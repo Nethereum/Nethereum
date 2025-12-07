@@ -1,3 +1,5 @@
+using System;
+
 namespace Nethereum.Wallet.UI.Components.Blazor.Shared
 {
     public enum WalletCardVariant

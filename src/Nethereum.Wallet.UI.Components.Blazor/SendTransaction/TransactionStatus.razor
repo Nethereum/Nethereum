@@ -11,20 +11,10 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<WalletFormLayout Title="@Localizer.GetString(Keys.TransactionStatus)"
-                  ShowContinue="false"
-                  ShowBack="false"
-                  ExitText="@ExitButtonText"
-                  OnExit="@(() => ViewModel.CloseCommand.Execute(null))">
-   
-    
-    <ChildContent>
-        <!-- Status Display -->
         <WalletFormSection>
             <MudStack AlignItems="AlignItems.Center" Spacing="4">
         @if (ViewModel.IsMonitoring)
         {
-            <!-- Real-time Status Display -->
             <MudIcon Icon="@GetStatusIcon()" 
                      Color="@GetStatusColor()" 
                      Size="MudBlazor.Size.Large" 
@@ -52,7 +42,6 @@
         }
         else if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
         {
-            <!-- Success State -->
             <MudIcon Icon="@Icons.Material.Filled.CheckCircle" 
                      Color="Color.Success" 
                      Size="MudBlazor.Size.Large" 
@@ -68,7 +57,6 @@
         }
         else if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
         {
-            <!-- Error State -->
             <MudIcon Icon="@Icons.Material.Filled.Error" 
                      Color="Color.Error" 
                      Size="MudBlazor.Size.Large" 
@@ -143,21 +131,28 @@
                 </MudCard>
             </WalletFormSection>
         }
-    </ChildContent>
-</WalletFormLayout>
-
 @code {
     [Parameter, EditorRequired] public TransactionStatusViewModel ViewModel { get; set; } = null!;
-    [Parameter] public EventCallback OnExit { get; set; }
-    [Parameter] public string ExitButtonText { get; set; } = "Close";
+    [Parameter] public int AutoCloseConfirmationCount { get; set; } = 12;
+    [Parameter] public bool ShowExitAction { get; set; } = true;
+
+
+    private EventCallback ExitCallback =>
+        ShowExitAction
+            ? EventCallback.Factory.Create(this, () => ViewModel.CloseCommand.Execute(null))
+            : EventCallback.Empty;
     [Parameter] public bool ShowExplorerButton { get; set; } = true;
     [Parameter] public bool IsCompactMode { get; set; } = false;
     
+    protected override void OnParametersSet()
+    {
+        ViewModel.AutoCloseConfirmationCount = AutoCloseConfirmationCount;
+    }
+
     protected override void OnInitialized()
     {
         LocalizationService.LanguageChanged += OnLanguageChanged;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-        ViewModel.OnClose = () => OnExit.InvokeAsync();
     }
     
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

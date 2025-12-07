@@ -1,11 +1,13 @@
 @using MudBlazor
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
 @using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Services
 @inject IJSRuntime JSRuntime
+@inject IViewportService ViewportService
 
 <!-- Master Wallet Form Layout - Used by all wallet forms -->
 <CascadingValue Value="this">
-<div class="wallet-form-layout" @ref="layoutElement">
+<div class="@LayoutClasses" @ref="layoutElement">
     
     <!-- Compact Header -->
     <WalletCompactHeader Title="@Title" 
@@ -26,16 +28,17 @@
     
     <!-- Bottom Navigation -->
     <WalletBottomNavigation ExitText="@ExitText"
-                           BackText="@BackText"
-                           ContinueText="@ContinueText"
-                           PrimaryText="@PrimaryText"
-                           ShowBack="@ShowBack"
-                           ShowContinue="@ShowContinue"
-                           ShowPrimary="@ShowPrimary"
-                           ContinueDisabled="@ContinueDisabled"
-                           PrimaryDisabled="@PrimaryDisabled"
-                           ActionButtons="@ActionButtons"
-                           OnExit="@OnExit"
+                            BackText="@BackText"
+                            ContinueText="@ContinueText"
+                            PrimaryText="@PrimaryText"
+                            ShowBack="@ShowBack"
+                            ShowContinue="@ShowContinue"
+                            ShowPrimary="@ShowPrimary"
+                            ShowExit="@ShowExit"
+                            ContinueDisabled="@ContinueDisabled"
+                            PrimaryDisabled="@PrimaryDisabled"
+                            ActionButtons="@ActionButtons"
+                            OnExit="@OnExit"
                            OnBack="@OnBack"
                            OnContinue="@OnContinue"
                            OnPrimary="@OnPrimary" />
@@ -55,6 +58,7 @@
     [Parameter] public string ContinueText { get; set; } = "Continue";
     [Parameter] public string PrimaryText { get; set; } = "Create Account";
     
+    [Parameter] public bool ShowExit { get; set; } = true;
     [Parameter] public bool ShowBack { get; set; } = false;
     [Parameter] public bool ShowContinue { get; set; } = true;
     [Parameter] public bool ShowPrimary { get; set; } = false;
@@ -71,6 +75,9 @@
     [Parameter] public RenderFragment? ActionButtons { get; set; }
     
     private ElementReference layoutElement;
+    private string LayoutClasses => ViewportService.IsCompact
+        ? "wallet-form-layout wallet-form-layout--compact"
+        : "wallet-form-layout";
     
     public async Task ScrollToTop()
     {

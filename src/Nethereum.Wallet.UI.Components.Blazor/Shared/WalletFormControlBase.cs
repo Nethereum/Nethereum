@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using Nethereum.Wallet.UI.Components.Core.Localization;
+using System.Collections.Generic;
 
 namespace Nethereum.Wallet.UI.Components.Blazor.Shared
 {

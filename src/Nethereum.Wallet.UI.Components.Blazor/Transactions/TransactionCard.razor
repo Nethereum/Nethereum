@@ -505,8 +505,15 @@
         _ => ""
     };
     
-    private string FormatHash(string hash) =>
-        hash.Length > 16 ? $"{hash[..6]}...{hash[^4..]}" : hash;
+    private string FormatHash(string hash)
+    {
+        if (string.IsNullOrEmpty(hash))
+        {
+            return "--";
+        }
+
+        return hash.Length > 16 ? $"{hash[..6]}...{hash[^4..]}" : hash;
+    }
     
     private string GetTimeDisplay()
     {

@@ -87,9 +87,67 @@
                 }
                 else
                 {
-                    <WalletEmptyState Icon="@Icons.Material.Outlined.Language"
-                                    Title="@Localizer.GetString(Keys.NoNetworksFound)"
-                                    Description="Try adjusting your search or filter settings" />
+                   <div class="mt-4">
+  
+                        <WalletCompactHeader Title="@Localizer.GetString(Keys.NoNetworksFound)"
+                                         Subtitle="@Localizer.GetString(Keys.AdjustSearchOrFilters)" />
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(ViewModel.SearchText) &&
+                    ViewModel.InternalSuggestions?.Any() == true)
+                {
+                    <div class="mt-4">
+                        <WalletCompactHeader Title="@Localizer.GetString(Keys.InternalResultsTitle)"
+                                             Subtitle="@Localizer.GetString(Keys.InternalResultsDescription)" />
+
+                        <div class="network-list mt-3">
+                            @foreach (var suggestion in ViewModel.InternalSuggestions)
+                            {
+                                <InternalNetworkSuggestionCard Suggestion="suggestion"
+                                                               IsCompactMode="@IsCompact"
+                                                               IsMobileSimplified="@(ComponentWidth < 600)"
+                                                               OnAdd="@(async s => await ViewModel.AddInternalNetworkCommand.ExecuteAsync(s))" />
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(ViewModel.SearchText) && 
+                    (ViewModel.IsChainlistLoading || ViewModel.ChainlistResults?.Any() == true || !string.IsNullOrEmpty(ViewModel.ChainlistMessage)))
+                {
+                    <div class="mt-4">
+                        <WalletCompactHeader Title="@Localizer.GetString(Keys.ChainlistResultsTitle)"
+                                             Subtitle="@(ViewModel.FilteredNetworks?.Any() == true 
+                                                         ? Localizer.GetString(Keys.ChainlistSupplementalDescription) 
+                                                         : Localizer.GetString(Keys.ChainlistResultsDescription))" />
+
+                        @if (ViewModel.IsChainlistLoading)
+                        {
+                            <div class="d-flex align-items-center mt-3 gap-2">
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                <MudText Typo="Typo.body2">@Localizer.GetString(Keys.ChainlistSearching)</MudText>
+                            </div>
+                        }
+                        else if (ViewModel.ChainlistResults?.Any() == true)
+                        {
+                            <div class="network-list mt-3">
+                                @foreach (var suggestion in ViewModel.ChainlistResults)
+                                {
+                                    <ChainlistNetworkCard Network="@suggestion"
+                                                          IsCompactMode="@IsCompact"
+                                                          IsMobileSimplified="@(ComponentWidth < 600)"
+                                                          OnAdd="@(async (item) => await ViewModel.AddChainlistNetworkCommand.ExecuteAsync(item))" />
+                                }
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(ViewModel.ChainlistMessage))
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-3 text-secondary">
+                                @ViewModel.ChainlistMessage
+                            </MudText>
+                        }
+                    </div>
                 }
             </WalletContentSection>
         }
@@ -117,6 +175,11 @@
         {
             notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
         }
+
+        ViewModel.OnNavigateToDetails = async chainId =>
+        {
+            await HandleNetworkDetailsByChainId(chainId);
+        };
 
         await ViewModel.InitializeCommand.ExecuteAsync(null);
         
@@ -202,6 +265,7 @@
         {
             notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
         }
+
+        ViewModel.OnNavigateToDetails = null;
     }
 }
-

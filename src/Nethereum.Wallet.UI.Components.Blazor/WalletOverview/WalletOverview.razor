@@ -9,7 +9,9 @@
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
 @using Nethereum.Wallet.UI.Components.Blazor.Transactions
 @using Nethereum.Wallet.UI.Components.Blazor.AccountDetails
+@using Nethereum.Wallet.Diagnostics
 @using Microsoft.JSInterop
+@using System.Threading
 @inject IComponentLocalizer<WalletOverviewViewModel> Localizer
 @inject WalletOverviewViewModel ViewModel
 @inject WalletOverviewConfiguration Config
@@ -159,6 +161,8 @@ else
     private bool _showSendTransaction = false;
     private bool _showTransactionHistory = false;
     private bool _showAccountDetails = false;
+    private CancellationTokenSource? _refreshCts;
+    private Task? _refreshTask;
     
     [Parameter] public bool IsCompactMode { get; set; } = false;
     
@@ -194,10 +198,13 @@ else
         };
         
         await ViewModel.InitializeCommand.ExecuteAsync(null);
+        
+        StartAutoRefresh();
     }
     
     private void ShowWalletOverview()
     {
+        Trace("ShowWalletOverview invoked");
         _showSendTransaction = false;
         _showTransactionHistory = false;
         _showAccountDetails = false;
@@ -206,6 +213,7 @@ else
     
     private void ShowSendTransaction()
     {
+        Trace("ShowSendTransaction invoked");
         _showSendTransaction = true;
         _showTransactionHistory = false;
         _showAccountDetails = false;
@@ -214,6 +222,7 @@ else
     
     private void ShowTransactionHistory()
     {
+        Trace("ShowTransactionHistory invoked");
         _showSendTransaction = false;
         _showTransactionHistory = true;
         _showAccountDetails = false;
@@ -222,17 +231,17 @@ else
     
     private void ShowAccountDetails()
     {
+        Trace("ShowAccountDetails invoked");
         _showSendTransaction = false;
         _showTransactionHistory = false;
         _showAccountDetails = true;
         StateHasChanged();
     }
     
-    private void OnTransactionSent()
+    private async Task OnTransactionSent()
     {
-        // Don't hide the TokenTransfer component - let the user dismiss the status screen
-        // Just reload pending transactions in the background
-        _ = ViewModel.LoadPendingTransactionsCommand.ExecuteAsync(null);
+        await ViewModel.LoadPendingTransactionsCommand.ExecuteAsync(null);
+        await ViewModel.LoadAccountBalanceCommand.ExecuteAsync(null);
     }
     
     private async Task HandleCopyHash(TransactionInfo transaction)
@@ -252,6 +261,79 @@ else
     
     public void Dispose()
     {
+        StopAutoRefresh();
         ViewModel?.Dispose();
+    }
+
+    private void Trace(string message)
+    {
+        WalletDiagnosticsLogger.Log("WalletOverview", message);
+    }
+
+    private void StartAutoRefresh()
+    {
+        if (!Config.AutoRefreshBalance)
+        {
+            return;
+        }
+
+        StopAutoRefresh();
+        _refreshCts = new CancellationTokenSource();
+        _refreshTask = RefreshLoopAsync(_refreshCts.Token);
+    }
+
+    private void StopAutoRefresh()
+    {
+        if (_refreshCts == null)
+        {
+            return;
+        }
+
+        try
+        {
+            _refreshCts.Cancel();
+        }
+        catch
+        {
+            // ignored
+        }
+        finally
+        {
+            _refreshCts.Dispose();
+            _refreshCts = null;
+        }
+    }
+
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        var intervalSeconds = Math.Max(5, Config.AutoRefreshIntervalSeconds);
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(intervalSeconds));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false))
+            {
+                if (_showSendTransaction || _showTransactionHistory)
+                {
+                    continue;
+                }
+
+                await InvokeAsync(async () =>
+                {
+                    if (ViewModel.SelectedAccount != null)
+                    {
+                        await ViewModel.LoadAccountBalanceAsync();
+                        await ViewModel.LoadPendingTransactionsAsync();
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // expected on dispose
+        }
+        finally
+        {
+            timer.Dispose();
+        }
     }
 }

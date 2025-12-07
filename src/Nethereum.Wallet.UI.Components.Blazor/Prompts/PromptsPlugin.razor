@@ -98,7 +98,7 @@ else if (ViewModel.CurrentPrompt != null)
                         OnRejected="@HandlePromptRejected" />
                 }
                 break;
-                
+
             default:
                 <MudAlert Severity="Severity.Warning">
                     @Localizer.GetString(Keys.UnknownPromptType)

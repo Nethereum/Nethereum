@@ -1,19 +1,23 @@
+@using Microsoft.JSInterop
 @using Nethereum.Wallet.UI.Components.Services
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.UI.Components.Prompts
 @using Nethereum.Wallet.UI.Components.Blazor.Prompts
 @using MudBlazor
+@using Nethereum.Wallet.Diagnostics
 @inject IComponentLocalizer<DAppSignaturePromptView> Localizer
+@inject DAppSignaturePromptViewModel ViewModel
+@inject IJSRuntime JSRuntime
 
 <WalletFormLayout Title="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Title)"
                   Subtitle="@GetSubtitle()"
                   ExitText="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Reject)"
                   ShowPrimary="true"
-                  PrimaryText="@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Sign)"
+                  PrimaryText="@(ViewModel.SignatureReady ? Localizer.GetString(DAppSignaturePromptLocalizer.Keys.ConfirmSignature) : Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Sign))"
                   OnExit="HandleReject"
                   OnPrimary="HandleSign"
-                  PrimaryDisabled="@_isSigning">
+                  PrimaryDisabled="@ViewModel.IsSigning">
     
     <ChildContent>
         @if (SignatureInfo != null)
@@ -75,6 +79,30 @@
                         }
                     </MudStack>
                 </MudPaper>
+
+                @if (ViewModel.HasTypedDataHashes)
+                {
+                    <MudPaper Class="pa-3 mt-3" Elevation="1">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.subtitle2" FontWeight="FontWeight.Bold">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.HashSectionTitle)</MudText>
+                            @if (!string.IsNullOrEmpty(ViewModel.TypedDataDomainHash))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.DomainHashLabel)</MudText>
+                                <MudText Typo="Typo.body2" Style="font-family: var(--mud-typography-body2-font-family, monospace); word-break: break-all;">@ViewModel.TypedDataDomainHash</MudText>
+                            }
+                            @if (!string.IsNullOrEmpty(ViewModel.TypedDataMessageHash))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.MessageHashLabel)</MudText>
+                                <MudText Typo="Typo.body2" Style="font-family: var(--mud-typography-body2-font-family, monospace); word-break: break-all;">@ViewModel.TypedDataMessageHash</MudText>
+                            }
+                            @if (!string.IsNullOrEmpty(ViewModel.TypedDataHash))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.TypedDataHashLabel)</MudText>
+                                <MudText Typo="Typo.body2" Style="font-family: var(--mud-typography-body2-font-family, monospace); word-break: break-all;">@ViewModel.TypedDataHash</MudText>
+                            }
+                        </MudStack>
+                    </MudPaper>
+                }
             }
             
             <MudPaper Class="pa-3 mt-3" Elevation="1">
@@ -108,6 +136,41 @@
                 </MudStack>
             </MudPaper>
             
+            @if (ViewModel.SignatureReady && !string.IsNullOrEmpty(ViewModel.SignaturePreview))
+            {
+                <MudPaper Class="pa-3 mt-3" Elevation="1">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.subtitle2" FontWeight="FontWeight.Bold">@Localizer.GetString(DAppSignaturePromptLocalizer.Keys.SignaturePreviewTitle)</MudText>
+                        <MudTextField Value="@ViewModel.SignaturePreview"
+                                      ReadOnly="true"
+                                      Lines="4"
+                                      Variant="Variant.Outlined"
+                                      Style="font-family: var(--mud-typography-body2-font-family, monospace); word-break: break-all;"
+                                      FullWidth="true" />
+                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.ContentCopy"
+                                       OnClick="CopySignatureAsync">
+                                @Localizer.GetString(DAppSignaturePromptLocalizer.Keys.CopySignature)
+                            </MudButton>
+                        </MudStack>
+                        <MudAlert Severity="Severity.Info">
+                            <MudText Typo="Typo.body2">
+                                @Localizer.GetString(DAppSignaturePromptLocalizer.Keys.SignatureReviewInfo)
+                            </MudText>
+                        </MudAlert>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3">
+                    <MudText Typo="Typo.body2">@ViewModel.ErrorMessage</MudText>
+                </MudAlert>
+            }
+
             <MudAlert Severity="Severity.Warning" Class="mt-3">
                 <MudText Typo="Typo.body2">
                     @Localizer.GetString(DAppSignaturePromptLocalizer.Keys.Warning)
@@ -123,9 +186,9 @@
     [Parameter] public EventCallback<object?> OnSigned { get; set; }
     [Parameter] public EventCallback OnRejected { get; set; }
     
-    private SignaturePromptInfo? SignatureInfo => PromptRequest?.Data as SignaturePromptInfo;
-    private bool _isSigning = false;
+    private SignaturePromptInfo? SignatureInfo => ViewModel.PromptInfo;
     private bool _showRaw;
+    private string? _currentPromptId;
     
     private string GetSubtitle()
     {
@@ -138,15 +201,33 @@
     
     private async Task HandleSign()
     {
-        _isSigning = true;
-        try
+        if (SignatureInfo == null)
         {
-            await OnSigned.InvokeAsync(true);
+            return;
         }
-        finally
+
+        if (!ViewModel.SignatureReady)
         {
-            _isSigning = false;
+            try
+            {
+                WalletDiagnosticsLogger.Log("BlazorPrompt", $"Signature prompt OnPrimary invoked promptId={PromptRequest?.Id}");
+                await ViewModel.SignAsync();
+            }
+            catch (OperationCanceledException)
+            {
+                await HandleReject();
+            }
+            catch
+            {
+                // Error message handled in ViewModel
+            }
         }
+        else if (!string.IsNullOrEmpty(ViewModel.SignaturePreview))
+        {
+            await OnSigned.InvokeAsync(ViewModel.SignaturePreview);
+        }
+
+        StateHasChanged();
     }
     
     private async Task HandleReject()
@@ -169,8 +250,28 @@
         return SignatureInfo.DecodedMessage;
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        _showRaw = string.IsNullOrEmpty(SignatureInfo?.DecodedMessage);
+        if (PromptRequest?.Data is SignaturePromptInfo info)
+        {
+            if (!string.Equals(_currentPromptId, PromptRequest.Id, StringComparison.Ordinal))
+            {
+                _currentPromptId = PromptRequest.Id;
+                await ViewModel.InitializeAsync(info);
+                _showRaw = string.IsNullOrEmpty(info?.DecodedMessage);
+            }
+        }
+        else
+        {
+            _currentPromptId = null;
+        }
+    }
+
+    private async Task CopySignatureAsync()
+    {
+        if (!string.IsNullOrEmpty(ViewModel.SignaturePreview))
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", ViewModel.SignaturePreview);
+        }
     }
 }

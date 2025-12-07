@@ -30,6 +30,14 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Prompts
             public const string VerifyingContract = "VerifyingContract";
             public const string PrimaryType = "PrimaryType";
             public const string ChainId = "ChainId";
+            public const string HashSectionTitle = "HashSectionTitle";
+            public const string DomainHashLabel = "DomainHashLabel";
+            public const string MessageHashLabel = "MessageHashLabel";
+            public const string TypedDataHashLabel = "TypedDataHashLabel";
+            public const string SignaturePreviewTitle = "SignaturePreviewTitle";
+            public const string CopySignature = "CopySignature";
+            public const string SignatureReviewInfo = "SignatureReviewInfo";
+            public const string ConfirmSignature = "ConfirmSignature";
         }
 
         protected override void RegisterTranslations()
@@ -54,7 +62,15 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Prompts
                 [Keys.DomainVersion] = "Version",
                 [Keys.VerifyingContract] = "Verifying Contract",
                 [Keys.PrimaryType] = "Primary Type",
-                [Keys.ChainId] = "Chain ID"
+                [Keys.ChainId] = "Chain ID",
+                [Keys.HashSectionTitle] = "Typed Data Hashes",
+                [Keys.DomainHashLabel] = "Domain Hash",
+                [Keys.MessageHashLabel] = "Message Hash",
+                [Keys.TypedDataHashLabel] = "Typed Data Hash",
+                [Keys.SignaturePreviewTitle] = "Signature Result",
+                [Keys.CopySignature] = "Copy Signature",
+                [Keys.SignatureReviewInfo] = "Review the signature and confirm to send it back to the application.",
+                [Keys.ConfirmSignature] = "Submit"
             });
 
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -68,7 +84,7 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Prompts
                 [Keys.HexChip] = "Hex",
                 [Keys.TooltipViewRaw] = "Ver original",
                 [Keys.TooltipViewDecoded] = "Ver decodificado",
-                [Keys.Warning] = "Solo firme mensajes de aplicaciones en las que confíe. Firmar mensajes maliciosos puede resultar en la pérdida de fondos.",
+                [Keys.Warning] = "Solo firme mensajes de dapps en las que confíe. Firmar mensajes maliciosos puede resultar en la pérdida de fondos.",
                 [Keys.Reject] = "Rechazar",
                 [Keys.Sign] = "Firmar",
                 [Keys.AccountDisplay] = "Cuenta: {0}",
@@ -77,7 +93,15 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Prompts
                 [Keys.DomainVersion] = "Versión",
                 [Keys.VerifyingContract] = "Contrato Verificador",
                 [Keys.PrimaryType] = "Tipo Principal",
-                [Keys.ChainId] = "ID de Cadena"
+                [Keys.ChainId] = "ID de Cadena",
+                [Keys.HashSectionTitle] = "Hashes de Datos Tipados",
+                [Keys.DomainHashLabel] = "Hash del Dominio",
+                [Keys.MessageHashLabel] = "Hash del Mensaje",
+                [Keys.TypedDataHashLabel] = "Hash Final",
+                [Keys.SignaturePreviewTitle] = "Resultado de la Firma",
+                [Keys.CopySignature] = "Copiar Firma",
+                [Keys.SignatureReviewInfo] = "Revise la firma y confirme para devolverla a la aplicación.",
+                [Keys.ConfirmSignature] = "Enviar"
             });
         }
     }

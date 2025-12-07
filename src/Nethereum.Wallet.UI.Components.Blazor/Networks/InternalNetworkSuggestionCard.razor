@@ -1,0 +1,97 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@inject IComponentLocalizer<NetworkListViewModel> Localizer
+
+<MudCard Elevation="1"
+         Class="wallet-card network-card chainlist-card">
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-4")">
+        <MudStack Row="true"
+                  AlignItems="AlignItems.Center"
+                  Justify="Justify.SpaceBetween"
+                  Spacing="@(IsCompactMode ? 2 : 3)">
+
+            <MudStack Row="true"
+                      AlignItems="AlignItems.Center"
+                      Spacing="@(IsCompactMode ? 2 : 3)"
+                      Style="flex-grow:1; min-width:0;">
+                <MudAvatar Size="@GetAvatarSize()" Style="@IdenticonGenerator.GetIdenticonStyle(Suggestion.DisplayName)">
+                    <div class="identicon-content">
+                        @IdenticonGenerator.GetNetworkIdenticonText(Suggestion.DisplayName)
+                    </div>
+                </MudAvatar>
+
+                <MudStack Spacing="@(IsCompactMode ? 0 : 1)"
+                          Style="flex-grow:1; min-width:0;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight:600;">
+                            @Suggestion.DisplayName
+                        </MudText>
+                        @if (Suggestion.IsTestnet)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                Testnet
+                            </MudChip>
+                        }
+                    </MudStack>
+                    @if (!IsMobileSimplified)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                                Chain ID: @Suggestion.ChainId
+                            </MudText>
+                            @if (Suggestion.RpcCount > 0)
+                            {
+                                <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                                    • @Suggestion.RpcCount RPC@(Suggestion.RpcCount == 1 ? string.Empty : "s")
+                                </MudText>
+                            }
+                        </MudStack>
+                        @if (!string.IsNullOrWhiteSpace(Suggestion.PrimaryRpc))
+                        {
+                            <MudText Typo="Typo.caption" Style="@GetSubtitleStyle()">
+                                @Suggestion.PrimaryRpc
+                            </MudText>
+                        }
+                    }
+                </MudStack>
+            </MudStack>
+
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Disabled="@Suggestion.IsAdding"
+                           OnClick="HandleAddAsync"
+                           Class="wallet-touch-target">
+                    @if (Suggestion.IsAdding)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                    }
+                    @Localizer.GetString(NetworkListLocalizer.Keys.InternalAddButton)
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public InternalNetworkSuggestion Suggestion { get; set; } = null!;
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public bool IsMobileSimplified { get; set; }
+    [Parameter] public EventCallback<InternalNetworkSuggestion> OnAdd { get; set; }
+
+    private async Task HandleAddAsync()
+    {
+        if (OnAdd.HasDelegate)
+        {
+            await OnAdd.InvokeAsync(Suggestion);
+        }
+    }
+
+    private Size GetAvatarSize() => IsCompactMode ? Size.Small : Size.Medium;
+    private Typo GetTitleTypo() => IsCompactMode ? Typo.subtitle2 : Typo.subtitle1;
+    private Typo GetSubtitleTypo() => IsCompactMode ? Typo.caption : Typo.body2;
+    private string GetSubtitleStyle() => "color: var(--mud-palette-text-secondary); font-weight: 400;";
+}

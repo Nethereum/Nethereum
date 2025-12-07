@@ -1,0 +1,18 @@
+.prompt-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.prompt-container > * {
+    flex: 1 1 auto;
+}
+
+.prompt-container .wallet-form-layout {
+    height: 100%;
+}
+
+.prompt-container .wallet-form-layout--compact {
+    min-height: 100%;
+}

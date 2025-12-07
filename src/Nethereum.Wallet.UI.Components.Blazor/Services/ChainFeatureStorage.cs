@@ -1,4 +1,5 @@
 using Nethereum.RPC.Chain;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Nethereum.Wallet.UI.Components.Blazor.Services

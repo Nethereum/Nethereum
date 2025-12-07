@@ -8,6 +8,14 @@
     overflow: hidden;
 }
 
+.wallet-form-layout--compact {
+    min-height: 100%;
+}
+
+.wallet-form-layout--compact .wallet-form-content {
+    padding: 0.75rem;
+}
+
 .wallet-form-content {
     flex: 1;
     padding: 1rem;

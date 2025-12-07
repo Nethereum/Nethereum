@@ -100,9 +100,7 @@
         {
             @if (ViewModel.TransactionStatus != null)
             {
-                <TransactionStatus ViewModel="@ViewModel.TransactionStatus"
-                                   ExitButtonText="@Localizer.GetString(Keys.Close)"
-                                   OnExit="HandleStatusExit" />
+                <TransactionStatus ViewModel="@ViewModel.TransactionStatus" />
             }
             else
             {

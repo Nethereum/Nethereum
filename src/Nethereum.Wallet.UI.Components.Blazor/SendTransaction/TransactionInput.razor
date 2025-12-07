@@ -102,12 +102,26 @@
                     <MudText Typo="Typo.body2">@Localizer.GetString(Keys.GasMode):</MudText>
                     <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
                         <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Variant.Filled : Variant.Outlined)"
+                                   Color="@(ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Color.Primary : Color.Default)"
                                    OnClick="@(async () => await ViewModel.ToggleGasModeCommand.ExecuteAsync(true))">
-                            @Localizer.GetString(Keys.GasModeEip1559)
+                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
+                                <span>@Localizer.GetString(Keys.GasModeEip1559)</span>
+                                @if (ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
+                                }
+                            </MudStack>
                         </MudButton>
                         <MudButton Variant="@(!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Variant.Filled : Variant.Outlined)"
+                                   Color="@(!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Color.Primary : Color.Default)"
                                    OnClick="@(async () => await ViewModel.ToggleGasModeCommand.ExecuteAsync(false))">
-                            @Localizer.GetString(Keys.GasModeLegacy)
+                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
+                                <span>@Localizer.GetString(Keys.GasModeLegacy)</span>
+                                @if (!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
+                                }
+                            </MudStack>
                         </MudButton>
                     </MudButtonGroup>
                 </MudStack>
@@ -125,15 +139,21 @@
                                    Size="Size.Small"
                                    OnClick="@(async () => await ViewModel.SelectMultiplierCommand.ExecuteAsync(option.Multiplier))"
                                    Disabled="@ViewModel.IsLoadingGasStrategies">
-                            @option.DisplayText
-                            @if (option.IsRecommended)
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="ml-1"/>
-                            }
+                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
+                                <span>@option.DisplayText</span>
+                                @if (Math.Abs(ViewModel.Transaction.GasConfiguration.SelectedMultiplier - option.Multiplier) < 0.01m)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
+                                }
+                                else if (option.IsRecommended)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" />
+                                }
+                            </MudStack>
                         </MudButton>
                     }
                     <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.IsCustomMode ? Variant.Filled : Variant.Outlined)"
-                               Color="Color.Secondary"
+                               Color="@(ViewModel.Transaction.GasConfiguration.IsCustomMode ? Color.Secondary : Color.Default)"
                                Size="Size.Small"
                                OnClick="@(async () => await ViewModel.EnableCustomModeCommand.ExecuteAsync(null))"
                                Disabled="@ViewModel.IsLoadingGasStrategies">

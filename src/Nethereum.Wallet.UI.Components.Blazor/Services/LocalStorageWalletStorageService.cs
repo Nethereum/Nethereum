@@ -23,6 +23,7 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Services
         private const string CustomChainsKey = "Nethereum.Wallet.CustomChains";
         private const string UserNetworksKey = "Nethereum.Wallet.UserNetworks";
         private const string RpcHealthKey = "Nethereum.Wallet.RpcHealth.";
+        private const string NetworkPreferenceKeyPrefix = "NetworkPreference.";
 
         public LocalStorageWalletStorageService(IJSRuntime jsRuntime)
         {
@@ -58,6 +59,12 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Services
             var json = JsonSerializer.Serialize(value, _jsonOptions);
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", fullKey, json);
         }
+
+        public Task SaveNetworkPreferenceAsync(string key, bool value)
+            => SetSettingAsync(NetworkPreferenceKeyPrefix + key, value);
+
+        public Task<bool?> GetNetworkPreferenceAsync(string key)
+            => GetSettingAsync<bool?>(NetworkPreferenceKeyPrefix + key);
 
         public async Task RemoveSettingAsync(string key)
         {

@@ -1,4 +1,5 @@
 @using MudBlazor
+@using System
 @using Nethereum.Wallet
 @using Nethereum.Wallet.WalletAccounts
 @using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
@@ -7,6 +8,7 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using System.ComponentModel
+@using System.Collections.Generic
 @using static Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic.MnemonicDetailsLocalizer
 @implements IDisposable
 @inject MnemonicDetailsViewModel ViewModel
@@ -201,7 +203,8 @@
 </WalletFormLayout>
 
 @code {
-    [Parameter] public string? MnemonicId { get; set; }
+    [Parameter] public string? GroupId { get; set; }
+    [Parameter] public IReadOnlyList<IWalletAccount> Accounts { get; set; } = Array.Empty<IWalletAccount>();
     [Parameter] public EventCallback OnExit { get; set; }
     
     public enum ViewSection
@@ -221,17 +224,17 @@
             notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
         }
 
-        if (!string.IsNullOrEmpty(MnemonicId))
+        if (!string.IsNullOrEmpty(GroupId))
         {
-            await ViewModel.InitializeAsync(MnemonicId);
+            await ViewModel.InitializeAsync(GroupId, Accounts);
         }
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!string.IsNullOrEmpty(MnemonicId) && MnemonicId != ViewModel.MnemonicInfo?.Id)
+        if (!string.IsNullOrEmpty(GroupId) && GroupId != ViewModel.MnemonicInfo?.Id)
         {
-            await ViewModel.InitializeAsync(MnemonicId);
+            await ViewModel.InitializeAsync(GroupId, Accounts);
         }
     }
 

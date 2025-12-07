@@ -3,6 +3,7 @@
 @using Nethereum.Wallet.UI.Components.SendTransaction.Models
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Diagnostics
 @using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
 @inject SendNativeTokenViewModel ViewModel
 @inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
@@ -77,7 +78,8 @@
                     @if (ViewModel.Transaction.TransactionStatus != null)
                     {
                         <TransactionStatus ViewModel="@ViewModel.Transaction.TransactionStatus" 
-                                          IsCompactMode="@IsCompactMode" />
+                                          IsCompactMode="@IsCompactMode"
+                                          />
                     }
                     else
                     {
@@ -115,6 +117,7 @@
     
     protected override async Task OnInitializedAsync()
     {
+        Trace("TokenTransfer OnInitializedAsync start");
         // Subscribe to language changes
         LocalizationService.LanguageChanged += OnLanguageChanged;
         
@@ -158,24 +161,28 @@
         
         // Initialize the ViewModel with wallet data
         await ViewModel.InitializeAsync();
+        Trace("TokenTransfer OnInitializedAsync completed");
         
         StateHasChanged();
     }
     
     private async Task HandleCancel()
     {
+        Trace("TokenTransfer HandleCancel invoked");
         if (OnCancel.HasDelegate)
             await OnCancel.InvokeAsync();
     }
     
     private async Task HandleBack()
     {
+        Trace($"TokenTransfer HandleBack invoked (step {ViewModel.CurrentStep})");
         ViewModel.PreviousStepCommand.Execute(null);
         StateHasChanged();
     }
     
     private async Task HandleContinue()
     {
+        Trace($"TokenTransfer HandleContinue invoked (step {ViewModel.CurrentStep})");
         // Clear any previous errors
         ViewModel.ErrorMessage = null;
         
@@ -187,7 +194,9 @@
     
     private async Task HandleSendTransaction()
     {
+        Trace("TokenTransfer HandleSendTransaction invoked");
         await ViewModel.SendTransactionCommand.ExecuteAsync(null);
+        Trace("TokenTransfer HandleSendTransaction completed");
         StateHasChanged();
     }
     
@@ -236,5 +245,9 @@
             ViewModel.NativeTransfer.PropertyChanged -= OnTransferModelPropertyChanged;
         }
     }
-}
 
+    private void Trace(string message)
+    {
+        WalletDiagnosticsLogger.Log("TokenTransfer", message);
+    }
+}

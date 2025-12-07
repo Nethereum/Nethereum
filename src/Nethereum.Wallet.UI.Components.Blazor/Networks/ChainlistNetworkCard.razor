@@ -1,0 +1,127 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Networks
+@using Nethereum.Wallet.UI.Components.Utils
+@inject IComponentLocalizer<NetworkListViewModel> Localizer
+
+<MudCard Elevation="1"
+         Class="wallet-card network-card chainlist-card"
+         Style="">
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-4")">
+        <MudStack Row="true"
+                  AlignItems="AlignItems.Center"
+                  Justify="Justify.SpaceBetween"
+                  Spacing="@(IsCompactMode ? 2 : 3)">
+
+            <MudStack Row="true"
+                      AlignItems="AlignItems.Center"
+                      Spacing="@(IsCompactMode ? 2 : 3)"
+                      Style="flex-grow:1; min-width:0;">
+                <MudAvatar Size="@GetAvatarSize()" Style="@GetAvatarStyle()">
+                    @if (!string.IsNullOrWhiteSpace(Network.IconUrl))
+                    {
+                        <MudImage Src="@Network.IconUrl"
+                                  Alt="@Network.DisplayName"
+                                  Style="width:100%; height:100%; object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <div class="identicon-content">
+                            @IdenticonGenerator.GetNetworkIdenticonText(Network.DisplayName)
+                        </div>
+                    }
+                </MudAvatar>
+
+                <MudStack Spacing="@(IsCompactMode ? 0 : 1)"
+                          Style="flex-grow:1; min-width:0;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight:600;">
+                            @Network.DisplayName
+                        </MudText>
+                        @if (Network.IsKnownTestnet)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                Testnet
+                            </MudChip>
+                        }
+                    </MudStack>
+
+                    @if (!IsMobileSimplified)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                                Chain ID: @Network.ChainId
+                            </MudText>
+                            @if (Network.RpcCount > 0)
+                            {
+                                <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                                    • @Network.RpcCount RPC@(Network.RpcCount == 1 ? string.Empty : "s")
+                                </MudText>
+                            }
+                        </MudStack>
+                        @if (!string.IsNullOrWhiteSpace(Network.PrimaryRpc))
+                        {
+                            <MudText Typo="Typo.caption" Style="@GetSubtitleStyle()">
+                                @Network.PrimaryRpc
+                            </MudText>
+                        }
+                    }
+                </MudStack>
+            </MudStack>
+
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                @if (Network.IsAlreadyAdded)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.CheckCircle">
+                        @Localizer.GetString(NetworkListLocalizer.Keys.ChainlistAlreadyAdded)
+                    </MudChip>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Disabled="@(!Network.HasRpcEndpoints || Network.IsAdding)"
+                               OnClick="HandleAddAsync"
+                               Class="wallet-touch-target">
+                        @if (Network.IsAdding)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                        }
+                        @Localizer.GetString(NetworkListLocalizer.Keys.ChainlistAddButton)
+                    </MudButton>
+                }
+            </MudStack>
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public ChainlistNetworkResult Network { get; set; } = null!;
+    [Parameter] public bool IsCompactMode { get; set; }
+    [Parameter] public bool IsMobileSimplified { get; set; }
+    [Parameter] public EventCallback<ChainlistNetworkResult> OnAdd { get; set; }
+
+    private async Task HandleAddAsync()
+    {
+        if (OnAdd.HasDelegate)
+        {
+            await OnAdd.InvokeAsync(Network);
+        }
+    }
+
+    private Size GetAvatarSize() => IsCompactMode ? Size.Small : Size.Medium;
+    private Typo GetTitleTypo() => IsCompactMode ? Typo.subtitle2 : Typo.subtitle1;
+    private Typo GetSubtitleTypo() => IsCompactMode ? Typo.caption : Typo.body2;
+    private string GetSubtitleStyle() => "color: var(--mud-palette-text-secondary); font-weight: 400;";
+
+    private string GetAvatarStyle()
+    {
+        if (!string.IsNullOrWhiteSpace(Network.IconUrl))
+        {
+            return "background: var(--mud-palette-background-grey); display:flex; align-items:center; justify-content:center;";
+        }
+
+        return IdenticonGenerator.GetIdenticonStyle(Network.DisplayName);
+    }
+}
