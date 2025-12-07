@@ -2,7 +2,9 @@
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC.HostWallet;
 using Nethereum.Wallet.UI;
+using System;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.RpcRequests
 {

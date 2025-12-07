@@ -1,6 +1,7 @@
 ﻿using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Wallet.UI;
 using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.RpcRequests
 {

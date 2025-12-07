@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Wallet.UI;
 using Newtonsoft.Json.Linq;

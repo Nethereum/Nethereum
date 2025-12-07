@@ -1,9 +1,11 @@
-﻿using Nethereum.JsonRpc.Client.RpcMessages;
+﻿using System;
+using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Wallet.UI;
 using Newtonsoft.Json.Linq;
 using Nethereum.ABI.EIP712;
 using Nethereum.Util;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.RpcRequests
 {
@@ -15,10 +17,16 @@ namespace Nethereum.Wallet.RpcRequests
         {
             var id = request.Id;
 
-            var enabledAccount = await context.EnableProviderAsync().ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(enabledAccount) || context.SelectedWalletAccount == null)
+            var selectedAccount = context.SelectedWalletAccount;
+            if (selectedAccount == null)
             {
-                return UserRejected(id);
+                var enabledAccount = await context.EnableProviderAsync().ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(enabledAccount) || context.SelectedWalletAccount == null)
+                {
+                    return UserRejected(id);
+                }
+
+                selectedAccount = context.SelectedWalletAccount;
             }
 
             var parameters = request.RawParameters as object[];
@@ -64,25 +72,25 @@ namespace Nethereum.Wallet.RpcRequests
                 ChainId = chainIdValue
             };
 
-            var approved = await context.RequestTypedDataSignAsync(promptRequest).ConfigureAwait(false);
-            if (!approved)
+            string? signature;
+            try
+            {
+                signature = await context.RequestTypedDataSignAsync(promptRequest).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
             {
                 return UserRejected(id);
             }
 
-            var account = await context.GetSelectedAccountAsync();
-            if (account == null)
+            if (string.IsNullOrEmpty(signature))
             {
-                return InvalidParams(id, "No account selected");
+                return UserRejected(id);
             }
 
-            if(!account.Address.IsTheSameAddress(address))
+            if(!selectedAccount.Address.IsTheSameAddress(address))
             {
                 return InvalidParams(id, "Addresses do not match");
             }
-
-            var web3 = await context.GetWalletWeb3Async();
-            var signature = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedDataJson);
 
             return new RpcResponseMessage(id, signature);
         }

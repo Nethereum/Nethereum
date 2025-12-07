@@ -5,6 +5,7 @@ using Nethereum.RPC.Accounts;
 using Nethereum.Wallet.UI;
 using Nethereum.Web3;
 using Nethereum.ABI.Util;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.RpcRequests
 {

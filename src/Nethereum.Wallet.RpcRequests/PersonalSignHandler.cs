@@ -1,8 +1,10 @@
-﻿using Nethereum.JsonRpc.Client.RpcMessages;
+﻿using System;
+using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Wallet.UI;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.RpcRequests
 {
@@ -17,10 +19,16 @@ namespace Nethereum.Wallet.RpcRequests
                 return InternalError(request.Id, "Wallet context unavailable");
             }
 
-            var enabledAccount = await context.EnableProviderAsync().ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(enabledAccount) || context.SelectedWalletAccount == null)
+            var selectedAccount = context.SelectedWalletAccount;
+            if (selectedAccount == null)
             {
-                return UserRejected(request.Id);
+                var enabledAccount = await context.EnableProviderAsync().ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(enabledAccount) || context.SelectedWalletAccount == null)
+                {
+                    return UserRejected(request.Id);
+                }
+
+                selectedAccount = context.SelectedWalletAccount;
             }
 
             var parameters = request.RawParameters as object[];
@@ -34,29 +42,26 @@ namespace Nethereum.Wallet.RpcRequests
                 return InvalidParams(request.Id, "Unable to determine message and address");
             }
 
-            var account = await context.GetSelectedAccountAsync().ConfigureAwait(false);
-            if (account == null)
-            {
-                return InvalidParams(request.Id, "No account selected");
-            }
-
-            if (!account.Address.IsTheSameAddress(address))
+            if (!selectedAccount.Address.IsTheSameAddress(address))
             {
                 return InvalidParams(request.Id, "Addresses do not match");
             }
 
             var promptContext = CreateSignaturePromptContext(message, address, context.SelectedDapp);
-            var approved = await context.RequestPersonalSignAsync(promptContext).ConfigureAwait(false);
-            if (!approved)
+            string? signature;
+            try
+            {
+                signature = await context.RequestPersonalSignAsync(promptContext).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
             {
                 return UserRejected(request.Id);
             }
 
-            var web3 = await context.GetWalletWeb3Async().ConfigureAwait(false);
-            var messageForSigning = NormalizePersonalSignMessage(message);
-            var signature = await web3.Eth.AccountSigning.PersonalSign
-                .SendRequestAsync(messageForSigning.HexToByteArray(), address)
-                .ConfigureAwait(false);
+            if (string.IsNullOrEmpty(signature))
+            {
+                return UserRejected(request.Id);
+            }
 
             return new RpcResponseMessage(request.Id, signature);
         }
@@ -125,21 +130,6 @@ namespace Nethereum.Wallet.RpcRequests
             };
         }
 
-        private static string NormalizePersonalSignMessage(string message)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                return message;
-            }
-
-            if (message.IsHex())
-            {
-                return message;
-            }
-
-            var bytes = Encoding.UTF8.GetBytes(message);
-            return bytes.ToHex(true);
-        }
     }
 
 }
