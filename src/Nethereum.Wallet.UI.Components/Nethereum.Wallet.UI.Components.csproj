@@ -1,28 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Reusable wallet UI components, view models, and services for Nethereum applications.</Description>
+    <AssemblyTitle>Nethereum.Wallet.UI.Components</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.Wallet.UI.Components</AssemblyName>
+    <PackageId>Nethereum.Wallet.UI.Components</PackageId>
+    <PackageTags>Nethereum;Ethereum;Wallet;UI;Components</PackageTags>
     <Nullable>enable</Nullable>
     <InternalsVisibleTo>Nethereum.Wallet.UI.Components.Avalonia</InternalsVisibleTo>
   </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Nethereum.Wallet\Nethereum.Wallet.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Wallet\Nethereum.Wallet.csproj" />
+  </ItemGroup>
 
-      <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
-      <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
-    </ItemGroup>
-
-
-
-  
   <ItemGroup>
     <Compile Update="ViewModels\NetworkSelectorViewModel.cs">
       <DependentUpon>NetworkSelector.razor</DependentUpon>
@@ -35,5 +37,12 @@
     <Compile Update="AccountFactories\ViewOnlyAccountFactory.cs" />
   </ItemGroup>
 
-</Project>
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>

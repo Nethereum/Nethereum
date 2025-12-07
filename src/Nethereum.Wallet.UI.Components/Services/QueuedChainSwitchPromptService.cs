@@ -66,14 +66,16 @@ namespace Nethereum.Wallet.UI.Components.Services
                     return result is bool approved && approved;
                 }
 
+                var timeoutMessage = _messages.GetString(PromptInfrastructureLocalizer.Keys.NetworkSwitchPromptTimedOut);
                 await _queueService.RejectPromptAsync(
                     promptId,
-                    _messages.GetString(PromptInfrastructureLocalizer.Keys.NetworkSwitchPromptTimedOut)).ConfigureAwait(false);
+                    timeoutMessage,
+                    new TimeoutException(timeoutMessage)).ConfigureAwait(false);
                 return false;
             }
             catch (Exception ex)
             {
-                await _queueService.RejectPromptAsync(promptId, ex.Message).ConfigureAwait(false);
+                await _queueService.RejectPromptAsync(promptId, ex.Message, ex).ConfigureAwait(false);
                 return false;
             }
         }

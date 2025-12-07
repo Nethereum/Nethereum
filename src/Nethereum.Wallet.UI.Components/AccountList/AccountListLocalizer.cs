@@ -87,7 +87,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
                 [Keys.BackToAccounts] = "Volver a Cuentas",
                 [Keys.LoadingAccounts] = "Cargando cuentas...",
                 [Keys.NoAccountsYet] = "Aún no hay cuentas",
-                [Keys.NoAccountsDescription] = "Crea o importa tu primera cuenta para comenzar con tu billetera",
+                [Keys.NoAccountsDescription] = "Crea o importa tu primera cuenta para comenzar con tu cartera",
                 [Keys.AddFirstAccount] = "Agregar Tu Primera Cuenta",
                 [Keys.ViewDetails] = "Ver Detalles",
                 [Keys.ListView] = "Lista",

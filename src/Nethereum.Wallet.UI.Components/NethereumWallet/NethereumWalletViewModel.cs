@@ -8,6 +8,7 @@ using Nethereum.Wallet.UI;
 using Nethereum.UI;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
 
 namespace Nethereum.Wallet.UI.Components.NethereumWallet
 {

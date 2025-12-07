@@ -344,7 +344,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.SingleRpcMode] = "Modo RPC Único:",
                 [Keys.MultipleRpcMode] = "Modo RPC Múltiple:",
                 [Keys.SingleRpcModeDescription] = "Seleccionar un endpoint RPC para usar en todas las solicitudes.",
-                [Keys.MultipleRpcModeDescription] = "Seleccionar múltiples endpoints RPC para equilibrio de carga y respaldo. La billetera usará automáticamente la estrategia configurada.",
+                [Keys.MultipleRpcModeDescription] = "Seleccionar múltiples endpoints RPC para equilibrio de carga y respaldo. La cartera usará automáticamente la estrategia configurada.",
                 
                 [Keys.NetworkNotFoundError] = "Red no encontrada",
                 [Keys.FailedToLoadNetwork] = "Error al cargar red: {0}",

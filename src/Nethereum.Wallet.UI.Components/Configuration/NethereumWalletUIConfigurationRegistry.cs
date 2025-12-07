@@ -6,6 +6,7 @@ using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic;
 using Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey;
 using Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly;
 using Nethereum.Wallet.Services;
+using System;
 
 namespace Nethereum.Wallet.UI.Components.Configuration
 {

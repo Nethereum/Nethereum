@@ -67,9 +67,11 @@ namespace Nethereum.Wallet.UI.Components.Services
                         else
                         {
                             prompt.Status = PromptStatus.TimedOut;
+                            var message = _messages.GetString(PromptInfrastructureLocalizer.Keys.GenericRequestTimedOut);
                             await _queueService.RejectPromptAsync(
                                 promptId,
-                                _messages.GetString(PromptInfrastructureLocalizer.Keys.GenericRequestTimedOut));
+                                message,
+                                new TimeoutException(message));
                             throw new TimeoutException(
                                 _messages.GetString(PromptInfrastructureLocalizer.Keys.TransactionPromptTimedOut));
                         }

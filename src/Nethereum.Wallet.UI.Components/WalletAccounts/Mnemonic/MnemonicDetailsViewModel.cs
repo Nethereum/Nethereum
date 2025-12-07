@@ -44,8 +44,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
         public string DisplayLabel => MnemonicInfo?.Label ?? "Unnamed Mnemonic";
         public bool HasPassphrase => !string.IsNullOrEmpty(MnemonicInfo?.Passphrase);
 
-        [RelayCommand]
-        public async Task InitializeAsync(string mnemonicId)
+        public async Task InitializeAsync(string groupId, IReadOnlyList<IWalletAccount> groupAccounts)
         {
             IsLoading = true;
             ErrorMessage = "";
@@ -59,7 +58,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                     return;
                 }
 
-                MnemonicInfo = vault.Mnemonics?.FirstOrDefault(m => m.Id == mnemonicId);
+                MnemonicInfo = vault.Mnemonics?.FirstOrDefault(m => m.Id == groupId);
                 if (MnemonicInfo == null)
                 {
                     ErrorMessage = "Mnemonic not found";
@@ -183,7 +182,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
         {
             if (MnemonicInfo == null) return false;
 
-            // Show confirmation dialog with proper warning
+           
             var confirmationTitle = _localizer.GetString(Keys.DeleteWarning);
             var confirmationMessage = HasAccounts 
                 ? string.Format(_localizer.GetString(Keys.DeleteWarningWithAccountsMessage), AccountCount)
@@ -263,9 +262,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
         }
 
         private async Task<bool> ValidatePasswordAsync(string password)
-        {
-            // This should be implemented based on your password validation logic
-            await Task.Delay(100);
+        { 
             return !string.IsNullOrEmpty(password);
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.UI.Components.Services
 {

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Wallet.UI;
 using System.Text.Json;
@@ -23,13 +24,15 @@ namespace Nethereum.Wallet.UI.Components.Services
             _messages = messages;
         }
 
-        public async Task<bool> PromptSignatureAsync(SignaturePromptContext context)
+        public async Task<string?> PromptSignatureAsync(SignaturePromptContext context)
         {
             var promptInfo = CreateSignaturePromptInfo(context);
-            return await ProcessSignaturePromptAsync(promptInfo).ConfigureAwait(false);
+            return await ProcessSignaturePromptAsync(
+                promptInfo,
+                _queueService.EnqueueSignaturePromptAsync).ConfigureAwait(false);
         }
 
-        public async Task<bool> PromptTypedDataSignAsync(TypedDataSignPromptContext context)
+        public async Task<string?> PromptTypedDataSignAsync(TypedDataSignPromptContext context)
         {
             var formatted = FormatTypedDataJson(context.TypedDataJson);
 
@@ -50,12 +53,16 @@ namespace Nethereum.Wallet.UI.Components.Services
                 ChainId = context.ChainId
             };
 
-            return await ProcessSignaturePromptAsync(promptInfo).ConfigureAwait(false);
+            return await ProcessSignaturePromptAsync(
+                promptInfo,
+                _queueService.EnqueueTypedDataPromptAsync).ConfigureAwait(false);
         }
 
-        private async Task<bool> ProcessSignaturePromptAsync(SignaturePromptInfo promptInfo)
+        private async Task<string?> ProcessSignaturePromptAsync(
+            SignaturePromptInfo promptInfo,
+            Func<SignaturePromptInfo, Task<string>> enqueuePromptAsync)
         {
-            var promptId = await _queueService.EnqueueSignaturePromptAsync(promptInfo);
+            var promptId = await enqueuePromptAsync(promptInfo).ConfigureAwait(false);
             
             if (!_overlayService.IsOverlayVisible)
             {
@@ -67,36 +74,41 @@ namespace Nethereum.Wallet.UI.Components.Services
             {
                 try
                 {
-                    var timeoutTask = Task.Delay(_defaultTimeout);
+                    using var cts = new CancellationTokenSource(_defaultTimeout);
+                    var timeoutTask = Task.Delay(_defaultTimeout, cts.Token);
                     var completedTask = await Task.WhenAny(prompt.CompletionSource.Task, timeoutTask).ConfigureAwait(false);
 
                     if (completedTask == prompt.CompletionSource.Task)
                     {
+                        cts.Cancel();
                         var result = await prompt.CompletionSource.Task.ConfigureAwait(false);
-                        return result is bool approved && approved;
+                        return result as string;
                     }
 
                     prompt.Status = PromptStatus.TimedOut;
+                    var timeoutMessage = _messages.GetString(PromptInfrastructureLocalizer.Keys.GenericRequestTimedOut);
                     await _queueService.RejectPromptAsync(
                         promptId,
-                        _messages.GetString(PromptInfrastructureLocalizer.Keys.GenericRequestTimedOut)).ConfigureAwait(false);
-                    return false;
+                        timeoutMessage,
+                        new TimeoutException(timeoutMessage)).ConfigureAwait(false);
+                    return null;
                 }
-                catch (TaskCanceledException)
+                catch (OperationCanceledException)
                 {
-                    return false;
+                    throw;
                 }
+                
                 catch (TimeoutException)
                 {
-                    return false;
+                    return null;
                 }
                 catch (Exception)
                 {
-                    return false;
+                    return null;
                 }
             }
 
-            return false;
+            return null;
         }
 
         private static SignaturePromptInfo CreateSignaturePromptInfo(SignaturePromptContext context)

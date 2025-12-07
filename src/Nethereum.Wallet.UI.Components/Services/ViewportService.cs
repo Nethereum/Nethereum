@@ -51,7 +51,7 @@ namespace Nethereum.Wallet.UI.Components.Services
                 };
                 
                 ViewportChanged?.Invoke(this, args);
-                await Task.Delay(1);
+                
                 
                 System.Console.WriteLine($"ViewportService: Updated to {_width}x{_height}, IsCompact={IsCompact}, Breakpoint={_configuration.ResponsiveBreakpoint}");
             }

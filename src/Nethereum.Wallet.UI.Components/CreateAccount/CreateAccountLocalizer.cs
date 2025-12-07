@@ -59,7 +59,7 @@ namespace Nethereum.Wallet.UI.Components.CreateAccount
                 [Keys.VaultNotAvailable] = "El almacén seguro no está disponible",
                 [Keys.NoAccountTypesAvailable] = "No hay tipos de cuenta disponibles",
                 [Keys.AccountAddedSuccessfully] = "¡Cuenta Agregada Exitosamente!",
-                [Keys.AccountAddedDescription] = "Tu nueva cuenta ha sido agregada a tu billetera",
+                [Keys.AccountAddedDescription] = "Tu nueva cuenta ha sido agregada a tu cartera",
                 [Keys.AddAnotherAccount] = "Agregar Otra Cuenta"
             });
         }

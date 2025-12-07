@@ -60,9 +60,11 @@ namespace Nethereum.Wallet.UI.Components.Services
                     }
                     else
                     {
+                        var timeoutMessage = _messages.GetString(PromptInfrastructureLocalizer.Keys.PermissionRequestTimedOut);
                         await _queueService.RejectPromptAsync(
                             promptId,
-                            _messages.GetString(PromptInfrastructureLocalizer.Keys.PermissionRequestTimedOut)).ConfigureAwait(false);
+                            timeoutMessage,
+                            new TimeoutException(timeoutMessage)).ConfigureAwait(false);
                         return false;
                     }
                 }
@@ -74,11 +76,12 @@ namespace Nethereum.Wallet.UI.Components.Services
                     _messages.GetString(PromptInfrastructureLocalizer.Keys.PermissionRequestCanceled)).ConfigureAwait(false);
                 return false;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await _queueService.RejectPromptAsync(
                     promptId,
-                    _messages.GetString(PromptInfrastructureLocalizer.Keys.PermissionRequestFailed)).ConfigureAwait(false);
+                    _messages.GetString(PromptInfrastructureLocalizer.Keys.PermissionRequestFailed),
+                    ex).ConfigureAwait(false);
                 return false;
             }
         }

@@ -61,10 +61,9 @@ namespace Nethereum.Wallet.UI.Components.Core.Validation
                 foreach (var error in validationErrors)
                 {
                     string? errorMessage = null;
-                    
+
                     if (error != null)
                     {
-                        // Use reflection to avoid compiler pattern matching issues
                         if (error.GetType().Name == "ValidationResult")
                         {
                             var errorMessageProperty = error.GetType().GetProperty("ErrorMessage");
@@ -79,16 +78,16 @@ namespace Nethereum.Wallet.UI.Components.Core.Validation
                             errorMessage = error.ToString();
                         }
                     }
-                    
-                    if (!string.IsNullOrEmpty(errorMessage))
+
+                    if (errorMessage != null)
                     {
                         var localizedMessage = _localizer.GetString(errorMessage);
                         errors.Add(localizedMessage);
                     }
                 }
             }
-            
-            if (string.IsNullOrEmpty(propertyName))
+
+                if (string.IsNullOrEmpty(propertyName))
             {
                 errors.AddRange(_customErrors.Values);
             }

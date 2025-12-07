@@ -27,7 +27,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
                 [Keys.DisplayName] = "Mis Cuentas",
-                [Keys.Description] = "Ver y gestionar las cuentas de tu billetera"
+                [Keys.Description] = "Ver y gestionar las cuentas de tu cartera"
             });
         }
     }

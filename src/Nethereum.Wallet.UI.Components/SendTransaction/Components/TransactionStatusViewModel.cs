@@ -41,6 +41,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
         public Action? OnViewTransaction { get; set; }
         public Action? OnNavigateToHistory { get; set; }
         public Action? OnNewTransaction { get; set; }
+        public int AutoCloseConfirmationCount { get; set; } = 12;
         
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
         public bool CanViewTransaction => !string.IsNullOrEmpty(TransactionHash);
@@ -87,7 +88,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
                 ExplorerUrl = $"{explorerUrl}/tx/{TransactionHash}";
             }
             
-            _web3 = await _walletHostProvider.GetWalletWeb3Async();
+            _web3 = await _walletHostProvider.GetWeb3Async();
             
             if (startMonitoring)
             {
@@ -126,14 +127,16 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
                 
                 if (receipt != null)
                 {
+                   
                     if (receipt.Status?.Value == 1)
                     {
+                        
                         CurrentStatus = Nethereum.Wallet.Services.Transactions.TransactionStatus.Confirmed;
                         SuccessMessage = _localizer.GetString(TransactionStatusLocalizer.Keys.TransactionConfirmed);
                         
                         var currentBlock = await _web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
-                        ConfirmationCount = (int)(currentBlock.Value - receipt.BlockNumber.Value);
-                        
+                        ConfirmationCount = (int)(currentBlock.Value - receipt.BlockNumber.Value) + 1;
+                       
                         if (receipt.GasUsed != null)
                         {
                             GasUsed = receipt.GasUsed.Value.ToString();
@@ -153,9 +156,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
                         OnPropertyChanged(nameof(GasUsed));
                         OnPropertyChanged(nameof(ActualCost));
                         
-                        if (ConfirmationCount >= 12)
+                        if (AutoCloseConfirmationCount > 0 && ConfirmationCount >= AutoCloseConfirmationCount)
                         {
                             StopMonitoring();
+                            OnClose?.Invoke();
                         }
                     }
                     else if (receipt.Status?.Value == 0)

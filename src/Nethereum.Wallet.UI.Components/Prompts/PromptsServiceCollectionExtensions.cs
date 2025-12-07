@@ -31,6 +31,8 @@ namespace Nethereum.Wallet.UI.Components.Prompts
             services.AddTransient<IComponentLocalizer<DAppPermissionPromptViewModel>>(provider =>
                 provider.GetRequiredService<DAppPermissionPromptLocalizer>());
 
+            services.AddTransient<DAppSignaturePromptViewModel>();
+
             return services;
         }
     }

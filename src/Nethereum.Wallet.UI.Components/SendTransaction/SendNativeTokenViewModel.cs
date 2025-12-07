@@ -9,6 +9,7 @@ using Nethereum.Wallet.UI.Components.SendTransaction.Models;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.Services.Transactions;
 using Nethereum.Wallet.Hosting;
+using Nethereum.Wallet.Diagnostics;
 
 namespace Nethereum.Wallet.UI.Components.SendTransaction
 {
@@ -52,6 +53,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         {
             try
             {
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", "InitializeAsync start");
                 // Get selected account and network info (copied from working TokenTransferViewModel)
                 var selectedAccount = _walletHostProvider.GetSelectedAccount();
                 if (selectedAccount == null)
@@ -59,6 +61,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     ErrorMessage = "No account selected";
                     return;
                 }
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", $"InitializeAsync selected account {selectedAccount.Address}");
                 
                 NativeTransfer.FromAddress = selectedAccount.Address;
                 
@@ -74,15 +77,19 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 NativeTransfer.TokenSymbol = tokenSymbol;
                 NativeTransfer.TokenDecimals = 18;
                 
-                var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", "InitializeAsync requesting read-only Web3");
+                var web3 = await _walletHostProvider.GetWeb3Async();
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", "InitializeAsync read-only Web3 ready");
                 var balance = await web3.Eth.GetBalance.SendRequestAsync(selectedAccount.Address);
                 NativeTransfer.AvailableBalance = balance.Value;
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", $"InitializeAsync balance loaded {balance.Value} wei");
                 
                 Transaction.Transaction.FromAddress = selectedAccount.Address;
                 Transaction.Initialize(Transaction.Transaction);
             }
             catch (Exception ex)
             {
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", $"InitializeAsync error: {ex.Message}");
                 ErrorMessage = $"Failed to initialize: {ex.Message}";
             }
         }
@@ -200,6 +207,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         [RelayCommand]
         private async Task SendTransactionAsync()
         {
+            WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", $"SendTransactionAsync invoked (CurrentStep={CurrentStep})");
             Console.WriteLine($"[DEBUG] SendTransactionAsync called. CurrentStep={CurrentStep}");
             Console.WriteLine($"[DEBUG] CanSendTransaction={CanSendTransaction}");
             
@@ -227,7 +235,9 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             try
             {
                 Console.WriteLine("[DEBUG] Calling Transaction.SendTransactionAsync()...");
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", "SendTransactionAsync calling Transaction.SendTransactionAsync");
                 var txHash = await Transaction.SendTransactionAsync();
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", $"SendTransactionAsync result: {(txHash ?? "null")}");
                 Console.WriteLine($"[DEBUG] Transaction result: {txHash ?? "null"}");
                 
                 if (!string.IsNullOrEmpty(txHash))
@@ -236,17 +246,17 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     SuccessMessage = _localizer.GetString(SendNativeTokenLocalizer.Keys.TransactionSent);
                     OnTransactionSent?.Invoke(txHash);
                     CurrentStep = 3;
-                    
-                    // Transaction submission is now handled in TransactionViewModel.SendTransactionAsync
-                    // No need to duplicate the pending transaction service code here
                 }
                 else
                 {
                     ErrorMessage = _localizer.GetString(SendNativeTokenLocalizer.Keys.TransactionFailed);
+                    CurrentStep = 2;
+                    return;
                 }
             }
             catch (Exception ex)
             {
+                WalletDiagnosticsLogger.Log("SendNativeTokenViewModel", $"SendTransactionAsync error: {ex.Message}");
                 ErrorMessage = $"{_localizer.GetString(SendNativeTokenLocalizer.Keys.TransactionFailed)}: {ex.Message}";
             }
             finally

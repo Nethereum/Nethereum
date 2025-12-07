@@ -72,8 +72,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             }
         }
         
+     
+
         [RelayCommand]
-        private async Task ApproveAndSendTransactionAsync()
+        public async Task ApproveAndSendTransactionAsync()
         {
             IsLoading = true;
             ErrorMessage = null;

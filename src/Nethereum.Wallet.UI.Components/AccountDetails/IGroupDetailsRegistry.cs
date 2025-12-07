@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Nethereum.Wallet;
 
 namespace Nethereum.Wallet.UI.Components.AccountDetails
@@ -20,5 +21,6 @@ namespace Nethereum.Wallet.UI.Components.AccountDetails
         string GroupType { get; }
         string DisplayName { get; }
         bool CanHandle(string groupId, IReadOnlyList<IWalletAccount> groupAccounts);
+        Task InitializeAsync(string groupId, IReadOnlyList<IWalletAccount> groupAccounts);
     }
 }

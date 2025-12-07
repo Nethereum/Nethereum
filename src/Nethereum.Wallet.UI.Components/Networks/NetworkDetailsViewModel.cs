@@ -13,6 +13,7 @@ using Nethereum.Wallet.Storage;
 using Nethereum.Wallet.UI.Components.Core.Localization;
 using Nethereum.Wallet.UI.Components.Networks.Models;
 using Nethereum.Wallet.Hosting;
+using System.Collections.Generic;
 
 namespace Nethereum.Wallet.UI.Components.Networks
 {

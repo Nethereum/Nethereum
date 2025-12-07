@@ -1,11 +1,15 @@
-using Nethereum.Wallet.Hosting;
-using Nethereum.Wallet.WalletAccounts;
-using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-using Nethereum.Wallet.Services.Network;
+using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Nethereum.RPC.Chain;
+using Nethereum.Wallet.Hosting;
+using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.UI.Components.Networks;
 using Nethereum.Wallet.UI.Components.Utils;
+using Nethereum.Wallet.WalletAccounts;
 
 namespace Nethereum.Wallet.UI.Components.Dashboard
 {

@@ -18,6 +18,7 @@ using Nethereum.Wallet.Services.Transaction;
 using Nethereum.Wallet.Services.Transactions;
 using Nethereum.Wallet.UI.Components.Core.Localization;
 using Nethereum.Wallet.UI.Components.SendTransaction.Models;
+using Nethereum.Wallet.Diagnostics;
 
 namespace Nethereum.Wallet.UI.Components.SendTransaction
 {
@@ -179,14 +180,22 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 model.GasConfiguration.CustomGasPrice = transactionInput.GasPrice.Value.ToString();
             }
             
-            if (transactionInput.MaxFeePerGas != null && transactionInput.MaxPriorityFeePerGas != null)
+            if (transactionInput.MaxFeePerGas != null && transactionInput.MaxPriorityFeePerGas != null
+                && transactionInput.MaxFeePerGas.Value != 0)
             {
                 model.GasConfiguration.IsEip1559Enabled = true;
                 model.GasConfiguration.CustomMaxFee = transactionInput.MaxFeePerGas.Value.ToString();
                 model.GasConfiguration.CustomPriorityFee = transactionInput.MaxPriorityFeePerGas.Value.ToString();
             }
-            
-            Initialize(model);
+            else
+            {
+                if(transactionInput.GasPrice == null && chainInfo != null && chainInfo.SupportEIP1559)
+                {
+                    model.GasConfiguration.IsEip1559Enabled = true;
+                }
+            }
+
+                Initialize(model);
 
             if (!string.IsNullOrEmpty(selectedAccount))
             {
@@ -332,7 +341,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                var web3 = await _walletHostProvider.GetWeb3Async();
                 var transactionInput = BuildEstimationTransactionInput();
 
                 if (transactionInput != null)
@@ -389,29 +398,40 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         {
             try
             {
-                GasPriceSuggestion suggestion;
-                
-                if (Transaction.GasConfiguration.IsEip1559Enabled)
+                GasEstimationError = null;
+                GasPriceSuggestion eipSuggestion = null;
+                GasPriceSuggestion legacySuggestion = null;
+                Exception lastException = null;
+                try
                 {
-                    suggestion = await _gasPriceProvider.GetEIP1559GasPriceAsync();
-                    
-                    if (!suggestion.MaxFeePerGas.HasValue || !suggestion.MaxPriorityFeePerGas.HasValue)
-                    {
-                        GasEstimationError = _localizer.GetString(TransactionLocalizer.Keys.EIP1559NotAvailable);
-                        return;
-                    }
+                    eipSuggestion = await _gasPriceProvider.GetEIP1559GasPriceAsync();
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                }
+                try
+                {
+                    legacySuggestion = await _gasPriceProvider.GetLegacyGasPriceAsync();
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                }
+                if (eipSuggestion == null && legacySuggestion == null)
+                {
+                    string message = ((lastException != null) ? lastException.Message : _localizer.GetString("GasPriceFetchFailed"));
+                    GasEstimationError = message;
                 }
                 else
                 {
-                    suggestion = await _gasPriceProvider.GetLegacyGasPriceAsync();
+                    Transaction.GasConfiguration.LoadSuggestions(eipSuggestion, legacySuggestion);
+                    UpdateGasDisplays();
                 }
-                
-                Transaction.GasConfiguration.LoadBaseValues(suggestion);
-                UpdateGasDisplays();
             }
             catch (Exception ex)
             {
-                GasEstimationError = $"{_localizer.GetString(TransactionLocalizer.Keys.GasPriceFetchFailed)}: {ex.Message}";
+                GasEstimationError = _localizer.GetString("GasPriceFetchFailed") + ": " + ex.Message;
             }
         }
         
@@ -425,7 +445,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                var web3 = await _walletHostProvider.GetWeb3Async();
                 var nonce = await web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(Transaction.FromAddress);
                 Transaction.Nonce = nonce.Value.ToString();
             }
@@ -458,7 +478,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 var transactionInput = Transaction.BuildTransactionInput(_nativeCurrencyDecimals);
                 if (transactionInput != null)
                 {
-                    var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                    var web3 = await _walletHostProvider.GetWeb3Async();
                     var result = await web3.Eth.Transactions.Call.SendRequestAsync(transactionInput);
                     SimulationResult = result;
                 }
@@ -491,15 +511,21 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         
         public async Task<string?> SendTransactionAsync()
         {
+            WalletDiagnosticsLogger.Log("TransactionViewModel", "SendTransactionAsync invoked");
             if (!HasValidTransaction()) return null;
-            
+            await _walletHostProvider.InitialiseAccountSignerAsync();
             try
             {
+                WalletDiagnosticsLogger.Log("TransactionViewModel", "Building transaction input");
                 var transactionInput = Transaction.BuildTransactionInput(_nativeCurrencyDecimals);
                 if (transactionInput == null) return null;
                 
+                WalletDiagnosticsLogger.Log("TransactionViewModel", "Requesting wallet Web3");
+                //await _walletHostProvider.InitialiseAccountSignerAsync();
                 var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                WalletDiagnosticsLogger.Log("TransactionViewModel", "Wallet Web3 acquired, sending transaction");
                 var txHash = await web3.TransactionManager.SendTransactionAsync(transactionInput);
+                WalletDiagnosticsLogger.Log("TransactionViewModel", $"Transaction submitted hash={txHash}");
                 
                 TransactionStatus = _statusViewModel;
                 await TransactionStatus.InitializeAsync(
@@ -532,8 +558,14 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 
                 return txHash;
             }
-            catch
+            catch (OperationCanceledException)
             {
+                WalletDiagnosticsLogger.Log("TransactionViewModel", "SendTransactionAsync canceled by user");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                WalletDiagnosticsLogger.Log("TransactionViewModel", $"SendTransactionAsync error: {ex}");
                 throw;
             }
         }

@@ -16,7 +16,7 @@ using Nethereum.Wallet.UI.Components.AccountDetails;
 
 namespace Nethereum.Wallet.UI.Components.AccountList
 {
-    public partial class AccountListViewModel : ObservableObject
+    public partial class AccountListViewModel : ObservableObject, IDisposable
     {
         private readonly NethereumWalletHostProvider _walletHostProvider;
         private readonly IWalletVaultService _vaultService;
@@ -80,6 +80,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             _ensService = ensService;
 
             _walletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
+            _walletHostProvider.AccountsRefreshed += OnAccountsRefreshedAsync;
         }
         [RelayCommand]
         public async Task InitializeAsync()
@@ -174,6 +175,13 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             }
         }
 
+        private async Task OnAccountsRefreshedAsync()
+        {
+            await LoadAccountsAsync();
+            SelectedAccount = _walletHostProvider.GetSelectedAccount();
+            SelectedAccountAddress = SelectedAccount?.Address ?? string.Empty;
+        }
+
         private AccountGroupViewModel CreateAccountGroupViewModel(AccountGroup accountGroup)
         {
             if (accountGroup.IsStandalone)
@@ -198,6 +206,12 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             if (mnemonicInfo != null && !string.IsNullOrEmpty(mnemonicInfo.Label))
             {
                 return mnemonicInfo.Label;
+            }
+
+            var hardwareInfo = accountGroup.GetGroupMetadata<HardwareWalletInfo>();
+            if (hardwareInfo != null && !string.IsNullOrEmpty(hardwareInfo.Label))
+            {
+                return hardwareInfo.Label;
             }
             
             // Use metadata registry for all account types (including mnemonic without custom label)
@@ -331,6 +345,12 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             {
                 IsLoading = false;
             }
+        }
+
+        public void Dispose()
+        {
+            _walletHostProvider.SelectedAccountChanged -= OnSelectedAccountChangedAsync;
+            _walletHostProvider.AccountsRefreshed -= OnAccountsRefreshedAsync;
         }
         [RelayCommand]
         public async Task CancelEditAccountAsync()

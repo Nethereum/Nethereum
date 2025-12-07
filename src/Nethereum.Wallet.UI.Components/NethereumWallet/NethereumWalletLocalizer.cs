@@ -19,6 +19,7 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
             public const string ConfirmPasswordLabel = "ConfirmPasswordLabel";
             public const string PasswordHelperText = "PasswordHelperText";
             public const string CreateButtonText = "CreateButtonText";
+            public const string CreateCancelButtonText = "CreateCancelButtonText";
             public const string CreateNewWalletLinkText = "CreateNewWalletLinkText";
             public const string ResetWallet = "ResetWallet";
             public const string ResetConfirmTitle = "ResetConfirmTitle";
@@ -55,6 +56,7 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
                 [Keys.ConfirmPasswordLabel] = "Confirm Password",
                 [Keys.PasswordHelperText] = "Choose a strong password to protect your wallet",
                 [Keys.CreateButtonText] = "Create Wallet",
+                [Keys.CreateCancelButtonText] = "Cancel",
                 [Keys.CreateNewWalletLinkText] = "Create New Wallet",
                 [Keys.ResetWallet] = "Reset Wallet",
                 [Keys.ResetConfirmTitle] = "Reset Wallet",
@@ -86,6 +88,7 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
                 [Keys.ConfirmPasswordLabel] = "Confirmar Contraseña",
                 [Keys.PasswordHelperText] = "Elige una contraseña segura para proteger tu cartera",
                 [Keys.CreateButtonText] = "Crear Cartera",
+                [Keys.CreateCancelButtonText] = "Cancelar",
                 [Keys.CreateNewWalletLinkText] = "Crear Nueva Cartera",
                 [Keys.ResetWallet] = "Reiniciar Cartera",
                 [Keys.ResetConfirmTitle] = "Reiniciar Cartera",

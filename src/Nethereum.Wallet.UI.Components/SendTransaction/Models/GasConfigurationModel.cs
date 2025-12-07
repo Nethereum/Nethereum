@@ -256,7 +256,18 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             }
         }
         
-        public void LoadBaseValues(GasPriceSuggestion suggestion)
+        private GasPriceSuggestion? _legacySuggestion;
+        private GasPriceSuggestion? _eip1559Suggestion;
+        public bool HasSuggestions => _legacySuggestion != null || _eip1559Suggestion != null;
+
+        public void LoadSuggestions(GasPriceSuggestion? eip1559Suggestion, GasPriceSuggestion? legacySuggestion)
+        {
+            _eip1559Suggestion = eip1559Suggestion;
+            _legacySuggestion = legacySuggestion;
+            ApplyCurrentModeDefaults();
+        }
+
+        public void ApplyCurrentModeDefaults()
         {
             BaseGasPrice = "";
             BaseMaxFee = "";
@@ -264,23 +275,34 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             AdjustedGasPrice = "";
             AdjustedMaxFee = "";
             AdjustedPriorityFee = "";
-            
-            if (IsEip1559Enabled && suggestion.MaxFeePerGas.HasValue && suggestion.MaxPriorityFeePerGas.HasValue)
+
+            if (IsEip1559Enabled && _eip1559Suggestion?.MaxFeePerGas.HasValue == true && _eip1559Suggestion.MaxPriorityFeePerGas.HasValue)
             {
                 BaseMaxFee = UnitConversion.Convert
-                    .FromWei(suggestion.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
+                    .FromWei(_eip1559Suggestion.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
                     .ToString("F2", CultureInfo.InvariantCulture);
                 BasePriorityFee = UnitConversion.Convert
-                    .FromWei(suggestion.MaxPriorityFeePerGas.Value, UnitConversion.EthUnit.Gwei)
+                    .FromWei(_eip1559Suggestion.MaxPriorityFeePerGas.Value, UnitConversion.EthUnit.Gwei)
                     .ToString("F2", CultureInfo.InvariantCulture);
+
+                if (!IsCustomMode)
+                {
+                    CustomMaxFee = BaseMaxFee;
+                    CustomPriorityFee = BasePriorityFee;
+                }
             }
-            else if (!IsEip1559Enabled && suggestion.GasPrice.HasValue)
+            else if (!IsEip1559Enabled && _legacySuggestion?.GasPrice.HasValue == true)
             {
                 BaseGasPrice = UnitConversion.Convert
-                    .FromWei(suggestion.GasPrice.Value, UnitConversion.EthUnit.Gwei)
+                    .FromWei(_legacySuggestion.GasPrice.Value, UnitConversion.EthUnit.Gwei)
                     .ToString("F2", CultureInfo.InvariantCulture);
+
+                if (!IsCustomMode)
+                {
+                    CustomGasPrice = BaseGasPrice;
+                }
             }
-            
+
             RecalculateAdjustedValues();
         }
         

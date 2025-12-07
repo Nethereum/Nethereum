@@ -27,7 +27,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
                 [Keys.DisplayName] = "Resumen",
-                [Keys.Description] = "Ver el resumen de tu billetera y actividad reciente"
+                [Keys.Description] = "Ver el resumen de tu cartera y actividad reciente"
             });
         }
     }

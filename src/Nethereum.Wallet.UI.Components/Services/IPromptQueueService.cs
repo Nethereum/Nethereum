@@ -19,13 +19,14 @@ namespace Nethereum.Wallet.UI.Components.Services
         
         Task<string> EnqueueTransactionPromptAsync(TransactionPromptInfo promptInfo);
         Task<string> EnqueueSignaturePromptAsync(SignaturePromptInfo promptInfo);
+        Task<string> EnqueueTypedDataPromptAsync(SignaturePromptInfo promptInfo);
         Task<string> EnqueuePermissionPromptAsync(DappPermissionPromptInfo promptInfo);
         Task<string> EnqueueChainAdditionPromptAsync(ChainAdditionPromptInfo promptInfo);
         Task<string> EnqueueNetworkSwitchPromptAsync(ChainSwitchPromptInfo promptInfo);
         PromptRequest? GetNextPrompt();
         PromptRequest? GetPromptById(string id);
         Task CompletePromptAsync(string promptId, object? result);
-        Task RejectPromptAsync(string promptId, string? reason = null);
+        Task RejectPromptAsync(string promptId, string? reason = null, Exception? exception = null);
         Task RejectAllAsync();
         void ClearQueue();
     }

@@ -124,6 +124,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
 
             _walletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
             _walletHostProvider.NetworkChanged += OnNetworkChangedAsync;
+            _walletHostProvider.AccountsRefreshed += OnAccountsRefreshedAsync;
             _pendingTransactionService.TransactionStatusChanged += OnTransactionStatusChanged;
         }
         [RelayCommand]
@@ -255,14 +256,15 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             }
         }
 
-        private async Task LoadAccountBalanceAsync()
+        [RelayCommand]
+        public async Task LoadAccountBalanceAsync()
         {
             if (SelectedAccount == null) return;
 
             HasBalanceError = false;
             try
             {
-                var web3 = await _walletHostProvider.GetWalletWeb3Async();
+                var web3 = await _walletHostProvider.GetWeb3Async();
                 
                 var balanceWei = await web3.Eth.GetBalance.SendRequestAsync(SelectedAccount.Address);
                 BalanceWei = balanceWei.Value;
@@ -281,7 +283,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         }
 
         [RelayCommand]
-        private async Task LoadPendingTransactionsAsync()
+        public async Task LoadPendingTransactionsAsync()
         {
             if (SelectedAccount == null) return;
             
@@ -383,7 +385,17 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             ChainId = chainId;
             
            
-            
+           
+            if (SelectedAccount != null)
+            {
+                await LoadAccountBalanceAsync();
+                await LoadPendingTransactionsAsync();
+            }
+        }
+
+        private async Task OnAccountsRefreshedAsync()
+        {
+            await LoadAccountsAsync();
             if (SelectedAccount != null)
             {
                 await LoadAccountBalanceAsync();
@@ -447,6 +459,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         {
             _walletHostProvider.SelectedAccountChanged -= OnSelectedAccountChangedAsync;
             _walletHostProvider.NetworkChanged -= OnNetworkChangedAsync;
+            _walletHostProvider.AccountsRefreshed -= OnAccountsRefreshedAsync;
             _pendingTransactionService.TransactionStatusChanged -= OnTransactionStatusChanged;
         }
     }

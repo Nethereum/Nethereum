@@ -81,6 +81,13 @@ namespace Nethereum.Wallet.UI.Components.Services
             return prompt.Id;
         }
 
+        public Task<string> EnqueueTypedDataPromptAsync(SignaturePromptInfo promptInfo)
+        {
+            // Typed data prompts share the same rendering logic as personal_sign requests,
+            // so we reuse the signature queue implementation.
+            return EnqueueSignaturePromptAsync(promptInfo);
+        }
+
         public async Task<string> EnqueuePermissionPromptAsync(DappPermissionPromptInfo promptInfo)
         {
             var prompt = new PromptRequest
@@ -190,13 +197,14 @@ namespace Nethereum.Wallet.UI.Components.Services
             }
         }
         
-        public async Task RejectPromptAsync(string promptId, string? reason = null)
+        public async Task RejectPromptAsync(string promptId, string? reason = null, Exception? exception = null)
         {
             if (_prompts.TryGetValue(promptId, out var prompt))
             {
                 prompt.Status = PromptStatus.Rejected;
-                prompt.CompletionSource.SetException(
-                    new Exception(reason ?? _messages.GetString(PromptInfrastructureLocalizer.Keys.UserRejected)));
+                var rejectionReason = reason ?? _messages.GetString(PromptInfrastructureLocalizer.Keys.UserRejected);
+                var rejectionException = exception ?? new OperationCanceledException(rejectionReason);
+                prompt.CompletionSource.SetException(rejectionException);
                 
                 _prompts.TryRemove(promptId, out _);
                 OnPropertyChanged(nameof(PendingPrompts));

@@ -17,6 +17,7 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
             public const string Menu = "Menu";
             public const string Close = "Close";
             public const string Navigation = "Navigation";
+            public const string Logout = "Logout";
         }
 
         public WalletDashboardLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -36,13 +37,14 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
                 [Keys.Dashboard] = "Dashboard",
                 [Keys.Menu] = "Menu",
                 [Keys.Close] = "Close",
-                [Keys.Navigation] = "Navigation"
+                [Keys.Navigation] = "Navigation",
+                [Keys.Logout] = "Logout"
             });
             
             // Spanish (Spain) translations
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
-                [Keys.WalletDashboard] = "Panel de Billetera",
+                [Keys.WalletDashboard] = "Panel de Cartera",
                 [Keys.NoAccount] = "Sin Cuenta",
                 [Keys.SelectSection] = "Selecciona una sección",
                 [Keys.SelectSectionMessage] = "Selecciona una sección del menú para comenzar",
@@ -51,7 +53,8 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
                 [Keys.Dashboard] = "Panel",
                 [Keys.Menu] = "Menú",
                 [Keys.Close] = "Cerrar",
-                [Keys.Navigation] = "Navegación"
+                [Keys.Navigation] = "Navegación",
+                [Keys.Logout] = "Cerrar sesión"
             });
         }
     }

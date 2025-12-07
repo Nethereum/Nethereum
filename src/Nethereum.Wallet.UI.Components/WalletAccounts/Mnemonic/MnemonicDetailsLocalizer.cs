@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
 {
     public static class MnemonicDetailsLocalizer

@@ -77,11 +77,13 @@ namespace Nethereum.Wallet.UI.Components.Services
                     return ChainAdditionPromptResult.ApprovedResult(null, request.SwitchAfterAdd, request.SwitchAfterAdd);
                 }
 
+                var timeoutMessage = _messages.GetString(PromptInfrastructureLocalizer.Keys.ChainAdditionTimedOut);
                 await _queueService.RejectPromptAsync(
                     promptId,
-                    _messages.GetString(PromptInfrastructureLocalizer.Keys.ChainAdditionTimedOut)).ConfigureAwait(false);
+                    timeoutMessage,
+                    new TimeoutException(timeoutMessage)).ConfigureAwait(false);
                 return ChainAdditionPromptResult.Rejected(
-                    _messages.GetString(PromptInfrastructureLocalizer.Keys.ChainAdditionTimedOut));
+                    timeoutMessage);
             }
             catch (TaskCanceledException)
             {
@@ -90,7 +92,7 @@ namespace Nethereum.Wallet.UI.Components.Services
             }
             catch (Exception ex)
             {
-                await _queueService.RejectPromptAsync(promptId, ex.Message).ConfigureAwait(false);
+                await _queueService.RejectPromptAsync(promptId, ex.Message, ex).ConfigureAwait(false);
                 return ChainAdditionPromptResult.Rejected(ex.Message);
             }
         }

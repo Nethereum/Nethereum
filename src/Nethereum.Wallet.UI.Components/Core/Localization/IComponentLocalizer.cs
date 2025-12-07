@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Nethereum.Wallet.UI.Components.Core.Localization
 {
     public interface IComponentLocalizer
