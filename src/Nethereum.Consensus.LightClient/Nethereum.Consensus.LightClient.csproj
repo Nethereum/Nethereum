@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Beacon light client orchestration (bootstrap, updates, trusted execution headers).</Description>
+    <AssemblyTitle>Nethereum.Consensus.LightClient</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
+    <AssemblyName>Nethereum.Consensus.LightClient</AssemblyName>
+    <PackageId>Nethereum.Consensus.LightClient</PackageId>
+    <PackageTags>Ethereum;Consensus;LightClient;BLS</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Beaconchain\Nethereum.Beaconchain.csproj" />
+    <ProjectReference Include="..\Nethereum.Consensus.Ssz\Nethereum.Consensus.Ssz.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>
