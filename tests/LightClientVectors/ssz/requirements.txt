@@ -1,0 +1,6 @@
+eth-utils>=2.2.0
+eth-typing>=3.5.2
+lru-dict>=1.2.0
+ruamel.yaml>=0.17.21
+pyrsistent>=0.19.3
+python-snappy>=0.6.1
