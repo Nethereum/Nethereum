@@ -109,7 +109,7 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
 
             var gasPrice = await web3.Eth.GasPrice.SendRequestAsync().ConfigureAwait(false);
 
-            var execTransactionFunction = await service.BuildTransactionAsync(
+            var execTransactionFunction = await service.BuildMultiSignatureTransactionAsync(
                 new EncodeTransactionDataFunction() { To = daiAddress }, transfer, (int)chainId, false,
                 walletOwnerPrivateKey).ConfigureAwait(false);
 
@@ -126,6 +126,8 @@ namespace Nethereum.GnosisSafe.Contracts.Testing
             Assert.Equal(Web3.Web3.Convert.FromWei(balanceBefore) + 1, Web3.Web3.Convert.FromWei(balanceAfter));
 
         }
+
+        
 
 
     }

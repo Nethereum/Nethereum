@@ -40,6 +40,7 @@ namespace Nethereum.HdWallet.UnitTests
         public void ShouldFindAccountUsingAddress(string address)
         {
             var wallet = new Wallet(Words, Password);
+            Debug.WriteLine(wallet.Seed);
             var account = wallet.GetAccount(address);
             Assert.NotNull(account);
         }
