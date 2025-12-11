@@ -5,6 +5,7 @@ using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Identity.ProofOfHumanity;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Standards.ENS;
+using Nethereum.Contracts.Standards.EIP3009;
 using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
@@ -157,8 +158,22 @@ namespace Nethereum.Contracts.Services
         /// </summary>
         ERC165SupportsInterfaceService ERC165 { get; }
 
+        /// <summary>
+        /// EIP-3009: Transfer With Authorization, Service to interact with smart contracts compliant with the standard interface
+        /// Enables gasless token transfers using signed authorizations (used by USDC and other stablecoins)
+        /// https://eips.ethereum.org/EIPS/eip-3009
+        /// </summary>
+        EIP3009Service EIP3009 { get; }
 
-
+        /// <summary>
+        /// EIP-3009: Transfer With Authorization, Service to interact with smart contracts compliant with the standard interface
+        /// Enables gasless token transfers using signed authorizations (used by USDC and other stablecoins)
+        /// https://eips.ethereum.org/EIPS/eip-3009
+        /// </summary>
+        /// <remarks>
+        /// This is an alias to EIP3009
+        /// </remarks>
+        EIP3009Service TransferWithAuthorizationEIP3009 { get; }
 
 
 

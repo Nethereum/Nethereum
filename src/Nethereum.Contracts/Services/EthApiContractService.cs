@@ -5,6 +5,7 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.Contracts.Standards.ENS;
+using Nethereum.Contracts.Standards.EIP3009;
 using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
@@ -35,6 +36,7 @@ namespace Nethereum.Contracts.Services
             ProofOfHumanity = new ProofOfHumanityService(this);
             ERC6492 = new ERC6492Service(this);
             ERC165 = new ERC165SupportsInterfaceService(this);
+            EIP3009 = new EIP3009Service(this);
 
             Create2DeterministicDeploymentProxyService = new Create2DeterministicDeploymentProxyService(this);
 #endif
@@ -208,9 +210,25 @@ namespace Nethereum.Contracts.Services
         /// </remarks>
         public ERC165SupportsInterfaceService SupportsInterfaceServiceERC165 => ERC165;
 
+        /// <summary>
+        /// EIP-3009: Transfer With Authorization, Service to interact with smart contracts compliant with the standard interface
+        /// Enables gasless token transfers using signed authorizations (used by USDC and other stablecoins)
+        /// https://eips.ethereum.org/EIPS/eip-3009
+        /// </summary>
+        public EIP3009Service EIP3009 { get; private set; }
 
         /// <summary>
-        ///ERC-2535: Diamonds, Multi-Facet Proxy  
+        /// EIP-3009: Transfer With Authorization, Service to interact with smart contracts compliant with the standard interface
+        /// Enables gasless token transfers using signed authorizations (used by USDC and other stablecoins)
+        /// https://eips.ethereum.org/EIPS/eip-3009
+        /// </summary>
+        /// <remarks>
+        /// This is an alias to EIP3009
+        /// </remarks>
+        public EIP3009Service TransferWithAuthorizationEIP3009 => EIP3009;
+
+        /// <summary>
+        ///ERC-2535: Diamonds, Multi-Facet Proxy
         ///Create modular smart contract systems that can be extended after deployment.
         /// https://eips.ethereum.org/EIPS/eip-2535
         /// </summary>
