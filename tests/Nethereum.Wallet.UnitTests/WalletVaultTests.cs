@@ -24,10 +24,11 @@ public class WalletVaultTests
         var key = hdWallet.GetEthereumKey(accountIndex);
         var address = key.GetPublicAddress();
 
-        var vault = new WalletVault();
-        vault.Mnemonics[mnemonicId] = new MnemonicInfo("01", mnemonic, null);
+        var vault = new WalletVault(new BouncyCastleAes256EncryptionStrategy());
+        var mnemonicInfo = new MnemonicInfo(mnemonicId, mnemonic, null);
+        vault.AddMnemonic(mnemonicInfo);
 
-        vault.Accounts.Add(new MnemonicWalletAccount(address, "main account", accountIndex, mnemonicId, hdWallet));
+        vault.Accounts.Add(new MnemonicWalletAccount(address, "main account", accountIndex, mnemonicInfo.Id, hdWallet));
 
         var privateKey = EthECKey.GenerateKey().GetPrivateKey();
         var privateAccount = new PrivateKeyWalletAccount(new Account(privateKey).Address, "cold wallet", privateKey);
@@ -36,7 +37,7 @@ public class WalletVaultTests
         // Act
         var encrypted = vault.Encrypt(password);
 
-        var decryptedVault = new WalletVault();
+        var decryptedVault = new WalletVault(new BouncyCastleAes256EncryptionStrategy());
         decryptedVault.Decrypt(encrypted, password);
 
         // Assert
