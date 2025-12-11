@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Beaconchain\Nethereum.Beaconchain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Consensus.Ssz\Nethereum.Consensus.Ssz.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.ChainStateVerification\Nethereum.ChainStateVerification.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>%(FileName)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>
