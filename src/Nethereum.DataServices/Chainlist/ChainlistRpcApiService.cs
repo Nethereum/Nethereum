@@ -35,5 +35,11 @@ namespace Nethereum.DataServices.Chainlist
             var headers = new Dictionary<string, string> { { "accept", "application/json" } };
             return restHttpHelper.GetAsync<List<ChainlistChainInfo>>(RpcJsonUrl, headers);
         }
+
+        public async Task<ChainlistChainInfo> GetChainByIdAsync(long chainId)
+        {
+            var allChains = await GetAllChainsAsync();
+            return allChains?.FirstOrDefault(chain => chain.ChainId == chainId);
+        }
     }
 }
