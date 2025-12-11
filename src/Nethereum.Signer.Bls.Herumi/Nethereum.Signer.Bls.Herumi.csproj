@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Herumi-backed native BLS implementation for Nethereum.</Description>
+    <AssemblyTitle>Nethereum.Signer.Bls.Herumi</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.Signer.Bls.Herumi</AssemblyName>
+    <PackageId>Nethereum.Signer.Bls.Herumi</PackageId>
+    <PackageTags>Ethereum;BLS;Herumi;LightClient</PackageTags>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="runtimes\**\*"
+          CopyToOutputDirectory="PreserveNewest"
+          Pack="true" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>
