@@ -11,7 +11,11 @@
 		<PackageId>Nethereum.Mud.Contracts</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Mud</PackageTags>
 		<LangVersion>Latest</LangVersion>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 	
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />

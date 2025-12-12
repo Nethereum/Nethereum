@@ -8,7 +8,11 @@
     <AssemblyName>Nethereum.RPC.Extensions</AssemblyName>
     <PackageId>Nethereum.RPC.Extensions</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>

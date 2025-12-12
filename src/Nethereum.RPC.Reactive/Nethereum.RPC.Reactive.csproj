@@ -8,7 +8,11 @@
     <AssemblyName>Nethereum.RPC.Reactive</AssemblyName>
     <PackageId>Nethereum.RPC.Reactive</PackageId>
     <PackageTags>Json;RPC;Reactive;Ethereum;Nethereum</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Reactive" Version="4.1.3" />

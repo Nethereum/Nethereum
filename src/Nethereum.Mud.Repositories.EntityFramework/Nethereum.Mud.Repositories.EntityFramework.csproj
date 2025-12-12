@@ -9,7 +9,11 @@
 		<PackageId>Nethereum.Mud.Repositories.EntityFramework</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Mud;EntityFrameworkd</PackageTags>
 		<LangVersion>Latest</LangVersion>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="[8.0.8,9)" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="[8.0.8,9)" />

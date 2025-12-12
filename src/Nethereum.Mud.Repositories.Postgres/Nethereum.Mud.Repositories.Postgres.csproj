@@ -9,7 +9,11 @@
 		<PackageId>Nethereum.Mud.Repositories.Postgres</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Mud;Postgres</PackageTags>
 		<LangVersion>Latest</LangVersion>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.4,9)" />

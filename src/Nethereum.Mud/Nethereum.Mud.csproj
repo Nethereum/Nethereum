@@ -10,7 +10,11 @@
 		<PackageId>Nethereum.Mud</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Mud</PackageTags>
 		<LangVersion>Latest</LangVersion>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 	
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Util.Rest\Nethereum.Util.Rest.csproj" />
