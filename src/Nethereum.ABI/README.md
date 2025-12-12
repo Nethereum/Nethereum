@@ -16,6 +16,12 @@ This package is fundamental to all smart contract interactions in Nethereum, as 
 dotnet add package Nethereum.ABI
 ```
 
+## Dependencies
+
+**Nethereum:**
+- **Nethereum.Hex** - Hexadecimal encoding/decoding
+- **Nethereum.Util** - Keccak-256 hashing and utilities
+
 ## Key Concepts
 
 ### Application Binary Interface (ABI)

@@ -39,11 +39,10 @@ dotnet add package Nethereum.Web3
 ## Dependencies
 
 **Nethereum:**
-- **Nethereum.JsonRpc.Client** - Core RPC abstraction
+- **Nethereum.JsonRpc.Client** - Core RPC abstraction (which provides JSON serialization support via Newtonsoft.Json or System.Text.Json)
 
-**External:**
-- **Newtonsoft.Json** - JSON serialization
-- **System.Net.Http** - HTTP communication
+**Framework:**
+- **System.Net.Http** - HTTP/HTTPS communication (built-in .NET library)
 
 ## Quick Start
 
@@ -509,7 +508,3 @@ Logs include:
 - [Nethereum Documentation](http://docs.nethereum.com/)
 - [HttpClient Best Practices](https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines)
 - [SocketsHttpHandler Documentation](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

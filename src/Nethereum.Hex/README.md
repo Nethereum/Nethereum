@@ -22,8 +22,12 @@ dotnet add package Nethereum.Hex
 
 ### Dependencies
 
-- **Newtonsoft.Json** (JSON serialization)
-- **System.Text.Json** (.NET 6.0+, optional for modern JSON serialization)
+None. This package has zero dependencies.
+
+**JSON Serialization Support:**
+- Includes converters for **Newtonsoft.Json** (if available in your application)
+- Includes converters for **System.Text.Json** (.NET 6.0+, if available in your application)
+- These are peer dependencies - not included by this package
 
 ## Key Concepts
 

@@ -38,20 +38,18 @@ dotnet add package Nethereum.Signer.Trezor
 ## Dependencies
 
 **External:**
-- **Device.Net** - Cross-platform USB device communication
-- **Device.Net.LibUsb** - LibUSB support for Linux/macOS
-- **Hardwarewallets.Net** - Hardware wallet abstractions
-- **Hid.Net** - HID device support
-- **Usb.Net** - USB device support
-- **protobuf-net** - Protocol Buffers for TREZOR messages
+- **Device.Net** (v4.3.0-beta) - Cross-platform USB device communication
+- **Device.Net.LibUsb** (v4.3.0-beta) - LibUSB support for Linux/macOS
+- **Hardwarewallets.Net** (v1.2.0) - Hardware wallet abstractions
+- **Hid.Net** (v4.3.0-beta) - HID device support
+- **Usb.Net** (v4.3.0-beta) - USB device support
+- **protobuf-net** (v3.2.52) - Protocol Buffers for TREZOR messages
+- **protobuf-net.Reflection** (v3.2.52) - Protocol Buffers reflection support
 
-**Note:** TREZOR communication protocol has been brought internally as the external Trezor.Net library is out of date.
+**Note:** TREZOR communication protocol implementation is built internally. The external Trezor.Net library is no longer used.
 
 **Nethereum:**
-- **Nethereum.Accounts** - Account and transaction management
-- **Nethereum.Signer** - Core signing infrastructure
-- **Nethereum.Signer.EIP712** - EIP-712 typed data signing
-- **Nethereum.Web3** - Web3 client integration
+- **Nethereum.Accounts** - Account and transaction management (includes Nethereum.Signer, Nethereum.Signer.EIP712)
 
 ## Quick Start
 
@@ -584,10 +582,10 @@ Enables plausible deniability - can reveal standard wallet under duress.
 
 | Type | Supported | Notes |
 |------|-----------|-------|
-| Legacy | ✅ Yes | EIP-155 with chain ID (requires chain ID, no raw Legacy) |
-| EIP-1559 (Type 2) | ✅ Yes | MaxFeePerGas, MaxPriorityFeePerGas |
-| EIP-2930 (Type 1) | ❌ No | Access lists not supported |
-| EIP-7702 (Type 4) | ❌ No | Not yet implemented |
+| Legacy | Yes | EIP-155 with chain ID (requires chain ID, no raw Legacy) |
+| EIP-1559 (Type 2) | Yes | MaxFeePerGas, MaxPriorityFeePerGas |
+| EIP-2930 (Type 1) | No | Access lists not supported |
+| EIP-7702 (Type 4) | No | Not yet implemented |
 
 ### EIP-712 Signing
 
@@ -600,12 +598,7 @@ This is more secure than "blind signing" hash-only approaches.
 
 ### Device Compatibility
 
-| Model | Supported | Notes |
-|-------|-----------|-------|
-| TREZOR One | ✅ Yes | All features supported |
-| TREZOR Model T | ✅ Yes | Touchscreen, enhanced UX |
-| TREZOR Safe 3 | ✅ Yes | Latest model |
-| TREZOR Model R | ✅ Yes | If supported by Trezor.Net |
+Supports all TREZOR devices with latest firmware. All Ethereum features (transactions, EIP-712, message signing) work across all models.
 
 ### Platform Support
 
@@ -698,7 +691,3 @@ var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(
 - **EIP-712 data is displayed in human-readable format** on device
 - No software can extract private keys from device
 - Passphrase adds extra security layer (25th word)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

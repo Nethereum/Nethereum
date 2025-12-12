@@ -101,66 +101,6 @@ public enum BlsImplementationKind
 }
 ```
 
-## Usage Examples
-
-### Example 1: Verify Sync Committee Signature
-
-```csharp
-using Nethereum.Signer.Bls;
-using Nethereum.Signer.Bls.Herumi;
-
-// Initialize BLS
-var bls = new NativeBls(new HerumiBlsBindings());
-await bls.InitializeAsync();
-
-// Sync committee aggreg ate signature data
-byte[] aggregateSignature = ...; // 96 bytes from beacon API
-byte[][] publicKeys = ...;       // 512 validator public keys (48 bytes each)
-byte[] signingRoot = ...;        // 32 bytes - beacon block root
-byte[] domain = ...;             // 32 bytes - compute_domain(DOMAIN_SYNC_COMMITTEE, ...)
-
-// Verify aggregate signature
-bool isValid = bls.VerifyAggregate(
-    aggregateSignature,
-    publicKeys,
-    new[] { signingRoot },  // Single message for sync committee
-    domain
-);
-
-if (isValid)
-{
-    Console.WriteLine("Sync committee signature verified!");
-}
-```
-
-### Example 2: Light Client Verification
-
-```csharp
-using Nethereum.Signer.Bls;
-using Nethereum.Signer.Bls.Herumi;
-
-// Light client verifies beacon chain updates
-var bls = new NativeBls(new HerumiBlsBindings());
-await bls.InitializeAsync();
-
-// From light client update
-var update = await lightClient.GetLatestUpdateAsync();
-
-// Verify sync committee aggregate signature
-bool syncCommitteeValid = bls.VerifyAggregate(
-    update.SyncAggregate.SyncCommitteeSignature,
-    update.SyncCommittee.PublicKeys,
-    new[] { update.AttestedHeader.GetSigningRoot() },
-    ComputeDomain(DOMAIN_SYNC_COMMITTEE, update.SignatureSlot)
-);
-
-if (syncCommitteeValid)
-{
-    // Light client can trust the beacon chain state
-    Console.WriteLine($"Verified beacon chain at slot {update.AttestedHeader.Slot}");
-}
-```
-
 ## Important Notes
 
 ### BLS12-381 Curve
@@ -222,7 +162,3 @@ BLS supports signature aggregation - multiple signatures can be combined into on
 - [Sync Committee Spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/sync-protocol.md)
 - [BLS12-381 For The Rest Of Us](https://hackmd.io/@benjaminion/bls12-381)
 - [Nethereum Documentation](http://docs.nethereum.com/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

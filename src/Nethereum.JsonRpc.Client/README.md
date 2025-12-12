@@ -39,8 +39,12 @@ dotnet add package Nethereum.JsonRpc.Client
 - **Nethereum.Hex** - Hex encoding/decoding utilities
 
 **External:**
-- **Microsoft.Extensions.Logging.Abstractions** - Logging support
-- **Newtonsoft.Json** - JSON serialization
+- **Microsoft.Extensions.Logging.Abstractions** (v6.0.0+) - Logging support (conditional dependency for modern frameworks)
+
+**JSON Serialization (Peer Dependencies):**
+- Supports **Newtonsoft.Json** (if available in consuming application)
+- Supports **System.Text.Json** (.NET 6.0+, if available in consuming application)
+- These are not included by this package - your application chooses the JSON library
 
 ## Quick Start
 
@@ -480,7 +484,3 @@ Use `RequestInterceptor` for:
 - [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
 - [Nethereum Documentation](http://docs.nethereum.com/)
 - [Nethereum RPC Services](http://docs.nethereum.com/en/latest/nethereum-rpc/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

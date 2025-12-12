@@ -622,7 +622,3 @@ tests/Nethereum.RPC.IntegrationTests/Testers/
 - [Nethereum Documentation](http://docs.nethereum.com)
 - [EIP-1559 Documentation](https://eips.ethereum.org/EIPS/eip-1559)
 - [EIP-2930 Access Lists](https://eips.ethereum.org/EIPS/eip-2930)
-
-## License
-
-MIT License - see LICENSE file for details

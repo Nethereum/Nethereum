@@ -28,7 +28,10 @@ dotnet add package Nethereum.Web3
 - **Nethereum.RPC** - Low-level RPC methods
 - **Nethereum.ABI** - ABI encoding/decoding
 - **Nethereum.Util** - Utility functions and unit conversion
-- **Nethereum.JsonRpc.Client** - JSON-RPC client abstraction
+- **Nethereum.Hex** - Hexadecimal encoding/decoding
+- **Nethereum.Signer** - Transaction and message signing
+- **Nethereum.KeyStore** - Keystore encryption/decryption
+- **Nethereum.JsonRpc.RpcClient** - JSON-RPC client abstraction
 - **Nethereum.BlockchainProcessing** - Block/transaction/log processing services
 
 ## Key Concepts

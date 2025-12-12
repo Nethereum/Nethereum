@@ -1,23 +1,23 @@
 # Nethereum.KeyStore
 
-Encrypted JSON wallet file generation and management using the Web3 Secret Storage Definition (UTC/JSON keystore format).
+Password-encrypted private key storage using the Web3 Secret Storage Definition standard.
 
 ## Overview
 
-Nethereum.KeyStore implements the [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition) for securely storing private keys encrypted with a password. This is the **same format** used by Geth, MyEtherWallet, MetaMask, and most Ethereum wallets.
+Nethereum.KeyStore implements the [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition) for encrypting and storing Ethereum private keys. This is a standard format for encrypted key storage used across the Ethereum ecosystem.
 
 **Key Features:**
-- Password-protected private key encryption
-- Two KDF (Key Derivation Function) options: **Scrypt** (default, more secure) and **PBKDF2** (faster)
-- AES-128-CTR encryption
-- Compatible with all major Ethereum wallets
-- Generate wallet files programmatically or decrypt existing ones
+- AES-128-CTR encryption with password-derived keys
+- Scrypt KDF (memory-hard, ASIC-resistant)
+- PBKDF2 KDF (legacy, faster but less secure)
+- Configurable KDF parameters for performance tuning
+- JSON serialization/deserialization
 
 **Use Cases:**
-- Create encrypted wallet files for users
-- Import/export wallets between applications
-- Secure local storage of private keys
-- Multi-wallet management
+- Encrypted local key storage
+- Wallet file generation
+- Key import/export between applications
+- Performance-tuned encryption for constrained environments (WASM, mobile)
 
 ## Installation
 
@@ -27,249 +27,285 @@ dotnet add package Nethereum.KeyStore
 
 ## Dependencies
 
-**External:**
-- **BouncyCastle.Cryptography** or **Portable.BouncyCastle** (cryptographic operations)
-
 **Nethereum:**
 - **Nethereum.Hex** - Hex encoding/decoding
+
+**External:**
+- **BouncyCastle.Cryptography** or **Portable.BouncyCastle** (conditional) - Cryptographic operations
 
 ## Quick Start
 
 ```csharp
 using Nethereum.KeyStore;
+using Nethereum.Signer;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-// Create encrypted keystore
+// Generate a new key
+var ecKey = EthECKey.GenerateKey();
+
+// Encrypt and generate keystore JSON
 var service = new KeyStoreScryptService();
-string password = "secure-password";
-byte[] privateKey = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d".HexToByteArray();
-
-// Generate encrypted JSON
-string json = service.EncryptAndGenerateKeyStoreAsJson(password, privateKey, "0x...");
-
-// Save to file
-File.WriteAllText("UTC--2024-01-01T00-00-00.000Z--address", json);
+string password = "testPassword";
+string json = service.EncryptAndGenerateKeyStoreAsJson(
+    password,
+    ecKey.GetPrivateKeyAsBytes(),
+    ecKey.GetPublicAddress()
+);
 
 // Decrypt later
-byte[] decryptedKey = service.DecryptKeyStoreFromJson(password, json);
+byte[] privateKey = service.DecryptKeyStoreFromJson(password, json);
 ```
 
-## Web3 Secret Storage Format
-
-Keystore files contain:
-- **cipher**: Encryption algorithm (aes-128-ctr)
-- **ciphertext**: Encrypted private key
-- **kdf**: Key derivation function (scrypt or pbkdf2)
-- **mac**: Message authentication code (prevents tampering)
-- **id**: Unique identifier (UUID)
-- **version**: Always 3 (current standard)
+**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:9-17`
 
 ## Usage Examples
 
-### Example 1: Generate Scrypt Keystore (Recommended)
+### Example 1: Generate Key and Create Keystore (Scrypt)
 
 ```csharp
 using Nethereum.KeyStore;
+using Nethereum.Signer;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-var service = new KeyStoreScryptService();
-string password = "MySecurePassword123!";
-string privateKey = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
-string address = "0x12890d2cce102216644c59dae5baed380d84830c";
+var ecKey = EthECKey.GenerateKey();
+var keyStoreScryptService = new KeyStoreScryptService();
+string password = "testPassword";
 
-// Generate encrypted JSON keystore
-string keystoreJson = service.EncryptAndGenerateKeyStoreAsJson(
+// Encrypt and serialize to JSON
+string json = keyStoreScryptService.EncryptAndGenerateKeyStoreAsJson(
     password,
-    privateKey.HexToByteArray(),
-    address
+    ecKey.GetPrivateKeyAsBytes(),
+    ecKey.GetPublicAddress()
 );
 
-// Keystore is compatible with MetaMask, MEW, Geth, etc.
-File.WriteAllText($"keystore-{address}.json", keystoreJson);
+// Save to file
+File.WriteAllText($"keystore-{ecKey.GetPublicAddress()}.json", json);
+
+// Decrypt to verify
+byte[] key = keyStoreScryptService.DecryptKeyStoreFromJson(password, json);
+Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 ```
 
-### Example 2: Decrypt Scrypt Keystore (Real Test Example)
+**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:9-17`
+
+### Example 2: Custom Scrypt Parameters (Performance Tuning)
+
+```csharp
+using Nethereum.KeyStore;
+using Nethereum.KeyStore.Model;
+using Nethereum.Signer;
+using Nethereum.Hex.HexConvertors.Extensions;
+
+var keyStoreService = new KeyStoreScryptService();
+
+// Lower N for faster encryption (WASM, mobile, testing)
+// Default: N=262144, R=1, P=8, Dklen=32
+var scryptParams = new ScryptParams { Dklen = 32, N = 32, R = 1, P = 8 };
+
+var ecKey = EthECKey.GenerateKey();
+string password = "testPassword";
+
+// Encrypt with custom parameters
+var keyStore = keyStoreService.EncryptAndGenerateKeyStore(
+    password,
+    ecKey.GetPrivateKeyAsBytes(),
+    scryptParams.N,
+    scryptParams.R,
+    scryptParams.P,
+    null // salt (null = auto-generate)
+);
+
+// Serialize to JSON
+string json = keyStoreService.SerializeKeyStoreToJson(keyStore);
+
+// Decrypt
+byte[] decryptedKey = keyStoreService.DecryptKeyStoreFromJson(password, json);
+```
+
+**From:** `Nethereum.Playground/wwwroot/samples/csharp/1021.txt:12-25`
+
+### Example 3: Decrypt Existing Keystore (Scrypt)
 
 ```csharp
 using Nethereum.KeyStore;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 var scryptKeyStoreJson = @"{
-    'crypto': {
-        'cipher': 'aes-128-ctr',
-        'cipherparams': { 'iv': '83dbcc02d8ccb40e466191a123791e0e' },
-        'ciphertext': 'd172bf743a674da9cdad04534d56926ef8358534d458fffccd4e6ad2fbde479c',
-        'kdf': 'scrypt',
-        'kdfparams': {
-            'dklen': 32,
-            'n': 262144,
-            'r': 1,
-            'p': 8,
-            'salt': 'ab0c7876052600dd703518d6fc3fe8984592145b591fc8fb5c6d43190334ba19'
+    ""crypto"" : {
+        ""cipher"" : ""aes-128-ctr"",
+        ""cipherparams"" : {
+            ""iv"" : ""83dbcc02d8ccb40e466191a123791e0e""
         },
-        'mac': '2103ac29920d71da29f15d75b4a16dbe95cfd7ff8faea1056c33131d846e3097'
+        ""ciphertext"" : ""d172bf743a674da9cdad04534d56926ef8358534d458fffccd4e6ad2fbde479c"",
+        ""kdf"" : ""scrypt"",
+        ""kdfparams"" : {
+            ""dklen"" : 32,
+            ""n"" : 262144,
+            ""r"" : 1,
+            ""p"" : 8,
+            ""salt"" : ""ab0c7876052600dd703518d6fc3fe8984592145b591fc8fb5c6d43190334ba19""
+        },
+        ""mac"" : ""2103ac29920d71da29f15d75b4a16dbe95cfd7ff8faea1056c33131d846e3097""
     },
-    'id': '3198bc9c-6672-5ab3-d995-4942343ae5b6',
-    'version': 3
+    ""id"" : ""3198bc9c-6672-5ab3-d995-4942343ae5b6"",
+    ""version"" : 3
 }";
 
 string password = "testpassword";
-var service = new KeyStoreScryptService();
+var keyStoreScryptService = new KeyStoreScryptService();
 
-// Decrypt
-byte[] privateKey = service.DecryptKeyStoreFromJson(password, scryptKeyStoreJson);
+// Deserialize and decrypt
+var keyStore = keyStoreScryptService.DeserializeKeyStoreFromJson(scryptKeyStoreJson);
+byte[] privateKey = keyStoreScryptService.DecryptKeyStore(password, keyStore);
 
 Console.WriteLine($"Private Key: {privateKey.ToHex()}");
 // Output: 7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d
 ```
 
-### Example 3: Generate PBKDF2 Keystore (Faster)
+**From:** `tests/Nethereum.KeyStore.UnitTests/KeyStoreServiceTester.cs:62-70`
+
+### Example 4: PBKDF2 Keystore (Legacy)
 
 ```csharp
 using Nethereum.KeyStore;
+using Nethereum.Signer;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-// PBKDF2 is faster but less secure than Scrypt
-var service = new KeyStorePbkdf2Service();
-string password = "MyPassword";
-byte[] privateKey = "...".HexToByteArray();
-string address = "0x...";
+var ecKey = EthECKey.GenerateKey();
+var keyStorePbkdf2Service = new KeyStorePbkdf2Service();
+string password = "testPassword";
 
-string json = service.EncryptAndGenerateKeyStoreAsJson(password, privateKey, address);
+// Encrypt with PBKDF2 (faster but less secure than Scrypt)
+string json = keyStorePbkdf2Service.EncryptAndGenerateKeyStoreAsJson(
+    password,
+    ecKey.GetPrivateKeyAsBytes(),
+    ecKey.GetPublicAddress()
+);
+
+// Decrypt
+byte[] key = keyStorePbkdf2Service.DecryptKeyStoreFromJson(password, json);
+Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 ```
 
-### Example 4: Decrypt PBKDF2 Keystore (Real Test Example)
+**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:20-28`
 
-```csharp
-using Nethereum.KeyStore;
-using Nethereum.Hex.HexConvertors.Extensions;
-
-var pbkdf2KeyStoreJson = @"{
-    'crypto': {
-        'cipher': 'aes-128-ctr',
-        'cipherparams': { 'iv': '6087dab2f9fdbbfaddc31a909735c1e6' },
-        'ciphertext': '5318b4d5bcd28de64ee5559e671353e16f075ecae9f99c7a79a38af5f869aa46',
-        'kdf': 'pbkdf2',
-        'kdfparams': {
-            'c': 262144,
-            'dklen': 32,
-            'prf': 'hmac-sha256',
-            'salt': 'ae3cd4e7013836a3df6bd7241b12db061dbe2c6785853cce422d148a624ce0bd'
-        },
-        'mac': '517ead924a9d0dc3124507e3393d175ce3ff7c1e96529c6c555ce9e51205e9b2'
-    },
-    'id': '3198bc9c-6672-5ab3-d995-4942343ae5b6',
-    'version': 3
-}";
-
-string password = "testpassword";
-var service = new KeyStorePbkdf2Service();
-
-byte[] privateKey = service.DecryptKeyStoreFromJson(password, pbkdf2KeyStoreJson);
-Assert.Equal("7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d", privateKey.ToHex());
-```
-
-### Example 5: Detect KDF Type Automatically
+### Example 5: Detect KDF Type
 
 ```csharp
 using Nethereum.KeyStore;
 
 string keystoreJson = File.ReadAllText("wallet.json");
-var checker = new KeyStoreKdfChecker();
+var keyStoreKdfChecker = new KeyStoreKdfChecker();
 
-if (checker.IsScryptKdf(keystoreJson))
+var kdfType = keyStoreKdfChecker.GetKeyStoreKdfType(keystoreJson);
+
+if (kdfType == KeyStoreKdfChecker.KdfType.scrypt)
 {
     var service = new KeyStoreScryptService();
     byte[] privateKey = service.DecryptKeyStoreFromJson(password, keystoreJson);
 }
-else if (checker.IsPbkdf2Kdf(keystoreJson))
+else if (kdfType == KeyStoreKdfChecker.KdfType.pbkdf2)
 {
     var service = new KeyStorePbkdf2Service();
     byte[] privateKey = service.DecryptKeyStoreFromJson(password, keystoreJson);
 }
 ```
 
-### Example 6: Encrypt with Custom Scrypt Parameters
+**From:** `tests/Nethereum.KeyStore.UnitTests/KeyStoreServiceTester.cs:101-114`
+
+### Example 6: Default Keystore Service
 
 ```csharp
 using Nethereum.KeyStore;
-using Nethereum.KeyStore.Model;
+using Nethereum.Signer;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-var service = new KeyStoreScryptService();
+var ecKey = EthECKey.GenerateKey();
+var keyStoreService = new KeyStoreService();
+string password = "testPassword";
 
-// Custom Scrypt parameters (higher = more secure but slower)
-var scryptParams = new ScryptParams
-{
-    N = 1048576,  // CPU cost (default: 262144)
-    R = 8,        // Memory cost (default: 1)
-    P = 1,        // Parallelization (default: 8)
-    Dklen = 32    // Derived key length
-};
-
-byte[] privateKey = "...".HexToByteArray();
-byte[] salt = new byte[32]; // Generate random salt
-string password = "secure-password";
-
-var crypto = service.EncryptAndGenerateKeyStore(
+// Uses default Scrypt parameters
+string json = keyStoreService.EncryptAndGenerateDefaultKeyStoreAsJson(
     password,
-    privateKey,
-    scryptParams.N,
-    scryptParams.R,
-    scryptParams.P,
-    salt
+    ecKey.GetPrivateKeyAsBytes(),
+    ecKey.GetPublicAddress()
 );
 
-// Convert to JSON
-var keyStore = new KeyStore<ScryptParams>
-{
-    Crypto = crypto,
-    Id = Guid.NewGuid().ToString(),
-    Version = 3
-};
+byte[] key = keyStoreService.DecryptKeyStoreFromJson(password, json);
+Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 ```
+
+**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:31-39`
 
 ## API Reference
 
 ### KeyStoreScryptService
 
-Scrypt-based keystore (recommended - more secure).
+Scrypt-based keystore encryption (recommended).
 
 ```csharp
 public class KeyStoreScryptService
 {
-    // Encrypt and generate JSON
+    // Encrypt and generate JSON (default parameters)
     public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string address);
+
+    // Encrypt with custom Scrypt parameters
+    public KeyStore<ScryptParams> EncryptAndGenerateKeyStore(
+        string password,
+        byte[] privateKey,
+        int n, int r, int p,
+        byte[] salt = null
+    );
+
+    // Serialize keystore to JSON
+    public string SerializeKeyStoreToJson(KeyStore<ScryptParams> keyStore);
+
+    // Deserialize JSON to keystore
+    public KeyStore<ScryptParams> DeserializeKeyStoreFromJson(string json);
 
     // Decrypt from JSON
     public byte[] DecryptKeyStoreFromJson(string password, string json);
 
-    // Decrypt from object
+    // Decrypt from keystore object
     public byte[] DecryptKeyStore(string password, KeyStore<ScryptParams> keyStore);
-
-    // Deserialize JSON to object
-    public KeyStore<ScryptParams> DeserializeKeyStoreFromJson(string json);
 }
+```
+
+**Default Scrypt Parameters:**
+```csharp
+N = 262144  // CPU/memory cost (2^18)
+R = 1       // Block size
+P = 8       // Parallelization
+Dklen = 32  // Derived key length
 ```
 
 ### KeyStorePbkdf2Service
 
-PBKDF2-based keystore (faster, less secure).
+PBKDF2-based keystore encryption (legacy).
 
 ```csharp
 public class KeyStorePbkdf2Service
 {
-    // Encrypt and generate JSON
+    // Same methods as KeyStoreScryptService but using PBKDF2
     public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string address);
-
-    // Decrypt from JSON
-    public byte[] DecryptKeyStoreFromJson(string password, string json);
-
-    // Decrypt from object
-    public byte[] DecryptKeyStore(string password, KeyStore<Pbkdf2Params> keyStore);
-
-    // Deserialize JSON to object
     public KeyStore<Pbkdf2Params> DeserializeKeyStoreFromJson(string json);
+    public byte[] DecryptKeyStoreFromJson(string password, string json);
+    public byte[] DecryptKeyStore(string password, KeyStore<Pbkdf2Params> keyStore);
+}
+```
+
+### KeyStoreService
+
+Unified service with default encryption.
+
+```csharp
+public class KeyStoreService
+{
+    // Encrypt with default Scrypt parameters
+    public string EncryptAndGenerateDefaultKeyStoreAsJson(string password, byte[] privateKey, string address);
+
+    // Decrypt (auto-detects KDF type)
+    public byte[] DecryptKeyStoreFromJson(string password, string json);
 }
 ```
 
@@ -280,10 +316,119 @@ Detect KDF type from JSON.
 ```csharp
 public class KeyStoreKdfChecker
 {
+    public enum KdfType { scrypt, pbkdf2 }
+
+    public KdfType GetKeyStoreKdfType(string json);
     public bool IsScryptKdf(string json);
     public bool IsPbkdf2Kdf(string json);
 }
 ```
+
+### Model Classes
+
+```csharp
+public class ScryptParams
+{
+    public int Dklen { get; set; }  // Derived key length (32)
+    public int N { get; set; }      // CPU/memory cost (262144)
+    public int R { get; set; }      // Block size (1)
+    public int P { get; set; }      // Parallelization (8)
+    public string Salt { get; set; } // Random salt (hex)
+}
+
+public class Pbkdf2Params
+{
+    public int Dklen { get; set; }  // Derived key length (32)
+    public int C { get; set; }      // Iteration count (262144)
+    public string Prf { get; set; } // PRF algorithm (hmac-sha256)
+    public string Salt { get; set; } // Random salt (hex)
+}
+
+public class KeyStore<TKdfParams>
+{
+    public CryptoInfo<TKdfParams> Crypto { get; set; }
+    public string Id { get; set; }      // UUID
+    public int Version { get; set; }    // Always 3
+    public string Address { get; set; } // Ethereum address (optional)
+}
+```
+
+## Scrypt Parameter Tuning
+
+### Default Parameters (Desktop/Server)
+
+```csharp
+N = 262144  // 2^18 - Strong security, ~100ms encryption
+R = 1
+P = 8
+```
+
+**Use for:** Desktop applications, servers, production wallets
+
+### Low-Cost Parameters (WASM/Mobile/Testing)
+
+```csharp
+N = 32      // 2^5 - Fast encryption, weaker security
+R = 1
+P = 8
+```
+
+**Use for:** Browser WASM, mobile apps, development/testing
+
+**From:** `Nethereum.Playground/wwwroot/samples/csharp/1021.txt:14`
+
+### High-Security Parameters
+
+```csharp
+N = 1048576  // 2^20 - Very strong security, ~3s encryption
+R = 8
+P = 1
+```
+
+**Use for:** Cold storage, high-value accounts, paranoid security
+
+### Parameter Effects
+
+| Parameter | Effect | Security Impact | Performance Impact |
+|-----------|--------|-----------------|-------------------|
+| **N** | CPU/memory cost | Exponential | Exponential |
+| **R** | Block size | Linear | Linear |
+| **P** | Parallelization | Linear | Linear (if parallel) |
+
+**N dominates:** Doubling N doubles time and memory. N=262144 uses ~256MB RAM.
+
+## Web3 Secret Storage Format
+
+Keystore JSON structure:
+
+```json
+{
+  "crypto": {
+    "cipher": "aes-128-ctr",
+    "cipherparams": { "iv": "..." },
+    "ciphertext": "...",
+    "kdf": "scrypt",
+    "kdfparams": {
+      "dklen": 32,
+      "n": 262144,
+      "r": 1,
+      "p": 8,
+      "salt": "..."
+    },
+    "mac": "..."
+  },
+  "id": "3198bc9c-6672-5ab3-d995-4942343ae5b6",
+  "version": 3
+}
+```
+
+**Fields:**
+- **cipher**: Always `aes-128-ctr`
+- **ciphertext**: Encrypted private key
+- **kdf**: `scrypt` or `pbkdf2`
+- **kdfparams**: KDF configuration
+- **mac**: HMAC for integrity verification
+- **version**: Always `3`
 
 ## Important Notes
 
@@ -291,28 +436,16 @@ public class KeyStoreKdfChecker
 
 | Feature | Scrypt | PBKDF2 |
 |---------|--------|--------|
-| **Security** | Higher (memory-hard) | Lower |
-| **Speed** | Slower | Faster |
-| **Default** | ✅ Use this | Legacy |
-| **Resistance** | ASIC-resistant | ASIC-vulnerable |
+| **Security** | Memory-hard, ASIC-resistant | CPU-only, ASIC-vulnerable |
+| **Speed** | Slower (~100ms default) | Faster (~50ms) |
+| **Recommendation** | Use this | Legacy only |
 
-**Recommendation:** Always use **Scrypt** unless you need compatibility with very old systems.
-
-### Password Strength
-
-```csharp
-// ❌ WEAK - Easy to brute force
-string password = "12345";
-
-// ✅ STRONG - Hard to crack
-string password = "MyV3ry$ecur3P@ssw0rd!2024";
-```
-
-Scrypt parameters make brute-forcing expensive, but **strong passwords are still critical**.
+**Use Scrypt** unless you need compatibility with very old systems.
 
 ### File Naming Convention
 
-Ethereum wallets use this naming convention:
+Standard naming convention used across Ethereum tools:
+
 ```
 UTC--<created_at UTC ISO8601>--<address hex>
 ```
@@ -322,34 +455,25 @@ Example:
 UTC--2024-01-15T10-30-45.123Z--0x12890d2cce102216644c59dae5baed380d84830c
 ```
 
-### Never Store Passwords
+### Security Considerations
 
-```csharp
-// ❌ WRONG - Password in code
-string password = "hardcoded-password";
-
-// ✅ CORRECT - Get from user
-string password = Console.ReadLine();
-```
-
-Keystore files are **only as secure as the password**. Never hardcode or store passwords.
+1. **Password strength is critical** - No KDF can protect weak passwords
+2. **N parameter tradeoff** - Higher N = more secure but slower
+3. **Salt is auto-generated** - Uses cryptographically secure random bytes
+4. **MAC prevents tampering** - Detects modified ciphertext
+5. **AES-128-CTR** - Standard encryption mode, secure when properly implemented
 
 ## Related Packages
 
-### Used By (Consumers)
-- **Nethereum.Accounts** - Account management with keystore support
-- **Nethereum.Wallet** - Multi-wallet management
+### Used By
+- **Nethereum.Accounts** - Account management with keystore loading
 
 ### Dependencies
-- **Nethereum.Hex** - Hex encoding
+- **Nethereum.Hex** - Hex encoding/decoding
 
 ## Additional Resources
 
-- [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition)
-- [Scrypt Paper](https://www.tarsnap.com/scrypt/scrypt.pdf)
-- [PBKDF2 Specification](https://tools.ietf.org/html/rfc2898)
+- [Web3 Secret Storage Definition](https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition) - Official specification
+- [Scrypt Paper](https://www.tarsnap.com/scrypt/scrypt.pdf) - Original Scrypt algorithm
+- [PBKDF2 RFC 2898](https://tools.ietf.org/html/rfc2898) - PBKDF2 specification
 - [Nethereum Documentation](http://docs.nethereum.com/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

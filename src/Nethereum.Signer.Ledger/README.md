@@ -8,7 +8,7 @@ Nethereum.Signer.Ledger provides **external signing capability** for Ethereum tr
 
 **Key Features:**
 - Sign transactions with Ledger hardware wallet
-- Support for Legacy, EIP-1559 (Type 2), and EIP-2930 (Type 1) transactions
+- Support for Legacy and EIP-1559 (Type 2) transactions
 - Contract deployment signing with data
 - Message signing (EIP-191)
 - Two derivation paths: `m/44'/60'/0'/0/x` (default) and `m/44'/60'/0'/x` (Ledger legacy)
@@ -36,13 +36,10 @@ dotnet add package Nethereum.Signer.Ledger
 ## Dependencies
 
 **External:**
-- **Ledger.Net** - Ledger hardware wallet communication library
-- **Device.Net** - Cross-platform USB device communication
+- **Ledger.Net** (v4.0.0) - Ledger hardware wallet communication library (includes Device.Net for USB/HID communication)
 
 **Nethereum:**
-- **Nethereum.Accounts** - Account and transaction management
-- **Nethereum.Signer** - Core signing infrastructure
-- **Nethereum.Web3** - Web3 client integration
+- **Nethereum.Accounts** - Account and transaction management (includes Nethereum.Signer)
 
 ## Quick Start
 
@@ -512,8 +509,8 @@ Without these settings enabled, transactions may be rejected by the device.
 |------|-----------|-------|
 | Legacy | Yes | EIP-155 with chain ID |
 | EIP-1559 (Type 2) | Yes | MaxFeePerGas, MaxPriorityFeePerGas |
-| EIP-2930 (Type 1) | Yes | Access lists |
-| EIP-7702 (Type 4) | No | Not yet implemented |
+| EIP-2930 (Type 1) | No | Not implemented |
+| EIP-7702 (Type 4) | No | Not implemented |
 
 ### User Experience Considerations
 

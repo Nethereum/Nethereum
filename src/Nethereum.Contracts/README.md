@@ -24,11 +24,14 @@ dotnet add package Nethereum.Contracts
 
 ## Dependencies
 
+**Nethereum:**
 - **Nethereum.ABI** - ABI encoding/decoding
 - **Nethereum.RPC** - RPC functionality
 - **Nethereum.Hex** - Hex utilities
-- **Nethereum.Util** - Utility functions
-- **Nethereum.Model** - Core Ethereum models
+- **Nethereum.Util.Rest** - REST utilities for HTTP metadata
+
+**External:**
+- **ADRaffy.ENSNormalize** (v0.1.5) - ENS name normalization (UTS-46/ENSIP-15)
 
 ## Key Concepts
 
