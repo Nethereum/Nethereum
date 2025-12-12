@@ -7,7 +7,11 @@
 		<TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
 		<AssemblyName>Nethereum.Merkle.Patricia</AssemblyName>
 		<PackageId>Nethereum.Merkle.Patricia</PackageId>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
 		<ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
