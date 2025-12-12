@@ -209,6 +209,8 @@ string zeroAddress = AddressUtil.ZERO_ADDRESS;
 
 ### Example 5: Wei/Ether Conversions
 
+From: [Nethereum Playground Example 1014](https://playground.nethereum.com/csharp/id/1014)
+
 ```csharp
 using Nethereum.Util;
 using System.Numerics;

@@ -764,6 +764,19 @@ When calculating signatures, types must be canonical:
 - **Account Abstraction**: Session keys and delegated operations
 - **DAO Voting**: Off-chain vote collection with on-chain execution
 
+## Playground Examples
+
+Runnable examples available at [Nethereum Playground](https://playground.nethereum.com/):
+
+**Human-Readable ABI:**
+- [Example 1069](https://playground.nethereum.com/csharp/id/1069) - Deployment, calls, and transactions using human-readable ABI format
+
+**ABI Encoding:**
+- [Example 1070](https://playground.nethereum.com/csharp/id/1070) - Encoding using ABI Values, Parameters and Default values
+- [Example 1071](https://playground.nethereum.com/csharp/id/1071) - ABI Encoding Packed using ABI Values
+- [Example 1072](https://playground.nethereum.com/csharp/id/1072) - ABI Encoding Packed using parameters
+- [Example 1073](https://playground.nethereum.com/csharp/id/1073) - ABI Encoding Packed using default values
+
 ## Resources
 
 - [Ethereum Contract ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
