@@ -477,11 +477,11 @@ For all other platforms (.NET 4.0+, .NET Core, .NET 5+), Nethereum uses the buil
 BigInteger uses **little-endian** byte arrays, but Ethereum typically uses **big-endian**:
 
 ```csharp
-// ❌ WRONG - Don't use Ethereum bytes directly
+// WRONG - Don't use Ethereum bytes directly
 byte[] ethereumBytes = ...; // Big-endian from Ethereum
 var wrong = new BigInteger(ethereumBytes); // Incorrect!
 
-// ✅ CORRECT - Reverse for Ethereum compatibility
+// CORRECT - Reverse for Ethereum compatibility
 byte[] ethereumBytes = ...;
 Array.Reverse(ethereumBytes); // Convert to little-endian
 var correct = new BigInteger(ethereumBytes);
@@ -507,17 +507,17 @@ decimal precise = (decimal)a / (decimal)b; // 2.333...
 1. **Modular Exponentiation**: Always use `ModPow` instead of computing power then modulus:
 
 ```csharp
-// ❌ SLOW
+// SLOW
 var slow = BigInteger.Pow(value, exp) % mod;
 
-// ✅ FAST
+// FAST
 var fast = BigInteger.ModPow(value, exp, mod);
 ```
 
 2. **Reuse Values**: Cache frequently used powers:
 
 ```csharp
-// ✅ GOOD - Cache the divisor
+// GOOD - Cache the divisor
 private static readonly BigInteger WeiPerEther = BigInteger.Pow(10, 18);
 
 public decimal WeiToEther(BigInteger wei)
@@ -549,10 +549,6 @@ BigInteger is **immutable** and therefore **thread-safe**. All operations return
 - [Nethereum Documentation](http://docs.nethereum.com/)
 - [Wei, Gwei, Ether Converter](https://eth-converter.com/)
 - [.NET Foundation GitHub](https://github.com/dotnet/runtime)
-
-## License
-
-This package contains code licensed to the .NET Foundation under the MIT license. Nethereum.BigInteger.N351 is distributed under the same MIT license as part of the Nethereum project.
 
 ## Migration Guide
 

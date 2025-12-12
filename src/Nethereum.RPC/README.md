@@ -158,7 +158,7 @@ var historicalBalance = await ethGetBalance.SendRequestAsync(
 Console.WriteLine($"Historical balance: {Web3.Convert.FromWei(historicalBalance.Value)} ETH");
 ```
 
-**From:** `tests/Nethereum.RPC.IntegrationTests/Testers/EthGetBalanceTester.cs:24`
+*Source: tests/Nethereum.RPC.IntegrationTests/Testers/EthGetBalanceTester.cs*
 
 ### Example 3: Calling Smart Contract Methods (eth_call)
 
@@ -186,7 +186,7 @@ Console.WriteLine($"Call result: {result}");
 // For typed contract interactions, use Nethereum.Contracts instead
 ```
 
-**From:** `tests/Nethereum.RPC.IntegrationTests/Testers/EthCallTester.cs:18`
+*Source: tests/Nethereum.RPC.IntegrationTests/Testers/EthCallTester.cs*
 
 ### Example 4: Estimating Gas
 
@@ -233,7 +233,7 @@ Console.WriteLine($"Chain ID: {chainId.Value}");
 // 42161 = Arbitrum
 ```
 
-**From:** `tests/Nethereum.RPC.IntegrationTests/Testers/EthChainIdTester.cs:18`
+*Source: tests/Nethereum.RPC.IntegrationTests/Testers/EthChainIdTester.cs*
 
 ### Example 6: Working with Different Clients (WebSocket, IPC)
 
@@ -261,7 +261,7 @@ var account = new ManagedAccount("0x12890d2cce102216644c59daE5baed380d84830c", "
 var web3WithAccount = new Web3(account, clientWs);
 ```
 
-**From:** `consoletests/Nethereum.Parity.Reactive.ConsoleTest/Program.cs:20`
+*Source: consoletests/Nethereum.Parity.Reactive.ConsoleTest/Program.cs*
 
 ### Example 7: Building RPC Requests for Custom Use Cases
 
@@ -287,7 +287,7 @@ var request2 = ethBlockNumber.BuildRequest();
 // Both requests can be sent in a batch
 ```
 
-**From:** `consoletests/Nethereum.Parity.Reactive.ConsoleTest/Program.cs:36`
+*Source: consoletests/Nethereum.Parity.Reactive.ConsoleTest/Program.cs*
 
 ### Example 8: Network Information
 

@@ -38,12 +38,10 @@ dotnet add package Nethereum.JsonRpc.WebSocketClient
 ## Dependencies
 
 **Nethereum:**
-- **Nethereum.JsonRpc.Client** - Core RPC abstraction
+- **Nethereum.JsonRpc.Client** - Core RPC abstraction (which provides JSON serialization and logging support)
 
 **External:**
-- **System.Net.WebSockets.Client** - WebSocket support
-- **Newtonsoft.Json** - JSON serialization
-- **Microsoft.Extensions.Logging.Abstractions** - Logging support
+- **System.Net.WebSockets.Client** (v4.3.2) - WebSocket protocol implementation
 
 ## Quick Start
 
@@ -377,7 +375,7 @@ public class ProductionBlockMonitor
         {
             client = new StreamingWebSocketClient(url);
 
-            // ⭐ Production pattern: auto-reconnect on error
+            // Production pattern: auto-reconnect on error
             client.Error += Client_Error;
         }
 
@@ -406,7 +404,7 @@ public class ProductionBlockMonitor
         await blockHeaderSubscription.UnsubscribeAsync();
     }
 
-    // ⭐ Production reconnection handler
+    // Production reconnection handler
     private async void Client_Error(object sender, Exception ex)
     {
         Console.WriteLine($"Client Error, restarting... ({ex.Message})");
@@ -633,7 +631,3 @@ Some providers limit concurrent subscriptions:
 - [WebSocket Protocol](https://datatracker.ietf.org/doc/html/rfc6455)
 - [Nethereum Documentation](http://docs.nethereum.com/)
 - [Nethereum Reactive Documentation](http://docs.nethereum.com/en/latest/nethereum-subscriptions-streaming/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

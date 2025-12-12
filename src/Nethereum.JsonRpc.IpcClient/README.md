@@ -36,12 +36,10 @@ dotnet add package Nethereum.JsonRpc.IpcClient
 ## Dependencies
 
 **Nethereum:**
-- **Nethereum.JsonRpc.Client** - Core RPC abstraction
+- **Nethereum.JsonRpc.Client** - Core RPC abstraction (provides JSON serialization and logging support)
 
 **External:**
-- **System.IO.Pipes** - Named pipes support
-- **Newtonsoft.Json** - JSON serialization
-- **Microsoft.Extensions.Logging.Abstractions** - Logging support
+- **System.IO.Pipes** (v4.3.0) - Named pipes support
 
 ## Quick Start
 
@@ -485,20 +483,20 @@ However, **IPC is already very fast** - batching provides less benefit than with
 ### When to Use IPC vs HTTP vs WebSocket
 
 **Use IPC when:**
-- ✅ Running on same machine as node
-- ✅ Ultra-low latency required (<2ms)
-- ✅ High-frequency requests (MEV, indexing)
-- ✅ Production node operator
+- Running on same machine as node
+- Ultra-low latency required (<2ms)
+- High-frequency requests (MEV, indexing)
+- Production node operator
 
 **Use HTTP when:**
-- ✅ Connecting to remote node
-- ✅ Simple request/response pattern
-- ✅ Standard latency acceptable (5-10ms)
+- Connecting to remote node
+- Simple request/response pattern
+- Standard latency acceptable (5-10ms)
 
 **Use WebSocket when:**
-- ✅ Need real-time subscriptions (`eth_subscribe`)
-- ✅ Event streaming required
-- ✅ Push notifications from node
+- Need real-time subscriptions (`eth_subscribe`)
+- Event streaming required
+- Push notifications from node
 
 ## Related Packages
 
@@ -544,7 +542,3 @@ erigon
 - [Named Pipes Documentation](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipes)
 - [Unix Domain Sockets](https://en.wikipedia.org/wiki/Unix_domain_socket)
 - [Nethereum Documentation](http://docs.nethereum.com/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

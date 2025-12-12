@@ -119,7 +119,7 @@ var proofs = merkleTree.GetProof('A');
 var isValid = merkleTree.VerifyProof(proofs, 'A');  // Returns true
 ```
 
-*Source: `MerkleUnitTests.cs:13-36`*
+*Source: tests/Nethereum.Contracts.IntegrationTests/MerkleDrop/MerkleUnitTests.cs*
 
 ### Example 2: OpenZeppelin-Compatible Merkle Tree for Airdrops
 
@@ -175,7 +175,7 @@ var proof = merkleTree.GetProof(userToClaim);
 // Contract verifies using OpenZeppelin's MerkleProof.sol
 ```
 
-*Source: `OpenZeppelinMerkleUnitTests.cs:14-75`*
+*Source: tests/Nethereum.Contracts.IntegrationTests/MerkleDrop/OpenZeppelinMerkleUnitTests.cs*
 
 ### Example 3: Whitelist with Single Parameter
 
@@ -212,7 +212,7 @@ var proof = merkleTree.GetProof(userEntry);
 var isWhitelisted = merkleTree.VerifyProof(proof, userEntry);  // true
 ```
 
-*Source: `OpenZeppelinMerkleUnitTests.cs:30-48`*
+*Source: tests/Nethereum.Contracts.IntegrationTests/MerkleDrop/OpenZeppelinMerkleUnitTests.cs*
 
 ### Example 4: Lean Incremental Merkle Tree (Efficient Updates)
 
@@ -269,7 +269,7 @@ var imported = LeanIncrementalMerkleTree<BigInteger>.Import(
 );
 ```
 
-*Source: `LeanIncrementalMerkleTree.cs:41-230`*
+*Source: src/Nethereum.Merkle/LeanIncrementalMerkleTree.cs*
 
 ### Example 5: Sparse Merkle Tree for Large Datasets
 
@@ -318,7 +318,7 @@ var count = await sparseTree.GetLeafCountAsync();  // 6
 await sparseTree.ClearAsync();
 ```
 
-*Source: `SparseMerkleTree.cs:32-273`*
+*Source: src/Nethereum.Merkle/Sparse/SparseMerkleTree.cs*
 
 ### Example 6: Using MerkleDropMerkleTree for Token Airdrops
 
@@ -363,7 +363,7 @@ var proof = merkleDropTree.GetProof(airdropItems[0]);
 // Recipient calls claim(proof, index, account, amount) on contract
 ```
 
-*Source: `MerkleDropMerkleTree.cs:1-8`*
+*Source: src/Nethereum.Merkle/MerkleDropMerkleTree.cs*
 
 ### Example 7: Custom Merkle Tree with Custom Data Types
 
@@ -415,7 +415,7 @@ var proof = merkleTree.GetProof(items[0]);
 var isValid = merkleTree.VerifyProof(proof, items[0]);
 ```
 
-*Source: `MerkleTree.cs:20-127`*
+*Source: src/Nethereum.Merkle/MerkleTree.cs*
 
 ### Example 8: Dynamically Adding Leaves to Existing Tree
 
@@ -457,7 +457,7 @@ merkleTree.InsertLeaves(newAddresses);
 var finalRoot = merkleTree.Root.Hash.ToHex(true);
 ```
 
-*Source: `MerkleTree.cs:81-99`*
+*Source: src/Nethereum.Merkle/MerkleTree.cs*
 
 ### Example 9: Static Proof Verification (Without Building Tree)
 
@@ -490,7 +490,7 @@ var isValid = MerkleTree<object>.VerifyProof(
 // Returns true if proof is valid
 ```
 
-*Source: `MerkleTree.cs:129-137`*
+*Source: src/Nethereum.Merkle/MerkleTree.cs*
 
 ## API Reference
 

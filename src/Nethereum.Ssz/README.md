@@ -121,7 +121,7 @@ Assert.Equal((ulong)42, intValue);
 Assert.Equal(fixedBytes, bytes);
 ```
 
-*Source: `SszWriterReaderTests.cs:9-28`*
+*Source: tests/Nethereum.Ssz.Tests/SszWriterReaderTests.cs*
 
 ### Example 2: Variable-Length Byte Arrays
 
@@ -149,7 +149,7 @@ byte[] result = reader.ReadVariableBytes(maxLength: 100);
 Assert.Equal(new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 }, result);
 ```
 
-*Source: `SszWriterReaderTests.cs:48-71`*
+*Source: tests/Nethereum.Ssz.Tests/SszWriterReaderTests.cs*
 
 ### Example 3: Writing and Reading Lists
 
@@ -179,7 +179,7 @@ ulong[] result = SszReader.ReadList<ulong>(ref reader, count: 3);
 Assert.Equal(new[] { 10UL, 12UL, 99UL }, result);
 ```
 
-*Source: `SszWriterReaderTests.cs:74-86`*
+*Source: tests/Nethereum.Ssz.Tests/SszWriterReaderTests.cs*
 
 ### Example 4: Writing Vectors (Fixed-Size Collections)
 
@@ -214,7 +214,7 @@ byte[][] result = reader.ReadVector(elementCount: 3, elementSize: 32);
 Assert.Equal(vector, result);
 ```
 
-*Source: `SszWriterReaderTests.cs:89-94`, `SszReader.cs:94-103`*
+*Source: tests/Nethereum.Ssz.Tests/SszWriterReaderTests.cs and src/Nethereum.Ssz/SszReader.cs*
 
 ### Example 5: Computing Merkle Roots (Merkleization)
 
@@ -246,7 +246,7 @@ using (var sha = System.Security.Cryptography.SHA256.Create())
 }
 ```
 
-*Source: `SszMerkleizerTests.cs:12-30`*
+*Source: tests/Nethereum.Ssz.Tests/SszMerkleizerTests.cs*
 
 ### Example 6: Chunkifying Data
 
@@ -276,7 +276,7 @@ Assert.Equal(data.Skip(32), chunks[1].Take(8));
 Assert.All(chunks[1].Skip(8), b => Assert.Equal(0, b));
 ```
 
-*Source: `SszMerkleizerTests.cs:64-75`*
+*Source: tests/Nethereum.Ssz.Tests/SszMerkleizerTests.cs*
 
 ### Example 7: Hash Tree Root for Vectors
 
@@ -303,7 +303,7 @@ Assert.NotEqual(root, differentRoot);
 // Final hash includes both the data and its length
 ```
 
-*Source: `SszMerkleizerTests.cs:52-61`*
+*Source: tests/Nethereum.Ssz.Tests/SszMerkleizerTests.cs*
 
 ### Example 8: Custom Element Readers
 
@@ -338,7 +338,7 @@ var reader = new SszReader(buffer);
 MyCustomType[] items = SszReader.ReadList<MyCustomType>(ref reader, count: 5);
 ```
 
-*Source: `SszElementReaderRegistry.cs:6-40`*
+*Source: src/Nethereum.Ssz/SszElementReaderRegistry.cs*
 
 ### Example 9: Handling Fixed vs Variable Bytes
 
@@ -366,7 +366,7 @@ var tooLong = new byte[100];
 byte[] encoded = writer.ToArray();
 ```
 
-*Source: `SszWriterReaderTests.cs:31-46`*
+*Source: tests/Nethereum.Ssz.Tests/SszWriterReaderTests.cs*
 
 ## API Reference
 

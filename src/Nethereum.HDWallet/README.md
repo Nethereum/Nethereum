@@ -30,13 +30,10 @@ dotnet add package Nethereum.HDWallet
 ## Dependencies
 
 **External:**
-- **NBitcoin** - Bitcoin and cryptographic primitives (BIP32/BIP39 implementation)
+- **NBitcoin** (v7.0.6) - Bitcoin and cryptographic primitives (BIP32/BIP39 implementation)
 
 **Nethereum:**
 - **Nethereum.Web3** - Web3 client and account integration
-- **Nethereum.Signer** - ECDSA signing
-- **Nethereum.Hex** - Hex encoding
-- **Nethereum.Util** - Address utilities
 
 ## Quick Start
 
@@ -355,25 +352,6 @@ public class PublicWallet
 
 ## Important Notes
 
-### Mnemonic Security
-
-```csharp
-// CRITICAL: Store mnemonic phrases securely!
-// Anyone with the mnemonic can access ALL accounts
-
-// ❌ WRONG - Never hardcode or log mnemonics
-Console.WriteLine("Mnemonic: " + string.Join(" ", wallet.Words));
-
-// ✅ CORRECT - Only show once during wallet creation
-// Instruct user to write down on paper and store securely
-```
-
-**Mnemonic = Master Key to ALL Accounts**
-- 12 words = 128-bit security
-- 24 words = 256-bit security
-- Never store in plain text
-- Never transmit over insecure channels
-- Write on paper, store in safe
 
 ### Seed Passwords (25th Word)
 
@@ -456,7 +434,3 @@ var depositAddress = publicWallet.GetAddress(customerID);
 - [BIP44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)
 - [Nethereum Documentation](http://docs.nethereum.com/)
 - [Ian Coleman's BIP39 Tool](https://iancoleman.io/bip39/) - Test derivation paths
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

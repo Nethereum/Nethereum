@@ -56,8 +56,6 @@ string json = service.EncryptAndGenerateKeyStoreAsJson(
 byte[] privateKey = service.DecryptKeyStoreFromJson(password, json);
 ```
 
-**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:9-17`
-
 ## Usage Examples
 
 ### Example 1: Generate Key and Create Keystore (Scrypt)
@@ -85,8 +83,6 @@ File.WriteAllText($"keystore-{ecKey.GetPublicAddress()}.json", json);
 byte[] key = keyStoreScryptService.DecryptKeyStoreFromJson(password, json);
 Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 ```
-
-**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:9-17`
 
 ### Example 2: Custom Scrypt Parameters (Performance Tuning)
 
@@ -121,8 +117,6 @@ string json = keyStoreService.SerializeKeyStoreToJson(keyStore);
 // Decrypt
 byte[] decryptedKey = keyStoreService.DecryptKeyStoreFromJson(password, json);
 ```
-
-**From:** `Nethereum.Playground/wwwroot/samples/csharp/1021.txt:12-25`
 
 ### Example 3: Decrypt Existing Keystore (Scrypt)
 
@@ -162,8 +156,6 @@ Console.WriteLine($"Private Key: {privateKey.ToHex()}");
 // Output: 7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d
 ```
 
-**From:** `tests/Nethereum.KeyStore.UnitTests/KeyStoreServiceTester.cs:62-70`
-
 ### Example 4: PBKDF2 Keystore (Legacy)
 
 ```csharp
@@ -187,8 +179,6 @@ byte[] key = keyStorePbkdf2Service.DecryptKeyStoreFromJson(password, json);
 Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 ```
 
-**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:20-28`
-
 ### Example 5: Detect KDF Type
 
 ```csharp
@@ -211,8 +201,6 @@ else if (kdfType == KeyStoreKdfChecker.KdfType.pbkdf2)
 }
 ```
 
-**From:** `tests/Nethereum.KeyStore.UnitTests/KeyStoreServiceTester.cs:101-114`
-
 ### Example 6: Default Keystore Service
 
 ```csharp
@@ -234,8 +222,6 @@ string json = keyStoreService.EncryptAndGenerateDefaultKeyStoreAsJson(
 byte[] key = keyStoreService.DecryptKeyStoreFromJson(password, json);
 Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 ```
-
-**From:** `tests/Nethereum.KeyStore.UnitTests/GenerateAndCreateKeyStoreFileTester.cs:31-39`
 
 ## API Reference
 
@@ -374,8 +360,6 @@ P = 8
 ```
 
 **Use for:** Browser WASM, mobile apps, development/testing
-
-**From:** `Nethereum.Playground/wwwroot/samples/csharp/1021.txt:14`
 
 ### High-Security Parameters
 

@@ -95,7 +95,7 @@ var legacyTx = new LegacyTransaction(
 // Transaction is ready to be signed with Nethereum.Signer
 ```
 
-*Source: Adapted from `TransactionTests.cs:34-48`*
+*Source: tests/Nethereum.Signer.UnitTests/TransactionTests.cs*
 
 ### Example 2: Decoding a Signed Transaction from RLP
 
@@ -121,7 +121,7 @@ var r = tx.Signature.R.ToHex();
 var s = tx.Signature.S.ToHex();
 ```
 
-*Source: `TransactionTests.cs:141-162`*
+*Source: tests/Nethereum.Signer.UnitTests/TransactionTests.cs*
 
 ### Example 3: Using TransactionFactory to Decode Any Transaction Type
 
@@ -159,7 +159,7 @@ switch (transaction.TransactionType)
 }
 ```
 
-*Source: `TransactionFactory.cs:50-64`*
+*Source: src/Nethereum.Model/TransactionFactory.cs*
 
 ### Example 4: Creating an EIP-1559 Transaction with Access List
 
@@ -197,7 +197,7 @@ var tx1559 = new Transaction1559(
 var rlpForSigning = tx1559.GetRLPEncodedRaw();
 ```
 
-*Source: `Transaction1559.cs:11-32`, `AccessListItem.cs:16-20`*
+*Source: src/Nethereum.Model/Transaction1559.cs, src/Nethereum.Model/AccessListItem.cs*
 
 ### Example 5: Working with Ethereum Account State
 
@@ -224,7 +224,7 @@ var eoa = new Account
 };
 ```
 
-*Source: `Account.cs:22-53`*
+*Source: src/Nethereum.Model/Account.cs*
 
 ### Example 6: Creating Event Logs
 
@@ -251,7 +251,7 @@ var logWithoutData = Log.Create(
 );
 ```
 
-*Source: `Log.cs:11-22`*
+*Source: src/Nethereum.Model/Log.cs*
 
 ### Example 7: Working with Block Headers
 
@@ -284,7 +284,7 @@ var blockHeader = new BlockHeader
 var encoded = BlockHeaderEncoder.Current.EncodeHeader(blockHeader);
 ```
 
-*Source: `BlockHeader.cs:8-31`*
+*Source: src/Nethereum.Model/BlockHeader.cs*
 
 ### Example 8: Creating Transactions for Different Networks
 
@@ -355,7 +355,7 @@ var encodedValue = AccountStorage.EncodeValueForStorage(storageValue);
 // These encoded values are used in the Patricia Merkle Trie
 ```
 
-*Source: `Account.cs:7-21`*
+*Source: src/Nethereum.Model/Account.cs*
 
 ## API Reference
 
