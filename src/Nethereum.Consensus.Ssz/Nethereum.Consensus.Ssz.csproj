@@ -9,7 +9,11 @@
     <AssemblyName>Nethereum.Consensus.Ssz</AssemblyName>
     <PackageId>Nethereum.Consensus.Ssz</PackageId>
     <PackageTags>Ethereum;SSZ;Consensus;LightClient</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Ssz\Nethereum.Ssz.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
