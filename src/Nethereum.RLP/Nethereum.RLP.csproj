@@ -8,10 +8,15 @@
     <AssemblyName>Nethereum.RLP</AssemblyName>
     <PackageId>Nethereum.RLP</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;RLP</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">

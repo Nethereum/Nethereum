@@ -6,9 +6,10 @@
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <AssemblyName>Nethereum.Hex</AssemblyName> 
+    <AssemblyName>Nethereum.Hex</AssemblyName>
     <PackageId>Nethereum.Hex</PackageId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -31,6 +32,10 @@
 
   <ItemGroup>
     <Folder Include="BigInteger\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
