@@ -1,0 +1,164 @@
+@using Nethereum.UI
+@using Nethereum.Wallet.UI
+@using Nethereum.Contracts.Standards.ERC20.ContractDefinition
+@using Nethereum.Util
+@inject SelectedEthereumHostProviderService SelectedHostProviderService
+@implements IDisposable
+
+<MudPaper Class="pa-4" Elevation="1">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h6">ERC-20 Token Transfer</MudText>
+
+        @if (SelectedHostProviderService.SelectedHost is null)
+        {
+            <MudAlert Severity="Severity.Info">
+                Connect the embedded wallet to enable token transfers.
+            </MudAlert>
+        }
+        else
+        {
+            <MudForm>
+                <MudStack Spacing="2">
+                    <MudTextField @bind-Value="_model.ContractAddress"
+                                  Label="Contract Address"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  For="() => _model.ContractAddress" />
+
+                    <MudNumericField T="int?"
+                                     @bind-Value="_model.DecimalPlaces"
+                                     Label="Decimal Places"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     For="() => _model.DecimalPlaces" />
+
+                    <MudTextField @bind-Value="_model.To"
+                                  Label="Recipient Address"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  For="() => _model.To" />
+
+                    <MudNumericField T="decimal?"
+                                     @bind-Value="_model.Amount"
+                                     Label="Token Amount"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     For="() => _model.Amount" />
+
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudButton ButtonType="ButtonType.Submit"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="_isSubmitting"
+                                   OnClick="TransferAsync">
+                            @(_isSubmitting ? "Sending..." : "Send Tokens")
+                        </MudButton>
+
+                        @if (_isSubmitting)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                        }
+                    </MudStack>
+                </MudStack>
+            </MudForm>
+
+            @if (!string.IsNullOrEmpty(_transactionHash))
+            {
+                <MudAlert Severity="Severity.Success">
+                    Transaction submitted: @_transactionHash
+                </MudAlert>
+            }
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error">
+                    @_errorMessage
+                </MudAlert>
+            }
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        SelectedHostProviderService.SelectedHostProviderChanged += OnSelectedHostChangedAsync;
+    }
+
+    private async Task OnSelectedHostChangedAsync(IEthereumHostProvider? provider)
+    {
+        _errorMessage = null;
+        _transactionHash = null;
+        _isSubmitting = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private readonly TransferFormModel _model = new()
+    {
+        DecimalPlaces = 18
+    };
+
+    private bool _isSubmitting;
+    private string? _transactionHash;
+    private string? _errorMessage;
+
+    private async Task TransferAsync()
+    {
+       
+        _errorMessage = null;
+        _transactionHash = null;
+        _isSubmitting = true;
+
+        try
+        {
+            if (SelectedHostProviderService.SelectedHost is null)
+            {
+                _errorMessage = "Wallet is not connected.";
+                return;
+            }
+
+            if (!_model.DecimalPlaces.HasValue || !_model.Amount.HasValue)
+            {
+                _errorMessage = "Please provide decimal places and amount.";
+                return;
+            }
+
+            var amountWei = UnitConversion.Convert.ToWei(_model.Amount.Value, _model.DecimalPlaces.Value);
+
+            var transfer = new TransferFunction
+            {
+                To = _model.To ?? string.Empty,
+                Value = amountWei
+            };
+
+            var hostProvider = SelectedHostProviderService.SelectedHost;
+            var web3 =  await hostProvider.GetWeb3Async();
+            var handler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
+			Console.WriteLine($"Sending transfer of {amountWei} wei to {_model.To} on contract {_model.ContractAddress}");
+            _transactionHash = await handler.SendRequestAsync(_model.ContractAddress ?? string.Empty, transfer);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+
+    public void Dispose()
+    {
+        SelectedHostProviderService.SelectedHostProviderChanged -= OnSelectedHostChangedAsync;
+    }
+
+    private sealed class TransferFormModel
+    {
+        public string? ContractAddress { get; set; }
+        public int? DecimalPlaces { get; set; }
+        public string? To { get; set; }
+        public decimal? Amount { get; set; }
+    }
+}

@@ -163,6 +163,10 @@
                                 ShowApplicationName="showApplicationName"
                                 ShowNetworkInHeader="showNetworkInHeader"
                                 ShowAccountDetailsInHeader="showAccountDetailsInHeader" />
+
+                <div class="mt-4" style="width: 100%; max-width: 800px;">
+                    <TokenTransferDemo />
+                </div>
             </div>
         </MudItem>
     </MudGrid>
@@ -194,6 +198,7 @@
     {
         WalletHostProvider.SelectedAccountChanged += OnSelectedAccountChanged;
         LocalizationService.LanguageChanged += OnLanguageChangedNotification;
+       
         
         // Initialize theme settings
         isDarkMode = ThemeService.IsDarkMode;
@@ -261,3 +266,4 @@
         StateHasChanged();
     }
 }
+

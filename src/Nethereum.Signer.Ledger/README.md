@@ -510,10 +510,10 @@ Without these settings enabled, transactions may be rejected by the device.
 
 | Type | Supported | Notes |
 |------|-----------|-------|
-| Legacy | ✅ Yes | EIP-155 with chain ID |
-| EIP-1559 (Type 2) | ✅ Yes | MaxFeePerGas, MaxPriorityFeePerGas |
-| EIP-2930 (Type 1) | ✅ Yes | Access lists |
-| EIP-7702 (Type 4) | ❌ No | Not yet implemented |
+| Legacy | Yes | EIP-155 with chain ID |
+| EIP-1559 (Type 2) | Yes | MaxFeePerGas, MaxPriorityFeePerGas |
+| EIP-2930 (Type 1) | Yes | Access lists |
+| EIP-7702 (Type 4) | No | Not yet implemented |
 
 ### User Experience Considerations
 
@@ -605,7 +605,3 @@ var avalancheAccount = new ExternalAccount(ledgerSigner, chainId: 43114); // Ava
 - Users must physically confirm each transaction
 - Device screen shows transaction details for verification
 - No software can extract private keys from device
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.
