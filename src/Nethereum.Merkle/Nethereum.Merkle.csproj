@@ -7,7 +7,11 @@
 		<TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
 		<AssemblyName>Nethereum.Merkle</AssemblyName>
 		<PackageId>Nethereum.Merkle</PackageId>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
 		<ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
