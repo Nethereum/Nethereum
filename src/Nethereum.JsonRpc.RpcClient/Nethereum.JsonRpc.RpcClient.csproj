@@ -8,7 +8,11 @@
     <AssemblyName>Nethereum.JsonRpc.RpcClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.RpcClient</PackageId>
     <PackageTags>Json;RPC;Nethereum</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />

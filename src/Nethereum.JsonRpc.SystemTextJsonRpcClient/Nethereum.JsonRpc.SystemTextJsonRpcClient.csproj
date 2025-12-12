@@ -9,7 +9,11 @@
 		<AssemblyName>Nethereum.JsonRpc.SystemTextJsonRpcClient</AssemblyName>
 		<PackageId>Nethereum.JsonRpc.SystemTextJsonRpcClient</PackageId>
 		<PackageTags>Ethereum;JsonRpc;Nethereum;System.Text.Json;AOT;Client;Web3</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 	
 	<ItemGroup>
 		<ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />

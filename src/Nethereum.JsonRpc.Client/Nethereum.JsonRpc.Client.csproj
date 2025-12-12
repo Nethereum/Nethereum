@@ -8,7 +8,11 @@
     <AssemblyName>Nethereum.JsonRpc.Client</AssemblyName>
     <PackageId>Nethereum.JsonRpc.Client</PackageId>
     <PackageTags>Json;RPC</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
