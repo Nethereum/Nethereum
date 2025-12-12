@@ -8,8 +8,12 @@
     <AssemblyName>Nethereum.Signer.Ledger</AssemblyName>
     <PackageId>Nethereum.Signer.Ledger</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Ledger</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 	 <LangVersion>preview</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />

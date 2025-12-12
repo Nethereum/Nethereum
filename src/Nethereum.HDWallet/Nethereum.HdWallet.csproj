@@ -10,7 +10,11 @@
     <AssemblyName>Nethereum.HdWallet</AssemblyName>
     <PackageId>Nethereum.HdWallet</PackageId>
     <PackageTags>Nethereum;Ethereum;Blockchain;HdWallet</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
   <ItemGroup>
 	  <PackageReference Include="NBitcoin" Version="7.0.6" />
   </ItemGroup>

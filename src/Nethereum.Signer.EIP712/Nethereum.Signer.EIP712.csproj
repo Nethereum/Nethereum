@@ -8,7 +8,11 @@
         <AssemblyName>Nethereum.Signer.EIP712</AssemblyName>
         <PackageId>Nethereum.Signer.EIP712</PackageId>
         <PackageTags>Netherum;Ethereum;Blockchain;EIP-712;Signer</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />

@@ -8,8 +8,12 @@
     <AssemblyName>Nethereum.Signer.Bls.Herumi</AssemblyName>
     <PackageId>Nethereum.Signer.Bls.Herumi</PackageId>
     <PackageTags>Ethereum;BLS;Herumi;LightClient</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
   </ItemGroup>

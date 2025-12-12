@@ -9,8 +9,12 @@
     <AssemblyName>Nethereum.Signer.Trezor</AssemblyName>
     <PackageId>Nethereum.Signer.Trezor</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Trezor</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 	<LangVersion>latest</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />

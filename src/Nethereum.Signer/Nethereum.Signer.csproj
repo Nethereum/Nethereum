@@ -9,8 +9,11 @@
     <PackageId>Nethereum.Signer</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;Transactions;Signer</PackageTags>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />

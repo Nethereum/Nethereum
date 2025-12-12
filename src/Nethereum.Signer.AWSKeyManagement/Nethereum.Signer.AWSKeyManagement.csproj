@@ -8,7 +8,11 @@
     <AssemblyName>Nethereum.Signer.AWSKeyManagement</AssemblyName>
     <PackageId>Nethereum.Signer.AWSKeyManagement</PackageId>
     <PackageTags>Netherum;Ethereum;Blockchain;AWSKeyManagement</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />

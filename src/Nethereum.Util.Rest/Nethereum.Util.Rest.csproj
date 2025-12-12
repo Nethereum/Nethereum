@@ -10,7 +10,11 @@
 		<PackageId>Nethereum.Util.Rest</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Util;Rest Client</PackageTags>
 		<LangVersion>Latest</LangVersion>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.1' ">
 		<DefineConstants>$(DefineConstants);PCL</DefineConstants>
