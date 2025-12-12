@@ -619,7 +619,3 @@ This is faster and avoids post-signature recovery ID calculation.
 - [RFC 6979: Deterministic ECDSA](https://tools.ietf.org/html/rfc6979)
 - [BouncyCastle Documentation](https://www.bouncycastle.org/csharp/)
 - [Nethereum Documentation](http://docs.nethereum.com/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

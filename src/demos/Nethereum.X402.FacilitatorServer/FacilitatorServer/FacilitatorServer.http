@@ -1,0 +1,6 @@
+@FacilitatorServer_HostAddress = http://localhost:5122
+
+GET {{FacilitatorServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

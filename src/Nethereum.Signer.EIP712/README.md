@@ -605,10 +605,10 @@ public class Eip712TypedDataSigner
 Always use `SignTypedDataV4` for MetaMask compatibility:
 
 ```csharp
-// ✅ CORRECT - Works with MetaMask
+// CORRECT - Works with MetaMask
 string signature = signer.SignTypedDataV4(typedData, key);
 
-// ❌ WRONG - Old format, not recommended
+// WRONG - Old format, not recommended
 string signature = signer.SignTypedData(typedData, key);
 ```
 
@@ -617,7 +617,7 @@ string signature = signer.SignTypedData(typedData, key);
 Always include proper domain to prevent cross-app replay:
 
 ```csharp
-// ✅ CORRECT - Unique per app and chain
+// CORRECT - Unique per app and chain
 var domain = new Domain
 {
     Name = "My dApp",
@@ -626,7 +626,7 @@ var domain = new Domain
     VerifyingContract = "0x..." // REQUIRED
 };
 
-// ❌ WRONG - Missing chainId allows replay attacks
+// WRONG - Missing chainId allows replay attacks
 var domain = new Domain
 {
     Name = "My dApp",
@@ -639,11 +639,11 @@ var domain = new Domain
 Member order in type definitions must match exactly:
 
 ```csharp
-// ✅ CORRECT - Consistent order
+// CORRECT - Consistent order
 new MemberDescription { Name = "name", Type = "string" },
 new MemberDescription { Name = "wallet", Type = "address" }
 
-// ❌ WRONG - Different order produces different hash
+// WRONG - Different order produces different hash
 new MemberDescription { Name = "wallet", Type = "address" },
 new MemberDescription { Name = "name", Type = "string" }
 ```
@@ -670,7 +670,3 @@ string signature = signer.SignTypedDataV4(jsonString, key);
 - [ERC-2612: Permit Extension](https://eips.ethereum.org/EIPS/eip-2612)
 - [EIP-3009: Transfer With Authorization](https://eips.ethereum.org/EIPS/eip-3009)
 - [Nethereum Documentation](http://docs.nethereum.com/)
-
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.
