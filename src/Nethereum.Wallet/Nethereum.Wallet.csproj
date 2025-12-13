@@ -9,7 +9,8 @@
     <AssemblyName>Nethereum.Wallet</AssemblyName>
     <PackageId>Nethereum.Wallet</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;Accounts</PackageTags>
-    <LangVersion>latest</LangVersion> 
+    <LangVersion>latest</LangVersion>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">

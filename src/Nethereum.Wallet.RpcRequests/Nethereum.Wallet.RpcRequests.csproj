@@ -9,6 +9,7 @@
     <AssemblyName>Nethereum.Wallet.RpcRequests</AssemblyName>
     <PackageId>Nethereum.Wallet.RpcRequests</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;RPC</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Wallet\Nethereum.Wallet.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
