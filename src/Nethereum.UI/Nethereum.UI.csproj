@@ -9,11 +9,12 @@
 		<AssemblyName>Nethereum.UI</AssemblyName>
 		<PackageId>Nethereum.UI</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" Version="9.3.0" />
-
+		<None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<ItemGroup>

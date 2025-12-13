@@ -601,14 +601,14 @@ catch (Exception ex)
 **Best Practice:** Reuse HttpClient instances to avoid socket exhaustion.
 
 ```csharp
-// ❌ WRONG - creates new HttpClient for every request
+// WRONG - creates new HttpClient for every request
 public Task<T> GetDataAsync<T>(string url)
 {
     var helper = new RestHttpHelper(new HttpClient()); // Don't do this!
     return helper.GetAsync<T>(url);
 }
 
-// ✅ CORRECT - reuse HttpClient
+// CORRECT - reuse HttpClient
 private readonly IRestHttpHelper _restHelper;
 
 public MyService()

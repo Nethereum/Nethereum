@@ -10,6 +10,7 @@
 		<AssemblyName>Nethereum.MudBlazorComponents</AssemblyName>
 		<PackageId>Nethereum.MudBlazorComponents</PackageId>
 		<PackageTags>Netherum;EIP6963;Blazor;Metamask;Coinbase;Rabby;Ethereum;Blockchain</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 
@@ -28,6 +29,7 @@
 	  <ProjectReference Include="..\Nethereum.Mud\Nethereum.Mud.csproj" />
 	  <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
 	  <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	  <None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 

@@ -355,7 +355,7 @@ using Nethereum.Contracts;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using System.Numerics;
 
-// ⭐ CRITICAL: Enable System.Text.Json for ABI deserialization (required for AOT)
+// CRITICAL: Enable System.Text.Json for ABI deserialization (required for AOT)
 Nethereum.ABI.ABIDeserialisation.AbiDeserializationSettings.UseSystemTextJson = true;
 
 var client = new SimpleRpcClient("https://eth.drpc.org");
@@ -460,7 +460,7 @@ public RequestInterceptor? OverridingRequestInterceptor { get; set; }
 |---------|------------------------|------------------------|
 | **Target Framework** | .NET 9.0+ | .NET Standard 2.0+ |
 | **Serialization** | System.Text.Json | Newtonsoft.Json |
-| **AOT Support** | ✅ Yes (source generators) | ❌ No |
+| **AOT Support** | Yes (source generators) | No |
 | **Performance** | ~30% faster | Baseline |
 | **Memory Usage** | ~40% lower | Baseline |
 | **Binary Size (AOT)** | 10-15 MB | N/A |
@@ -470,18 +470,18 @@ public RequestInterceptor? OverridingRequestInterceptor { get; set; }
 ### When to Use This Package
 
 **Use SystemTextJsonRpcClient when:**
-- ✅ Building .NET 9.0+ applications
-- ✅ Using Native AOT compilation
-- ✅ Performance is critical (high throughput)
-- ✅ Cloud-native/serverless (Azure Functions, AWS Lambda)
-- ✅ Need Bearer token authentication
-- ✅ Want minimal memory footprint
+- Building .NET 9.0+ applications
+- Using Native AOT compilation
+- Performance is critical (high throughput)
+- Cloud-native/serverless (Azure Functions, AWS Lambda)
+- Need Bearer token authentication
+- Want minimal memory footprint
 
 **Use RpcClient (Newtonsoft.Json) when:**
-- ✅ Need .NET Standard 2.0 / .NET Framework support
-- ✅ Using older .NET versions (.NET Core 2.1, .NET 5, etc.)
-- ✅ Legacy codebases with Newtonsoft.Json
-- ✅ Need Unity support
+- Need .NET Standard 2.0 / .NET Framework support
+- Using older .NET versions (.NET Core 2.1, .NET 5, etc.)
+- Legacy codebases with Newtonsoft.Json
+- Need Unity support
 
 ### AOT Compilation Benefits
 

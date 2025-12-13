@@ -579,11 +579,11 @@ public static class SszContainerEncoding
 **DO NOT mix consensus and execution serialization formats:**
 
 ```csharp
-// ❌ WRONG - using RLP on consensus types
+// WRONG - using RLP on consensus types
 var header = new BeaconBlockHeader();
 byte[] rlpEncoded = header.EncodeRLP(); // Does not exist!
 
-// ✅ CORRECT - using SSZ on consensus types
+// CORRECT - using SSZ on consensus types
 byte[] sszEncoded = header.Encode();
 ```
 
@@ -592,11 +592,11 @@ byte[] sszEncoded = header.Encode();
 Many fields have **strict size requirements**:
 
 ```csharp
-// ❌ WRONG - incorrect sizes
+// WRONG - incorrect sizes
 header.ParentRoot = new byte[16]; // Must be 32!
 syncCommittee.Pubkeys.Add(new byte[64]); // Must be 48!
 
-// ✅ CORRECT
+// CORRECT
 header.ParentRoot = new byte[32];
 syncCommittee.Pubkeys.Add(new byte[48]);
 ```
@@ -606,10 +606,10 @@ syncCommittee.Pubkeys.Add(new byte[48]);
 Consensus layer uses **SHA-256**, not Keccak-256:
 
 ```csharp
-// ❌ WRONG - Keccak is for execution layer
+// WRONG - Keccak is for execution layer
 byte[] hash = Keccak256.Compute(header.Encode());
 
-// ✅ CORRECT - SHA-256 for consensus
+// CORRECT - SHA-256 for consensus
 byte[] root = header.HashTreeRoot();
 ```
 
@@ -618,13 +618,13 @@ byte[] root = header.HashTreeRoot();
 Sync committees **must have exactly 512 validators**:
 
 ```csharp
-// ❌ WRONG
+// WRONG
 var syncCommittee = new SyncCommittee
 {
     Pubkeys = new List<byte[]>(256) // Wrong size!
 };
 
-// ✅ CORRECT
+// CORRECT
 var syncCommittee = new SyncCommittee
 {
     Pubkeys = new List<byte[]>(512)

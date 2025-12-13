@@ -137,7 +137,7 @@ From a MUD config defining a Player table:
 // Auto-generated from mud.config.ts
 public partial class PlayerTableRecord : TableRecord<PlayerKey, PlayerValue>
 {
-    public PlayerTableRecord() : base("Player") { }
+    public PlayerTableRecord() : base("MyWorld", "Player") { }
 
     public class PlayerKey
     {
@@ -470,7 +470,7 @@ using Nethereum.Mud;
 // Singleton table record
 public class ConfigTableRecord : TableRecordSingleton<ConfigValue>
 {
-    public ConfigTableRecord() : base("Config") { }
+    public ConfigTableRecord() : base("MyWorld", "Config") { }
 
     public class ConfigValue
     {

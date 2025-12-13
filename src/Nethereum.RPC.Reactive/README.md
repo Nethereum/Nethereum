@@ -2,6 +2,8 @@
 
 **Nethereum.RPC.Reactive** provides Reactive Extensions (Rx.NET) support for Ethereum RPC operations. It enables reactive programming patterns for monitoring blockchain events, streaming blocks and transactions, and building real-time Ethereum applications using observables.
 
+> **Note**: This package builds on **Nethereum.JsonRpc.WebSocketStreamingClient**, which provides the core IObservable infrastructure for WebSocket subscriptions. For detailed documentation on Observable handlers and subscription internals, see the Nethereum.JsonRpc.WebSocketStreamingClient package.
+
 ## Features
 
 - **WebSocket Subscriptions** - eth_subscribe support for real-time events
@@ -249,14 +251,14 @@ public class BlockMonitor
             .Subscribe(
                 onNext: block =>
                 {
-                    Console.WriteLine($"⛏️  Block {block.Number.Value}");
+                    Console.WriteLine($"Block {block.Number.Value}");
                     Console.WriteLine($"   Hash: {block.BlockHash}");
                     Console.WriteLine($"   Time: {DateTimeOffset.FromUnixTimeSeconds((long)block.Timestamp.Value)}");
                     Console.WriteLine($"   Transactions: {block.TransactionHashes?.Length ?? 0}");
                 },
                 onError: error =>
                 {
-                    Console.WriteLine($"❌ Subscription error: {error.Message}");
+                    Console.WriteLine($"Subscription error: {error.Message}");
                 },
                 onCompleted: () =>
                 {
@@ -268,7 +270,7 @@ public class BlockMonitor
         subscription.GetSubscribeResponseAsObservable()
             .Subscribe(subscriptionId =>
             {
-                Console.WriteLine($"✅ Subscribed with ID: {subscriptionId}");
+                Console.WriteLine($"Subscribed with ID: {subscriptionId}");
             });
 
         await client.StartAsync();
@@ -277,7 +279,7 @@ public class BlockMonitor
 
     private async void Client_Error(object sender, Exception ex)
     {
-        Console.WriteLine($"⚠️  WebSocket error: {ex.Message}");
+        Console.WriteLine($"WebSocket error: {ex.Message}");
         Console.WriteLine("Attempting to reconnect...");
 
         // Stop and restart
@@ -328,7 +330,7 @@ var ethBalanceRequest = new EthGetBalance().BuildRequest(
 // Subscribe to balance updates
 balanceSubscription.GetSubscriptionDataResponsesAsObservable()
     .Subscribe(
-        newBalance => Console.WriteLine($"💰 New Balance: {Web3.Convert.FromWei(newBalance.Value)} ETH"),
+        newBalance => Console.WriteLine($"New Balance: {Web3.Convert.FromWei(newBalance.Value)} ETH"),
         onError => Console.WriteLine($"Error: {onError.Message}")
     );
 
@@ -376,7 +378,7 @@ web3.Eth.GetBlocksWithTransactionHashes()
     .Where(block => block.BaseFeePerGas?.Value > 100000000000) // > 100 gwei
     .Subscribe(block =>
     {
-        Console.WriteLine($"⚠️  High base fee alert! Block {block.Number}: {block.BaseFeePerGas.Value} wei");
+        Console.WriteLine($"High base fee alert! Block {block.Number}: {block.BaseFeePerGas.Value} wei");
     });
 ```
 
@@ -396,7 +398,7 @@ web3.Eth.GetBlocksWithTransactions()
     .Subscribe(tx =>
     {
         var ethValue = Web3.Convert.FromWei(tx.Value.Value);
-        Console.WriteLine($"🐋 Whale transfer: {ethValue} ETH");
+        Console.WriteLine($"Whale transfer: {ethValue} ETH");
         Console.WriteLine($"   From: {tx.From}");
         Console.WriteLine($"   To: {tx.To}");
         Console.WriteLine($"   Tx: {tx.TransactionHash}");
@@ -420,7 +422,7 @@ subscription.GetSubscriptionDataResponsesAsObservable()
     .Buffer(TimeSpan.FromSeconds(5)) // Group pending txs every 5 seconds
     .Subscribe(async txHashes =>
     {
-        Console.WriteLine($"📬 {txHashes.Count} pending transactions in last 5 seconds");
+        Console.WriteLine($"{txHashes.Count} pending transactions in last 5 seconds");
 
         // Get details for first pending transaction
         if (txHashes.Count > 0)
@@ -479,7 +481,7 @@ subscription.GetSubscriptionDataResponsesAsObservable()
             var decoded = Event<TransferEventDTO>.DecodeEvent(log);
             var amount = Web3.Convert.FromWei(decoded.Event.Value, 6); // USDC has 6 decimals
 
-            Console.WriteLine($"💵 USDC Transfer: {amount} USDC");
+            Console.WriteLine($"USDC Transfer: {amount} USDC");
             Console.WriteLine($"   From: {decoded.Event.From}");
             Console.WriteLine($"   To: {decoded.Event.To}");
             Console.WriteLine($"   Block: {log.BlockNumber.Value}");
@@ -649,7 +651,7 @@ var largeBlockTransfers = web3.Eth.GetBlocksWithTransactions()
 
 largeBlockTransfers.Subscribe(result =>
 {
-    Console.WriteLine($"🚨 Suspicious activity from {result.From}");
+    Console.WriteLine($"Suspicious activity from {result.From}");
     Console.WriteLine($"   {result.Transactions.Count} large transfers in 1 minute");
 });
 ```
@@ -781,6 +783,7 @@ Blocks are skipped in the stream
 
 ## Related Packages
 
+- **Nethereum.JsonRpc.WebSocketStreamingClient** - Core IObservable infrastructure for WebSocket subscriptions (foundation for this package)
 - **Nethereum.RPC** - Core RPC functionality
 - **Nethereum.JsonRpc.WebSocketClient** - WebSocket client for subscriptions
 - **Nethereum.Web3** - High-level Web3 API

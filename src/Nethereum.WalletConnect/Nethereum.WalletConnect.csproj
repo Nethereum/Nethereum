@@ -11,6 +11,7 @@
 		<PackageId>Nethereum.WalletConnect</PackageId>
 		<PackageTags>Netherum;WalletConnect;Ethereum;Blockchain</PackageTags>
 		<LangVersion>preview</LangVersion>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -19,8 +20,8 @@
 		<PackageReference Include="Newtonsoft.Json" Version="[13.0.3,14)" />
 		<PackageReference Include="WalletConnect.Core" Version="2.3.0" />
 		<PackageReference Include="WalletConnect.Sign" Version="2.3.0" />
+		<None Include="README.md" Pack="true" PackagePath="" />
 
-		
 	</ItemGroup>
 
 	

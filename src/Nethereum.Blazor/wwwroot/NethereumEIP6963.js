@@ -117,14 +117,14 @@ window.NethereumEIP6963Interop = {
                 throw new Error("No wallet selected. Call selectWallet() first.");
             }
 
-            log(`🔄 Sending request: ${JSON.stringify(parsedMessage)}`);
+            log(`Sending request: ${JSON.stringify(parsedMessage)}`);
 
             const response = await this.selectedEthereumProvider.request(parsedMessage);
-            log(`✅ Response received: ${JSON.stringify(response)}`);
+            log(`Response received: ${JSON.stringify(response)}`);
 
             return { jsonrpc: "2.0", result: response, id: parsedMessage.id, error: null };
         } catch (e) {
-            log(`❌ Error in Ethereum request: ${e.message}`);
+            log(`Error in Ethereum request: ${e.message}`);
 
             return {
                 jsonrpc: "2.0",

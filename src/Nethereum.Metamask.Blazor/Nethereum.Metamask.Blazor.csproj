@@ -10,6 +10,7 @@
 		<AssemblyName>Nethereum.Metamask.Blazor</AssemblyName>
 		<PackageId>Nethereum.Metamask.Blazor</PackageId>
 		<PackageTags>Netherum;Metamask;Ethereum;Blockchain</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 
@@ -17,6 +18,7 @@
 	  <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="6.0.5" />
 	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.2" />
 	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.2" PrivateAssets="all" />
+	  <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">

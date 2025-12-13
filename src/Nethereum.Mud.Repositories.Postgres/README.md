@@ -24,8 +24,6 @@ dotnet add package Nethereum.Mud.Repositories.Postgres
 - **Npgsql.EntityFrameworkCore.PostgreSQL** 8.0+
 - **EFCore.NamingConventions** 8.0+
 - Nethereum.Mud.Repositories.EntityFramework
-- Nethereum.Mud.Contracts
-- Nethereum.Mud
 
 ## Key Concepts
 
@@ -518,10 +516,10 @@ MUD ABI types are mapped to PostgreSQL types:
 
 **1. Use bytea for keys and binary data:**
 ```csharp
-// ✅ Fast: Binary comparison
+// Fast: Binary comparison
 r.TableIdBytes == tableIdBytes
 
-// ❌ Slow: String comparison
+// Slow: String comparison
 r.TableId == tableIdHex
 ```
 

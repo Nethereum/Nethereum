@@ -24,7 +24,6 @@ dotnet add package Nethereum.Mud.Repositories.EntityFramework
 - **Microsoft.EntityFrameworkCore.Relational** 8.0+
 - Nethereum.Mud
 - Nethereum.Mud.Contracts
-- Nethereum.BlockchainProcessing
 
 ## Key Concepts
 

@@ -8,10 +8,12 @@
 		<AssemblyName>Nethereum.Optimism</AssemblyName>
 		<PackageId>Nethereum.Optimism</PackageId>
 		<PackageTags>Netherum;Ethereum;Optimism;L2;Blockchain;Crypto 2.0</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+		<None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
