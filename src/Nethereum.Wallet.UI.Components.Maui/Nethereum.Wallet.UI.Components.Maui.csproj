@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Wallet.UI.Components.Maui</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Maui</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;MAUI;UI</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -40,5 +41,9 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>
