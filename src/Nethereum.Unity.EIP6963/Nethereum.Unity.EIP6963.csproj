@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Unity.EIP6963</AssemblyName>
     <PackageId>Nethereum.Unity.EIP6963</PackageId>
     <PackageTags>Netherum;Unity3d;Unity;EIP6963;Metamask;Coinbase;Rabby;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 	<LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -26,6 +27,7 @@
     <None Update="NethereumEIP6963.jslib">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
