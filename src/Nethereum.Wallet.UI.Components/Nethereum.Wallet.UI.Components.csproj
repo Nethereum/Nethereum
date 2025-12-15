@@ -9,6 +9,7 @@
     <AssemblyName>Nethereum.Wallet.UI.Components</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;UI;Components</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
     <InternalsVisibleTo>Nethereum.Wallet.UI.Components.Avalonia</InternalsVisibleTo>
   </PropertyGroup>
@@ -44,5 +45,9 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>
