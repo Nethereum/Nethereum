@@ -9,6 +9,7 @@
     <AssemblyName>Nethereum.Wallet.UI.Components.Blazor.Trezor</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Blazor.Trezor</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;Blazor;Trezor</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -32,5 +33,9 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>
