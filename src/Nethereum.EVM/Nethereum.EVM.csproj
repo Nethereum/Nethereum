@@ -8,6 +8,7 @@
 	<AssemblyName>Nethereum.EVM</AssemblyName>
 	<PackageId>Nethereum.EVM</PackageId>
 	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<LangVersion>9.0</LangVersion>
 </PropertyGroup>
 
@@ -16,6 +17,10 @@
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

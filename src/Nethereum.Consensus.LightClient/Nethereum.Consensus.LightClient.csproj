@@ -8,6 +8,7 @@
     <AssemblyName>Nethereum.Consensus.LightClient</AssemblyName>
     <PackageId>Nethereum.Consensus.LightClient</PackageId>
     <PackageTags>Ethereum;Consensus;LightClient;BLS</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Beaconchain\Nethereum.Beaconchain.csproj" />
@@ -20,5 +21,8 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>

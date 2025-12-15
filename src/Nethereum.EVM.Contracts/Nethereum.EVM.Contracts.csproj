@@ -8,6 +8,7 @@
 	<AssemblyName>Nethereum.EVM.Contracts</AssemblyName>
 	<PackageId>Nethereum.EVM.Contracts</PackageId>
 	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
 </PropertyGroup>
 <ItemGroup>
   <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
@@ -16,6 +17,10 @@
   <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
   <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
   <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+</ItemGroup>
+
+<ItemGroup>
+  <None Include="README.md" Pack="true" PackagePath="" />
 </ItemGroup>
 
 </Project>
