@@ -18,8 +18,25 @@ namespace Nethereum.Consensus.Ssz
         public const int SyncCommitteeLength = (SyncCommitteeSize * PubKeyLength) + PubKeyLength; // 512 pubkeys + aggregate
         public const int LogsBloomLength = 256;
         public const int CurrentSyncCommitteeBranchLength = 5;
-        public const int FinalityBranchLength = 6;
+        public const int FinalityBranchLength = 7;
         public const int ExecutionBranchLength = 4;
+
+        // Generalized indices
+        // Deneb: ExecutionPayloadGIndex = 25, FinalizedRootGIndex = 105
+        // Electra: FinalizedRootGIndex = 169 (BeaconState gained new fields)
+        public const int ExecutionPayloadGIndex = 25;
+        public const int FinalizedRootGIndexDeneb = 105;
+        public const int FinalizedRootGIndexElectra = 169;
+
+        // Computed from generalized indices for proof verification
+        // Execution branch: depth = floorlog2(25) = 4, index = 25 - 16 = 9
+        public const int ExecutionBranchDepth = 4;
+        public const int ExecutionBranchIndex = 9;
+
+        // Finality branch (Electra - current mainnet):
+        // depth = floorlog2(169) = 7, index = 169 - 128 = 41
+        public const int FinalityBranchDepth = 7;
+        public const int FinalityBranchIndex = 41;
 
         public static int BranchByteLength(int depth) => depth * RootLength;
 
