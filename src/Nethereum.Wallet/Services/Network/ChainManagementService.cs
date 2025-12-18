@@ -232,6 +232,9 @@ namespace Nethereum.Wallet.Services.Network
             }
 
             var defaults = await _strategy.GetDefaultChainsAsync().ConfigureAwait(false);
+            foreach (var d in defaults)
+                ApplyKnownChainDefaults(d);
+
             await _storageService.SaveUserNetworksAsync(defaults).ConfigureAwait(false);
 
             foreach (var d in defaults)
@@ -259,8 +262,17 @@ namespace Nethereum.Wallet.Services.Network
 
         private ChainFeature CacheAndClone(ChainFeature feature)
         {
+            ApplyKnownChainDefaults(feature);
             _chainCache[feature.ChainId] = feature;
             return CloneChainFeature(feature);
+        }
+
+        private static void ApplyKnownChainDefaults(ChainFeature feature)
+        {
+            if (ChainCategories.SupportsLightClient(feature.ChainId))
+            {
+                feature.SupportsLightClient = true;
+            }
         }
 
         private static ChainFeature CloneChainFeature(ChainFeature original) =>
@@ -281,7 +293,11 @@ namespace Nethereum.Wallet.Services.Network
                 SupportEIP1559 = original.SupportEIP1559,
                 HttpRpcs = original.HttpRpcs?.ToList() ?? new List<string>(),
                 WsRpcs = original.WsRpcs?.ToList() ?? new List<string>(),
-                Explorers = original.Explorers?.ToList() ?? new List<string>()
+                Explorers = original.Explorers?.ToList() ?? new List<string>(),
+                SupportsLightClient = original.SupportsLightClient,
+                LightClientEnabled = original.LightClientEnabled,
+                BeaconChainApiUrl = original.BeaconChainApiUrl,
+                ExecutionRpcUrlForProofs = original.ExecutionRpcUrlForProofs
             };
 
         private static List<string> MergeDistinct(List<string>? existing, List<string>? incoming)

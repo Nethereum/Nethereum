@@ -14,6 +14,7 @@ using System.Numerics;
 using static Nethereum.Wallet.UI.Components.WalletOverview.WalletOverviewLocalizer;
 using Nethereum.Wallet.Services.Transactions;
 using Nethereum.Wallet.Services.Network;
+using Nethereum.Wallet.Services.VerifiedState;
 
 namespace Nethereum.Wallet.UI.Components.WalletOverview
 {
@@ -26,6 +27,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         private readonly IComponentLocalizer<WalletOverviewViewModel> _localizer;
         private readonly IPendingTransactionService _pendingTransactionService;
         private readonly IChainManagementService _chainManagementService;
+        private readonly IVerifiedBalanceService? _verifiedBalanceService;
 
         [ObservableProperty]
         private IWalletAccount? _selectedAccount;
@@ -47,6 +49,55 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
 
         [ObservableProperty]
         private bool _hasFiatBalance;
+
+        [ObservableProperty]
+        private bool _isLightClientEnabled;
+
+        [ObservableProperty]
+        private BigInteger _verifiedBalanceWei = BigInteger.Zero;
+
+        [ObservableProperty]
+        private bool _isVerifiedBalanceLoading;
+
+        [ObservableProperty]
+        private bool _hasVerifiedBalance;
+
+        [ObservableProperty]
+        private bool _verifiedBalanceError;
+
+        [ObservableProperty]
+        private string? _verifiedBalanceErrorMessage;
+
+        [ObservableProperty]
+        private ulong _verifiedBlockNumber;
+
+        [ObservableProperty]
+        private bool _isOptimisticMode;
+
+        [ObservableProperty]
+        private bool _isRpcLimitation;
+
+        public string FormattedVerifiedBalance
+        {
+            get
+            {
+                if (VerifiedBalanceWei == BigInteger.Zero)
+                    return "0";
+
+                var etherValue = UnitConversion.Convert.FromWei(VerifiedBalanceWei);
+
+                if (etherValue >= 1000)
+                    return etherValue.ToString("N2");
+                else if (etherValue >= 1)
+                    return etherValue.ToString("F4").TrimEnd('0').TrimEnd('.');
+                else if (etherValue >= 0.001m)
+                    return etherValue.ToString("F6").TrimEnd('0').TrimEnd('.');
+                else
+                    return etherValue.ToString("F8").TrimEnd('0').TrimEnd('.');
+            }
+        }
+
+        public bool BalancesMatch => !HasVerifiedBalance || BalanceWei == VerifiedBalanceWei;
 
         public string FormattedBalance
         {
@@ -112,7 +163,8 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             NethereumWalletHostProvider walletHostProvider,
             IComponentLocalizer<WalletOverviewViewModel> localizer,
             IPendingTransactionService pendingTransactionService,
-            IChainManagementService chainManagementService)
+            IChainManagementService chainManagementService,
+            IVerifiedBalanceService? verifiedBalanceService = null)
         {
             _walletVaultService = walletVaultService;
             _notificationService = notificationService;
@@ -121,6 +173,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             _localizer = localizer;
             _pendingTransactionService = pendingTransactionService;
             _chainManagementService = chainManagementService;
+            _verifiedBalanceService = verifiedBalanceService;
 
             _walletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
             _walletHostProvider.NetworkChanged += OnNetworkChangedAsync;
@@ -134,12 +187,13 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             try
             {
                 ChainId = _walletHostProvider.SelectedNetworkChainId;
-               
+                await CheckLightClientEnabledAsync();
 
                 await LoadAccountsAsync();
                 if (SelectedAccount != null)
                 {
                     await LoadAccountBalanceAsync();
+                    await LoadVerifiedBalanceAsync();
                     await LoadPendingTransactionsAsync();
                     await LoadRecentTransactionsAsync();
                 }
@@ -155,10 +209,12 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             IsRefreshing = true;
             try
             {
+                await CheckLightClientEnabledAsync();
                 await LoadAccountsAsync();
                 if (SelectedAccount != null)
                 {
                     await LoadAccountBalanceAsync();
+                    await LoadVerifiedBalanceAsync();
                     await LoadPendingTransactionsAsync();
                     await LoadRecentTransactionsAsync();
                 }
@@ -195,6 +251,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             }
 
             await LoadAccountBalanceAsync();
+            await LoadVerifiedBalanceAsync();
             await LoadPendingTransactionsAsync();
             await LoadRecentTransactionsAsync();
 
@@ -282,6 +339,75 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             }
         }
 
+        private async Task CheckLightClientEnabledAsync()
+        {
+            try
+            {
+                var chainFeature = await _chainManagementService.GetChainAsync(new BigInteger(ChainId));
+                IsLightClientEnabled = chainFeature?.SupportsLightClient == true &&
+                                       chainFeature?.LightClientEnabled == true;
+            }
+            catch
+            {
+                IsLightClientEnabled = false;
+            }
+        }
+
+        [RelayCommand]
+        public async Task LoadVerifiedBalanceAsync()
+        {
+            if (_verifiedBalanceService == null || SelectedAccount == null)
+            {
+                HasVerifiedBalance = false;
+                return;
+            }
+
+            if (!IsLightClientEnabled)
+            {
+                HasVerifiedBalance = false;
+                return;
+            }
+
+            IsVerifiedBalanceLoading = true;
+            VerifiedBalanceError = false;
+            VerifiedBalanceErrorMessage = null;
+            IsRpcLimitation = false;
+
+            try
+            {
+                var result = await _verifiedBalanceService.GetBalanceAsync(SelectedAccount.Address, new BigInteger(ChainId));
+                if (result.IsVerified)
+                {
+                    VerifiedBalanceWei = result.Balance;
+                    VerifiedBlockNumber = result.BlockNumber;
+                    IsOptimisticMode = result.Mode == VerifiedBalanceMode.Optimistic;
+                    HasVerifiedBalance = true;
+                    VerifiedBalanceError = false;
+                    IsRpcLimitation = false;
+                    OnPropertyChanged(nameof(FormattedVerifiedBalance));
+                    OnPropertyChanged(nameof(BalancesMatch));
+                }
+                else
+                {
+                    IsRpcLimitation = result.IsRpcLimitation;
+                    VerifiedBalanceErrorMessage = result.Error ?? _localizer.GetString(Keys.VerificationFailed);
+                    VerifiedBalanceError = true;
+                    HasVerifiedBalance = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                VerifiedBalanceErrorMessage = ex.Message;
+                VerifiedBalanceError = true;
+                HasVerifiedBalance = false;
+                IsRpcLimitation = false;
+            }
+            finally
+            {
+                IsVerifiedBalanceLoading = false;
+            }
+        }
+
         [RelayCommand]
         public async Task LoadPendingTransactionsAsync()
         {
@@ -345,10 +471,11 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                     }
                     
                     // Refresh balance for confirmed or failed transactions
-                    if (e.NewStatus == TransactionStatus.Confirmed || 
+                    if (e.NewStatus == TransactionStatus.Confirmed ||
                         e.NewStatus == TransactionStatus.Failed)
                     {
                         await LoadAccountBalanceAsync();
+                        await LoadVerifiedBalanceAsync();
                         await LoadRecentTransactionsAsync();
                     }
                 }
@@ -376,6 +503,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             if (SelectedAccount != null)
             {
                 await LoadAccountBalanceAsync();
+                await LoadVerifiedBalanceAsync();
                 await LoadPendingTransactionsAsync();
             }
         }
@@ -383,12 +511,12 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         private async Task OnNetworkChangedAsync(long chainId)
         {
             ChainId = chainId;
-            
-           
-           
+            await CheckLightClientEnabledAsync();
+
             if (SelectedAccount != null)
             {
                 await LoadAccountBalanceAsync();
+                await LoadVerifiedBalanceAsync();
                 await LoadPendingTransactionsAsync();
             }
         }

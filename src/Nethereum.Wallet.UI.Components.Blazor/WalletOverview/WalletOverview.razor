@@ -131,6 +131,22 @@ else
                                         @Localizer.GetString(WalletOverviewLocalizer.Keys.BalanceLoadError)
                                     </MudAlert>
                                 }
+
+                                @if (ViewModel.IsLightClientEnabled)
+                                {
+                                    <MudDivider Class="my-2" />
+                                    <VerifiedBalanceDisplay
+                                        IsLoading="@ViewModel.IsVerifiedBalanceLoading"
+                                        HasBalance="@ViewModel.HasVerifiedBalance"
+                                        HasError="@ViewModel.VerifiedBalanceError"
+                                        ErrorMessage="@ViewModel.VerifiedBalanceErrorMessage"
+                                        FormattedBalance="@ViewModel.FormattedVerifiedBalance"
+                                        CurrencySymbol="@ViewModel.CurrencySymbol"
+                                        BlockNumber="@ViewModel.VerifiedBlockNumber"
+                                        BalancesMatch="@ViewModel.BalancesMatch"
+                                        IsOptimisticMode="@ViewModel.IsOptimisticMode"
+                                        IsRpcLimitation="@ViewModel.IsRpcLimitation" />
+                                }
                             </MudStack>
                         </MudCard>
                     </WalletContentSection>
@@ -242,6 +258,7 @@ else
     {
         await ViewModel.LoadPendingTransactionsCommand.ExecuteAsync(null);
         await ViewModel.LoadAccountBalanceCommand.ExecuteAsync(null);
+        await ViewModel.LoadVerifiedBalanceCommand.ExecuteAsync(null);
     }
     
     private async Task HandleCopyHash(TransactionInfo transaction)
@@ -322,6 +339,7 @@ else
                     if (ViewModel.SelectedAccount != null)
                     {
                         await ViewModel.LoadAccountBalanceAsync();
+                        await ViewModel.LoadVerifiedBalanceAsync();
                         await ViewModel.LoadPendingTransactionsAsync();
                     }
                 });

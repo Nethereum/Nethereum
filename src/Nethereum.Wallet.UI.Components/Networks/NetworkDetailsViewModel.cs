@@ -31,6 +31,14 @@ namespace Nethereum.Wallet.UI.Components.Networks
         [ObservableProperty] private string? _successMessage;
         [ObservableProperty] private ViewSection _currentSection = ViewSection.Overview;
         [ObservableProperty] private NetworkConfiguration _networkConfig;
+
+        [ObservableProperty] private bool _supportsLightClient;
+        [ObservableProperty] private bool _lightClientEnabled;
+        [ObservableProperty] private string? _beaconChainApiUrl;
+        [ObservableProperty] private string? _executionRpcUrlForProofs;
+        [ObservableProperty] private bool _isTestingBeaconConnection;
+        [ObservableProperty] private string? _beaconTestResult;
+        [ObservableProperty] private bool _beaconTestSuccess;
         
         public bool IsActive => _walletHostProvider.SelectedNetworkChainId == (long)(Network?.ChainId ?? 0);
         
@@ -86,6 +94,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                     await LoadRpcConfigurationAsync();
                     await LoadRpcEndpointsAsync();
                     NetworkConfig.LoadFromChainFeature(Network);
+                    LoadLightClientSettings();
                 }
                 else
                 {
@@ -626,6 +635,96 @@ namespace Nethereum.Wallet.UI.Components.Networks
             catch (Exception ex)
             {
                 ErrorMessage = $"Failed to remove network: {ex.Message}";
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        #endregion
+
+        #region Light Client Configuration
+
+        private void LoadLightClientSettings()
+        {
+            if (Network == null) return;
+
+            SupportsLightClient = Network.SupportsLightClient;
+            LightClientEnabled = Network.LightClientEnabled;
+            BeaconChainApiUrl = Network.BeaconChainApiUrl;
+            ExecutionRpcUrlForProofs = Network.ExecutionRpcUrlForProofs;
+            BeaconTestResult = null;
+            BeaconTestSuccess = false;
+        }
+
+        [RelayCommand]
+        private async Task TestBeaconConnectionAsync()
+        {
+            if (string.IsNullOrEmpty(BeaconChainApiUrl))
+            {
+                BeaconTestSuccess = false;
+                BeaconTestResult = "Beacon API URL required";
+                return;
+            }
+
+            IsTestingBeaconConnection = true;
+            BeaconTestResult = null;
+
+            try
+            {
+                using var httpClient = new HttpClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
+                var response = await httpClient.GetAsync($"{BeaconChainApiUrl.TrimEnd('/')}/eth/v1/node/health");
+
+                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.PartialContent)
+                {
+                    BeaconTestSuccess = true;
+                    BeaconTestResult = "Connected";
+                }
+                else
+                {
+                    BeaconTestSuccess = false;
+                    BeaconTestResult = $"Failed: HTTP {(int)response.StatusCode}";
+                }
+            }
+            catch (Exception ex)
+            {
+                BeaconTestSuccess = false;
+                BeaconTestResult = $"Failed: {ex.Message}";
+            }
+            finally
+            {
+                IsTestingBeaconConnection = false;
+            }
+        }
+
+        [RelayCommand]
+        private async Task SaveLightClientConfigAsync()
+        {
+            if (Network == null)
+            {
+                ErrorMessage = "No network selected";
+                return;
+            }
+
+            try
+            {
+                IsLoading = true;
+                ErrorMessage = null;
+
+                Network.SupportsLightClient = SupportsLightClient;
+                Network.LightClientEnabled = LightClientEnabled;
+                Network.BeaconChainApiUrl = BeaconChainApiUrl;
+                Network.ExecutionRpcUrlForProofs = ExecutionRpcUrlForProofs;
+
+                await _chainManagementService.UpdateChainAsync(Network);
+
+                SuccessMessage = "Light client settings saved successfully";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to save light client settings: {ex.Message}";
             }
             finally
             {

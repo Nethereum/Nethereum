@@ -125,6 +125,17 @@ namespace Nethereum.Wallet.UI.Components.Networks
             public const string FailedToUpdateNetwork = "FailedToUpdateNetwork";
             public const string RpcEndpointAddedSuccessfully = "RpcEndpointAddedSuccessfully";
             public const string FailedToAddRpcEndpoint = "FailedToAddRpcEndpoint";
+
+            public const string LightClientVerification = "LightClientVerification";
+            public const string LightClientDescription = "LightClientDescription";
+            public const string LightClientNotSupported = "LightClientNotSupported";
+            public const string ChainSupportsLightClient = "ChainSupportsLightClient";
+            public const string EnableVerifiedBalance = "EnableVerifiedBalance";
+            public const string BeaconChainApiUrl = "BeaconChainApiUrl";
+            public const string BeaconChainApiUrlHelper = "BeaconChainApiUrlHelper";
+            public const string ExecutionRpcForProofs = "ExecutionRpcForProofs";
+            public const string ExecutionRpcForProofsHelper = "ExecutionRpcForProofsHelper";
+            public const string TestBeaconConnection = "TestBeaconConnection";
         }
 
         public NetworkDetailsLocalizer(IWalletLocalizationService localizationService) 
@@ -253,7 +264,18 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.NetworkUpdatedSuccessfully] = "Network updated successfully",
                 [Keys.FailedToUpdateNetwork] = "Failed to update network: {0}",
                 [Keys.RpcEndpointAddedSuccessfully] = "RPC endpoint added successfully",
-                [Keys.FailedToAddRpcEndpoint] = "Failed to add RPC endpoint: {0}"
+                [Keys.FailedToAddRpcEndpoint] = "Failed to add RPC endpoint: {0}",
+
+                [Keys.LightClientVerification] = "Light Client Verification",
+                [Keys.LightClientDescription] = "Enable trustless balance verification using beacon chain light client proofs",
+                [Keys.LightClientNotSupported] = "Light client is not enabled for this chain. Enable if this chain has a beacon chain API.",
+                [Keys.ChainSupportsLightClient] = "Chain Supports Light Client",
+                [Keys.EnableVerifiedBalance] = "Enable Verified Balance",
+                [Keys.BeaconChainApiUrl] = "Beacon Chain API URL",
+                [Keys.BeaconChainApiUrlHelper] = "e.g. https://ethereum-beacon-api.publicnode.com",
+                [Keys.ExecutionRpcForProofs] = "Execution RPC for Proofs (optional)",
+                [Keys.ExecutionRpcForProofsHelper] = "Uses primary RPC if empty",
+                [Keys.TestBeaconConnection] = "Test Beacon Connection"
             });
             
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -375,7 +397,18 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.NetworkUpdatedSuccessfully] = "Red actualizada exitosamente",
                 [Keys.FailedToUpdateNetwork] = "Error al actualizar la red: {0}",
                 [Keys.RpcEndpointAddedSuccessfully] = "Endpoint RPC agregado exitosamente",
-                [Keys.FailedToAddRpcEndpoint] = "Error al agregar endpoint RPC: {0}"
+                [Keys.FailedToAddRpcEndpoint] = "Error al agregar endpoint RPC: {0}",
+
+                [Keys.LightClientVerification] = "Verificación de Cliente Ligero",
+                [Keys.LightClientDescription] = "Habilitar verificación de saldo sin confianza usando pruebas de cliente ligero de beacon chain",
+                [Keys.LightClientNotSupported] = "El cliente ligero no está habilitado para esta cadena. Habilítelo si esta cadena tiene una API de beacon chain.",
+                [Keys.ChainSupportsLightClient] = "La Cadena Soporta Cliente Ligero",
+                [Keys.EnableVerifiedBalance] = "Habilitar Saldo Verificado",
+                [Keys.BeaconChainApiUrl] = "URL de API de Beacon Chain",
+                [Keys.BeaconChainApiUrlHelper] = "ej. https://ethereum-beacon-api.publicnode.com",
+                [Keys.ExecutionRpcForProofs] = "RPC de Ejecución para Pruebas (opcional)",
+                [Keys.ExecutionRpcForProofsHelper] = "Usa RPC primario si está vacío",
+                [Keys.TestBeaconConnection] = "Probar Conexión Beacon"
             });
         }
     }

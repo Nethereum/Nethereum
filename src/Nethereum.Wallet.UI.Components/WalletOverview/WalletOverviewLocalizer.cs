@@ -39,6 +39,14 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             public const string NoExplorerConfigured = "NoExplorerConfigured";
             public const string FailedToOpenExplorer = "FailedToOpenExplorer";
             public const string TransactionHashCopied = "TransactionHashCopied";
+            public const string VerifiedBalance = "VerifiedBalance";
+            public const string FinalizedBlock = "FinalizedBlock";
+            public const string LightClientNotConfigured = "LightClientNotConfigured";
+            public const string VerificationFailed = "VerificationFailed";
+            public const string BalancesMismatchWarning = "BalancesMismatchWarning";
+            public const string VerifiedBalanceLoading = "VerifiedBalanceLoading";
+            public const string OptimisticBlock = "OptimisticBlock";
+            public const string RpcLimitationMessage = "RpcLimitationMessage";
         }
 
         public WalletOverviewLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -80,7 +88,15 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                 [Keys.BackButton] = "Back",
                 [Keys.NoExplorerConfigured] = "No block explorer configured for this network",
                 [Keys.FailedToOpenExplorer] = "Failed to open block explorer",
-                [Keys.TransactionHashCopied] = "Transaction hash copied to clipboard"
+                [Keys.TransactionHashCopied] = "Transaction hash copied to clipboard",
+                [Keys.VerifiedBalance] = "Verified Balance",
+                [Keys.FinalizedBlock] = "Finalized Block",
+                [Keys.LightClientNotConfigured] = "Light client not configured",
+                [Keys.VerificationFailed] = "Verification failed",
+                [Keys.BalancesMismatchWarning] = "Warning: Verified balance differs from RPC balance",
+                [Keys.VerifiedBalanceLoading] = "Verifying balance...",
+                [Keys.OptimisticBlock] = "Optimistic Block",
+                [Keys.RpcLimitationMessage] = "RPC node does not support historical proofs. Use an archive node for verified balances."
             });
             
             // Spanish (Spain) translations
@@ -117,7 +133,15 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                 [Keys.BackButton] = "Atrás",
                 [Keys.NoExplorerConfigured] = "No hay explorador de bloques configurado para esta red",
                 [Keys.FailedToOpenExplorer] = "Error al abrir el explorador de bloques",
-                [Keys.TransactionHashCopied] = "Hash de transacción copiado al portapapeles"
+                [Keys.TransactionHashCopied] = "Hash de transacción copiado al portapapeles",
+                [Keys.VerifiedBalance] = "Saldo Verificado",
+                [Keys.FinalizedBlock] = "Bloque Finalizado",
+                [Keys.LightClientNotConfigured] = "Cliente ligero no configurado",
+                [Keys.VerificationFailed] = "Verificación fallida",
+                [Keys.BalancesMismatchWarning] = "Advertencia: El saldo verificado difiere del saldo RPC",
+                [Keys.VerifiedBalanceLoading] = "Verificando saldo...",
+                [Keys.OptimisticBlock] = "Bloque Optimista",
+                [Keys.RpcLimitationMessage] = "El nodo RPC no admite pruebas históricas. Use un nodo de archivo para saldos verificados."
             });
         }
     }

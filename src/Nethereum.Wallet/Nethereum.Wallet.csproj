@@ -15,13 +15,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+    <ProjectReference Include="..\Nethereum.Beaconchain\Nethereum.Beaconchain.csproj" />
+    <ProjectReference Include="..\Nethereum.ChainStateVerification\Nethereum.ChainStateVerification.csproj" />
     <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj" />
+    <ProjectReference Include="..\Nethereum.Consensus.Ssz\Nethereum.Consensus.Ssz.csproj" />
     <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
     <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
     <ProjectReference Include="..\Nethereum.GnosisSafe\Nethereum.GnosisSafe.csproj" />
     <ProjectReference Include="..\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
     <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>

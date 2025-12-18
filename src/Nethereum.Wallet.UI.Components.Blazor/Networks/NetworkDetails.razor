@@ -76,7 +76,7 @@
             
             <WalletBarActionButton Icon="@Icons.Material.Filled.Save"
                                    Text="@Localizer.GetString(Keys.Save)"
-                                   OnClick="@(() => ViewModel.SaveRpcConfigurationCommand.ExecuteAsync(null))"
+                                   OnClick="@HandleSaveRpcAndLightClientConfig"
                                    Class="wallet-button-primary"
                                    Disabled="@ViewModel.IsLoading" />
         }
@@ -176,7 +176,7 @@
                                                    TextKey="@Keys.NetworkStatus"
                                                    Localizer="@Localizer" />
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
-                                            <MudChip T="string" Size="Size.Small" 
+                                            <MudChip T="string" Size="Size.Small"
                                                     Color="@(ViewModel.IsActive ? Color.Success : Color.Default)">
                                                 @(ViewModel.IsActive ? Localizer.GetString(Keys.Active) : Localizer.GetString(Keys.Inactive))
                                             </MudChip>
@@ -569,7 +569,7 @@
                                             @Localizer.GetString(Keys.AddRpcEndpointsDescription)
                                         </MudText>
                                     </div>
-                                    
+
                                     <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
                                         <WalletTextField @bind-Value="@ViewModel.NetworkConfig.NewRpcUrl"
                                                        Label="@Localizer.GetString(Keys.RpcUrl)"
@@ -578,13 +578,77 @@
                                                        Placeholder="e.g., https://mainnet.infura.io/v3/your-project-id"
                                                        Disabled="false"
                                                        Style="flex-grow: 1;" />
-                                        
+
                                         <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                                     Color="Color.Primary" 
+                                                     Color="Color.Primary"
                                                      Size="Size.Large"
                                                      OnClick="@(() => ViewModel.AddCustomRpcCommand.ExecuteAsync(null))"
                                                      Title="@Localizer.GetString(Keys.AddRpcEndpoint)" />
                                     </MudStack>
+                                </MudStack>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Light Client Verification Section -->
+                        <MudCard Class="wallet-card">
+                            <MudCardContent>
+                                <MudStack Spacing="3">
+                                    <div>
+                                        <MudText Typo="Typo.h6">@Localizer.GetString(Keys.LightClientVerification)</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @Localizer.GetString(Keys.LightClientDescription)
+                                        </MudText>
+                                    </div>
+
+                                    @if (!ViewModel.SupportsLightClient)
+                                    {
+                                        <MudAlert Severity="Severity.Warning" Dense="true">
+                                            @Localizer.GetString(Keys.LightClientNotSupported)
+                                        </MudAlert>
+                                        <MudSwitch @bind-Value="@ViewModel.SupportsLightClient"
+                                                   Label="@Localizer.GetString(Keys.ChainSupportsLightClient)"
+                                                   Color="Color.Warning" />
+                                    }
+                                    else
+                                    {
+                                        <MudSwitch @bind-Value="@ViewModel.LightClientEnabled"
+                                                   Label="@Localizer.GetString(Keys.EnableVerifiedBalance)"
+                                                   Color="Color.Primary" />
+
+                                        @if (ViewModel.LightClientEnabled)
+                                        {
+                                            <MudTextField @bind-Value="@ViewModel.BeaconChainApiUrl"
+                                                          Label="@Localizer.GetString(Keys.BeaconChainApiUrl)"
+                                                          Required="true"
+                                                          Variant="Variant.Filled"
+                                                          HelperText="@Localizer.GetString(Keys.BeaconChainApiUrlHelper)" />
+
+                                            <MudTextField @bind-Value="@ViewModel.ExecutionRpcUrlForProofs"
+                                                          Label="@Localizer.GetString(Keys.ExecutionRpcForProofs)"
+                                                          Variant="Variant.Filled"
+                                                          HelperText="@Localizer.GetString(Keys.ExecutionRpcForProofsHelper)" />
+
+                                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                                <MudButton Variant="Variant.Outlined"
+                                                           StartIcon="@Icons.Material.Filled.Cable"
+                                                           OnClick="@(() => ViewModel.TestBeaconConnectionCommand.ExecuteAsync(null))"
+                                                           Disabled="@ViewModel.IsTestingBeaconConnection">
+                                                    @if (ViewModel.IsTestingBeaconConnection)
+                                                    {
+                                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                                    }
+                                                    @Localizer.GetString(Keys.TestBeaconConnection)
+                                                </MudButton>
+                                                @if (!string.IsNullOrEmpty(ViewModel.BeaconTestResult))
+                                                {
+                                                    <MudChip T="string" Size="Size.Small"
+                                                            Color="@(ViewModel.BeaconTestSuccess ? Color.Success : Color.Error)">
+                                                        @ViewModel.BeaconTestResult
+                                                    </MudChip>
+                                                }
+                                            </MudStack>
+                                        }
+                                    }
                                 </MudStack>
                             </MudCardContent>
                         </MudCard>
@@ -886,6 +950,15 @@
                 await TestRpcEndpoint(rpc);
             }
         }
+    }
+
+    private async Task HandleSaveRpcAndLightClientConfig()
+    {
+        // Save RPC configuration
+        await ViewModel.SaveRpcConfigurationCommand.ExecuteAsync(null);
+
+        // Save light client configuration
+        await ViewModel.SaveLightClientConfigCommand.ExecuteAsync(null);
     }
 
     private async Task HandleRemoveFailedRpcs()

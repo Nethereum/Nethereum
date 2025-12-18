@@ -5,6 +5,7 @@ using Nethereum.Wallet.UI;
 using Nethereum.Wallet.Storage;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.Services;
+using Nethereum.Wallet.Services.VerifiedState;
 using System;
 
 namespace Nethereum.Wallet.Hosting
@@ -44,8 +45,11 @@ namespace Nethereum.Wallet.Hosting
             // Expose as generic host provider for polymorphic resolution (MetaMask / WalletConnect etc.)
             services.TryAdd(new ServiceDescriptor(typeof(IEthereumHostProvider), sp => sp.GetRequiredService<NethereumWalletHostProvider>(), lifetime));
 
-            // Expose as IWalletContext 
+            // Expose as IWalletContext
             services.TryAdd(new ServiceDescriptor(typeof(IWalletContext), sp => sp.GetRequiredService<NethereumWalletHostProvider>(), lifetime));
+
+            // Add verified state services for light client balance verification
+            services.AddWalletVerifiedStateServices();
 
             return services;
         }

@@ -1,0 +1,87 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.WalletOverview
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@inject IComponentLocalizer<WalletOverviewViewModel> Localizer
+
+<MudStack Spacing="1" AlignItems="AlignItems.Center">
+
+    @if (IsLoading)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                @Localizer.GetString(WalletOverviewLocalizer.Keys.VerifiedBalanceLoading)
+            </MudText>
+        </MudStack>
+    }
+    else if (HasError && IsRpcLimitation)
+    {
+        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.Info"
+                     Color="Color.Warning" Size="Size.Small" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localizer.GetString(WalletOverviewLocalizer.Keys.VerifiedBalance)
+            </MudText>
+        </MudStack>
+        <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Text" Class="mt-1">
+            @Localizer.GetString(WalletOverviewLocalizer.Keys.RpcLimitationMessage)
+        </MudAlert>
+    }
+    else if (HasError)
+    {
+        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser"
+                     Color="@GetStatusColor()" Size="Size.Small" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localizer.GetString(WalletOverviewLocalizer.Keys.VerifiedBalance)
+            </MudText>
+        </MudStack>
+        <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Text" Class="mt-1" Style="word-break: break-word; white-space: normal;">
+            @ErrorMessage
+        </MudAlert>
+    }
+    else if (HasBalance)
+    {
+        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser"
+                     Color="@GetStatusColor()" Size="Size.Small" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localizer.GetString(WalletOverviewLocalizer.Keys.VerifiedBalance)
+            </MudText>
+        </MudStack>
+        <MudStack Row="false" Spacing="1" AlignItems="AlignItems.Baseline">
+            <MudText Typo="Typo.h6" Style="font-weight: 600;">@FormattedBalance @CurrencySymbol</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Tertiary">
+                (@Localizer.GetString(IsOptimisticMode ? WalletOverviewLocalizer.Keys.OptimisticBlock : WalletOverviewLocalizer.Keys.FinalizedBlock) @BlockNumber.ToString("N0"))
+            </MudText>
+        </MudStack>
+        @if (!BalancesMatch)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Text" Class="mt-1">
+                @Localizer.GetString(WalletOverviewLocalizer.Keys.BalancesMismatchWarning)
+            </MudAlert>
+        }
+    }
+</MudStack>
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool HasBalance { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string FormattedBalance { get; set; } = "0";
+    [Parameter] public string CurrencySymbol { get; set; } = "ETH";
+    [Parameter] public ulong BlockNumber { get; set; }
+    [Parameter] public bool BalancesMatch { get; set; } = true;
+    [Parameter] public bool IsOptimisticMode { get; set; }
+    [Parameter] public bool IsRpcLimitation { get; set; }
+
+    private Color GetStatusColor()
+    {
+        if (IsLoading) return Color.Default;
+        if (HasError) return Color.Error;
+        if (HasBalance && BalancesMatch) return Color.Success;
+        if (HasBalance && !BalancesMatch) return Color.Warning;
+        return Color.Default;
+    }
+}
