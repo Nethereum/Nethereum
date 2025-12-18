@@ -16,6 +16,7 @@
     <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
     <ProjectReference Include="..\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
