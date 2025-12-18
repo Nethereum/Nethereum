@@ -119,6 +119,11 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
+            if (!VerifyExecutionBranch(update.AttestedHeader))
+            {
+                return false;
+            }
+
             _state.OptimisticHeader = update.AttestedHeader.Beacon;
             _state.OptimisticExecutionPayload = update.AttestedHeader.Execution;
             _state.OptimisticSlot = update.AttestedHeader.Beacon.Slot;
@@ -150,6 +155,21 @@ namespace Nethereum.Consensus.LightClient
             }
 
             if (!VerifyFinalitySyncAggregate(update))
+            {
+                return false;
+            }
+
+            if (!VerifyExecutionBranch(update.AttestedHeader))
+            {
+                return false;
+            }
+
+            if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+            {
+                return false;
+            }
+
+            if (!VerifyExecutionBranch(update.FinalizedHeader))
             {
                 return false;
             }
@@ -203,6 +223,21 @@ namespace Nethereum.Consensus.LightClient
             }
 
             if (!VerifySyncAggregate(update))
+            {
+                return false;
+            }
+
+            if (!VerifyExecutionBranch(update.AttestedHeader))
+            {
+                return false;
+            }
+
+            if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+            {
+                return false;
+            }
+
+            if (!VerifyExecutionBranch(update.FinalizedHeader))
             {
                 return false;
             }
@@ -388,6 +423,44 @@ namespace Nethereum.Consensus.LightClient
             };
 
             return SszMerkleizer.Merkleize(fieldRoots);
+        }
+
+        private static bool VerifyExecutionBranch(LightClientHeader header)
+        {
+            if (header?.Beacon == null || header.Execution == null || header.ExecutionBranch == null)
+                return false;
+
+            if (header.ExecutionBranch.Count < SszBasicTypes.ExecutionBranchDepth)
+                return false;
+
+            var executionRoot = header.Execution.HashTreeRoot();
+
+            return SszMerkleizer.VerifyProof(
+                executionRoot,
+                header.ExecutionBranch,
+                SszBasicTypes.ExecutionBranchDepth,
+                SszBasicTypes.ExecutionBranchIndex,
+                header.Beacon.BodyRoot
+            );
+        }
+
+        private static bool VerifyFinalityBranch(LightClientHeader attestedHeader, LightClientHeader finalizedHeader, IList<byte[]> finalityBranch)
+        {
+            if (attestedHeader?.Beacon == null || finalizedHeader?.Beacon == null || finalityBranch == null)
+                return false;
+
+            if (finalityBranch.Count < SszBasicTypes.FinalityBranchDepth)
+                return false;
+
+            var finalizedRoot = finalizedHeader.Beacon.HashTreeRoot();
+
+            return SszMerkleizer.VerifyProof(
+                finalizedRoot,
+                finalityBranch,
+                SszBasicTypes.FinalityBranchDepth,
+                SszBasicTypes.FinalityBranchIndex,
+                attestedHeader.Beacon.StateRoot
+            );
         }
     }
 }

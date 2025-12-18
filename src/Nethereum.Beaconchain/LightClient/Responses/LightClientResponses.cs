@@ -431,4 +431,38 @@ namespace Nethereum.Beaconchain.LightClient.Responses
 #endif
         public string SyncCommitteeSignature { get; set; }
     }
+
+    public class StateForkResponse
+    {
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("data")]
+#else
+        [JsonProperty("data")]
+#endif
+        public StateForkData Data { get; set; }
+    }
+
+    public class StateForkData
+    {
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("previous_version")]
+#else
+        [JsonProperty("previous_version")]
+#endif
+        public string PreviousVersion { get; set; }
+
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("current_version")]
+#else
+        [JsonProperty("current_version")]
+#endif
+        public string CurrentVersion { get; set; }
+
+#if NET8_0_OR_GREATER
+        [JsonPropertyName("epoch")]
+#else
+        [JsonProperty("epoch")]
+#endif
+        public string Epoch { get; set; }
+    }
 }

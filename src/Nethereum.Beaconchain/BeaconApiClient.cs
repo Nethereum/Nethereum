@@ -1,5 +1,7 @@
 using System.Net.Http;
+using System.Threading.Tasks;
 using Nethereum.Beaconchain.LightClient;
+using Nethereum.Beaconchain.LightClient.Responses;
 using Nethereum.Util.Rest;
 
 namespace Nethereum.Beaconchain
@@ -26,5 +28,11 @@ namespace Nethereum.Beaconchain
         }
 
         public ILightClientApi LightClient => _lightClient;
+
+        public async Task<StateForkResponse> GetStateForkAsync(string stateId = "head")
+        {
+            var url = $"{BaseUrl}/eth/v1/beacon/states/{stateId}/fork";
+            return await _restHelper.GetAsync<StateForkResponse>(url).ConfigureAwait(false);
+        }
     }
 }
