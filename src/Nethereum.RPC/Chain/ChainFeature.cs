@@ -27,6 +27,11 @@ namespace Nethereum.RPC.Chain
         public List<string> WsRpcs { get; set; } = new List<string>();
         public List<string> Explorers { get; set; } = new List<string>();
 
+        public bool SupportsLightClient { get; set; } = false;
+        public bool LightClientEnabled { get; set; } = false;
+        public string BeaconChainApiUrl { get; set; }
+        public string ExecutionRpcUrlForProofs { get; set; }
+
         public AddEthereumChainParameter ToAddEthereumChainParameter()
         {
             return new AddEthereumChainParameter()
@@ -133,6 +138,16 @@ namespace Nethereum.RPC.Chain
             new BigInteger(42220),    // Celo
             new BigInteger(11297108109), // Palm Network
         };
+
+        /// <summary>
+        /// Known chain IDs that support beacon chain light client protocol
+        /// </summary>
+        public static readonly BigInteger[] LightClientChainIds =
+        {
+            new BigInteger(1),        // Ethereum Mainnet
+            new BigInteger(11155111), // Sepolia
+            new BigInteger(17000),    // Holesky
+        };
         
         /// <summary>
         /// Checks if a chain ID represents a testnet
@@ -149,8 +164,14 @@ namespace Nethereum.RPC.Chain
         /// <summary>
         /// Checks if a chain ID represents a mainnet (not testnet)
         /// </summary>
-        public static bool IsMainnet(BigInteger chainId) => 
+        public static bool IsMainnet(BigInteger chainId) =>
             !IsTestnet(chainId);
+
+        /// <summary>
+        /// Checks if a chain ID supports the beacon chain light client protocol
+        /// </summary>
+        public static bool SupportsLightClient(BigInteger chainId) =>
+            LightClientChainIds.Contains(chainId);
     }
 
 }
