@@ -18,9 +18,8 @@
     <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="runtimes\**\*"
-          CopyToOutputDirectory="PreserveNewest"
-          Pack="true" />
+    <None Include="runtimes\**\*" Pack="true" PackagePath="runtimes" />
+    <None Include="buildTransitive\**\*" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>

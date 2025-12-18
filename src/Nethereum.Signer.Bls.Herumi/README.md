@@ -199,6 +199,205 @@ catch (InvalidOperationException ex)
 - Light client implementations
 - Beacon chain verification tools
 
+## Developer Guide: Native Library Packaging
+
+This package uses a **local NuGet package** for native library distribution. This ensures native assets are correctly deployed on all platforms (Windows, Linux, Android, etc.).
+
+### Why Local Package?
+
+Native libraries in `runtimes/<rid>/native/` only work correctly when distributed via NuGet package. Using `ProjectReference` does not properly copy native assets to consuming Android/iOS apps.
+
+### Package Workflow
+
+**After ANY change to native libraries**, you must re-pack:
+
+```bash
+# From repo root
+dotnet pack src/Nethereum.Signer.Bls.Herumi/Nethereum.Signer.Bls.Herumi.csproj -o nativeartifacts -c Release
+```
+
+This creates/updates `nativeartifacts/Nethereum.Signer.Bls.Herumi.{version}.nupkg`.
+
+### Local Feed Configuration
+
+The repo has a `NuGet.config` at root that includes the local feed:
+
+```xml
+<configuration>
+  <packageSources>
+    <add key="local" value="./nativeartifacts" />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>
+```
+
+### Dependency Chain
+
+```
+Any consumer app
+    → Nethereum.Wallet
+        → Nethereum.Signer.Bls.Herumi (PackageReference)
+            → runtimes/win-x64/native/bls_eth.dll
+            → runtimes/linux-x64/native/libbls_eth.so
+            → runtimes/android-arm64/native/libbls_eth.so
+```
+
+`Nethereum.Wallet` references this package via `PackageReference` (not `ProjectReference`) so native assets flow correctly.
+
+### Native Library Locations
+
+```
+runtimes/
+├── win-x64/native/
+│   ├── bls_eth.dll
+│   └── mcl.dll
+├── linux-x64/native/
+│   └── libbls_eth.so
+└── android-arm64/native/
+    └── libbls_eth.so
+```
+
+### Building Native Libraries
+
+#### Windows (x64)
+
+Pre-built from Herumi releases or build with MSVC. Requires both `bls_eth.dll` and `mcl.dll`.
+
+#### Linux (x64)
+
+Build in WSL or Linux:
+```bash
+cd external/bls
+make BLS_ETH=1
+cp lib/libbls_eth.so /path/to/runtimes/linux-x64/native/
+```
+
+#### Android (ARM64) - Recommended Method
+
+Use pre-compiled static libraries from [bls-eth-go-binary](https://github.com/herumi/bls-eth-go-binary) and create a shared library:
+
+```bash
+# Step 1: Clone the release branch (contains pre-compiled static libs)
+cd /tmp
+git clone -b release https://github.com/herumi/bls-eth-go-binary
+cd bls-eth-go-binary
+
+# Step 2: Verify static library exists
+ls -la bls/lib/android/arm64-v8a/
+# Expected: libbls384_256.a
+
+# Step 3: Set up Android NDK
+export ANDROID_NDK_HOME=/path/to/android-ndk  # e.g., ~/Android/Sdk/ndk/26.1.10909125
+export CXX=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++
+
+# Step 4: Create shared library from static library
+# Use -static-libstdc++ to avoid libc++_shared.so dependency
+$CXX -shared -static-libstdc++ -o libbls_eth.so \
+    -Wl,--whole-archive bls/lib/android/arm64-v8a/libbls384_256.a -Wl,--no-whole-archive
+
+# Step 5: Verify no C++ runtime dependency
+readelf -d libbls_eth.so | grep NEEDED
+# Should only show: libm.so, libdl.so, libc.so (NO libc++_shared.so)
+
+# Step 6: Copy to runtimes folder
+cp libbls_eth.so /path/to/Nethereum/src/Nethereum.Signer.Bls.Herumi/runtimes/android-arm64/native/
+```
+
+**Why use pre-compiled static libs?**
+- Built by Herumi with correct `BLS_ETH=1` configuration
+- `COMPILED_TIME_VAR` (246) is baked in at compile time
+- The `--whole-archive` flag ensures all symbols are included
+
+#### Android (ARM64) - Build from Source (Alternative)
+
+If pre-compiled doesn't work, build from source. **Important:** Do NOT define `MCL_FP_BIT` or `MCL_FR_BIT` on command line - let headers set them via `bn_c384_256.h`.
+
+```bash
+export CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+export CXX=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++
+export AR=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+
+cd external/bls
+
+MCL_FLAGS="-O3 -DNDEBUG -DMCL_DONT_USE_XBYAK -DMCL_VINT_FIXED_BUFFER -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_VINT_64BIT_PORTABLE -DMCL_FP_GENERIC -DMCL_SIZEOF_UNIT=8 -fPIC"
+
+mkdir -p obj lib mcl/obj mcl/lib
+
+$CXX -c $MCL_FLAGS -I mcl/include -o mcl/obj/fp.o mcl/src/fp.cpp
+$CXX -c $MCL_FLAGS -I mcl/include -o mcl/obj/bn_c384_256.o mcl/src/bn_c384_256.cpp
+$CXX -c -DBLS_ETH=1 -DBLS_DLL_EXPORT -fvisibility=default $MCL_FLAGS -I include -I mcl/include -o obj/bls_c384_256.o src/bls_c384_256.cpp
+$CXX -shared -static-libstdc++ -o lib/libbls_eth.so obj/bls_c384_256.o mcl/obj/fp.o mcl/obj/bn_c384_256.o
+
+cp lib/libbls_eth.so /path/to/runtimes/android-arm64/native/
+```
+
+### Checklist: After Native Library Changes
+
+1. [ ] Copy new `.dll`/`.so` files to appropriate `runtimes/<rid>/native/` folder
+2. [ ] Run `dotnet pack src/Nethereum.Signer.Bls.Herumi -o nativeartifacts -c Release`
+3. [ ] Verify package contents: `unzip -l nativeartifacts/Nethereum.Signer.Bls.Herumi.*.nupkg | grep runtimes`
+4. [ ] Run `dotnet restore` in consuming projects
+5. [ ] Test on target platforms
+
+### Android Native Library Loading Architecture
+
+On Android, .NET's `DllImport("bls_eth")` doesn't automatically resolve to `libbls_eth.so` like it does on Linux/Windows. This package uses a `NativeLibrary.SetDllImportResolver` to handle cross-platform library resolution.
+
+**How it works:**
+
+1. **`BlsNativeLibraryResolver.cs`** - Registered via `[ModuleInitializer]` when the assembly loads
+2. Intercepts DllImport calls for `"bls_eth"`
+3. Resolves to platform-specific names:
+   - Android: `libbls_eth.so` or `libbls_eth`
+   - Windows: `bls_eth.dll`
+   - Linux: `libbls_eth.so`
+   - macOS: `libbls_eth.dylib`
+
+**Key files:**
+
+```
+Nethereum.Signer.Bls.Herumi/
+├── BlsNativeLibraryResolver.cs    # [ModuleInitializer] - auto-registers resolver
+├── bls_eth.cs                     # DllImport declarations (uses "bls_eth")
+├── HerumiNativeBindings.cs        # High-level API
+├── buildTransitive/
+│   └── Nethereum.Signer.Bls.Herumi.targets  # Registers AndroidNativeLibrary
+└── runtimes/
+    ├── android-arm64/native/libbls_eth.so
+    ├── linux-x64/native/libbls_eth.so
+    └── win-x64/native/bls_eth.dll, mcl.dll
+```
+
+**The `buildTransitive/*.targets` file** ensures Android includes the native library in the APK:
+
+```xml
+<Project>
+  <ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+    <AndroidNativeLibrary Include="...\runtimes\android-arm64\native\libbls_eth.so" Abi="arm64-v8a" />
+  </ItemGroup>
+</Project>
+```
+
+This places `libbls_eth.so` at `lib/arm64-v8a/libbls_eth.so` in the APK.
+
+### Troubleshooting
+
+**"Library not found" on Android:**
+- Verify `libbls_eth.so` is in package under `runtimes/android-arm64/native/`
+- Check APK contains `lib/arm64-v8a/libbls_eth.so`: `unzip -l app.apk | grep libbls_eth`
+- Ensure `buildTransitive/*.targets` is included in the NuGet package
+
+**"blsInit failed" / COMPILED_TIME_VAR mismatch:**
+- Library must be built with `BLS_ETH=1` flag
+- C# expects `COMPILED_TIME_VAR=246` (BLS_ETH mode)
+- If built without BLS_ETH, it expects 46 and will fail
+- Use pre-compiled static libs from `bls-eth-go-binary` to ensure correct build
+
+**Package not found during restore:**
+- Ensure `NuGet.config` exists at repo root with local feed
+- Run pack command first to create the package
+- Clear NuGet cache if needed: `rm -rf ~/.nuget/packages/nethereum.signer.bls.herumi`
+
 ## Additional Resources
 
 - [Herumi BLS Library](https://github.com/herumi/bls)

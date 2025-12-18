@@ -1,0 +1,5 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+    <AndroidNativeLibrary Include="$(MSBuildThisFileDirectory)..\runtimes\android-arm64\native\libbls_eth.so" Abi="arm64-v8a" />
+  </ItemGroup>
+</Project>
