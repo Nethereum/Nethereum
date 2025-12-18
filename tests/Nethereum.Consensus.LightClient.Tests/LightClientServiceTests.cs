@@ -16,6 +16,77 @@ namespace Nethereum.Consensus.LightClient.Tests
     public class LightClientServiceTests
     {
         [Fact]
+        public void MerkleProof_ExecutionBranch_VerifiesCorrectly()
+        {
+            var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+
+            var executionRoot = update.AttestedHeader.Execution.HashTreeRoot();
+            var result = SszMerkleizer.VerifyProof(
+                executionRoot,
+                update.AttestedHeader.ExecutionBranch,
+                SszBasicTypes.ExecutionBranchDepth,
+                SszBasicTypes.ExecutionBranchIndex,
+                update.AttestedHeader.Beacon.BodyRoot);
+
+            Assert.True(result, "Execution branch verification failed for AttestedHeader");
+        }
+
+        [Fact]
+        public void MerkleProof_FinalityBranch_VerifiesCorrectly()
+        {
+            var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+
+            var finalizedRoot = update.FinalizedHeader.Beacon.HashTreeRoot();
+            var result = SszMerkleizer.VerifyProof(
+                finalizedRoot,
+                update.FinalityBranch,
+                SszBasicTypes.FinalityBranchDepth,
+                SszBasicTypes.FinalityBranchIndex,
+                update.AttestedHeader.Beacon.StateRoot);
+
+            Assert.True(result, "Finality branch verification failed");
+        }
+
+        [Fact]
+        public void MerkleProof_FinalizedHeaderExecutionBranch_VerifiesCorrectly()
+        {
+            var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+
+            var executionRoot = update.FinalizedHeader.Execution.HashTreeRoot();
+            var result = SszMerkleizer.VerifyProof(
+                executionRoot,
+                update.FinalizedHeader.ExecutionBranch,
+                SszBasicTypes.ExecutionBranchDepth,
+                SszBasicTypes.ExecutionBranchIndex,
+                update.FinalizedHeader.Beacon.BodyRoot);
+
+            Assert.True(result, "Execution branch verification failed for FinalizedHeader");
+        }
+
+        [Fact]
+        public void MerkleProof_RoundTrip_PreservesVerification()
+        {
+            var originalUpdate = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+            var response = TestDataFactory.CreateUpdateResponse(originalUpdate);
+            var roundTrippedUpdate = LightClientResponseMapper.ToDomain(response);
+
+            var originalExecRoot = originalUpdate.AttestedHeader.Execution.HashTreeRoot();
+            var roundTrippedExecRoot = roundTrippedUpdate.AttestedHeader.Execution.HashTreeRoot();
+            Assert.Equal(originalExecRoot, roundTrippedExecRoot);
+
+            Assert.Equal(originalUpdate.AttestedHeader.Beacon.BodyRoot, roundTrippedUpdate.AttestedHeader.Beacon.BodyRoot);
+
+            var result = SszMerkleizer.VerifyProof(
+                roundTrippedExecRoot,
+                roundTrippedUpdate.AttestedHeader.ExecutionBranch,
+                SszBasicTypes.ExecutionBranchDepth,
+                SszBasicTypes.ExecutionBranchIndex,
+                roundTrippedUpdate.AttestedHeader.Beacon.BodyRoot);
+
+            Assert.True(result, "Execution branch verification failed after round-trip");
+        }
+
+        [Fact]
         public async Task InitializeAsync_PopulatesStateAndPersists()
         {
             var bootstrap = TestDataFactory.CreateBootstrap(slot: 1, blockNumber: 100);
@@ -135,13 +206,19 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             public static LightClientUpdate CreateUpdate(ulong slot, ulong blockNumber)
             {
+                var finalizedHeader = CreateHeader(slot, blockNumber);
+                var finalizedRoot = finalizedHeader.Beacon.HashTreeRoot();
+                var finalityBranch = CreateValidFinalityBranch(finalizedRoot, out var stateRoot);
+
+                var attestedHeader = CreateHeaderWithStateRoot(slot, blockNumber, stateRoot);
+
                 return new LightClientUpdate
                 {
-                    AttestedHeader = CreateHeader(slot, blockNumber),
-                    FinalizedHeader = CreateHeader(slot, blockNumber),
+                    AttestedHeader = attestedHeader,
+                    FinalizedHeader = finalizedHeader,
                     SyncAggregate = CreateSyncAggregate(),
                     NextSyncCommittee = CreateSyncCommittee(),
-                    FinalityBranch = CreateBranch(SszBasicTypes.FinalityBranchLength),
+                    FinalityBranch = finalityBranch,
                     NextSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength),
                     SignatureSlot = slot + 1
                 };
@@ -257,38 +334,159 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             private static LightClientHeader CreateHeader(ulong slot, ulong blockNumber)
             {
+                var execution = new ExecutionPayloadHeader
+                {
+                    ParentHash = Enumerable.Repeat((byte)0x04, SszBasicTypes.RootLength).ToArray(),
+                    FeeRecipient = Enumerable.Repeat((byte)0x05, 20).ToArray(),
+                    StateRoot = Enumerable.Repeat((byte)0x06, SszBasicTypes.RootLength).ToArray(),
+                    ReceiptsRoot = Enumerable.Repeat((byte)0x07, SszBasicTypes.RootLength).ToArray(),
+                    LogsBloom = Enumerable.Repeat((byte)0x08, SszBasicTypes.LogsBloomLength).ToArray(),
+                    PrevRandao = Enumerable.Repeat((byte)0x09, SszBasicTypes.RootLength).ToArray(),
+                    BlockNumber = blockNumber,
+                    GasLimit = 30_000_000,
+                    GasUsed = 1_000_000,
+                    Timestamp = 123456,
+                    ExtraData = new byte[] { 0xAA, 0xBB },
+                    BaseFeePerGas = new byte[SszBasicTypes.RootLength],
+                    BlockHash = Enumerable.Repeat((byte)0x11, SszBasicTypes.RootLength).ToArray(),
+                    TransactionsRoot = Enumerable.Repeat((byte)0x12, SszBasicTypes.RootLength).ToArray(),
+                    WithdrawalsRoot = Enumerable.Repeat((byte)0x13, SszBasicTypes.RootLength).ToArray(),
+                    BlobGasUsed = 0,
+                    ExcessBlobGas = 0
+                };
+
+                var executionRoot = execution.HashTreeRoot();
+                var executionBranch = CreateValidExecutionBranch(executionRoot, out var bodyRoot);
+
+                var beacon = new BeaconBlockHeader
+                {
+                    Slot = slot,
+                    ProposerIndex = 1,
+                    ParentRoot = Enumerable.Repeat((byte)0x01, SszBasicTypes.RootLength).ToArray(),
+                    StateRoot = Enumerable.Repeat((byte)0x02, SszBasicTypes.RootLength).ToArray(),
+                    BodyRoot = bodyRoot
+                };
+
                 return new LightClientHeader
                 {
-                    Beacon = new BeaconBlockHeader
-                    {
-                        Slot = slot,
-                        ProposerIndex = 1,
-                        ParentRoot = Enumerable.Repeat((byte)0x01, SszBasicTypes.RootLength).ToArray(),
-                        StateRoot = Enumerable.Repeat((byte)0x02, SszBasicTypes.RootLength).ToArray(),
-                        BodyRoot = Enumerable.Repeat((byte)0x03, SszBasicTypes.RootLength).ToArray()
-                    },
-                    Execution = new ExecutionPayloadHeader
-                    {
-                        ParentHash = Enumerable.Repeat((byte)0x04, SszBasicTypes.RootLength).ToArray(),
-                        FeeRecipient = Enumerable.Repeat((byte)0x05, 20).ToArray(),
-                        StateRoot = Enumerable.Repeat((byte)0x06, SszBasicTypes.RootLength).ToArray(),
-                        ReceiptsRoot = Enumerable.Repeat((byte)0x07, SszBasicTypes.RootLength).ToArray(),
-                        LogsBloom = Enumerable.Repeat((byte)0x08, SszBasicTypes.LogsBloomLength).ToArray(),
-                        PrevRandao = Enumerable.Repeat((byte)0x09, SszBasicTypes.RootLength).ToArray(),
-                        BlockNumber = blockNumber,
-                        GasLimit = 30_000_000,
-                        GasUsed = 1_000_000,
-                        Timestamp = 123456,
-                        ExtraData = new byte[] { 0xAA, 0xBB },
-                        BaseFeePerGas = Enumerable.Repeat((byte)0x10, SszBasicTypes.RootLength).ToArray(),
-                        BlockHash = Enumerable.Repeat((byte)0x11, SszBasicTypes.RootLength).ToArray(),
-                        TransactionsRoot = Enumerable.Repeat((byte)0x12, SszBasicTypes.RootLength).ToArray(),
-                        WithdrawalsRoot = Enumerable.Repeat((byte)0x13, SszBasicTypes.RootLength).ToArray(),
-                        BlobGasUsed = 0,
-                        ExcessBlobGas = 0
-                    },
-                    ExecutionBranch = CreateBranch(SszBasicTypes.ExecutionBranchLength)
+                    Beacon = beacon,
+                    Execution = execution,
+                    ExecutionBranch = executionBranch
                 };
+            }
+
+            private static List<byte[]> CreateValidExecutionBranch(byte[] executionRoot, out byte[] bodyRoot)
+            {
+                var branch = new List<byte[]>(SszBasicTypes.ExecutionBranchDepth);
+
+                for (int i = 0; i < SszBasicTypes.ExecutionBranchDepth; i++)
+                {
+                    var sibling = new byte[SszBasicTypes.RootLength];
+                    for (int j = 0; j < sibling.Length; j++)
+                    {
+                        sibling[j] = (byte)(0x50 + i);
+                    }
+                    branch.Add(sibling);
+                }
+
+                var current = executionRoot;
+                for (int i = 0; i < SszBasicTypes.ExecutionBranchDepth; i++)
+                {
+                    if ((SszBasicTypes.ExecutionBranchIndex & (1 << i)) != 0)
+                    {
+                        current = HashPair(branch[i], current);
+                    }
+                    else
+                    {
+                        current = HashPair(current, branch[i]);
+                    }
+                }
+
+                bodyRoot = current;
+                return branch;
+            }
+
+            private static List<byte[]> CreateValidFinalityBranch(byte[] finalizedRoot, out byte[] stateRoot)
+            {
+                var branch = new List<byte[]>(SszBasicTypes.FinalityBranchDepth);
+
+                for (int i = 0; i < SszBasicTypes.FinalityBranchDepth; i++)
+                {
+                    var sibling = new byte[SszBasicTypes.RootLength];
+                    for (int j = 0; j < sibling.Length; j++)
+                    {
+                        sibling[j] = (byte)(0x60 + i);
+                    }
+                    branch.Add(sibling);
+                }
+
+                var current = finalizedRoot;
+                for (int i = 0; i < SszBasicTypes.FinalityBranchDepth; i++)
+                {
+                    if ((SszBasicTypes.FinalityBranchIndex & (1 << i)) != 0)
+                    {
+                        current = HashPair(branch[i], current);
+                    }
+                    else
+                    {
+                        current = HashPair(current, branch[i]);
+                    }
+                }
+
+                stateRoot = current;
+                return branch;
+            }
+
+            private static LightClientHeader CreateHeaderWithStateRoot(ulong slot, ulong blockNumber, byte[] stateRoot)
+            {
+                var execution = new ExecutionPayloadHeader
+                {
+                    ParentHash = Enumerable.Repeat((byte)0x04, SszBasicTypes.RootLength).ToArray(),
+                    FeeRecipient = Enumerable.Repeat((byte)0x05, 20).ToArray(),
+                    StateRoot = Enumerable.Repeat((byte)0x06, SszBasicTypes.RootLength).ToArray(),
+                    ReceiptsRoot = Enumerable.Repeat((byte)0x07, SszBasicTypes.RootLength).ToArray(),
+                    LogsBloom = Enumerable.Repeat((byte)0x08, SszBasicTypes.LogsBloomLength).ToArray(),
+                    PrevRandao = Enumerable.Repeat((byte)0x09, SszBasicTypes.RootLength).ToArray(),
+                    BlockNumber = blockNumber,
+                    GasLimit = 30_000_000,
+                    GasUsed = 1_000_000,
+                    Timestamp = 123456,
+                    ExtraData = new byte[] { 0xAA, 0xBB },
+                    BaseFeePerGas = new byte[SszBasicTypes.RootLength],
+                    BlockHash = Enumerable.Repeat((byte)0x11, SszBasicTypes.RootLength).ToArray(),
+                    TransactionsRoot = Enumerable.Repeat((byte)0x12, SszBasicTypes.RootLength).ToArray(),
+                    WithdrawalsRoot = Enumerable.Repeat((byte)0x13, SszBasicTypes.RootLength).ToArray(),
+                    BlobGasUsed = 0,
+                    ExcessBlobGas = 0
+                };
+
+                var executionRoot = execution.HashTreeRoot();
+                var executionBranch = CreateValidExecutionBranch(executionRoot, out var bodyRoot);
+
+                var beacon = new BeaconBlockHeader
+                {
+                    Slot = slot,
+                    ProposerIndex = 1,
+                    ParentRoot = Enumerable.Repeat((byte)0x01, SszBasicTypes.RootLength).ToArray(),
+                    StateRoot = stateRoot,
+                    BodyRoot = bodyRoot
+                };
+
+                return new LightClientHeader
+                {
+                    Beacon = beacon,
+                    Execution = execution,
+                    ExecutionBranch = executionBranch
+                };
+            }
+
+            private static byte[] HashPair(byte[] left, byte[] right)
+            {
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                var combined = new byte[left.Length + right.Length];
+                Buffer.BlockCopy(left, 0, combined, 0, left.Length);
+                Buffer.BlockCopy(right, 0, combined, left.Length, right.Length);
+                return sha.ComputeHash(combined);
             }
 
             private static SyncCommittee CreateSyncCommittee()

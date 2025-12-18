@@ -148,5 +148,16 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             ex?.Message?.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 ||
             ex?.Message?.IndexOf("Too Many Requests", StringComparison.OrdinalIgnoreCase) >= 0 ||
             ex?.Message?.IndexOf("rate limit", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        public static VerifiedStateService CreateVerifiedStateService(LightClientService lightClient)
+        {
+            var trustedProvider = new TrustedHeaderProvider(lightClient);
+            var rpcClient = new RpcClient(new Uri(TestConstants.ExecutionRpcUrl));
+            var ethGetProof = new EthGetProof(rpcClient);
+            var ethGetCode = new EthGetCode(rpcClient);
+            var trieVerifier = new TrieProofVerifier();
+
+            return new VerifiedStateService(trustedProvider, ethGetProof, ethGetCode, trieVerifier);
+        }
     }
 }

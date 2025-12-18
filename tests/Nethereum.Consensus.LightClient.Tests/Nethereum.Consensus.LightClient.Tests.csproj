@@ -11,15 +11,8 @@
     <ProjectReference Include="..\..\src\Nethereum.ChainStateVerification\Nethereum.ChainStateVerification.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
-    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.0.0" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
-  </ItemGroup>
-  <ItemGroup />
-  <ItemGroup>
-    <Content Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>%(FileName)%(Extension)</Link>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
