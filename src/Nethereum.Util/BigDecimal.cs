@@ -381,10 +381,19 @@ namespace Nethereum.Util
         {
             //todo culture format
             var decimalCharacter = ".";
-            var indexOfDecimal = value.IndexOf(".");
             var exponent = 0;
+
+            var indexOfExponent = value.LastIndexOf("E", StringComparison.OrdinalIgnoreCase);
+            if (indexOfExponent > 0)
+            {
+                exponent = int.Parse(value.Substring(indexOfExponent + 1));
+                value = value.Substring(0, indexOfExponent);
+            }
+
+            var indexOfDecimal = value.IndexOf(".");
             if (indexOfDecimal != -1)
-                exponent = (value.Length - (indexOfDecimal + 1)) * -1;
+                exponent += (value.Length - (indexOfDecimal + 1)) * -1;
+
             var mantissa = BigInteger.Parse(value.Replace(decimalCharacter, ""));
             return new BigDecimal(mantissa, exponent);
         }

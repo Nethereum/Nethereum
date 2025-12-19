@@ -62,6 +62,18 @@ namespace Nethereum.Util.UnitTests
             Assert.Equal(value, BigDecimal.Parse(value).ToString());
         }
 
+        [Theory]
+        [InlineData("0.001", "1E-3")]
+        [InlineData("8000000", "80E+5")]
+        [InlineData("31542.2", "3.15422E4")]
+        [InlineData("0.000000516484", "5.16484e-7")]
+        [InlineData("5.16484", "0.000000516484e7")]
+        [InlineData("0", "0e7")]
+        public void ShouldParseENotation(string expected, string value)
+        {
+            Assert.Equal(expected, BigDecimal.Parse(value).ToString());
+        }
+
         [Fact]
         public void ShouldCastToDecimal()
         {
