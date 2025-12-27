@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using Newtonsoft.Json.Linq;
 
 namespace Nethereum.KeyStore
@@ -69,6 +70,29 @@ namespace Nethereum.KeyStore
             if (address == null) throw new ArgumentNullException(nameof(address));
 
             return _keyStoreScryptService.EncryptAndGenerateKeyStoreAsJson(password, key, address);
+        }
+
+        public string EncryptPayloadAsJson(string password, byte[] data)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            return _keyStoreScryptService.EncryptAndGenerateCryptoStoreAsJson(password, data);
+        }
+
+        public string EncryptPayloadFromStringAsJson(string password, string data)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            return _keyStoreScryptService.EncryptAndGenerateCryptoStoreFromStringAsJson(password, data);
+        }
+
+        public byte[] DecryptPayloadFromJson(string password, string json)
+        {
+            return _keyStoreScryptService.DecryptCryptoStoreFromJson(password, json);
+        }
+
+        public string DecryptPayloadToUtf8String(string password, string json)
+        {
+            var bytes = DecryptPayloadFromJson(password, json);
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 }

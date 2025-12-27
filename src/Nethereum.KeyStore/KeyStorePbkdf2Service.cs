@@ -43,22 +43,22 @@ namespace Nethereum.KeyStore
             return JsonKeyStorePbkdf2Serialiser.SerialisePbkdf2(keyStore);
         }
 
-        public override byte[] DecryptKeyStore(string password, KeyStore<Pbkdf2Params> keyStore)
-        {
-            if (password == null) throw new ArgumentNullException(nameof(password));
-            if (keyStore == null) throw new ArgumentNullException(nameof(keyStore));
-
-            return KeyStoreCrypto.DecryptPbkdf2Sha256(password, keyStore.Crypto.Mac.HexToByteArray(),
-                keyStore.Crypto.CipherParams.Iv.HexToByteArray(),
-                keyStore.Crypto.CipherText.HexToByteArray(),
-                keyStore.Crypto.Kdfparams.Count,
-                keyStore.Crypto.Kdfparams.Salt.HexToByteArray(),
-                keyStore.Crypto.Kdfparams.Dklen);
-        }
-
         public override string GetKdfType()
         {
             return KdfType;
+        }
+
+        protected override byte[] DecryptFromCryptoInfo(string password, CryptoInfo<Pbkdf2Params> cryptoInfo)
+        {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            if (cryptoInfo == null) throw new ArgumentNullException(nameof(cryptoInfo));
+
+            return KeyStoreCrypto.DecryptPbkdf2Sha256(password, cryptoInfo.Mac.HexToByteArray(),
+                cryptoInfo.CipherParams.Iv.HexToByteArray(),
+                cryptoInfo.CipherText.HexToByteArray(),
+                cryptoInfo.Kdfparams.Count,
+                cryptoInfo.Kdfparams.Salt.HexToByteArray(),
+                cryptoInfo.Kdfparams.Dklen);
         }
     }
 }
