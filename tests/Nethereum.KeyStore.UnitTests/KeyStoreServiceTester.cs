@@ -1,4 +1,6 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using System.Linq;
+using System.Text.Json;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
 
 namespace Nethereum.KeyStore.UnitTests
@@ -111,6 +113,69 @@ namespace Nethereum.KeyStore.UnitTests
             var keyStoreKdfChecker = new KeyStoreKdfChecker();
             var kdfType = keyStoreKdfChecker.GetKeyStoreKdfType(scryptKeyStoreDocument);
             Assert.Equal(KeyStoreKdfChecker.KdfType.scrypt, kdfType);
+        }
+
+        [Fact]
+        public void EncryptingTwiceProducesUniqueSaltAndCiphertextWhileRoundTripping()
+        {
+            var password = "testpassword";
+            var address = "0x0000000000000000000000000000000000000000";
+            var payload = Enumerable.Range(0, 32).Select(i => (byte)i).ToArray();
+
+            var keyStoreService = new KeyStoreScryptService();
+
+            var json1 = keyStoreService.EncryptAndGenerateKeyStoreAsJson(password, payload, address);
+            var json2 = keyStoreService.EncryptAndGenerateKeyStoreAsJson(password, payload, address);
+
+            using var document1 = JsonDocument.Parse(json1);
+            using var document2 = JsonDocument.Parse(json2);
+
+            var salt1 = document1.RootElement.GetProperty("crypto").GetProperty("kdfparams").GetProperty("salt").GetString();
+            var salt2 = document2.RootElement.GetProperty("crypto").GetProperty("kdfparams").GetProperty("salt").GetString();
+            var cipherText1 = document1.RootElement.GetProperty("crypto").GetProperty("ciphertext").GetString();
+            var cipherText2 = document2.RootElement.GetProperty("crypto").GetProperty("ciphertext").GetString();
+
+            Assert.NotNull(salt1);
+            Assert.NotNull(salt2);
+            Assert.NotNull(cipherText1);
+            Assert.NotNull(cipherText2);
+
+            Assert.NotEqual(salt1, salt2);
+            Assert.NotEqual(cipherText1, cipherText2);
+
+            var decrypted1 = keyStoreService.DecryptKeyStoreFromJson(password, json1);
+            var decrypted2 = keyStoreService.DecryptKeyStoreFromJson(password, json2);
+
+            Assert.Equal(payload, decrypted1);
+            Assert.Equal(payload, decrypted2);
+        }
+
+        [Fact]
+        public void ShouldEncryptAndDecryptUtf8PayloadWithoutAddress()
+        {
+            var password = "anotherpassword";
+            var payload = "vault payload with utf8 markers";
+
+            var keyStoreService = new KeyStoreService();
+
+            var json = keyStoreService.EncryptPayloadFromStringAsJson(password, payload);
+            var decrypted = keyStoreService.DecryptPayloadToUtf8String(password, json);
+
+            Assert.Equal(payload, decrypted);
+        }
+
+        [Fact]
+        public void CryptoStorePayloadJsonDoesNotIncludeAddress()
+        {
+            var password = "payloadpassword";
+            var data = "payload";
+            var keyStoreService = new KeyStoreService();
+
+            var json = keyStoreService.EncryptPayloadFromStringAsJson(password, data);
+
+            using var document = JsonDocument.Parse(json);
+            Assert.False(document.RootElement.TryGetProperty("address", out _));
+            Assert.Equal(3, document.RootElement.GetProperty("version").GetInt32());
         }
     }
 }
