@@ -132,6 +132,67 @@ namespace Nethereum.Contracts.Standards.ERC20
 
             return returnInfo;
         }
+
+        public async Task<List<TokenOwnerBalance>> GetAllTokenBalancesUsingBatchRpcAsync(IEnumerable<string> ownerAddresses,
+            IEnumerable<string> contractAddresses, BlockParameter block,
+            int numberOfCallsPerRequest = MultiQueryBatchRpcHandler.DEFAULT_CALLS_PER_REQUEST)
+        {
+            var balanceCalls = new List<MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>>();
+            foreach (var ownerAddress in ownerAddresses)
+            {
+                foreach (var contractAddress in contractAddresses)
+                {
+                    var balanceCall = new BalanceOfFunction() { Owner = ownerAddress };
+                    balanceCalls.Add(new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(balanceCall,
+                        contractAddress));
+                }
+            }
+
+            var batchRpcHandler = this._ethApiContractService.GetMultiQueryBatchRpcHandler();
+            await batchRpcHandler.MultiCallAsync(block, numberOfCallsPerRequest, balanceCalls.ToArray()).ConfigureAwait(false);
+
+            return balanceCalls.Select(x => new TokenOwnerBalance()
+            {
+                Balance = x.Output?.Balance ?? BigInteger.Zero,
+                ContractAddress = x.Target,
+                Owner = x.Input.Owner,
+                Success = x.Success
+            }).ToList();
+        }
+
+        public Task<List<TokenOwnerBalance>> GetAllTokenBalancesUsingBatchRpcAsync(IEnumerable<string> ownerAddresses,
+            IEnumerable<string> contractAddresses, int numberOfCallsPerRequest = MultiQueryBatchRpcHandler.DEFAULT_CALLS_PER_REQUEST)
+        {
+            return GetAllTokenBalancesUsingBatchRpcAsync(ownerAddresses, contractAddresses,
+                BlockParameter.CreateLatest(), numberOfCallsPerRequest);
+        }
+
+        public Task<List<TokenOwnerBalance>> GetAllTokenBalancesUsingBatchRpcAsync(string ownerAddress,
+            IEnumerable<string> contractAddresses, int numberOfCallsPerRequest = MultiQueryBatchRpcHandler.DEFAULT_CALLS_PER_REQUEST)
+        {
+            return GetAllTokenBalancesUsingBatchRpcAsync(new string[] { ownerAddress }, contractAddresses,
+                BlockParameter.CreateLatest(), numberOfCallsPerRequest);
+        }
+
+        public async Task<List<TokenOwnerInfo>> GetAllTokenBalancesUsingBatchRpcAsync(IEnumerable<string> ownerAddresses,
+            IEnumerable<Token> tokens, BlockParameter block,
+            int numberOfCallsPerRequest = MultiQueryBatchRpcHandler.DEFAULT_CALLS_PER_REQUEST)
+        {
+            var tokenBalances = await GetAllTokenBalancesUsingBatchRpcAsync(ownerAddresses, tokens.Select(x => x.Address),
+                block, numberOfCallsPerRequest).ConfigureAwait(false);
+            var returnInfo = new List<TokenOwnerInfo>();
+            foreach (var token in tokens)
+            {
+                var ownerBalances = tokenBalances.Where(x => x.ContractAddress.IsTheSameAddress(token.Address));
+                var tokenOwnerBalances = ownerBalances as TokenOwnerBalance[] ?? ownerBalances.ToArray();
+                if (tokenOwnerBalances.Any())
+                {
+                    returnInfo.Add(new TokenOwnerInfo() { Token = token, OwnersBalances = tokenOwnerBalances.ToList() });
+                }
+            }
+
+            return returnInfo;
+        }
 #endif
 
     }

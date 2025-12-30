@@ -28,5 +28,9 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
         Task<List<EventLog<TransferEventDTO>>> GetAllTransferEventsFromAndToAccount(string contractAddress, string account,
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
             int retryWeight = BlockchainLogProcessingService.RetryWeight);
+
+        Task<List<EventLog<TransferEventDTO>>> GetAllTransferEventsFromAndToAccount(string account,
+            BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight);
     }
 }

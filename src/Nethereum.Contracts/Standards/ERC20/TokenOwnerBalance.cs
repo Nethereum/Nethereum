@@ -7,5 +7,6 @@ namespace Nethereum.Contracts.Standards.ERC20
         public string ContractAddress { get; set; }
         public BigInteger Balance { get; set; }
         public string Owner { get; set; }
+        public bool Success { get; set; } = true;
     }
 }
