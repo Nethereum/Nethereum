@@ -12,7 +12,7 @@ public abstract class WalletVaultServiceBase : IWalletVaultService
 {
     protected WalletVault? _vault;
     protected string? _currentPassword;
-    protected virtual IEncryptionStrategy GetEncryptionStrategy() => new DefaultAes256EncryptionStrategy();
+    protected virtual IEncryptionStrategy GetEncryptionStrategy() => new KeyStoreEncryptionStrategy();
 
     public Task<IReadOnlyList<IWalletAccount>> GetAccountsAsync()
         => Task.FromResult((IReadOnlyList<IWalletAccount>)(_vault?.Accounts ?? new List<IWalletAccount>()));

@@ -56,98 +56,99 @@ namespace Nethereum.Wallet.Services.VerifiedState
             if (instance == null)
                 return new VerifiedBalanceResult { IsVerified = false, Error = initError ?? "Light client initialization failed" };
 
-            var executionRpcUrl = !string.IsNullOrEmpty(chainFeature.ExecutionRpcUrlForProofs)
-                ? chainFeature.ExecutionRpcUrlForProofs
-                : chainFeature.HttpRpcs?.Count > 0 ? chainFeature.HttpRpcs[0] : "unknown";
+            var result = new VerifiedBalanceResult();
 
-            // Try finalized mode first (strongest security)
+            // Try finalized balance (strongest security - ~12 min behind head)
+            await TryGetFinalizedBalanceAsync(instance, address, result).ConfigureAwait(false);
+
+            // Try optimistic balance (weaker security - seconds behind head)
+            await TryGetOptimisticBalanceAsync(instance, address, result).ConfigureAwait(false);
+
+            // Set overall result based on what we got
+            if (result.HasFinalizedBalance)
+            {
+                result.IsVerified = true;
+                result.Balance = result.FinalizedBalance.Value;
+                result.BlockNumber = result.FinalizedBlockNumber;
+                result.Mode = VerifiedBalanceMode.Finalized;
+            }
+            else if (result.HasOptimisticBalance)
+            {
+                result.IsVerified = true;
+                result.Balance = result.OptimisticBalance.Value;
+                result.BlockNumber = result.OptimisticBlockNumber;
+                result.Mode = VerifiedBalanceMode.Optimistic;
+            }
+            else
+            {
+                result.IsVerified = false;
+                result.Mode = VerifiedBalanceMode.Unavailable;
+                result.IsRpcLimitation = IsPrunedHistoryError(result.FinalizedError) && IsPrunedHistoryError(result.OptimisticError);
+                result.Error = result.FinalizedError ?? result.OptimisticError ?? "Unable to verify balance";
+            }
+
+            return result;
+        }
+
+        private async Task TryGetFinalizedBalanceAsync(LightClientInstance instance, string address, VerifiedBalanceResult result)
+        {
             try
             {
                 await instance.LightClient.UpdateFinalityAsync().ConfigureAwait(false);
                 instance.VerifiedStateService.Mode = ChainStateVerification.VerificationMode.Finalized;
-                var finalizedHeader = instance.VerifiedStateService.GetCurrentHeader();
-                System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Trying finalized block: {finalizedHeader.BlockNumber}, RPC: {executionRpcUrl}");
+                var header = instance.VerifiedStateService.GetCurrentHeader();
 
                 var balance = await instance.VerifiedStateService.GetBalanceAsync(address).ConfigureAwait(false);
 
-                return new VerifiedBalanceResult
-                {
-                    Balance = balance,
-                    IsVerified = true,
-                    BlockNumber = finalizedHeader.BlockNumber,
-                    Mode = VerifiedBalanceMode.Finalized
-                };
-            }
-            catch (Exception ex) when (IsPrunedHistoryError(ex))
-            {
-                System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Finalized failed: {ex.Message}");
-
-                // Fallback to optimistic mode if finalized fails due to pruning
-                try
-                {
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Calling UpdateOptimisticAsync...");
-                    var optimisticUpdated = await instance.LightClient.UpdateOptimisticAsync().ConfigureAwait(false);
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] UpdateOptimisticAsync returned: {optimisticUpdated}");
-
-                    var state = instance.LightClient.GetState();
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] State.OptimisticExecutionPayload is null: {state.OptimisticExecutionPayload == null}");
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] State.FinalizedExecutionPayload block: {state.FinalizedExecutionPayload?.BlockNumber}");
-                    if (state.OptimisticExecutionPayload != null)
-                        System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] State.OptimisticExecutionPayload block: {state.OptimisticExecutionPayload.BlockNumber}");
-
-                    if (!optimisticUpdated)
-                    {
-                        return new VerifiedBalanceResult
-                        {
-                            IsVerified = false,
-                            Mode = VerifiedBalanceMode.Unavailable,
-                            Error = "Failed to get optimistic update from beacon chain (BLS verification may have failed)"
-                        };
-                    }
-
-                    instance.VerifiedStateService.ClearCache();
-                    instance.VerifiedStateService.Mode = ChainStateVerification.VerificationMode.Optimistic;
-                    var optimisticHeader = instance.VerifiedStateService.GetCurrentHeader();
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Trying optimistic block: {optimisticHeader.BlockNumber}");
-
-                    var balance = await instance.VerifiedStateService.GetBalanceAsync(address).ConfigureAwait(false);
-
-                    return new VerifiedBalanceResult
-                    {
-                        Balance = balance,
-                        IsVerified = true,
-                        BlockNumber = optimisticHeader.BlockNumber,
-                        Mode = VerifiedBalanceMode.Optimistic
-                    };
-                }
-                catch (Exception optimisticEx) when (IsPrunedHistoryError(optimisticEx))
-                {
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Optimistic also failed: {optimisticEx.Message}");
-                    return new VerifiedBalanceResult
-                    {
-                        IsVerified = false,
-                        Mode = VerifiedBalanceMode.Unavailable,
-                        IsRpcLimitation = true,
-                        Error = $"RPC ({executionRpcUrl}) proof window exceeded. Finalized/Optimistic blocks too old."
-                    };
-                }
-                catch (Exception optimisticEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Optimistic error: {optimisticEx.Message}");
-                    return new VerifiedBalanceResult { IsVerified = false, Error = $"Optimistic: {optimisticEx.Message}" };
-                }
+                result.FinalizedBalance = balance;
+                result.FinalizedBlockNumber = header.BlockNumber;
+                result.HasFinalizedBalance = true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[VerifiedBalance] Unexpected error: {ex.Message}");
-                return new VerifiedBalanceResult { IsVerified = false, Error = ex.Message };
+                result.FinalizedError = IsPrunedHistoryError(ex) ? "RPC proof window exceeded" : ex.Message;
+                result.HasFinalizedBalance = false;
+            }
+        }
+
+        private async Task TryGetOptimisticBalanceAsync(LightClientInstance instance, string address, VerifiedBalanceResult result)
+        {
+            try
+            {
+                var updated = await instance.LightClient.UpdateOptimisticAsync().ConfigureAwait(false);
+                if (!updated)
+                {
+                    result.OptimisticError = "Failed to get optimistic update";
+                    result.HasOptimisticBalance = false;
+                    return;
+                }
+
+                instance.VerifiedStateService.ClearCache();
+                instance.VerifiedStateService.Mode = ChainStateVerification.VerificationMode.Optimistic;
+                var header = instance.VerifiedStateService.GetCurrentHeader();
+
+                var balance = await instance.VerifiedStateService.GetBalanceAsync(address).ConfigureAwait(false);
+
+                result.OptimisticBalance = balance;
+                result.OptimisticBlockNumber = header.BlockNumber;
+                result.HasOptimisticBalance = true;
+            }
+            catch (Exception ex)
+            {
+                result.OptimisticError = IsPrunedHistoryError(ex) ? "RPC proof window exceeded" : ex.Message;
+                result.HasOptimisticBalance = false;
             }
         }
 
         private static bool IsPrunedHistoryError(Exception ex) =>
-            ex?.Message?.IndexOf("old data not available due to pruning", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            ex?.Message?.IndexOf("missing trie node", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            ex?.Message?.IndexOf("distance to target block exceeds maximum proof window", StringComparison.OrdinalIgnoreCase) >= 0;
+            ex?.Message != null && IsPrunedHistoryError(ex.Message);
+
+        private static bool IsPrunedHistoryError(string? errorMessage) =>
+            errorMessage != null && (
+                errorMessage.IndexOf("old data not available due to pruning", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                errorMessage.IndexOf("missing trie node", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                errorMessage.IndexOf("distance to target block exceeds maximum proof window", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                errorMessage.IndexOf("RPC proof window exceeded", StringComparison.OrdinalIgnoreCase) >= 0);
 
         public async Task<LightClientStatus> GetStatusAsync(BigInteger chainId)
         {

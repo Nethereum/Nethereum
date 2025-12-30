@@ -218,6 +218,30 @@ namespace Nethereum.Wallet.Services.Network
             return CloneChainFeature(resolved);
         }
 
+        public async Task<int> SyncMissingDefaultChainsAsync()
+        {
+            var userNetworks = await _storageService.GetUserNetworksAsync().ConfigureAwait(false);
+            var existingChainIds = userNetworks.Select(n => n.ChainId).ToHashSet();
+
+            var defaults = await _strategy.GetDefaultChainsAsync().ConfigureAwait(false);
+            var missingChains = defaults.Where(d => !existingChainIds.Contains(d.ChainId)).ToList();
+
+            int addedCount = 0;
+            foreach (var chain in missingChains)
+            {
+                ApplyKnownChainDefaults(chain);
+                if (NetworkInputValidator.ValidateChainFeature(chain, out _))
+                {
+                    await _storageService.SaveUserNetworkAsync(chain).ConfigureAwait(false);
+                    _chainCache[chain.ChainId] = chain;
+                    _coreDefaultChainIds.Add(chain.ChainId);
+                    addedCount++;
+                }
+            }
+
+            return addedCount;
+        }
+
         #endregion
 
         #region Internal helpers

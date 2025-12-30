@@ -26,5 +26,6 @@ namespace Nethereum.Wallet.Services.Network
         Task UpdateChainAsync(ChainFeature chain);
         Task UpdateChainRpcConfigurationAsync(BigInteger chainId, List<string> httpRpcs, List<string> wsRpcs);
         Task<bool> UpdateUserNetworkAsync(ChainFeature updatedNetwork);
+        Task<int> SyncMissingDefaultChainsAsync();
     }
 }

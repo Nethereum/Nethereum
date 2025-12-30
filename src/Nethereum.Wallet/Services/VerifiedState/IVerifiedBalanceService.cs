@@ -27,6 +27,18 @@ namespace Nethereum.Wallet.Services.VerifiedState
         public VerifiedBalanceMode Mode { get; set; }
         public string Error { get; set; }
         public bool IsRpcLimitation { get; set; }
+
+        // Finalized balance (strongest security - ~12 min behind)
+        public BigInteger? FinalizedBalance { get; set; }
+        public ulong FinalizedBlockNumber { get; set; }
+        public bool HasFinalizedBalance { get; set; }
+        public string FinalizedError { get; set; }
+
+        // Optimistic balance (weaker security - ~seconds behind)
+        public BigInteger? OptimisticBalance { get; set; }
+        public ulong OptimisticBlockNumber { get; set; }
+        public bool HasOptimisticBalance { get; set; }
+        public string OptimisticError { get; set; }
     }
 
     public class LightClientStatus
