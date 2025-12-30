@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Nethereum.KeyStore\Nethereum.KeyStore.csproj" />
     <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />
     <ProjectReference Include="..\Nethereum.Beaconchain\Nethereum.Beaconchain.csproj" />
     <ProjectReference Include="..\Nethereum.ChainStateVerification\Nethereum.ChainStateVerification.csproj" />
@@ -30,6 +31,7 @@
     <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
     <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\Nethereum.TokenServices\Nethereum.TokenServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>
