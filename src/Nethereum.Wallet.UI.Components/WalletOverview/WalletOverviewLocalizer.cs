@@ -40,6 +40,7 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             public const string FailedToOpenExplorer = "FailedToOpenExplorer";
             public const string TransactionHashCopied = "TransactionHashCopied";
             public const string VerifiedBalance = "VerifiedBalance";
+            public const string VerifiedBalances = "VerifiedBalances";
             public const string FinalizedBlock = "FinalizedBlock";
             public const string LightClientNotConfigured = "LightClientNotConfigured";
             public const string VerificationFailed = "VerificationFailed";
@@ -47,6 +48,13 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             public const string VerifiedBalanceLoading = "VerifiedBalanceLoading";
             public const string OptimisticBlock = "OptimisticBlock";
             public const string RpcLimitationMessage = "RpcLimitationMessage";
+            public const string FinalizedBalance = "FinalizedBalance";
+            public const string OptimisticBalance = "OptimisticBalance";
+            public const string FinalizedBalanceTooltip = "FinalizedBalanceTooltip";
+            public const string OptimisticBalanceTooltip = "OptimisticBalanceTooltip";
+            public const string FinalizedUnavailable = "FinalizedUnavailable";
+            public const string OptimisticUnavailable = "OptimisticUnavailable";
+            public const string BalancesDifferFromRpc = "BalancesDifferFromRpc";
         }
 
         public WalletOverviewLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -57,8 +65,8 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         {
             _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
             {
-                [Keys.Title] = "Wallet Overview",
-                [Keys.WalletOverview] = "Wallet Overview",
+                [Keys.Title] = "Current Account",
+                [Keys.WalletOverview] = "Current Account",
                 [Keys.Balance] = "Balance",
                 [Keys.TotalBalance] = "Total Balance",
                 [Keys.RecentTransactions] = "Recent Transactions",
@@ -68,17 +76,17 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                 [Keys.ManageAccountsButton] = "Manage Accounts",
                 [Keys.CopyAddressButton] = "Copy Address",
                 [Keys.RefreshButton] = "Refresh",
-                [Keys.NetworkLabel] = "Network",
+                [Keys.NetworkLabel] = "Chain",
                 [Keys.AccountLabel] = "Account",
                 [Keys.AddressCopied] = "Address copied to clipboard",
-                [Keys.RefreshSuccess] = "Wallet overview refreshed successfully",
-                [Keys.RefreshError] = "Failed to refresh wallet overview",
+                [Keys.RefreshSuccess] = "Account refreshed successfully",
+                [Keys.RefreshError] = "Failed to refresh account",
                 [Keys.AccountSwitched] = "Switched to account",
                 [Keys.SelectAccountFirst] = "Please select an account first",
                 [Keys.BalanceLoadError] = "Failed to load balance",
                 [Keys.PriceUnavailable] = "Price data unavailable",
                 [Keys.ErrorText] = "Error",
-                [Keys.NetworkSwitched] = "Switched to network",
+                [Keys.NetworkSwitched] = "Switched to chain",
                 [Keys.LoadingBalance] = "Loading balance...",
                 [Keys.LoadingTransactions] = "Loading transactions...",
                 [Keys.TransactionHistory] = "History",
@@ -90,20 +98,28 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                 [Keys.FailedToOpenExplorer] = "Failed to open block explorer",
                 [Keys.TransactionHashCopied] = "Transaction hash copied to clipboard",
                 [Keys.VerifiedBalance] = "Verified Balance",
-                [Keys.FinalizedBlock] = "Finalized Block",
+                [Keys.VerifiedBalances] = "Verified Balances",
+                [Keys.FinalizedBlock] = "Block",
                 [Keys.LightClientNotConfigured] = "Light client not configured",
                 [Keys.VerificationFailed] = "Verification failed",
                 [Keys.BalancesMismatchWarning] = "Warning: Verified balance differs from RPC balance",
                 [Keys.VerifiedBalanceLoading] = "Verifying balance...",
-                [Keys.OptimisticBlock] = "Optimistic Block",
-                [Keys.RpcLimitationMessage] = "RPC node does not support historical proofs. Use an archive node for verified balances."
+                [Keys.OptimisticBlock] = "Block",
+                [Keys.RpcLimitationMessage] = "RPC node does not support historical proofs. Use an archive node for verified balances.",
+                [Keys.FinalizedBalance] = "Finalized",
+                [Keys.OptimisticBalance] = "Optimistic",
+                [Keys.FinalizedBalanceTooltip] = "~12 min behind, never reverts",
+                [Keys.OptimisticBalanceTooltip] = "Seconds behind, may revert",
+                [Keys.FinalizedUnavailable] = "Unavailable",
+                [Keys.OptimisticUnavailable] = "Unavailable",
+                [Keys.BalancesDifferFromRpc] = "Differs from RPC"
             });
             
             // Spanish (Spain) translations
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
-                [Keys.Title] = "Resumen de Cartera",
-                [Keys.WalletOverview] = "Resumen de Cartera",
+                [Keys.Title] = "Cuenta Activa",
+                [Keys.WalletOverview] = "Cuenta Activa",
                 [Keys.Balance] = "Saldo",
                 [Keys.TotalBalance] = "Saldo Total",
                 [Keys.RecentTransactions] = "Transacciones Recientes",
@@ -113,17 +129,17 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                 [Keys.ManageAccountsButton] = "Gestionar Cuentas",
                 [Keys.CopyAddressButton] = "Copiar Dirección",
                 [Keys.RefreshButton] = "Actualizar",
-                [Keys.NetworkLabel] = "Red",
+                [Keys.NetworkLabel] = "Cadena",
                 [Keys.AccountLabel] = "Cuenta",
                 [Keys.AddressCopied] = "Dirección copiada al portapapeles",
-                [Keys.RefreshSuccess] = "Resumen de cartera actualizado exitosamente",
-                [Keys.RefreshError] = "Error al actualizar el resumen de cartera",
+                [Keys.RefreshSuccess] = "Cuenta actualizada exitosamente",
+                [Keys.RefreshError] = "Error al actualizar la cuenta",
                 [Keys.AccountSwitched] = "Cambiado a cuenta",
                 [Keys.SelectAccountFirst] = "Por favor selecciona una cuenta primero",
                 [Keys.BalanceLoadError] = "Error al cargar el saldo",
                 [Keys.PriceUnavailable] = "Datos de precio no disponibles",
                 [Keys.ErrorText] = "Error",
-                [Keys.NetworkSwitched] = "Cambiado a red",
+                [Keys.NetworkSwitched] = "Cambiado a cadena",
                 [Keys.LoadingBalance] = "Cargando saldo...",
                 [Keys.LoadingTransactions] = "Cargando transacciones...",
                 [Keys.TransactionHistory] = "Historial",
@@ -135,13 +151,21 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                 [Keys.FailedToOpenExplorer] = "Error al abrir el explorador de bloques",
                 [Keys.TransactionHashCopied] = "Hash de transacción copiado al portapapeles",
                 [Keys.VerifiedBalance] = "Saldo Verificado",
-                [Keys.FinalizedBlock] = "Bloque Finalizado",
+                [Keys.VerifiedBalances] = "Saldos Verificados",
+                [Keys.FinalizedBlock] = "Bloque",
                 [Keys.LightClientNotConfigured] = "Cliente ligero no configurado",
                 [Keys.VerificationFailed] = "Verificación fallida",
                 [Keys.BalancesMismatchWarning] = "Advertencia: El saldo verificado difiere del saldo RPC",
                 [Keys.VerifiedBalanceLoading] = "Verificando saldo...",
-                [Keys.OptimisticBlock] = "Bloque Optimista",
-                [Keys.RpcLimitationMessage] = "El nodo RPC no admite pruebas históricas. Use un nodo de archivo para saldos verificados."
+                [Keys.OptimisticBlock] = "Bloque",
+                [Keys.RpcLimitationMessage] = "El nodo RPC no admite pruebas históricas. Use un nodo de archivo para saldos verificados.",
+                [Keys.FinalizedBalance] = "Finalizado",
+                [Keys.OptimisticBalance] = "Optimista",
+                [Keys.FinalizedBalanceTooltip] = "~12 min atrás, nunca revierte",
+                [Keys.OptimisticBalanceTooltip] = "Segundos atrás, puede revertir",
+                [Keys.FinalizedUnavailable] = "No disponible",
+                [Keys.OptimisticUnavailable] = "No disponible",
+                [Keys.BalancesDifferFromRpc] = "Difiere del RPC"
             });
         }
     }

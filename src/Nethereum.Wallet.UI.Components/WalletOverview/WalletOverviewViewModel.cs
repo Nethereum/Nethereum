@@ -77,27 +77,58 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         [ObservableProperty]
         private bool _isRpcLimitation;
 
-        public string FormattedVerifiedBalance
+        [ObservableProperty]
+        private BigInteger? _finalizedBalanceWei;
+
+        [ObservableProperty]
+        private ulong _finalizedBlockNumber;
+
+        [ObservableProperty]
+        private bool _hasFinalizedBalance;
+
+        [ObservableProperty]
+        private string? _finalizedBalanceError;
+
+        [ObservableProperty]
+        private BigInteger? _optimisticBalanceWei;
+
+        [ObservableProperty]
+        private ulong _optimisticBlockNumber;
+
+        [ObservableProperty]
+        private bool _hasOptimisticBalance;
+
+        [ObservableProperty]
+        private string? _optimisticBalanceError;
+
+        public string FormattedVerifiedBalance => FormatBalanceValue(VerifiedBalanceWei);
+
+        public string FormattedFinalizedBalance => FormatBalanceValue(FinalizedBalanceWei ?? BigInteger.Zero);
+
+        public string FormattedOptimisticBalance => FormatBalanceValue(OptimisticBalanceWei ?? BigInteger.Zero);
+
+        private static string FormatBalanceValue(BigInteger balanceWei)
         {
-            get
-            {
-                if (VerifiedBalanceWei == BigInteger.Zero)
-                    return "0";
+            if (balanceWei == BigInteger.Zero)
+                return "0";
 
-                var etherValue = UnitConversion.Convert.FromWei(VerifiedBalanceWei);
+            var etherValue = UnitConversion.Convert.FromWei(balanceWei);
 
-                if (etherValue >= 1000)
-                    return etherValue.ToString("N2");
-                else if (etherValue >= 1)
-                    return etherValue.ToString("F4").TrimEnd('0').TrimEnd('.');
-                else if (etherValue >= 0.001m)
-                    return etherValue.ToString("F6").TrimEnd('0').TrimEnd('.');
-                else
-                    return etherValue.ToString("F8").TrimEnd('0').TrimEnd('.');
-            }
+            if (etherValue >= 1000)
+                return etherValue.ToString("N2");
+            else if (etherValue >= 1)
+                return etherValue.ToString("F4").TrimEnd('0').TrimEnd('.');
+            else if (etherValue >= 0.001m)
+                return etherValue.ToString("F6").TrimEnd('0').TrimEnd('.');
+            else
+                return etherValue.ToString("F8").TrimEnd('0').TrimEnd('.');
         }
 
         public bool BalancesMatch => !HasVerifiedBalance || BalanceWei == VerifiedBalanceWei;
+
+        public bool FinalizedBalanceMatches => !HasFinalizedBalance || BalanceWei == FinalizedBalanceWei;
+
+        public bool OptimisticBalanceMatches => !HasOptimisticBalance || BalanceWei == OptimisticBalanceWei;
 
         public string FormattedBalance
         {
@@ -359,12 +390,16 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             if (_verifiedBalanceService == null || SelectedAccount == null)
             {
                 HasVerifiedBalance = false;
+                HasFinalizedBalance = false;
+                HasOptimisticBalance = false;
                 return;
             }
 
             if (!IsLightClientEnabled)
             {
                 HasVerifiedBalance = false;
+                HasFinalizedBalance = false;
+                HasOptimisticBalance = false;
                 return;
             }
 
@@ -376,6 +411,31 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
             try
             {
                 var result = await _verifiedBalanceService.GetBalanceAsync(SelectedAccount.Address, new BigInteger(ChainId));
+
+                HasFinalizedBalance = result.HasFinalizedBalance;
+                if (result.HasFinalizedBalance)
+                {
+                    FinalizedBalanceWei = result.FinalizedBalance;
+                    FinalizedBlockNumber = result.FinalizedBlockNumber;
+                    FinalizedBalanceError = null;
+                }
+                else
+                {
+                    FinalizedBalanceError = result.FinalizedError;
+                }
+
+                HasOptimisticBalance = result.HasOptimisticBalance;
+                if (result.HasOptimisticBalance)
+                {
+                    OptimisticBalanceWei = result.OptimisticBalance;
+                    OptimisticBlockNumber = result.OptimisticBlockNumber;
+                    OptimisticBalanceError = null;
+                }
+                else
+                {
+                    OptimisticBalanceError = result.OptimisticError;
+                }
+
                 if (result.IsVerified)
                 {
                     VerifiedBalanceWei = result.Balance;
@@ -384,8 +444,6 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                     HasVerifiedBalance = true;
                     VerifiedBalanceError = false;
                     IsRpcLimitation = false;
-                    OnPropertyChanged(nameof(FormattedVerifiedBalance));
-                    OnPropertyChanged(nameof(BalancesMatch));
                 }
                 else
                 {
@@ -394,12 +452,21 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
                     VerifiedBalanceError = true;
                     HasVerifiedBalance = false;
                 }
+
+                OnPropertyChanged(nameof(FormattedVerifiedBalance));
+                OnPropertyChanged(nameof(FormattedFinalizedBalance));
+                OnPropertyChanged(nameof(FormattedOptimisticBalance));
+                OnPropertyChanged(nameof(BalancesMatch));
+                OnPropertyChanged(nameof(FinalizedBalanceMatches));
+                OnPropertyChanged(nameof(OptimisticBalanceMatches));
             }
             catch (Exception ex)
             {
                 VerifiedBalanceErrorMessage = ex.Message;
                 VerifiedBalanceError = true;
                 HasVerifiedBalance = false;
+                HasFinalizedBalance = false;
+                HasOptimisticBalance = false;
                 IsRpcLimitation = false;
             }
             finally

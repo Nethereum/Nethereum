@@ -15,12 +15,13 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
     public partial class NethereumWalletViewModel : ObservableObject
     {
         private readonly IWalletVaultService _walletVaultService;
-        private readonly IWalletNotificationService _notificationService;
         private readonly IWalletDialogService _dialogService;
         private readonly IComponentLocalizer<NethereumWalletViewModel> _localizer;
         private readonly NethereumWalletConfiguration _config;
         private readonly NethereumWalletHostProvider _walletHostProvider;
         private readonly SelectedEthereumHostProviderService _selectedHostProvider;
+        private Task<bool>? _loginOperationTask;
+        private Task<bool>? _createOperationTask;
 
         public Func<Task>? OnWalletConnected { get; set; }
 
@@ -51,6 +52,9 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         [ObservableProperty]
         private string _loginError = string.Empty;
 
+        [ObservableProperty]
+        private string _statusMessage = string.Empty;
+
         public bool CanCreateWallet => 
             !string.IsNullOrEmpty(NewPassword) &&
             NewPassword == ConfirmPassword &&
@@ -67,7 +71,6 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
 
         public NethereumWalletViewModel(
             IWalletVaultService walletVaultService,
-            IWalletNotificationService notificationService,
             IWalletDialogService dialogService,
             IComponentLocalizer<NethereumWalletViewModel> localizer,
             NethereumWalletConfiguration config,
@@ -75,7 +78,6 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
             SelectedEthereumHostProviderService selectedHostProvider)
         {
             _walletVaultService = walletVaultService;
-            _notificationService = notificationService;
             _dialogService = dialogService;
             _localizer = localizer;
             _config = config;
@@ -116,48 +118,18 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         [RelayCommand]
         public async Task LoginAsync()
         {
-            IsBusy = true;
-            LoginError = string.Empty;
-
+            var operation = StartLoginOperation();
+            bool success = false;
+            Exception? error = null;
             try
             {
-                var success = await _walletVaultService.UnlockAsync(Password);
-                if (success)
-                {
-                    _notificationService.ShowSuccess(_localizer.GetString("VaultUnlockedSuccessfully"));
-                    
-                    IsWalletUnlocked = true;
-                    
-                    await CheckAccountsAsync();
-                    
-                    // If we have accounts, enable the provider and select one
-                    if (HasAccounts)
-                    {
-                        await _walletHostProvider.EnableProviderAsync();
-                        await _selectedHostProvider.SetSelectedEthereumHostProvider(_walletHostProvider);
-                    }
-                    
-                    if (OnWalletConnected != null)
-                    {
-                        await OnWalletConnected();
-                    }
-                }
-                else
-                {
-                    LoginError = _localizer.GetString("IncorrectPassword");
-                    _notificationService.ShowError(LoginError);
-                }
+                success = await operation;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                LoginError = _localizer.GetString("LoginError", ex.Message);
-                _notificationService.ShowError(LoginError);
+                error = ex;
             }
-            finally
-            {
-                IsBusy = false;
-                Password = string.Empty;
-            }
+            await CompleteLoginOperationAsync(success, error);
         }
 
         [RelayCommand]
@@ -176,64 +148,23 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         [RelayCommand]
         public async Task CreateWalletAsync()
         {
-            CreateError = string.Empty;
-
-            if (string.IsNullOrEmpty(NewPassword))
+            var operation = StartCreateWalletOperation();
+            if (operation == null)
             {
-                CreateError = _localizer.GetString("PasswordRequired");
                 return;
             }
 
-            if (NewPassword != ConfirmPassword)
-            {
-                CreateError = _localizer.GetString("PasswordMismatch");
-                return;
-            }
-
-            if (NewPassword.Length < _config.Security.MinPasswordLength)
-            {
-                CreateError = _localizer.GetString("PasswordTooShort", _config.Security.MinPasswordLength);
-                return;
-            }
-
-            if (!IsPasswordValid(NewPassword))
-            {
-                CreateError = _localizer.GetString("PasswordNotStrongEnough");
-                return;
-            }
-
-            IsBusy = true;
-
+            bool success = false;
+            Exception? error = null;
             try
             {
-                await _walletVaultService.CreateNewAsync(NewPassword);
-                _notificationService.ShowSuccess(_localizer.GetString("WalletCreated"));
-                
-                // Mark wallet as unlocked - it's automatically unlocked after creation
-                IsWalletUnlocked = true;
-                VaultExists = true;
-                
-                NewPassword = string.Empty;
-                ConfirmPassword = string.Empty;
-                
-                await CheckAccountsAsync();
-                
-                // New wallets won't have accounts, so we'll go to account creation state
-                // Don't enable provider yet - wait until we have an account
-                
-                if (OnWalletConnected != null)
-                {
-                    await OnWalletConnected();
-                }
+                success = await operation;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                CreateError = _localizer.GetString("CreateFailed", ex.Message);
+                error = ex;
             }
-            finally
-            {
-                IsBusy = false;
-            }
+            await CompleteCreateWalletOperationAsync(success, error);
         }
 
         public bool IsPasswordValid(string password)
@@ -300,8 +231,8 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         public async Task ShowResetWalletConfirmationAsync()
         {
             var confirmed = await _dialogService.ShowConfirmationAsync(
-                _localizer.GetString("ResetWalletConfirmTitle"),
-                _localizer.GetString("ResetWalletConfirmMessage"));
+                _localizer.GetString(NethereumWalletLocalizer.Keys.ResetConfirmTitle),
+                _localizer.GetString(NethereumWalletLocalizer.Keys.ResetConfirmMessage));
                 
             if (confirmed)
             {
@@ -312,20 +243,160 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
         private async Task ResetWalletAsync()
         {
             IsBusy = true;
+            LoginError = string.Empty;
+            StatusMessage = _localizer.GetString(NethereumWalletLocalizer.Keys.ResettingWalletStatus);
+            await Task.Delay(50);
             try
             {
-                await _walletVaultService.ResetAsync();
+                await Task.Run(async () => await _walletVaultService.ResetAsync());
                 VaultExists = false;
                 await _selectedHostProvider.ClearSelectedEthereumHostProvider();
-                _notificationService.ShowSuccess(_localizer.GetString("WalletResetSuccess"));
             }
             catch (System.Exception ex)
             {
-                _notificationService.ShowError(_localizer.GetString("WalletResetError", ex.Message));
+                LoginError = _localizer.GetString(NethereumWalletLocalizer.Keys.WalletResetError, ex.Message);
             }
             finally
             {
                 IsBusy = false;
+                StatusMessage = string.Empty;
+            }
+        }
+
+        public Task<bool> StartLoginOperation()
+        {
+            if (_loginOperationTask != null)
+            {
+                return _loginOperationTask;
+            }
+
+            LoginError = string.Empty;
+            IsBusy = true;
+            StatusMessage = _localizer.GetString(NethereumWalletLocalizer.Keys.UnlockingWalletStatus);
+
+            var password = Password;
+            _loginOperationTask = Task.Run(async () => await _walletVaultService.UnlockAsync(password));
+            return _loginOperationTask;
+        }
+
+        public async Task CompleteLoginOperationAsync(bool success, Exception? error = null)
+        {
+            try
+            {
+                if (error != null)
+                {
+                    LoginError = _localizer.GetString(NethereumWalletLocalizer.Keys.LoginError, error.Message);
+                    return;
+                }
+
+                if (success)
+                {
+                    IsWalletUnlocked = true;
+
+                    await CheckAccountsAsync();
+
+                    if (HasAccounts)
+                    {
+                        await _walletHostProvider.EnableProviderAsync();
+                        await _selectedHostProvider.SetSelectedEthereumHostProvider(_walletHostProvider);
+                    }
+
+                    if (OnWalletConnected != null)
+                    {
+                        await OnWalletConnected();
+                    }
+                }
+                else
+                {
+                    LoginError = _localizer.GetString(NethereumWalletLocalizer.Keys.IncorrectPassword);
+                }
+            }
+            finally
+            {
+                IsBusy = false;
+                StatusMessage = string.Empty;
+                Password = string.Empty;
+                _loginOperationTask = null;
+            }
+        }
+
+        public Task<bool>? StartCreateWalletOperation()
+        {
+            if (_createOperationTask != null)
+            {
+                return _createOperationTask;
+            }
+
+            CreateError = string.Empty;
+
+            if (string.IsNullOrEmpty(NewPassword))
+            {
+                CreateError = _localizer.GetString(NethereumWalletLocalizer.Keys.PasswordRequired);
+                return null;
+            }
+
+            if (NewPassword != ConfirmPassword)
+            {
+                CreateError = _localizer.GetString(NethereumWalletLocalizer.Keys.PasswordMismatch);
+                return null;
+            }
+
+            if (NewPassword.Length < _config.Security.MinPasswordLength)
+            {
+                CreateError = _localizer.GetString(NethereumWalletLocalizer.Keys.PasswordTooShort, _config.Security.MinPasswordLength);
+                return null;
+            }
+
+            if (!IsPasswordValid(NewPassword))
+            {
+                CreateError = _localizer.GetString(NethereumWalletLocalizer.Keys.PasswordNotStrongEnough);
+                return null;
+            }
+
+            IsBusy = true;
+            StatusMessage = _localizer.GetString(NethereumWalletLocalizer.Keys.CreatingWalletStatus);
+
+            var password = NewPassword;
+            _createOperationTask = Task.Run(async () =>
+            {
+                await _walletVaultService.CreateNewAsync(password);
+                return true;
+            });
+
+            return _createOperationTask;
+        }
+
+        public async Task CompleteCreateWalletOperationAsync(bool success, Exception? error = null)
+        {
+            try
+            {
+                if (error != null)
+                {
+                    CreateError = _localizer.GetString(NethereumWalletLocalizer.Keys.WalletCreationFailed, error.Message);
+                    return;
+                }
+
+                if (success)
+                {
+                    IsWalletUnlocked = true;
+                    VaultExists = true;
+
+                    NewPassword = string.Empty;
+                    ConfirmPassword = string.Empty;
+
+                    await CheckAccountsAsync();
+
+                    if (OnWalletConnected != null)
+                    {
+                        await OnWalletConnected();
+                    }
+                }
+            }
+            finally
+            {
+                IsBusy = false;
+                StatusMessage = string.Empty;
+                _createOperationTask = null;
             }
         }
     }

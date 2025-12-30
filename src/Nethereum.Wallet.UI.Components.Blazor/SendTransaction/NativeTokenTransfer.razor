@@ -3,11 +3,51 @@
 @using Nethereum.Wallet.UI.Components.SendTransaction.Components
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Services.Tokens.Models
 @using static Nethereum.Wallet.UI.Components.Blazor.Shared.WalletTextField
 @using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
 @inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
 @inject IWalletLocalizationService LocalizationService
 @implements IDisposable
+
+@if (ViewModel.AvailableTokens.Count > 1)
+{
+    <WalletFormSection Title="@Localizer.GetString(Keys.SelectToken)">
+        <MudSelect T="AccountToken"
+                   Value="@ViewModel.SelectedToken"
+                   ValueChanged="@OnTokenSelected"
+                   Label="@Localizer.GetString(Keys.Token)"
+                   Variant="Variant.Outlined"
+                   Dense="true"
+                   Disabled="@ViewModel.IsLoadingTokens">
+            @foreach (var token in ViewModel.AvailableTokens)
+            {
+                <MudSelectItem Value="@token">
+                    <div class="d-flex align-center gap-2">
+                        @if (!string.IsNullOrEmpty(token.LogoURI))
+                        {
+                            <MudAvatar Size="Size.Small" Image="@token.LogoURI" />
+                        }
+                        else
+                        {
+                            <MudAvatar Size="Size.Small" Color="Color.Primary">@token.Symbol[0]</MudAvatar>
+                        }
+                        <div>
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">@token.Symbol</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @FormatBalance(token.Balance, token.Decimals) @token.Symbol
+                            </MudText>
+                        </div>
+                    </div>
+                </MudSelectItem>
+            }
+        </MudSelect>
+        @if (ViewModel.IsLoadingTokens)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-1" />
+        }
+    </WalletFormSection>
+}
 
 <WalletFormSection Title="@Localizer.GetString(Keys.RecipientSection)">
     <WalletTextField @bind-Value="ViewModel.NativeTransfer.RecipientAddress"
@@ -45,39 +85,66 @@
 
 @code {
     [Parameter] public SendNativeTokenViewModel ViewModel { get; set; } = null!;
-    
+
     protected override void OnInitialized()
     {
         LocalizationService.LanguageChanged += OnLanguageChanged;
-        
-        // Subscribe to ViewModel changes to update the UI when validation changes
+
         if (ViewModel?.NativeTransfer != null)
         {
             ViewModel.NativeTransfer.PropertyChanged += OnViewModelPropertyChanged;
             ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
     }
-    
+
     private void OnLanguageChanged(string languageCode)
     {
         InvokeAsync(StateHasChanged);
     }
-    
+
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // Update UI when validation state changes
         if (e.PropertyName == nameof(ViewModel.NativeTransfer.IsValid) ||
+            e.PropertyName == nameof(ViewModel.SelectedToken) ||
+            e.PropertyName == nameof(ViewModel.AvailableTokens) ||
+            e.PropertyName == nameof(ViewModel.IsLoadingTokens) ||
             e.PropertyName?.EndsWith("Error") == true ||
             e.PropertyName == "HasErrors")
         {
             InvokeAsync(StateHasChanged);
         }
     }
-    
+
+    private async Task OnTokenSelected(AccountToken token)
+    {
+        if (token != null)
+        {
+            await ViewModel.SelectTokenCommand.ExecuteAsync(token);
+            StateHasChanged();
+        }
+    }
+
+    private string FormatBalance(System.Numerics.BigInteger balance, int decimals)
+    {
+        if (balance == System.Numerics.BigInteger.Zero)
+            return "0";
+
+        var tokenValue = Nethereum.Util.UnitConversion.Convert.FromWei(balance, decimals);
+
+        if (tokenValue >= 1000)
+            return tokenValue.ToString("N2");
+        else if (tokenValue >= 1)
+            return tokenValue.ToString("F4").TrimEnd('0').TrimEnd('.');
+        else if (tokenValue >= 0.001m)
+            return tokenValue.ToString("F6").TrimEnd('0').TrimEnd('.');
+        else
+            return tokenValue.ToString("F8").TrimEnd('0').TrimEnd('.');
+    }
+
     public void Dispose()
     {
         LocalizationService.LanguageChanged -= OnLanguageChanged;
-        
+
         if (ViewModel?.NativeTransfer != null)
         {
             ViewModel.NativeTransfer.PropertyChanged -= OnViewModelPropertyChanged;

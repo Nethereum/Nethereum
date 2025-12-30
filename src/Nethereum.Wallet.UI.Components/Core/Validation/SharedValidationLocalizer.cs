@@ -80,7 +80,7 @@ namespace Nethereum.Wallet.UI.Components.Core.Validation
                 [Keys.InvalidUrl] = "Invalid URL format",
                 [Keys.InvalidRpcUrl] = "Invalid RPC endpoint URL",
                 [Keys.InvalidChainId] = "Invalid chain ID",
-                [Keys.NetworkUnreachable] = "Network is unreachable",
+                [Keys.NetworkUnreachable] = "Chain is unreachable",
                 
                 [Keys.GasLimitTooLow] = "Gas limit is too low (minimum 21000)",
                 [Keys.GasLimitTooHigh] = "Gas limit is too high",
@@ -126,7 +126,7 @@ namespace Nethereum.Wallet.UI.Components.Core.Validation
                 [Keys.InvalidUrl] = "Formato de URL inválido",
                 [Keys.InvalidRpcUrl] = "URL del endpoint RPC inválida",
                 [Keys.InvalidChainId] = "ID de cadena inválido",
-                [Keys.NetworkUnreachable] = "La red no es accesible",
+                [Keys.NetworkUnreachable] = "La cadena no es accesible",
                 
                 [Keys.GasLimitTooLow] = "El límite de gas es demasiado bajo (mínimo 21000)",
                 [Keys.GasLimitTooHigh] = "El límite de gas es demasiado alto",

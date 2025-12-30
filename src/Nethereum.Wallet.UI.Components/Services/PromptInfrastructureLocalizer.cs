@@ -31,14 +31,14 @@ namespace Nethereum.Wallet.UI.Components.Services
             {
                 [Keys.GenericRequestTimedOut] = "The request timed out.",
                 [Keys.TransactionPromptTimedOut] = "The transaction request timed out.",
-                [Keys.NetworkSwitchPromptTimedOut] = "The network switch request timed out.",
+                [Keys.NetworkSwitchPromptTimedOut] = "The chain switch request timed out.",
                 [Keys.PermissionRequestTimedOut] = "The permission request timed out.",
                 [Keys.PermissionRequestCanceled] = "The permission request was canceled.",
                 [Keys.PermissionRequestFailed] = "The permission request failed.",
-                [Keys.ChainAdditionInvalidRequest] = "The received network information is invalid.",
+                [Keys.ChainAdditionInvalidRequest] = "The received chain information is invalid.",
                 [Keys.PromptNotFound] = "The request context could not be found.",
-                [Keys.ChainAdditionTimedOut] = "The add network request timed out.",
-                [Keys.ChainAdditionCanceled] = "The add network request was canceled.",
+                [Keys.ChainAdditionTimedOut] = "The add chain request timed out.",
+                [Keys.ChainAdditionCanceled] = "The add chain request was canceled.",
                 [Keys.UserRejected] = "The user rejected the request.",
                 [Keys.BulkRejection] = "All pending requests were rejected."
             });
@@ -47,14 +47,14 @@ namespace Nethereum.Wallet.UI.Components.Services
             {
                 [Keys.GenericRequestTimedOut] = "La solicitud superó el tiempo de espera.",
                 [Keys.TransactionPromptTimedOut] = "La solicitud de transacción superó el tiempo de espera.",
-                [Keys.NetworkSwitchPromptTimedOut] = "La solicitud de cambio de red superó el tiempo de espera.",
+                [Keys.NetworkSwitchPromptTimedOut] = "La solicitud de cambio de cadena superó el tiempo de espera.",
                 [Keys.PermissionRequestTimedOut] = "La solicitud de permiso superó el tiempo de espera.",
                 [Keys.PermissionRequestCanceled] = "La solicitud de permiso fue cancelada.",
                 [Keys.PermissionRequestFailed] = "La solicitud de permiso falló.",
-                [Keys.ChainAdditionInvalidRequest] = "La información de la red recibida no es válida.",
+                [Keys.ChainAdditionInvalidRequest] = "La información de la cadena recibida no es válida.",
                 [Keys.PromptNotFound] = "No se pudo encontrar el contexto de la solicitud.",
-                [Keys.ChainAdditionTimedOut] = "La solicitud para agregar la red superó el tiempo de espera.",
-                [Keys.ChainAdditionCanceled] = "La solicitud para agregar la red fue cancelada.",
+                [Keys.ChainAdditionTimedOut] = "La solicitud para agregar la cadena superó el tiempo de espera.",
+                [Keys.ChainAdditionCanceled] = "La solicitud para agregar la cadena fue cancelada.",
                 [Keys.UserRejected] = "El usuario rechazó la solicitud.",
                 [Keys.BulkRejection] = "Se rechazaron todas las solicitudes pendientes."
             });

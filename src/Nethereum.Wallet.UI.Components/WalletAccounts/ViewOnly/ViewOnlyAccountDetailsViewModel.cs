@@ -91,13 +91,13 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
                         await _vaultService.SaveAsync();
                         
                         IsEditingAccountName = false;
-                        SuccessMessage = _localizer.GetString("AccountNameUpdated");
+                        SuccessMessage = _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.AccountNameUpdated);
                     }
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Failed to update account name: {ex.Message}";
+                ErrorMessage = string.Format(_localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.AccountNameUpdateError), ex.Message);
             }
             finally
             {
@@ -125,20 +125,20 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
                 {
                     if (vault.Accounts.Count <= 1)
                     {
-                        ErrorMessage = _localizer.GetString("CannotRemoveLastAccount");
+                        ErrorMessage = _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.CannotRemoveLastAccount);
                         return false;
                     }
 
                     // Show warning confirmation dialog
-                    var accountName = Account.Name ?? "View-Only Account";
-                    var confirmTitle = _localizer.GetString("ConfirmRemoval");
-                    var confirmMessage = string.Format(_localizer.GetString("ConfirmRemovalMessage"), accountName);
+                    var accountName = Account.Name ?? _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.ViewOnlyBadge);
+                    var confirmTitle = _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.ConfirmRemoval);
+                    var confirmMessage = string.Format(_localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.ConfirmRemovalMessage), accountName);
                     
                     var confirmed = await _dialogService.ShowWarningConfirmationAsync(
-                        confirmTitle, 
-                        confirmMessage, 
-                        _localizer.GetString("RemoveAccount"),
-                        _localizer.GetString("Cancel"));
+                        confirmTitle,
+                        confirmMessage,
+                        _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.RemoveAccount),
+                        _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.Cancel));
                     if (!confirmed)
                     {
                         IsLoading = false;
@@ -151,21 +151,21 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
                         vault.Accounts.Remove(accountToRemove);
                         await _vaultService.SaveAsync();
                         
-                        SuccessMessage = _localizer.GetString("AccountRemoved");
-                        
-                        _notificationService.ShowSuccess(_localizer.GetString("AccountRemoved"));
+                        SuccessMessage = _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.AccountRemoved);
+
+                        _notificationService.ShowSuccess(_localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.AccountRemoved));
                         return true;
                     }
                     else
                     {
-                        ErrorMessage = "Account not found in vault.";
+                        ErrorMessage = _localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.AccountNotFoundInVault);
                         return false;
                     }
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = string.Format(_localizer.GetString("RemovalError"), ex.Message);
+                ErrorMessage = string.Format(_localizer.GetString(ViewOnlyAccountDetailsLocalizer.Keys.RemovalError), ex.Message);
                 return false;
             }
             finally

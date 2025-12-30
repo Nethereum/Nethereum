@@ -85,6 +85,11 @@ namespace Nethereum.Wallet.UI.Components.Transactions
             public const string InputData = "InputData";
             public const string MaxFeePerGas = "MaxFeePerGas";
             public const string MaxPriorityFeePerGas = "MaxPriorityFeePerGas";
+
+            public const string ContractAddress = "ContractAddress";
+            public const string Topics = "Topics";
+            public const string Data = "Data";
+            public const string Success = "Success";
         }
         
         public TransactionHistoryLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -116,7 +121,7 @@ namespace Nethereum.Wallet.UI.Components.Transactions
                 [Keys.Time] = "Time",
                 [Keys.Confirmations] = "Confirmations",
                 [Keys.Actions] = "Actions",
-                [Keys.Network] = "Network",
+                [Keys.Network] = "Chain",
                 [Keys.Value] = "Value",
                 [Keys.GasUsed] = "Gas Used",
                 [Keys.GasPrice] = "Gas Price",
@@ -172,7 +177,12 @@ namespace Nethereum.Wallet.UI.Components.Transactions
                 [Keys.EventLogs] = "Event Logs",
                 [Keys.InputData] = "Input Data",
                 [Keys.MaxFeePerGas] = "Max Fee Per Gas",
-                [Keys.MaxPriorityFeePerGas] = "Max Priority Fee Per Gas"
+                [Keys.MaxPriorityFeePerGas] = "Max Priority Fee Per Gas",
+
+                [Keys.ContractAddress] = "Contract Address",
+                [Keys.Topics] = "Topics",
+                [Keys.Data] = "Data",
+                [Keys.Success] = "Success"
             });
             
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -198,7 +208,7 @@ namespace Nethereum.Wallet.UI.Components.Transactions
                 [Keys.Time] = "Tiempo",
                 [Keys.Confirmations] = "Confirmaciones",
                 [Keys.Actions] = "Acciones",
-                [Keys.Network] = "Red",
+                [Keys.Network] = "Cadena",
                 [Keys.Value] = "Valor",
                 [Keys.GasUsed] = "Gas Usado",
                 [Keys.GasPrice] = "Precio del Gas",
@@ -254,7 +264,12 @@ namespace Nethereum.Wallet.UI.Components.Transactions
                 [Keys.EventLogs] = "Registros de eventos",
                 [Keys.InputData] = "Datos de entrada",
                 [Keys.MaxFeePerGas] = "Tarifa máxima por gas",
-                [Keys.MaxPriorityFeePerGas] = "Tarifa de prioridad máxima por gas"
+                [Keys.MaxPriorityFeePerGas] = "Tarifa de prioridad máxima por gas",
+
+                [Keys.ContractAddress] = "Dirección del Contrato",
+                [Keys.Topics] = "Temas",
+                [Keys.Data] = "Datos",
+                [Keys.Success] = "Exitoso"
             });
         }
     }

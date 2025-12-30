@@ -1,0 +1,129 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Contacts
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Utils
+@using static Nethereum.Wallet.UI.Components.Contacts.ContactListLocalizer
+@inject IComponentLocalizer<ContactListViewModel> Localizer
+
+<MudCard Elevation="1"
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="HandleClick">
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-3")">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="flex: 1; min-width: 0;">
+                <MudAvatar Size="@(IsCompactMode ? Size.Small : Size.Medium)"
+                          Style="@IdenticonGenerator.GetIdenticonStyle(Contact.Address)">
+                    <div class="identicon-content">@GetInitials(Contact.Name)</div>
+                </MudAvatar>
+                <MudStack Spacing="0" Style="flex: 1; min-width: 0;">
+                    <MudText Typo="@(IsCompactMode ? Typo.body2 : Typo.subtitle2)"
+                            Style="font-weight: 600;">@Contact.Name</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary"
+                            Style="font-family: 'Roboto Mono', monospace;">
+                        @Contact.FormattedAddress
+                    </MudText>
+                    @if (!string.IsNullOrEmpty(Contact.Notes))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="contact-notes">
+                            @Contact.Notes
+                        </MudText>
+                    }
+                </MudStack>
+            </MudStack>
+            @if (ShowActions || IsSelectable)
+            {
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" @onclick:stopPropagation="true">
+                    @if (IsSelectable)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                  Color="Color.Primary"
+                                  Size="Size.Small"
+                                  OnClick="@HandleSelect"
+                                  Class="wallet-touch-target">
+                            @Localizer.GetString(Keys.Select)
+                        </MudButton>
+                    }
+                    else if (ShowActions)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Size="@GetButtonSize()"
+                                       Color="Color.Default"
+                                       Class="wallet-touch-target"
+                                       OnClick="@HandleEdit"
+                                       Title="@Localizer.GetString(Keys.Edit)" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="@GetButtonSize()"
+                                       Color="Color.Error"
+                                       Class="wallet-touch-target"
+                                       OnClick="@HandleDelete"
+                                       Title="@Localizer.GetString(Keys.Delete)" />
+                    }
+                </MudStack>
+            }
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public ContactItemViewModel Contact { get; set; }
+    [Parameter] public bool IsSelectable { get; set; } = false;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public EventCallback<ContactItemViewModel> OnSelect { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+
+    private Size GetButtonSize() => IsCompactMode ? Size.Small : Size.Medium;
+
+    private string GetCardClasses()
+    {
+        var classes = "wallet-card contact-card";
+        if (IsSelectable)
+            classes += " selectable";
+        return classes;
+    }
+
+    private string GetCardStyle()
+    {
+        return "cursor: pointer; transition: all 0.2s ease;";
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    private async Task HandleClick()
+    {
+        if (IsSelectable && OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Contact);
+        }
+    }
+
+    private async Task HandleSelect()
+    {
+        if (OnSelect.HasDelegate)
+            await OnSelect.InvokeAsync(Contact);
+    }
+
+    private async Task HandleEdit()
+    {
+        if (OnEdit.HasDelegate)
+            await OnEdit.InvokeAsync();
+    }
+
+    private async Task HandleDelete()
+    {
+        if (OnDelete.HasDelegate)
+            await OnDelete.InvokeAsync();
+    }
+}

@@ -1,0 +1,130 @@
+@using MudBlazor
+@using System.Linq
+@using System.Numerics
+@using Nethereum.RPC.Chain
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Networks
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+
+<div class="@(IsCompactMode ? "wallet-compact" : "")">
+<MudStack Spacing="@(IsCompactMode ? 2 : 4)">
+    <WalletContentSection Class="spacing-tight">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h6">@Localizer.GetString(Keys.SelectChain)</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                          Size="Size.Small"
+                          OnClick="@HandleExit" />
+        </MudStack>
+    </WalletContentSection>
+
+    <WalletContentSection Class="spacing-tight">
+        <WalletTextField @bind-Value="@_searchText"
+                        LabelKey="@Keys.SearchChains"
+                        PlaceholderKey="@Keys.SearchChains"
+                        Required="false"
+                        Localizer="@Localizer"
+                        FieldType="WalletTextField.WalletTextFieldType.Search" />
+    </WalletContentSection>
+
+    <WalletContentSection Class="spacing-tight">
+        @if (FilteredUserChains?.Any() == true)
+        {
+            <div class="network-list mt-3">
+                @foreach (var chain in FilteredUserChains)
+                {
+                    <NetworkCard Network="@chain"
+                                IsSelected="@IsChainSelected(chain)"
+                                IsActive="@IsChainSelected(chain)"
+                                ShowActions="true"
+                                ShowMenuButton="false"
+                                IsCompactMode="@IsCompactMode"
+                                OnSelectNetwork="@HandleChainSelect" />
+                }
+            </div>
+        }
+
+        @if (FilteredAllChains?.Any() == true)
+        {
+            <div class="@(FilteredUserChains?.Any() == true ? "mt-4" : "")">
+  
+                <div class="network-list mt-3">
+                    @foreach (var chain in FilteredAllChains)
+                    {
+                        <NetworkCard Network="@chain"
+                                    IsSelected="@IsChainSelected(chain)"
+                                    ShowActions="true"
+                                    ShowMenuButton="false"
+                                    IsCompactMode="@IsCompactMode"
+                                    OnSelectNetwork="@HandleChainSelect" />
+                    }
+                </div>
+            </div>
+        }
+
+        @if (!FilteredUserChains?.Any() == true && !FilteredAllChains?.Any() == true)
+        {
+            <WalletCompactHeader Title="@Localizer.GetString(Keys.NoNetworksFound)"
+                                Subtitle="@Localizer.GetString(Keys.SearchChains)" />
+        }
+    </WalletContentSection>
+</MudStack>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<ChainFeature> UserChains { get; set; }
+    [Parameter] public IEnumerable<ChainFeature> AllChains { get; set; }
+    [Parameter] public long? SelectedChainId { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public EventCallback<ChainFeature> OnChainSelected { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    private string _searchText = "";
+
+    private IEnumerable<ChainFeature> FilteredUserChains =>
+        UserChains?.Where(c => MatchesSearch(c)) ?? Enumerable.Empty<ChainFeature>();
+
+    private IEnumerable<ChainFeature> FilteredAllChains
+    {
+        get
+        {
+            var userChainIds = UserChains?.Select(c => c.ChainId).ToHashSet() ?? new HashSet<BigInteger>();
+            return AllChains?
+                .Where(c => !userChainIds.Contains(c.ChainId) && MatchesSearch(c))
+                ?? Enumerable.Empty<ChainFeature>();
+        }
+    }
+
+    private bool MatchesSearch(ChainFeature chain)
+    {
+        if (string.IsNullOrWhiteSpace(_searchText))
+            return true;
+
+        var search = _searchText.ToLowerInvariant();
+        return (chain.ChainName?.ToLowerInvariant().Contains(search) ?? false) ||
+               chain.ChainId.ToString().Contains(search);
+    }
+
+    private bool IsChainSelected(ChainFeature chain)
+    {
+        return SelectedChainId.HasValue && (long)chain.ChainId == SelectedChainId.Value;
+    }
+
+    private async Task HandleChainSelect(ChainFeature chain)
+    {
+        if (OnChainSelected.HasDelegate)
+        {
+            await OnChainSelected.InvokeAsync(chain);
+        }
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+}

@@ -1,20 +1,80 @@
 @using MudBlazor
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using Nethereum.RPC.Chain
 @using Nethereum.Wallet.UI.Components.SendTransaction
 @using Nethereum.Wallet.UI.Components.SendTransaction.Models
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Contacts
+@using Nethereum.Wallet.UI.Components.Blazor.Tokens
+@using Nethereum.Wallet.Services.Contacts
+@using Nethereum.Wallet.Services.Tokens.Models
+@using Nethereum.Wallet.WalletAccounts
 @using Nethereum.Wallet.Diagnostics
+@using Nethereum.Wallet.UI.Components.Dashboard
 @using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
 @inject SendNativeTokenViewModel ViewModel
 @inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
 @inject IWalletLocalizationService LocalizationService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
+@implements INavigatablePlugin
 
-<WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+@if (_currentSubView == TransferSubView.ChainPicker)
+{
+    <ChainPicker UserChains="@ViewModel.AvailableChains"
+                 AllChains="@ViewModel.AvailableChains"
+                 SelectedChainId="@((long?)ViewModel.SelectedChain?.ChainId)"
+                 IsCompactMode="@IsCompactMode"
+                 OnChainSelected="@HandleChainSelected"
+                 OnExit="@(async () => await SetSubView(TransferSubView.None))" />
+}
+else if (_currentSubView == TransferSubView.TokenPicker)
+{
+    <TokenPicker UserTokens="@ViewModel.AvailableTokens"
+                 AllTokens="@ViewModel.AllKnownTokens"
+                 SelectedToken="@ViewModel.SelectedToken"
+                 ChainId="@((long?)ViewModel.SelectedChain?.ChainId)"
+                 IsCompactMode="@IsCompactMode"
+                 IsSearching="@ViewModel.IsSearchingTokens"
+                 OnTokenSelected="@HandleTokenSelected"
+                 OnSearch="@HandleTokenSearch"
+                 OnGetBalance="@HandleGetBalance"
+                 LoadingBalanceTokens="@ViewModel.LoadingBalanceTokens"
+                 OnAddCustomToken="@(async () => await SetSubView(TransferSubView.AddToken))"
+                 OnExit="@(async () => await SetSubView(TransferSubView.None))" />
+}
+else if (_currentSubView == TransferSubView.ContactPicker)
+{
+    <ContactList IsSelectable="true"
+                 IsCompactMode="@IsCompactMode"
+                 ShowExit="true"
+                 OnContactSelected="@HandleContactSelected"
+                 OnExit="@(async () => await SetSubView(TransferSubView.None))" />
+}
+else if (_currentSubView == TransferSubView.AddToken)
+{
+    <AddCustomToken OnTokenAdded="@HandleTokenAdded" OnCancel="@(async () => await SetSubView(TransferSubView.TokenPicker))" />
+}
+else if (_currentSubView == TransferSubView.AccountPicker)
+{
+    <AccountPicker Accounts="@ViewModel.AvailableAccounts"
+                   SelectedAccount="@ViewModel.SelectedAccount"
+                   IsCompactMode="@IsCompactMode"
+                   OnAccountSelected="@HandleAccountSelected"
+                   OnExit="@(async () => await SetSubView(TransferSubView.None))" />
+}
+else
+{
+<WalletFormLayout
+                  ShowHeader="false"
+                  Title="@Localizer.GetString(Keys.Title)"
                   Subtitle=""
                   Steps="@formSteps"
                   CurrentStepIndex="@(ViewModel.CurrentStep - 1)"
+                  ShowExit="@(ViewModel.CurrentStep > 1)"
                   ExitText="@(ViewModel.CurrentStep == 3 ? Localizer.GetString(Keys.Done) : Localizer.GetString(Keys.Cancel))"
                   BackText="@Localizer.GetString(Keys.Previous)"
                   ContinueText="@Localizer.GetString(Keys.ContinueButton)"
@@ -25,6 +85,7 @@
                   ShowPrimary="@(ViewModel.CurrentStep == 2)"
                   ContinueDisabled="@(!ViewModel.CanProceedToNextStep)"
                   PrimaryDisabled="@ViewModel.IsLoading"
+                  IsCompactMode="@IsCompactMode"
                   OnExit="@HandleCancel"
                   OnBack="@HandleBack"
                   OnContinue="@HandleContinue"
@@ -58,7 +119,13 @@
             @switch (ViewModel.CurrentStep)
             {
                 case 1:
-                    <NativeTokenTransfer ViewModel="ViewModel" />
+                    <TokenTransferInput ViewModel="ViewModel"
+                                       OnShowChainPicker="@(async () => await SetSubView(TransferSubView.ChainPicker))"
+                                       OnShowTokenPicker="@(async () => await SetSubView(TransferSubView.TokenPicker))"
+                                       OnShowContactPicker="@(async () => await SetSubView(TransferSubView.ContactPicker))"
+                                       OnShowAccountPicker="@(async () => await SetSubView(TransferSubView.AccountPicker))"
+                                       OnAddToken="@(async () => await SetSubView(TransferSubView.AddToken))"
+                                       IsCompactMode="@IsCompactMode" />
                     break;
                     
                 case 2:
@@ -103,16 +170,22 @@
         }
     </ChildContent>
 </WalletFormLayout>
+}
 
 @code {
     [Parameter] public EventCallback OnTransactionSent { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
-    
+
     [Parameter] public string? FromAddress { get; set; }
     [Parameter] public string TokenSymbol { get; set; } = "ETH";
     [Parameter] public int TokenDecimals { get; set; } = 18;
     [Parameter] public bool IsCompactMode { get; set; } = false;
-    
+    [Parameter] public string? PreSelectedContractAddress { get; set; }
+    [Parameter] public long? PreSelectedChainId { get; set; }
+    [Parameter] public Action<object>? OnReady { get; set; }
+
+    private enum TransferSubView { None, ChainPicker, TokenPicker, ContactPicker, AddToken, AccountPicker }
+    private TransferSubView _currentSubView = TransferSubView.None;
     private List<WalletFormStep> formSteps = new();
     
     protected override async Task OnInitializedAsync()
@@ -161,8 +234,12 @@
         
         // Initialize the ViewModel with wallet data
         await ViewModel.InitializeAsync();
+
+        // Notify parent that component is ready to receive navigation parameters
+        OnReady?.Invoke(this);
+
         Trace("TokenTransfer OnInitializedAsync completed");
-        
+
         StateHasChanged();
     }
     
@@ -235,6 +312,64 @@
             await JSRuntime.InvokeVoidAsync("open", url, "_blank");
         }
     }
+
+    private async Task SetSubView(TransferSubView subView)
+    {
+        _currentSubView = subView;
+
+        if (subView == TransferSubView.TokenPicker)
+        {
+            await ViewModel.RefreshKnownTokenBalancesCommand.ExecuteAsync(null);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HandleTokenSearch(string searchText)
+    {
+        await ViewModel.SearchTokensCommand.ExecuteAsync(searchText);
+    }
+
+    private async Task HandleChainSelected(ChainFeature chain)
+    {
+        ViewModel.SelectedChain = chain;
+        _currentSubView = TransferSubView.None;
+        StateHasChanged();
+    }
+
+    private async Task HandleTokenSelected(AccountToken token)
+    {
+        await ViewModel.SelectTokenCommand.ExecuteAsync(token);
+        _currentSubView = TransferSubView.None;
+        StateHasChanged();
+    }
+
+    private void HandleContactSelected(Contact contact)
+    {
+        ViewModel.NativeTransfer.RecipientAddress = contact.Address;
+        _currentSubView = TransferSubView.None;
+        StateHasChanged();
+    }
+
+    private void HandleAccountSelected(IWalletAccount account)
+    {
+        ViewModel.SelectedAccount = account;
+        _currentSubView = TransferSubView.None;
+        StateHasChanged();
+    }
+
+    private async Task HandleTokenAdded()
+    {
+        await ViewModel.RefreshKnownTokenBalancesCommand.ExecuteAsync(null);
+        _currentSubView = TransferSubView.None;
+        StateHasChanged();
+    }
+
+    private async Task HandleGetBalance(AccountToken token)
+    {
+        await ViewModel.GetTokenBalanceCommand.ExecuteAsync(token);
+        StateHasChanged();
+    }
     
     public void Dispose()
     {
@@ -249,5 +384,39 @@
     private void Trace(string message)
     {
         WalletDiagnosticsLogger.Log("TokenTransfer", message);
+    }
+
+    public async Task NavigateWithParametersAsync(Dictionary<string, object> parameters)
+    {
+        Trace($"NavigateWithParametersAsync called with {parameters.Count} parameters");
+
+        string? tokenContract = null;
+        string? tokenSymbol = null;
+        long? chainId = null;
+        string? accountAddress = null;
+
+        if (parameters.TryGetValue("TokenContract", out var contractObj))
+            tokenContract = contractObj as string;
+
+        if (parameters.TryGetValue("TokenSymbol", out var symbolObj))
+            tokenSymbol = symbolObj as string;
+
+        if (parameters.TryGetValue("ChainId", out var chainIdObj))
+        {
+            if (chainIdObj is long cid)
+                chainId = cid;
+            else if (chainIdObj is int intCid)
+                chainId = intCid;
+        }
+
+        if (parameters.TryGetValue("AccountAddress", out var accountObj))
+            accountAddress = accountObj as string;
+
+        Trace($"Parsed: chain={chainId}, symbol={tokenSymbol}, contract={tokenContract}");
+
+        // Apply pre-selection to the ViewModel
+        await ViewModel.ApplyPreSelectionAsync(accountAddress, chainId, tokenContract, tokenSymbol);
+
+        await InvokeAsync(StateHasChanged);
     }
 }

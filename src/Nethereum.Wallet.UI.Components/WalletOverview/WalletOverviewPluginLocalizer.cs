@@ -19,15 +19,15 @@ namespace Nethereum.Wallet.UI.Components.WalletOverview
         {
             _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
             {
-                [Keys.DisplayName] = "Overview",
-                [Keys.Description] = "View your wallet summary and recent activity"
+                [Keys.DisplayName] = "Current Account",
+                [Keys.Description] = "View your current account balance and activity"
             });
-            
+
             // Spanish (Spain) translations
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
-                [Keys.DisplayName] = "Resumen",
-                [Keys.Description] = "Ver el resumen de tu cartera y actividad reciente"
+                [Keys.DisplayName] = "Cuenta Activa",
+                [Keys.Description] = "Ver el saldo y actividad de tu cuenta activa"
             });
         }
     }

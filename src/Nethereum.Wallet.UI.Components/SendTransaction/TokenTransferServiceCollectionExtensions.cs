@@ -6,6 +6,7 @@ using Nethereum.Wallet.UI.Components.SendTransaction.Components;
 using Nethereum.Wallet.UI.Components.SendTransaction.Models;
 using Nethereum.Wallet.UI.Components.Core.Localization;
 using Nethereum.Wallet.UI.Components.Core.Validation;
+using Nethereum.Wallet.UI.Components.Dashboard;
 
 namespace Nethereum.Wallet.UI.Components.SendTransaction
 {
@@ -52,7 +53,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             //     provider.GetRequiredService<TokenTransferLocalizer>());
             //     provider.GetRequiredService<TransactionInputLocalizer>());
             //     provider.GetRequiredService<TransactionConfirmationLocalizer>();
-            
+
+            services.AddScoped<TokenTransferPluginViewModel>();
+            services.AddScoped<IDashboardPluginViewModel, TokenTransferPluginViewModel>();
+
             return services;
         }
     }

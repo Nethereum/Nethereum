@@ -1,0 +1,38 @@
+.selectable-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wallet-space-sm, 8px);
+}
+
+.selectable-list-actions {
+    display: flex;
+    gap: var(--wallet-space-sm, 8px);
+    padding-bottom: var(--wallet-space-sm, 8px);
+}
+
+.selectable-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wallet-space-sm, 8px);
+}
+
+.selectable-card-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--wallet-space-sm, 8px);
+    cursor: pointer;
+}
+
+.selection-checkbox {
+    flex-shrink: 0;
+}
+
+.selectable-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.selectable-list-summary {
+    text-align: right;
+    padding-top: var(--wallet-space-sm, 8px);
+}

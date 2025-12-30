@@ -1,0 +1,127 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Networks
+
+<div class="selectable-list">
+    @if (Networks == null || !Networks.Any())
+    {
+        <WalletEmptyState Title="@EmptyMessage" Icon="@Icons.Material.Filled.Lan" />
+    }
+    else
+    {
+        <div class="selectable-list-header">
+            @if (ShowBulkActions)
+            {
+                <div class="selectable-list-actions">
+                    <MudButton Variant="Variant.Text"
+                              Color="Color.Primary"
+                              Size="Size.Small"
+                              OnClick="@HandleSelectAll">
+                        @SelectAllText
+                    </MudButton>
+                    <MudButton Variant="Variant.Text"
+                              Color="Color.Default"
+                              Size="Size.Small"
+                              OnClick="@HandleDeselectAll">
+                        @DeselectAllText
+                    </MudButton>
+                </div>
+            }
+            @if (ShowTestnetToggle)
+            {
+                <div class="testnet-toggle">
+                    <MudSwitch T="bool"
+                              Value="@ShowTestnets"
+                              ValueChanged="@HandleTestnetToggle"
+                              Color="Color.Primary"
+                              Label="@ShowTestnetsText"
+                              Size="Size.Small" />
+                </div>
+            }
+        </div>
+
+        <div class="selectable-card-list">
+            @foreach (var network in FilteredNetworks)
+            {
+                <div class="selectable-card-wrapper" @onclick="@(() => HandleToggle(network))">
+                    <MudCheckBox T="bool"
+                                Value="@network.IsSelected"
+                                ValueChanged="@((value) => HandleCheckboxChange(network, value))"
+                                Color="Color.Primary"
+                                Class="selection-checkbox"
+                                @onclick:stopPropagation="true" />
+                    <div class="selectable-card-content">
+                        <NetworkCard Network="@network.ChainFeature"
+                                    IsSelected="@network.IsSelected"
+                                    IsCompactMode="@IsCompactMode"
+                                    ShowActions="false" />
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (ShowSelectedCount)
+        {
+            <div class="selectable-list-summary">
+                <MudText Typo="Typo.caption" Color="Color.Primary">
+                    @string.Format(SelectedCountFormat, SelectedCount)
+                </MudText>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<SelectableNetworkViewModel>? Networks { get; set; }
+    [Parameter] public EventCallback<SelectableNetworkViewModel> OnToggle { get; set; }
+    [Parameter] public EventCallback OnSelectAll { get; set; }
+    [Parameter] public EventCallback OnDeselectAll { get; set; }
+    [Parameter] public bool ShowTestnets { get; set; }
+    [Parameter] public EventCallback<bool> ShowTestnetsChanged { get; set; }
+    [Parameter] public bool ShowBulkActions { get; set; } = true;
+    [Parameter] public bool ShowTestnetToggle { get; set; } = true;
+    [Parameter] public bool ShowSelectedCount { get; set; } = true;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public string EmptyMessage { get; set; } = "No networks available";
+    [Parameter] public string SelectAllText { get; set; } = "Select All";
+    [Parameter] public string DeselectAllText { get; set; } = "Deselect All";
+    [Parameter] public string ShowTestnetsText { get; set; } = "Show Testnets";
+    [Parameter] public string SelectedCountFormat { get; set; } = "{0} network(s) selected";
+
+    private IEnumerable<SelectableNetworkViewModel> FilteredNetworks =>
+        ShowTestnets ? (Networks ?? Enumerable.Empty<SelectableNetworkViewModel>())
+                     : (Networks ?? Enumerable.Empty<SelectableNetworkViewModel>()).Where(n => !n.IsTestnet);
+
+    private int SelectedCount => Networks?.Count(n => n.IsSelected) ?? 0;
+
+    private async Task HandleToggle(SelectableNetworkViewModel network)
+    {
+        if (OnToggle.HasDelegate)
+            await OnToggle.InvokeAsync(network);
+    }
+
+    private async Task HandleCheckboxChange(SelectableNetworkViewModel network, bool value)
+    {
+        if (OnToggle.HasDelegate)
+            await OnToggle.InvokeAsync(network);
+    }
+
+    private async Task HandleSelectAll()
+    {
+        if (OnSelectAll.HasDelegate)
+            await OnSelectAll.InvokeAsync();
+    }
+
+    private async Task HandleDeselectAll()
+    {
+        if (OnDeselectAll.HasDelegate)
+            await OnDeselectAll.InvokeAsync();
+    }
+
+    private async Task HandleTestnetToggle(bool value)
+    {
+        if (ShowTestnetsChanged.HasDelegate)
+            await ShowTestnetsChanged.InvokeAsync(value);
+    }
+}

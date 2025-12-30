@@ -1,0 +1,299 @@
+@using MudBlazor
+@using System.Linq
+@using System.ComponentModel
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Storage
+@using Nethereum.Wallet.UI.Components.Blazor.Tokens
+@using Nethereum.Wallet.UI.Components.Dashboard.Services
+@using static Nethereum.Wallet.UI.Components.Holdings.HoldingsLocalizer
+@implements IDisposable
+@inject HoldingsViewModel ViewModel
+@inject IComponentLocalizer<HoldingsViewModel> Localizer
+@inject IDashboardNavigationService DashboardNavService
+
+@if (_showAddToken)
+{
+    <AddCustomToken OnTokenAdded="@HandleAddTokenComplete" OnCancel="@HideAddToken" />
+}
+else if (ViewModel.IsShowingEditPage)
+{
+    <EditHoldings CurrentSettings="@ViewModel.Settings"
+                  OnSave="@HandleEditSave"
+                  OnCancel="@HandleEditCancel" />
+}
+else if (ViewModel.IsLoading)
+{
+    <WalletContentSection Class="spacing-normal">
+        <WalletLoadingState Message="@Localizer.GetString(Keys.Loading)" />
+    </WalletContentSection>
+}
+else if (!HasAnyData)
+{
+    <WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+                      ShowExit="@ShowExit"
+                      ShowContinue="false"
+                      OnExit="@HandleExit">
+        <ChildContent>
+            <WalletContentSection Class="spacing-normal">
+                <WalletEmptyState Title="@Localizer.GetString(Keys.NoHoldingsYet)"
+                                  Description="@Localizer.GetString(Keys.NoHoldingsDescription)"
+                                  Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                                  ActionText="@Localizer.GetString(Keys.ConfigureHoldings)"
+                                  OnAction="@HandleEdit" />
+            </WalletContentSection>
+        </ChildContent>
+    </WalletFormLayout>
+}
+else
+{
+    <WalletFormLayout ShowHeader="false"
+                      Title="@Localizer.GetString(Keys.Title)"
+                      Subtitle="@GetSubtitle()"
+                      ShowExit="@ShowExit"
+                      ShowContinue="false"
+                      OnExit="@HandleExit">
+        <ActionButtons>
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Add"
+                                   Text="@Localizer.GetString(Keys.AddToken)"
+                                   OnClick="@ShowAddToken" />
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Edit"
+                                   Text="@Localizer.GetString(Keys.Edit)"
+                                   OnClick="@HandleEdit" />
+            @if (ViewModel.IsScanning || ViewModel.IsUpdating)
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Sync"
+                                       Text="@Localizer.GetString(Keys.Refreshing)"
+                                       Disabled="true"
+                                       Class="wallet-button-action wallet-spin" />
+            }
+            else
+            {
+                <WalletBarActionButton Icon="@Icons.Material.Filled.Refresh"
+                                       Text="@Localizer.GetString(Keys.Refresh)"
+                                       OnClick="@HandleRefresh"
+                                       Class="wallet-button-primary" />
+            }
+        </ActionButtons>
+        <ChildContent>
+            <!-- Summary Section -->
+            <WalletContentSection Class="spacing-tight">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-weight-bold">
+                        @ViewModel.FormattedTotalValue
+                    </MudText>
+                    @if (ViewModel.IsUpdating && !string.IsNullOrEmpty(ViewModel.ScanStatusMessage))
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Style="width: 14px; height: 14px;" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @ViewModel.ScanStatusMessage
+                            </MudText>
+                        </MudStack>
+                    }
+                    else if (ViewModel.LastUpdated.HasValue)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @string.Format(Localizer.GetString(Keys.LastUpdated), ViewModel.LastUpdatedFormatted)
+                        </MudText>
+                    }
+                </MudStack>
+            </WalletContentSection>
+
+            @if (ViewModel.IsScanning)
+            {
+                <HoldingsScanProgress AccountProgress="@ViewModel.AccountProgress"
+                                      Networks="@ViewModel.NetworkItems"
+                                      Accounts="@ViewModel.AccountItems"
+                                      StatusMessage="@ViewModel.ScanStatusMessage"
+                                      OverallProgress="@ViewModel.ScanProgressPercent"
+                                      OnCancel="@HandleCancelScan"
+                                      Localizer="@Localizer" />
+            }
+
+            <!-- Tab Control -->
+            <WalletContentSection Class="spacing-tight">
+                <WalletSegmentedControl TValue="HoldingsTab"
+                                        Options="@_tabOptions"
+                                        SelectedValue="@ViewModel.SelectedTab"
+                                        SelectedValueChanged="@HandleTabChange" />
+            </WalletContentSection>
+
+            <!-- Tab Content -->
+            <WalletContentSection Class="spacing-tight">
+                @switch (ViewModel.SelectedTab)
+                {
+                    case HoldingsTab.Accounts:
+                        <HoldingsAccountsTab AccountItems="@ViewModel.AccountItems"
+                                             TokenItems="@ViewModel.TokenItems"
+                                             NetworkItems="@ViewModel.NetworkItems"
+                                             SelectedAccountAddresses="@ViewModel.Settings?.SelectedAccountAddresses"
+                                             CurrencySymbol="@ViewModel.CurrencySymbol"
+                                             IsCompactMode="@IsCompactMode" />
+                        break;
+
+                    case HoldingsTab.Networks:
+                        <HoldingsNetworksTab NetworkItems="@ViewModel.NetworkItems"
+                                             TokenItems="@ViewModel.TokenItems"
+                                             AccountItems="@ViewModel.AccountItems"
+                                             SelectedChainIds="@ViewModel.Settings?.SelectedChainIds"
+                                             CurrencySymbol="@ViewModel.CurrencySymbol"
+                                             IsCompactMode="@IsCompactMode" />
+                        break;
+
+                    case HoldingsTab.Tokens:
+                        <HoldingsTokensTab TokenItems="@ViewModel.TokenItems"
+                                           CurrencySymbol="@ViewModel.CurrencySymbol"
+                                           IsCompactMode="@IsCompactMode"
+                                           OnSendToken="@HandleSendToken"
+                                           OnSendTokenOnChain="@HandleSendTokenOnChain" />
+                        break;
+                }
+            </WalletContentSection>
+
+            @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+            {
+                <WalletContentSection Class="spacing-tight">
+                    <MudAlert Severity="Severity.Success" ShowCloseIcon="true" CloseIconClicked="@(() => ViewModel.SuccessMessage = null)">@ViewModel.SuccessMessage</MudAlert>
+                </WalletContentSection>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-tight">
+                    <MudAlert Severity="Severity.Error" ShowCloseIcon="true" CloseIconClicked="@(() => ViewModel.ErrorMessage = null)">@ViewModel.ErrorMessage</MudAlert>
+                </WalletContentSection>
+            }
+        </ChildContent>
+    </WalletFormLayout>
+}
+
+@code {
+    [Parameter] public bool ShowExit { get; set; } = false;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    private List<WalletSegmentedControl<HoldingsTab>.WalletSegmentOption<HoldingsTab>> _tabOptions;
+    private bool _showAddToken = false;
+
+    private bool HasAnyData =>
+        (ViewModel.Settings?.SelectedAccountAddresses?.Any() ?? false) &&
+        (ViewModel.Settings?.SelectedChainIds?.Any() ?? false);
+
+    protected override void OnInitialized()
+    {
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        _tabOptions = new List<WalletSegmentedControl<HoldingsTab>.WalletSegmentOption<HoldingsTab>>
+        {
+            new() { Value = HoldingsTab.Accounts, Title = Localizer.GetString(Keys.Accounts) },
+            new() { Value = HoldingsTab.Networks, Title = Localizer.GetString(Keys.Networks) },
+            new() { Value = HoldingsTab.Tokens, Title = Localizer.GetString(Keys.Tokens) }
+        };
+    }
+
+    private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.InitializeCommand.ExecuteAsync(null);
+    }
+
+    private string GetSubtitle()
+    {
+        var accounts = ViewModel.SelectedAccountCount;
+        var networks = ViewModel.SelectedNetworkCount;
+        return $"{accounts} {(accounts == 1 ? "account" : "accounts")} × {networks} {(networks == 1 ? "network" : "networks")}";
+    }
+
+    private void HandleTabChange(HoldingsTab tab)
+    {
+        ViewModel.SelectedTab = tab;
+        StateHasChanged();
+    }
+
+    private void HandleEdit()
+    {
+        ViewModel.ShowEditPageCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private async Task HandleEditSave(HoldingsSettings newSettings)
+    {
+        await ViewModel.ApplySettingsCommand.ExecuteAsync(newSettings);
+        StateHasChanged();
+    }
+
+    private void HandleEditCancel()
+    {
+        ViewModel.CancelEditCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private async Task HandleRefresh()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+        StateHasChanged();
+    }
+
+    private void HandleCancelScan()
+    {
+        ViewModel.CancelScanCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+            await OnExit.InvokeAsync();
+    }
+
+    private async Task HandleSendToken(HoldingsTokenItemViewModel token)
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            ["TokenSymbol"] = token.Symbol,
+            ["ChainId"] = token.ChainBalances?.FirstOrDefault()?.ChainId
+        };
+        await DashboardNavService.NavigateToPluginAsync("token-transfer", parameters);
+    }
+
+    private async Task HandleSendTokenOnChain((HoldingsTokenItemViewModel Token, ChainBalanceItemViewModel Chain) tokenAndChain)
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            ["TokenSymbol"] = tokenAndChain.Token.Symbol,
+            ["ChainId"] = tokenAndChain.Chain.ChainId
+        };
+        await DashboardNavService.NavigateToPluginAsync("token-transfer", parameters);
+    }
+
+    private void ShowAddToken()
+    {
+        _showAddToken = true;
+        StateHasChanged();
+    }
+
+    private void HideAddToken()
+    {
+        _showAddToken = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleAddTokenComplete()
+    {
+        _showAddToken = false;
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ViewModel?.Dispose();
+    }
+}

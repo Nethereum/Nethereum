@@ -46,6 +46,10 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey
             public const string CannotRemoveLastAccount = "CannotRemoveLastAccount";
             public const string AccountRemoved = "AccountRemoved";
             public const string RemovalError = "RemovalError";
+            public const string UnableToRetrievePrivateKey = "UnableToRetrievePrivateKey";
+            public const string InvalidPassword = "InvalidPassword";
+            public const string AccountNotFoundInVault = "AccountNotFoundInVault";
+            public const string AccountNameUpdated = "AccountNameUpdated";
         }
 
         public PrivateKeyAccountDetailsLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -95,7 +99,11 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey
                 [Keys.ConfirmRemovalMessage] = "Are you sure you want to remove '{0}'? This action cannot be undone.",
                 [Keys.CannotRemoveLastAccount] = "Cannot remove the last account in the vault.",
                 [Keys.AccountRemoved] = "Account removed successfully",
-                [Keys.RemovalError] = "Failed to remove account: {0}"
+                [Keys.RemovalError] = "Failed to remove account: {0}",
+                [Keys.UnableToRetrievePrivateKey] = "Unable to retrieve private key for this account type.",
+                [Keys.InvalidPassword] = "Invalid password.",
+                [Keys.AccountNotFoundInVault] = "Account not found in vault.",
+                [Keys.AccountNameUpdated] = "Account name updated successfully"
             });
             
             // Spanish (Spain) translations
@@ -139,7 +147,11 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey
                 [Keys.ConfirmRemovalMessage] = "¿Estás seguro de que quieres eliminar '{0}'? Esta acción no se puede deshacer.",
                 [Keys.CannotRemoveLastAccount] = "No se puede eliminar la última cuenta en la bóveda.",
                 [Keys.AccountRemoved] = "Cuenta eliminada exitosamente",
-                [Keys.RemovalError] = "Error al eliminar cuenta: {0}"
+                [Keys.RemovalError] = "Error al eliminar cuenta: {0}",
+                [Keys.UnableToRetrievePrivateKey] = "No se puede obtener la clave privada para este tipo de cuenta.",
+                [Keys.InvalidPassword] = "Contraseña inválida.",
+                [Keys.AccountNotFoundInVault] = "Cuenta no encontrada en la bóveda.",
+                [Keys.AccountNameUpdated] = "Nombre de cuenta actualizado exitosamente"
             });
         }
     }

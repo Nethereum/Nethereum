@@ -36,6 +36,13 @@ namespace Nethereum.Wallet.UI.Components.Prompts
             public const string GasConfiguration = "GasConfiguration";
             public const string EstimatedCost = "EstimatedCost";
             public const string TransactionDetails = "TransactionDetails";
+            public const string ReviewGasSettings = "ReviewGasSettings";
+            public const string ApproveAndSend = "ApproveAndSend";
+            public const string SendingTransaction = "SendingTransaction";
+            public const string Cancel = "Cancel";
+            public const string RequestFromLabel = "RequestFromLabel";
+            public const string Done = "Done";
+            public const string RetryTransaction = "RetryTransaction";
         }
         
         protected override void RegisterTranslations()
@@ -65,7 +72,14 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 [Keys.Close] = "Close",
                 [Keys.GasConfiguration] = "Gas Configuration",
                 [Keys.EstimatedCost] = "Estimated Cost",
-                [Keys.TransactionDetails] = "Transaction Details"
+                [Keys.TransactionDetails] = "Transaction Details",
+                [Keys.ReviewGasSettings] = "Review Gas Settings",
+                [Keys.ApproveAndSend] = "Approve & Send",
+                [Keys.SendingTransaction] = "Sending transaction...",
+                [Keys.Cancel] = "Cancel",
+                [Keys.RequestFromLabel] = "Request from",
+                [Keys.Done] = "Done",
+                [Keys.RetryTransaction] = "Retry Transaction"
             });
             
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -93,7 +107,14 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 [Keys.Close] = "Cerrar",
                 [Keys.GasConfiguration] = "Configuración de Gas",
                 [Keys.EstimatedCost] = "Costo Estimado",
-                [Keys.TransactionDetails] = "Detalles de Transacción"
+                [Keys.TransactionDetails] = "Detalles de Transacción",
+                [Keys.ReviewGasSettings] = "Revisar Configuración de Gas",
+                [Keys.ApproveAndSend] = "Aprobar y Enviar",
+                [Keys.SendingTransaction] = "Enviando transacción...",
+                [Keys.Cancel] = "Cancelar",
+                [Keys.RequestFromLabel] = "Solicitud de",
+                [Keys.Done] = "Hecho",
+                [Keys.RetryTransaction] = "Reintentar Transacción"
             });
         }
     }

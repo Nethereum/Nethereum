@@ -1,0 +1,244 @@
+@using MudBlazor
+@using System.Linq
+@using System.Numerics
+@using Nethereum.Wallet.Services.Tokens.Models
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+
+<div class="@(IsCompactMode ? "wallet-compact" : "")">
+<MudStack Spacing="@(IsCompactMode ? 2 : 4)">
+    <WalletContentSection Class="spacing-tight">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h6">@Localizer.GetString(Keys.SelectToken)</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                          Size="Size.Small"
+                          OnClick="@HandleExit" />
+        </MudStack>
+    </WalletContentSection>
+
+    <WalletContentSection Class="spacing-tight">
+        <WalletTextField Value="@_searchText"
+                        ValueChanged="@OnSearchTextChanged"
+                        LabelKey="@Keys.SearchTokens"
+                        PlaceholderKey="@Keys.SearchTokens"
+                        Required="false"
+                        Localizer="@Localizer"
+                        FieldType="WalletTextField.WalletTextFieldType.Search" />
+        @if (IsSearching)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-1" />
+        }
+    </WalletContentSection>
+
+    @if (FilteredUserTokens?.Any() == true)
+    {
+        <WalletGroupSection Title="@Localizer.GetString(Keys.YourTokens)"
+                           Icon="@Icons.Material.Filled.AccountBalanceWallet">
+            @foreach (var token in FilteredUserTokens)
+            {
+                <TokenCard Token="@token"
+                          IsSelected="@IsTokenSelected(token)"
+                          IsCompactMode="@IsCompactMode"
+                          ShowBalance="true"
+                          ShowValue="true"
+                          OnSelect="@HandleTokenSelect" />
+            }
+        </WalletGroupSection>
+    }
+
+    @if (FilteredAllTokens?.Any() == true)
+    {
+        <WalletGroupSection Title="@Localizer.GetString(Keys.AllTokens)"
+                           Icon="@Icons.Material.Filled.Token"
+                           Collapsible="true"
+                           InitiallyExpanded="@(FilteredUserTokens?.Any() != true)">
+            @foreach (var token in FilteredAllTokens)
+            {
+                <TokenCard Token="@token"
+                          IsSelected="@IsTokenSelected(token)"
+                          IsCompactMode="@IsCompactMode"
+                          ShowBalance="true"
+                          ShowValue="true"
+                          ShowGetBalanceButton="true"
+                          IsLoadingBalance="@IsLoadingBalance(token)"
+                          OnSelect="@HandleTokenSelect"
+                          OnGetBalance="@HandleGetBalance" />
+            }
+            @if (HasMoreTokens)
+            {
+                <MudButton Variant="Variant.Text"
+                          Color="Color.Primary"
+                          Size="@(IsCompactMode ? Size.Small : Size.Medium)"
+                          OnClick="@LoadMoreTokens"
+                          FullWidth="true"
+                          Class="wallet-touch-target">
+                    @Localizer.GetString(Keys.LoadMore)
+                </MudButton>
+            }
+        </WalletGroupSection>
+    }
+
+    @if (!FilteredUserTokens?.Any() == true && !FilteredAllTokens?.Any() == true)
+    {
+        <WalletContentSection Class="spacing-tight">
+            <WalletCompactHeader Title="@Localizer.GetString(Keys.NoTokensFound)"
+                                Subtitle="@Localizer.GetString(Keys.SearchTokens)" />
+        </WalletContentSection>
+    }
+
+    <WalletContentSection Class="spacing-tight">
+        <MudButton Variant="Variant.Outlined"
+                  Color="Color.Primary"
+                  Size="@(IsCompactMode ? Size.Small : Size.Medium)"
+                  StartIcon="@Icons.Material.Filled.Add"
+                  OnClick="@HandleAddCustomToken"
+                  FullWidth="true"
+                  Class="wallet-touch-target">
+            @Localizer.GetString(Keys.AddCustomToken)
+        </MudButton>
+    </WalletContentSection>
+</MudStack>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<AccountToken> UserTokens { get; set; }
+    [Parameter] public IEnumerable<AccountToken> AllTokens { get; set; }
+    [Parameter] public AccountToken SelectedToken { get; set; }
+    [Parameter] public long? ChainId { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public bool IsSearching { get; set; } = false;
+    [Parameter] public EventCallback<AccountToken> OnTokenSelected { get; set; }
+    [Parameter] public EventCallback OnAddCustomToken { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<string> OnSearch { get; set; }
+    [Parameter] public EventCallback<AccountToken> OnGetBalance { get; set; }
+    [Parameter] public HashSet<string> LoadingBalanceTokens { get; set; }
+
+    private string _searchText = "";
+    private System.Threading.CancellationTokenSource? _searchCts;
+    private const int _pageSize = 20;
+    private int _allTokensDisplayCount = 20;
+
+    private async Task OnSearchTextChanged(string value)
+    {
+        _searchText = value;
+        _allTokensDisplayCount = _pageSize;
+        StateHasChanged();
+
+        _searchCts?.Cancel();
+        _searchCts = new System.Threading.CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(300, _searchCts.Token);
+
+            if (OnSearch.HasDelegate && value.Length >= 2)
+            {
+                await OnSearch.InvokeAsync(value);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private void LoadMoreTokens()
+    {
+        _allTokensDisplayCount += _pageSize;
+        StateHasChanged();
+    }
+
+    private IEnumerable<AccountToken> FilteredUserTokens =>
+        UserTokens?.Where(t => MatchesSearch(t) && MatchesChain(t)) ?? Enumerable.Empty<AccountToken>();
+
+    private IEnumerable<AccountToken> AllTokensFiltered
+    {
+        get
+        {
+            var userTokenKeys = UserTokens?
+                .Select(t => GetTokenKey(t))
+                .ToHashSet() ?? new HashSet<string>();
+
+            return AllTokens?
+                .Where(t => !userTokenKeys.Contains(GetTokenKey(t)) && MatchesSearch(t) && MatchesChain(t))
+                ?? Enumerable.Empty<AccountToken>();
+        }
+    }
+
+    private IEnumerable<AccountToken> FilteredAllTokens => AllTokensFiltered.Take(_allTokensDisplayCount);
+
+    private bool HasMoreTokens => AllTokensFiltered.Count() > _allTokensDisplayCount;
+
+    private string GetTokenKey(AccountToken token) =>
+        $"{token.ChainId}:{token.ContractAddress?.ToLowerInvariant() ?? "native"}";
+
+    private bool MatchesSearch(AccountToken token)
+    {
+        if (string.IsNullOrWhiteSpace(_searchText))
+            return true;
+
+        var search = _searchText.ToLowerInvariant();
+        return (token.Symbol?.ToLowerInvariant().Contains(search) ?? false) ||
+               (token.Name?.ToLowerInvariant().Contains(search) ?? false) ||
+               (token.ContractAddress?.ToLowerInvariant().Contains(search) ?? false);
+    }
+
+    private bool MatchesChain(AccountToken token)
+    {
+        if (!ChainId.HasValue)
+            return true;
+        return token.ChainId == ChainId.Value;
+    }
+
+    private bool IsTokenSelected(AccountToken token)
+    {
+        if (SelectedToken == null)
+            return false;
+
+        return string.Equals(token.Symbol, SelectedToken.Symbol, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(token.ContractAddress, SelectedToken.ContractAddress, StringComparison.OrdinalIgnoreCase) &&
+               token.ChainId == SelectedToken.ChainId;
+    }
+
+    private async Task HandleTokenSelect(AccountToken token)
+    {
+        if (OnTokenSelected.HasDelegate)
+        {
+            await OnTokenSelected.InvokeAsync(token);
+        }
+    }
+
+    private async Task HandleAddCustomToken()
+    {
+        if (OnAddCustomToken.HasDelegate)
+        {
+            await OnAddCustomToken.InvokeAsync();
+        }
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+
+    private async Task HandleGetBalance(AccountToken token)
+    {
+        if (OnGetBalance.HasDelegate)
+        {
+            await OnGetBalance.InvokeAsync(token);
+        }
+    }
+
+    private bool IsLoadingBalance(AccountToken token)
+    {
+        if (LoadingBalanceTokens == null || string.IsNullOrEmpty(token?.ContractAddress))
+            return false;
+        return LoadingBalanceTokens.Contains(token.ContractAddress);
+    }
+}

@@ -1,0 +1,61 @@
+@using MudBlazor
+
+<div class="wallet-group @(Collapsible ? "collapsible" : "") @Class">
+    <div class="wallet-group-header" @onclick="ToggleExpand">
+        <div class="wallet-group-info">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <MudIcon Icon="@Icon" Size="Size.Small" Color="Color.Default" />
+            }
+            <MudText Typo="Typo.subtitle2" Class="wallet-group-title">@Title</MudText>
+            @if (HeaderContent != null)
+            {
+                @HeaderContent
+            }
+        </div>
+        <div class="wallet-group-actions">
+            @if (ActionContent != null)
+            {
+                <span @onclick:stopPropagation="true">
+                    @ActionContent
+                </span>
+            }
+            @if (Collapsible)
+            {
+                <MudIcon Icon="@(_isExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                         Size="Size.Small"
+                         Color="Color.Default" />
+            }
+        </div>
+    </div>
+    @if (!Collapsible || _isExpanded)
+    {
+        <div class="wallet-group-content">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Icon { get; set; }
+    [Parameter] public bool Collapsible { get; set; } = false;
+    [Parameter] public bool InitiallyExpanded { get; set; } = true;
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment HeaderContent { get; set; }
+    [Parameter] public RenderFragment ActionContent { get; set; }
+
+    private bool _isExpanded = true;
+
+    protected override void OnInitialized()
+    {
+        _isExpanded = InitiallyExpanded;
+    }
+
+    private void ToggleExpand()
+    {
+        if (Collapsible)
+            _isExpanded = !_isExpanded;
+    }
+}

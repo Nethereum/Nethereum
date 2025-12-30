@@ -1,0 +1,113 @@
+@using MudBlazor
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+
+<MudCard Elevation="@(IsSelected ? 2 : 1)"
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="@HandleClick">
+
+    <MudCardContent Class="pa-2">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="flex-grow: 1; min-width: 0;">
+                <MudAvatar Size="Size.Small" Style="@GetAvatarStyle()">
+                    <div class="identicon-content">
+                        @GetAccountInitial()
+                    </div>
+                </MudAvatar>
+
+                <MudStack Spacing="0" Style="flex-grow: 1; min-width: 0;">
+                    <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@(Account?.Name ?? "Account")</MudText>
+                    <MudText Typo="Typo.caption" Style="@GetSubtitleStyle()" Class="font-monospace">
+                        @FormatAddress(Account?.Address)
+                    </MudText>
+                </MudStack>
+            </MudStack>
+
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                @if (!IsSelected)
+                {
+                    <MudButton Variant="Variant.Text"
+                              Color="Color.Primary"
+                              Size="Size.Small"
+                              OnClick="@HandleSelectClick"
+                              OnClick:stopPropagation="true"
+                              Class="wallet-touch-target">
+                        @Localizer.GetString(Keys.SelectButton)
+                    </MudButton>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                }
+            </MudStack>
+
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public IWalletAccount Account { get; set; }
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public EventCallback<IWalletAccount> OnSelect { get; set; }
+
+    private string GetAccountInitial()
+    {
+        if (string.IsNullOrEmpty(Account?.Name))
+            return Account?.Address?.Length > 2 ? Account.Address.Substring(2, 1).ToUpper() : "?";
+        return Account.Name[0].ToString().ToUpper();
+    }
+
+    private string GetCardClasses()
+    {
+        var classes = "wallet-card account-picker-card";
+        if (IsSelected)
+            classes += " wallet-card-selected";
+        return classes;
+    }
+
+    private string GetCardStyle()
+    {
+        if (IsSelected)
+        {
+            return "border: 2px solid var(--mud-palette-primary); background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);";
+        }
+        return string.Empty;
+    }
+
+    private string GetAvatarStyle()
+    {
+        return IdenticonGenerator.GetIdenticonStyle(Account?.Address ?? "Account");
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Account);
+        }
+    }
+
+    private async Task HandleSelectClick()
+    {
+        if (OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Account);
+        }
+    }
+
+    private string GetSubtitleStyle() => "color: var(--mud-palette-text-secondary); font-weight: 400;";
+
+    private string FormatAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 12)
+            return address ?? "";
+        return $"{address.Substring(0, 6)}...{address.Substring(address.Length - 4)}";
+    }
+}

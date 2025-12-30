@@ -8,6 +8,7 @@
 @using Microsoft.JSInterop
 @using Nethereum.Wallet.UI.Components.Core.Localization
 @using Nethereum.Wallet.UI.Components.Dashboard
+@using Nethereum.Wallet.UI.Components.SendTransaction
 @using Nethereum.Wallet.UI.Components.Services
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
 @using static Nethereum.Wallet.UI.Components.Dashboard.WalletDashboardLocalizer
@@ -359,6 +360,9 @@
                 
             if (properties.Any(p => p.Name == "IsCompact"))
                 parameters.Add("IsCompact", isCompact);
+
+            if (properties.Any(p => p.Name == "IsCompactMode"))
+                parameters.Add("IsCompactMode", isCompact);
                 
             // Dashboard-specific navigation callback for create-account workflow
             if (plugin.PluginId == "create-account" && properties.Any(p => p.Name == "OnAccountAdded"))
@@ -367,6 +371,17 @@
             // Add OnReady callback for all components
             if (properties.Any(p => p.Name == "OnReady"))
                 parameters.Add("OnReady", (Action<object>)OnPluginReady);
+
+            // Handle TokenTransfer pre-selection from navigation
+            if (plugin is TokenTransferPluginViewModel transferPlugin)
+            {
+                if (properties.Any(p => p.Name == "PreSelectedChainId") && transferPlugin.PreSelectedChainId.HasValue)
+                    parameters.Add("PreSelectedChainId", transferPlugin.PreSelectedChainId.Value);
+                if (properties.Any(p => p.Name == "PreSelectedContractAddress") && !string.IsNullOrEmpty(transferPlugin.PreSelectedTokenContract))
+                    parameters.Add("PreSelectedContractAddress", transferPlugin.PreSelectedTokenContract);
+                if (properties.Any(p => p.Name == "TokenSymbol") && !string.IsNullOrEmpty(transferPlugin.PreSelectedTokenSymbol))
+                    parameters.Add("TokenSymbol", transferPlugin.PreSelectedTokenSymbol);
+            }
         }
 
         return parameters;
@@ -429,6 +444,14 @@
     
     private async Task OnNavigationRequestedAsync(object sender, Nethereum.Wallet.UI.Components.Dashboard.Services.DashboardNavigationEventArgs e)
     {
+        // Apply navigation parameters to the plugin viewmodel BEFORE switching
+        // This ensures GetPluginParameters() can read the pre-selected values during render
+        var targetPlugin = AvailablePlugins.FirstOrDefault(p => p.PluginId == e.PluginId);
+        if (targetPlugin is INavigatablePlugin nav && e.Parameters != null)
+        {
+            await nav.NavigateWithParametersAsync(e.Parameters);
+        }
+
         pendingNavigationParameters = e.Parameters;
         await SwitchToPlugin(e.PluginId);
     }

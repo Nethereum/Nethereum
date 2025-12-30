@@ -1,0 +1,45 @@
+.holdings-scan-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 16px);
+}
+
+.scan-account-card {
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: var(--mud-default-borderradius);
+}
+
+.scan-chains-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-sm, 12px);
+}
+
+.scan-chain-item {
+    padding: var(--spacing-sm, 12px);
+    border-radius: var(--mud-default-borderradius);
+    background: var(--mud-palette-background-grey);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.scan-chain-item.complete {
+    background: rgba(var(--mud-palette-success-rgb), 0.08);
+    border-color: rgba(var(--mud-palette-success-rgb), 0.3);
+}
+
+.scan-chain-item.scanning {
+    background: rgba(var(--mud-palette-primary-rgb), 0.08);
+    border-color: rgba(var(--mud-palette-primary-rgb), 0.3);
+}
+
+.scan-chain-item.waiting {
+    opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+    .scan-chains-grid {
+        grid-template-columns: 1fr;
+    }
+}

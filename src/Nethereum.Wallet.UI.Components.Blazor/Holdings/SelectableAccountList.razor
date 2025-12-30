@@ -1,0 +1,124 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.AccountList
+
+<div class="selectable-list">
+    @if (Accounts == null || !Accounts.Any())
+    {
+        <WalletEmptyState Title="@EmptyMessage" Icon="@Icons.Material.Filled.AccountBalanceWallet" />
+    }
+    else
+    {
+        @if (ShowBulkActions)
+        {
+            <div class="selectable-list-actions">
+                <MudButton Variant="Variant.Text"
+                          Color="Color.Primary"
+                          Size="Size.Small"
+                          OnClick="@HandleSelectAll">
+                    @SelectAllText
+                </MudButton>
+                <MudButton Variant="Variant.Text"
+                          Color="Color.Default"
+                          Size="Size.Small"
+                          OnClick="@HandleDeselectAll">
+                    @DeselectAllText
+                </MudButton>
+            </div>
+        }
+
+        <div class="selectable-card-list">
+            @foreach (var account in Accounts)
+            {
+                <div class="selectable-card-wrapper" @onclick="@(() => HandleToggle(account))">
+                    <MudCheckBox T="bool"
+                                Value="@account.IsSelected"
+                                ValueChanged="@((value) => HandleCheckboxChange(account, value))"
+                                Color="Color.Primary"
+                                Class="selection-checkbox"
+                                @onclick:stopPropagation="true" />
+                    <div class="selectable-card-content">
+                        <AccountCard Account="@account.Account"
+                                    IsSelected="@account.IsSelected"
+                                    AccountDisplayName="@account.Name"
+                                    IsCompactMode="@IsCompactMode"
+                                    ShowActions="false" />
+                    </div>
+                    @if (ShowRescanOption && account.IsSelected)
+                    {
+                        <div @onclick:stopPropagation="true">
+                            <MudButton Variant="Variant.Text"
+                                      Color="@(account.ForceRescan ? Color.Warning : Color.Default)"
+                                      Size="Size.Small"
+                                      StartIcon="@Icons.Material.Filled.Refresh"
+                                      OnClick="@(() => HandleToggleRescan(account))">
+                                @(account.ForceRescan ? RescanActiveText : RescanText)
+                            </MudButton>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (ShowSelectedCount)
+        {
+            <div class="selectable-list-summary">
+                <MudText Typo="Typo.caption" Color="Color.Primary">
+                    @string.Format(SelectedCountFormat, SelectedCount)
+                </MudText>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<SelectableAccountViewModel>? Accounts { get; set; }
+    [Parameter] public EventCallback<SelectableAccountViewModel> OnToggle { get; set; }
+    [Parameter] public EventCallback<SelectableAccountViewModel> OnToggleRescan { get; set; }
+    [Parameter] public EventCallback OnSelectAll { get; set; }
+    [Parameter] public EventCallback OnDeselectAll { get; set; }
+    [Parameter] public bool ShowBulkActions { get; set; } = true;
+    [Parameter] public bool ShowSelectedCount { get; set; } = true;
+    [Parameter] public bool ShowRescanOption { get; set; } = false;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public string EmptyMessage { get; set; } = "No accounts available";
+    [Parameter] public string SelectAllText { get; set; } = "Select All";
+    [Parameter] public string DeselectAllText { get; set; } = "Deselect All";
+    [Parameter] public string SelectedCountFormat { get; set; } = "{0} account(s) selected";
+    [Parameter] public string RescanText { get; set; } = "Force rescan";
+    [Parameter] public string RescanActiveText { get; set; } = "Will rescan from scratch";
+
+    private int SelectedCount => Accounts?.Count(a => a.IsSelected) ?? 0;
+
+    private async Task HandleToggle(SelectableAccountViewModel account)
+    {
+        if (OnToggle.HasDelegate)
+            await OnToggle.InvokeAsync(account);
+    }
+
+    private async Task HandleCheckboxChange(SelectableAccountViewModel account, bool value)
+    {
+        if (OnToggle.HasDelegate)
+            await OnToggle.InvokeAsync(account);
+    }
+
+    private async Task HandleToggleRescan(SelectableAccountViewModel account)
+    {
+        account.ForceRescan = !account.ForceRescan;
+        if (OnToggleRescan.HasDelegate)
+            await OnToggleRescan.InvokeAsync(account);
+    }
+
+    private async Task HandleSelectAll()
+    {
+        if (OnSelectAll.HasDelegate)
+            await OnSelectAll.InvokeAsync();
+    }
+
+    private async Task HandleDeselectAll()
+    {
+        if (OnDeselectAll.HasDelegate)
+            await OnDeselectAll.InvokeAsync();
+    }
+}

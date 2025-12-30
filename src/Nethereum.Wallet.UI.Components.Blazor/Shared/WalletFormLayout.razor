@@ -9,11 +9,13 @@
 <CascadingValue Value="this">
 <div class="@LayoutClasses" @ref="layoutElement">
     
-    <!-- Compact Header -->
-    <WalletCompactHeader Title="@Title" 
-                         Subtitle="@Subtitle" />
-    
-    <!-- Step Progress (if steps provided) -->
+  @if (ShowHeader)
+  {
+            <!-- Compact Header -->
+            <WalletCompactHeader Title="@Title" 
+            Subtitle="@Subtitle" />
+   }
+        <!-- Step Progress (if steps provided) -->
     @if (Steps?.Any() == true)
     {
         <WalletStepProgress Steps="@Steps" 
@@ -48,21 +50,23 @@
 @code {
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string Subtitle { get; set; } = "";
-    
+
     [Parameter] public List<WalletFormStep>? Steps { get; set; }
     [Parameter] public int CurrentStepIndex { get; set; } = 0;
     [Parameter] public IComponentLocalizer? StepLocalizer { get; set; }
-    
+
     [Parameter] public string ExitText { get; set; } = "Exit";
     [Parameter] public string BackText { get; set; } = "Back";
     [Parameter] public string ContinueText { get; set; } = "Continue";
     [Parameter] public string PrimaryText { get; set; } = "Create Account";
-    
+
     [Parameter] public bool ShowExit { get; set; } = true;
     [Parameter] public bool ShowBack { get; set; } = false;
     [Parameter] public bool ShowContinue { get; set; } = true;
     [Parameter] public bool ShowPrimary { get; set; } = false;
-    
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+
     [Parameter] public bool ContinueDisabled { get; set; } = false;
     [Parameter] public bool PrimaryDisabled { get; set; } = false;
     
@@ -75,9 +79,16 @@
     [Parameter] public RenderFragment? ActionButtons { get; set; }
     
     private ElementReference layoutElement;
-    private string LayoutClasses => ViewportService.IsCompact
-        ? "wallet-form-layout wallet-form-layout--compact"
-        : "wallet-form-layout";
+    private string LayoutClasses
+    {
+        get
+        {
+            var classes = "wallet-form-layout";
+            if (ViewportService.IsCompact || IsCompactMode)
+                classes += " wallet-form-layout--compact wallet-compact";
+            return classes;
+        }
+    }
     
     public async Task ScrollToTop()
     {

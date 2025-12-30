@@ -34,6 +34,8 @@ namespace Nethereum.Wallet.UI.Components.Dialogs.Localization
             public const string FieldTooShort = "FieldTooShort";
             public const string FieldTooLong = "FieldTooLong";
             public const string InvalidFormat = "InvalidFormat";
+
+            public const string SelectAccountTitle = "SelectAccountTitle";
         }
         
         public DialogLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -70,9 +72,11 @@ namespace Nethereum.Wallet.UI.Components.Dialogs.Localization
                 [Keys.InvalidInput] = "Invalid input",
                 [Keys.FieldTooShort] = "Field must be at least {0} characters",
                 [Keys.FieldTooLong] = "Field cannot exceed {0} characters",
-                [Keys.InvalidFormat] = "Invalid format"
+                [Keys.InvalidFormat] = "Invalid format",
+
+                [Keys.SelectAccountTitle] = "Select an Account"
             });
-            
+
             // Spanish (Spain) translations
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
@@ -102,7 +106,9 @@ namespace Nethereum.Wallet.UI.Components.Dialogs.Localization
                 [Keys.InvalidInput] = "Entrada inválida",
                 [Keys.FieldTooShort] = "El campo debe tener al menos {0} caracteres",
                 [Keys.FieldTooLong] = "El campo no puede exceder {0} caracteres",
-                [Keys.InvalidFormat] = "Formato inválido"
+                [Keys.InvalidFormat] = "Formato inválido",
+
+                [Keys.SelectAccountTitle] = "Seleccionar una Cuenta"
             });
         }
     }

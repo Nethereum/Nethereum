@@ -20,15 +20,15 @@ namespace Nethereum.Wallet.UI.Components.Networks
         {
             _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
             {
-                [Keys.DisplayName] = "Networks",
-                [Keys.Description] = "Manage and configure blockchain networks"
+                [Keys.DisplayName] = "Chains",
+                [Keys.Description] = "Manage and configure blockchain chains"
             });
-            
+
             // Spanish (Spain) translations
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
-                [Keys.DisplayName] = "Redes",
-                [Keys.Description] = "Gestionar y configurar redes blockchain"
+                [Keys.DisplayName] = "Cadenas",
+                [Keys.Description] = "Gestionar y configurar cadenas blockchain"
             });
         }
     }

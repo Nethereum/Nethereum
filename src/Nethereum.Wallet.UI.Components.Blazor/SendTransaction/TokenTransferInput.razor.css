@@ -1,0 +1,48 @@
+.wallet-picker-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--wallet-space-sm, 8px) var(--wallet-space-md, 12px);
+    border: 1px solid var(--wallet-border, #e5e7eb);
+    border-radius: var(--wallet-radius-md, 8px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+    background: var(--wallet-bg-primary, #ffffff);
+}
+
+.wallet-picker-field:hover {
+    background: var(--wallet-bg-secondary, #f9fafb);
+    border-color: var(--wallet-primary, #2563eb);
+}
+
+.picker-content {
+    display: flex;
+    align-items: center;
+    gap: var(--wallet-space-sm, 8px);
+}
+
+.picker-label {
+    font-weight: 500;
+}
+
+.picker-sublabel {
+    color: var(--wallet-text-secondary, #6b7280);
+    font-size: var(--wallet-font-sm, 0.875rem);
+}
+
+.placeholder {
+    color: var(--wallet-text-secondary, #6b7280);
+}
+
+.identicon-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}

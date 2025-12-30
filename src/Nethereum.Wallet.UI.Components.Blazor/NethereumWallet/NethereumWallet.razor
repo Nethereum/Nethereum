@@ -29,19 +29,7 @@
 
 <div style="@GetContainerStyle()">
     <div style="padding:2px; height: 100%; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
-        @if (ViewModel.IsBusy)
-    {
-        @if (Config.ShowProgressIndicators)
-        {
-            <MudCard Class="pa-6">
-                <MudStack AlignItems="AlignItems.Center" Spacing="4">
-                    <MudProgressCircular Indeterminate="true" Size="MudBlazor.Size.Large" />
-                    <MudText Typo="Typo.h6">@Localizer.GetString(Keys.LoadingText)</MudText>
-                </MudStack>
-            </MudCard>
-        }
-    }
-    else if (ViewModel.VaultExists && !ViewModel.IsWalletUnlocked)
+        @if (ViewModel.VaultExists && !ViewModel.IsWalletUnlocked)
     {
         <!-- Login Form -->
         <MudCard Class="pa-6">
@@ -72,7 +60,8 @@
                               Immediate="true"
                               Adornment="@(Config.AllowPasswordVisibilityToggle ? Adornment.End : Adornment.None)"
                               AdornmentIcon="@(showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
-                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? TogglePasswordVisibility : null)" />
+                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? TogglePasswordVisibility : null)"
+                              Disabled="@ViewModel.IsBusy" />
 
                 @if (!string.IsNullOrEmpty(ViewModel.LoginError))
                 {
@@ -82,17 +71,28 @@
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudButton Variant="Variant.Text" 
                                Style="color: var(--mud-palette-text-primary); opacity: 0.8;"
+                               Disabled="@ViewModel.IsBusy"
                                OnClick="ShowCreateNewWallet">
                         @Localizer.GetString(Keys.CreateNewWalletLinkText)
                     </MudButton>
                     
                     <MudButton Variant="Variant.Filled" 
                                Color="Color.Primary"
-                               OnClick="ViewModel.LoginCommand.ExecuteAsync"
-                               Disabled="@(!ViewModel.CanLogin)">
+                               OnClick="OnLoginButtonClickedAsync"
+                               Disabled="@(!ViewModel.CanLogin || ViewModel.IsBusy)"
+                               Loading="@ViewModel.IsBusy"
+                               LoadingPosition="Position.Start">
                         @Localizer.GetString(Keys.LoginButton)
                     </MudButton>
                 </MudStack>
+                
+                @if (ViewModel.IsBusy && !string.IsNullOrEmpty(ViewModel.StatusMessage))
+                {
+                    <MudStack AlignItems="AlignItems.Center" Direction="Row" Spacing="2">
+                        <MudProgressCircular Indeterminate="true" Size="MudBlazor.Size.Small" />
+                        <MudText Typo="Typo.caption">@ViewModel.StatusMessage</MudText>
+                    </MudStack>
+                }
                 
                 @if (Config.Behavior.EnableWalletReset)
                 {
@@ -100,6 +100,7 @@
                         <MudButton Variant="Variant.Text" 
                                    Color="Color.Error"
                                    Size="MudBlazor.Size.Small"
+                                   Disabled="@ViewModel.IsBusy"
                                    OnClick="ViewModel.ShowResetWalletConfirmationAsync">
                             @Localizer.GetString(Keys.ResetWallet)
                         </MudButton>
@@ -150,7 +151,8 @@
                               HelperText="@Localizer.GetString(Keys.PasswordHelperText)"
                               Adornment="@(Config.AllowPasswordVisibilityToggle ? Adornment.End : Adornment.None)"
                               AdornmentIcon="@(showNewPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
-                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? ToggleNewPasswordVisibility : null)" />
+                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? ToggleNewPasswordVisibility : null)"
+                              Disabled="@ViewModel.IsBusy" />
 
                 <MudTextField @bind-Value="ViewModel.ConfirmPassword" 
                               Label="@Localizer.GetString(Keys.ConfirmPasswordLabel)" 
@@ -160,7 +162,8 @@
                               ErrorText="@Localizer.GetString(Keys.PasswordMismatch)"
                               Adornment="@(Config.AllowPasswordVisibilityToggle ? Adornment.End : Adornment.None)"
                               AdornmentIcon="@(showConfirmPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
-                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? ToggleConfirmPasswordVisibility : null)" />
+                              OnAdornmentClick="@(Config.AllowPasswordVisibilityToggle ? ToggleConfirmPasswordVisibility : null)"
+                              Disabled="@ViewModel.IsBusy" />
 
                 @if (ViewModel.ShowPasswordStrengthIndicator)
                 {
@@ -186,11 +189,21 @@
                     }
                     <MudButton Variant="Variant.Filled" 
                                Color="Color.Primary"
-                               OnClick="ViewModel.CreateWalletCommand.ExecuteAsync"
-                               Disabled="@(!ViewModel.CanCreateWallet)">
+                               OnClick="OnCreateWalletButtonClickedAsync"
+                               Disabled="@(!ViewModel.CanCreateWallet || ViewModel.IsBusy)"
+                               Loading="@ViewModel.IsBusy"
+                               LoadingPosition="Position.Start">
                         @Localizer.GetString(Keys.CreateButtonText)
                     </MudButton>
                 </MudStack>
+
+                @if (ViewModel.IsBusy && !string.IsNullOrEmpty(ViewModel.StatusMessage))
+                {
+                    <MudStack AlignItems="AlignItems.Center" Direction="Row" Spacing="2">
+                        <MudProgressCircular Indeterminate="true" Size="MudBlazor.Size.Small" />
+                        <MudText Typo="Typo.caption">@ViewModel.StatusMessage</MudText>
+                    </MudStack>
+                }
             </MudStack>
         </MudCard>
     }
@@ -318,8 +331,65 @@
         WalletDiagnosticsLogger.Log("WalletDispatcher", "Invoking work on UI thread");
         return InvokeAsync(work);
     }
+    
+    private Task OnLoginButtonClickedAsync()
+    {
+        if (ViewModel.IsBusy)
+            return Task.CompletedTask;
 
-   
+        var operation = ViewModel.StartLoginOperation();
+        _ = MonitorLoginOperationAsync(operation);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task MonitorLoginOperationAsync(Task<bool> operation)
+    {
+        bool success = false;
+        Exception? error = null;
+        try
+        {
+            success = await operation;
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+
+        await ViewModel.CompleteLoginOperationAsync(success, error);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnCreateWalletButtonClickedAsync()
+    {
+        if (ViewModel.IsBusy)
+            return Task.CompletedTask;
+
+        var operation = ViewModel.StartCreateWalletOperation();
+        if (operation == null)
+            return Task.CompletedTask;
+
+        _ = MonitorCreateWalletOperationAsync(operation);
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task MonitorCreateWalletOperationAsync(Task<bool> operation)
+    {
+        bool success = false;
+        Exception? error = null;
+        try
+        {
+            success = await operation;
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+
+        await ViewModel.CompleteCreateWalletOperationAsync(success, error);
+        await InvokeAsync(StateHasChanged);
+    }
 
     private void ShowCreateNewWallet()
     {

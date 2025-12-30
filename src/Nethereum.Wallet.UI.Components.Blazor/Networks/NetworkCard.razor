@@ -72,19 +72,28 @@
                 <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
                     @if (!IsSelected)
                     {
-                        <MudButton Variant="Variant.Text" 
+                        <MudButton Variant="Variant.Text"
                                   Color="Color.Primary"
                                   Size="Size.Small"
                                   OnClick="@HandleSelectClick"
+                                  OnClick:stopPropagation="true"
                                   Class="wallet-touch-target">
                             @Localizer.GetString(NetworkListLocalizer.Keys.SelectButton)
                         </MudButton>
                     }
-                    <MudIconButton Icon="@Icons.Material.Filled.MoreVert"
-                                  Size="Size.Medium"
-                                  Color="Color.Default"
-                                  OnClick="@HandleMenuClick"
-                                  Class="wallet-touch-target" />
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                    }
+                    @if (ShowMenuButton)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.MoreVert"
+                                      Size="Size.Medium"
+                                      Color="Color.Default"
+                                      OnClick="@HandleMenuClick"
+                                      OnClick:stopPropagation="true"
+                                      Class="wallet-touch-target" />
+                    }
                 </MudStack>
             }
             else if (IsSelected)
@@ -100,6 +109,7 @@
     [Parameter] public bool IsSelected { get; set; }
     [Parameter] public bool IsActive { get; set; }
     [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowMenuButton { get; set; } = true;
     [Parameter] public bool IsCompactMode { get; set; } = false;
     [Parameter] public bool IsMobileSimplified { get; set; } = false;
     [Parameter] public EventCallback<ChainFeature> OnNetworkClick { get; set; }

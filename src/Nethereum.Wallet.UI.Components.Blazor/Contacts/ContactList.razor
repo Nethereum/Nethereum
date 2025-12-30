@@ -1,0 +1,200 @@
+@using MudBlazor
+@using System.Linq
+@using Nethereum.Wallet.UI.Components.Contacts
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Services.Contacts
+@using static Nethereum.Wallet.UI.Components.Contacts.ContactListLocalizer
+@inject ContactListViewModel ViewModel
+@inject IComponentLocalizer<ContactListViewModel> Localizer
+@implements IDisposable
+
+@if (ViewModel.IsShowingAddEdit)
+{
+    <WalletFormLayout Title="@(ViewModel.IsEditMode ? Localizer.GetString(Keys.EditContact) : Localizer.GetString(Keys.AddContact))"
+                      ShowExit="true"
+                      ExitText="@Localizer.GetString(Keys.Cancel)"
+                      ShowPrimary="true"
+                      PrimaryText="@Localizer.GetString(Keys.Save)"
+                      PrimaryDisabled="@(!ViewModel.IsFormValid || ViewModel.IsLoading)"
+                      OnExit="@(() => ViewModel.CancelAddEditCommand.Execute(null))"
+                      OnPrimary="@HandleSave">
+        <ChildContent>
+            <WalletFormSection>
+                <MudTextField @bind-Value="ViewModel.EditName"
+                              Label="@Localizer.GetString(Keys.Name)"
+                              Error="@(!string.IsNullOrEmpty(ViewModel.EditNameError))"
+                              ErrorText="@ViewModel.EditNameError"
+                              Required="true"
+                              Immediate="true"
+                              Variant="Variant.Outlined"
+                              Class="mb-4" />
+
+                <MudTextField @bind-Value="ViewModel.EditAddress"
+                              Label="@Localizer.GetString(Keys.Address)"
+                              Error="@(!string.IsNullOrEmpty(ViewModel.EditAddressError))"
+                              ErrorText="@ViewModel.EditAddressError"
+                              Required="true"
+                              Immediate="true"
+                              ReadOnly="@ViewModel.IsEditMode"
+                              Variant="Variant.Outlined"
+                              Class="mb-4" />
+
+                <MudTextField @bind-Value="ViewModel.EditNotes"
+                              Label="@Localizer.GetString(Keys.Notes)"
+                              Lines="3"
+                              Variant="Variant.Outlined" />
+            </WalletFormSection>
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <MudAlert Severity="Severity.Error">@ViewModel.ErrorMessage</MudAlert>
+                </WalletContentSection>
+            }
+        </ChildContent>
+    </WalletFormLayout>
+}
+else if (ViewModel.IsLoading)
+{
+    <WalletContentSection Class="spacing-normal">
+        <WalletLoadingState Message="@Localizer.GetString(Keys.Loading)" />
+    </WalletContentSection>
+}
+else
+{
+    <WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+                      ShowExit="@ShowExit"
+                      ShowContinue="false"
+                      IsCompactMode="@IsCompactMode"
+                      OnExit="@HandleExit">
+        <ActionButtons>
+            <WalletBarActionButton Icon="@Icons.Material.Filled.Add"
+                                   Text="@Localizer.GetString(Keys.AddContact)"
+                                   OnClick="@(() => ViewModel.ShowAddCommand.Execute(null))" />
+        </ActionButtons>
+        <ChildContent>
+            <WalletContentSection Class="spacing-tight">
+                <MudTextField @bind-Value="ViewModel.SearchText"
+                              Placeholder="@Localizer.GetString(Keys.SearchPlaceholder)"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Immediate="true"
+                              Variant="Variant.Outlined"
+                              Clearable="true" />
+            </WalletContentSection>
+
+            @if (ViewModel.UserAccounts.Any())
+            {
+                <WalletGroupSection Title="@Localizer.GetString(Keys.YourAccounts)"
+                                   Icon="@Icons.Material.Filled.Person">
+                    @foreach (var account in ViewModel.UserAccounts)
+                    {
+                        <ContactCard Contact="@account"
+                                     IsSelectable="@IsSelectable"
+                                     IsCompactMode="@IsCompactMode"
+                                     OnSelect="@HandleSelect"
+                                     ShowActions="false" />
+                    }
+                </WalletGroupSection>
+            }
+
+            @if (!ViewModel.Contacts.Any() && !ViewModel.UserAccounts.Any())
+            {
+                <WalletContentSection Class="spacing-normal">
+                    @if (string.IsNullOrWhiteSpace(ViewModel.SearchText))
+                    {
+                        <WalletEmptyState Title="@Localizer.GetString(Keys.NoContacts)"
+                                          Description="@Localizer.GetString(Keys.NoContactsDescription)"
+                                          Icon="@Icons.Material.Filled.Contacts"
+                                          ActionText="@Localizer.GetString(Keys.AddContact)"
+                                          OnAction="@(() => ViewModel.ShowAddCommand.Execute(null))" />
+                    }
+                    else
+                    {
+                        <WalletEmptyState Title="@Localizer.GetString(Keys.NoMatchingContacts)"
+                                          Description=""
+                                          Icon="@Icons.Material.Filled.SearchOff" />
+                    }
+                </WalletContentSection>
+            }
+            else if (ViewModel.Contacts.Any())
+            {
+                <WalletGroupSection Title="@Localizer.GetString(Keys.SavedContacts)"
+                                   Icon="@Icons.Material.Filled.Contacts"
+                                   Collapsible="true"
+                                   InitiallyExpanded="@(!ViewModel.UserAccounts.Any())">
+                    @foreach (var contact in ViewModel.Contacts)
+                    {
+                        <ContactCard Contact="@contact"
+                                     IsSelectable="@IsSelectable"
+                                     IsCompactMode="@IsCompactMode"
+                                     OnSelect="@HandleSelect"
+                                     OnEdit="@(() => ViewModel.ShowEditCommand.Execute(contact))"
+                                     OnDelete="@(() => HandleDelete(contact))" />
+                    }
+                </WalletGroupSection>
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-normal">
+                    <MudAlert Severity="Severity.Error">@ViewModel.ErrorMessage</MudAlert>
+                </WalletContentSection>
+            }
+        </ChildContent>
+    </WalletFormLayout>
+}
+
+@code {
+    [Parameter] public bool ShowExit { get; set; } = false;
+    [Parameter] public bool IsSelectable { get; set; } = false;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<Contact> OnContactSelected { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.OnContactSelected = async contact =>
+        {
+            if (OnContactSelected.HasDelegate)
+                await OnContactSelected.InvokeAsync(contact);
+        };
+
+        await ViewModel.InitializeCommand.ExecuteAsync(null);
+    }
+
+    private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleSave()
+    {
+        await ViewModel.SaveContactCommand.ExecuteAsync(null);
+        StateHasChanged();
+    }
+
+    private async Task HandleDelete(ContactItemViewModel contact)
+    {
+        await ViewModel.DeleteContactCommand.ExecuteAsync(contact);
+    }
+
+    private void HandleSelect(ContactItemViewModel contact)
+    {
+        ViewModel.SelectContactCommand.Execute(contact);
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+            await OnExit.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        ViewModel?.Dispose();
+    }
+}

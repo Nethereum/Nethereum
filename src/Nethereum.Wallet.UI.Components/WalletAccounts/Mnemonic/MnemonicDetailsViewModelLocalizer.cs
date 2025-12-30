@@ -11,8 +11,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
 
         protected override void RegisterTranslations()
         {
-            // Use the same translations as MnemonicDetailsLocalizer
             _globalService.RegisterTranslations(_componentName, "en-US", MnemonicDetailsLocalizer.DefaultValues);
+            _globalService.RegisterTranslations(_componentName, "es-ES", MnemonicDetailsLocalizer.SpanishValues);
         }
     }
 }

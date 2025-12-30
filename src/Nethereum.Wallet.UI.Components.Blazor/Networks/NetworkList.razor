@@ -31,7 +31,7 @@
         {
             <WalletContentSection Class="spacing-normal">
                 <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
-                              Title="Error"
+                              Title="@Localizer.GetString(Keys.Error)"
                               Description="@ViewModel.ErrorMessage"
                               Icon="@Icons.Material.Filled.Error" />
             </WalletContentSection>
@@ -56,11 +56,13 @@
                 
                 <!-- Add Custom Network Button -->
                 <div class="mt-3">
-                    <MudButton Variant="Variant.Outlined" 
+                    <MudButton Variant="Variant.Outlined"
                               Color="Color.Primary"
+                              Size="@(IsCompact ? Size.Small : Size.Medium)"
                               StartIcon="@Icons.Material.Filled.Add"
                               OnClick="@HandleAddCustomNetwork"
-                              FullWidth="true">
+                              FullWidth="true"
+                              Class="wallet-touch-target">
                         @Localizer.GetString(Keys.AddCustomNetwork)
                     </MudButton>
                 </div>

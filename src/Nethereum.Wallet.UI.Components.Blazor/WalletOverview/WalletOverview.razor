@@ -43,6 +43,7 @@ else
 {
     <!-- Main wallet overview -->
     <WalletFormLayout Title="@Localizer.GetString(WalletOverviewLocalizer.Keys.WalletOverview)"
+                      ShowHeader ="false"
                       ShowPrimary="false"
                       ShowContinue="false"
                       ShowBack="@_showAccountDetails"
@@ -57,14 +58,6 @@ else
                                      OnClick="ShowTransactionHistory"
                                      IsNavigation="true"
                                      Disabled="@(ViewModel.SelectedAccount == null)" />
-                <WalletBarActionButton Icon="@Icons.Material.Filled.Send"
-                                     Text="@Localizer.GetString(WalletOverviewLocalizer.Keys.SendButton)"
-                                     OnClick="ShowSendTransaction"
-                                     IsNavigation="true"
-                                     Disabled="@(ViewModel.SelectedAccount == null)" />
-                <WalletBarActionButton Icon="@Icons.Material.Filled.Token"
-                                     Text="@Localizer.GetString(WalletOverviewLocalizer.Keys.TokenBalances)"
-                                     Disabled="true" />
             }
         </ActionButtons>
         
@@ -145,7 +138,17 @@ else
                                         BlockNumber="@ViewModel.VerifiedBlockNumber"
                                         BalancesMatch="@ViewModel.BalancesMatch"
                                         IsOptimisticMode="@ViewModel.IsOptimisticMode"
-                                        IsRpcLimitation="@ViewModel.IsRpcLimitation" />
+                                        IsRpcLimitation="@ViewModel.IsRpcLimitation"
+                                        HasFinalizedBalance="@ViewModel.HasFinalizedBalance"
+                                        FormattedFinalizedBalance="@ViewModel.FormattedFinalizedBalance"
+                                        FinalizedBlockNumber="@ViewModel.FinalizedBlockNumber"
+                                        FinalizedBalanceError="@ViewModel.FinalizedBalanceError"
+                                        FinalizedBalanceMatches="@ViewModel.FinalizedBalanceMatches"
+                                        HasOptimisticBalance="@ViewModel.HasOptimisticBalance"
+                                        FormattedOptimisticBalance="@ViewModel.FormattedOptimisticBalance"
+                                        OptimisticBlockNumber="@ViewModel.OptimisticBlockNumber"
+                                        OptimisticBalanceError="@ViewModel.OptimisticBalanceError"
+                                        OptimisticBalanceMatches="@ViewModel.OptimisticBalanceMatches" />
                                 }
                             </MudStack>
                         </MudCard>
@@ -184,7 +187,6 @@ else
     
     protected override async Task OnInitializedAsync()
     {
-        ViewModel.OnSendTransactionRequested = ShowSendTransaction;
         ViewModel.OnNavigateToTransactionHistory = ShowTransactionHistory;
         ViewModel.OnNavigateToAccountDetails = ShowAccountDetails;
         
@@ -226,15 +228,7 @@ else
         _showAccountDetails = false;
         StateHasChanged();
     }
-    
-    private void ShowSendTransaction()
-    {
-        Trace("ShowSendTransaction invoked");
-        _showSendTransaction = true;
-        _showTransactionHistory = false;
-        _showAccountDetails = false;
-        StateHasChanged();
-    }
+   
     
     private void ShowTransactionHistory()
     {

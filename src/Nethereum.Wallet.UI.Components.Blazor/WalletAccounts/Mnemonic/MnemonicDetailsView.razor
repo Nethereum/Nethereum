@@ -83,7 +83,7 @@
                                     <!-- Type -->
                                     <div>
                                         <WalletText TextType="WalletText.WalletTextType.Label"
-                                                   Text="Type"
+                                                   TextKey="@Keys.TypeLabel"
                                                    Localizer="@Localizer" />
                                         <WalletText TextType="WalletText.WalletTextType.Body"
                                                    TextKey="@Keys.MnemonicType"
@@ -94,7 +94,7 @@
                                     <!-- Passphrase Status -->
                                     <div>
                                         <WalletText TextType="WalletText.WalletTextType.Label"
-                                                   Text="Security"
+                                                   TextKey="@Keys.SecurityLabel"
                                                    Localizer="@Localizer" />
                                         <MudChip T="string" 
                                                 Size="Size.Small" 
@@ -154,7 +154,8 @@
                     <!-- Placeholder for other sections -->
                     <WalletContentSection Class="spacing-normal">
                         <WalletText TextType="WalletText.WalletTextType.Body"
-                                   Text="Section coming soon..."
+                                   TextKey="@Keys.SectionComingSoon"
+                                   Localizer="@Localizer"
                                    Class="text-center" />
                     </WalletContentSection>
                     break;
@@ -186,7 +187,7 @@
             <!-- Empty state -->
             <WalletContentSection Class="spacing-loose">
                 <div class="empty-state">
-                    <MudIcon Icon="@Icons.Material.Outlined.AccountTree" 
+                    <MudIcon Icon="@Icons.Material.Outlined.AccountTree"
                              Size="Size.Large"
                              Color="Color.Secondary" />
                     <WalletText TextType="WalletText.WalletTextType.Heading6"
@@ -194,7 +195,8 @@
                                Localizer="@Localizer"
                                Class="mt-3" />
                     <WalletText TextType="WalletText.WalletTextType.Body"
-                               Text="The requested seed phrase could not be found."
+                               TextKey="@Keys.MnemonicNotFoundMessage"
+                               Localizer="@Localizer"
                                Variant="WalletText.WalletTextVariant.Muted" />
                 </div>
             </WalletContentSection>
@@ -307,8 +309,8 @@
         return currentSection switch
         {
             ViewSection.Overview => Localizer.GetString(Keys.MnemonicOverview),
-            ViewSection.Settings => "Manage seed phrase settings and deletion",
-            ViewSection.Security => "View and manage your seed phrase",
+            ViewSection.Settings => Localizer.GetString(Keys.SettingsSubtitle),
+            ViewSection.Security => Localizer.GetString(Keys.SecuritySubtitle),
             _ => ""
         };
     }

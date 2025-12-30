@@ -1,0 +1,212 @@
+@using MudBlazor
+@using System.Numerics
+@using Nethereum.Wallet.Services.Tokens.Models
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+
+<MudCard Elevation="@(IsSelected ? 2 : 1)"
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="@HandleClick">
+
+    <MudCardContent Class="pa-2">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="flex-grow: 1; min-width: 0;">
+                <MudAvatar Size="Size.Small" Style="@GetAvatarStyle()">
+                    @if (!string.IsNullOrEmpty(Token?.LogoURI))
+                    {
+                        <MudImage Src="@Token.LogoURI" Alt="@Token.Symbol" Style="width: 100%; height: 100%; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="identicon-content">
+                            @IdenticonGenerator.GetTokenIdenticonText(Token?.Symbol)
+                        </div>
+                    }
+                </MudAvatar>
+
+                <MudStack Spacing="0" Style="flex-grow: 1; min-width: 0;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@Token?.Symbol</MudText>
+                        @if (Token?.IsNative == true)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">
+                                Native
+                            </MudChip>
+                        }
+                    </MudStack>
+                    @if (ShowBalance && Token?.Balance > BigInteger.Zero)
+                    {
+                        <MudText Typo="Typo.caption" Style="@GetSubtitleStyle()">
+                            @FormatBalance() @Token?.Symbol
+                        </MudText>
+                    }
+                    else if (!string.IsNullOrEmpty(Token?.Name))
+                    {
+                        <MudText Typo="Typo.caption" Style="@GetSubtitleStyle()">
+                            @Token.Name
+                        </MudText>
+                    }
+                </MudStack>
+            </MudStack>
+
+            @if (ShowActions)
+            {
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                    @if (ShowValue && Token?.Value.HasValue == true && Token.Value.Value > 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @FormatValue()
+                        </MudText>
+                    }
+                    @if (ShowGetBalanceButton && Token?.Balance == BigInteger.Zero && !Token.IsNative)
+                    {
+                        @if (IsLoadingBalance)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                        }
+                        else
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                                          Size="Size.Small"
+                                          Color="Color.Primary"
+                                          OnClick="@HandleGetBalanceClick"
+                                          OnClick:stopPropagation="true"
+                                          Class="wallet-touch-target"
+                                          Title="@Localizer.GetString(Keys.GetBalance)" />
+                        }
+                    }
+                    @if (!IsSelected)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                  Color="Color.Primary"
+                                  Size="Size.Small"
+                                  OnClick="@HandleSelectClick"
+                                  OnClick:stopPropagation="true"
+                                  Class="wallet-touch-target">
+                            @Localizer.GetString(Keys.SelectButton)
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                    }
+                </MudStack>
+            }
+            else if (IsSelected)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+            }
+
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public AccountToken Token { get; set; }
+    [Parameter] public bool IsSelected { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public bool ShowBalance { get; set; } = true;
+    [Parameter] public bool ShowValue { get; set; } = true;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowGetBalanceButton { get; set; } = false;
+    [Parameter] public bool IsLoadingBalance { get; set; } = false;
+    [Parameter] public EventCallback<AccountToken> OnSelect { get; set; }
+    [Parameter] public EventCallback<AccountToken> OnGetBalance { get; set; }
+
+    private string GetTokenInitial()
+    {
+        if (string.IsNullOrEmpty(Token?.Symbol))
+            return "?";
+        return Token.Symbol.Length > 0 ? Token.Symbol[0].ToString() : "?";
+    }
+
+    private string GetCardClasses()
+    {
+        var classes = "wallet-card token-card";
+        if (IsSelected)
+            classes += " wallet-card-selected";
+        return classes;
+    }
+
+    private string GetCardStyle()
+    {
+        if (IsSelected)
+        {
+            return "border: 2px solid var(--mud-palette-primary); background: linear-gradient(135deg, var(--mud-palette-primary-lighten) 0%, transparent 100%);";
+        }
+        return string.Empty;
+    }
+
+    private string GetAvatarStyle()
+    {
+        if (!string.IsNullOrEmpty(Token?.LogoURI))
+        {
+            return "background: var(--mud-palette-background-grey); display: flex; align-items: center; justify-content: center;";
+        }
+        return IdenticonGenerator.GetIdenticonStyle(Token?.Symbol ?? "TOKEN");
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Token);
+        }
+    }
+
+    private async Task HandleSelectClick()
+    {
+        if (OnSelect.HasDelegate)
+        {
+            await OnSelect.InvokeAsync(Token);
+        }
+    }
+
+    private async Task HandleGetBalanceClick()
+    {
+        if (OnGetBalance.HasDelegate)
+        {
+            await OnGetBalance.InvokeAsync(Token);
+        }
+    }
+
+    private string GetSubtitleStyle() => "color: var(--mud-palette-text-secondary); font-weight: 400;";
+
+    private string FormatBalance()
+    {
+        if (Token?.Balance == null || Token.Balance == BigInteger.Zero)
+            return "0";
+
+        var tokenValue = Nethereum.Util.UnitConversion.Convert.FromWei(Token.Balance, Token.Decimals);
+
+        if (tokenValue >= 1000)
+            return tokenValue.ToString("N2");
+        else if (tokenValue >= 1)
+            return tokenValue.ToString("F4").TrimEnd('0').TrimEnd('.');
+        else if (tokenValue >= 0.001m)
+            return tokenValue.ToString("F6").TrimEnd('0').TrimEnd('.');
+        else
+            return tokenValue.ToString("F8").TrimEnd('0').TrimEnd('.');
+    }
+
+    private string FormatValue()
+    {
+        if (Token?.Value == null || !Token.Value.HasValue)
+            return string.Empty;
+
+        var currency = Token.PriceCurrency ?? "USD";
+        var symbol = currency == "USD" ? "$" : currency;
+
+        if (Token.Value.Value >= 1000)
+            return $"{symbol}{Token.Value.Value:N2}";
+        else if (Token.Value.Value >= 1)
+            return $"{symbol}{Token.Value.Value:F2}";
+        else
+            return $"{symbol}{Token.Value.Value:F4}";
+    }
+}

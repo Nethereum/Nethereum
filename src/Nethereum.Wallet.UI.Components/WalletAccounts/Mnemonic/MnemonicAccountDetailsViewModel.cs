@@ -138,7 +138,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                     }
                     else
                     {
-                        ErrorMessage = "Account not found in vault.";
+                        ErrorMessage = _localizer.GetString(MnemonicAccountDetailsLocalizer.Keys.AccountNotFoundInVault);
                         return false;
                     }
                 }

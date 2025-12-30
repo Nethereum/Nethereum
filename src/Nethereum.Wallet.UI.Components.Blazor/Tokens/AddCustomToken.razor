@@ -1,0 +1,196 @@
+@using MudBlazor
+@using System.Numerics
+@using Nethereum.Wallet.UI.Components.Tokens
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Utils
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using static Nethereum.Wallet.UI.Components.Tokens.AddCustomTokenLocalizer
+@implements IDisposable
+@inject AddCustomTokenViewModel ViewModel
+@inject IComponentLocalizer<AddCustomTokenViewModel> Localizer
+@inject INetworkIconProvider NetworkIconProvider
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+                  ShowContinue="false"
+                  ShowPrimary="true"
+                  PrimaryText="@Localizer.GetString(Keys.Save)"
+                  ExitText="@Localizer.GetString(Keys.Cancel)"
+                  OnPrimary="@HandleSave"
+                  OnExit="@HandleCancel"
+                  PrimaryDisabled="@(!ViewModel.IsFormValid || ViewModel.IsSaving)">
+    <ChildContent>
+        @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+        {
+            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                          Title="@Localizer.GetString(Keys.Error)"
+                          Description="@ViewModel.ErrorMessage"
+                          Icon="@Icons.Material.Filled.Error" />
+        }
+
+        @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+        {
+            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                          Title="@Localizer.GetString(Keys.Success)"
+                          Description="@ViewModel.SuccessMessage"
+                          Icon="@Icons.Material.Filled.CheckCircle" />
+        }
+
+        <WalletFormSection Title="@Localizer.GetString(Keys.NetworkSection)">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                @{
+                    var chainIconUri = GetNetworkIconUri(ViewModel.CurrentChainId);
+                }
+                @if (!string.IsNullOrEmpty(chainIconUri))
+                {
+                    <MudAvatar Size="Size.Small" Image="@chainIconUri" Style="background: var(--mud-palette-background-grey);" />
+                }
+                else
+                {
+                    <MudAvatar Size="Size.Small" Style="@GetChainAvatarStyle()">
+                        <div class="identicon-content">@ViewModel.CurrentChainName[0]</div>
+                    </MudAvatar>
+                }
+                <MudText Typo="Typo.body1">@ViewModel.CurrentChainName</MudText>
+            </MudStack>
+        </WalletFormSection>
+
+        <WalletFormSection Title="@Localizer.GetString(Keys.TokenInfoSection)">
+            <MudStack Spacing="3">
+                <!-- Contract Address -->
+                <MudStack Spacing="1">
+                    <MudTextField @bind-Value="@ViewModel.ContractAddress"
+                                 Label="@Localizer.GetString(Keys.ContractAddress)"
+                                 Required="true"
+                                 Error="@(!string.IsNullOrEmpty(ViewModel.ContractAddressError))"
+                                 ErrorText="@ViewModel.ContractAddressError"
+                                 Placeholder="0x..."
+                                 Disabled="@ViewModel.IsFetchingMetadata"
+                                 Variant="Variant.Outlined" />
+                    <MudButton Variant="Variant.Text"
+                              Color="Color.Primary"
+                              Size="Size.Small"
+                              StartIcon="@Icons.Material.Filled.Download"
+                              OnClick="@(async () => await ViewModel.FetchTokenMetadataCommand.ExecuteAsync(null))"
+                              Disabled="@(ViewModel.IsFetchingMetadata || string.IsNullOrWhiteSpace(ViewModel.ContractAddress))">
+                        @if (ViewModel.IsFetchingMetadata)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        }
+                        @Localizer.GetString(Keys.FetchMetadata)
+                    </MudButton>
+                </MudStack>
+
+                <!-- Symbol -->
+                <MudTextField @bind-Value="@ViewModel.Symbol"
+                             Label="@Localizer.GetString(Keys.Symbol)"
+                             Required="true"
+                             Error="@(!string.IsNullOrEmpty(ViewModel.SymbolError))"
+                             ErrorText="@ViewModel.SymbolError"
+                             Placeholder="@Localizer.GetString(Keys.SymbolPlaceholder)"
+                             Disabled="@ViewModel.IsFetchingMetadata"
+                             Variant="Variant.Outlined" />
+
+                <!-- Name -->
+                <MudTextField @bind-Value="@ViewModel.Name"
+                             Label="@Localizer.GetString(Keys.Name)"
+                             Required="true"
+                             Error="@(!string.IsNullOrEmpty(ViewModel.NameError))"
+                             ErrorText="@ViewModel.NameError"
+                             Placeholder="@Localizer.GetString(Keys.NamePlaceholder)"
+                             Disabled="@ViewModel.IsFetchingMetadata"
+                             Variant="Variant.Outlined" />
+
+                <!-- Decimals -->
+                <MudTextField @bind-Value="@ViewModel.Decimals"
+                             Label="@Localizer.GetString(Keys.Decimals)"
+                             Required="true"
+                             Error="@(!string.IsNullOrEmpty(ViewModel.DecimalsError))"
+                             ErrorText="@ViewModel.DecimalsError"
+                             Placeholder="18"
+                             Disabled="@ViewModel.IsFetchingMetadata"
+                             Variant="Variant.Outlined" />
+
+                <!-- Logo URI (optional) -->
+                <MudTextField @bind-Value="@ViewModel.LogoUri"
+                             Label="@Localizer.GetString(Keys.LogoUri)"
+                             Required="false"
+                             Placeholder="https://..."
+                             Disabled="@ViewModel.IsFetchingMetadata"
+                             Variant="Variant.Outlined" />
+            </MudStack>
+        </WalletFormSection>
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public EventCallback OnTokenAdded { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        ViewModel.OnTokenAdded = () =>
+        {
+            if (OnTokenAdded.HasDelegate)
+            {
+                InvokeAsync(() => OnTokenAdded.InvokeAsync());
+            }
+        };
+
+        ViewModel.OnCancel = () =>
+        {
+            if (OnCancel.HasDelegate)
+            {
+                InvokeAsync(() => OnCancel.InvokeAsync());
+            }
+        };
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleSave()
+    {
+        await ViewModel.SaveTokenCommand.ExecuteAsync(null);
+    }
+
+    private async Task HandleCancel()
+    {
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+
+    private string GetNetworkIconUri(long chainId)
+    {
+        var chainIdBigInt = new BigInteger(chainId);
+        return NetworkIconProvider.HasNetworkIcon(chainIdBigInt)
+            ? NetworkIconProvider.GetNetworkIcon(chainIdBigInt)
+            : null;
+    }
+
+    private string GetChainAvatarStyle()
+    {
+        return IdenticonGenerator.GetIdenticonStyle(ViewModel.CurrentChainName);
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+
+        ViewModel.OnTokenAdded = null;
+        ViewModel.OnCancel = null;
+    }
+}

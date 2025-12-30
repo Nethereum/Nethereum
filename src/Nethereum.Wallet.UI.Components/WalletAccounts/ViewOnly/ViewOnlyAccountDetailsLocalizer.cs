@@ -54,6 +54,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
             public const string SelectAccountMessage = "SelectAccountMessage";
             public const string Error = "Error";
             public const string Success = "Success";
+            public const string AccountNotFoundInVault = "AccountNotFoundInVault";
+            public const string AccountNameUpdateError = "AccountNameUpdateError";
         }
         
         public ViewOnlyAccountDetailsLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -110,7 +112,9 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
                 [Keys.NoAccountSelected] = "No Account Selected",
                 [Keys.SelectAccountMessage] = "Please select an account to view its details",
                 [Keys.Error] = "Error",
-                [Keys.Success] = "Success"
+                [Keys.Success] = "Success",
+                [Keys.AccountNotFoundInVault] = "Account not found in vault.",
+                [Keys.AccountNameUpdateError] = "Failed to update account name: {0}"
             });
             
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -161,7 +165,9 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.ViewOnly
                 [Keys.NoAccountSelected] = "Ninguna Cuenta Seleccionada",
                 [Keys.SelectAccountMessage] = "Por favor selecciona una cuenta para ver sus detalles",
                 [Keys.Error] = "Error",
-                [Keys.Success] = "Éxito"
+                [Keys.Success] = "Éxito",
+                [Keys.AccountNotFoundInVault] = "Cuenta no encontrada en la bóveda.",
+                [Keys.AccountNameUpdateError] = "Error al actualizar el nombre de la cuenta: {0}"
             });
         }
     }

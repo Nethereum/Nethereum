@@ -1,0 +1,145 @@
+@using MudBlazor
+@using System.Linq
+@using System.Numerics
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Portfolio
+@using Nethereum.Wallet.UI.Components.Utils
+@using static Nethereum.Wallet.UI.Components.Holdings.HoldingsLocalizer
+@inject IComponentLocalizer<HoldingsViewModel> Localizer
+@inject INetworkIconProvider NetworkIconProvider
+
+<div class="holdings-tab-content">
+    @if (TokenItems == null || !TokenItems.Any())
+    {
+        <WalletEmptyState Title="@Localizer.GetString(Keys.NoTokensFound)"
+                          Description="@Localizer.GetString(Keys.ScanToDiscover)"
+                          Icon="@Icons.Material.Filled.Token" />
+    }
+    else
+    {
+        <WalletContentSection Class="spacing-tight">
+            <MudTextField @bind-Value="_searchText"
+                          Placeholder="@Localizer.GetString(Keys.SearchTokens)"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          Variant="Variant.Outlined"
+                          Clearable="true" />
+        </WalletContentSection>
+
+        @foreach (var token in FilteredTokens)
+        {
+            var hasChains = token.ChainBalances?.Any() ?? false;
+
+            <PortfolioExpandableRow Title="@token.Symbol"
+                                    Subtitle="@GetTokenSubtitle(token)"
+                                    PrimaryValue="@($"{token.FormattedTotalBalance} {token.Symbol}")"
+                                    SecondaryValue="@token.FormattedTotalValue"
+                                    IconUri="@token.LogoUri"
+                                    IconText="@token.Symbol"
+                                    IsExpanded="@token.IsExpanded"
+                                    IsExpandedChanged="@(expanded => token.IsExpanded = expanded)"
+                                    HasChildren="@hasChains"
+                                    IsCompactMode="@IsCompactMode"
+                                    Level="1">
+                <Actions>
+                    <MudIconButton Icon="@Icons.Material.Filled.Send"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   Class="wallet-touch-target"
+                                   OnClick="@(() => HandleSendToken(token))"
+                                   Title="@Localizer.GetString(Keys.Send)" />
+                </Actions>
+                <ChildContent>
+                    @foreach (var chainBalance in token.ChainBalances?.OrderByDescending(c => c.Value ?? 0) ?? Enumerable.Empty<ChainBalanceItemViewModel>())
+                    {
+                        var hasAccounts = chainBalance.AccountBalances?.Any() ?? false;
+
+                        <PortfolioExpandableRow Title="@chainBalance.ChainName"
+                                                Subtitle="@($"{chainBalance.AccountCount} {(chainBalance.AccountCount == 1 ? "account" : "accounts")}")"
+                                                PrimaryValue="@($"{chainBalance.FormattedBalance} {token.Symbol}")"
+                                                SecondaryValue="@chainBalance.FormattedValue"
+                                                IconUri="@GetNetworkIconUri(chainBalance.ChainId)"
+                                                IconText="@chainBalance.ChainName"
+                                                IsExpanded="@chainBalance.IsExpanded"
+                                                IsExpandedChanged="@(expanded => chainBalance.IsExpanded = expanded)"
+                                                HasChildren="@hasAccounts"
+                                                IsCompactMode="true"
+                                                Level="2">
+                            <Actions>
+                                <MudIconButton Icon="@Icons.Material.Filled.Send"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               Class="wallet-touch-target"
+                                               OnClick="@(() => HandleSendTokenOnChain(token, chainBalance))"
+                                               Title="@Localizer.GetString(Keys.SendOnChain)" />
+                            </Actions>
+                            <ChildContent>
+                                @foreach (var accountBalance in chainBalance.AccountBalances?.OrderByDescending(a => a.Value ?? 0) ?? Enumerable.Empty<AccountBalanceItemViewModel>())
+                                {
+                                    <PortfolioExpandableRow Title="@(accountBalance.Name ?? accountBalance.FormattedAddress)"
+                                                            Subtitle="@accountBalance.FormattedAddress"
+                                                            PrimaryValue="@($"{accountBalance.FormattedBalance} {token.Symbol}")"
+                                                            SecondaryValue="@accountBalance.FormattedValue"
+                                                            IconText="@accountBalance.Address"
+                                                            HasChildren="false"
+                                                            IsCompactMode="true"
+                                                            Level="3" />
+                                }
+                            </ChildContent>
+                        </PortfolioExpandableRow>
+                    }
+                </ChildContent>
+            </PortfolioExpandableRow>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<HoldingsTokenItemViewModel> TokenItems { get; set; }
+    [Parameter] public string CurrencySymbol { get; set; } = "$";
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public EventCallback<HoldingsTokenItemViewModel> OnSendToken { get; set; }
+    [Parameter] public EventCallback<(HoldingsTokenItemViewModel Token, ChainBalanceItemViewModel Chain)> OnSendTokenOnChain { get; set; }
+
+    private string _searchText = "";
+
+    private IEnumerable<HoldingsTokenItemViewModel> FilteredTokens =>
+        string.IsNullOrWhiteSpace(_searchText)
+            ? TokenItems?.OrderByDescending(t => t.TotalValue ?? 0) ?? Enumerable.Empty<HoldingsTokenItemViewModel>()
+            : TokenItems?.Where(t =>
+                (t.Symbol?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (t.Name?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+              .OrderByDescending(t => t.TotalValue ?? 0) ?? Enumerable.Empty<HoldingsTokenItemViewModel>();
+
+    private string GetTokenSubtitle(HoldingsTokenItemViewModel token)
+    {
+        return token?.Price.HasValue == true ? token.FormattedPrice : "";
+    }
+
+    private string GetNetworkIconUri(long chainId)
+    {
+        var chainIdBigInt = new BigInteger(chainId);
+        return NetworkIconProvider.HasNetworkIcon(chainIdBigInt)
+            ? NetworkIconProvider.GetNetworkIcon(chainIdBigInt)
+            : null;
+    }
+
+    private async Task HandleSendToken(HoldingsTokenItemViewModel token)
+    {
+        if (OnSendToken.HasDelegate)
+        {
+            await OnSendToken.InvokeAsync(token);
+        }
+    }
+
+    private async Task HandleSendTokenOnChain(HoldingsTokenItemViewModel token, ChainBalanceItemViewModel chainBalance)
+    {
+        if (OnSendTokenOnChain.HasDelegate)
+        {
+            await OnSendTokenOnChain.InvokeAsync((token, chainBalance));
+        }
+    }
+}

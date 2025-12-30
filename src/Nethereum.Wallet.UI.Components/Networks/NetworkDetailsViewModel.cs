@@ -255,7 +255,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
         {
             if (Network == null)
             {
-                ErrorMessage = "No network selected";
+                ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.NoNetworkSelected);
                 return;
             }
 
@@ -271,13 +271,13 @@ namespace Nethereum.Wallet.UI.Components.Networks
 
                 if (!selectedUrls.Any())
                 {
-                    ErrorMessage = "Please select at least one RPC endpoint";
+                    ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.SelectAtLeastOneRpcEndpoint);
                     return;
                 }
 
                 if (RpcSelectionMode == RpcSelectionMode.Single && selectedUrls.Count > 1)
                 {
-                    ErrorMessage = "Single mode requires exactly one RPC endpoint";
+                    ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.SingleModeRequiresOneRpc);
                     return;
                 }
 
@@ -290,11 +290,11 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 };
 
                 await _rpcEndpointService.SaveConfigurationAsync(config);
-                SuccessMessage = "RPC configuration saved successfully";
+                SuccessMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.RpcConfigurationSavedSuccessfully);
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Failed to save RPC configuration: {ex.Message}";
+                ErrorMessage = string.Format(_localizer.GetString(NetworkDetailsLocalizer.Keys.FailedToSaveRpcConfiguration), ex.Message);
             }
             finally
             {
@@ -355,7 +355,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 }
                 else
                 {
-                    ErrorMessage = "No RPC endpoints configured";
+                    ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.NoRpcEndpointsConfigured);
                 }
             }
             catch (Exception ex)
@@ -386,7 +386,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 // If trying to disable the only selected one, don't allow it
                 else
                 {
-                    ErrorMessage = "At least one RPC endpoint must be selected";
+                    ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.AtLeastOneRpcRequired);
                 }
             }
             else
@@ -401,7 +401,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                     }
                     else
                     {
-                        ErrorMessage = "At least one RPC endpoint must remain selected";
+                        ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.AtLeastOneRpcMustRemain);
                     }
                 }
                 else
@@ -476,12 +476,12 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 await _chainManagementService.UpdateChainRpcConfigurationAsync(Network.ChainId, httpRpcs, wsRpcs);
                 
                 await InitializeAsync(Network.ChainId);
-                
-                SuccessMessage = "RPC endpoint removed successfully";
+
+                SuccessMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.RpcEndpointRemovedSuccessfully);
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Failed to remove RPC endpoint: {ex.Message}";
+                ErrorMessage = $"{_localizer.GetString(NetworkDetailsLocalizer.Keys.FailedToAddRpcEndpoint)}: {ex.Message}";
             }
             finally
             {
@@ -530,8 +530,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
         [RelayCommand]
         private async Task DeactivateNetworkAsync()
         {
-            // Network deactivation is no longer supported - networks are either selected or not
-            ErrorMessage = "Networks cannot be deactivated. Use network selection instead.";
+            ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.CannotDeactivateNetwork);
         }
 
         [RelayCommand]
@@ -664,7 +663,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
             if (string.IsNullOrEmpty(BeaconChainApiUrl))
             {
                 BeaconTestSuccess = false;
-                BeaconTestResult = "Beacon API URL required";
+                BeaconTestResult = _localizer.GetString(NetworkDetailsLocalizer.Keys.BeaconApiUrlRequired);
                 return;
             }
 
@@ -704,7 +703,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
         {
             if (Network == null)
             {
-                ErrorMessage = "No network selected";
+                ErrorMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.NoNetworkSelected);
                 return;
             }
 
@@ -720,11 +719,11 @@ namespace Nethereum.Wallet.UI.Components.Networks
 
                 await _chainManagementService.UpdateChainAsync(Network);
 
-                SuccessMessage = "Light client settings saved successfully";
+                SuccessMessage = _localizer.GetString(NetworkDetailsLocalizer.Keys.LightClientSettingsSavedSuccessfully);
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Failed to save light client settings: {ex.Message}";
+                ErrorMessage = string.Format(_localizer.GetString(NetworkDetailsLocalizer.Keys.FailedToSaveLightClientSettings), ex.Message);
             }
             finally
             {

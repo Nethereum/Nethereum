@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Nethereum.Wallet.WalletAccounts;
 using Nethereum.Wallet.Services;
 using Nethereum.Wallet.UI.Components.AccountDetails;
+using Nethereum.Wallet.UI.Components.Core.Localization;
 
 namespace Nethereum.Wallet.UI.Components.AccountList
 {
@@ -24,6 +25,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
         private readonly BaseWalletConfiguration _vaultConfiguration;
         private readonly IAccountTypeMetadataRegistry _metadataRegistry;
         private readonly IEnsService? _ensService;
+        private readonly IComponentLocalizer<AccountListViewModel> _localizer;
         public IEnumerable<IWalletAccount> AllAccounts =>
             AccountGroups.SelectMany(group => group.Accounts);
 
@@ -70,6 +72,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             IWalletNotificationService notificationService,
             BaseWalletConfiguration vaultConfiguration,
             IAccountTypeMetadataRegistry metadataRegistry,
+            IComponentLocalizer<AccountListViewModel> localizer,
             IEnsService? ensService = null)
         {
             _walletHostProvider = walletHostProvider;
@@ -77,6 +80,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             _notificationService = notificationService;
             _vaultConfiguration = vaultConfiguration;
             _metadataRegistry = metadataRegistry;
+            _localizer = localizer;
             _ensService = ensService;
 
             _walletHostProvider.SelectedAccountChanged += OnSelectedAccountChangedAsync;
@@ -302,7 +306,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
 
                 if (string.IsNullOrWhiteSpace(EditingAccountName))
                 {
-                    ErrorMessage = "Account name cannot be empty";
+                    ErrorMessage = _localizer.GetString(AccountListLocalizer.Keys.AccountNameCannotBeEmpty);
                     return;
                 }
 
@@ -323,7 +327,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
                         }
                     }
                     
-                    SuccessMessage = "Account name updated successfully";
+                    SuccessMessage = _localizer.GetString(AccountListLocalizer.Keys.AccountNameUpdatedSuccessfully);
                 }
 
                 var accountToUpdate = AllAccounts.FirstOrDefault(a => a.Address == EditingAccountAddress);

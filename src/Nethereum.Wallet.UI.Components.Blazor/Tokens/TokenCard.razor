@@ -1,0 +1,123 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Tokens
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using static Nethereum.Wallet.UI.Components.Tokens.TokenListLocalizer
+@inject IComponentLocalizer<TokenListViewModel> Localizer
+
+<MudCard Elevation="1"
+         Class="@GetCardClasses()"
+         Style="cursor: pointer;"
+         @onclick="@HandleClick">
+
+    <MudCardContent Class="@(IsCompact ? "pa-2" : "pa-4")">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="@(IsCompact ? 2 : 3)">
+
+            <!-- Left: Token Logo and Info -->
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="@(IsCompact ? 2 : 3)" Style="flex-grow: 1; min-width: 0;">
+                <MudAvatar Size="@GetAvatarSize()" Style="@GetTokenAvatarStyle()">
+                    @if (!string.IsNullOrEmpty(Token?.Token?.LogoURI))
+                    {
+                        <MudImage Src="@Token.Token.LogoURI"
+                                 Alt="@Token.Token.Symbol"
+                                 Style="width: 100%; height: 100%; object-fit: cover;"
+                                 @onerror="@HandleImageError" />
+                    }
+                    else
+                    {
+                        <div class="identicon-content">
+                            @GetAvatarText()
+                        </div>
+                    }
+                </MudAvatar>
+
+                <MudStack Spacing="0" Style="flex-grow: 1; min-width: 0;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight: 600;">@Token?.Token?.Symbol</MudText>
+                        @if (Token?.Token?.IsCustom == true)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                @Localizer.GetString(Keys.CustomToken)
+                            </MudChip>
+                        }
+                    </MudStack>
+                    <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                        @Token?.Token?.Name
+                    </MudText>
+                </MudStack>
+            </MudStack>
+
+            <!-- Right: Balance and Value -->
+            <MudStack AlignItems="AlignItems.End" Spacing="0">
+                <MudText Typo="@GetTitleTypo()" Style="font-weight: 600;">
+                    @Token?.FormattedBalance @Token?.Token?.Symbol
+                </MudText>
+                @if (Token?.HasPrice == true)
+                {
+                    <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                        @Token?.FormattedValue
+                    </MudText>
+                }
+            </MudStack>
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public TokenItemViewModel? Token { get; set; }
+    [Parameter] public bool IsCompact { get; set; } = false;
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private bool _imageError = false;
+
+    private string GetCardClasses()
+    {
+        var classes = new List<string> { "wallet-card", "token-card" };
+        return string.Join(" ", classes);
+    }
+
+    private string GetTokenAvatarStyle()
+    {
+        if (!string.IsNullOrEmpty(Token?.Token?.LogoURI) && !_imageError)
+        {
+            return "background: var(--mud-palette-background-grey); display: flex; align-items: center; justify-content: center;";
+        }
+        else
+        {
+            var colorSeed = Token?.Token?.Symbol ?? Token?.Token?.ContractAddress ?? "TK";
+            return IdenticonGenerator.GetIdenticonStyle(colorSeed);
+        }
+    }
+
+    private string GetAvatarText()
+    {
+        var symbol = Token?.Token?.Symbol;
+        if (string.IsNullOrEmpty(symbol)) return "TK";
+        return symbol.Length >= 2
+            ? symbol.Substring(0, 2).ToUpperInvariant()
+            : symbol.ToUpperInvariant();
+    }
+
+    private void HandleImageError()
+    {
+        _imageError = true;
+        StateHasChanged();
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnClick.HasDelegate)
+        {
+            await OnClick.InvokeAsync();
+        }
+    }
+
+    private Size GetAvatarSize() => IsCompact ? Size.Small : Size.Medium;
+
+    private Typo GetTitleTypo() => IsCompact ? Typo.subtitle2 : Typo.subtitle1;
+
+    private Typo GetSubtitleTypo() => IsCompact ? Typo.caption : Typo.body2;
+
+    private string GetSubtitleStyle() => "color: var(--mud-palette-text-secondary); font-weight: 400;";
+}

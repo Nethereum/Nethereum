@@ -15,6 +15,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             public const string MnemonicOverview = "MnemonicOverview";
             public const string MnemonicName = "MnemonicName";
             public const string MnemonicType = "MnemonicType";
+            public const string TypeLabel = "TypeLabel";
+            public const string SecurityLabel = "SecurityLabel";
             public const string CreatedDate = "CreatedDate";
             public const string AccountCount = "AccountCount";
             public const string HasPassphrase = "HasPassphrase";
@@ -63,6 +65,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             public const string Error = "Error";
             public const string Success = "Success";
             public const string MnemonicNotFound = "MnemonicNotFound";
+            public const string MnemonicNotFoundMessage = "MnemonicNotFoundMessage";
             public const string NoVaultAvailable = "NoVaultAvailable";
             public const string LabelUpdated = "LabelUpdated";
             public const string MnemonicDeleted = "MnemonicDeleted";
@@ -76,9 +79,12 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             public const string MnemonicTooltip = "MnemonicTooltip";
             public const string PassphraseTooltip = "PassphraseTooltip";
             public const string DerivationPathTooltip = "DerivationPathTooltip";
+
+            public const string SettingsSubtitle = "SettingsSubtitle";
+            public const string SecuritySubtitle = "SecuritySubtitle";
+            public const string SectionComingSoon = "SectionComingSoon";
         }
 
-        // Default English values (these would be replaced by proper localization system)
         public static readonly Dictionary<string, string> DefaultValues = new()
         {
             { Keys.MnemonicDetails, "Seed Phrase Details" },
@@ -90,6 +96,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             { Keys.MnemonicOverview, "Seed Phrase Overview" },
             { Keys.MnemonicName, "Name" },
             { Keys.MnemonicType, "HD Wallet (BIP-44)" },
+            { Keys.TypeLabel, "Type" },
+            { Keys.SecurityLabel, "Security" },
             { Keys.CreatedDate, "Created" },
             { Keys.AccountCount, "Accounts" },
             { Keys.HasPassphrase, "Protected with passphrase" },
@@ -138,6 +146,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             { Keys.Error, "Error" },
             { Keys.Success, "Success" },
             { Keys.MnemonicNotFound, "Seed phrase not found" },
+            { Keys.MnemonicNotFoundMessage, "The requested seed phrase could not be found." },
             { Keys.NoVaultAvailable, "No wallet available" },
             { Keys.LabelUpdated, "Seed phrase name updated successfully" },
             { Keys.MnemonicDeleted, "Seed phrase deleted successfully" },
@@ -150,7 +159,92 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
 
             { Keys.MnemonicTooltip, "A seed phrase is a series of words that can be used to recover your wallet" },
             { Keys.PassphraseTooltip, "An additional passphrase provides extra security for your seed phrase" },
-            { Keys.DerivationPathTooltip, "The path used to generate this account from the seed phrase" }
+            { Keys.DerivationPathTooltip, "The path used to generate this account from the seed phrase" },
+
+            { Keys.SettingsSubtitle, "Manage seed phrase settings and deletion" },
+            { Keys.SecuritySubtitle, "View and manage your seed phrase" },
+            { Keys.SectionComingSoon, "Section coming soon..." }
+        };
+
+        public static readonly Dictionary<string, string> SpanishValues = new()
+        {
+            { Keys.MnemonicDetails, "Detalles de la Frase Semilla" },
+            { Keys.Overview, "Resumen" },
+            { Keys.Security, "Seguridad" },
+            { Keys.Accounts, "Cuentas" },
+            { Keys.Settings, "Configuración" },
+
+            { Keys.MnemonicOverview, "Resumen de la Frase Semilla" },
+            { Keys.MnemonicName, "Nombre" },
+            { Keys.MnemonicType, "Cartera HD (BIP-44)" },
+            { Keys.TypeLabel, "Tipo" },
+            { Keys.SecurityLabel, "Seguridad" },
+            { Keys.CreatedDate, "Creada" },
+            { Keys.AccountCount, "Cuentas" },
+            { Keys.HasPassphrase, "Protegida con contraseña" },
+            { Keys.NoPassphrase, "Sin contraseña" },
+
+            { Keys.AssociatedAccounts, "Cuentas Asociadas" },
+            { Keys.NoAccountsMessage, "Aún no se han creado cuentas a partir de esta frase semilla." },
+            { Keys.CreateFirstAccount, "Crear Primera Cuenta" },
+            { Keys.AccountName, "Nombre de la Cuenta" },
+            { Keys.AccountIndex, "Índice de la Cuenta" },
+            { Keys.DerivationPath, "Ruta de Derivación" },
+            { Keys.Address, "Dirección" },
+
+            { Keys.RevealSeedPhrase, "Revelar Frase Semilla" },
+            { Keys.SecurityWarning, "Advertencia de Seguridad" },
+            { Keys.SecurityWarningMessage, "Tu frase semilla da acceso completo a tu cartera. Nunca la compartas con nadie y guárdala de forma segura." },
+            { Keys.SeedPhraseTitle, "Frase Semilla" },
+            { Keys.KeepSecure, "Mantener Segura" },
+            { Keys.KeepSecureMessage, "Anota tu frase semilla y guárdala en un lugar seguro. Nunca la compartas con nadie." },
+            { Keys.HideSeedPhrase, "Ocultar Frase Semilla" },
+
+            { Keys.MnemonicLabel, "Nombre de la Frase Semilla" },
+            { Keys.MnemonicLabelPlaceholder, "Ingresa un nombre para esta frase semilla" },
+            { Keys.MnemonicLabelHelperText, "Elige un nombre memorable para ayudarte a identificar esta frase semilla" },
+            { Keys.SaveLabel, "Guardar Nombre" },
+            { Keys.DeleteMnemonic, "Eliminar Frase Semilla" },
+            { Keys.DeleteWarning, "Eliminar Frase Semilla" },
+            { Keys.DeleteWarningMessage, "Esto eliminará permanentemente la frase semilla y no se puede deshacer. Asegúrate de tener una copia de seguridad." },
+            { Keys.DeleteWarningWithAccountsMessage, "Esto eliminará permanentemente esta frase semilla y todas las {0} cuentas asociadas. Esta acción no se puede deshacer." },
+            { Keys.CannotDeleteWithAccounts, "No se puede eliminar una frase semilla que tiene cuentas asociadas. Elimina primero todas las cuentas." },
+
+            { Keys.EditLabel, "Editar Nombre" },
+            { Keys.ViewSeedPhrase, "Ver Frase Semilla" },
+            { Keys.ManageAccounts, "Administrar Cuentas" },
+            { Keys.AddAccount, "Añadir Cuenta" },
+            { Keys.ViewAccount, "Ver Cuenta" },
+            { Keys.Back, "Atrás" },
+            { Keys.Continue, "Continuar" },
+            { Keys.Save, "Guardar" },
+            { Keys.Cancel, "Cancelar" },
+            { Keys.Delete, "Eliminar" },
+            { Keys.Confirm, "Confirmar" },
+
+            { Keys.Loading, "Cargando..." },
+            { Keys.LoadingMnemonic, "Cargando detalles de la frase semilla..." },
+            { Keys.Error, "Error" },
+            { Keys.Success, "Éxito" },
+            { Keys.MnemonicNotFound, "Frase semilla no encontrada" },
+            { Keys.MnemonicNotFoundMessage, "No se pudo encontrar la frase semilla solicitada." },
+            { Keys.NoVaultAvailable, "No hay cartera disponible" },
+            { Keys.LabelUpdated, "Nombre de la frase semilla actualizado exitosamente" },
+            { Keys.MnemonicDeleted, "Frase semilla eliminada exitosamente" },
+            { Keys.PasswordLabel, "Contraseña" },
+            { Keys.InvalidPassword, "Contraseña inválida" },
+
+            { Keys.CopyToClipboard, "Copiar al portapapeles" },
+            { Keys.AddressCopied, "Dirección copiada al portapapeles" },
+            { Keys.SeedPhraseCopied, "Frase semilla copiada al portapapeles" },
+
+            { Keys.MnemonicTooltip, "Una frase semilla es una serie de palabras que se pueden usar para recuperar tu cartera" },
+            { Keys.PassphraseTooltip, "Una contraseña adicional proporciona seguridad extra para tu frase semilla" },
+            { Keys.DerivationPathTooltip, "La ruta utilizada para generar esta cuenta a partir de la frase semilla" },
+
+            { Keys.SettingsSubtitle, "Administrar configuración y eliminación de la frase semilla" },
+            { Keys.SecuritySubtitle, "Ver y administrar tu frase semilla" },
+            { Keys.SectionComingSoon, "Sección próximamente..." }
         };
     }
 }

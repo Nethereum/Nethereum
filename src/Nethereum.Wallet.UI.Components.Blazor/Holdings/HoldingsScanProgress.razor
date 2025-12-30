@@ -1,0 +1,156 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.Services.Tokens.Models
+@using static Nethereum.Wallet.UI.Components.Holdings.HoldingsLocalizer
+
+<div class="holdings-scan-progress">
+    <WalletContentSection Class="spacing-tight">
+        <MudStack Spacing="3">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h6">@Localizer.GetString(Keys.Scanning)</MudText>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Error"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Cancel"
+                           OnClick="@HandleCancel">
+                    @Localizer.GetString(Keys.Cancel)
+                </MudButton>
+            </MudStack>
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@StatusMessage</MudText>
+                <MudProgressLinear Value="@OverallProgress" Color="Color.Primary" Rounded="true" Size="Size.Medium" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Right">@OverallProgress%</MudText>
+            </MudStack>
+        </MudStack>
+    </WalletContentSection>
+
+    @if (AccountProgress?.Any() == true)
+    {
+        @foreach (var accountEntry in AccountProgress)
+        {
+            var accountAddress = accountEntry.Key;
+            var progress = accountEntry.Value;
+            var accountName = GetAccountName(accountAddress);
+
+            <WalletContentSection Class="spacing-tight">
+                <MudCard Elevation="0" Class="scan-account-card">
+                    <MudCardContent Class="pa-3">
+                        <MudStack Spacing="2">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudAvatar Size="Size.Small" Color="Color.Primary">
+                                        @GetAccountInitials(accountName)
+                                    </MudAvatar>
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.subtitle2">@accountName</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@FormatAddress(accountAddress)</MudText>
+                                    </MudStack>
+                                </MudStack>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                                    @progress.CompletedChains/@progress.TotalChains
+                                </MudChip>
+                            </MudStack>
+
+                            <div class="scan-chains-grid">
+                                @foreach (var chainEntry in progress.ChainProgress.OrderBy(c => c.Key))
+                                {
+                                    var chainId = chainEntry.Key;
+                                    var chainProgress = chainEntry.Value;
+                                    var network = Networks?.FirstOrDefault(n => n.ChainId == chainId);
+                                    var chainName = network?.Name ?? $"Chain {chainId}";
+
+                                    <div class="scan-chain-item @(chainProgress.IsComplete ? "complete" : chainProgress.CheckedTokens > 0 ? "scanning" : "waiting")">
+                                        <MudStack Spacing="1">
+                                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    @if (chainProgress.IsComplete)
+                                                    {
+                                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                    }
+                                                    else if (chainProgress.CheckedTokens > 0)
+                                                    {
+                                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" Style="width: 16px; height: 16px;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Default" Size="Size.Small" />
+                                                    }
+                                                    <MudText Typo="Typo.body2" Style="font-weight: 500;">@chainName</MudText>
+                                                </MudStack>
+                                                @if (chainProgress.TokensFoundSoFar > 0 || chainProgress.IsComplete)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                                                        @chainProgress.TokensFoundSoFar tokens
+                                                    </MudChip>
+                                                }
+                                            </MudStack>
+                                            <MudProgressLinear Value="@chainProgress.PercentComplete"
+                                                               Color="@(chainProgress.IsComplete ? Color.Success : Color.Primary)"
+                                                               Rounded="true"
+                                                               Size="Size.Small" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @if (chainProgress.IsComplete)
+                                                {
+                                                    @:Complete
+                                                }
+                                                else if (chainProgress.CheckedTokens > 0)
+                                                {
+                                                    @:@chainProgress.CheckedTokens/@chainProgress.TotalTokens checked
+                                                }
+                                                else
+                                                {
+                                                    @:Waiting...
+                                                }
+                                            </MudText>
+                                        </MudStack>
+                                    </div>
+                                }
+                            </div>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </WalletContentSection>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public Dictionary<string, MultiChainDiscoveryProgress> AccountProgress { get; set; }
+    [Parameter] public IEnumerable<HoldingsNetworkItemViewModel> Networks { get; set; }
+    [Parameter] public IEnumerable<HoldingsAccountItemViewModel> Accounts { get; set; }
+    [Parameter] public string StatusMessage { get; set; }
+    [Parameter] public int OverallProgress { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public IComponentLocalizer<HoldingsViewModel> Localizer { get; set; }
+
+    private async Task HandleCancel()
+    {
+        if (OnCancel.HasDelegate)
+            await OnCancel.InvokeAsync();
+    }
+
+    private string GetAccountName(string address)
+    {
+        var account = Accounts?.FirstOrDefault(a =>
+            string.Equals(a.Address, address, StringComparison.OrdinalIgnoreCase));
+        return account?.Name ?? FormatAddress(address);
+    }
+
+    private string GetAccountInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "??";
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 2)
+            return $"{words[0][0]}{words[1][0]}".ToUpperInvariant();
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpperInvariant() : name.ToUpperInvariant();
+    }
+
+    private static string FormatAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 10) return address ?? "";
+        return $"{address.Substring(0, 6)}...{address.Substring(address.Length - 4)}";
+    }
+}

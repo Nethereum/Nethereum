@@ -1,0 +1,284 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Utils
+
+<MudCard Elevation="1"
+         Class="@GetCardClasses()"
+         Style="@GetCardStyle()"
+         @onclick="HandleClick">
+    <MudCardContent Class="@(IsCompactMode ? "pa-2" : "pa-3")">
+        @if (HeaderContent != null)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="width: 100%;">
+                @if (HasChildren)
+                {
+                    <MudIcon Icon="@(IsExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                             Size="Size.Small"
+                             Style="flex-shrink: 0;" />
+                }
+                @HeaderContent
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Row="true"
+                      AlignItems="AlignItems.Center"
+                      Spacing="@(IsCompactMode ? 2 : 3)"
+                      Style="width: 100%;">
+
+                @if (HasChildren)
+                {
+                    <MudIcon Icon="@(IsExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                             Size="@(IsCompactMode ? Size.Small : Size.Medium)"
+                             Style="flex-shrink: 0;" />
+                }
+                else
+                {
+                    <div style="width: @(IsCompactMode ? "20px" : "24px"); flex-shrink: 0;"></div>
+                }
+
+                @if (ShowToggle)
+                {
+                    <MudIconButton Icon="@(IsIncluded ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"
+                                   Size="Size.Small"
+                                   Color="@(IsIncluded ? Color.Primary : Color.Default)"
+                                   OnClick="@HandleToggle"
+                                   OnClick:stopPropagation="true"
+                                   Style="flex-shrink: 0;" />
+                }
+
+                @if (!string.IsNullOrEmpty(IconUri) && !_imageError)
+                {
+                    <MudAvatar Size="@GetAvatarSize()" Style="@GetAvatarStyleWithFlex()">
+                        <MudImage Src="@IconUri"
+                                 Alt="@IconAlt"
+                                 Style="width: 100%; height: 100%; object-fit: cover;"
+                                 @onerror="@HandleImageError" />
+                    </MudAvatar>
+                }
+                else if (!string.IsNullOrEmpty(IconText))
+                {
+                    <MudAvatar Size="@GetAvatarSize()" Style="@GetIdenticonStyleWithFlex()">
+                        <div class="identicon-content">@GetAvatarText()</div>
+                    </MudAvatar>
+                }
+                else if (!string.IsNullOrEmpty(IconType))
+                {
+                    <MudAvatar Size="@GetAvatarSize()" Color="Color.Default" Style="flex-shrink: 0;">
+                        <MudIcon Icon="@GetIconForType()" Size="@(IsCompactMode ? Size.Small : Size.Medium)" />
+                    </MudAvatar>
+                }
+
+                <MudStack Spacing="@(IsCompactMode ? 0 : 1)" Style="flex: 1 1 auto; min-width: 0; overflow: hidden;">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudText Typo="@GetTitleTypo()" Style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            @Title
+                        </MudText>
+                        @if (!string.IsNullOrEmpty(StatusIcon))
+                        {
+                            <MudTooltip Text="@StatusTooltip" Placement="Placement.Top">
+                                <span style="@GetStatusStyle()">@StatusIcon</span>
+                            </MudTooltip>
+                        }
+                    </MudStack>
+                    @if (!string.IsNullOrEmpty(Subtitle))
+                    {
+                        <MudText Typo="@GetSubtitleTypo()" Style="@GetSubtitleStyle()">
+                            @Subtitle
+                        </MudText>
+                    }
+                </MudStack>
+
+                <MudStack AlignItems="AlignItems.End" Spacing="0" Style="flex-shrink: 0; text-align: right;">
+                    <MudText Typo="@GetValueTypo()" Style="font-weight: 500;">
+                        @PrimaryValue
+                    </MudText>
+                    @if (!string.IsNullOrEmpty(SecondaryValue))
+                    {
+                        <MudText Typo="@GetSubtitleTypo()" Style="color: var(--mud-palette-text-secondary);">
+                            @SecondaryValue
+                        </MudText>
+                    }
+                </MudStack>
+
+                @if (Actions != null)
+                {
+                    <div @onclick:stopPropagation="true" style="flex-shrink: 0; margin-left: 8px;">
+                        @Actions
+                    </div>
+                }
+            </MudStack>
+        }
+    </MudCardContent>
+</MudCard>
+
+@if (IsExpanded && (ExpandedContent != null || ChildContent != null))
+{
+    <div class="portfolio-nested @LevelClass" style="margin-left: @GetNestedMargin();">
+        @if (ExpandedContent != null)
+        {
+            @ExpandedContent
+        }
+        else
+        {
+            @ChildContent
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string Subtitle { get; set; }
+    [Parameter] public string PrimaryValue { get; set; }
+    [Parameter] public string SecondaryValue { get; set; }
+
+    [Parameter] public string IconUri { get; set; }
+    [Parameter] public string IconAlt { get; set; }
+    [Parameter] public string IconText { get; set; }
+    [Parameter] public string IconType { get; set; }
+
+    [Parameter] public bool IsExpanded { get; set; }
+    [Parameter] public EventCallback<bool> IsExpandedChanged { get; set; }
+
+    [Parameter] public bool ShowToggle { get; set; }
+    [Parameter] public bool IsIncluded { get; set; } = true;
+    [Parameter] public EventCallback OnToggle { get; set; }
+
+    [Parameter] public bool HasChildren { get; set; } = true;
+    [Parameter] public int Level { get; set; } = 1;
+    [Parameter] public bool IsCompactMode { get; set; }
+
+    [Parameter] public string StatusIcon { get; set; }
+    [Parameter] public string StatusTooltip { get; set; }
+    [Parameter] public bool HasError { get; set; }
+
+    [Parameter] public string Class { get; set; }
+    [Parameter] public RenderFragment HeaderContent { get; set; }
+    [Parameter] public RenderFragment ExpandedContent { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment Actions { get; set; }
+
+    private bool _imageError = false;
+
+    private string LevelClass => Level switch
+    {
+        1 => "portfolio-level-1",
+        2 => "portfolio-level-2",
+        3 => "portfolio-level-3",
+        _ => "portfolio-level-1"
+    };
+
+    private string GetNestedMargin() => IsCompactMode ? "24px" : "32px";
+
+    private async Task HandleClick()
+    {
+        if (HasChildren)
+        {
+            IsExpanded = !IsExpanded;
+            await IsExpandedChanged.InvokeAsync(IsExpanded);
+        }
+    }
+
+    private async Task HandleToggle()
+    {
+        await OnToggle.InvokeAsync();
+    }
+
+    private Size GetAvatarSize() => IsCompactMode ? Size.Small : Size.Medium;
+
+    private Typo GetTitleTypo() => IsCompactMode ? Typo.body2 : Typo.body1;
+
+    private Typo GetSubtitleTypo() => Typo.caption;
+
+    private Typo GetValueTypo() => IsCompactMode ? Typo.body2 : Typo.body1;
+
+    private string GetCardClasses()
+    {
+        var classes = "wallet-card portfolio-card";
+        if (!IsIncluded)
+            classes += " portfolio-card-excluded";
+        if (IsCompactMode)
+            classes += " wallet-card-compact";
+        if (IsExpanded)
+            classes += " portfolio-card-expanded";
+        if (!string.IsNullOrEmpty(Class))
+            classes += $" {Class}";
+        return classes;
+    }
+
+    private string GetCardStyle()
+    {
+        var styles = new List<string> { "cursor: pointer; margin-bottom: 4px;" };
+        if (!IsIncluded)
+            styles.Add("opacity: 0.5;");
+        return string.Join(" ", styles);
+    }
+
+    private string GetAvatarStyle()
+    {
+        if (!_imageError)
+        {
+            return "background: var(--mud-palette-background-grey);";
+        }
+        return GetIdenticonStyle();
+    }
+
+    private string GetAvatarStyleWithFlex()
+    {
+        return $"{GetAvatarStyle()} flex-shrink: 0;";
+    }
+
+    private string GetIdenticonStyle()
+    {
+        return IdenticonGenerator.GetIdenticonStyle(IconText ?? Title ?? "");
+    }
+
+    private string GetIdenticonStyleWithFlex()
+    {
+        return $"{GetIdenticonStyle()} flex-shrink: 0;";
+    }
+
+    private string GetAvatarText()
+    {
+        var text = IconText ?? Title ?? "";
+        if (string.IsNullOrEmpty(text)) return "??";
+        return text.Length >= 2
+            ? text.Substring(0, 2).ToUpperInvariant()
+            : text.ToUpperInvariant();
+    }
+
+    private string GetIconForType()
+    {
+        return IconType switch
+        {
+            "account" => Icons.Material.Filled.AccountBalanceWallet,
+            "network" => Icons.Material.Filled.Link,
+            "token" => Icons.Material.Filled.Token,
+            _ => Icons.Material.Filled.Circle
+        };
+    }
+
+    private void HandleImageError()
+    {
+        _imageError = true;
+        StateHasChanged();
+    }
+
+    private string GetStatusStyle()
+    {
+        if (HasError)
+        {
+            return "font-size: 14px; color: var(--mud-palette-error);";
+        }
+        return "font-size: 14px; color: var(--mud-palette-success);";
+    }
+
+    private string GetSubtitleStyle()
+    {
+        var baseStyle = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+        if (HasError)
+        {
+            return $"{baseStyle} color: var(--mud-palette-error);";
+        }
+        return $"{baseStyle} color: var(--mud-palette-text-secondary);";
+    }
+}

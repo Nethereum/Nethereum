@@ -49,6 +49,39 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             public const string MaxButton = "MaxButton";
             public const string PleaseCorrectErrors = "PleaseCorrectErrors";
             public const string Done = "Done";
+            public const string NoAccountSelected = "NoAccountSelected";
+
+            public const string SelectToken = "SelectToken";
+            public const string Token = "Token";
+            public const string LoadingTokens = "LoadingTokens";
+
+            public const string PluginName = "PluginName";
+            public const string PluginDescription = "PluginDescription";
+            public const string SelectChain = "SelectChain";
+            public const string SelectAccount = "SelectAccount";
+            public const string AddCustomToken = "AddCustomToken";
+            public const string ContractAddress = "ContractAddress";
+            public const string FetchingTokenInfo = "FetchingTokenInfo";
+            public const string TokenAdded = "TokenAdded";
+            public const string RefreshingBalances = "RefreshingBalances";
+            public const string SelectFromContacts = "SelectFromContacts";
+            public const string InvalidTokenContract = "InvalidTokenContract";
+            public const string TokenNotFound = "TokenNotFound";
+            public const string BalanceValue = "BalanceValue";
+            public const string AmountValue = "AmountValue";
+
+            public const string SearchChains = "SearchChains";
+            public const string YourNetworks = "YourNetworks";
+            public const string AllNetworks = "AllNetworks";
+            public const string NoNetworksFound = "NoNetworksFound";
+
+            public const string SearchTokens = "SearchTokens";
+            public const string YourTokens = "YourTokens";
+            public const string AllTokens = "AllTokens";
+            public const string NoTokensFound = "NoTokensFound";
+            public const string SelectButton = "SelectButton";
+            public const string LoadMore = "LoadMore";
+            public const string GetBalance = "GetBalance";
         }
         
         public SendNativeTokenLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -59,7 +92,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         {
             _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
             {
-                [Keys.Title] = "Send Native Token",
+                [Keys.Title] = "Send Token",
                 [Keys.Cancel] = "Cancel",
                 [Keys.Previous] = "Back",
                 [Keys.ContinueButton] = "Continue",
@@ -100,12 +133,45 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.AvailableBalance] = "Available Balance",
                 [Keys.MaxButton] = "Max",
                 [Keys.PleaseCorrectErrors] = "Please correct validation errors",
-                [Keys.Done] = "Done"
+                [Keys.Done] = "Done",
+                [Keys.NoAccountSelected] = "No account selected",
+
+                [Keys.SelectToken] = "Select Token",
+                [Keys.Token] = "Token",
+                [Keys.LoadingTokens] = "Loading tokens...",
+
+                [Keys.PluginName] = "Transfer",
+                [Keys.PluginDescription] = "Send tokens to another address",
+                [Keys.SelectChain] = "Select Chain",
+                [Keys.SelectAccount] = "Select Account",
+                [Keys.AddCustomToken] = "Add Custom Token",
+                [Keys.ContractAddress] = "Contract Address",
+                [Keys.FetchingTokenInfo] = "Fetching token info...",
+                [Keys.TokenAdded] = "Token added successfully",
+                [Keys.RefreshingBalances] = "Refreshing balances...",
+                [Keys.SelectFromContacts] = "Select from Contacts",
+                [Keys.InvalidTokenContract] = "Invalid token contract address",
+                [Keys.TokenNotFound] = "Token not found at this address",
+                [Keys.BalanceValue] = "≈ {0}",
+                [Keys.AmountValue] = "≈ {0}",
+
+                [Keys.SearchChains] = "Search chains...",
+                [Keys.YourNetworks] = "Your Networks",
+                [Keys.AllNetworks] = "All Networks",
+                [Keys.NoNetworksFound] = "No chains found",
+
+                [Keys.SearchTokens] = "Search tokens...",
+                [Keys.YourTokens] = "Your Tokens",
+                [Keys.AllTokens] = "All Tokens",
+                [Keys.NoTokensFound] = "No tokens found",
+                [Keys.SelectButton] = "Select",
+                [Keys.LoadMore] = "Load More",
+                [Keys.GetBalance] = "Get Balance"
             });
-            
+
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
-                [Keys.Title] = "Enviar Token Nativo",
+                [Keys.Title] = "Enviar Token",
                 [Keys.Cancel] = "Cancelar",
                 [Keys.Previous] = "Atrás",
                 [Keys.ContinueButton] = "Continuar",
@@ -146,7 +212,40 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.AvailableBalance] = "Saldo Disponible",
                 [Keys.MaxButton] = "Máx",
                 [Keys.PleaseCorrectErrors] = "Por favor corrija los errores de validación",
-                [Keys.Done] = "Hecho"
+                [Keys.Done] = "Hecho",
+                [Keys.NoAccountSelected] = "Ninguna cuenta seleccionada",
+
+                [Keys.SelectToken] = "Seleccionar Token",
+                [Keys.Token] = "Token",
+                [Keys.LoadingTokens] = "Cargando tokens...",
+
+                [Keys.PluginName] = "Transferir",
+                [Keys.PluginDescription] = "Enviar tokens a otra dirección",
+                [Keys.SelectChain] = "Seleccionar Cadena",
+                [Keys.SelectAccount] = "Seleccionar Cuenta",
+                [Keys.AddCustomToken] = "Agregar Token Personalizado",
+                [Keys.ContractAddress] = "Dirección del Contrato",
+                [Keys.FetchingTokenInfo] = "Obteniendo información del token...",
+                [Keys.TokenAdded] = "Token agregado exitosamente",
+                [Keys.RefreshingBalances] = "Actualizando saldos...",
+                [Keys.SelectFromContacts] = "Seleccionar de Contactos",
+                [Keys.InvalidTokenContract] = "Dirección de contrato de token inválida",
+                [Keys.TokenNotFound] = "Token no encontrado en esta dirección",
+                [Keys.BalanceValue] = "≈ {0}",
+                [Keys.AmountValue] = "≈ {0}",
+
+                [Keys.SearchChains] = "Buscar cadenas...",
+                [Keys.YourNetworks] = "Tus Redes",
+                [Keys.AllNetworks] = "Todas las Redes",
+                [Keys.NoNetworksFound] = "No se encontraron cadenas",
+
+                [Keys.SearchTokens] = "Buscar tokens...",
+                [Keys.YourTokens] = "Tus Tokens",
+                [Keys.AllTokens] = "Todos los Tokens",
+                [Keys.NoTokensFound] = "No se encontraron tokens",
+                [Keys.SelectButton] = "Seleccionar",
+                [Keys.LoadMore] = "Cargar Más",
+                [Keys.GetBalance] = "Obtener Saldo"
             });
         }
     }

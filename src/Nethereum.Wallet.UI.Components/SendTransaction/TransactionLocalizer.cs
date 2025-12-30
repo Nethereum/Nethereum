@@ -118,6 +118,9 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             public const string InvalidGasConfiguration = "InvalidGasConfiguration";
             public const string NonceRequired = "NonceRequired";
             public const string ValidationError = "ValidationError";
+
+            public const string DecodeTransactionData = "DecodeTransactionData";
+            public const string FunctionSignature = "FunctionSignature";
         }
         
         public TransactionLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -169,7 +172,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.To] = "To", 
                 [Keys.Contract] = "Contract",
                 [Keys.Amount] = "Amount",
-                [Keys.Network] = "Network",
+                [Keys.Network] = "Chain",
                 [Keys.ChainId] = "Chain ID",
                 [Keys.TransactionParameters] = "Transaction Parameters",
                 [Keys.TransactionData] = "Transaction Data",
@@ -199,9 +202,9 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.GasConfigurationIssue] = "Gas configuration issue",
                 [Keys.RefreshGasStrategiesFailed] = "Failed to refresh gas strategies",
                 [Keys.InitializationFailed] = "Transaction initialization failed",
-                [Keys.NetworkInitializationWarning] = "Network initialization warning",
+                [Keys.NetworkInitializationWarning] = "Chain initialization warning",
                 [Keys.UsingStrategy] = "Using strategy",
-                [Keys.NetworkBasePriceUseCustom] = "Network base price - use CUSTOM to adjust",
+                [Keys.NetworkBasePriceUseCustom] = "Chain base price - use CUSTOM to adjust",
                 [Keys.UnknownFunction] = "Unknown Function",
                 [Keys.UnknownFunctionDescription] = "This function signature is not in our database",
                 [Keys.DataSize] = "Data Size",
@@ -220,14 +223,14 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.GasModeEip1559] = "EIP-1559",
                 [Keys.GasModeLegacy] = "Legacy",
                 [Keys.GasPriceAdjustment] = "Gas Price Adjustment",
-                [Keys.NetworkGasPrice] = "Network Base Price",
+                [Keys.NetworkGasPrice] = "Chain Base Price",
                 [Keys.YourGasPrice] = "Your Gas Price",
                 [Keys.Multiplier08] = "0.8x",
                 [Keys.Multiplier10] = "1.0x",
                 [Keys.Multiplier12] = "1.2x",
-                [Keys.Multiplier08Description] = "20% below network - may take longer to confirm",
-                [Keys.Multiplier10Description] = "Network recommended - standard confirmation time",
-                [Keys.Multiplier12Description] = "20% above network - faster confirmation expected",
+                [Keys.Multiplier08Description] = "20% below chain - may take longer to confirm",
+                [Keys.Multiplier10Description] = "Chain recommended - standard confirmation time",
+                [Keys.Multiplier12Description] = "20% above chain - faster confirmation expected",
                 [Keys.Custom] = "Custom",
                 [Keys.SaveCustomGas] = "Save Custom Settings",
                 [Keys.RefreshGasPrices] = "Refresh Prices",
@@ -237,7 +240,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.InvalidAmount] = "Amount must be greater than zero",
                 [Keys.InvalidGasConfiguration] = "Invalid gas configuration",
                 [Keys.NonceRequired] = "Nonce is required",
-                [Keys.ValidationError] = "Validation Error"
+                [Keys.ValidationError] = "Validation Error",
+
+                [Keys.DecodeTransactionData] = "Decode Transaction Data",
+                [Keys.FunctionSignature] = "Function Signature"
             });
             
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -283,7 +289,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.To] = "Para",
                 [Keys.Contract] = "Contrato",
                 [Keys.Amount] = "Cantidad",
-                [Keys.Network] = "Red",
+                [Keys.Network] = "Cadena",
                 [Keys.ChainId] = "ID de Cadena",
                 [Keys.TransactionParameters] = "Parámetros de Transacción",
                 [Keys.TransactionData] = "Datos de Transacción",
@@ -313,9 +319,9 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.GasConfigurationIssue] = "Problema con la configuración de gas",
                 [Keys.RefreshGasStrategiesFailed] = "Error al actualizar estrategias de gas",
                 [Keys.InitializationFailed] = "Error en la inicialización de transacción",
-                [Keys.NetworkInitializationWarning] = "Advertencia de inicialización de red",
+                [Keys.NetworkInitializationWarning] = "Advertencia de inicialización de cadena",
                 [Keys.UsingStrategy] = "Usando estrategia",
-                [Keys.NetworkBasePriceUseCustom] = "Precio base de la red - usar PERSONALIZADO para ajustar",
+                [Keys.NetworkBasePriceUseCustom] = "Precio base de la cadena - usar PERSONALIZADO para ajustar",
                 [Keys.UnknownFunction] = "Función Desconocida",
                 [Keys.UnknownFunctionDescription] = "Esta firma de función no está en nuestra base de datos",
                 [Keys.DataSize] = "Tamaño de Datos",
@@ -334,14 +340,14 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.GasModeEip1559] = "EIP-1559",
                 [Keys.GasModeLegacy] = "Heredado",
                 [Keys.GasPriceAdjustment] = "Ajuste de Precio de Gas",
-                [Keys.NetworkGasPrice] = "Precio Base de Red",
+                [Keys.NetworkGasPrice] = "Precio Base de Cadena",
                 [Keys.YourGasPrice] = "Tu Precio de Gas",
                 [Keys.Multiplier08] = "0.8x",
                 [Keys.Multiplier10] = "1.0x",
                 [Keys.Multiplier12] = "1.2x",
-                [Keys.Multiplier08Description] = "20% por debajo de la red - puede tardar más en confirmar",
-                [Keys.Multiplier10Description] = "Recomendado por la red - tiempo de confirmación estándar",
-                [Keys.Multiplier12Description] = "20% por encima de la red - confirmación más rápida esperada",
+                [Keys.Multiplier08Description] = "20% por debajo de la cadena - puede tardar más en confirmar",
+                [Keys.Multiplier10Description] = "Recomendado por la cadena - tiempo de confirmación estándar",
+                [Keys.Multiplier12Description] = "20% por encima de la cadena - confirmación más rápida esperada",
                 [Keys.Custom] = "Personalizado",
                 [Keys.SaveCustomGas] = "Guardar Configuración Personalizada",
                 [Keys.RefreshGasPrices] = "Actualizar Precios",
@@ -351,7 +357,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.InvalidAmount] = "La cantidad debe ser mayor que cero",
                 [Keys.InvalidGasConfiguration] = "Configuración de gas inválida",
                 [Keys.NonceRequired] = "El nonce es requerido",
-                [Keys.ValidationError] = "Error de Validación"
+                [Keys.ValidationError] = "Error de Validación",
+
+                [Keys.DecodeTransactionData] = "Decodificar Datos de Transacción",
+                [Keys.FunctionSignature] = "Firma de Función"
             });
         }
     }

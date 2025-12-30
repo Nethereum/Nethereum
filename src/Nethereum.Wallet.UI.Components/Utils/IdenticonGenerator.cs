@@ -14,13 +14,25 @@ namespace Nethereum.Wallet.UI.Components.Utils
         public static string GetNetworkIdenticonText(string networkName)
         {
             if (string.IsNullOrEmpty(networkName)) return "?";
-            
+
             if (networkName.Length >= 3)
                 return networkName.Substring(0, 3).ToUpper();
             else if (networkName.Length >= 2)
                 return networkName.Substring(0, 2).ToUpper();
             else
                 return networkName.ToUpper().PadRight(2, '?');
+        }
+
+        public static string GetTokenIdenticonText(string symbol)
+        {
+            if (string.IsNullOrEmpty(symbol)) return "?";
+
+            if (symbol.Length >= 3)
+                return symbol.Substring(0, 3).ToUpper();
+            else if (symbol.Length >= 2)
+                return symbol.Substring(0, 2).ToUpper();
+            else
+                return symbol.ToUpper();
         }
 
         public static string GetIdenticonStyle(string address)

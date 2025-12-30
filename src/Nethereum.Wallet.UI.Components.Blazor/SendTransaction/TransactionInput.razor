@@ -306,7 +306,7 @@
 {
     <WalletFormSection Title="@Localizer.GetString(Keys.AdvancedOptions)">
         <MudStack Spacing="3">
-            <WalletTextField @bind-Value="ViewModel.Transaction.Nonce" 
+            <WalletTextField @bind-Value="ViewModel.Transaction.Nonce"
                             LabelKey="@Keys.Nonce"
                             Localizer="@Localizer"
                             Disabled="@(!ViewModel.IsNonceEditable || ViewModel.IsLoadingNonce)"
@@ -314,7 +314,7 @@
                             ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.Nonce))"
                             ActionIcon="@Icons.Material.Filled.Refresh"
                             OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.RefreshNonceCommand.ExecuteAsync(null)))"
-                            ActionTooltip="Refresh Nonce"
+                            ActionTooltip="@Localizer.GetString(Keys.RefreshNonce)"
                             IsLoading="@ViewModel.IsLoadingNonce" />
             
             <WalletTextField @bind-Value="ViewModel.Transaction.Data"
@@ -326,7 +326,7 @@
                             ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.Data))"
                             ActionIcon="@Icons.Material.Filled.Code"
                             OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.DecodeTransactionDataCommand.ExecuteAsync(null)))"
-                            ActionTooltip="Decode Transaction Data"
+                            ActionTooltip="@Localizer.GetString(Keys.DecodeTransactionData)"
                             IsMonospace="true" />
         </MudStack>
     </WalletFormSection>
@@ -357,7 +357,7 @@
                 }
                 else if (ViewModel.DecodedData.IsDecoded && !string.IsNullOrEmpty(ViewModel.DecodedData.TextSignature))
                 {
-                    <MudText Typo="Typo.body2">Function Signature:</MudText>
+                    <MudText Typo="Typo.body2">@Localizer.GetString(Keys.FunctionSignature):</MudText>
                     <MudPaper Elevation="0" Style="background: var(--mud-palette-background-grey); padding: 12px; font-family: monospace; font-size: 0.875rem;">
                         @ViewModel.DecodedData.TextSignature
                     </MudPaper>

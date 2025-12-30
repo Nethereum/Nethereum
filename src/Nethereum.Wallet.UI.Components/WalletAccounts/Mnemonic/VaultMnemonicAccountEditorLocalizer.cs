@@ -54,6 +54,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             public const string StepSelectMnemonicLabel = "StepSelectMnemonicLabel";
             public const string StepConfigureLabel = "StepConfigureLabel";
             public const string StepConfirmLabel = "StepConfirmLabel";
+
+            public const string DuplicateAccountTitle = "DuplicateAccountTitle";
         }
         
         public VaultMnemonicAccountEditorLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -110,9 +112,11 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 
                 [Keys.StepSelectMnemonicLabel] = "Select Mnemonic",
                 [Keys.StepConfigureLabel] = "Configure",
-                [Keys.StepConfirmLabel] = "Confirm"
+                [Keys.StepConfirmLabel] = "Confirm",
+
+                [Keys.DuplicateAccountTitle] = "Duplicate Account"
             });
-            
+
             // Spanish (Spain) translations
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
@@ -162,7 +166,9 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 
                 [Keys.StepSelectMnemonicLabel] = "Seleccionar Mnemónico",
                 [Keys.StepConfigureLabel] = "Configurar",
-                [Keys.StepConfirmLabel] = "Confirmar"
+                [Keys.StepConfirmLabel] = "Confirmar",
+
+                [Keys.DuplicateAccountTitle] = "Cuenta Duplicada"
             });
         }
     }

@@ -255,10 +255,10 @@
                                 <MudItem xs="12" md="6">
                                     <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.ReceiptStatus)" 
                                              Variant="Variant.Outlined">
-                                        <MudChip T="string" 
-                                                Color="@(Transaction.ReceiptStatus.Value ? Color.Success : Color.Error)" 
+                                        <MudChip T="string"
+                                                Color="@(Transaction.ReceiptStatus.Value ? Color.Success : Color.Error)"
                                                 Size="Size.Small">
-                                            @(Transaction.ReceiptStatus.Value ? "Success" : "Failed")
+                                            @(Transaction.ReceiptStatus.Value ? Localizer.GetString(TransactionHistoryLocalizer.Keys.Success) : Localizer.GetString(TransactionHistoryLocalizer.Keys.Failed))
                                         </MudChip>
                                     </MudField>
                                 </MudItem>
@@ -290,7 +290,7 @@
                                 {
                                     <MudExpansionPanel Text="@($"Log {log.LogIndex}: {FormatHash(log.Address)}")">
                                         <MudStack Spacing="1">
-                                            <MudField Label="Contract Address" Variant="Variant.Text">
+                                            <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.ContractAddress)" Variant="Variant.Text">
                                                 <MudText Typo="Typo.caption" Style="word-break: break-all;">
                                                     @log.Address
                                                 </MudText>
@@ -298,7 +298,7 @@
                                             
                                             @if (log.Topics?.Length > 0)
                                             {
-                                                <MudField Label="Topics" Variant="Variant.Text">
+                                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Topics)" Variant="Variant.Text">
                                                     <MudStack Spacing="1">
                                                         @foreach (var topic in log.Topics.Take(4))
                                                         {
@@ -312,7 +312,7 @@
                                             
                                             @if (!string.IsNullOrEmpty(log.Data) && log.Data != "0x")
                                             {
-                                                <MudField Label="Data" Variant="Variant.Text">
+                                                <MudField Label="@Localizer.GetString(TransactionHistoryLocalizer.Keys.Data)" Variant="Variant.Text">
                                                     <MudText Typo="Typo.caption" Style="word-break: break-all; font-family: monospace;">
                                                         @(log.Data.Length > 66 ? log.Data.Substring(0, 66) + "..." : log.Data)
                                                     </MudText>

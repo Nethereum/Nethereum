@@ -1,0 +1,188 @@
+@using MudBlazor
+@using System.Linq
+@using System.Numerics
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Portfolio
+@using Nethereum.Wallet.UI.Components.Utils
+@using static Nethereum.Wallet.UI.Components.Holdings.HoldingsLocalizer
+@inject IComponentLocalizer<HoldingsViewModel> Localizer
+@inject INetworkIconProvider NetworkIconProvider
+
+<div class="holdings-tab-content">
+    @if (NetworkItems == null || !NetworkItems.Any())
+    {
+        <WalletEmptyState Title="@Localizer.GetString(Keys.NoNetworksConfigured)"
+                          Icon="@Icons.Material.Filled.Lan" />
+    }
+    else
+    {
+        @foreach (var network in NetworkItems.OrderByDescending(n => n.TotalValue))
+        {
+            var isSelected = SelectedChainIds?.Contains(network.ChainId) ?? false;
+            var networkAccounts = GetAccountsForNetwork(network.ChainId);
+            var hasAccounts = networkAccounts.Any();
+
+            <PortfolioExpandableRow Title="@network.Name"
+                                    Subtitle="@(isSelected && network.TokenCount > 0 ? $"{network.TokenCount} tokens" : network.NativeSymbol)"
+                                    PrimaryValue="@(isSelected ? CurrencyFormatter.FormatValue(network.TotalValue, CurrencySymbol) : "-")"
+                                    IconUri="@GetNetworkIconUri(network.ChainId)"
+                                    IconText="@network.Name"
+                                    IsExpanded="@network.IsExpanded"
+                                    IsExpandedChanged="@(expanded => network.IsExpanded = expanded)"
+                                    HasChildren="@(isSelected && hasAccounts)"
+                                    IsCompactMode="@IsCompactMode"
+                                    Class="@(isSelected ? "" : "holdings-row-disabled")"
+                                    Level="1">
+                <ChildContent>
+                    @foreach (var account in networkAccounts)
+                    {
+                        var accountTokens = GetTokensForNetworkAccount(network.ChainId, account.Address);
+                        var hasTokens = accountTokens.Any();
+
+                        <PortfolioExpandableRow Title="@account.Name"
+                                                Subtitle="@account.FormattedAddress"
+                                                PrimaryValue="@CurrencyFormatter.FormatValue(account.Value, CurrencySymbol)"
+                                                IconText="@account.Address"
+                                                IsExpanded="@IsAccountExpanded(network.ChainId, account.Address)"
+                                                IsExpandedChanged="@(expanded => SetAccountExpanded(network.ChainId, account.Address, expanded))"
+                                                HasChildren="@hasTokens"
+                                                IsCompactMode="true"
+                                                Level="2">
+                            <ChildContent>
+                                @foreach (var token in accountTokens)
+                                {
+                                    <PortfolioExpandableRow Title="@token.Symbol"
+                                                            Subtitle="@GetTokenSubtitle(token)"
+                                                            PrimaryValue="@($"{CurrencyFormatter.FormatBalance(token.Balance)} {token.Symbol}")"
+                                                            SecondaryValue="@CurrencyFormatter.FormatValue(token.Value, CurrencySymbol)"
+                                                            IconUri="@token.LogoUri"
+                                                            IconText="@token.Symbol"
+                                                            HasChildren="false"
+                                                            IsCompactMode="true"
+                                                            Level="3" />
+                                }
+                            </ChildContent>
+                        </PortfolioExpandableRow>
+                    }
+                </ChildContent>
+            </PortfolioExpandableRow>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<HoldingsNetworkItemViewModel> NetworkItems { get; set; }
+    [Parameter] public IEnumerable<HoldingsTokenItemViewModel> TokenItems { get; set; }
+    [Parameter] public IEnumerable<HoldingsAccountItemViewModel> AccountItems { get; set; }
+    [Parameter] public IEnumerable<long> SelectedChainIds { get; set; }
+    [Parameter] public string CurrencySymbol { get; set; } = "$";
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+
+    private Dictionary<string, bool> _accountExpandedState = new();
+
+    private record AccountSummary(string Address, string Name, string FormattedAddress, decimal Value);
+    private record TokenSummary(string Symbol, string Name, string LogoUri, decimal Balance, decimal Value, decimal? Price);
+
+    private IEnumerable<AccountSummary> GetAccountsForNetwork(long chainId)
+    {
+        if (TokenItems == null) return Enumerable.Empty<AccountSummary>();
+
+        var accounts = new Dictionary<string, (string Name, string FormattedAddress, decimal Value)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var token in TokenItems)
+        {
+            foreach (var chainBalance in token.ChainBalances ?? Enumerable.Empty<ChainBalanceItemViewModel>())
+            {
+                if (chainBalance.ChainId != chainId) continue;
+
+                foreach (var accountBalance in chainBalance.AccountBalances ?? Enumerable.Empty<AccountBalanceItemViewModel>())
+                {
+                    var address = accountBalance.Address;
+                    var value = accountBalance.Value ?? 0;
+                    var accountItem = AccountItems?.FirstOrDefault(a =>
+                        string.Equals(a.Address, address, StringComparison.OrdinalIgnoreCase));
+                    var name = accountItem?.Name ?? accountBalance.Name ?? FormatAddress(address);
+                    var formattedAddress = FormatAddress(address);
+
+                    if (accounts.TryGetValue(address, out var existing))
+                    {
+                        accounts[address] = (existing.Name, existing.FormattedAddress, existing.Value + value);
+                    }
+                    else
+                    {
+                        accounts[address] = (name, formattedAddress, value);
+                    }
+                }
+            }
+        }
+
+        return accounts
+            .OrderByDescending(a => a.Value.Value)
+            .Select(a => new AccountSummary(a.Key, a.Value.Name, a.Value.FormattedAddress, a.Value.Value));
+    }
+
+    private IEnumerable<TokenSummary> GetTokensForNetworkAccount(long chainId, string accountAddress)
+    {
+        if (TokenItems == null) return Enumerable.Empty<TokenSummary>();
+
+        var tokens = new List<TokenSummary>();
+
+        foreach (var token in TokenItems)
+        {
+            foreach (var chainBalance in token.ChainBalances ?? Enumerable.Empty<ChainBalanceItemViewModel>())
+            {
+                if (chainBalance.ChainId != chainId) continue;
+
+                foreach (var accountBalance in chainBalance.AccountBalances ?? Enumerable.Empty<AccountBalanceItemViewModel>())
+                {
+                    if (string.Equals(accountBalance.Address, accountAddress, StringComparison.OrdinalIgnoreCase))
+                    {
+                        tokens.Add(new TokenSummary(
+                            token.Symbol,
+                            token.Name,
+                            token.LogoUri,
+                            accountBalance.Balance,
+                            accountBalance.Value ?? 0,
+                            token.Price
+                        ));
+                    }
+                }
+            }
+        }
+
+        return tokens.OrderByDescending(t => t.Value);
+    }
+
+    private static string FormatAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 10) return address ?? "";
+        return $"{address.Substring(0, 6)}...{address.Substring(address.Length - 4)}";
+    }
+
+    private string GetAccountKey(long chainId, string accountAddress) => $"{chainId}_{accountAddress}";
+
+    private bool IsAccountExpanded(long chainId, string accountAddress)
+    {
+        return _accountExpandedState.TryGetValue(GetAccountKey(chainId, accountAddress), out var expanded) && expanded;
+    }
+
+    private void SetAccountExpanded(long chainId, string accountAddress, bool expanded)
+    {
+        _accountExpandedState[GetAccountKey(chainId, accountAddress)] = expanded;
+    }
+
+    private string GetTokenSubtitle(TokenSummary token)
+    {
+        return token.Price.HasValue ? CurrencyFormatter.FormatPrice(token.Price, CurrencySymbol) : "";
+    }
+
+    private string GetNetworkIconUri(long chainId)
+    {
+        var chainIdBigInt = new BigInteger(chainId);
+        return NetworkIconProvider.HasNetworkIcon(chainIdBigInt)
+            ? NetworkIconProvider.GetNetworkIcon(chainIdBigInt)
+            : null;
+    }
+}

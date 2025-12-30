@@ -8,16 +8,19 @@
         <MudText>@Message</MudText>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+        <MudButton OnClick="Cancel" Color="Color.Default">@CancelText</MudButton>
+        <MudButton Color="@ConfirmColor" OnClick="Submit">@ConfirmText</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
-    [Parameter] required public string Title { get; set; }
-    [Parameter] required public string Message { get; set; }
+    [Parameter] public string Title { get; set; } = "Confirm";
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string ConfirmText { get; set; } = "Ok";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public Color ConfirmColor { get; set; } = Color.Primary;
 
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();

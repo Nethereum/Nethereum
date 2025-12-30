@@ -67,8 +67,9 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             public const string PasswordLabel = "PasswordLabel";
             public const string AccountNameLabel = "AccountNameLabel";
             public const string AccountNameHelperText = "AccountNameHelperText";
-            
+
             public const string AccountDerivedFromSeedPhrase = "AccountDerivedFromSeedPhrase";
+            public const string AccountNotFoundInVault = "AccountNotFoundInVault";
         }
 
         public MnemonicAccountDetailsLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -138,7 +139,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 [Keys.PasswordLabel] = "Password",
                 [Keys.AccountNameLabel] = "Account Name",
                 [Keys.AccountNameHelperText] = "Give your account a memorable name",
-                [Keys.AccountDerivedFromSeedPhrase] = "{0} is account index {1} derived from your {2} seed phrase."
+                [Keys.AccountDerivedFromSeedPhrase] = "{0} is account index {1} derived from your {2} seed phrase.",
+                [Keys.AccountNotFoundInVault] = "Account not found in vault."
             });
 
             // Spanish (Spain) translations
@@ -203,7 +205,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 [Keys.PasswordLabel] = "Contraseña",
                 [Keys.AccountNameLabel] = "Nombre de Cuenta",
                 [Keys.AccountNameHelperText] = "Dale un nombre memorable a tu cuenta",
-                [Keys.AccountDerivedFromSeedPhrase] = "{0} es el índice de cuenta {1} derivado de tu frase semilla {2}."
+                [Keys.AccountDerivedFromSeedPhrase] = "{0} es el índice de cuenta {1} derivado de tu frase semilla {2}.",
+                [Keys.AccountNotFoundInVault] = "Cuenta no encontrada en la bóveda."
             });
         }
     }

@@ -1,0 +1,151 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Holdings
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Blazor.Holdings
+@using Nethereum.Wallet.Storage
+@using static Nethereum.Wallet.UI.Components.Holdings.EditHoldingsLocalizer
+@inject EditHoldingsViewModel ViewModel
+@inject IComponentLocalizer<EditHoldingsViewModel> Localizer
+
+@if (ViewModel.IsLoading)
+{
+    <WalletContentSection Class="spacing-normal">
+        <WalletLoadingState Message="@Localizer.GetString(Keys.Loading)" />
+    </WalletContentSection>
+}
+else
+{
+    <WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+                      ShowExit="true"
+                      ExitText="@Localizer.GetString(Keys.Cancel)"
+                      OnExit="@HandleCancel"
+                      ShowPrimary="true"
+                      ShowContinue="false"
+                      PrimaryText="@Localizer.GetString(Keys.Save)"
+                      OnPrimary="@HandleSave">
+        <ChildContent>
+            <!-- Accounts Section -->
+            <WalletGroupSection Title="@Localizer.GetString(Keys.Accounts)"
+                               Icon="@Icons.Material.Filled.AccountCircle">
+                <SelectableAccountList Accounts="@ViewModel.Accounts"
+                                       OnToggle="@HandleToggleAccount"
+                                       OnSelectAll="@HandleSelectAllAccounts"
+                                       OnDeselectAll="@HandleDeselectAllAccounts"
+                                       ShowBulkActions="true"
+                                       ShowSelectedCount="false"
+                                       ShowRescanOption="true"
+                                       IsCompactMode="true"
+                                       EmptyMessage="@Localizer.GetString(Keys.NoAccounts)"
+                                       SelectAllText="@Localizer.GetString(Keys.SelectAll)"
+                                       DeselectAllText="@Localizer.GetString(Keys.DeselectAll)"
+                                       RescanText="@Localizer.GetString(Keys.ForceRescan)"
+                                       RescanActiveText="@Localizer.GetString(Keys.WillRescan)" />
+            </WalletGroupSection>
+
+            <!-- Networks Section -->
+            <WalletGroupSection Title="@Localizer.GetString(Keys.Networks)"
+                               Icon="@Icons.Material.Filled.Lan">
+                <SelectableNetworkList Networks="@ViewModel.Networks"
+                                       OnToggle="@HandleToggleNetwork"
+                                       OnSelectAll="@HandleSelectAllNetworks"
+                                       OnDeselectAll="@HandleDeselectAllNetworks"
+                                       ShowBulkActions="true"
+                                       ShowTestnetToggle="false"
+                                       ShowSelectedCount="false"
+                                       IsCompactMode="true"
+                                       EmptyMessage="@Localizer.GetString(Keys.NoNetworks)"
+                                       SelectAllText="@Localizer.GetString(Keys.SelectAll)"
+                                       DeselectAllText="@Localizer.GetString(Keys.DeselectAll)" />
+            </WalletGroupSection>
+
+            <!-- Summary -->
+            <WalletContentSection Class="spacing-tight">
+                <div class="edit-holdings-summary">
+                    <MudText Typo="Typo.body2" Color="Color.Primary">
+                        @ViewModel.SelectionSummary
+                    </MudText>
+                </div>
+            </WalletContentSection>
+
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletContentSection Class="spacing-tight">
+                    <MudAlert Severity="Severity.Error">@ViewModel.ErrorMessage</MudAlert>
+                </WalletContentSection>
+            }
+        </ChildContent>
+    </WalletFormLayout>
+}
+
+@code {
+    [Parameter] public HoldingsSettings CurrentSettings { get; set; }
+    [Parameter] public EventCallback<HoldingsSettings> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ViewModel.InitializeCommand.ExecuteAsync(CurrentSettings);
+    }
+
+    private void HandleToggleAccount(SelectableAccountViewModel account)
+    {
+        ViewModel.ToggleAccountCommand.Execute(account);
+        StateHasChanged();
+    }
+
+    private void HandleToggleNetwork(SelectableNetworkViewModel network)
+    {
+        ViewModel.ToggleNetworkCommand.Execute(network);
+        StateHasChanged();
+    }
+
+    private void HandleSelectAllAccounts()
+    {
+        ViewModel.SelectAllAccountsCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private void HandleDeselectAllAccounts()
+    {
+        ViewModel.DeselectAllAccountsCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private void HandleSelectAllNetworks()
+    {
+        ViewModel.SelectAllNetworksCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private void HandleDeselectAllNetworks()
+    {
+        ViewModel.DeselectAllNetworksCommand.Execute(null);
+        StateHasChanged();
+    }
+
+    private async Task HandleSave()
+    {
+        await ViewModel.SaveCommand.ExecuteAsync(null);
+    }
+
+    private async Task HandleCancel()
+    {
+        await ViewModel.CancelCommand.ExecuteAsync(null);
+    }
+
+    protected override void OnInitialized()
+    {
+        ViewModel.OnSave = async (settings) =>
+        {
+            if (OnSave.HasDelegate)
+                await OnSave.InvokeAsync(settings);
+        };
+
+        ViewModel.OnCancel = async () =>
+        {
+            if (OnCancel.HasDelegate)
+                await OnCancel.InvokeAsync();
+        };
+    }
+}

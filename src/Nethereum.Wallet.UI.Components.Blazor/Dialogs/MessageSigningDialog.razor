@@ -1,6 +1,10 @@
 @using MudBlazor
 @using Nethereum.Wallet.UI.Components.Services
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Dialogs.Localization
+@using static Nethereum.Wallet.UI.Components.Dialogs.Localization.MessageSigningDialogLocalizer
 @using System.Text.Json
+@inject IComponentLocalizer<MessageSigningDialogLocalizer> Localizer
 
 <MudDialog>
     <DialogContent>
@@ -25,7 +29,7 @@
                     {
                         <div class="d-flex align-center mb-2">
                             <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" />
-                            <span>High Risk Signing Request</span>
+                            <span>@Localizer.GetString(Keys.HighRiskSigningRequest)</span>
                         </div>
                     }
                     @if (!string.IsNullOrEmpty(GetWarningMessage()))
@@ -43,7 +47,7 @@
                         <div class="d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.Language" Color="Color.Primary" Class="mr-3" />
                             <div>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Request from:</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.RequestFrom)</MudText>
                                 <MudText Typo="Typo.subtitle1" Class="font-weight-medium">@GetOrigin()</MudText>
                             </div>
                         </div>
@@ -57,7 +61,7 @@
                 <MudCard Class="mb-4" Outlined="true">
                     <MudCardHeader>
                         <CardHeaderContent>
-                            <MudText Typo="Typo.h6">Domain Information</MudText>
+                            <MudText Typo="Typo.h6">@Localizer.GetString(Keys.DomainInformation)</MudText>
                         </CardHeaderContent>
                     </MudCardHeader>
                     <MudCardContent>
@@ -66,7 +70,7 @@
                             {
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Domain">
                                     <div class="d-flex justify-space-between align-center">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Name:</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.Name)</MudText>
                                         <MudText Typo="Typo.body2">@TypedDataInfo.DomainName</MudText>
                                     </div>
                                 </MudListItem>
@@ -75,7 +79,7 @@
                             {
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Tag">
                                     <div class="d-flex justify-space-between align-center">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Version:</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.Version)</MudText>
                                         <MudText Typo="Typo.body2">@TypedDataInfo.DomainVersion</MudText>
                                     </div>
                                 </MudListItem>
@@ -84,7 +88,7 @@
                             {
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.AccountBalance">
                                     <div class="d-flex justify-space-between align-center">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Contract:</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.Contract)</MudText>
                                         <MudText Typo="Typo.body2" Class="font-family-monospace">
                                             @FormatAddress(TypedDataInfo.VerifyingContract)
                                         </MudText>
@@ -100,7 +104,7 @@
             <MudCard Class="message-content mb-4" Outlined="true">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@(IsTypedData() ? "Structured Data" : "Message")</MudText>
+                        <MudText Typo="Typo.h6">@(IsTypedData() ? Localizer.GetString(Keys.StructuredData) : Localizer.GetString(Keys.Message))</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
                         <MudIconButton Icon="@(showRawData ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
@@ -128,18 +132,18 @@
                     
                     @if (IsTypedData())
                     {
-                        <MudButton Variant="Variant.Text" 
-                                   Size="MudBlazor.Size.Small" 
+                        <MudButton Variant="Variant.Text"
+                                   Size="MudBlazor.Size.Small"
                                    OnClick="@(() => showRawData = !showRawData)"
                                    StartIcon="@(showRawData ? Icons.Material.Filled.ViewCompact : Icons.Material.Filled.Code)"
                                    Class="mt-2">
-                            @(showRawData ? "Show Structured View" : "Show Raw JSON")
+                            @(showRawData ? Localizer.GetString(Keys.ShowStructuredView) : Localizer.GetString(Keys.ShowRawJson))
                         </MudButton>
                     }
                 </MudCardContent>
             </MudCard>
 
-            <!-- Network Information -->
+            <!-- Chain Information -->
             @if (!string.IsNullOrEmpty(GetNetworkName()))
             {
                 <MudCard Class="mb-4" Style="@NetworkCardStyle">
@@ -147,7 +151,7 @@
                         <div class="d-flex align-center justify-center">
                             <MudIcon Icon="@Icons.Material.Filled.Language" Color="Color.Primary" Class="mr-2" />
                             <div class="text-center">
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Network</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.Chain)</MudText>
                                 <MudText Typo="Typo.subtitle1" Class="font-weight-medium">@GetNetworkName()</MudText>
                             </div>
                         </div>
@@ -160,15 +164,15 @@
                 <div class="d-flex align-center">
                     <MudIcon Icon="@Icons.Material.Filled.Security" Class="mr-2" />
                     <div>
-                        <MudText Typo="Typo.body2" Class="font-weight-medium">Security Notice</MudText>
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">@Localizer.GetString(Keys.SecurityNotice)</MudText>
                         <MudText Typo="Typo.caption">
                             @if (IsTypedData())
                             {
-                                <text>Signing this structured data will authorize the action described above. Only sign if you trust the requesting application.</text>
+                                @Localizer.GetString(Keys.TypedDataSecurityMessage)
                             }
                             else
                             {
-                                <text>Signing this message proves you own this account. Only sign if you trust the requesting application.</text>
+                                @Localizer.GetString(Keys.PersonalSignSecurityMessage)
                             }
                         </MudText>
                     </div>
@@ -178,15 +182,15 @@
     </DialogContent>
     <DialogActions>
         <div class="d-flex justify-space-between w-100">
-            <MudButton OnClick="Reject" 
-                       Variant="Variant.Outlined" 
+            <MudButton OnClick="Reject"
+                       Variant="Variant.Outlined"
                        Color="Color.Default"
                        Size="MudBlazor.Size.Large"
                        StartIcon="@Icons.Material.Filled.Close">
-                Cancel
+                @Localizer.GetString(Keys.Cancel)
             </MudButton>
-            <MudButton OnClick="Sign" 
-                       Variant="Variant.Filled" 
+            <MudButton OnClick="Sign"
+                       Variant="Variant.Filled"
                        Color="Color.Primary"
                        Size="MudBlazor.Size.Large"
                        StartIcon="@Icons.Material.Filled.Edit"
@@ -194,11 +198,11 @@
                 @if (isSigning)
                 {
                     <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span>Signing...</span>
+                    <span>@Localizer.GetString(Keys.Signing)</span>
                 }
                 else
                 {
-                    <span>Sign Message</span>
+                    <span>@Localizer.GetString(Keys.SignMessage)</span>
                 }
             </MudButton>
         </div>
@@ -286,7 +290,7 @@
             catch
             {
                 builder.OpenElement(0, "div");
-                builder.AddContent(1, "Unable to display structured data");
+                builder.AddContent(1, Localizer.GetString(Keys.UnableToDisplayData));
                 builder.CloseElement();
             }
         };

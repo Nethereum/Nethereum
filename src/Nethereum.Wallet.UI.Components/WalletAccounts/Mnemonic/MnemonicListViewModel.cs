@@ -112,13 +112,13 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 var vault = _walletVaultService.GetCurrentVault();
                 if (vault == null)
                 {
-                    ErrorMessage = "No vault available";
+                    ErrorMessage = _localizer.GetString(MnemonicListViewModelLocalizer.Keys.NoVaultAvailable);
                     return false;
                 }
 
                 if (mnemonic.AccountCount > 0)
                 {
-                    ErrorMessage = "Cannot delete mnemonic that has associated accounts. Remove all accounts first.";
+                    ErrorMessage = _localizer.GetString(MnemonicListViewModelLocalizer.Keys.CannotDeleteMnemonicWithAccounts);
                     return false;
                 }
 

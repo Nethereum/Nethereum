@@ -1,0 +1,59 @@
+.wallet-group {
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.wallet-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-background);
+}
+
+.wallet-group.collapsible .wallet-group-header {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.wallet-group.collapsible .wallet-group-header:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.wallet-group-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.wallet-group-title {
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+.wallet-group-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.wallet-group-content {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--wallet-space-sm, 0.75rem);
+}
+
+/* Compact mode adjustments */
+.wallet-group.compact .wallet-group-header {
+    padding: 0.5rem 0.75rem;
+}
+
+.wallet-group.compact .wallet-group-content {
+    padding: 0.5rem;
+    gap: var(--wallet-space-xs, 0.5rem);
+}

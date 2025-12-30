@@ -1,0 +1,307 @@
+@using MudBlazor
+@using System.Numerics
+@using Nethereum.RPC.Chain
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.Wallet.UI.Components.Utils
+@using Nethereum.Wallet.Services.Tokens.Models
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+@inject IWalletLocalizationService LocalizationService
+@inject INetworkIconProvider NetworkIconProvider
+@implements IDisposable
+
+<WalletFormSection Title="@Localizer.GetString(Keys.SelectChain)">
+    <div class="wallet-picker-field" @onclick="HandleShowChainPicker">
+        @if (ViewModel.SelectedChain != null)
+        {
+            <div class="picker-content">
+                <MudAvatar Size="Size.Small" Style="@GetChainAvatarStyle()">
+                    @if (HasChainIcon())
+                    {
+                        <MudImage Src="@GetChainIconUrl()" Alt="@ViewModel.SelectedChain.ChainName" Style="width: 100%; height: 100%; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="identicon-content">@IdenticonGenerator.GetNetworkIdenticonText(ViewModel.SelectedChain.ChainName)</div>
+                    }
+                </MudAvatar>
+                <span class="picker-label">@ViewModel.SelectedChain.ChainName</span>
+                @if (ViewModel.SelectedChain.IsTestnet)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">Testnet</MudChip>
+                }
+            </div>
+        }
+        else
+        {
+            <span class="placeholder">@Localizer.GetString(Keys.SelectChain)</span>
+        }
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Color="Color.Default" />
+    </div>
+</WalletFormSection>
+
+<WalletFormSection Title="@Localizer.GetString(Keys.SelectAccount)">
+    <div class="wallet-picker-field" @onclick="HandleShowAccountPicker">
+        @if (ViewModel.SelectedAccount != null)
+        {
+            <div class="picker-content">
+                <MudAvatar Size="Size.Small" Style="@GetAccountAvatarStyle()">
+                    <div class="identicon-content">@IdenticonGenerator.GetIdenticonText(ViewModel.SelectedAccount.Address)</div>
+                </MudAvatar>
+                <div>
+                    <span class="picker-label">@(ViewModel.SelectedAccount.Name ?? "Account")</span>
+                    <span class="picker-sublabel"> · @FormatAddress(ViewModel.SelectedAccount.Address)</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <span class="placeholder">@Localizer.GetString(Keys.SelectAccount)</span>
+        }
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Color="Color.Default" />
+    </div>
+</WalletFormSection>
+
+<WalletFormSection Title="@Localizer.GetString(Keys.SelectToken)">
+    <div class="wallet-picker-field" @onclick="HandleShowTokenPicker">
+        @if (ViewModel.SelectedToken != null)
+        {
+            <div class="picker-content">
+                <MudAvatar Size="Size.Small" Style="@GetTokenAvatarStyle()">
+                    @if (!string.IsNullOrEmpty(ViewModel.SelectedToken.LogoURI))
+                    {
+                        <MudImage Src="@ViewModel.SelectedToken.LogoURI" Alt="@ViewModel.SelectedToken.Symbol" Style="width: 100%; height: 100%; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="identicon-content">@IdenticonGenerator.GetTokenIdenticonText(ViewModel.SelectedToken.Symbol)</div>
+                    }
+                </MudAvatar>
+                <div>
+                    <span class="picker-label">@ViewModel.SelectedToken.Symbol</span>
+                    <span class="picker-sublabel"> · @FormatBalance(ViewModel.SelectedToken.Balance, ViewModel.SelectedToken.Decimals)</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <span class="placeholder">@Localizer.GetString(Keys.SelectToken)</span>
+        }
+        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Color="Color.Default" />
+    </div>
+
+    @if (ViewModel.IsLoadingTokens || ViewModel.IsRefreshingBalances)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-1" />
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
+            @(ViewModel.IsRefreshingBalances ? Localizer.GetString(Keys.RefreshingBalances) : Localizer.GetString(Keys.LoadingTokens))
+        </MudText>
+    }
+
+    @if (ViewModel.SelectedToken != null)
+    {
+        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localizer.GetString(Keys.AvailableBalance): @ViewModel.NativeTransfer.FormattedAvailableBalance @ViewModel.SelectedToken.Symbol
+            </MudText>
+            @if (ViewModel.HasPrice)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @ViewModel.FormattedBalanceValue
+                </MudText>
+            }
+        </MudStack>
+    }
+</WalletFormSection>
+
+<WalletFormSection Title="@Localizer.GetString(Keys.RecipientSection)">
+    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="@(IsCompactMode ? 1 : 2)">
+        <WalletTextField @bind-Value="ViewModel.NativeTransfer.RecipientAddress"
+                         LabelKey="@Keys.RecipientAddress"
+                         PlaceholderKey="@Keys.RecipientAddressPlaceholder"
+                         Localizer="@Localizer"
+                         FieldType="WalletTextField.WalletTextFieldType.Address"
+                         Required="true"
+                         Error="@ViewModel.NativeTransfer.HasFieldErrors(nameof(ViewModel.NativeTransfer.RecipientAddress))"
+                         ErrorText="@ViewModel.NativeTransfer.GetFieldError(nameof(ViewModel.NativeTransfer.RecipientAddress))"
+                         IsMonospace="true"
+                         Style="flex: 1;" />
+        <MudIconButton Icon="@Icons.Material.Filled.Contacts"
+                       Color="Color.Primary"
+                       Variant="Variant.Text"
+                       Size="Size.Medium"
+                       Class="wallet-touch-target"
+                       OnClick="@ShowContactPicker"
+                       Title="@Localizer.GetString(Keys.SelectFromContacts)" />
+    </MudStack>
+</WalletFormSection>
+
+<WalletFormSection>
+    <WalletTextField @bind-Value="ViewModel.NativeTransfer.Amount"
+                     LabelKey="@Keys.Amount"
+                     PlaceholderKey="@Keys.AmountPlaceholder"
+                     Localizer="@Localizer"
+                     Suffix="@ViewModel.NativeTransfer.TokenSymbol"
+                     Required="true"
+                     Error="@ViewModel.NativeTransfer.HasFieldErrors(nameof(ViewModel.NativeTransfer.Amount))"
+                     ErrorText="@ViewModel.NativeTransfer.GetFieldError(nameof(ViewModel.NativeTransfer.Amount))" />
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mt-2">
+        <div>
+            @if (ViewModel.HasPrice && !string.IsNullOrEmpty(ViewModel.FormattedAmountValue))
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @ViewModel.FormattedAmountValue
+                </MudText>
+            }
+        </div>
+        <MudButton Size="MudBlazor.Size.Small"
+                   Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="@(() => ViewModel.NativeTransfer.SetMaxAmount())">
+            @Localizer.GetString(Keys.MaxButton)
+        </MudButton>
+    </MudStack>
+</WalletFormSection>
+
+@code {
+    [Parameter] public SendNativeTokenViewModel ViewModel { get; set; } = null!;
+    [Parameter] public EventCallback OnAddToken { get; set; }
+    [Parameter] public EventCallback OnShowContactPicker { get; set; }
+    [Parameter] public EventCallback OnShowChainPicker { get; set; }
+    [Parameter] public EventCallback OnShowTokenPicker { get; set; }
+    [Parameter] public EventCallback OnShowAccountPicker { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        LocalizationService.LanguageChanged += OnLanguageChanged;
+
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+            if (ViewModel.NativeTransfer != null)
+            {
+                ViewModel.NativeTransfer.PropertyChanged += OnViewModelPropertyChanged;
+            }
+        }
+    }
+
+    private void OnLanguageChanged(string languageCode)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleShowChainPicker()
+    {
+        if (OnShowChainPicker.HasDelegate)
+            await OnShowChainPicker.InvokeAsync();
+    }
+
+    private async Task HandleShowTokenPicker()
+    {
+        if (OnShowTokenPicker.HasDelegate)
+            await OnShowTokenPicker.InvokeAsync();
+    }
+
+    private async Task HandleShowAccountPicker()
+    {
+        if (OnShowAccountPicker.HasDelegate)
+            await OnShowAccountPicker.InvokeAsync();
+    }
+
+    private string GetAccountAvatarStyle()
+    {
+        return IdenticonGenerator.GetIdenticonStyle(ViewModel.SelectedAccount?.Address ?? "Account");
+    }
+
+    private bool HasChainIcon()
+    {
+        if (ViewModel.SelectedChain == null) return false;
+        return NetworkIconProvider.HasNetworkIcon(ViewModel.SelectedChain.ChainId);
+    }
+
+    private string? GetChainIconUrl()
+    {
+        if (ViewModel.SelectedChain == null) return null;
+        return NetworkIconProvider.GetNetworkIcon(ViewModel.SelectedChain.ChainId);
+    }
+
+    private string GetChainAvatarStyle()
+    {
+        if (HasChainIcon())
+        {
+            return "background: var(--mud-palette-background-grey); display: flex; align-items: center; justify-content: center;";
+        }
+        return IdenticonGenerator.GetIdenticonStyle(ViewModel.SelectedChain?.ChainName ?? "Chain");
+    }
+
+    private string GetTokenAvatarStyle()
+    {
+        if (!string.IsNullOrEmpty(ViewModel.SelectedToken?.LogoURI))
+        {
+            return "background: var(--mud-palette-background-grey); display: flex; align-items: center; justify-content: center;";
+        }
+        return IdenticonGenerator.GetIdenticonStyle(ViewModel.SelectedToken?.Symbol ?? "TOKEN");
+    }
+
+    private string GetAccountInitial()
+    {
+        if (string.IsNullOrEmpty(ViewModel.SelectedAccount?.Name))
+            return ViewModel.SelectedAccount?.Address?.Length > 2
+                ? ViewModel.SelectedAccount.Address.Substring(2, 1).ToUpper()
+                : "?";
+        return ViewModel.SelectedAccount.Name[0].ToString().ToUpper();
+    }
+
+    private async Task ShowContactPicker()
+    {
+        if (OnShowContactPicker.HasDelegate)
+            await OnShowContactPicker.InvokeAsync();
+    }
+
+    private string FormatAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 12)
+            return address ?? "";
+        return $"{address.Substring(0, 6)}...{address.Substring(address.Length - 4)}";
+    }
+
+    private string FormatBalance(BigInteger balance, int decimals)
+    {
+        if (balance == BigInteger.Zero)
+            return "0";
+
+        var tokenValue = Nethereum.Util.UnitConversion.Convert.FromWei(balance, decimals);
+
+        if (tokenValue >= 1000)
+            return tokenValue.ToString("N2");
+        else if (tokenValue >= 1)
+            return tokenValue.ToString("F4").TrimEnd('0').TrimEnd('.');
+        else if (tokenValue >= 0.001m)
+            return tokenValue.ToString("F6").TrimEnd('0').TrimEnd('.');
+        else
+            return tokenValue.ToString("F8").TrimEnd('0').TrimEnd('.');
+    }
+
+    public void Dispose()
+    {
+        LocalizationService.LanguageChanged -= OnLanguageChanged;
+
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            if (ViewModel.NativeTransfer != null)
+            {
+                ViewModel.NativeTransfer.PropertyChanged -= OnViewModelPropertyChanged;
+            }
+        }
+    }
+}

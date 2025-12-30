@@ -98,22 +98,22 @@ namespace Nethereum.Wallet.UI.Components.Networks
         {
             _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
             {
-                [Keys.AddCustomNetwork] = "Add Custom Network",
-                [Keys.BackToNetworks] = "Back to Networks",
-                [Keys.CreateNetwork] = "Create Network",
+                [Keys.AddCustomNetwork] = "Add Custom Chain",
+                [Keys.BackToNetworks] = "Back to Chains",
+                [Keys.CreateNetwork] = "Create Chain",
                 [Keys.Cancel] = "Cancel",
-                
+
                 [Keys.BasicInformation] = "Basic Information",
-                [Keys.BasicInformationDescription] = "Configure the essential network details",
+                [Keys.BasicInformationDescription] = "Configure the essential chain details",
                 [Keys.ChainId] = "Chain ID",
                 [Keys.ChainIdPlaceholder] = "1337",
-                [Keys.ChainIdHelperText] = "Unique identifier for this network",
-                [Keys.NetworkName] = "Network Name",
-                [Keys.NetworkNamePlaceholder] = "My Custom Network",
-                [Keys.NetworkNameHelperText] = "A descriptive name for your network",
+                [Keys.ChainIdHelperText] = "Unique identifier for this chain",
+                [Keys.NetworkName] = "Chain Name",
+                [Keys.NetworkNamePlaceholder] = "My Custom Chain",
+                [Keys.NetworkNameHelperText] = "A descriptive name for your chain",
                 
                 [Keys.CurrencyConfiguration] = "Native Currency",
-                [Keys.CurrencyConfigurationDescription] = "Configure the native currency for this network",
+                [Keys.CurrencyConfigurationDescription] = "Configure the native currency for this chain",
                 [Keys.CurrencySymbol] = "Currency Symbol",
                 [Keys.CurrencySymbolPlaceholder] = "ETH",
                 [Keys.CurrencyName] = "Currency Name",
@@ -122,7 +122,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.CurrencyDecimalsHelperText] = "Number of decimal places (0-18)",
                 
                 [Keys.RpcEndpoints] = "RPC Endpoints",
-                [Keys.RpcEndpointsDescription] = "Add RPC endpoints to connect to this network",
+                [Keys.RpcEndpointsDescription] = "Add RPC endpoints to connect to this chain",
                 [Keys.NewRpcUrl] = "RPC URL",
                 [Keys.NewRpcUrlPlaceholder] = "https://rpc.example.com",
                 [Keys.AddRpcEndpoint] = "Add RPC",
@@ -140,9 +140,9 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.NoExplorers] = "No block explorers added",
                 
                 [Keys.AdvancedSettings] = "Advanced Settings",
-                [Keys.AdvancedSettingsDescription] = "Protocol support and network classification",
-                [Keys.IsTestnet] = "Testnet Network",
-                [Keys.IsTestnetDescription] = "Mark this as a test network",
+                [Keys.AdvancedSettingsDescription] = "Protocol support and chain classification",
+                [Keys.IsTestnet] = "Testnet Chain",
+                [Keys.IsTestnetDescription] = "Mark this as a test chain",
                 [Keys.SupportEip155] = "EIP-155 Support",
                 [Keys.SupportEip155Description] = "Replay protection (recommended: enabled)",
                 [Keys.SupportEip1559] = "EIP-1559 Support", 
@@ -163,18 +163,18 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.DuplicateRpcUrl] = "This RPC URL has already been added",
                 [Keys.InvalidExplorerUrlFormat] = "Please enter a valid HTTP/HTTPS URL for the explorer",
                 [Keys.DuplicateExplorerUrl] = "This explorer URL has already been added",
-                [Keys.NetworkAlreadyExists] = "A network with this Chain ID already exists",
-                [Keys.NetworkAddedSuccessfully] = "Network added successfully!",
-                [Keys.FailedToAddNetwork] = "Failed to add network",
-                
+                [Keys.NetworkAlreadyExists] = "A chain with this Chain ID already exists",
+                [Keys.NetworkAddedSuccessfully] = "Chain added successfully!",
+                [Keys.FailedToAddNetwork] = "Failed to add chain",
+
                 [Keys.ChainIdRequired] = "Chain ID is required",
-                [Keys.NetworkNameRequired] = "Network name is required",
+                [Keys.NetworkNameRequired] = "Chain name is required",
                 [Keys.CurrencySymbolRequired] = "Currency symbol is required",
                 [Keys.CurrencyNameRequired] = "Currency name is required",
                 [Keys.RpcUrlRequired] = "RPC URL is required",
                 [Keys.ExplorerUrlRequired] = "Explorer URL is required",
                 
-                [Keys.NetworkNameTooShort] = "Network name must be at least 2 characters",
+                [Keys.NetworkNameTooShort] = "Chain name must be at least 2 characters",
                 [Keys.InvalidCurrencySymbol] = "Currency symbol must be 1-10 characters",
                 [Keys.CurrencyNameTooShort] = "Currency name must be at least 2 characters",
                 [Keys.InvalidCurrencyDecimals] = "Currency decimals must be between 0 and 18"
@@ -182,22 +182,22 @@ namespace Nethereum.Wallet.UI.Components.Networks
 
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
-                [Keys.AddCustomNetwork] = "Agregar Red Personalizada",
-                [Keys.BackToNetworks] = "Volver a Redes",
-                [Keys.CreateNetwork] = "Crear Red",
+                [Keys.AddCustomNetwork] = "Agregar Cadena Personalizada",
+                [Keys.BackToNetworks] = "Volver a Cadenas",
+                [Keys.CreateNetwork] = "Crear Cadena",
                 [Keys.Cancel] = "Cancelar",
-                
+
                 [Keys.BasicInformation] = "Información Básica",
-                [Keys.BasicInformationDescription] = "Configurar los detalles esenciales de la red",
+                [Keys.BasicInformationDescription] = "Configurar los detalles esenciales de la cadena",
                 [Keys.ChainId] = "ID de Cadena",
                 [Keys.ChainIdPlaceholder] = "1337",
-                [Keys.ChainIdHelperText] = "Identificador único para esta red",
-                [Keys.NetworkName] = "Nombre de Red",
-                [Keys.NetworkNamePlaceholder] = "Mi Red Personalizada",
-                [Keys.NetworkNameHelperText] = "Un nombre descriptivo para tu red",
-                
+                [Keys.ChainIdHelperText] = "Identificador único para esta cadena",
+                [Keys.NetworkName] = "Nombre de Cadena",
+                [Keys.NetworkNamePlaceholder] = "Mi Cadena Personalizada",
+                [Keys.NetworkNameHelperText] = "Un nombre descriptivo para tu cadena",
+
                 [Keys.CurrencyConfiguration] = "Moneda Nativa",
-                [Keys.CurrencyConfigurationDescription] = "Configurar la moneda nativa para esta red",
+                [Keys.CurrencyConfigurationDescription] = "Configurar la moneda nativa para esta cadena",
                 [Keys.CurrencySymbol] = "Símbolo de Moneda",
                 [Keys.CurrencySymbolPlaceholder] = "ETH",
                 [Keys.CurrencyName] = "Nombre de Moneda",
@@ -206,7 +206,7 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.CurrencyDecimalsHelperText] = "Número de decimales (0-18)",
                 
                 [Keys.RpcEndpoints] = "Endpoints RPC",
-                [Keys.RpcEndpointsDescription] = "Agregar endpoints RPC para conectarse a esta red",
+                [Keys.RpcEndpointsDescription] = "Agregar endpoints RPC para conectarse a esta cadena",
                 [Keys.NewRpcUrl] = "URL RPC",
                 [Keys.NewRpcUrlPlaceholder] = "https://rpc.example.com",
                 [Keys.AddRpcEndpoint] = "Agregar RPC",
@@ -224,9 +224,9 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.NoExplorers] = "No se han agregado exploradores de bloques",
                 
                 [Keys.AdvancedSettings] = "Configuración Avanzada",
-                [Keys.AdvancedSettingsDescription] = "Soporte de protocolo y clasificación de red",
-                [Keys.IsTestnet] = "Red de Prueba",
-                [Keys.IsTestnetDescription] = "Marcar como red de prueba",
+                [Keys.AdvancedSettingsDescription] = "Soporte de protocolo y clasificación de cadena",
+                [Keys.IsTestnet] = "Cadena de Prueba",
+                [Keys.IsTestnetDescription] = "Marcar como cadena de prueba",
                 [Keys.SupportEip155] = "Soporte EIP-155",
                 [Keys.SupportEip155Description] = "Protección de repetición (recomendado: habilitado)",
                 [Keys.SupportEip1559] = "Soporte EIP-1559",
@@ -247,18 +247,18 @@ namespace Nethereum.Wallet.UI.Components.Networks
                 [Keys.DuplicateRpcUrl] = "Esta URL RPC ya ha sido agregada",
                 [Keys.InvalidExplorerUrlFormat] = "Por favor ingresa una URL HTTP/HTTPS válida para el explorador",
                 [Keys.DuplicateExplorerUrl] = "Esta URL del explorador ya ha sido agregada",
-                [Keys.NetworkAlreadyExists] = "Ya existe una red con este ID de cadena",
-                [Keys.NetworkAddedSuccessfully] = "¡Red agregada exitosamente!",
-                [Keys.FailedToAddNetwork] = "Error al agregar la red",
-                
+                [Keys.NetworkAlreadyExists] = "Ya existe una cadena con este ID de cadena",
+                [Keys.NetworkAddedSuccessfully] = "¡Cadena agregada exitosamente!",
+                [Keys.FailedToAddNetwork] = "Error al agregar la cadena",
+
                 [Keys.ChainIdRequired] = "El ID de cadena es requerido",
-                [Keys.NetworkNameRequired] = "El nombre de red es requerido",
+                [Keys.NetworkNameRequired] = "El nombre de cadena es requerido",
                 [Keys.CurrencySymbolRequired] = "El símbolo de moneda es requerido",
                 [Keys.CurrencyNameRequired] = "El nombre de moneda es requerido",
                 [Keys.RpcUrlRequired] = "La URL RPC es requerida",
                 [Keys.ExplorerUrlRequired] = "La URL del explorador es requerida",
                 
-                [Keys.NetworkNameTooShort] = "El nombre de red debe tener al menos 2 caracteres",
+                [Keys.NetworkNameTooShort] = "El nombre de cadena debe tener al menos 2 caracteres",
                 [Keys.InvalidCurrencySymbol] = "El símbolo de moneda debe tener 1-10 caracteres",
                 [Keys.CurrencyNameTooShort] = "El nombre de moneda debe tener al menos 2 caracteres",
                 [Keys.InvalidCurrencyDecimals] = "Los decimales de moneda deben estar entre 0 y 18"

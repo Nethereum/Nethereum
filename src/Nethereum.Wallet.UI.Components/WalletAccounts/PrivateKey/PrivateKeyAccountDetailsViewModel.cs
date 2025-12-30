@@ -134,12 +134,12 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey
                     }
                     else
                     {
-                        ErrorMessage = "Unable to retrieve private key for this account type.";
+                        ErrorMessage = _localizer.GetString(PrivateKeyAccountDetailsLocalizer.Keys.UnableToRetrievePrivateKey);
                     }
                 }
                 else
                 {
-                    ErrorMessage = "Invalid password.";
+                    ErrorMessage = _localizer.GetString(PrivateKeyAccountDetailsLocalizer.Keys.InvalidPassword);
                 }
             }
             catch (Exception ex)
@@ -212,7 +212,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.PrivateKey
                     }
                     else
                     {
-                        ErrorMessage = "Account not found in vault.";
+                        ErrorMessage = _localizer.GetString(PrivateKeyAccountDetailsLocalizer.Keys.AccountNotFoundInVault);
                         return false;
                     }
                 }

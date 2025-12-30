@@ -1,0 +1,141 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Tokens
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using static Nethereum.Wallet.UI.Components.Tokens.TokenSettingsLocalizer
+@implements IDisposable
+@inject TokenSettingsViewModel ViewModel
+@inject IComponentLocalizer<TokenSettingsViewModel> Localizer
+
+<WalletFormLayout Title="@Localizer.GetString(Keys.Title)"
+                  PrimaryText="@Localizer.GetString(Keys.Save)"
+                  SecondaryText="@Localizer.GetString(Keys.Cancel)"
+                  OnPrimary="@HandleSave"
+                  OnSecondary="@HandleCancel"
+                  PrimaryDisabled="@ViewModel.IsSaving"
+                  IsLoading="@ViewModel.IsSaving">
+    <ChildContent>
+        @if (ViewModel.IsLoading)
+        {
+            <WalletContentSection>
+                <div class="loading-state">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                </div>
+            </WalletContentSection>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                              Title="@Localizer.GetString(Keys.Error)"
+                              Description="@ViewModel.ErrorMessage"
+                              Icon="@Icons.Material.Filled.Error" />
+            }
+
+            @if (!string.IsNullOrEmpty(ViewModel.SuccessMessage))
+            {
+                <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Success"
+                              Title="@Localizer.GetString(Keys.Success)"
+                              Description="@ViewModel.SuccessMessage"
+                              Icon="@Icons.Material.Filled.CheckCircle" />
+            }
+
+            <!-- Display Settings -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.DisplaySection)">
+                <MudStack Spacing="3">
+                    <MudSelect T="string"
+                              @bind-Value="@ViewModel.SelectedCurrency"
+                              Label="@Localizer.GetString(Keys.Currency)"
+                              HelperText="@Localizer.GetString(Keys.CurrencyDescription)"
+                              Variant="Variant.Outlined">
+                        @foreach (var currency in ViewModel.AvailableCurrencies)
+                        {
+                            <MudSelectItem Value="@currency.Code">@currency.DisplayName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+            </WalletFormSection>
+
+            <!-- Refresh Settings -->
+            <WalletFormSection Title="@Localizer.GetString(Keys.RefreshSection)">
+                <MudStack Spacing="3">
+                    <MudSwitch @bind-Value="@ViewModel.AutoRefreshPrices"
+                              Label="@Localizer.GetString(Keys.AutoRefreshPrices)"
+                              Color="Color.Primary" />
+
+                    @if (ViewModel.AutoRefreshPrices)
+                    {
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.body2">@Localizer.GetString(Keys.RefreshInterval)</MudText>
+                            <MudSlider T="int"
+                                      @bind-Value="@ViewModel.RefreshIntervalSeconds"
+                                      Min="60"
+                                      Max="900"
+                                      Step="60"
+                                      Color="Color.Primary">
+                                @ViewModel.RefreshIntervalSeconds @Localizer.GetString(Keys.Seconds)
+                            </MudSlider>
+                            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
+                                @Localizer.GetString(Keys.RefreshIntervalDescription)
+                            </MudText>
+                        </MudStack>
+                    }
+                </MudStack>
+            </WalletFormSection>
+        }
+    </ChildContent>
+</WalletFormLayout>
+
+@code {
+    [Parameter] public EventCallback OnSettingsSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        ViewModel.OnSettingsSaved = () =>
+        {
+            if (OnSettingsSaved.HasDelegate)
+            {
+                InvokeAsync(() => OnSettingsSaved.InvokeAsync());
+            }
+        };
+
+        await ViewModel.LoadSettingsCommand.ExecuteAsync(null);
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleSave()
+    {
+        await ViewModel.SaveSettingsCommand.ExecuteAsync(null);
+    }
+
+    private async Task HandleCancel()
+    {
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+
+        ViewModel.OnSettingsSaved = null;
+    }
+}

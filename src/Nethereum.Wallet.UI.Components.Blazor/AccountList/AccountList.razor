@@ -160,12 +160,12 @@
                                 @Localizer.GetString(AccountListLocalizer.Keys.NoAccountsDescription)
                             </MudText>
                         </MudStack>
-                        <MudButton Variant="Variant.Filled" 
-                                   Color="Color.Primary" 
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
                                    Size="@(IsCompact ? MudBlazor.Size.Medium : MudBlazor.Size.Large)"
                                    StartIcon="Icons.Material.Filled.Add"
                                    OnClick="AddNewAccount"
-                                   Class="rounded-lg px-6">
+                                   Class="wallet-touch-target rounded-lg px-6">
                             @Localizer.GetString(AccountListLocalizer.Keys.AddFirstAccount)
                         </MudButton>
                     </MudStack>

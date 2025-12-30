@@ -1,0 +1,72 @@
+@using MudBlazor
+@using System.Linq
+@using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using static Nethereum.Wallet.UI.Components.SendTransaction.SendNativeTokenLocalizer
+@inject IComponentLocalizer<SendNativeTokenViewModel> Localizer
+
+<div class="@(IsCompactMode ? "wallet-compact" : "")">
+<MudStack Spacing="@(IsCompactMode ? 2 : 4)">
+    <WalletContentSection Class="spacing-tight">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h6">@Localizer.GetString(Keys.SelectAccount)</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                          Size="Size.Small"
+                          OnClick="@HandleExit" />
+        </MudStack>
+    </WalletContentSection>
+
+    <WalletContentSection Class="spacing-tight">
+        @if (Accounts?.Any() == true)
+        {
+            <div class="account-list">
+                @foreach (var account in Accounts)
+                {
+                    <AccountPickerCard Account="@account"
+                                      IsSelected="@IsAccountSelected(account)"
+                                      IsCompactMode="@IsCompactMode"
+                                      OnSelect="@HandleAccountSelect" />
+                }
+            </div>
+        }
+        else
+        {
+            <WalletCompactHeader Title="@Localizer.GetString(Keys.NoAccountSelected)" />
+        }
+    </WalletContentSection>
+</MudStack>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<IWalletAccount> Accounts { get; set; }
+    [Parameter] public IWalletAccount SelectedAccount { get; set; }
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+    [Parameter] public EventCallback<IWalletAccount> OnAccountSelected { get; set; }
+    [Parameter] public EventCallback OnExit { get; set; }
+
+    private bool IsAccountSelected(IWalletAccount account)
+    {
+        if (SelectedAccount == null || account == null)
+            return false;
+
+        return string.Equals(account.Address, SelectedAccount.Address, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task HandleAccountSelect(IWalletAccount account)
+    {
+        if (OnAccountSelected.HasDelegate)
+        {
+            await OnAccountSelected.InvokeAsync(account);
+        }
+    }
+
+    private async Task HandleExit()
+    {
+        if (OnExit.HasDelegate)
+        {
+            await OnExit.InvokeAsync();
+        }
+    }
+}

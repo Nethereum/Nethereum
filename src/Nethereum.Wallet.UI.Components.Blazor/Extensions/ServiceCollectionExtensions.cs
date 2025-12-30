@@ -36,6 +36,9 @@ using Nethereum.UI;
 using Nethereum.Wallet.UI.Components.Prompts;
 using Nethereum.Wallet.UI.Components.Blazor.Prompts;
 using Nethereum.Wallet.UI.Components.Shared;
+using Nethereum.Wallet.UI.Components.Tokens;
+using Nethereum.Wallet.UI.Components.Holdings;
+using Nethereum.Wallet.UI.Components.Contacts;
 using System;
 
 
@@ -123,6 +126,9 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             services.AddSingleton<BaseWalletConfiguration>(sp => sp.GetRequiredService<AccountListConfiguration>());
 
             services.AddNetworkManagement();
+            services.AddTokenServices();
+            services.AddHoldingsServices();
+            services.AddContactServices();
 
             services.AddTokenTransferServices();
 
@@ -220,6 +226,9 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             services.AddSingleton<BaseWalletConfiguration>(sp => sp.GetRequiredService<AccountListConfiguration>());
 
             services.AddNetworkManagement();
+            services.AddTokenServices();
+            services.AddHoldingsServices();
+            services.AddContactServices();
             services.AddTokenTransferServices();
             services.AddTransactionServices();
             services.AddPromptsServices();
@@ -314,7 +323,10 @@ namespace Nethereum.Wallet.UI.Components.Blazor.Extensions
             componentRegistry.Register<WalletOverviewPluginViewModel, Nethereum.Wallet.UI.Components.Blazor.WalletOverview.WalletOverview>();
             componentRegistry.Register<NetworkManagementPluginViewModel, Nethereum.Wallet.UI.Components.Blazor.Networks.NetworkManagement>();
             componentRegistry.Register<SendNativeTokenViewModel, Nethereum.Wallet.UI.Components.Blazor.SendTransaction.TokenTransfer>();
+            componentRegistry.Register<TokenTransferPluginViewModel, Nethereum.Wallet.UI.Components.Blazor.SendTransaction.TokenTransfer>();
             componentRegistry.Register<PromptsPluginViewModel, Nethereum.Wallet.UI.Components.Blazor.Prompts.PromptsPlugin>();
+            componentRegistry.Register<HoldingsPluginViewModel, Nethereum.Wallet.UI.Components.Blazor.Holdings.Holdings>();
+            componentRegistry.Register<ContactListPluginViewModel, Nethereum.Wallet.UI.Components.Blazor.Contacts.ContactList>();
         }
 
     }

@@ -102,7 +102,7 @@
                         @if (ViewModel.HasDuplicateAccount)
                         {
                             <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
-                                            Title="Duplicate Account"
+                                            Title="@Localizer.GetString(Keys.DuplicateAccountTitle)"
                                             Description="@ViewModel.DuplicateAccountMessage"
                                             Icon="@Icons.Material.Filled.Warning" />
                         }

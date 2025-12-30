@@ -54,14 +54,14 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 var vault = _walletVaultService.GetCurrentVault();
                 if (vault == null)
                 {
-                    ErrorMessage = "No vault available";
+                    ErrorMessage = _localizer.GetString(Keys.NoVaultAvailable);
                     return;
                 }
 
                 MnemonicInfo = vault.Mnemonics?.FirstOrDefault(m => m.Id == groupId);
                 if (MnemonicInfo == null)
                 {
-                    ErrorMessage = "Mnemonic not found";
+                    ErrorMessage = _localizer.GetString(Keys.MnemonicNotFound);
                     return;
                 }
 
@@ -120,15 +120,15 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 var vault = _walletVaultService.GetCurrentVault();
                 if (vault == null)
                 {
-                    ErrorMessage = "No vault available";
+                    ErrorMessage = _localizer.GetString(Keys.NoVaultAvailable);
                     return;
                 }
 
                 MnemonicInfo.Label = EditingMnemonicLabel.Trim();
-                
+
                 await _walletVaultService.SaveAsync();
-                
-                SuccessMessage = "Mnemonic label updated successfully";
+
+                SuccessMessage = _localizer.GetString(Keys.LabelUpdated);
                 OnPropertyChanged(nameof(DisplayLabel));
             }
             catch (Exception ex)
@@ -155,7 +155,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 var isValid = await ValidatePasswordAsync(password);
                 if (!isValid)
                 {
-                    ErrorMessage = "Invalid password";
+                    ErrorMessage = _localizer.GetString(Keys.InvalidPassword);
                     return;
                 }
 
@@ -211,7 +211,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 var vault = _walletVaultService.GetCurrentVault();
                 if (vault == null)
                 {
-                    ErrorMessage = "No vault available";
+                    ErrorMessage = _localizer.GetString(Keys.NoVaultAvailable);
                     return false;
                 }
 

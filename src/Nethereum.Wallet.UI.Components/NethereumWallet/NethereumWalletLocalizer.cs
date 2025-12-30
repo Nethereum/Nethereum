@@ -29,11 +29,16 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
             public const string PasswordRequired = "PasswordRequired";
             public const string PasswordMismatch = "PasswordMismatch";
             public const string PasswordTooShort = "PasswordTooShort";
+            public const string PasswordNotStrongEnough = "PasswordNotStrongEnough";
             public const string IncorrectPassword = "IncorrectPassword";
             public const string LoginError = "LoginError";
             public const string VaultUnlockedSuccessfully = "VaultUnlockedSuccessfully";
             public const string WalletCreatedSuccessfully = "WalletCreatedSuccessfully";
             public const string WalletCreationFailed = "WalletCreationFailed";
+            public const string UnlockingWalletStatus = "UnlockingWalletStatus";
+            public const string CreatingWalletStatus = "CreatingWalletStatus";
+            public const string ResettingWalletStatus = "ResettingWalletStatus";
+            public const string WalletResetError = "WalletResetError";
         }
         
         public NethereumWalletLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -66,11 +71,16 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
                 [Keys.PasswordRequired] = "Password is required",
                 [Keys.PasswordMismatch] = "Passwords do not match",
                 [Keys.PasswordTooShort] = "Password must be at least {0} characters long",
+                [Keys.PasswordNotStrongEnough] = "Password is not strong enough",
                 [Keys.IncorrectPassword] = "Incorrect password",
                 [Keys.LoginError] = "Login failed: {0}",
                 [Keys.VaultUnlockedSuccessfully] = "Vault unlocked successfully",
                 [Keys.WalletCreatedSuccessfully] = "Wallet created successfully",
-                [Keys.WalletCreationFailed] = "Failed to create wallet: {0}"
+                [Keys.WalletCreationFailed] = "Failed to create wallet: {0}",
+                [Keys.UnlockingWalletStatus] = "Unlocking wallet...",
+                [Keys.CreatingWalletStatus] = "Creating wallet...",
+                [Keys.ResettingWalletStatus] = "Resetting wallet...",
+                [Keys.WalletResetError] = "Failed to reset wallet: {0}"
             });
             
             // Spanish (Spain) translations
@@ -98,11 +108,16 @@ namespace Nethereum.Wallet.UI.Components.NethereumWallet
                 [Keys.PasswordRequired] = "La contraseña es obligatoria",
                 [Keys.PasswordMismatch] = "Las contraseñas no coinciden",
                 [Keys.PasswordTooShort] = "La contraseña debe tener al menos {0} caracteres",
+                [Keys.PasswordNotStrongEnough] = "La contraseña no es lo suficientemente segura",
                 [Keys.IncorrectPassword] = "Contraseña incorrecta",
                 [Keys.LoginError] = "Error al iniciar sesión: {0}",
                 [Keys.VaultUnlockedSuccessfully] = "Caja fuerte desbloqueada correctamente",
                 [Keys.WalletCreatedSuccessfully] = "Cartera creada correctamente",
-                [Keys.WalletCreationFailed] = "Error al crear la cartera: {0}"
+                [Keys.WalletCreationFailed] = "Error al crear la cartera: {0}",
+                [Keys.UnlockingWalletStatus] = "Desbloqueando cartera...",
+                [Keys.CreatingWalletStatus] = "Creando cartera...",
+                [Keys.ResettingWalletStatus] = "Restableciendo cartera...",
+                [Keys.WalletResetError] = "Error al restablecer la cartera: {0}"
             });
         }
     }

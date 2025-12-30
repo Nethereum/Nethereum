@@ -1,10 +1,15 @@
 @using MudBlazor
 @using Nethereum.Wallet
 @using Nethereum.Wallet.WalletAccounts
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Dialogs.Localization
+@using static Nethereum.Wallet.UI.Components.Dialogs.Localization.DialogLocalizer
+
+@inject IComponentLocalizer<object> Localizer
 
 <MudDialog>
     <TitleContent>
-        <MudText Typo="Typo.h6">Select an Account</MudText>
+        <MudText Typo="Typo.h6">@Localizer.GetString(Keys.SelectAccountTitle)</MudText>
     </TitleContent>
     <DialogContent>
         <MudList T="string">
@@ -18,7 +23,7 @@
         </MudList>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="@Cancel">Cancel</MudButton>
+        <MudButton OnClick="@Cancel">@Localizer.GetString(Keys.CancelButton)</MudButton>
     </DialogActions>
 </MudDialog>
 

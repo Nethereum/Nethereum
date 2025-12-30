@@ -2,6 +2,9 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Numerics;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.UI.Validation.Attributes;
 using Nethereum.Util;
 using Nethereum.Wallet.UI.Components.Core.Localization;
@@ -10,33 +13,52 @@ using static Nethereum.Wallet.UI.Components.Core.Validation.SharedValidationLoca
 
 namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
 {
+    [Function("transfer", "bool")]
+    public class ERC20TransferFunction : FunctionMessage
+    {
+        [Parameter("address", "_to", 1)]
+        public string To { get; set; }
+
+        [Parameter("uint256", "_value", 2)]
+        public BigInteger Value { get; set; }
+    }
+
     public partial class TokenNativeTransferModel : LocalizedValidationModel
     {
         public TokenNativeTransferModel(IComponentLocalizer localizer) : base(localizer)
         {
             _tokenSymbol = "ETH";
             _tokenDecimals = 18;
+            _isNativeToken = true;
         }
-        
+
         [ObservableProperty] private string _fromAddress = "";
-        
+
         [ObservableProperty]
         [NotifyDataErrorInfo]
         [Required(ErrorMessage = "The field is required")]
         [EthereumAddress(ErrorMessage = "Invalid Ethereum address")]
         [NotifyPropertyChangedFor(nameof(IsValid))]
         private string _recipientAddress = "";
-        
+
         [ObservableProperty]
         [NotifyDataErrorInfo]
         [Required(ErrorMessage = "The field is required")]
         [NotifyPropertyChangedFor(nameof(IsValid))]
         private string _amount = "";
-        
+
         [ObservableProperty] private BigInteger _availableBalance = BigInteger.Zero;
         [ObservableProperty] private string _tokenSymbol;
         [ObservableProperty] private int _tokenDecimals;
         [ObservableProperty] private bool _showAdvancedOptions = false;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsValid))]
+        private bool _isNativeToken = true;
+
+        [ObservableProperty] private string? _contractAddress;
+        [ObservableProperty] private string? _tokenLogoUri;
+        [ObservableProperty] private long _chainId;
         
         [ObservableProperty]
         [NotifyDataErrorInfo]
@@ -200,7 +222,50 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             TransactionData = "";
             Nonce = "";
             ShowAdvancedOptions = false;
+            IsNativeToken = true;
+            ContractAddress = null;
+            TokenLogoUri = null;
+            ChainId = 0;
             ClearErrors();
+        }
+
+        public string GetTransactionToAddress()
+        {
+            return IsNativeToken ? RecipientAddress : ContractAddress ?? RecipientAddress;
+        }
+
+        public BigInteger GetTransactionValue()
+        {
+            return IsNativeToken ? GetTransferAmountInSmallestUnit() : BigInteger.Zero;
+        }
+
+        public string? GetEncodedTransferData()
+        {
+            if (IsNativeToken)
+            {
+                return string.IsNullOrWhiteSpace(TransactionData) ? null : TransactionData;
+            }
+
+            var transferFunction = new ERC20TransferFunction
+            {
+                To = RecipientAddress,
+                Value = GetTransferAmountInSmallestUnit()
+            };
+            return transferFunction.GetCallData().ToHex(true);
+        }
+
+        public void SetToken(string symbol, int decimals, bool isNative, string? contractAddress = null, string? logoUri = null, long chainId = 0)
+        {
+            TokenSymbol = symbol;
+            TokenDecimals = decimals;
+            IsNativeToken = isNative;
+            ContractAddress = contractAddress;
+            TokenLogoUri = logoUri;
+            ChainId = chainId;
+            AvailableBalance = BigInteger.Zero;
+            Amount = "";
+            ClearCustomErrors(nameof(Amount));
+            OnPropertyChanged(nameof(IsValid));
         }
     }
 }

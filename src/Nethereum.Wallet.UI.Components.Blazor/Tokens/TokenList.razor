@@ -1,0 +1,194 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.Tokens
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Microsoft.AspNetCore.Components
+@using System.ComponentModel
+@using static Nethereum.Wallet.UI.Components.Tokens.TokenListLocalizer
+@implements IDisposable
+@inject TokenListViewModel ViewModel
+@inject IComponentLocalizer<TokenListViewModel> Localizer
+
+<MudStack Spacing="4">
+    @if (ViewModel.IsLoading && !ViewModel.IsScanning)
+    {
+        <WalletContentSection Class="spacing-normal">
+            <div class="loading-state">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                <WalletText TextType="WalletText.WalletTextType.Body"
+                           TextKey="@Keys.Loading"
+                           Localizer="@Localizer"
+                           Class="mt-3" />
+            </div>
+        </WalletContentSection>
+    }
+    else if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+    {
+        <WalletContentSection Class="spacing-normal">
+            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Error"
+                          Title="@Localizer.GetString(Keys.Error)"
+                          Description="@ViewModel.ErrorMessage"
+                          Icon="@Icons.Material.Filled.Error" />
+        </WalletContentSection>
+    }
+    else
+    {
+        <!-- Portfolio Summary Header -->
+        <WalletContentSection Class="spacing-tight">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h6">@Localizer.GetString(Keys.Tokens)</MudText>
+                <MudStack AlignItems="AlignItems.End" Spacing="0">
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
+                        @Localizer.GetString(Keys.TotalValue)
+                    </MudText>
+                    <MudText Typo="Typo.h5" Style="font-weight: 600;">@ViewModel.FormattedTotalValue</MudText>
+                </MudStack>
+            </MudStack>
+        </WalletContentSection>
+
+        <!-- Search and Filters -->
+        <WalletContentSection Class="spacing-tight">
+            <WalletTextField @bind-Value="@ViewModel.SearchText"
+                           LabelKey="@Keys.SearchTokens"
+                           PlaceholderKey="@Keys.SearchTokens"
+                           Required="false"
+                           Localizer="@Localizer"
+                           FieldType="WalletTextField.WalletTextFieldType.Search" />
+
+            <div class="mt-3">
+                <MudCheckBox @bind-Value="@ViewModel.ShowZeroBalances"
+                            Color="Color.Primary">
+                    @Localizer.GetString(Keys.ShowZeroBalances)
+                </MudCheckBox>
+            </div>
+
+            <!-- Action Buttons -->
+            <MudStack Row="true" Spacing="2" Class="mt-3" Wrap="Wrap.Wrap">
+                <MudButton Variant="Variant.Outlined"
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.Search"
+                          OnClick="@(async () => await ViewModel.DiscoverTokensCommand.ExecuteAsync(null))"
+                          Disabled="@ViewModel.IsScanning"
+                          Size="Size.Small">
+                    @Localizer.GetString(Keys.ScanAllTokens)
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                          Color="Color.Default"
+                          StartIcon="@Icons.Material.Filled.Refresh"
+                          OnClick="@(async () => await ViewModel.RefreshCommand.ExecuteAsync(null))"
+                          Disabled="@ViewModel.IsLoading"
+                          Size="Size.Small">
+                    @Localizer.GetString(Keys.RefreshBalances)
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.Add"
+                          OnClick="@HandleAddCustomToken"
+                          Size="Size.Small">
+                    @Localizer.GetString(Keys.AddCustomToken)
+                </MudButton>
+            </MudStack>
+        </WalletContentSection>
+
+        <!-- Scan Progress -->
+        @if (ViewModel.IsScanning)
+        {
+            <WalletContentSection Class="spacing-tight">
+                <MudProgressLinear Value="@ViewModel.ScanProgress" Color="Color.Primary" Class="mb-2" />
+                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
+                    @Localizer.GetString(Keys.Scanning) (@ViewModel.ScanProgress%)
+                </MudText>
+            </WalletContentSection>
+        }
+
+        <!-- Token List -->
+        <WalletContentSection Class="spacing-tight">
+            @if (ViewModel.FilteredTokens?.Any() == true)
+            {
+                <div class="token-list">
+                    @foreach (var token in ViewModel.FilteredTokens)
+                    {
+                        <TokenCard Token="@token"
+                                  IsCompact="@IsCompact"
+                                  OnClick="@(() => HandleTokenClick(token))" />
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="mt-4">
+                    <WalletCompactHeader Title="@Localizer.GetString(Keys.NoTokensFound)" />
+                </div>
+            }
+        </WalletContentSection>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public EventCallback OnExit { get; set; }
+    [Parameter] public EventCallback<string> OnTokenSelected { get; set; }
+    [Parameter] public EventCallback OnAddCustomToken { get; set; }
+    [Parameter] public EventCallback OnOpenSettings { get; set; }
+    [Parameter] public int ComponentWidth { get; set; } = 800;
+    [Parameter] public bool IsCompact { get; set; } = false;
+
+    public TokenListViewModel? TokenListViewModel => ViewModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+        }
+
+        ViewModel.OnAddCustomToken = () =>
+        {
+            if (OnAddCustomToken.HasDelegate)
+            {
+                InvokeAsync(() => OnAddCustomToken.InvokeAsync());
+            }
+        };
+
+        ViewModel.OnOpenSettings = () =>
+        {
+            if (OnOpenSettings.HasDelegate)
+            {
+                InvokeAsync(() => OnOpenSettings.InvokeAsync());
+            }
+        };
+
+        await ViewModel.InitializeCommand.ExecuteAsync(null);
+    }
+
+    private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleTokenClick(TokenItemViewModel token)
+    {
+        if (OnTokenSelected.HasDelegate)
+        {
+            await OnTokenSelected.InvokeAsync(token.Token.ContractAddress);
+        }
+    }
+
+    private async Task HandleAddCustomToken()
+    {
+        if (OnAddCustomToken.HasDelegate)
+        {
+            await OnAddCustomToken.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+        }
+
+        ViewModel.OnAddCustomToken = null;
+        ViewModel.OnOpenSettings = null;
+    }
+}

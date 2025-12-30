@@ -31,6 +31,8 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             public const string GroupedView = "GroupedView";
             public const string SelectButton = "SelectButton";
             public const string ManageButton = "ManageButton";
+            public const string AccountNameCannotBeEmpty = "AccountNameCannotBeEmpty";
+            public const string AccountNameUpdatedSuccessfully = "AccountNameUpdatedSuccessfully";
         }
 
         public AccountListLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -64,7 +66,9 @@ namespace Nethereum.Wallet.UI.Components.AccountList
                 [Keys.ListView] = "List",
                 [Keys.GroupedView] = "Grouped",
                 [Keys.SelectButton] = "Select",
-                [Keys.ManageButton] = "Manage"
+                [Keys.ManageButton] = "Manage",
+                [Keys.AccountNameCannotBeEmpty] = "Account name cannot be empty",
+                [Keys.AccountNameUpdatedSuccessfully] = "Account name updated successfully"
             });
             
             // Spanish (Spain) translations
@@ -93,7 +97,9 @@ namespace Nethereum.Wallet.UI.Components.AccountList
                 [Keys.ListView] = "Lista",
                 [Keys.GroupedView] = "Agrupado",
                 [Keys.SelectButton] = "Seleccionar",
-                [Keys.ManageButton] = "Gestionar"
+                [Keys.ManageButton] = "Gestionar",
+                [Keys.AccountNameCannotBeEmpty] = "El nombre de la cuenta no puede estar vacío",
+                [Keys.AccountNameUpdatedSuccessfully] = "Nombre de cuenta actualizado exitosamente"
             });
         }
     }

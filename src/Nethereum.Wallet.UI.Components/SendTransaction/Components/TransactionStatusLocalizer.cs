@@ -73,7 +73,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
                 [Keys.From] = "From",
                 [Keys.To] = "To",
                 [Keys.Value] = "Value",
-                [Keys.Network] = "Network",
+                [Keys.Network] = "Chain",
                 
                 [Keys.WaitingForConfirmation] = "Waiting for confirmation...",
                 [Keys.ConfirmationsProgress] = "Confirmations: {0}/12",
@@ -110,7 +110,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Components
                 [Keys.From] = "Desde",
                 [Keys.To] = "Para",
                 [Keys.Value] = "Valor",
-                [Keys.Network] = "Red",
+                [Keys.Network] = "Cadena",
                 
                 [Keys.WaitingForConfirmation] = "Esperando confirmación...",
                 [Keys.ConfirmationsProgress] = "Confirmaciones: {0}/12",
