@@ -14,7 +14,7 @@ namespace Nethereum.TokenServices.ERC20.Events
     {
         private readonly int _numberOfBlocksPerRequest;
 
-        public Erc20EventScanner(int numberOfBlocksPerRequest = 10000)
+        public Erc20EventScanner(int numberOfBlocksPerRequest = 500)
         {
             _numberOfBlocksPerRequest = numberOfBlocksPerRequest;
         }
