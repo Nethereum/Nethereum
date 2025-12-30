@@ -2,6 +2,7 @@
 using Nethereum.DataServices.Sourcify.Responses;
 using Nethereum.Util.Rest;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
