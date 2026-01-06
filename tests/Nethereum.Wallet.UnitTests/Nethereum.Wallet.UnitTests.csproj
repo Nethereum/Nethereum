@@ -16,6 +16,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Wallet\Nethereum.Wallet.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.TokenServices\Nethereum.TokenServices.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DataServices\Nethereum.DataServices.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

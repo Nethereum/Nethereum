@@ -235,11 +235,89 @@ cd Nethereum.AccountAbstraction
 CALL :restorepack
 cd..
 
-cd Nethereum.AccountAbstraction
+cd Nethereum.JsonRpc.SystemTextJsonRpcClient
 CALL :restorepack
 cd..
 
-cd Nethereum.JsonRpc.SystemTextJsonRpcClient
+SET projectName=
+
+cd Nethereum.Beaconchain
+CALL :restorepack
+cd..
+
+cd Nethereum.Consensus.LightClient
+CALL :restorepack
+cd..
+
+cd Nethereum.Consensus.Ssz
+CALL :restorepack
+cd..
+
+cd Nethereum.Ssz
+CALL :restorepack
+cd..
+
+cd Nethereum.Signer.Bls
+CALL :restorepack
+cd..
+
+cd Nethereum.Signer.Bls.Herumi
+CALL :restorepack
+cd..
+
+cd Nethereum.ChainStateVerification
+CALL :restorepack
+cd..
+
+cd Nethereum.Circles
+CALL :restorepack
+cd..
+
+cd Nethereum.Maui.AndroidUsb
+CALL :restorepack
+cd..
+
+cd Nethereum.TokenServices
+CALL :restorepack
+cd..
+
+cd Nethereum.Uniswap
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.RpcRequests
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.Trezor
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.UI.Components
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.UI.Components.Blazor
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.UI.Components.Blazor.Trezor
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.UI.Components.Maui
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.UI.Components.Trezor
+CALL :restorepack
+cd..
+
+cd Nethereum.X402
 CALL :restorepack
 cd..
 
