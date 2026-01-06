@@ -20,7 +20,12 @@ namespace Nethereum.JsonRpc.Client
             var errors = new List<RpcError>();
             foreach (var response in responses)
             {
+                
+                if(response.Id == null)
+                    continue;
+
                 var batchItem = BatchItems.First(x => x.RpcRequestMessage.Id.ToString() == response.Id.ToString());
+
                 if (response.HasError)
                 {
                     batchItem.DecodeResponse(response);
@@ -28,6 +33,7 @@ namespace Nethereum.JsonRpc.Client
                 }
                 else
                 {
+                   
                     batchItem.DecodeResponse(response);
                 }
             }
