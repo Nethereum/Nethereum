@@ -10,7 +10,11 @@
     <PackageTags>Nethereum;Ethereum;Blockchain;X402;Payments;HTTP;EIP-3009;USDC</PackageTags>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+	  <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />

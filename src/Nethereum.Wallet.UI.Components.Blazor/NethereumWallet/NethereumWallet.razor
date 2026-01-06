@@ -447,10 +447,6 @@
             WalletBlazorDispatcher.Unregister(_dispatcherHandle);
             _dispatcherHandle = null;
         }
-        if (DialogAccessor != null)
-        {
-            DialogAccessor.DialogService = null;
-        }
         if (ViewModel != null)
         {
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
