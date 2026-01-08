@@ -1,6 +1,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using System.Numerics;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction
 {
@@ -33,7 +34,7 @@ namespace Nethereum.AccountAbstraction
 
         public byte[] CreateAccountAbstractionExecuteOpEncodedFunctionAsync(PackedUserOperation userOp, string entryPoint, BigInteger chainId)
         {
-            var hash = UserOperationBuilder.HashUserOperation(userOp, entryPoint, chainId);    
+            var hash = Nethereum.AccountAbstraction.Structs.UserOperationBuilder.HashUserOperation(userOp, entryPoint, chainId);    
             return CreateAccountAbstractionExecuteOpEncodedFunction(userOp, hash);
         }
 

@@ -178,7 +178,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 }
                 
                 
-                  var packedUserOperation = UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
+                  var packedUserOperation = Nethereum.AccountAbstraction.Structs.UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
                   return packedUserOperation;
             }
 

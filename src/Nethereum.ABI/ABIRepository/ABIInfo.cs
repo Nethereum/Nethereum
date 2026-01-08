@@ -3,6 +3,7 @@ using Nethereum.ABI.ABIDeserialisation;
 using Nethereum.ABI.Model;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 
 namespace Nethereum.ABI.ABIRepository
 {
@@ -28,6 +29,35 @@ namespace Nethereum.ABI.ABIRepository
 
         [JsonProperty("metadata")]
         public CompilationMetadata.CompilationMetadata Metadata { get; set; }
+
+        [JsonProperty("runtimeSourceMap")]
+        public string RuntimeSourceMap { get; set; }
+
+        [JsonProperty("runtimeBytecode")]
+        public string RuntimeBytecode { get; set; }
+
+        [JsonProperty("sourceFileIndex")]
+        public Dictionary<int, string> SourceFileIndex { get; set; }
+
+        [JsonIgnore]
+        public bool HasDebugInfo =>
+            Metadata?.Sources != null &&
+            Metadata.Sources.Count > 0 &&
+            !string.IsNullOrEmpty(RuntimeSourceMap);
+
+        public string GetSourceContent(int sourceFileIndex)
+        {
+            if (SourceFileIndex == null || Metadata?.Sources == null) return null;
+            if (!SourceFileIndex.TryGetValue(sourceFileIndex, out var filePath)) return null;
+            if (!Metadata.Sources.TryGetValue(filePath, out var source)) return null;
+            return source.Content;
+        }
+
+        public string GetSourceFilePath(int sourceFileIndex)
+        {
+            if (SourceFileIndex == null) return null;
+            return SourceFileIndex.TryGetValue(sourceFileIndex, out var filePath) ? filePath : null;
+        }
 
         public void InitialiseContractABI(bool force = false)
         {
