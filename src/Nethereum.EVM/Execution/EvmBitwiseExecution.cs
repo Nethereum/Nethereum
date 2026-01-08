@@ -6,7 +6,7 @@ namespace Nethereum.EVM.Execution
     {
         public void ShiftSignedRight(Program program)
         {
-            var first = (int)program.StackPopAndConvertToBigInteger();
+            var first = program.StackPopAndConvertToUBigInteger();
             var second = program.StackPopAndConvertToBigInteger();
 
             if (first >= 256)
@@ -22,7 +22,7 @@ namespace Nethereum.EVM.Execution
             }
             else
             {
-                program.StackPush(second >> first);
+                program.StackPush(second >> (int)first);
             }
 
             program.Step();
@@ -68,7 +68,7 @@ namespace Nethereum.EVM.Execution
 
         public void ShiftLeft(Program program)
         {
-            var first = (int)program.StackPopAndConvertToUBigInteger();
+            var first = program.StackPopAndConvertToUBigInteger();
             var second = program.StackPop();
             if (first >= 256)
             {
@@ -76,14 +76,14 @@ namespace Nethereum.EVM.Execution
             }
             else
             {
-                program.StackPush(second.ShiftLeft(first));
+                program.StackPush(second.ShiftLeft((int)first));
             }
             program.Step();
         }
 
         public void ShiftRight(Program program)
         {
-            var first = (int)program.StackPopAndConvertToUBigInteger();
+            var first = program.StackPopAndConvertToUBigInteger();
             var second = program.StackPopAndConvertToUBigInteger();
             if (first >= 256)
             {
@@ -91,7 +91,7 @@ namespace Nethereum.EVM.Execution
             }
             else
             {
-                program.StackPush(second >> first);
+                program.StackPush(second >> (int)first);
             }
             program.Step();
         }

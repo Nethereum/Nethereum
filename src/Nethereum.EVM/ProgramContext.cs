@@ -77,6 +77,11 @@ namespace Nethereum.EVM
             
             
             this.callInput = callInput;
+
+            if (callInput.GasPrice != null)
+            {
+                GasPrice = callInput.GasPrice;
+            }
         }
 
         public void InitialiaseContractBalanceFromCallInputValue()

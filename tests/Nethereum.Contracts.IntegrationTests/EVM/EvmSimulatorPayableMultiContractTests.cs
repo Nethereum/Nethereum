@@ -70,7 +70,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             programContext = new ProgramContext(callInput, executionStateService);
             var program2 = new Program(code.HexToByteArray(), programContext);
             await evmSimulator.ExecuteAsync(program2);
-            var resultEncoded = program.ProgramResult.Result;
+            var resultEncoded = program2.ProgramResult.Result;
             var result = new PaidAmountOutputDTO().DecodeOutput(resultEncoded.ToHex());
             Assert.Equal(5000, result.ReturnValue1);
 

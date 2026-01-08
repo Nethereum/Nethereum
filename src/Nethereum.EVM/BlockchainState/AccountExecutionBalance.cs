@@ -37,6 +37,11 @@ namespace Nethereum.EVM.BlockchainState
             InitialChainBalance = value;
         }
 
+        public void SetExecutionBalance(BigInteger? value)
+        {
+            ExecutionBalance = value;
+        }
+
         public string ToTraceString()
         {
             var builder = new StringBuilder();

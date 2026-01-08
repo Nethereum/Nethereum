@@ -11,7 +11,7 @@ namespace Nethereum.EVM.Execution
             var lengthDataToCopy = (int)program.StackPopAndConvertToUBigInteger();
             var dataInput = program.ProgramContext.DataInput;
 
-            if (indexOfData > dataInput.Length)
+            if (indexOfData >= dataInput.Length)
             {
                 program.WriteToMemory(indexInMemory, lengthDataToCopy, new byte[0]);
             }
@@ -38,7 +38,7 @@ namespace Nethereum.EVM.Execution
         {
             var index = (int)program.StackPopAndConvertToBigInteger();
             var dataInput = program.ProgramContext.DataInput;
-            if (index > dataInput.Length)
+            if (index >= dataInput.Length)
             {
                 program.StackPush(0);
             }

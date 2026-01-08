@@ -242,9 +242,12 @@ namespace Nethereum.EVM.UnitTests
                                         traceTestStep = test.Trace[i + 1];
                                     }
                                 }
-                                Assert.Equal(traceStep.Depth, traceTestStep.Depth);
-                                Assert.Equal((int)traceStep.Instruction.Instruction.Value, traceTestStep.Op);
-                                Assert.Equal(traceStep.Stack.Count, traceTestStep.StackSize);
+                                if (traceStep.Depth != traceTestStep.Depth)
+                                    throw new Exception($"Depth mismatch at step {i}: expected={traceTestStep.Depth}, actual={traceStep.Depth}, op={traceStep.Instruction.Instruction}, pc={traceStep.Instruction.Step}");
+                                if ((int)traceStep.Instruction.Instruction.Value != traceTestStep.Op)
+                                    throw new Exception($"Op mismatch at step {i}: expected={traceTestStep.Op}, actual={(int)traceStep.Instruction.Instruction.Value}, depth={traceStep.Depth}, pc={traceStep.Instruction.Step}");
+                                if (traceStep.Stack.Count != traceTestStep.StackSize)
+                                    throw new Exception($"StackSize mismatch at step {i}: expected={traceTestStep.StackSize}, actual={traceStep.Stack.Count}, depth={traceStep.Depth}, op={traceStep.Instruction.Instruction}, pc={traceStep.Instruction.Step}");
                                 var reverseStack = traceTestStep.Stack.ToArray().Reverse().ToArray();
 
                                 //Assert.Equal(traceStep.Stack.Count, reverseStack.Length);
@@ -253,15 +256,20 @@ namespace Nethereum.EVM.UnitTests
                                 {
                                     var stackElementTrace = traceStep.Stack[x];
                                     var stackElementTraceTest = reverseStack[x];
-                                    Assert.Equal(stackElementTrace.ToHexCompact(),
-                                        stackElementTraceTest.ToHexCompact());
+                                    var actual = stackElementTrace.ToHexCompact();
+                                    var expected = stackElementTraceTest.ToHexCompact();
+                                    if (actual != expected)
+                                    {
+                                        throw new Exception($"Stack mismatch at step {i}, stack pos {x}, depth={traceStep.Depth}, op={traceStep.Instruction.Instruction}, pc={traceStep.Instruction.Step}: expected='{expected}', actual='{actual}'");
+                                    }
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            var x = ex;
-                            throw ex;
+                            var innerSteps = trace.Count(t => t.Depth == 1);
+                            var expectedInnerSteps = test.Trace.Count(t => t.Depth == 1);
+                            throw new Exception($"Trace compare failed for {scenarioName}/{test.Id}: {ex.Message}. Our inner steps={innerSteps}, expected inner steps={expectedInnerSteps}, our total={trace.Count}, expected total={test.Trace.Count}", ex);
                         }
 
                         var resultHex = string.Empty;
@@ -269,8 +277,14 @@ namespace Nethereum.EVM.UnitTests
                         {
                             resultHex = program.ProgramResult.Result.ToHexCompact();
                         }
-
-                        Assert.Equal(resultHex, test.Trace.Last().Return.ToHexCompact());
+                        var expectedHex = test.Trace.Last().Return.ToHexCompact();
+                        if (resultHex != expectedHex)
+                        {
+                            var resultLen = program.ProgramResult.Result?.Length ?? 0;
+                            var lastCallLen = program.ProgramResult.LastCallReturnData?.Length ?? 0;
+                            var lastCallHex = program.ProgramResult.LastCallReturnData?.ToHexCompact() ?? "null";
+                            throw new Exception($"Test {scenarioName}/{test.Id} failed. Expected='{expectedHex}', Actual='{resultHex}', ResultLen={resultLen}, LastCallReturnLen={lastCallLen}, LastCallReturnHex='{lastCallHex}'");
+                        }
 
                         var gas = program.TotalGasUsed;
                     }
@@ -287,30 +301,27 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task TestvmArithmeticTest()
         {
-            await RunTestsFromFolder("Tests/VMTests/vmArithmeticTest",
-            new string[] {
-                  "twoOps"});
+            await RunTestsFromFolder("Tests/VMTests/vmArithmeticTest", null);
 
         }
 
-        //This have gas so cannot be used yet.
-        //[Fact]
-        //public async Task TestvmIOandFlowOperations()
-        //{
-        //    var excluded = new string[] { "codecopy", "jump", "jumpi" };
-        //    await RunTestsFromFolder("Tests/VMTests/vmIOandFlowOperations", excluded);
-        //}
+        [Fact]
+        public async Task TestvmIOandFlowOperations()
+        {
+            await RunTestsFromFolder("Tests/VMTests/vmIOandFlowOperations", null);
+        }
 
 
-        //[Fact]
-        //public async Task TestvmTests()
-        //{
-        //    var excluded = new string[] { "calldatacopy" };
-        //    await RunTestsFromFolder("Tests/VMTests/vmTests", excluded);
-        //}
+        [Fact]
+        public async Task TestvmTests()
+        {
+            await RunTestsFromFolder("Tests/VMTests/vmTests", null, null);
+        }
 
-
-
-
+        [Fact]
+        public async Task TestvmLogTest()
+        {
+            await RunTestsFromFolder("Tests/VMTests/vmLogTest", null);
+        }
     }
 }

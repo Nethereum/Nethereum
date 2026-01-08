@@ -1,6 +1,7 @@
 ﻿using Nethereum.ABI;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
+using Nethereum.EVM.Exceptions;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using System;
@@ -37,13 +38,18 @@ namespace Nethereum.EVM
         public Program(byte[] bytecode, ProgramContext programContext = null)
         {
             this.Instructions = ProgramInstructionsUtils.GetProgramInstructions(bytecode);
-            
+
             this.stack = new List<byte[]>();
             this.Memory = new List<byte>();
             ByteCode = bytecode;
             ProgramContext = programContext;
             Trace = new List<ProgramTrace>();
             ProgramResult = new ProgramResult();
+
+            if (programContext != null)
+            {
+                GasRemaining = programContext.Gas;
+            }
         }
 
         public ProgramInstruction GetCurrentInstruction()
@@ -76,13 +82,20 @@ namespace Nethereum.EVM
 
             if (currentInstructionIndex >= Instructions.Count)
             {
+                StoppedImplicitly = true;
                 Stop();
             }
         }
 
         public bool Stopped { get; private set; } = false;
+        public bool StoppedImplicitly { get; private set; } = false;
         public byte[] ByteCode { get; }
         public ProgramContext ProgramContext { get; }
+
+        public int GetCurrentInstructionIndex()
+        {
+            return currentInstructionIndex;
+        }
 
         public void Stop()
         {
@@ -166,7 +179,14 @@ namespace Nethereum.EVM
 
         public const int MAX_STACKSIZE = 1024;
 
-
+        public void ExpandMemory(int newSize)
+        {
+            if (newSize > Memory.Count)
+            {
+                var extraSize = (int)Math.Ceiling((double)(newSize - Memory.Count) / 32) * 32;
+                Memory.AddRange(new byte[extraSize]);
+            }
+        }
 
         public void WriteToMemory(int index, byte[] data)
         {
@@ -281,10 +301,10 @@ namespace Nethereum.EVM
 
         public void UpdateGasUsed(BigInteger gasCost)
         {
-            //if (GasRemaining < gasCost)
-            //{
-            //    throw new Exception("Out of gas");
-            //}
+            if (GasRemaining < gasCost)
+            {
+                throw new OutOfGasException(gasCost, GasRemaining);
+            }
 
             TotalGasUsed += gasCost;
             GasRemaining -= gasCost;

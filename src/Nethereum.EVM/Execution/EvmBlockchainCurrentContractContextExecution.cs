@@ -66,8 +66,23 @@ namespace Nethereum.EVM.Execution
         {
             var index = program.StackPopAndConvertToUBigInteger();
             var length = program.StackPopAndConvertToUBigInteger();
-            var data = program.Memory.GetRange((int)index, (int)length);
-            var encoded = Sha3Keccack.Current.CalculateHash(data.ToArray());
+
+            byte[] data;
+            if (length == 0)
+            {
+                data = new byte[0];
+            }
+            else
+            {
+                int memoryEnd = (int)(index + length);
+                if (memoryEnd > program.Memory.Count)
+                {
+                    program.ExpandMemory(memoryEnd);
+                }
+                data = program.Memory.GetRange((int)index, (int)length).ToArray();
+            }
+
+            var encoded = Sha3Keccack.Current.CalculateHash(data);
             program.StackPush(encoded);
             program.Step();
         }

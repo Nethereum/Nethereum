@@ -11,6 +11,7 @@ namespace Nethereum.EVM
     public class ProgramResult
     {
         public byte[] Result { get; set;}
+        public byte[] LastCallReturnData { get; set; }
         public List<FilterLog> Logs { get; set; } = new List<FilterLog>();
         public bool IsRevert { get; set; }
         public string GetRevertMessage()

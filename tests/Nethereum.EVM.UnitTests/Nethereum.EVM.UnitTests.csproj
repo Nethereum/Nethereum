@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.ABI\Nethereum.ABI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

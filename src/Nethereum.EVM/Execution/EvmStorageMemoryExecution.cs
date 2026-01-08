@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Linq;
+using Nethereum.EVM.Exceptions;
 using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
@@ -28,6 +29,9 @@ namespace Nethereum.EVM.Execution
 
         public async Task SStore(Program program)
         {
+            if (program.ProgramContext.IsStatic)
+                throw new StaticCallViolationException("SSTORE");
+
             var key = program.StackPopAndConvertToUBigInteger();
             //ensure we have the value in storage to track it
             //always first so we can track the original value
@@ -41,16 +45,8 @@ namespace Nethereum.EVM.Execution
         {
             var index = (int)program.StackPopAndConvertToUBigInteger();
 
-            var data = new byte[32];
-            if (index + 32 > program.Memory.Count)
-            {
-                var dataToCopy = program.Memory.Skip(index).ToArray();
-                Array.Copy(dataToCopy, data, dataToCopy.Length);
-            }
-            else
-            {
-                data = program.Memory.GetRange(index, 32).ToArray();
-            }
+            program.ExpandMemory(index + 32);
+            var data = program.Memory.GetRange(index, 32).ToArray();
 
             program.StackPush(data);
             program.Step();

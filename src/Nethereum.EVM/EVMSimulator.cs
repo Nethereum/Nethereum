@@ -57,6 +57,26 @@ namespace Nethereum.EVM
                 vmExecutionCounter = vmExecutionCounter + 1 + innerTrace.Count;
                 program.Trace.AddRange(innerTrace);
             }
+
+            if (traceEnabled && program.StoppedImplicitly)
+            {
+                var implicitStopInstruction = new ProgramInstruction
+                {
+                    Instruction = Instruction.STOP,
+                    Value = 0,
+                    Step = program.ByteCode.Length
+                };
+                var implicitStopTrace = ProgramTrace.CreateTraceFromCurrentProgram(
+                    program.ProgramContext.AddressContract,
+                    vmExecutionCounter,
+                    programExecutionCounter,
+                    depth,
+                    program,
+                    implicitStopInstruction,
+                    program.ProgramContext.CodeAddress);
+                program.Trace.Add(implicitStopTrace);
+            }
+
             return program;
         }
         public async Task<List<ProgramTrace>> StepAsync(Program program, int vmExecutionCounter, int depth = 0, bool traceEnabled = true)

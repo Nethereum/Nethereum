@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Nethereum.EVM.Exceptions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
@@ -14,6 +15,9 @@ namespace Nethereum.EVM.Execution
         }
         public void Log(Program program, int numberTopics)
         {
+            if (program.ProgramContext.IsStatic)
+                throw new StaticCallViolationException("LOG" + numberTopics);
+
             var address = program.ProgramContext.AddressContract;
 
             var memStart = (int)program.StackPopAndConvertToUBigInteger();
@@ -43,7 +47,7 @@ namespace Nethereum.EVM.Execution
             var memoryIndex = (int)program.StackPopAndConvertToUBigInteger();
             var resultIndex = (int)program.StackPopAndConvertToUBigInteger();
             var lengthResult = (int)program.StackPopAndConvertToUBigInteger();
-            var result = program.ProgramResult.Result;
+            var result = program.ProgramResult.LastCallReturnData;
             if (result == null)
             {
                 program.WriteToMemory(memoryIndex, lengthResult, new byte[] { });
@@ -68,7 +72,7 @@ namespace Nethereum.EVM.Execution
 
         public  void ReturnDataSize(Program program)
         {
-            var result = program.ProgramResult.Result;
+            var result = program.ProgramResult.LastCallReturnData;
             var length = 0;
             if (result != null)
             {
@@ -89,7 +93,6 @@ namespace Nethereum.EVM.Execution
             }
             catch
             {
-                program.Step();
                 program.Stop();
             }
         }
@@ -113,7 +116,6 @@ namespace Nethereum.EVM.Execution
                 program.ProgramResult.Result = result;
             }
 
-            program.Step();
             program.Stop();
         }
     }

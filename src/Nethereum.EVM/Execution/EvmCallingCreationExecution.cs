@@ -3,6 +3,7 @@ using System.Numerics;
 using Nethereum.ABI;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Nethereum.EVM.Exceptions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Linq;
@@ -21,9 +22,12 @@ namespace Nethereum.EVM.Execution
         }
         public async Task<List<ProgramTrace>> CreateAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled)
         {
-            var value = program.StackPopAndConvertToBigInteger();
-            var memoryIndex = (int)program.StackPopAndConvertToBigInteger();
-            var memoryLength = (int)program.StackPopAndConvertToBigInteger();
+            if (program.ProgramContext.IsStatic)
+                throw new StaticCallViolationException("CREATE");
+
+            var value = program.StackPopAndConvertToUBigInteger();
+            var memoryIndex = (int)program.StackPopAndConvertToUBigInteger();
+            var memoryLength = (int)program.StackPopAndConvertToUBigInteger();
             var contractAddress = program.ProgramContext.AddressContract;
             var nonce = await program.ProgramContext.ExecutionStateService.GetNonceAsync(contractAddress);
             var newContractAddress = ContractUtils.CalculateContractAddress(contractAddress, nonce);
@@ -34,9 +38,12 @@ namespace Nethereum.EVM.Execution
 
         public async Task<List<ProgramTrace>> Create2Async(Program program, int vmExecutionStep, int depth, bool traceEnabled)
         {
-            var value = program.StackPopAndConvertToBigInteger();
-            var memoryIndex = (int)program.StackPopAndConvertToBigInteger();
-            var memoryLength = (int)program.StackPopAndConvertToBigInteger();
+            if (program.ProgramContext.IsStatic)
+                throw new StaticCallViolationException("CREATE2");
+
+            var value = program.StackPopAndConvertToUBigInteger();
+            var memoryIndex = (int)program.StackPopAndConvertToUBigInteger();
+            var memoryLength = (int)program.StackPopAndConvertToUBigInteger();
             var salt = program.StackPop();
             var contractAddress = program.ProgramContext.AddressContract;
             var nonce = await program.ProgramContext.ExecutionStateService.GetNonceAsync(contractAddress);
@@ -66,6 +73,7 @@ namespace Nethereum.EVM.Execution
                 (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
             programContext.Difficulty = program.ProgramContext.Difficulty;
             programContext.GasLimit = program.ProgramContext.GasLimit;
+            programContext.GasPrice = program.ProgramContext.GasPrice;
             var callProgram = new Program(byteCode, programContext);
 
             var vm = new EVMSimulator(evmProgramExecutionParent);
@@ -76,7 +84,6 @@ namespace Nethereum.EVM.Execution
                 {
                     program.StackPush(new AddressType().Encode(newContractAddress));
                     var code = callProgram.ProgramResult.Result;
-                    program.ProgramResult.Result = callProgram.ProgramResult.Result;
                     program.ProgramContext.ExecutionStateService.SaveCode(newContractAddress, code);
                     program.ProgramResult.Logs.AddRange(callProgram.ProgramResult.Logs);
                     program.ProgramResult.InnerCalls.Add(callInput);
@@ -103,6 +110,9 @@ namespace Nethereum.EVM.Execution
 
         public async Task SelfDestructAsync(Program program)
         {
+            if (program.ProgramContext.IsStatic)
+                throw new StaticCallViolationException("SELFDESTRUCT");
+
             var addressReceiverFunds = program.StackPop();
             var addressReceiverFundsHex = addressReceiverFunds.ConvertToEthereumChecksumAddress();
 
@@ -124,7 +134,7 @@ namespace Nethereum.EVM.Execution
 
         public async Task<List<ProgramTrace>> StaticCallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
-            var gas = program.StackPopAndConvertToBigInteger();
+            var gas = program.StackPopAndConvertToUBigInteger();
             var codeAddress = program.StackPop();
             var value = 0;
             var from = program.ProgramContext.AddressContract;
@@ -134,7 +144,7 @@ namespace Nethereum.EVM.Execution
 
         public async Task<List<ProgramTrace>> DelegateCallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
-            var gas = program.StackPopAndConvertToBigInteger();
+            var gas = program.StackPopAndConvertToUBigInteger();
             var codeAddress = program.StackPop();
             var value = program.ProgramContext.Value; // value is the same
             var from = program.ProgramContext.AddressCaller; //sender is the original caller
@@ -144,9 +154,9 @@ namespace Nethereum.EVM.Execution
 
         public async Task<List<ProgramTrace>> CallCodeAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
-            var gas = program.StackPopAndConvertToBigInteger();
+            var gas = program.StackPopAndConvertToUBigInteger();
             var codeAddress = program.StackPop();
-            var value = program.StackPopAndConvertToBigInteger();
+            var value = program.StackPopAndConvertToUBigInteger();
             var from = program.ProgramContext.AddressContract; //sender is the current contract
             var to = program.ProgramContext.AddressContract; // keeping the same storage
             return await GenericCallAsync(program, vmExecutionStep, depth, traceEnabled, gas, codeAddress, value, from, to);
@@ -154,9 +164,9 @@ namespace Nethereum.EVM.Execution
 
         public async Task<List<ProgramTrace>> CallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled = true)
         {
-            var gas = program.StackPopAndConvertToBigInteger();
+            var gas = program.StackPopAndConvertToUBigInteger();
             var codeAddress = program.StackPop();
-            var value = program.StackPopAndConvertToBigInteger();
+            var value = program.StackPopAndConvertToUBigInteger();
             var from = program.ProgramContext.AddressContract;
             var to = codeAddress.ConvertToEthereumChecksumAddress();
   
@@ -168,11 +178,11 @@ namespace Nethereum.EVM.Execution
 
         private async Task<List<ProgramTrace>> GenericCallAsync(Program program, int vmExecutionStep, int depth, bool traceEnabled, BigInteger gas, byte[] codeAddress, BigInteger value, string from, string to,  bool staticCall = false)
         {
-            var dataInputIndex = (int)program.StackPopAndConvertToBigInteger();
-            var dataInputLength = (int)program.StackPopAndConvertToBigInteger();
+            var dataInputIndex = (int)program.StackPopAndConvertToUBigInteger();
+            var dataInputLength = (int)program.StackPopAndConvertToUBigInteger();
 
-            var resultMemoryDataIndex = (int)program.StackPopAndConvertToBigInteger();
-            var resultMemoryDataLength = (int)program.StackPopAndConvertToBigInteger();
+            var resultMemoryDataIndex = (int)program.StackPopAndConvertToUBigInteger();
+            var resultMemoryDataLength = (int)program.StackPopAndConvertToUBigInteger();
 
             var dataInput = new byte[] { };
 
@@ -242,6 +252,7 @@ namespace Nethereum.EVM.Execution
                         baseFee: (long)program.ProgramContext.BaseFee);
                 programContext.Difficulty = program.ProgramContext.Difficulty;
                 programContext.GasLimit = program.ProgramContext.GasLimit;
+                programContext.GasPrice = program.ProgramContext.GasPrice;
                 var callProgram = new Program(byteCode, programContext);
                 callProgram.GasRemaining = gas;
                 var vm = new EVMSimulator(evmProgramExecutionParent);
@@ -254,14 +265,13 @@ namespace Nethereum.EVM.Execution
                     {
                         program.StackPush(1);
                         var result = callProgram.ProgramResult.Result;
-                        program.ProgramResult.Result = callProgram.ProgramResult.Result;
-                        
+                        program.ProgramResult.LastCallReturnData = result;
 
-                        if (program.ProgramResult.Result != null)
+                        if (result != null)
                         {
-                            if (resultMemoryDataLength > program.ProgramResult.Result.Length)
+                            if (resultMemoryDataLength > result.Length)
                             {
-                                resultMemoryDataLength = program.ProgramResult.Result.Length;
+                                resultMemoryDataLength = result.Length;
                             }
                         }
 
