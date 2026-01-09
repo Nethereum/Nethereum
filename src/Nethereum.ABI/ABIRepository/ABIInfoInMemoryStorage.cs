@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace Nethereum.ABI.ABIRepository
 {
@@ -19,21 +20,45 @@ namespace Nethereum.ABI.ABIRepository
         public ABIInfo GetABIInfo(BigInteger chainId, string contractAddress)
         {
             contractAddress = contractAddress.ToLowerInvariant();
-            return _abiInfos.FirstOrDefault(x => x.Address == contractAddress && chainId == x.ChainId);
+            return _abiInfos.FirstOrDefault(x => x.Address == contractAddress && x.ChainId.HasValue && (long)chainId == x.ChainId.Value);
         }
 
         public FunctionABI FindFunctionABI(BigInteger chainId, string contractAddress, string signature)
         {
             var abiInfo = GetABIInfo(chainId, contractAddress);
-            if (abiInfo == null) return null;
-            return abiInfo.ContractABI.FindFunctionABI(signature);
+            if (abiInfo != null)
+            {
+                var result = abiInfo.ContractABI.FindFunctionABI(signature);
+                if (result != null) return result;
+            }
+
+            var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+            if (_signatureToFunctionABIDictionary.TryGetValue(normalizedSig, out var functions) && functions.Count > 0)
+            {
+                return functions[0];
+            }
+
+            return null;
         }
 
         public FunctionABI FindFunctionABIFromInputData(BigInteger chainId, string contractAddress, string inputData)
         {
             var abiInfo = GetABIInfo(chainId, contractAddress);
-            if (abiInfo == null) return null;
-            return abiInfo.ContractABI.FindFunctionABIFromInputData(inputData);
+            if (abiInfo != null)
+            {
+                var result = abiInfo.ContractABI.FindFunctionABIFromInputData(inputData);
+                if (result != null) return result;
+            }
+
+            if (!SignatureEncoder.ValiInputDataSignature(inputData)) return null;
+            var signature = SignatureEncoder.GetSignatureFromData(inputData);
+            var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+            if (_signatureToFunctionABIDictionary.TryGetValue(normalizedSig, out var functions) && functions.Count > 0)
+            {
+                return functions[0];
+            }
+
+            return null;
         }
 
         public ErrorABI FindErrorABI(BigInteger chainId, string contractAddress, string signature)
@@ -46,8 +71,19 @@ namespace Nethereum.ABI.ABIRepository
         public EventABI FindEventABI(BigInteger chainId, string contractAddress, string signature)
         {
             var abiInfo = GetABIInfo(chainId, contractAddress);
-            if (abiInfo == null) return null;
-            return abiInfo.ContractABI.FindEventABI(signature);
+            if (abiInfo != null)
+            {
+                var result = abiInfo.ContractABI.FindEventABI(signature);
+                if (result != null) return result;
+            }
+
+            var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+            if (_signatureToEventABIDictionary.TryGetValue(normalizedSig, out var events) && events.Count > 0)
+            {
+                return events[0];
+            }
+
+            return null;
         }
 
         public List<FunctionABI> FindFunctionABI(string signature)
@@ -164,6 +200,85 @@ namespace Nethereum.ABI.ABIRepository
             {
                 this._signatureToFunctionABIDictionary.Add(signature, new List<FunctionABI> { functionABI });
             }
+        }
+
+        public Task<ABIInfo> GetABIInfoAsync(long chainId, string contractAddress)
+        {
+            return Task.FromResult(GetABIInfo(new BigInteger(chainId), contractAddress));
+        }
+
+        public Task<FunctionABI> FindFunctionABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            return Task.FromResult(FindFunctionABI(chainId, contractAddress, signature));
+        }
+
+        public Task<FunctionABI> FindFunctionABIFromInputDataAsync(BigInteger chainId, string contractAddress, string inputData)
+        {
+            return Task.FromResult(FindFunctionABIFromInputData(chainId, contractAddress, inputData));
+        }
+
+        public Task<EventABI> FindEventABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            return Task.FromResult(FindEventABI(chainId, contractAddress, signature));
+        }
+
+        public Task<ErrorABI> FindErrorABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            return Task.FromResult(FindErrorABI(chainId, contractAddress, signature));
+        }
+
+        public Task<IDictionary<string, FunctionABI>> FindFunctionABIsBatchAsync(IEnumerable<string> signatures)
+        {
+            var result = new Dictionary<string, FunctionABI>();
+            foreach (var signature in signatures)
+            {
+                var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+                if (_signatureToFunctionABIDictionary.TryGetValue(normalizedSig, out var functions) && functions.Count > 0)
+                {
+                    result[signature] = functions[0];
+                }
+            }
+            return Task.FromResult<IDictionary<string, FunctionABI>>(result);
+        }
+
+        public Task<IDictionary<string, EventABI>> FindEventABIsBatchAsync(IEnumerable<string> signatures)
+        {
+            var result = new Dictionary<string, EventABI>();
+            foreach (var signature in signatures)
+            {
+                var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+                if (_signatureToEventABIDictionary.TryGetValue(normalizedSig, out var events) && events.Count > 0)
+                {
+                    result[signature] = events[0];
+                }
+            }
+            return Task.FromResult<IDictionary<string, EventABI>>(result);
+        }
+
+        public Task<ABIBatchResult> FindABIsBatchAsync(
+            IEnumerable<string> functionSignatures, IEnumerable<string> eventSignatures)
+        {
+            var result = new ABIBatchResult();
+
+            foreach (var signature in functionSignatures ?? Enumerable.Empty<string>())
+            {
+                var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+                if (_signatureToFunctionABIDictionary.TryGetValue(normalizedSig, out var funcs) && funcs.Count > 0)
+                {
+                    result.Functions[signature] = funcs[0];
+                }
+            }
+
+            foreach (var signature in eventSignatures ?? Enumerable.Empty<string>())
+            {
+                var normalizedSig = SignatureEncoder.ConvertToStringKey(signature);
+                if (_signatureToEventABIDictionary.TryGetValue(normalizedSig, out var evts) && evts.Count > 0)
+                {
+                    result.Events[signature] = evts[0];
+                }
+            }
+
+            return Task.FromResult(result);
         }
     }
 }

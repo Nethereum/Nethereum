@@ -8,7 +8,7 @@ namespace Nethereum.Wallet.Services.Transaction
 {
     public interface ITransactionDataDecodingService
     {
-        Task<TransactionDataInfo> DecodeTransactionDataAsync(string transactionData, string? contractAddress = null);
+        Task<TransactionDataInfo> DecodeTransactionDataAsync(string transactionData, string? contractAddress = null, long chainId = 1);
         bool HasFunctionSignature(string transactionData);
     }
 

@@ -10,7 +10,6 @@ namespace Nethereum.DataServices.ABIInfoStorage
     public class EtherscanABIInfoStorage : IABIInfoStorage
     {
         private readonly string _apiKey;
-        private readonly ABIInfoInMemoryStorage _cache = new ABIInfoInMemoryStorage();
 
         public EtherscanABIInfoStorage(string apiKey = null)
         {
@@ -19,89 +18,102 @@ namespace Nethereum.DataServices.ABIInfoStorage
 
         public void AddABIInfo(ABIInfo abiInfo)
         {
-            _cache.AddABIInfo(abiInfo);
         }
 
         public ABIInfo GetABIInfo(BigInteger chainId, string contractAddress)
         {
-            var cached = _cache.GetABIInfo(chainId, contractAddress);
-            if (cached != null) return cached;
-
-            var abiInfo = FetchFromEtherscanAsync((long)chainId, contractAddress).ConfigureAwait(false).GetAwaiter().GetResult();
-            if (abiInfo != null)
-            {
-                _cache.AddABIInfo(abiInfo);
-            }
-            return abiInfo;
+            return GetABIInfoAsync((long)chainId, contractAddress).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public async Task<ABIInfo> GetABIInfoAsync(long chainId, string contractAddress)
         {
-            var cached = _cache.GetABIInfo(chainId, contractAddress);
-            if (cached != null) return cached;
+            if (string.IsNullOrEmpty(contractAddress))
+                return null;
 
-            var abiInfo = await FetchFromEtherscanAsync(chainId, contractAddress).ConfigureAwait(false);
-            if (abiInfo != null)
-            {
-                _cache.AddABIInfo(abiInfo);
-            }
-            return abiInfo;
+            return await FetchFromEtherscanAsync(chainId, contractAddress).ConfigureAwait(false);
         }
 
         public FunctionABI FindFunctionABI(BigInteger chainId, string contractAddress, string signature)
         {
-            EnsureLoaded(chainId, contractAddress);
-            return _cache.FindFunctionABI(chainId, contractAddress, signature);
+            var abiInfo = GetABIInfo(chainId, contractAddress);
+            return abiInfo?.ContractABI?.FindFunctionABI(signature);
         }
 
         public FunctionABI FindFunctionABIFromInputData(BigInteger chainId, string contractAddress, string inputData)
         {
-            EnsureLoaded(chainId, contractAddress);
-            return _cache.FindFunctionABIFromInputData(chainId, contractAddress, inputData);
+            var abiInfo = GetABIInfo(chainId, contractAddress);
+            return abiInfo?.ContractABI?.FindFunctionABIFromInputData(inputData);
         }
 
         public EventABI FindEventABI(BigInteger chainId, string contractAddress, string signature)
         {
-            EnsureLoaded(chainId, contractAddress);
-            return _cache.FindEventABI(chainId, contractAddress, signature);
+            var abiInfo = GetABIInfo(chainId, contractAddress);
+            return abiInfo?.ContractABI?.FindEventABI(signature);
         }
 
         public ErrorABI FindErrorABI(BigInteger chainId, string contractAddress, string signature)
         {
-            EnsureLoaded(chainId, contractAddress);
-            return _cache.FindErrorABI(chainId, contractAddress, signature);
+            var abiInfo = GetABIInfo(chainId, contractAddress);
+            return abiInfo?.ContractABI?.FindErrorABI(signature);
         }
 
         public List<FunctionABI> FindFunctionABI(string signature)
         {
-            return _cache.FindFunctionABI(signature);
+            return new List<FunctionABI>();
         }
 
         public List<FunctionABI> FindFunctionABIFromInputData(string inputData)
         {
-            return _cache.FindFunctionABIFromInputData(inputData);
+            return new List<FunctionABI>();
         }
 
         public List<EventABI> FindEventABI(string signature)
         {
-            return _cache.FindEventABI(signature);
+            return new List<EventABI>();
         }
 
         public List<ErrorABI> FindErrorABI(string signature)
         {
-            return _cache.FindErrorABI(signature);
+            return new List<ErrorABI>();
         }
 
-        private void EnsureLoaded(BigInteger chainId, string contractAddress)
+        public async Task<FunctionABI> FindFunctionABIAsync(BigInteger chainId, string contractAddress, string signature)
         {
-            if (_cache.GetABIInfo(chainId, contractAddress) == null)
-            {
-                var abiInfo = FetchFromEtherscanAsync((long)chainId, contractAddress).ConfigureAwait(false).GetAwaiter().GetResult();
-                if (abiInfo != null)
-                {
-                    _cache.AddABIInfo(abiInfo);
-                }
-            }
+            var abiInfo = await GetABIInfoAsync((long)chainId, contractAddress).ConfigureAwait(false);
+            return abiInfo?.ContractABI?.FindFunctionABI(signature);
+        }
+
+        public async Task<FunctionABI> FindFunctionABIFromInputDataAsync(BigInteger chainId, string contractAddress, string inputData)
+        {
+            var abiInfo = await GetABIInfoAsync((long)chainId, contractAddress).ConfigureAwait(false);
+            return abiInfo?.ContractABI?.FindFunctionABIFromInputData(inputData);
+        }
+
+        public async Task<EventABI> FindEventABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            var abiInfo = await GetABIInfoAsync((long)chainId, contractAddress).ConfigureAwait(false);
+            return abiInfo?.ContractABI?.FindEventABI(signature);
+        }
+
+        public async Task<ErrorABI> FindErrorABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            var abiInfo = await GetABIInfoAsync((long)chainId, contractAddress).ConfigureAwait(false);
+            return abiInfo?.ContractABI?.FindErrorABI(signature);
+        }
+
+        public Task<IDictionary<string, FunctionABI>> FindFunctionABIsBatchAsync(IEnumerable<string> signatures)
+        {
+            return Task.FromResult<IDictionary<string, FunctionABI>>(new Dictionary<string, FunctionABI>());
+        }
+
+        public Task<IDictionary<string, EventABI>> FindEventABIsBatchAsync(IEnumerable<string> signatures)
+        {
+            return Task.FromResult<IDictionary<string, EventABI>>(new Dictionary<string, EventABI>());
+        }
+
+        public Task<ABIBatchResult> FindABIsBatchAsync(IEnumerable<string> functionSignatures, IEnumerable<string> eventSignatures)
+        {
+            return Task.FromResult(new ABIBatchResult());
         }
 
         private async Task<ABIInfo> FetchFromEtherscanAsync(long chainId, string address)

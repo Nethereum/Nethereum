@@ -18,7 +18,7 @@ namespace Nethereum.Wallet.Services.Transaction
             _fourByteService = fourByteService;
         }
 
-        public async Task<TransactionDataInfo> DecodeTransactionDataAsync(string transactionData, string? contractAddress = null)
+        public async Task<TransactionDataInfo> DecodeTransactionDataAsync(string transactionData, string? contractAddress = null, long chainId = 1)
         {
             var info = new TransactionDataInfo
             {

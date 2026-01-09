@@ -39,6 +39,9 @@ namespace Nethereum.ABI.ABIRepository
         [JsonProperty("sourceFileIndex")]
         public Dictionary<int, string> SourceFileIndex { get; set; }
 
+        [JsonProperty("proxyImplementationAddresses")]
+        public List<string> ProxyImplementationAddresses { get; set; }
+
         [JsonIgnore]
         public bool HasDebugInfo =>
             Metadata?.Sources != null &&

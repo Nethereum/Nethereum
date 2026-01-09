@@ -22,6 +22,7 @@
     <ProjectReference Include="..\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj" />
     <ProjectReference Include="..\Nethereum.Consensus.Ssz\Nethereum.Consensus.Ssz.csproj" />
     <ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
     <ProjectReference Include="..\Nethereum.GnosisSafe\Nethereum.GnosisSafe.csproj" />
     <ProjectReference Include="..\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />

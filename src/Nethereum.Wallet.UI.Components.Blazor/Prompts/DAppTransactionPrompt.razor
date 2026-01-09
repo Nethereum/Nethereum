@@ -13,7 +13,7 @@
 <div class="dapp-transaction-prompt">
     @if (ViewModel.CurrentStep == 0)
     {
-        <WalletFormSection Title="@Localizer.GetString(Keys.TransactionRequest)">
+        <WalletFormSection Title="@Localizer.GetString(Keys.ConfirmTransaction)">
             @if (!string.IsNullOrEmpty(ViewModel.PromptInfo.DAppName))
             {
                 <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3 pa-2" Style="background: var(--mud-palette-background-grey); border-radius: 8px;">
@@ -37,17 +37,17 @@
                     </MudStack>
                 </MudStack>
             }
-            
-           
-            
+
             <TransactionInput ViewModel="@ViewModel.Transaction"
                             Layout="TransactionInputLayout.Confirmation"
                             ShowTransactionDetails="true"
                             ShowDataDecoding="true"
+                            ShowGasConfiguration="true"
+                            ShowCostSummary="true"
                             RecipientReadOnly="true"
                             AmountReadOnly="true"
-                            ShowGasConfiguration="false" />
-            
+                            AllowGasModeSwitch="true" />
+
             @if (!string.IsNullOrEmpty(ViewModel.PromptInfo.WarningMessage))
             {
                 <MudAlert Severity="Severity.Warning" Class="mt-3">
@@ -55,69 +55,34 @@
                 </MudAlert>
             }
         </WalletFormSection>
-        
-        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-4">
-            <MudButton Color="Color.Error"
-                      Variant="Variant.Text"
-                      OnClick="@(() => ViewModel.RejectTransactionCommand.Execute(null))">
-                @Localizer.GetString(Keys.Reject)
-            </MudButton>
-            <MudButton Color="Color.Primary"
-                      Variant="Variant.Filled"
-                      OnClick="@(() => ViewModel.NextStepCommand.Execute(null))"
-                      Disabled="@(!ViewModel.CanProceedToNextStep)">
-                @Localizer.GetString(Keys.ReviewGasSettings)
-            </MudButton>
-        </MudStack>
-    }
-    else if (ViewModel.CurrentStep == 1)
-    {
-        <WalletFormSection Title="@Localizer.GetString(Keys.ConfirmTransaction)">
-            <TransactionInput ViewModel="@ViewModel.Transaction"
-                            Layout="TransactionInputLayout.Confirmation"
-                            ShowTransactionDetails="true"
-                            ShowGasConfiguration="true"
-                            ShowCostSummary="true"
-                            RecipientReadOnly="true"
-                            AmountReadOnly="true"
-                            AllowGasModeSwitch="true" />
-        </WalletFormSection>
-        
+
         @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
         {
             <MudAlert Severity="Severity.Error" Class="mt-3">
                 @ViewModel.ErrorMessage
             </MudAlert>
         }
-        
+
         <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-4">
-            <MudButton Color="Color.Default"
+            <MudButton Color="Color.Error"
                       Variant="Variant.Text"
-                      OnClick="@(() => ViewModel.PreviousStepCommand.Execute(null))"
+                      OnClick="@(() => ViewModel.RejectTransactionCommand.Execute(null))"
                       Disabled="@ViewModel.IsLoading">
-                @Localizer.GetString(Keys.Back)
+                @Localizer.GetString(Keys.Reject)
             </MudButton>
-            <MudStack Row="true" Spacing="2">
-                <MudButton Color="Color.Error"
-                          Variant="Variant.Text"
-                          OnClick="@(() => ViewModel.RejectTransactionCommand.Execute(null))"
-                          Disabled="@ViewModel.IsLoading">
-                    @Localizer.GetString(Keys.Reject)
-                </MudButton>
-                <MudButton Color="Color.Primary"
-                          Variant="Variant.Filled"
-                          OnClick="@ApproveAndSendTransactionAsync"
-                          Disabled="@(!ViewModel.CanApprove)">
-                    @if (ViewModel.IsLoading)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    }
-                    @Localizer.GetString(Keys.ApproveAndSend)
-                </MudButton>
-            </MudStack>
+            <MudButton Color="Color.Primary"
+                      Variant="Variant.Filled"
+                      OnClick="@ApproveAndSendTransactionAsync"
+                      Disabled="@(!ViewModel.CanApprove)">
+                @if (ViewModel.IsLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                @Localizer.GetString(Keys.ApproveAndSend)
+            </MudButton>
         </MudStack>
     }
-    else if (ViewModel.CurrentStep == 2)
+    else if (ViewModel.CurrentStep == 1)
     {
         <WalletFormSection Title="@Localizer.GetString(Keys.TransactionStatus)">
             @if (ViewModel.IsLoading)

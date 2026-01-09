@@ -362,6 +362,9 @@ namespace Nethereum.EVM
                         case Instruction.MSIZE:
                             EvmProgramExecution.StorageMemory.MSize(program);
                             break;
+                        case Instruction.MCOPY:
+                            EvmProgramExecution.StorageMemory.MCopy(program);
+                            break;
                         case Instruction.SLOAD:
                             await EvmProgramExecution.StorageMemory.SLoad(program);
                             break;

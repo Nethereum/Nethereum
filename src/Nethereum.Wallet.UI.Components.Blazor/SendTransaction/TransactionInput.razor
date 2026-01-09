@@ -13,15 +13,14 @@
 @if (ShowTransactionDetails)
 {
     <WalletFormSection Title="@Localizer.GetString(Keys.TransactionDetails)">
-        <MudStack Spacing="3">
+        <MudStack Spacing="2">
             <WalletTextField Value="@ViewModel.Transaction.FromAddress"
                             LabelKey="@Keys.From"
                             Localizer="@Localizer"
                             FieldType="WalletTextFieldType.Address"
                             IsMonospace="true"
-                            ReadOnly="true"
-                            />
-            
+                            ReadOnly="true" />
+
             @if (RecipientReadOnly)
             {
                 <WalletTextField Value="@ViewModel.Transaction.RecipientAddress"
@@ -41,7 +40,7 @@
                                 ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.RecipientAddress))"
                                 IsMonospace="true" />
             }
-            
+
             @if (AmountReadOnly)
             {
                 <WalletTextField Value="@($"{ViewModel.Transaction.Amount} {ViewModel.TokenDisplay}")"
@@ -58,13 +57,6 @@
                                 Error="@ViewModel.Transaction.HasFieldErrors(nameof(ViewModel.Transaction.Amount))"
                                 ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.Amount))" />
             }
-            
-            
-            <WalletTextField Value="@ViewModel.ChainId"
-                            LabelKey="@Keys.ChainId"
-                            Localizer="@Localizer"
-                            Suffix="@(!string.IsNullOrEmpty(ViewModel.NetworkName) && ViewModel.NetworkName != ViewModel.ChainId ? ViewModel.NetworkName : "")"
-                            ReadOnly="true" />
         </MudStack>
     </WalletFormSection>
 }
@@ -79,262 +71,13 @@
     </WalletFormSection>
 }
 
-@if (ShowGasConfiguration && ViewModel.Transaction.GasConfiguration != null)
+@* Decoded Data Section - only shown if decoding is available *@
+@if (ShowDataDecoding && !string.IsNullOrEmpty(ViewModel.Transaction.Data) && ViewModel.DecodedData.IsDecoded)
 {
-    <WalletFormSection Title="@Localizer.GetString(Keys.GasConfiguration)">
-        @if (ViewModel.IsLoadingGasStrategies)
-        {
-            <WalletLoadingState Message="@Localizer.GetString(Keys.LoadingGasPrices)" IsCompact="true" />
-        }
-        else if (!string.IsNullOrEmpty(ViewModel.GasEstimationError))
-        {
-            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
-                           Title="@Localizer.GetString(Keys.GasConfigurationIssue)"
-                           Description="@ViewModel.GasEstimationError"
-                           Icon="@Icons.Material.Filled.Warning" />
-        }
-        else
-        {
-            @* EIP-1559 / Legacy Toggle *@
-            @if (ViewModel.Transaction.GasConfiguration.CanToggleGasMode)
-            {
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
-                    <MudText Typo="Typo.body2">@Localizer.GetString(Keys.GasMode):</MudText>
-                    <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
-                        <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Variant.Filled : Variant.Outlined)"
-                                   Color="@(ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Color.Primary : Color.Default)"
-                                   OnClick="@(async () => await ViewModel.ToggleGasModeCommand.ExecuteAsync(true))">
-                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
-                                <span>@Localizer.GetString(Keys.GasModeEip1559)</span>
-                                @if (ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
-                                }
-                            </MudStack>
-                        </MudButton>
-                        <MudButton Variant="@(!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Variant.Filled : Variant.Outlined)"
-                                   Color="@(!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Color.Primary : Color.Default)"
-                                   OnClick="@(async () => await ViewModel.ToggleGasModeCommand.ExecuteAsync(false))">
-                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
-                                <span>@Localizer.GetString(Keys.GasModeLegacy)</span>
-                                @if (!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
-                                }
-                            </MudStack>
-                        </MudButton>
-                    </MudButtonGroup>
-                </MudStack>
-            }
-            
-            @* Multiplier Selection *@
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.body2">@Localizer.GetString(Keys.GasPriceAdjustment):</MudText>
-                
-                <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small">
-                    @foreach (var option in GasMultiplierOption.All)
-                    {
-                        <MudButton Variant="@(Math.Abs(ViewModel.Transaction.GasConfiguration.SelectedMultiplier - option.Multiplier) < 0.01m ? Variant.Filled : Variant.Outlined)"
-                                   Color="@(option.IsRecommended ? Color.Primary : Color.Default)"
-                                   Size="Size.Small"
-                                   OnClick="@(async () => await ViewModel.SelectMultiplierCommand.ExecuteAsync(option.Multiplier))"
-                                   Disabled="@ViewModel.IsLoadingGasStrategies">
-                            <MudStack Direction="Row" AlignItems="AlignItems.Center" Spacing="1">
-                                <span>@option.DisplayText</span>
-                                @if (Math.Abs(ViewModel.Transaction.GasConfiguration.SelectedMultiplier - option.Multiplier) < 0.01m)
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
-                                }
-                                else if (option.IsRecommended)
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" />
-                                }
-                            </MudStack>
-                        </MudButton>
-                    }
-                    <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.IsCustomMode ? Variant.Filled : Variant.Outlined)"
-                               Color="@(ViewModel.Transaction.GasConfiguration.IsCustomMode ? Color.Secondary : Color.Default)"
-                               Size="Size.Small"
-                               OnClick="@(async () => await ViewModel.EnableCustomModeCommand.ExecuteAsync(null))"
-                               Disabled="@ViewModel.IsLoadingGasStrategies">
-                        @Localizer.GetString(Keys.Custom)
-                    </MudButton>
-                </MudButtonGroup>
-                <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
-                               Size="Size.Small"
-                               Color="Color.Primary"
-                               OnClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))"
-                               Disabled="@ViewModel.IsLoadingGasStrategies"
-                               Title="@Localizer.GetString(Keys.RefreshGasPrices)" />
-                
-                @* Show base and adjusted values *@
-                @if (!string.IsNullOrEmpty(ViewModel.BaseGasDisplay))
-                {
-                    <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background: var(--mud-palette-background-grey);">
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.caption">
-                                <b>@Localizer.GetString(Keys.NetworkGasPrice):</b> @ViewModel.BaseGasDisplay
-                            </MudText>
-                            @if (!ViewModel.Transaction.GasConfiguration.IsCustomMode && !string.IsNullOrEmpty(ViewModel.AdjustedGasDisplay))
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Primary">
-                                    <b>@Localizer.GetString(Keys.YourGasPrice):</b> @ViewModel.AdjustedGasDisplay
-                                </MudText>
-                                @if (!string.IsNullOrEmpty(ViewModel.MultiplierDescription))
-                                {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @ViewModel.MultiplierDescription
-                                    </MudText>
-                                }
-                            }
-                        </MudStack>
-                    </MudPaper>
-                }
-            </MudStack>
-        }
-        
-        @* Gas Limit Field *@
-        <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomGasLimit" 
-                        LabelKey="@Keys.GasLimit"
-                        Localizer="@Localizer"
-                        Disabled="@ViewModel.IsEstimatingGas"
-                        ReadOnly="false"
-                        Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomGasLimit))"
-                        ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomGasLimit))"
-                        ActionIcon="@Icons.Material.Filled.Calculate"
-                        OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.EstimateGasLimitCommand.ExecuteAsync(null)))"
-                        ActionTooltip="@Localizer.GetString(Keys.EstimateGas)"
-                        IsLoading="@ViewModel.IsEstimatingGas" />
-    </WalletFormSection>
-    
-    @* Gas Price Fields *@
-    @if (ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
-    {
-        <WalletFormSection>
-            @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
-            {
-                <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomMaxFee" 
-                                LabelKey="@Keys.MaxFee"
-                                Localizer="@Localizer"
-                                Suffix="Gwei"
-                                Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomMaxFee))"
-                                ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomMaxFee))"
-                                ActionIcon="@Icons.Material.Filled.Refresh"
-                                OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))"
-                                ActionTooltip="@Localizer.GetString(Keys.RefreshGasPrices)" />
-            }
-            else
-            {
-                <WalletTextField Value="@ViewModel.Transaction.GasConfiguration.AdjustedMaxFee" 
-                                LabelKey="@Keys.MaxFee"
-                                Localizer="@Localizer"
-                                Suffix="Gwei"
-                                ReadOnly="true" />
-            }
-        </WalletFormSection>
-        
-        <WalletFormSection>
-            @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
-            {
-                <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomPriorityFee" 
-                                LabelKey="@Keys.PriorityFee"
-                                Localizer="@Localizer"
-                                Suffix="Gwei"
-                                Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomPriorityFee))"
-                                ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomPriorityFee))" />
-            }
-            else
-            {
-                <WalletTextField Value="@ViewModel.Transaction.GasConfiguration.AdjustedPriorityFee" 
-                                LabelKey="@Keys.PriorityFee"
-                                Localizer="@Localizer"
-                                Suffix="Gwei"
-                                ReadOnly="true" />
-            }
-        </WalletFormSection>
-    }
-    else
-    {
-        <WalletFormSection>
-            @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
-            {
-                <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomGasPrice" 
-                                LabelKey="@Keys.GasPrice"
-                                Localizer="@Localizer"
-                                Suffix="Gwei"
-                                Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomGasPrice))"
-                                ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomGasPrice))"
-                                ActionIcon="@Icons.Material.Filled.Refresh"
-                                OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))"
-                                ActionTooltip="@Localizer.GetString(Keys.RefreshGasPrices)" />
-            }
-            else
-            {
-                <WalletTextField Value="@ViewModel.Transaction.GasConfiguration.AdjustedGasPrice" 
-                                LabelKey="@Keys.GasPrice"
-                                Localizer="@Localizer"
-                                Suffix="Gwei"
-                                ReadOnly="true" />
-            }
-        </WalletFormSection>
-    }
-    
-    @* Total Cost Summary *@
-    <WalletFormSection>
-                <WalletTextField Value="@($"{ViewModel.TotalTransactionCost} {ViewModel.TokenDisplay}")"
-                        LabelKey="@Keys.TotalCost"
-                        Localizer="@Localizer"
-                        HelpText="@($"{Localizer.GetString(Keys.GasCost)}: {ViewModel.TotalGasCost} {ViewModel.TokenDisplay}")"
-                        ReadOnly="true"
-                        Class="wallet-cost-summary" />
-    </WalletFormSection>
-    
-    @* Save Custom Button *@
-    @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
-    {
-        <MudButton Variant="Variant.Text" 
-                   Color="Color.Primary" 
-                   Size="Size.Small"
-                   OnClick="@(async () => await ViewModel.SaveCustomGasCommand.ExecuteAsync(null))"
-                   StartIcon="@Icons.Material.Filled.Save">
-            @Localizer.GetString(Keys.SaveCustomGas)
-        </MudButton>
-    }
-}
-
-@if (ShowAdvancedOptions)
-{
-    <WalletFormSection Title="@Localizer.GetString(Keys.AdvancedOptions)">
-        <MudStack Spacing="3">
-            <WalletTextField @bind-Value="ViewModel.Transaction.Nonce"
-                            LabelKey="@Keys.Nonce"
-                            Localizer="@Localizer"
-                            Disabled="@(!ViewModel.IsNonceEditable || ViewModel.IsLoadingNonce)"
-                            Error="@ViewModel.Transaction.HasFieldErrors(nameof(ViewModel.Transaction.Nonce))"
-                            ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.Nonce))"
-                            ActionIcon="@Icons.Material.Filled.Refresh"
-                            OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.RefreshNonceCommand.ExecuteAsync(null)))"
-                            ActionTooltip="@Localizer.GetString(Keys.RefreshNonce)"
-                            IsLoading="@ViewModel.IsLoadingNonce" />
-            
-            <WalletTextField @bind-Value="ViewModel.Transaction.Data"
-                            LabelKey="@Keys.TransactionData"
-                            Placeholder="0x..."
-                            Localizer="@Localizer"
-                            Lines="2"
-                            Error="@ViewModel.Transaction.HasFieldErrors(nameof(ViewModel.Transaction.Data))"
-                            ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.Data))"
-                            ActionIcon="@Icons.Material.Filled.Code"
-                            OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.DecodeTransactionDataCommand.ExecuteAsync(null)))"
-                            ActionTooltip="@Localizer.GetString(Keys.DecodeTransactionData)"
-                            IsMonospace="true" />
-        </MudStack>
-    </WalletFormSection>
-}
-
-@if (ShowDataDecoding && !string.IsNullOrEmpty(ViewModel.Transaction.Data))
-{
-    <WalletFormSection Title="@Localizer.GetString(Keys.TransactionData)">
+    <WalletGroupSection Title="@Localizer.GetString(Keys.DecodedData)"
+                       Icon="@Icons.Material.Filled.Code"
+                       Collapsible="true"
+                       InitiallyExpanded="true">
         @if (ViewModel.IsLoadingDecoding)
         {
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
@@ -342,7 +85,7 @@
                 <MudText Typo="Typo.body2">@Localizer.GetString(Keys.DecodingTransaction)</MudText>
             </MudStack>
         }
-        else if (ViewModel.DecodedData.IsDecoded)
+        else
         {
             <MudStack Spacing="2">
                 <MudText Typo="Typo.subtitle2" Color="Color.Primary">
@@ -355,7 +98,7 @@
                         @ViewModel.DecodedData.DecodedParameters
                     </MudPaper>
                 }
-                else if (ViewModel.DecodedData.IsDecoded && !string.IsNullOrEmpty(ViewModel.DecodedData.TextSignature))
+                else if (!string.IsNullOrEmpty(ViewModel.DecodedData.TextSignature))
                 {
                     <MudText Typo="Typo.body2">@Localizer.GetString(Keys.FunctionSignature):</MudText>
                     <MudPaper Elevation="0" Style="background: var(--mud-palette-background-grey); padding: 12px; font-family: monospace; font-size: 0.875rem;">
@@ -364,37 +107,271 @@
                 }
             </MudStack>
         }
-        else if (ViewModel.DecodedData.HasError)
-        {
-            <MudAlert Severity="Severity.Warning" Dense="true">
-                @ViewModel.DecodedData.DecodingError
-            </MudAlert>
-        }
-        else if (ViewModel.DecodedData.IsContract)
-        {
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                @Localizer.GetString(Keys.Contract) - @Localizer.GetString(Keys.UnknownFunction)
-            </MudText>
-        }
-        else
-        {
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                @Localizer.GetString(Keys.RawData)
-            </MudText>
-        }
-    </WalletFormSection>
+    </WalletGroupSection>
 }
 
+@* Advanced Options Section - contains Input Data, Gas Config, Nonce, EVM Simulation *@
+@if (ShowAdvancedOptions || ShowGasConfiguration)
+{
+    <WalletGroupSection Title="@Localizer.GetString(Keys.AdvancedOptions)"
+                       Icon="@Icons.Material.Filled.Settings"
+                       Collapsible="true"
+                       InitiallyExpanded="@ShouldExpandAdvancedOptions">
+        <MudStack Spacing="2">
+            @* Input Data (raw hex) - FIRST field in Advanced *@
+            @if (!string.IsNullOrEmpty(ViewModel.Transaction.Data))
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.InputData):</MudText>
+                <MudPaper Elevation="0" Style="background: var(--mud-palette-background-grey); padding: 12px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; max-height: 100px; overflow-y: auto;">
+                    @ViewModel.Transaction.Data
+                </MudPaper>
+            }
+
+            @* Gas Configuration *@
+            @if (ShowGasConfiguration && ViewModel.Transaction.GasConfiguration != null)
+            {
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.subtitle2">@Localizer.GetString(Keys.GasConfiguration)</MudText>
+
+                @if (ViewModel.IsLoadingGasStrategies)
+                {
+                    <WalletLoadingState Message="@Localizer.GetString(Keys.LoadingGasPrices)" IsCompact="true" />
+                }
+                else if (!string.IsNullOrEmpty(ViewModel.GasEstimationError))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudText Typo="Typo.body2" Color="Color.Warning">@ViewModel.GasEstimationError</MudText>
+                        <MudLink Color="Color.Primary" OnClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))">
+                            @Localizer.GetString(Keys.RecalculateGas)
+                        </MudLink>
+                    </MudStack>
+                }
+                else
+                {
+                    @* EIP-1559 / Legacy Toggle *@
+                    @if (ViewModel.Transaction.GasConfiguration.CanToggleGasMode)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.body2">@Localizer.GetString(Keys.GasMode):</MudText>
+                            <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                                <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Variant.Filled : Variant.Outlined)"
+                                           Color="@(ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Color.Primary : Color.Default)"
+                                           OnClick="@(async () => await ViewModel.ToggleGasModeCommand.ExecuteAsync(true))">
+                                    @Localizer.GetString(Keys.GasModeEip1559)
+                                </MudButton>
+                                <MudButton Variant="@(!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Variant.Filled : Variant.Outlined)"
+                                           Color="@(!ViewModel.Transaction.GasConfiguration.IsEip1559Enabled ? Color.Primary : Color.Default)"
+                                           OnClick="@(async () => await ViewModel.ToggleGasModeCommand.ExecuteAsync(false))">
+                                    @Localizer.GetString(Keys.GasModeLegacy)
+                                </MudButton>
+                            </MudButtonGroup>
+                        </MudStack>
+                    }
+
+                    @* Multiplier Selection *@
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2">@Localizer.GetString(Keys.GasPriceAdjustment):</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           OnClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))"
+                                           Disabled="@ViewModel.IsLoadingGasStrategies"
+                                           Title="@Localizer.GetString(Keys.RefreshGasPrices)" />
+                        </MudStack>
+
+                        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+                            @foreach (var option in GasMultiplierOption.All)
+                            {
+                                var isSelected = Math.Abs(ViewModel.Transaction.GasConfiguration.SelectedMultiplier - option.Multiplier) < 0.01m;
+                                <MudButton Variant="@(isSelected ? Variant.Filled : Variant.Outlined)"
+                                           Color="@(isSelected ? Color.Secondary : Color.Default)"
+                                           Size="Size.Small"
+                                           OnClick="@(async () => await ViewModel.SelectMultiplierCommand.ExecuteAsync(option.Multiplier))"
+                                           Disabled="@ViewModel.IsLoadingGasStrategies">
+                                    @option.DisplayText
+                                </MudButton>
+                            }
+                            <MudButton Variant="@(ViewModel.Transaction.GasConfiguration.IsCustomMode ? Variant.Filled : Variant.Outlined)"
+                                       Color="@(ViewModel.Transaction.GasConfiguration.IsCustomMode ? Color.Secondary : Color.Default)"
+                                       Size="Size.Small"
+                                       OnClick="@(async () => await ViewModel.EnableCustomModeCommand.ExecuteAsync(null))"
+                                       Disabled="@ViewModel.IsLoadingGasStrategies">
+                                @Localizer.GetString(Keys.Custom)
+                            </MudButton>
+                        </MudButtonGroup>
+
+                        @* Show base and adjusted values *@
+                        @if (!string.IsNullOrEmpty(ViewModel.BaseGasDisplay))
+                        {
+                            <MudPaper Elevation="0" Class="pa-2" Style="background: var(--mud-palette-background-grey); border-radius: 8px;">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.caption">
+                                        <b>@Localizer.GetString(Keys.NetworkGasPrice):</b> @ViewModel.BaseGasDisplay
+                                    </MudText>
+                                    @if (!ViewModel.Transaction.GasConfiguration.IsCustomMode && !string.IsNullOrEmpty(ViewModel.AdjustedGasDisplay))
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Primary">
+                                            <b>@Localizer.GetString(Keys.YourGasPrice):</b> @ViewModel.AdjustedGasDisplay
+                                        </MudText>
+                                        @if (!string.IsNullOrEmpty(ViewModel.MultiplierDescription))
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @ViewModel.MultiplierDescription
+                                            </MudText>
+                                        }
+                                    }
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    </MudStack>
+
+                    @* Gas Limit Field *@
+                    <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomGasLimit"
+                                    LabelKey="@Keys.GasLimit"
+                                    Localizer="@Localizer"
+                                    Disabled="@ViewModel.IsEstimatingGas"
+                                    ReadOnly="false"
+                                    Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomGasLimit))"
+                                    ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomGasLimit))"
+                                    ActionIcon="@Icons.Material.Filled.Calculate"
+                                    OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.EstimateGasLimitCommand.ExecuteAsync(null)))"
+                                    ActionTooltip="@Localizer.GetString(Keys.EstimateGas)"
+                                    IsLoading="@ViewModel.IsEstimatingGas" />
+
+                    @* Gas Price Fields *@
+                    @if (ViewModel.Transaction.GasConfiguration.IsEip1559Enabled)
+                    {
+                        @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
+                        {
+                            <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomMaxFee"
+                                            LabelKey="@Keys.MaxFee"
+                                            Localizer="@Localizer"
+                                            Suffix="Gwei"
+                                            Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomMaxFee))"
+                                            ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomMaxFee))"
+                                            ActionIcon="@Icons.Material.Filled.Refresh"
+                                            OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))"
+                                            ActionTooltip="@Localizer.GetString(Keys.RefreshGasPrices)" />
+                        }
+                        else
+                        {
+                            <WalletTextField Value="@ViewModel.Transaction.GasConfiguration.AdjustedMaxFee"
+                                            LabelKey="@Keys.MaxFee"
+                                            Localizer="@Localizer"
+                                            Suffix="Gwei"
+                                            ReadOnly="true" />
+                        }
+
+                        @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
+                        {
+                            <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomPriorityFee"
+                                            LabelKey="@Keys.PriorityFee"
+                                            Localizer="@Localizer"
+                                            Suffix="Gwei"
+                                            Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomPriorityFee))"
+                                            ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomPriorityFee))" />
+                        }
+                        else
+                        {
+                            <WalletTextField Value="@ViewModel.Transaction.GasConfiguration.AdjustedPriorityFee"
+                                            LabelKey="@Keys.PriorityFee"
+                                            Localizer="@Localizer"
+                                            Suffix="Gwei"
+                                            ReadOnly="true" />
+                        }
+                    }
+                    else
+                    {
+                        @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
+                        {
+                            <WalletTextField @bind-Value="ViewModel.Transaction.GasConfiguration.CustomGasPrice"
+                                            LabelKey="@Keys.GasPrice"
+                                            Localizer="@Localizer"
+                                            Suffix="Gwei"
+                                            Error="@ViewModel.Transaction.GasConfiguration.HasFieldErrors(nameof(ViewModel.Transaction.GasConfiguration.CustomGasPrice))"
+                                            ErrorText="@ViewModel.Transaction.GasConfiguration.GetFieldError(nameof(ViewModel.Transaction.GasConfiguration.CustomGasPrice))"
+                                            ActionIcon="@Icons.Material.Filled.Refresh"
+                                            OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.FetchGasPriceCommand.ExecuteAsync(null)))"
+                                            ActionTooltip="@Localizer.GetString(Keys.RefreshGasPrices)" />
+                        }
+                        else
+                        {
+                            <WalletTextField Value="@ViewModel.Transaction.GasConfiguration.AdjustedGasPrice"
+                                            LabelKey="@Keys.GasPrice"
+                                            Localizer="@Localizer"
+                                            Suffix="Gwei"
+                                            ReadOnly="true" />
+                        }
+                    }
+
+                    @* Total Cost Summary *@
+                    @if (!IsGasCostZero())
+                    {
+                        <MudPaper Elevation="0" Class="pa-2" Style="background: var(--mud-palette-surface); border-radius: 8px; border: 1px solid var(--mud-palette-lines-default);">
+                            <MudStack Spacing="1">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.GasCost):</MudText>
+                                    <MudText Typo="Typo.body2">@ViewModel.TotalGasCost @ViewModel.TokenDisplay</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">@Localizer.GetString(Keys.TotalCost):</MudText>
+                                    <MudText Typo="Typo.body1" Color="Color.Primary" Style="font-weight: 600;">@ViewModel.TotalTransactionCost @ViewModel.TokenDisplay</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    }
+
+                    @* Save Custom Button *@
+                    @if (ViewModel.Transaction.GasConfiguration.IsCustomMode)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   OnClick="@(async () => await ViewModel.SaveCustomGasCommand.ExecuteAsync(null))"
+                                   StartIcon="@Icons.Material.Filled.Save">
+                            @Localizer.GetString(Keys.SaveCustomGas)
+                        </MudButton>
+                    }
+                }
+            }
+
+            @* Nonce Field *@
+            <MudDivider Class="my-2" />
+            <WalletTextField @bind-Value="ViewModel.Transaction.Nonce"
+                            LabelKey="@Keys.Nonce"
+                            Localizer="@Localizer"
+                            Disabled="@(!ViewModel.IsNonceEditable || ViewModel.IsLoadingNonce)"
+                            Error="@ViewModel.Transaction.HasFieldErrors(nameof(ViewModel.Transaction.Nonce))"
+                            ErrorText="@ViewModel.Transaction.GetFieldError(nameof(ViewModel.Transaction.Nonce))"
+                            ActionIcon="@Icons.Material.Filled.Refresh"
+                            OnActionClick="@(async () => await ExecuteCommandSafely(() => ViewModel.RefreshNonceCommand.ExecuteAsync(null)))"
+                            ActionTooltip="@Localizer.GetString(Keys.RefreshNonce)"
+                            IsLoading="@ViewModel.IsLoadingNonce" />
+
+            @* EVM Simulation *@
+            <MudDivider Class="my-2" />
+            <StateChangesPreview ViewModel="ViewModel" />
+        </MudStack>
+    </WalletGroupSection>
+}
+
+<!-- Transaction Summary Section -->
+@if (ShowSummary)
+{
+    <TransactionSummary ViewModel="ViewModel" />
+}
 
 @code {
     [Parameter] public TransactionViewModel ViewModel { get; set; } = null!;
     [Parameter] public TransactionInputLayout Layout { get; set; } = TransactionInputLayout.Full;
-    
+
     [Parameter] public bool ShowTransactionDetails { get; set; } = true;
     [Parameter] public bool ShowGasConfiguration { get; set; } = true;
     [Parameter] public bool ShowAdvancedOptions { get; set; } = true;
     [Parameter] public bool ShowDataDecoding { get; set; } = true;
     [Parameter] public bool ShowCostSummary { get; set; } = true;
+    [Parameter] public bool ShowSummary { get; set; } = true;
     
     [Parameter] public bool RecipientReadOnly { get; set; } = false;
     [Parameter] public bool AmountReadOnly { get; set; } = false;
@@ -403,10 +380,12 @@
     
     [Parameter] public RenderFragment? HeaderContent { get; set; }
     [Parameter] public RenderFragment? FooterContent { get; set; }
-    
+
     [Parameter] public EventCallback<TransactionModel> OnTransactionValidated { get; set; }
     [Parameter] public EventCallback<GasStrategy> OnGasStrategyChanged { get; set; }
-    
+
+    private bool ShouldExpandAdvancedOptions => false;
+
     protected override void OnInitialized()
     {
         LocalizationService.LanguageChanged += OnLanguageChanged;
@@ -474,8 +453,13 @@
     {
         InvokeAsync(StateHasChanged);
     }
-    
-    
+
+    private bool IsGasCostZero()
+    {
+        if (string.IsNullOrEmpty(ViewModel.TotalGasCost)) return true;
+        return ViewModel.TotalGasCost == "0" || ViewModel.TotalGasCost == "0.00" || ViewModel.TotalGasCost == "0.000000";
+    }
+
     public void Dispose()
     {
         LocalizationService.LanguageChanged -= OnLanguageChanged;

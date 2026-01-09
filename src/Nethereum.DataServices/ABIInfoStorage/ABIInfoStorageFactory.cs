@@ -8,64 +8,57 @@ namespace Nethereum.DataServices.ABIInfoStorage
     {
         public static IABIInfoStorage CreateDefault(
             string etherscanApiKey = null,
-            ABIInfoInMemoryStorage localStorage = null)
+            IABIInfoStorage cache = null)
         {
-            var local = localStorage ?? new ABIInfoInMemoryStorage();
-            var sourcify = new SourcifyABIInfoStorage(new SourcifyApiServiceV2());
+            var cacheStorage = cache ?? new ABIInfoInMemoryStorage();
+            var sourcify = new SourcifyABIInfoStorage();
+            var sourcify4Byte = new Sourcify4ByteABIInfoStorage();
+            var fourByteDirectory = new FourByteDirectoryABIInfoStorage();
 
-            var providers = new List<IABIInfoStorage> { local, sourcify };
+            var implementations = new List<IABIInfoStorage> { sourcify, sourcify4Byte, fourByteDirectory };
 
             if (!string.IsNullOrEmpty(etherscanApiKey))
             {
                 var etherscan = new EtherscanABIInfoStorage(etherscanApiKey);
-                providers.Add(etherscan);
+                implementations.Insert(1, etherscan);
             }
 
-            return new CachingABIInfoStorage(
-                new CompositeABIInfoStorage(providers),
-                local);
+            return new CompositeABIInfoStorage(cacheStorage, implementations.ToArray());
         }
 
-        public static IABIInfoStorage CreateWithSourcifyOnly(ABIInfoInMemoryStorage localStorage = null)
+        public static IABIInfoStorage CreateWithSourcifyOnly(IABIInfoStorage cache = null)
         {
-            var local = localStorage ?? new ABIInfoInMemoryStorage();
-            var sourcify = new SourcifyABIInfoStorage(new SourcifyApiServiceV2());
+            var cacheStorage = cache ?? new ABIInfoInMemoryStorage();
+            var sourcify = new SourcifyABIInfoStorage();
+            var sourcify4Byte = new Sourcify4ByteABIInfoStorage();
+            var fourByteDirectory = new FourByteDirectoryABIInfoStorage();
 
-            return new CachingABIInfoStorage(
-                new CompositeABIInfoStorage(local, sourcify),
-                local);
+            return new CompositeABIInfoStorage(cacheStorage, sourcify, sourcify4Byte, fourByteDirectory);
         }
 
         public static IABIInfoStorage CreateWithEtherscanOnly(
             string etherscanApiKey,
-            ABIInfoInMemoryStorage localStorage = null)
+            IABIInfoStorage cache = null)
         {
-            var local = localStorage ?? new ABIInfoInMemoryStorage();
+            var cacheStorage = cache ?? new ABIInfoInMemoryStorage();
             var etherscan = new EtherscanABIInfoStorage(etherscanApiKey);
+            var sourcify4Byte = new Sourcify4ByteABIInfoStorage();
+            var fourByteDirectory = new FourByteDirectoryABIInfoStorage();
 
-            return new CachingABIInfoStorage(
-                new CompositeABIInfoStorage(local, etherscan),
-                local);
+            return new CompositeABIInfoStorage(cacheStorage, etherscan, sourcify4Byte, fourByteDirectory);
         }
 
-        public static IABIInfoStorage CreateLocalOnly(ABIInfoInMemoryStorage localStorage = null)
+        public static IABIInfoStorage CreateLocalOnly(IABIInfoStorage cache = null)
         {
-            return localStorage ?? new ABIInfoInMemoryStorage();
+            return cache ?? new ABIInfoInMemoryStorage();
         }
 
         public static IABIInfoStorage CreateCustom(
-            ABIInfoInMemoryStorage localStorage,
-            params IABIInfoStorage[] additionalStorages)
+            IABIInfoStorage cache,
+            params IABIInfoStorage[] implementations)
         {
-            var providers = new List<IABIInfoStorage> { localStorage ?? new ABIInfoInMemoryStorage() };
-            if (additionalStorages != null)
-            {
-                providers.AddRange(additionalStorages);
-            }
-
-            return new CachingABIInfoStorage(
-                new CompositeABIInfoStorage(providers),
-                localStorage);
+            var cacheStorage = cache ?? new ABIInfoInMemoryStorage();
+            return new CompositeABIInfoStorage(cacheStorage, implementations);
         }
     }
 }

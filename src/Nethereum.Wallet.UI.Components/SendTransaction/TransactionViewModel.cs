@@ -4,10 +4,12 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.AspNetCore.Components;
+using Nethereum.EVM.StateChanges;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Chain;
@@ -32,6 +34,8 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         private readonly IGasConfigurationPersistenceService _gasPersistenceService;
         private readonly IPendingTransactionService _pendingTransactionService;
         private readonly Components.TransactionStatusViewModel _statusViewModel;
+        private readonly IStateChangesPreviewService? _stateChangesPreviewService;
+        private CancellationTokenSource? _previewCancellationTokenSource;
         private int _nativeCurrencyDecimals = 18;
         
         private const string DEFAULT_TOKEN_SYMBOL = "ETH";
@@ -49,6 +53,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         [ObservableProperty] private bool _isSimulating = false;
         [ObservableProperty] private string? _simulationResult;
         [ObservableProperty] private bool _isLoadingDecoding = false;
+
+        [ObservableProperty] private StateChangesResult? _stateChangesPreview;
+        [ObservableProperty] private bool _isPreviewingStateChanges = false;
+        [ObservableProperty] private bool _hasPreviewedStateChanges = false;
         
         [ObservableProperty] private string _tokenSymbol = DEFAULT_TOKEN_SYMBOL;
         [ObservableProperty] private string _tokenName = string.Empty;
@@ -60,6 +68,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         [ObservableProperty] private decimal _gasBufferPercentage = 1.10m;
         
         [ObservableProperty] private bool _isLoadingGasStrategies = false;
+        [ObservableProperty] private bool _isFetchingGasPrice = false;
         [ObservableProperty] private Dictionary<GasStrategy, GasStrategyDisplay> _gasStrategies = new();
         [ObservableProperty] private string? _gasStrategyHint;
         [ObservableProperty] private bool _canSwitchGasMode = false;
@@ -105,7 +114,8 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             IChainManagementService chainManagementService,
             IGasConfigurationPersistenceService gasPersistenceService,
             IPendingTransactionService pendingTransactionService,
-            Components.TransactionStatusViewModel statusViewModel)
+            Components.TransactionStatusViewModel statusViewModel,
+            IStateChangesPreviewService? stateChangesPreviewService = null)
         {
             _localizer = localizer;
             _walletHostProvider = walletHostProvider;
@@ -115,9 +125,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             _gasPersistenceService = gasPersistenceService;
             _pendingTransactionService = pendingTransactionService;
             _statusViewModel = statusViewModel;
-            
+            _stateChangesPreviewService = stateChangesPreviewService;
+
             _transaction = new TransactionModel(localizer);
-            
+
             SetupPropertyListeners();
 
             ApplyNativeCurrencyMetadata(null);
@@ -315,11 +326,16 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 return;
             }
 
+            if (IsLoadingDecoding) return;
+
+            IsLoadingDecoding = true;
             try
             {
+                var chainId = _walletHostProvider.SelectedNetworkChainId;
                 DecodedData = await _dataDecodingService.DecodeTransactionDataAsync(
-                    Transaction.Data, 
-                    Transaction.RecipientAddress);
+                    Transaction.Data,
+                    Transaction.RecipientAddress,
+                    chainId);
             }
             catch (Exception ex)
             {
@@ -328,6 +344,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     RawData = Transaction.Data,
                     DecodingError = ex.Message
                 };
+            }
+            finally
+            {
+                IsLoadingDecoding = false;
             }
         }
 
@@ -396,12 +416,16 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         [RelayCommand]
         public async Task FetchGasPriceAsync()
         {
+            if (IsFetchingGasPrice) return;
+            IsFetchingGasPrice = true;
+
             try
             {
                 GasEstimationError = null;
                 GasPriceSuggestion eipSuggestion = null;
                 GasPriceSuggestion legacySuggestion = null;
                 Exception lastException = null;
+
                 try
                 {
                     eipSuggestion = await _gasPriceProvider.GetEIP1559GasPriceAsync();
@@ -410,6 +434,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 {
                     lastException = ex;
                 }
+
                 try
                 {
                     legacySuggestion = await _gasPriceProvider.GetLegacyGasPriceAsync();
@@ -418,9 +443,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 {
                     lastException = ex;
                 }
-                if (eipSuggestion == null && legacySuggestion == null)
+
+                if (!HasValidGasData(eipSuggestion) && !HasValidGasData(legacySuggestion))
                 {
-                    string message = ((lastException != null) ? lastException.Message : _localizer.GetString("GasPriceFetchFailed"));
+                    string message = lastException?.Message ?? _localizer.GetString("GasPriceFetchFailed");
                     GasEstimationError = message;
                 }
                 else
@@ -433,6 +459,17 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             {
                 GasEstimationError = _localizer.GetString("GasPriceFetchFailed") + ": " + ex.Message;
             }
+            finally
+            {
+                IsFetchingGasPrice = false;
+            }
+        }
+
+        private static bool HasValidGasData(GasPriceSuggestion? suggestion)
+        {
+            if (suggestion == null) return false;
+            return (suggestion.MaxFeePerGas.HasValue && suggestion.MaxPriorityFeePerGas.HasValue) ||
+                   suggestion.GasPrice.HasValue;
         }
         
         [RelayCommand]
@@ -469,10 +506,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         private async Task SimulateTransactionAsync()
         {
             if (!Transaction.IsValid) return;
-            
+
             IsSimulating = true;
             SimulationResult = null;
-            
+
             try
             {
                 var transactionInput = Transaction.BuildTransactionInput(_nativeCurrencyDecimals);
@@ -491,6 +528,96 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             {
                 IsSimulating = false;
             }
+        }
+
+        public bool CanPreviewStateChanges => _stateChangesPreviewService != null && Transaction.IsValid;
+
+        [RelayCommand]
+        private async Task PreviewStateChangesAsync()
+        {
+            if (_stateChangesPreviewService == null || !Transaction.IsValid) return;
+
+            _previewCancellationTokenSource?.Cancel();
+            _previewCancellationTokenSource = new CancellationTokenSource();
+
+            IsPreviewingStateChanges = true;
+            StateChangesPreview = null;
+
+            try
+            {
+                var transactionInput = Transaction.BuildTransactionInput(_nativeCurrencyDecimals);
+                if (transactionInput != null)
+                {
+                    var chainId = _walletHostProvider.SelectedNetworkChainId;
+                    var currentUserAddress = _walletHostProvider.SelectedAccount ?? transactionInput.From;
+
+                    StateChangesPreview = await _stateChangesPreviewService.PreviewStateChangesAsync(
+                        transactionInput,
+                        chainId,
+                        currentUserAddress,
+                        _previewCancellationTokenSource.Token).ConfigureAwait(false);
+
+                    HasPreviewedStateChanges = true;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Preview was cancelled
+            }
+            catch (Exception ex)
+            {
+                StateChangesPreview = new StateChangesResult
+                {
+                    Error = $"{_localizer.GetString(TransactionLocalizer.Keys.SimulationFailed)}: {ex.Message}"
+                };
+            }
+            finally
+            {
+                IsPreviewingStateChanges = false;
+            }
+        }
+
+        public void CancelStateChangesPreview()
+        {
+            _previewCancellationTokenSource?.Cancel();
+        }
+
+        public void ResetPreviewState()
+        {
+            _previewCancellationTokenSource?.Cancel();
+            StateChangesPreview = null;
+            HasPreviewedStateChanges = false;
+            IsPreviewingStateChanges = false;
+
+            SimulationResult = null;
+            IsSimulating = false;
+
+            DecodedData = new TransactionDataInfo();
+            IsLoadingDecoding = false;
+
+            GasEstimationError = null;
+            NonceError = null;
+            ValidationError = null;
+        }
+
+        public void ResetGasState()
+        {
+            Transaction.Nonce = "";
+            Transaction.GasConfiguration.CustomGasLimit = TransactionConstants.DEFAULT_TRANSFER_GAS_LIMIT.ToString();
+            Transaction.GasConfiguration.BaseGasPrice = "";
+            Transaction.GasConfiguration.BaseMaxFee = "";
+            Transaction.GasConfiguration.BasePriorityFee = "";
+            Transaction.GasConfiguration.AdjustedGasPrice = "";
+            Transaction.GasConfiguration.AdjustedMaxFee = "";
+            Transaction.GasConfiguration.AdjustedPriorityFee = "";
+            Transaction.GasConfiguration.SelectedMultiplier = 1.0m;
+            Transaction.GasConfiguration.IsCustomMode = false;
+
+            BaseGasDisplay = "";
+            AdjustedGasDisplay = "";
+            MultiplierDescription = "";
+            GasEstimationError = null;
+            NonceError = null;
         }
         
         public async Task<TransactionInput?> PrepareTransactionAsync(int tokenDecimals = 18)
@@ -896,7 +1023,18 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 Transaction.GasConfiguration.CanToggleGasMode = supportsEIP1559;
                 Transaction.GasConfiguration.IsEip1559Enabled = supportsEIP1559 && preferEip1559;
                 CanSwitchGasMode = supportsEIP1559;
-                
+
+                if (string.IsNullOrEmpty(Transaction.GasConfiguration.BaseMaxFee) &&
+                    string.IsNullOrEmpty(Transaction.GasConfiguration.BaseGasPrice))
+                {
+                    await FetchGasPriceAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    Transaction.GasConfiguration.ApplyCurrentModeDefaults();
+                    UpdateGasDisplays();
+                }
+
                 await RefreshGasStrategyDisplayAsync().ConfigureAwait(false);
                 
                 if (CanEstimateGas())

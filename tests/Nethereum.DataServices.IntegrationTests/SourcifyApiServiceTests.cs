@@ -373,13 +373,11 @@ namespace Nethereum.DataServices.IntegrationTests
         }
 
         [Fact]
-        public void ShouldNotUse4ByteFallbackWhenDisabled()
+        public void SourcifyStorageReturnsEmptyForUnknownSelectors()
         {
             var storage = new SourcifyABIInfoStorage(
                 new SourcifyApiServiceV2(),
-                new Sourcify4ByteSignatureService(),
-                resolveProxies: false,
-                use4ByteFallback: false);
+                resolveProxies: false);
             var unknownSelector = "0xdeadbeef";
 
             var functionABI = storage.FindFunctionABI(unknownSelector);

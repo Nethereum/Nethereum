@@ -276,7 +276,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
             AdjustedMaxFee = "";
             AdjustedPriorityFee = "";
 
-            if (IsEip1559Enabled && _eip1559Suggestion?.MaxFeePerGas.HasValue == true && _eip1559Suggestion.MaxPriorityFeePerGas.HasValue)
+            var hasEip1559Data = _eip1559Suggestion?.MaxFeePerGas.HasValue == true && _eip1559Suggestion.MaxPriorityFeePerGas.HasValue;
+            var hasLegacyData = _legacySuggestion?.GasPrice.HasValue == true;
+
+            if (IsEip1559Enabled && hasEip1559Data)
             {
                 BaseMaxFee = UnitConversion.Convert
                     .FromWei(_eip1559Suggestion.MaxFeePerGas.Value, UnitConversion.EthUnit.Gwei)
@@ -291,8 +294,13 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
                     CustomPriorityFee = BasePriorityFee;
                 }
             }
-            else if (!IsEip1559Enabled && _legacySuggestion?.GasPrice.HasValue == true)
+            else if (hasLegacyData)
             {
+                if (IsEip1559Enabled && !hasEip1559Data)
+                {
+                    IsEip1559Enabled = false;
+                }
+
                 BaseGasPrice = UnitConversion.Convert
                     .FromWei(_legacySuggestion.GasPrice.Value, UnitConversion.EthUnit.Gwei)
                     .ToString("F2", CultureInfo.InvariantCulture);
@@ -301,6 +309,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
                 {
                     CustomGasPrice = BaseGasPrice;
                 }
+            }
+            else
+            {
+                return;
             }
 
             RecalculateAdjustedValues();

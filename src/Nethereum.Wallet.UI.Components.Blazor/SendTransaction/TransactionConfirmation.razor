@@ -240,7 +240,7 @@
                 @ViewModel.TotalGasCost @ViewModel.TokenDisplay
             </MudText>
         </MudItem>
-        
+
         <MudItem xs="12" sm="6">
             <MudText Typo="Typo.caption" Color="Color.Secondary">
                 @Localizer.GetString(Keys.TotalCost)
@@ -251,6 +251,9 @@
         </MudItem>
     </MudGrid>
 </WalletFormSection>
+
+<!-- State Changes Preview Section -->
+<StateChangesPreview ViewModel="ViewModel" />
 
 @code {
     [Parameter] public TransactionViewModel ViewModel { get; set; } = null!;

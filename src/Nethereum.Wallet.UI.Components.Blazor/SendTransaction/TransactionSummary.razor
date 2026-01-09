@@ -1,0 +1,140 @@
+@using MudBlazor
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using Nethereum.EVM.StateChanges
+@using static Nethereum.Wallet.UI.Components.SendTransaction.TransactionLocalizer
+@inject IComponentLocalizer<TransactionViewModel> Localizer
+@implements IDisposable
+
+<WalletGroupSection Title="@Localizer.GetString(Keys.TransactionSummary)"
+                   Icon="@Icons.Material.Filled.Summarize">
+    <MudStack Spacing="2">
+        <MudPaper Elevation="0" Class="pa-3" Style="background: var(--mud-palette-surface); border-radius: 8px; border: 1px solid var(--mud-palette-lines-default);">
+            <MudStack Spacing="2">
+                @* Action *@
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.Action):</MudText>
+                    <MudText Typo="Typo.body2" Style="font-weight: 500;">@GetActionSummary()</MudText>
+                </MudStack>
+
+                @* Recipient - show full address *@
+                @if (!string.IsNullOrEmpty(ViewModel.Transaction?.RecipientAddress))
+                {
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.Recipient):</MudText>
+                        <MudText Typo="Typo.caption" Style="font-family: monospace; word-break: break-all;">@ViewModel.Transaction.RecipientAddress</MudText>
+                    </MudStack>
+                }
+
+                @* Gas Cost - hidden when zero *@
+                @if (!string.IsNullOrEmpty(ViewModel.TotalGasCost) && !IsGasCostZero(ViewModel.TotalGasCost))
+                {
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localizer.GetString(Keys.GasCost):</MudText>
+                        <MudText Typo="Typo.body2">@ViewModel.TotalGasCost @ViewModel.TokenDisplay</MudText>
+                    </MudStack>
+                }
+
+                @* Total Cost *@
+                @if (!string.IsNullOrEmpty(ViewModel.TotalTransactionCost) && !IsGasCostZero(ViewModel.TotalTransactionCost))
+                {
+                    <MudDivider Class="my-1" />
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body1" Style="font-weight: 600;">@Localizer.GetString(Keys.TotalCost):</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Primary" Style="font-weight: 600;">@ViewModel.TotalTransactionCost @ViewModel.TokenDisplay</MudText>
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</WalletGroupSection>
+
+@code {
+    [Parameter] public TransactionViewModel ViewModel { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ViewModel.TotalGasCost) ||
+            e.PropertyName == nameof(ViewModel.TotalTransactionCost) ||
+            e.PropertyName == nameof(ViewModel.StateChangesPreview) ||
+            e.PropertyName == nameof(ViewModel.HasPreviewedStateChanges) ||
+            e.PropertyName == nameof(ViewModel.DecodedData))
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+
+    private string GetActionSummary()
+    {
+        if (ViewModel.DecodedData?.IsDecoded == true && !string.IsNullOrEmpty(ViewModel.DecodedData.FunctionName))
+        {
+            return ViewModel.DecodedData.FunctionName;
+        }
+
+        if (!string.IsNullOrEmpty(ViewModel.Transaction?.Data) && ViewModel.Transaction.Data.Length > 2)
+        {
+            return Localizer.GetString(Keys.ContractInteraction);
+        }
+
+        if (ViewModel.Transaction?.Amount != null && decimal.TryParse(ViewModel.Transaction.Amount, out var amount) && amount > 0)
+        {
+            return string.Format(Localizer.GetString(Keys.NativeTransfer), ViewModel.Transaction.Amount, ViewModel.TokenSymbol);
+        }
+
+        return Localizer.GetString(Keys.ContractInteraction);
+    }
+
+    private bool IsGasCostZero(string? cost)
+    {
+        if (string.IsNullOrEmpty(cost)) return true;
+        return cost == "0" || cost == "0.00" || cost == "0.000000";
+    }
+
+    private string FormatChangeAmount(BalanceChange change)
+    {
+        var amount = change.Change;
+        if (amount < 0) amount = -amount;
+
+        var decimals = change.Type == BalanceChangeType.Native ? 18 : change.TokenDecimals;
+        if (decimals == 0) decimals = 18;
+
+        try
+        {
+            var decimalAmount = Nethereum.Util.UnitConversion.Convert.FromWei(amount, decimals);
+            string formatted;
+            if (decimalAmount >= 1000000)
+                formatted = decimalAmount.ToString("N0");
+            else if (decimalAmount >= 1)
+                formatted = decimalAmount.ToString("N4").TrimEnd('0').TrimEnd('.');
+            else
+                formatted = decimalAmount.ToString("0.######");
+
+            var symbol = change.Type == BalanceChangeType.Native
+                ? "ETH"
+                : (!string.IsNullOrEmpty(change.TokenSymbol) ? change.TokenSymbol : "???");
+
+            return $"{formatted} {symbol}";
+        }
+        catch
+        {
+            return amount.ToString();
+        }
+    }
+}

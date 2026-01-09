@@ -84,14 +84,20 @@ namespace Nethereum.Wallet.Services.Transaction
         
         public async Task<GasPriceSuggestion> GetLegacyGasPriceAsync()
         {
-            var web3 = await _hostProvider.GetWeb3Async().ConfigureAwait(false);
-            
-            var gasPrice = await web3.Eth.GasPrice.SendRequestAsync().ConfigureAwait(false);
-            
-            return new GasPriceSuggestion
+            try
             {
-                GasPrice = gasPrice.Value
-            };
+                var web3 = await _hostProvider.GetWeb3Async().ConfigureAwait(false);
+                var gasPrice = await web3.Eth.GasPrice.SendRequestAsync().ConfigureAwait(false);
+
+                return new GasPriceSuggestion
+                {
+                    GasPrice = gasPrice.Value
+                };
+            }
+            catch
+            {
+                return new GasPriceSuggestion();
+            }
         }
         
         public async Task<GasPriceSuggestion> GetEIP1559GasPriceAsync()

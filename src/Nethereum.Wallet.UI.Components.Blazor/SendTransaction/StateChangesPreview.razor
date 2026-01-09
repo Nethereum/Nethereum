@@ -1,0 +1,451 @@
+@using MudBlazor
+@using System.Collections.Generic
+@using System.Numerics
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.EVM.Decoding
+@using Nethereum.EVM.StateChanges
+@using Nethereum.Util
+@using Nethereum.Wallet.UI.Components.SendTransaction
+@using Nethereum.Wallet.UI.Components.Core.Localization
+@using Nethereum.Wallet.UI.Components.Blazor.Shared
+@using static Nethereum.Wallet.UI.Components.SendTransaction.TransactionLocalizer
+@inject IComponentLocalizer<TransactionViewModel> Localizer
+@implements IDisposable
+
+<WalletGroupSection Title="@Localizer.GetString(Keys.EVMSimulation)"
+                   Icon="@Icons.Material.Filled.Science"
+                   Collapsible="true"
+                   InitiallyExpanded="true">
+    @if (ViewModel.IsPreviewingStateChanges)
+    {
+        <MudStack Spacing="2">
+            <WalletLoadingState Message="@Localizer.GetString(Keys.PreviewingStateChanges)" IsCompact="true" />
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Secondary"
+                       OnClick="@(() => ViewModel.CancelStateChangesPreview())"
+                       StartIcon="@Icons.Material.Filled.Cancel">
+                @Localizer.GetString(Keys.Cancel)
+            </MudButton>
+        </MudStack>
+    }
+    else if (ViewModel.StateChangesPreview != null)
+    {
+        @if (!string.IsNullOrEmpty(ViewModel.StateChangesPreview.Error))
+        {
+            <WalletInfoCard Severity="WalletInfoCard.WalletInfoSeverity.Warning"
+                           Title="@Localizer.GetString(Keys.SimulationFailed)"
+                           Description="@ViewModel.StateChangesPreview.Error"
+                           Icon="@Icons.Material.Filled.Warning" />
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="@(() => ViewModel.PreviewStateChangesCommand.Execute(null))"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       Class="mt-2">
+                @Localizer.GetString(Keys.RetrySimulation)
+            </MudButton>
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                @* Balance Changes Section *@
+                @if (ViewModel.StateChangesPreview.HasBalanceChanges)
+                {
+                    <WalletGroupSection Title="@Localizer.GetString(Keys.BalanceChanges)"
+                                       Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                                       Class="nested-group">
+                        <MudStack Spacing="2">
+                            @foreach (var change in ViewModel.StateChangesPreview.BalanceChanges)
+                            {
+                                <MudPaper Elevation="0" Class="pa-3" Style="background: var(--mud-palette-background-grey); border-radius: 8px;">
+                                    <MudStack Spacing="1">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            @if (change.IsCurrentUser)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                                                    @Localizer.GetString(Keys.You)
+                                                </MudChip>
+                                            }
+                                            <MudText Typo="Typo.body2" Style="font-family: monospace; word-break: break-all;">
+                                                @FormatAddress(change.Address)
+                                            </MudText>
+                                        </MudStack>
+
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                            @{
+                                                var isPositive = change.Change > 0;
+                                                var changeColor = isPositive ? Color.Success : Color.Error;
+                                                var changePrefix = isPositive ? "+" : "";
+                                                var tokenDisplay = GetTokenDisplay(change);
+                                                var formattedAmount = FormatAmount(change);
+                                            }
+
+                                            <MudIcon Icon="@(isPositive ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward)"
+                                                     Color="@changeColor"
+                                                     Size="Size.Small" />
+
+                                            <MudText Typo="Typo.body1" Color="@changeColor" Style="font-weight: 600;">
+                                                @changePrefix@formattedAmount @tokenDisplay
+                                            </MudText>
+
+                                            @if (change.Type == BalanceChangeType.ERC721 || change.Type == BalanceChangeType.ERC1155)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">
+                                                    @(change.Type == BalanceChangeType.ERC721 ? "NFT" : "ERC1155")
+                                                    @if (change.TokenId.HasValue)
+                                                    {
+                                                        <text>#@change.TokenId.Value</text>
+                                                    }
+                                                </MudChip>
+                                            }
+                                        </MudStack>
+
+                                        @* Token Contract Address *@
+                                        @if (change.Type != BalanceChangeType.Native && !string.IsNullOrEmpty(change.TokenAddress))
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace;">
+                                                @Localizer.GetString(Keys.ContractAddress): @FormatAddress(change.TokenAddress)
+                                            </MudText>
+                                        }
+
+                                        @* Validation Status *@
+                                        @if (change.ValidationStatus != BalanceValidationStatus.NotValidated)
+                                        {
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                @switch (change.ValidationStatus)
+                                                {
+                                                    case BalanceValidationStatus.Verified:
+                                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                        <MudText Typo="Typo.caption" Color="Color.Success">@Localizer.GetString(Keys.BalanceVerified)</MudText>
+                                                        break;
+                                                    case BalanceValidationStatus.FeeOnTransfer:
+                                                        <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Size="Size.Small" />
+                                                        <MudText Typo="Typo.caption" Color="Color.Warning">
+                                                            @Localizer.GetString(Keys.BalanceFeeOnTransfer)
+                                                            @if (change.ActualChange.HasValue)
+                                                            {
+                                                                <text> (@Localizer.GetString(Keys.ActualAmount): @FormatAmountFromBigInteger(change.ActualChange.Value, change))</text>
+                                                            }
+                                                        </MudText>
+                                                        break;
+                                                    case BalanceValidationStatus.Rebasing:
+                                                        <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Info" Size="Size.Small" />
+                                                        <MudText Typo="Typo.caption" Color="Color.Info">
+                                                            @Localizer.GetString(Keys.BalanceRebasing)
+                                                            @if (change.ActualChange.HasValue)
+                                                            {
+                                                                <text> (@Localizer.GetString(Keys.ActualAmount): @FormatAmountFromBigInteger(change.ActualChange.Value, change))</text>
+                                                            }
+                                                        </MudText>
+                                                        break;
+                                                    case BalanceValidationStatus.OwnerMismatch:
+                                                        <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                                                        <MudText Typo="Typo.caption" Color="Color.Error">@Localizer.GetString(Keys.BalanceOwnerMismatch)</MudText>
+                                                        break;
+                                                    case BalanceValidationStatus.Mismatch:
+                                                        <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" />
+                                                        <MudText Typo="Typo.caption" Color="Color.Error">
+                                                            @Localizer.GetString(Keys.BalanceMismatch)
+                                                            @if (change.ActualChange.HasValue)
+                                                            {
+                                                                <text> (@Localizer.GetString(Keys.ActualAmount): @FormatAmountFromBigInteger(change.ActualChange.Value, change))</text>
+                                                            }
+                                                        </MudText>
+                                                        break;
+                                                }
+                                            </MudStack>
+                                        }
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    </WalletGroupSection>
+                }
+
+                @* Contract Calls Section (Collapsible) *@
+                @if (GetFlattenedCalls() is var allCalls && allCalls.Count > 0)
+                {
+                    <WalletGroupSection Title="@($"{Localizer.GetString(Keys.ContractCallsSection)} ({allCalls.Count})")"
+                                       Icon="@Icons.Material.Filled.CallMade"
+                                       Collapsible="true"
+                                       InitiallyExpanded="false"
+                                       Class="nested-group">
+                        <MudStack Spacing="1">
+                            @foreach (var (call, depth) in allCalls)
+                            {
+                                <MudPaper Elevation="0" Class="pa-2" Style="@($"background: var(--mud-palette-background-grey); border-radius: 4px; margin-left: {depth * 16}px")">
+                                    <MudStack Spacing="1">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Style="flex-wrap: wrap;">
+                                            <MudText Typo="Typo.body2" Style="font-family: monospace; color: var(--mud-palette-text-secondary);">
+                                                @(depth > 0 ? "└─" : "▶")
+                                            </MudText>
+                                            <MudText Typo="Typo.body2" Style="font-family: monospace; font-weight: 500;">
+                                                @call.GetDisplayName()
+                                            </MudText>
+                                            @if (call.Value > 0)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">
+                                                    @FormatEth(call.Value) ETH
+                                                </MudChip>
+                                            }
+                                        </MudStack>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace;">
+                                            @Localizer.GetString(Keys.ContractAddress): @FormatAddress(call.To)
+                                        </MudText>
+                                        @if (call.IsDecoded && call.InputParameters?.Count > 0)
+                                        {
+                                            <MudPaper Elevation="0" Style="background: var(--mud-palette-background); padding: 8px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; border-radius: 4px; margin-top: 4px;">
+                                                @(call.InputParameters.ConvertToJObject().ToString())
+                                            </MudPaper>
+                                        }
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    </WalletGroupSection>
+                }
+
+                @* Events Section (Collapsible) *@
+                @if (ViewModel.StateChangesPreview.DecodedLogs?.Count > 0)
+                {
+                    <WalletGroupSection Title="@($"{Localizer.GetString(Keys.EventsSection)} ({ViewModel.StateChangesPreview.DecodedLogs.Count})")"
+                                       Icon="@Icons.Material.Filled.Notifications"
+                                       Collapsible="true"
+                                       InitiallyExpanded="false"
+                                       Class="nested-group">
+                        <MudStack Spacing="1">
+                            @foreach (var log in ViewModel.StateChangesPreview.DecodedLogs)
+                            {
+                                <MudPaper Elevation="0" Class="pa-2" Style="background: var(--mud-palette-background-grey); border-radius: 4px;">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.body2" Style="font-family: monospace; font-weight: 500;">
+                                            @GetEventDisplayName(log)
+                                        </MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace;">
+                                            @Localizer.GetString(Keys.ContractAddress): @FormatAddress(log.ContractAddress)
+                                        </MudText>
+                                        @if (log.IsDecoded && log.Parameters?.Count > 0)
+                                        {
+                                            <MudPaper Elevation="0" Style="background: var(--mud-palette-background); padding: 8px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; border-radius: 4px; margin-top: 4px;">
+                                                @(log.Parameters.ConvertToJObject().ToString())
+                                            </MudPaper>
+                                        }
+                                        @if (!log.IsDecoded && log.OriginalLog?.Topics?.Length > 0)
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace; word-break: break-all;">
+                                                @Localizer.GetString(Keys.EventSignature): @(GetTopicDisplay(log.OriginalLog.Topics[0]))
+                                            </MudText>
+                                            @if (!string.IsNullOrEmpty(log.OriginalLog.Data) && log.OriginalLog.Data.Length > 2)
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace; word-break: break-all;">
+                                                    @Localizer.GetString(Keys.RawData): @(log.OriginalLog.Data.Length > 42 ? log.OriginalLog.Data[..42] + "..." : log.OriginalLog.Data)
+                                                </MudText>
+                                            }
+                                        }
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    </WalletGroupSection>
+                }
+
+                @* No results message *@
+                @if (!ViewModel.StateChangesPreview.HasBalanceChanges &&
+                     (GetFlattenedCalls()?.Count ?? 0) == 0 &&
+                     (ViewModel.StateChangesPreview.DecodedLogs?.Count ?? 0) == 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @Localizer.GetString(Keys.NoBalanceChanges)
+                    </MudText>
+                }
+            </MudStack>
+        }
+    }
+    else if (ViewModel.CanPreviewStateChanges && !ViewModel.HasPreviewedStateChanges)
+    {
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   OnClick="@(() => ViewModel.PreviewStateChangesCommand.Execute(null))"
+                   StartIcon="@Icons.Material.Filled.PlayArrow"
+                   FullWidth="true">
+            @Localizer.GetString(Keys.SimulateTransaction)
+        </MudButton>
+    }
+    else if (!ViewModel.CanPreviewStateChanges)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            @Localizer.GetString(Keys.SimulationNotAvailable)
+        </MudText>
+    }
+</WalletGroupSection>
+
+@code {
+    [Parameter] public TransactionViewModel ViewModel { get; set; } = null!;
+    [Parameter] public bool IsCompactMode { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ViewModel.IsPreviewingStateChanges) ||
+            e.PropertyName == nameof(ViewModel.StateChangesPreview) ||
+            e.PropertyName == nameof(ViewModel.HasPreviewedStateChanges) ||
+            e.PropertyName == nameof(ViewModel.CanPreviewStateChanges))
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        if (ViewModel != null)
+        {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+
+    private string FormatAddress(string? address)
+    {
+        if (string.IsNullOrEmpty(address)) return "";
+        if (!IsCompactMode) return address;
+        if (address.Length <= 13) return address;
+        return $"{address[..6]}...{address[^4..]}";
+    }
+
+    private string GetTokenDisplay(BalanceChange change)
+    {
+        if (change.Type == BalanceChangeType.Native)
+            return "ETH";
+
+        if (!string.IsNullOrEmpty(change.TokenSymbol))
+            return change.TokenSymbol;
+
+        if (!string.IsNullOrEmpty(change.TokenAddress))
+            return FormatAddress(change.TokenAddress);
+
+        return "???";
+    }
+
+    private string FormatAmount(BalanceChange change)
+    {
+        var amount = change.Change;
+        if (amount < 0) amount = -amount;
+
+        if (change.Type == BalanceChangeType.ERC721)
+            return "1";
+
+        var decimals = change.Type == BalanceChangeType.Native ? 18 : change.TokenDecimals;
+        if (decimals == 0) decimals = 18;
+
+        try
+        {
+            var decimalAmount = UnitConversion.Convert.FromWei(amount, decimals);
+            if (decimalAmount >= 1000000)
+                return decimalAmount.ToString("N0");
+            if (decimalAmount >= 1)
+                return decimalAmount.ToString("N4").TrimEnd('0').TrimEnd('.');
+            return decimalAmount.ToString("0.######");
+        }
+        catch
+        {
+            return amount.ToString();
+        }
+    }
+
+    private string FormatAmountFromBigInteger(BigInteger amount, BalanceChange change)
+    {
+        var absAmount = amount < 0 ? -amount : amount;
+        var prefix = amount >= 0 ? "+" : "-";
+
+        if (change.Type == BalanceChangeType.ERC721)
+            return $"{prefix}1";
+
+        var decimals = change.Type == BalanceChangeType.Native ? 18 : change.TokenDecimals;
+        if (decimals == 0) decimals = 18;
+
+        try
+        {
+            var decimalAmount = UnitConversion.Convert.FromWei(absAmount, decimals);
+            string formatted;
+            if (decimalAmount >= 1000000)
+                formatted = decimalAmount.ToString("N0");
+            else if (decimalAmount >= 1)
+                formatted = decimalAmount.ToString("N4").TrimEnd('0').TrimEnd('.');
+            else
+                formatted = decimalAmount.ToString("0.######");
+            return $"{prefix}{formatted}";
+        }
+        catch
+        {
+            return $"{prefix}{absAmount}";
+        }
+    }
+
+    private string GetEventDisplayName(DecodedLog log)
+    {
+        var eventName = log.GetEventName();
+        if (log.IsDecoded && !string.IsNullOrEmpty(eventName))
+            return eventName;
+
+        if (log.OriginalLog?.Topics?.Length > 0)
+        {
+            var topic = log.OriginalLog.Topics[0]?.ToString();
+            if (!string.IsNullOrEmpty(topic))
+                return topic.Length > 18 ? topic[..18] + "..." : topic;
+        }
+
+        return Localizer.GetString(Keys.UnknownEvent);
+    }
+
+    private string GetTopicDisplay(object topic)
+    {
+        var topicStr = topic?.ToString();
+        if (string.IsNullOrEmpty(topicStr)) return "";
+        return topicStr.Length > 18 ? topicStr[..18] + "..." : topicStr;
+    }
+
+    private string FormatEth(BigInteger wei)
+    {
+        try
+        {
+            var eth = UnitConversion.Convert.FromWei(wei, 18);
+            return eth.ToString("0.####");
+        }
+        catch
+        {
+            return wei.ToString();
+        }
+    }
+
+    private List<(DecodedCall Call, int Depth)> GetFlattenedCalls()
+    {
+        var result = new List<(DecodedCall, int)>();
+        var rootCall = ViewModel.StateChangesPreview?.RootCall;
+
+        if (rootCall?.InnerCalls != null)
+        {
+            FlattenCalls(rootCall.InnerCalls, 0, result);
+        }
+
+        return result;
+    }
+
+    private void FlattenCalls(List<DecodedCall>? calls, int depth, List<(DecodedCall, int)> result)
+    {
+        if (calls == null) return;
+
+        foreach (var call in calls)
+        {
+            result.Add((call, depth));
+            if (call.InnerCalls?.Count > 0)
+            {
+                FlattenCalls(call.InnerCalls, depth + 1, result);
+            }
+        }
+    }
+}

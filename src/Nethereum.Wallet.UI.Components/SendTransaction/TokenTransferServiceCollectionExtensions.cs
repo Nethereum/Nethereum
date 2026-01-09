@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Nethereum.ABI.ABIRepository;
+using Nethereum.DataServices.ABIInfoStorage;
 using Nethereum.DataServices.FourByteDirectory;
 using Nethereum.Wallet.Services.Transaction;
 using Nethereum.Wallet.UI.Components.SendTransaction.Components;
@@ -16,10 +18,21 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         {
             
             services.AddTransient<FourByteDirectoryService>();
-            services.AddTransient<ITransactionDataDecodingService, FourByteDataDecodingService>();
-            
+            services.AddTransient<FourByteDataDecodingService>();
+
             services.AddTransient<IGasPriceProvider, NethereumGasPriceProvider>();
             services.TryAddSingleton<IGasConfigurationPersistenceService, InMemoryGasConfigurationPersistenceService>();
+
+            services.TryAddSingleton<IABIInfoStorage>(sp => ABIInfoStorageFactory.CreateWithSourcifyOnly());
+
+            services.AddTransient<ITransactionDataDecodingService>(sp =>
+            {
+                var abiStorage = sp.GetRequiredService<IABIInfoStorage>();
+                var fourByteFallback = sp.GetRequiredService<FourByteDataDecodingService>();
+                return new SourcifyDataDecodingService(abiStorage, fourByteFallback);
+            });
+
+            services.AddTransient<IStateChangesPreviewService, StateChangesPreviewService>();
             
             services.AddTransient<TokenNativeTransferModel>();
             services.AddTransient<TransactionModel>();

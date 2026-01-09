@@ -83,8 +83,8 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             
             try
             {
-                CurrentStep = 2;
-                
+                CurrentStep = 1;
+
                 var txHash = await _transactionViewModel.SendTransactionAsync();
                 
                 if (!string.IsNullOrEmpty(txHash))
@@ -96,7 +96,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 {
                     ErrorMessage = _localizer.GetString(DAppTransactionPromptLocalizer.Keys.TransactionFailedToSend);
                     ShowRetry = true;
-                    CurrentStep = 1;
+                    CurrentStep = 0;
                 }
             }
             catch (Exception ex)
@@ -105,7 +105,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     DAppTransactionPromptLocalizer.Keys.TransactionFailedWithReason,
                     ex.Message);
                 ShowRetry = true;
-                CurrentStep = 1;
+                CurrentStep = 0;
             }
             finally
             {
@@ -142,7 +142,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         };
 
         public bool CanApprove =>
-            CurrentStep == 1 &&
+            CurrentStep == 0 &&
             Transaction.HasValidTransaction() &&
             !IsLoading &&
             string.IsNullOrWhiteSpace(_transactionViewModel.ValidationError);

@@ -36,6 +36,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             public const string NonceMustBeNonNegative = "NonceMustBeNonNegative";
             
             public const string SimulateTransaction = "SimulateTransaction";
+            public const string Cancel = "Cancel";
             public const string RefreshNonce = "RefreshNonce";
             public const string EstimateGas = "EstimateGas";
             
@@ -121,6 +122,45 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
 
             public const string DecodeTransactionData = "DecodeTransactionData";
             public const string FunctionSignature = "FunctionSignature";
+
+            public const string StateChangesPreview = "StateChangesPreview";
+            public const string PreviewStateChanges = "PreviewStateChanges";
+            public const string PreviewingStateChanges = "PreviewingStateChanges";
+            public const string PreviewError = "PreviewError";
+            public const string BalanceChanges = "BalanceChanges";
+            public const string NoBalanceChanges = "NoBalanceChanges";
+            public const string You = "You";
+            public const string FunctionCallSection = "FunctionCallSection";
+            public const string ContractCallsSection = "ContractCallsSection";
+            public const string EventsSection = "EventsSection";
+            public const string UnableToDecodeParameters = "UnableToDecodeParameters";
+            public const string NoInputData = "NoInputData";
+
+            public const string EVMSimulation = "EVMSimulation";
+            public const string RetrySimulation = "RetrySimulation";
+            public const string ContractAddress = "ContractAddress";
+            public const string EventSignature = "EventSignature";
+            public const string SimulationNotAvailable = "SimulationNotAvailable";
+            public const string UnknownEvent = "UnknownEvent";
+
+            public const string BalanceVerified = "BalanceVerified";
+            public const string BalanceFeeOnTransfer = "BalanceFeeOnTransfer";
+            public const string BalanceRebasing = "BalanceRebasing";
+            public const string BalanceMismatch = "BalanceMismatch";
+            public const string BalanceOwnerMismatch = "BalanceOwnerMismatch";
+            public const string ActualAmount = "ActualAmount";
+
+            public const string TransactionSummary = "TransactionSummary";
+            public const string Action = "Action";
+            public const string Recipient = "Recipient";
+            public const string SimulationStatus = "SimulationStatus";
+            public const string SimulationSuccess = "SimulationSuccess";
+            public const string SimulationNotRun = "SimulationNotRun";
+            public const string NativeTransfer = "NativeTransfer";
+            public const string ContractInteraction = "ContractInteraction";
+            public const string DecodedData = "DecodedData";
+            public const string InputData = "InputData";
+            public const string RecalculateGas = "RecalculateGas";
         }
         
         public TransactionLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -160,6 +200,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.NonceMustBeNonNegative] = "Nonce must be non-negative",
                 
                 [Keys.SimulateTransaction] = "Simulate Transaction",
+                [Keys.Cancel] = "Cancel",
                 [Keys.RefreshNonce] = "Refresh Nonce",
                 [Keys.EstimateGas] = "Estimate Gas",
                 
@@ -243,7 +284,46 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.ValidationError] = "Validation Error",
 
                 [Keys.DecodeTransactionData] = "Decode Transaction Data",
-                [Keys.FunctionSignature] = "Function Signature"
+                [Keys.FunctionSignature] = "Function Signature",
+
+                [Keys.StateChangesPreview] = "State Changes Preview",
+                [Keys.PreviewStateChanges] = "Preview State Changes",
+                [Keys.PreviewingStateChanges] = "Previewing state changes...",
+                [Keys.PreviewError] = "Preview Error",
+                [Keys.BalanceChanges] = "Balance Changes",
+                [Keys.NoBalanceChanges] = "No balance changes detected",
+                [Keys.You] = "You",
+                [Keys.FunctionCallSection] = "Function Call",
+                [Keys.ContractCallsSection] = "Contract Calls",
+                [Keys.EventsSection] = "Events",
+                [Keys.UnableToDecodeParameters] = "Unable to decode parameters",
+                [Keys.NoInputData] = "No input data",
+
+                [Keys.EVMSimulation] = "EVM Simulation",
+                [Keys.RetrySimulation] = "Retry Simulation",
+                [Keys.ContractAddress] = "Contract",
+                [Keys.EventSignature] = "Signature",
+                [Keys.SimulationNotAvailable] = "Simulation not available for this transaction",
+                [Keys.UnknownEvent] = "Unknown Event",
+
+                [Keys.BalanceVerified] = "Verified",
+                [Keys.BalanceFeeOnTransfer] = "Fee-on-transfer detected",
+                [Keys.BalanceRebasing] = "Rebasing token detected",
+                [Keys.BalanceMismatch] = "Balance mismatch",
+                [Keys.BalanceOwnerMismatch] = "Owner mismatch",
+                [Keys.ActualAmount] = "Actual",
+
+                [Keys.TransactionSummary] = "Summary",
+                [Keys.Action] = "Action",
+                [Keys.Recipient] = "Recipient",
+                [Keys.SimulationStatus] = "Simulation",
+                [Keys.SimulationSuccess] = "Success",
+                [Keys.SimulationNotRun] = "Not run",
+                [Keys.NativeTransfer] = "Transfer {0} {1}",
+                [Keys.ContractInteraction] = "Contract Call",
+                [Keys.DecodedData] = "Decoded Data",
+                [Keys.InputData] = "Input Data",
+                [Keys.RecalculateGas] = "Recalculate"
             });
             
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
@@ -277,6 +357,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.NonceMustBeNonNegative] = "El nonce debe ser no negativo",
                 
                 [Keys.SimulateTransaction] = "Simular Transacción",
+                [Keys.Cancel] = "Cancelar",
                 [Keys.RefreshNonce] = "Actualizar Nonce",
                 [Keys.EstimateGas] = "Estimar Gas",
                 
@@ -360,7 +441,46 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 [Keys.ValidationError] = "Error de Validación",
 
                 [Keys.DecodeTransactionData] = "Decodificar Datos de Transacción",
-                [Keys.FunctionSignature] = "Firma de Función"
+                [Keys.FunctionSignature] = "Firma de Función",
+
+                [Keys.StateChangesPreview] = "Vista Previa de Cambios de Estado",
+                [Keys.PreviewStateChanges] = "Vista Previa de Cambios",
+                [Keys.PreviewingStateChanges] = "Previsualizando cambios de estado...",
+                [Keys.PreviewError] = "Error de Vista Previa",
+                [Keys.BalanceChanges] = "Cambios de Balance",
+                [Keys.NoBalanceChanges] = "No se detectaron cambios de balance",
+                [Keys.You] = "Tú",
+                [Keys.FunctionCallSection] = "Llamada de Función",
+                [Keys.ContractCallsSection] = "Llamadas de Contrato",
+                [Keys.EventsSection] = "Eventos",
+                [Keys.UnableToDecodeParameters] = "No se pueden decodificar los parámetros",
+                [Keys.NoInputData] = "Sin datos de entrada",
+
+                [Keys.EVMSimulation] = "Simulación EVM",
+                [Keys.RetrySimulation] = "Reintentar Simulación",
+                [Keys.ContractAddress] = "Contrato",
+                [Keys.EventSignature] = "Firma",
+                [Keys.SimulationNotAvailable] = "La simulación no está disponible para esta transacción",
+                [Keys.UnknownEvent] = "Evento Desconocido",
+
+                [Keys.BalanceVerified] = "Verificado",
+                [Keys.BalanceFeeOnTransfer] = "Tarifa de transferencia detectada",
+                [Keys.BalanceRebasing] = "Token con rebase detectado",
+                [Keys.BalanceMismatch] = "Discrepancia de balance",
+                [Keys.BalanceOwnerMismatch] = "Discrepancia de propietario",
+                [Keys.ActualAmount] = "Real",
+
+                [Keys.TransactionSummary] = "Resumen",
+                [Keys.Action] = "Acción",
+                [Keys.Recipient] = "Destinatario",
+                [Keys.SimulationStatus] = "Simulación",
+                [Keys.SimulationSuccess] = "Exitosa",
+                [Keys.SimulationNotRun] = "No ejecutada",
+                [Keys.NativeTransfer] = "Transferir {0} {1}",
+                [Keys.ContractInteraction] = "Llamada de Contrato",
+                [Keys.DecodedData] = "Datos Decodificados",
+                [Keys.InputData] = "Datos de Entrada",
+                [Keys.RecalculateGas] = "Recalcular"
             });
         }
     }

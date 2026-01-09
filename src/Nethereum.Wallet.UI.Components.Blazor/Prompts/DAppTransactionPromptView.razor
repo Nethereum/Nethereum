@@ -19,9 +19,9 @@
                   BackText="@Localizer.GetString(Keys.Back)"
                   ContinueText="@Localizer.GetString(Keys.Continue)"
                   PrimaryText="@GetPrimaryButtonText()"
-                  ShowBack="@(ViewModel.CurrentStep > 0 && ViewModel.CurrentStep < 2)"
-                  ShowContinue="@(ViewModel.CurrentStep == 0)"
-                  ShowPrimary="@(ViewModel.CurrentStep == 1)"
+                  ShowBack="false"
+                  ShowContinue="false"
+                  ShowPrimary="@(ViewModel.CurrentStep == 0)"
                   ContinueDisabled="@(!ViewModel.CanProceedToNextStep)"
                   PrimaryDisabled="@(!ViewModel.CanApprove)"
                   OnExit="HandleExit"
@@ -39,17 +39,17 @@
                                     Title="@PromptInfo.DAppName"
                                     Subtitle="@PromptInfo.Origin" />
                 }
-                
-                
-                
+
                 <TransactionInput ViewModel="@ViewModel.Transaction"
                                 Layout="TransactionInputLayout.Confirmation"
                                 ShowTransactionDetails="true"
                                 ShowDataDecoding="true"
+                                ShowGasConfiguration="true"
+                                ShowCostSummary="true"
                                 RecipientReadOnly="true"
                                 AmountReadOnly="true"
-                                ShowGasConfiguration="false" />
-                
+                                AllowGasModeSwitch="true" />
+
                 @if (!string.IsNullOrEmpty(PromptInfo?.WarningMessage))
                 {
                     <MudAlert Severity="Severity.Warning" Class="mt-3">
@@ -63,40 +63,27 @@
                         @ViewModel.ValidationError
                     </MudAlert>
                 }
+
+                @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-3">
+                        @ViewModel.ErrorMessage
+                        @if (ViewModel.ShowRetry)
+                        {
+                            <MudButton Color="Color.Primary"
+                                      Variant="Variant.Text"
+                                      Size="Size.Small"
+                                      StartIcon="@Icons.Material.Filled.Refresh"
+                                      OnClick="@(() => ViewModel.RetryTransactionCommand.Execute(null))"
+                                      Class="ml-2">
+                                @Localizer.GetString(Keys.Retry)
+                            </MudButton>
+                        }
+                    </MudAlert>
+                }
             </WalletFormSection>
         }
         else if (ViewModel.CurrentStep == 1)
-        {
-            <WalletFormSection Title="@Localizer.GetString(Keys.GasConfiguration)">
-                <TransactionInput ViewModel="@ViewModel.Transaction"
-                                Layout="TransactionInputLayout.Confirmation"
-                                ShowTransactionDetails="true"
-                                ShowGasConfiguration="true"
-                                ShowCostSummary="true"
-                                RecipientReadOnly="true"
-                                AmountReadOnly="true"
-                                AllowGasModeSwitch="true" />
-            </WalletFormSection>
-            
-            @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
-            {
-                <MudAlert Severity="Severity.Error" Class="mt-3">
-                    @ViewModel.ErrorMessage
-                    @if (ViewModel.ShowRetry)
-                    {
-                        <MudButton Color="Color.Primary" 
-                                  Variant="Variant.Text"
-                                  Size="Size.Small"
-                                  StartIcon="@Icons.Material.Filled.Refresh"
-                                  OnClick="@(() => ViewModel.RetryTransactionCommand.Execute(null))"
-                                  Class="ml-2">
-                            @Localizer.GetString(Keys.Retry)
-                        </MudButton>
-                    }
-                </MudAlert>
-            }
-        }
-        else if (ViewModel.CurrentStep == 2)
         {
             @if (ViewModel.TransactionStatus != null)
             {
@@ -135,7 +122,6 @@
     {
         _steps.AddRange(new[]
         {
-            new WalletFormStep { Label = Localizer.GetString(Keys.StepReview), Icon = Icons.Material.Filled.Preview },
             new WalletFormStep { Label = Localizer.GetString(Keys.StepConfirm), Icon = Icons.Material.Filled.Check },
             new WalletFormStep { Label = Localizer.GetString(Keys.StepStatus), Icon = Icons.Material.Filled.Done }
         });
@@ -163,9 +149,8 @@
     {
         return ViewModel.CurrentStep switch
         {
-            0 => Localizer.GetString(Keys.ReviewTransaction),
-            1 => Localizer.GetString(Keys.ConfirmTransaction),
-            2 => Localizer.GetString(Keys.TransactionStatus),
+            0 => Localizer.GetString(Keys.ConfirmTransaction),
+            1 => Localizer.GetString(Keys.TransactionStatus),
             _ => Localizer.GetString(Keys.TransactionRequest)
         };
     }
@@ -183,7 +168,7 @@
     {
         return ViewModel.CurrentStep switch
         {
-            1 => Localizer.GetString(Keys.SendTransaction),
+            0 => Localizer.GetString(Keys.SendTransaction),
             _ => Localizer.GetString(Keys.Continue)
         };
     }
@@ -210,7 +195,7 @@
     
     private async Task HandlePrimary()
     {
-        if (ViewModel.CurrentStep == 1)
+        if (ViewModel.CurrentStep == 0)
         {
             await ViewModel.ApproveAndSendTransactionCommand.ExecuteAsync(null);
         }

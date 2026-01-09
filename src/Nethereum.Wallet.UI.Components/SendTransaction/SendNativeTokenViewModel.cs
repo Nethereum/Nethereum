@@ -257,8 +257,15 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
         {
             if (CanGoBack)
             {
+                var previousStep = CurrentStep;
                 CurrentStep--;
                 ClearMessages();
+
+                if (previousStep == 2)
+                {
+                    Transaction.ResetPreviewState();
+                    Transaction.ResetGasState();
+                }
             }
         }
         
