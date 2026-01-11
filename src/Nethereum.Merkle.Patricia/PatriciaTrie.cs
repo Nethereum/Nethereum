@@ -310,13 +310,13 @@ namespace Nethereum.Merkle.Patricia
 
         public InMemoryTrieStorage GenerateProof(Node currentNode, byte[] keyAsNibbles, InMemoryTrieStorage storage)
         {
-            storage.Put(currentNode.GetHash(), currentNode.GetRLPEncodedData());
-
             if (currentNode is EmptyNode || currentNode is null)
             {
                 //not matching any keys
                 return null;
             }
+
+            storage.Put(currentNode.GetHash(), currentNode.GetRLPEncodedData());
 
             if (currentNode is LeafNode leafNode)
             {

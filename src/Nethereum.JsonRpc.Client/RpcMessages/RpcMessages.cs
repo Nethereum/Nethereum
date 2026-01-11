@@ -320,13 +320,13 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 #if NET6_0_OR_GREATER
         [JsonPropertyName("jsonrpc")]
 #endif
-        public string JsonRpcVersion { get; private set; }
+        public string JsonRpcVersion { get; set; }
 
         [JsonProperty("method", Required = Required.Always)]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("method")]
 #endif
-        public string Method { get; private set; }
+        public string Method { get; set; }
 
         [JsonProperty("params")]
         [Newtonsoft.Json.JsonConverter(typeof(RpcParametersJsonConverter))] // Newtonsoft
@@ -424,6 +424,11 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
             {
                 ResultSystemTextJson = element;
             }
+            else
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(result);
+                ResultSystemTextJson = System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
+            }
 #endif
         }
 
@@ -441,6 +446,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 
 #if NET6_0_OR_GREATER
         [JsonPropertyName("result")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public JsonElement ResultSystemTextJson { get; set; }
 #endif
 
