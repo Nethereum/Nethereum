@@ -64,7 +64,7 @@ namespace Nethereum.EVM.Execution
             var memoryIndex = (int)program.StackPopAndConvertToUBigInteger();
             var resultIndex = (int)program.StackPopAndConvertToUBigInteger();
             var lengthResult = (int)program.StackPopAndConvertToUBigInteger();
-            var result = program.ProgramResult.LastCallReturnData ?? Array.Empty<byte>();
+            var result = program.ProgramResult.LastCallReturnData ?? new byte[0];
 
             if (resultIndex + lengthResult > result.Length)
             {

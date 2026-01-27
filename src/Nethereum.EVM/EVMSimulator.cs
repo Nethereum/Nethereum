@@ -573,7 +573,6 @@ namespace Nethereum.EVM
                 {
                     program.ProgramContext.ExecutionStateService.UpsertInternalBalance(to, value);
                 }
-                program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
 
                 // Calculate gas that would be forwarded (for trace accuracy - geth includes this in CALL cost)
                 var maxAllowedGasForEmpty = program.GasRemaining - (program.GasRemaining / 64);
@@ -592,7 +591,7 @@ namespace Nethereum.EVM
                         // Check if we have enough gas (gas forwarded to precompile)
                         if (gasToForwardForTrace < precompileGasCost)
                         {
-                            // Out of gas - precompile call fails
+                            // Out of gas - precompile call fails, revert state changes
                             program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
                             program.StackPush(0);
                             program.ProgramResult.LastCallReturnData = null;
@@ -604,12 +603,38 @@ namespace Nethereum.EVM
                         program.GasRemaining -= (long)precompileGasCost;
                         program.TotalGasUsed += (long)precompileGasCost;
 
-                        var precompiledResult = EvmProgramExecution.PreCompiledContracts.ExecutePreCompile(codeAddressAsChecksum, dataInput);
-                        program.WriteToMemory(resultMemoryDataIndex, precompiledResult);
-                        program.ProgramResult.LastCallReturnData = precompiledResult;
+                        try
+                        {
+                            var precompiledResult = EvmProgramExecution.PreCompiledContracts.ExecutePreCompile(codeAddressAsChecksum, dataInput);
+                            // Write result to memory, respecting the output size limit
+                            var resultLength = Math.Min(resultMemoryDataLength, precompiledResult?.Length ?? 0);
+                            program.WriteToMemory(resultMemoryDataIndex, resultLength, precompiledResult);
+                            program.ProgramResult.LastCallReturnData = precompiledResult;
+                            // Precompile succeeded - commit the snapshot
+                            program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
+                        }
+                        catch
+                        {
+                            // Precompile execution failed (e.g., invalid input)
+                            // Per EIP-196/197: consume all forwarded gas, return 0 (failure)
+                            var remainingForwardedGas = gasToForwardForTrace - precompileGasCost;
+                            if (remainingForwardedGas > 0)
+                            {
+                                program.GasRemaining -= (long)remainingForwardedGas;
+                                program.TotalGasUsed += (long)remainingForwardedGas;
+                            }
+                            // Revert state changes (including any value transfer)
+                            program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
+                            program.ProgramResult.LastCallReturnData = null;
+                            program.StackPush(0);
+                            program.Step();
+                            return new SubCallSetup { ShouldCreateSubCall = false, IsPrecompileHandled = true, GasForwarded = gasToForwardForTrace };
+                        }
                     }
                     else
                     {
+                        // Non-precompile empty code - commit snapshot and handle
+                        program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
                         program.ProgramResult.LastCallReturnData = null;
 
                         // For empty code with value > 0, return the stipend to the caller.
@@ -624,6 +649,13 @@ namespace Nethereum.EVM
                         }
                     }
 
+                    program.StackPush(1);
+                    program.Step();
+                }
+                else
+                {
+                    // dataInput is null - just commit the value transfer and succeed
+                    program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
                     program.StackPush(1);
                     program.Step();
                 }
