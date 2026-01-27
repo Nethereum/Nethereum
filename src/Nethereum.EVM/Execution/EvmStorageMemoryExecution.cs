@@ -33,14 +33,9 @@ namespace Nethereum.EVM.Execution
             if (program.ProgramContext.IsStatic)
                 throw new StaticCallViolationException("SSTORE");
 
-            // EIP-2200: Sentry check - if gas_left <= 2300 before SSTORE, fail
-            // This check is ALSO done in EVMSimulator for trace correctness,
-            // but we keep it here for direct calls and backwards compatibility
-            if (program.ProgramContext.EnforceGasSentry &&
-                program.GasRemaining <= GasConstants.SSTORE_SENTRY)
-            {
-                throw new SStoreSentryException(program.GasRemaining, GasConstants.SSTORE_SENTRY);
-            }
+            // Note: EIP-2200 sentry check is done in EVMSimulator BEFORE gas deduction.
+            // Do NOT add a sentry check here - gas has already been deducted at this point,
+            // so GasRemaining would be the wrong value to check against the 2300 threshold.
 
             var key = program.StackPopAndConvertToUBigInteger();
             var currentValue = await program.ProgramContext.GetFromStorageAsync(key);

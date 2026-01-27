@@ -215,8 +215,8 @@
             var indexInMemory = program.StackPeekAtAndConvertToUBigInteger(indexInMemoryPeekIndex);
             var lengthDataToCopy = program.StackPeekAtAndConvertToUBigInteger(lengthDataToCopyPeekIndex);
 
-            var words = (int)((indexInMemory + 31) / 32);
-            var memoryCost = program.CalculateMemoryExpansionGas(lengthDataToCopy, indexInMemory);
+            var words = (int)((lengthDataToCopy + 31) / 32);
+            var memoryCost = program.CalculateMemoryExpansionGas(indexInMemory, lengthDataToCopy);
 
             return 3 + (3 * words) + memoryCost;
         }
@@ -334,23 +334,27 @@
 
         private static BigInteger CalculateCreateGas(Program program)
         {
-            var memoryIndex = program.StackPeekAtAndConvertToUBigInteger(1); 
+            var memoryIndex = program.StackPeekAtAndConvertToUBigInteger(1);
             var memoryLength = program.StackPeekAtAndConvertToUBigInteger(2);
-
-            var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
-
-            return 32000 + memoryCost;
-        }
-
-        private static BigInteger CalculateCreate2Gas(Program program)
-        {
-            var memoryIndex = program.StackPeekAtAndConvertToUBigInteger(1);   
-            var memoryLength = program.StackPeekAtAndConvertToUBigInteger(2);  
 
             var words = (memoryLength + 31) / 32;
             var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
 
-            return 32000 + (6 * words) + memoryCost;
+            return 32000 + (GasConstants.INIT_CODE_WORD_GAS * words) + memoryCost;
+        }
+
+        private static BigInteger CalculateCreate2Gas(Program program)
+        {
+            var memoryIndex = program.StackPeekAtAndConvertToUBigInteger(1);
+            var memoryLength = program.StackPeekAtAndConvertToUBigInteger(2);
+
+            var words = (memoryLength + 31) / 32;
+            var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
+
+            var hashCost = GasConstants.KECCAK256_PER_WORD * words;
+            var initCodeCost = GasConstants.INIT_CODE_WORD_GAS * words;
+
+            return 32000 + hashCost + initCodeCost + memoryCost;
         }
 
 

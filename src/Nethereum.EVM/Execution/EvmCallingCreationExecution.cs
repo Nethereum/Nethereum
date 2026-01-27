@@ -345,6 +345,16 @@ namespace Nethereum.EVM.Execution
             var resultMemoryDataIndex = (int)resultMemoryDataIndexBig;
             var resultMemoryDataLength = (int)resultMemoryDataLengthBig;
 
+            // Expand memory to required size BEFORE execution (per Yellow Paper)
+            // Gas was already charged for this expansion in OpcodeGasTable
+            var inputEnd = dataInputLength > 0 ? dataInputIndex + dataInputLength : 0;
+            var outputEnd = resultMemoryDataLength > 0 ? resultMemoryDataIndex + resultMemoryDataLength : 0;
+            var requiredMemorySize = Math.Max(inputEnd, outputEnd);
+            if (requiredMemorySize > 0)
+            {
+                program.ExpandMemory(requiredMemorySize);
+            }
+
             if (depth + 1 > GasConstants.MAX_CALL_DEPTH)
             {
                 program.StackPush(0);
