@@ -508,6 +508,16 @@ namespace Nethereum.EVM
                 return new SubCallSetup { ShouldCreateSubCall = false };
             }
 
+            // EVM spec: Expand memory for both input and output regions BEFORE the call
+            // This expansion happens regardless of whether the call succeeds or fails
+            var inputEnd = dataInputLength > 0 ? dataInputIndex + dataInputLength : 0;
+            var outputEnd = resultMemoryDataLength > 0 ? resultMemoryDataIndex + resultMemoryDataLength : 0;
+            var requiredMemorySize = Math.Max(inputEnd, outputEnd);
+            if (requiredMemorySize > program.Memory.Count)
+            {
+                program.ExpandMemory(requiredMemorySize);
+            }
+
             var dataInput = new byte[0];
             if (dataInputLength != 0)
             {
@@ -763,6 +773,12 @@ namespace Nethereum.EVM
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
+            }
+
+            // EVM spec: Expand memory for the initcode region BEFORE the create
+            if (memoryLength > 0 && memoryIndex + memoryLength > program.Memory.Count)
+            {
+                program.ExpandMemory(memoryIndex + memoryLength);
             }
 
             var contractAddress = program.ProgramContext.AddressContract;

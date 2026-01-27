@@ -131,6 +131,16 @@ namespace Nethereum.EVM.Execution
                 address = address.Skip(address.Length - 20).ToArray();
             var addressString = AddressUtil.Current.ConvertToValid20ByteAddress(address.ToHex()).ToLower();
             program.ProgramContext.RecordAddressAccess(addressString);
+
+            // EIP-1052: For non-existent accounts, EXTCODEHASH returns 0
+            var accountExists = await program.ProgramContext.ExecutionStateService.AccountExistsAsync(addressString);
+            if (!accountExists)
+            {
+                program.StackPush(0);
+                program.Step();
+                return;
+            }
+
             var code = await program.ProgramContext.ExecutionStateService.GetCodeAsync(addressString);
             if (code == null)
             {

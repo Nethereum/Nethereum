@@ -276,5 +276,19 @@ namespace Nethereum.EVM.BlockchainState
                 AccountsState.Remove(address);
             }
         }
+
+        public async Task<bool> AccountExistsAsync(string address)
+        {
+            var balance = await GetTotalBalanceAsync(address);
+            if (balance > 0) return true;
+
+            var nonce = await GetNonceAsync(address);
+            if (nonce > 0) return true;
+
+            var code = await GetCodeAsync(address);
+            if (code != null && code.Length > 0) return true;
+
+            return false;
+        }
     }
 }
