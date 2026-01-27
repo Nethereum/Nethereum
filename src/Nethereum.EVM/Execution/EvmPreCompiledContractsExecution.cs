@@ -4,12 +4,135 @@ using System.Security.Cryptography;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Nethereum.Signer;
+using Nethereum.Signer.Crypto;
+using Nethereum.EVM.Gas;
 using Org.BouncyCastle.Crypto.Digests;
 
 namespace Nethereum.EVM.Execution
 {
     public class EvmPreCompiledContractsExecution
     {
+        public virtual BigInteger GetPrecompileGasCost(string address, byte[] data)
+        {
+            int dataLen = data?.Length ?? 0;
+            int wordCount = (dataLen + 31) / 32;
+
+            switch (address.ToHexCompact())
+            {
+                case "1": // ECRECOVER
+                    return GasConstants.ECRECOVER_GAS;
+                case "2": // SHA256
+                    return GasConstants.SHA256_BASE_GAS + GasConstants.SHA256_PER_WORD_GAS * wordCount;
+                case "3": // RIPEMD160
+                    return GasConstants.RIPEMD160_BASE_GAS + GasConstants.RIPEMD160_PER_WORD_GAS * wordCount;
+                case "4": // IDENTITY (datacopy)
+                    return GasConstants.IDENTITY_BASE_GAS + GasConstants.IDENTITY_PER_WORD_GAS * wordCount;
+                case "5": // MODEXP - dynamic gas cost
+                    return GetModExpGas(data);
+                case "6": // BN128_ADD
+                    return 150; // EIP-1108
+                case "7": // BN128_MUL
+                    return 6000; // EIP-1108
+                case "8": // BN128_PAIRING
+                    return GetBn128PairingGas(dataLen);
+                case "9": // BLAKE2F
+                    return GetBlake2fGas(data);
+            }
+            return 0;
+        }
+
+        private BigInteger GetModExpGas(byte[] data)
+        {
+            data = data ?? new byte[0];
+
+            int offset = 0;
+            var baseLen = (int)ReadBigInteger(data, offset, 32);
+            offset += 32;
+            var expLen = (int)ReadBigInteger(data, offset, 32);
+            offset += 32;
+            var modLen = (int)ReadBigInteger(data, offset, 32);
+            offset += 32;
+
+            // Calculate exponent head (first 32 bytes of exponent, or all if shorter)
+            BigInteger expHead = 0;
+            if (expLen > 0)
+            {
+                int headLen = Math.Min(32, expLen);
+                for (int i = 0; i < headLen && (offset + baseLen + i) < data.Length; i++)
+                {
+                    expHead = (expHead << 8) | data[offset + baseLen + i];
+                }
+                if (expLen > 32)
+                {
+                    // Shift left to account for remaining exp bytes
+                    expHead <<= (expLen - 32) * 8;
+                }
+            }
+
+            // Bit length of exponent head
+            int expBitLen = 0;
+            if (expHead > 0)
+            {
+                var temp = expHead;
+                while (temp > 0)
+                {
+                    expBitLen++;
+                    temp >>= 1;
+                }
+            }
+
+            // Calculate iteration count per EIP-2565
+            BigInteger iterationCount;
+            if (expLen <= 32 && expHead == 0)
+            {
+                iterationCount = 0;
+            }
+            else if (expLen <= 32)
+            {
+                iterationCount = expBitLen - 1;
+            }
+            else
+            {
+                iterationCount = 8 * (expLen - 32) + expBitLen - 1;
+            }
+            if (iterationCount < 1) iterationCount = 1;
+
+            // Calculate multiplication complexity
+            var maxLen = Math.Max(baseLen, modLen);
+            BigInteger mulComplexity;
+            if (maxLen <= 64)
+            {
+                mulComplexity = maxLen * maxLen;
+            }
+            else if (maxLen <= 1024)
+            {
+                mulComplexity = maxLen * maxLen / 4 + 96 * maxLen - 3072;
+            }
+            else
+            {
+                mulComplexity = maxLen * maxLen / 16 + 480 * maxLen - 199680;
+            }
+
+            // EIP-2565: gas = max(200, floor(mulComplexity * iterationCount / 3))
+            var gas = mulComplexity * iterationCount / 3;
+            return gas < 200 ? 200 : gas;
+        }
+
+        private BigInteger GetBn128PairingGas(int dataLen)
+        {
+            // EIP-1108: 34000 * k + 45000 where k = number of pairs
+            int k = dataLen / 192;
+            return 34000 * k + 45000;
+        }
+
+        private BigInteger GetBlake2fGas(byte[] data)
+        {
+            if (data == null || data.Length < 4)
+                return 0;
+            // Gas = rounds (first 4 bytes as big-endian uint32)
+            return (uint)((data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]);
+        }
+
         public virtual bool IsPrecompiledAdress(string address)
         {
             switch (address.ToHexCompact())
@@ -43,9 +166,11 @@ namespace Nethereum.EVM.Execution
                 case "5":
                     return ModExp(data);
                 case "6":
+                    return BN128Curve.Add(data);
                 case "7":
+                    return BN128Curve.Mul(data);
                 case "8":
-                    throw new NotImplementedException($"BN128 precompiled contract {address} not implemented");
+                    return BN128Curve.Pairing(data);
                 case "9":
                     return Blake2f(data);
             }
@@ -61,7 +186,16 @@ namespace Nethereum.EVM.Execution
             var r = data.Slice(64, 96);
             var s = data.Slice(96, 128);
 
-            var recoveredAddress = EthECKey.RecoverFromSignature(EthECDSASignatureFactory.FromComponents(r, s, new byte[] { v }), hash).GetPublicAddressAsBytes();
+            byte[] recoveredAddress;
+            try
+            {
+                recoveredAddress = EthECKey.RecoverFromSignature(EthECDSASignatureFactory.FromComponents(r, s, new byte[] { v }), hash).GetPublicAddressAsBytes();
+            }
+            catch
+            {
+                return new byte[32]; // Return zeros on error (matching EVM behavior)
+            }
+
             return recoveredAddress.PadTo32Bytes();
         }
 

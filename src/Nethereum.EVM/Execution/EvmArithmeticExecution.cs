@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Nethereum.ABI;
 using Nethereum.EVM;
 
@@ -8,6 +9,8 @@ namespace Nethereum.EVM.Execution
     public class EvmArithmeticExecution
     {
         public static BigInteger Two256 = IntType.MAX_UINT256_VALUE + 1;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SDiv(Program program)
         {
             var first = program.StackPopAndConvertToBigInteger();
@@ -29,6 +32,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SMod(Program program)
         {
             var first = program.StackPopAndConvertToBigInteger();
@@ -45,7 +49,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddMod(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();
@@ -64,6 +68,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MulMod(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();
@@ -82,6 +87,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();
@@ -92,6 +98,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Exp(Program program)
         {
             var value = program.StackPopAndConvertToUBigInteger();
@@ -101,6 +108,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Mul(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();
@@ -111,6 +119,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Sub(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();
@@ -120,6 +129,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Div(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();
@@ -137,6 +147,7 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Mod(Program program)
         {
             var first = program.StackPopAndConvertToUBigInteger();

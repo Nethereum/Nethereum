@@ -370,13 +370,13 @@
             if (!isWarm) program.MarkAddressAsWarm(toBytes);
             var accountState = await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(to);
 
+            // Memory expansion cost - take MAX of input and output regions, not sum
+            // Per Yellow Paper: μ'_i ≡ M(M(μ_i, μ_s[3], μ_s[4]), μ_s[5], μ_s[6])
+            var inEnd = inSize > 0 ? inOffset + inSize : BigInteger.Zero;
+            var outEnd = outSize > 0 ? outOffset + outSize : BigInteger.Zero;
+            var maxEnd = BigInteger.Max(inEnd, outEnd);
+            var memCost = maxEnd > 0 ? program.CalculateMemoryExpansionGas(0, maxEnd) : BigInteger.Zero;
 
-
-            // Memory cost for input/output
-            var memCost = program.CalculateMemoryExpansionGas(inOffset, inSize)
-                        + program.CalculateMemoryExpansionGas(outOffset, outSize);
-
-           
             var accessCost = isWarm ? 100 : 2600;
 
             var baseGas = accessCost + memCost;
@@ -408,10 +408,13 @@
             var isWarm = program.IsAddressWarm(toBytes);
             if (!isWarm) program.MarkAddressAsWarm(toBytes);
 
-            var accessCost = isWarm ? 100 : 2600;
-            var memCost = program.CalculateMemoryExpansionGas(inOffset, inSize) +
-                          program.CalculateMemoryExpansionGas(outOffset, outSize);
+            // Memory expansion cost - take MAX of input and output regions
+            var inEnd = inSize > 0 ? inOffset + inSize : BigInteger.Zero;
+            var outEnd = outSize > 0 ? outOffset + outSize : BigInteger.Zero;
+            var maxEnd = BigInteger.Max(inEnd, outEnd);
+            var memCost = maxEnd > 0 ? program.CalculateMemoryExpansionGas(0, maxEnd) : BigInteger.Zero;
 
+            var accessCost = isWarm ? 100 : 2600;
             var baseGas = accessCost + memCost;
 
             if (value > 0)
@@ -435,10 +438,13 @@
             var isWarm = program.IsAddressWarm(toBytes);
             if (!isWarm) program.MarkAddressAsWarm(toBytes);
 
-            var accessCost = isWarm ? 100 : 2600;
-            var memCost = program.CalculateMemoryExpansionGas(inOffset, inSize) +
-                          program.CalculateMemoryExpansionGas(outOffset, outSize);
+            // Memory expansion cost - take MAX of input and output regions
+            var inEnd = inSize > 0 ? inOffset + inSize : BigInteger.Zero;
+            var outEnd = outSize > 0 ? outOffset + outSize : BigInteger.Zero;
+            var maxEnd = BigInteger.Max(inEnd, outEnd);
+            var memCost = maxEnd > 0 ? program.CalculateMemoryExpansionGas(0, maxEnd) : BigInteger.Zero;
 
+            var accessCost = isWarm ? 100 : 2600;
             return accessCost + memCost;
         }
 
@@ -454,10 +460,13 @@
             var isWarm = program.IsAddressWarm(toBytes);
             if (!isWarm) program.MarkAddressAsWarm(toBytes);
 
-            var accessCost = isWarm ? 100 : 2600;
-            var memCost = program.CalculateMemoryExpansionGas(inOffset, inSize) +
-                          program.CalculateMemoryExpansionGas(outOffset, outSize);
+            // Memory expansion cost - take MAX of input and output regions
+            var inEnd = inSize > 0 ? inOffset + inSize : BigInteger.Zero;
+            var outEnd = outSize > 0 ? outOffset + outSize : BigInteger.Zero;
+            var maxEnd = BigInteger.Max(inEnd, outEnd);
+            var memCost = maxEnd > 0 ? program.CalculateMemoryExpansionGas(0, maxEnd) : BigInteger.Zero;
 
+            var accessCost = isWarm ? 100 : 2600;
             return accessCost + memCost;
         }
 

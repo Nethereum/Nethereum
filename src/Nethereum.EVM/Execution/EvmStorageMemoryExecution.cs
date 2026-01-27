@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Linq;
 using Nethereum.EVM.Exceptions;
+using Nethereum.EVM.Gas;
 using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
@@ -32,13 +33,72 @@ namespace Nethereum.EVM.Execution
             if (program.ProgramContext.IsStatic)
                 throw new StaticCallViolationException("SSTORE");
 
+            // EIP-2200: Sentry check - if gas_left <= 2300 before SSTORE, fail
+            // This check is ALSO done in EVMSimulator for trace correctness,
+            // but we keep it here for direct calls and backwards compatibility
+            if (program.ProgramContext.EnforceGasSentry &&
+                program.GasRemaining <= GasConstants.SSTORE_SENTRY)
+            {
+                throw new SStoreSentryException(program.GasRemaining, GasConstants.SSTORE_SENTRY);
+            }
+
             var key = program.StackPopAndConvertToUBigInteger();
-            //ensure we have the value in storage to track it
-            //always first so we can track the original value
-            await program.ProgramContext.GetFromStorageAsync(key);
-            var storageValue = program.StackPop();
-            program.ProgramContext.SaveToStorage(key, storageValue);
+            var currentValue = await program.ProgramContext.GetFromStorageAsync(key);
+            var newValue = program.StackPop();
+
+            CalculateSStoreRefund(program, key, currentValue, newValue);
+
+            program.ProgramContext.SaveToStorage(key, newValue);
             program.Step();
+        }
+
+        private void CalculateSStoreRefund(Program program, BigInteger key, byte[] currentValue, byte[] newValue)
+        {
+            var contextAddress = program.ProgramContext.AddressContract;
+            var state = program.ProgramContext.ExecutionStateService.CreateOrGetAccountExecutionState(contextAddress);
+
+            var currentVal = currentValue?.PadTo32Bytes() ?? ByteUtil.InitialiseEmptyByteArray(32);
+            var newVal = newValue?.PadTo32Bytes() ?? ByteUtil.InitialiseEmptyByteArray(32);
+            var origVal = state.OriginalStorageValues.ContainsKey(key)
+                ? state.OriginalStorageValues[key]?.PadTo32Bytes() ?? ByteUtil.InitialiseEmptyByteArray(32)
+                : currentVal;
+
+            if (ByteUtil.AreEqual(newVal, currentVal))
+                return;
+
+            if (ByteUtil.AreEqual(currentVal, origVal))
+            {
+                if (!ByteUtil.IsZero(origVal) && ByteUtil.IsZero(newVal))
+                {
+                    program.AddRefund(GasConstants.SSTORE_CLEARS_SCHEDULE);
+                }
+            }
+            else
+            {
+                if (!ByteUtil.IsZero(origVal))
+                {
+                    if (ByteUtil.IsZero(currentVal))
+                    {
+                        program.AddRefund(-GasConstants.SSTORE_CLEARS_SCHEDULE);
+                    }
+                    else if (ByteUtil.IsZero(newVal))
+                    {
+                        program.AddRefund(GasConstants.SSTORE_CLEARS_SCHEDULE);
+                    }
+                }
+
+                if (ByteUtil.AreEqual(newVal, origVal))
+                {
+                    if (ByteUtil.IsZero(origVal))
+                    {
+                        program.AddRefund(GasConstants.SSTORE_SET_REFUND);
+                    }
+                    else
+                    {
+                        program.AddRefund(GasConstants.SSTORE_RESET_REFUND);
+                    }
+                }
+            }
         }
 
         public void MLoad(Program program)

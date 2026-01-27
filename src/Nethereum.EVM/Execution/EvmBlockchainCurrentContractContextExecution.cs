@@ -45,6 +45,8 @@ namespace Nethereum.EVM.Execution
 
         private async Task BalanceStepAsync(Program program, byte[] address)
         {
+            var addressString = address.ConvertToEthereumChecksumAddress();
+            program.ProgramContext.RecordAddressAccess(addressString);
             BigInteger balance = await GetTotalBalanceAsync(program, address);
             program.StackPush(balance);
             program.Step();
@@ -121,6 +123,7 @@ namespace Nethereum.EVM.Execution
             program.StackPush(gaslimit);
             program.Step();
         }
+
         public void Gas(Program program)
         {
             var gas = BigInteger.Max(program.GasRemaining, 0);

@@ -128,7 +128,7 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             _listener = Task.Factory.StartNew(async () =>
             {
                 await HandleIncomingMessagesAsync().ConfigureAwait(false);
-            }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+            }, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current).Unwrap();
            
             return ConnectWebSocketAsync();
         }
@@ -291,9 +291,11 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             var logger = new RpcLogger(_log);
             while (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
             {
+                var semaphoreAcquired = false;
                 try
                 {
                     await _semaphoreSlimListener.WaitAsync().ConfigureAwait(false);
+                    semaphoreAcquired = true;
                     if (_clientWebSocket != null && _clientWebSocket.State == WebSocketState.Open && AnyQueueRequests())
                     {
                         using (var memoryData = await ReceiveFullResponseAsync(_clientWebSocket).ConfigureAwait(false))
@@ -334,7 +336,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
                 finally
                 {
                     //release the semaphore for the listener so it can be disposed
-                    _semaphoreSlimListener.Release();
+                    if (semaphoreAcquired)
+                    {
+                        _semaphoreSlimListener.Release();
+                    }
                 }
             }
         }
@@ -387,13 +392,14 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             IsStarted = false;
             //Cancel listener
             _cancellationTokenSource?.Cancel();
+            var semaphoreAcquired = false;
             try
             {
                  //We could wait but this means the websocket will be in bad state before trying to close it or dispose it
                 // _listener?.Wait();
                 
                 //wait for the cancellation to be completed (or wait a second)
-                await _semaphoreSlimListener.WaitAsync(1000).ConfigureAwait(false);
+                semaphoreAcquired = await _semaphoreSlimListener.WaitAsync(1000).ConfigureAwait(false);
                 //Dispose listener
 #if !NETSTANDARD1_3
                 try
@@ -423,7 +429,10 @@ namespace Nethereum.JsonRpc.WebSocketStreamingClient
             finally
             {
                 //release the semaphore for the listener to restart if wanted
-                _semaphoreSlimListener.Release();
+                if (semaphoreAcquired)
+                {
+                    _semaphoreSlimListener.Release();
+                }
             }
 
             //Close the clientWebSocket

@@ -1,22 +1,35 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
 {
     public class EvmCallInputDataExecution
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CallDataCopy(Program program)
         {
-            var indexInMemory = (int)program.StackPopAndConvertToUBigInteger();
-            var indexOfData = (int)program.StackPopAndConvertToUBigInteger();
-            var lengthDataToCopy = (int)program.StackPopAndConvertToUBigInteger();
+            var indexInMemoryBig = program.StackPopAndConvertToUBigInteger();
+            var indexOfDataBig = program.StackPopAndConvertToUBigInteger();
+            var lengthDataToCopyBig = program.StackPopAndConvertToUBigInteger();
             var dataInput = program.ProgramContext.DataInput;
 
-            if (indexOfData >= dataInput.Length)
+            if (indexInMemoryBig > int.MaxValue || lengthDataToCopyBig > int.MaxValue)
             {
-                program.WriteToMemory(indexInMemory, lengthDataToCopy, new byte[0]);
+                program.Step();
+                return;
+            }
+
+            var indexInMemory = (int)indexInMemoryBig;
+            var lengthDataToCopy = (int)lengthDataToCopyBig;
+
+            if (indexOfDataBig > int.MaxValue || indexOfDataBig >= dataInput.Length)
+            {
+                program.WriteToMemory(indexInMemory, lengthDataToCopy, ByteUtil.EMPTY_BYTE_ARRAY);
             }
             else
             {
+                var indexOfData = (int)indexOfDataBig;
                 var size = dataInput.Length - indexOfData;
 
                 if (lengthDataToCopy < size)
@@ -34,17 +47,18 @@ namespace Nethereum.EVM.Execution
 
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CallDataLoad(Program program)
         {
-            var index = (int)program.StackPopAndConvertToBigInteger();
+            var indexBig = program.StackPopAndConvertToUBigInteger();
             var dataInput = program.ProgramContext.DataInput;
-            if (index >= dataInput.Length)
+            if (indexBig > int.MaxValue || indexBig >= dataInput.Length)
             {
                 program.StackPush(0);
             }
             else
             {
-                //ensure only 32 bytes
+                var index = (int)indexBig;
                 int size = Math.Min(dataInput.Length - index, 32);
                 byte[] dataLoaded = new byte[32];
                 Array.Copy(dataInput, index, dataLoaded, 0, size);
@@ -55,6 +69,7 @@ namespace Nethereum.EVM.Execution
 
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CallDataSize(Program program)
         {
             program.StackPush(program.ProgramContext.DataInput.Length);

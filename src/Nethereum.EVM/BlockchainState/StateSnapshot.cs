@@ -8,11 +8,13 @@ namespace Nethereum.EVM.BlockchainState
     {
         public int SnapshotId { get; }
         public Dictionary<string, AccountStateSnapshot> AccountSnapshots { get; }
+        public HashSet<string> WarmAddresses { get; }
 
-        public StateSnapshot(int snapshotId, Dictionary<string, AccountExecutionState> accountsState)
+        public StateSnapshot(int snapshotId, Dictionary<string, AccountExecutionState> accountsState, HashSet<string> warmAddresses)
         {
             SnapshotId = snapshotId;
             AccountSnapshots = new Dictionary<string, AccountStateSnapshot>();
+            WarmAddresses = new HashSet<string>(warmAddresses);
 
             foreach (var kvp in accountsState)
             {
@@ -31,7 +33,8 @@ namespace Nethereum.EVM.BlockchainState
                 ),
                 ExecutionBalance = accountState.Balance.ExecutionBalance,
                 Nonce = accountState.Nonce,
-                Code = accountState.Code?.ToArray()
+                Code = accountState.Code?.ToArray(),
+                WarmStorageKeys = new HashSet<BigInteger>(accountState.WarmStorageKeys)
             };
         }
     }

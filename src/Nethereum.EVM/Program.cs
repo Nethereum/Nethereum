@@ -1,20 +1,24 @@
-﻿using Nethereum.ABI;
+using Nethereum.ABI;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
 using Nethereum.EVM.Exceptions;
+using Nethereum.EVM.Gas;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Nethereum.EVM
 {
 
     public class Program
     {
-        private List<byte[]> stack { get; set; }
+        public const int MAX_STACKSIZE = 1024;
+        private readonly byte[][] stack = new byte[MAX_STACKSIZE][];
+        private int stackPointer = 0;
         public List<byte> Memory { get; set; }
         public List<ProgramInstruction> Instructions { get; private set; }
         public List<ProgramTrace> Trace { get; private set; }
@@ -23,7 +27,12 @@ namespace Nethereum.EVM
 
         public List<string> GetCurrentStackAsHex()
         {
-            return stack.Select(x => x.ToHex()).ToList();
+            var result = new List<string>(stackPointer);
+            for (int i = stackPointer - 1; i >= 0; i--)
+            {
+                result.Add(stack[i].ToHex());
+            }
+            return result;
         }
 
         public string GetCurrentMemoryAsHex()
@@ -38,8 +47,6 @@ namespace Nethereum.EVM
         public Program(byte[] bytecode, ProgramContext programContext = null)
         {
             this.Instructions = ProgramInstructionsUtils.GetProgramInstructions(bytecode);
-
-            this.stack = new List<byte[]>();
             this.Memory = new List<byte>();
             ByteCode = bytecode;
             ProgramContext = programContext;
@@ -49,6 +56,18 @@ namespace Nethereum.EVM
             if (programContext != null)
             {
                 GasRemaining = programContext.Gas;
+            }
+            else
+            {
+                // For testing without context, provide unlimited gas
+                GasRemaining = BigInteger.Parse("10000000000000");
+            }
+
+            // Handle empty bytecode - immediately mark as stopped
+            if (this.Instructions.Count == 0)
+            {
+                StoppedImplicitly = true;
+                Stop();
             }
         }
 
@@ -112,55 +131,76 @@ namespace Nethereum.EVM
             SetInstrunctionIndex(currentInstructionIndex + steps);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackPush(byte[] stackWord)
         {
-            ThrowWhenPushStackOverflows(); 
-            stack.Insert(0, stackWord.PadTo32Bytes());
+            ThrowWhenPushStackOverflows();
+            stack[stackPointer++] = stackWord.PadTo32Bytes();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] StackPeek()
         {
-            return stack[0];
+            return stack[stackPointer - 1];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] StackPeekAt(int index)
         {
-            if (index < 0 || index >= stack.Count)
+            int actualIndex = stackPointer - 1 - index;
+            if (actualIndex < 0 || index < 0)
             {
                 throw new Exception("Invalid stack index");
             }
-            return stack[index];
+            return stack[actualIndex];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BigInteger StackPeekAtAndConvertToBigInteger(int index)
         {
             return StackPeekAt(index).ConvertToInt256();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BigInteger StackPeekAtAndConvertToUBigInteger(int index)
         {
             return StackPeekAt(index).ConvertToUInt256();
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackSwap(int index)
         {
-            var swapTemp = stack[0];
-            stack[0] = stack[index];
-            stack[index] = swapTemp;
+            if (stackPointer < index + 1)
+            {
+                throw new Exception($"Stack underflow: SWAP{index} requires {index + 1} items, have {stackPointer}");
+            }
+            int topIndex = stackPointer - 1;
+            int swapIndex = stackPointer - 1 - index;
+            var swapTemp = stack[topIndex];
+            stack[topIndex] = stack[swapIndex];
+            stack[swapIndex] = swapTemp;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackDup(int index)
         {
-            var dup = stack[index - 1];
+            if (stackPointer < index)
+            {
+                throw new Exception($"Stack underflow: DUP{index} requires {index} items, have {stackPointer}");
+            }
+            var dup = stack[stackPointer - index];
             StackPush(dup);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[] StackPop()
         {
-            var popItem = stack[0];
-            stack.RemoveAt(0);
-            return popItem;
+            if (stackPointer == 0)
+            {
+                throw new Exception("Stack underflow");
+            }
+            return stack[--stackPointer];
         }
 
         private void ThrowWhenPushStackOverflows()
@@ -168,16 +208,14 @@ namespace Nethereum.EVM
             VerifyStackOverflow(0,1);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void VerifyStackOverflow(int args, int returns)
         {
-            
-            if (stack.Count - args + returns > MAX_STACKSIZE)
+            if (stackPointer - args + returns > MAX_STACKSIZE)
             {
                 throw new Exception("Stack overflow, maximum size is " + MAX_STACKSIZE);
             }
         }
-
-        public const int MAX_STACKSIZE = 1024;
 
         public void ExpandMemory(int newSize)
         {
@@ -228,16 +266,19 @@ namespace Nethereum.EVM
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BigInteger StackPopAndConvertToBigInteger()
         {
             return StackPop().ConvertToInt256();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BigInteger StackPopAndConvertToUBigInteger()
         {
             return StackPop().ConvertToUInt256();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackPushSigned(BigInteger value)
         {
             if (value < 0)
@@ -247,7 +288,7 @@ namespace Nethereum.EVM
             StackPush(value);
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackPush(BigInteger value)
         {
             StackPush(IntTypeEncoder.EncodeSignedUnsigned256(value, 32));
@@ -255,12 +296,25 @@ namespace Nethereum.EVM
 
         public bool IsAddressWarm(byte[] addressBytes)
         {
-            return ProgramContext.ExecutionStateService.AddressIsWarm(addressBytes.ToHex());
+            var address = ExtractAddressFromBytes(addressBytes);
+            return ProgramContext.ExecutionStateService.AddressIsWarm(address);
         }
 
         public void MarkAddressAsWarm(byte[] addressBytes)
         {
-            ProgramContext.ExecutionStateService.MarkAddressAsWarm(addressBytes.ToHex());
+            var address = ExtractAddressFromBytes(addressBytes);
+            ProgramContext.ExecutionStateService.MarkAddressAsWarm(address);
+        }
+
+        private static string ExtractAddressFromBytes(byte[] addressBytes)
+        {
+            if (addressBytes.Length <= 20)
+            {
+                return addressBytes.ToHex();
+            }
+            var last20Bytes = new byte[20];
+            Array.Copy(addressBytes, addressBytes.Length - 20, last20Bytes, 0, 20);
+            return last20Bytes.ToHex();
         }
 
         public bool IsStorageSlotWarm(BigInteger key)
@@ -279,11 +333,15 @@ namespace Nethereum.EVM
         {
             if (length == 0) return 0;
 
+            var highestAccessedByte = offset + length;
+
+            if (highestAccessedByte > int.MaxValue)
+                return GasConstants.OVERFLOW_GAS_COST;
+
             var currentBytes = Memory?.Count ?? 0;
             var currentWords = (currentBytes + 31) / 32;
 
-            var highestAccessedByte = (int)(offset + length);
-            var requiredWords = (highestAccessedByte + 31) / 32;
+            var requiredWords = ((int)highestAccessedByte + 31) / 32;
 
             if (requiredWords <= currentWords)
                 return 0;
@@ -298,6 +356,7 @@ namespace Nethereum.EVM
 
         public BigInteger TotalGasUsed { get; set; } = 0;
         public BigInteger GasRemaining { get; set; } = 0;
+        public BigInteger RefundCounter { get; set; } = 0;
 
         public void UpdateGasUsed(BigInteger gasCost)
         {
@@ -308,6 +367,17 @@ namespace Nethereum.EVM
 
             TotalGasUsed += gasCost;
             GasRemaining -= gasCost;
+        }
+
+        public void AddRefund(BigInteger refund)
+        {
+            RefundCounter += refund;
+        }
+
+        public BigInteger GetEffectiveRefund()
+        {
+            var maxRefund = TotalGasUsed / GasConstants.REFUND_QUOTIENT;
+            return BigInteger.Min(RefundCounter, maxRefund);
         }
     }
 }

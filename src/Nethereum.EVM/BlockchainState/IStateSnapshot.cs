@@ -7,6 +7,7 @@ namespace Nethereum.EVM.BlockchainState
     {
         int SnapshotId { get; }
         Dictionary<string, AccountStateSnapshot> AccountSnapshots { get; }
+        HashSet<string> WarmAddresses { get; }
     }
 
     public class AccountStateSnapshot
@@ -16,5 +17,6 @@ namespace Nethereum.EVM.BlockchainState
         public BigInteger? ExecutionBalance { get; set; }
         public BigInteger? Nonce { get; set; }
         public byte[] Code { get; set; }
+        public HashSet<BigInteger> WarmStorageKeys { get; set; }
     }
 }

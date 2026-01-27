@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Nethereum.EVM.Exceptions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -23,6 +24,7 @@ namespace Nethereum.EVM.Execution
             var memStart = (int)program.StackPopAndConvertToUBigInteger();
             var memLength = (int)program.StackPopAndConvertToUBigInteger();
 
+
             var topics = new List<string>();
             for (int i = 0; i < numberTopics; ++i)
             {
@@ -30,7 +32,22 @@ namespace Nethereum.EVM.Execution
                 topics.Add(topic.ToHex());
             }
 
-            byte[] data = program.Memory.GetRange(memStart, memLength).ToArray();
+            byte[] data;
+            if (memLength == 0)
+            {
+                // When memLength is 0, no actual memory read is needed
+                data = new byte[0];
+            }
+            else if (memStart + memLength > program.Memory.Count)
+            {
+                // Memory needs to be expanded - expand it before reading
+                program.ExpandMemory(memStart + memLength);
+                data = program.Memory.GetRange(memStart, memLength).ToArray();
+            }
+            else
+            {
+                data = program.Memory.GetRange(memStart, memLength).ToArray();
+            }
 
             var filterLog = new FilterLog
             {
@@ -82,8 +99,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-
-
         public void Revert(Program program)
         {
             try
@@ -102,11 +117,19 @@ namespace Nethereum.EVM.Execution
             var index = (int)program.StackPopAndConvertToUBigInteger();
             var size = (int)program.StackPopAndConvertToUBigInteger();
 
-
-            if (index + size > program.Memory.Count)
+            if (size == 0)
+            {
+                program.ProgramResult.Result = new byte[0];
+            }
+            else if (index >= program.Memory.Count)
+            {
+                program.ProgramResult.Result = new byte[size];
+            }
+            else if (index + size > program.Memory.Count)
             {
                 var returnByte = new byte[size];
-                byte[] result = program.Memory.GetRange(index, program.Memory.Count - index).ToArray();
+                var available = program.Memory.Count - index;
+                byte[] result = program.Memory.GetRange(index, available).ToArray();
                 Array.Copy(result, returnByte, result.Length);
                 program.ProgramResult.Result = returnByte;
             }

@@ -1,23 +1,48 @@
 ﻿using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
 {
     public class EvmCodeExecution
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CodeCopy(Program program)
         {
             var byteCode = program.ByteCode;
             var byteCodeLength = byteCode.Length;
 
-            int indexInMemory = (int)program.StackPopAndConvertToUBigInteger();
-            int indexOfByteCode = (int)program.StackPopAndConvertToUBigInteger();
-            int lengthOfByteCodeToCopy = (int)program.StackPopAndConvertToUBigInteger();
-            CodeCopy(program, byteCode, byteCodeLength, indexInMemory, indexOfByteCode, lengthOfByteCodeToCopy);
+            var indexInMemoryBig = program.StackPopAndConvertToUBigInteger();
+            var indexOfByteCodeBig = program.StackPopAndConvertToUBigInteger();
+            var lengthOfByteCodeToCopyBig = program.StackPopAndConvertToUBigInteger();
+
+            if (indexInMemoryBig > int.MaxValue || lengthOfByteCodeToCopyBig > int.MaxValue)
+            {
+                program.Step();
+                return;
+            }
+
+            var indexInMemory = (int)indexInMemoryBig;
+            var lengthOfByteCodeToCopy = (int)lengthOfByteCodeToCopyBig;
+
+            if (indexOfByteCodeBig > int.MaxValue || indexOfByteCodeBig >= byteCodeLength)
+            {
+                program.WriteToMemory(indexInMemory, lengthOfByteCodeToCopy, ByteUtil.EMPTY_BYTE_ARRAY);
+            }
+            else
+            {
+                var indexOfByteCode = (int)indexOfByteCodeBig;
+                CodeCopyInternal(program, byteCode, byteCodeLength, indexInMemory, indexOfByteCode, lengthOfByteCodeToCopy);
+                return;
+            }
+            program.Step();
         }
 
-        private void CodeCopy(Program program, byte[] byteCode, int byteCodeLength, int indexInMemory, int indexOfByteCode, int lengthOfByteCodeToCopy)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CodeCopyInternal(Program program, byte[] byteCode, int byteCodeLength, int indexInMemory, int indexOfByteCode, int lengthOfByteCodeToCopy)
         {
             byte[] byteCodeCopy = new byte[lengthOfByteCodeToCopy];
 
@@ -39,16 +64,44 @@ namespace Nethereum.EVM.Execution
         public async Task ExtCodeCopyAsync(Program program)
         {
             var address = program.StackPop();
-            var byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(address.ConvertToEthereumChecksumAddress());
+            // Take last 20 bytes if longer (stack stores 32-byte values)
+            if (address.Length > 20)
+                address = address.Skip(address.Length - 20).ToArray();
+            var addressString = AddressUtil.Current.ConvertToValid20ByteAddress(address.ToHex()).ToLower();
+            program.ProgramContext.RecordAddressAccess(addressString);
+            var byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(addressString);
+            if (byteCode == null)
+            {
+                byteCode = ByteUtil.EMPTY_BYTE_ARRAY;
+            }
 
             var byteCodeLength = byteCode.Length;
-            int indexInMemory = (int)program.StackPopAndConvertToUBigInteger();
-            int indexOfByteCode = (int)program.StackPopAndConvertToUBigInteger();
-            int lengthOfByteCodeToCopy = (int)program.StackPopAndConvertToUBigInteger();
+            var indexInMemoryBig = program.StackPopAndConvertToUBigInteger();
+            var indexOfByteCodeBig = program.StackPopAndConvertToUBigInteger();
+            var lengthOfByteCodeToCopyBig = program.StackPopAndConvertToUBigInteger();
 
-            CodeCopy(program, byteCode, byteCodeLength, indexInMemory, indexOfByteCode, lengthOfByteCodeToCopy);
+            if (indexInMemoryBig > int.MaxValue || lengthOfByteCodeToCopyBig > int.MaxValue)
+            {
+                program.Step();
+                return;
+            }
+
+            var indexInMemory = (int)indexInMemoryBig;
+            var lengthOfByteCodeToCopy = (int)lengthOfByteCodeToCopyBig;
+
+            if (indexOfByteCodeBig > int.MaxValue || indexOfByteCodeBig >= byteCodeLength)
+            {
+                program.WriteToMemory(indexInMemory, lengthOfByteCodeToCopy, ByteUtil.EMPTY_BYTE_ARRAY);
+                program.Step();
+            }
+            else
+            {
+                var indexOfByteCode = (int)indexOfByteCodeBig;
+                CodeCopyInternal(program, byteCode, byteCodeLength, indexInMemory, indexOfByteCode, lengthOfByteCodeToCopy);
+            }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CodeSize(Program program)
         {
             var size = program.ByteCode.Length;
@@ -59,18 +112,29 @@ namespace Nethereum.EVM.Execution
         public async Task ExtCodeSizeAsync(Program program)
         {
             var address = program.StackPop();
-            var code = await program.ProgramContext.ExecutionStateService.GetCodeAsync(address.ConvertToEthereumChecksumAddress());
-            program.StackPush(code.Length);
+            // Take last 20 bytes if longer (stack stores 32-byte values)
+            if (address.Length > 20)
+                address = address.Skip(address.Length - 20).ToArray();
+            var addressString = AddressUtil.Current.ConvertToValid20ByteAddress(address.ToHex()).ToLower();
+            program.ProgramContext.RecordAddressAccess(addressString);
+            var code = await program.ProgramContext.ExecutionStateService.GetCodeAsync(addressString);
+            var codeSize = code?.Length ?? 0;
+            program.StackPush(codeSize);
             program.Step();
         }
 
         public async Task ExtCodeHashAsync(Program program)
         {
             var address = program.StackPop();
-            var code = await program.ProgramContext.ExecutionStateService.GetCodeAsync(address.ConvertToEthereumChecksumAddress());
+            // Take last 20 bytes if longer (stack stores 32-byte values)
+            if (address.Length > 20)
+                address = address.Skip(address.Length - 20).ToArray();
+            var addressString = AddressUtil.Current.ConvertToValid20ByteAddress(address.ToHex()).ToLower();
+            program.ProgramContext.RecordAddressAccess(addressString);
+            var code = await program.ProgramContext.ExecutionStateService.GetCodeAsync(addressString);
             if (code == null)
             {
-                code = new byte[] { };
+                code = ByteUtil.EMPTY_BYTE_ARRAY;
             }
             var codeHash = Sha3Keccack.Current.CalculateHash(code);
             program.StackPush(codeHash);

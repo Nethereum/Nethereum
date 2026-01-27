@@ -42,6 +42,12 @@ namespace Nethereum.EVM.BlockchainState
             }
         }
 
+        public void SetPreStateStorage(BigInteger key, byte[] value)
+        {
+            Storage[key] = value;
+            OriginalStorageValues[key] = value;
+        }
+
         public byte[] GetStorageValue(BigInteger key)
         {
             if (StorageContainsKey(key))

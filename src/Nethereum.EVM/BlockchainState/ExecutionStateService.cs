@@ -1,4 +1,5 @@
 ﻿using Nethereum.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -10,6 +11,7 @@ namespace Nethereum.EVM.BlockchainState
     {
         private readonly Stack<IStateSnapshot> _snapshots = new Stack<IStateSnapshot>();
         private int _nextSnapshotId = 0;
+        private readonly HashSet<string> _warmAddresses = new HashSet<string>();
 
         public ExecutionStateService(INodeDataService nodeDataService)
         {
@@ -22,8 +24,9 @@ namespace Nethereum.EVM.BlockchainState
 
         public int TakeSnapshot()
         {
-            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState);
+            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState, _warmAddresses);
             _snapshots.Push(snapshot);
+
             return _nextSnapshotId++;
         }
 
@@ -71,6 +74,12 @@ namespace Nethereum.EVM.BlockchainState
 
         private void RestoreFromSnapshot(IStateSnapshot snapshot)
         {
+            _warmAddresses.Clear();
+            foreach (var addr in snapshot.WarmAddresses)
+            {
+                _warmAddresses.Add(addr);
+            }
+
             var addressesToRemove = AccountsState.Keys
                 .Where(addr => !snapshot.AccountSnapshots.ContainsKey(addr))
                 .ToList();
@@ -102,6 +111,15 @@ namespace Nethereum.EVM.BlockchainState
             accountState.Balance.SetExecutionBalance(snapshot.ExecutionBalance);
             accountState.Nonce = snapshot.Nonce;
             accountState.Code = snapshot.Code?.ToArray();
+
+            accountState.WarmStorageKeys.Clear();
+            if (snapshot.WarmStorageKeys != null)
+            {
+                foreach (var key in snapshot.WarmStorageKeys)
+                {
+                    accountState.WarmStorageKeys.Add(key);
+                }
+            }
         }
 
 
@@ -120,10 +138,13 @@ namespace Nethereum.EVM.BlockchainState
 
         public async Task<byte[]> GetCodeAsync(string address)
         {
-            var accountState = CreateOrGetAccountExecutionState(address);
+            var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
+
+            var accountState = CreateOrGetAccountExecutionState(normalizedAddress);
+
             if (accountState.Code == null)
             {
-                accountState.Code = await NodeDataService.GetCodeAsync(address);
+                accountState.Code = await NodeDataService.GetCodeAsync(normalizedAddress);
             }
             return accountState.Code;
         }
@@ -162,13 +183,26 @@ namespace Nethereum.EVM.BlockchainState
 
         public bool AddressIsWarm(string address)
         {
-            address = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
-            return AccountsState.ContainsKey(address);
+            return _warmAddresses.Any(w => w.IsTheSameAddress(address));
         }
 
         public void MarkAddressAsWarm(string address)
         {
+            if (!AddressIsWarm(address))
+            {
+                var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
+                _warmAddresses.Add(normalized);
+            }
             CreateOrGetAccountExecutionState(address);
+        }
+
+        public void MarkPrecompilesAsWarm()
+        {
+            for (int i = 1; i <= 9; i++)
+            {
+                var precompileAddress = "0x" + i.ToString().PadLeft(40, '0');
+                MarkAddressAsWarm(precompileAddress);
+            }
         }
 
         public AccountExecutionState CreateOrGetAccountExecutionState(string address)
@@ -187,6 +221,13 @@ namespace Nethereum.EVM.BlockchainState
             address = address.ToLower();
             var accountState = CreateOrGetAccountExecutionState(address);
             accountState.UpsertStorageValue(key, storageValue);
+        }
+
+        public void SetPreStateStorage(string address, BigInteger key, byte[] storageValue)
+        {
+            address = address.ToLower();
+            var accountState = CreateOrGetAccountExecutionState(address);
+            accountState.SetPreStateStorage(key, storageValue);
         }
 
         public bool ContainsInitialChainBalanceForAddress(string address)
@@ -217,6 +258,15 @@ namespace Nethereum.EVM.BlockchainState
         {
             var accountState = CreateOrGetAccountExecutionState(address);
             accountState.Balance.UpdateExecutionBalance(value);
+        }
+
+        public void DeleteAccount(string address)
+        {
+            address = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
+            if (AccountsState.ContainsKey(address))
+            {
+                AccountsState.Remove(address);
+            }
         }
     }
 }

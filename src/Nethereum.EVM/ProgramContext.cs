@@ -1,6 +1,7 @@
 ﻿using Nethereum.ABI;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
@@ -41,13 +42,18 @@ namespace Nethereum.EVM
         public BigInteger Fee { get; set; }
         public Dictionary<BigInteger, byte[]> TransientStorage { get; } = new();
         public bool IsStatic { get; set; } = false;
+        public int Depth { get; set; } = 0;
+        public string ExecutionId { get; set; } = Guid.NewGuid().ToString().Substring(0, 8);
+        public bool EnforceGasSentry { get; set; } = false;
 
         public ExecutionStateService ExecutionStateService { get; protected set; }
+        public AccessListTracker AccessListTracker { get; protected set; }
 
        
-        public ProgramContext(CallInput callInput, ExecutionStateService executionStateService, string addressOrigin = null, string codeAddress = null, long blockNumber = 1, long timestamp = 1438269988, string coinbase = "0x0000000000000000000000000000000000000000", long baseFee = 1)
+        public ProgramContext(CallInput callInput, ExecutionStateService executionStateService, string addressOrigin = null, string codeAddress = null, long blockNumber = 1, long timestamp = 1438269988, string coinbase = "0x0000000000000000000000000000000000000000", long baseFee = 1, bool trackAccessList = false)
         {
             if (addressOrigin == null) addressOrigin = callInput.From;
+            AccessListTracker = new AccessListTracker(callInput.From, callInput.To, trackAccessList);
             AddressContractEncoded = new AddressType().Encode(callInput.To);
             AddressCallerEncoded = new AddressType().Encode(callInput.From);
             AddressOriginEncoded = new AddressType().Encode(addressOrigin);
@@ -91,11 +97,13 @@ namespace Nethereum.EVM
 
         public Task<byte[]> GetFromStorageAsync(BigInteger key)
         {
+            AccessListTracker?.RecordStorageAccess(AddressContract, key);
             return ExecutionStateService.GetFromStorageAsync(AddressContract, key);
         }
 
         public void SaveToStorage(BigInteger key, byte[] storageValue)
         {
+            AccessListTracker?.RecordStorageAccess(AddressContract, key);
             ExecutionStateService.SaveToStorage(AddressContract, key, storageValue);
         }
 
@@ -104,6 +112,19 @@ namespace Nethereum.EVM
             return ExecutionStateService.CreateOrGetAccountExecutionState(AddressContract).GetContractStorageAsHex();
         }
 
+        public List<AccessListItem> GetAccessList()
+        {
+            return AccessListTracker?.GetAccessList() ?? new List<AccessListItem>();
+        }
 
+        public void RecordAddressAccess(string address)
+        {
+            AccessListTracker?.RecordAddressAccess(address);
+        }
+
+        public void SetAccessListTracker(AccessListTracker tracker)
+        {
+            AccessListTracker = tracker;
+        }
     }
 }

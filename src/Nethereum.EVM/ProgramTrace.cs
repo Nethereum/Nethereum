@@ -20,6 +20,7 @@ namespace Nethereum.EVM
         public int Depth { get; set; }
         public List<string> MemoryAsArray { get; set; } = new List<string>();
         public BigInteger GasCost { get; internal set; }
+        public BigInteger GasRemaining { get; internal set; }
 
         public override string ToString()
         {
