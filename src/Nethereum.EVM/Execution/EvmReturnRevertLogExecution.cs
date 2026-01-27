@@ -64,24 +64,17 @@ namespace Nethereum.EVM.Execution
             var memoryIndex = (int)program.StackPopAndConvertToUBigInteger();
             var resultIndex = (int)program.StackPopAndConvertToUBigInteger();
             var lengthResult = (int)program.StackPopAndConvertToUBigInteger();
-            var result = program.ProgramResult.LastCallReturnData;
-            if (result == null)
+            var result = program.ProgramResult.LastCallReturnData ?? Array.Empty<byte>();
+
+            if (resultIndex + lengthResult > result.Length)
             {
-                program.WriteToMemory(memoryIndex, lengthResult, new byte[] { });
+                throw new OutOfGasException(program.GasRemaining, 0);
             }
-            else
+
+            if (lengthResult > 0)
             {
-
-                var size = result.Length - resultIndex;
-
-                if (lengthResult < size)
-                {
-                    size = lengthResult;
-                }
-
-                var dataToCopy = new byte[size];
-                Array.Copy(result, resultIndex, dataToCopy, 0, size);
-
+                var dataToCopy = new byte[lengthResult];
+                Array.Copy(result, resultIndex, dataToCopy, 0, lengthResult);
                 program.WriteToMemory(memoryIndex, lengthResult, dataToCopy);
             }
             program.Step();

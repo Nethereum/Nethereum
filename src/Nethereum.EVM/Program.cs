@@ -341,7 +341,7 @@ namespace Nethereum.EVM
             var currentBytes = Memory?.Count ?? 0;
             var currentWords = (currentBytes + 31) / 32;
 
-            var requiredWords = ((int)highestAccessedByte + 31) / 32;
+            var requiredWords = (highestAccessedByte + 31) / 32;
 
             if (requiredWords <= currentWords)
                 return 0;
@@ -349,7 +349,7 @@ namespace Nethereum.EVM
             return MemoryCost(requiredWords) - MemoryCost(currentWords);
         }
 
-        private static BigInteger MemoryCost(int words)
+        private static BigInteger MemoryCost(BigInteger words)
         {
             return (words * words / 512) + (3 * words);
         }

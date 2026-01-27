@@ -181,6 +181,14 @@ namespace Nethereum.EVM.BlockchainState
             accountState.Nonce = nonce;
         }
 
+        public void PrepareNewContractAccount(string address)
+        {
+            var accountState = CreateOrGetAccountExecutionState(address);
+            accountState.ClearStorageForNewContract();
+            accountState.Nonce = 1;
+            accountState.Code = null;
+        }
+
         public bool AddressIsWarm(string address)
         {
             return _warmAddresses.Any(w => w.IsTheSameAddress(address));

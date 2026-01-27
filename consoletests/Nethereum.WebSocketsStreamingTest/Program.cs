@@ -38,7 +38,7 @@ namespace Nethereum.WebSocketsStreamingTest
             //var example = new ExampleLogsUniswapSyncSubscription(url);
 
             var example = new ExampleReconnectStress(url);
-            await example.RunAsync(iterations: 200, delayBetweenMs: 50);
+            await example.RunAsync(iterations: 30, delayBetweenMs: 50);
 
             Console.ReadLine();
         }

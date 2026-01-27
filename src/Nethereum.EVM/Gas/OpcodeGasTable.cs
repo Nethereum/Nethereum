@@ -71,6 +71,7 @@
         { Instruction.CALLDATALOAD, 3 },
         { Instruction.CALLDATASIZE, 2 },
         { Instruction.CODESIZE, 2 },
+        { Instruction.RETURNDATASIZE, 2 },
         { Instruction.GASPRICE, 2 },
         { Instruction.BLOCKHASH, 20 },
         { Instruction.COINBASE, 2 },
@@ -102,7 +103,7 @@
         { Instruction.RETURN, -1 },
         { Instruction.REVERT, -1 },
         { Instruction.INVALID, 0 },
-        { Instruction.SELFDESTRUCT, 5000 },
+        { Instruction.SELFDESTRUCT, -1 },
 
         // PUSH0
         { Instruction.PUSH0, 2 },
@@ -173,23 +174,38 @@
                 Instruction.MSTORE8 => CalculateMStore8Gas(program),
                 Instruction.RETURN => CalculateReturnGas(program),
                 Instruction.REVERT => CalculateRevertGas(program),
+                Instruction.SELFDESTRUCT => await CalculateSelfDestructGas(program),
                 _ => throw new NotImplementedException($"Dynamic gas not implemented for {instruction}")
             };
         }
 
-        // Dynamic gas handlers (stubs)
+        // Dynamic gas handlers
         private static BigInteger CalculateExpGas(Program program)
         {
-            var baseVal = program.StackPeekAt(1); // Exponent is second in stack (topmost is base)
-            var bytesInExponent = baseVal.Length;
-            return 10 + 50 * bytesInExponent;
+            // EIP-158: G_exp + G_expbyte × byte_size_of_exponent
+            // byte_size_of_exponent = 0 if exponent = 0, else 1 + floor(log256(exponent))
+            // This is the minimal bytes needed to represent the exponent, NOT the padded 32-byte stack value
+            var exponentBytes = program.StackPeekAt(1); // Exponent is second in stack (topmost is base)
+
+            // Count minimal bytes: skip leading zeros
+            int bytesInExponent = 0;
+            for (int i = 0; i < exponentBytes.Length; i++)
+            {
+                if (exponentBytes[i] != 0)
+                {
+                    bytesInExponent = exponentBytes.Length - i;
+                    break;
+                }
+            }
+
+            return GasConstants.EXP_BASE + GasConstants.EXP_BYTE * bytesInExponent;
         }
         private static BigInteger CalculateSha3Gas(Program program)
         {
             var index = program.StackPeekAtAndConvertToUBigInteger(0); // memoryIndex is second from top
             var length = program.StackPeekAtAndConvertToUBigInteger(1); // indexInMemory is top of stack
 
-            var lengthWords = (int)((length + 31) / 32); // ceil(len / 32)
+            var lengthWords = (length + 31) / 32;
 
             var memoryCost = program.CalculateMemoryExpansionGas(index, length);
             return 30 + (6 * lengthWords) + memoryCost;
@@ -215,7 +231,7 @@
             var indexInMemory = program.StackPeekAtAndConvertToUBigInteger(indexInMemoryPeekIndex);
             var lengthDataToCopy = program.StackPeekAtAndConvertToUBigInteger(lengthDataToCopyPeekIndex);
 
-            var words = (int)((lengthDataToCopy + 31) / 32);
+            var words = (lengthDataToCopy + 31) / 32;
             var memoryCost = program.CalculateMemoryExpansionGas(indexInMemory, lengthDataToCopy);
 
             return 3 + (3 * words) + memoryCost;
@@ -238,10 +254,10 @@
 
         private static BigInteger CalculateExtCodeCopyGas(Program program)
         {
-            var length = program.StackPeekAtAndConvertToUBigInteger(0);        
-            var indexOfByteCode = program.StackPeekAtAndConvertToUBigInteger(1); 
-            var indexInMemory = program.StackPeekAtAndConvertToUBigInteger(2); 
-            var addressBytes = program.StackPeekAt(3);                         
+            var addressBytes = program.StackPeekAt(0);
+            var indexInMemory = program.StackPeekAtAndConvertToUBigInteger(1);
+            var indexOfByteCode = program.StackPeekAtAndConvertToUBigInteger(2);
+            var length = program.StackPeekAtAndConvertToUBigInteger(3);
 
             var words = (length + 31) / 32;
             var memoryCost = program.CalculateMemoryExpansionGas(indexInMemory, length);
@@ -528,6 +544,37 @@
             var offset = program.StackPeekAtAndConvertToUBigInteger(0);
             var length = program.StackPeekAtAndConvertToUBigInteger(1);
             return program.CalculateMemoryExpansionGas(offset, length);
+        }
+
+        private static async Task<BigInteger> CalculateSelfDestructGas(Program program)
+        {
+            var addressBytes = program.StackPeekAt(0);
+            var recipientAddress = addressBytes.ConvertToEthereumChecksumAddress();
+
+            BigInteger gas = 5000;
+
+            var isWarm = program.IsAddressWarm(addressBytes);
+            if (!isWarm)
+            {
+                program.MarkAddressAsWarm(addressBytes);
+                gas += 2600;
+            }
+
+            var recipientBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(recipientAddress);
+            var recipientCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(recipientAddress);
+            var recipientNonce = await program.ProgramContext.ExecutionStateService.GetNonceAsync(recipientAddress);
+            var accountExists = recipientBalance > 0 || (recipientCode != null && recipientCode.Length > 0) || recipientNonce > 0;
+
+            if (!accountExists)
+            {
+                var selfBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(program.ProgramContext.AddressContract);
+                if (selfBalance > 0)
+                {
+                    gas += 25000;
+                }
+            }
+
+            return gas;
         }
 
     }

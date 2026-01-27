@@ -407,7 +407,16 @@ namespace Nethereum.EVM
                 }
 
                 parentProgram.StackPush(0);
-                parentProgram.ProgramResult.LastCallReturnData = childProgram.ProgramResult.Result;
+                var result = childProgram.ProgramResult.Result;
+                parentProgram.ProgramResult.LastCallReturnData = result;
+
+                // Per EIP-140: REVERT data is written to the output buffer (same as success)
+                if (result != null && result.Length > 0)
+                {
+                    var resultLength = Math.Min(completedFrame.ResultMemoryDataLength, result.Length);
+                    parentProgram.WriteToMemory(completedFrame.ResultMemoryDataIndex, resultLength, result);
+                }
+
                 parentProgram.GasRemaining += gasToReturn;
                 parentProgram.TotalGasUsed += gasActuallySpent;
                 // Note: RefundCounter is NOT propagated on revert - refunds are lost with the reverted state
@@ -797,12 +806,13 @@ namespace Nethereum.EVM
             // Take snapshot AFTER nonce increment - nonce won't be reverted on failure
             var snapshotId = program.ProgramContext.ExecutionStateService.TakeSnapshot();
 
-            // EIP-684: Check for address collision - fail if target has code OR nonce > 0
-            // Collision causes exceptional halt - all gas consumed, but nonce is preserved
+            // EIP-684 + EIP-7610: Check for address collision
+            // Collision occurs if target has: code OR nonce > 0 OR non-empty storage
             var targetAccount = await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(newContractAddress);
             var targetHasCode = targetAccount.Code != null && targetAccount.Code.Length > 0;
             var targetHasNonce = targetAccount.Nonce.HasValue && targetAccount.Nonce.Value > 0;
-            if (targetHasCode || targetHasNonce)
+            var targetHasStorage = targetAccount.Storage != null && targetAccount.Storage.Count > 0;
+            if (targetHasCode || targetHasNonce || targetHasStorage)
             {
                 // Collision: commit snapshot (keeps current state including nonce increment)
                 program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
@@ -1163,6 +1173,8 @@ namespace Nethereum.EVM
                     await EvmProgramExecution.CallingCreation.SelfDestructAsync(program);
                     break;
                 case Instruction.INVALID:
+                    program.GasRemaining = 0;
+                    program.ProgramResult.IsRevert = true;
                     program.Stop();
                     break;
                 default:
@@ -1576,10 +1588,11 @@ namespace Nethereum.EVM
                             break;
 
                         case Instruction.INVALID:
+                            program.GasRemaining = 0;
+                            program.ProgramResult.IsRevert = true;
                             program.Stop();
                             break;
-                      
-                       
+
                         default:
                             throw new ArgumentOutOfRangeException();
                     }

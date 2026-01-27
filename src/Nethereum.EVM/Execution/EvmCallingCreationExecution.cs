@@ -139,11 +139,13 @@ namespace Nethereum.EVM.Execution
             // EIP-2929: Mark new contract address as warm
             program.ProgramContext.ExecutionStateService.MarkAddressAsWarm(newContractAddress);
 
-            // EIP-684: Check for address collision - fail if target has code OR nonce > 0
+            // EIP-684 + EIP-7610: Check for address collision
+            // Collision occurs if target has: code OR nonce > 0 OR non-empty storage
             var targetAccount = await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(newContractAddress);
             var targetHasCode = targetAccount.Code != null && targetAccount.Code.Length > 0;
             var targetHasNonce = targetAccount.Nonce.HasValue && targetAccount.Nonce.Value > 0;
-            if (targetHasCode || targetHasNonce)
+            var targetHasStorage = targetAccount.Storage != null && targetAccount.Storage.Count > 0;
+            if (targetHasCode || targetHasNonce || targetHasStorage)
             {
                 program.StackPush(0);
                 program.Step();
@@ -158,11 +160,14 @@ namespace Nethereum.EVM.Execution
                 ChainId = new HexBigInteger(program.ProgramContext.ChainId)
             };
 
-            program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
-            // Credit value to new contract before initcode execution (so SELFBALANCE works)
-            program.ProgramContext.ExecutionStateService.UpsertInternalBalance(newContractAddress, value);
-
             var snapshotId = program.ProgramContext.ExecutionStateService.TakeSnapshot();
+
+            // EIP-161: New contracts start with nonce=1, and clear any pre-existing storage
+            // This must happen after snapshot so it can be reverted on failure
+            program.ProgramContext.ExecutionStateService.PrepareNewContractAccount(newContractAddress);
+
+            program.ProgramContext.ExecutionStateService.UpsertInternalBalance(program.ProgramContext.AddressContract, -value);
+            program.ProgramContext.ExecutionStateService.UpsertInternalBalance(newContractAddress, value);
 
             var programContext = new ProgramContext(callInput, program.ProgramContext.ExecutionStateService, program.ProgramContext.AddressOrigin, null,
                 (long)program.ProgramContext.BlockNumber, (long)program.ProgramContext.Timestamp, program.ProgramContext.Coinbase, (long)program.ProgramContext.BaseFee);
@@ -223,7 +228,7 @@ namespace Nethereum.EVM.Execution
                     program.ProgramResult.CreatedContractAccounts.AddRange(callProgram.ProgramResult.CreatedContractAccounts);
                     program.ProgramResult.DeletedContractAccounts.AddRange(callProgram.ProgramResult.DeletedContractAccounts);
                     program.ProgramResult.LastCallReturnData = null;
-                    program.ProgramContext.ExecutionStateService.SetNonce(newContractAddress, 1);
+                    // Note: Nonce was already set to 1 by PrepareNewContractAccount before initcode
                     var gasActuallySpentOnCreate = gasToAllocate - callProgram.GasRemaining;
                     if (gasActuallySpentOnCreate < 0) gasActuallySpentOnCreate = 0;
                     program.GasRemaining += callProgram.GasRemaining;

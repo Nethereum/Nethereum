@@ -57,6 +57,13 @@ namespace Nethereum.EVM.BlockchainState
             return null;
         }
 
+        public void ClearStorageForNewContract()
+        {
+            Storage.Clear();
+            OriginalStorageValues.Clear();
+            WarmStorageKeys.Clear();
+        }
+
         public bool IsStorageKeyWarm(BigInteger key) => WarmStorageKeys.Contains(key);
 
         public void MarkStorageKeyAsWarm(BigInteger key) => WarmStorageKeys.Add(key);
