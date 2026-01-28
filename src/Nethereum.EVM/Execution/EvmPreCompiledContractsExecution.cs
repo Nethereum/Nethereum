@@ -95,25 +95,18 @@ namespace Nethereum.EVM.Execution
             }
             if (iterationCount < 1) iterationCount = 1;
 
-            // Calculate multiplication complexity (use BigInteger to avoid overflow)
+            // Calculate multiplication complexity per EIP-2565
+            // words = ceil(max(baseLen, modLen) / 8)
+            // mulComplexity = words * words
             BigInteger maxLen = Math.Max(baseLen, modLen);
-            BigInteger mulComplexity;
-            if (maxLen <= 64)
-            {
-                mulComplexity = maxLen * maxLen;
-            }
-            else if (maxLen <= 1024)
-            {
-                mulComplexity = maxLen * maxLen / 4 + 96 * maxLen - 3072;
-            }
-            else
-            {
-                mulComplexity = maxLen * maxLen / 16 + 480 * maxLen - 199680;
-            }
+            BigInteger words = (maxLen + 7) / 8;
+            BigInteger mulComplexity = words * words;
 
             // EIP-2565: gas = max(200, floor(mulComplexity * iterationCount / 3))
             var gas = mulComplexity * iterationCount / 3;
-            return gas < 200 ? 200 : gas;
+            var result = gas < 200 ? 200 : gas;
+
+            return result;
         }
 
         private BigInteger GetBn128PairingGas(int dataLen)
