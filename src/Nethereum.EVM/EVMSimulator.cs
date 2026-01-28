@@ -356,11 +356,21 @@ namespace Nethereum.EVM
             var childProgram = completedFrame.Program;
             var parentProgram = parentFrame.Program;
 
-            // Cap returned gas at what was allocated - stipend (2300 free gas for calls with value)
-            // should NOT return to parent. If child used less than stipend, parent still gets back
-            // at most what it allocated, not the unspent stipend.
-            var gasToReturn = BigInteger.Min(childProgram.GasRemaining, completedFrame.GasAllocated);
-            var gasActuallySpent = completedFrame.GasAllocated - gasToReturn;
+            // Per Yellow Paper: parent receives back whatever gas remains in the callee.
+            // The stipend (2300 gas for value calls) is given "for free" but if unused,
+            // it IS returned to the parent. This is correct EVM behavior.
+            var gasToReturn = childProgram.GasRemaining;
+            // Gas actually spent is what was allocated minus what's returned (capped at allocated)
+            var gasActuallySpent = completedFrame.GasAllocated - BigInteger.Min(gasToReturn, completedFrame.GasAllocated);
+
+            // If callee returns more gas than was allocated, the excess is the unused stipend.
+            // This stipend was already charged in the CALL opcode cost (G_callvalue = 9000 includes
+            // G_callstipend = 2300). If unused, we must refund it from TotalGasUsed.
+            var excessReturn = gasToReturn - completedFrame.GasAllocated;
+            if (excessReturn > 0)
+            {
+                parentProgram.TotalGasUsed -= excessReturn;
+            }
 
             if (!childProgram.ProgramResult.IsRevert)
             {
@@ -622,6 +632,9 @@ namespace Nethereum.EVM
                             program.ProgramResult.LastCallReturnData = precompiledResult;
                             // Precompile succeeded - commit the snapshot
                             program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
+                            // Note: Precompiles don't receive the stipend, so no stipend refund needed here.
+                            // The G_callvalue (9000) includes G_callstipend (2300), but precompiles
+                            // are not EVM contracts and don't get the stipend.
                         }
                         catch
                         {
@@ -666,6 +679,17 @@ namespace Nethereum.EVM
                 {
                     // dataInput is null - just commit the value transfer and succeed
                     program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
+                    program.ProgramResult.LastCallReturnData = null;
+
+                    // For empty code with value > 0, return the stipend to the caller.
+                    // Same as the non-precompile case above - stipend is "free" gas that was
+                    // included in G_callvalue (9000) but should be refunded when unused.
+                    if (shouldTransferValue && value > 0)
+                    {
+                        program.GasRemaining += GasConstants.CALL_STIPEND;
+                        program.TotalGasUsed -= GasConstants.CALL_STIPEND;
+                    }
+
                     program.StackPush(1);
                     program.Step();
                 }
