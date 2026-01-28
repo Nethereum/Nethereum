@@ -314,7 +314,9 @@
                 ? state.OriginalStorageValues[key]?.PadTo32Bytes() ?? ByteUtil.InitialiseEmptyByteArray(32)
                 : currentVal;
 
-            if (ByteUtil.AreEqual(newValue, currentVal))
+            var areEqual = ByteUtil.AreEqual(newValue, currentVal);
+
+            if (areEqual)
             {
                 return gasCost + 100;
             }

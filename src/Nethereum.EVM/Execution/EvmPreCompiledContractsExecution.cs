@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -46,26 +47,24 @@ namespace Nethereum.EVM.Execution
             data = data ?? new byte[0];
 
             int offset = 0;
-            var baseLen = (int)ReadBigInteger(data, offset, 32);
+            var baseLen = ReadBigInteger(data, offset, 32);
             offset += 32;
-            var expLen = (int)ReadBigInteger(data, offset, 32);
+            var expLen = ReadBigInteger(data, offset, 32);
             offset += 32;
-            var modLen = (int)ReadBigInteger(data, offset, 32);
+            var modLen = ReadBigInteger(data, offset, 32);
             offset += 32;
 
-            // Calculate exponent head (first 32 bytes of exponent, or all if shorter)
-            // Per EIP-2565: we only use the bit length of the first 32 bytes
             BigInteger expHead = 0;
-            if (expLen > 0)
+            if (expLen > 0 && expLen <= int.MaxValue)
             {
-                int headLen = Math.Min(32, expLen);
-                for (int i = 0; i < headLen && (offset + baseLen + i) < data.Length; i++)
+                int headLen = (int)BigInteger.Min(32, expLen);
+                var expStartOffset = offset + (baseLen <= int.MaxValue ? (int)baseLen : int.MaxValue);
+                for (int i = 0; i < headLen && (expStartOffset + i) < data.Length; i++)
                 {
-                    expHead = (expHead << 8) | data[offset + baseLen + i];
+                    expHead = (expHead << 8) | data[expStartOffset + i];
                 }
             }
 
-            // Bit length of exponent head
             int expBitLen = 0;
             if (expHead > 0)
             {
@@ -77,8 +76,6 @@ namespace Nethereum.EVM.Execution
                 }
             }
 
-            // Calculate iteration count per EIP-2565
-            // iteration_count = 8 * (expLen - 32) + ((expBitLen - 1) if expHead > 0 else 0)
             BigInteger iterationCount;
             if (expLen <= 32 && expHead == 0)
             {
@@ -90,19 +87,14 @@ namespace Nethereum.EVM.Execution
             }
             else
             {
-                // When expLen > 32, add (expBitLen - 1) only if expHead > 0
                 iterationCount = 8 * (expLen - 32) + (expHead > 0 ? expBitLen - 1 : 0);
             }
             if (iterationCount < 1) iterationCount = 1;
 
-            // Calculate multiplication complexity per EIP-2565
-            // words = ceil(max(baseLen, modLen) / 8)
-            // mulComplexity = words * words
-            BigInteger maxLen = Math.Max(baseLen, modLen);
+            BigInteger maxLen = BigInteger.Max(baseLen, modLen);
             BigInteger words = (maxLen + 7) / 8;
             BigInteger mulComplexity = words * words;
 
-            // EIP-2565: gas = max(200, floor(mulComplexity * iterationCount / 3))
             var gas = mulComplexity * iterationCount / 3;
             var result = gas < 200 ? 200 : gas;
 
@@ -169,13 +161,39 @@ namespace Nethereum.EVM.Execution
             return null;
         }
 
+        private static readonly BigInteger SECP256K1_N = BigInteger.Parse("00fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", System.Globalization.NumberStyles.HexNumber);
+
         public byte[] EcRecover(byte[] data)
         {
-            data = data.PadTo128Bytes();
+            if (data == null || data.Length == 0)
+                data = new byte[128];
+            else if (data.Length < 128)
+            {
+                var padded = new byte[128];
+                Array.Copy(data, 0, padded, 0, data.Length);
+                data = padded;
+            }
             var hash = data.Slice(0, 32);
+
+            for (int i = 32; i < 63; i++)
+            {
+                if (data[i] != 0)
+                    return new byte[0];
+            }
+
             var v = data[63];
             var r = data.Slice(64, 96);
             var s = data.Slice(96, 128);
+
+            var rReversed = r.Reverse().Concat(new byte[] { 0 }).ToArray();
+            var sReversed = s.Reverse().Concat(new byte[] { 0 }).ToArray();
+            var rBigInt = new BigInteger(rReversed);
+            var sBigInt = new BigInteger(sReversed);
+
+            if (rBigInt <= 0 || rBigInt >= SECP256K1_N)
+                return new byte[0];
+            if (sBigInt <= 0 || sBigInt >= SECP256K1_N)
+                return new byte[0];
 
             byte[] recoveredAddress;
             try
@@ -184,7 +202,7 @@ namespace Nethereum.EVM.Execution
             }
             catch
             {
-                return new byte[0]; // ECRECOVER returns empty on failure (per Yellow Paper)
+                return new byte[0];
             }
 
             return recoveredAddress.PadTo32Bytes();
