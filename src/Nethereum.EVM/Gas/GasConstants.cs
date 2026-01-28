@@ -102,6 +102,7 @@ namespace Nethereum.EVM.Gas
         public const int RIPEMD160_PER_WORD_GAS = 120;
         public const int IDENTITY_BASE_GAS = 15;
         public const int IDENTITY_PER_WORD_GAS = 3;
+        public const int KZG_POINT_EVALUATION_GAS = 50000;  // EIP-4844
     }
 }
 

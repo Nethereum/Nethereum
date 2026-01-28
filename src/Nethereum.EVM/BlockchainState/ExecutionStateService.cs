@@ -206,9 +206,10 @@ namespace Nethereum.EVM.BlockchainState
 
         public void MarkPrecompilesAsWarm()
         {
-            for (int i = 1; i <= 9; i++)
+            // EIP-4844 (Cancun) adds KZG point evaluation precompile at address 0x0A
+            for (int i = 1; i <= 10; i++)
             {
-                var precompileAddress = "0x" + i.ToString().PadLeft(40, '0');
+                var precompileAddress = "0x" + i.ToString("x").PadLeft(40, '0');
                 MarkAddressAsWarm(precompileAddress);
             }
         }
