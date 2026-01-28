@@ -378,7 +378,7 @@
         {
             var gas = program.StackPeekAtAndConvertToBigInteger(0);
             var toBytes = program.StackPeekAt(1);
-            var value = program.StackPeekAtAndConvertToBigInteger(2);
+            var value = program.StackPeekAtAndConvertToUBigInteger(2);
             var inOffset = program.StackPeekAtAndConvertToBigInteger(3);
             var inSize = program.StackPeekAtAndConvertToBigInteger(4);
             var outOffset = program.StackPeekAtAndConvertToBigInteger(5);
@@ -419,7 +419,7 @@
         {
             var gas = program.StackPeekAtAndConvertToBigInteger(0);
             var toBytes = program.StackPeekAt(1);
-            var value = program.StackPeekAtAndConvertToBigInteger(2);
+            var value = program.StackPeekAtAndConvertToUBigInteger(2);
             var inOffset = program.StackPeekAtAndConvertToBigInteger(3);
             var inSize = program.StackPeekAtAndConvertToBigInteger(4);
             var outOffset = program.StackPeekAtAndConvertToBigInteger(5);

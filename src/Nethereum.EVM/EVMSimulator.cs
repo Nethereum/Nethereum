@@ -493,6 +493,13 @@ namespace Nethereum.EVM
                     break;
             }
 
+            // In STATICCALL context, CALL with value > 0 is not allowed (state modification - transfers funds)
+            // CALLCODE with value > 0 IS allowed because it doesn't actually transfer funds
+            if (program.ProgramContext.IsStatic && value > 0 && callType == CallFrameType.Call)
+            {
+                throw new Exceptions.StaticCallViolationException(callType.ToString());
+            }
+
             var dataInputIndexBig = program.StackPopAndConvertToUBigInteger();
             var dataInputLengthBig = program.StackPopAndConvertToUBigInteger();
             var resultMemoryDataIndexBig = program.StackPopAndConvertToUBigInteger();
@@ -650,9 +657,14 @@ namespace Nethereum.EVM
                             program.ProgramResult.LastCallReturnData = precompiledResult;
                             // Precompile succeeded - commit the snapshot
                             program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
-                            // Note: Precompiles don't receive the stipend, so no stipend refund needed here.
+                            // For precompile with value > 0, refund the stipend.
                             // The G_callvalue (9000) includes G_callstipend (2300), but precompiles
-                            // are not EVM contracts and don't get the stipend.
+                            // don't receive/use the stipend since they're not EVM code. Refund it.
+                            if (shouldTransferValue && value > 0)
+                            {
+                                program.GasRemaining += GasConstants.CALL_STIPEND;
+                                program.TotalGasUsed -= GasConstants.CALL_STIPEND;
+                            }
                         }
                         catch
                         {

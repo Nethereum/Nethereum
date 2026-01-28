@@ -107,14 +107,23 @@ namespace Nethereum.EVM.Execution
 
         public  void Return(Program program)
         {
-            var index = (int)program.StackPopAndConvertToUBigInteger();
-            var size = (int)program.StackPopAndConvertToUBigInteger();
+            var indexBig = program.StackPopAndConvertToUBigInteger();
+            var sizeBig = program.StackPopAndConvertToUBigInteger();
 
-            if (size == 0)
+            if (sizeBig == 0)
             {
                 program.ProgramResult.Result = new byte[0];
+                program.Stop();
+                return;
             }
-            else if (index >= program.Memory.Count)
+
+            // For size > 0, if we got here the gas was paid so memory expansion was affordable.
+            // Values larger than int.MaxValue would have required astronomical gas (OVERFLOW_GAS_COST).
+            // Safe to cast since we've already paid for any memory expansion.
+            var index = (int)indexBig;
+            var size = (int)sizeBig;
+
+            if (index >= program.Memory.Count)
             {
                 program.ProgramResult.Result = new byte[size];
             }
