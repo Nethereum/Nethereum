@@ -308,13 +308,18 @@ namespace Nethereum.EVM
 
         private static string ExtractAddressFromBytes(byte[] addressBytes)
         {
+            string hex;
             if (addressBytes.Length <= 20)
             {
-                return addressBytes.ToHex();
+                hex = addressBytes.ToHex();
             }
-            var last20Bytes = new byte[20];
-            Array.Copy(addressBytes, addressBytes.Length - 20, last20Bytes, 0, 20);
-            return last20Bytes.ToHex();
+            else
+            {
+                var last20Bytes = new byte[20];
+                Array.Copy(addressBytes, addressBytes.Length - 20, last20Bytes, 0, 20);
+                hex = last20Bytes.ToHex();
+            }
+            return AddressUtil.Current.ConvertToValid20ByteAddress(hex);
         }
 
         public bool IsStorageSlotWarm(BigInteger key)

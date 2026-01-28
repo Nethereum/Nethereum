@@ -513,6 +513,15 @@ namespace Nethereum.EVM
 
             if (parentFrame.Depth + 1 > GasConstants.MAX_CALL_DEPTH)
             {
+                // Call depth exceeded. If value > 0, the G_callvalue (9000) was already charged
+                // and the stipend should be refunded since callee was never invoked.
+                var shouldTransferValueDepthCheck = callType != CallFrameType.DelegateCall && callType != CallFrameType.StaticCall;
+                if (shouldTransferValueDepthCheck && value > 0)
+                {
+                    program.GasRemaining += GasConstants.CALL_STIPEND;
+                    program.TotalGasUsed -= GasConstants.CALL_STIPEND;
+                }
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
