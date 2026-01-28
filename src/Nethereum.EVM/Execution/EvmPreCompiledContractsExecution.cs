@@ -54,6 +54,7 @@ namespace Nethereum.EVM.Execution
             offset += 32;
 
             // Calculate exponent head (first 32 bytes of exponent, or all if shorter)
+            // Per EIP-2565: we only use the bit length of the first 32 bytes
             BigInteger expHead = 0;
             if (expLen > 0)
             {
@@ -61,11 +62,6 @@ namespace Nethereum.EVM.Execution
                 for (int i = 0; i < headLen && (offset + baseLen + i) < data.Length; i++)
                 {
                     expHead = (expHead << 8) | data[offset + baseLen + i];
-                }
-                if (expLen > 32)
-                {
-                    // Shift left to account for remaining exp bytes
-                    expHead <<= (expLen - 32) * 8;
                 }
             }
 
@@ -82,6 +78,7 @@ namespace Nethereum.EVM.Execution
             }
 
             // Calculate iteration count per EIP-2565
+            // iteration_count = 8 * (expLen - 32) + ((expBitLen - 1) if expHead > 0 else 0)
             BigInteger iterationCount;
             if (expLen <= 32 && expHead == 0)
             {
@@ -93,12 +90,13 @@ namespace Nethereum.EVM.Execution
             }
             else
             {
-                iterationCount = 8 * (expLen - 32) + expBitLen - 1;
+                // When expLen > 32, add (expBitLen - 1) only if expHead > 0
+                iterationCount = 8 * (expLen - 32) + (expHead > 0 ? expBitLen - 1 : 0);
             }
             if (iterationCount < 1) iterationCount = 1;
 
-            // Calculate multiplication complexity
-            var maxLen = Math.Max(baseLen, modLen);
+            // Calculate multiplication complexity (use BigInteger to avoid overflow)
+            BigInteger maxLen = Math.Max(baseLen, modLen);
             BigInteger mulComplexity;
             if (maxLen <= 64)
             {
@@ -193,7 +191,7 @@ namespace Nethereum.EVM.Execution
             }
             catch
             {
-                return new byte[32]; // Return zeros on error (matching EVM behavior)
+                return new byte[0]; // ECRECOVER returns empty on failure (per Yellow Paper)
             }
 
             return recoveredAddress.PadTo32Bytes();

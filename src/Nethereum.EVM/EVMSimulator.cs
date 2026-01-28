@@ -568,9 +568,16 @@ namespace Nethereum.EVM
                 var callerBalance = callerAccount.Balance.GetTotalBalance();
                 if (callerBalance < value)
                 {
-                    // When CALL/CALLCODE fails due to insufficient balance, the stipend that would
-                    // have been given to the callee is never allocated, so we refund it
+                    // CALL/CALLCODE fails immediately due to insufficient balance.
+                    // The G_callvalue (9000) was already charged in OpcodeGasTable.
+                    // Since the callee was never invoked, the stipend (2300) was never given.
+                    // The stipend is "free" gas that the callee would have received and could
+                    // return to the caller. Since the call failed before invocation, we must
+                    // refund it - same as the empty code path where callee returns immediately.
+                    // Per EIP-211: failed call clears the return data buffer
                     program.GasRemaining += GasConstants.CALL_STIPEND;
+                    program.TotalGasUsed -= GasConstants.CALL_STIPEND;
+                    program.ProgramResult.LastCallReturnData = null;
                     program.StackPush(0);
                     program.Step();
                     return new SubCallSetup { ShouldCreateSubCall = false };
@@ -611,7 +618,9 @@ namespace Nethereum.EVM
                         // Check if we have enough gas (gas forwarded to precompile)
                         if (gasToForwardForTrace < precompileGasCost)
                         {
-                            // Out of gas - precompile call fails, revert state changes
+                            // Out of gas - precompile call fails, consume ALL forwarded gas, revert state
+                            program.GasRemaining -= (long)gasToForwardForTrace;
+                            program.TotalGasUsed += (long)gasToForwardForTrace;
                             program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
                             program.StackPush(0);
                             program.ProgramResult.LastCallReturnData = null;
