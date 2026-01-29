@@ -48,6 +48,7 @@ namespace Nethereum.EVM.Execution
 
             if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
             {
+                program.GasRemaining = 0;
                 program.StackPush(0);
                 program.ProgramResult.LastCallReturnData = null;
                 program.Step();
@@ -100,6 +101,7 @@ namespace Nethereum.EVM.Execution
 
             if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
             {
+                program.GasRemaining = 0;
                 program.StackPush(0);
                 program.ProgramResult.LastCallReturnData = null;
                 program.Step();

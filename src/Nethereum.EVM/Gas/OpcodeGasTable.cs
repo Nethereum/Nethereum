@@ -356,9 +356,13 @@
             var memoryIndex = program.StackPeekAtAndConvertToUBigInteger(1);
             var memoryLength = program.StackPeekAtAndConvertToUBigInteger(2);
 
-            var words = (memoryLength + 31) / 32;
-            var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
+            if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
+            {
+                return 32000;
+            }
 
+            var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
+            var words = (memoryLength + 31) / 32;
             return 32000 + (GasConstants.INIT_CODE_WORD_GAS * words) + memoryCost;
         }
 
@@ -367,9 +371,13 @@
             var memoryIndex = program.StackPeekAtAndConvertToUBigInteger(1);
             var memoryLength = program.StackPeekAtAndConvertToUBigInteger(2);
 
-            var words = (memoryLength + 31) / 32;
-            var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
+            if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
+            {
+                return 32000;
+            }
 
+            var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
+            var words = (memoryLength + 31) / 32;
             var hashCost = GasConstants.KECCAK256_PER_WORD * words;
             var initCodeCost = GasConstants.INIT_CODE_WORD_GAS * words;
 
