@@ -174,8 +174,6 @@ namespace Nethereum.EVM.Execution
         public void TLoad(Program program)
         {
             var key = program.StackPopAndConvertToUBigInteger();
-            if (program.ProgramContext.IsStatic)
-                throw new Exception("TLOAD not allowed in static context");
 
             byte[] value = program.ProgramContext.TransientStorage.TryGetValue(key, out var val)
                 ? val

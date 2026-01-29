@@ -155,7 +155,7 @@
                 Instruction.EXTCODEHASH => CalculateExtCodeHashGas(program),
                 Instruction.RETURNDATACOPY => CalculateReturnDataCopyGas(program),
                 Instruction.SLOAD => CalculateSloadGas(program),
-                Instruction.SSTORE => CalculateSStoreGas(program),
+                Instruction.SSTORE => await CalculateSStoreGasAsync(program),
                 Instruction.LOG0 => CalculateLogGas(program),
                 Instruction.LOG1 => CalculateLogGas(program),
                 Instruction.LOG2 => CalculateLogGas(program),
@@ -293,7 +293,7 @@
             return isWarm ? 100 : 2100;
         }
 
-        private static BigInteger CalculateSStoreGas(Program program)
+        private static async Task<BigInteger> CalculateSStoreGasAsync(Program program)
         {
             var key = program.StackPeekAtAndConvertToUBigInteger(0);
             var newValue = program.StackPeekAt(1).PadTo32Bytes();
@@ -309,7 +309,8 @@
 
             BigInteger gasCost = isWarm ? 0 : 2100;
 
-            var currentVal = state.GetStorageValue(key)?.PadTo32Bytes() ?? ByteUtil.InitialiseEmptyByteArray(32);
+            var currentVal = (await program.ProgramContext.ExecutionStateService.GetFromStorageAsync(contextAddress, key))?.PadTo32Bytes()
+                ?? ByteUtil.InitialiseEmptyByteArray(32);
             var origVal = state.OriginalStorageValues.ContainsKey(key)
                 ? state.OriginalStorageValues[key]?.PadTo32Bytes() ?? ByteUtil.InitialiseEmptyByteArray(32)
                 : currentVal;
@@ -499,9 +500,8 @@
             var length = program.StackPeekAtAndConvertToUBigInteger(2);     // third
 
             var words = (length + 31) / 32;
-            var memoryCost =
-                program.CalculateMemoryExpansionGas(destOffset, length) +
-                program.CalculateMemoryExpansionGas(srcOffset, length);
+            var maxMemoryEnd = BigInteger.Max(destOffset + length, srcOffset + length);
+            var memoryCost = length == 0 ? 0 : program.CalculateMemoryExpansionGas(0, maxMemoryEnd);
 
             return 3 + (3 * words) + memoryCost;
         }

@@ -38,6 +38,7 @@ namespace Nethereum.EVM.Execution
             if (memoryIndexBig > int.MaxValue || memoryLengthBig > int.MaxValue)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -48,6 +49,7 @@ namespace Nethereum.EVM.Execution
             if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -88,6 +90,7 @@ namespace Nethereum.EVM.Execution
             if (memoryIndexBig > int.MaxValue || memoryLengthBig > int.MaxValue)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -98,6 +101,7 @@ namespace Nethereum.EVM.Execution
             if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -129,6 +133,7 @@ namespace Nethereum.EVM.Execution
             if (depth + 1 > GasConstants.MAX_CALL_DEPTH)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -148,6 +153,7 @@ namespace Nethereum.EVM.Execution
             if (targetHasCode || targetHasNonce || targetHasStorage)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -196,6 +202,7 @@ namespace Nethereum.EVM.Execution
                     {
                         program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
                         program.StackPush(0);
+                        program.ProgramResult.LastCallReturnData = null;
                         var gasActuallySpent = gasToAllocate - callProgram.GasRemaining;
                         if (gasActuallySpent < 0) gasActuallySpent = 0;
                         program.GasRemaining += callProgram.GasRemaining;
@@ -210,6 +217,7 @@ namespace Nethereum.EVM.Execution
                     {
                         program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
                         program.StackPush(0);
+                        program.ProgramResult.LastCallReturnData = null;
                         program.TotalGasUsed += gasToAllocate;
                         program.Step();
                         return callProgram.Trace;
@@ -239,7 +247,8 @@ namespace Nethereum.EVM.Execution
                 {
                     program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
                     program.StackPush(0);
-                    program.ProgramResult.LastCallReturnData = callProgram.ProgramResult.Result;
+                    // EIP-211: For CREATE/CREATE2, return data is empty on failure (including REVERT)
+                    program.ProgramResult.LastCallReturnData = null;
                     var gasActuallySpent = gasToAllocate - callProgram.GasRemaining;
                     if (gasActuallySpent < 0) gasActuallySpent = 0;
                     program.GasRemaining += callProgram.GasRemaining;
@@ -341,6 +350,7 @@ namespace Nethereum.EVM.Execution
                 resultMemoryDataIndexBig > int.MaxValue || resultMemoryDataLengthBig > int.MaxValue)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
@@ -363,6 +373,7 @@ namespace Nethereum.EVM.Execution
             if (depth + 1 > GasConstants.MAX_CALL_DEPTH)
             {
                 program.StackPush(0);
+                program.ProgramResult.LastCallReturnData = null;
                 program.Step();
                 return new List<ProgramTrace>();
             }
