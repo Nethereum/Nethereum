@@ -16,7 +16,7 @@ namespace Nethereum.Signer.Crypto.BN128
         /// <summary>
         /// Group order r = 36u⁴ + 36u³ + 18u² + 6u + 1
         /// </summary>
-        public static readonly BigInteger Order = new BigInteger("21888242871839275088548364400416034343698204186575808495617");
+        public static readonly BigInteger Order = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
         /// <summary>
         /// BN parameter u (sometimes called x)

@@ -167,6 +167,9 @@ namespace Nethereum.Signer.Crypto
                     // Validate G2 point is on the twist curve
                     if (!IsOnTwistCurve(g2X, g2Y))
                         throw new ArgumentException("G2 point not on twist curve in pairing input");
+                    // Validate G2 point is in the correct subgroup
+                    if (!g2Points[i].IsInCorrectSubgroup())
+                        throw new ArgumentException("G2 point not in correct subgroup in pairing input");
                 }
             }
 

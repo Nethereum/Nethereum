@@ -151,6 +151,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public TwistPoint Double(TwistPoint a)
         {
+            // Save a.Y * a.Z early to avoid aliasing issues when a == this
+            var aYaZ = new Fp2().Mul(a.Y, a.Z);
+
             // A = a.x²
             var A = new Fp2().Square(a.X);
             // B = a.y²
@@ -195,10 +198,8 @@ namespace Nethereum.Signer.Crypto.BN128
             // y = t3 - t
             Y.Sub(t3, t);
 
-            // t = a.y * a.z
-            t.Mul(a.Y, a.Z);
-            // z = t + t
-            Z.Add(t, t);
+            // z = aYaZ + aYaZ (using saved value)
+            Z.Add(aYaZ, aYaZ);
 
             return this;
         }
@@ -246,6 +247,42 @@ namespace Nethereum.Signer.Crypto.BN128
         public TwistPoint Copy()
         {
             return new TwistPoint(X, Y, Z, T);
+        }
+
+        public TwistPoint ScalarMul(TwistPoint point, BigInteger scalar)
+        {
+            var result = new TwistPoint();
+            result.SetInfinity();
+
+            if (scalar.SignValue == 0 || point.IsInfinity())
+            {
+                return this.Set(result);
+            }
+
+            var temp = point.Copy();
+            var scalarCopy = scalar;
+
+            while (scalarCopy.SignValue > 0)
+            {
+                if (scalarCopy.TestBit(0))
+                {
+                    result.Add(result, temp);
+                }
+                temp.Double(temp);
+                scalarCopy = scalarCopy.ShiftRight(1);
+            }
+
+            return this.Set(result);
+        }
+
+        public bool IsInCorrectSubgroup()
+        {
+            if (IsInfinity())
+                return true;
+
+            var result = new TwistPoint();
+            result.ScalarMul(this, BN128Constants.Order);
+            return result.IsInfinity();
         }
 
         /// <summary>
