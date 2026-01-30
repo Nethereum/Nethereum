@@ -390,10 +390,10 @@
             var gas = program.StackPeekAtAndConvertToBigInteger(0);
             var toBytes = program.StackPeekAt(1);
             var value = program.StackPeekAtAndConvertToUBigInteger(2);
-            var inOffset = program.StackPeekAtAndConvertToBigInteger(3);
-            var inSize = program.StackPeekAtAndConvertToBigInteger(4);
-            var outOffset = program.StackPeekAtAndConvertToBigInteger(5);
-            var outSize = program.StackPeekAtAndConvertToBigInteger(6);
+            var inOffset = program.StackPeekAtAndConvertToUBigInteger(3);
+            var inSize = program.StackPeekAtAndConvertToUBigInteger(4);
+            var outOffset = program.StackPeekAtAndConvertToUBigInteger(5);
+            var outSize = program.StackPeekAtAndConvertToUBigInteger(6);
 
             var to = toBytes.ConvertToEthereumChecksumAddress();
             // Cold access cost
@@ -431,10 +431,10 @@
             var gas = program.StackPeekAtAndConvertToBigInteger(0);
             var toBytes = program.StackPeekAt(1);
             var value = program.StackPeekAtAndConvertToUBigInteger(2);
-            var inOffset = program.StackPeekAtAndConvertToBigInteger(3);
-            var inSize = program.StackPeekAtAndConvertToBigInteger(4);
-            var outOffset = program.StackPeekAtAndConvertToBigInteger(5);
-            var outSize = program.StackPeekAtAndConvertToBigInteger(6);
+            var inOffset = program.StackPeekAtAndConvertToUBigInteger(3);
+            var inSize = program.StackPeekAtAndConvertToUBigInteger(4);
+            var outOffset = program.StackPeekAtAndConvertToUBigInteger(5);
+            var outSize = program.StackPeekAtAndConvertToUBigInteger(6);
 
             var isWarm = program.IsAddressWarm(toBytes);
             if (!isWarm) program.MarkAddressAsWarm(toBytes);
@@ -461,10 +461,10 @@
         {
             var gas = program.StackPeekAtAndConvertToBigInteger(0);
             var toBytes = program.StackPeekAt(1);
-            var inOffset = program.StackPeekAtAndConvertToBigInteger(2);
-            var inSize = program.StackPeekAtAndConvertToBigInteger(3);
-            var outOffset = program.StackPeekAtAndConvertToBigInteger(4);
-            var outSize = program.StackPeekAtAndConvertToBigInteger(5);
+            var inOffset = program.StackPeekAtAndConvertToUBigInteger(2);
+            var inSize = program.StackPeekAtAndConvertToUBigInteger(3);
+            var outOffset = program.StackPeekAtAndConvertToUBigInteger(4);
+            var outSize = program.StackPeekAtAndConvertToUBigInteger(5);
 
             var isWarm = program.IsAddressWarm(toBytes);
             if (!isWarm) program.MarkAddressAsWarm(toBytes);
@@ -483,10 +483,10 @@
         {
             var gas = program.StackPeekAtAndConvertToBigInteger(0);
             var toBytes = program.StackPeekAt(1);
-            var inOffset = program.StackPeekAtAndConvertToBigInteger(2);
-            var inSize = program.StackPeekAtAndConvertToBigInteger(3);
-            var outOffset = program.StackPeekAtAndConvertToBigInteger(4);
-            var outSize = program.StackPeekAtAndConvertToBigInteger(5);
+            var inOffset = program.StackPeekAtAndConvertToUBigInteger(2);
+            var inSize = program.StackPeekAtAndConvertToUBigInteger(3);
+            var outOffset = program.StackPeekAtAndConvertToUBigInteger(4);
+            var outSize = program.StackPeekAtAndConvertToUBigInteger(5);
 
             var isWarm = program.IsAddressWarm(toBytes);
             if (!isWarm) program.MarkAddressAsWarm(toBytes);

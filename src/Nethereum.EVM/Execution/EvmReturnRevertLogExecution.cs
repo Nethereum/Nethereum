@@ -21,8 +21,8 @@ namespace Nethereum.EVM.Execution
 
             var address = program.ProgramContext.AddressContract;
 
-            var memStart = (int)program.StackPopAndConvertToUBigInteger();
-            var memLength = (int)program.StackPopAndConvertToUBigInteger();
+            var memStartBig = program.StackPopAndConvertToUBigInteger();
+            var memLengthBig = program.StackPopAndConvertToUBigInteger();
 
 
             var topics = new List<string>();
@@ -33,19 +33,19 @@ namespace Nethereum.EVM.Execution
             }
 
             byte[] data;
-            if (memLength == 0)
+            if (memLengthBig == 0)
             {
-                // When memLength is 0, no actual memory read is needed
                 data = new byte[0];
-            }
-            else if (memStart + memLength > program.Memory.Count)
-            {
-                // Memory needs to be expanded - expand it before reading
-                program.ExpandMemory(memStart + memLength);
-                data = program.Memory.GetRange(memStart, memLength).ToArray();
             }
             else
             {
+                var memStart = (int)memStartBig;
+                var memLength = (int)memLengthBig;
+
+                if (memStart + memLength > program.Memory.Count)
+                {
+                    program.ExpandMemory(memStart + memLength);
+                }
                 data = program.Memory.GetRange(memStart, memLength).ToArray();
             }
 
