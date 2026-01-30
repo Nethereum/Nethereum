@@ -19,12 +19,15 @@ namespace Nethereum.EVM.BlockchainState
         }
 
         public Dictionary<string, AccountExecutionState> AccountsState { get; private set; } = new Dictionary<string, AccountExecutionState>();
+        public Dictionary<string, Dictionary<BigInteger, byte[]>> TransientStorage { get; private set; } = new Dictionary<string, Dictionary<BigInteger, byte[]>>(StringComparer.OrdinalIgnoreCase);
 
         public INodeDataService NodeDataService { get; set; }
 
+        public bool IsPragueEnabled { get; set; } = false;
+
         public int TakeSnapshot()
         {
-            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState, _warmAddresses);
+            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState, _warmAddresses, TransientStorage);
             _snapshots.Push(snapshot);
 
             return _nextSnapshotId++;
@@ -92,6 +95,16 @@ namespace Nethereum.EVM.BlockchainState
             foreach (var kvp in snapshot.AccountSnapshots)
             {
                 RestoreAccountState(kvp.Key, kvp.Value);
+            }
+
+            // Restore transient storage
+            TransientStorage.Clear();
+            if (snapshot.TransientStorage != null)
+            {
+                foreach (var kvp in snapshot.TransientStorage)
+                {
+                    TransientStorage[kvp.Key] = new Dictionary<BigInteger, byte[]>(kvp.Value.ToDictionary(x => x.Key, x => x.Value?.ToArray()));
+                }
             }
         }
 
@@ -206,8 +219,10 @@ namespace Nethereum.EVM.BlockchainState
 
         public void MarkPrecompilesAsWarm()
         {
+            // Precompiles 0x01-0x09: Standard (ECRECOVER through BLAKE2F)
             // EIP-4844 (Cancun) adds KZG point evaluation precompile at address 0x0A
-            for (int i = 1; i <= 10; i++)
+            // EIP-2537 (Prague) adds BLS12-381 precompiles at addresses 0x0B-0x11
+            for (int i = 1; i <= 17; i++)
             {
                 var precompileAddress = "0x" + i.ToString("x").PadLeft(40, '0');
                 MarkAddressAsWarm(precompileAddress);

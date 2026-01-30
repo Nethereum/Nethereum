@@ -26,8 +26,18 @@ namespace Nethereum.EVM
 
 #endif
         public EvmProgramExecution EvmProgramExecution { get; }
-        public EVMSimulator(EvmProgramExecution evmProgramExecution = null)
-       {
+
+        public EVMSimulator() : this((EvmProgramExecution)null)
+        {
+        }
+
+        public EVMSimulator(Execution.IPrecompileProvider precompileProvider)
+            : this(new EvmProgramExecution(precompileProvider))
+        {
+        }
+
+        public EVMSimulator(EvmProgramExecution evmProgramExecution)
+        {
             EvmProgramExecution = evmProgramExecution ?? new EvmProgramExecution();
         }
 
@@ -625,7 +635,7 @@ namespace Nethereum.EVM
                 if (dataInput != null)
                 {
                     // Use codeAddressAsChecksum for precompile check, not 'to' (matters for CALLCODE/DELEGATECALL)
-                    var isPrecompile = EvmProgramExecution.PreCompiledContracts.IsPrecompiledAdress(codeAddressAsChecksum);
+                    var isPrecompile = EvmProgramExecution.PreCompiledContracts.IsPrecompiledAddress(codeAddressAsChecksum);
                     if (isPrecompile)
                     {
                         // Calculate precompile gas cost and consume it
@@ -741,6 +751,7 @@ namespace Nethereum.EVM
             programContext.Depth = parentFrame.Depth + 1;
             programContext.IsStatic = isStatic || program.ProgramContext.IsStatic;
             programContext.EnforceGasSentry = program.ProgramContext.EnforceGasSentry;
+            programContext.TransientStorage = program.ProgramContext.TransientStorage;
             programContext.SetAccessListTracker(program.ProgramContext.AccessListTracker);
 
             var callProgram = new Program(byteCode, programContext);
@@ -805,14 +816,17 @@ namespace Nethereum.EVM
                 salt = program.StackPop();
             }
 
-            if (memoryIndexBig > int.MaxValue || memoryLengthBig > int.MaxValue)
+            // If memoryLength is 0, we don't need to read any memory, so offset doesn't matter
+            // Only fail if we actually need to read memory and the parameters overflow int
+            if (memoryLengthBig > int.MaxValue || (memoryLengthBig > 0 && memoryIndexBig > int.MaxValue))
             {
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
             }
 
-            var memoryIndex = (int)memoryIndexBig;
+            // Safe to cast: memoryLength is within int.MaxValue, and if memoryLength > 0, memoryIndex is too
+            var memoryIndex = memoryLengthBig > 0 ? (int)memoryIndexBig : 0;
             var memoryLength = (int)memoryLengthBig;
 
             if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
@@ -942,6 +956,7 @@ namespace Nethereum.EVM
             programContext.GasLimit = program.ProgramContext.GasLimit;
             programContext.GasPrice = program.ProgramContext.GasPrice;
             programContext.Depth = parentFrame.Depth + 1;
+            programContext.TransientStorage = program.ProgramContext.TransientStorage;
             programContext.SetAccessListTracker(program.ProgramContext.AccessListTracker);
 
             var callProgram = new Program(byteCode, programContext);

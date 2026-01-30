@@ -23,11 +23,40 @@ namespace Nethereum.EVM.Execution
 
     public class EvmBlockchainCurrentContractContextExecution
     {
+        public const string HISTORY_STORAGE_ADDRESS = "0x0F792be4B0c0cb4DAE440Ef133E90C0eCD48CCCC";
+        public const int HISTORY_SERVE_WINDOW = 8192;
+        public const int BLOCKHASH_SERVE_WINDOW = 256;
+
         public async Task BlockHashAsync(Program program)
         {
             var blockNumber = program.StackPopAndConvertToBigInteger();
-            var blockHash = await program.ProgramContext.ExecutionStateService.NodeDataService.GetBlockHashAsync(blockNumber);
-            program.StackPush(blockHash);
+            var currentBlock = program.ProgramContext.BlockNumber;
+
+            if (blockNumber >= currentBlock || blockNumber < 0)
+            {
+                program.StackPush(new byte[32]);
+                program.Step();
+                return;
+            }
+
+            var blocksAgo = currentBlock - blockNumber;
+
+            if (blocksAgo <= BLOCKHASH_SERVE_WINDOW)
+            {
+                var blockHash = await program.ProgramContext.ExecutionStateService.NodeDataService.GetBlockHashAsync(blockNumber);
+                program.StackPush(blockHash);
+            }
+            else if (blocksAgo <= HISTORY_SERVE_WINDOW && program.ProgramContext.ExecutionStateService.IsPragueEnabled)
+            {
+                var slot = blockNumber % HISTORY_SERVE_WINDOW;
+                var blockHash = await program.ProgramContext.ExecutionStateService.GetFromStorageAsync(HISTORY_STORAGE_ADDRESS, slot);
+                program.StackPush(blockHash ?? new byte[32]);
+            }
+            else
+            {
+                program.StackPush(new byte[32]);
+            }
+
             program.Step();
         }
 
@@ -174,10 +203,17 @@ namespace Nethereum.EVM.Execution
         public void TLoad(Program program)
         {
             var key = program.StackPopAndConvertToUBigInteger();
+            var address = program.ProgramContext.AddressContract;
+            var transientStorage = program.ProgramContext.ExecutionStateService.TransientStorage;
 
-            byte[] value = program.ProgramContext.TransientStorage.TryGetValue(key, out var val)
-                ? val
-                : new byte[32];
+            byte[] value = new byte[32];
+            if (transientStorage.TryGetValue(address, out var addressStorage))
+            {
+                if (addressStorage.TryGetValue(key, out var val))
+                {
+                    value = val;
+                }
+            }
 
             program.StackPush(value);
             program.Step();
@@ -187,11 +223,19 @@ namespace Nethereum.EVM.Execution
         {
             var key = program.StackPopAndConvertToUBigInteger();
             var value = program.StackPop().PadTo32Bytes();
+            var address = program.ProgramContext.AddressContract;
+            var transientStorage = program.ProgramContext.ExecutionStateService.TransientStorage;
 
             if (program.ProgramContext.IsStatic)
                 throw new Exception("TSTORE not allowed in static context");
 
-            program.ProgramContext.TransientStorage[key] = value;
+            if (!transientStorage.TryGetValue(address, out var addressStorage))
+            {
+                addressStorage = new Dictionary<BigInteger, byte[]>();
+                transientStorage[address] = addressStorage;
+            }
+            addressStorage[key] = value;
+
             program.Step();
         }
     }

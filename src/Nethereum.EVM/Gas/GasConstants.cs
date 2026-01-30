@@ -94,6 +94,10 @@ namespace Nethereum.EVM.Gas
         public const int TX_ACCESS_LIST_ADDRESS_GAS = 2400;
         public const int TX_ACCESS_LIST_STORAGE_KEY_GAS = 1900;
 
+        // EIP-7623: Calldata gas floor (Prague)
+        public const int TX_FLOOR_PER_TOKEN = 10;
+        public const int TX_TOKENS_PER_NON_ZERO_BYTE = 4;
+
         // Precompile costs
         public const int ECRECOVER_GAS = 3000;
         public const int SHA256_BASE_GAS = 60;
@@ -103,6 +107,16 @@ namespace Nethereum.EVM.Gas
         public const int IDENTITY_BASE_GAS = 15;
         public const int IDENTITY_PER_WORD_GAS = 3;
         public const int KZG_POINT_EVALUATION_GAS = 50000;  // EIP-4844
+
+        // EIP-2537: BLS12-381 Precompile gas costs (Prague)
+        public const int BLS12_G1ADD_GAS = 375;            // 0x0B
+        public const int BLS12_G1MSM_BASE_GAS = 12000;     // 0x0C - per point base
+        public const int BLS12_G2ADD_GAS = 600;            // 0x0D
+        public const int BLS12_G2MSM_BASE_GAS = 22500;     // 0x0E - per point base
+        public const int BLS12_PAIRING_BASE_GAS = 37700;   // 0x0F - base
+        public const int BLS12_PAIRING_PER_PAIR_GAS = 32600; // 0x0F - per pair
+        public const int BLS12_MAP_FP_TO_G1_GAS = 5500;    // 0x10
+        public const int BLS12_MAP_FP2_TO_G2_GAS = 23800;  // 0x11
     }
 }
 

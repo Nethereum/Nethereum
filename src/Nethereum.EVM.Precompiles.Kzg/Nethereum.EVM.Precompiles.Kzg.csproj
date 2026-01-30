@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>KZG point evaluation precompile implementation for Nethereum EVM using c-kzg-4844 native library.</Description>
+    <AssemblyTitle>Nethereum.EVM.Precompiles.Kzg</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.EVM.Precompiles.Kzg</AssemblyName>
+    <PackageId>Nethereum.EVM.Precompiles.Kzg</PackageId>
+    <PackageTags>Ethereum;KZG;EIP-4844;EVM;Precompile;Blob</PackageTags>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Ckzg.Bindings" Version="1.0.2.828" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>

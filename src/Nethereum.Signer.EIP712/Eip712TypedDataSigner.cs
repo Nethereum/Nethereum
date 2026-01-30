@@ -12,7 +12,7 @@ namespace Nethereum.Signer.EIP712
     public class Eip712TypedDataSigner
     {
         
-        private readonly EthereumMessageSigner _signer = new EthereumMessageSigner();
+        private readonly MessageSigner _signer = new MessageSigner();
         public static Eip712TypedDataSigner Current { get; } = new Eip712TypedDataSigner();
 
         /// <summary>

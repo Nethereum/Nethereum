@@ -40,7 +40,7 @@ namespace Nethereum.EVM
         public BigInteger GasLimit { get; set; } = 10000000;
         public BigInteger Difficulty { get; set; } = 1;
         public BigInteger Fee { get; set; }
-        public Dictionary<BigInteger, byte[]> TransientStorage { get; } = new();
+        public Dictionary<string, Dictionary<BigInteger, byte[]>> TransientStorage { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public bool IsStatic { get; set; } = false;
         public int Depth { get; set; } = 0;
         public string ExecutionId { get; set; } = Guid.NewGuid().ToString().Substring(0, 8);

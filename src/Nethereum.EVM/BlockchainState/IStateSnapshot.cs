@@ -8,6 +8,7 @@ namespace Nethereum.EVM.BlockchainState
         int SnapshotId { get; }
         Dictionary<string, AccountStateSnapshot> AccountSnapshots { get; }
         HashSet<string> WarmAddresses { get; }
+        Dictionary<string, Dictionary<BigInteger, byte[]>> TransientStorage { get; }
     }
 
     public class AccountStateSnapshot

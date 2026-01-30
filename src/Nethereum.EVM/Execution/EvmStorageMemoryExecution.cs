@@ -109,17 +109,33 @@ namespace Nethereum.EVM.Execution
 
         public void MCopy(Program program)
         {
-            var destOffset = (int)program.StackPopAndConvertToUBigInteger(); 
-            var srcOffset = (int)program.StackPopAndConvertToUBigInteger();  
-            var length = (int)program.StackPopAndConvertToUBigInteger();     
+            var destOffsetBig = program.StackPopAndConvertToUBigInteger();
+            var srcOffsetBig = program.StackPopAndConvertToUBigInteger();
+            var lengthBig = program.StackPopAndConvertToUBigInteger();
+
+            if (lengthBig == 0)
+            {
+                program.Step();
+                return;
+            }
+
+            // For huge values that exceed int.MaxValue, memory expansion gas would be astronomical
+            // and would have already caused OOG. If we get here with such values, something is wrong.
+            if (destOffsetBig > int.MaxValue || srcOffsetBig > int.MaxValue || lengthBig > int.MaxValue)
+            {
+                throw new Exceptions.OutOfGasException("Memory offset or length exceeds maximum");
+            }
+
+            var destOffset = (int)destOffsetBig;
+            var srcOffset = (int)srcOffsetBig;
+            var length = (int)lengthBig;
+
+            // EIP-5656: Memory must expand to max(srcOffset + length, destOffset + length)
+            var maxMemoryEnd = Math.Max(srcOffset + length, destOffset + length);
+            program.ExpandMemory(maxMemoryEnd);
 
             var srcData = new byte[length];
-
-            if (srcOffset < program.Memory.Count)
-            {
-                var available = Math.Min(length, program.Memory.Count - srcOffset);
-                program.Memory.CopyTo(srcOffset, srcData, 0, available);
-            }
+            program.Memory.CopyTo(srcOffset, srcData, 0, length);
 
             program.WriteToMemory(destOffset, length, srcData);
             program.Step();

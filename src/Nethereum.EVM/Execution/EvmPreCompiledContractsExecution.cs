@@ -11,10 +11,21 @@ using Org.BouncyCastle.Crypto.Digests;
 
 namespace Nethereum.EVM.Execution
 {
-    public class EvmPreCompiledContractsExecution
+    public class EvmPreCompiledContractsExecution : IPrecompiledContractsExecution
     {
+        private readonly IPrecompileProvider _precompileProvider;
+
+        public EvmPreCompiledContractsExecution(IPrecompileProvider precompileProvider = null)
+        {
+            _precompileProvider = precompileProvider;
+        }
+
         public virtual BigInteger GetPrecompileGasCost(string address, byte[] data)
         {
+            // Check if external provider handles this address
+            if (_precompileProvider?.CanHandle(address) == true)
+                return _precompileProvider.GetGasCost(address, data);
+
             int dataLen = data?.Length ?? 0;
             int wordCount = (dataLen + 31) / 32;
 
@@ -40,6 +51,20 @@ namespace Nethereum.EVM.Execution
                     return GetBlake2fGas(data);
                 case "a": // KZG Point Evaluation (EIP-4844)
                     return GasConstants.KZG_POINT_EVALUATION_GAS;
+                case "b": // BLS12-381 G1ADD (EIP-2537)
+                    return GasConstants.BLS12_G1ADD_GAS;
+                case "c": // BLS12-381 G1MSM (EIP-2537)
+                    return GetBls12G1MsmGas(dataLen);
+                case "d": // BLS12-381 G2ADD (EIP-2537)
+                    return GasConstants.BLS12_G2ADD_GAS;
+                case "e": // BLS12-381 G2MSM (EIP-2537)
+                    return GetBls12G2MsmGas(dataLen);
+                case "f": // BLS12-381 PAIRING (EIP-2537)
+                    return GetBls12PairingGas(dataLen);
+                case "10": // BLS12-381 MAP_FP_TO_G1 (EIP-2537)
+                    return GasConstants.BLS12_MAP_FP_TO_G1_GAS;
+                case "11": // BLS12-381 MAP_FP2_TO_G2 (EIP-2537)
+                    return GasConstants.BLS12_MAP_FP2_TO_G2_GAS;
             }
             return 0;
         }
@@ -118,8 +143,57 @@ namespace Nethereum.EVM.Execution
             return (uint)((data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]);
         }
 
-        public virtual bool IsPrecompiledAdress(string address)
+        // EIP-2537 MSM discount table
+        private static readonly int[] MSM_DISCOUNT = new int[]
         {
+            1000, 1000, 923, 884, 855, 832, 812, 796, 782, 770,
+            759, 749, 740, 732, 724, 717, 711, 704, 699, 693,
+            688, 683, 679, 674, 670, 666, 663, 659, 655, 652,
+            649, 646, 643, 640, 637, 634, 632, 629, 627, 624,
+            622, 620, 618, 615, 613, 611, 609, 607, 606, 604,
+            602, 600, 598, 597, 595, 593, 592, 590, 589, 587,
+            586, 584, 583, 582, 580, 579, 578, 576, 575, 574,
+            573, 571, 570, 569, 568, 567, 566, 565, 564, 563,
+            562, 561, 560, 559, 558, 557, 556, 555, 554, 553,
+            552, 551, 550, 549, 548, 547, 547, 546, 545, 544,
+            543, 543, 542, 541, 540, 540, 539, 538, 537, 537,
+            536, 535, 535, 534, 533, 533, 532, 531, 531, 530,
+            530, 529, 528, 528, 527, 527, 526, 526, 525, 525
+        };
+
+        private BigInteger GetBls12G1MsmGas(int dataLen)
+        {
+            // G1MSM input: 160 bytes per point-scalar pair (128 byte G1 point + 32 byte scalar)
+            int k = dataLen / 160;
+            if (k == 0) return GasConstants.BLS12_G1MSM_BASE_GAS;
+
+            int discount = k <= MSM_DISCOUNT.Length ? MSM_DISCOUNT[k - 1] : MSM_DISCOUNT[MSM_DISCOUNT.Length - 1];
+            return (BigInteger)k * GasConstants.BLS12_G1MSM_BASE_GAS * discount / 1000;
+        }
+
+        private BigInteger GetBls12G2MsmGas(int dataLen)
+        {
+            // G2MSM input: 288 bytes per point-scalar pair (256 byte G2 point + 32 byte scalar)
+            int k = dataLen / 288;
+            if (k == 0) return GasConstants.BLS12_G2MSM_BASE_GAS;
+
+            int discount = k <= MSM_DISCOUNT.Length ? MSM_DISCOUNT[k - 1] : MSM_DISCOUNT[MSM_DISCOUNT.Length - 1];
+            return (BigInteger)k * GasConstants.BLS12_G2MSM_BASE_GAS * discount / 1000;
+        }
+
+        private BigInteger GetBls12PairingGas(int dataLen)
+        {
+            // Pairing input: 384 bytes per pair (128 byte G1 + 256 byte G2)
+            int k = dataLen / 384;
+            return GasConstants.BLS12_PAIRING_BASE_GAS + (BigInteger)k * GasConstants.BLS12_PAIRING_PER_PAIR_GAS;
+        }
+
+        public virtual bool IsPrecompiledAddress(string address)
+        {
+            // Check if external provider handles this address
+            if (_precompileProvider?.CanHandle(address) == true)
+                return true;
+
             switch (address.ToHexCompact().ToLowerInvariant())
             {
                 case "1":
@@ -132,13 +206,30 @@ namespace Nethereum.EVM.Execution
                 case "8":
                 case "9":
                 case "a": // EIP-4844 KZG Point Evaluation (Cancun)
+                case "b": // EIP-2537 BLS12-381 G1ADD (Prague)
+                case "c": // EIP-2537 BLS12-381 G1MSM (Prague)
+                case "d": // EIP-2537 BLS12-381 G2ADD (Prague)
+                case "e": // EIP-2537 BLS12-381 G2MSM (Prague)
+                case "f": // EIP-2537 BLS12-381 PAIRING (Prague)
+                case "10": // EIP-2537 BLS12-381 MAP_FP_TO_G1 (Prague)
+                case "11": // EIP-2537 BLS12-381 MAP_FP2_TO_G2 (Prague)
                     return true;
             }
 
             return false;
         }
+
+        [Obsolete("Use IsPrecompiledAddress instead (fixed spelling)")]
+        public virtual bool IsPrecompiledAdress(string address)
+        {
+            return IsPrecompiledAddress(address);
+        }
         public virtual byte[] ExecutePreCompile(string address, byte[] data)
         {
+            // Check if external provider handles this address
+            if (_precompileProvider?.CanHandle(address) == true)
+                return _precompileProvider.Execute(address, data);
+
             switch (address.ToHexCompact().ToLowerInvariant())
             {
                 case "1":
@@ -161,6 +252,20 @@ namespace Nethereum.EVM.Execution
                     return Blake2f(data);
                 case "a":
                     return KzgPointEvaluation(data);
+                case "b":
+                    return Bls12G1Add(data);
+                case "c":
+                    return Bls12G1Msm(data);
+                case "d":
+                    return Bls12G2Add(data);
+                case "e":
+                    return Bls12G2Msm(data);
+                case "f":
+                    return Bls12Pairing(data);
+                case "10":
+                    return Bls12MapFpToG1(data);
+                case "11":
+                    return Bls12MapFp2ToG2(data);
             }
 
             return null;
@@ -466,6 +571,73 @@ namespace Nethereum.EVM.Execution
             // This matches the behavior expected by the tests - invalid inputs cause precompile failure.
 
             throw new NotImplementedException("KZG point evaluation cryptographic verification not implemented");
+        }
+
+        // EIP-2537: BLS12-381 Precompiles (Prague)
+        // These require native cryptographic libraries (e.g., Herumi MCL, blst)
+        // For now, throw NotImplementedException which consumes all forwarded gas per precompile semantics
+
+        public byte[] Bls12G1Add(byte[] data)
+        {
+            // Input: 256 bytes (two G1 points, 128 bytes each)
+            // Output: 128 bytes (one G1 point)
+            if (data == null || data.Length != 256)
+                throw new ArgumentException("Invalid BLS12-381 G1ADD input: expected 256 bytes");
+            throw new NotImplementedException("BLS12-381 G1ADD cryptographic operation not implemented");
+        }
+
+        public byte[] Bls12G1Msm(byte[] data)
+        {
+            // Input: 160*k bytes (k pairs of 128-byte G1 point + 32-byte scalar)
+            // Output: 128 bytes (one G1 point)
+            if (data == null || data.Length == 0 || data.Length % 160 != 0)
+                throw new ArgumentException("Invalid BLS12-381 G1MSM input: expected multiple of 160 bytes");
+            throw new NotImplementedException("BLS12-381 G1MSM cryptographic operation not implemented");
+        }
+
+        public byte[] Bls12G2Add(byte[] data)
+        {
+            // Input: 512 bytes (two G2 points, 256 bytes each)
+            // Output: 256 bytes (one G2 point)
+            if (data == null || data.Length != 512)
+                throw new ArgumentException("Invalid BLS12-381 G2ADD input: expected 512 bytes");
+            throw new NotImplementedException("BLS12-381 G2ADD cryptographic operation not implemented");
+        }
+
+        public byte[] Bls12G2Msm(byte[] data)
+        {
+            // Input: 288*k bytes (k pairs of 256-byte G2 point + 32-byte scalar)
+            // Output: 256 bytes (one G2 point)
+            if (data == null || data.Length == 0 || data.Length % 288 != 0)
+                throw new ArgumentException("Invalid BLS12-381 G2MSM input: expected multiple of 288 bytes");
+            throw new NotImplementedException("BLS12-381 G2MSM cryptographic operation not implemented");
+        }
+
+        public byte[] Bls12Pairing(byte[] data)
+        {
+            // Input: 384*k bytes (k pairs of 128-byte G1 + 256-byte G2)
+            // Output: 32 bytes (0 or 1 indicating pairing check result)
+            if (data == null || data.Length == 0 || data.Length % 384 != 0)
+                throw new ArgumentException("Invalid BLS12-381 PAIRING input: expected multiple of 384 bytes");
+            throw new NotImplementedException("BLS12-381 PAIRING cryptographic operation not implemented");
+        }
+
+        public byte[] Bls12MapFpToG1(byte[] data)
+        {
+            // Input: 64 bytes (field element)
+            // Output: 128 bytes (G1 point)
+            if (data == null || data.Length != 64)
+                throw new ArgumentException("Invalid BLS12-381 MAP_FP_TO_G1 input: expected 64 bytes");
+            throw new NotImplementedException("BLS12-381 MAP_FP_TO_G1 cryptographic operation not implemented");
+        }
+
+        public byte[] Bls12MapFp2ToG2(byte[] data)
+        {
+            // Input: 128 bytes (Fp2 element)
+            // Output: 256 bytes (G2 point)
+            if (data == null || data.Length != 128)
+                throw new ArgumentException("Invalid BLS12-381 MAP_FP2_TO_G2 input: expected 128 bytes");
+            throw new NotImplementedException("BLS12-381 MAP_FP2_TO_G2 cryptographic operation not implemented");
         }
     }
 }

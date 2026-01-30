@@ -2,8 +2,17 @@
 {
     public class EvmProgramExecution
     {
-        public EvmProgramExecution() 
-        { 
+        public EvmProgramExecution() : this((IPrecompileProvider)null)
+        {
+        }
+
+        public EvmProgramExecution(IPrecompileProvider precompileProvider)
+            : this(new EvmPreCompiledContractsExecution(precompileProvider))
+        {
+        }
+
+        public EvmProgramExecution(IPrecompiledContractsExecution precompiledContracts)
+        {
             Arithmetic = new EvmArithmeticExecution();
             Bitwise = new EvmBitwiseExecution();
             CallingCreation = new EvmCallingCreationExecution(this);
@@ -11,7 +20,7 @@
             CallInput = new EvmCallInputExecution();
             Code    = new EvmCodeExecution();
             StorageMemory = new EvmStorageMemoryExecution();
-            PreCompiledContracts = new EvmPreCompiledContractsExecution();
+            PreCompiledContracts = precompiledContracts;
             BlockchainCurrentContractContext = new EvmBlockchainCurrentContractContextExecution();
             ReturnRevertLogExecution = new EvmReturnRevertLogExecution();
             StackFlowExecution = new EvmProgramStackFlowExecution();
@@ -24,7 +33,7 @@
         public EvmCallInputExecution CallInput { get; protected set; }
         public EvmCodeExecution  Code { get; protected set; }
         public EvmStorageMemoryExecution StorageMemory { get; protected set; }
-        public EvmPreCompiledContractsExecution PreCompiledContracts { get; protected set; }
+        public IPrecompiledContractsExecution PreCompiledContracts { get; protected set; }
         public EvmBlockchainCurrentContractContextExecution BlockchainCurrentContractContext { get; protected set; }
 
        public EvmReturnRevertLogExecution ReturnRevertLogExecution { get; protected set; }
