@@ -404,7 +404,6 @@
             var accountState = await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(to);
 
             // Memory expansion cost - take MAX of input and output regions, not sum
-            // Per Yellow Paper: μ'_i ≡ M(M(μ_i, μ_s[3], μ_s[4]), μ_s[5], μ_s[6])
             var inEnd = inSize > 0 ? inOffset + inSize : BigInteger.Zero;
             var outEnd = outSize > 0 ? outOffset + outSize : BigInteger.Zero;
             var maxEnd = BigInteger.Max(inEnd, outEnd);
@@ -453,7 +452,6 @@
             if (value > 0)
             {
                 baseGas += 9000;
-                // No +25000 for account creation in CALLCODE
             }
 
             return baseGas;

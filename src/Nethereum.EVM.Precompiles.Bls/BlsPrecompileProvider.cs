@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.EVM.Execution;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -9,11 +10,24 @@ namespace Nethereum.EVM.Precompiles.Bls
     public class BlsPrecompileProvider : IPrecompileProvider
     {
         private readonly IBls12381Operations _blsOperations;
+        private static readonly string[] _addresses = new[]
+        {
+            "0x000000000000000000000000000000000000000b",
+            "0x000000000000000000000000000000000000000c",
+            "0x000000000000000000000000000000000000000d",
+            "0x000000000000000000000000000000000000000e",
+            "0x000000000000000000000000000000000000000f",
+            "0x0000000000000000000000000000000000000010",
+            "0x0000000000000000000000000000000000000011"
+        };
 
         public BlsPrecompileProvider(IBls12381Operations blsOperations)
         {
             _blsOperations = blsOperations ?? throw new ArgumentNullException(nameof(blsOperations));
         }
+
+        public IEnumerable<string> GetHandledAddresses() => _addresses;
+
         public const string G1ADD_ADDRESS = "b";
         public const string G1MSM_ADDRESS = "c";
         public const string G2ADD_ADDRESS = "d";

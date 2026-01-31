@@ -1,0 +1,187 @@
+{
+    "GeneralStateTests/stRandom2/randomStatetest644.json::randomStatetest644-fork_[Cancun-Prague]-d0g0v0" : {
+        "_info" : {
+            "comment" : "Geth Failed this test on Frontier and Homestead",
+            "filling-rpc-server" : "evmone-t8n 0.15.0+commit.42caf43b",
+            "filling-tool-version" : "retesteth-0.3.2-legacy+commit.bde76e25.Linux.g++",
+            "fixture-format" : "state_test",
+            "hash" : "0x7a1022fe1aa44eb5e11fa98275ea4bafc590347b425c898f44d2cf140dcc8eed",
+            "lllcversion" : "Version: 0.5.14-develop.2024.11.5+commit.b2b86751.mod.Linux.g++",
+            "repo" : "ethereum/tests",
+            "solidity" : "Version: 0.8.24+commit.e11b9ed9.Linux.g++",
+            "source" : "src/GeneralStateTestsFiller/stRandom2/randomStatetest644Filler.json",
+            "sourceHash" : "0xbec367e07cc3dd58b3effbff0df0e405bc0976852775b2ac6107189c06baf49d"
+        },
+        "config" : {
+            "blobSchedule" : {
+                "Cancun" : {
+                    "baseFeeUpdateFraction" : "0x32f0ed",
+                    "max" : "0x06",
+                    "target" : "0x03"
+                },
+                "Prague" : {
+                    "baseFeeUpdateFraction" : "0x4c6964",
+                    "max" : "0x09",
+                    "target" : "0x06"
+                }
+            },
+            "chainid" : "0x01"
+        },
+        "env" : {
+            "currentBaseFee" : "0x0a",
+            "currentCoinbase" : "0xffffffffffffffffffffffffffffffffffffffff",
+            "currentDifficulty" : "0x020000",
+            "currentExcessBlobGas" : "0x00",
+            "currentGasLimit" : "0x60ca5bfb0d6208",
+            "currentNumber" : "0x01",
+            "currentRandom" : "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentTimestamp" : "0x03e8"
+        },
+        "post" : {
+            "Cancun" : [
+                {
+                    "hash" : "0x830b0797180278350340a725e5573179e2a6ae461950f71f7774248e2654e10e",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x0000000000000000000000000000000000000001" : {
+                            "balance" : "0xf3107ce3",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0x1000000000000000000000000000000000000000" : {
+                            "balance" : "0x23c22aeb4961b17e",
+                            "code" : "0x73a66737fdcc16cd591384a0b12fb650ce85011e553b7d85cc6995d8948ac88f5726f16627d809c92dba32d01471809ad1c5046b53687d1ff18bca5a755a0c6cd7ce36e1dc18c7c2a909f6bc0073d53f4c10a2121e6b4f0aeadc71b441c331b19ec57822835269748ae558697a082470abaa3595d4b8256f8954c7ed655896eb04017a7f522be50fd88e38ee27de7ebd20794466f490bcb43162328a337a6e42fd88cacf6a8ecb264fe21836cf31d0ae7be53da5fe2cac802905640c0a18b2ccfd806fed6d7cbaf1fc19c6931d6c37b9320599ca5061121076a6546fc888f04e94c09adcc8a3cc9d002448838977c1010c1cdef7438b3d1e99cf6d78b9d4f55962b04476323f3441",
+                            "nonce" : "0x94",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x236d08fd5f31e638",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x9183fd5b40d86e03",
+                            "code" : "0x74357a5ade2da3b4a5f5459faff84e5ea9b714b60ed26257ef597d9aa2e6d9316426366fe24fb9ed56c4a9e5dcf06af08c42368fdaa12b71476283c5bd6147ed93625663ae6252d373624971d86228ec1a730000000000000000000000000000000000000005630c30a604f478fe44add6669b247cad0f00251697572fa913a16c98038931df54",
+                            "nonce" : "0x1c",
+                            "storage" : {
+                            }
+                        },
+                        "0xffffffffffffffffffffffffffffffffffffffff" : {
+                            "balance" : "0x532f42c819fa5bed",
+                            "code" : "0x77351c4c5a02c8f13fa7c7f5800fa5c9ba2f3b971c13764f9b61c2db66c3f909c17e434a68d685402956cc341dbf6779516900ed0a1e2666dfa40e70f3bcee773c2bffd5b5422a2cf32b19e541f15ae2b6fbe16fd19bbd567728190f83569f036dccd3886aa69c1e685736da06152e3b24728b13546ea1abd48ee47b1b2e1ec70b37fa14cc709d35fce7380230f426455385da80771ffc6e261f3bfe7bfe7f1827d17b0cf49a7d7ff8ceb60b6a86ebbb762eb3e4dd1a8a09eaa9a500bc65cbefd4251865b70ca7e26682f1a2bad52a4a697aa0baf4ebe05130ec6a62e66e719d6bb753654f0ff08533f6d088e16d682dca6786082a55eda4d65f21e91074345d12b775ce0f47447731e5eeeff44ca0a946e1df77f77e3d07cc9daa30a1b2941c17f9039ffa3baddf70dce808a071acb22d3fe0b1ecea101f659fd3fcfe7d9f16546273b0236232b7926211894273ffffffffffffffffffffffffffffffffffffffff3c6247f037626ab8de621acb67625b60d5636bd2696273ffffffffffffffffffffffffffffffffffffffff630b2df5d6f1623402af629589806317ef5652f032",
+                            "nonce" : "0x1c",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf90234800a82bef794000000000000000000000000000000000000000184f3107ce3b901cf7300000000000000000000000000000000000000013b7ea30da9ff11bd5f11e4529c93ce4b37d5a256d61e1f1a0ecccb5fbb21fec97f6b3d456b8caaaa84ef30a44fd8779fae5a48354b937835d82d57999d194d4edfbaf0a8dd026d727e3315a53e907b0e1873b4dcb7f806014bc23164e8cc0560256f0c6a8c09c0df2f0f8208ff622bb459d46ffab16ce9d64bcf9cec668338ebbc7f9e64656ae99c617d0dd709c1f78f96bea46e2df76db8418e2b657fc77ff2f979952911a73b767a6ce270c7392d2ff340648610fe0219aaf24df2b26e97e2761497bc6b97dea1269de3aca3b69ec7098a7257114a4a2e22c401ec6319bc2deb70980ebef372a327809b3c2473ab86578d2fccd458e6b99a277c4a1d3e96351fbebe62fe63d300444afd3a9077c20905d2a92b5b2945de6bf9b28d1d42795ca74b029dce6934312994a31fed72e45da26c73c636b40b1f6d529f35488625624a9dfd0b62309f286277b5ab6259b2fd62144722631c4722737300000000000000000000000000000000000000056317345497f13368b2a96595a00933d8dd6dc111a13b90768f330898544a443407620316d3625614816282f1e9622e741d731000000000000000000000000000000000000000631d791a38fa1ba09cdaa717798ef3792729a7d409714e34378eda77b0333f3daca4f7acd0c92547a03e727613a2ceb49bf87fbf38732a50093e2fe73e81f18009063a8eccab27e436"
+                }
+            ],
+            "Prague" : [
+                {
+                    "hash" : "0x0928943a04d2d8bb4a5e8790cbb9f711eebe2e40e073c63e7fc2a6b79e86ab56",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x0000000000000000000000000000000000000001" : {
+                            "balance" : "0xf3107ce3",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0x1000000000000000000000000000000000000000" : {
+                            "balance" : "0x23c22aeb4961b17e",
+                            "code" : "0x73a66737fdcc16cd591384a0b12fb650ce85011e553b7d85cc6995d8948ac88f5726f16627d809c92dba32d01471809ad1c5046b53687d1ff18bca5a755a0c6cd7ce36e1dc18c7c2a909f6bc0073d53f4c10a2121e6b4f0aeadc71b441c331b19ec57822835269748ae558697a082470abaa3595d4b8256f8954c7ed655896eb04017a7f522be50fd88e38ee27de7ebd20794466f490bcb43162328a337a6e42fd88cacf6a8ecb264fe21836cf31d0ae7be53da5fe2cac802905640c0a18b2ccfd806fed6d7cbaf1fc19c6931d6c37b9320599ca5061121076a6546fc888f04e94c09adcc8a3cc9d002448838977c1010c1cdef7438b3d1e99cf6d78b9d4f55962b04476323f3441",
+                            "nonce" : "0x94",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x236d08fd5f30d220",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x9183fd5b40d86e03",
+                            "code" : "0x74357a5ade2da3b4a5f5459faff84e5ea9b714b60ed26257ef597d9aa2e6d9316426366fe24fb9ed56c4a9e5dcf06af08c42368fdaa12b71476283c5bd6147ed93625663ae6252d373624971d86228ec1a730000000000000000000000000000000000000005630c30a604f478fe44add6669b247cad0f00251697572fa913a16c98038931df54",
+                            "nonce" : "0x1c",
+                            "storage" : {
+                            }
+                        },
+                        "0xffffffffffffffffffffffffffffffffffffffff" : {
+                            "balance" : "0x532f42c819fa5bed",
+                            "code" : "0x77351c4c5a02c8f13fa7c7f5800fa5c9ba2f3b971c13764f9b61c2db66c3f909c17e434a68d685402956cc341dbf6779516900ed0a1e2666dfa40e70f3bcee773c2bffd5b5422a2cf32b19e541f15ae2b6fbe16fd19bbd567728190f83569f036dccd3886aa69c1e685736da06152e3b24728b13546ea1abd48ee47b1b2e1ec70b37fa14cc709d35fce7380230f426455385da80771ffc6e261f3bfe7bfe7f1827d17b0cf49a7d7ff8ceb60b6a86ebbb762eb3e4dd1a8a09eaa9a500bc65cbefd4251865b70ca7e26682f1a2bad52a4a697aa0baf4ebe05130ec6a62e66e719d6bb753654f0ff08533f6d088e16d682dca6786082a55eda4d65f21e91074345d12b775ce0f47447731e5eeeff44ca0a946e1df77f77e3d07cc9daa30a1b2941c17f9039ffa3baddf70dce808a071acb22d3fe0b1ecea101f659fd3fcfe7d9f16546273b0236232b7926211894273ffffffffffffffffffffffffffffffffffffffff3c6247f037626ab8de621acb67625b60d5636bd2696273ffffffffffffffffffffffffffffffffffffffff630b2df5d6f1623402af629589806317ef5652f032",
+                            "nonce" : "0x1c",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf90234800a82bef794000000000000000000000000000000000000000184f3107ce3b901cf7300000000000000000000000000000000000000013b7ea30da9ff11bd5f11e4529c93ce4b37d5a256d61e1f1a0ecccb5fbb21fec97f6b3d456b8caaaa84ef30a44fd8779fae5a48354b937835d82d57999d194d4edfbaf0a8dd026d727e3315a53e907b0e1873b4dcb7f806014bc23164e8cc0560256f0c6a8c09c0df2f0f8208ff622bb459d46ffab16ce9d64bcf9cec668338ebbc7f9e64656ae99c617d0dd709c1f78f96bea46e2df76db8418e2b657fc77ff2f979952911a73b767a6ce270c7392d2ff340648610fe0219aaf24df2b26e97e2761497bc6b97dea1269de3aca3b69ec7098a7257114a4a2e22c401ec6319bc2deb70980ebef372a327809b3c2473ab86578d2fccd458e6b99a277c4a1d3e96351fbebe62fe63d300444afd3a9077c20905d2a92b5b2945de6bf9b28d1d42795ca74b029dce6934312994a31fed72e45da26c73c636b40b1f6d529f35488625624a9dfd0b62309f286277b5ab6259b2fd62144722631c4722737300000000000000000000000000000000000000056317345497f13368b2a96595a00933d8dd6dc111a13b90768f330898544a443407620316d3625614816282f1e9622e741d731000000000000000000000000000000000000000631d791a38fa1ba09cdaa717798ef3792729a7d409714e34378eda77b0333f3daca4f7acd0c92547a03e727613a2ceb49bf87fbf38732a50093e2fe73e81f18009063a8eccab27e436"
+                }
+            ]
+        },
+        "pre" : {
+            "0x1000000000000000000000000000000000000000" : {
+                "balance" : "0x23c22aeb4961b17e",
+                "code" : "0x73a66737fdcc16cd591384a0b12fb650ce85011e553b7d85cc6995d8948ac88f5726f16627d809c92dba32d01471809ad1c5046b53687d1ff18bca5a755a0c6cd7ce36e1dc18c7c2a909f6bc0073d53f4c10a2121e6b4f0aeadc71b441c331b19ec57822835269748ae558697a082470abaa3595d4b8256f8954c7ed655896eb04017a7f522be50fd88e38ee27de7ebd20794466f490bcb43162328a337a6e42fd88cacf6a8ecb264fe21836cf31d0ae7be53da5fe2cac802905640c0a18b2ccfd806fed6d7cbaf1fc19c6931d6c37b9320599ca5061121076a6546fc888f04e94c09adcc8a3cc9d002448838977c1010c1cdef7438b3d1e99cf6d78b9d4f55962b04476323f3441",
+                "nonce" : "0x94",
+                "storage" : {
+                }
+            },
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x236d08fe524712cb",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            },
+            "0xb94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x9183fd5b40d86e03",
+                "code" : "0x74357a5ade2da3b4a5f5459faff84e5ea9b714b60ed26257ef597d9aa2e6d9316426366fe24fb9ed56c4a9e5dcf06af08c42368fdaa12b71476283c5bd6147ed93625663ae6252d373624971d86228ec1a730000000000000000000000000000000000000005630c30a604f478fe44add6669b247cad0f00251697572fa913a16c98038931df54",
+                "nonce" : "0x1c",
+                "storage" : {
+                }
+            },
+            "0xffffffffffffffffffffffffffffffffffffffff" : {
+                "balance" : "0x532f42c819fa5bed",
+                "code" : "0x77351c4c5a02c8f13fa7c7f5800fa5c9ba2f3b971c13764f9b61c2db66c3f909c17e434a68d685402956cc341dbf6779516900ed0a1e2666dfa40e70f3bcee773c2bffd5b5422a2cf32b19e541f15ae2b6fbe16fd19bbd567728190f83569f036dccd3886aa69c1e685736da06152e3b24728b13546ea1abd48ee47b1b2e1ec70b37fa14cc709d35fce7380230f426455385da80771ffc6e261f3bfe7bfe7f1827d17b0cf49a7d7ff8ceb60b6a86ebbb762eb3e4dd1a8a09eaa9a500bc65cbefd4251865b70ca7e26682f1a2bad52a4a697aa0baf4ebe05130ec6a62e66e719d6bb753654f0ff08533f6d088e16d682dca6786082a55eda4d65f21e91074345d12b775ce0f47447731e5eeeff44ca0a946e1df77f77e3d07cc9daa30a1b2941c17f9039ffa3baddf70dce808a071acb22d3fe0b1ecea101f659fd3fcfe7d9f16546273b0236232b7926211894273ffffffffffffffffffffffffffffffffffffffff3c6247f037626ab8de621acb67625b60d5636bd2696273ffffffffffffffffffffffffffffffffffffffff630b2df5d6f1623402af629589806317ef5652f032",
+                "nonce" : "0x1c",
+                "storage" : {
+                }
+            }
+        },
+        "transaction" : {
+            "data" : [
+                "0x7300000000000000000000000000000000000000013b7ea30da9ff11bd5f11e4529c93ce4b37d5a256d61e1f1a0ecccb5fbb21fec97f6b3d456b8caaaa84ef30a44fd8779fae5a48354b937835d82d57999d194d4edfbaf0a8dd026d727e3315a53e907b0e1873b4dcb7f806014bc23164e8cc0560256f0c6a8c09c0df2f0f8208ff622bb459d46ffab16ce9d64bcf9cec668338ebbc7f9e64656ae99c617d0dd709c1f78f96bea46e2df76db8418e2b657fc77ff2f979952911a73b767a6ce270c7392d2ff340648610fe0219aaf24df2b26e97e2761497bc6b97dea1269de3aca3b69ec7098a7257114a4a2e22c401ec6319bc2deb70980ebef372a327809b3c2473ab86578d2fccd458e6b99a277c4a1d3e96351fbebe62fe63d300444afd3a9077c20905d2a92b5b2945de6bf9b28d1d42795ca74b029dce6934312994a31fed72e45da26c73c636b40b1f6d529f35488625624a9dfd0b62309f286277b5ab6259b2fd62144722631c4722737300000000000000000000000000000000000000056317345497f13368b2a96595a00933d8dd6dc111a13b90768f330898544a443407620316d3625614816282f1e9622e741d731000000000000000000000000000000000000000631d791a38fa"
+            ],
+            "gasLimit" : [
+                "0xbef7"
+            ],
+            "gasPrice" : "0x0a",
+            "nonce" : "0x00",
+            "secretKey" : "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "sender" : "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to" : "0x0000000000000000000000000000000000000001",
+            "value" : [
+                "0xf3107ce3"
+            ]
+        }
+    }
+}

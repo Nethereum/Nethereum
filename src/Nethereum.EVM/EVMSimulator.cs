@@ -373,6 +373,7 @@ namespace Nethereum.EVM
             // Gas actually spent is what was allocated minus what's returned (capped at allocated)
             var gasActuallySpent = completedFrame.GasAllocated - BigInteger.Min(gasToReturn, completedFrame.GasAllocated);
 
+
             // If callee returns more gas than was allocated, the excess is the unused stipend.
             // This stipend was already charged in the CALL opcode cost (G_callvalue = 9000 includes
             // G_callstipend = 2300). If unused, we must refund it from TotalGasUsed.
@@ -515,15 +516,18 @@ namespace Nethereum.EVM
             var resultMemoryDataIndexBig = program.StackPopAndConvertToUBigInteger();
             var resultMemoryDataLengthBig = program.StackPopAndConvertToUBigInteger();
 
-            if (dataInputIndexBig > int.MaxValue || dataInputLengthBig > int.MaxValue ||
-                resultMemoryDataIndexBig > int.MaxValue || resultMemoryDataLengthBig > int.MaxValue)
+            if ((dataInputLengthBig > 0 && dataInputIndexBig > int.MaxValue) ||
+                dataInputLengthBig > int.MaxValue ||
+                (resultMemoryDataLengthBig > 0 && resultMemoryDataIndexBig > int.MaxValue) ||
+                resultMemoryDataLengthBig > int.MaxValue)
             {
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
             }
 
-            var dataInputIndex = (int)dataInputIndexBig;
+            // Safe casts - clamp to int.MaxValue if overflow would occur (for unused values)
+            var dataInputIndex = dataInputIndexBig > int.MaxValue ? int.MaxValue : (int)dataInputIndexBig;
             var dataInputLength = (int)dataInputLengthBig;
             var resultMemoryDataIndex = (int)resultMemoryDataIndexBig;
             var resultMemoryDataLength = (int)resultMemoryDataLengthBig;
@@ -820,6 +824,7 @@ namespace Nethereum.EVM
             // Only fail if we actually need to read memory and the parameters overflow int
             if (memoryLengthBig > int.MaxValue || (memoryLengthBig > 0 && memoryIndexBig > int.MaxValue))
             {
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
@@ -832,6 +837,7 @@ namespace Nethereum.EVM
             if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
             {
                 program.GasRemaining = 0;
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
@@ -839,6 +845,7 @@ namespace Nethereum.EVM
 
             if (parentFrame.Depth + 1 > GasConstants.MAX_CALL_DEPTH)
             {
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
@@ -885,6 +892,7 @@ namespace Nethereum.EVM
             // EIP-3541: Reject initcode starting with 0xEF (before incrementing nonce)
             if (byteCode.Length > 0 && byteCode[0] == 0xEF)
             {
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
@@ -894,6 +902,7 @@ namespace Nethereum.EVM
             var senderBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(contractAddress);
             if (senderBalance < value)
             {
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
@@ -903,6 +912,7 @@ namespace Nethereum.EVM
             var maxNonce = BigInteger.Pow(2, 64) - 1;
             if (nonce >= maxNonce)
             {
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };
@@ -936,6 +946,8 @@ namespace Nethereum.EVM
                 var collisionGas = program.GasRemaining - (program.GasRemaining / 64);
                 program.GasRemaining -= collisionGas;
                 program.TotalGasUsed += collisionGas;
+                // EIP-684: On CREATE failure due to collision, return data is empty
+                program.ProgramResult.LastCallReturnData = null;
                 program.StackPush(0);
                 program.Step();
                 return new SubCallSetup { ShouldCreateSubCall = false };

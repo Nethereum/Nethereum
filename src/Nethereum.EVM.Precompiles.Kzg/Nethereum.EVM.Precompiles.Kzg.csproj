@@ -16,6 +16,9 @@
   <ItemGroup>
     <PackageReference Include="Ckzg.Bindings" Version="1.0.2.828" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="trusted_setup.txt" />
+  </ItemGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>

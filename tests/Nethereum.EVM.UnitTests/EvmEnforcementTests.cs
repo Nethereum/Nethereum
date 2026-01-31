@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.EVM.BlockchainState;
@@ -144,15 +145,16 @@ namespace Nethereum.EVM.UnitTests
         private readonly EvmPreCompiledContractsExecution _precompiles = new EvmPreCompiledContractsExecution();
 
         [Fact]
-        public void IsPrecompiledAddress_ShouldReturnTrueForAddresses1Through9()
+        public void IsPrecompiledAddress_ShouldReturnTrueForAddresses1ThroughA()
         {
-            Assert.True(_precompiles.IsPrecompiledAdress("0x0000000000000000000000000000000000000001"));
-            Assert.True(_precompiles.IsPrecompiledAdress("0x0000000000000000000000000000000000000002"));
-            Assert.True(_precompiles.IsPrecompiledAdress("0x0000000000000000000000000000000000000003"));
-            Assert.True(_precompiles.IsPrecompiledAdress("0x0000000000000000000000000000000000000004"));
-            Assert.True(_precompiles.IsPrecompiledAdress("0x0000000000000000000000000000000000000005"));
-            Assert.True(_precompiles.IsPrecompiledAdress("0x0000000000000000000000000000000000000009"));
-            Assert.False(_precompiles.IsPrecompiledAdress("0x000000000000000000000000000000000000000A"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000001"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000002"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000003"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000004"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000005"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000009"));
+            Assert.True(_precompiles.IsPrecompiledAddress("0x000000000000000000000000000000000000000A")); // KZG (EIP-4844)
+            Assert.False(_precompiles.IsPrecompiledAddress("0x000000000000000000000000000000000000000B")); // BLS12-381 not yet implemented
         }
 
         [Fact]
@@ -253,14 +255,109 @@ namespace Nethereum.EVM.UnitTests
         }
 
         [Fact]
-        public void BN128_ShouldThrowNotImplemented()
+        public void BN128Add_ZeroPoints_ShouldReturnZero()
         {
-            Assert.Throws<NotImplementedException>(() =>
-                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", new byte[0]));
-            Assert.Throws<NotImplementedException>(() =>
-                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", new byte[0]));
-            Assert.Throws<NotImplementedException>(() =>
-                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", new byte[0]));
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", new byte[0]);
+            Assert.Equal(64, result.Length);
+            Assert.All(result, b => Assert.Equal(0, b));
+        }
+
+        [Fact]
+        public void BN128Add_PointPlusInfinity_ShouldReturnSamePoint()
+        {
+            var x = "0000000000000000000000000000000000000000000000000000000000000001";
+            var y = "0000000000000000000000000000000000000000000000000000000000000002";
+            var input = (x + y + new string('0', 128)).HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", input);
+            Assert.Equal(64, result.Length);
+            Assert.Equal(x, result.Take(32).ToArray().ToHex());
+            Assert.Equal(y, result.Skip(32).ToArray().ToHex());
+        }
+
+        [Fact]
+        public void BN128Mul_ZeroScalar_ShouldReturnInfinity()
+        {
+            var x = "0000000000000000000000000000000000000000000000000000000000000001";
+            var y = "0000000000000000000000000000000000000000000000000000000000000002";
+            var scalar = new string('0', 64);
+            var input = (x + y + scalar).HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", input);
+            Assert.Equal(64, result.Length);
+            Assert.All(result, b => Assert.Equal(0, b));
+        }
+
+        [Fact]
+        public void BN128Mul_OneScalar_ShouldReturnSamePoint()
+        {
+            var x = "0000000000000000000000000000000000000000000000000000000000000001";
+            var y = "0000000000000000000000000000000000000000000000000000000000000002";
+            var scalar = "0000000000000000000000000000000000000000000000000000000000000001";
+            var input = (x + y + scalar).HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", input);
+            Assert.Equal(64, result.Length);
+            Assert.Equal(x, result.Take(32).ToArray().ToHex());
+            Assert.Equal(y, result.Skip(32).ToArray().ToHex());
+        }
+
+        [Fact]
+        public void BN128Pairing_EmptyInput_ShouldReturnTrue()
+        {
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", new byte[0]);
+            Assert.Equal(32, result.Length);
+            Assert.Equal(1, result[31]);
+        }
+
+        [Fact]
+        public void BN128Pairing_InvalidLength_ShouldThrow()
+        {
+            var input = new byte[100];
+            Assert.Throws<ArgumentException>(() =>
+                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", input));
+        }
+
+        [Theory]
+        [MemberData(nameof(BN128TestVectors.AddTestCases), MemberType = typeof(BN128TestVectors))]
+        public void BN128Add_GethTestVectors(string name, string input, string expectedOutput)
+        {
+            var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", inputBytes);
+            Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
+        }
+
+        [Theory]
+        [MemberData(nameof(BN128TestVectors.MulTestCases), MemberType = typeof(BN128TestVectors))]
+        public void BN128Mul_GethTestVectors(string name, string input, string expectedOutput)
+        {
+            var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", inputBytes);
+            Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
+        }
+
+        [Theory]
+        [MemberData(nameof(BN128TestVectors.PairingTestCases), MemberType = typeof(BN128TestVectors))]
+        public void BN128Pairing_GethTestVectors(string name, string input, string expectedOutput)
+        {
+            var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", inputBytes);
+            Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
+        }
+
+        [Theory]
+        [MemberData(nameof(BN128TestVectors.PairingInvalidInputTestCases), MemberType = typeof(BN128TestVectors))]
+        public void BN128Pairing_InvalidInput_ShouldThrow(string name, string input)
+        {
+            var inputBytes = input.HexToByteArray();
+            Assert.Throws<ArgumentException>(() =>
+                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", inputBytes));
+        }
+
+        [Theory]
+        [MemberData(nameof(BN128TestVectors.PairingComputationTestCases), MemberType = typeof(BN128TestVectors))]
+        public void BN128Pairing_FullComputation_GethTestVectors(string name, string input, string expectedOutput)
+        {
+            var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
+            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", inputBytes);
+            Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
         }
     }
 }

@@ -1,0 +1,133 @@
+{
+    "GeneralStateTests/stStaticFlagEnabled/StaticcallForPrecompilesIssue683.json::StaticcallForPrecompilesIssue683-fork_[Cancun-Prague]-d0g0v0" : {
+        "_info" : {
+            "comment" : "Bytecode from issue 683, that initially show the problem with staticcall in hevm.\nIssue link: https://github.com/ethereum/tests/issues/683\nPullrequest link with original bytecode: https://github.com/dapphub/dapptools/pull/360\n",
+            "filling-rpc-server" : "evmone-t8n 0.15.0+commit.42caf43b",
+            "filling-tool-version" : "retesteth-0.3.2-legacy+commit.bde76e25.Linux.g++",
+            "fixture-format" : "state_test",
+            "hash" : "0x5c7590e475f0fa9f2598d7b49883d4d3de05d44493fc0f3c9ad4368faba50b09",
+            "lllcversion" : "Version: 0.5.14-develop.2024.11.5+commit.b2b86751.mod.Linux.g++",
+            "repo" : "ethereum/tests",
+            "solidity" : "Version: 0.8.24+commit.e11b9ed9.Linux.g++",
+            "source" : "src/GeneralStateTestsFiller/stStaticFlagEnabled/StaticcallForPrecompilesIssue683Filler.yml",
+            "sourceHash" : "0x854ca31bee31d3a36116496a352f21b9da4f9fdfc40f4c63252575d4906db7a8"
+        },
+        "config" : {
+            "blobSchedule" : {
+                "Cancun" : {
+                    "baseFeeUpdateFraction" : "0x32f0ed",
+                    "max" : "0x06",
+                    "target" : "0x03"
+                },
+                "Prague" : {
+                    "baseFeeUpdateFraction" : "0x4c6964",
+                    "max" : "0x09",
+                    "target" : "0x06"
+                }
+            },
+            "chainid" : "0x01"
+        },
+        "env" : {
+            "currentBaseFee" : "0x0a",
+            "currentCoinbase" : "0xcafe000000000000000000000000000000000001",
+            "currentDifficulty" : "0x020000",
+            "currentExcessBlobGas" : "0x00",
+            "currentGasLimit" : "0x989680",
+            "currentNumber" : "0x01",
+            "currentRandom" : "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentTimestamp" : "0x03e8"
+        },
+        "post" : {
+            "Cancun" : [
+                {
+                    "hash" : "0x3f84ec1ec6f4dea495390a8607d6c16fd03e8943f3119e17a09bc021d063667c",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0xa000000000000000000000000000000000000000" : {
+                            "balance" : "0x044c",
+                            "code" : "0x600080541515601d576001815580818283305afa15601b578081fd5b005b80818283600160025af15050",
+                            "nonce" : "0x00",
+                            "storage" : {
+                                "0x00" : "0x01"
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a6cdb064",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf860800a830f424094a00000000000000000000000000000000000000064801ca054870e924ab213fd0acf66dd0adfd431874d9face7898dd1782c737590cf01d0a05afbafd3918a0904a5d215edb16650f36704cc05a3eb3a3d950a72c3d4d364d0"
+                }
+            ],
+            "Prague" : [
+                {
+                    "hash" : "0x3f84ec1ec6f4dea495390a8607d6c16fd03e8943f3119e17a09bc021d063667c",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0xa000000000000000000000000000000000000000" : {
+                            "balance" : "0x044c",
+                            "code" : "0x600080541515601d576001815580818283305afa15601b578081fd5b005b80818283600160025af15050",
+                            "nonce" : "0x00",
+                            "storage" : {
+                                "0x00" : "0x01"
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a6cdb064",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf860800a830f424094a00000000000000000000000000000000000000064801ca054870e924ab213fd0acf66dd0adfd431874d9face7898dd1782c737590cf01d0a05afbafd3918a0904a5d215edb16650f36704cc05a3eb3a3d950a72c3d4d364d0"
+                }
+            ]
+        },
+        "pre" : {
+            "0xa000000000000000000000000000000000000000" : {
+                "balance" : "0x03e8",
+                "code" : "0x600080541515601d576001815580818283305afa15601b578081fd5b005b80818283600160025af15050",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            },
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x0de0b6b3a7640000",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            }
+        },
+        "transaction" : {
+            "data" : [
+                "0x"
+            ],
+            "gasLimit" : [
+                "0x0f4240"
+            ],
+            "gasPrice" : "0x0a",
+            "nonce" : "0x00",
+            "secretKey" : "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "sender" : "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to" : "0xa000000000000000000000000000000000000000",
+            "value" : [
+                "0x64"
+            ]
+        }
+    }
+}

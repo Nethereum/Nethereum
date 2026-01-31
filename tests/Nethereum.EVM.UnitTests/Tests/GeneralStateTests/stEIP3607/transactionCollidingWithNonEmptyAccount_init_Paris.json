@@ -1,0 +1,424 @@
+{
+    "GeneralStateTests/stEIP3607/transactionCollidingWithNonEmptyAccount_init_Paris.json::transactionCollidingWithNonEmptyAccount_init_Paris-fork_[Cancun-Prague]-d[0-3]g0v0" : {
+        "_info" : {
+            "comment" : "Account with non-empty code attempts to send tx to create a contract",
+            "filling-rpc-server" : "evmone-t8n 0.15.0+commit.42caf43b",
+            "filling-tool-version" : "retesteth-0.3.2-legacy+commit.bde76e25.Linux.g++",
+            "fixture-format" : "state_test",
+            "hash" : "0x09d8300c63e763277d1c4cc91dcdb7306c074b3ca2b60d2d5fcfccc4dcb6b12c",
+            "lllcversion" : "Version: 0.5.14-develop.2024.11.5+commit.b2b86751.mod.Linux.g++",
+            "repo" : "ethereum/tests",
+            "solidity" : "Version: 0.8.24+commit.e11b9ed9.Linux.g++",
+            "source" : "src/GeneralStateTestsFiller/stEIP3607/transactionCollidingWithNonEmptyAccount_init_ParisFiller.yml",
+            "sourceHash" : "0x3f6d0fd1e8f158d173c5310812b74353898ec0f7a1afff979bebad05c972d922"
+        },
+        "config" : {
+            "blobSchedule" : {
+                "Cancun" : {
+                    "baseFeeUpdateFraction" : "0x32f0ed",
+                    "max" : "0x06",
+                    "target" : "0x03"
+                },
+                "Prague" : {
+                    "baseFeeUpdateFraction" : "0x4c6964",
+                    "max" : "0x09",
+                    "target" : "0x06"
+                }
+            },
+            "chainid" : "0x01"
+        },
+        "env" : {
+            "currentBaseFee" : "0x0a",
+            "currentCoinbase" : "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentDifficulty" : "0x020000",
+            "currentExcessBlobGas" : "0x00",
+            "currentGasLimit" : "0xff112233445566",
+            "currentNumber" : "0x01",
+            "currentRandom" : "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentTimestamp" : "0x03e8"
+        },
+        "post" : {
+            "Cancun" : [
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf84f800a83061a8080830186a0001ca0940546fa422a9310b30cc6b14ecb25996f6f7c56b25b4c4d3ad0f60b56ea7df0a02686b496576a0632b2b9238d6aacb7fa317864b06bb3199b613050c1d8abb42b"
+                },
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 1,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf854800a83061a8080830186a08560206000f31ca0b3090d3211444a7b1530ae2b72bfd606fc5902d2d04bb2390448361b3d198d94a05c69af38472b9a5c913eb413379078dbb3beed941467229da6d47bf5c82d67c0"
+                },
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 2,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf86f800a83061a8080830186a0a0600080808061271073d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d05af1001ba04f47162d9bf110ab4fcba8dacac4b7f9c486ca413cbc32e4e4c01c39d540cf5da00e2e10ad50c7939b4e043c39452d429104cf11f2ce336fae443d813735580b54"
+                },
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 3,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf86c800a83061a8080830186a09d600080808073d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d05af4001ba0cfadc18a29faa534a75e04aef07950da9a59e3702f08f31a6733a5216f66d5d6a0254ddde156bb11dcaa86d9b55a3d060aec429e61cf4720bc3899017754c8ee32"
+                }
+            ],
+            "Prague" : [
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf84f800a83061a8080830186a0001ca0940546fa422a9310b30cc6b14ecb25996f6f7c56b25b4c4d3ad0f60b56ea7df0a02686b496576a0632b2b9238d6aacb7fa317864b06bb3199b613050c1d8abb42b"
+                },
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 1,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf854800a83061a8080830186a08560206000f31ca0b3090d3211444a7b1530ae2b72bfd606fc5902d2d04bb2390448361b3d198d94a05c69af38472b9a5c913eb413379078dbb3beed941467229da6d47bf5c82d67c0"
+                },
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 2,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf86f800a83061a8080830186a0a0600080808061271073d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d05af1001ba04f47162d9bf110ab4fcba8dacac4b7f9c486ca413cbc32e4e4c01c39d540cf5da00e2e10ad50c7939b4e043c39452d429104cf11f2ce336fae443d813735580b54"
+                },
+                {
+                    "expectException" : "TransactionException.SENDER_NOT_EOA",
+                    "hash" : "0x8dfa52e93613ae31d9dc920dcbd368d992ec5cea0eab5ff882961b15f4ebae8e",
+                    "indexes" : {
+                        "data" : 3,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x00",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf86c800a83061a8080830186a09d600080808073d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d05af4001ba0cfadc18a29faa534a75e04aef07950da9a59e3702f08f31a6733a5216f66d5d6a0254ddde156bb11dcaa86d9b55a3d060aec429e61cf4720bc3899017754c8ee32"
+                }
+            ]
+        },
+        "pre" : {
+            "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba" : {
+                "balance" : "0x00",
+                "code" : "0x",
+                "nonce" : "0x01",
+                "storage" : {
+                }
+            },
+            "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                "balance" : "0x0a",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            },
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x0de0b6b3a7640000",
+                "code" : "0x00",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            },
+            "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                "balance" : "0x0a",
+                "code" : "0x00",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            }
+        },
+        "transaction" : {
+            "data" : [
+                "0x00",
+                "0x60206000f3",
+                "0x600080808061271073d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d05af100",
+                "0x600080808073d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d05af400"
+            ],
+            "gasLimit" : [
+                "0x061a80"
+            ],
+            "gasPrice" : "0x0a",
+            "nonce" : "0x00",
+            "secretKey" : "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "sender" : "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to" : "",
+            "value" : [
+                "0x0186a0"
+            ]
+        }
+    }
+}

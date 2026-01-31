@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Nethereum.Signer.Bls.Herumi</id>
+    <version>5.8.0</version>
+    <authors>Juan Blanco,Nethereum contributors</authors>
+    <license type="file">LICENSE.md</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>images\logo64x64.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://nethereum.com/</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</iconUrl>
+    <description>Herumi-backed native BLS implementation for Nethereum.</description>
+    <copyright>Nethereum.com (Juan Blanco) 2015-2024</copyright>
+    <tags>Ethereum BLS Herumi LightClient</tags>
+    <repository type="git" url="https://github.com/Nethereum/Nethereum" branch="refs/heads/master" commit="214b1e3f09a282c0b2b98156bd295f89406f918d" />
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Nethereum.Signer.Bls" version="5.8.0" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="[11.0.2, 14.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0">
+        <dependency id="Nethereum.Signer.Bls" version="5.8.0" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="[11.0.2, 14.0.0)" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="Nethereum.Signer.Bls" version="5.8.0" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="[11.0.2, 14.0.0)" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

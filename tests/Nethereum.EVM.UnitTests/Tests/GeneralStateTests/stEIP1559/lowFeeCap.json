@@ -1,0 +1,141 @@
+{
+    "GeneralStateTests/stEIP1559/lowFeeCap.json::lowFeeCap-fork_[Cancun-Prague]-d0g0v0" : {
+        "_info" : {
+            "comment" : "Ori Pomerantz qbzzt1@gmail.com",
+            "filling-rpc-server" : "evmone-t8n 0.15.0+commit.42caf43b",
+            "filling-tool-version" : "retesteth-0.3.2-legacy+commit.bde76e25.Linux.g++",
+            "fixture-format" : "state_test",
+            "hash" : "0xf334a6620cec0d49bd7c5dca004faefbccc50ee4e1856d8e47807642c7526326",
+            "labels" : {
+                "0" : "declaredKeyWrite"
+            },
+            "lllcversion" : "Version: 0.5.14-develop.2024.11.5+commit.b2b86751.mod.Linux.g++",
+            "repo" : "ethereum/tests",
+            "solidity" : "Version: 0.8.24+commit.e11b9ed9.Linux.g++",
+            "source" : "src/GeneralStateTestsFiller/stEIP1559/lowFeeCapFiller.yml",
+            "sourceHash" : "0x5af31560be7da57dfec7b0234ffe583a776e9c25758f0a213413a953208bb8f4"
+        },
+        "config" : {
+            "blobSchedule" : {
+                "Cancun" : {
+                    "baseFeeUpdateFraction" : "0x32f0ed",
+                    "max" : "0x06",
+                    "target" : "0x03"
+                },
+                "Prague" : {
+                    "baseFeeUpdateFraction" : "0x4c6964",
+                    "max" : "0x09",
+                    "target" : "0x06"
+                }
+            },
+            "chainid" : "0x01"
+        },
+        "env" : {
+            "currentBaseFee" : "0x03e8",
+            "currentCoinbase" : "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentDifficulty" : "0x020000",
+            "currentExcessBlobGas" : "0x00",
+            "currentGasLimit" : "0xff112233445566",
+            "currentNumber" : "0x01",
+            "currentRandom" : "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentTimestamp" : "0x03e8"
+        },
+        "post" : {
+            "Cancun" : [
+                {
+                    "expectException" : "TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS",
+                    "hash" : "0x716ece27b2ad0ec9edbb6bd19f1c37b65f48f10d9c0251b309b14354353da8c7",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0xcccccccccccccccccccccccccccccccccccccccc" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x600260005500",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0x02f8680101648203e783061a8094cccccccccccccccccccccccccccccccccccccccc830186a000c080a0a0c75b311bd40cb10835e4ef967a6629e01352001bd7cc3b5b4cba0c3ca35722a00ed43a4b0bd8161baa12da82564ead82f3edf051e3d2cfeb57003db712fcfd16"
+                }
+            ],
+            "Prague" : [
+                {
+                    "expectException" : "TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS",
+                    "hash" : "0x716ece27b2ad0ec9edbb6bd19f1c37b65f48f10d9c0251b309b14354353da8c7",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        },
+                        "0xcccccccccccccccccccccccccccccccccccccccc" : {
+                            "balance" : "0x0de0b6b3a7640000",
+                            "code" : "0x600260005500",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0x02f8680101648203e783061a8094cccccccccccccccccccccccccccccccccccccccc830186a000c080a0a0c75b311bd40cb10835e4ef967a6629e01352001bd7cc3b5b4cba0c3ca35722a00ed43a4b0bd8161baa12da82564ead82f3edf051e3d2cfeb57003db712fcfd16"
+                }
+            ]
+        },
+        "pre" : {
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x0de0b6b3a7640000",
+                "code" : "0x",
+                "nonce" : "0x01",
+                "storage" : {
+                }
+            },
+            "0xcccccccccccccccccccccccccccccccccccccccc" : {
+                "balance" : "0x0de0b6b3a7640000",
+                "code" : "0x600260005500",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            }
+        },
+        "transaction" : {
+            "accessLists" : [
+                [
+                ]
+            ],
+            "data" : [
+                "0x00"
+            ],
+            "gasLimit" : [
+                "0x061a80"
+            ],
+            "maxFeePerGas" : "0x03e7",
+            "maxPriorityFeePerGas" : "0x64",
+            "nonce" : "0x01",
+            "secretKey" : "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "sender" : "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to" : "0xcccccccccccccccccccccccccccccccccccccccc",
+            "value" : [
+                "0x0186a0"
+            ]
+        }
+    }
+}

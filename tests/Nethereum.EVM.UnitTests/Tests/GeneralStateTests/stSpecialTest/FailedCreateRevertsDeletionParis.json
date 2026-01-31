@@ -1,0 +1,134 @@
+{
+    "GeneralStateTests/stSpecialTest/FailedCreateRevertsDeletionParis.json::FailedCreateRevertsDeletionParis-fork_[Cancun-Prague]-d0g0v0" : {
+        "_info" : {
+            "comment" : "A modification of stRevertTests/RevertInCreateInInit.  That test, for EIP158 only, accidentially tested the case where a contract creation transaction touches an empty account and then fails.  This one tests the same thing not just for EIP158 but any network thereafter.",
+            "filling-rpc-server" : "evmone-t8n 0.15.0+commit.42caf43b",
+            "filling-tool-version" : "retesteth-0.3.2-legacy+commit.bde76e25.Linux.g++",
+            "fixture-format" : "state_test",
+            "hash" : "0x19821cdb4a178aa610ae66b202cedd77faf06acc41b8f0b0bce0351ea4d534e6",
+            "lllcversion" : "Version: 0.5.14-develop.2024.11.5+commit.b2b86751.mod.Linux.g++",
+            "repo" : "ethereum/tests",
+            "solidity" : "Version: 0.8.24+commit.e11b9ed9.Linux.g++",
+            "source" : "src/GeneralStateTestsFiller/stSpecialTest/FailedCreateRevertsDeletionParisFiller.json",
+            "sourceHash" : "0x23e7108053d7b1bdbd2fa136cb6eafbe9ff6f91b279083a637dc013360b17e7e"
+        },
+        "config" : {
+            "blobSchedule" : {
+                "Cancun" : {
+                    "baseFeeUpdateFraction" : "0x32f0ed",
+                    "max" : "0x06",
+                    "target" : "0x03"
+                },
+                "Prague" : {
+                    "baseFeeUpdateFraction" : "0x4c6964",
+                    "max" : "0x09",
+                    "target" : "0x06"
+                }
+            },
+            "chainid" : "0x01"
+        },
+        "env" : {
+            "currentBaseFee" : "0x0a",
+            "currentCoinbase" : "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentDifficulty" : "0x020000",
+            "currentExcessBlobGas" : "0x00",
+            "currentGasLimit" : "0x0a10000000",
+            "currentNumber" : "0x01",
+            "currentRandom" : "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentTimestamp" : "0x03e8"
+        },
+        "post" : {
+            "Cancun" : [
+                {
+                    "hash" : "0x3e518e0ca76504209a2a44b6c11af9537e7872c4005ce49b633ee0f1d845049f",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                                "0x00" : "0x01"
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf86e800a850a000000008080a03050600d80601360003960006000f050fe00fe6211223360005260206000fd001ba076961c0bc9185f8f650ad74b734ebedb442a0ed7c3f0767c203c8800105b1222a02a22d9ddd242a8b7c0ac1cfbabd9798e1efee7e3b1dc4d1e663e7a5f2c3cf6c5"
+                }
+            ],
+            "Prague" : [
+                {
+                    "hash" : "0x3e518e0ca76504209a2a44b6c11af9537e7872c4005ce49b633ee0f1d845049f",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                                "0x00" : "0x01"
+                            }
+                        },
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x00",
+                            "code" : "0x",
+                            "nonce" : "0x01",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf86e800a850a000000008080a03050600d80601360003960006000f050fe00fe6211223360005260206000fd001ba076961c0bc9185f8f650ad74b734ebedb442a0ed7c3f0767c203c8800105b1222a02a22d9ddd242a8b7c0ac1cfbabd9798e1efee7e3b1dc4d1e663e7a5f2c3cf6c5"
+                }
+            ]
+        },
+        "pre" : {
+            "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f" : {
+                "balance" : "0x0a",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                    "0x00" : "0x01"
+                }
+            },
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x6400000000",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            }
+        },
+        "transaction" : {
+            "data" : [
+                "0x3050600d80601360003960006000f050fe00fe6211223360005260206000fd00"
+            ],
+            "gasLimit" : [
+                "0x0a00000000"
+            ],
+            "gasPrice" : "0x0a",
+            "nonce" : "0x00",
+            "secretKey" : "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "sender" : "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to" : "",
+            "value" : [
+                "0x00"
+            ]
+        }
+    }
+}

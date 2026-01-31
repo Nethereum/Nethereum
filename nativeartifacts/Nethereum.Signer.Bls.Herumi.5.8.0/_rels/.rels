@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Type="http://schemas.microsoft.com/packaging/2010/07/manifest" Target="/Nethereum.Signer.Bls.Herumi.nuspec" Id="RAE96C30521340500" />
+  <Relationship Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="/package/services/metadata/core-properties/593213a5026c412bbf337dd7560c5cf0.psmdcp" Id="RCBD1FEB17D5F18D0" />
+</Relationships>

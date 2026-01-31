@@ -335,10 +335,7 @@ namespace Nethereum.EVM.UnitTests
         {
             var vm = new EVMSimulator();
             var program = new Program(hexBytes.HexToByteArray());
-            for (var i = 0; i < numberOfSteps; i++)
-            {
-                await vm.StepAsync(program, i);
-            }
+            await vm.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
             Assert.Equal(expected.ToUpper(), program.StackPeek().ToHex().ToUpper());
         }

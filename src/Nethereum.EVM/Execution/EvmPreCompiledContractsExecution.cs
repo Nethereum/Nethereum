@@ -190,30 +190,14 @@ namespace Nethereum.EVM.Execution
 
         public virtual bool IsPrecompiledAddress(string address)
         {
-            // Check if external provider handles this address
-            if (_precompileProvider?.CanHandle(address) == true)
-                return true;
+            if (_precompileProvider != null)
+                return _precompileProvider.CanHandle(address);
 
-            switch (address.ToHexCompact().ToLowerInvariant())
+            // Fallback: check built-in Prague range (0x01-0x11) when no provider configured
+            var compact = address.ToHexCompact().ToLowerInvariant();
+            if (int.TryParse(compact, System.Globalization.NumberStyles.HexNumber, null, out int addressNum))
             {
-                case "1":
-                case "2":
-                case "3":
-                case "4":
-                case "5":
-                case "6":
-                case "7":
-                case "8":
-                case "9":
-                case "a": // EIP-4844 KZG Point Evaluation (Cancun)
-                case "b": // EIP-2537 BLS12-381 G1ADD (Prague)
-                case "c": // EIP-2537 BLS12-381 G1MSM (Prague)
-                case "d": // EIP-2537 BLS12-381 G2ADD (Prague)
-                case "e": // EIP-2537 BLS12-381 G2MSM (Prague)
-                case "f": // EIP-2537 BLS12-381 PAIRING (Prague)
-                case "10": // EIP-2537 BLS12-381 MAP_FP_TO_G1 (Prague)
-                case "11": // EIP-2537 BLS12-381 MAP_FP2_TO_G2 (Prague)
-                    return true;
+                return addressNum >= 1 && addressNum <= 17;
             }
 
             return false;

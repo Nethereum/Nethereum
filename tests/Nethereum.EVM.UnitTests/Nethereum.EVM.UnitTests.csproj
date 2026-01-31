@@ -11,10 +11,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ABI\Nethereum.ABI.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Bls\Nethereum.EVM.Precompiles.Bls.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.8.0" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />

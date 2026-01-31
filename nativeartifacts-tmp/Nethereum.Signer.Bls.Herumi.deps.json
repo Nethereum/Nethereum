@@ -1,0 +1,58 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Nethereum.Signer.Bls.Herumi/5.8.0": {
+        "dependencies": {
+          "Nethereum.Signer.Bls": "5.8.0",
+          "Newtonsoft.Json": "11.0.2"
+        },
+        "runtime": {
+          "Nethereum.Signer.Bls.Herumi.dll": {}
+        }
+      },
+      "Newtonsoft.Json/11.0.2": {
+        "runtime": {
+          "lib/netstandard2.0/Newtonsoft.Json.dll": {
+            "assemblyVersion": "11.0.0.0",
+            "fileVersion": "11.0.2.21924"
+          }
+        }
+      },
+      "Nethereum.Signer.Bls/5.8.0": {
+        "dependencies": {
+          "Newtonsoft.Json": "11.0.2"
+        },
+        "runtime": {
+          "Nethereum.Signer.Bls.dll": {
+            "assemblyVersion": "5.8.0.0",
+            "fileVersion": "5.8.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Nethereum.Signer.Bls.Herumi/5.8.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Newtonsoft.Json/11.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-IvJe1pj7JHEsP8B8J8DwlMEx8UInrs/x+9oVY+oCD13jpLu4JbJU2WCIsMRn5C4yW9+DgkaO8uiVE5VHKjpmdQ==",
+      "path": "newtonsoft.json/11.0.2",
+      "hashPath": "newtonsoft.json.11.0.2.nupkg.sha512"
+    },
+    "Nethereum.Signer.Bls/5.8.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

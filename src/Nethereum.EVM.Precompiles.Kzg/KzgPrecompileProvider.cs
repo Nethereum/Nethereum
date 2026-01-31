@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.EVM.Execution;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -8,8 +9,11 @@ namespace Nethereum.EVM.Precompiles.Kzg
     public class KzgPrecompileProvider : IPrecompileProvider
     {
         private readonly IKzgOperations _kzgOperations;
+        private static readonly string[] _addresses = new[] { "0x000000000000000000000000000000000000000a" };
 
         public const string KZG_POINT_EVALUATION_ADDRESS = "a";
+
+        public IEnumerable<string> GetHandledAddresses() => _addresses;
 
         public const int KZG_GAS_COST = 50000;
 

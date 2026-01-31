@@ -554,12 +554,7 @@ namespace Nethereum.EVM.UnitTests
             var program = new Program(bytecode);
             program.GasRemaining = 1000000;
 
-            for (int i = 0; i < maxSteps && !program.Stopped; i++)
-            {
-                await _vm.StepAsync(program, i);
-            }
-
-            return program;
+            return await _vm.ExecuteWithCallStackAsync(program, traceEnabled: false);
         }
 
         private async Task<Program> ExecuteProgramWithContext(string hexBytecode, int maxSteps, byte[] callData)
@@ -586,12 +581,7 @@ namespace Nethereum.EVM.UnitTests
             var program = new Program(bytecode, programContext);
             program.GasRemaining = 1000000;
 
-            for (int i = 0; i < maxSteps && !program.Stopped; i++)
-            {
-                await _vm.StepAsync(program, i);
-            }
-
-            return program;
+            return await _vm.ExecuteWithCallStackAsync(program, traceEnabled: false);
         }
 
         #endregion

@@ -1,0 +1,133 @@
+{
+    "GeneralStateTests/stTransactionTest/HighGasPriceParis.json::HighGasPriceParis-fork_[Cancun-Prague]-d0g0v0" : {
+        "_info" : {
+            "comment" : "",
+            "filling-rpc-server" : "evmone-t8n 0.15.0+commit.42caf43b",
+            "filling-tool-version" : "retesteth-0.3.2-legacy+commit.bde76e25.Linux.g++",
+            "fixture-format" : "state_test",
+            "hash" : "0x77dd21b8bc5ba9220c239faa714a335330f02a488136e77b05d803990270da70",
+            "lllcversion" : "Version: 0.5.14-develop.2024.11.5+commit.b2b86751.mod.Linux.g++",
+            "repo" : "ethereum/tests",
+            "solidity" : "Version: 0.8.24+commit.e11b9ed9.Linux.g++",
+            "source" : "src/GeneralStateTestsFiller/stTransactionTest/HighGasPriceParisFiller.yml",
+            "sourceHash" : "0xd4d19c018057c5cbfd11181ce42e15c59050e13395e831a7bbcd4014a0ae451e"
+        },
+        "config" : {
+            "blobSchedule" : {
+                "Cancun" : {
+                    "baseFeeUpdateFraction" : "0x32f0ed",
+                    "max" : "0x06",
+                    "target" : "0x03"
+                },
+                "Prague" : {
+                    "baseFeeUpdateFraction" : "0x4c6964",
+                    "max" : "0x09",
+                    "target" : "0x06"
+                }
+            },
+            "chainid" : "0x01"
+        },
+        "env" : {
+            "currentBaseFee" : "0x0a",
+            "currentCoinbase" : "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentDifficulty" : "0x020000",
+            "currentExcessBlobGas" : "0x00",
+            "currentGasLimit" : "0x05500000",
+            "currentNumber" : "0x01",
+            "currentRandom" : "0x0000000000000000000000000000000000000000000000000000000000020000",
+            "currentTimestamp" : "0x03e8"
+        },
+        "post" : {
+            "Cancun" : [
+                {
+                    "expectException" : "TransactionException.INSUFFICIENT_ACCOUNT_FUNDS|TransactionException.GASLIMIT_PRICE_PRODUCT_OVERFLOW",
+                    "hash" : "0xecd1cea72bd1224b1d7a28a577170c00dd480b26b5b0f353e3d4ad2bb542cc09",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x3b9aca00",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf87e809f031eea408f8e1799cb883da2927b1336521d73c2c14accfebb70d5c5af006c82520894d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d001801ca039b081ab7094dff1b3ac79cbf8e381adc9f7a4e16290d7abc42dd006e5e062c5a033af00e26e5eb4431dcad601b2c8bf12d51eef2bd037d14681f22692ffab1ccd"
+                }
+            ],
+            "Prague" : [
+                {
+                    "expectException" : "TransactionException.INSUFFICIENT_ACCOUNT_FUNDS|TransactionException.GASLIMIT_PRICE_PRODUCT_OVERFLOW",
+                    "hash" : "0xecd1cea72bd1224b1d7a28a577170c00dd480b26b5b0f353e3d4ad2bb542cc09",
+                    "indexes" : {
+                        "data" : 0,
+                        "gas" : 0,
+                        "value" : 0
+                    },
+                    "logs" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "state" : {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                            "balance" : "0x3b9aca00",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        },
+                        "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                            "balance" : "0x0a",
+                            "code" : "0x",
+                            "nonce" : "0x00",
+                            "storage" : {
+                            }
+                        }
+                    },
+                    "txbytes" : "0xf87e809f031eea408f8e1799cb883da2927b1336521d73c2c14accfebb70d5c5af006c82520894d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d001801ca039b081ab7094dff1b3ac79cbf8e381adc9f7a4e16290d7abc42dd006e5e062c5a033af00e26e5eb4431dcad601b2c8bf12d51eef2bd037d14681f22692ffab1ccd"
+                }
+            ]
+        },
+        "pre" : {
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b" : {
+                "balance" : "0x3b9aca00",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            },
+            "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0" : {
+                "balance" : "0x0a",
+                "code" : "0x",
+                "nonce" : "0x00",
+                "storage" : {
+                }
+            }
+        },
+        "transaction" : {
+            "data" : [
+                "0x"
+            ],
+            "gasLimit" : [
+                "0x5208"
+            ],
+            "gasPrice" : "0x031eea408f8e1799cb883da2927b1336521d73c2c14accfebb70d5c5af006c",
+            "nonce" : "0x00",
+            "secretKey" : "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "sender" : "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to" : "0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+            "value" : [
+                "0x01"
+            ]
+        }
+    }
+}

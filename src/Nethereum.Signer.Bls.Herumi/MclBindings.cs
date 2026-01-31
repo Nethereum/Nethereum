@@ -146,5 +146,32 @@ namespace Nethereum.Signer.Bls.Herumi
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int mclBnFp_isValid(in MclBnFp x);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void mclBn_setETHserialization(int mode);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void mclBn_verifyOrderG1(int doVerify);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void mclBn_verifyOrderG2(int doVerify);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int mclBnFp_setLittleEndian(ref MclBnFp x, [In] byte[] buf, ulong bufSize);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int mclBnFp_setLittleEndianMod(ref MclBnFp x, [In] byte[] buf, ulong bufSize);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong mclBnFp_getLittleEndian([Out] byte[] buf, ulong maxBufSize, in MclBnFp x);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void mclBnFp_setInt(ref MclBnFp x, int v);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void mclBnG1_normalize(ref MclBnG1 y, in MclBnG1 x);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void mclBnG2_normalize(ref MclBnG2 y, in MclBnG2 x);
     }
 }

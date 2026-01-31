@@ -217,16 +217,10 @@ namespace Nethereum.EVM.BlockchainState
             CreateOrGetAccountExecutionState(address);
         }
 
-        public void MarkPrecompilesAsWarm()
+        public void MarkPrecompilesAsWarm(Execution.IPrecompileProvider provider)
         {
-            // Precompiles 0x01-0x09: Standard (ECRECOVER through BLAKE2F)
-            // EIP-4844 (Cancun) adds KZG point evaluation precompile at address 0x0A
-            // EIP-2537 (Prague) adds BLS12-381 precompiles at addresses 0x0B-0x11
-            for (int i = 1; i <= 17; i++)
-            {
-                var precompileAddress = "0x" + i.ToString("x").PadLeft(40, '0');
-                MarkAddressAsWarm(precompileAddress);
-            }
+            foreach (var address in provider.GetHandledAddresses())
+                MarkAddressAsWarm(address);
         }
 
         public AccountExecutionState CreateOrGetAccountExecutionState(string address)
