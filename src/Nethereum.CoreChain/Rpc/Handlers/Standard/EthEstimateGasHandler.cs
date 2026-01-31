@@ -15,59 +15,68 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
             var callInput = GetParam<CallInput>(request, 0);
+            var blockTag = GetOptionalParam<string>(request, 1, "latest");
+
+            ValidateBlockParameterIsLatest(blockTag, MethodName);
 
             BigInteger? value = callInput.Value?.Value;
 
             // Use a high gas limit for estimation
             var estimationGasLimit = (BigInteger)30_000_000;
 
-            var result = await context.Node.CallAsync(
-                callInput.To,
-                callInput.Data?.HexToByteArray(),
-                callInput.From,
-                value,
-                estimationGasLimit
-            );
+            // Check if this is contract creation (no 'to' address)
+            var isContractCreation = string.IsNullOrEmpty(callInput.To) || callInput.To == "0x";
 
-            if (!result.Success)
+            // Calculate intrinsic gas using TransactionProcessor constants
+            var intrinsicGas = TransactionProcessor.CalculateIntrinsicGas(
+                callInput.Data?.HexToByteArray(),
+                isContractCreation);
+
+            BigInteger executionGas = 0;
+
+            if (isContractCreation)
             {
-                return Error(request.Id, 3, $"execution reverted: {result.RevertReason}");
+                // For contract creation, execute the init code to estimate gas
+                var createResult = await context.Node.EstimateContractCreationGasAsync(
+                    callInput.Data?.HexToByteArray(),
+                    callInput.From,
+                    value,
+                    estimationGasLimit - intrinsicGas
+                );
+
+                if (!createResult.Success)
+                {
+                    return Error(request.Id, 3, $"execution reverted: {createResult.RevertReason}", createResult.ReturnData?.ToHex(true));
+                }
+
+                executionGas = createResult.GasUsed;
+            }
+            else
+            {
+                // For regular calls, use the existing CallAsync
+                var result = await context.Node.CallAsync(
+                    callInput.To,
+                    callInput.Data?.HexToByteArray(),
+                    callInput.From,
+                    value,
+                    estimationGasLimit - intrinsicGas
+                );
+
+                if (!result.Success)
+                {
+                    return Error(request.Id, 3, $"execution reverted: {result.RevertReason}", result.ReturnData?.ToHex(true));
+                }
+
+                executionGas = result.GasUsed;
             }
 
-            // Calculate intrinsic gas (base tx cost + data cost)
-            var intrinsicGas = CalculateIntrinsicGas(callInput.Data, callInput.To);
-
             // Total gas = intrinsic gas + execution gas
-            var totalGas = intrinsicGas + result.GasUsed;
+            var totalGas = intrinsicGas + executionGas;
 
             // Add 10% buffer for safety
             var estimate = totalGas * 110 / 100;
 
             return Success(request.Id, new HexBigInteger(estimate));
-        }
-
-        private BigInteger CalculateIntrinsicGas(string data, string to)
-        {
-            // Base transaction cost
-            BigInteger gas = 21000;
-
-            // Contract creation adds 32000 gas
-            if (string.IsNullOrEmpty(to))
-            {
-                gas += 32000;
-            }
-
-            // Data cost: 4 per zero byte, 16 per non-zero byte
-            if (!string.IsNullOrEmpty(data))
-            {
-                var dataBytes = data.HexToByteArray();
-                foreach (var b in dataBytes)
-                {
-                    gas += b == 0 ? 4 : 16;
-                }
-            }
-
-            return gas;
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.CoreChain.Rpc
 {
@@ -171,7 +172,52 @@ namespace Nethereum.CoreChain.Rpc
             if (value is JsonElement element)
                 return DeserializeJsonElement<T>(element);
 
-            return (T)Convert.ChangeType(value, typeof(T));
+            var targetType = typeof(T);
+
+            // For string target, convert via ToString or get string property
+            if (targetType == typeof(string))
+            {
+                // Try to call GetRPCParam if it's a BlockParameter
+                var getRPCParamMethod = value.GetType().GetMethod("GetRPCParam");
+                if (getRPCParamMethod != null)
+                {
+                    var rpcParam = getRPCParamMethod.Invoke(value, null);
+                    return (T)(object)rpcParam?.ToString();
+                }
+                // Try to get HexValue property if it's a HexBigInteger or similar
+                var hexValueProperty = value.GetType().GetProperty("HexValue");
+                if (hexValueProperty != null)
+                {
+                    var hexValue = hexValueProperty.GetValue(value);
+                    return (T)(object)hexValue?.ToString();
+                }
+                return (T)(object)value.ToString();
+            }
+
+            // For primitive types that implement IConvertible
+            if (targetType.IsPrimitive || targetType == typeof(decimal))
+            {
+                return (T)Convert.ChangeType(value, targetType);
+            }
+
+            // Handle Newtonsoft.Json JToken types (JObject, JArray, etc.)
+            if (value is JToken jToken)
+            {
+                var json = jToken.ToString(Formatting.None);
+                return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+            }
+
+            // For complex types, serialize to JSON then deserialize
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(value);
+                return System.Text.Json.JsonSerializer.Deserialize<T>(json);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to convert {value?.GetType().Name} to {targetType.Name}: {ex.Message}", ex);
+            }
         }
 
         protected static string ToHex(int value) => ((BigInteger)value).ToHex(false);
@@ -179,5 +225,23 @@ namespace Nethereum.CoreChain.Rpc
         protected static string ToHex(ulong value) => ((BigInteger)value).ToHex(false);
         protected static string ToHex(BigInteger value) => value.ToHex(false);
         protected static string ToHex(byte[] data) => data.ToHex(true);
+
+        protected static void ValidateBlockParameterIsLatest(string blockTag, string methodName)
+        {
+            if (string.IsNullOrEmpty(blockTag))
+                return;
+
+            var normalized = blockTag.ToLowerInvariant();
+            if (normalized == "latest" || normalized == "pending")
+                return;
+
+            if (normalized == "earliest")
+                throw RpcException.InvalidParams($"{methodName}: historical state queries not supported. Use 'latest' or 'pending'.");
+
+            if (normalized.StartsWith("0x") || char.IsDigit(normalized[0]))
+                throw RpcException.InvalidParams($"{methodName}: historical state queries not supported. Use 'latest' or 'pending'.");
+
+            throw RpcException.InvalidParams($"{methodName}: invalid block parameter '{blockTag}'. Use 'latest' or 'pending'.");
+        }
     }
 }

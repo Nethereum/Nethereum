@@ -12,6 +12,10 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
             var address = GetParam<string>(request, 0);
+            var blockTag = GetOptionalParam<string>(request, 1, "latest");
+
+            ValidateBlockParameterIsLatest(blockTag, MethodName);
+
             var code = await context.Node.GetCodeAsync(address);
             return Success(request.Id, code != null ? code.ToHex(true) : "0x");
         }

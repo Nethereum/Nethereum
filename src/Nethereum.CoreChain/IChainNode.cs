@@ -15,6 +15,7 @@ namespace Nethereum.CoreChain
         ILogStore Logs { get; }
         IStateStore State { get; }
         IFilterStore Filters { get; }
+        ITrieNodeStore TrieNodes { get; }
 
         Task<BigInteger> GetBlockNumberAsync();
         Task<BlockHeader> GetBlockByHashAsync(byte[] hash);
@@ -32,8 +33,10 @@ namespace Nethereum.CoreChain
         Task<byte[]> GetStorageAtAsync(string address, BigInteger slot);
 
         Task<CallResult> CallAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
+        Task<CallResult> EstimateContractCreationGasAsync(byte[] initCode, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
+        Task<AccessListResult> CreateAccessListAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
         Task<TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx);
 
-        List<ISignedTransaction> GetPendingTransactions();
+        Task<List<ISignedTransaction>> GetPendingTransactionsAsync();
     }
 }

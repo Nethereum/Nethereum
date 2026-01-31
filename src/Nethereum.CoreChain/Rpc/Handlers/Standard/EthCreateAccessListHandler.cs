@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -7,9 +9,9 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 {
-    public class EthCallHandler : RpcHandlerBase
+    public class EthCreateAccessListHandler : RpcHandlerBase
     {
-        public override string MethodName => ApiMethods.eth_call.ToString();
+        public override string MethodName => ApiMethods.eth_createAccessList.ToString();
 
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
@@ -21,7 +23,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             BigInteger? gas = callInput.Gas?.Value;
             BigInteger? value = callInput.Value?.Value;
 
-            var result = await context.Node.CallAsync(
+            var result = await context.Node.CreateAccessListAsync(
                 callInput.To,
                 callInput.Data?.HexToByteArray(),
                 callInput.From,
@@ -29,12 +31,20 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 gas
             );
 
-            if (!result.Success && !string.IsNullOrEmpty(result.RevertReason))
+            var accessListDto = result.AccessList.Select(item => new AccessList
             {
-                return Error(request.Id, 3, $"execution reverted: {result.RevertReason}", result.ReturnData?.ToHex(true));
-            }
+                Address = item.Address,
+                StorageKeys = item.StorageKeys?.Select(k => k.ToHex(true)).ToList() ?? new List<string>()
+            }).ToList();
 
-            return Success(request.Id, result.ReturnData?.ToHex(true) ?? "0x");
+            var response = new AccessListGasUsed
+            {
+                AccessList = accessListDto,
+                GasUsed = new Nethereum.Hex.HexTypes.HexBigInteger(result.GasUsed),
+                Error = result.Error
+            };
+
+            return Success(request.Id, response);
         }
     }
 }

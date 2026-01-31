@@ -16,11 +16,13 @@ namespace Nethereum.CoreChain.Services
     public class ProofService
     {
         private readonly IStateStore _stateStore;
+        private readonly ITrieNodeStore _trieNodeStore;
         private readonly RootCalculator _rootCalculator;
 
-        public ProofService(IStateStore stateStore)
+        public ProofService(IStateStore stateStore, ITrieNodeStore trieNodeStore = null)
         {
             _stateStore = stateStore;
+            _trieNodeStore = trieNodeStore;
             _rootCalculator = new RootCalculator();
         }
 
@@ -30,11 +32,87 @@ namespace Nethereum.CoreChain.Services
             byte[] stateRoot)
         {
             var sha3 = new Sha3Keccack();
-            var accounts = await _stateStore.GetAllAccountsAsync();
             var account = await _stateStore.GetAccountAsync(address);
 
+            var addressBytesForProof = address.HexToByteArray();
+            if (addressBytesForProof.Length < 20)
+            {
+                var paddedAddress = new byte[20];
+                System.Array.Copy(addressBytesForProof, 0, paddedAddress, 20 - addressBytesForProof.Length, addressBytesForProof.Length);
+                addressBytesForProof = paddedAddress;
+            }
+            var addressHash = sha3.CalculateHash(addressBytesForProof);
+
+            List<string> accountProofHex;
+
+            if (_trieNodeStore != null && stateRoot != null && stateRoot.Length == 32 && !stateRoot.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH))
+            {
+                var trie = PatriciaTrie.LoadFromStorage(stateRoot, _trieNodeStore);
+                var proofStorage = trie.GenerateProof(addressHash, _trieNodeStore);
+                accountProofHex = proofStorage?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
+            }
+            else
+            {
+                accountProofHex = await GenerateAccountProofWithFullRebuildAsync(addressHash);
+            }
+
+            var accountStorage = await _stateStore.GetAllStorageAsync(address);
+            byte[] storageHash = DefaultValues.EMPTY_TRIE_HASH;
+            if (accountStorage.Count > 0)
+            {
+                var storageDict = new Dictionary<byte[], byte[]>();
+                foreach (var storageKvp in accountStorage)
+                {
+                    var slotBytes = storageKvp.Key.ToBytesForRLPEncoding();
+                    if (slotBytes.Length < 32)
+                    {
+                        var paddedSlot = new byte[32];
+                        System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
+                        slotBytes = paddedSlot;
+                    }
+                    var hashedSlot = sha3.CalculateHash(slotBytes);
+                    storageDict[hashedSlot] = storageKvp.Value;
+                }
+                storageHash = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
+            }
+
+            var storageProofs = new List<StorageProof>();
+            if (storageKeys != null && storageKeys.Count > 0 && accountStorage != null)
+            {
+                storageProofs = await GenerateStorageProofsAsync(address, storageKeys, accountStorage);
+            }
+            else if (storageKeys != null && storageKeys.Count > 0)
+            {
+                foreach (var key in storageKeys)
+                {
+                    storageProofs.Add(new StorageProof
+                    {
+                        Key = new HexBigInteger(key),
+                        Value = new HexBigInteger(BigInteger.Zero),
+                        Proof = new List<string>()
+                    });
+                }
+            }
+
+            return new AccountProof
+            {
+                Address = address,
+                Balance = new HexBigInteger(account?.Balance ?? BigInteger.Zero),
+                CodeHash = (account?.CodeHash ?? DefaultValues.EMPTY_DATA_HASH).ToHex(true),
+                Nonce = new HexBigInteger(account?.Nonce ?? BigInteger.Zero),
+                StorageHash = storageHash.ToHex(true),
+                AccountProofs = accountProofHex,
+                StorageProof = storageProofs
+            };
+        }
+
+        private async Task<List<string>> GenerateAccountProofWithFullRebuildAsync(byte[] addressHash)
+        {
+            var sha3 = new Sha3Keccack();
+            var accounts = await _stateStore.GetAllAccountsAsync();
+
             var trie = new PatriciaTrie();
-            var nodeStore = new InMemoryTrieNodeStore();
+            ITrieNodeStore nodeStore = _trieNodeStore ?? new InMemoryTrieNodeStore();
 
             foreach (var kvp in accounts)
             {
@@ -72,7 +150,7 @@ namespace Nethereum.CoreChain.Services
                         var hashedSlot = sha3.CalculateHash(slotBytes);
                         storageDict[hashedSlot] = storageKvp.Value;
                     }
-                    acc.StateRoot = _rootCalculator.CalculateStorageRoot(storageDict);
+                    acc.StateRoot = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
                 }
                 else
                 {
@@ -83,66 +161,8 @@ namespace Nethereum.CoreChain.Services
                 trie.Put(hashedKey, encodedAccount, nodeStore);
             }
 
-            var addressBytesForProof = address.HexToByteArray();
-            if (addressBytesForProof.Length < 20)
-            {
-                var paddedAddress = new byte[20];
-                System.Array.Copy(addressBytesForProof, 0, paddedAddress, 20 - addressBytesForProof.Length, addressBytesForProof.Length);
-                addressBytesForProof = paddedAddress;
-            }
-            var addressHash = sha3.CalculateHash(addressBytesForProof);
-
             var proofStorage = trie.GenerateProof(addressHash);
-            var accountProofHex = proofStorage?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
-
-            var storage2 = await _stateStore.GetAllStorageAsync(address);
-            byte[] storageHash = DefaultValues.EMPTY_TRIE_HASH;
-            if (storage2.Count > 0)
-            {
-                var storageDict = new Dictionary<byte[], byte[]>();
-                foreach (var storageKvp in storage2)
-                {
-                    var slotBytes = storageKvp.Key.ToBytesForRLPEncoding();
-                    if (slotBytes.Length < 32)
-                    {
-                        var paddedSlot = new byte[32];
-                        System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-                        slotBytes = paddedSlot;
-                    }
-                    var hashedSlot = sha3.CalculateHash(slotBytes);
-                    storageDict[hashedSlot] = storageKvp.Value;
-                }
-                storageHash = _rootCalculator.CalculateStorageRoot(storageDict);
-            }
-
-            var storageProofs = new List<StorageProof>();
-            if (storageKeys != null && storageKeys.Count > 0 && storage2 != null)
-            {
-                storageProofs = await GenerateStorageProofsAsync(address, storageKeys, storage2);
-            }
-            else if (storageKeys != null && storageKeys.Count > 0)
-            {
-                foreach (var key in storageKeys)
-                {
-                    storageProofs.Add(new StorageProof
-                    {
-                        Key = new HexBigInteger(key),
-                        Value = new HexBigInteger(BigInteger.Zero),
-                        Proof = new List<string>()
-                    });
-                }
-            }
-
-            return new AccountProof
-            {
-                Address = address,
-                Balance = new HexBigInteger(account?.Balance ?? BigInteger.Zero),
-                CodeHash = (account?.CodeHash ?? DefaultValues.EMPTY_DATA_HASH).ToHex(true),
-                Nonce = new HexBigInteger(account?.Nonce ?? BigInteger.Zero),
-                StorageHash = storageHash.ToHex(true),
-                AccountProofs = accountProofHex,
-                StorageProof = storageProofs
-            };
+            return proofStorage?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
         }
 
         private async Task<List<StorageProof>> GenerateStorageProofsAsync(

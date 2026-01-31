@@ -13,6 +13,10 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         {
             var address = GetParam<string>(request, 0);
             var slotHex = GetParam<string>(request, 1);
+            var blockTag = GetOptionalParam<string>(request, 2, "latest");
+
+            ValidateBlockParameterIsLatest(blockTag, MethodName);
+
             var slot = slotHex.HexToBigInteger(false);
 
             var value = await context.Node.GetStorageAtAsync(address, slot);

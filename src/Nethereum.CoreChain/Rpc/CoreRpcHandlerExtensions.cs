@@ -21,6 +21,7 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new EthSendRawTransactionHandler());
             registry.Register(new EthCallHandler());
             registry.Register(new EthEstimateGasHandler());
+            registry.Register(new EthCreateAccessListHandler());
             registry.Register(new EthGetTransactionByHashHandler());
             registry.Register(new EthMaxPriorityFeePerGasHandler());
             registry.Register(new EthFeeHistoryHandler());

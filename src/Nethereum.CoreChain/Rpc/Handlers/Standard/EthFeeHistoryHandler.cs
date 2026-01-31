@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.Model;
+using Nethereum.RLP;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -40,6 +43,14 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 {
                     throw RpcException.InvalidParams("Invalid block count parameter");
                 }
+            }
+            else if (blockCountParam is HexBigInteger hexBigInt)
+            {
+                blockCount = (int)hexBigInt.Value;
+            }
+            else if (blockCountParam is BigInteger bigInt)
+            {
+                blockCount = (int)bigInt;
             }
             else
             {
@@ -80,11 +91,9 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
                     if (reward != null && rewardPercentiles != null)
                     {
-                        var blockRewards = new List<string>();
-                        foreach (var percentile in rewardPercentiles)
-                        {
-                            blockRewards.Add(new HexBigInteger(context.Node.Config.SuggestedPriorityFee).HexValue);
-                        }
+                        var blockHash = await context.Node.GetBlockHashByNumberAsync(i);
+                        var blockRewards = await CalculateRewardPercentilesAsync(
+                            context, blockHash, block.BaseFee ?? context.Node.Config.BaseFee, rewardPercentiles);
                         reward.Add(blockRewards);
                     }
                 }
@@ -97,7 +106,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                         var blockRewards = new List<string>();
                         foreach (var percentile in rewardPercentiles)
                         {
-                            blockRewards.Add(new HexBigInteger(context.Node.Config.SuggestedPriorityFee).HexValue);
+                            blockRewards.Add(new HexBigInteger(0).HexValue);
                         }
                         reward.Add(blockRewards);
                     }
@@ -119,6 +128,64 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             }
 
             return Success(request.Id, result);
+        }
+
+        private async Task<List<string>> CalculateRewardPercentilesAsync(
+            RpcContext context,
+            byte[] blockHash,
+            BigInteger baseFee,
+            List<double> percentiles)
+        {
+            var transactions = await context.Node.Transactions.GetByBlockHashAsync(blockHash);
+            if (transactions == null || transactions.Count == 0)
+            {
+                return percentiles.Select(_ => new HexBigInteger(0).HexValue).ToList();
+            }
+
+            var priorityFees = new List<BigInteger>();
+            foreach (var tx in transactions)
+            {
+                var priorityFee = CalculateEffectivePriorityFee(tx, baseFee);
+                priorityFees.Add(priorityFee);
+            }
+
+            priorityFees.Sort();
+
+            var results = new List<string>();
+            foreach (var percentile in percentiles)
+            {
+                var index = (int)Math.Floor(percentile / 100.0 * (priorityFees.Count - 1));
+                index = Math.Max(0, Math.Min(index, priorityFees.Count - 1));
+                results.Add(new HexBigInteger(priorityFees[index]).HexValue);
+            }
+
+            return results;
+        }
+
+        private BigInteger CalculateEffectivePriorityFee(ISignedTransaction tx, BigInteger baseFee)
+        {
+            if (tx is Transaction1559 tx1559)
+            {
+                var maxPriorityFee = tx1559.MaxPriorityFeePerGas ?? BigInteger.Zero;
+                var maxFee = tx1559.MaxFeePerGas ?? BigInteger.Zero;
+                return BigInteger.Min(maxPriorityFee, maxFee - baseFee);
+            }
+            if (tx is Transaction2930 tx2930)
+            {
+                var gasPrice = tx2930.GasPrice ?? BigInteger.Zero;
+                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+            }
+            if (tx is LegacyTransaction legacyTx)
+            {
+                var gasPrice = legacyTx.GasPrice.ToBigIntegerFromRLPDecoded();
+                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+            }
+            if (tx is LegacyTransactionChainId legacyChainIdTx)
+            {
+                var gasPrice = legacyChainIdTx.GasPrice.ToBigIntegerFromRLPDecoded();
+                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+            }
+            return BigInteger.Zero;
         }
     }
 }

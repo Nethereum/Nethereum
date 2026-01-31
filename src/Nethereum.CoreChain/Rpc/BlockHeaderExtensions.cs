@@ -1,3 +1,4 @@
+using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
@@ -7,8 +8,16 @@ namespace Nethereum.CoreChain.Rpc
 {
     public static class BlockHeaderExtensions
     {
-        public static BlockWithTransactionHashes ToBlockWithTransactionHashes(this BlockHeader header, byte[] blockHash, string[] transactionHashes = null)
+        public static BlockWithTransactionHashes ToBlockWithTransactionHashes(
+            this BlockHeader header,
+            byte[] blockHash,
+            string[] transactionHashes = null,
+            BigInteger? totalDifficulty = null,
+            int? blockSize = null)
         {
+            var calculatedTotalDifficulty = totalDifficulty ?? header.Difficulty * (header.BlockNumber + 1);
+            var calculatedSize = blockSize ?? CalculateHeaderSize(header);
+
             return new BlockWithTransactionHashes
             {
                 Number = new HexBigInteger(header.BlockNumber),
@@ -22,10 +31,10 @@ namespace Nethereum.CoreChain.Rpc
                 ReceiptsRoot = header.ReceiptHash?.ToHex(true),
                 Miner = header.Coinbase,
                 Difficulty = new HexBigInteger(header.Difficulty),
-                TotalDifficulty = new HexBigInteger(0),
+                TotalDifficulty = new HexBigInteger(calculatedTotalDifficulty),
                 MixHash = header.MixHash?.ToHex(true),
                 ExtraData = header.ExtraData?.ToHex(true) ?? "0x",
-                Size = new HexBigInteger(0),
+                Size = new HexBigInteger(calculatedSize),
                 GasLimit = new HexBigInteger(header.GasLimit),
                 GasUsed = new HexBigInteger(header.GasUsed),
                 Timestamp = new HexBigInteger(header.Timestamp),
@@ -35,8 +44,16 @@ namespace Nethereum.CoreChain.Rpc
             };
         }
 
-        public static BlockWithTransactions ToBlockWithTransactions(this BlockHeader header, byte[] blockHash, Transaction[] transactions = null)
+        public static BlockWithTransactions ToBlockWithTransactions(
+            this BlockHeader header,
+            byte[] blockHash,
+            Transaction[] transactions = null,
+            BigInteger? totalDifficulty = null,
+            int? blockSize = null)
         {
+            var calculatedTotalDifficulty = totalDifficulty ?? header.Difficulty * (header.BlockNumber + 1);
+            var calculatedSize = blockSize ?? CalculateHeaderSize(header);
+
             return new BlockWithTransactions
             {
                 Number = new HexBigInteger(header.BlockNumber),
@@ -50,10 +67,10 @@ namespace Nethereum.CoreChain.Rpc
                 ReceiptsRoot = header.ReceiptHash?.ToHex(true),
                 Miner = header.Coinbase,
                 Difficulty = new HexBigInteger(header.Difficulty),
-                TotalDifficulty = new HexBigInteger(0),
+                TotalDifficulty = new HexBigInteger(calculatedTotalDifficulty),
                 MixHash = header.MixHash?.ToHex(true),
                 ExtraData = header.ExtraData?.ToHex(true) ?? "0x",
-                Size = new HexBigInteger(0),
+                Size = new HexBigInteger(calculatedSize),
                 GasLimit = new HexBigInteger(header.GasLimit),
                 GasUsed = new HexBigInteger(header.GasUsed),
                 Timestamp = new HexBigInteger(header.Timestamp),
@@ -61,6 +78,13 @@ namespace Nethereum.CoreChain.Rpc
                 BaseFeePerGas = header.BaseFee.HasValue ? new HexBigInteger(header.BaseFee.Value) : null,
                 Transactions = transactions ?? new Transaction[0]
             };
+        }
+
+        private static int CalculateHeaderSize(BlockHeader header)
+        {
+            var encoder = BlockHeaderEncoder.Current;
+            var encoded = encoder.Encode(header);
+            return encoded.Length;
         }
     }
 }

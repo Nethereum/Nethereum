@@ -34,6 +34,11 @@ namespace Nethereum.CoreChain
                 trie.Put(key, encodedTransactions[i], storage);
             }
 
+            if (nodeStore != null)
+            {
+                trie.SaveNodesToStorage(nodeStore);
+            }
+
             return trie.Root.GetHash();
         }
 
@@ -52,6 +57,11 @@ namespace Nethereum.CoreChain
                 trie.Put(key, encodedReceipt, storage);
             }
 
+            if (nodeStore != null)
+            {
+                trie.SaveNodesToStorage(nodeStore);
+            }
+
             return trie.Root.GetHash();
         }
 
@@ -67,6 +77,11 @@ namespace Nethereum.CoreChain
             {
                 var key = GetIndexKey(i);
                 trie.Put(key, encodedReceipts[i], storage);
+            }
+
+            if (nodeStore != null)
+            {
+                trie.SaveNodesToStorage(nodeStore);
             }
 
             return trie.Root.GetHash();
@@ -87,6 +102,11 @@ namespace Nethereum.CoreChain
                 trie.Put(addressHash, encodedAccount, storage);
             }
 
+            if (nodeStore != null)
+            {
+                trie.SaveNodesToStorage(nodeStore);
+            }
+
             return trie.Root.GetHash();
         }
 
@@ -103,6 +123,11 @@ namespace Nethereum.CoreChain
                 var keyHash = kvp.Key;
                 var value = RLP.RLP.EncodeElement(kvp.Value);
                 trie.Put(keyHash, value, storage);
+            }
+
+            if (nodeStore != null)
+            {
+                trie.SaveNodesToStorage(nodeStore);
             }
 
             return trie.Root.GetHash();

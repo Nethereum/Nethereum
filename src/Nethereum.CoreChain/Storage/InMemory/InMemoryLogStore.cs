@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 
 namespace Nethereum.CoreChain.Storage.InMemory
@@ -14,6 +15,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         private readonly Dictionary<string, List<int>> _logIndexesByTxHash = new Dictionary<string, List<int>>();
         private readonly Dictionary<string, List<int>> _logIndexesByBlockHash = new Dictionary<string, List<int>>();
         private readonly Dictionary<BigInteger, List<int>> _logIndexesByBlockNumber = new Dictionary<BigInteger, List<int>>();
+        private readonly Dictionary<BigInteger, byte[]> _bloomByBlockNumber = new Dictionary<BigInteger, byte[]>();
 
         public Task SaveLogsAsync(List<Log> logs, byte[] txHash, byte[] blockHash, BigInteger blockNumber, int txIndex)
         {
@@ -48,15 +50,117 @@ namespace Nethereum.CoreChain.Storage.InMemory
             return Task.FromResult(0);
         }
 
+        public Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom)
+        {
+            if (bloom == null || bloom.Length != 256)
+                return Task.CompletedTask;
+
+            lock (_lock)
+            {
+                _bloomByBlockNumber[blockNumber] = bloom;
+            }
+            return Task.CompletedTask;
+        }
+
         public Task<List<FilteredLog>> GetLogsAsync(LogFilter filter)
         {
             lock (_lock)
             {
-                var result = _logs
-                    .Where(log => MatchesFilter(log, filter))
-                    .ToList();
-                return Task.FromResult(result);
+                var queryBloom = BuildQueryBloom(filter);
+                var hasBloomFilter = queryBloom != null && !queryBloom.IsEmpty();
+
+                if (!hasBloomFilter)
+                {
+                    var result = _logs
+                        .Where(log => MatchesFilter(log, filter))
+                        .ToList();
+                    return Task.FromResult(result);
+                }
+
+                var matchingBlocks = new HashSet<BigInteger>();
+                var fromBlock = filter.FromBlock ?? BigInteger.Zero;
+                var toBlock = filter.ToBlock ?? _logIndexesByBlockNumber.Keys.DefaultIfEmpty(BigInteger.Zero).Max();
+
+                foreach (var kvp in _bloomByBlockNumber)
+                {
+                    if (kvp.Key >= fromBlock && kvp.Key <= toBlock)
+                    {
+                        if (queryBloom.Matches(kvp.Value))
+                        {
+                            matchingBlocks.Add(kvp.Key);
+                        }
+                    }
+                }
+
+                var resultLogs = new List<FilteredLog>();
+                foreach (var blockNumber in matchingBlocks)
+                {
+                    if (_logIndexesByBlockNumber.TryGetValue(blockNumber, out var indexes))
+                    {
+                        foreach (var index in indexes)
+                        {
+                            var log = _logs[index];
+                            if (MatchesAddressAndTopics(log, filter))
+                            {
+                                resultLogs.Add(log);
+                            }
+                        }
+                    }
+                }
+
+                return Task.FromResult(resultLogs);
             }
+        }
+
+        private LogBloomFilter BuildQueryBloom(LogFilter filter)
+        {
+            if (filter == null)
+                return null;
+
+            var hasAddresses = filter.Addresses != null && filter.Addresses.Count > 0;
+            var hasTopics = filter.Topics != null && filter.Topics.Count > 0 &&
+                            filter.Topics.Any(t => t != null && t.Count > 0);
+
+            if (!hasAddresses && !hasTopics)
+                return null;
+
+            var bloom = new LogBloomFilter();
+
+            if (hasAddresses)
+            {
+                foreach (var address in filter.Addresses)
+                {
+                    bloom.AddAddress(address);
+                }
+            }
+
+            if (hasTopics)
+            {
+                for (int i = 0; i < filter.Topics.Count; i++)
+                {
+                    var topicFilter = filter.Topics[i];
+                    if (topicFilter != null && topicFilter.Count > 0)
+                    {
+                        foreach (var topic in topicFilter)
+                        {
+                            bloom.AddTopic(topic);
+                        }
+                    }
+                }
+            }
+
+            return bloom;
+        }
+
+        private bool MatchesAddressAndTopics(FilteredLog log, LogFilter filter)
+        {
+            if (!filter.MatchesAddress(log.Address))
+                return false;
+
+            if (!filter.MatchesTopics(log.Topics))
+                return false;
+
+            return true;
         }
 
         public Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash)
@@ -105,6 +209,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
                 _logIndexesByTxHash.Clear();
                 _logIndexesByBlockHash.Clear();
                 _logIndexesByBlockNumber.Clear();
+                _bloomByBlockNumber.Clear();
             }
         }
 

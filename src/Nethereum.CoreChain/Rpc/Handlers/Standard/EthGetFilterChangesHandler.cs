@@ -35,7 +35,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                     return await HandleBlockFilterAsync(request, context, filterState, currentBlock);
 
                 case FilterType.PendingTransaction:
-                    return HandlePendingTransactionFilter(request, context, filterState);
+                    return await HandlePendingTransactionFilterAsync(request, context, filterState);
 
                 default:
                     throw RpcException.InvalidParams("Unknown filter type");
@@ -87,12 +87,12 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             return Success(request.Id, blockHashes);
         }
 
-        private RpcResponseMessage HandlePendingTransactionFilter(
+        private async Task<RpcResponseMessage> HandlePendingTransactionFilterAsync(
             RpcRequestMessage request,
             RpcContext context,
             FilterState filterState)
         {
-            var pendingTxs = context.Node.GetPendingTransactions();
+            var pendingTxs = await context.Node.GetPendingTransactionsAsync();
             var txHashes = pendingTxs?.Select(tx => tx.Hash.ToHex(true)).ToList() ?? new List<string>();
             return Success(request.Id, txHashes);
         }
