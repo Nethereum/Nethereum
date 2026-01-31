@@ -8,6 +8,7 @@ using Nethereum.ABI.ABIRepository;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Decoding;
+using Nethereum.EVM.Execution;
 using Nethereum.EVM.StateChanges;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
@@ -43,6 +44,16 @@ namespace Nethereum.Wallet.Services.Transaction
             string currentUserAddress,
             CancellationToken ct = default)
         {
+            return await PreviewStateChangesAsync(callInput, chainId, currentUserAddress, enableTracing: true, ct).ConfigureAwait(false);
+        }
+
+        public async Task<StateChangesResult> PreviewStateChangesAsync(
+            CallInput callInput,
+            long chainId,
+            string currentUserAddress,
+            bool enableTracing,
+            CancellationToken ct = default)
+        {
             try
             {
                 var chain = await _chainManagementService.GetChainAsync(new BigInteger(chainId)).ConfigureAwait(false);
@@ -69,7 +80,6 @@ namespace Nethereum.Wallet.Services.Transaction
                     return ExtractSimpleTransferChanges(callInput, currentUserAddress);
                 }
 
-                // Ensure ChainId is set for EVM execution
                 if (callInput.ChainId == null)
                 {
                     callInput.ChainId = new Hex.HexTypes.HexBigInteger(chainId);
@@ -82,30 +92,24 @@ namespace Nethereum.Wallet.Services.Transaction
                     ? (long)block.Timestamp.Value
                     : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-                var programContext = new ProgramContext(
-                    callInput,
-                    executionStateService,
-                    null,
-                    null,
-                    (long)blockNumber.Value,
-                    timestamp);
-
-                var program = new Program(code.HexToByteArray(), programContext);
-                var evmSimulator = new EVMSimulator();
+                var baseFee = block?.BaseFeePerGas?.Value ?? BigInteger.Zero;
 
                 ct.ThrowIfCancellationRequested();
 
-                program = await evmSimulator.ExecuteAsync(program, 0, 0, true).ConfigureAwait(false);
+                var ctx = BuildExecutionContext(callInput, executionStateService, blockNumber, timestamp, baseFee, enableTracing);
+
+                var config = HardforkConfig.Default;
+                var executor = new TransactionExecutor(config);
+                var execResult = await executor.ExecuteAsync(ctx).ConfigureAwait(false);
 
                 ct.ThrowIfCancellationRequested();
 
-                // Collect all unique contract addresses from logs and inner calls
                 var allAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 allAddresses.Add(contractAddress);
 
-                if (program.ProgramResult.Logs != null)
+                if (execResult.Logs != null)
                 {
-                    foreach (var log in program.ProgramResult.Logs)
+                    foreach (var log in execResult.Logs)
                     {
                         if (!string.IsNullOrEmpty(log.Address))
                         {
@@ -114,12 +118,11 @@ namespace Nethereum.Wallet.Services.Transaction
                     }
                 }
 
-                if (program.ProgramResult.InnerCalls != null)
+                if (execResult.InnerCalls != null)
                 {
-                    CollectAddressesFromCalls(program.ProgramResult.InnerCalls, allAddresses);
+                    CollectAddressesFromCalls(execResult.InnerCalls, allAddresses);
                 }
 
-                // Pre-fetch ABIs for all contract addresses in parallel
                 var fetchTasks = allAddresses.Select(addr =>
                     _abiStorage.GetABIInfoAsync(chainId, addr)).ToList();
                 await Task.WhenAll(fetchTasks).ConfigureAwait(false);
@@ -127,7 +130,7 @@ namespace Nethereum.Wallet.Services.Transaction
                 ct.ThrowIfCancellationRequested();
 
                 var decoder = new ProgramResultDecoder(_abiStorage);
-                var decodedResult = decoder.Decode(program, callInput, new BigInteger(chainId));
+                var decodedResult = decoder.Decode(execResult, callInput, new BigInteger(chainId));
 
                 if (decodedResult == null)
                 {
@@ -140,10 +143,13 @@ namespace Nethereum.Wallet.Services.Transaction
                     executionStateService,
                     currentUserAddress);
 
-                if (program.ProgramResult.IsRevert)
+                if (!execResult.Success)
                 {
-                    stateChanges.Error = "Transaction would revert";
+                    stateChanges.Error = execResult.RevertReason ?? execResult.Error ?? "Transaction would revert";
                 }
+
+                stateChanges.Traces = execResult.Traces;
+                stateChanges.GasUsed = execResult.GasUsed;
 
                 await AddTokenMetadataAsync(stateChanges, chainId).ConfigureAwait(false);
 
@@ -157,6 +163,41 @@ namespace Nethereum.Wallet.Services.Transaction
             {
                 return new StateChangesResult { Error = $"Preview failed: {ex.Message}" };
             }
+        }
+
+        private TransactionExecutionContext BuildExecutionContext(
+            CallInput callInput,
+            ExecutionStateService executionState,
+            Hex.HexTypes.HexBigInteger blockNumber,
+            long timestamp,
+            BigInteger baseFee,
+            bool traceEnabled)
+        {
+            var gasLimit = callInput.Gas?.Value ?? 10_000_000;
+            var value = callInput.Value?.Value ?? BigInteger.Zero;
+            var gasPrice = callInput.GasPrice?.Value ?? baseFee + 1_000_000_000;
+
+            return new TransactionExecutionContext
+            {
+                Sender = callInput.From,
+                To = callInput.To,
+                Data = callInput.Data?.HexToByteArray(),
+                GasLimit = gasLimit,
+                Value = value,
+                GasPrice = gasPrice,
+                MaxFeePerGas = callInput.MaxFeePerGas?.Value ?? gasPrice,
+                MaxPriorityFeePerGas = callInput.MaxPriorityFeePerGas?.Value ?? 1_000_000_000,
+                Nonce = callInput.Nonce?.Value ?? BigInteger.Zero,
+                IsEip1559 = callInput.MaxFeePerGas != null,
+                IsContractCreation = string.IsNullOrEmpty(callInput.To),
+                BlockNumber = (long)blockNumber.Value,
+                Timestamp = timestamp,
+                BaseFee = baseFee,
+                Coinbase = "0x0000000000000000000000000000000000000000",
+                BlockGasLimit = 30_000_000,
+                ExecutionState = executionState,
+                TraceEnabled = traceEnabled
+            };
         }
 
         private StateChangesResult ExtractSimpleTransferChanges(CallInput callInput, string currentUserAddress)

@@ -12,5 +12,12 @@ namespace Nethereum.Wallet.Services.Transaction
             long chainId,
             string currentUserAddress,
             CancellationToken ct = default);
+
+        Task<StateChangesResult> PreviewStateChangesAsync(
+            CallInput callInput,
+            long chainId,
+            string currentUserAddress,
+            bool enableTracing,
+            CancellationToken ct = default);
     }
 }

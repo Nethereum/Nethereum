@@ -52,7 +52,7 @@ namespace Nethereum.EVM
                 if (result.IsValidationError)
                     return result;
 
-                SetupState(ctx, result);
+                await SetupStateAsync(ctx, result);
                 if (result.IsValidationError)
                     return result;
 
@@ -149,7 +149,7 @@ namespace Nethereum.EVM
             }
         }
 
-        private void SetupState(TransactionExecutionContext ctx, TransactionExecutionResult result)
+        private async Task SetupStateAsync(TransactionExecutionContext ctx, TransactionExecutionResult result)
         {
             ctx.ExecutionState.MarkAddressAsWarm(ctx.Sender);
             ctx.ExecutionState.MarkPrecompilesAsWarm(_precompileProvider);
@@ -160,8 +160,15 @@ namespace Nethereum.EVM
 
             ctx.SenderAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.Sender);
 
+            // Load sender's nonce from storage if not already loaded
+            if (ctx.SenderAccount.Nonce == null)
+            {
+                ctx.SenderAccount.Nonce = await ctx.ExecutionState.NodeDataService.GetTransactionCount(ctx.Sender);
+            }
+
             // EIP-3607: Sender must be EOA (always enabled - post-London)
-            if (ctx.SenderAccount.Code != null && ctx.SenderAccount.Code.Length > 0)
+            var senderCode = await ctx.ExecutionState.GetCodeAsync(ctx.Sender);
+            if (senderCode != null && senderCode.Length > 0)
                 throw new TransactionValidationException("SENDER_NOT_EOA");
 
             var senderBalance = ctx.SenderAccount.Balance.GetTotalBalance();
@@ -199,11 +206,11 @@ namespace Nethereum.EVM
 
             ctx.TransactionSnapshotId = ctx.ExecutionState.TakeSnapshot();
 
-            SetupTargetAccount(ctx);
+            await SetupTargetAccountAsync(ctx);
             ProcessAccessList(ctx);
         }
 
-        private void SetupTargetAccount(TransactionExecutionContext ctx)
+        private async Task SetupTargetAccountAsync(TransactionExecutionContext ctx)
         {
             ctx.HasCollision = false;
 
@@ -211,11 +218,15 @@ namespace Nethereum.EVM
             {
                 ctx.ContractAddress = ContractUtils.CalculateContractAddress(ctx.Sender, ctx.SenderNonceBeforeIncrement);
                 ctx.ExecutionState.MarkAddressAsWarm(ctx.ContractAddress);
+
+                // Load existing account state to check for collision
+                var contractCode = await ctx.ExecutionState.GetCodeAsync(ctx.ContractAddress);
+                var contractNonce = await ctx.ExecutionState.GetNonceAsync(ctx.ContractAddress);
                 var contractAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.ContractAddress);
 
                 // EIP-684 + EIP-7610: Collision detection (always enabled)
-                var targetHasCode = contractAccount.Code != null && contractAccount.Code.Length > 0;
-                var targetHasNonce = contractAccount.Nonce.HasValue && contractAccount.Nonce.Value > 0;
+                var targetHasCode = contractCode != null && contractCode.Length > 0;
+                var targetHasNonce = contractNonce > 0;
                 var targetHasStorage = contractAccount.Storage != null && contractAccount.Storage.Count > 0;
                 ctx.HasCollision = targetHasCode || targetHasNonce || targetHasStorage;
 
@@ -228,8 +239,8 @@ namespace Nethereum.EVM
             else if (!string.IsNullOrEmpty(ctx.To))
             {
                 ctx.ExecutionState.MarkAddressAsWarm(ctx.To);
-                var receiverAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.To);
-                ctx.Code = receiverAccount.Code;
+                // Load code from underlying storage
+                ctx.Code = await ctx.ExecutionState.GetCodeAsync(ctx.To);
             }
         }
 
@@ -346,6 +357,12 @@ namespace Nethereum.EVM
                 }
 
                 result.RevertReason = program.ProgramResult.GetRevertMessage();
+
+                // Capture full program result for decoding (logs, inner calls, etc.)
+                result.ProgramResult = program.ProgramResult;
+                result.Logs = program.ProgramResult.Logs;
+                result.InnerCalls = program.ProgramResult.InnerCalls;
+                result.InnerContractCodeCalls = program.ProgramResult.InnerContractCodeCalls;
 
                 if (result.Success)
                 {

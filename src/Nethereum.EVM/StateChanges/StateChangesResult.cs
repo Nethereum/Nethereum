@@ -1,5 +1,6 @@
 using Nethereum.EVM.Decoding;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 
 namespace Nethereum.EVM.StateChanges
@@ -11,10 +12,13 @@ namespace Nethereum.EVM.StateChanges
         public List<DecodedLog> DecodedLogs { get; set; } = new List<DecodedLog>();
         public DecodedProgramResult DecodedResult { get; set; }
         public string Error { get; set; }
+        public List<ProgramTrace> Traces { get; set; }
+        public BigInteger GasUsed { get; set; }
 
         public bool HasError => !string.IsNullOrEmpty(Error);
         public bool HasBalanceChanges => BalanceChanges != null && BalanceChanges.Count > 0;
         public bool HasDecodedLogs => DecodedLogs != null && DecodedLogs.Count > 0;
+        public bool HasTraces => Traces != null && Traces.Count > 0;
 
         public string ToSummaryString()
         {

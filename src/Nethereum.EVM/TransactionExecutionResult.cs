@@ -20,6 +20,9 @@ namespace Nethereum.EVM
         public List<ProgramTrace> Traces { get; set; }
         public List<string> CreatedAccounts { get; set; } = new List<string>();
         public List<string> DeletedAccounts { get; set; } = new List<string>();
+        public List<CallInput> InnerCalls { get; set; } = new List<CallInput>();
+        public Dictionary<string, List<ProgramInstruction>> InnerContractCodeCalls { get; set; } = new Dictionary<string, List<ProgramInstruction>>();
+        public ProgramResult ProgramResult { get; set; }
     }
 
     public enum TransactionError

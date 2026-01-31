@@ -32,6 +32,29 @@ namespace Nethereum.EVM.Decoding
         }
 
         public DecodedProgramResult Decode(
+            TransactionExecutionResult executionResult,
+            CallInput initialCall,
+            BigInteger chainId)
+        {
+            if (executionResult.ProgramResult != null)
+            {
+                return Decode(executionResult.ProgramResult, executionResult.Traces, initialCall, chainId);
+            }
+
+            // Fallback for when ProgramResult is not available (e.g., precompile-only calls)
+            var programResult = new ProgramResult
+            {
+                Result = executionResult.ReturnData,
+                IsRevert = !executionResult.Success,
+                Logs = executionResult.Logs ?? new List<RPC.Eth.DTOs.FilterLog>(),
+                InnerCalls = executionResult.InnerCalls ?? new List<RPC.Eth.DTOs.CallInput>(),
+                CreatedContractAccounts = executionResult.CreatedAccounts ?? new List<string>(),
+                DeletedContractAccounts = executionResult.DeletedAccounts ?? new List<string>()
+            };
+            return Decode(programResult, executionResult.Traces, initialCall, chainId);
+        }
+
+        public DecodedProgramResult Decode(
             ProgramResult programResult,
             List<ProgramTrace> trace,
             CallInput initialCall,
