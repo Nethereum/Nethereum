@@ -186,14 +186,14 @@ namespace Nethereum.Signer.Bls.Herumi
             }
             MclBindings.MclBnG1 x2 = default(MclBindings.MclBnG1);
             byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
-            if (MclBindings.mclBnFp_deserialize(ref x2.x, array, (ulong)array.Length) == 0L)
+            if (MclBindings.mclBnFp_setLittleEndianMod(ref x2.x, array, (ulong)array.Length) != 0)
             {
-                throw new ArgumentException("Invalid G1 point: failed to deserialize x coordinate");
+                throw new ArgumentException("Invalid G1 point: failed to set x coordinate");
             }
             byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
-            if (MclBindings.mclBnFp_deserialize(ref x2.y, array2, (ulong)array2.Length) == 0L)
+            if (MclBindings.mclBnFp_setLittleEndianMod(ref x2.y, array2, (ulong)array2.Length) != 0)
             {
-                throw new ArgumentException("Invalid G1 point: failed to deserialize y coordinate");
+                throw new ArgumentException("Invalid G1 point: failed to set y coordinate");
             }
             MclBindings.mclBnFp_setInt(ref x2.z, 1);
             if (MclBindings.mclBnG1_isValid(in x2) == 0)
