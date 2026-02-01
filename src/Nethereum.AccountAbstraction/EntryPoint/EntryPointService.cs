@@ -128,15 +128,15 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                     userOperation.PaymasterPostOpGasLimit ??= UserOperation.DEFAULT_PAYMASTER_POST_OP_GAS_LIMIT;
                 }
 
-                if (userOperation.MaxFeePerGas == null)
-                {
-                    var block = await Web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(BlockParameter.CreateLatest());
-                    userOperation.MaxFeePerGas = block.BaseFeePerGas.Value + (userOperation.MaxPriorityFeePerGas ?? UserOperation.DEFAULT_MAX_FEE_PER_GAS);
-                }
-
                 if (userOperation.MaxPriorityFeePerGas == null)
                 {
                     userOperation.MaxPriorityFeePerGas = UserOperation.DEFAULT_MAX_PRIORITY_FEE_PER_GAS;
+                }
+
+                if (userOperation.MaxFeePerGas == null)
+                {
+                    var block = await Web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(BlockParameter.CreateLatest());
+                    userOperation.MaxFeePerGas = block.BaseFeePerGas.Value + userOperation.MaxPriorityFeePerGas.Value;
                 }
 
 
@@ -178,7 +178,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 }
                 
                 
-                  var packedUserOperation = Nethereum.AccountAbstraction.Structs.UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
+                  var packedUserOperation = UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
                   return packedUserOperation;
             }
 

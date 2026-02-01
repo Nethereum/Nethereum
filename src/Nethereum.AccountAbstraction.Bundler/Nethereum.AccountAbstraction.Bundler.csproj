@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>ERC-4337 Bundler implementation for Nethereum - process and submit UserOperations</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+</Project>

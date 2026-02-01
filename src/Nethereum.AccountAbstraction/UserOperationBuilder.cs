@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI;
+using Nethereum.ABI.Encoders;
 using Nethereum.ABI.EIP712;
 using Nethereum.Contracts.Services;
 using Nethereum.RLP;
@@ -87,7 +88,7 @@ namespace Nethereum.AccountAbstraction
         public static byte[] PackPaymasterData(string paymaster, BigInteger paymasterVerificationGasLimit, BigInteger postOpGasLimit, byte[] paymasterData)
         {
             return ByteUtil.Merge(
-                new AddressType().Encode(paymaster),
+                new AddressTypeEncoder().EncodePacked(paymaster),
                 ByteUtil.PadBytesLeft(paymasterVerificationGasLimit.ToBytesForRLPEncoding(), 16),
                 ByteUtil.PadBytesLeft(postOpGasLimit.ToBytesForRLPEncoding(), 16),
                 paymasterData
