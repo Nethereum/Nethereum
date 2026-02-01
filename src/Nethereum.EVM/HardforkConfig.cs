@@ -6,6 +6,7 @@ namespace Nethereum.EVM
     {
         public bool EnableEIP4844 { get; set; }
         public bool EnableEIP7623 { get; set; }
+        public bool EnableEIP7702 { get; set; }
         public int MaxBlobsPerBlock { get; set; }
         public IPrecompileProvider PrecompileProvider { get; set; }
 
@@ -13,6 +14,7 @@ namespace Nethereum.EVM
         {
             EnableEIP4844 = true,
             EnableEIP7623 = false,
+            EnableEIP7702 = false,
             MaxBlobsPerBlock = 6,
             PrecompileProvider = BuiltInPrecompileProvider.Cancun(),
         };
@@ -21,6 +23,7 @@ namespace Nethereum.EVM
         {
             EnableEIP4844 = true,
             EnableEIP7623 = true,
+            EnableEIP7702 = true,
             MaxBlobsPerBlock = 9,
             PrecompileProvider = BuiltInPrecompileProvider.Prague(),
         };

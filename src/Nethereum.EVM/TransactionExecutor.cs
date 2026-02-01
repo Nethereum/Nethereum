@@ -7,7 +7,9 @@ using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
 using Nethereum.EVM.Gas;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Signer;
 using Nethereum.Util;
 
 namespace Nethereum.EVM
@@ -17,6 +19,9 @@ namespace Nethereum.EVM
         private const byte VERSIONED_HASH_VERSION_KZG = 0x01;
         private const int MAX_INITCODE_SIZE = 49152;
         private const int MAX_CODE_SIZE = 24576;
+        private static readonly byte[] DELEGATION_PREFIX = new byte[] { 0xef, 0x01, 0x00 };
+        private const int PER_AUTH_BASE_COST = 12500;
+        private const int PER_EMPTY_ACCOUNT_COST = 25000;
 
         private readonly EVMSimulator _evmSimulator;
         private readonly HardforkConfig _config;
@@ -110,6 +115,12 @@ namespace Nethereum.EVM
 
             ctx.IntrinsicGas = IntrinsicGasCalculator.CalculateIntrinsicGas(ctx.Data, ctx.IsContractCreation, ctx.AccessList);
 
+            // EIP-7702: Authorization list gas (configurable - Prague)
+            if (_config.EnableEIP7702 && ctx.AuthorisationList != null && ctx.AuthorisationList.Count > 0)
+            {
+                ctx.IntrinsicGas += ctx.AuthorisationList.Count * PER_AUTH_BASE_COST;
+            }
+
             // EIP-7623: Floor gas (configurable - Prague)
             ctx.MinGasRequired = ctx.IntrinsicGas;
             if (_config.EnableEIP7623)
@@ -167,9 +178,21 @@ namespace Nethereum.EVM
             }
 
             // EIP-3607: Sender must be EOA (always enabled - post-London)
+            // EIP-7702: Delegated EOAs are allowed (they have 0xef0100 + address code)
             var senderCode = await ctx.ExecutionState.GetCodeAsync(ctx.Sender);
             if (senderCode != null && senderCode.Length > 0)
-                throw new TransactionValidationException("SENDER_NOT_EOA");
+            {
+                if (!IsDelegatedCode(senderCode))
+                    throw new TransactionValidationException("SENDER_NOT_EOA");
+            }
+
+            // EIP-7702: Process authorization list before execution
+            if (_config.EnableEIP7702 && ctx.AuthorisationList != null && ctx.AuthorisationList.Count > 0)
+            {
+                await ProcessAuthorizationListAsync(ctx, result);
+                if (result.IsValidationError)
+                    return;
+            }
 
             var senderBalance = ctx.SenderAccount.Balance.GetTotalBalance();
 
@@ -260,6 +283,98 @@ namespace Nethereum.EVM
                         var slot = storageKey.HexToBigInteger(false);
                         warmAccount.MarkStorageKeyAsWarm(slot);
                     }
+                }
+            }
+        }
+
+        private static bool IsDelegatedCode(byte[] code)
+        {
+            if (code == null || code.Length != 23)
+                return false;
+
+            return code[0] == DELEGATION_PREFIX[0] &&
+                   code[1] == DELEGATION_PREFIX[1] &&
+                   code[2] == DELEGATION_PREFIX[2];
+        }
+
+        private static byte[] CreateDelegationCode(string address)
+        {
+            var addressBytes = address.HexToByteArray();
+            var code = new byte[23];
+            code[0] = DELEGATION_PREFIX[0];
+            code[1] = DELEGATION_PREFIX[1];
+            code[2] = DELEGATION_PREFIX[2];
+            Array.Copy(addressBytes, 0, code, 3, 20);
+            return code;
+        }
+
+        private async Task ProcessAuthorizationListAsync(TransactionExecutionContext ctx, TransactionExecutionResult result)
+        {
+            var processedAuthorities = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var auth in ctx.AuthorisationList)
+            {
+                try
+                {
+                    // Recover the authority address from the signature
+                    var authorityAddress = auth.RecoverSignerAddress();
+
+                    // Skip duplicate authorities in the same transaction
+                    if (processedAuthorities.Contains(authorityAddress))
+                        continue;
+
+                    processedAuthorities.Add(authorityAddress);
+
+                    // EIP-7702: Validate chain ID (0 means valid on any chain)
+                    if (auth.ChainId != 0 && auth.ChainId != ctx.ChainId)
+                        continue;
+
+                    // Mark authority address as warm
+                    ctx.ExecutionState.MarkAddressAsWarm(authorityAddress);
+
+                    // Get authority account state
+                    var authorityAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(authorityAddress);
+
+                    // Load current nonce if not already loaded
+                    if (authorityAccount.Nonce == null)
+                    {
+                        authorityAccount.Nonce = await ctx.ExecutionState.NodeDataService.GetTransactionCount(authorityAddress);
+                    }
+
+                    // EIP-7702: Validate authorization nonce matches authority's current nonce
+                    if (auth.Nonce != authorityAccount.Nonce)
+                        continue;
+
+                    // Check if authority already has code (and it's not delegated code)
+                    var existingCode = await ctx.ExecutionState.GetCodeAsync(authorityAddress);
+                    if (existingCode != null && existingCode.Length > 0 && !IsDelegatedCode(existingCode))
+                        continue;
+
+                    // Increment the authority's nonce
+                    authorityAccount.Nonce = authorityAccount.Nonce + 1;
+
+                    // Install delegation code: 0xef0100 + address
+                    // If auth.Address is empty, remove delegation (set code to empty)
+                    if (string.IsNullOrEmpty(auth.Address) || auth.Address == "0x" ||
+                        auth.Address == "0x0000000000000000000000000000000000000000")
+                    {
+                        authorityAccount.Code = new byte[0];
+                    }
+                    else
+                    {
+                        authorityAccount.Code = CreateDelegationCode(auth.Address);
+                    }
+
+                    // Mark the delegate address as warm too
+                    if (!string.IsNullOrEmpty(auth.Address) && auth.Address != "0x")
+                    {
+                        ctx.ExecutionState.MarkAddressAsWarm(auth.Address);
+                    }
+                }
+                catch
+                {
+                    // Invalid signature or other error - skip this authorization
+                    continue;
                 }
             }
         }

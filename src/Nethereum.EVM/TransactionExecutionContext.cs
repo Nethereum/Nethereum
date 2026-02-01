@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Gas;
+using Nethereum.Model;
 
 namespace Nethereum.EVM
 {
@@ -20,9 +21,11 @@ namespace Nethereum.EVM
         public bool IsEip1559 { get; set; }
         public bool IsContractCreation { get; set; }
         public bool IsType3Transaction { get; set; }
+        public bool IsType4Transaction { get; set; }
         public List<string> BlobVersionedHashes { get; set; }
         public BigInteger MaxFeePerBlobGas { get; set; }
         public List<AccessListEntry> AccessList { get; set; }
+        public List<Authorisation7702Signed> AuthorisationList { get; set; }
 
         public long BlockNumber { get; set; }
         public long Timestamp { get; set; }
@@ -32,6 +35,7 @@ namespace Nethereum.EVM
         public BigInteger BlockGasLimit { get; set; }
         public BigInteger ExcessBlobGas { get; set; }
         public BigInteger BlobBaseFee { get; set; }
+        public BigInteger ChainId { get; set; }
 
         public BigInteger IntrinsicGas { get; set; }
         public BigInteger FloorGas { get; set; }
