@@ -51,6 +51,7 @@ namespace Nethereum.EVM
         public ExecutionStateService ExecutionState { get; set; }
         public AccountExecutionState SenderAccount { get; set; }
         public byte[] Code { get; set; }
+        public string DelegateAddress { get; set; }
 
         public bool TraceEnabled { get; set; }
     }

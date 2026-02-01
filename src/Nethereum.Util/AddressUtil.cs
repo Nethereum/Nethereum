@@ -65,6 +65,13 @@ namespace Nethereum.Util
             return address == AddressEmptyAsHex;
         }
 
+        public bool IsZeroAddress(string address)
+        {
+            if (string.IsNullOrEmpty(address)) return false;
+            var normalized = ConvertToValid20ByteAddress(address);
+            return string.Equals(normalized, ZERO_ADDRESS, StringComparison.OrdinalIgnoreCase);
+        }
+
         public bool IsNotAnEmptyAddress(string address)
         {
             return !IsAnEmptyAddress(address);

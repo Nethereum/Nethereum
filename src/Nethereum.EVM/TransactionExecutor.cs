@@ -263,7 +263,20 @@ namespace Nethereum.EVM
             {
                 ctx.ExecutionState.MarkAddressAsWarm(ctx.To);
                 // Load code from underlying storage
-                ctx.Code = await ctx.ExecutionState.GetCodeAsync(ctx.To);
+                var targetCode = await ctx.ExecutionState.GetCodeAsync(ctx.To);
+
+                // EIP-7702: If target has delegation code, load the delegate's code instead
+                if (_config.EnableEIP7702 && IsDelegatedCode(targetCode))
+                {
+                    var delegateAddress = GetDelegateAddress(targetCode);
+                    ctx.ExecutionState.MarkAddressAsWarm(delegateAddress);
+                    ctx.Code = await ctx.ExecutionState.GetCodeAsync(delegateAddress);
+                    ctx.DelegateAddress = delegateAddress;
+                }
+                else
+                {
+                    ctx.Code = targetCode;
+                }
             }
         }
 
@@ -295,6 +308,16 @@ namespace Nethereum.EVM
             return code[0] == DELEGATION_PREFIX[0] &&
                    code[1] == DELEGATION_PREFIX[1] &&
                    code[2] == DELEGATION_PREFIX[2];
+        }
+
+        private static string GetDelegateAddress(byte[] delegationCode)
+        {
+            if (delegationCode == null || delegationCode.Length != 23)
+                return null;
+
+            var addressBytes = new byte[20];
+            Array.Copy(delegationCode, 3, addressBytes, 0, 20);
+            return "0x" + addressBytes.ToHex();
         }
 
         private static byte[] CreateDelegationCode(string address)
@@ -354,9 +377,9 @@ namespace Nethereum.EVM
                     authorityAccount.Nonce = authorityAccount.Nonce + 1;
 
                     // Install delegation code: 0xef0100 + address
-                    // If auth.Address is empty, remove delegation (set code to empty)
+                    // If auth.Address is empty or zero, remove delegation (set code to empty)
                     if (string.IsNullOrEmpty(auth.Address) || auth.Address == "0x" ||
-                        auth.Address == "0x0000000000000000000000000000000000000000")
+                        AddressUtil.Current.IsZeroAddress(auth.Address))
                     {
                         authorityAccount.Code = new byte[0];
                     }

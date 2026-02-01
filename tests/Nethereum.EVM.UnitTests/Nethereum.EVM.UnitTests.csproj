@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ABI\Nethereum.ABI.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Bls\Nethereum.EVM.Precompiles.Bls.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />

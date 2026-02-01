@@ -21,9 +21,9 @@ namespace Nethereum.Model
                     RLP.RLP.EncodeElement(accessListItem.ChainId.ToBytesForRLPEncoding()),
                     RLP.RLP.EncodeElement(accessListItem.Address.HexToByteArray()),
                     RLP.RLP.EncodeElement(accessListItem.Nonce.ToBytesForRLPEncoding()),
-                    RLP.RLP.EncodeElement(accessListItem.V.TrimZeroBytes()),
-                    RLP.RLP.EncodeElement(accessListItem.R.TrimZeroBytes()),
-                    RLP.RLP.EncodeElement(accessListItem.S.TrimZeroBytes())
+                    RLP.RLP.EncodeElement((accessListItem.V ?? new byte[0]).TrimZeroBytes()),
+                    RLP.RLP.EncodeElement((accessListItem.R ?? new byte[0]).TrimZeroBytes()),
+                    RLP.RLP.EncodeElement((accessListItem.S ?? new byte[0]).TrimZeroBytes())
                 };
                 encodedData.Add(RLP.RLP.EncodeList(encodedItem.ToArray()));
             }
@@ -43,9 +43,9 @@ namespace Nethereum.Model
                 authorisationListItem.ChainId = decodedItem[0].RLPData.ToBigIntegerFromRLPDecoded();
                 authorisationListItem.Address = decodedItem[1].RLPData.ToHex();
                 authorisationListItem.Nonce = decodedItem[2].RLPData.ToBigIntegerFromRLPDecoded();
-                authorisationListItem.V = decodedItem[3].RLPData;
-                authorisationListItem.R = decodedItem[4].RLPData;
-                authorisationListItem.S = decodedItem[5].RLPData;
+                authorisationListItem.V = decodedItem[3].RLPData ?? new byte[0];
+                authorisationListItem.R = decodedItem[4].RLPData ?? new byte[0];
+                authorisationListItem.S = decodedItem[5].RLPData ?? new byte[0];
                 accessLists.Add(authorisationListItem);
             }
 

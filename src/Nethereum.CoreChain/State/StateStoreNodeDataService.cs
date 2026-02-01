@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 
 namespace Nethereum.CoreChain.State
 {
@@ -39,7 +40,23 @@ namespace Nethereum.CoreChain.State
             if (account?.CodeHash == null)
                 return null;
 
+            // Empty code hash means no code
+            if (IsEmptyCodeHash(account.CodeHash))
+                return null;
+
             return await _stateStore.GetCodeAsync(account.CodeHash);
+        }
+
+        private static bool IsEmptyCodeHash(byte[] codeHash)
+        {
+            if (codeHash == null || codeHash.Length != DefaultValues.EMPTY_DATA_HASH.Length)
+                return false;
+            for (int i = 0; i < codeHash.Length; i++)
+            {
+                if (codeHash[i] != DefaultValues.EMPTY_DATA_HASH[i])
+                    return false;
+            }
+            return true;
         }
 
         public async Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
