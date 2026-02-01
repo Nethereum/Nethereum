@@ -365,6 +365,8 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         this.MudNamespace = null;
         this.SharedGeneratedTypes = null;
         this.SharedTypesNamespace = null;
+        this.ReferencedTypesNamespaces = null;
+        this.StructReferencedTypes = null;
         this.AddRootNamespaceOnVbProjectsToImportStatements = true;
     };
     $p.get_ContractABI = function ContractProjectGenerator_get_ContractABI() { return this.ContractABI; };
@@ -382,7 +384,9 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
     $p.set_MudNamespace = function ContractProjectGenerator_set_MudNamespace(value) { this.MudNamespace = value;return value; };
     $p.get_SharedGeneratedTypes = function ContractProjectGenerator_get_SharedGeneratedTypes() { return this.SharedGeneratedTypes; };
     $p.get_SharedTypesNamespace = function ContractProjectGenerator_get_SharedTypesNamespace() { return this.SharedTypesNamespace; };
-    $t.ctor = function ContractProjectGenerator(contractABI, contractName, byteCode, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, sharedTypesNamespace, sharedGeneratedTypes, baseOutputPath, pathDelimiter, codeGenLanguage) {
+    $p.get_ReferencedTypesNamespaces = function ContractProjectGenerator_get_ReferencedTypesNamespaces() { return this.ReferencedTypesNamespaces; };
+    $p.get_StructReferencedTypes = function ContractProjectGenerator_get_StructReferencedTypes() { return this.StructReferencedTypes; };
+    $t.ctor = function ContractProjectGenerator(contractABI, contractName, byteCode, baseNamespace, serviceNamespace, cqsNamespace, dtoNamespace, sharedTypesNamespace, sharedGeneratedTypes, baseOutputPath, pathDelimiter, codeGenLanguage, referencedTypesNamespaces, structReferencedTypes) {
         $t.$baseType.ctor.call(this);
         this.ContractABI = contractABI;
         this.ContractName = contractName;
@@ -407,8 +411,9 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             this.SharedGeneratedTypes = sharedGeneratedTypes;
         }
 
-
         this.SharedTypesNamespace = sharedTypesNamespace;
+        this.ReferencedTypesNamespaces = referencedTypesNamespaces || $d.array(String, 0);
+        this.StructReferencedTypes = structReferencedTypes || $d.array(String, 0);
     };
     $p.GenerateAllMessagesFileAndService = function ContractProjectGenerator_GenerateAllMessagesFileAndService() {
         var generated = new (System.Collections.Generic.List$1(Nethereum.Generators.Core.GeneratedFile, 
@@ -535,7 +540,7 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
         var serviceFullPath = this.GetFullPath(this.get_ServiceNamespace());
         var serviceGenerator = new Nethereum.Generators.Service.ServiceGenerator.ctor(this.get_ContractABI(), 
             this.get_ContractName(), this.get_ByteCode(), serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, 
-            sharedTypesFullNamespace, this.get_CodeGenLanguage());
+            sharedTypesFullNamespace, this.get_CodeGenLanguage(), this.get_ReferencedTypesNamespaces());
         return serviceGenerator.GenerateFileContent$1(serviceFullPath);
     };
     $p.GenerateMudService = function ContractProjectGenerator_GenerateMudService(mudNamespace, singleMessagesFile) {
@@ -652,11 +657,25 @@ $d.define(Nethereum.Generators.ContractProjectGenerator, null, function($t, $p) 
             50623).ctor)();
         for (var $i = 0, $a = this.get_ContractABI().get_Structs(), $length = $a.length; $i < $length; $i++) {
             var structAbi = $a[$i];
+            if (this.IsStructReferenced(structAbi.get_Name())) {
+                continue;
+            }
             var structTypeGenerator = new Nethereum.Generators.DTOs.StructTypeGenerator.ctor(structAbi, 
                 structTypeNamespace, this.get_CodeGenLanguage());
             generators.Add(structTypeGenerator);
         }
         return generators;
+    };
+    $p.IsStructReferenced = function ContractProjectGenerator_IsStructReferenced(structName) {
+        if (this.get_StructReferencedTypes() == null || this.get_StructReferencedTypes().length == 0) {
+            return false;
+        }
+        for (var i = 0; i < this.get_StructReferencedTypes().length; i++) {
+            if (String.Equals(this.get_StructReferencedTypes()[i], structName, 5 /* StringComparison.OrdinalIgnoreCase */)) {
+                return true;
+            }
+        }
+        return false;
     };
     $p.GetAllFunctionDTOsGenerators = function ContractProjectGenerator_GetAllFunctionDTOsGenerators() {
         var dtoFullNamespace = this.GetFullNamespace(this.get_DTONamespace());
@@ -4649,11 +4668,11 @@ $d.define(Nethereum.Generators.Service.ServiceGenerator, Nethereum.Generators.Co
         this.ContractABI = null;
     };
     $p.get_ContractABI = function ServiceGenerator_get_ContractABI() { return this.ContractABI; };
-    $t.ctor = function ServiceGenerator(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace, codeGenLanguage) {
+    $t.ctor = function ServiceGenerator(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace, codeGenLanguage, referencedTypesNamespaces) {
         $t.$baseType.ctor.call(this);
         this.ContractABI = contractABI;
         this.set_ClassModel(new Nethereum.Generators.Service.ServiceModel.ctor(contractABI, contractName, 
-            byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace));
+            byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace, referencedTypesNamespaces));
         this.get_ClassModel().set_CodeGenLanguage(codeGenLanguage);
         this.InitialiseTemplate(codeGenLanguage);
     };
@@ -4682,19 +4701,22 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
         this.CQSNamespace = null;
         this.FunctionOutputNamespace = null;
         this.SharedTypesFullNamespace = null;
+        this.ReferencedTypesNamespaces = null;
         this.ContractDeploymentCQSMessageModel = null;
     };
     $p.get_ContractABI = function ServiceModel_get_ContractABI() { return this.ContractABI; };
     $p.get_CQSNamespace = function ServiceModel_get_CQSNamespace() { return this.CQSNamespace; };
     $p.get_FunctionOutputNamespace = function ServiceModel_get_FunctionOutputNamespace() { return this.FunctionOutputNamespace; };
     $p.get_SharedTypesFullNamespace = function ServiceModel_get_SharedTypesFullNamespace() { return this.SharedTypesFullNamespace; };
+    $p.get_ReferencedTypesNamespaces = function ServiceModel_get_ReferencedTypesNamespaces() { return this.ReferencedTypesNamespaces; };
     $p.get_ContractDeploymentCQSMessageModel = function ServiceModel_get_ContractDeploymentCQSMessageModel() { return this.ContractDeploymentCQSMessageModel; };
-    $t.ctor = function ServiceModel(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace) {
+    $t.ctor = function ServiceModel(contractABI, contractName, byteCode, namespace, cqsNamespace, functionOutputNamespace, sharedTypesFullNamespace, referencedTypesNamespaces) {
         $t.$baseType.ctor.call(this, namespace, contractName, "Service");
         this.ContractABI = contractABI;
         this.CQSNamespace = cqsNamespace;
         this.FunctionOutputNamespace = functionOutputNamespace;
         this.SharedTypesFullNamespace = sharedTypesFullNamespace;
+        this.ReferencedTypesNamespaces = referencedTypesNamespaces || $d.array(String, 0);
         this.ContractDeploymentCQSMessageModel = new Nethereum.Generators.CQS.ContractDeploymentCQSMessageModel.ctor(contractABI.get_Constructor(), 
             cqsNamespace, byteCode, contractName);
         this.InitialiseNamespaceDependencies();
@@ -4707,6 +4729,15 @@ $d.define(Nethereum.Generators.Service.ServiceModel, Nethereum.Generators.Core.T
 
         if (!String.IsNullOrEmpty(sharedTypesFullNamespace))
             this.get_NamespaceDependencies().Add(sharedTypesFullNamespace);
+
+        if (this.get_ReferencedTypesNamespaces() != null && this.get_ReferencedTypesNamespaces().length > 0) {
+            for (var $i = 0, $a = this.get_ReferencedTypesNamespaces(), $length = $a.length; $i < $length; $i++) {
+                var ns = $a[$i];
+                if (!String.IsNullOrEmpty(ns) && !this.get_NamespaceDependencies().Contains(ns)) {
+                    this.get_NamespaceDependencies().Add(ns);
+                }
+            }
+        }
     };
     $t.GetDefaultTypeName = function ServiceModel_GetDefaultTypeName(name) {
         return Nethereum.Generators.Core.TypeMessageModel.GetDefaultTypeName(name, "Service");

@@ -90,7 +90,9 @@ namespace Nethereum.Generators.Net
             string basePath,
             string pathSeparator,
             int codeGenLang,
-            string mudNamespace = null)
+            string mudNamespace = null,
+            string[] referencedTypesNamespaces = null,
+            string[] structReferencedTypes = null)
         {
             var classGenerator = new ContractProjectGenerator(
                 abi,
@@ -104,7 +106,9 @@ namespace Nethereum.Generators.Net
                 sharedGeneratedTypes,
                 basePath,
                 pathSeparator,
-                (CodeGenLanguage)codeGenLang
+                (CodeGenLanguage)codeGenLang,
+                referencedTypesNamespaces,
+                structReferencedTypes
             )
             {
                 AddRootNamespaceOnVbProjectsToImportStatements = false,

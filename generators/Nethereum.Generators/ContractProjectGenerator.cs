@@ -34,6 +34,9 @@ namespace Nethereum.Generators
 
         public string SharedTypesNamespace { get; }
 
+        public string[] ReferencedTypesNamespaces { get; }
+        public string[] StructReferencedTypes { get; }
+
         public ContractProjectGenerator(ContractABI contractABI,
             string contractName,
             string byteCode,
@@ -45,7 +48,9 @@ namespace Nethereum.Generators
             string[] sharedGeneratedTypes,
             string baseOutputPath,
             string pathDelimiter,
-            CodeGenLanguage codeGenLanguage)
+            CodeGenLanguage codeGenLanguage,
+            string[] referencedTypesNamespaces = null,
+            string[] structReferencedTypes = null)
         {
             ContractABI = contractABI;
             ContractName = contractName;
@@ -75,9 +80,9 @@ namespace Nethereum.Generators
                 SharedGeneratedTypes = sharedGeneratedTypes;
             }
 
-            
             SharedTypesNamespace = sharedTypesNamespace;
-            
+            ReferencedTypesNamespaces = referencedTypesNamespaces ?? new string[0];
+            StructReferencedTypes = structReferencedTypes ?? new string[0];
         }
 
         public GeneratedFile[] GenerateAllMessagesFileAndService()
@@ -205,7 +210,7 @@ namespace Nethereum.Generators
             }
             
             //using the same namespace..
-            var mainGenerator = new AllMessagesGenerator (generators, ContractName, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
+            var mainGenerator = new AllMessagesGenerator (generators, ContractName, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage, ReferencedTypesNamespaces);
             return mainGenerator.GenerateFileContent(cqsFullPath);
         }
 
@@ -238,7 +243,7 @@ namespace Nethereum.Generators
 
             var serviceFullNamespace = GetFullNamespace(ServiceNamespace);
             var serviceFullPath = GetFullPath(ServiceNamespace);
-            var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage);
+            var serviceGenerator = new ServiceGenerator(ContractABI, ContractName, ByteCode, serviceFullNamespace, cqsFullNamespace, dtoFullNamespace, sharedTypesFullNamespace, CodeGenLanguage, ReferencedTypesNamespaces);
             return serviceGenerator.GenerateFileContent(serviceFullPath);
         }
 
@@ -355,10 +360,30 @@ namespace Nethereum.Generators
             var generators = new List<StructTypeGenerator>();
             foreach (var structAbi in ContractABI.Structs)
             {
-                var structTypeGenerator = new StructTypeGenerator(structAbi, structTypeNamespace, CodeGenLanguage);
+                if (IsStructReferenced(structAbi.Name))
+                {
+                    continue;
+                }
+                var structTypeGenerator = new StructTypeGenerator(structAbi, structTypeNamespace, CodeGenLanguage, ReferencedTypesNamespaces);
                 generators.Add(structTypeGenerator);
             }
             return generators;
+        }
+
+        private bool IsStructReferenced(string structName)
+        {
+            if (StructReferencedTypes == null || StructReferencedTypes.Length == 0)
+            {
+                return false;
+            }
+            for (int i = 0; i < StructReferencedTypes.Length; i++)
+            {
+                if (string.Equals(StructReferencedTypes[i], structName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public List<FunctionOutputDTOGenerator> GetAllFunctionDTOsGenerators()

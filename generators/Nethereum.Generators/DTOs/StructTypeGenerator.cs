@@ -8,9 +8,9 @@ namespace Nethereum.Generators.DTOs
     public class StructTypeGenerator : ClassGeneratorBase<StructTypeModel>
     {
 
-        public StructTypeGenerator(StructABI structTypeABI, string @namespace, CodeGenLanguage codeGenLanguage)
+        public StructTypeGenerator(StructABI structTypeABI, string @namespace, CodeGenLanguage codeGenLanguage, string[] referencedTypesNamespaces = null)
         {
-            ClassModel = new StructTypeModel(structTypeABI, @namespace) { CodeGenLanguage = codeGenLanguage };
+            ClassModel = new StructTypeModel(structTypeABI, @namespace, referencedTypesNamespaces) { CodeGenLanguage = codeGenLanguage };
             InitialiseTemplate(codeGenLanguage);
         }
 

@@ -49,6 +49,8 @@ declare module Nethereum {
             set_MudNamespace(value: string): void;
             get_SharedGeneratedTypes(): string[];
             get_SharedTypesNamespace(): string;
+            get_ReferencedTypesNamespaces(): string[];
+            get_StructReferencedTypes(): string[];
             GenerateAllMessagesFileAndService(): Core.GeneratedFile[];
             AreStructsSharedGenerated(): boolean;
             HasSharingSettings(): boolean;
@@ -83,8 +85,8 @@ declare module Nethereum {
         export interface ContractProjectGeneratorTypeFunc extends TypeFunction {
             (): ContractProjectGeneratorTypeFunc;
             prototype: ContractProjectGenerator;
-            new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, sharedGeneratedTypes: string[], baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage): ContractProjectGenerator;
-            ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, sharedGeneratedTypes: string[], baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage): ContractProjectGenerator; };
+            new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, sharedGeneratedTypes: string[], baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage, referencedTypesNamespaces?: string[], structReferencedTypes?: string[]): ContractProjectGenerator;
+            ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, baseNamespace: string, serviceNamespace: string, cqsNamespace: string, dtoNamespace: string, sharedTypesNamespace: string, sharedGeneratedTypes: string[], baseOutputPath: string, pathDelimiter: string, codeGenLanguage: Core.CodeGenLanguage, referencedTypesNamespaces?: string[], structReferencedTypes?: string[]): ContractProjectGenerator; };
         }
         const ContractProjectGenerator: ContractProjectGeneratorTypeFunc;
 
@@ -804,8 +806,8 @@ declare module Nethereum {
             export interface ServiceGeneratorTypeFunc extends TypeFunction {
                 (): ServiceGeneratorTypeFunc;
                 prototype: ServiceGenerator;
-                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ServiceGenerator;
-                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, codeGenLanguage: Core.CodeGenLanguage): ServiceGenerator; };
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, codeGenLanguage: Core.CodeGenLanguage, referencedTypesNamespaces?: string[]): ServiceGenerator;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, codeGenLanguage: Core.CodeGenLanguage, referencedTypesNamespaces?: string[]): ServiceGenerator; };
             }
             const ServiceGenerator: ServiceGeneratorTypeFunc;
 
@@ -815,13 +817,14 @@ declare module Nethereum {
                 get_CQSNamespace(): string;
                 get_FunctionOutputNamespace(): string;
                 get_SharedTypesFullNamespace(): string;
+                get_ReferencedTypesNamespaces(): string[];
                 get_ContractDeploymentCQSMessageModel(): CQS.ContractDeploymentCQSMessageModel;
             }
             export interface ServiceModelTypeFunc extends TypeFunction {
                 (): ServiceModelTypeFunc;
                 prototype: ServiceModel;
-                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string): ServiceModel;
-                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string): ServiceModel; };
+                new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, referencedTypesNamespaces?: string[]): ServiceModel;
+                ctor: { new (contractABI: Model.ContractABI, contractName: string, byteCode: string, namespace: string, cqsNamespace: string, functionOutputNamespace: string, sharedTypesFullNamespace: string, referencedTypesNamespaces?: string[]): ServiceModel; };
                 GetDefaultTypeName(name: string): string;
             }
             const ServiceModel: ServiceModelTypeFunc;

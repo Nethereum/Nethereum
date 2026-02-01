@@ -122,9 +122,12 @@
                         $"{contractName}.ContractDefinition",
                         config.SharedTypesNamespace,
                         config.SharedTypes,
-                        absolutePath, 
+                        absolutePath,
                         Path.DirectorySeparatorChar.ToString(),
-                        config.CodeGenLang
+                        config.CodeGenLang,
+                        null,
+                        config.ReferencedTypesNamespaces,
+                        config.StructReferencedTypes
                     ));
                     break;
 

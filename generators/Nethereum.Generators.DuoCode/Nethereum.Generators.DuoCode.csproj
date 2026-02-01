@@ -34,546 +34,412 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-   <DuoCodeDtsMode>es6</DuoCodeDtsMode>
-   <DuoCodeModuleKind>commonjs</DuoCodeModuleKind>
-   </PropertyGroup>
+    <DuoCodeDtsMode>es6</DuoCodeDtsMode>
+    <DuoCodeModuleKind>commonjs</DuoCodeModuleKind>
+  </PropertyGroup>
   <ItemGroup>
-        <Compile Include="..\Nethereum.Generators\BlazorPagesGenerator.cs">
-				<Link>\BlazorPagesGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ContractProjectGenerator.cs">
-				<Link>\ContractProjectGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudTablesGenerator.cs">
-				<Link>\MudTablesGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\NetStandardLibraryGenerator.cs">
-				<Link>\NetStandardLibraryGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\GeneratorModel\FunctionABIModel.cs">
-				<Link>\ABI\GeneratorModel\FunctionABIModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\GeneratorModel\ParameterABIModel.cs">
-				<Link>\ABI\GeneratorModel\ParameterABIModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\GeneratorModel\ParameterABIModelTypeMap.cs">
-				<Link>\ABI\GeneratorModel\ParameterABIModelTypeMap.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\ConstructorABI.cs">
-				<Link>\ABI\Model\ConstructorABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\ContractABI.cs">
-				<Link>\ABI\Model\ContractABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\ErrorABI.cs">
-				<Link>\ABI\Model\ErrorABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\EventABI.cs">
-				<Link>\ABI\Model\EventABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\FunctionABI.cs">
-				<Link>\ABI\Model\FunctionABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\FunctionEventOverloadTypeNameBuilder.cs">
-				<Link>\ABI\Model\FunctionEventOverloadTypeNameBuilder.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\ParameterABI.cs">
-				<Link>\ABI\Model\ParameterABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\Model\StructABI.cs">
-				<Link>\ABI\Model\StructABI.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToCSharpType.cs">
-				<Link>\ABI\TypeConvertors\ABITypeToCSharpType.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToDotNetTypeBase.cs">
-				<Link>\ABI\TypeConvertors\ABITypeToDotNetTypeBase.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToFSharpType.cs">
-				<Link>\ABI\TypeConvertors\ABITypeToFSharpType.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToVBType.cs">
-				<Link>\ABI\TypeConvertors\ABITypeToVBType.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\AllMessages\AllMessagesGenerator.cs">
-				<Link>\AllMessages\AllMessagesGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\AllMessages\AllMessagesModel.cs">
-				<Link>\AllMessages\AllMessagesModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\BlazorServicePage\BlazorPageServiceGenerator.cs">
-				<Link>\BlazorServicePage\BlazorPageServiceGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\BlazorServicePage\BlazorPageServiceModel.cs">
-				<Link>\BlazorServicePage\BlazorPageServiceModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\BlazorServicePage\CSharp\BlazorFunctionComponentsTemplate.cs">
-				<Link>\BlazorServicePage\CSharp\BlazorFunctionComponentsTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\BlazorServicePage\CSharp\BlazorPageServiceCSharpRazorTemplate.cs">
-				<Link>\BlazorServicePage\CSharp\BlazorPageServiceCSharpRazorTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\ConsoleGenerator.cs">
-				<Link>\Console\ConsoleGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\ConsoleModel.cs">
-				<Link>\Console\ConsoleModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\CSharp\ConsoleCSharpTemplate.cs">
-				<Link>\Console\CSharp\ConsoleCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\CSharp\ContractDeploymentMockUpMethodCSharpTemplate.cs">
-				<Link>\Console\CSharp\ContractDeploymentMockUpMethodCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\CSharp\FunctionMockupMethodCSharpTemplate.cs">
-				<Link>\Console\CSharp\FunctionMockupMethodCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\Vb\ConsoleVbTemplate.cs">
-				<Link>\Console\Vb\ConsoleVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\Vb\ContractDeploymentMockUpMethodVbTemplate.cs">
-				<Link>\Console\Vb\ContractDeploymentMockUpMethodVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Console\Vb\FunctionMockupMethodVbTemplate.cs">
-				<Link>\Console\Vb\FunctionMockupMethodVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ClassFileTemplate.cs">
-				<Link>\Core\ClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ClassGeneratorBase.cs">
-				<Link>\Core\ClassGeneratorBase.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ClassTemplateBase.cs">
-				<Link>\Core\ClassTemplateBase.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\CodeGenLanguage.cs">
-				<Link>\Core\CodeGenLanguage.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\CodeGenLanguageExt.cs">
-				<Link>\Core\CodeGenLanguageExt.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\CommonGenerators.cs">
-				<Link>\Core\CommonGenerators.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\CsharpClassFileTemplate.cs">
-				<Link>\Core\CsharpClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\CSharpMultipleClassFileTemplate.cs">
-				<Link>\Core\CSharpMultipleClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\FileModel.cs">
-				<Link>\Core\FileModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\FileTemplate.cs">
-				<Link>\Core\FileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\FSharpClassFileTemplate.cs">
-				<Link>\Core\FSharpClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\FSharpMultipleClassFileTemplate.cs">
-				<Link>\Core\FSharpMultipleClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\GeneratedFile.cs">
-				<Link>\Core\GeneratedFile.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\IClassGenerator.cs">
-				<Link>\Core\IClassGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\IClassModel.cs">
-				<Link>\Core\IClassModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\IClassTemplate.cs">
-				<Link>\Core\IClassTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\IFileGenerator.cs">
-				<Link>\Core\IFileGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\IGenerator.cs">
-				<Link>\Core\IGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\IMessage.cs">
-				<Link>\Core\IMessage.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ITypeConvertor.cs">
-				<Link>\Core\ITypeConvertor.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\MessageMap.cs">
-				<Link>\Core\MessageMap.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\MultipleClassFileTemplate.cs">
-				<Link>\Core\MultipleClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\MultipleClassGeneratorBase.cs">
-				<Link>\Core\MultipleClassGeneratorBase.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\Parameter.cs">
-				<Link>\Core\Parameter.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ParameterDirection.cs">
-				<Link>\Core\ParameterDirection.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ParameterMap.cs">
-				<Link>\Core\ParameterMap.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerCSharpTemplate.cs">
-				<Link>\Core\ParameterMapperAssignerCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerTemplate.cs">
-				<Link>\Core\ParameterMapperAssignerTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerVbTemplate.cs">
-				<Link>\Core\ParameterMapperAssignerVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\ParameterModel.cs">
-				<Link>\Core\ParameterModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\RazorClassFileTemplate.cs">
-				<Link>\Core\RazorClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\SpaceUtils.cs">
-				<Link>\Core\SpaceUtils.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\TypeMessageModel.cs">
-				<Link>\Core\TypeMessageModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\Utils.cs">
-				<Link>\Core\Utils.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\VbClassFileTemplate.cs">
-				<Link>\Core\VbClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Core\VbMultipleClassFileTemplate.cs">
-				<Link>\Core\VbMultipleClassFileTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageGenerator.cs">
-				<Link>\CQS\ContractDeploymentCQSMessageGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageModel.cs">
-				<Link>\CQS\ContractDeploymentCQSMessageModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageGenerator.cs">
-				<Link>\CQS\FunctionCQSMessageGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageModel.cs">
-				<Link>\CQS\FunctionCQSMessageModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\CSharp\ContractDeploymentCQSMessageCSharpTemplate.cs">
-				<Link>\CQS\CSharp\ContractDeploymentCQSMessageCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\CSharp\FunctionCQSMessageCSharpTemplate.cs">
-				<Link>\CQS\CSharp\FunctionCQSMessageCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\FSharp\ContractDeploymentCQSMessageFSharpTemplate.cs">
-				<Link>\CQS\FSharp\ContractDeploymentCQSMessageFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\FSharp\FunctionCQSMessageFSharpTemplate.cs">
-				<Link>\CQS\FSharp\FunctionCQSMessageFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\Vb\ContractDeploymentCQSMessageVbTemplate.cs">
-				<Link>\CQS\Vb\ContractDeploymentCQSMessageVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\CQS\Vb\FunctionCQSMessageVbTemplate.cs">
-				<Link>\CQS\Vb\FunctionCQSMessageVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\ErrorDTOGenerator.cs">
-				<Link>\DTOs\ErrorDTOGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\ErrorDTOModel.cs">
-				<Link>\DTOs\ErrorDTOModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\EventDTOGenerator.cs">
-				<Link>\DTOs\EventDTOGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\EventDTOModel.cs">
-				<Link>\DTOs\EventDTOModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOGenerator.cs">
-				<Link>\DTOs\FunctionOutputDTOGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOModel.cs">
-				<Link>\DTOs\FunctionOutputDTOModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\StructTypeGenerator.cs">
-				<Link>\DTOs\StructTypeGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\StructTypeModel.cs">
-				<Link>\DTOs\StructTypeModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\CSharp\ErrorDTOCSharpTemplate.cs">
-				<Link>\DTOs\CSharp\ErrorDTOCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\CSharp\EventDTOCSharpTemplate.cs">
-				<Link>\DTOs\CSharp\EventDTOCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\CSharp\FunctionOutputDTOCSharpTemplate.cs">
-				<Link>\DTOs\CSharp\FunctionOutputDTOCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\CSharp\ParameterABIEventDTOCSharpTemplate.cs">
-				<Link>\DTOs\CSharp\ParameterABIEventDTOCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\CSharp\ParameterABIFunctionDTOCsharpTemplate.cs">
-				<Link>\DTOs\CSharp\ParameterABIFunctionDTOCsharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\CSharp\StructTypeCSharpTemplate.cs">
-				<Link>\DTOs\CSharp\StructTypeCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FSharp\ErrorDTOFSharpTemplate.cs">
-				<Link>\DTOs\FSharp\ErrorDTOFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FSharp\EventDTOFSharpTemplate.cs">
-				<Link>\DTOs\FSharp\EventDTOFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FSharp\FunctionOutputDTOFSharpTemplate.cs">
-				<Link>\DTOs\FSharp\FunctionOutputDTOFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FSharp\ParameterABIEventDTOFSharpTemplate.cs">
-				<Link>\DTOs\FSharp\ParameterABIEventDTOFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FSharp\ParameterABIFunctionDTOFSharpTemplate.cs">
-				<Link>\DTOs\FSharp\ParameterABIFunctionDTOFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\FSharp\StructTypeFSharpTemplate.cs">
-				<Link>\DTOs\FSharp\StructTypeFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\Vb\ErrorDTOVbTemplate.cs">
-				<Link>\DTOs\Vb\ErrorDTOVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\Vb\EventDTOVbTemplate.cs">
-				<Link>\DTOs\Vb\EventDTOVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\Vb\FunctionOutputDTOVbTemplate.cs">
-				<Link>\DTOs\Vb\FunctionOutputDTOVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\Vb\ParameterABIEventDTOCVbTemplate.cs">
-				<Link>\DTOs\Vb\ParameterABIEventDTOCVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\Vb\ParameterABIFunctionDTOVbTemplate.cs">
-				<Link>\DTOs\Vb\ParameterABIFunctionDTOVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\DTOs\Vb\StructTypeVbTemplate.cs">
-				<Link>\DTOs\Vb\StructTypeVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudService\MudServiceGenerator.cs">
-				<Link>\MudService\MudServiceGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudService\MudServiceModel.cs">
-				<Link>\MudService\MudServiceModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudService\CSharp\ServiceCSharpTemplate.cs">
-				<Link>\MudService\CSharp\ServiceCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudService\FSharp\MudServiceFSharpTemplate.cs">
-				<Link>\MudService\FSharp\MudServiceFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudService\Vb\ServiceVbTemplate.cs">
-				<Link>\MudService\Vb\ServiceVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudTable\MudTable.cs">
-				<Link>\MudTable\MudTable.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudTable\MudTableGenerator.cs">
-				<Link>\MudTable\MudTableGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudTable\MudTableModel.cs">
-				<Link>\MudTable\MudTableModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\MudTable\CSharp\MudTableCSharpTemplate.cs">
-				<Link>\MudTable\CSharp\MudTableCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\ServiceGenerator.cs">
-				<Link>\Service\ServiceGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\ServiceModel.cs">
-				<Link>\Service\ServiceModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\CSharp\ContractDeploymentServiceMethodsCSharpTemplate.cs">
-				<Link>\Service\CSharp\ContractDeploymentServiceMethodsCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\CSharp\FunctionServiceMethodCSharpTemplate.cs">
-				<Link>\Service\CSharp\FunctionServiceMethodCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\CSharp\ServiceCSharpTemplate.cs">
-				<Link>\Service\CSharp\ServiceCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\FSharp\ContractDeploymentServiceMethodsFSharpTemplate.cs">
-				<Link>\Service\FSharp\ContractDeploymentServiceMethodsFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\FSharp\FunctionServiceMethodFSharpTemplate.cs">
-				<Link>\Service\FSharp\FunctionServiceMethodFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\FSharp\ServiceFSharpTemplate.cs">
-				<Link>\Service\FSharp\ServiceFSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\Vb\ContractDeploymentServiceMethodsVbTemplate.cs">
-				<Link>\Service\Vb\ContractDeploymentServiceMethodsVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\Vb\FunctionServiceMethodVbTemplate.cs">
-				<Link>\Service\Vb\FunctionServiceMethodVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Service\Vb\ServiceVbTemplate.cs">
-				<Link>\Service\Vb\ServiceVbTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Unity\UnityContractFactoryGenerator.cs">
-				<Link>\Unity\UnityContractFactoryGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Unity\UnityContractFactoryModel.cs">
-				<Link>\Unity\UnityContractFactoryModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Unity\UnityRequestsGenerator.cs">
-				<Link>\Unity\UnityRequestsGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Unity\UnityRequestsModel.cs">
-				<Link>\Unity\UnityRequestsModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Unity\CSharp\UnityContractFactoryCSharpTemplate.cs">
-				<Link>\Unity\CSharp\UnityContractFactoryCSharpTemplate.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\Unity\CSharp\UnityFunctionRequestsClassTemplates.cs">
-				<Link>\Unity\CSharp\UnityFunctionRequestsClassTemplates.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\XUnit\SimpleTestGenerator.cs">
-				<Link>\XUnit\SimpleTestGenerator.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\XUnit\SimpleTestModel.cs">
-				<Link>\XUnit\SimpleTestModel.cs</Link>
-		</Compile>
-		
-        <Compile Include="..\Nethereum.Generators\XUnit\CSharp\SimpleTestCSharpTemplate.cs">
-				<Link>\XUnit\CSharp\SimpleTestCSharpTemplate.cs</Link>
-		</Compile>
-		
+    <Compile Include="..\Nethereum.Generators\BlazorPagesGenerator.cs">
+      <Link>\BlazorPagesGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ContractProjectGenerator.cs">
+      <Link>\ContractProjectGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTablesGenerator.cs">
+      <Link>\MudTablesGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\NetStandardLibraryGenerator.cs">
+      <Link>\NetStandardLibraryGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\GeneratorModel\FunctionABIModel.cs">
+      <Link>\ABI\GeneratorModel\FunctionABIModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\GeneratorModel\ParameterABIModel.cs">
+      <Link>\ABI\GeneratorModel\ParameterABIModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\GeneratorModel\ParameterABIModelTypeMap.cs">
+      <Link>\ABI\GeneratorModel\ParameterABIModelTypeMap.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\ConstructorABI.cs">
+      <Link>\ABI\Model\ConstructorABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\ContractABI.cs">
+      <Link>\ABI\Model\ContractABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\ErrorABI.cs">
+      <Link>\ABI\Model\ErrorABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\EventABI.cs">
+      <Link>\ABI\Model\EventABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\FunctionABI.cs">
+      <Link>\ABI\Model\FunctionABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\FunctionEventOverloadTypeNameBuilder.cs">
+      <Link>\ABI\Model\FunctionEventOverloadTypeNameBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\ParameterABI.cs">
+      <Link>\ABI\Model\ParameterABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\Model\StructABI.cs">
+      <Link>\ABI\Model\StructABI.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToCSharpType.cs">
+      <Link>\ABI\TypeConvertors\ABITypeToCSharpType.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToDotNetTypeBase.cs">
+      <Link>\ABI\TypeConvertors\ABITypeToDotNetTypeBase.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToFSharpType.cs">
+      <Link>\ABI\TypeConvertors\ABITypeToFSharpType.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\ABI\TypeConvertors\ABITypeToVBType.cs">
+      <Link>\ABI\TypeConvertors\ABITypeToVBType.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\AllMessages\AllMessagesGenerator.cs">
+      <Link>\AllMessages\AllMessagesGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\AllMessages\AllMessagesModel.cs">
+      <Link>\AllMessages\AllMessagesModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\BlazorServicePage\BlazorPageServiceGenerator.cs">
+      <Link>\BlazorServicePage\BlazorPageServiceGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\BlazorServicePage\BlazorPageServiceModel.cs">
+      <Link>\BlazorServicePage\BlazorPageServiceModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\BlazorServicePage\CSharp\BlazorFunctionComponentsTemplate.cs">
+      <Link>\BlazorServicePage\CSharp\BlazorFunctionComponentsTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\BlazorServicePage\CSharp\BlazorPageServiceCSharpRazorTemplate.cs">
+      <Link>\BlazorServicePage\CSharp\BlazorPageServiceCSharpRazorTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\ConsoleGenerator.cs">
+      <Link>\Console\ConsoleGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\ConsoleModel.cs">
+      <Link>\Console\ConsoleModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\CSharp\ConsoleCSharpTemplate.cs">
+      <Link>\Console\CSharp\ConsoleCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\CSharp\ContractDeploymentMockUpMethodCSharpTemplate.cs">
+      <Link>\Console\CSharp\ContractDeploymentMockUpMethodCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\CSharp\FunctionMockupMethodCSharpTemplate.cs">
+      <Link>\Console\CSharp\FunctionMockupMethodCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\Vb\ConsoleVbTemplate.cs">
+      <Link>\Console\Vb\ConsoleVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\Vb\ContractDeploymentMockUpMethodVbTemplate.cs">
+      <Link>\Console\Vb\ContractDeploymentMockUpMethodVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Console\Vb\FunctionMockupMethodVbTemplate.cs">
+      <Link>\Console\Vb\FunctionMockupMethodVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ClassFileTemplate.cs">
+      <Link>\Core\ClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ClassGeneratorBase.cs">
+      <Link>\Core\ClassGeneratorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ClassTemplateBase.cs">
+      <Link>\Core\ClassTemplateBase.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\CodeGenLanguage.cs">
+      <Link>\Core\CodeGenLanguage.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\CodeGenLanguageExt.cs">
+      <Link>\Core\CodeGenLanguageExt.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\CommonGenerators.cs">
+      <Link>\Core\CommonGenerators.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\CsharpClassFileTemplate.cs">
+      <Link>\Core\CsharpClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\CSharpMultipleClassFileTemplate.cs">
+      <Link>\Core\CSharpMultipleClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\FileModel.cs">
+      <Link>\Core\FileModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\FileTemplate.cs">
+      <Link>\Core\FileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\FSharpClassFileTemplate.cs">
+      <Link>\Core\FSharpClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\FSharpMultipleClassFileTemplate.cs">
+      <Link>\Core\FSharpMultipleClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\GeneratedFile.cs">
+      <Link>\Core\GeneratedFile.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\IClassGenerator.cs">
+      <Link>\Core\IClassGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\IClassModel.cs">
+      <Link>\Core\IClassModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\IClassTemplate.cs">
+      <Link>\Core\IClassTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\IFileGenerator.cs">
+      <Link>\Core\IFileGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\IGenerator.cs">
+      <Link>\Core\IGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\IMessage.cs">
+      <Link>\Core\IMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ITypeConvertor.cs">
+      <Link>\Core\ITypeConvertor.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\MessageMap.cs">
+      <Link>\Core\MessageMap.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\MultipleClassFileTemplate.cs">
+      <Link>\Core\MultipleClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\MultipleClassGeneratorBase.cs">
+      <Link>\Core\MultipleClassGeneratorBase.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\Parameter.cs">
+      <Link>\Core\Parameter.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ParameterDirection.cs">
+      <Link>\Core\ParameterDirection.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ParameterMap.cs">
+      <Link>\Core\ParameterMap.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerCSharpTemplate.cs">
+      <Link>\Core\ParameterMapperAssignerCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerTemplate.cs">
+      <Link>\Core\ParameterMapperAssignerTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ParameterMapperAssignerVbTemplate.cs">
+      <Link>\Core\ParameterMapperAssignerVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\ParameterModel.cs">
+      <Link>\Core\ParameterModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\RazorClassFileTemplate.cs">
+      <Link>\Core\RazorClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\SpaceUtils.cs">
+      <Link>\Core\SpaceUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\TypeMessageModel.cs">
+      <Link>\Core\TypeMessageModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\Utils.cs">
+      <Link>\Core\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\VbClassFileTemplate.cs">
+      <Link>\Core\VbClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Core\VbMultipleClassFileTemplate.cs">
+      <Link>\Core\VbMultipleClassFileTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageGenerator.cs">
+      <Link>\CQS\ContractDeploymentCQSMessageGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\ContractDeploymentCQSMessageModel.cs">
+      <Link>\CQS\ContractDeploymentCQSMessageModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageGenerator.cs">
+      <Link>\CQS\FunctionCQSMessageGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\FunctionCQSMessageModel.cs">
+      <Link>\CQS\FunctionCQSMessageModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\CSharp\ContractDeploymentCQSMessageCSharpTemplate.cs">
+      <Link>\CQS\CSharp\ContractDeploymentCQSMessageCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\CSharp\FunctionCQSMessageCSharpTemplate.cs">
+      <Link>\CQS\CSharp\FunctionCQSMessageCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\FSharp\ContractDeploymentCQSMessageFSharpTemplate.cs">
+      <Link>\CQS\FSharp\ContractDeploymentCQSMessageFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\FSharp\FunctionCQSMessageFSharpTemplate.cs">
+      <Link>\CQS\FSharp\FunctionCQSMessageFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\Vb\ContractDeploymentCQSMessageVbTemplate.cs">
+      <Link>\CQS\Vb\ContractDeploymentCQSMessageVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\CQS\Vb\FunctionCQSMessageVbTemplate.cs">
+      <Link>\CQS\Vb\FunctionCQSMessageVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\ErrorDTOGenerator.cs">
+      <Link>\DTOs\ErrorDTOGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\ErrorDTOModel.cs">
+      <Link>\DTOs\ErrorDTOModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\EventDTOGenerator.cs">
+      <Link>\DTOs\EventDTOGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\EventDTOModel.cs">
+      <Link>\DTOs\EventDTOModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOGenerator.cs">
+      <Link>\DTOs\FunctionOutputDTOGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FunctionOutputDTOModel.cs">
+      <Link>\DTOs\FunctionOutputDTOModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\StructTypeGenerator.cs">
+      <Link>\DTOs\StructTypeGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\StructTypeModel.cs">
+      <Link>\DTOs\StructTypeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\CSharp\ErrorDTOCSharpTemplate.cs">
+      <Link>\DTOs\CSharp\ErrorDTOCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\CSharp\EventDTOCSharpTemplate.cs">
+      <Link>\DTOs\CSharp\EventDTOCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\CSharp\FunctionOutputDTOCSharpTemplate.cs">
+      <Link>\DTOs\CSharp\FunctionOutputDTOCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\CSharp\ParameterABIEventDTOCSharpTemplate.cs">
+      <Link>\DTOs\CSharp\ParameterABIEventDTOCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\CSharp\ParameterABIFunctionDTOCsharpTemplate.cs">
+      <Link>\DTOs\CSharp\ParameterABIFunctionDTOCsharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\CSharp\StructTypeCSharpTemplate.cs">
+      <Link>\DTOs\CSharp\StructTypeCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FSharp\ErrorDTOFSharpTemplate.cs">
+      <Link>\DTOs\FSharp\ErrorDTOFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FSharp\EventDTOFSharpTemplate.cs">
+      <Link>\DTOs\FSharp\EventDTOFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FSharp\FunctionOutputDTOFSharpTemplate.cs">
+      <Link>\DTOs\FSharp\FunctionOutputDTOFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FSharp\ParameterABIEventDTOFSharpTemplate.cs">
+      <Link>\DTOs\FSharp\ParameterABIEventDTOFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FSharp\ParameterABIFunctionDTOFSharpTemplate.cs">
+      <Link>\DTOs\FSharp\ParameterABIFunctionDTOFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\FSharp\StructTypeFSharpTemplate.cs">
+      <Link>\DTOs\FSharp\StructTypeFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\Vb\ErrorDTOVbTemplate.cs">
+      <Link>\DTOs\Vb\ErrorDTOVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\Vb\EventDTOVbTemplate.cs">
+      <Link>\DTOs\Vb\EventDTOVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\Vb\FunctionOutputDTOVbTemplate.cs">
+      <Link>\DTOs\Vb\FunctionOutputDTOVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\Vb\ParameterABIEventDTOCVbTemplate.cs">
+      <Link>\DTOs\Vb\ParameterABIEventDTOCVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\Vb\ParameterABIFunctionDTOVbTemplate.cs">
+      <Link>\DTOs\Vb\ParameterABIFunctionDTOVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\DTOs\Vb\StructTypeVbTemplate.cs">
+      <Link>\DTOs\Vb\StructTypeVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\MudServiceGenerator.cs">
+      <Link>\MudService\MudServiceGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\MudServiceModel.cs">
+      <Link>\MudService\MudServiceModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\CSharp\ServiceCSharpTemplate.cs">
+      <Link>\MudService\CSharp\ServiceCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\FSharp\MudServiceFSharpTemplate.cs">
+      <Link>\MudService\FSharp\MudServiceFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudService\Vb\ServiceVbTemplate.cs">
+      <Link>\MudService\Vb\ServiceVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\MudTable.cs">
+      <Link>\MudTable\MudTable.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\MudTableGenerator.cs">
+      <Link>\MudTable\MudTableGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\MudTableModel.cs">
+      <Link>\MudTable\MudTableModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\MudTable\CSharp\MudTableCSharpTemplate.cs">
+      <Link>\MudTable\CSharp\MudTableCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\ServiceGenerator.cs">
+      <Link>\Service\ServiceGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\ServiceModel.cs">
+      <Link>\Service\ServiceModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\CSharp\ContractDeploymentServiceMethodsCSharpTemplate.cs">
+      <Link>\Service\CSharp\ContractDeploymentServiceMethodsCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\CSharp\FunctionServiceMethodCSharpTemplate.cs">
+      <Link>\Service\CSharp\FunctionServiceMethodCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\CSharp\ServiceCSharpTemplate.cs">
+      <Link>\Service\CSharp\ServiceCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\FSharp\ContractDeploymentServiceMethodsFSharpTemplate.cs">
+      <Link>\Service\FSharp\ContractDeploymentServiceMethodsFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\FSharp\FunctionServiceMethodFSharpTemplate.cs">
+      <Link>\Service\FSharp\FunctionServiceMethodFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\FSharp\ServiceFSharpTemplate.cs">
+      <Link>\Service\FSharp\ServiceFSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\Vb\ContractDeploymentServiceMethodsVbTemplate.cs">
+      <Link>\Service\Vb\ContractDeploymentServiceMethodsVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\Vb\FunctionServiceMethodVbTemplate.cs">
+      <Link>\Service\Vb\FunctionServiceMethodVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Service\Vb\ServiceVbTemplate.cs">
+      <Link>\Service\Vb\ServiceVbTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Unity\UnityContractFactoryGenerator.cs">
+      <Link>\Unity\UnityContractFactoryGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Unity\UnityContractFactoryModel.cs">
+      <Link>\Unity\UnityContractFactoryModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Unity\UnityRequestsGenerator.cs">
+      <Link>\Unity\UnityRequestsGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Unity\UnityRequestsModel.cs">
+      <Link>\Unity\UnityRequestsModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Unity\CSharp\UnityContractFactoryCSharpTemplate.cs">
+      <Link>\Unity\CSharp\UnityContractFactoryCSharpTemplate.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\Unity\CSharp\UnityFunctionRequestsClassTemplates.cs">
+      <Link>\Unity\CSharp\UnityFunctionRequestsClassTemplates.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\XUnit\SimpleTestGenerator.cs">
+      <Link>\XUnit\SimpleTestGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\XUnit\SimpleTestModel.cs">
+      <Link>\XUnit\SimpleTestModel.cs</Link>
+    </Compile>
+    <Compile Include="..\Nethereum.Generators\XUnit\CSharp\SimpleTestCSharpTemplate.cs">
+      <Link>\XUnit\CSharp\SimpleTestCSharpTemplate.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -586,10 +452,10 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\DuoCode.3.0.1654.0\build\DuoCode.targets'))" />
   </Target>
- <PropertyGroup>
-    <PostBuildEvent>xcopy "$(ProjectDir) scripts\Nethereum.Generators.DuoCode.d.ts" "$(SolutionDir) src\Nethereum.Generators.JavaScript\" /Y /I 
-        xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js" "$(SolutionDir)src\Nethereum.Generators.JavaScript\" /Y /I 
-        xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js.map" "$(SolutionDir)src\Nethereum.Generators.JavaScript\" /Y /I</PostBuildEvent>
+  <PropertyGroup>
+    <PostBuildEvent>xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.d.ts" "$(SolutionDir)src\Nethereum.Generators.JavaScript\" /Y /I 
+ xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js" "$(SolutionDir)src\Nethereum.Generators.JavaScript\" /Y /I
+ xcopy "$(ProjectDir)scripts\Nethereum.Generators.DuoCode.js.map" "$(SolutionDir)src\Nethereum.Generators.JavaScript\" /Y /I</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

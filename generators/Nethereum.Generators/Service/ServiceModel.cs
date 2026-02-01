@@ -10,18 +10,20 @@ namespace Nethereum.Generators.Service
         public string CQSNamespace { get; }
         public string FunctionOutputNamespace { get; }
         public string SharedTypesFullNamespace { get; }
+        public string[] ReferencedTypesNamespaces { get; }
         public ContractDeploymentCQSMessageModel ContractDeploymentCQSMessageModel { get; }
 
 
-        public ServiceModel(ContractABI contractABI, string contractName, 
-                            string byteCode, string @namespace, 
-                            string cqsNamespace, string functionOutputNamespace, string sharedTypesFullNamespace) :
+        public ServiceModel(ContractABI contractABI, string contractName,
+                            string byteCode, string @namespace,
+                            string cqsNamespace, string functionOutputNamespace, string sharedTypesFullNamespace, string[] referencedTypesNamespaces = null) :
             base(@namespace, contractName, "Service") // we need to duplicate the name due typescript
         {
             ContractABI = contractABI;
             CQSNamespace = cqsNamespace;
             FunctionOutputNamespace = functionOutputNamespace;
             SharedTypesFullNamespace = sharedTypesFullNamespace;
+            ReferencedTypesNamespaces = referencedTypesNamespaces ?? new string[0];
             ContractDeploymentCQSMessageModel = new ContractDeploymentCQSMessageModel(contractABI.Constructor, cqsNamespace, byteCode, contractName);
             InitialiseNamespaceDependencies();
 
@@ -33,6 +35,17 @@ namespace Nethereum.Generators.Service
 
             if(!string.IsNullOrEmpty(sharedTypesFullNamespace))
                 NamespaceDependencies.Add(sharedTypesFullNamespace);
+
+            if (ReferencedTypesNamespaces != null && ReferencedTypesNamespaces.Length > 0)
+            {
+                foreach (var ns in ReferencedTypesNamespaces)
+                {
+                    if (!string.IsNullOrEmpty(ns) && !NamespaceDependencies.Contains(ns))
+                    {
+                        NamespaceDependencies.Add(ns);
+                    }
+                }
+            }
         }
 
         public static string GetDefaultTypeName(string name)

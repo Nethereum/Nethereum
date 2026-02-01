@@ -170,4 +170,25 @@ var jsonGeneratorSetsExample2 =
 files = codegen.generateFilesFromConfigJsonString(jsonGeneratorSetsExample2, "examples/testAbi");
 files.forEach(f => console.log(f));
 
+// Example 3: Test referencedTypesNamespaces and structReferencedTypes
+var jsonGeneratorSetsExample3 =
+    `[
+{
+    "paths": ["out/ERC20.sol/Standard_Token.json"],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "MyProject.Contracts",
+                "basePath": "codeGenNodeTest/GeneratorSets/Example3/MyProject.Contracts",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["MyProject.SharedStructs", "MyProject.CommonTypes"],
+                "structReferencedTypes": ["SomeSharedStruct"]
+            }
+        ]
+}
+]`;
+
+console.log("\n=== Example 3: Testing referencedTypesNamespaces and structReferencedTypes ===");
+files = codegen.generateFilesFromConfigJsonString(jsonGeneratorSetsExample3, "examples/testAbi");
+files.forEach(f => console.log(f));
 

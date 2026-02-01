@@ -17,7 +17,9 @@ var n = require('./Nethereum.Generators.DuoCode.js');
     basePath: string,
     pathSeparator: string,
     codeGenLang: int,
-    mudNamespace: string = null
+    mudNamespace: string = null,
+    referencedTypesNamespaces: string[] = null,
+    structReferencedTypes: string[] = null
  ): string[] {
     var contractDes = abiDes.buildContract(abi);
     var classGenerator = new Nethereum.Generators.ContractProjectGenerator(contractDes,
@@ -31,7 +33,9 @@ var n = require('./Nethereum.Generators.DuoCode.js');
         sharedTypes,
         basePath,
         pathSeparator,
-        codeGenLang);
+        codeGenLang,
+        referencedTypesNamespaces,
+        structReferencedTypes);
 
      classGenerator.set_AddRootNamespaceOnVbProjectsToImportStatements(false);
      if (mudNamespace !== null && mudNamespace !== undefined && mudNamespace !== '') {
@@ -153,7 +157,9 @@ export function generateAllClasses(abi: string, byteCode: string,
     sharedTypes: string[],
     basePath: string,
     codeGenLang: int,
-    mudNamespace: string = null
+    mudNamespace: string = null,
+    referencedTypesNamespaces: string[] = null,
+    structReferencedTypes: string[] = null
 ) : string[] {
 
     var serviceNamespace = contractName;
@@ -173,7 +179,9 @@ export function generateAllClasses(abi: string, byteCode: string,
         basePath,
         pathSeparator,
         codeGenLang,
-        mudNamespace);
+        mudNamespace,
+        referencedTypesNamespaces,
+        structReferencedTypes);
 }
 
 export function generateMudService(abi: string, byteCode: string,
@@ -300,19 +308,21 @@ function applyDefaults(config: GeneratorConfig): GeneratorConfig {
         sharedTypesNamespace: config.sharedTypesNamespace || "",
         sharedTypes: config.sharedTypes || [],
         generatorType: config.generatorType,
-        mudNamespace: config.mudNamespace || ""
+        mudNamespace: config.mudNamespace || "",
+        referencedTypesNamespaces: config.referencedTypesNamespaces || [],
+        structReferencedTypes: config.structReferencedTypes || []
     };
 }
 
 function generateFilesUsingConfig(generatorConfig: GeneratorConfig, fileName: string, root: string) :string[] {
-    const { baseNamespace, codeGenLang, basePath, generatorType, sharedTypesNamespace, sharedTypes, mudNamespace } = applyDefaults(generatorConfig);
+    const { baseNamespace, codeGenLang, basePath, generatorType, sharedTypesNamespace, sharedTypes, mudNamespace, referencedTypesNamespaces, structReferencedTypes } = applyDefaults(generatorConfig);
     const absolutePath = path.resolve(root, basePath);
     var files = [];
     if (!fileName.endsWith('mud.config.ts')) {
         const { abi, bytecode, contractName } = extractAbiAndBytecode(fileName);
         switch (generatorType) {
             case GeneratorType.ContractDefinition:
-                files = generateAllClasses(abi, bytecode, contractName, baseNamespace, sharedTypesNamespace, sharedTypes, absolutePath, codeGenLang, mudNamespace);
+                files = generateAllClasses(abi, bytecode, contractName, baseNamespace, sharedTypesNamespace, sharedTypes, absolutePath, codeGenLang, mudNamespace, referencedTypesNamespaces, structReferencedTypes);
                 break;
             case GeneratorType.UnityRequest:
                 files = generateUnityRequests(abi, bytecode, contractName, baseNamespace, sharedTypesNamespace, sharedTypes, absolutePath);
@@ -390,6 +400,8 @@ export interface GeneratorConfig {
     sharedTypes: string[];
     generatorType: GeneratorType;
     mudNamespace: string;
+    referencedTypesNamespaces: string[];
+    structReferencedTypes: string[];
 }
 
 export interface GeneratorSetConfig {

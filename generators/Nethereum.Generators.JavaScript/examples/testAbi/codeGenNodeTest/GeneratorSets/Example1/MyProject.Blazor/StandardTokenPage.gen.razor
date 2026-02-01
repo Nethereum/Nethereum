@@ -1,10 +1,12 @@
+@using Nethereum.MudBlazorComponents
 @using System.Numerics
 @using Nethereum.UI
 @using MyProject.Contracts.Standard_Token
 @using MyProject.Contracts.Standard_Token.ContractDefinition
 
 @page "/standard_token"
-@rendermode InteractiveWebAssembly
+@page "/standard_token/{ContractAddress}"
+
 @inject SelectedEthereumHostProviderService selectedHostProviderService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
@@ -15,7 +17,7 @@
 
         <ContractDeploymentComponent TDeploymentMessage="StandardTokenDeployment"
             HostProvider="selectedHostProviderService"
-            ServiceType="typeof(StandardTokenPage)"
+            ServiceType="typeof(StandardTokenService)"
             ContractAddressChanged="ContractAddressChanged" />
 
         <QueryFunctionComponent TFunctionMessage="AllowanceFunction" TFunctionOutput="BigInteger"
@@ -102,7 +104,8 @@
 
 @code
     {
-        private string ContractAddress;
+    [Parameter]
+    public string ContractAddress { get; set; }
 
         private void ContractAddressChanged(string address)
         {
