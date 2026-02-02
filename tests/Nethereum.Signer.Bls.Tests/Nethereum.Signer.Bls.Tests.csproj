@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
-    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.0.0" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.8.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

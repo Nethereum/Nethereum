@@ -1,7 +1,9 @@
 using System.Numerics;
+using Nethereum.AccountAbstraction.Bundler.Aggregation;
 using Nethereum.AccountAbstraction.Bundler.Mempool;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
+using Nethereum.AccountAbstraction.Interfaces;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -18,11 +20,18 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
         private readonly IWeb3 _web3;
         private readonly BundlerConfig _config;
         private readonly Dictionary<string, EntryPointService> _entryPoints = new();
+        private readonly IAggregatorManager? _aggregatorManager;
 
         public BundleExecutor(IWeb3 web3, BundlerConfig config)
+            : this(web3, config, null)
+        {
+        }
+
+        public BundleExecutor(IWeb3 web3, BundlerConfig config, IAggregatorManager? aggregatorManager)
         {
             _web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _aggregatorManager = aggregatorManager;
 
             foreach (var ep in config.SupportedEntryPoints)
             {
@@ -30,7 +39,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
             }
         }
 
-        public Task<Bundle> BuildBundleAsync(MempoolEntry[] entries)
+        public async Task<Bundle> BuildBundleAsync(MempoolEntry[] entries)
         {
             if (entries == null || entries.Length == 0)
             {
@@ -61,7 +70,60 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
                 CreatedAt = DateTimeOffset.UtcNow
             };
 
-            return Task.FromResult(bundle);
+            if (_aggregatorManager != null && _aggregatorManager.SupportsAggregation)
+            {
+                bundle.AggregatedGroups = await GroupByAggregatorAsync(entries);
+            }
+
+            return bundle;
+        }
+
+        private async Task<Dictionary<string, AggregatedGroup>> GroupByAggregatorAsync(MempoolEntry[] entries)
+        {
+            var groups = new Dictionary<string, List<MempoolEntry>>();
+
+            foreach (var entry in entries)
+            {
+                var aggregatorAddress = _aggregatorManager!.DetectAggregator(entry.UserOperation);
+                if (!string.IsNullOrEmpty(aggregatorAddress))
+                {
+                    if (!groups.ContainsKey(aggregatorAddress))
+                    {
+                        groups[aggregatorAddress] = new List<MempoolEntry>();
+                    }
+                    groups[aggregatorAddress].Add(entry);
+                }
+            }
+
+            var result = new Dictionary<string, AggregatedGroup>();
+
+            foreach (var (aggregatorAddress, groupEntries) in groups)
+            {
+                if (groupEntries.Count < 2)
+                    continue;
+
+                var aggregator = _aggregatorManager!.GetAggregator(aggregatorAddress);
+                if (aggregator == null)
+                    continue;
+
+                try
+                {
+                    var userOps = groupEntries.Select(e => e.UserOperation).ToArray();
+                    var aggregatedSig = await aggregator.AggregateSignaturesAsync(userOps);
+
+                    result[aggregatorAddress] = new AggregatedGroup
+                    {
+                        Aggregator = aggregatorAddress,
+                        Entries = groupEntries.ToArray(),
+                        AggregatedSignature = aggregatedSig
+                    };
+                }
+                catch
+                {
+                }
+            }
+
+            return result;
         }
 
         public async Task<BundleExecutionResult> ExecuteAsync(Bundle bundle)
@@ -79,18 +141,16 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
 
             try
             {
-                var ops = bundle.Entries
-                    .Select(e => ConvertToContractUserOp(e.UserOperation))
-                    .ToList();
+                TransactionReceipt receipt;
 
-                var handleOpsFunction = new HandleOpsFunction
+                if (bundle.UsesAggregation)
                 {
-                    Ops = ops,
-                    Beneficiary = bundle.Beneficiary,
-                    Gas = bundle.EstimatedGas
-                };
-
-                var receipt = await epService.HandleOpsRequestAndWaitForReceiptAsync(handleOpsFunction);
+                    receipt = await ExecuteAggregatedAsync(bundle, epService);
+                }
+                else
+                {
+                    receipt = await ExecuteStandardAsync(bundle, epService);
+                }
 
                 if (receipt.Status?.Value != 1)
                 {
@@ -117,6 +177,65 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
             {
                 return BundleExecutionResult.Failed($"Execution error: {ex.Message}");
             }
+        }
+
+        private async Task<TransactionReceipt> ExecuteStandardAsync(Bundle bundle, EntryPointService epService)
+        {
+            var ops = bundle.Entries
+                .Select(e => ConvertToContractUserOp(e.UserOperation))
+                .ToList();
+
+            var handleOpsFunction = new HandleOpsFunction
+            {
+                Ops = ops,
+                Beneficiary = bundle.Beneficiary,
+                Gas = bundle.EstimatedGas
+            };
+
+            return await epService.HandleOpsRequestAndWaitForReceiptAsync(handleOpsFunction);
+        }
+
+        private async Task<TransactionReceipt> ExecuteAggregatedAsync(Bundle bundle, EntryPointService epService)
+        {
+            var opsPerAggregator = new List<UserOpsPerAggregator>();
+
+            foreach (var (aggregatorAddress, group) in bundle.AggregatedGroups)
+            {
+                var userOps = group.Entries
+                    .Select(e => ConvertToContractUserOp(e.UserOperation))
+                    .ToList();
+
+                opsPerAggregator.Add(new UserOpsPerAggregator
+                {
+                    UserOps = userOps,
+                    Aggregator = aggregatorAddress,
+                    Signature = group.AggregatedSignature
+                });
+            }
+
+            var nonAggregatedEntries = bundle.NonAggregatedEntries;
+            if (nonAggregatedEntries.Length > 0)
+            {
+                var nonAggregatedOps = nonAggregatedEntries
+                    .Select(e => ConvertToContractUserOp(e.UserOperation))
+                    .ToList();
+
+                opsPerAggregator.Add(new UserOpsPerAggregator
+                {
+                    UserOps = nonAggregatedOps,
+                    Aggregator = "0x0000000000000000000000000000000000000000",
+                    Signature = Array.Empty<byte>()
+                });
+            }
+
+            var handleAggregatedOpsFunction = new HandleAggregatedOpsFunction
+            {
+                OpsPerAggregator = opsPerAggregator,
+                Beneficiary = bundle.Beneficiary,
+                Gas = bundle.EstimatedGas
+            };
+
+            return await epService.HandleAggregatedOpsRequestAndWaitForReceiptAsync(handleAggregatedOpsFunction);
         }
 
         public async Task<BigInteger> EstimateBundleGasAsync(Bundle bundle)

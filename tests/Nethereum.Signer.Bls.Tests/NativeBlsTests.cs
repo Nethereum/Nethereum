@@ -85,6 +85,17 @@ namespace Nethereum.Signer.Bls.Tests
                 VerifyCalled = true;
                 return VerificationResult;
             }
+
+            public byte[] AggregateSignatures(byte[][] signatures)
+            {
+                return signatures.Length > 0 ? signatures[0] : Array.Empty<byte>();
+            }
+
+            public bool Verify(byte[] signature, byte[] publicKey, byte[] message)
+            {
+                VerifyCalled = true;
+                return VerificationResult;
+            }
         }
     }
 }

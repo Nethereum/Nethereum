@@ -63,6 +63,44 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
         /// User operation hashes in this bundle.
         /// </summary>
         public string[] UserOpHashes => Entries.Select(e => e.UserOpHash).ToArray();
+
+        /// <summary>
+        /// Operations grouped by aggregator. Empty if no aggregation is used.
+        /// Key is the aggregator address, value contains the entries and aggregated signature.
+        /// </summary>
+        public Dictionary<string, AggregatedGroup> AggregatedGroups { get; set; } = new();
+
+        /// <summary>
+        /// Whether this bundle uses aggregation.
+        /// </summary>
+        public bool UsesAggregation => AggregatedGroups.Count > 0;
+
+        /// <summary>
+        /// Entries that don't use any aggregator.
+        /// </summary>
+        public MempoolEntry[] NonAggregatedEntries =>
+            Entries.Where(e => !AggregatedGroups.Values.Any(g => g.Entries.Contains(e))).ToArray();
+    }
+
+    /// <summary>
+    /// A group of UserOperations that share the same aggregator.
+    /// </summary>
+    public class AggregatedGroup
+    {
+        /// <summary>
+        /// The aggregator address.
+        /// </summary>
+        public string Aggregator { get; set; } = null!;
+
+        /// <summary>
+        /// The entries in this group.
+        /// </summary>
+        public MempoolEntry[] Entries { get; set; } = Array.Empty<MempoolEntry>();
+
+        /// <summary>
+        /// The aggregated signature for all operations in this group.
+        /// </summary>
+        public byte[] AggregatedSignature { get; set; } = Array.Empty<byte>();
     }
 
     /// <summary>

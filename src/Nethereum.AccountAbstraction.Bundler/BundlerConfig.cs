@@ -71,6 +71,24 @@ namespace Nethereum.AccountAbstraction.Bundler
         public bool UnsafeMode { get; set; } = false;
 
         /// <summary>
+        /// Whether to enable ERC-7562 trace-based opcode validation.
+        /// When enabled, UserOperations are validated against forbidden opcodes
+        /// and storage access rules using EVM simulation.
+        /// </summary>
+        public bool EnableERC7562Validation { get; set; } = false;
+
+        /// <summary>
+        /// Minimum stake required for entities to use staked-only opcodes (e.g., BALANCE, SELFBALANCE).
+        /// Applies to senders, factories, paymasters, and aggregators.
+        /// </summary>
+        public BigInteger MinStake { get; set; } = 1_000_000_000_000_000_000; // 1 ETH
+
+        /// <summary>
+        /// Minimum unstake delay in seconds for staked entities.
+        /// </summary>
+        public uint MinUnstakeDelaySec { get; set; } = 86400; // 24 hours
+
+        /// <summary>
         /// Whitelist of addresses that bypass reputation checks.
         /// </summary>
         public HashSet<string> WhitelistedAddresses { get; set; } = new();
@@ -89,6 +107,24 @@ namespace Nethereum.AccountAbstraction.Bundler
         /// Chain ID (set automatically from web3 if not specified).
         /// </summary>
         public BigInteger? ChainId { get; set; }
+
+        /// <summary>
+        /// Whether to enable BLS signature aggregation for UserOperations.
+        /// When enabled, operations with BLS signatures can be aggregated to reduce gas costs.
+        /// </summary>
+        public bool EnableBlsAggregation { get; set; } = false;
+
+        /// <summary>
+        /// Addresses of supported BLS aggregator contracts.
+        /// Operations using these aggregators can have their signatures aggregated.
+        /// </summary>
+        public string[] BlsAggregatorAddresses { get; set; } = Array.Empty<string>();
+
+        /// <summary>
+        /// Minimum number of operations required to perform aggregation.
+        /// Below this threshold, operations are submitted individually.
+        /// </summary>
+        public int MinAggregationSize { get; set; } = 2;
 
         /// <summary>
         /// Creates a default configuration for AppChain (simplified mode).
@@ -113,9 +149,27 @@ namespace Nethereum.AccountAbstraction.Bundler
             BeneficiaryAddress = beneficiary,
             StrictValidation = true,
             SimulateValidation = true,
+            EnableERC7562Validation = true,
             MinPriorityFeePerGas = 1_000_000_000, // 1 Gwei
             AutoBundleIntervalMs = 10_000,
             UnsafeMode = false
+        };
+
+        /// <summary>
+        /// Creates a configuration for production bundler with full ERC-7562 validation.
+        /// </summary>
+        public static BundlerConfig CreateProductionConfig(string entryPoint, string beneficiary) => new()
+        {
+            SupportedEntryPoints = new[] { entryPoint },
+            BeneficiaryAddress = beneficiary,
+            StrictValidation = true,
+            SimulateValidation = true,
+            EnableERC7562Validation = true,
+            MinPriorityFeePerGas = 1_000_000_000, // 1 Gwei
+            AutoBundleIntervalMs = 10_000,
+            UnsafeMode = false,
+            MinStake = 1_000_000_000_000_000_000, // 1 ETH
+            MinUnstakeDelaySec = 86400 // 24 hours
         };
     }
 }

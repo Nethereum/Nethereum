@@ -164,7 +164,11 @@ namespace Nethereum.AccountAbstraction.Bundler
         public string Address { get; set; } = null!;
         public int OpsIncluded { get; set; }
         public int OpsFailed { get; set; }
+        public int OpsDropped { get; set; }
         public ReputationStatus Status { get; set; }
+        public DateTimeOffset LastUpdated { get; set; }
+        public DateTimeOffset? BannedUntil { get; set; }
+        public DateTimeOffset? ThrottledUntil { get; set; }
     }
 
     /// <summary>

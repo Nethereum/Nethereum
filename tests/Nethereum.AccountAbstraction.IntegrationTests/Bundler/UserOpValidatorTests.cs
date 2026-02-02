@@ -56,14 +56,20 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         [Fact]
         public async Task ValidateStructure_WithValidOp_ReturnsSuccess()
         {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
+
             var validator = new UserOpValidator(_fixture.Web3, _fixture.BundlerConfig);
-            var userOp = CreateValidPackedUserOp("0x1234567890123456789012345678901234567890");
+            var userOp = CreateValidPackedUserOp(accountAddress);
+            userOp.Nonce = nonce;
 
             var result = await validator.ValidateStructureAsync(
                 userOp,
                 _fixture.EntryPointService.ContractAddress);
 
-            Assert.True(result.IsValid);
+            Assert.True(result.IsValid, result.Error);
             Assert.Null(result.Error);
         }
 
@@ -234,14 +240,20 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         [Fact]
         public async Task ValidateStructure_ReturnsGasLimits()
         {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
+
             var validator = new UserOpValidator(_fixture.Web3, _fixture.BundlerConfig);
-            var userOp = CreateValidPackedUserOp("0x1234567890123456789012345678901234567890");
+            var userOp = CreateValidPackedUserOp(accountAddress);
+            userOp.Nonce = nonce;
 
             var result = await validator.ValidateStructureAsync(
                 userOp,
                 _fixture.EntryPointService.ContractAddress);
 
-            Assert.True(result.IsValid);
+            Assert.True(result.IsValid, result.Error);
             Assert.True(result.VerificationGasLimit > 0);
             Assert.True(result.CallGasLimit > 0);
             Assert.True(result.PreVerificationGas > 0);

@@ -15,5 +15,9 @@ namespace Nethereum.Signer.Bls
             byte[][] publicKeys,
             byte[][] messages,
             byte[] domain);
+
+        byte[] AggregateSignatures(byte[][] signatures);
+
+        bool Verify(byte[] signature, byte[] publicKey, byte[] message);
     }
 }

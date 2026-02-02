@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -11,7 +12,9 @@
     <ProjectReference Include="..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
     <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
   </ItemGroup>
 
 </Project>

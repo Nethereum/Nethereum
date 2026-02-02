@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
-using Nethereum.AccountAbstraction.BaseAccount.ContractDefinition;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.Interfaces
 {

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Nethereum.AccountAbstraction.Bundler.Execution;
 using Nethereum.AccountAbstraction.Bundler.Mempool;
+using Nethereum.AccountAbstraction.Bundler.Reputation;
 using Nethereum.AccountAbstraction.Bundler.Validation;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.GasEstimation;
@@ -12,10 +13,6 @@ using Nethereum.Web3;
 
 namespace Nethereum.AccountAbstraction.Bundler
 {
-    /// <summary>
-    /// Main bundler service implementation.
-    /// Processes UserOperations, manages the mempool, and executes bundles.
-    /// </summary>
     public class BundlerService : IBundlerServiceExtended, IDisposable
     {
         private readonly IWeb3 _web3;
@@ -23,10 +20,11 @@ namespace Nethereum.AccountAbstraction.Bundler
         private readonly IUserOpMempool _mempool;
         private readonly IUserOpValidator _validator;
         private readonly IBundleExecutor _executor;
+        private readonly IReputationService? _reputationService;
         private readonly Dictionary<string, EntryPointService> _entryPoints = new();
 
         private readonly Dictionary<string, UserOperationReceipt> _receipts = new();
-        private readonly Dictionary<string, ReputationEntry> _reputation = new();
+        private readonly Dictionary<string, ReputationEntry> _inMemoryReputation = new();
         private readonly BundlerStats _stats = new() { StartedAt = DateTimeOffset.UtcNow };
 
         private Timer? _autoBundleTimer;
@@ -34,7 +32,7 @@ namespace Nethereum.AccountAbstraction.Bundler
         private bool _disposed;
 
         public BundlerService(IWeb3 web3, BundlerConfig config)
-            : this(web3, config, null, null, null)
+            : this(web3, config, null, null, null, null)
         {
         }
 
@@ -44,12 +42,24 @@ namespace Nethereum.AccountAbstraction.Bundler
             IUserOpMempool? mempool,
             IUserOpValidator? validator,
             IBundleExecutor? executor)
+            : this(web3, config, mempool, validator, executor, null)
+        {
+        }
+
+        public BundlerService(
+            IWeb3 web3,
+            BundlerConfig config,
+            IUserOpMempool? mempool,
+            IUserOpValidator? validator,
+            IBundleExecutor? executor,
+            IReputationService? reputationService)
         {
             _web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mempool = mempool ?? new InMemoryUserOpMempool(config.MaxMempoolSize);
             _validator = validator ?? new UserOpValidator(web3, config);
             _executor = executor ?? new BundleExecutor(web3, config);
+            _reputationService = reputationService;
 
             foreach (var ep in config.SupportedEntryPoints)
             {
@@ -73,6 +83,11 @@ namespace Nethereum.AccountAbstraction.Bundler
             if (_config.BlacklistedAddresses.Contains(userOp.Sender?.ToLowerInvariant() ?? ""))
             {
                 throw new InvalidOperationException("Sender is blacklisted");
+            }
+
+            if (_reputationService != null && !_config.UnsafeMode)
+            {
+                await CheckReputationAsync(userOp);
             }
 
             var validationResult = await _validator.ValidateAsync(userOp, entryPoint);
@@ -259,24 +274,38 @@ namespace Nethereum.AccountAbstraction.Bundler
             });
         }
 
-        public Task SetReputationAsync(string address, ReputationEntry reputation)
+        public async Task SetReputationAsync(string address, ReputationEntry reputation)
         {
-            _reputation[address.ToLowerInvariant()] = reputation;
-            return Task.CompletedTask;
+            if (_reputationService != null)
+            {
+                await _reputationService.UpdateAsync(reputation);
+            }
+            else
+            {
+                _inMemoryReputation[address.ToLowerInvariant()] = reputation;
+            }
         }
 
-        public Task<ReputationEntry> GetReputationAsync(string address)
+        public async Task<ReputationEntry> GetReputationAsync(string address)
         {
-            if (_reputation.TryGetValue(address.ToLowerInvariant(), out var entry))
+            if (_reputationService != null)
             {
-                return Task.FromResult(entry);
+                var entry = await _reputationService.GetAsync(address);
+                if (entry != null)
+                {
+                    return entry;
+                }
+            }
+            else if (_inMemoryReputation.TryGetValue(address.ToLowerInvariant(), out var inMemEntry))
+            {
+                return inMemEntry;
             }
 
-            return Task.FromResult(new ReputationEntry
+            return new ReputationEntry
             {
                 Address = address,
                 Status = ReputationStatus.Ok
-            });
+            };
         }
 
         public async Task<BundleExecutionResult?> ExecuteBundleAsync()
@@ -301,14 +330,106 @@ namespace Nethereum.AccountAbstraction.Bundler
                 _stats.BundlesSubmitted++;
                 _stats.IncludedCount += hashes.Length;
                 _stats.TotalGasUsed += result.GasUsed;
+
+                if (_reputationService != null)
+                {
+                    foreach (var entry in pending)
+                    {
+                        await RecordIncludedReputationAsync(entry);
+                    }
+                }
             }
             else
             {
                 await _mempool.MarkFailedAsync(hashes, result.Error ?? "Unknown error");
                 _stats.FailedCount += hashes.Length;
+
+                if (_reputationService != null)
+                {
+                    foreach (var entry in pending)
+                    {
+                        await RecordFailedReputationAsync(entry);
+                    }
+                }
             }
 
             return result;
+        }
+
+        private async Task CheckReputationAsync(PackedUserOperation userOp)
+        {
+            var sender = userOp.Sender?.ToLowerInvariant() ?? "";
+
+            if (!_config.WhitelistedAddresses.Contains(sender))
+            {
+                if (await _reputationService!.IsBannedAsync(sender))
+                {
+                    throw new InvalidOperationException($"Sender {sender} is banned");
+                }
+
+                if (await _reputationService.IsThrottledAsync(sender))
+                {
+                    throw new InvalidOperationException($"Sender {sender} is throttled");
+                }
+            }
+
+            var factory = ExtractFactory(userOp.InitCode);
+            if (!string.IsNullOrEmpty(factory) && !_config.WhitelistedAddresses.Contains(factory.ToLowerInvariant()))
+            {
+                if (await _reputationService!.IsBannedAsync(factory))
+                {
+                    throw new InvalidOperationException($"Factory {factory} is banned");
+                }
+
+                if (await _reputationService.IsThrottledAsync(factory))
+                {
+                    throw new InvalidOperationException($"Factory {factory} is throttled");
+                }
+            }
+
+            var paymaster = ExtractPaymaster(userOp.PaymasterAndData);
+            if (!string.IsNullOrEmpty(paymaster) && !_config.WhitelistedAddresses.Contains(paymaster.ToLowerInvariant()))
+            {
+                if (await _reputationService!.IsBannedAsync(paymaster))
+                {
+                    throw new InvalidOperationException($"Paymaster {paymaster} is banned");
+                }
+
+                if (await _reputationService.IsThrottledAsync(paymaster))
+                {
+                    throw new InvalidOperationException($"Paymaster {paymaster} is throttled");
+                }
+            }
+        }
+
+        private async Task RecordIncludedReputationAsync(MempoolEntry entry)
+        {
+            await _reputationService!.RecordIncludedAsync(entry.UserOperation.Sender ?? "");
+
+            if (!string.IsNullOrEmpty(entry.Factory))
+            {
+                await _reputationService.RecordIncludedAsync(entry.Factory);
+            }
+
+            if (!string.IsNullOrEmpty(entry.Paymaster))
+            {
+                await _reputationService.RecordIncludedAsync(entry.Paymaster);
+            }
+        }
+
+        private async Task RecordFailedReputationAsync(MempoolEntry entry)
+        {
+            await _reputationService!.RecordFailedAsync(entry.UserOperation.Sender ?? "");
+
+            if (!string.IsNullOrEmpty(entry.Factory))
+            {
+                await _reputationService.RecordFailedAsync(entry.Factory);
+            }
+
+            if (!string.IsNullOrEmpty(entry.Paymaster))
+            {
+                await _reputationService.RecordFailedAsync(entry.Paymaster);
+            }
         }
 
         private void AutoBundleCallback(object? state)

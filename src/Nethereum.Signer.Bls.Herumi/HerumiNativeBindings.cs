@@ -139,5 +139,55 @@ namespace Nethereum.Signer.Bls.Herumi
 
             return msgVector;
         }
+
+        public byte[] AggregateSignatures(byte[][] signatures)
+        {
+            if (signatures == null || signatures.Length == 0)
+            {
+                throw new ArgumentException("At least one signature is required.", nameof(signatures));
+            }
+
+            EnsureInitialized();
+
+            var aggregated = new BLS.Signature();
+            aggregated.Deserialize(signatures[0]);
+
+            for (int i = 1; i < signatures.Length; i++)
+            {
+                var sig = new BLS.Signature();
+                sig.Deserialize(signatures[i]);
+                aggregated.Add(sig);
+            }
+
+            return aggregated.Serialize();
+        }
+
+        public bool Verify(byte[] signature, byte[] publicKey, byte[] message)
+        {
+            if (signature == null || signature.Length == 0)
+            {
+                throw new ArgumentException("Signature is required.", nameof(signature));
+            }
+
+            if (publicKey == null || publicKey.Length == 0)
+            {
+                throw new ArgumentException("Public key is required.", nameof(publicKey));
+            }
+
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            EnsureInitialized();
+
+            var sig = new BLS.Signature();
+            sig.Deserialize(signature);
+
+            var pk = new BLS.PublicKey();
+            pk.Deserialize(publicKey);
+
+            return pk.Verify(sig, message);
+        }
     }
 }

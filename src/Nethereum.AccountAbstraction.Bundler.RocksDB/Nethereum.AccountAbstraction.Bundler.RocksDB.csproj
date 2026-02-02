@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum Account Abstraction Bundler RocksDB - Persistent storage for ERC-4337 bundler mempool and reputation</Description>
+    <AssemblyTitle>Nethereum.AccountAbstraction.Bundler.RocksDB</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Nethereum.AccountAbstraction.Bundler.RocksDB</AssemblyName>
+    <PackageId>Nethereum.AccountAbstraction.Bundler.RocksDB</PackageId>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RocksDB" Version="10.4.2.62149" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
+    <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+</Project>

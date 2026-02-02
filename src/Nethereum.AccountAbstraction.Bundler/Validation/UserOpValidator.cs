@@ -1,9 +1,12 @@
 using System.Numerics;
+using Nethereum.AccountAbstraction.Bundler.Validation.ERC7562;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.AccountAbstraction.Validation;
 using Nethereum.Contracts;
+using Nethereum.EVM;
+using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
@@ -11,16 +14,25 @@ using Nethereum.Web3;
 
 namespace Nethereum.AccountAbstraction.Bundler.Validation
 {
-    /// <summary>
-    /// Validates UserOperations according to ERC-4337 rules.
-    /// </summary>
     public class UserOpValidator : IUserOpValidator
     {
         private readonly IWeb3 _web3;
         private readonly BundlerConfig _config;
         private readonly Dictionary<string, EntryPointService> _entryPoints = new();
+        private readonly IStakingInfoService _stakingInfoService;
+        private readonly ERC7562SimulationService? _erc7562SimulationService;
+        private readonly INodeDataService _nodeDataService;
 
         public UserOpValidator(IWeb3 web3, BundlerConfig config)
+            : this(web3, config, null, null)
+        {
+        }
+
+        public UserOpValidator(
+            IWeb3 web3,
+            BundlerConfig config,
+            INodeDataService? nodeDataService,
+            IStakingInfoService? stakingInfoService)
         {
             _web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -28,6 +40,14 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             foreach (var ep in config.SupportedEntryPoints)
             {
                 _entryPoints[ep.ToLowerInvariant()] = new EntryPointService(web3, ep);
+            }
+
+            _nodeDataService = nodeDataService ?? Web3NodeDataServiceAdapter.CreateForLatest(web3);
+            _stakingInfoService = stakingInfoService ?? new StakingInfoService(web3, config);
+
+            if (config.EnableERC7562Validation)
+            {
+                _erc7562SimulationService = new ERC7562SimulationService(_nodeDataService, HardforkConfig.Default);
             }
         }
 
@@ -41,10 +61,98 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
 
             if (_config.SimulateValidation)
             {
-                return await SimulateValidationAsync(userOp, entryPoint);
+                var simResult = await SimulateValidationAsync(userOp, entryPoint);
+                if (!simResult.IsValid)
+                {
+                    return simResult;
+                }
+                structureResult = simResult;
+            }
+
+            if (_config.EnableERC7562Validation && _erc7562SimulationService != null)
+            {
+                var erc7562Result = await ValidateERC7562Async(userOp, entryPoint);
+                if (!erc7562Result.IsValid)
+                {
+                    return erc7562Result;
+                }
             }
 
             return structureResult;
+        }
+
+        private async Task<UserOpValidationResult> ValidateERC7562Async(PackedUserOperation userOp, string entryPoint)
+        {
+            try
+            {
+                var senderInfo = await _stakingInfoService.GetSenderInfoAsync(userOp.Sender, entryPoint);
+                var factoryInfo = await _stakingInfoService.GetFactoryInfoAsync(userOp.InitCode, entryPoint);
+                var paymasterInfo = await _stakingInfoService.GetPaymasterInfoAsync(userOp.PaymasterAndData, entryPoint);
+
+                var userOpDto = new PackedUserOperationDTO
+                {
+                    Sender = userOp.Sender,
+                    Nonce = userOp.Nonce,
+                    InitCode = userOp.InitCode ?? Array.Empty<byte>(),
+                    CallData = userOp.CallData ?? Array.Empty<byte>(),
+                    AccountGasLimits = userOp.AccountGasLimits ?? Array.Empty<byte>(),
+                    PreVerificationGas = userOp.PreVerificationGas,
+                    GasFees = userOp.GasFees ?? Array.Empty<byte>(),
+                    PaymasterAndData = userOp.PaymasterAndData ?? Array.Empty<byte>(),
+                    Signature = userOp.Signature ?? Array.Empty<byte>()
+                };
+
+                var chainId = _config.ChainId ?? await GetChainIdAsync();
+
+                var result = await _erc7562SimulationService!.ValidateUserOperationAsync(
+                    userOpDto,
+                    entryPoint,
+                    senderInfo,
+                    factoryInfo,
+                    paymasterInfo,
+                    aggregator: null,
+                    blockNumber: -1,
+                    timestamp: -1,
+                    coinbase: null,
+                    chainId: chainId);
+
+                if (!result.IsValid)
+                {
+                    var violationMessages = result.Violations
+                        .Select(v => $"{v.Rule}: {v.Message} ({v.Entity}@{v.Address})")
+                        .ToList();
+
+                    return UserOpValidationResult.Failure(
+                        $"ERC-7562 validation failed: {string.Join("; ", violationMessages)}",
+                        UserOpValidationError.InvalidOpcodeAccess);
+                }
+
+                return UserOpValidationResult.Success();
+            }
+            catch (Exception ex)
+            {
+                return UserOpValidationResult.Failure(
+                    $"ERC-7562 validation error: {ex.Message}",
+                    UserOpValidationError.InvalidOpcodeAccess);
+            }
+        }
+
+        private async Task<BigInteger> GetChainIdAsync()
+        {
+            if (_config.ChainId.HasValue)
+            {
+                return _config.ChainId.Value;
+            }
+
+            try
+            {
+                var chainId = await _web3.Eth.ChainId.SendRequestAsync();
+                return chainId.Value;
+            }
+            catch
+            {
+                return 1;
+            }
         }
 
         public async Task<UserOpValidationResult> ValidateStructureAsync(PackedUserOperation userOp, string entryPoint)
