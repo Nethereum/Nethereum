@@ -82,8 +82,12 @@ namespace Nethereum.EVM
 
         private void ValidateTransaction(TransactionExecutionContext ctx, TransactionExecutionResult result)
         {
-            // EIP-1559 validation (always enabled - post-London)
-            if (ctx.IsEip1559)
+            // Skip gas price validation in Call mode (eth_call doesn't pay for gas)
+            if (ctx.IsCallMode)
+            {
+                ctx.EffectiveGasPrice = 0;
+            }
+            else if (ctx.IsEip1559)
             {
                 if (ctx.MaxFeePerGas < ctx.BaseFee)
                     throw new TransactionValidationException("INSUFFICIENT_MAX_FEE_PER_GAS");
@@ -179,11 +183,15 @@ namespace Nethereum.EVM
 
             // EIP-3607: Sender must be EOA (always enabled - post-London)
             // EIP-7702: Delegated EOAs are allowed (they have 0xef0100 + address code)
-            var senderCode = await ctx.ExecutionState.GetCodeAsync(ctx.Sender);
-            if (senderCode != null && senderCode.Length > 0)
+            // Skip for Call mode - allow calls from any address
+            if (!ctx.IsCallMode)
             {
-                if (!IsDelegatedCode(senderCode))
-                    throw new TransactionValidationException("SENDER_NOT_EOA");
+                var senderCode = await ctx.ExecutionState.GetCodeAsync(ctx.Sender);
+                if (senderCode != null && senderCode.Length > 0)
+                {
+                    if (!IsDelegatedCode(senderCode))
+                        throw new TransactionValidationException("SENDER_NOT_EOA");
+                }
             }
 
             // EIP-7702: Process authorization list before execution
@@ -206,26 +214,34 @@ namespace Nethereum.EVM
                 ctx.BlobGasCost = IntrinsicGasCalculator.CalculateBlobGasCost(blobCount, ctx.BlobBaseFee);
             }
 
-            var maxCost = ctx.GasLimit * (ctx.IsEip1559 ? ctx.MaxFeePerGas : ctx.GasPrice) + ctx.Value + ctx.BlobGasCost;
-
-            if (senderBalance < maxCost)
+            // Skip balance check for gas in Call mode - calls don't require gas payment
+            if (!ctx.IsCallMode)
             {
-                result.IsValidationError = true;
-                result.Error = $"Insufficient balance: {senderBalance} < {maxCost}";
-                return;
+                var maxCost = ctx.GasLimit * (ctx.IsEip1559 ? ctx.MaxFeePerGas : ctx.GasPrice) + ctx.Value + ctx.BlobGasCost;
+
+                if (senderBalance < maxCost)
+                {
+                    result.IsValidationError = true;
+                    result.Error = $"Insufficient balance: {senderBalance} < {maxCost}";
+                    return;
+                }
             }
 
             ctx.SenderNonceBeforeIncrement = ctx.SenderAccount.Nonce ?? BigInteger.Zero;
 
-            // EIP-2681: Nonce overflow (always enabled)
-            if (ctx.SenderNonceBeforeIncrement >= BigInteger.Parse("18446744073709551615"))
-                throw new TransactionValidationException("NONCE_IS_MAX");
+            // Skip nonce validation and increment in Call mode
+            if (!ctx.IsCallMode)
+            {
+                // EIP-2681: Nonce overflow (always enabled)
+                if (ctx.SenderNonceBeforeIncrement >= BigInteger.Parse("18446744073709551615"))
+                    throw new TransactionValidationException("NONCE_IS_MAX");
 
-            ctx.SenderAccount.Nonce = ctx.SenderNonceBeforeIncrement + 1;
-            ctx.SenderAccount.Balance.UpdateExecutionBalance(-(ctx.GasLimit * ctx.EffectiveGasPrice));
+                ctx.SenderAccount.Nonce = ctx.SenderNonceBeforeIncrement + 1;
+                ctx.SenderAccount.Balance.UpdateExecutionBalance(-(ctx.GasLimit * ctx.EffectiveGasPrice));
 
-            if (ctx.BlobGasCost > 0)
-                ctx.SenderAccount.Balance.UpdateExecutionBalance(-ctx.BlobGasCost);
+                if (ctx.BlobGasCost > 0)
+                    ctx.SenderAccount.Balance.UpdateExecutionBalance(-ctx.BlobGasCost);
+            }
 
             ctx.TransactionSnapshotId = ctx.ExecutionState.TakeSnapshot();
 
@@ -442,7 +458,7 @@ namespace Nethereum.EVM
                 Value = new Hex.HexTypes.HexBigInteger(ctx.Value),
                 Nonce = new Hex.HexTypes.HexBigInteger(ctx.Nonce),
                 GasPrice = new Hex.HexTypes.HexBigInteger(ctx.EffectiveGasPrice),
-                ChainId = new Hex.HexTypes.HexBigInteger(1)
+                ChainId = new Hex.HexTypes.HexBigInteger(ctx.ChainId)
             };
 
             var programContext = new ProgramContext(
@@ -669,6 +685,10 @@ namespace Nethereum.EVM
             }
 
             result.EffectiveGasUsed = result.GasUsed;
+
+            // Skip gas refund and coinbase payment in Call mode
+            if (ctx.IsCallMode)
+                return;
 
             var gasRefundAmount = (ctx.GasLimit - result.GasUsed) * ctx.EffectiveGasPrice;
             ctx.SenderAccount.Balance.UpdateExecutionBalance(gasRefundAmount);

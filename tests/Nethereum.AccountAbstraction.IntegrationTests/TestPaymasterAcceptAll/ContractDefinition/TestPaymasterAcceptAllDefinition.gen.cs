@@ -8,6 +8,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
 using System.Threading;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.IntegrationTests.TestPaymasterAcceptAll.ContractDefinition
 {

@@ -63,22 +63,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             var packedUserOperation = UserOperationBuilder.PackUserOperation(userOperation);
 
-            var packedUserOperationStruct = new TestUtil.ContractDefinition.PackedUserOperation
-            {
-                Sender = packedUserOperation.Sender,
-                CallData = packedUserOperation.CallData,
-                PreVerificationGas = packedUserOperation.PreVerificationGas,
-                AccountGasLimits = packedUserOperation.AccountGasLimits,
-                InitCode = packedUserOperation.InitCode,
-                PaymasterAndData = packedUserOperation.PaymasterAndData,
-                GasFees = packedUserOperation.GasFees,
-                Signature = packedUserOperation.Signature,
-                Nonce = packedUserOperation.Nonce
-            };
-
             var encoded = UserOperationBuilder.PackAndEncodeUserOperationStruct(userOperation);
 
-            var encodedSolidity = await testUtilService.EncodeUserOpQueryAsync(packedUserOperationStruct);
+            var encodedSolidity = await testUtilService.EncodeUserOpQueryAsync(packedUserOperation);
             Assert.True(encoded.ToHex().IsTheSameHex(encodedSolidity.ToHex()));
         }
 

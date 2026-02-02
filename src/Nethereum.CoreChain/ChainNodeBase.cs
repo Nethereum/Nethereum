@@ -25,6 +25,7 @@ namespace Nethereum.CoreChain
         protected readonly INodeDataService _nodeDataService;
         protected readonly TransactionProcessor _transactionProcessor;
         protected readonly ITransactionVerificationAndRecovery _txVerifier;
+        protected readonly TransactionExecutor _executor;
 
         protected ChainNodeBase(
             IBlockStore blockStore,
@@ -36,7 +37,8 @@ namespace Nethereum.CoreChain
             TransactionProcessor transactionProcessor,
             ITransactionVerificationAndRecovery txVerifier,
             INodeDataService nodeDataService = null,
-            ITrieNodeStore trieNodeStore = null)
+            ITrieNodeStore trieNodeStore = null,
+            HardforkConfig hardforkConfig = null)
         {
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _transactionStore = transactionStore ?? throw new ArgumentNullException(nameof(transactionStore));
@@ -48,6 +50,7 @@ namespace Nethereum.CoreChain
             _txVerifier = txVerifier ?? throw new ArgumentNullException(nameof(txVerifier));
             _nodeDataService = nodeDataService ?? new StateStoreNodeDataService(_stateStore, _blockStore);
             _trieNodeStore = trieNodeStore;
+            _executor = new TransactionExecutor(hardforkConfig ?? HardforkConfig.Default);
         }
 
         public abstract ChainConfig Config { get; }
@@ -129,49 +132,44 @@ namespace Nethereum.CoreChain
             var blockContext = await GetBlockContextForCallAsync();
             var executionStateService = new ExecutionStateService(_nodeDataService);
 
-            var code = await _nodeDataService.GetCodeAsync(to);
-            if (code == null || code.Length == 0)
-            {
-                return new CallResult { Success = true, ReturnData = Array.Empty<byte>(), GasUsed = 0 };
-            }
+            var isContractCreation = string.IsNullOrEmpty(to);
 
             var callerBalance = await _nodeDataService.GetBalanceAsync(from);
             executionStateService.SetInitialChainBalance(from, callerBalance);
 
-            var callInput = new CallInput
+            var ctx = new TransactionExecutionContext
             {
-                From = from,
-                To = to,
-                Value = new Nethereum.Hex.HexTypes.HexBigInteger(callValue),
-                Data = data?.ToHex(true) ?? "0x",
-                Gas = new Nethereum.Hex.HexTypes.HexBigInteger(callGasLimit),
-                GasPrice = new Nethereum.Hex.HexTypes.HexBigInteger(0),
-                ChainId = new Nethereum.Hex.HexTypes.HexBigInteger(Config.ChainId)
+                Mode = ExecutionMode.Call,
+                Sender = from,
+                To = isContractCreation ? null : to,
+                Data = data,
+                Value = callValue,
+                GasLimit = callGasLimit,
+                GasPrice = 0,
+                MaxFeePerGas = 0,
+                MaxPriorityFeePerGas = 0,
+                Nonce = 0,
+                IsEip1559 = false,
+                IsContractCreation = isContractCreation,
+                BlockNumber = (long)blockContext.BlockNumber,
+                Timestamp = blockContext.Timestamp,
+                Coinbase = blockContext.Coinbase,
+                BaseFee = blockContext.BaseFee,
+                Difficulty = blockContext.Difficulty,
+                BlockGasLimit = blockContext.GasLimit,
+                ChainId = blockContext.ChainId,
+                ExecutionState = executionStateService,
+                TraceEnabled = false
             };
 
-            var programContext = new ProgramContext(
-                callInput,
-                executionStateService,
-                from,
-                to,
-                (long)blockContext.BlockNumber,
-                blockContext.Timestamp,
-                blockContext.Coinbase,
-                (long)blockContext.BaseFee);
-
-            programContext.GasLimit = blockContext.GasLimit;
-            programContext.Difficulty = blockContext.Difficulty;
-
-            var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
-            await simulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
+            var result = await _executor.ExecuteAsync(ctx);
 
             return new CallResult
             {
-                Success = !program.ProgramResult.IsRevert,
-                ReturnData = program.ProgramResult.Result ?? Array.Empty<byte>(),
-                RevertReason = program.ProgramResult.GetRevertMessage(),
-                GasUsed = program.TotalGasUsed
+                Success = result.Success,
+                ReturnData = result.ReturnData ?? Array.Empty<byte>(),
+                RevertReason = result.RevertReason ?? result.Error,
+                GasUsed = result.GasUsed
             };
         }
 

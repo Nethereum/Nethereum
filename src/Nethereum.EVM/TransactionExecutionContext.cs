@@ -6,8 +6,16 @@ using Nethereum.Model;
 
 namespace Nethereum.EVM
 {
+    public enum ExecutionMode
+    {
+        Transaction,
+        Call
+    }
+
     public class TransactionExecutionContext
     {
+        public ExecutionMode Mode { get; set; } = ExecutionMode.Transaction;
+        public bool IsCallMode => Mode == ExecutionMode.Call;
         public string Sender { get; set; }
         public string To { get; set; }
         public byte[] Data { get; set; }

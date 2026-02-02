@@ -11,6 +11,7 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
 using Nethereum.AccountAbstraction.IntegrationTests.TestUtil.ContractDefinition;
+using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.IntegrationTests.TestUtil
 {

@@ -28,12 +28,12 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             var result = await context.Node.SendTransactionAsync(signedTx);
 
-            if (!result.Success)
+            if (result.Success || result.Receipt != null)
             {
-                return Error(request.Id, -32000, result.RevertReason ?? "Transaction execution failed");
+                return Success(request.Id, result.TransactionHash.ToHex(true));
             }
 
-            return Success(request.Id, result.TransactionHash.ToHex(true));
+            return Error(request.Id, -32000, result.RevertReason ?? "Transaction rejected");
         }
     }
 }
