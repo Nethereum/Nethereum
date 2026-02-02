@@ -306,14 +306,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // WHEN: Execute batch of 3 count() calls
-            var countFunction = new CountFunction();
-            var countCallData = countFunction.GetCallData();
+            // WHEN: Execute batch of 3 count() calls using simplified API
+            var countCallData = new CountFunction().GetCallData();
 
             var receipt = await handler.BatchExecuteAsync(
-                (testCounter.ContractAddress, BigInteger.Zero, countCallData),
-                (testCounter.ContractAddress, BigInteger.Zero, countCallData),
-                (testCounter.ContractAddress, BigInteger.Zero, countCallData));
+                countCallData,
+                countCallData,
+                countCallData);
 
             // THEN: All calls should execute in one UserOperation
             Assert.NotNull(receipt);

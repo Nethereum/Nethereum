@@ -175,27 +175,44 @@ The handler automatically checks if the account exists. If not, it includes the 
 
 ## Batching Multiple Calls
 
-Execute multiple contract calls in a single UserOperation:
+Execute multiple contract calls in a single UserOperation. All calls target the handler's contract:
 
 ```csharp
 var handler = (AAContractHandler)erc20.ContractHandler;
 
-// Prepare call data for multiple operations
-var transfer1 = new TransferFunction { To = addr1, Value = 100 }.GetCallData();
-var transfer2 = new TransferFunction { To = addr2, Value = 200 }.GetCallData();
-var approve = new ApproveFunction { Spender = spender, Value = 500 }.GetCallData();
-
-// Execute all in one UserOperation
+// Use ToBatchCall() extension method for clean, type-safe batching
 var receipt = await handler.BatchExecuteAsync(
-    (tokenAddress, 0, transfer1),
-    (tokenAddress, 0, transfer2),
-    (tokenAddress, 0, approve));
+    new TransferFunction { To = addr1, Value = 100 }.ToBatchCall(),
+    new TransferFunction { To = addr2, Value = 200 }.ToBatchCall(),
+    new TransferFunction { To = addr3, Value = 300 }.ToBatchCall());
 
 // All three operations succeed or fail atomically
 if (receipt.UserOpSuccess)
 {
-    Console.WriteLine("All transfers and approval completed!");
+    Console.WriteLine("All transfers completed!");
 }
+```
+
+### Batch API Options
+
+```csharp
+// Recommended: Use ToBatchCall() for type safety
+await handler.BatchExecuteAsync(
+    new TransferFunction { To = addr1, Value = 100 }.ToBatchCall(),
+    new ApproveFunction { Spender = spender, Value = 500 }.ToBatchCall());
+
+// With ETH value: ToBatchCall(ethValue)
+await handler.BatchExecuteAsync(
+    new DepositFunction().ToBatchCall(ethValue: Web3.Convert.ToWei(1)));
+
+// Simple: Just raw call data bytes
+await handler.BatchExecuteAsync(callData1, callData2, callData3);
+
+// Generic: Pass FunctionMessage objects directly (all same type)
+await handler.BatchExecuteAsync(
+    new CountFunction(),
+    new CountFunction(),
+    new CountFunction());
 ```
 
 ## Gas Sponsorship with Paymasters

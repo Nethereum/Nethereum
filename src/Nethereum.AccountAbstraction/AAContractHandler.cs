@@ -242,19 +242,50 @@ namespace Nethereum.AccountAbstraction
             return new HexBigInteger(totalGas);
         }
 
-        public async Task<AATransactionReceipt> BatchExecuteAsync(
-            params (string target, BigInteger value, byte[] callData)[] calls)
+        /// <summary>
+        /// Execute multiple function calls in a single UserOperation.
+        /// All calls target the handler's contract address.
+        /// Use FunctionMessage.ToBatchCall() extension to create BatchCall objects.
+        /// </summary>
+        /// <example>
+        /// await handler.BatchExecuteAsync(
+        ///     new TransferFunction { To = addr1, Value = 100 }.ToBatchCall(),
+        ///     new TransferFunction { To = addr2, Value = 200 }.ToBatchCall());
+        /// </example>
+        public async Task<AATransactionReceipt> BatchExecuteAsync(params BatchCall[] calls)
         {
             var callsList = calls.Select(c => new Call
             {
-                Target = c.target,
-                Value = c.value,
-                Data = c.callData
+                Target = ContractAddress,
+                Value = c.Value,
+                Data = c.CallData
             }).ToList();
 
             var batchFunc = new ExecuteBatchFunction { Calls = callsList };
             var packedOp = await CreateUserOperationFromCallDataAsync(batchFunc.GetCallData());
             return await SendAndWaitForReceiptAsync(packedOp, null);
+        }
+
+        /// <summary>
+        /// Execute multiple function calls in a single UserOperation (simple overload).
+        /// All calls target the handler's contract address with zero ETH value.
+        /// </summary>
+        public async Task<AATransactionReceipt> BatchExecuteAsync(params byte[][] callDatas)
+        {
+            var batchCalls = callDatas.Select(data => new BatchCall(data)).ToArray();
+            return await BatchExecuteAsync(batchCalls);
+        }
+
+        /// <summary>
+        /// Execute multiple function messages in a single UserOperation.
+        /// All calls target the handler's contract address.
+        /// </summary>
+        public async Task<AATransactionReceipt> BatchExecuteAsync<TFunctionMessage>(
+            params TFunctionMessage[] functionMessages)
+            where TFunctionMessage : FunctionMessage
+        {
+            var batchCalls = functionMessages.Select(msg => msg.ToBatchCall()).ToArray();
+            return await BatchExecuteAsync(batchCalls);
         }
 
         public async Task<PackedUserOperation> CreateUserOperationAsync<TEthereumContractFunctionMessage>(
