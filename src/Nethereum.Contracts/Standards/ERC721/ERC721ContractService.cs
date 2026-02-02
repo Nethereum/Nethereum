@@ -14,12 +14,12 @@ namespace Nethereum.Contracts.Standards.ERC721
 {
 
 
-    public partial class ERC721ContractService
+    public partial class ERC721ContractService : IContractHandlerService
     {
         private readonly IEthApiContractService _ethApiContractService;
         public string ContractAddress { get; }
 
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
 
         public ERC721ContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {

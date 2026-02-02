@@ -13,11 +13,11 @@ namespace Nethereum.Contracts.Standards.EIP3009
     /// Service to interact with smart contracts implementing the EIP-3009 standard
     /// https://eips.ethereum.org/EIPS/eip-3009
     /// </summary>
-    public class EIP3009ContractService
+    public class EIP3009ContractService : IContractHandlerService
     {
         public string ContractAddress { get; }
 
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
 
         public EIP3009ContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {

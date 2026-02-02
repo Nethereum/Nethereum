@@ -10,10 +10,10 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Standards.ERC1155
 {
-    public class ERC1155ContractService
+    public class ERC1155ContractService : IContractHandlerService
     {
         public string ContractAddress { get; }
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
 
         public ERC1155ContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {

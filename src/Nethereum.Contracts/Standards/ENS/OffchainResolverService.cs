@@ -8,10 +8,10 @@ namespace Nethereum.Contracts.Standards.ENS
 {
 
 
-    public partial class OffchainResolverService
+    public partial class OffchainResolverService : IContractHandlerService
     {
         public string ContractAddress { get; }
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
         public OffchainResolverService(IEthApiContractService ethApiContractService, string contractAddress)
         {
             ContractAddress = contractAddress;

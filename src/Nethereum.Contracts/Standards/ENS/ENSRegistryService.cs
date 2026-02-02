@@ -7,11 +7,11 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Standards.ENS
 {
-    public partial class ENSRegistryService
+    public partial class ENSRegistryService : IContractHandlerService
     {
         public string ContractAddress { get; }
 
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
 
         public ENSRegistryService(IEthApiContractService ethApiContractService, string contractAddress)
         {

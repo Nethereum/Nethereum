@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Contracts.Standards.ERC165
 {
-    public class ERC165SupportsInterfaceContractService
+    public class ERC165SupportsInterfaceContractService : IContractHandlerService
     {
 
         public string ContractAddress { get; }
 
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
 
         public ERC165SupportsInterfaceContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {

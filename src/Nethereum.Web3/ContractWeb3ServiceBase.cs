@@ -16,7 +16,7 @@ using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Web3
 {
-        public abstract class ContractWeb3ServiceBase:ContractServiceBase
+        public abstract partial class ContractWeb3ServiceBase : ContractServiceBase, IContractWeb3Service, IContractHandlerService
         {
             public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync<TDeploymentMessage>(Nethereum.Web3.IWeb3 web3, TDeploymentMessage deploymentMessage = null, CancellationTokenSource cancellationTokenSource = null)
             where TDeploymentMessage : Nethereum.Contracts.ContractDeploymentMessage, new()

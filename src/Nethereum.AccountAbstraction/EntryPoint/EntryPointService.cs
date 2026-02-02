@@ -18,6 +18,11 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 {
         public partial class EntryPointService
         {
+            public EntryPointService(Nethereum.Contracts.Services.IEthApiContractService ethApiContractService, string contractAddress)
+                : base(ethApiContractService, contractAddress)
+            {
+            }
+
             public async Task<string> GetSenderAddressQueryAsync(byte[] initCode)
             {
                 var getSenderAddressFunction = new GetSenderAddressFunction
@@ -42,7 +47,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 {
                     if (AccountAbstractionEIP7702Utils.IsEip7702UserOp(userOperation))
                     {
-                        var delegateAddress = await Web3.Eth.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
+                        var delegateAddress = await EthApi.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
                         if (string.IsNullOrEmpty(delegateAddress))
                         {
                             throw new Exception("Must provide eip7702delegate for EIP-7702 UserOperation initialisation");
@@ -50,7 +55,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 
                         if (userOperation.Nonce == null)
                         {
-                            userOperation.Nonce = await Web3.Eth.Transactions
+                            userOperation.Nonce = await EthApi.Transactions
                                 .GetTransactionCount
                                 .SendRequestAsync(userOperation.Sender);
                         }
@@ -90,7 +95,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                                     toAddress = initAddress.ToHex(true);
                                 }
 
-                                var initEstimate = await Web3.Eth.Transactions.EstimateGas.SendRequestAsync(
+                                var initEstimate = await EthApi.Transactions.EstimateGas.SendRequestAsync(
                                 new CallInput
                                 {
                                     From = senderCreator,
@@ -112,7 +117,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 
                 if (userOperation.CallGasLimit == null && (userOperation.CallData != null && userOperation.CallData.Length > 0))
                 {
-                    var gasEstimated = await Web3.Eth.Transactions.EstimateGas.SendRequestAsync(
+                    var gasEstimated = await EthApi.Transactions.EstimateGas.SendRequestAsync(
                         new CallInput
                         {
                             From = ContractAddress,
@@ -135,7 +140,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 
                 if (userOperation.MaxFeePerGas == null)
                 {
-                    var block = await Web3.Eth.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(BlockParameter.CreateLatest());
+                    var block = await EthApi.Blocks.GetBlockWithTransactionsByNumber.SendRequestAsync(BlockParameter.CreateLatest());
                     userOperation.MaxFeePerGas = block.BaseFeePerGas.Value + userOperation.MaxPriorityFeePerGas.Value;
                 }
 
@@ -161,14 +166,14 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 EthECKey signer,
                 string eip7702Delegate = null)
             {
-                var chainId = await Web3.Eth.ChainId.SendRequestAsync();
+                var chainId = await EthApi.ChainId.SendRequestAsync();
                 userOperation = await InitialiseUserOperationAsync(userOperation);
                 
                 if (AccountAbstractionEIP7702Utils.IsEip7702UserOp(userOperation))
                 {
                     if (string.IsNullOrEmpty(eip7702Delegate))
                     {
-                        var delegateAddress = await Web3.Eth.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
+                        var delegateAddress = await EthApi.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
                         userOperation.InitCode = AccountAbstractionEIP7702Utils.UpdateInitCodeForHashing(userOperation.InitCode, delegateAddress);
                     }
                     else

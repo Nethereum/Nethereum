@@ -7,11 +7,11 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.Contracts.Standards.ERC1271
 {
-    public class ERC1271ContractService
+    public class ERC1271ContractService : IContractHandlerService
     {
         public const string MAGICVALUE = "0x1626ba7e";
         public string ContractAddress { get; }
-        public ContractHandler ContractHandler { get; }
+        public ContractHandler ContractHandler { get; set; }
 
         public ERC1271ContractService(IEthApiContractService ethApiContractService, string contractAddress)
         {

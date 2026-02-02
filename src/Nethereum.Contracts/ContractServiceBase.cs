@@ -7,7 +7,7 @@ using Nethereum.Contracts.ContractHandlers;
 
 namespace Nethereum.Contracts
 {
-    public abstract class ContractServiceBase : IContractService
+    public abstract class ContractServiceBase : IContractService, IContractHandlerService
     {
         public ContractHandler ContractHandler { get; set; }
 
