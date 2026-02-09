@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Nethereum.Contracts;
 using Nethereum.CoreChain;
@@ -36,6 +37,24 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             _dispatcher = new RpcDispatcher(registry, _context);
         }
 
+        private static JObject ResultToJObject(object result)
+        {
+            if (result is JsonElement jsonElement)
+            {
+                return JObject.Parse(jsonElement.GetRawText());
+            }
+            return JObject.FromObject(result);
+        }
+
+        private static JArray ResultToJArray(object result)
+        {
+            if (result is JsonElement jsonElement)
+            {
+                return JArray.Parse(jsonElement.GetRawText());
+            }
+            return JArray.FromObject(result);
+        }
+
         [Fact]
         public async Task EthChainId_ReturnsConfiguredChainId()
         {
@@ -45,16 +64,9 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
-            // ChainId 31337 = 0x7a69 - HexBigInteger.HexValue returns hex string
-            var result = response.Result;
-            if (result is Nethereum.Hex.HexTypes.HexBigInteger hexBigInt)
-            {
-                Assert.Equal("0x7a69", hexBigInt.HexValue);
-            }
-            else
-            {
-                Assert.Equal(31337.ToString(), result?.ToString());
-            }
+            // ChainId 31337 = 0x7a69
+            var resultStr = response.Result?.ToString();
+            Assert.True(resultStr == "0x7a69" || resultStr == "31337", $"Expected 0x7a69 or 31337, got {resultStr}");
         }
 
         [Fact]
@@ -278,8 +290,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
-            var logs = response.Result as IEnumerable<object>;
-            Assert.NotNull(logs);
+            var logs = ResultToJArray(response.Result);
             Assert.NotEmpty(logs);
         }
 
@@ -305,8 +316,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var responseBefore = await _dispatcher.DispatchAsync(requestBefore);
 
             Assert.Null(responseBefore.Error);
-            var logsBefore = responseBefore.Result as IEnumerable<object>;
-            Assert.NotNull(logsBefore);
+            var logsBefore = ResultToJArray(responseBefore.Result);
             Assert.Empty(logsBefore);
 
             var filterAfter = JObject.FromObject(new
@@ -319,8 +329,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var responseAfter = await _dispatcher.DispatchAsync(requestAfter);
 
             Assert.Null(responseAfter.Error);
-            var logsAfter = responseAfter.Result as IEnumerable<object>;
-            Assert.NotNull(logsAfter);
+            var logsAfter = ResultToJArray(responseAfter.Result);
             Assert.NotEmpty(logsAfter);
         }
 
@@ -344,12 +353,12 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response1 = await _dispatcher.DispatchAsync(request1);
 
             Assert.Null(response1.Error);
-            var logs1 = response1.Result as IEnumerable<object>;
-            Assert.NotNull(logs1);
+            var logs1 = ResultToJArray(response1.Result);
+            Assert.NotEmpty(logs1);
             foreach (var log in logs1)
             {
-                var logJson = JObject.FromObject(log);
-                var address = logJson["address"]?.ToString();
+                var logJson = log as JObject;
+                var address = logJson?["address"]?.ToString();
                 Assert.Equal(contract1.ToLowerInvariant(), address?.ToLowerInvariant());
             }
         }
@@ -373,10 +382,10 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var logs = response.Result as IEnumerable<object>;
-            Assert.NotNull(logs);
+            var logs = ResultToJArray(response.Result);
+            Assert.NotEmpty(logs);
 
-            var firstLogJson = JObject.FromObject(logs.First());
+            var firstLogJson = logs[0] as JObject;
             Assert.NotNull(firstLogJson["address"]);
             Assert.NotNull(firstLogJson["blockHash"]);
             Assert.NotNull(firstLogJson["blockNumber"]);
@@ -396,7 +405,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
 
-            var result = JObject.FromObject(response.Result);
+            var result = ResultToJObject(response.Result);
             Assert.NotNull(result["address"]);
             Assert.NotNull(result["balance"]);
             Assert.NotNull(result["nonce"]);
@@ -420,7 +429,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
 
-            var result = JObject.FromObject(response.Result);
+            var result = ResultToJObject(response.Result);
             Assert.NotNull(result["storageProof"]);
             var storageProofs = result["storageProof"] as JArray;
             Assert.NotNull(storageProofs);
@@ -442,7 +451,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var result = JObject.FromObject(response.Result);
+            var result = ResultToJObject(response.Result);
             var balanceHex = result["balance"]?.ToString();
             Assert.NotNull(balanceHex);
             Assert.StartsWith("0x", balanceHex);
@@ -457,7 +466,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var result = JObject.FromObject(response.Result);
+            var result = ResultToJObject(response.Result);
             var codeHash = result["codeHash"]?.ToString();
             Assert.NotNull(codeHash);
             Assert.Equal("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470", codeHash);
@@ -476,7 +485,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var result = JObject.FromObject(response.Result);
+            var result = ResultToJObject(response.Result);
             var storageProofs = result["storageProof"] as JArray;
             Assert.NotNull(storageProofs);
             Assert.Equal(3, storageProofs.Count);
@@ -491,7 +500,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var result = JObject.FromObject(response.Result);
+            var result = ResultToJObject(response.Result);
             var accountProof = result["accountProof"] as JArray;
             Assert.NotNull(accountProof);
             Assert.NotEmpty(accountProof);
@@ -766,7 +775,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
 
-            var tx = JObject.FromObject(response.Result);
+            var tx = ResultToJObject(response.Result);
             Assert.NotNull(tx["hash"]);
             Assert.NotNull(tx["from"]);
             Assert.NotNull(tx["to"]);
@@ -788,7 +797,15 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            Assert.Null(response.Result);
+            // Result may be null or a JsonElement with ValueKind.Null
+            if (response.Result is JsonElement jsonElement)
+            {
+                Assert.Equal(JsonValueKind.Null, jsonElement.ValueKind);
+            }
+            else
+            {
+                Assert.Null(response.Result);
+            }
         }
 
         [Fact]
@@ -806,7 +823,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var tx = JObject.FromObject(response.Result);
+            var tx = ResultToJObject(response.Result);
 
             var typeValue = tx["type"];
             if (typeValue != null)
@@ -831,7 +848,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var tx = JObject.FromObject(response.Result);
+            var tx = ResultToJObject(response.Result);
 
             Assert.NotNull(tx["r"]);
             Assert.NotNull(tx["s"]);
@@ -852,7 +869,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            var tx = JObject.FromObject(response.Result);
+            var tx = ResultToJObject(response.Result);
 
             var toValue = tx["to"]?.ToString();
             Assert.True(string.IsNullOrEmpty(toValue) || toValue == "null");

@@ -1,4 +1,5 @@
 using System.Numerics;
+using Nethereum.Contracts;
 using Nethereum.CoreChain.IntegrationTests.Contracts;
 using Nethereum.CoreChain.IntegrationTests.Fixtures;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -71,7 +72,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             Assert.NotNull(block);
 
             var trie = new PatriciaTrie();
-            var key = 0.ToBytesForRLPEncoding();
+            var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
             Assert.Equal(block.TransactionsHash, trie.Root.GetHash());
@@ -110,13 +111,15 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var txResult = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(txResult.Success);
-            Assert.NotNull(txResult.Receipt);
+
+            var receipt = await _fixture.Node.GetTransactionReceiptAsync(signedTx.Hash);
+            Assert.NotNull(receipt);
 
             var block = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(block);
 
             var rootCalculator = new CoreChain.RootCalculator();
-            var computedRoot = rootCalculator.CalculateReceiptsRoot(new List<Receipt> { txResult.Receipt });
+            var computedRoot = rootCalculator.CalculateReceiptsRoot(new List<Receipt> { receipt });
 
             Assert.Equal(block.ReceiptHash, computedRoot);
         }
@@ -170,7 +173,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             Assert.NotNull(block);
 
             var trie = new PatriciaTrie();
-            var key = 0.ToBytesForRLPEncoding();
+            var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
             Assert.Equal(block.TransactionsHash, trie.Root.GetHash());
@@ -181,16 +184,23 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         {
             var contractAddress = await _fixture.DeployERC20Async(OneToken * 1000);
 
-            var result = await _fixture.TransferERC20Async(contractAddress, _fixture.RecipientAddress, OneToken * 100);
+            var transferFunction = new Contracts.TransferFunction { To = _fixture.RecipientAddress, Value = OneToken * 100 };
+            var callData = transferFunction.GetCallData();
+            var signedTx = _fixture.CreateSignedTransaction(contractAddress, BigInteger.Zero, callData);
+
+            var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
-            Assert.NotEmpty(result.Logs);
+
+            var receipt = await _fixture.Node.GetTransactionReceiptAsync(signedTx.Hash);
+            Assert.NotNull(receipt);
+            Assert.NotEmpty(receipt.Logs);
 
             var block = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(block.ReceiptHash);
             Assert.NotEqual(DefaultValues.EMPTY_TRIE_HASH, block.ReceiptHash);
 
             var rootCalculator = new CoreChain.RootCalculator();
-            var computedRoot = rootCalculator.CalculateReceiptsRoot(new List<Receipt> { result.Receipt });
+            var computedRoot = rootCalculator.CalculateReceiptsRoot(new List<Receipt> { receipt });
 
             Assert.Equal(block.ReceiptHash, computedRoot);
         }
@@ -221,7 +231,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetLatestBlockAsync();
 
             var trie = new PatriciaTrie();
-            var key = 0.ToBytesForRLPEncoding();
+            var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
             var proof = trie.GenerateProof(key);
@@ -243,13 +253,15 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
-            Assert.NotNull(result.Receipt);
+
+            var receipt = await _fixture.Node.GetTransactionReceiptAsync(signedTx.Hash);
+            Assert.NotNull(receipt);
 
             var block = await _fixture.Node.GetLatestBlockAsync();
-            var encodedReceipt = ReceiptEncoder.Current.Encode(result.Receipt);
+            var encodedReceipt = ReceiptEncoder.Current.Encode(receipt);
 
             var trie = new PatriciaTrie();
-            var key = 0.ToBytesForRLPEncoding();
+            var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedReceipt);
 
             Assert.Equal(block.ReceiptHash, trie.Root.GetHash());
@@ -282,7 +294,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             corruptedRoot[0] ^= 0xFF;
 
             var trie = new PatriciaTrie();
-            var key = 0.ToBytesForRLPEncoding();
+            var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
             var proof = trie.GenerateProof(key);

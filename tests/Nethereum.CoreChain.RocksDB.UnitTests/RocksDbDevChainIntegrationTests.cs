@@ -7,18 +7,20 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
-    public class RocksDbDevChainIntegrationTests : IClassFixture<RocksDbTestFixture>, IDisposable
+    public class RocksDbDevChainIntegrationTests : IAsyncLifetime
     {
-        private readonly RocksDbTestFixture _fixture;
+        private RocksDbTestFixture _fixture = null!;
 
-        public RocksDbDevChainIntegrationTests(RocksDbTestFixture fixture)
+        public Task InitializeAsync()
         {
-            _fixture = fixture;
-            _fixture.Reset();
+            _fixture = new RocksDbTestFixture();
+            return Task.CompletedTask;
         }
 
-        public void Dispose()
+        public Task DisposeAsync()
         {
+            _fixture.Dispose();
+            return Task.CompletedTask;
         }
 
         private DevChainNode CreateNode(DevChainConfig config = null)
@@ -30,7 +32,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 _fixture.ReceiptStore,
                 _fixture.LogStore,
                 _fixture.StateStore,
-                _fixture.FilterStore);
+                _fixture.FilterStore,
+                _fixture.TrieNodeStore);
         }
 
         [Fact]
