@@ -294,7 +294,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
         {
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.BeneficiaryAddress
             };
 
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(

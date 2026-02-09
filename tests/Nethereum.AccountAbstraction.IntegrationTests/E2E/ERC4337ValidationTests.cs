@@ -780,7 +780,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             // GIVEN: A paymaster with zero deposit (not enough to cover gas)
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.OperatorAccount.Address
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
@@ -865,7 +866,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             // GIVEN: A paymaster with only 1 wei deposit (not enough for expensive operation)
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.OperatorAccount.Address
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
@@ -961,7 +963,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             // GIVEN: A paymaster with sufficient deposit and stake
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.OperatorAccount.Address
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);

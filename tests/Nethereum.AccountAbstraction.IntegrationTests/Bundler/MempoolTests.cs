@@ -55,7 +55,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                     PaymasterAndData = Array.Empty<byte>(),
                     Signature = new byte[65]
                 },
-                EntryPoint = "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+                EntryPoint = "0x433709009B8330FDa32311DF1C2AFA402eD8D009", // v0.9
                 Priority = priority ?? 1_000_000_000,
                 Prefund = 1_000_000_000_000_000,
                 ValidAfter = validAfter,

@@ -1,6 +1,8 @@
 using System;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.AccountAbstraction;
+using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.IntegrationTests.E2E.Fixtures;
 using Nethereum.AccountAbstraction.IntegrationTests.TestCounter;
 using Nethereum.AccountAbstraction.IntegrationTests.TestCounter.ContractDefinition;
@@ -10,6 +12,7 @@ using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Standards.ERC20;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Web3;
 using Xunit;
@@ -412,38 +415,323 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         #region Scenario 5: Sequential Operations and Nonce Management
 
-        [Fact(Skip = "Sequential operations may have timing issues with nonce management - needs investigation")]
+        [Fact]
         [Trait("Scenario", "Sequential-Operations")]
         public async Task Scenario_SequentialOperations_NonceIncrements()
         {
             // SCENARIO: Multiple sequential operations using the same handler
-            // Demonstrates that nonce is managed correctly
+            // Demonstrates that nonce is managed correctly across multiple UserOperations
+
+            var freshBundler = _fixture.CreateNewBundlerService();
+            var bundlerAdapter = new BundlerServiceAdapter(freshBundler, DevChainBundlerFixture.CHAIN_ID);
 
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(4009, 10m);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
                 _fixture.Web3, new TestCounterDeployment());
 
-            var bundlerService = CreateBundlerAdapter();
+            testCounter.ChangeContractHandlerToAA(
+                accountAddress,
+                accountKey,
+                bundlerAdapter,
+                _fixture.EntryPointService.ContractAddress,
+                factory: factoryConfig);
+
+            // First operation - account deployed, nonce = 0
+            var receipt1 = await testCounter.CountRequestAndWaitForReceiptAsync();
+            Assert.NotNull(receipt1);
+            Assert.IsType<AATransactionReceipt>(receipt1);
+            Assert.True(((AATransactionReceipt)receipt1).UserOpSuccess, "First count should succeed");
+
+            var count1 = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(BigInteger.One, count1);
+
+            // Second operation - nonce should be 1
+            var receipt2 = await testCounter.CountRequestAndWaitForReceiptAsync();
+            Assert.NotNull(receipt2);
+            Assert.True(((AATransactionReceipt)receipt2).UserOpSuccess, "Second count should succeed");
+
+            var count2 = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(new BigInteger(2), count2);
+
+            // Third operation - nonce should be 2
+            var receipt3 = await testCounter.CountRequestAndWaitForReceiptAsync();
+            Assert.NotNull(receipt3);
+            Assert.True(((AATransactionReceipt)receipt3).UserOpSuccess, "Third count should succeed");
+
+            var count3 = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(new BigInteger(3), count3);
+
+            freshBundler.Dispose();
+        }
+
+        [Fact]
+        [Trait("Scenario", "Full-AAContractHandler-Path")]
+        public async Task Scenario_FullAAContractHandler_CountRequestAndWaitForReceipt()
+        {
+            // CRITICAL TEST: Uses the actual AAContractHandler path that was timing out
+            // This should call SendRequestAndWaitForReceiptAsync via the adapter
+
+            var freshBundler = _fixture.CreateNewBundlerService();
+            var bundlerAdapter = new BundlerServiceAdapter(freshBundler, DevChainBundlerFixture.CHAIN_ID);
+
+            var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(4013, 10m);
+
+            var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
+                _fixture.Web3, new TestCounterDeployment());
+
+            testCounter.ChangeContractHandlerToAA(
+                accountAddress,
+                accountKey,
+                bundlerAdapter,
+                _fixture.EntryPointService.ContractAddress,
+                factory: factoryConfig);
+
+            // CRITICAL: This is the actual AAContractHandler path that was timing out
+            // It internally calls:
+            //   1. CreateUserOperationAsync (builds and signs UserOp)
+            //   2. ToRpcFormat (converts to RPC format)
+            //   3. bundlerAdapter.SendUserOperation.SendRequestAsync (sends + executes)
+            //   4. WaitForReceiptAsync (polls GetUserOperationReceipt until found)
+            var receipt = await testCounter.CountRequestAndWaitForReceiptAsync();
+
+            // Verify receipt is correct
+            Assert.NotNull(receipt);
+            Assert.IsType<AATransactionReceipt>(receipt);
+            var aaReceipt = (AATransactionReceipt)receipt;
+            Assert.True(aaReceipt.UserOpSuccess, $"UserOp should succeed. Revert: {aaReceipt.RevertReason}");
+
+            // Verify counter incremented
+            var count = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(BigInteger.One, count);
+
+            freshBundler.Dispose();
+        }
+
+        [Fact]
+        [Trait("Scenario", "Diagnostic-RPC-Roundtrip")]
+        public async Task Diagnostic_RpcRoundtrip_HashPreservation()
+        {
+            // DIAGNOSTIC: Test if RPC format round-trip preserves the UserOpHash
+            // This identifies if format conversion is causing hash mismatches
+
+            var freshBundler = _fixture.CreateNewBundlerService();
+            var bundlerAdapter = new BundlerServiceAdapter(freshBundler, DevChainBundlerFixture.CHAIN_ID);
+
+            var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(4011, 10m);
+
+            var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
+                _fixture.Web3, new TestCounterDeployment());
 
             var handler = testCounter.ChangeContractHandlerToAA(
                 accountAddress,
                 accountKey,
-                bundlerService,
+                bundlerAdapter,
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // WHEN: Execute 2 sequential operations (keeping it simple for test stability)
-            for (int i = 1; i <= 2; i++)
-            {
-                var receipt = await testCounter.CountRequestAndWaitForReceiptAsync();
-                var aaReceipt = (AATransactionReceipt)receipt;
-                Assert.True(aaReceipt.UserOpSuccess, $"Operation {i} should succeed. Revert: {aaReceipt.RevertReason}");
-            }
+            // Step 1: Create original PackedUserOperation
+            var countFunction = new CountFunction();
+            var originalPackedOp = await handler.CreateUserOperationAsync(countFunction);
 
-            // THEN: Counter should be 2
-            var finalCount = await testCounter.CountersQueryAsync(accountAddress);
-            Assert.Equal(new BigInteger(2), finalCount);
+            // Step 2: Calculate hash from ORIGINAL packed op (before any conversion)
+            var hashFromOriginal = await freshBundler.SendUserOperationAsync(originalPackedOp, _fixture.EntryPointService.ContractAddress);
+
+            // Clear the mempool - we need to test the reconverted op separately
+            await freshBundler.DropUserOperationAsync(hashFromOriginal);
+
+            // Step 3: Simulate what the adapter does - convert to RPC and back
+            var rpcUserOp = UserOperationConverter.ToRpcFormat(originalPackedOp);
+            var reconvertedPackedOp = UserOperationConverter.FromRpcFormat(rpcUserOp);
+
+            // Step 4: Calculate hash from RECONVERTED packed op
+            var hashFromReconverted = await freshBundler.SendUserOperationAsync(reconvertedPackedOp, _fixture.EntryPointService.ContractAddress);
+
+            // Step 5: Compare hashes - if they differ, RPC round-trip is causing the problem
+            Assert.Equal(hashFromOriginal, hashFromReconverted);
+
+            // Cleanup
+            freshBundler.Dispose();
+        }
+
+        [Fact]
+        [Trait("Scenario", "Diagnostic-Sequential")]
+        public async Task Diagnostic_SequentialOperations_DetailedTracing()
+        {
+            // DIAGNOSTIC: Traces exactly what happens between sequential operations
+            // to identify why the second operation times out
+
+            var freshBundler = _fixture.CreateNewBundlerService();
+            var bundlerAdapter = new BundlerServiceAdapter(freshBundler, DevChainBundlerFixture.CHAIN_ID);
+
+            var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(4014, 10m);
+
+            var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
+                _fixture.Web3, new TestCounterDeployment());
+
+            var handler = testCounter.ChangeContractHandlerToAA(
+                accountAddress,
+                accountKey,
+                bundlerAdapter,
+                _fixture.EntryPointService.ContractAddress,
+                factory: factoryConfig);
+
+            // === FIRST OPERATION ===
+            var countFunction1 = new CountFunction();
+            var packedOp1 = await handler.CreateUserOperationAsync(countFunction1);
+            Assert.NotNull(packedOp1);
+
+            // First op should have nonce 0 and include initCode (account not deployed)
+            Assert.Equal(BigInteger.Zero, packedOp1.Nonce);
+            var hasInitCode1 = packedOp1.InitCode != null && packedOp1.InitCode.Length > 0;
+            Assert.True(hasInitCode1, "First op should have initCode (account not deployed)");
+
+            // Get verification gas from first op (for comparison)
+            var accountGasLimits1 = packedOp1.AccountGasLimits ?? new byte[32];
+            var verificationGas1 = new BigInteger(accountGasLimits1.Take(16).Reverse().Concat(new byte[] { 0 }).ToArray());
+
+            // Send and execute first op (mirroring what adapter does)
+            var rpcUserOp1 = UserOperationConverter.ToRpcFormat(packedOp1);
+            var reconvertedOp1 = UserOperationConverter.FromRpcFormat(rpcUserOp1);
+            var hash1 = await freshBundler.SendUserOperationAsync(reconvertedOp1, _fixture.EntryPointService.ContractAddress);
+
+            var pendingBefore1 = await freshBundler.GetPendingUserOperationsAsync();
+            Assert.True(pendingBefore1.Length >= 1, $"First op: expected pending >= 1, got {pendingBefore1.Length}");
+
+            var result1 = await freshBundler.ExecuteBundleAsync();
+            Assert.NotNull(result1);
+            Assert.True(result1.Success, $"First bundle failed: {result1.Error}");
+
+            var receipt1 = await freshBundler.GetUserOperationReceiptAsync(hash1);
+            Assert.NotNull(receipt1);
+
+            var count1 = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(BigInteger.One, count1);
+
+            // Check mempool state after first operation
+            var statusAfter1 = await freshBundler.GetUserOperationStatusAsync(hash1);
+            Assert.Equal(UserOpState.Included, statusAfter1.State);
+
+            // === SECOND OPERATION ===
+
+            // Query the on-chain nonce for key 0 BEFORE creating second op
+            var onChainNonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
+
+            var countFunction2 = new CountFunction();
+            var packedOp2 = await handler.CreateUserOperationAsync(countFunction2);
+            Assert.NotNull(packedOp2);
+
+            // Detailed nonce diagnostics
+            Assert.NotEqual(packedOp1.Nonce, packedOp2.Nonce);
+            Assert.Equal(onChainNonce, packedOp2.Nonce);
+
+            // Key diagnostic: Check if initCode is empty for second op (account already deployed)
+            var hasInitCode2 = packedOp2.InitCode != null && packedOp2.InitCode.Length > 0;
+            Assert.False(hasInitCode2, $"Second op should have empty initCode (account already deployed). InitCode length: {packedOp2.InitCode?.Length ?? 0}");
+
+            // Compare verification gas between first and second operations
+            var accountGasLimits2 = packedOp2.AccountGasLimits ?? new byte[32];
+            var verificationGas2 = new BigInteger(accountGasLimits2.Take(16).Reverse().Concat(new byte[] { 0 }).ToArray());
+
+            // After FIX: DEFAULT_VERIFICATION_GAS_LIMIT is now 150000 (was 15000)
+            // Both operations should have sufficient verification gas
+            Assert.True(verificationGas2 >= 100000,
+                $"Second op should have sufficient verification gas. First op: {verificationGas1}, Second op: {verificationGas2}");
+
+            // Verify account code exists on-chain
+            var accountCode = await _fixture.Web3.Eth.GetCode.SendRequestAsync(accountAddress);
+            Assert.True(!string.IsNullOrEmpty(accountCode) && accountCode != "0x" && accountCode.Length > 2,
+                $"Account should be deployed after first op. Code: {accountCode}");
+
+            // Send second op
+            var rpcUserOp2 = UserOperationConverter.ToRpcFormat(packedOp2);
+            var reconvertedOp2 = UserOperationConverter.FromRpcFormat(rpcUserOp2);
+            var hash2 = await freshBundler.SendUserOperationAsync(reconvertedOp2, _fixture.EntryPointService.ContractAddress);
+
+            // Hashes should be different
+            Assert.NotEqual(hash1, hash2);
+
+            // Check pending ops before second bundle
+            var pendingBefore2 = await freshBundler.GetPendingUserOperationsAsync();
+            Assert.True(pendingBefore2.Length >= 1, $"Second op: expected pending >= 1, got {pendingBefore2.Length}");
+
+            var result2 = await freshBundler.ExecuteBundleAsync();
+            Assert.NotNull(result2);
+            Assert.True(result2.Success, $"Second bundle failed: {result2.Error}");
+
+            var status2 = await freshBundler.GetUserOperationStatusAsync(hash2);
+            Assert.Equal(UserOpState.Included, status2.State);
+
+            var receipt2 = await freshBundler.GetUserOperationReceiptAsync(hash2);
+            Assert.NotNull(receipt2);
+
+            var count2 = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(new BigInteger(2), count2);
+
+            freshBundler.Dispose();
+        }
+
+        [Fact]
+        [Trait("Scenario", "Diagnostic-Full-Path")]
+        public async Task Diagnostic_FullAAContractHandlerPath_WithTracing()
+        {
+            // DIAGNOSTIC: Full AAContractHandler path with detailed tracing
+            // This traces the exact path that times out to identify where it fails
+
+            var freshBundler = _fixture.CreateNewBundlerService();
+            var bundlerAdapter = new BundlerServiceAdapter(freshBundler, DevChainBundlerFixture.CHAIN_ID);
+
+            var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(4012, 10m);
+
+            var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
+                _fixture.Web3, new TestCounterDeployment());
+
+            var handler = testCounter.ChangeContractHandlerToAA(
+                accountAddress,
+                accountKey,
+                bundlerAdapter,
+                _fixture.EntryPointService.ContractAddress,
+                factory: factoryConfig);
+
+            // Step 1: Create the packed op (same as handler does internally)
+            var countFunction = new CountFunction();
+            var originalPackedOp = await handler.CreateUserOperationAsync(countFunction);
+
+            // Step 2: Simulate SendUserOperationAdapter.SendRequestAsync exactly
+            var rpcUserOp = UserOperationConverter.ToRpcFormat(originalPackedOp);
+            var reconvertedPackedOp = UserOperationConverter.FromRpcFormat(rpcUserOp);
+
+            var userOpHash = await freshBundler.SendUserOperationAsync(reconvertedPackedOp, _fixture.EntryPointService.ContractAddress);
+            Assert.NotNull(userOpHash);
+
+            // Step 3: Check mempool before execution
+            var pendingBefore = await freshBundler.GetPendingUserOperationsAsync();
+            Assert.True(pendingBefore.Length >= 1, $"Should have pending. Found: {pendingBefore.Length}");
+
+            // Step 4: Execute bundle (same as adapter does)
+            var bundleResult = await freshBundler.ExecuteBundleAsync();
+            Assert.NotNull(bundleResult);
+            Assert.True(bundleResult.Success, $"Bundle failed: {bundleResult.Error}");
+            Assert.NotNull(bundleResult.TransactionHash);
+
+            // Step 5: Check mempool state after execution
+            var status = await freshBundler.GetUserOperationStatusAsync(userOpHash);
+            Assert.Equal(UserOpState.Included, status.State);
+            Assert.NotNull(status.TransactionHash);
+
+            // Step 6: Get receipt via bundler directly
+            var directReceipt = await freshBundler.GetUserOperationReceiptAsync(userOpHash);
+            Assert.NotNull(directReceipt);
+
+            // Step 7: Get receipt via adapter (same path WaitForReceiptAsync uses)
+            var adapterReceipt = await bundlerAdapter.GetUserOperationReceipt.SendRequestAsync(userOpHash);
+            Assert.NotNull(adapterReceipt);
+
+            // Step 8: Verify the actual counter incremented
+            var count = await testCounter.CountersQueryAsync(accountAddress);
+            Assert.Equal(BigInteger.One, count);
+
+            freshBundler.Dispose();
         }
 
         #endregion
@@ -715,7 +1003,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.OperatorAccount.Address
             };
 
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(

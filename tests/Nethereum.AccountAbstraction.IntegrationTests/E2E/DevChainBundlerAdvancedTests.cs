@@ -465,7 +465,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             var paymasterDeployment = new TestPaymasterDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.OperatorAccount.Address
             };
 
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(

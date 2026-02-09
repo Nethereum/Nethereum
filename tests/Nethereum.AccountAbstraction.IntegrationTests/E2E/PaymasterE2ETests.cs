@@ -308,7 +308,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.BeneficiaryAddress
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
@@ -474,7 +475,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.BeneficiaryAddress
             };
 
             return await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
