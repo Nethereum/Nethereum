@@ -16,6 +16,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         public ILogStore LogStore { get; private set; }
         public IStateStore StateStore { get; private set; }
         public IFilterStore FilterStore { get; private set; }
+        public ITrieNodeStore TrieNodeStore { get; private set; }
 
         public RocksDbTestFixture()
         {
@@ -37,16 +38,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             LogStore = new RocksDbLogStore(Manager);
             StateStore = new RocksDbStateStore(Manager);
             FilterStore = new RocksDbFilterStore(Manager);
-        }
-
-        public void Reset()
-        {
-            Manager?.Dispose();
-            if (Directory.Exists(DatabasePath))
-            {
-                Directory.Delete(DatabasePath, true);
-            }
-            Initialize();
+            TrieNodeStore = new RocksDbTrieNodeStore(Manager);
         }
 
         public void Dispose()
