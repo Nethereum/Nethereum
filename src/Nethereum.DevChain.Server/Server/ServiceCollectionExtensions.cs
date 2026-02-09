@@ -1,6 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Rpc;
+using Nethereum.CoreChain.RocksDB;
+using Nethereum.CoreChain.RocksDB.Stores;
+using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.DevChain;
 using Nethereum.DevChain.Rpc;
 using Nethereum.DevChain.Server.Accounts;
@@ -15,11 +19,43 @@ namespace Nethereum.DevChain.Server.Server
         {
             services.AddSingleton(config);
 
-            services.AddSingleton(provider =>
+            if (config.Storage?.ToLowerInvariant() == "rocksdb")
             {
-                var devChainConfig = config.ToDevChainConfig();
-                return new DevChainNode(devChainConfig);
-            });
+                services.AddRocksDbStorage(new RocksDbStorageOptions
+                {
+                    DatabasePath = config.DataDir
+                });
+
+                services.AddSingleton(provider =>
+                {
+                    var devChainConfig = config.ToDevChainConfig();
+                    var blockStore = provider.GetRequiredService<IBlockStore>();
+                    var transactionStore = provider.GetRequiredService<ITransactionStore>();
+                    var receiptStore = provider.GetRequiredService<IReceiptStore>();
+                    var logStore = provider.GetRequiredService<ILogStore>();
+                    var stateStore = provider.GetRequiredService<IStateStore>();
+                    var filterStore = provider.GetRequiredService<IFilterStore>();
+                    var trieNodeStore = provider.GetRequiredService<ITrieNodeStore>();
+
+                    return new DevChainNode(
+                        devChainConfig,
+                        blockStore,
+                        transactionStore,
+                        receiptStore,
+                        logStore,
+                        stateStore,
+                        filterStore,
+                        trieNodeStore);
+                });
+            }
+            else
+            {
+                services.AddSingleton(provider =>
+                {
+                    var devChainConfig = config.ToDevChainConfig();
+                    return new DevChainNode(devChainConfig);
+                });
+            }
 
             services.AddSingleton<DevAccountManager>();
 
@@ -47,12 +83,9 @@ namespace Nethereum.DevChain.Server.Server
             {
                 var registry = provider.GetRequiredService<RpcHandlerRegistry>();
                 var context = provider.GetRequiredService<RpcContext>();
-                var logger = provider.GetRequiredService<ILogger<RpcDispatcher>>();
+                var logger = config.Verbose ? provider.GetRequiredService<ILogger<RpcDispatcher>>() : null;
 
-                Action<string>? logInfo = config.Verbose ? msg => logger.LogInformation("{Message}", msg) : null;
-                Action<string, Exception>? logError = (msg, ex) => logger.LogError(ex, "{Message}", msg);
-
-                return new RpcDispatcher(registry, context, logInfo, logError);
+                return new RpcDispatcher(registry, context, logger);
             });
 
             return services;

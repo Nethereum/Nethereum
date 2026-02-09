@@ -31,8 +31,8 @@ namespace Nethereum.DevChain.Tracing
                 {
                     Pc = (ulong)(trace.Instruction?.Step ?? 0),
                     Op = trace.Instruction?.Instruction?.ToString() ?? "UNKNOWN",
-                    Gas = (ulong)gasRemaining,
-                    GasCost = (ulong)trace.GasCost,
+                    Gas = gasRemaining < 0 ? 0 : (gasRemaining > ulong.MaxValue ? ulong.MaxValue : (ulong)gasRemaining),
+                    GasCost = trace.GasCost < 0 ? 0 : (trace.GasCost > ulong.MaxValue ? ulong.MaxValue : (ulong)trace.GasCost),
                     Depth = trace.Depth
                 };
 

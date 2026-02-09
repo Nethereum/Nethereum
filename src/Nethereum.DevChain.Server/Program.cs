@@ -56,54 +56,57 @@ app.MapPost("/", async (HttpContext httpContext) =>
             return;
         }
 
-        var jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        httpContext.Response.ContentType = "application/json";
 
         if (json.TrimStart().StartsWith('['))
         {
-            var requests = JsonSerializer.Deserialize<RpcRequestMessage[]>(json, jsonOptions);
+            var requests = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequestArray);
             if (requests != null)
             {
-                var responses = await dispatcher.DispatchBatchAsync(requests);
-                httpContext.Response.ContentType = "application/json";
-                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(responses));
+                var rpcRequests = requests.Select(ToRpcRequestMessage).ToArray();
+                var responses = await dispatcher.DispatchBatchAsync(rpcRequests);
+                var jsonResponses = responses.Select(ToJsonRpcResponse).ToArray();
+                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(jsonResponses, CoreChainJsonContext.Default.JsonRpcResponseArray));
                 return;
             }
         }
 
-        var request = JsonSerializer.Deserialize<RpcRequestMessage>(json, jsonOptions);
+        var request = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequest);
         if (request == null)
         {
             httpContext.Response.StatusCode = 400;
-            await httpContext.Response.WriteAsJsonAsync(new { error = "Invalid JSON-RPC request" });
+            await httpContext.Response.WriteAsync("{\"error\":\"Invalid JSON-RPC request\"}");
             return;
         }
 
-        var response = await dispatcher.DispatchAsync(request);
-        httpContext.Response.ContentType = "application/json";
-        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(response));
+        var rpcRequest = ToRpcRequestMessage(request);
+        var response = await dispatcher.DispatchAsync(rpcRequest);
+        var jsonResponse = ToJsonRpcResponse(response);
+        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
     }
     catch (JsonException ex)
     {
         logger.LogError(ex, "JSON parsing error");
         httpContext.Response.StatusCode = 400;
-        await httpContext.Response.WriteAsJsonAsync(new RpcResponseMessage(null, new RpcError
+        httpContext.Response.ContentType = "application/json";
+        var errorResponse = new JsonRpcResponse
         {
-            Code = -32700,
-            Message = "Parse error: " + ex.Message
-        }));
+            Id = null,
+            Error = new JsonRpcError { Code = -32700, Message = "Parse error: " + ex.Message }
+        };
+        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
     }
     catch (Exception ex)
     {
         logger.LogError(ex, "Unexpected error");
         httpContext.Response.StatusCode = 500;
-        await httpContext.Response.WriteAsJsonAsync(new RpcResponseMessage(null, new RpcError
+        httpContext.Response.ContentType = "application/json";
+        var errorResponse = new JsonRpcResponse
         {
-            Code = -32603,
-            Message = "Internal error: " + ex.Message
-        }));
+            Id = null,
+            Error = new JsonRpcError { Code = -32603, Message = "Internal error: " + ex.Message }
+        };
+        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
     }
 });
 
@@ -132,6 +135,20 @@ void PrintBanner(DevChainServerConfig config, DevAccountManager accounts)
     Console.WriteLine($"RPC Server listening on http://{config.Host}:{config.Port}");
     Console.ResetColor();
     Console.WriteLine($"Chain ID: {config.ChainId}");
+
+    if (config.Storage?.ToLowerInvariant() == "rocksdb")
+    {
+        Console.ForegroundColor = ConsoleColor.Blue;
+        Console.WriteLine($"Storage: RocksDB ({config.DataDir})");
+        Console.ResetColor();
+    }
+
+    if (config.AutoMineBatchSize > 1)
+    {
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine($"Batch Mining: {config.AutoMineBatchSize} txs / {config.AutoMineBatchTimeoutMs}ms timeout");
+        Console.ResetColor();
+    }
 
     if (config.Fork?.Url != null)
     {
@@ -213,5 +230,57 @@ void ApplyCommandLineOverrides(DevChainServerConfig config, string[] args)
         {
             config.Verbose = true;
         }
+        else if (arg == "--batch-size" && i + 1 < args.Length)
+        {
+            if (int.TryParse(args[++i], out var batchSize))
+                config.AutoMineBatchSize = batchSize;
+        }
+        else if (arg == "--batch-timeout" && i + 1 < args.Length)
+        {
+            if (int.TryParse(args[++i], out var timeoutMs))
+                config.AutoMineBatchTimeoutMs = timeoutMs;
+        }
+        else if (arg == "--storage" && i + 1 < args.Length)
+        {
+            config.Storage = args[++i];
+        }
+        else if (arg == "--data-dir" && i + 1 < args.Length)
+        {
+            config.DataDir = args[++i];
+        }
     }
+}
+
+RpcRequestMessage ToRpcRequestMessage(JsonRpcRequest request)
+{
+    return new RpcRequestMessage
+    {
+        Id = request.Id,
+        Method = request.Method,
+        JsonRpcVersion = request.Jsonrpc,
+        RawParameters = request.Params.HasValue ? request.Params.Value : null
+    };
+}
+
+JsonRpcResponse ToJsonRpcResponse(RpcResponseMessage response)
+{
+    if (response.HasError)
+    {
+        return new JsonRpcResponse
+        {
+            Id = response.Id,
+            Error = new JsonRpcError
+            {
+                Code = response.Error.Code,
+                Message = response.Error.Message,
+                Data = response.Error.Data
+            }
+        };
+    }
+
+    return new JsonRpcResponse
+    {
+        Id = response.Id,
+        Result = response.Result
+    };
 }

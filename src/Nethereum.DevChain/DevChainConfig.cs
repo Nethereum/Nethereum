@@ -8,8 +8,24 @@ namespace Nethereum.DevChain
         public int MaxTransactionsPerBlock { get; set; } = 100;
         public long BlockTime { get; set; } = 0;
 
+        /// <summary>
+        /// When AutoMine is enabled, batch transactions together before mining.
+        /// Mining occurs when batch size is reached OR timeout elapses.
+        /// Set to 1 for immediate mining (legacy behavior).
+        /// </summary>
+        public int AutoMineBatchSize { get; set; } = 1;
+
+        /// <summary>
+        /// Maximum time to wait for batch to fill before mining (milliseconds).
+        /// Only applies when AutoMineBatchSize > 1.
+        /// </summary>
+        public int AutoMineBatchTimeoutMs { get; set; } = 10;
+
         public long TimeOffset { get; set; } = 0;
         public long? NextBlockTimestamp { get; set; }
+        public System.Numerics.BigInteger? NextBlockBaseFee { get; set; }
+        public byte[] NextBlockPrevRandao { get; set; }
+        public string NextBlockCoinbase { get; set; }
 
         public string ForkUrl { get; set; }
         public long? ForkBlockNumber { get; set; }

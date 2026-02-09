@@ -17,6 +17,10 @@ namespace Nethereum.DevChain.Server.Configuration
         public string AccountBalance { get; set; } = "10000000000000000000000";
         public ForkConfig? Fork { get; set; }
         public bool Verbose { get; set; } = false;
+        public int AutoMineBatchSize { get; set; } = 1;
+        public int AutoMineBatchTimeoutMs { get; set; } = 10;
+        public string Storage { get; set; } = "memory";
+        public string DataDir { get; set; } = "./chaindata";
 
         public BigInteger GetAccountBalance()
         {
@@ -30,6 +34,8 @@ namespace Nethereum.DevChain.Server.Configuration
                 ChainId = ChainId,
                 BlockGasLimit = BlockGasLimit,
                 AutoMine = AutoMine,
+                AutoMineBatchSize = AutoMineBatchSize,
+                AutoMineBatchTimeoutMs = AutoMineBatchTimeoutMs,
                 InitialBalance = GetAccountBalance(),
                 ForkUrl = Fork?.Url,
                 ForkBlockNumber = Fork?.BlockNumber

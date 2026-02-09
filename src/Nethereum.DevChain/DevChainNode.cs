@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
@@ -18,22 +19,15 @@ using Nethereum.Signer;
 using Nethereum.RLP;
 using Nethereum.RPC;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Util;
+using Account = Nethereum.Web3.Accounts.Account;
 
 namespace Nethereum.DevChain
 {
-    public class DevChainNode : IDevChainNode
+    public class DevChainNode : ChainNodeBase, IDevChainNode, IDisposable
     {
         private readonly DevChainConfig _config;
-        private readonly IBlockStore _blockStore;
-        private readonly ITransactionStore _transactionStore;
-        private readonly IReceiptStore _receiptStore;
-        private readonly ILogStore _logStore;
-        private readonly IStateStore _stateStore;
-        private readonly IFilterStore _filterStore;
-        private readonly INodeDataService _nodeDataService;
-        private readonly TransactionProcessor _transactionProcessor;
         private readonly BlockManager _blockManager;
-        private readonly ITransactionVerificationAndRecovery _txVerifier;
         private readonly Dictionary<int, CoreChain.Storage.IStateSnapshot> _snapshots = new Dictionary<int, CoreChain.Storage.IStateSnapshot>();
 
         private bool _initialized;
@@ -42,58 +36,83 @@ namespace Nethereum.DevChain
         {
         }
 
-        public DevChainNode(DevChainConfig config)
+        public DevChainNode(DevChainConfig config) : this(
+            config,
+            new InMemoryBlockStore(),
+            new InMemoryTransactionStore(),
+            new InMemoryReceiptStore(),
+            new InMemoryLogStore(),
+            new InMemoryStateStore(),
+            new InMemoryFilterStore(),
+            new InMemoryTrieNodeStore())
+        {
+        }
+
+        public DevChainNode(
+            DevChainConfig config,
+            IBlockStore blockStore,
+            ITransactionStore transactionStore,
+            IReceiptStore receiptStore,
+            ILogStore logStore,
+            IStateStore stateStore,
+            IFilterStore filterStore,
+            ITrieNodeStore trieNodeStore = null)
+            : base(
+                blockStore,
+                transactionStore,
+                receiptStore,
+                logStore,
+                stateStore,
+                filterStore,
+                CreateTransactionProcessor(stateStore, blockStore, config),
+                new TransactionVerificationAndRecoveryImp(),
+                CreateNodeDataService(stateStore, blockStore, config),
+                trieNodeStore)
         {
             _config = config ?? DevChainConfig.Default;
 
-            _blockStore = new InMemoryBlockStore();
-            _transactionStore = new InMemoryTransactionStore();
-            _receiptStore = new InMemoryReceiptStore();
-            _logStore = new InMemoryLogStore();
-            _stateStore = new InMemoryStateStore();
-            _filterStore = new InMemoryFilterStore();
-            _txVerifier = new TransactionVerificationAndRecoveryImp();
-
-            if (_config.IsForkEnabled)
-            {
-                var rpcClient = new RpcClient(new Uri(_config.ForkUrl));
-                var ethApiService = new EthApiService(rpcClient);
-                var forkBlock = _config.ForkBlockNumber.HasValue
-                    ? new BlockParameter((ulong)_config.ForkBlockNumber.Value)
-                    : BlockParameter.CreateLatest();
-
-                _nodeDataService = new ForkingNodeDataService(
-                    _stateStore, _blockStore, ethApiService, forkBlock);
-            }
-            else
-            {
-                _nodeDataService = new StateStoreNodeDataService(_stateStore, _blockStore);
-            }
-
-            _transactionProcessor = new TransactionProcessor(
-                _stateStore,
-                _blockStore,
-                _config,
-                _txVerifier);
-
             _blockManager = new BlockManager(
-                _blockStore,
-                _transactionStore,
-                _receiptStore,
-                _logStore,
-                _stateStore,
+                blockStore,
+                transactionStore,
+                receiptStore,
+                logStore,
+                stateStore,
                 _transactionProcessor,
-                _config);
+                _txVerifier,
+                _config,
+                trieNodeStore);
         }
 
+        private static TransactionProcessor CreateTransactionProcessor(
+            IStateStore stateStore, IBlockStore blockStore, DevChainConfig config)
+        {
+            var effectiveConfig = config ?? DevChainConfig.Default;
+            return new TransactionProcessor(
+                stateStore,
+                blockStore,
+                effectiveConfig,
+                new TransactionVerificationAndRecoveryImp(),
+                effectiveConfig.GetHardforkConfig());
+        }
+
+        private static INodeDataService CreateNodeDataService(
+            IStateStore stateStore, IBlockStore blockStore, DevChainConfig config)
+        {
+            if (config?.IsForkEnabled == true)
+            {
+                var rpcClient = new RpcClient(new Uri(config.ForkUrl));
+                var ethApiService = new EthApiService(rpcClient);
+                var forkBlock = config.ForkBlockNumber.HasValue
+                    ? new BlockParameter((ulong)config.ForkBlockNumber.Value)
+                    : BlockParameter.CreateLatest();
+
+                return new ForkingNodeDataService(stateStore, blockStore, ethApiService, forkBlock);
+            }
+            return new StateStoreNodeDataService(stateStore, blockStore);
+        }
+
+        public override ChainConfig Config => _config;
         public DevChainConfig DevConfig => _config;
-        ChainConfig IChainNode.Config => _config;
-        public IBlockStore Blocks => _blockStore;
-        public ITransactionStore Transactions => _transactionStore;
-        public IReceiptStore Receipts => _receiptStore;
-        public ILogStore Logs => _logStore;
-        public IStateStore State => _stateStore;
-        public IFilterStore Filters => _filterStore;
         public BlockManager BlockManager => _blockManager;
 
         public async Task StartAsync()
@@ -133,7 +152,151 @@ namespace Nethereum.DevChain
             _initialized = true;
         }
 
-        public async Task<TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx)
+        public async Task StartAsync(params Account[] accounts)
+        {
+            if (_initialized)
+                return;
+
+            foreach (var account in accounts)
+            {
+                await SetBalanceAsync(account.Address, _config.InitialBalance);
+            }
+
+            await _blockManager.InitializeAsync();
+            _initialized = true;
+        }
+
+        public async Task StartAsync(IEnumerable<Account> accounts, BigInteger balance)
+        {
+            if (_initialized)
+                return;
+
+            foreach (var account in accounts)
+            {
+                await SetBalanceAsync(account.Address, balance);
+            }
+
+            await _blockManager.InitializeAsync();
+            _initialized = true;
+        }
+
+        public async Task StartAsync(params EthECKey[] keys)
+        {
+            if (_initialized)
+                return;
+
+            foreach (var key in keys)
+            {
+                await SetBalanceAsync(key.GetPublicAddress(), _config.InitialBalance);
+            }
+
+            await _blockManager.InitializeAsync();
+            _initialized = true;
+        }
+
+        public async Task StartAsync(IEnumerable<EthECKey> keys, BigInteger balance)
+        {
+            if (_initialized)
+                return;
+
+            foreach (var key in keys)
+            {
+                await SetBalanceAsync(key.GetPublicAddress(), balance);
+            }
+
+            await _blockManager.InitializeAsync();
+            _initialized = true;
+        }
+
+        public async Task StartAsync(IDictionary<string, BigInteger> addressBalances)
+        {
+            if (_initialized)
+                return;
+
+            foreach (var kvp in addressBalances)
+            {
+                await SetBalanceAsync(kvp.Key, kvp.Value);
+            }
+
+            await _blockManager.InitializeAsync();
+            _initialized = true;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(DevChainConfig config = null)
+        {
+            var node = new DevChainNode(config ?? DevChainConfig.Default);
+            await node.StartAsync();
+            return node;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(params string[] prefundedAddresses)
+        {
+            var node = new DevChainNode();
+            await node.StartAsync(prefundedAddresses);
+            return node;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(params Account[] accounts)
+        {
+            var node = new DevChainNode();
+            await node.StartAsync(accounts);
+            return node;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(params EthECKey[] keys)
+        {
+            var node = new DevChainNode();
+            await node.StartAsync(keys);
+            return node;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(DevChainConfig config, params Account[] accounts)
+        {
+            var node = new DevChainNode(config);
+            await node.StartAsync(accounts);
+            return node;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(DevChainConfig config, params EthECKey[] keys)
+        {
+            var node = new DevChainNode(config);
+            await node.StartAsync(keys);
+            return node;
+        }
+
+        public static async Task<DevChainNode> CreateAndStartAsync(IDictionary<string, BigInteger> addressBalances, DevChainConfig config = null)
+        {
+            var node = new DevChainNode(config ?? DevChainConfig.Default);
+            await node.StartAsync(addressBalances);
+            return node;
+        }
+
+        public Account[] GenerateAndFundAccounts(int count)
+        {
+            var accounts = new Account[count];
+            var chainId = (int)_config.ChainId;
+            for (int i = 0; i < count; i++)
+            {
+                var key = EthECKey.GenerateKey();
+                accounts[i] = new Account(key.GetPrivateKey(), chainId);
+            }
+            return accounts;
+        }
+
+        public async Task<Account[]> GenerateAndFundAccountsAsync(int count, BigInteger? balance = null)
+        {
+            var accounts = GenerateAndFundAccounts(count);
+            var fundBalance = balance ?? _config.InitialBalance;
+
+            foreach (var account in accounts)
+            {
+                await SetBalanceAsync(account.Address, fundBalance);
+            }
+
+            return accounts;
+        }
+
+        public override async Task<CoreChain.TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx)
         {
             EnsureInitialized();
             return await _blockManager.SendTransactionAsync(tx);
@@ -145,95 +308,46 @@ namespace Nethereum.DevChain
             return await _blockManager.MineBlockAsync();
         }
 
+        public async Task<byte[]> MineBlockAsync(byte[] parentBeaconBlockRoot)
+        {
+            EnsureInitialized();
+            return await _blockManager.MineBlockAsync(parentBeaconBlockRoot);
+        }
+
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
         {
             EnsureInitialized();
             return await _blockManager.MineBlockWithTransactionAsync(tx);
         }
 
-        public async Task<BlockHeader> GetBlockByHashAsync(byte[] blockHash)
-        {
-            return await _blockStore.GetByHashAsync(blockHash);
-        }
-
-        public async Task<BlockHeader> GetBlockByNumberAsync(BigInteger blockNumber)
-        {
-            return await _blockStore.GetByNumberAsync(blockNumber);
-        }
-
-        public async Task<byte[]> GetBlockHashByNumberAsync(BigInteger blockNumber)
-        {
-            return await _blockStore.GetHashByNumberAsync(blockNumber);
-        }
-
-        public async Task<BlockHeader> GetLatestBlockAsync()
-        {
-            return await _blockStore.GetLatestAsync();
-        }
-
-        public async Task<BigInteger> GetBlockNumberAsync()
-        {
-            return await _blockStore.GetHeightAsync();
-        }
-
-        public async Task<ISignedTransaction> GetTransactionByHashAsync(byte[] txHash)
-        {
-            return await _transactionStore.GetByHashAsync(txHash);
-        }
-
-        public async Task<Receipt> GetTransactionReceiptAsync(byte[] txHash)
-        {
-            return await _receiptStore.GetByTxHashAsync(txHash);
-        }
-
-        public async Task<ReceiptInfo> GetTransactionReceiptInfoAsync(byte[] txHash)
-        {
-            return await _receiptStore.GetInfoByTxHashAsync(txHash);
-        }
-
-        public async Task<BigInteger> GetBalanceAsync(string address)
-        {
-            return await _nodeDataService.GetBalanceAsync(address);
-        }
-
-        public async Task<BigInteger> GetNonceAsync(string address)
-        {
-            return await _nodeDataService.GetTransactionCount(address);
-        }
-
-        public async Task<byte[]> GetCodeAsync(string address)
-        {
-            return await _nodeDataService.GetCodeAsync(address);
-        }
-
-        public async Task<byte[]> GetStorageAtAsync(string address, BigInteger slot)
-        {
-            return await _nodeDataService.GetStorageAtAsync(address, slot);
-        }
-
         public async Task SetBalanceAsync(string address, BigInteger balance)
         {
             var account = await _stateStore.GetAccountAsync(address)
-                ?? new Account { Nonce = 0 };
+                ?? new Model.Account { Nonce = 0 };
             account.Balance = balance;
             await _stateStore.SaveAccountAsync(address, account);
+        }
+
+        public async Task SetBlockHashAsync(BigInteger blockNumber, byte[] hash)
+        {
+            await _blockStore.UpdateBlockHashAsync(blockNumber, hash);
         }
 
         public async Task SetNonceAsync(string address, BigInteger nonce)
         {
             var account = await _stateStore.GetAccountAsync(address)
-                ?? new Account { Balance = 0 };
+                ?? new Model.Account { Balance = 0 };
             account.Nonce = nonce;
             await _stateStore.SaveAccountAsync(address, account);
         }
 
         public async Task SetCodeAsync(string address, byte[] code)
         {
-            var codeHash = new Nethereum.Util.Sha3Keccack().CalculateHash(code);
+            var codeHash = new Sha3Keccack().CalculateHash(code);
             await _stateStore.SaveCodeAsync(codeHash, code);
 
             var account = await _stateStore.GetAccountAsync(address)
-                ?? new Account { Balance = 0, Nonce = 1 };
+                ?? new Model.Account { Balance = 0, Nonce = 1 };
             account.CodeHash = codeHash;
             await _stateStore.SaveAccountAsync(address, account);
         }
@@ -262,7 +376,7 @@ namespace Nethereum.DevChain
             }
         }
 
-        public BlockContext GetPendingBlockContext()
+        public CoreChain.BlockContext GetPendingBlockContext()
         {
             return _blockManager.GetPendingBlockContext();
         }
@@ -272,66 +386,15 @@ namespace Nethereum.DevChain
             return _blockManager.GetPendingTransactionCount();
         }
 
-        public List<ISignedTransaction> GetPendingTransactions()
+        public override Task<List<ISignedTransaction>> GetPendingTransactionsAsync()
         {
-            return _blockManager.GetPendingTransactions();
+            return Task.FromResult(_blockManager.GetPendingTransactions());
         }
 
-        public async Task<CallResult> CallAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null)
+        protected override Task<BlockContext> GetBlockContextForCallAsync()
         {
             EnsureInitialized();
-
-            from = from ?? "0x0000000000000000000000000000000000000000";
-            var callValue = value ?? BigInteger.Zero;
-            var callGasLimit = gasLimit ?? 10_000_000;
-
-            var blockContext = _blockManager.GetPendingBlockContext();
-            var executionStateService = new ExecutionStateService(_nodeDataService);
-
-            var code = await _nodeDataService.GetCodeAsync(to);
-            if (code == null || code.Length == 0)
-            {
-                return new CallResult { Success = true, ReturnData = new byte[0], GasUsed = 0 };
-            }
-
-            var callerBalance = await _nodeDataService.GetBalanceAsync(from);
-            executionStateService.SetInitialChainBalance(from, callerBalance);
-
-            var callInput = new CallInput
-            {
-                From = from,
-                To = to,
-                Value = new Hex.HexTypes.HexBigInteger(callValue),
-                Data = data?.ToHex(true) ?? "0x",
-                Gas = new Hex.HexTypes.HexBigInteger(callGasLimit),
-                GasPrice = new Hex.HexTypes.HexBigInteger(0),
-                ChainId = new Hex.HexTypes.HexBigInteger(_config.ChainId)
-            };
-
-            var programContext = new ProgramContext(
-                callInput,
-                executionStateService,
-                from,
-                to,
-                (long)blockContext.BlockNumber,
-                blockContext.Timestamp,
-                blockContext.Coinbase,
-                (long)blockContext.BaseFee);
-
-            programContext.GasLimit = blockContext.GasLimit;
-            programContext.Difficulty = blockContext.Difficulty;
-
-            var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
-            await simulator.ExecuteAsync(program, traceEnabled: false);
-
-            return new CallResult
-            {
-                Success = !program.ProgramResult.IsRevert,
-                ReturnData = program.ProgramResult.Result ?? new byte[0],
-                RevertReason = program.ProgramResult.GetRevertMessage(),
-                GasUsed = program.TotalGasUsed
-            };
+            return Task.FromResult(_blockManager.GetPendingBlockContext());
         }
 
         public async Task<OpcodeTracerResponse> TraceTransactionAsync(
@@ -354,13 +417,13 @@ namespace Nethereum.DevChain
                 throw new InvalidOperationException($"Block for transaction {txHash} not found");
 
             var from = _txVerifier.GetSenderAddress(tx);
-            var isContractCreation = string.IsNullOrEmpty(GetTransactionTo(tx));
-            var to = isContractCreation ? receiptInfo.ContractAddress : GetTransactionTo(tx);
-            var data = GetTransactionData(tx);
-            var value = GetTransactionValue(tx);
-            var gasLimit = GetTransactionGasLimit(tx);
+            var isContractCreation = tx.IsContractCreation();
+            var to = isContractCreation ? receiptInfo.ContractAddress : tx.GetReceiverAddress();
+            var data = tx.GetData();
+            var value = tx.GetValue();
+            var gasLimit = tx.GetGasLimit();
 
-            var blockContext = new BlockContext
+            var blockContext = new CoreChain.BlockContext
             {
                 BlockNumber = block.BlockNumber,
                 Timestamp = block.Timestamp,
@@ -413,7 +476,7 @@ namespace Nethereum.DevChain
 
             var program = new Program(code, programContext);
             var simulator = new EVMSimulator();
-            await simulator.ExecuteAsync(program, traceEnabled: true);
+            await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
 
             return TraceConverter.ConvertToOpcodeResponse(program, config);
         }
@@ -480,7 +543,7 @@ namespace Nethereum.DevChain
 
             var program = new Program(code, programContext);
             var simulator = new EVMSimulator();
-            await simulator.ExecuteAsync(program, traceEnabled: true);
+            await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
 
             return TraceConverter.ConvertToOpcodeResponse(program, config);
         }
@@ -511,7 +574,7 @@ namespace Nethereum.DevChain
                     {
                         var slot = storageKvp.Key.HexToBigInteger(false);
                         var value = storageKvp.Value.HexToByteArray();
-                        accountState.UpsertStorageValue(slot, value);
+                        accountState.SetPreStateStorage(slot, value);
                     }
                 }
 
@@ -521,77 +584,9 @@ namespace Nethereum.DevChain
                     {
                         var slot = storageKvp.Key.HexToBigInteger(false);
                         var value = storageKvp.Value.HexToByteArray();
-                        accountState.UpsertStorageValue(slot, value);
+                        accountState.SetPreStateStorage(slot, value);
                     }
                 }
-            }
-        }
-
-        private string GetTransactionTo(ISignedTransaction tx)
-        {
-            switch (tx)
-            {
-                case Transaction1559 tx1559:
-                    return tx1559.ReceiverAddress;
-                case Transaction2930 tx2930:
-                    return tx2930.ReceiverAddress;
-                case LegacyTransaction legacyTx:
-                    return legacyTx.ReceiveAddress?.ToHex(true);
-                case LegacyTransactionChainId legacyChainTx:
-                    return legacyChainTx.ReceiveAddress?.ToHex(true);
-                default:
-                    return null;
-            }
-        }
-
-        private byte[] GetTransactionData(ISignedTransaction tx)
-        {
-            switch (tx)
-            {
-                case Transaction1559 tx1559:
-                    return tx1559.Data?.HexToByteArray();
-                case Transaction2930 tx2930:
-                    return tx2930.Data?.HexToByteArray();
-                case LegacyTransaction legacyTx:
-                    return legacyTx.Data;
-                case LegacyTransactionChainId legacyChainTx:
-                    return legacyChainTx.Data;
-                default:
-                    return null;
-            }
-        }
-
-        private BigInteger GetTransactionValue(ISignedTransaction tx)
-        {
-            switch (tx)
-            {
-                case Transaction1559 tx1559:
-                    return tx1559.Amount ?? 0;
-                case Transaction2930 tx2930:
-                    return tx2930.Amount ?? 0;
-                case LegacyTransaction legacyTx:
-                    return legacyTx.Value.ToBigIntegerFromRLPDecoded();
-                case LegacyTransactionChainId legacyChainTx:
-                    return legacyChainTx.Value.ToBigIntegerFromRLPDecoded();
-                default:
-                    return 0;
-            }
-        }
-
-        private BigInteger GetTransactionGasLimit(ISignedTransaction tx)
-        {
-            switch (tx)
-            {
-                case Transaction1559 tx1559:
-                    return tx1559.GasLimit ?? 21000;
-                case Transaction2930 tx2930:
-                    return tx2930.GasLimit ?? 21000;
-                case LegacyTransaction legacyTx:
-                    return legacyTx.GasLimit.ToBigIntegerFromRLPDecoded();
-                case LegacyTransactionChainId legacyChainTx:
-                    return legacyChainTx.GasLimit.ToBigIntegerFromRLPDecoded();
-                default:
-                    return 21000;
             }
         }
 
@@ -599,6 +594,37 @@ namespace Nethereum.DevChain
         {
             if (!_initialized)
                 throw new InvalidOperationException("DevChainNode must be initialized by calling StartAsync() before use.");
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (var snapshot in _snapshots.Values)
+                {
+                    snapshot.Dispose();
+                }
+                _snapshots.Clear();
+
+                if (_stateStore is InMemoryStateStore memStateStore)
+                    memStateStore.Clear();
+                if (_blockStore is InMemoryBlockStore memBlockStore)
+                    memBlockStore.Clear();
+                if (_transactionStore is InMemoryTransactionStore memTxStore)
+                    memTxStore.Clear();
+                if (_receiptStore is InMemoryReceiptStore memReceiptStore)
+                    memReceiptStore.Clear();
+                if (_logStore is InMemoryLogStore memLogStore)
+                    memLogStore.Clear();
+
+                _initialized = false;
+            }
         }
     }
 }

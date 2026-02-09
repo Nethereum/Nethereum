@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
@@ -17,17 +20,21 @@ namespace Nethereum.DevChain
         private static readonly byte[] EMPTY_LIST_HASH = new Sha3Keccack().CalculateHash(RLP.RLP.EncodeList());
 
         private readonly IBlockStore _blockStore;
-        private readonly ITransactionStore _transactionStore;
-        private readonly IReceiptStore _receiptStore;
-        private readonly ILogStore _logStore;
         private readonly IStateStore _stateStore;
-        private readonly TransactionProcessor _transactionProcessor;
+        private readonly ITransactionVerificationAndRecovery _txVerifier;
         private readonly DevChainConfig _config;
-        private readonly RootCalculator _rootCalculator;
+        private readonly IBlockProducer _blockProducer;
         private readonly object _lock = new object();
+        private readonly SemaphoreSlim _mineLock = new SemaphoreSlim(1, 1);
 
         private List<ISignedTransaction> _pendingTransactions = new List<ISignedTransaction>();
-        private BlockContext _pendingBlockContext;
+        private CoreChain.BlockContext _pendingBlockContext;
+        private Dictionary<string, TransactionExecutionResult> _lastExecutionResults = new Dictionary<string, TransactionExecutionResult>();
+
+        // Batch mining support
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<TransactionExecutionResult>> _pendingResultSources = new();
+        private Timer _batchTimer;
+        private int _batchPending;
 
         public BlockManager(
             IBlockStore blockStore,
@@ -35,17 +42,24 @@ namespace Nethereum.DevChain
             IReceiptStore receiptStore,
             ILogStore logStore,
             IStateStore stateStore,
-            TransactionProcessor transactionProcessor,
-            DevChainConfig config)
+            CoreChain.TransactionProcessor transactionProcessor,
+            ITransactionVerificationAndRecovery txVerifier,
+            DevChainConfig config,
+            ITrieNodeStore trieNodeStore = null)
         {
             _blockStore = blockStore;
-            _transactionStore = transactionStore;
-            _receiptStore = receiptStore;
-            _logStore = logStore;
             _stateStore = stateStore;
-            _transactionProcessor = transactionProcessor;
+            _txVerifier = txVerifier;
             _config = config;
-            _rootCalculator = new RootCalculator();
+
+            _blockProducer = new BlockProducer(
+                blockStore,
+                transactionStore,
+                receiptStore,
+                logStore,
+                stateStore,
+                transactionProcessor,
+                trieNodeStore);
         }
 
         public async Task InitializeAsync()
@@ -61,12 +75,15 @@ namespace Nethereum.DevChain
 
         private async Task CreateGenesisBlockAsync()
         {
+            var stateRootCalculator = new StateRootCalculator();
+            var stateRoot = await stateRootCalculator.ComputeStateRootAsync(_stateStore);
+
             var genesisHeader = new BlockHeader
             {
                 ParentHash = new byte[32],
                 UnclesHash = EMPTY_LIST_HASH,
                 Coinbase = _config.Coinbase,
-                StateRoot = DefaultValues.EMPTY_TRIE_HASH,
+                StateRoot = stateRoot,
                 TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
                 ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
                 LogsBloom = new byte[256],
@@ -90,8 +107,21 @@ namespace Nethereum.DevChain
             var latestBlock = await _blockStore.GetLatestAsync();
             var nextBlockNumber = latestBlock != null ? latestBlock.BlockNumber + 1 : 1;
             var timestamp = GetNextBlockTimestamp();
+            var baseFee = GetNextBlockBaseFee();
 
-            _pendingBlockContext = BlockContext.FromConfig(_config, nextBlockNumber, timestamp);
+            _pendingBlockContext = CoreChain.BlockContext.FromConfig(_config, nextBlockNumber, timestamp);
+            _pendingBlockContext.BaseFee = baseFee;
+        }
+
+        private BigInteger GetNextBlockBaseFee()
+        {
+            if (_config.NextBlockBaseFee.HasValue)
+            {
+                var baseFee = _config.NextBlockBaseFee.Value;
+                _config.NextBlockBaseFee = null;
+                return baseFee;
+            }
+            return _config.BaseFee;
         }
 
         private long GetNextBlockTimestamp()
@@ -105,6 +135,28 @@ namespace Nethereum.DevChain
             return DateTime.UtcNow.ToUnixTimestamp() + _config.TimeOffset;
         }
 
+        private byte[] GetNextBlockPrevRandao()
+        {
+            if (_config.NextBlockPrevRandao != null)
+            {
+                var prevRandao = _config.NextBlockPrevRandao;
+                _config.NextBlockPrevRandao = null;
+                return prevRandao;
+            }
+            return null;
+        }
+
+        private string GetNextBlockCoinbase()
+        {
+            if (_config.NextBlockCoinbase != null)
+            {
+                var coinbase = _config.NextBlockCoinbase;
+                _config.NextBlockCoinbase = null;
+                return coinbase;
+            }
+            return _config.Coinbase;
+        }
+
         public void AddPendingTransaction(ISignedTransaction tx)
         {
             lock (_lock)
@@ -116,7 +168,9 @@ namespace Nethereum.DevChain
             }
         }
 
-        public async Task<byte[]> MineBlockAsync()
+        public async Task<byte[]> MineBlockAsync() => await MineBlockAsync(null);
+
+        public async Task<byte[]> MineBlockAsync(byte[] parentBeaconBlockRoot)
         {
             List<ISignedTransaction> transactions;
             BlockContext blockContext;
@@ -128,88 +182,57 @@ namespace Nethereum.DevChain
                 blockContext = _pendingBlockContext;
             }
 
-            blockContext.Timestamp = GetNextBlockTimestamp();
-
-            var results = new List<TransactionExecutionResult>();
-            var receipts = new List<Receipt>();
-            var encodedTransactions = new List<byte[]>();
-            BigInteger cumulativeGasUsed = 0;
-            BigInteger totalGasUsed = 0;
-            var combinedBloom = new byte[256];
-
-            for (int i = 0; i < transactions.Count; i++)
+            // Skip if no transactions (another concurrent mine already processed them)
+            if (transactions.Count == 0)
             {
-                var tx = transactions[i];
-                var result = await _transactionProcessor.ExecuteTransactionAsync(
-                    tx, blockContext, i, cumulativeGasUsed);
-
-                results.Add(result);
-                receipts.Add(result.Receipt);
-                encodedTransactions.Add(tx.GetRLPEncoded());
-                totalGasUsed += result.GasUsed;
-                cumulativeGasUsed = result.CumulativeGasUsed;
-
-                CombineBloom(combinedBloom, result.Receipt.Bloom);
+                return null;
             }
 
-            var transactionsRoot = _rootCalculator.CalculateTransactionsRoot(encodedTransactions);
-            var receiptsRoot = _rootCalculator.CalculateReceiptsRoot(receipts);
+            var timestamp = GetNextBlockTimestamp();
+            var baseFee = GetNextBlockBaseFee();
+            var prevRandao = GetNextBlockPrevRandao() ?? blockContext.PrevRandao;
+            var coinbase = GetNextBlockCoinbase();
 
-            var parentBlock = await _blockStore.GetLatestAsync();
-            var parentHash = parentBlock != null
-                ? await _blockStore.GetHashByNumberAsync(parentBlock.BlockNumber)
-                : new byte[32];
-
-            var stateRoot = await ComputeStateRootAsync();
-
-            var blockHeader = new BlockHeader
+            var options = new BlockProductionOptions
             {
-                ParentHash = parentHash ?? new byte[32],
-                UnclesHash = EMPTY_LIST_HASH,
-                Coinbase = blockContext.Coinbase,
-                StateRoot = stateRoot,
-                TransactionsHash = transactionsRoot,
-                ReceiptHash = receiptsRoot,
-                LogsBloom = combinedBloom,
+                Timestamp = timestamp,
+                BlockGasLimit = blockContext.GasLimit,
+                BaseFee = baseFee,
+                Coinbase = coinbase,
                 Difficulty = blockContext.Difficulty,
-                BlockNumber = blockContext.BlockNumber,
-                GasLimit = (long)blockContext.GasLimit,
-                GasUsed = (long)totalGasUsed,
-                Timestamp = blockContext.Timestamp,
-                ExtraData = new byte[0],
-                MixHash = blockContext.PrevRandao ?? new byte[32],
-                Nonce = new byte[8],
-                BaseFee = blockContext.BaseFee
+                PrevRandao = prevRandao,
+                ExtraData = Array.Empty<byte>(),
+                ChainId = blockContext.ChainId,
+                ParentBeaconBlockRoot = parentBeaconBlockRoot
             };
 
-            var blockHash = CalculateBlockHash(blockHeader);
+            var result = await _blockProducer.ProduceBlockAsync(transactions, options);
 
-            await _blockStore.SaveAsync(blockHeader, blockHash);
-
-            for (int i = 0; i < results.Count; i++)
+            // Track execution results for DevChain-specific features (AutoMine result lookup)
+            // Note: Results accumulate intentionally - don't clear to avoid race conditions
+            lock (_lock)
             {
-                var result = results[i];
-                var tx = transactions[i];
-
-                var effectiveGasPrice = CalculateEffectiveGasPrice(tx, blockContext.BaseFee);
-
-                await _transactionStore.SaveAsync(tx, blockHash, i);
-                await _receiptStore.SaveAsync(result.Receipt, tx.Hash, blockHash, blockContext.BlockNumber, i, result.GasUsed, result.ContractAddress, effectiveGasPrice);
-
-                if (result.Logs != null && result.Logs.Count > 0)
+                foreach (var txResult in result.TransactionResults)
                 {
-                    await _logStore.SaveLogsAsync(
-                        result.Logs,
-                        tx.Hash,
-                        blockHash,
-                        blockContext.BlockNumber,
-                        i);
+                    var txHash = txResult.TxHash.ToHex(true);
+                    var receipt = txResult.Receipt;
+                    var logs = receipt?.Logs ?? new List<Log>();
+                    _lastExecutionResults[txHash] = new TransactionExecutionResult
+                    {
+                        TransactionHash = txResult.TxHash,
+                        Success = txResult.Success,
+                        Receipt = receipt,
+                        Logs = logs,
+                        RevertReason = txResult.ErrorMessage,
+                        GasUsed = txResult.GasUsed,
+                        ReturnData = txResult.ReturnData
+                    };
                 }
             }
 
             await InitializePendingBlockAsync();
 
-            return blockHash;
+            return result.BlockHash;
         }
 
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
@@ -220,37 +243,202 @@ namespace Nethereum.DevChain
 
         public async Task<TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx)
         {
+            // Step 1: Mempool validation (like real Ethereum)
+            var validationResult = await ValidateTransactionAsync(tx);
+            if (!validationResult.Success)
+            {
+                return validationResult; // RPC error for mempool failures
+            }
+
+            // Step 2: Add to pending (mempool accepted)
             AddPendingTransaction(tx);
 
+            // Step 3: Mine if AutoMine
             if (_config.AutoMine)
             {
-                await MineBlockAsync();
-            }
+                var txHash = tx.Hash.ToHex(true);
 
-            var location = await _transactionStore.GetLocationAsync(tx.Hash);
-            if (location != null)
-            {
-                var blockHeader = await _blockStore.GetByHashAsync(location.BlockHash);
-                var receipt = await _receiptStore.GetByTxHashAsync(tx.Hash);
-
-                return new TransactionExecutionResult
+                // Batch mode: batch size > 1
+                if (_config.AutoMineBatchSize > 1)
                 {
-                    Transaction = tx,
-                    TransactionHash = tx.Hash,
-                    TransactionIndex = location.TransactionIndex,
-                    Success = receipt?.HasSucceeded ?? false,
-                    Receipt = receipt,
-                    Logs = receipt?.Logs ?? new List<Log>()
-                };
+                    return await SendTransactionBatchedAsync(tx, txHash);
+                }
+
+                // Immediate mode: batch size == 1 (legacy behavior)
+                await MineBlockAsync();
+
+                lock (_lock)
+                {
+                    if (_lastExecutionResults.TryGetValue(txHash, out var executionResult))
+                    {
+                        return executionResult;
+                    }
+                }
             }
 
+            // Step 4: Return SUCCESS with tx hash (like real Ethereum)
+            // Execution success/failure is in receipt.status, not here
             return new TransactionExecutionResult
             {
                 Transaction = tx,
                 TransactionHash = tx.Hash,
-                Success = false,
-                RevertReason = "Transaction not yet mined"
+                Success = true // Mempool accepted = success for eth_sendRawTransaction
             };
+        }
+
+        private async Task<TransactionExecutionResult> SendTransactionBatchedAsync(ISignedTransaction tx, string txHash)
+        {
+            // Create completion source for this transaction
+            var tcs = new TaskCompletionSource<TransactionExecutionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingResultSources[txHash] = tcs;
+
+            bool shouldMine = false;
+            lock (_lock)
+            {
+                _batchPending++;
+
+                // Check if batch is full
+                if (_batchPending >= _config.AutoMineBatchSize)
+                {
+                    shouldMine = true;
+                    _batchPending = 0;
+                    _batchTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                }
+                else
+                {
+                    // Start or reset batch timer
+                    if (_batchTimer == null)
+                    {
+                        _batchTimer = new Timer(OnBatchTimeout, null, _config.AutoMineBatchTimeoutMs, Timeout.Infinite);
+                    }
+                    else
+                    {
+                        _batchTimer.Change(_config.AutoMineBatchTimeoutMs, Timeout.Infinite);
+                    }
+                }
+            }
+
+            if (shouldMine)
+            {
+                await MineAndCompleteAsync();
+            }
+
+            // Wait for result (with timeout to prevent deadlocks)
+            var timeoutTask = Task.Delay(30000); // 30 second timeout
+            var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                _pendingResultSources.TryRemove(txHash, out _);
+                return new TransactionExecutionResult
+                {
+                    Transaction = tx,
+                    TransactionHash = tx.Hash,
+                    Success = false,
+                    RevertReason = "Batch mining timeout"
+                };
+            }
+
+            return await tcs.Task;
+        }
+
+        private void OnBatchTimeout(object state)
+        {
+            lock (_lock)
+            {
+                if (_batchPending > 0)
+                {
+                    _batchPending = 0;
+                    // Fire and forget the mining task
+                    _ = MineAndCompleteAsync();
+                }
+            }
+        }
+
+        private async Task MineAndCompleteAsync()
+        {
+            await MineBlockAsync();
+
+            // Complete all pending TaskCompletionSources
+            var toComplete = _pendingResultSources.Keys.ToList();
+            foreach (var txHash in toComplete)
+            {
+                if (_pendingResultSources.TryRemove(txHash, out var tcs))
+                {
+                    TransactionExecutionResult result;
+                    lock (_lock)
+                    {
+                        if (!_lastExecutionResults.TryGetValue(txHash, out result))
+                        {
+                            // TX was in pending but not mined (possible if another mine grabbed it)
+                            result = new TransactionExecutionResult
+                            {
+                                TransactionHash = txHash.HexToByteArray(),
+                                Success = true
+                            };
+                        }
+                    }
+                    tcs.TrySetResult(result);
+                }
+            }
+        }
+
+        private async Task<TransactionExecutionResult> ValidateTransactionAsync(ISignedTransaction tx)
+        {
+            var result = new TransactionExecutionResult
+            {
+                Transaction = tx,
+                TransactionHash = tx.Hash
+            };
+
+            // 1. Verify signature and recover sender
+            var senderAddress = _txVerifier.GetSenderAddress(tx);
+            if (string.IsNullOrEmpty(senderAddress))
+            {
+                result.Success = false;
+                result.RevertReason = "Invalid signature: cannot recover sender address";
+                return result;
+            }
+
+            // 2. Get transaction data
+            var txData = CoreChain.TransactionProcessor.GetTransactionData(tx);
+            var isContractCreation = string.IsNullOrEmpty(txData.To);
+
+            // 3. Check intrinsic gas
+            var intrinsicGas = CoreChain.TransactionProcessor.CalculateIntrinsicGas(txData.Data, isContractCreation);
+            if (txData.GasLimit < intrinsicGas)
+            {
+                result.Success = false;
+                result.RevertReason = $"Intrinsic gas too low: have {txData.GasLimit}, want {intrinsicGas}";
+                return result;
+            }
+
+            // 4. Check sender account
+            var senderAccount = await _stateStore.GetAccountAsync(senderAddress);
+            if (senderAccount == null)
+            {
+                senderAccount = new Account { Balance = 0, Nonce = 0 };
+            }
+
+            // 5. Check nonce
+            if (senderAccount.Nonce != txData.Nonce)
+            {
+                result.Success = false;
+                result.RevertReason = $"Invalid nonce: have {txData.Nonce}, want {senderAccount.Nonce}";
+                return result;
+            }
+
+            // 6. Check balance
+            var maxCost = txData.GasLimit * txData.GasPrice + txData.Value;
+            if (senderAccount.Balance < maxCost)
+            {
+                result.Success = false;
+                result.RevertReason = $"Insufficient funds: have {senderAccount.Balance}, want {maxCost}";
+                return result;
+            }
+
+            result.Success = true;
+            return result;
         }
 
         public int GetPendingTransactionCount()
@@ -269,19 +457,9 @@ namespace Nethereum.DevChain
             }
         }
 
-        public BlockContext GetPendingBlockContext()
+        public CoreChain.BlockContext GetPendingBlockContext()
         {
             return _pendingBlockContext;
-        }
-
-        private void CombineBloom(byte[] target, byte[] source)
-        {
-            if (source == null || source.Length != 256) return;
-
-            for (int i = 0; i < 256; i++)
-            {
-                target[i] |= source[i];
-            }
         }
 
         private byte[] CalculateBlockHash(BlockHeader header)
@@ -289,86 +467,6 @@ namespace Nethereum.DevChain
             var encoder = BlockHeaderEncoder.Current;
             var encoded = encoder.Encode(header);
             return new Sha3Keccack().CalculateHash(encoded);
-        }
-
-        private async Task<byte[]> ComputeStateRootAsync()
-        {
-            var accounts = await _stateStore.GetAllAccountsAsync();
-            if (accounts.Count == 0)
-                return DefaultValues.EMPTY_TRIE_HASH;
-
-            var sha3 = new Sha3Keccack();
-            var accountsWithHashedKeys = new Dictionary<byte[], Account>();
-
-            foreach (var kvp in accounts)
-            {
-                var addressBytes = kvp.Key.HexToByteArray();
-                if (addressBytes.Length < 20)
-                {
-                    var paddedAddress = new byte[20];
-                    System.Array.Copy(addressBytes, 0, paddedAddress, 20 - addressBytes.Length, addressBytes.Length);
-                    addressBytes = paddedAddress;
-                }
-                var hashedKey = sha3.CalculateHash(addressBytes);
-
-                var storage = await _stateStore.GetAllStorageAsync(kvp.Key);
-                var account = new Account
-                {
-                    Nonce = kvp.Value.Nonce,
-                    Balance = kvp.Value.Balance,
-                    CodeHash = kvp.Value.CodeHash ?? DefaultValues.EMPTY_DATA_HASH
-                };
-
-                if (storage.Count > 0)
-                {
-                    var storageDict = new Dictionary<byte[], byte[]>();
-                    foreach (var storageKvp in storage)
-                    {
-                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding();
-                        if (slotBytes.Length < 32)
-                        {
-                            var paddedSlot = new byte[32];
-                            System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-                            slotBytes = paddedSlot;
-                        }
-                        var hashedSlot = sha3.CalculateHash(slotBytes);
-                        storageDict[hashedSlot] = storageKvp.Value;
-                    }
-                    account.StateRoot = _rootCalculator.CalculateStorageRoot(storageDict);
-                }
-                else
-                {
-                    account.StateRoot = DefaultValues.EMPTY_TRIE_HASH;
-                }
-
-                accountsWithHashedKeys[hashedKey] = account;
-            }
-
-            return _rootCalculator.CalculateStateRoot(accountsWithHashedKeys);
-        }
-
-        private BigInteger CalculateEffectiveGasPrice(ISignedTransaction tx, BigInteger baseFee)
-        {
-            if (tx is Transaction1559 eip1559Tx)
-            {
-                var maxPriorityFee = eip1559Tx.MaxPriorityFeePerGas ?? BigInteger.Zero;
-                var maxFee = eip1559Tx.MaxFeePerGas ?? BigInteger.Zero;
-                var priorityFee = BigInteger.Min(maxPriorityFee, maxFee - baseFee);
-                return baseFee + priorityFee;
-            }
-            if (tx is Transaction2930 eip2930Tx)
-            {
-                return eip2930Tx.GasPrice ?? BigInteger.Zero;
-            }
-            if (tx is LegacyTransaction legacyTx)
-            {
-                return legacyTx.GasPrice.ToBigIntegerFromRLPDecoded();
-            }
-            if (tx is LegacyTransactionChainId legacyChainIdTx)
-            {
-                return legacyChainIdTx.GasPrice.ToBigIntegerFromRLPDecoded();
-            }
-            return baseFee;
         }
     }
 }

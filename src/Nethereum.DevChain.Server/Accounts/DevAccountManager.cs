@@ -1,5 +1,5 @@
 using System.Numerics;
-using Nethereum.HdWallet;
+using Nethereum.Wallet.Bip32;
 using Nethereum.DevChain.Server.Configuration;
 
 namespace Nethereum.DevChain.Server.Accounts
@@ -8,7 +8,7 @@ namespace Nethereum.DevChain.Server.Accounts
     {
         private readonly List<DevAccount> _accounts = new();
         private readonly HashSet<string> _impersonatedAccounts = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Wallet _wallet;
+        private readonly MinimalHDWallet _wallet;
         private readonly BigInteger _chainId;
 
         public IReadOnlyList<DevAccount> Accounts => _accounts;
@@ -16,7 +16,7 @@ namespace Nethereum.DevChain.Server.Accounts
 
         public DevAccountManager(DevChainServerConfig config)
         {
-            _wallet = new Wallet(config.Mnemonic, null);
+            _wallet = new MinimalHDWallet(config.Mnemonic);
             _chainId = config.ChainId;
 
             var initialBalance = config.GetAccountBalance();
