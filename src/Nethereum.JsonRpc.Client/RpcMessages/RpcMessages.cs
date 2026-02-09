@@ -111,6 +111,20 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 
             try
             {
+#if NET6_0_OR_GREATER
+                if (result is JsonElement jsonElement)
+                {
+                    var jsonString = jsonElement.GetRawText();
+                    JToken jToken = JToken.Parse(jsonString);
+                    if (settings == null)
+                        return jToken.ToObject<T>();
+                    else
+                    {
+                        var jsonSerializer = Newtonsoft.Json.JsonSerializer.Create(settings);
+                        return jToken.ToObject<T>(jsonSerializer);
+                    }
+                }
+#endif
                 JToken token = result as JToken ?? JToken.FromObject(result);
 
                 if (settings == null)
@@ -292,7 +306,7 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 #if NET6_0_OR_GREATER
         [System.Text.Json.Serialization.JsonConstructor]
 #endif
-        private RpcRequestMessage() { }
+        public RpcRequestMessage() { }
 
         public RpcRequestMessage(object id, string method, params object[] parameterList)
         {
@@ -423,11 +437,6 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
             if (result is JsonElement element)
             {
                 ResultSystemTextJson = element;
-            }
-            else
-            {
-                var json = System.Text.Json.JsonSerializer.Serialize(result);
-                ResultSystemTextJson = System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
             }
 #endif
         }
