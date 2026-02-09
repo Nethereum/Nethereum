@@ -223,6 +223,16 @@ namespace Nethereum.EVM.BlockchainState
                 MarkAddressAsWarm(address);
         }
 
+        /// <summary>
+        /// WARNING: This method only creates or retrieves a cached execution state object.
+        /// It does NOT load balance, nonce, code, or storage from the node/storage.
+        /// To READ values, use the appropriate async methods that load from storage:
+        /// - Balance: GetTotalBalanceAsync()
+        /// - Nonce: GetNonceAsync()
+        /// - Code: GetCodeAsync()
+        /// - Storage: GetFromStorageAsync()
+        /// Reading directly from the returned AccountExecutionState without initialization returns default/zero values.
+        /// </summary>
         public AccountExecutionState CreateOrGetAccountExecutionState(string address)
         {
             address = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();

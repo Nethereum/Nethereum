@@ -1,6 +1,6 @@
 # Nethereum.EVM
 
-**Nethereum.EVM** is an experimental Ethereum Virtual Machine (EVM) simulator that executes EVM bytecode instruction-by-instruction with full trace support and gas calculation.
+**Nethereum.EVM** is a production-ready Ethereum Virtual Machine (EVM) execution engine that runs bytecode instruction-by-instruction with full trace support and gas calculation. Passes all Ethereum VM and State tests.
 
 ## Overview
 
@@ -13,7 +13,7 @@ This package provides a local EVM implementation that can:
 - Parse and disassemble bytecode
 - Support all EVM opcodes including recent additions (Cancun, Shanghai forks)
 
-**Status**: Experimental - suitable for testing, debugging, and educational purposes.
+**Status**: Production - passes all Ethereum VM and State tests. Purpose-built for development tooling, testing, debugging, and simulation.
 
 ## Installation
 
@@ -634,20 +634,20 @@ Located in `OpcodeGasTable.cs:357-462`
 
 From: `Instruction.cs:4-329`
 
-## Limitations
+## Scope and Use Cases
 
-### Experimental Status
+### Production Use Cases
 
-This is an **experimental** EVM implementation suitable for:
-- Testing and debugging smart contracts locally
-- Educational purposes and EVM learning
-- Bytecode analysis and disassembly
-- Gas estimation and optimization research
+This EVM implementation is designed for:
+- **DevChain**: Local development node (similar to Hardhat Network, Anvil)
+- **Simulation**: Transaction simulation and what-if analysis
+- **Testing**: Smart contract testing and debugging
+- **Analysis**: Bytecode disassembly and gas optimization research
 
-**Not recommended for:**
-- Production systems
-- Mainnet transaction simulation requiring 100% accuracy
-- Consensus-critical applications
+**Not designed for:**
+- Full Ethereum client (not a geth/reth replacement)
+- Mainnet validator node
+- Consensus-critical public chain execution
 
 ### Known Limitations
 

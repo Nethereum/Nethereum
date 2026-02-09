@@ -594,8 +594,8 @@ namespace Nethereum.EVM
             // If caller doesn't have enough balance, CALL/CALLCODE fails immediately
             if (shouldTransferValue && value > 0)
             {
-                var callerAccount = program.ProgramContext.ExecutionStateService.CreateOrGetAccountExecutionState(program.ProgramContext.AddressContract);
-                var callerBalance = callerAccount.Balance.GetTotalBalance();
+                // Must use GetTotalBalanceAsync to properly load balance from storage if not yet initialized
+                var callerBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(program.ProgramContext.AddressContract);
                 if (callerBalance < value)
                 {
                     // CALL/CALLCODE fails immediately due to insufficient balance.

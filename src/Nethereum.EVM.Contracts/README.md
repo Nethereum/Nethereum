@@ -4,14 +4,14 @@
 
 ## Overview
 
-This package offers specialized contract simulators that leverage the experimental EVM simulator to:
+This package offers specialized contract simulators that leverage the EVM execution engine to:
 - Simulate contract function calls with real blockchain state
 - Track state changes across transactions
 - Reverse-engineer contract storage layouts
 - Validate expected behavior before deployment
 - Test contract interactions locally
 
-**Status**: Experimental - suitable for testing, debugging, and analysis.
+**Status**: Production - suitable for testing, debugging, simulation, and analysis.
 
 ## Installation
 
@@ -498,9 +498,9 @@ Required packages:
 
 ## Limitations
 
-### Experimental Status
+### Current Limitations
 
-This simulator is experimental and has limitations:
+This simulator has the following limitations:
 
 1. **ERC20 Focus** - Currently only provides ERC20 simulator (more contract types planned)
 2. **Gas Accuracy** - Gas calculations may differ slightly from actual execution
@@ -516,12 +516,12 @@ The `CalculateMappingBalanceSlotAsync` method:
 - May fail if contract uses non-standard storage layouts
 - Limited to `numberOfSlotsToTry` attempts (default 10,000)
 
-### Not Suitable For
+### Design Scope
 
-- High-frequency simulation requirements
-- Production transaction validation
+Not designed for:
+- High-frequency simulation requirements (use direct RPC for production)
 - Consensus-critical operations
-- Real-time gas estimation (use RPC `eth_estimateGas` instead)
+- Real-time gas estimation (use RPC `eth_estimateGas` for production)
 
 ## Source Files Reference
 

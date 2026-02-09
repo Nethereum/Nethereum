@@ -108,8 +108,8 @@ namespace Nethereum.EVM.Contracts.ERC20
             var program = new Program(code, programContext);
 
             var evmSimulator = new EVMSimulator();
-     
-            await evmSimulator.ExecuteAsync(program);
+
+            await evmSimulator.ExecuteWithCallStackAsync(program);
             return program.ProgramResult;
            
         }
@@ -126,7 +126,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             var code = await GetCodeAsync();
             var program = new Program(code, programContext);
             var evmSimulator = new EVMSimulator();
-            await evmSimulator.ExecuteAsync(program);
+            await evmSimulator.ExecuteWithCallStackAsync(program);
             var resultEncoded = program.ProgramResult.Result;
             var result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());
             return result.Balance;
@@ -160,7 +160,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             var evmSimulator = new EVMSimulator();
 
             //execute the program
-            var traceResult = await evmSimulator.ExecuteAsync(program);
+            await evmSimulator.ExecuteWithCallStackAsync(program);
             var intTypeDecoder = new ABI.Decoders.IntTypeDecoder();
             //get the result from the program
             var resultEncoded = program.ProgramResult.Result;
