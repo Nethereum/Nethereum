@@ -1,26 +1,44 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Nethereum.Hex.HexConvertors.Extensions
 {
     public static class HexByteConvertorExtensions
     {
-        //From article http://blogs.msdn.com/b/heikkiri/archive/2012/07/17/hex-string-to-corresponding-byte-array.aspx
-
         private static readonly byte[] Empty = new byte[0];
+        private static readonly char[] HexChars = "0123456789abcdef".ToCharArray();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string ToHex(this byte[] value, bool prefix = false)
         {
-            var strPrex = prefix ? "0x" : "";
-            return strPrex + string.Concat(value.Select(b => b.ToString("x2")).ToArray());
+            var length = value.Length;
+            var chars = new char[length * 2 + (prefix ? 2 : 0)];
+            var offset = 0;
+            if (prefix)
+            {
+                chars[0] = '0';
+                chars[1] = 'x';
+                offset = 2;
+            }
+            for (int i = 0; i < length; i++)
+            {
+                var b = value[i];
+                chars[offset + i * 2] = HexChars[b >> 4];
+                chars[offset + i * 2 + 1] = HexChars[b & 0x0F];
+            }
+            return new string(chars);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool HasHexPrefix(this string value)
         {
             return value.StartsWith("0x");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsHex(this string value)
         {
             if (value == null) return false;
@@ -37,6 +55,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string RemoveHexPrefix(this string value)
         {
             if (value == null) return null;
@@ -118,6 +137,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             return bytes;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] HexToByteArray(this string value)
         {
             try {
@@ -130,6 +150,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte FromCharacterToByte(char character, int index, int shift = 0)
         {
             var value = (byte) character;
