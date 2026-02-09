@@ -55,6 +55,19 @@ namespace Nethereum.AccountAbstraction.Contracts.Interfaces.IAccountExecute.Cont
         public virtual List<byte[]> Data { get; set; }
     }
 
+    public partial class ExecuteUserOpFunction : ExecuteUserOpFunctionBase { }
+
+    [Function("executeUserOp")]
+    public class ExecuteUserOpFunctionBase : FunctionMessage
+    {
+        [Parameter("tuple", "userOp", 1)]
+        public virtual PackedUserOperation UserOp { get; set; }
+        [Parameter("bytes32", "userOpHash", 2)]
+        public virtual byte[] UserOpHash { get; set; }
+    }
+
+
+
 
 
 

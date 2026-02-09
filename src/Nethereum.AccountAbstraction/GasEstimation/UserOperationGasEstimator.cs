@@ -1,5 +1,8 @@
 using System.Numerics;
 using Nethereum.ABI;
+using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
+using Nethereum.AccountAbstraction.Structs;
+using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -8,20 +11,45 @@ using Nethereum.Web3;
 
 namespace Nethereum.AccountAbstraction.GasEstimation
 {
+    public interface IEvmGasEstimator
+    {
+        Task<EvmEstimationResult> EstimateGasAsync(string from, string to, byte[] data, BigInteger value, long gasLimit);
+    }
+
+    public class EvmEstimationResult
+    {
+        public bool Success { get; set; }
+        public BigInteger GasUsed { get; set; }
+        public string Error { get; set; }
+    }
+
     public class UserOperationGasEstimator
     {
-        private readonly IWeb3? _web3;
+        private readonly IWeb3 _web3;
         private readonly string _entryPointAddress;
+        private readonly IEvmGasEstimator _evmEstimator;
+        private readonly string _bundlerAddress;
 
-        public UserOperationGasEstimator(IWeb3? web3, string entryPointAddress)
+        public UserOperationGasEstimator(IWeb3 web3, string entryPointAddress, string bundlerAddress = null)
         {
             _web3 = web3;
             _entryPointAddress = entryPointAddress ?? throw new ArgumentNullException(nameof(entryPointAddress));
+            _bundlerAddress = bundlerAddress ?? "0x0000000000000000000000000000000000000000";
         }
 
-        private IWeb3 RequireWeb3()
+        public UserOperationGasEstimator(IEvmGasEstimator evmEstimator, string entryPointAddress, string bundlerAddress = null)
         {
-            return _web3 ?? throw new InvalidOperationException("Web3 instance is required for this operation");
+            _evmEstimator = evmEstimator ?? throw new ArgumentNullException(nameof(evmEstimator));
+            _entryPointAddress = entryPointAddress ?? throw new ArgumentNullException(nameof(entryPointAddress));
+            _bundlerAddress = bundlerAddress ?? "0x0000000000000000000000000000000000000000";
+        }
+
+        public UserOperationGasEstimator(IWeb3 web3, IEvmGasEstimator evmEstimator, string entryPointAddress, string bundlerAddress = null)
+        {
+            _web3 = web3;
+            _evmEstimator = evmEstimator;
+            _entryPointAddress = entryPointAddress ?? throw new ArgumentNullException(nameof(entryPointAddress));
+            _bundlerAddress = bundlerAddress ?? "0x0000000000000000000000000000000000000000";
         }
 
         public async Task<UserOperationGasEstimateResult> EstimateGasAsync(UserOperation userOp)
@@ -30,26 +58,296 @@ namespace Nethereum.AccountAbstraction.GasEstimation
 
             var result = new UserOperationGasEstimateResult();
 
-            var preVerificationGas = CalculatePreVerificationGas(userOp);
-            result.PreVerificationGas = preVerificationGas;
+            // PreVerificationGas - always calculated via formula
+            result.PreVerificationGas = CalculatePreVerificationGas(userOp);
 
-            var verificationGasLimit = await EstimateVerificationGasAsync(userOp);
-            result.VerificationGasLimit = verificationGasLimit;
+            // Try handleOps-based estimation first
+            var handleOpsEstimation = await TryEstimateViaHandleOpsAsync(userOp);
 
-            var callGasLimit = await EstimateCallGasAsync(userOp);
-            result.CallGasLimit = callGasLimit;
-
-            if (HasPaymaster(userOp))
+            if (handleOpsEstimation.Success)
             {
-                result.PaymasterVerificationGasLimit = GasEstimationConstants.VERIFICATION_GAS_BUFFER;
-                result.PaymasterPostOpGasLimit = GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
+                result.VerificationGasLimit = handleOpsEstimation.VerificationGasLimit;
+            }
+            else
+            {
+                // Fallback to legacy per-phase estimation
+                result.VerificationGasLimit = await EstimateVerificationGasLegacyAsync(userOp);
             }
 
+            // CallGasLimit - estimate separately
+            result.CallGasLimit = await EstimateCallGasAsync(userOp);
+
+            // Paymaster gas limits
+            if (HasPaymaster(userOp))
+            {
+                result.PaymasterVerificationGasLimit = GasEstimationConstants.DEFAULT_PAYMASTER_VERIFICATION_GAS_FALLBACK;
+                result.PaymasterPostOpGasLimit = GasEstimationConstants.DEFAULT_PAYMASTER_POST_OP_GAS_FALLBACK;
+            }
+
+            // Gas prices
             var (maxFeePerGas, maxPriorityFeePerGas) = await GetGasPricesAsync();
             result.MaxFeePerGas = maxFeePerGas;
             result.MaxPriorityFeePerGas = maxPriorityFeePerGas;
 
             return result;
+        }
+
+        private async Task<HandleOpsEstimationResult> TryEstimateViaHandleOpsAsync(UserOperation userOp)
+        {
+            var result = new HandleOpsEstimationResult { Success = false };
+
+            try
+            {
+                // Create a copy with callGasLimit=0 so only verification runs
+                var verificationOnlyOp = CreateVerificationOnlyUserOp(userOp);
+                var packedOp = UserOperationBuilder.PackUserOperation(verificationOnlyOp);
+                var handleOpsData = EncodeHandleOps(new[] { packedOp });
+
+                BigInteger gasUsed;
+
+                // Try Node RPC first if available
+                if (_web3 != null)
+                {
+                    gasUsed = await EstimateHandleOpsViaNodeAsync(handleOpsData);
+                }
+                // Fall back to EVM simulation
+                else if (_evmEstimator != null)
+                {
+                    gasUsed = await EstimateHandleOpsViaEvmAsync(handleOpsData);
+                }
+                else
+                {
+                    return result;
+                }
+
+                // Subtract fixed overhead and add buffer
+                var verificationGas = gasUsed - GasEstimationConstants.HANDLE_OPS_FIXED_OVERHEAD;
+                verificationGas = ApplyBuffer(verificationGas, GasEstimationConstants.VERIFICATION_GAS_BUFFER_PERCENT);
+                verificationGas = BigInteger.Max(verificationGas, GasEstimationConstants.VERIFICATION_GAS_BUFFER);
+                verificationGas = BigInteger.Min(verificationGas, GasEstimationConstants.MAX_VERIFICATION_GAS);
+
+                result.Success = true;
+                result.VerificationGasLimit = verificationGas;
+            }
+            catch
+            {
+                // Estimation failed, will use fallback
+            }
+
+            return result;
+        }
+
+        private async Task<BigInteger> EstimateHandleOpsViaNodeAsync(byte[] handleOpsData)
+        {
+            var callInput = new CallInput
+            {
+                From = _bundlerAddress,
+                To = _entryPointAddress,
+                Data = handleOpsData.ToHex(true),
+                Gas = new HexBigInteger(GasEstimationConstants.MAX_SIMULATION_GAS)
+            };
+
+            var gasEstimate = await _web3.Eth.Transactions.EstimateGas.SendRequestAsync(callInput);
+            return gasEstimate.Value;
+        }
+
+        private async Task<BigInteger> EstimateHandleOpsViaEvmAsync(byte[] handleOpsData)
+        {
+            var evmResult = await _evmEstimator.EstimateGasAsync(
+                _bundlerAddress,
+                _entryPointAddress,
+                handleOpsData,
+                BigInteger.Zero,
+                GasEstimationConstants.MAX_SIMULATION_GAS);
+
+            if (!evmResult.Success)
+            {
+                throw new InvalidOperationException($"EVM estimation failed: {evmResult.Error}");
+            }
+
+            return evmResult.GasUsed;
+        }
+
+        private UserOperation CreateVerificationOnlyUserOp(UserOperation original)
+        {
+            return new UserOperation
+            {
+                Sender = original.Sender,
+                Nonce = original.Nonce ?? 0,
+                InitCode = original.InitCode ?? Array.Empty<byte>(),
+                CallData = original.CallData ?? Array.Empty<byte>(),
+                CallGasLimit = 0, // Key: set to 0 so only verification runs
+                VerificationGasLimit = GasEstimationConstants.MAX_VERIFICATION_GAS,
+                PreVerificationGas = GasEstimationConstants.PRE_VERIFICATION_OVERHEAD_GAS,
+                MaxFeePerGas = original.MaxFeePerGas ?? 1_000_000_000,
+                MaxPriorityFeePerGas = original.MaxPriorityFeePerGas ?? 1_000_000_000,
+                Paymaster = original.Paymaster,
+                PaymasterData = original.PaymasterData ?? Array.Empty<byte>(),
+                PaymasterVerificationGasLimit = original.PaymasterVerificationGasLimit ?? GasEstimationConstants.DEFAULT_PAYMASTER_VERIFICATION_GAS_FALLBACK,
+                PaymasterPostOpGasLimit = 0,
+                Signature = new byte[GasEstimationConstants.SIGNATURE_SIZE]
+            };
+        }
+
+        private byte[] EncodeHandleOps(PackedUserOperation[] ops)
+        {
+            var handleOpsFunction = new HandleOpsFunction
+            {
+                Ops = ops.ToList(),
+                Beneficiary = _bundlerAddress
+            };
+
+            return handleOpsFunction.GetCallData();
+        }
+
+        public async Task<BigInteger> EstimateCallGasAsync(UserOperation userOp)
+        {
+            if (userOp.CallData == null || userOp.CallData.Length == 0)
+            {
+                return GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
+            }
+
+            try
+            {
+                BigInteger gasUsed;
+
+                if (_web3 != null)
+                {
+                    var callInput = new CallInput
+                    {
+                        From = _entryPointAddress,
+                        To = userOp.Sender,
+                        Data = userOp.CallData.ToHex(true),
+                        Gas = new HexBigInteger(GasEstimationConstants.MAX_SIMULATION_GAS)
+                    };
+
+                    var gasEstimate = await _web3.Eth.Transactions.EstimateGas.SendRequestAsync(callInput);
+                    gasUsed = gasEstimate.Value;
+                }
+                else if (_evmEstimator != null)
+                {
+                    var evmResult = await _evmEstimator.EstimateGasAsync(
+                        _entryPointAddress,
+                        userOp.Sender,
+                        userOp.CallData,
+                        BigInteger.Zero,
+                        GasEstimationConstants.MAX_SIMULATION_GAS);
+
+                    if (!evmResult.Success)
+                    {
+                        return GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
+                    }
+
+                    gasUsed = evmResult.GasUsed;
+                }
+                else
+                {
+                    return GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
+                }
+
+                gasUsed += GasEstimationConstants.INNER_GAS_OVERHEAD;
+                gasUsed = ApplyBuffer(gasUsed, GasEstimationConstants.CALL_GAS_BUFFER_PERCENT);
+
+                return BigInteger.Max(gasUsed, GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT);
+            }
+            catch
+            {
+                return GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
+            }
+        }
+
+        private async Task<BigInteger> EstimateVerificationGasLegacyAsync(UserOperation userOp)
+        {
+            BigInteger totalVerificationGas = GasEstimationConstants.VERIFICATION_GAS_BUFFER;
+
+            if (HasInitCode(userOp))
+            {
+                var deploymentGas = await EstimateAccountDeploymentGasAsync(userOp);
+                totalVerificationGas += deploymentGas;
+            }
+            else
+            {
+                var accountValidationGas = await EstimateAccountValidationGasAsync(userOp);
+                totalVerificationGas = BigInteger.Max(totalVerificationGas, accountValidationGas + 50000);
+            }
+
+            if (HasPaymaster(userOp))
+            {
+                totalVerificationGas += GasEstimationConstants.PAYMASTER_VALIDATION_GAS_BUFFER;
+            }
+
+            totalVerificationGas += GasEstimationConstants.FIXED_VERIFICATION_GAS_OVERHEAD;
+
+            return BigInteger.Min(totalVerificationGas, GasEstimationConstants.MAX_VERIFICATION_GAS);
+        }
+
+        private async Task<BigInteger> EstimateAccountDeploymentGasAsync(UserOperation userOp)
+        {
+            if (!HasInitCode(userOp))
+                return 0;
+
+            var (factoryAddress, factoryData) = ParseInitCode(userOp.InitCode);
+
+            try
+            {
+                if (_web3 != null)
+                {
+                    var callInput = new CallInput
+                    {
+                        From = _entryPointAddress,
+                        To = factoryAddress,
+                        Data = factoryData.ToHex(true),
+                        Gas = new HexBigInteger(GasEstimationConstants.MAX_SIMULATION_GAS)
+                    };
+
+                    var gasEstimate = await _web3.Eth.Transactions.EstimateGas.SendRequestAsync(callInput);
+                    return gasEstimate.Value + GasEstimationConstants.CREATE2_COST;
+                }
+                else if (_evmEstimator != null)
+                {
+                    var evmResult = await _evmEstimator.EstimateGasAsync(
+                        _entryPointAddress,
+                        factoryAddress,
+                        factoryData,
+                        BigInteger.Zero,
+                        GasEstimationConstants.MAX_SIMULATION_GAS);
+
+                    if (evmResult.Success)
+                    {
+                        return evmResult.GasUsed + GasEstimationConstants.CREATE2_COST;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to default
+            }
+
+            return GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS + GasEstimationConstants.CREATE2_COST;
+        }
+
+        private async Task<BigInteger> EstimateAccountValidationGasAsync(UserOperation userOp)
+        {
+            if (string.IsNullOrEmpty(userOp.Sender))
+                return GasEstimationConstants.DEFAULT_VERIFICATION_GAS_FALLBACK;
+
+            try
+            {
+                if (_web3 != null)
+                {
+                    var codeSize = await _web3.Eth.GetCode.SendRequestAsync(userOp.Sender);
+                    if (string.IsNullOrEmpty(codeSize) || codeSize == "0x" || codeSize == "0x0")
+                    {
+                        return GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to default
+            }
+
+            return GasEstimationConstants.VERIFICATION_GAS_BUFFER;
         }
 
         public BigInteger CalculatePreVerificationGas(UserOperation userOp)
@@ -69,126 +367,33 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             return fixedCost + calldataCost + perWordGas + overhead;
         }
 
-        public async Task<BigInteger> EstimateVerificationGasAsync(UserOperation userOp)
-        {
-            BigInteger totalVerificationGas = GasEstimationConstants.VERIFICATION_GAS_BUFFER;
-
-            if (HasInitCode(userOp))
-            {
-                var deploymentGas = await EstimateAccountDeploymentGasAsync(userOp);
-                totalVerificationGas += deploymentGas;
-            }
-            else
-            {
-                var accountValidationGas = await EstimateAccountValidationGasAsync(userOp);
-                totalVerificationGas = Math.Max((long)totalVerificationGas, (long)accountValidationGas + 50000);
-            }
-
-            if (HasPaymaster(userOp))
-            {
-                totalVerificationGas += GasEstimationConstants.PAYMASTER_VALIDATION_GAS_BUFFER;
-            }
-
-            totalVerificationGas += GasEstimationConstants.FIXED_VERIFICATION_GAS_OVERHEAD;
-
-            return BigInteger.Min(totalVerificationGas, GasEstimationConstants.MAX_VERIFICATION_GAS);
-        }
-
-        public async Task<BigInteger> EstimateCallGasAsync(UserOperation userOp)
-        {
-            if (userOp.CallData == null || userOp.CallData.Length == 0)
-            {
-                return GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
-            }
-
-            try
-            {
-                var callInput = new CallInput
-                {
-                    From = userOp.Sender,
-                    To = userOp.Sender,
-                    Data = userOp.CallData.ToHex(true),
-                    Gas = new HexBigInteger(10_000_000)
-                };
-
-                var gasEstimate = await RequireWeb3().Eth.Transactions.EstimateGas.SendRequestAsync(callInput);
-                var estimatedGas = gasEstimate.Value;
-
-                estimatedGas += GasEstimationConstants.INNER_GAS_OVERHEAD;
-                estimatedGas = (estimatedGas * 120) / 100;
-
-                return BigInteger.Max(estimatedGas, GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT);
-            }
-            catch
-            {
-                return GasEstimationConstants.DEFAULT_CALL_GAS_LIMIT;
-            }
-        }
-
-        private async Task<BigInteger> EstimateAccountDeploymentGasAsync(UserOperation userOp)
-        {
-            if (!HasInitCode(userOp))
-                return 0;
-
-            var (factoryAddress, factoryData) = ParseInitCode(userOp.InitCode);
-
-            try
-            {
-                var callInput = new CallInput
-                {
-                    From = _entryPointAddress,
-                    To = factoryAddress,
-                    Data = factoryData.ToHex(true),
-                    Gas = new HexBigInteger(10_000_000)
-                };
-
-                var gasEstimate = await RequireWeb3().Eth.Transactions.EstimateGas.SendRequestAsync(callInput);
-                return gasEstimate.Value + GasEstimationConstants.CREATE2_COST;
-            }
-            catch
-            {
-                return GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS + GasEstimationConstants.CREATE2_COST;
-            }
-        }
-
-        private async Task<BigInteger> EstimateAccountValidationGasAsync(UserOperation userOp)
-        {
-            if (string.IsNullOrEmpty(userOp.Sender))
-                return GasEstimationConstants.VERIFICATION_GAS_BUFFER;
-
-            try
-            {
-                var codeSize = await RequireWeb3().Eth.GetCode.SendRequestAsync(userOp.Sender);
-                if (string.IsNullOrEmpty(codeSize) || codeSize == "0x" || codeSize == "0x0")
-                {
-                    return GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS;
-                }
-
-                return GasEstimationConstants.VERIFICATION_GAS_BUFFER;
-            }
-            catch
-            {
-                return GasEstimationConstants.VERIFICATION_GAS_BUFFER;
-            }
-        }
-
         private async Task<(BigInteger maxFeePerGas, BigInteger maxPriorityFeePerGas)> GetGasPricesAsync()
         {
             try
             {
-                var block = await RequireWeb3().Eth.Blocks.GetBlockWithTransactionsByNumber
-                    .SendRequestAsync(BlockParameter.CreateLatest());
+                if (_web3 != null)
+                {
+                    var block = await _web3.Eth.Blocks.GetBlockWithTransactionsByNumber
+                        .SendRequestAsync(BlockParameter.CreateLatest());
 
-                var baseFee = block.BaseFeePerGas?.Value ?? 0;
-                var maxPriorityFee = 1_000_000_000;
-                var maxFee = baseFee + maxPriorityFee;
+                    var baseFee = block.BaseFeePerGas?.Value ?? 0;
+                    var maxPriorityFee = 1_000_000_000;
+                    var maxFee = baseFee + maxPriorityFee;
 
-                return (maxFee, maxPriorityFee);
+                    return (maxFee, maxPriorityFee);
+                }
             }
             catch
             {
-                return (1_000_000_000, 1_000_000_000);
+                // Fall through to default
             }
+
+            return (1_000_000_000, 1_000_000_000);
+        }
+
+        private static BigInteger ApplyBuffer(BigInteger gas, int bufferPercent)
+        {
+            return (gas * (100 + bufferPercent)) / 100;
         }
 
         public static BigInteger CalculateCalldataCost(byte[] data)
@@ -252,7 +457,7 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             return (factoryAddressBytes.ToHex(true), factoryData);
         }
 
-        private static Structs.PackedUserOperation PackUserOperationForGasEstimate(UserOperation userOp)
+        private static PackedUserOperation PackUserOperationForGasEstimate(UserOperation userOp)
         {
             var tempOp = new UserOperation
             {
@@ -274,6 +479,12 @@ namespace Nethereum.AccountAbstraction.GasEstimation
 
             return UserOperationBuilder.PackUserOperation(tempOp);
         }
+    }
+
+    public class HandleOpsEstimationResult
+    {
+        public bool Success { get; set; }
+        public BigInteger VerificationGasLimit { get; set; }
     }
 
     public class UserOperationGasEstimateResult

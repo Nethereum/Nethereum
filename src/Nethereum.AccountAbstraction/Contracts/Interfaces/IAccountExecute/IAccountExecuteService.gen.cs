@@ -107,12 +107,41 @@ namespace Nethereum.AccountAbstraction.Contracts.Interfaces.IAccountExecute
              return ContractHandler.SendRequestAndWaitForReceiptAsync(executeBatchFunction, cancellationToken);
         }
 
+        public virtual Task<string> ExecuteUserOpRequestAsync(ExecuteUserOpFunction executeUserOpFunction)
+        {
+             return ContractHandler.SendRequestAsync(executeUserOpFunction);
+        }
+
+        public virtual Task<TransactionReceipt> ExecuteUserOpRequestAndWaitForReceiptAsync(ExecuteUserOpFunction executeUserOpFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(executeUserOpFunction, cancellationToken);
+        }
+
+        public virtual Task<string> ExecuteUserOpRequestAsync(PackedUserOperation userOp, byte[] userOpHash)
+        {
+            var executeUserOpFunction = new ExecuteUserOpFunction();
+                executeUserOpFunction.UserOp = userOp;
+                executeUserOpFunction.UserOpHash = userOpHash;
+            
+             return ContractHandler.SendRequestAsync(executeUserOpFunction);
+        }
+
+        public virtual Task<TransactionReceipt> ExecuteUserOpRequestAndWaitForReceiptAsync(PackedUserOperation userOp, byte[] userOpHash, CancellationTokenSource cancellationToken = null)
+        {
+            var executeUserOpFunction = new ExecuteUserOpFunction();
+                executeUserOpFunction.UserOp = userOp;
+                executeUserOpFunction.UserOpHash = userOpHash;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(executeUserOpFunction, cancellationToken);
+        }
+
         public override List<Type> GetAllFunctionTypes()
         {
             return new List<Type>
             {
                 typeof(ExecuteFunction),
-                typeof(ExecuteBatchFunction)
+                typeof(ExecuteBatchFunction),
+                typeof(ExecuteUserOpFunction)
             };
         }
 

@@ -149,6 +149,34 @@ namespace Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount
              return ContractHandler.SendRequestAndWaitForReceiptAsync(executeBatchFunction, cancellationToken);
         }
 
+        public virtual Task<string> ExecuteUserOpRequestAsync(ExecuteUserOpFunction executeUserOpFunction)
+        {
+             return ContractHandler.SendRequestAsync(executeUserOpFunction);
+        }
+
+        public virtual Task<TransactionReceipt> ExecuteUserOpRequestAndWaitForReceiptAsync(ExecuteUserOpFunction executeUserOpFunction, CancellationTokenSource cancellationToken = null)
+        {
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(executeUserOpFunction, cancellationToken);
+        }
+
+        public virtual Task<string> ExecuteUserOpRequestAsync(PackedUserOperation userOp, byte[] returnValue2)
+        {
+            var executeUserOpFunction = new ExecuteUserOpFunction();
+                executeUserOpFunction.UserOp = userOp;
+                executeUserOpFunction.ReturnValue2 = returnValue2;
+            
+             return ContractHandler.SendRequestAsync(executeUserOpFunction);
+        }
+
+        public virtual Task<TransactionReceipt> ExecuteUserOpRequestAndWaitForReceiptAsync(PackedUserOperation userOp, byte[] returnValue2, CancellationTokenSource cancellationToken = null)
+        {
+            var executeUserOpFunction = new ExecuteUserOpFunction();
+                executeUserOpFunction.UserOp = userOp;
+                executeUserOpFunction.ReturnValue2 = returnValue2;
+            
+             return ContractHandler.SendRequestAndWaitForReceiptAsync(executeUserOpFunction, cancellationToken);
+        }
+
         public Task<BigInteger> GetDepositQueryAsync(GetDepositFunction getDepositFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<GetDepositFunction, BigInteger>(getDepositFunction, blockParameter);
@@ -277,6 +305,7 @@ namespace Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount
                 typeof(EntryPointFunction),
                 typeof(ExecuteFunction),
                 typeof(ExecuteBatchFunction),
+                typeof(ExecuteUserOpFunction),
                 typeof(GetDepositFunction),
                 typeof(OwnerFunction),
                 typeof(ProxiableUUIDFunction),
@@ -300,6 +329,7 @@ namespace Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount
             return new List<Type>
             {
                 typeof(AddressEmptyCodeError),
+                typeof(ArrayLengthMismatchError),
                 typeof(ECDSAInvalidSignatureError),
                 typeof(ECDSAInvalidSignatureLengthError),
                 typeof(ECDSAInvalidSignatureSError),

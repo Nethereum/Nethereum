@@ -11,7 +11,7 @@ namespace Nethereum.AccountAbstraction
         public static readonly byte[] DEFAULT_INIT_CODE = Array.Empty<byte>();
         public static readonly byte[] DEFAULT_CALL_DATA = Array.Empty<byte>();
         public static readonly BigInteger DEFAULT_CALL_GAS_LIMIT = 0;
-        public static readonly BigInteger? DEFAULT_VERIFICATION_GAS_LIMIT = 15000;
+        public static readonly BigInteger? DEFAULT_VERIFICATION_GAS_LIMIT = 150000;
         public static readonly BigInteger DEFAULT_PRE_VERIFICATION_GAS = 21000;
         public static readonly BigInteger DEFAULT_MAX_FEE_PER_GAS = 0;
         public static readonly BigInteger DEFAULT_MAX_PRIORITY_FEE_PER_GAS = 1000000000;

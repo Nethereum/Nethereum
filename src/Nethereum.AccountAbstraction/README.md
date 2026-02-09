@@ -32,8 +32,13 @@ var ownerKey = new EthECKey("your-private-key");
 var bundlerService = new AccountAbstractionBundlerService(
     new RpcClient(new Uri("https://your-bundler-url")));
 
-// EntryPoint v0.7
-var entryPointAddress = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+// EntryPoint v0.9 (recommended)
+var entryPointAddress = "0x433709009B8330FDa32311DF1C2AFA402eD8D009";
+
+// Or use constants
+var entryPointAddress = EntryPointAddresses.V09; // 0x433709009B8330FDa32311DF1C2AFA402eD8D009
+// var entryPointAddress = EntryPointAddresses.V08; // 0x4337084d9e255ff0702461cf8895ce9e3b5ff108
+// var entryPointAddress = EntryPointAddresses.V07; // 0x0000000071727De22E5E9d8BAf0edAc6f37da032
 ```
 
 ### 2. Using with Any Contract Service
@@ -385,7 +390,7 @@ Your Application
             ▼
 ┌─────────────────────────┐
 │   EntryPoint Contract   │  (handleOps)
-│   0x00...7de22e5e9d8baf │
+│   0x4337090...eD8D009   │  (v0.9)
 └───────────┬─────────────┘
             │
             ▼

@@ -79,6 +79,17 @@ namespace Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount.ContractD
         public virtual List<byte[]> Datas { get; set; }
     }
 
+    public partial class ExecuteUserOpFunction : ExecuteUserOpFunctionBase { }
+
+    [Function("executeUserOp")]
+    public class ExecuteUserOpFunctionBase : FunctionMessage
+    {
+        [Parameter("tuple", "userOp", 1)]
+        public virtual PackedUserOperation UserOp { get; set; }
+        [Parameter("bytes32", "", 2)]
+        public virtual byte[] ReturnValue2 { get; set; }
+    }
+
     public partial class GetDepositFunction : GetDepositFunctionBase { }
 
     [Function("getDeposit", "uint256")]
@@ -162,6 +173,8 @@ namespace Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount.ContractD
 
 
 
+
+
     public partial class GetDepositOutputDTO : GetDepositOutputDTOBase { }
 
     [FunctionOutput]
@@ -220,6 +233,12 @@ namespace Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount.ContractD
     {
         [Parameter("address", "target", 1)]
         public virtual string Target { get; set; }
+    }
+
+    public partial class ArrayLengthMismatchError : ArrayLengthMismatchErrorBase { }
+    [Error("ArrayLengthMismatch")]
+    public class ArrayLengthMismatchErrorBase : IErrorDTO
+    {
     }
 
     public partial class ECDSAInvalidSignatureError : ECDSAInvalidSignatureErrorBase { }

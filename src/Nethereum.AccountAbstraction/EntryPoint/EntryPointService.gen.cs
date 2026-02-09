@@ -151,6 +151,17 @@ namespace Nethereum.AccountAbstraction.EntryPoint
             return ContractHandler.QueryDeserializingToObjectAsync<Eip712DomainFunction, Eip712DomainOutputDTO>(null, blockParameter);
         }
 
+        public Task<byte[]> GetCurrentUserOpHashQueryAsync(GetCurrentUserOpHashFunction getCurrentUserOpHashFunction, BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<GetCurrentUserOpHashFunction, byte[]>(getCurrentUserOpHashFunction, blockParameter);
+        }
+
+        
+        public virtual Task<byte[]> GetCurrentUserOpHashQueryAsync(BlockParameter blockParameter = null)
+        {
+            return ContractHandler.QueryAsync<GetCurrentUserOpHashFunction, byte[]>(null, blockParameter);
+        }
+
         public virtual Task<GetDepositInfoOutputDTO> GetDepositInfoQueryAsync(GetDepositInfoFunction getDepositInfoFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryDeserializingToObjectAsync<GetDepositInfoFunction, GetDepositInfoOutputDTO>(getDepositInfoFunction, blockParameter);
@@ -476,6 +487,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 typeof(DelegateAndRevertFunction),
                 typeof(DepositToFunction),
                 typeof(Eip712DomainFunction),
+                typeof(GetCurrentUserOpHashFunction),
                 typeof(GetDepositInfoFunction),
                 typeof(GetDomainSeparatorV4Function),
                 typeof(GetNonceFunction),
@@ -503,6 +515,8 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                 typeof(BeforeExecutionEventDTO),
                 typeof(DepositedEventDTO),
                 typeof(EIP712DomainChangedEventDTO),
+                typeof(EIP7702AccountInitializedEventDTO),
+                typeof(IgnoredInitCodeEventDTO),
                 typeof(PostOpRevertReasonEventDTO),
                 typeof(SignatureAggregatorChangedEventDTO),
                 typeof(StakeLockedEventDTO),
@@ -520,14 +534,30 @@ namespace Nethereum.AccountAbstraction.EntryPoint
             return new List<Type>
             {
                 typeof(DelegateAndRevertError),
+                typeof(DepositWithdrawalFailedError),
+                typeof(Eip7702SenderNotDelegateError),
+                typeof(Eip7702SenderWithoutCodeError),
                 typeof(FailedOpError),
                 typeof(FailedOpWithRevertError),
+                typeof(FailedSendToBeneficiaryError),
+                typeof(InsufficientDepositError),
+                typeof(InternalFunctionError),
+                typeof(InvalidBeneficiaryError),
+                typeof(InvalidPaymasterError),
+                typeof(InvalidPaymasterDataError),
+                typeof(InvalidPaymasterSignatureLengthError),
                 typeof(InvalidShortStringError),
+                typeof(InvalidStakeError),
+                typeof(InvalidUnstakeDelayError),
+                typeof(NotStakedError),
                 typeof(PostOpRevertedError),
-                typeof(ReentrancyGuardReentrantCallError),
+                typeof(ReentrancyError),
                 typeof(SenderAddressResultError),
                 typeof(SignatureValidationFailedError),
-                typeof(StringTooLongError)
+                typeof(StakeNotUnlockedError),
+                typeof(StakeWithdrawalFailedError),
+                typeof(StringTooLongError),
+                typeof(WithdrawalNotDueError)
             };
         }
     }

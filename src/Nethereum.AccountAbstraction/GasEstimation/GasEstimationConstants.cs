@@ -21,5 +21,16 @@ namespace Nethereum.AccountAbstraction.GasEstimation
         public static readonly BigInteger FIXED_VERIFICATION_GAS_OVERHEAD = 21000;
         public static readonly BigInteger ACCOUNT_DEPLOYMENT_BASE_GAS = 32000;
         public static readonly BigInteger CREATE2_COST = 32000;
+
+        // HandleOps-based estimation constants
+        public const int HANDLE_OPS_FIXED_OVERHEAD = 30000;
+        public const int VERIFICATION_GAS_BUFFER_PERCENT = 20;
+        public const int CALL_GAS_BUFFER_PERCENT = 20;
+        public const long MAX_SIMULATION_GAS = 10_000_000;
+
+        // Default fallback values when estimation fails
+        public const int DEFAULT_VERIFICATION_GAS_FALLBACK = 150000;
+        public const int DEFAULT_PAYMASTER_VERIFICATION_GAS_FALLBACK = 100000;
+        public const int DEFAULT_PAYMASTER_POST_OP_GAS_FALLBACK = 50000;
     }
 }
