@@ -1,0 +1,379 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./ModularSmartAccount.sol";
+
+contract SmartAccountFactoryGovernance is EIP712, ReentrancyGuard {
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using ECDSA for bytes32;
+    using Clones for address;
+
+    // ========== CONSTANTS ==========
+
+    uint256 public constant MAX_ADMINS = 50;
+
+    bytes32 private constant REGISTER_MODULE_TYPEHASH = keccak256(
+        "RegisterModule(bytes32 moduleId,address moduleAddress,uint256 nonce,uint256 deadline)"
+    );
+
+    bytes32 private constant UNREGISTER_MODULE_TYPEHASH = keccak256(
+        "UnregisterModule(bytes32 moduleId,uint256 nonce,uint256 deadline)"
+    );
+
+    bytes32 private constant UPDATE_ADMINS_TYPEHASH = keccak256(
+        "UpdateAdmins(address[] newAdmins,uint256 newThreshold,uint256 nonce,uint256 deadline)"
+    );
+
+    // ========== STORAGE ==========
+
+    address public immutable implementation;
+    address public immutable entryPoint;
+    address public immutable accountRegistry;
+
+    EnumerableSet.AddressSet private _admins;
+    uint256 public threshold;
+    uint256 public nonce;
+
+    mapping(bytes32 => address) public moduleRegistry;
+    bytes32[] public registeredModuleIds;
+
+    // ========== EVENTS ==========
+
+    event AccountCreated(
+        address indexed account,
+        address indexed owner,
+        bytes32 indexed salt,
+        bytes32[] moduleIds
+    );
+    event ModuleRegistered(bytes32 indexed moduleId, address indexed moduleAddress);
+    event ModuleUnregistered(bytes32 indexed moduleId);
+    event AdminsUpdated(address[] newAdmins, uint256 newThreshold, uint256 nonce);
+
+    // ========== ERRORS ==========
+
+    error ModuleNotRegistered(bytes32 moduleId);
+    error ModuleAlreadyRegistered(bytes32 moduleId);
+    error InvalidModuleAddress();
+    error AccountAlreadyDeployed();
+    error InvalidThreshold();
+    error InvalidAdminCount();
+    error InvalidAddress();
+    error DuplicateAdmin();
+    error InsufficientSignatures();
+    error InvalidSignature();
+    error SignatureExpired();
+    error NotAdmin();
+
+    // ========== CONSTRUCTOR ==========
+
+    constructor(
+        address _entryPoint,
+        address _accountRegistry,
+        address[] memory initialAdmins,
+        uint256 initialThreshold
+    ) EIP712("SmartAccountFactoryGovernance", "1") {
+        if (initialAdmins.length == 0 || initialAdmins.length > MAX_ADMINS) {
+            revert InvalidAdminCount();
+        }
+        if (initialThreshold == 0 || initialThreshold > initialAdmins.length) {
+            revert InvalidThreshold();
+        }
+
+        entryPoint = _entryPoint;
+        accountRegistry = _accountRegistry;
+
+        for (uint256 i = 0; i < initialAdmins.length; i++) {
+            address admin = initialAdmins[i];
+            if (admin == address(0)) revert InvalidAddress();
+            if (!_admins.add(admin)) revert DuplicateAdmin();
+        }
+
+        threshold = initialThreshold;
+
+        implementation = address(
+            new ModularSmartAccount(_entryPoint, _accountRegistry)
+        );
+    }
+
+    // ========== ACCOUNT CREATION (permissionless) ==========
+
+    function createAccount(
+        address owner,
+        bytes32 salt,
+        bytes32[] calldata moduleIds
+    ) external returns (address account) {
+        bytes32 fullSalt = _getSalt(owner, salt, moduleIds);
+
+        account = implementation.cloneDeterministic(fullSalt);
+
+        (address[] memory moduleAddresses, bool[] memory canValidate) = _resolveModules(moduleIds);
+
+        ModularSmartAccount(payable(account)).initialize(
+            owner,
+            moduleIds,
+            moduleAddresses,
+            canValidate
+        );
+
+        emit AccountCreated(account, owner, salt, moduleIds);
+    }
+
+    function createAccountIfNeeded(
+        address owner,
+        bytes32 salt,
+        bytes32[] calldata moduleIds
+    ) external returns (address account) {
+        account = this.getAddress(owner, salt, moduleIds);
+
+        if (account.code.length == 0) {
+            account = this.createAccount(owner, salt, moduleIds);
+        }
+    }
+
+    function getAddress(
+        address owner,
+        bytes32 salt,
+        bytes32[] calldata moduleIds
+    ) external view returns (address) {
+        bytes32 fullSalt = _getSalt(owner, salt, moduleIds);
+        return implementation.predictDeterministicAddress(fullSalt);
+    }
+
+    function isDeployed(
+        address owner,
+        bytes32 salt,
+        bytes32[] calldata moduleIds
+    ) external view returns (bool) {
+        address predicted = this.getAddress(owner, salt, moduleIds);
+        return predicted.code.length > 0;
+    }
+
+    // ========== MODULE REGISTRATION (requires multi-sig) ==========
+
+    function registerModule(
+        bytes32 moduleId,
+        address moduleAddress,
+        uint256 deadline,
+        bytes[] calldata signatures
+    ) external nonReentrant {
+        if (block.timestamp > deadline) revert SignatureExpired();
+        if (moduleRegistry[moduleId] != address(0)) revert ModuleAlreadyRegistered(moduleId);
+        if (moduleAddress == address(0)) revert InvalidModuleAddress();
+
+        bytes32 structHash = keccak256(abi.encode(
+            REGISTER_MODULE_TYPEHASH,
+            moduleId,
+            moduleAddress,
+            nonce,
+            deadline
+        ));
+
+        _validateSignatures(structHash, signatures);
+
+        nonce++;
+        moduleRegistry[moduleId] = moduleAddress;
+        registeredModuleIds.push(moduleId);
+
+        emit ModuleRegistered(moduleId, moduleAddress);
+    }
+
+    function unregisterModule(
+        bytes32 moduleId,
+        uint256 deadline,
+        bytes[] calldata signatures
+    ) external nonReentrant {
+        if (block.timestamp > deadline) revert SignatureExpired();
+        if (moduleRegistry[moduleId] == address(0)) revert ModuleNotRegistered(moduleId);
+
+        bytes32 structHash = keccak256(abi.encode(
+            UNREGISTER_MODULE_TYPEHASH,
+            moduleId,
+            nonce,
+            deadline
+        ));
+
+        _validateSignatures(structHash, signatures);
+
+        nonce++;
+        delete moduleRegistry[moduleId];
+
+        for (uint256 i = 0; i < registeredModuleIds.length; i++) {
+            if (registeredModuleIds[i] == moduleId) {
+                registeredModuleIds[i] = registeredModuleIds[registeredModuleIds.length - 1];
+                registeredModuleIds.pop();
+                break;
+            }
+        }
+
+        emit ModuleUnregistered(moduleId);
+    }
+
+    // ========== ADMIN MANAGEMENT (requires multi-sig) ==========
+
+    function updateAdmins(
+        address[] calldata newAdmins,
+        uint256 newThreshold,
+        uint256 deadline,
+        bytes[] calldata signatures
+    ) external nonReentrant {
+        if (block.timestamp > deadline) revert SignatureExpired();
+        if (newAdmins.length == 0 || newAdmins.length > MAX_ADMINS) revert InvalidAdminCount();
+        if (newThreshold == 0 || newThreshold > newAdmins.length) revert InvalidThreshold();
+
+        bytes32 structHash = keccak256(abi.encode(
+            UPDATE_ADMINS_TYPEHASH,
+            keccak256(abi.encodePacked(newAdmins)),
+            newThreshold,
+            nonce,
+            deadline
+        ));
+
+        _validateSignatures(structHash, signatures);
+
+        // Clear existing admins
+        address[] memory currentAdmins = _admins.values();
+        for (uint256 i = 0; i < currentAdmins.length; i++) {
+            _admins.remove(currentAdmins[i]);
+        }
+
+        // Add new admins with duplicate check
+        for (uint256 i = 0; i < newAdmins.length; i++) {
+            address admin = newAdmins[i];
+            if (admin == address(0)) revert InvalidAddress();
+            if (!_admins.add(admin)) revert DuplicateAdmin();
+        }
+
+        threshold = newThreshold;
+        nonce++;
+
+        emit AdminsUpdated(newAdmins, newThreshold, nonce);
+    }
+
+    // ========== SIGNATURE VALIDATION ==========
+
+    function _validateSignatures(
+        bytes32 structHash,
+        bytes[] calldata signatures
+    ) internal view {
+        if (signatures.length < threshold) revert InsufficientSignatures();
+
+        bytes32 digest = _hashTypedDataV4(structHash);
+
+        address[] memory usedSigners = new address[](signatures.length);
+        uint256 validSignatures = 0;
+
+        for (uint256 i = 0; i < signatures.length; i++) {
+            address signer = digest.recover(signatures[i]);
+
+            if (!_admins.contains(signer)) revert InvalidSignature();
+
+            // Check for duplicate signers
+            bool isDuplicate = false;
+            for (uint256 j = 0; j < validSignatures; j++) {
+                if (usedSigners[j] == signer) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                usedSigners[validSignatures] = signer;
+                validSignatures++;
+            }
+        }
+
+        if (validSignatures < threshold) revert InsufficientSignatures();
+    }
+
+    function validateSignatures(
+        bytes32 digest,
+        bytes[] calldata signatures
+    ) external view returns (bool) {
+        if (signatures.length < threshold) return false;
+
+        address[] memory usedSigners = new address[](signatures.length);
+        uint256 validSignatures = 0;
+
+        for (uint256 i = 0; i < signatures.length; i++) {
+            address signer = digest.recover(signatures[i]);
+
+            if (!_admins.contains(signer)) return false;
+
+            bool isDuplicate = false;
+            for (uint256 j = 0; j < validSignatures; j++) {
+                if (usedSigners[j] == signer) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                usedSigners[validSignatures] = signer;
+                validSignatures++;
+            }
+        }
+
+        return validSignatures >= threshold;
+    }
+
+    // ========== VIEW FUNCTIONS ==========
+
+    function getAdmins() external view returns (address[] memory) {
+        return _admins.values();
+    }
+
+    function getAdminCount() external view returns (uint256) {
+        return _admins.length();
+    }
+
+    function isAdmin(address account) external view returns (bool) {
+        return _admins.contains(account);
+    }
+
+    function getModuleAddress(bytes32 moduleId) external view returns (address) {
+        return moduleRegistry[moduleId];
+    }
+
+    function getRegisteredModules() external view returns (bytes32[] memory) {
+        return registeredModuleIds;
+    }
+
+    function getRegisteredModuleCount() external view returns (uint256) {
+        return registeredModuleIds.length;
+    }
+
+    function getDomainSeparator() external view returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    // ========== INTERNAL FUNCTIONS ==========
+
+    function _getSalt(
+        address owner,
+        bytes32 salt,
+        bytes32[] calldata moduleIds
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(owner, salt, moduleIds));
+    }
+
+    function _resolveModules(
+        bytes32[] calldata moduleIds
+    ) internal view returns (address[] memory addresses, bool[] memory canValidate) {
+        addresses = new address[](moduleIds.length);
+        canValidate = new bool[](moduleIds.length);
+
+        for (uint256 i = 0; i < moduleIds.length; i++) {
+            address moduleAddr = moduleRegistry[moduleIds[i]];
+            if (moduleAddr == address(0)) {
+                revert ModuleNotRegistered(moduleIds[i]);
+            }
+            addresses[i] = moduleAddr;
+            canValidate[i] = true;
+        }
+    }
+}
