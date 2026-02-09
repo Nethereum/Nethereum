@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Nethereum.Util
@@ -35,12 +36,10 @@ namespace Nethereum.Util
             return org.Skip(start).Take(end - start).ToArray();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] InitialiseEmptyByteArray(int length)
         {
-            var returnArray = new byte[length];
-            for (var i = 0; i < length; i++)
-                returnArray[i] = 0x00;
-            return returnArray;
+            return new byte[length];
         }
 
         public static IEnumerable<byte> MergeToEnum(params byte[][] arrays)
@@ -65,6 +64,7 @@ namespace Nethereum.Util
                 result[i] = (byte) (a[i] ^ b[i]);
             return result;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] PadTo32Bytes(this byte[] bytesToPad)
         {
             if (bytesToPad.Length >= 32) return bytesToPad;
@@ -77,14 +77,11 @@ namespace Nethereum.Util
             return PadBytes(bytesToPad, 128);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] PadBytes(this byte[] bytesToPad, int numberOfBytes)
         {
             var ret = new byte[numberOfBytes];
-
-            for (var i = 0; i < ret.Length; i++)
-                ret[i] = 0;
             Array.Copy(bytesToPad, 0, ret, numberOfBytes - bytesToPad.Length, bytesToPad.Length);
-
             return ret;
         }
 
@@ -95,14 +92,11 @@ namespace Nethereum.Util
             return PadBytes(bytesToPad, numberOfBytes);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] PadBytesRight(this byte[] bytesToPad, int numberOfBytes)
         {
             var ret = new byte[numberOfBytes];
-
-            for (var i = 0; i < ret.Length; i++)
-                ret[i] = 0;
             Array.Copy(bytesToPad, 0, ret, 0, bytesToPad.Length);
-
             return ret;
         }
 
@@ -185,6 +179,7 @@ namespace Nethereum.Util
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AreEqual(byte[] a, byte[] b)
         {
             if (a == null && b == null) return true;
@@ -198,6 +193,7 @@ namespace Nethereum.Util
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsZero(byte[] value)
         {
             if (value == null) return true;
