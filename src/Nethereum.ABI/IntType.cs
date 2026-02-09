@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.ABI.Decoders;
 using Nethereum.ABI.Encoders;
@@ -9,7 +10,7 @@ namespace Nethereum.ABI
     {
         public static BigInteger MAX_INT256_VALUE =
             BigInteger.Parse("57896044618658097711785492504343953926634992332820282019728792003956564819967");
-        
+
         public static BigInteger MIN_INT256_VALUE =
             BigInteger.Parse("-57896044618658097711785492504343953926634992332820282019728792003956564819968");
 
@@ -17,6 +18,11 @@ namespace Nethereum.ABI
             BigInteger.Parse("115792089237316195423570985008687907853269984665640564039457584007913129639935");
 
         public static BigInteger MIN_UINT_VALUE = 0;
+
+        private static readonly Dictionary<uint, BigInteger> _maxUnsignedCache = new Dictionary<uint, BigInteger>();
+        private static readonly Dictionary<uint, BigInteger> _maxSignedCache = new Dictionary<uint, BigInteger>();
+        private static readonly Dictionary<uint, BigInteger> _minSignedCache = new Dictionary<uint, BigInteger>();
+        private static readonly object _cacheLock = new object();
 
         public override int StaticSize { get; }
 
@@ -48,19 +54,43 @@ namespace Nethereum.ABI
         public static BigInteger GetMaxSignedValue(uint size)
         {
             CheckIsValidAndThrow(size);
-            return BigInteger.Pow(2, (int) size - 1) - 1;
+            lock (_cacheLock)
+            {
+                if (!_maxSignedCache.TryGetValue(size, out var result))
+                {
+                    result = BigInteger.Pow(2, (int)size - 1) - 1;
+                    _maxSignedCache[size] = result;
+                }
+                return result;
+            }
         }
 
         public static BigInteger GetMinSignedValue(uint size)
         {
             CheckIsValidAndThrow(size);
-            return BigInteger.Pow(-2, (int) size - 1);
+            lock (_cacheLock)
+            {
+                if (!_minSignedCache.TryGetValue(size, out var result))
+                {
+                    result = BigInteger.Pow(-2, (int)size - 1);
+                    _minSignedCache[size] = result;
+                }
+                return result;
+            }
         }
 
         public static BigInteger GetMaxUnSignedValue(uint size)
         {
             CheckIsValidAndThrow(size);
-            return BigInteger.Pow(2, (int) size) - 1;
+            lock (_cacheLock)
+            {
+                if (!_maxUnsignedCache.TryGetValue(size, out var result))
+                {
+                    result = BigInteger.Pow(2, (int)size) - 1;
+                    _maxUnsignedCache[size] = result;
+                }
+                return result;
+            }
         }
 
         private static void CheckIsValidAndThrow(uint size)
