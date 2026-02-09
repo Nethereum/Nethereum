@@ -1,6 +1,7 @@
 using System.Numerics;
 using Nethereum.AccountAbstraction.GasEstimation;
 using Nethereum.Util;
+using Nethereum.Web3;
 using Xunit;
 
 namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
@@ -107,7 +108,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 InitCode = Array.Empty<byte>()
             };
 
-            var estimator = new UserOperationGasEstimator(null!, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3)null!, "0x0000000000000000000000000000000000000000");
             var preVerificationGas = estimator.CalculatePreVerificationGas(userOp);
 
             var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
@@ -139,7 +140,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 opWithCallData.CallData[i] = (byte)(i + 1);
             }
 
-            var estimator = new UserOperationGasEstimator(null!, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3)null!, "0x0000000000000000000000000000000000000000");
 
             var emptyGas = estimator.CalculatePreVerificationGas(emptyOp);
             var callDataGas = estimator.CalculatePreVerificationGas(opWithCallData);
@@ -158,7 +159,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 Signature = Array.Empty<byte>()
             };
 
-            var estimator = new UserOperationGasEstimator(null!, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3)null!, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var signatureGasCost = GasEstimationConstants.SIGNATURE_SIZE * GasEstimationConstants.NON_ZERO_BYTE_GAS_COST;
@@ -224,7 +225,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 Nonce = 0
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
@@ -241,7 +242,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 Nonce = 0
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
@@ -259,7 +260,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 InitCode = Array.Empty<byte>()
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
@@ -282,7 +283,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 InitCode = initCode
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             Assert.True(gas > 0, "Should calculate gas for zero address with initCode");
@@ -292,13 +293,13 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
         public void Constructor_NullEntryPoint_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new UserOperationGasEstimator(null, null!));
+                new UserOperationGasEstimator((IWeb3?)null, null!));
         }
 
         [Fact]
         public void Constructor_NullWeb3_Succeeds()
         {
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             Assert.NotNull(estimator);
         }
     }
@@ -328,7 +329,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 InitCode = initCode
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
 
             var gasWithoutInit = estimator.CalculatePreVerificationGas(opWithoutInit);
             var gasWithInit = estimator.CalculatePreVerificationGas(opWithInit);
@@ -347,7 +348,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 InitCode = new byte[] { 0x01, 0x02, 0x03 }
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
@@ -368,7 +369,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 InitCode = initCode
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
@@ -399,7 +400,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
             };
             for (int i = 0; i < 100; i++) opWithPaymaster.PaymasterData[i] = 0xFF;
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
 
             var gasWithoutPaymaster = estimator.CalculatePreVerificationGas(opWithoutPaymaster);
             var gasWithPaymaster = estimator.CalculatePreVerificationGas(opWithPaymaster);
@@ -427,7 +428,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 PaymasterData = Array.Empty<byte>()
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
 
             var gasZeroPaymaster = estimator.CalculatePreVerificationGas(opWithZeroPaymaster);
             var gasNoPaymaster = estimator.CalculatePreVerificationGas(opWithoutPaymaster);
@@ -455,7 +456,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
             };
             for (int i = 0; i < 200; i++) opLargePaymasterData.PaymasterData[i] = 0xFF;
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
 
             var gasSmall = estimator.CalculatePreVerificationGas(opSmallPaymasterData);
             var gasLarge = estimator.CalculatePreVerificationGas(opLargePaymasterData);
@@ -521,7 +522,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 Nonce = BigInteger.Parse("115792089237316195423570985008687907853269984665640564039457584007913129639935")
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
 
             var gasSmallNonce = estimator.CalculatePreVerificationGas(opSmallNonce);
             var gasLargeNonce = estimator.CalculatePreVerificationGas(opLargeNonce);
@@ -552,7 +553,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 MaxPriorityFeePerGas = 10_000_000_000
             };
 
-            var estimator = new UserOperationGasEstimator(null, "0x0000000000000000000000000000000000000000");
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
 
             var gasLow = estimator.CalculatePreVerificationGas(opLowGas);
             var gasHigh = estimator.CalculatePreVerificationGas(opHighGas);

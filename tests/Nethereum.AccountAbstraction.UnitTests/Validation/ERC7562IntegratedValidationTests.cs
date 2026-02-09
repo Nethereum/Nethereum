@@ -17,7 +17,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
     {
         private readonly ERC7562SimulationService _simulationService;
         private readonly InMemoryNodeDataService _nodeDataService;
-        private const string EntryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+        private const string EntryPointAddress = "0x433709009B8330FDa32311DF1C2AFA402eD8D009"; // v0.9
 
         public ERC7562IntegratedValidationTests()
         {
