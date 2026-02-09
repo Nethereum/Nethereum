@@ -26,8 +26,24 @@ namespace Nethereum.Merkle.Patricia
 
         public PatriciaTrie():this(new Sha3KeccackHashProvider())
         {
-            
+
         }
+
+        public static PatriciaTrie LoadFromStorage(byte[] rootHash, ITrieStorage storage)
+        {
+            return LoadFromStorage(rootHash, storage, new Sha3KeccackHashProvider());
+        }
+
+        public static PatriciaTrie LoadFromStorage(byte[] rootHash, ITrieStorage storage, IHashProvider hashProvider)
+        {
+            if (rootHash == null || rootHash.Length == 0)
+                return new PatriciaTrie(hashProvider);
+
+            var trie = new PatriciaTrie(hashProvider);
+            trie.Root = new HashNode(hashProvider) { Hash = rootHash };
+            return trie;
+        }
+
         public IHashProvider HashProvider { get; }
 
         public Node Root { get; private set; }
@@ -221,7 +237,8 @@ namespace Nethereum.Merkle.Patricia
             }
 
             var nibbleBranch = keyAsNibbles[0];
-            currentNode.Children[nibbleBranch] = Put(currentNode.Children[nibbleBranch], keyAsNibbles.Skip(1).ToArray(), value, storage);
+            var newChild = Put(currentNode.Children[nibbleBranch], keyAsNibbles.Skip(1).ToArray(), value, storage);
+            currentNode.SetChild(nibbleBranch, newChild);
             return currentNode;
         }
         
@@ -303,30 +320,262 @@ namespace Nethereum.Merkle.Patricia
             Root = Put(Root, key.ConvertToNibbles(), value, storage);
         }
 
+        public void Delete(byte[] key, ITrieStorage storage = null)
+        {
+            Root = Delete(Root, key.ConvertToNibbles(), storage);
+        }
+
+        private Node Delete(Node node, byte[] keyAsNibbles, ITrieStorage storage)
+        {
+            if (node is null || node is EmptyNode)
+            {
+                return new EmptyNode();
+            }
+
+            if (node is LeafNode leafNode)
+            {
+                return DeleteFromLeafNode(leafNode, keyAsNibbles);
+            }
+
+            if (node is BranchNode branchNode)
+            {
+                return DeleteFromBranchNode(branchNode, keyAsNibbles, storage);
+            }
+
+            if (node is ExtendedNode extendedNode)
+            {
+                return DeleteFromExtendedNode(extendedNode, keyAsNibbles, storage);
+            }
+
+            if (node is HashNode hashNode)
+            {
+                return DeleteFromHashNode(hashNode, keyAsNibbles, storage);
+            }
+
+            return node;
+        }
+
+        private Node DeleteFromHashNode(HashNode hashNode, byte[] keyAsNibbles, ITrieStorage storage)
+        {
+            if (hashNode.InnerNode == null)
+            {
+                hashNode.DecodeInnerNode(storage, false);
+            }
+            hashNode.InnerNode = Delete(hashNode.InnerNode, keyAsNibbles, storage);
+            return NormalizeNode(hashNode.InnerNode);
+        }
+
+        private Node DeleteFromLeafNode(LeafNode leafNode, byte[] keyAsNibbles)
+        {
+            var foundSameNibbles = leafNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
+            if (foundSameNibbles.Length == leafNode.Nibbles.Length && foundSameNibbles.Length == keyAsNibbles.Length)
+            {
+                return new EmptyNode();
+            }
+            return leafNode;
+        }
+
+        private Node DeleteFromBranchNode(BranchNode branchNode, byte[] keyAsNibbles, ITrieStorage storage)
+        {
+            if (keyAsNibbles == null || keyAsNibbles.Length == 0)
+            {
+                branchNode.Value = null;
+            }
+            else
+            {
+                var nibble = keyAsNibbles[0];
+                var newChild = Delete(branchNode.Children[nibble], keyAsNibbles.Skip(1).ToArray(), storage);
+                branchNode.SetChild(nibble, newChild);
+            }
+            return NormalizeBranchNode(branchNode);
+        }
+
+        private Node DeleteFromExtendedNode(ExtendedNode extendedNode, byte[] keyAsNibbles, ITrieStorage storage)
+        {
+            var foundSameNibbles = extendedNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
+            if (foundSameNibbles.Length < extendedNode.Nibbles.Length)
+            {
+                return extendedNode;
+            }
+            extendedNode.InnerNode = Delete(extendedNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), storage);
+            return NormalizeExtendedNode(extendedNode);
+        }
+
+        private Node NormalizeNode(Node node)
+        {
+            if (node is EmptyNode) return new EmptyNode();
+            return node;
+        }
+
+        private Node NormalizeBranchNode(BranchNode branchNode)
+        {
+            int nonEmptyChildCount = 0;
+            int nonEmptyChildIndex = -1;
+            for (int i = 0; i < 16; i++)
+            {
+                if (branchNode.Children[i] != null && !(branchNode.Children[i] is EmptyNode))
+                {
+                    nonEmptyChildCount++;
+                    nonEmptyChildIndex = i;
+                }
+            }
+
+            bool hasNoValue = branchNode.Value == null || branchNode.Value.Length == 0;
+
+            if (nonEmptyChildCount == 0 && hasNoValue)
+            {
+                return new EmptyNode();
+            }
+
+            if (nonEmptyChildCount == 0 && !hasNoValue)
+            {
+                var leaf = new LeafNode(HashProvider);
+                leaf.Nibbles = new byte[0];
+                leaf.Value = branchNode.Value;
+                return leaf;
+            }
+
+            if (nonEmptyChildCount == 1 && hasNoValue)
+            {
+                var child = branchNode.Children[nonEmptyChildIndex];
+                var nibblePrefix = new byte[] { (byte)nonEmptyChildIndex };
+
+                if (child is LeafNode leafChild)
+                {
+                    var newLeaf = new LeafNode(HashProvider);
+                    newLeaf.Nibbles = nibblePrefix.Concat(leafChild.Nibbles).ToArray();
+                    newLeaf.Value = leafChild.Value;
+                    return newLeaf;
+                }
+                else if (child is ExtendedNode extChild)
+                {
+                    var newExt = new ExtendedNode(HashProvider);
+                    newExt.Nibbles = nibblePrefix.Concat(extChild.Nibbles).ToArray();
+                    newExt.InnerNode = extChild.InnerNode;
+                    return newExt;
+                }
+                else
+                {
+                    var newExt = new ExtendedNode(HashProvider);
+                    newExt.Nibbles = nibblePrefix;
+                    newExt.InnerNode = child;
+                    return newExt;
+                }
+            }
+
+            return branchNode;
+        }
+
+        private Node NormalizeExtendedNode(ExtendedNode extendedNode)
+        {
+            if (extendedNode.InnerNode is EmptyNode || extendedNode.InnerNode == null)
+            {
+                return new EmptyNode();
+            }
+
+            if (extendedNode.InnerNode is LeafNode leafChild)
+            {
+                var newLeaf = new LeafNode(HashProvider);
+                newLeaf.Nibbles = extendedNode.Nibbles.Concat(leafChild.Nibbles).ToArray();
+                newLeaf.Value = leafChild.Value;
+                return newLeaf;
+            }
+
+            if (extendedNode.InnerNode is ExtendedNode extChild)
+            {
+                var newExt = new ExtendedNode(HashProvider);
+                newExt.Nibbles = extendedNode.Nibbles.Concat(extChild.Nibbles).ToArray();
+                newExt.InnerNode = extChild.InnerNode;
+                return newExt;
+            }
+
+            return extendedNode;
+        }
+
+        public void SaveNodesToStorage(ITrieStorage storage)
+        {
+            if (storage == null) return;
+            SaveNodeToStorage(Root, storage);
+        }
+
+        private void SaveNodeToStorage(Node node, ITrieStorage storage)
+        {
+            if (node == null || node is EmptyNode) return;
+
+            if (node is HashNode hashNode)
+            {
+                if (hashNode.InnerNode != null)
+                {
+                    SaveNodeToStorage(hashNode.InnerNode, storage);
+                }
+                return;
+            }
+
+            var hash = node.GetHash();
+            var data = node.GetRLPEncodedData();
+            if (hash != null && data != null && hash.Length == 32)
+            {
+                storage.Put(hash, data);
+            }
+
+            if (node is BranchNode branchNode)
+            {
+                foreach (var child in branchNode.Children)
+                {
+                    SaveNodeToStorage(child, storage);
+                }
+            }
+            else if (node is ExtendedNode extendedNode)
+            {
+                SaveNodeToStorage(extendedNode.InnerNode, storage);
+            }
+        }
+
         public InMemoryTrieStorage GenerateProof(byte[] key)
         {
-           return GenerateProof(Root, key.ConvertToNibbles(), new InMemoryTrieStorage());
+           return GenerateProof(Root, key.ConvertToNibbles(), new InMemoryTrieStorage(), null);
+        }
+
+        public InMemoryTrieStorage GenerateProof(byte[] key, ITrieStorage nodeStorage)
+        {
+           return GenerateProof(Root, key.ConvertToNibbles(), new InMemoryTrieStorage(), nodeStorage);
         }
 
         public InMemoryTrieStorage GenerateProof(Node currentNode, byte[] keyAsNibbles, InMemoryTrieStorage storage)
         {
+            return GenerateProof(currentNode, keyAsNibbles, storage, null);
+        }
+
+        public InMemoryTrieStorage GenerateProof(Node currentNode, byte[] keyAsNibbles, InMemoryTrieStorage proofStorage, ITrieStorage nodeStorage)
+        {
             if (currentNode is EmptyNode || currentNode is null)
             {
-                //not matching any keys
                 return null;
             }
 
-            storage.Put(currentNode.GetHash(), currentNode.GetRLPEncodedData());
+            if (currentNode is HashNode hashNode)
+            {
+                if (hashNode.InnerNode == null && nodeStorage != null)
+                {
+                    hashNode.DecodeInnerNode(nodeStorage, false);
+                }
+                if (hashNode.InnerNode != null)
+                {
+                    return GenerateProof(hashNode.InnerNode, keyAsNibbles, proofStorage, nodeStorage);
+                }
+                return null;
+            }
+
+            proofStorage.Put(currentNode.GetHash(), currentNode.GetRLPEncodedData());
 
             if (currentNode is LeafNode leafNode)
             {
                 var foundSameNibbles = leafNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
                 if (foundSameNibbles.Length != leafNode.Nibbles.Length || foundSameNibbles.Length != keyAsNibbles.Length)
                 {
-                    //not matching all
                     return null;
                 }
-                return storage;
+                return proofStorage;
             }
 
             if (currentNode is BranchNode branchNode)
@@ -337,9 +586,9 @@ namespace Nethereum.Merkle.Patricia
                     {
                         return null;
                     }
-                    return storage;
+                    return proofStorage;
                 }
-                return GenerateProof(branchNode.Children[keyAsNibbles[0]], keyAsNibbles.Skip(1).ToArray(), storage);
+                return GenerateProof(branchNode.Children[keyAsNibbles[0]], keyAsNibbles.Skip(1).ToArray(), proofStorage, nodeStorage);
             }
 
             if (currentNode is ExtendedNode extendedNode)
@@ -350,10 +599,10 @@ namespace Nethereum.Merkle.Patricia
                     return null;
                 }
 
-                return GenerateProof(extendedNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), storage);
+                return GenerateProof(extendedNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), proofStorage, nodeStorage);
             }
 
-            return storage;
+            return proofStorage;
         }
     }
 }

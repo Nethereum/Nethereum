@@ -7,6 +7,9 @@ namespace Nethereum.Merkle.Patricia
 {
     public class LeafNode:Node
     {
+        private byte[] _nibbles;
+        private byte[] _value;
+
         public LeafNode() : this(new Sha3KeccackHashProvider())
         {
 
@@ -16,10 +19,27 @@ namespace Nethereum.Merkle.Patricia
 
         }
 
-        public byte[] Nibbles { get; set; }
-        public byte[] Value { get; set; }
+        public byte[] Nibbles
+        {
+            get => _nibbles;
+            set
+            {
+                _nibbles = value;
+                MarkDirty();
+            }
+        }
 
-        public override byte[] GetRLPEncodedData()
+        public byte[] Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                MarkDirty();
+            }
+        }
+
+        public override byte[] GetRLPEncodedDataCore()
         {
             var returnByteArray = new List<byte[]>();
             var nibblesByteArray = GetPrefixedNibbles().ConvertFromNibbles();

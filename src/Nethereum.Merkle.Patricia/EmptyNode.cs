@@ -13,7 +13,7 @@ namespace Nethereum.Merkle.Patricia
         {
         }
 
-        public override byte[] GetRLPEncodedData()
+        public override byte[] GetRLPEncodedDataCore()
         {
             return RLP.RLP.EncodeElement(new byte[0]);
         }

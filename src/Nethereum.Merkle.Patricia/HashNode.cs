@@ -7,6 +7,8 @@ namespace Nethereum.Merkle.Patricia
 {
     public class HashNode : Node
     {
+        private Node _innerNode;
+
         public HashNode() : this(new Sha3KeccackHashProvider())
         {
 
@@ -14,40 +16,46 @@ namespace Nethereum.Merkle.Patricia
 
         public HashNode(IHashProvider hashProvider) : base(hashProvider)
         {
- 
+
         }
 
         public byte[] Hash { get; set; }
-        public Node InnerNode { get; set; }
+
+        public Node InnerNode
+        {
+            get => _innerNode;
+            set
+            {
+                _innerNode = value;
+                MarkDirty();
+            }
+        }
 
         public override byte[] GetHash()
         {
-            if (InnerNode == null)
+            if (_innerNode == null)
                 return Hash;
-            var innerNodeHash = InnerNode.GetHash();
-            if (innerNodeHash.AreTheSame(Hash))
-            {
+
+            if (_innerNode is EmptyNode)
                 return Hash;
-            }
-            else
+
+            if (_innerNode.IsDirty)
             {
-                if(InnerNode is EmptyNode)
-                {
-                    return Hash; // if we have an empty node this might be due to partial storage so we return the original hash
-                }
-                throw new Exception("Hash node inner node hash does not match current hash");
+                var newHash = _innerNode.GetHash();
+                Hash = newHash;
+                return newHash;
             }
 
+            return _innerNode.GetHash();
         }
 
         public void DecodeInnerNode(ITrieStorage storage, bool decodeInnerHashNodes)
         {
            var node = new NodeDecoder().DecodeNode(Hash, decodeInnerHashNodes, storage);
-           InnerNode = node;
-            
+           _innerNode = node;
         }
 
-        public override byte[] GetRLPEncodedData()
+        public override byte[] GetRLPEncodedDataCore()
         {
             if (InnerNode is EmptyNode) return Hash; // if we have an empty node this might be due to partial storage so we return the original hash
             if (InnerNode != null) return InnerNode.GetRLPEncodedData();

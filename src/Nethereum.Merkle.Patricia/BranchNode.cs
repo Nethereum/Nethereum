@@ -5,27 +5,41 @@ namespace Nethereum.Merkle.Patricia
 {
     public class BranchNode:Node
     {
+        private readonly Node[] _children;
+        private byte[] _value;
+
         public BranchNode() : this(new Sha3KeccackHashProvider()) { }
         public BranchNode(IHashProvider hashProvider) : base(hashProvider)
         {
-            Children = new Node[16];
-            Value = new byte[0];
+            _children = new Node[16];
+            _value = new byte[0];
         }
 
         public void SetChild(int nibble, Node node)
         {
-            Children[nibble] = node;
+            _children[nibble] = node;
+            MarkDirty();
         }
 
         public void RemoveChild(int nibble)
         {
-            Children[nibble] = null;
+            _children[nibble] = null;
+            MarkDirty();
         }
 
-        public Node[] Children { get; }
-        public byte[] Value { get; set; }
+        public Node[] Children => _children;
 
-        public override byte[] GetRLPEncodedData()
+        public byte[] Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                MarkDirty();
+            }
+        }
+
+        public override byte[] GetRLPEncodedDataCore()
         {
             var returnByteArray = new List<byte[]>();
             foreach(Node node in Children)

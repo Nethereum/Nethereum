@@ -1,4 +1,4 @@
-﻿
+
 using Nethereum.Util.HashProviders;
 using System.Collections.Generic;
 
@@ -7,14 +7,35 @@ namespace Nethereum.Merkle.Patricia
 {
     public class ExtendedNode : Node
     {
-        public byte[] Nibbles { get; set; }
-        public Node InnerNode { get; set; }
+        private byte[] _nibbles;
+        private Node _innerNode;
+
+        public byte[] Nibbles
+        {
+            get => _nibbles;
+            set
+            {
+                _nibbles = value;
+                MarkDirty();
+            }
+        }
+
+        public Node InnerNode
+        {
+            get => _innerNode;
+            set
+            {
+                _innerNode = value;
+                MarkDirty();
+            }
+        }
+
         public ExtendedNode() : this(new Sha3KeccackHashProvider()) { }
         public ExtendedNode(IHashProvider hashProvider) : base(hashProvider)
         {
         }
 
-        public override byte[] GetRLPEncodedData()
+        public override byte[] GetRLPEncodedDataCore()
         {
             var returnByteArray = new List<byte[]>();
             var nibblesByteArray = GetPrefixedNibbles().ConvertFromNibbles();

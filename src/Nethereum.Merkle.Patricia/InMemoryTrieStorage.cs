@@ -28,8 +28,7 @@ namespace Nethereum.Merkle.Patricia
 
         public void Put(byte[] key, byte[] value)
         {
-            if (_storage.ContainsKey(key)) _storage[key] = value;
-            _storage.Add(key, value);  
+            _storage[key] = value;
         }
     }
 }
