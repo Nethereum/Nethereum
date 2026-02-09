@@ -37,6 +37,59 @@ namespace Nethereum.Model
         private byte[] _data = new byte[256];
         public byte[] Data => _data;
 
+        public LogBloomFilter()
+        {
+        }
+
+        public LogBloomFilter(byte[] existingBloom)
+        {
+            if (existingBloom != null && existingBloom.Length == 256)
+            {
+                _data = existingBloom;
+            }
+        }
+
+        public void AddAddress(string address)
+        {
+            if (string.IsNullOrEmpty(address)) return;
+            var hasher = Util.Sha3Keccack.Current;
+            SetBits(hasher.CalculateHash(address.HexToByteArray()));
+        }
+
+        public void AddAddress(byte[] address)
+        {
+            if (address == null || address.Length == 0) return;
+            var hasher = Util.Sha3Keccack.Current;
+            SetBits(hasher.CalculateHash(address));
+        }
+
+        public void AddTopic(byte[] topic)
+        {
+            if (topic == null || topic.Length == 0) return;
+            var hasher = Util.Sha3Keccack.Current;
+            SetBits(hasher.CalculateHash(topic));
+        }
+
+        public bool Matches(byte[] blockBloom)
+        {
+            if (blockBloom == null || blockBloom.Length != 256) return true;
+            for (int i = 0; i < 256; i++)
+            {
+                if ((_data[i] & blockBloom[i]) != _data[i])
+                    return false;
+            }
+            return true;
+        }
+
+        public bool IsEmpty()
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                if (_data[i] != 0) return false;
+            }
+            return true;
+        }
+
         /**
            * Discover the low order 11-bits, of the first three double-bytes, of the SHA3 hash, of each
            * value and update the bloom filter accordingly.
