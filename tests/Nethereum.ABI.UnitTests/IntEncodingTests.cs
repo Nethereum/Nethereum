@@ -156,7 +156,27 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(long.MaxValue, intresult);
         }
 
+#if NET7_0_OR_GREATER
+		[Fact]
+        public virtual void ShouldEncodeDecodeInt128()
+        {
+            var intType = new IntType("int128");
+            var result = intType.Encode(Int128.MaxValue).ToHex();
+            var intresult = intType.Decode<Int128>(result);
+            Assert.Equal(Int128.MaxValue, intresult);
+		}
+
         [Fact]
+        public virtual void ShouldEncodeDecodeUInt128()
+        {
+            var intType = new IntType("uint128");
+            var result = intType.Encode(UInt128.MaxValue).ToHex();
+            var intresult = intType.Decode<UInt128>(result);
+            Assert.Equal(UInt128.MaxValue, intresult);
+		}
+#endif
+
+		[Fact]
         public virtual void ShouldEncodeDecodeSByte()
         {
             var intType = new IntType("int8");

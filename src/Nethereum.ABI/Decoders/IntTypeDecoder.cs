@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using Nethereum.Hex.HexConvertors.Extensions;
 
+
 namespace Nethereum.ABI.Decoders
 {
     public class IntTypeDecoder : TypeDecoder
@@ -51,7 +52,14 @@ namespace Nethereum.ABI.Decoders
             if (type == typeof(ulong))
                 return DecodeULong(encoded);
 
-            if (type == typeof(BigInteger) || type == typeof(object))
+#if NET7_0_OR_GREATER
+            if (type == typeof(UInt128))
+                return DecodeUInt128(encoded);
+
+            if (type == typeof(Int128))
+                return DecodeInt128(encoded);
+#endif
+			if (type == typeof(BigInteger) || type == typeof(object))
                 return DecodeBigInteger(encoded);
 
             throw new NotSupportedException(type + " is not a supported decoding type for IntType");
@@ -128,7 +136,18 @@ namespace Nethereum.ABI.Decoders
             return (ulong) DecodeBigInteger(encoded);
         }
 
-        public override Type GetDefaultDecodingType()
+#if NET7_0_OR_GREATER
+        public UInt128 DecodeUInt128(byte[] encoded)
+        {
+            return (UInt128) DecodeBigInteger(encoded);
+        }
+
+        public Int128 DecodeInt128(byte[] encoded)
+        {
+            return (Int128) DecodeBigInteger(encoded);
+        }
+#endif
+		public override Type GetDefaultDecodingType()
         {
             return typeof(BigInteger);
         }
@@ -139,9 +158,11 @@ namespace Nethereum.ABI.Decoders
                    type == typeof(ulong) || type == typeof(long) ||
                    type == typeof(short) || type == typeof(ushort) ||
                    type == typeof(byte) || type == typeof(sbyte) ||
-                   type == typeof(BigInteger) || type == typeof(object)
-                   
-                   || type.GetTypeInfo().IsEnum;
+                   type == typeof(BigInteger) || type == typeof(object) ||
+#if NET7_0_OR_GREATER
+                   type == typeof(UInt128) || type == typeof(Int128) ||
+#endif
+				   type.GetTypeInfo().IsEnum;
         }
 
         public override object DecodePacked(byte[] encoded, Type type)
