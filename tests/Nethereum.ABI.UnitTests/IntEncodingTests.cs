@@ -156,7 +156,6 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(long.MaxValue, intresult);
         }
 
-#if NET7_0_OR_GREATER
 		[Fact]
         public virtual void ShouldEncodeDecodeInt128()
         {
@@ -174,7 +173,6 @@ namespace Nethereum.ABI.UnitTests
             var intresult = intType.Decode<UInt128>(result);
             Assert.Equal(UInt128.MaxValue, intresult);
 		}
-#endif
 
 		[Fact]
         public virtual void ShouldEncodeDecodeSByte()
