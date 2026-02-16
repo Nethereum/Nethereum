@@ -5,6 +5,7 @@ using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.ABIDeserialisation;
 using Xunit;
+using System;
 
 namespace Nethereum.ABI.UnitTests
 {
@@ -60,6 +61,17 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        public virtual void ShouldEncode128BitInt()
+        {
+            var input = new FunctionMultipleInput { First = 69, Second = -69 };
+            var result = new FunctionCallEncoder().EncodeRequest(input, "c6888fa1");
+            Assert.Equal(
+                "0xc6888fa10000000000000000000000000000000000000000000000000000000000000045ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffbb",
+                result
+            );
+		}
+
+		[Fact]
         public virtual void ShouldEncodeMultipleTypesIncludingDynamicStringAndIntArray()
         {
             var paramsEncoded =
@@ -95,6 +107,16 @@ namespace Nethereum.ABI.UnitTests
             [Parameter("uint[20]", "b", 2)] public List<BigInteger> B { get; set; }
 
             [Parameter("string", 3)] public string C { get; set; }
+        }
+
+        [Function("test")]
+        [FunctionOutput]
+        public class FunctionMultipleInput
+        {
+            [Parameter("uint128")]
+            public UInt128 First { get; set; }
+            [Parameter("int128")]
+            public Int128 Second { get; set; }
         }
     }
 }
