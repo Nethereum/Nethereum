@@ -50,7 +50,36 @@ namespace Nethereum.ABI.UnitTests
                 exception.Message);
         }
 
-        [Event("Transfer")]
+		// original event here: https://etherscan.io/tx/0xfd574dd63703b782663abadf7b3a268f5e7d2e6ba1a268d907788fbec09b2963#eventlog#300
+		[Fact]
+        public void DecodeTopics_Decodes_UniV3Swap_Event()
+        {
+            String[] topics = [
+					"0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
+					"0x000000000000000000000000a88bd9c71ef8bdb60105e4d5de2d4fd71be2d3b2",
+					"0x000000000000000000000000e45b4a84e0ad24b8617a489d743c52b84b7acebe"
+				];
+
+            var data = "0x" + String.Concat(
+					"fffffffffffffffffffffffffffffffffffffffffffffffffd7532715ed0d8eb0000000000000000",
+					"000000000000000000000000000000000000000015b3046000000000000000000000000000000000",
+					"000000000002eacd7ddd5d098d7ae0f8000000000000000000000000000000000000000000000000",
+					"3e24dad3c998033efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffcf12b"
+				);
+
+            var swapDto = new UniV3SwapEvent();
+            new EventTopicDecoder().DecodeTopics(swapDto, topics, data);
+
+			Assert.True("0xa88Bd9c71EF8bDB60105E4d5dE2D4FD71BE2d3B2".IsTheSameAddress(swapDto.Sender));
+			Assert.True("0xe45b4a84E0aD24B8617a489d743c52B84B7aCeBE".IsTheSameAddress(swapDto.Recipient));
+			Assert.Equal(-183184747335198485, swapDto.Amount0);
+            Assert.Equal(364053600, swapDto.Amount1);
+            Assert.Equal("3526676048263385991274744", swapDto.SqrtPriceX96.ToString());
+            Assert.Equal((UInt128)4477944532668252990, swapDto.Liquidity);
+            Assert.Equal(-200405, swapDto.Tick);
+		}
+
+		[Event("Transfer")]
         public class TransferEvent
         {
             [Parameter("address", "_from", 1, true)]
@@ -73,5 +102,24 @@ namespace Nethereum.ABI.UnitTests
             [Parameter("uint256", "_value", 3, false)]
             public BigInteger Value { get; set; }
         }
+
+        [Event("Swap")]
+        public class UniV3SwapEvent
+        {
+            [Parameter("address", "sender", 1, true)]
+            public string Sender { get; set; }
+            [Parameter("address", "recipient", 2, true)]
+            public string Recipient { get; set; }
+            [Parameter("int256", "amount0", 3, false)]
+            public BigInteger Amount0 { get; set; }
+            [Parameter("int256", "amount1", 4, false)]
+            public BigInteger Amount1 { get; set; }
+            [Parameter("uint160", "sqrtPriceX96", 5, false)]
+            public BigInteger SqrtPriceX96 { get; set; }
+            [Parameter("uint128", "liquidity", 6, false)]
+            public UInt128 Liquidity { get; set; }
+            [Parameter("int24", "tick", 7, false)]
+            public int Tick { get; set; }
+		}
     }
 }
