@@ -96,15 +96,9 @@ namespace Nethereum.ABI.Decoders
             return new BigInteger(encoded);
         }
 
-        public byte DecodeByte(byte[] encoded)
-        {
-            return (byte) DecodeBigInteger(encoded);
-        }
+        public byte DecodeByte(byte[] encoded) => encoded.Last();
 
-        public sbyte DecodeSbyte(byte[] encoded)
-        {
-            return (sbyte) DecodeBigInteger(encoded);
-        }
+        public sbyte DecodeSbyte(byte[] encoded) => (sbyte) encoded.Last();
 
         public short DecodeShort(byte[] encoded)
         {
