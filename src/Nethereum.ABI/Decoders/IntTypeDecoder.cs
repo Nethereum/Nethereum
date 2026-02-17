@@ -59,7 +59,7 @@ namespace Nethereum.ABI.Decoders
             if (type == typeof(Int128))
                 return DecodeInt128(encoded);
 #endif
-			if (type == typeof(BigInteger) || type == typeof(object))
+            if (type == typeof(BigInteger) || type == typeof(object))
                 return DecodeBigInteger(encoded);
 
             throw new NotSupportedException(type + " is not a supported decoding type for IntType");
@@ -102,14 +102,14 @@ namespace Nethereum.ABI.Decoders
 
         public short DecodeShort(byte[] encoded)
         {
-			var result = GetIntFromBytesBE(encoded, encoded.Length - 4);
-			return (short) result;
-		}
+            var result = GetIntFromBytesBE(encoded, encoded.Length - 4);
+            return (short) result;
+        }
 
         public ushort DecodeUShort(byte[] encoded)
         {
             var result = GetIntFromBytesBE(encoded, encoded.Length - 4);
-			return (ushort) result;
+            return (ushort) result;
         }
 
         public int DecodeInt(byte[] encoded)
@@ -129,21 +129,25 @@ namespace Nethereum.ABI.Decoders
 
         public ulong DecodeULong(byte[] encoded)
         {
-			uint high = (uint)GetIntFromBytesBE(encoded, encoded.Length - 8);
-			uint low = (uint)GetIntFromBytesBE(encoded, encoded.Length - 4);
-			ulong result = ((ulong)high << 32) | low;
-			return result;
-		}
+            uint high = (uint)GetIntFromBytesBE(encoded, encoded.Length - 8);
+            uint low = (uint)GetIntFromBytesBE(encoded, encoded.Length - 4);
+            ulong result = ((ulong)high << 32) | low;
+            return result;
+        }
 
 #if NET7_0_OR_GREATER
         public UInt128 DecodeUInt128(byte[] encoded)
         {
-            return (UInt128) DecodeBigInteger(encoded);
+            UInt128 low = (UInt128) DecodeULong(encoded);
+            uint highHigh = (uint) GetIntFromBytesBE(encoded, encoded.Length - 16);
+            uint highLow = (uint) GetIntFromBytesBE(encoded, encoded.Length - 12);
+            UInt128 highPart = ((UInt128) highHigh << (64 + 32)) | ((UInt128) highLow << 64);
+            return highPart | low;
         }
 
         public Int128 DecodeInt128(byte[] encoded)
         {
-            return (Int128) DecodeBigInteger(encoded);
+            return (Int128) DecodeUInt128(encoded);
         }
 #endif
 		public override Type GetDefaultDecodingType()
