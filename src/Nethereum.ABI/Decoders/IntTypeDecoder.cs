@@ -102,33 +102,38 @@ namespace Nethereum.ABI.Decoders
 
         public short DecodeShort(byte[] encoded)
         {
-            return (short) DecodeBigInteger(encoded);
-        }
+			var result = GetIntFromBytesBE(encoded, encoded.Length - 4);
+			return (short) result;
+		}
 
         public ushort DecodeUShort(byte[] encoded)
         {
-            return (ushort) DecodeBigInteger(encoded);
+            var result = GetIntFromBytesBE(encoded, encoded.Length - 4);
+			return (ushort) result;
         }
 
         public int DecodeInt(byte[] encoded)
         {
-            return (int) DecodeBigInteger(encoded);
+            return GetIntFromBytesBE(encoded, encoded.Length - 4);
         }
 
         public long DecodeLong(byte[] encoded)
         {
-            return (long) DecodeBigInteger(encoded);
+            return (long) DecodeULong(encoded);
         }
 
         public uint DecodeUInt(byte[] encoded)
         {
-            return (uint) DecodeBigInteger(encoded);
+            return (uint) GetIntFromBytesBE(encoded, encoded.Length - 4);
         }
 
         public ulong DecodeULong(byte[] encoded)
         {
-            return (ulong) DecodeBigInteger(encoded);
-        }
+			uint high = (uint)GetIntFromBytesBE(encoded, encoded.Length - 8);
+			uint low = (uint)GetIntFromBytesBE(encoded, encoded.Length - 4);
+			ulong result = ((ulong)high << 32) | low;
+			return result;
+		}
 
 #if NET7_0_OR_GREATER
         public UInt128 DecodeUInt128(byte[] encoded)
@@ -163,5 +168,23 @@ namespace Nethereum.ABI.Decoders
         { 
            return Decode(encoded, type);
         }
+
+        /// <summary>
+        /// Converts four consecutive bytes from the specified array, starting at the given index, into a 32-bit signed
+        /// integer using big-endian byte order.
+        /// </summary>
+        /// <remarks>The method does not perform bounds checking. If there are fewer than four bytes
+        /// available from the specified index, an exception may be thrown.</remarks>
+        /// <param name="encoded">The byte array containing the bytes to convert.</param>
+        /// <param name="startIndex">The zero-based index in the array at which to begin reading the four bytes. Must be less than or equal to
+        /// the length of the array minus four.</param>
+        /// <returns>A 32-bit signed integer representing the value of the four bytes interpreted in big-endian order.</returns>
+        internal int GetIntFromBytesBE(byte[] encoded, int startIndex)
+        {
+            int result = encoded[startIndex] << 24;
+            result |= encoded[startIndex + 1] << 16;
+            result |= encoded[startIndex + 2] << 8;
+            return result | encoded[startIndex + 3];
+		}
     }
 }
