@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -314,6 +315,52 @@ namespace Nethereum.ABI.UnitTests
             var given = IntType.MAX_INT256_VALUE + 1;
             var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
             Assert.StartsWith("Signed SmartContract integer must not exceed maximum value for int256", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(ulong.MaxValue, ulong.MinValue, "uint64")]
+        [InlineData(long.MaxValue, long.MinValue, "int64")]
+        [InlineData(uint.MaxValue, uint.MinValue, "uint32")]
+        [InlineData(int.MaxValue, int.MinValue, "int32")]
+        [InlineData(ushort.MaxValue, ushort.MinValue, "uint16")]
+        [InlineData(short.MaxValue, short.MinValue, "int16")]
+        [InlineData(byte.MaxValue, byte.MinValue, "uint8")]
+        [InlineData(sbyte.MaxValue, sbyte.MinValue, "int8")]
+        public virtual void ShouldThrowOverflowErrorWhenDecodingIntOutOfBoundaries(dynamic maxValue, dynamic minValue, string evmType)
+        {
+            var encodingIntType = new IntType("int256");
+            var decodingIntType = new IntType(evmType);
+            String result;
+
+            BigInteger givenMax = maxValue;
+            givenMax *= 3;
+
+            result = encodingIntType.Encode(givenMax).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, maxValue.GetType()));
+
+            BigInteger givenMin = minValue;
+            givenMin--;
+
+            result = encodingIntType.Encode(givenMin).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, minValue.GetType()));
+        }
+
+        [Fact]
+        public virtual void ShouldThrowOverflowErrorWhenDecodingInt128OutOfBoundaries()
+        {
+            var encodingIntType = new IntType("int256");
+            var decodingIntType = new IntType("int128");
+            String result;
+
+            BigInteger givenMax = Int128.MaxValue;
+            givenMax *= 3;
+            result = encodingIntType.Encode(givenMax).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, typeof(Int128)));
+
+            BigInteger givenMin = Int128.MinValue;
+            givenMin--;
+            result = encodingIntType.Encode(givenMin).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, typeof(Int128)));
         }
 
         [Fact]

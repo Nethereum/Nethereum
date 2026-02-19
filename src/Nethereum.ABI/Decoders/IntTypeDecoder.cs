@@ -22,20 +22,54 @@ namespace Nethereum.ABI.Decoders
 
         public override object Decode(byte[] encoded, Type type)
         {
+            object result = null;
+            int size = 32;
+
+            Byte expectedByteValue;
+            if (_signed && encoded.First() > 0) // Check that number is negative
+                expectedByteValue = 0xFF; // Expected leadings bytes for negative numbers
+            else
+                expectedByteValue = 0x00; // Expected leading bytes for positive numbers
+
+
             if (type == typeof(byte))
-                return DecodeByte(encoded);
+            {
+                result = DecodeByte(encoded);
+                size = sizeof(byte);
+            }
 
             if (type == typeof(sbyte))
-                return DecodeSbyte(encoded);
+            {
+                result = DecodeSbyte(encoded);
+                size = sizeof(sbyte);
+                if (expectedByteValue == 0xFF && (sbyte)result > 0
+                    || expectedByteValue == 0x00 && (sbyte)result < 0)
+                    throw new OverflowException();
+            }
 
             if (type == typeof(short))
-                return DecodeShort(encoded);
+            {
+                result = DecodeShort(encoded);
+                size = sizeof(short);
+                if (expectedByteValue == 0xFF && (short)result > 0
+                    || expectedByteValue == 0x00 && (short)result < 0)
+                    throw new OverflowException();
+            }
 
             if (type == typeof(ushort))
-                return DecodeUShort(encoded);
+            {
+                result = DecodeUShort(encoded);
+                size = sizeof(ushort);
+            }
 
             if (type == typeof(int))
-                return DecodeInt(encoded);
+            {
+                result = DecodeInt(encoded);
+                size = sizeof(int);
+                if (expectedByteValue == 0xFF && (int)result > 0
+                    || expectedByteValue == 0x00 && (int)result < 0)
+                    throw new OverflowException();
+            }
 
             if (type.GetTypeInfo().IsEnum)
             {
@@ -44,25 +78,55 @@ namespace Nethereum.ABI.Decoders
             }
 
             if (type == typeof(uint))
-                return DecodeUInt(encoded);
+            {
+                result = DecodeUInt(encoded);
+                size = sizeof(uint);
+            }
 
             if (type == typeof(long))
-                return DecodeLong(encoded);
+            {
+                result = DecodeLong(encoded);
+                size = sizeof(long);
+                if (expectedByteValue == 0xFF && (long)result > 0
+                    || expectedByteValue == 0x00 && (long)result < 0)
+                    throw new OverflowException();
+            }
 
             if (type == typeof(ulong))
-                return DecodeULong(encoded);
+            {
+                result = DecodeULong(encoded);
+                size = sizeof(ulong);
+            }
 
 #if NET7_0_OR_GREATER
             if (type == typeof(UInt128))
-                return DecodeUInt128(encoded);
+            {
+                result = DecodeUInt128(encoded);
+                size = 16;
+            }
 
             if (type == typeof(Int128))
-                return DecodeInt128(encoded);
+            {
+                result = DecodeInt128(encoded);
+                size = 16;
+                if (expectedByteValue == 0xFF && (Int128)result > 0
+                    || expectedByteValue == 0x00 && (Int128)result < 0)
+                    throw new OverflowException();
+            }
 #endif
             if (type == typeof(BigInteger) || type == typeof(object))
                 return DecodeBigInteger(encoded);
 
-            throw new NotSupportedException(type + " is not a supported decoding type for IntType");
+            for (int i = 0; i < encoded.Length - size; i++)
+            {
+                if (encoded[i] != expectedByteValue)
+                    throw new OverflowException();
+            }
+
+            if (result is null)
+                throw new NotSupportedException(type + " is not a supported decoding type for IntType");
+            else
+                return result;
         }
 
         public BigInteger DecodeBigInteger(string hexString)
