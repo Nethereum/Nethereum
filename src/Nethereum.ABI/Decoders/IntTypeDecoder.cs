@@ -40,20 +40,22 @@ namespace Nethereum.ABI.Decoders
 
             if (type == typeof(sbyte))
             {
-                result = DecodeSbyte(encoded);
+                var value = DecodeSbyte(encoded);
                 size = sizeof(sbyte);
-                if (expectedByteValue == 0xFF && (sbyte)result > 0
-                    || expectedByteValue == 0x00 && (sbyte)result < 0)
+                if (expectedByteValue == 0xFF && value >= 0
+                    || expectedByteValue == 0x00 && value < 0)
                     throw new OverflowException();
+                result = value;
             }
 
             if (type == typeof(short))
             {
-                result = DecodeShort(encoded);
+                var value = DecodeShort(encoded);
                 size = sizeof(short);
-                if (expectedByteValue == 0xFF && (short)result > 0
-                    || expectedByteValue == 0x00 && (short)result < 0)
+                if (expectedByteValue == 0xFF && value >= 0
+                    || expectedByteValue == 0x00 && value < 0)
                     throw new OverflowException();
+                result = value;
             }
 
             if (type == typeof(ushort))
@@ -64,11 +66,12 @@ namespace Nethereum.ABI.Decoders
 
             if (type == typeof(int))
             {
-                result = DecodeInt(encoded);
+                var value = DecodeInt(encoded);
                 size = sizeof(int);
-                if (expectedByteValue == 0xFF && (int)result > 0
-                    || expectedByteValue == 0x00 && (int)result < 0)
+                if (expectedByteValue == 0xFF && value >= 0
+                    || expectedByteValue == 0x00 && value < 0)
                     throw new OverflowException();
+                result = value;
             }
 
             if (type.GetTypeInfo().IsEnum)
@@ -85,11 +88,12 @@ namespace Nethereum.ABI.Decoders
 
             if (type == typeof(long))
             {
-                result = DecodeLong(encoded);
+                var value = DecodeLong(encoded);
                 size = sizeof(long);
-                if (expectedByteValue == 0xFF && (long)result > 0
-                    || expectedByteValue == 0x00 && (long)result < 0)
+                if (expectedByteValue == 0xFF && value >= 0
+                    || expectedByteValue == 0x00 && value < 0)
                     throw new OverflowException();
+                result = value;
             }
 
             if (type == typeof(ulong))
@@ -107,11 +111,12 @@ namespace Nethereum.ABI.Decoders
 
             if (type == typeof(Int128))
             {
-                result = DecodeInt128(encoded);
+                var value = DecodeInt128(encoded);
                 size = 16;
-                if (expectedByteValue == 0xFF && (Int128)result > 0
-                    || expectedByteValue == 0x00 && (Int128)result < 0)
+                if (expectedByteValue == 0xFF && value >= 0
+                    || expectedByteValue == 0x00 && value < 0)
                     throw new OverflowException();
+                result = value;
             }
 #endif
             if (type == typeof(BigInteger) || type == typeof(object))
@@ -214,7 +219,7 @@ namespace Nethereum.ABI.Decoders
             return (Int128) DecodeUInt128(encoded);
         }
 #endif
-		public override Type GetDefaultDecodingType()
+        public override Type GetDefaultDecodingType()
         {
             return typeof(BigInteger);
         }
@@ -229,7 +234,7 @@ namespace Nethereum.ABI.Decoders
 #if NET7_0_OR_GREATER
                    type == typeof(UInt128) || type == typeof(Int128) ||
 #endif
-				   type.GetTypeInfo().IsEnum;
+                   type.GetTypeInfo().IsEnum;
         }
 
         public override object DecodePacked(byte[] encoded, Type type)
@@ -253,6 +258,6 @@ namespace Nethereum.ABI.Decoders
             result |= encoded[startIndex + 1] << 16;
             result |= encoded[startIndex + 2] << 8;
             return result | encoded[startIndex + 3];
-		}
+        }
     }
 }
