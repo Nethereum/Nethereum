@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -137,77 +138,122 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(TestEnum.Lion, decresult3);
         }
 
-
-        [Fact]
-        public virtual void ShouldEncodeDecodeInt()
+        [Theory]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MaxValue / 3)]
+        [InlineData(0)]
+        [InlineData(int.MinValue / 3)]
+        [InlineData(int.MinValue)]
+        public virtual void ShouldEncodeDecodeInt(int value)
         {
             var intType = new IntType("int");
-            var result = intType.Encode(int.MaxValue).ToHex();
+            var result = intType.Encode(value).ToHex();
             var intresult = intType.Decode<int>(result);
-            Assert.Equal(int.MaxValue, intresult);
+            Assert.Equal(value, intresult);
         }
 
-        [Fact]
-        public virtual void ShouldEncodeDecodeInt64()
+        [Theory]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MaxValue / 3)]
+        [InlineData(0)]
+        [InlineData(long.MinValue / 3)]
+        [InlineData(long.MinValue)]
+        public virtual void ShouldEncodeDecodeInt64(long value)
         {
             var intType = new IntType("int64");
-            var result = intType.Encode(long.MaxValue).ToHex();
+            var result = intType.Encode(value).ToHex();
             var intresult = intType.Decode<long>(result);
-            Assert.Equal(long.MaxValue, intresult);
+            Assert.Equal(value, intresult);
         }
 
-		[Fact]
-        public virtual void ShouldEncodeDecodeInt128()
+        [Theory]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MaxValue / 3)]
+        [InlineData(0)]
+        [InlineData(long.MinValue / 3)]
+        [InlineData(long.MinValue)]
+        public virtual void ShouldEncodeDecodeInt128(long value)
         {
+            Int128 value128 = (Int128) value;
             var intType = new IntType("int128");
-            var result = intType.Encode(Int128.MaxValue).ToHex();
+            var result = intType.Encode(value128).ToHex();
             var intresult = intType.Decode<Int128>(result);
-            Assert.Equal(Int128.MaxValue, intresult);
-		}
+            Assert.Equal(value128, intresult);
 
-        [Fact]
-        public virtual void ShouldEncodeDecodeUInt128()
+            value128 <<= 64;
+            result = intType.Encode(value128).ToHex();
+            intresult = intType.Decode<Int128>(result);
+            Assert.Equal(value128, intresult);
+        }
+
+        [Theory]
+        [InlineData(ulong.MaxValue)]
+        [InlineData(1)]
+        [InlineData(0)]
+        public virtual void ShouldEncodeDecodeUInt128(ulong value)
         {
+            UInt128 value128 = (UInt128) value;
             var intType = new IntType("uint128");
-            var result = intType.Encode(UInt128.MaxValue).ToHex();
+            var result = intType.Encode(value128).ToHex();
             var intresult = intType.Decode<UInt128>(result);
-            Assert.Equal(UInt128.MaxValue, intresult);
-		}
+            Assert.Equal(value128, intresult);
 
-		[Fact]
-        public virtual void ShouldEncodeDecodeSByte()
+            value128 <<= 64;
+            result = intType.Encode(value128).ToHex();
+            intresult = intType.Decode<UInt128>(result);
+            Assert.Equal(value128, intresult);
+        }
+
+        [Theory]
+        [InlineData(sbyte.MaxValue)]
+        [InlineData(sbyte.MaxValue / 3)]
+        [InlineData(0)]
+        [InlineData(sbyte.MinValue / 3)]
+        [InlineData(sbyte.MinValue)]
+        public virtual void ShouldEncodeDecodeSByte(sbyte value)
         {
             var intType = new IntType("int8");
-            var result = intType.Encode(sbyte.MaxValue).ToHex();
+            var result = intType.Encode(value).ToHex();
             var intresult = intType.Decode<sbyte>(result);
-            Assert.Equal(sbyte.MaxValue, intresult);
+            Assert.Equal(value, intresult);
         }
 
-        [Fact]
-        public virtual void ShouldEncodeDecodeShort()
+        [Theory]
+        [InlineData(short.MaxValue)]
+        [InlineData(short.MaxValue / 3)]
+        [InlineData(0)]
+        [InlineData(short.MinValue / 3)]
+        [InlineData(short.MinValue)]
+        public virtual void ShouldEncodeDecodeShort(short value)
         {
             var intType = new IntType("int16");
-            var result = intType.Encode(short.MaxValue).ToHex();
+            var result = intType.Encode(value).ToHex();
             var intresult = intType.Decode<short>(result);
-            Assert.Equal(short.MaxValue, intresult);
+            Assert.Equal(value, intresult);
         }
 
-        [Fact]
-        public virtual void ShouldEncodeDecodeUInt64()
+        [Theory]
+        [InlineData(ulong.MaxValue)]
+        [InlineData(1)]
+        [InlineData(0)]
+        public virtual void ShouldEncodeDecodeUInt64(ulong value)
         {
             var intType = new IntType("uint64");
-            var result = intType.Encode(ulong.MaxValue).ToHex();
+            var result = intType.Encode(value).ToHex();
             var intresult = intType.Decode<ulong>(result);
-            Assert.Equal(ulong.MaxValue, intresult);
+            Assert.Equal(value, intresult);
         }
 
-        [Fact]
-        public virtual void ShouldEncodeDecodeUShort()
+        [Theory]
+        [InlineData(ushort.MaxValue)]
+        [InlineData(1)]
+        [InlineData(0)]
+        public virtual void ShouldEncodeDecodeUShort(ushort value)
         {
             var intType = new IntType("uint16");
-            var result = intType.Encode(ushort.MaxValue).ToHex();
+            var result = intType.Encode(value).ToHex();
             var intresult = intType.Decode<ushort>(result);
-            Assert.Equal(ushort.MaxValue, intresult);
+            Assert.Equal(value, intresult);
         }
 
         [Fact]
@@ -269,6 +315,52 @@ namespace Nethereum.ABI.UnitTests
             var given = IntType.MAX_INT256_VALUE + 1;
             var ex = Assert.Throws<ArgumentOutOfRangeException>("value", () => intType.Encode(given));
             Assert.StartsWith("Signed SmartContract integer must not exceed maximum value for int256", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(ulong.MaxValue, ulong.MinValue, "uint64")]
+        [InlineData(long.MaxValue, long.MinValue, "int64")]
+        [InlineData(uint.MaxValue, uint.MinValue, "uint32")]
+        [InlineData(int.MaxValue, int.MinValue, "int32")]
+        [InlineData(ushort.MaxValue, ushort.MinValue, "uint16")]
+        [InlineData(short.MaxValue, short.MinValue, "int16")]
+        [InlineData(byte.MaxValue, byte.MinValue, "uint8")]
+        [InlineData(sbyte.MaxValue, sbyte.MinValue, "int8")]
+        public virtual void ShouldThrowOverflowErrorWhenDecodingIntOutOfBoundaries(dynamic maxValue, dynamic minValue, string evmType)
+        {
+            var encodingIntType = new IntType("int256");
+            var decodingIntType = new IntType(evmType);
+            String result;
+
+            BigInteger givenMax = maxValue;
+            givenMax *= 3;
+
+            result = encodingIntType.Encode(givenMax).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, maxValue.GetType()));
+
+            BigInteger givenMin = minValue;
+            givenMin--;
+
+            result = encodingIntType.Encode(givenMin).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, minValue.GetType()));
+        }
+
+        [Fact]
+        public virtual void ShouldThrowOverflowErrorWhenDecodingInt128OutOfBoundaries()
+        {
+            var encodingIntType = new IntType("int256");
+            var decodingIntType = new IntType("int128");
+            String result;
+
+            BigInteger givenMax = Int128.MaxValue;
+            givenMax *= 3;
+            result = encodingIntType.Encode(givenMax).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, typeof(Int128)));
+
+            BigInteger givenMin = Int128.MinValue;
+            givenMin--;
+            result = encodingIntType.Encode(givenMin).ToHex();
+            Assert.Throws<OverflowException>(() => decodingIntType.Decode(result, typeof(Int128)));
         }
 
         [Fact]
