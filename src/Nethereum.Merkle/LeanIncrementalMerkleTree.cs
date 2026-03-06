@@ -19,6 +19,7 @@ namespace Nethereum.Merkle
         private readonly IHashProvider _hashProvider;
         private readonly IByteArrayConvertor<T> _byteArrayConvertor;
         private readonly IPairConcatStrategy _pairConcatStrategy;
+        private List<List<byte[]>> _layers = new List<List<byte[]>>();
         public List<T> Leaves => _leaves;
 
         public byte[] Root { get; private set; }
@@ -42,7 +43,17 @@ namespace Nethereum.Merkle
         {
             if (leaf == null) throw new ArgumentNullException(nameof(leaf));
             _leaves.Add(leaf);
-            UpdateRootIncrementally();
+            var hash = _hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(leaf));
+
+            if (_layers.Count == 0)
+            {
+                _layers.Add(new List<byte[]> { hash });
+                Root = hash;
+                return;
+            }
+
+            _layers[0].Add(hash);
+            PropagateInsert();
         }
 
         public void InsertMany(IEnumerable<T> leaves)
@@ -51,7 +62,7 @@ namespace Nethereum.Merkle
             var list = leaves.ToList();
             if (list.Count == 0) return;
             _leaves.AddRange(list);
-            UpdateRootIncrementally();
+            RebuildLayers();
         }
 
         public void Update(int index, T newLeaf)
@@ -61,7 +72,8 @@ namespace Nethereum.Merkle
                 throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} is out of range");
 
             _leaves[index] = newLeaf;
-            UpdateRootIncrementally();
+            _layers[0][index] = _hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(newLeaf));
+            PropagateFromIndex(index);
         }
 
         public void UpdateMany(int[] indices, T[] newLeaves)
@@ -87,7 +99,7 @@ namespace Nethereum.Merkle
             {
                 _leaves[indices[i]] = newLeaves[i];
             }
-            UpdateRootIncrementally();
+            RebuildLayers();
         }
 
         public bool Has(T leaf)
@@ -106,15 +118,17 @@ namespace Nethereum.Merkle
         {
             nodeFormatter = nodeFormatter ?? (bytes => Convert.ToBase64String(bytes));
             var nodes = new List<List<string>>();
-            var leavesAsBytes = _leaves.Select(_byteArrayConvertor.ConvertToByteArray).ToList();
-            nodes.Add(leavesAsBytes.Select(nodeFormatter).ToList());
 
-            var currentLevel = leavesAsBytes;
-            while (currentLevel.Count > 1)
+            if (_layers.Count == 0)
             {
-                var nextLevel = PairwiseHash(currentLevel);
-                nodes.Add(nextLevel.Select(nodeFormatter).ToList());
-                currentLevel = nextLevel;
+                nodes.Add(new List<string>());
+            }
+            else
+            {
+                for (int i = 0; i < _layers.Count; i++)
+                {
+                    nodes.Add(_layers[i].Select(nodeFormatter).ToList());
+                }
             }
 
 #if NET5_0_OR_GREATER
@@ -152,25 +166,16 @@ namespace Nethereum.Merkle
 
                 var leaves = nodes[0].Select(leafMapper).ToList();
                 tree._leaves.AddRange(leaves);
-                tree.UpdateRootIncrementally();
+                tree.RebuildLayers();
 
-                // Validate upper levels if nodeParser is provided
                 if (nodeParser != null && nodes.Count > 1)
                 {
-                    var computedNodes = new List<List<byte[]>> { tree._leaves.Select(byteArrayConvertor.ConvertToByteArray).ToList() };
-                    var currentLevel = computedNodes[0];
-                    while (currentLevel.Count > 1)
-                    {
-                        computedNodes.Add(tree.PairwiseHash(currentLevel));
-                        currentLevel = computedNodes.Last(); ;
-                    }
-
                     for (int level = 1; level < nodes.Count; level++)
                     {
                         var expectedNodes = nodes[level].Select(nodeParser).ToList();
-                        if (level < computedNodes.Count)
+                        if (level < tree._layers.Count)
                         {
-                            var computedLevel = computedNodes[level];
+                            var computedLevel = tree._layers[level];
                             if (!expectedNodes.SequenceEqual(computedLevel, new ByteArrayComparer()))
                                 throw new ArgumentException($"Invalid tree data: mismatch at level {level}");
                         }
@@ -189,26 +194,112 @@ namespace Nethereum.Merkle
             return tree;
         }
 
-        private void UpdateRootIncrementally()
+        private void RebuildLayers()
         {
-            var nodes = _leaves.Select(_byteArrayConvertor.ConvertToByteArray).ToList();
-            while (nodes.Count > 1)
+            _layers.Clear();
+            if (_leaves.Count == 0)
             {
-                var temp = new List<byte[]>();
-                for (int i = 0; i < nodes.Count; i += 2)
-                {
-                    if (i + 1 < nodes.Count)
-                        temp.Add(HashPair(nodes[i], nodes[i + 1]));
-                    else
-                        temp.Add(nodes[i]);
-                }
-                nodes = temp;
-            }
 #if NET5_0_OR_GREATER
-            Root = nodes.FirstOrDefault() ?? Array.Empty<byte>();
+                Root = Array.Empty<byte>();
 #else
-            Root = nodes.FirstOrDefault() ?? new byte[0];
+                Root = new byte[0];
 #endif
+                return;
+            }
+
+            _layers.Add(_leaves.Select(l => _hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(l))).ToList());
+            var current = _layers[0];
+            while (current.Count > 1)
+            {
+                var next = PairwiseHash(current);
+                _layers.Add(next);
+                current = next;
+            }
+            Root = current[0];
+        }
+
+        private void PropagateInsert()
+        {
+            int leafCount = _layers[0].Count;
+
+            for (int level = 0; level < _layers.Count; level++)
+            {
+                var currentLayer = _layers[level];
+                int nextLevelCount = (currentLayer.Count + 1) / 2;
+
+                if (level + 1 < _layers.Count)
+                {
+                    var nextLayer = _layers[level + 1];
+                    while (nextLayer.Count < nextLevelCount)
+                        nextLayer.Add(null);
+
+                    int lastIdx = currentLayer.Count - 1;
+                    int parentIdx = lastIdx / 2;
+                    int leftIdx = parentIdx * 2;
+                    int rightIdx = leftIdx + 1;
+
+                    byte[] parentHash;
+                    if (rightIdx < currentLayer.Count)
+                        parentHash = HashPair(currentLayer[leftIdx], currentLayer[rightIdx]);
+                    else
+                        parentHash = currentLayer[leftIdx];
+
+                    nextLayer[parentIdx] = parentHash;
+                }
+                else if (currentLayer.Count > 1)
+                {
+                    var next = new List<byte[]>(new byte[nextLevelCount][]);
+                    int lastIdx = currentLayer.Count - 1;
+                    int parentIdx = lastIdx / 2;
+
+                    for (int p = 0; p <= parentIdx; p++)
+                    {
+                        int li = p * 2;
+                        int ri = li + 1;
+                        if (ri < currentLayer.Count)
+                            next[p] = HashPair(currentLayer[li], currentLayer[ri]);
+                        else
+                            next[p] = currentLayer[li];
+                    }
+
+                    _layers.Add(next);
+                }
+            }
+
+            var topLayer = _layers[_layers.Count - 1];
+            if (topLayer.Count > 1)
+            {
+                var next = PairwiseHash(topLayer);
+                _layers.Add(next);
+            }
+            Root = _layers[_layers.Count - 1][0];
+        }
+
+        private void PropagateFromIndex(int leafIndex)
+        {
+            if (_layers.Count <= 1)
+            {
+                Root = _layers[0][0];
+                return;
+            }
+
+            int idx = leafIndex;
+            for (int level = 0; level < _layers.Count - 1; level++)
+            {
+                int parentIdx = idx / 2;
+                int leftIdx = parentIdx * 2;
+                int rightIdx = leftIdx + 1;
+
+                byte[] parentHash;
+                if (rightIdx < _layers[level].Count)
+                    parentHash = HashPair(_layers[level][leftIdx], _layers[level][rightIdx]);
+                else
+                    parentHash = _layers[level][leftIdx];
+
+                _layers[level + 1][parentIdx] = parentHash;
+                idx = parentIdx;
+            }
+            Root = _layers[_layers.Count - 1][0];
         }
 
         public MerkleProof GenerateProof(int leafIndex)
@@ -216,15 +307,13 @@ namespace Nethereum.Merkle
             if (leafIndex < 0 || leafIndex >= _leaves.Count)
                 throw new ArgumentOutOfRangeException(nameof(leafIndex));
             var proofNodes = new List<byte[]>();
-            int index = leafIndex;
-            var currentLevel = _leaves.Select(_byteArrayConvertor.ConvertToByteArray).ToList();
-            for (int level = 0; currentLevel.Count > 1; level++)
+            int idx = leafIndex;
+            for (int level = 0; level < _layers.Count - 1; level++)
             {
-                int siblingIndex = index ^ 1;
-                if (siblingIndex < currentLevel.Count)
-                    proofNodes.Add(currentLevel[siblingIndex]);
-                index /= 2;
-                currentLevel = PairwiseHash(currentLevel);
+                int siblingIdx = idx ^ 1;
+                if (siblingIdx < _layers[level].Count)
+                    proofNodes.Add(_layers[level][siblingIdx]);
+                idx /= 2;
             }
             return new MerkleProof { ProofNodes = proofNodes };
         }
@@ -234,7 +323,7 @@ namespace Nethereum.Merkle
             if (proof == null) throw new ArgumentNullException(nameof(proof));
             if (leaf == null) throw new ArgumentNullException(nameof(leaf));
             if (root == null) throw new ArgumentNullException(nameof(root));
-            var computedHash = _byteArrayConvertor.ConvertToByteArray(leaf);
+            var computedHash = _hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(leaf));
             foreach (var node in proof.ProofNodes)
             {
                 computedHash = HashPair(computedHash, node);
@@ -276,7 +365,6 @@ namespace Nethereum.Merkle
             }
         }
 
-        // Fallback Log2 implementation for older .NET versions
 #if !(NETCOREAPP2_1_OR_GREATER || NET5_0_OR_GREATER)
         private static double Log2(double x)
         {

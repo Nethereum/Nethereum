@@ -9,6 +9,7 @@ namespace Nethereum.Merkle.Patricia
         private byte[] _cachedHash;
         private byte[] _cachedRlpData;
         private bool _dirty = true;
+        private bool _needsPersist = true;
 
         public Node(IHashProvider hashProvider)
         {
@@ -39,11 +40,19 @@ namespace Nethereum.Merkle.Patricia
         public void MarkDirty()
         {
             _dirty = true;
+            _needsPersist = true;
             _cachedHash = null;
             _cachedRlpData = null;
         }
 
         public bool IsDirty => _dirty;
+
+        public bool NeedsPersist => _needsPersist;
+
+        public void ClearNeedsPersist()
+        {
+            _needsPersist = false;
+        }
 
         protected void InvalidateCache()
         {

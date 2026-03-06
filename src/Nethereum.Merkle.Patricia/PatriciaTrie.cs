@@ -518,6 +518,8 @@ namespace Nethereum.Merkle.Patricia
                 storage.Put(hash, data);
             }
 
+            node.ClearNeedsPersist();
+
             if (node is BranchNode branchNode)
             {
                 foreach (var child in branchNode.Children)
@@ -528,6 +530,47 @@ namespace Nethereum.Merkle.Patricia
             else if (node is ExtendedNode extendedNode)
             {
                 SaveNodeToStorage(extendedNode.InnerNode, storage);
+            }
+        }
+
+        public void SaveDirtyNodesToStorage(ITrieStorage storage)
+        {
+            if (storage == null) return;
+            SaveDirtyNodeToStorage(Root, storage);
+        }
+
+        private void SaveDirtyNodeToStorage(Node node, ITrieStorage storage)
+        {
+            if (node == null || node is EmptyNode) return;
+
+            if (node is HashNode hashNode)
+            {
+                if (hashNode.InnerNode != null && hashNode.InnerNode.NeedsPersist)
+                    SaveDirtyNodeToStorage(hashNode.InnerNode, storage);
+                return;
+            }
+
+            if (!node.NeedsPersist) return;
+
+            var hash = node.GetHash();
+            var data = node.GetRLPEncodedData();
+            if (hash != null && data != null && hash.Length == 32)
+            {
+                storage.Put(hash, data);
+            }
+
+            node.ClearNeedsPersist();
+
+            if (node is BranchNode branchNode)
+            {
+                foreach (var child in branchNode.Children)
+                {
+                    SaveDirtyNodeToStorage(child, storage);
+                }
+            }
+            else if (node is ExtendedNode extendedNode)
+            {
+                SaveDirtyNodeToStorage(extendedNode.InnerNode, storage);
             }
         }
 

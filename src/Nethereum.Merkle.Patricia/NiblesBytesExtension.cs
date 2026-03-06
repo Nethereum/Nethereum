@@ -52,11 +52,10 @@ namespace Nethereum.Merkle.Patricia
 
         public static bool AreTheSame(this byte[] a, byte[] b)
         {
-            if (a == null || b == null) return true;
-            if (a == null) return false;
-            if (b == null) return false;
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
 
-            if (a.Length > b.Length)
+            if (a.Length != b.Length)
                 return false;
 
             for (int i = 0; i < a.Length; i++)
