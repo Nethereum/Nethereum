@@ -19,8 +19,8 @@ namespace Nethereum.EVM
         public Dictionary<string, string> Storage { get; set; }
         public int Depth { get; set; }
         public List<string> MemoryAsArray { get; set; } = new List<string>();
-        public BigInteger GasCost { get; internal set; }
-        public BigInteger GasRemaining { get; internal set; }
+        public BigInteger GasCost { get; set; }
+        public BigInteger GasRemaining { get; set; }
 
         public override string ToString()
         {

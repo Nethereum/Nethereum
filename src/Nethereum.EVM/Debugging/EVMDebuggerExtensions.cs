@@ -3,6 +3,7 @@ using Nethereum.EVM.SourceInfo;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Nethereum.EVM.Debugging
 {
@@ -22,10 +23,24 @@ namespace Nethereum.EVM.Debugging
             return session;
         }
 
+        public static async Task<EVMDebuggerSession> CreateDebugSessionAsync(this Program program, IABIInfoStorage abiStorage, long chainId)
+        {
+            var session = new EVMDebuggerSession(abiStorage);
+            await session.LoadFromProgramAsync(program, chainId);
+            return session;
+        }
+
         public static EVMDebuggerSession CreateDebugSession(this List<ProgramTrace> trace, IABIInfoStorage abiStorage, long chainId)
         {
             var session = new EVMDebuggerSession(abiStorage);
             session.LoadFromTrace(trace, chainId);
+            return session;
+        }
+
+        public static async Task<EVMDebuggerSession> CreateDebugSessionAsync(this List<ProgramTrace> trace, IABIInfoStorage abiStorage, long chainId)
+        {
+            var session = new EVMDebuggerSession(abiStorage);
+            await session.LoadFromTraceAsync(trace, chainId);
             return session;
         }
 

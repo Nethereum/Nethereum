@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using Nethereum.ABI.Model;
+using Nethereum.Hex.HexConvertors.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,6 +8,45 @@ namespace Nethereum.EVM
 {
     public static class ProgramInstructionsUtils
     {
+        public static Dictionary<int, string> GetFunctionDispatcherMap(
+            List<ProgramInstruction> instructions, ContractABI contractABI = null)
+        {
+            var map = new Dictionary<int, string>();
+            if (instructions == null)
+                return map;
+
+            for (int i = 0; i < instructions.Count - 3; i++)
+            {
+                var inst = instructions[i];
+                if (inst.Instruction == Instruction.PUSH4
+                    && inst.Arguments?.Length == 4
+                    && instructions[i + 1].Instruction == Instruction.EQ)
+                {
+                    var next = instructions[i + 2];
+                    if ((next.Instruction == Instruction.PUSH1 || next.Instruction == Instruction.PUSH2)
+                        && instructions[i + 3].Instruction == Instruction.JUMPI
+                        && next.Arguments != null)
+                    {
+                        var selectorHex = inst.ArgumentsAsHex();
+                        var destPC = ParsePushArguments(next.Arguments);
+                        if (map.ContainsKey(destPC)) continue;
+
+                        var funcAbi = contractABI?.FindFunctionABI(selectorHex);
+                        map[destPC] = funcAbi?.Name ?? selectorHex;
+                    }
+                }
+            }
+            return map;
+        }
+
+        private static int ParsePushArguments(byte[] args)
+        {
+            int val = 0;
+            for (int i = 0; i < args.Length; i++)
+                val = (val << 8) | args[i];
+            return val;
+        }
+
         public static bool ContainsFunctionSignature(List<ProgramInstruction> instructions, string signature)
         {
             signature = signature.EnsureHexPrefix();

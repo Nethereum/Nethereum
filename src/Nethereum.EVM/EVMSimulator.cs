@@ -333,6 +333,16 @@ namespace Nethereum.EVM
                 parentProgram.ProgramResult.Logs.AddRange(childProgram.ProgramResult.Logs);
                 parentProgram.ProgramResult.InnerCalls.Add(completedFrame.CallInput);
                 parentProgram.ProgramResult.InnerCalls.AddRange(childProgram.ProgramResult.InnerCalls);
+                parentProgram.ProgramResult.InnerCallResults.Add(new InnerCallResult
+                {
+                    CallInput = completedFrame.CallInput,
+                    FrameType = (int)completedFrame.FrameType,
+                    Depth = completedFrame.Depth,
+                    GasUsed = gasActuallySpentOnCreate + codeDepositCost,
+                    Output = code,
+                    Success = true
+                });
+                parentProgram.ProgramResult.InnerCallResults.AddRange(childProgram.ProgramResult.InnerCallResults);
                 parentProgram.ProgramResult.CreatedContractAccounts.Add(completedFrame.NewContractAddress);
                 parentProgram.ProgramResult.CreatedContractAccounts.AddRange(childProgram.ProgramResult.CreatedContractAccounts);
                 parentProgram.ProgramResult.DeletedContractAccounts.AddRange(childProgram.ProgramResult.DeletedContractAccounts);
@@ -354,6 +364,18 @@ namespace Nethereum.EVM
                 // Set return data for RETURNDATASIZE/RETURNDATACOPY - the REVERT data from initcode
                 parentProgram.ProgramResult.LastCallReturnData = childProgram.ProgramResult.Result;
                 var gasActuallySpent = completedFrame.GasAllocated - gasToReturn;
+                parentProgram.ProgramResult.InnerCallResults.Add(new InnerCallResult
+                {
+                    CallInput = completedFrame.CallInput,
+                    FrameType = (int)completedFrame.FrameType,
+                    Depth = completedFrame.Depth,
+                    GasUsed = gasActuallySpent,
+                    Output = childProgram.ProgramResult.Result,
+                    Success = false,
+                    Error = childProgram.ProgramResult.IsRevert ? "execution reverted" : "out of gas",
+                    RevertReason = childProgram.ProgramResult.IsRevert ? childProgram.ProgramResult.GetRevertMessage() : null
+                });
+                parentProgram.ProgramResult.InnerCallResults.AddRange(childProgram.ProgramResult.InnerCallResults);
                 parentProgram.GasRemaining += gasToReturn;
                 parentProgram.TotalGasUsed += gasActuallySpent;
                 // Note: RefundCounter is NOT propagated on revert
@@ -404,6 +426,16 @@ namespace Nethereum.EVM
                 parentProgram.ProgramResult.Logs.AddRange(childProgram.ProgramResult.Logs);
                 parentProgram.ProgramResult.InnerCalls.Add(completedFrame.CallInput);
                 parentProgram.ProgramResult.InnerCalls.AddRange(childProgram.ProgramResult.InnerCalls);
+                parentProgram.ProgramResult.InnerCallResults.Add(new InnerCallResult
+                {
+                    CallInput = completedFrame.CallInput,
+                    FrameType = (int)completedFrame.FrameType,
+                    Depth = completedFrame.Depth,
+                    GasUsed = gasActuallySpent,
+                    Output = childProgram.ProgramResult.Result,
+                    Success = true
+                });
+                parentProgram.ProgramResult.InnerCallResults.AddRange(childProgram.ProgramResult.InnerCallResults);
                 parentProgram.ProgramResult.CreatedContractAccounts.AddRange(childProgram.ProgramResult.CreatedContractAccounts);
                 parentProgram.ProgramResult.DeletedContractAccounts.AddRange(childProgram.ProgramResult.DeletedContractAccounts);
 
@@ -437,6 +469,19 @@ namespace Nethereum.EVM
                     var resultLength = Math.Min(completedFrame.ResultMemoryDataLength, result.Length);
                     parentProgram.WriteToMemory(completedFrame.ResultMemoryDataIndex, resultLength, result);
                 }
+
+                parentProgram.ProgramResult.InnerCallResults.Add(new InnerCallResult
+                {
+                    CallInput = completedFrame.CallInput,
+                    FrameType = (int)completedFrame.FrameType,
+                    Depth = completedFrame.Depth,
+                    GasUsed = gasActuallySpent,
+                    Output = result,
+                    Success = false,
+                    Error = "execution reverted",
+                    RevertReason = childProgram.ProgramResult.GetRevertMessage()
+                });
+                parentProgram.ProgramResult.InnerCallResults.AddRange(childProgram.ProgramResult.InnerCallResults);
 
                 parentProgram.GasRemaining += gasToReturn;
                 parentProgram.TotalGasUsed += gasActuallySpent;
