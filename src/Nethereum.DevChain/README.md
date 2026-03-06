@@ -1,15 +1,17 @@
 # Nethereum.DevChain
 
-Development blockchain with full EVM execution, automatic mining, and extended RPC support. A local Ethereum-compatible chain for testing and development.
+Development blockchain with full EVM execution up to the Prague hardfork, automatic mining, SQLite storage, and extended RPC support. A local Ethereum-compatible chain for testing and development.
 
 ## Overview
 
 Nethereum.DevChain provides a complete local blockchain environment:
-- **Instant Mining** - Transactions are mined immediately
-- **Full EVM Execution** - Complete EVM opcode support via Nethereum.EVM
-- **State Management** - Patricia trie-based state with snapshots
-- **Extended RPC** - Development and debug APIs beyond standard Ethereum
+- **Instant Mining** - Transactions mined immediately or on a configurable interval
+- **Full EVM Execution** - EVM opcode support up to Prague via Nethereum.EVM
+- **SQLite Storage** - Default lightweight storage with auto-cleanup (no native dependencies)
+- **State Management** - Patricia trie-based state with snapshot/revert
+- **Extended RPC** - Development, debug, and Anvil-compatible APIs
 - **Transaction Tracing** - Geth-compatible debug_traceTransaction and debug_traceCall
+- **Forking** - Fork from live Ethereum networks
 
 ## Installation
 
@@ -19,52 +21,123 @@ dotnet add package Nethereum.DevChain
 
 ## Dependencies
 
-**Package References:**
 - Nethereum.CoreChain - Core blockchain infrastructure
 - Nethereum.RPC.Extensions - Extended RPC utilities
 - Nethereum.JsonRpc.RpcClient - JSON-RPC client
-- Nethereum.Geth - Geth-compatible debug DTOs
+- Nethereum.RPC - Standard debug tracing DTOs
+- Microsoft.Data.Sqlite - SQLite storage provider
 
-## DevChainNode
+## Quick Start
 
-The main class for running a development chain:
+### Default (SQLite with auto-cleanup)
 
 ```csharp
 using Nethereum.DevChain;
 
+var node = new DevChainNode();
+await node.StartAsync(new[] { "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" });
+
+// Use the node...
+
+node.Dispose(); // SQLite DB deleted automatically
+```
+
+### With Custom Config
+
+```csharp
 var config = new DevChainConfig
 {
     ChainId = 1337,
-    GasLimit = 30000000,
-    BaseFee = 1000000000
+    BlockGasLimit = 30_000_000,
+    AutoMine = true,
+    InitialBalance = BigInteger.Parse("10000000000000000000000") // 10000 ETH
 };
 
 var node = new DevChainNode(config);
-
-// Start with funded accounts
-var fundedAddresses = new[] { "0x1234...", "0x5678..." };
 await node.StartAsync(fundedAddresses);
 ```
 
-**From:** `src/Nethereum.DevChain/DevChainNode.cs`
+### Fully In-Memory
+
+```csharp
+var node = DevChainNode.CreateInMemory();
+await node.StartAsync(fundedAddresses);
+```
+
+### Persistent SQLite
+
+```csharp
+var node = new DevChainNode("./mychain/chain.db", persistDb: true);
+await node.StartAsync(fundedAddresses);
+// DB survives restart
+```
+
+### Convenience Factory
+
+```csharp
+var node = await DevChainNode.CreateAndStartAsync(
+    fundedAddresses,
+    new DevChainConfig { ChainId = 31337 }
+);
+```
+
+## Storage Architecture
+
+DevChain uses a hybrid storage strategy by default:
+
+| Data | Store | Reason |
+|------|-------|--------|
+| Blocks | SQLite | Historical, grows unbounded |
+| Transactions | SQLite | Historical, grows unbounded |
+| Receipts | SQLite | Historical, grows unbounded |
+| Logs | SQLite | Historical, grows unbounded |
+| State | In-Memory | Needs fast snapshot/revert |
+| Filters | In-Memory | Transient, bounded |
+| Trie Nodes | In-Memory | Needs fast access |
+
+SQLite uses WAL journal mode for concurrent reads during block production. The database is auto-deleted on dispose unless persistence is enabled.
+
+## Configuration
+
+```csharp
+public class DevChainConfig
+{
+    public int ChainId { get; set; } = 1337;
+    public long BlockGasLimit { get; set; } = 30_000_000;
+    public bool AutoMine { get; set; } = true;
+    public long BlockTime { get; set; } = 0;           // 0 = instant
+    public int MaxTransactionsPerBlock { get; set; } = 100;
+    public BigInteger BaseFee { get; set; } = 1_000_000_000; // 1 gwei
+    public BigInteger InitialBalance { get; set; };
+
+    // Forking
+    public string ForkUrl { get; set; }
+    public long? ForkBlockNumber { get; set; }
+
+    // Auto-mine batching
+    public int AutoMineBatchSize { get; set; } = 1;
+    public int AutoMineBatchTimeoutMs { get; set; } = 100;
+}
+
+// Built-in presets
+var config = DevChainConfig.Default;   // ChainId 1337
+var config = DevChainConfig.Hardhat;   // ChainId 31337
+var config = DevChainConfig.Anvil;     // ChainId 31337
+```
 
 ## Core Features
 
 ### Transaction Processing
 
-Submit and execute transactions:
-
 ```csharp
 // Send raw transaction
 var txHash = await node.SendRawTransactionAsync(signedTxBytes);
 
-// Wait for receipt
+// Get receipt
 var receipt = await node.GetTransactionReceiptAsync(txHash);
 ```
 
 ### Contract Execution
-
-Execute contract calls with full EVM tracing:
 
 ```csharp
 using Nethereum.RPC.Eth.DTOs;
@@ -73,7 +146,7 @@ var callInput = new CallInput
 {
     From = "0x1234...",
     To = contractAddress,
-    Data = "0x..." // Encoded function call
+    Data = "0x..."
 };
 
 // Execute without state change
@@ -86,42 +159,54 @@ var gasEstimate = await node.EstimateGasAsync(callInput);
 ### State Access
 
 ```csharp
-// Get account balance
 var balance = await node.GetBalanceAsync(address);
-
-// Get contract code
 var code = await node.GetCodeAsync(contractAddress);
-
-// Get storage at slot
 var storage = await node.GetStorageAtAsync(contractAddress, slot);
-
-// Get transaction count (nonce)
 var nonce = await node.GetTransactionCountAsync(address);
 ```
 
-### Block Management
+### Account Management
+
+Modify account state for testing:
 
 ```csharp
-// Get latest block
-var block = await node.GetLatestBlockAsync();
+await node.SetBalanceAsync(address, newBalance);
+await node.SetCodeAsync(address, bytecode);
+await node.SetStorageAtAsync(address, slot, value);
+await node.SetNonceAsync(address, nonce);
+```
 
-// Get block by number
-var block = await node.GetBlockByNumberAsync(blockNumber);
+### Snapshots
 
-// Get block by hash
-var block = await node.GetBlockByHashAsync(blockHash);
+```csharp
+// Take snapshot
+var snapshotId = await node.SnapshotAsync();
+
+// Execute transactions...
+
+// Revert all changes
+await node.RevertToSnapshotAsync(snapshotId);
+```
+
+### Block Mining
+
+```csharp
+// Manual mining
+await node.MineBlockAsync();
+
+// Time manipulation
+node.Config.NextBlockTimestamp = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds();
+await node.MineBlockAsync();
 ```
 
 ## Debug/Trace APIs
-
-DevChain supports Geth-compatible debug APIs for transaction tracing:
 
 ### debug_traceTransaction
 
 Trace a mined transaction step-by-step:
 
 ```csharp
-using Nethereum.Geth.RPC.Debug.Tracers;
+using Nethereum.RPC.DebugNode.Tracers;
 
 var config = new OpcodeTracerConfigDto
 {
@@ -129,58 +214,37 @@ var config = new OpcodeTracerConfigDto
     DisableStack = false,
     DisableStorage = false,
     EnableReturnData = true,
-    Limit = 1000 // Max trace steps
+    Limit = 1000
 };
 
 var trace = await node.TraceTransactionAsync(txHash, config);
 
-// Access trace results
-Console.WriteLine($"Gas used: {trace.Gas}");
-Console.WriteLine($"Failed: {trace.Failed}");
-Console.WriteLine($"Return value: {trace.ReturnValue}");
-
 foreach (var log in trace.StructLogs)
 {
     Console.WriteLine($"PC: {log.Pc}, Op: {log.Op}, Gas: {log.Gas}");
-    Console.WriteLine($"Stack: {string.Join(", ", log.Stack)}");
 }
 ```
 
-**From:** `src/Nethereum.DevChain/DevChainNode.cs`
-
 ### debug_traceCall
 
-Trace a call without mining:
+Trace a call without mining, with optional state overrides:
 
 ```csharp
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Geth.RPC.Debug.DTOs;
-
-var callInput = new CallInput
-{
-    From = "0x1234...",
-    To = contractAddress,
-    Data = "0x18160ddd" // totalSupply()
-};
-
-// With state overrides
 var stateOverrides = new Dictionary<string, StateOverrideDto>
 {
     [address] = new StateOverrideDto
     {
-        Balance = "0x1000000000000000000", // 1 ETH
-        Code = "0x...", // Override contract code
+        Balance = "0x1000000000000000000",
+        Code = "0x...",
         State = new Dictionary<string, string>
         {
-            ["0x0"] = "0x..." // Override storage
+            ["0x0"] = "0x..."
         }
     }
 };
 
 var trace = await node.TraceCallAsync(callInput, config, stateOverrides);
 ```
-
-**From:** `src/Nethereum.DevChain/DevChainNode.cs`
 
 ## RPC Handler Extensions
 
@@ -191,20 +255,12 @@ using Nethereum.DevChain.Rpc;
 using Nethereum.CoreChain.Rpc;
 
 var registry = new RpcHandlerRegistry();
-
-// Standard Ethereum handlers
-registry.AddStandardHandlers();
-
-// DevChain handlers (evm_*, hardhat_*, etc.)
-registry.AddDevHandlers();
-
-// Debug handlers (debug_traceTransaction, debug_traceCall)
-registry.AddDebugHandlers();
+registry.AddStandardHandlers();  // Core Ethereum methods
+registry.AddDevHandlers();       // Dev/debug methods
+registry.AddAnvilAliases();      // Anvil compatibility
 ```
 
-**From:** `src/Nethereum.DevChain/Rpc/DevRpcHandlerExtensions.cs`
-
-### Available Dev Methods
+### Development Methods
 
 | Method | Description |
 |--------|-------------|
@@ -214,77 +270,37 @@ registry.AddDebugHandlers();
 | `evm_increaseTime` | Increase block timestamp |
 | `evm_setNextBlockTimestamp` | Set next block timestamp |
 
-### Available Debug Methods
+### Account Management Methods
+
+| Method | Description |
+|--------|-------------|
+| `hardhat_setBalance` | Set account balance |
+| `hardhat_setCode` | Set contract code |
+| `hardhat_setNonce` | Set account nonce |
+| `hardhat_setStorageAt` | Set storage slot |
+
+### Debug Methods
 
 | Method | Description |
 |--------|-------------|
 | `debug_traceTransaction` | Trace mined transaction |
 | `debug_traceCall` | Trace call without mining |
 
-## Configuration
+### Anvil Aliases
 
-```csharp
-public class DevChainConfig
-{
-    public int ChainId { get; set; } = 1337;
-    public long GasLimit { get; set; } = 30000000;
-    public BigInteger BaseFee { get; set; } = 1000000000; // 1 gwei
-    public BigInteger InitialBalance { get; set; } = BigInteger.Parse("10000000000000000000000"); // 10000 ETH
-}
-```
+All `hardhat_*` methods are also available as `anvil_*` for compatibility:
 
-**From:** `src/Nethereum.DevChain/DevChainConfig.cs`
-
-## Transaction Processing
-
-The `TransactionProcessor` handles transaction execution:
-
-```csharp
-var processor = new TransactionProcessor(
-    stateStore,
-    trieNodeStore,
-    chainConfig
-);
-
-var result = await processor.ProcessTransactionAsync(
-    signedTransaction,
-    blockContext
-);
-
-// Result contains:
-// - Success/failure status
-// - Gas used
-// - Logs emitted
-// - Contract address (for deployments)
-// - Return data
-// - Revert reason (if failed)
-```
-
-**From:** `src/Nethereum.DevChain/TransactionProcessor.cs`
-
-## Block Management
-
-The `BlockManager` handles block creation and storage:
-
-```csharp
-var blockManager = new BlockManager(
-    blockStore,
-    transactionStore,
-    receiptStore,
-    trieNodeStore
-);
-
-// Create and mine a block with transactions
-var block = await blockManager.CreateBlockAsync(
-    parentHash,
-    transactions,
-    receipts,
-    stateRoot,
-    receiptsRoot
-);
-```
-
-**From:** `src/Nethereum.DevChain/BlockManager.cs`
+| Anvil Method | Maps To |
+|-------------|---------|
+| `anvil_setBalance` | `hardhat_setBalance` |
+| `anvil_setCode` | `hardhat_setCode` |
+| `anvil_setNonce` | `hardhat_setNonce` |
+| `anvil_setStorageAt` | `hardhat_setStorageAt` |
+| `anvil_impersonateAccount` | `hardhat_impersonateAccount` |
+| `anvil_stopImpersonatingAccount` | `hardhat_stopImpersonatingAccount` |
+| `anvil_mine` | `evm_mine` |
+| `anvil_snapshot` | `evm_snapshot` |
+| `anvil_revert` | `evm_revert` |
 
 ## Usage with RPC Server
 
@@ -295,87 +311,54 @@ using Nethereum.DevChain;
 using Nethereum.DevChain.Rpc;
 using Nethereum.CoreChain.Rpc;
 
-// Create node
 var node = new DevChainNode(config);
 await node.StartAsync(fundedAddresses);
 
-// Setup RPC
 var registry = new RpcHandlerRegistry();
 registry.AddStandardHandlers();
 registry.AddDevHandlers();
-registry.AddDebugHandlers();
+registry.AddAnvilAliases();
 
 var context = new RpcContext(node, chainId, services);
 var dispatcher = new RpcDispatcher(registry, context);
 
-// Handle RPC requests
-var request = new RpcRequestMessage(1, "eth_blockNumber");
 var response = await dispatcher.DispatchAsync(request);
 ```
 
-## Trace Converter
+## Forking
 
-Convert internal EVM traces to Geth-compatible format:
+Fork from live Ethereum networks to test against real state:
 
 ```csharp
-using Nethereum.DevChain.Tracing;
-using Nethereum.EVM;
-using Nethereum.Geth.RPC.Debug.Tracers;
-
-// After EVM execution with tracing enabled
-var program = await simulator.ExecuteAsync(program, traceEnabled: true);
-
-// Convert to Geth format
-var config = new OpcodeTracerConfigDto
+var config = new DevChainConfig
 {
-    EnableMemory = true,
-    DisableStack = false,
-    DisableStorage = false,
-    Limit = 100
+    ForkUrl = "https://eth.llamarpc.com",
+    ForkBlockNumber = 19000000
 };
 
-var opcodeResponse = TraceConverter.ConvertToOpcodeResponse(program, config);
+var node = await DevChainNode.CreateAndStartAsync(fundedAddresses, config);
 
-// Response contains:
-// - Gas used
-// - Failed flag
-// - Return value
-// - StructLogs array (Geth-compatible)
+// Reads hit fork source on cache miss, writes are local only
+var balance = await node.GetBalanceAsync("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
 ```
 
-**From:** `src/Nethereum.DevChain/Tracing/TraceConverter.cs`
+## Historical State
+
+DevChain supports querying state at any past block when using `HistoricalStateStore`:
+
+```csharp
+// State diffs are automatically recorded per block
+// Query balance at a specific block
+var pastBalance = await node.GetBalanceAsync(address, blockNumber: 5);
+```
 
 ## Related Packages
 
-- **Nethereum.CoreChain** - Core blockchain infrastructure
+- **Nethereum.CoreChain** - Core blockchain infrastructure and storage interfaces
 - **Nethereum.DevChain.Server** - HTTP JSON-RPC server (dotnet tool)
+- **Nethereum.Aspire.DevChain** - Aspire-orchestrated variant for distributed dev environments
 - **Nethereum.EVM** - EVM simulator
-- **Nethereum.Geth** - Geth-compatible DTOs for tracing
-
-## Example: Complete Test Setup
-
-```csharp
-using Nethereum.DevChain;
-using Nethereum.Web3;
-using Nethereum.Web3.Accounts;
-
-// Start dev chain
-var node = new DevChainNode(new DevChainConfig { ChainId = 1337 });
-var accounts = new[] { "0x1234..." };
-await node.StartAsync(accounts);
-
-// Connect Web3 client
-var account = new Account("private_key", 1337);
-var web3 = new Web3(account, "http://localhost:8545");
-
-// Deploy and interact with contracts
-var deploymentReceipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
-    abi, bytecode, account.Address
-);
-
-var contract = web3.Eth.GetContract(abi, deploymentReceipt.ContractAddress);
-var result = await contract.GetFunction("myFunction").CallAsync<int>();
-```
+- **Nethereum.RPC** - Standard debug tracing DTOs
 
 ## Additional Resources
 

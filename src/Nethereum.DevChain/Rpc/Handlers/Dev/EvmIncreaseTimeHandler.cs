@@ -11,10 +11,10 @@ namespace Nethereum.DevChain.Rpc.Handlers.Dev
 
         public override Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
-            var seconds = GetParam<long>(request, 0);
+            var seconds = ParseHexOrDecimalLong(request, 0);
             var devNode = (DevChainNode)context.Node;
-            devNode.DevConfig.TimeOffset += seconds;
-            return Task.FromResult(Success(request.Id, ToHex(devNode.DevConfig.TimeOffset)));
+            var newOffset = devNode.DevConfig.AddTimeOffset(seconds);
+            return Task.FromResult(Success(request.Id, ToHex(newOffset)));
         }
     }
 }

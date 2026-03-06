@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Nethereum.CoreChain.Rpc;
+using Nethereum.DevChain.Rpc;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 
@@ -59,6 +60,8 @@ namespace Nethereum.DevChain
         {
             var registry = new RpcHandlerRegistry();
             registry.AddStandardHandlers();
+            registry.AddDevHandlers();
+            registry.AddAnvilAliases();
 
             var context = new RpcContext(node, node.Config.ChainId, serviceProvider ?? new EmptyServiceProvider());
             return new RpcDispatcher(registry, context);

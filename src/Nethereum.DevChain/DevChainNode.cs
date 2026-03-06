@@ -7,11 +7,9 @@ using Nethereum.CoreChain;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
-using Nethereum.DevChain.Tracing;
+using Nethereum.DevChain.Storage.Sqlite;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
-using Nethereum.Geth.RPC.Debug.DTOs;
-using Nethereum.Geth.RPC.Debug.Tracers;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
@@ -28,24 +26,57 @@ namespace Nethereum.DevChain
     {
         private readonly DevChainConfig _config;
         private readonly BlockManager _blockManager;
-        private readonly Dictionary<int, CoreChain.Storage.IStateSnapshot> _snapshots = new Dictionary<int, CoreChain.Storage.IStateSnapshot>();
+        private readonly object _snapshotsLock = new object();
+        private readonly Dictionary<int, SnapshotInfo> _snapshots = new();
+        private volatile bool _initialized;
+        private bool _disposed;
 
-        private bool _initialized;
+        private SqliteStorageManager _sqliteManager;
 
         public DevChainNode() : this(DevChainConfig.Default)
         {
         }
 
-        public DevChainNode(DevChainConfig config) : this(
-            config,
-            new InMemoryBlockStore(),
-            new InMemoryTransactionStore(),
-            new InMemoryReceiptStore(),
-            new InMemoryLogStore(),
-            new InMemoryStateStore(),
-            new InMemoryFilterStore(),
-            new InMemoryTrieNodeStore())
+        public DevChainNode(DevChainConfig config) : this(config, CreateSqliteManager(null, true))
         {
+        }
+
+        private DevChainNode(DevChainConfig config, SqliteStorageManager sqliteManager) : this(
+            config,
+            new SqliteBlockStore(sqliteManager),
+            new SqliteTransactionStore(sqliteManager),
+            new SqliteReceiptStore(sqliteManager),
+            new SqliteLogStore(sqliteManager),
+            new HistoricalStateStore(new SqliteStateStore(sqliteManager), new SqliteStateDiffStore(sqliteManager), HistoricalStateOptions.DevChainDefault),
+            new InMemoryFilterStore(),
+            new SqliteTrieNodeStore(sqliteManager))
+        {
+            _sqliteManager = sqliteManager;
+        }
+
+        public DevChainNode(DevChainConfig config, string dbPath, bool persistDb = false)
+            : this(config, CreateSqliteManager(dbPath, !persistDb))
+        {
+        }
+
+        private static SqliteStorageManager CreateSqliteManager(string dbPath, bool deleteOnDispose)
+        {
+            return new SqliteStorageManager(dbPath, deleteOnDispose);
+        }
+
+        public static DevChainNode CreateInMemory(DevChainConfig config = null)
+        {
+            config = config ?? DevChainConfig.Default;
+            var blockStore = new InMemoryBlockStore();
+            return new DevChainNode(
+                config,
+                blockStore,
+                new InMemoryTransactionStore(blockStore),
+                new InMemoryReceiptStore(),
+                new InMemoryLogStore(),
+                new HistoricalStateStore(new InMemoryStateStore(), new InMemoryStateDiffStore(), HistoricalStateOptions.DevChainDefault),
+                new InMemoryFilterStore(),
+                new InMemoryTrieNodeStore());
         }
 
         public DevChainNode(
@@ -64,8 +95,8 @@ namespace Nethereum.DevChain
                 logStore,
                 stateStore,
                 filterStore,
-                CreateTransactionProcessor(stateStore, blockStore, config),
-                new TransactionVerificationAndRecoveryImp(),
+                CreateTransactionProcessor(stateStore, blockStore, config, SharedTxVerifier),
+                SharedTxVerifier,
                 CreateNodeDataService(stateStore, blockStore, config),
                 trieNodeStore)
         {
@@ -83,15 +114,17 @@ namespace Nethereum.DevChain
                 trieNodeStore);
         }
 
+        private static readonly ITransactionVerificationAndRecovery SharedTxVerifier = new TransactionVerificationAndRecoveryImp();
+
         private static TransactionProcessor CreateTransactionProcessor(
-            IStateStore stateStore, IBlockStore blockStore, DevChainConfig config)
+            IStateStore stateStore, IBlockStore blockStore, DevChainConfig config, ITransactionVerificationAndRecovery txVerifier)
         {
             var effectiveConfig = config ?? DevChainConfig.Default;
             return new TransactionProcessor(
                 stateStore,
                 blockStore,
                 effectiveConfig,
-                new TransactionVerificationAndRecoveryImp(),
+                txVerifier,
                 effectiveConfig.GetHardforkConfig());
         }
 
@@ -341,9 +374,11 @@ namespace Nethereum.DevChain
             await _stateStore.SaveAccountAsync(address, account);
         }
 
+        private static readonly Sha3Keccack _keccak = new();
+
         public async Task SetCodeAsync(string address, byte[] code)
         {
-            var codeHash = new Sha3Keccack().CalculateHash(code);
+            var codeHash = _keccak.CalculateHash(code);
             await _stateStore.SaveCodeAsync(codeHash, code);
 
             var account = await _stateStore.GetAccountAsync(address)
@@ -360,19 +395,63 @@ namespace Nethereum.DevChain
         public async Task<CoreChain.Storage.IStateSnapshot> TakeSnapshotAsync()
         {
             var snapshot = await _stateStore.CreateSnapshotAsync();
-            _snapshots[snapshot.SnapshotId] = snapshot;
+            var latestBlock = await _blockStore.GetLatestAsync();
+            var blockHeight = latestBlock?.BlockNumber ?? 0;
+
+            lock (_snapshotsLock)
+            {
+                _snapshots[snapshot.SnapshotId] = new SnapshotInfo(snapshot, blockHeight);
+            }
             return snapshot;
         }
 
         public async Task RevertToSnapshotAsync(CoreChain.Storage.IStateSnapshot snapshot)
         {
-            if (_snapshots.TryGetValue(snapshot.SnapshotId, out var storedSnapshot))
+            SnapshotInfo info;
+            lock (_snapshotsLock)
             {
-                await _stateStore.RevertSnapshotAsync(storedSnapshot);
+                if (!_snapshots.TryGetValue(snapshot.SnapshotId, out info))
+                    info = new SnapshotInfo(snapshot, 0);
+
+                var staleIds = new List<int>();
+                foreach (var kvp in _snapshots)
+                {
+                    if (kvp.Key > snapshot.SnapshotId)
+                    {
+                        kvp.Value.StateSnapshot.Dispose();
+                        staleIds.Add(kvp.Key);
+                    }
+                }
+                foreach (var id in staleIds)
+                {
+                    _snapshots.Remove(id);
+                }
             }
-            else
+
+            await _stateStore.RevertSnapshotAsync(info.StateSnapshot);
+
+            if (info.BlockHeight > 0)
             {
-                await _stateStore.RevertSnapshotAsync(snapshot);
+                await PruneStoresAfterBlockAsync(info.BlockHeight);
+
+                if (_stateStore is HistoricalStateStore historicalStore)
+                    await historicalStore.PurgeDiffsAboveBlockAsync(info.BlockHeight);
+            }
+
+            await _blockManager.ReinitializePendingBlockAsync();
+        }
+
+        private async Task PruneStoresAfterBlockAsync(System.Numerics.BigInteger snapshotBlockHeight)
+        {
+            var latestBlock = await _blockStore.GetLatestAsync();
+            if (latestBlock == null) return;
+
+            for (var blockNum = latestBlock.BlockNumber; blockNum > snapshotBlockHeight; blockNum--)
+            {
+                await _logStore.DeleteByBlockNumberAsync(blockNum);
+                await _receiptStore.DeleteByBlockNumberAsync(blockNum);
+                await _transactionStore.DeleteByBlockNumberAsync(blockNum);
+                await _blockStore.DeleteByNumberAsync(blockNum);
             }
         }
 
@@ -397,199 +476,6 @@ namespace Nethereum.DevChain
             return Task.FromResult(_blockManager.GetPendingBlockContext());
         }
 
-        public async Task<OpcodeTracerResponse> TraceTransactionAsync(
-            string txHash,
-            OpcodeTracerConfigDto config = null)
-        {
-            EnsureInitialized();
-
-            var txHashBytes = txHash.HexToByteArray();
-            var tx = await _transactionStore.GetByHashAsync(txHashBytes);
-            if (tx == null)
-                throw new InvalidOperationException($"Transaction {txHash} not found");
-
-            var receiptInfo = await _receiptStore.GetInfoByTxHashAsync(txHashBytes);
-            if (receiptInfo == null)
-                throw new InvalidOperationException($"Receipt for transaction {txHash} not found");
-
-            var block = await _blockStore.GetByHashAsync(receiptInfo.BlockHash);
-            if (block == null)
-                throw new InvalidOperationException($"Block for transaction {txHash} not found");
-
-            var from = _txVerifier.GetSenderAddress(tx);
-            var isContractCreation = tx.IsContractCreation();
-            var to = isContractCreation ? receiptInfo.ContractAddress : tx.GetReceiverAddress();
-            var data = tx.GetData();
-            var value = tx.GetValue();
-            var gasLimit = tx.GetGasLimit();
-
-            var blockContext = new CoreChain.BlockContext
-            {
-                BlockNumber = block.BlockNumber,
-                Timestamp = block.Timestamp,
-                Coinbase = block.Coinbase ?? _config.Coinbase,
-                Difficulty = block.Difficulty,
-                GasLimit = block.GasLimit,
-                BaseFee = block.BaseFee ?? 0,
-                ChainId = _config.ChainId
-            };
-
-            var code = await _nodeDataService.GetCodeAsync(to);
-            if (code == null || code.Length == 0)
-            {
-                return new OpcodeTracerResponse
-                {
-                    Gas = 0,
-                    Failed = false,
-                    ReturnValue = "0x",
-                    StructLogs = new List<StructLog>()
-                };
-            }
-
-            var executionStateService = new ExecutionStateService(_nodeDataService);
-            var callerBalance = await _nodeDataService.GetBalanceAsync(from);
-            executionStateService.SetInitialChainBalance(from, callerBalance);
-
-            var callInput = new CallInput
-            {
-                From = from,
-                To = to,
-                Value = new Hex.HexTypes.HexBigInteger(value),
-                Data = data?.ToHex(true) ?? "0x",
-                Gas = new Hex.HexTypes.HexBigInteger(gasLimit),
-                GasPrice = new Hex.HexTypes.HexBigInteger(0),
-                ChainId = new Hex.HexTypes.HexBigInteger(_config.ChainId)
-            };
-
-            var programContext = new ProgramContext(
-                callInput,
-                executionStateService,
-                from,
-                to,
-                (long)blockContext.BlockNumber,
-                blockContext.Timestamp,
-                blockContext.Coinbase,
-                (long)blockContext.BaseFee);
-
-            programContext.GasLimit = blockContext.GasLimit;
-            programContext.Difficulty = blockContext.Difficulty;
-
-            var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
-            await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
-
-            return TraceConverter.ConvertToOpcodeResponse(program, config);
-        }
-
-        public async Task<OpcodeTracerResponse> TraceCallAsync(
-            CallInput callInput,
-            OpcodeTracerConfigDto config = null,
-            Dictionary<string, StateOverrideDto> stateOverrides = null)
-        {
-            EnsureInitialized();
-
-            var from = callInput.From ?? "0x0000000000000000000000000000000000000000";
-            var to = callInput.To;
-            var callValue = callInput.Value?.Value ?? BigInteger.Zero;
-            var callGasLimit = callInput.Gas?.Value ?? 10_000_000;
-            var data = callInput.Data?.HexToByteArray();
-
-            var blockContext = _blockManager.GetPendingBlockContext();
-            var executionStateService = new ExecutionStateService(_nodeDataService);
-
-            var callerBalance = await _nodeDataService.GetBalanceAsync(from);
-            executionStateService.SetInitialChainBalance(from, callerBalance);
-
-            if (stateOverrides != null)
-            {
-                await ApplyStateOverridesAsync(executionStateService, stateOverrides);
-            }
-
-            var code = await _nodeDataService.GetCodeAsync(to);
-            if (code == null || code.Length == 0)
-            {
-                return new OpcodeTracerResponse
-                {
-                    Gas = 0,
-                    Failed = false,
-                    ReturnValue = "0x",
-                    StructLogs = new List<StructLog>()
-                };
-            }
-
-            var traceCallInput = new CallInput
-            {
-                From = from,
-                To = to,
-                Value = new Hex.HexTypes.HexBigInteger(callValue),
-                Data = data?.ToHex(true) ?? "0x",
-                Gas = new Hex.HexTypes.HexBigInteger(callGasLimit),
-                GasPrice = new Hex.HexTypes.HexBigInteger(0),
-                ChainId = new Hex.HexTypes.HexBigInteger(_config.ChainId)
-            };
-
-            var programContext = new ProgramContext(
-                traceCallInput,
-                executionStateService,
-                from,
-                to,
-                (long)blockContext.BlockNumber,
-                blockContext.Timestamp,
-                blockContext.Coinbase,
-                (long)blockContext.BaseFee);
-
-            programContext.GasLimit = blockContext.GasLimit;
-            programContext.Difficulty = blockContext.Difficulty;
-
-            var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
-            await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
-
-            return TraceConverter.ConvertToOpcodeResponse(program, config);
-        }
-
-        private async Task ApplyStateOverridesAsync(
-            ExecutionStateService executionStateService,
-            Dictionary<string, StateOverrideDto> overrides)
-        {
-            foreach (var kvp in overrides)
-            {
-                var address = kvp.Key;
-                var overrideDto = kvp.Value;
-                var accountState = executionStateService.CreateOrGetAccountExecutionState(address);
-
-                if (overrideDto.Balance != null)
-                {
-                    executionStateService.SetInitialChainBalance(address, overrideDto.Balance.Value);
-                }
-
-                if (!string.IsNullOrEmpty(overrideDto.Code))
-                {
-                    accountState.Code = overrideDto.Code.HexToByteArray();
-                }
-
-                if (overrideDto.State != null)
-                {
-                    foreach (var storageKvp in overrideDto.State)
-                    {
-                        var slot = storageKvp.Key.HexToBigInteger(false);
-                        var value = storageKvp.Value.HexToByteArray();
-                        accountState.SetPreStateStorage(slot, value);
-                    }
-                }
-
-                if (overrideDto.StateDiff != null)
-                {
-                    foreach (var storageKvp in overrideDto.StateDiff)
-                    {
-                        var slot = storageKvp.Key.HexToBigInteger(false);
-                        var value = storageKvp.Value.HexToByteArray();
-                        accountState.SetPreStateStorage(slot, value);
-                    }
-                }
-            }
-        }
-
         private void EnsureInitialized()
         {
             if (!_initialized)
@@ -604,13 +490,21 @@ namespace Nethereum.DevChain
 
         protected virtual void Dispose(bool disposing)
         {
+            if (_disposed) return;
+            _disposed = true;
+
             if (disposing)
             {
-                foreach (var snapshot in _snapshots.Values)
+                lock (_snapshotsLock)
                 {
-                    snapshot.Dispose();
+                    foreach (var info in _snapshots.Values)
+                    {
+                        info.StateSnapshot.Dispose();
+                    }
+                    _snapshots.Clear();
                 }
-                _snapshots.Clear();
+
+                _blockManager?.Dispose();
 
                 if (_stateStore is InMemoryStateStore memStateStore)
                     memStateStore.Clear();
@@ -623,8 +517,23 @@ namespace Nethereum.DevChain
                 if (_logStore is InMemoryLogStore memLogStore)
                     memLogStore.Clear();
 
+                _sqliteManager?.Dispose();
+                _sqliteManager = null;
+
                 _initialized = false;
             }
+        }
+    }
+
+    internal class SnapshotInfo
+    {
+        public CoreChain.Storage.IStateSnapshot StateSnapshot { get; }
+        public System.Numerics.BigInteger BlockHeight { get; }
+
+        public SnapshotInfo(CoreChain.Storage.IStateSnapshot stateSnapshot, System.Numerics.BigInteger blockHeight)
+        {
+            StateSnapshot = stateSnapshot;
+            BlockHeight = blockHeight;
         }
     }
 }

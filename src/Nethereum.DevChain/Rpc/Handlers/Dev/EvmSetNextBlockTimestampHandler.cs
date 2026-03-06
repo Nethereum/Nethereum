@@ -11,9 +11,9 @@ namespace Nethereum.DevChain.Rpc.Handlers.Dev
 
         public override Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
-            var timestamp = GetParam<long>(request, 0);
+            var timestamp = ParseHexOrDecimalLong(request, 0);
             var devNode = (DevChainNode)context.Node;
-            devNode.DevConfig.NextBlockTimestamp = timestamp;
+            devNode.DevConfig.SetNextBlockTimestamp(timestamp);
             return Task.FromResult(Success(request.Id, ToHex(timestamp)));
         }
     }

@@ -1,5 +1,4 @@
 using Nethereum.CoreChain.Rpc;
-using Nethereum.DevChain.Rpc.Handlers.Debug;
 using Nethereum.DevChain.Rpc.Handlers.Dev;
 
 namespace Nethereum.DevChain.Rpc
@@ -36,12 +35,5 @@ namespace Nethereum.DevChain.Rpc
             return registry;
         }
 
-        public static RpcHandlerRegistry AddDebugHandlers(this RpcHandlerRegistry registry)
-        {
-            registry.Register(new DebugTraceTransactionHandler());
-            registry.Register(new DebugTraceCallHandler());
-
-            return registry;
-        }
     }
 }
