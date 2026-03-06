@@ -1,0 +1,131 @@
+@page "/transaction/{TxHash}/debug"
+@using Microsoft.Extensions.Options
+@using Nethereum.Explorer.Services
+@inject IEvmDebugService DebugService
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerLocalizer L
+@inject IJSRuntime JS
+
+<PageTitle>@L[ExplorerKeys.Debugger.Title] @ExplorerFormatUtils.TruncateHex(TxHash, 16) - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[ExplorerKeys.Transactions.Title], Href = "/transactions" },
+    new() { Label = ExplorerFormatUtils.TruncateHex(TxHash, 16), Href = $"/transaction/{TxHash}" },
+    new() { Label = L[ExplorerKeys.Debugger.Debug] }
+})" />
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="mb-0"><i class="bi bi-bug me-2"></i>@L[ExplorerKeys.Debugger.Title]</h4>
+    <a href="/transaction/@TxHash" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>@L[ExplorerKeys.Debugger.BackToTransaction]
+    </a>
+</div>
+
+@if (_loading)
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="spinner-border text-info mb-3" role="status"></div>
+            <div class="text-color-secondary">@L[ExplorerKeys.Debugger.ReplayingTransaction]</div>
+            <div class="text-color-secondary mt-1" style="font-size:0.85rem;">@L[ExplorerKeys.Debugger.ReplayingSubtitle]</div>
+        </div>
+    </div>
+}
+else if (_error != null)
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-exclamation-triangle display-4 text-color-danger"></i>
+            <h5 class="mt-3">@L[ExplorerKeys.Debugger.ReplayFailed]</h5>
+            <p class="text-color-secondary">@_error</p>
+            <button class="btn btn-outline-primary mt-2" @onclick="LoadAsync">
+                <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Shared.Retry]
+            </button>
+        </div>
+    </div>
+}
+else if (_result?.Session != null)
+{
+    @if (_result.IsRevert)
+    {
+        <div class="alert alert-danger d-flex align-items-center mb-3">
+            <i class="bi bi-x-octagon-fill me-2"></i>
+            <span>@L[ExplorerKeys.Debugger.Reverted]</span>
+        </div>
+    }
+
+    <ErrorBoundary @ref="_errorBoundary">
+        <ChildContent>
+            <EvmDebugger Session="_result.Session"
+                         IsRevert="_result.IsRevert"
+                         HasSourceMaps="_result.HasSourceMaps"
+                         SourceFiles="_result.SourceFiles"
+                         FileContents="_result.FileContents"
+                         Theme="@_monacoTheme" />
+        </ChildContent>
+        <ErrorContent Context="ex">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-exclamation-triangle display-4 text-color-danger"></i>
+                    <h5 class="mt-3">@L[ExplorerKeys.Debugger.RenderingError]</h5>
+                    <p class="text-color-secondary">@ex.Message</p>
+                    <button class="btn btn-outline-primary mt-2" @onclick="RecoverFromError">
+                        <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Shared.Retry]
+                    </button>
+                </div>
+            </div>
+        </ErrorContent>
+    </ErrorBoundary>
+}
+
+@code {
+    [Parameter] public string TxHash { get; set; } = "";
+
+    private EvmReplayResult? _result;
+    private bool _loading = true;
+    private string? _error;
+    private ErrorBoundary? _errorBoundary;
+    private string _monacoTheme = "nethereum-dark";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string>("getDocumentTheme");
+            _monacoTheme = theme == "light" ? "nethereum-light" : "nethereum-dark";
+            await LoadAsync();
+        }
+    }
+
+    private void RecoverFromError()
+    {
+        _errorBoundary?.Recover();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _result = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            _result = await DebugService.ReplayTransactionAsync(TxHash);
+            if (_result.Error != null)
+            {
+                _error = _result.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

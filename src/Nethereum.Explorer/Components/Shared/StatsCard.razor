@@ -1,0 +1,23 @@
+<div class="col-md-6 col-lg-3">
+    <div class="card h-100">
+        <div class="card-body">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="stat-icon">
+                        <i class="@IconClass"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="card-subtitle mb-1 text-muted">@Title</h6>
+                    <h5 class="card-title mb-0">@(Value ?? "...")</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string IconClass { get; set; } = "bi bi-circle";
+}

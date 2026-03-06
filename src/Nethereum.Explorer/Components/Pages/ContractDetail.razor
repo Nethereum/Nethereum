@@ -1,0 +1,638 @@
+@page "/contract/{Address}"
+@using Nethereum.ABI.ABIDeserialisation
+@using Nethereum.ABI.ABIRepository
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.ABI.Model
+@using Nethereum.UI
+@using Nethereum.Util
+@using Nethereum.Explorer.Services
+@using Nethereum.Hex.HexTypes
+@using Nethereum.RPC.HostWallet
+@using Nethereum.Web3
+@using Nethereum.BlockchainProcessing.BlockStorage.Entities
+@inject IAbiStorageService AbiStorage
+@inject IAbiDecodingService AbiDecoding
+@inject SelectedEthereumHostProviderService HostProvider
+@inject IWeb3 Web3
+@inject ILogQueryService LogQuery
+@inject ITransactionQueryService TransactionQuery
+@inject ToastService Toast
+@inject ExplorerChainService ChainService
+@inject ILogger<ContractDetail> Logger
+@inject ExplorerLocalizer L
+
+<PageTitle>@L[ExplorerKeys.Contract.Title] @Address - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[ExplorerKeys.Account.Title], Href = $"/account/{Address}" },
+    new() { Label = L[ExplorerKeys.Contract.Title] }
+})" />
+
+<h4 class="mb-3"><i class="bi bi-file-earmark-code me-2"></i>@L[ExplorerKeys.Contract.Title]</h4>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="detail-row">
+            <span class="detail-label">@L[ExplorerKeys.Account.Address]</span>
+            <div class="detail-value font-monospace">@Address</div>
+        </div>
+        @if (_abiInfo != null && !string.IsNullOrEmpty(_abiInfo.ContractName))
+        {
+            <div class="detail-row">
+                <span class="detail-label">Name</span>
+                <div class="detail-value">@_abiInfo.ContractName</div>
+            </div>
+        }
+        <div class="detail-row">
+            <span class="detail-label">@L[ExplorerKeys.Contract.AbiStatus]</span>
+            <div class="detail-value">
+                @if (_abiInfo?.ContractABI != null)
+                {
+                    <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>@L[ExplorerKeys.Contract.AbiAvailable]</span>
+                    <span class="ms-2 small text-muted">@L.GetString(ExplorerKeys.Contract.FunctionsEvents, _abiInfo.ContractABI.Functions.Length, _abiInfo.ContractABI.Events.Length)</span>
+                }
+                else if (_loading)
+                {
+                    <span class="text-muted">Loading...</span>
+                }
+                else
+                {
+                    <span class="badge badge-danger"><i class="bi bi-x-circle me-1"></i>@L[ExplorerKeys.Contract.NoAbi]</span>
+                }
+            </div>
+        </div>
+        @if (_abiInfo?.ProxyImplementationAddresses != null && _abiInfo.ProxyImplementationAddresses.Any())
+        {
+            <div class="detail-row">
+                <span class="detail-label">Proxy</span>
+                <div class="detail-value">
+                    <span class="badge explorer-badge explorer-badge-primary">
+                        <i class="bi bi-arrow-repeat me-1"></i>@L[ExplorerKeys.Contract.ProxyContract]
+                    </span>
+                    <span class="ms-2 small text-color-secondary">@L[ExplorerKeys.Contract.Implementation]</span>
+                    @foreach (var impl in _abiInfo.ProxyImplementationAddresses)
+                    {
+                        <a href="@($"/contract/{impl}")" class="ms-1 font-monospace small">@ExplorerFormatUtils.TruncateHex(impl, 20)</a>
+                    }
+                </div>
+            </div>
+        }
+        @if (_nodeChainId != null)
+        {
+            <div class="detail-row">
+                <span class="detail-label">Chain ID</span>
+                <div class="detail-value d-flex align-items-center gap-2">
+                    <span>@_nodeChainId.Value</span>
+                    @if (HostProvider?.SelectedHost != null)
+                    {
+                        <button class="btn btn-outline-primary btn-sm" @onclick="AddChainToWalletAsync" disabled="@_switchingNetwork">
+                            @if (_switchingNetwork)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            <i class="bi bi-wallet2 me-1"></i>Add to Wallet
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        @if (HostProvider?.SelectedHost == null)
+        {
+            <div class="detail-row">
+                <span class="detail-label">Wallet</span>
+                <div class="detail-value">
+                    <span class="badge badge-danger">@L[ExplorerKeys.Contract.NotConnected]</span>
+                    <span class="ms-2 small text-muted">@L[ExplorerKeys.Contract.ConnectWalletMessage]</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "abi" ? "active" : "")" @onclick="@(() => _activeTab = "abi")">@L[ExplorerKeys.Contract.AbiJson]</button>
+    </li>
+    @if (_readFunctions.Any())
+    {
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "read" ? "active" : "")" @onclick="@(() => _activeTab = "read")">@L[ExplorerKeys.Contract.Query] (@_readFunctions.Count)</button>
+        </li>
+    }
+    @if (_writeFunctions.Any())
+    {
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "write" ? "active" : "")" @onclick="@(() => _activeTab = "write")">@L[ExplorerKeys.Contract.Transact] (@_writeFunctions.Count)</button>
+        </li>
+    }
+    @if (_events.Any())
+    {
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "events" ? "active" : "")" @onclick="@(() => _activeTab = "events")">@L[ExplorerKeys.Contract.Events] (@_events.Count)</button>
+        </li>
+    }
+    @if (_sourceFiles.Any())
+    {
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "source" ? "active" : "")" @onclick="@(() => _activeTab = "source")">@L[ExplorerKeys.Contract.SourceCode] (@_sourceFiles.Count)</button>
+        </li>
+    }
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "txs" ? "active" : "")" @onclick="@(() => SwitchToTxsTab())">
+            @L[ExplorerKeys.Transactions.Title]
+            @if (_txTotalCount > 0)
+            {
+                <span class="badge ms-1 explorer-badge explorer-badge-primary text-xs">@_txTotalCount</span>
+            }
+        </button>
+    </li>
+</ul>
+
+@if (_activeTab == "abi")
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            @if (_abiInfo?.ABI != null)
+            {
+                <h6 class="mb-2 text-color-secondary">@L[ExplorerKeys.Contract.AbiJson]</h6>
+                <div class="code-block">@_abiInfo.ABI</div>
+
+                @if (!string.IsNullOrEmpty(_bytecode) && _bytecode != "0x")
+                {
+                    <h6 class="mt-3 mb-2 d-flex align-items-center gap-2 text-color-secondary">
+                        <span>@L[ExplorerKeys.Contract.Bytecode]</span>
+                        <span class="badge badge-info text-xs">@((_bytecode.Length - 2) / 2) @L[ExplorerKeys.Contract.BytesLabel]</span>
+                        <button class="btn btn-sm ms-auto text-color-dim text-sm" @onclick="ToggleBytecode">
+                            <i class="bi @(_bytecodeExpanded ? "bi-chevron-up" : "bi-chevron-down") me-1"></i>@(_bytecodeExpanded ? L[ExplorerKeys.Contract.Collapse] : L[ExplorerKeys.Contract.Expand])
+                        </button>
+                    </h6>
+                    @if (_bytecodeExpanded)
+                    {
+                        <div class="code-block">@_bytecode</div>
+                    }
+                }
+            }
+            else
+            {
+                <div class="mb-3">
+                    <label class="form-label">@L[ExplorerKeys.Contract.PasteAbiJson]</label>
+                    <textarea class="form-control font-monospace small" rows="8" @bind="_uploadAbi" placeholder="[{&quot;inputs&quot;:[],&quot;name&quot;:&quot;...&quot;,&quot;type&quot;:&quot;function&quot;}]"></textarea>
+                </div>
+                @if (!string.IsNullOrEmpty(_uploadError))
+                {
+                    <div class="text-danger small mb-2">@_uploadError</div>
+                }
+                <button class="btn btn-primary btn-sm" @onclick="UploadAbiAsync" disabled="@string.IsNullOrWhiteSpace(_uploadAbi)">
+                    <i class="bi bi-upload me-1"></i>@L[ExplorerKeys.Contract.StoreAbi]
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@if (_readFunctions.Any())
+{
+    <div style="@(_activeTab != "read" ? "display:none" : "")">
+        @foreach (var func in _readFunctions)
+        {
+            <DynamicQueryFunction ContractAddress="@Address"
+                                 ABI="@(_abiInfo?.ABI ?? "")"
+                                 FunctionABI="func"
+                                 ContractABI="@_abiInfo?.ContractABI"
+                                 Web3="Web3"
+                                 HostProvider="HostProvider" />
+        }
+    </div>
+}
+
+@if (_writeFunctions.Any())
+{
+    <div style="@(_activeTab != "write" ? "display:none" : "")">
+        @if (HostProvider?.SelectedHost == null)
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-wallet2 display-4"></i>
+                <h5 class="mt-3">@L[ExplorerKeys.Contract.ConnectAWallet]</h5>
+                <p>@L[ExplorerKeys.Contract.ConnectWalletMessage]</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var func in _writeFunctions)
+            {
+                <DynamicTransactionFunction ContractAddress="@Address"
+                                           ABI="@(_abiInfo?.ABI ?? "")"
+                                           FunctionABI="func"
+                                           ContractABI="@_abiInfo?.ContractABI"
+                                           HostProvider="HostProvider"
+                                           ExpectedChainId="@_nodeChainId"
+                                           AddChainParameter="@_addChainParam" />
+            }
+        }
+    </div>
+}
+
+@if (_activeTab == "events")
+{
+    <h6 class="mb-3 text-color-secondary">@L[ExplorerKeys.Contract.EventSignatures]</h6>
+    @foreach (var evt in _events)
+    {
+        <div class="card mb-2">
+            <div class="card-body py-2">
+                <span class="badge bg-info me-2">@evt.Name</span>
+                <span class="font-monospace small text-muted">@evt.Sha3Signature</span>
+                @if (evt.InputParameters.Length > 0)
+                {
+                    <div class="mt-2 small">
+                        @foreach (var param in evt.InputParameters.OrderBy(p => p.Order))
+                        {
+                            var paramName = param.GetParameterNameUsingDefaultIfNotSet();
+                            <span class="me-3">
+                                @if (param.Indexed)
+                                {
+                                    <span class="badge badge-info me-1 text-xxs">indexed</span>
+                                }
+                                <span class="text-muted">@param.Type</span>
+                                <span>@paramName</span>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <h6 class="mt-4 mb-3 d-flex justify-content-between align-items-center">
+        <span class="text-color-secondary">@L[ExplorerKeys.Contract.RecentEventLogs]</span>
+        <button class="btn btn-outline-primary btn-sm" @onclick="LoadEventLogsAsync" disabled="@_eventLogsLoading">
+            @if (_eventLogsLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Contract.LoadEvents]
+        </button>
+    </h6>
+
+    @if (_eventLogs == null)
+    {
+        <div class="text-center py-3 text-color-dim">@L[ExplorerKeys.Contract.ClickLoadEvents]</div>
+    }
+    else if (!_eventLogs.Any())
+    {
+        <EmptyState IconClass="bi bi-journal-text" Title="@L[ExplorerKeys.Contract.NoEventsFound]" Subtitle="@L[ExplorerKeys.Contract.NoEventsSubtitle]" />
+    }
+    else
+    {
+        @foreach (var log in _eventLogs)
+        {
+            var decoded = _decodedEventLogs.FirstOrDefault(d => d.LogIndex == log.LogIndex.ToString());
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        @if (decoded != null && decoded.IsDecoded)
+                        {
+                            <span class="badge bg-info">@decoded.EventName</span>
+                        }
+                        else
+                        {
+                            <span class="badge explorer-badge explorer-badge-neutral">@L[ExplorerKeys.Contract.Log]</span>
+                        }
+                        <span class="font-monospace small text-color-dim">@L[ExplorerKeys.Contract.Index]: @log.LogIndex</span>
+                        @if (!string.IsNullOrEmpty(log.TransactionHash))
+                        {
+                            <a href="@($"/transaction/{log.TransactionHash}")" class="font-monospace small text-sm">@ExplorerFormatUtils.TruncateHex(log.TransactionHash, 16)</a>
+                        }
+                    </div>
+                    @if (decoded != null && decoded.IsDecoded && decoded.Parameters.Any())
+                    {
+                        <div class="small mt-1">
+                            @foreach (var p in decoded.Parameters)
+                            {
+                                <div class="d-flex gap-2">
+                                    <span class="text-color-secondary explorer-min-w-120">@p.Parameter.Name (@p.Parameter.Type)</span>
+                                    <span class="font-monospace word-break-all">@p.Result?.ToString()</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="font-monospace small mt-1 text-color-dim word-break-all">
+                            @L[ExplorerKeys.Contract.Topic]: @(log.EventHash ?? "N/A")
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="mt-2">
+            <Pagination CurrentPage="@_eventPage" HasMore="@_eventHasMore" OnPageChanged="@GoToEventPage" />
+        </div>
+    }
+}
+
+else if (_activeTab == "source")
+{
+    <div class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-code me-1"></i>
+            <select class="form-select form-select-sm font-monospace explorer-themed-select" style="max-width: 400px;"
+                    @onchange="OnSourceFileChanged" value="@_selectedSourcePath">
+                @foreach (var file in _sourceFiles)
+                {
+                    <option value="@file.Path">@file.Path</option>
+                }
+            </select>
+            @{
+                var selectedFile = _sourceFiles.FirstOrDefault(f => f.Path == _selectedSourcePath);
+            }
+            @if (selectedFile != null && !string.IsNullOrEmpty(selectedFile.License))
+            {
+                <span class="badge badge-info ms-auto">@selectedFile.License</span>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (selectedFile != null)
+            {
+                <SolidityCodeViewer Content="@selectedFile.Content" FileName="@selectedFile.Path" MinHeight="500" />
+            }
+        </div>
+    </div>
+}
+
+@if (_activeTab == "txs")
+{
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-arrow-left-right me-1"></i>@L[ExplorerKeys.Contract.ContractTransactions]</span>
+            @if (_txList != null)
+            {
+                <span class="text-color-secondary text-md">Page @_txPage @(_txTotalPages > 0 ? $"of {_txTotalPages}" : "")</span>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (_txList == null)
+            {
+                <div class="text-center py-4"><LoadingSpinner Message="Loading transactions..." /></div>
+            }
+            else if (!_txList.Any())
+            {
+                <EmptyState IconClass="bi bi-inbox" Title="@L[ExplorerKeys.Contract.NoTransactionsFound]" Subtitle="@L[ExplorerKeys.Contract.NoContractTxSubtitle]" />
+            }
+            else
+            {
+                <TransactionTable Transactions="_txList" CurrencySymbol="@ChainService.CurrencySymbol" />
+            }
+        </div>
+    </div>
+
+    @if (_txList != null && _txList.Any())
+    {
+        <div class="mt-3">
+            <Pagination CurrentPage="@_txPage" HasMore="@_txHasMore" TotalPages="@_txTotalPages" OnPageChanged="@GoToTxPage" />
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string Address { get; set; } = "";
+
+    private ABIInfo? _abiInfo;
+    private bool _loading = true;
+    private string _activeTab = "abi";
+    private string _uploadAbi = "";
+    private string? _uploadError;
+
+    private List<FunctionABI> _readFunctions = new();
+    private List<FunctionABI> _writeFunctions = new();
+    private List<EventABI> _events = new();
+
+    private List<ITransactionLogView>? _eventLogs;
+    private List<DecodedEventLog> _decodedEventLogs = new();
+    private bool _eventLogsLoading;
+    private int _eventPage = 1;
+    private bool _eventHasMore;
+    private const int EventPageSize = 20;
+
+    private List<SourceFileEntry> _sourceFiles = new();
+    private string? _selectedSourcePath;
+
+    private string? _bytecode;
+    private bool _bytecodeExpanded;
+
+    private HexBigInteger? _nodeChainId;
+    private AddEthereumChainParameter? _addChainParam;
+    private bool _switchingNetwork;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _activeTab = "abi";
+        _uploadAbi = "";
+        _uploadError = null;
+        _eventLogs = null;
+        _decodedEventLogs = new();
+        _eventLogsLoading = false;
+        _eventPage = 1;
+        _eventHasMore = false;
+        _sourceFiles = new();
+        _selectedSourcePath = null;
+        _bytecode = null;
+        _bytecodeExpanded = false;
+        _txList = null;
+        _txPage = 1;
+        _txHasMore = false;
+        _txTotalCount = 0;
+        _txTotalPages = 0;
+        _txLoaded = false;
+
+        _abiInfo = await AbiStorage.GetContractAbiAsync(Address);
+        _nodeChainId = await ChainService.GetChainIdAsync();
+        _addChainParam = ChainService.BuildAddChainParameter();
+        try { _bytecode = await Web3.Eth.GetCode.SendRequestAsync(Address); } catch (Exception ex) { Logger.LogDebug(ex, "Failed to fetch bytecode for {Address}", Address); }
+        _loading = false;
+        ParseAbi();
+    }
+
+    private void ParseAbi()
+    {
+        _readFunctions.Clear();
+        _writeFunctions.Clear();
+        _events.Clear();
+
+        if (_abiInfo?.ContractABI == null) return;
+
+        foreach (var func in _abiInfo.ContractABI.Functions)
+        {
+            if (func.Constant)
+                _readFunctions.Add(func);
+            else
+                _writeFunctions.Add(func);
+        }
+
+        _events.AddRange(_abiInfo.ContractABI.Events);
+
+        _sourceFiles.Clear();
+        if (_abiInfo.Metadata?.Sources != null)
+        {
+            foreach (var kvp in _abiInfo.Metadata.Sources)
+            {
+                if (!string.IsNullOrEmpty(kvp.Value?.Content))
+                    _sourceFiles.Add(new SourceFileEntry { Path = kvp.Key, Content = kvp.Value.Content, License = kvp.Value.License });
+            }
+            if (_sourceFiles.Any())
+                _selectedSourcePath = _sourceFiles[0].Path;
+        }
+
+        if (_sourceFiles.Any())
+            _activeTab = "source";
+        else if (_readFunctions.Any())
+            _activeTab = "read";
+        else if (_abiInfo.ABI != null)
+            _activeTab = "abi";
+    }
+
+    private async Task LoadEventLogsAsync()
+    {
+        _eventLogsLoading = true;
+        _decodedEventLogs = new();
+        StateHasChanged();
+
+        try
+        {
+            _eventLogs = await LogQuery.GetContractLogsAsync(Address, _eventPage, EventPageSize);
+            _eventHasMore = _eventLogs.Count == EventPageSize;
+
+            if (_eventLogs.Any() && _abiInfo?.ABI != null)
+            {
+                var rawLogs = _eventLogs.Select(l => new RawEventLog
+                {
+                    LogIndex = l.LogIndex.ToString(),
+                    Address = l.Address,
+                    EventHash = l.EventHash,
+                    IndexVal1 = l.IndexVal1,
+                    IndexVal2 = l.IndexVal2,
+                    IndexVal3 = l.IndexVal3,
+                    Data = l.Data
+                });
+                _decodedEventLogs = await AbiDecoding.DecodeEventLogsAsync(Address, rawLogs);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load event logs for contract {Address}", Address);
+        }
+        finally
+        {
+            _eventLogsLoading = false;
+        }
+    }
+
+    private async Task GoToEventPage(int page)
+    {
+        _eventPage = page;
+        await LoadEventLogsAsync();
+    }
+
+    private void OnSourceFileChanged(ChangeEventArgs e)
+    {
+        _selectedSourcePath = e.Value?.ToString();
+    }
+
+    private async Task UploadAbiAsync()
+    {
+        _uploadError = null;
+
+        try
+        {
+            var contractAbi = ABIDeserialiserFactory.DeserialiseContractABI(_uploadAbi);
+            if (contractAbi == null)
+            {
+                _uploadError = L[ExplorerKeys.Contract.InvalidAbiJson];
+                return;
+            }
+
+            await AbiStorage.StoreAbiAsync(Address, _uploadAbi);
+            _abiInfo = await AbiStorage.GetContractAbiAsync(Address);
+            _uploadAbi = "";
+            ParseAbi();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to parse ABI for {Address}", Address);
+            _uploadError = L[ExplorerKeys.Contract.FailedToParseAbi];
+        }
+    }
+
+    private async Task AddChainToWalletAsync()
+    {
+        if (_nodeChainId == null || HostProvider?.SelectedHost == null) return;
+        _switchingNetwork = true;
+        StateHasChanged();
+        try
+        {
+            await ChainService.AddChainToWalletAsync(HostProvider);
+            Toast.ShowSuccess(L[ExplorerKeys.Contract.ChainAddedSwitched]);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to add chain to wallet");
+            Toast.ShowError(L[ExplorerKeys.Contract.FailedAddChain]);
+        }
+        finally
+        {
+            _switchingNetwork = false;
+        }
+    }
+
+    private void ToggleBytecode() => _bytecodeExpanded = !_bytecodeExpanded;
+
+    // --- Transactions tab ---
+    private List<ITransactionView>? _txList;
+    private int _txPage = 1;
+    private bool _txHasMore;
+    private int _txTotalCount;
+    private int _txTotalPages;
+    private bool _txLoaded;
+    private const int TxPageSize = 25;
+
+    private async Task SwitchToTxsTab()
+    {
+        _activeTab = "txs";
+        if (!_txLoaded)
+        {
+            await LoadContractTransactionsAsync();
+            _txLoaded = true;
+        }
+    }
+
+    private async Task LoadContractTransactionsAsync()
+    {
+        try
+        {
+            _txList = await TransactionQuery.GetAddressTransactionsAsync(Address, _txPage, TxPageSize);
+            _txTotalCount = await TransactionQuery.GetAddressTransactionCountAsync(Address);
+            _txHasMore = _txList.Count == TxPageSize;
+            _txTotalPages = _txTotalCount > 0 ? (int)Math.Ceiling(_txTotalCount / (double)TxPageSize) : 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load transactions for contract {Address}", Address);
+            _txList ??= new();
+        }
+    }
+
+    private async Task GoToTxPage(int page)
+    {
+        _txPage = page;
+        await LoadContractTransactionsAsync();
+    }
+
+    private class SourceFileEntry
+    {
+        public string Path { get; set; } = "";
+        public string Content { get; set; } = "";
+        public string? License { get; set; }
+    }
+}

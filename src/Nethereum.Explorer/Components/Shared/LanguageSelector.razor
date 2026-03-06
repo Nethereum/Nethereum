@@ -1,0 +1,65 @@
+@inject ExplorerLocalizer L
+@implements IDisposable
+
+<div class="dropdown">
+    <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center px-2 text-color-secondary text-base"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            style="text-decoration: none;">
+        <i class="bi bi-translate me-1"></i>
+        <span>@_currentCode</span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" style="min-width: 140px;">
+        <li>
+            <button class="dropdown-item d-flex align-items-center gap-2" @onclick="@(() => SetLanguage("en"))">
+                @if (L.CurrentLanguage == "en")
+                {
+                    <i class="bi bi-check-lg text-color-primary"></i>
+                }
+                else
+                {
+                    <span style="width: 16px;"></span>
+                }
+                @L[ExplorerKeys.Nav.English]
+            </button>
+        </li>
+        <li>
+            <button class="dropdown-item d-flex align-items-center gap-2" @onclick="@(() => SetLanguage("es"))">
+                @if (L.CurrentLanguage == "es")
+                {
+                    <i class="bi bi-check-lg text-color-primary"></i>
+                }
+                else
+                {
+                    <span style="width: 16px;"></span>
+                }
+                @L[ExplorerKeys.Nav.Spanish]
+            </button>
+        </li>
+    </ul>
+</div>
+
+@code {
+    private string _currentCode => L.CurrentLanguage.ToUpperInvariant();
+
+    protected override void OnInitialized()
+    {
+        L.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void SetLanguage(string lang)
+    {
+        L.SetLanguage(lang);
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        L.LanguageChanged -= OnLanguageChanged;
+    }
+}

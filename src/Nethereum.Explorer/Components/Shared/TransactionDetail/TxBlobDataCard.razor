@@ -1,0 +1,33 @@
+@if (BlobInfo != null)
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent d-flex align-items-center">
+            <h6 class="mb-0"><i class="bi bi-database me-2"></i>@L[ExplorerKeys.TransactionDetail.BlobData] (EIP-4844)</h6>
+            <span class="badge ms-2 explorer-badge explorer-badge-warning">@BlobInfo.BlobCount blob@(BlobInfo.BlobCount != 1 ? "s" : "")</span>
+        </div>
+        <div class="card-body">
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.MaxFeePerBlobGas]</div>
+                <div class="col-sm-9 detail-value text-color-warning">@ExplorerFormatUtils.FormatGwei(BlobInfo.MaxFeePerBlobGas) Gwei</div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.BlobCount]</div>
+                <div class="col-sm-9 detail-value">@BlobInfo.BlobCount</div>
+            </div>
+            <hr class="my-2 explorer-detail-separator" />
+            <div class="detail-label mb-2">@L[ExplorerKeys.TransactionDetail.BlobVersionedHashes]</div>
+            @for (var bi = 0; bi < BlobInfo.BlobVersionedHashes.Count; bi++)
+            {
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge explorer-badge explorer-badge-warning text-xs">Blob #@bi</span>
+                    <HexDisplay Value="@BlobInfo.BlobVersionedHashes[bi]" MaxLength="66" />
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public BlobTransactionInfo? BlobInfo { get; set; }
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+}

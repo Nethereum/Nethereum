@@ -1,0 +1,881 @@
+@page "/mud/records"
+@page "/mud/records/{Address}/{TableId}"
+@using Microsoft.Extensions.Options
+@inject IMudExplorerService MudExplorer
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerLocalizer L
+@inject ILogger<MudRecords> Logger
+
+<PageTitle>@L[ExplorerKeys.MudRecords.Title] - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@_breadcrumbs" />
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        <i class="bi bi-database me-2"></i>
+        @if (!string.IsNullOrEmpty(_tableName))
+        {
+            <span>@_tableName</span>
+        }
+        else
+        {
+            <span>@L[ExplorerKeys.MudRecords.Title]</span>
+        }
+    </h4>
+    <div class="d-flex align-items-center gap-3">
+        @if (_normalisedTableName != null)
+        {
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button"
+                        class="btn @(_viewMode == ViewMode.Table ? "btn-primary" : "btn-outline-secondary")"
+                        @onclick="() => SwitchView(ViewMode.Table)">
+                    <i class="bi bi-table me-1"></i>Table
+                </button>
+                <button type="button"
+                        class="btn @(_viewMode == ViewMode.Raw ? "btn-primary" : "btn-outline-secondary")"
+                        @onclick="() => SwitchView(ViewMode.Raw)">
+                    <i class="bi bi-braces me-1"></i>Raw
+                </button>
+            </div>
+        }
+        @if (_recordCount > 0)
+        {
+            <span class="explorer-subtitle">@L.GetString(ExplorerKeys.MudRecords.RecordsCount, _recordCount)</span>
+        }
+    </div>
+</div>
+
+@if (!Options.Value.EnableMud)
+{
+    <EmptyState IconClass="bi bi-database" Title="MUD Explorer Disabled" Subtitle="MUD World browsing is not enabled for this explorer instance." />
+}
+else if (string.IsNullOrEmpty(Address) || string.IsNullOrEmpty(TableId))
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">@L[ExplorerKeys.MudRecords.WorldAddress]</label>
+                    <select class="form-select form-select-sm" @bind="_selectedWorld" @bind:after="OnWorldChanged">
+                        <option value="">@L[ExplorerKeys.MudRecords.SelectAWorld]</option>
+                        @foreach (var world in _worlds)
+                        {
+                            <option value="@world">@world</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">@L[ExplorerKeys.MudRecords.TableLabel]</label>
+                    <select class="form-select form-select-sm" @bind="_selectedTable" @bind:after="OnTableChanged">
+                        <option value="">@L[ExplorerKeys.MudRecords.AllTables]</option>
+                        @foreach (var table in _tableOptions)
+                        {
+                            <option value="@table.TableId">@table.DisplayName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center gap-3 mb-3 explorer-subtitle">
+        <div>
+            <span class="text-color-dim">@L[ExplorerKeys.MudRecords.WorldAddress]:</span>
+            <HexDisplay Value="@Address" Link="@($"/account/{Address}")" MaxLength="16" />
+        </div>
+        <div>
+            <span class="text-color-dim">Table ID:</span>
+            @{var headerDecoded = TryDecodeResourceId(TableId);}
+            @if (headerDecoded != null)
+            {
+                <span title="@TableId">
+                    <span class="text-color-accent">@headerDecoded</span>
+                    <small class="ms-1 font-monospace text-color-dim text-xxs">@TableId[..10]...</small>
+                </span>
+            }
+            else
+            {
+                <HexDisplay Value="@TableId" MaxLength="20" />
+            }
+        </div>
+    </div>
+}
+
+@* ── Query Builder (normalised mode only) ── *@
+@if (_viewMode == ViewMode.Table && _normalisedTableName != null && _queryColumns.Any())
+{
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <span class="explorer-subtitle">
+                <i class="bi bi-funnel me-1"></i>@L[ExplorerKeys.MudRecords.QueryFilters]
+            </span>
+            <div class="d-flex gap-1">
+                @if (_filterConditions.Any())
+                {
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters" title="@L[ExplorerKeys.MudRecords.Clear]">
+                        <i class="bi bi-x-circle me-1"></i>@L[ExplorerKeys.MudRecords.Clear]
+                    </button>
+                }
+                <button class="btn btn-outline-primary btn-sm" @onclick="AddFilterCondition">
+                    <i class="bi bi-plus me-1"></i>@L[ExplorerKeys.MudRecords.AddFilter]
+                </button>
+            </div>
+        </div>
+        @if (_filterConditions.Any() || !string.IsNullOrEmpty(_orderByField))
+        {
+            <div class="card-body py-2">
+                @for (int i = 0; i < _filterConditions.Count; i++)
+                {
+                    var idx = i;
+                    var condition = _filterConditions[idx];
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm"
+                                    value="@condition.FieldName"
+                                    @onchange="@(e => { condition.FieldName = e.Value?.ToString() ?? ""; condition.DataType = _queryColumns.FirstOrDefault(c => c.Name == condition.FieldName)?.DataType ?? ""; })">
+                                <option value="">@L[ExplorerKeys.MudRecords.FieldPlaceholder]</option>
+                                @foreach (var col in _queryColumns)
+                                {
+                                    <option value="@col.Name">@col.Name (@col.DataType)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm"
+                                    value="@condition.Operator"
+                                    @onchange="@(e => { condition.Operator = e.Value?.ToString() ?? "="; })">
+                                <option value="=">=</option>
+                                <option value="!=">!=</option>
+                                <option value=">">&gt;</option>
+                                <option value="<">&lt;</option>
+                                <option value=">=">&gt;=</option>
+                                <option value="<=">&lt;=</option>
+                                <option value="LIKE">LIKE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="@L[ExplorerKeys.MudRecords.ValuePlaceholder]"
+                                   value="@condition.Value"
+                                   @oninput="@(e => { condition.Value = e.Value?.ToString() ?? ""; })"
+                                   @onkeydown="@(async (e) => { if (e.Key == "Enter") await ExecuteQuery(); })" />
+                        </div>
+                        <div class="col-md-2 d-flex gap-1">
+                            <button class="btn btn-outline-danger btn-sm" @onclick="@(() => RemoveFilterCondition(idx))" title="Remove">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+                <div class="row g-2 align-items-center mt-1">
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm"
+                                value="@_orderByField"
+                                @onchange="@(e => { _orderByField = e.Value?.ToString() ?? ""; })">
+                            <option value="">@L[ExplorerKeys.MudRecords.OrderBy]</option>
+                            @foreach (var col in _queryColumns)
+                            {
+                                <option value="@col.Name">@col.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm"
+                                value="@(_orderByDesc ? "DESC" : "ASC")"
+                                @onchange="@(e => { _orderByDesc = e.Value?.ToString() == "DESC"; })">
+                            <option value="ASC">ASC</option>
+                            <option value="DESC">DESC</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5"></div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-sm w-100" @onclick="ExecuteQuery">
+                            <i class="bi bi-play-fill me-1"></i>@L[ExplorerKeys.MudRecords.QueryButton]
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>@_errorMessage</div>
+        <button type="button" class="btn-close ms-auto" @onclick="@(() => _errorMessage = null)"></button>
+    </div>
+}
+
+@if (_loading)
+{
+    <LoadingSpinner Message="@L[ExplorerKeys.MudRecords.LoadingRecords]" />
+}
+else if (_viewMode == ViewMode.Table && _normalisedRecords != null && _normalisedRecords.Any())
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            @foreach (var col in _normalisedColumnNames)
+                            {
+                                <th>
+                                    @col
+                                    @{ var colInfo = _queryColumns.FirstOrDefault(c => c.Name == col); }
+                                    @if (ResourceIdColumnNames.Contains(col))
+                                    {
+                                        <small class="d-block text-color-dim text-xxs">resourceId</small>
+                                    }
+                                    else if (colInfo != null)
+                                    {
+                                        <small class="d-block text-color-dim text-xxs">@colInfo.DataType</small>
+                                    }
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var record in _normalisedRecords)
+                        {
+                            <tr>
+                                @foreach (var col in _normalisedColumnNames)
+                                {
+                                    <td>
+                                        @if (record.Fields.TryGetValue(col, out var val))
+                                        {
+                                            @if (IsEthereumAddress(val))
+                                            {
+                                                <HexDisplay Value="@val" Link="@($"/account/{val}")" MaxLength="20" />
+                                            }
+                                            else if (ResourceIdColumnNames.Contains(col) && IsResourceId(val))
+                                            {
+                                                var decoded = TryDecodeResourceId(val);
+                                                @if (decoded != null)
+                                                {
+                                                    <span title="@val">
+                                                        <span class="text-color-accent">@decoded</span>
+                                                        <small class="ms-1 font-monospace text-color-dim text-xxs">@val[..10]...</small>
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <HexDisplay Value="@val" MaxLength="18" />
+                                                }
+                                            }
+                                            else if (IsResourceId(val))
+                                            {
+                                                var decoded = TryDecodeResourceId(val);
+                                                @if (decoded != null)
+                                                {
+                                                    <span title="@val">
+                                                        <span class="text-color-accent">@decoded</span>
+                                                        <small class="ms-1 font-monospace text-color-dim text-xxs">@val[..10]...</small>
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <HexDisplay Value="@val" MaxLength="18" />
+                                                }
+                                            }
+                                            else if (IsHexValue(val))
+                                            {
+                                                <HexDisplay Value="@val" MaxLength="18" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-color-primary word-break-all">@val</span>
+                                            }
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <Pagination CurrentPage="@_page" HasMore="@_hasMore" TotalPages="@_totalPages" OnPageChanged="@GoToPage" />
+    </div>
+}
+else if (_viewMode == ViewMode.Table && _normalisedTableName != null && !_loading)
+{
+    <EmptyState IconClass="bi bi-table" Title="@L[ExplorerKeys.MudRecords.NoResults]" Subtitle="@L[ExplorerKeys.MudRecords.NoResultsSubtitle]" />
+}
+else if (_decodedRecords != null && _decodedRecords.Any())
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            @if (_columnHeaders.Any())
+                            {
+                                @foreach (var col in _columnHeaders)
+                                {
+                                    <th>
+                                        @col.Name
+                                        @if (col.IsKey)
+                                        {
+                                            <i class="bi bi-key-fill ms-1 text-color-accent text-xxs" title="@L[ExplorerKeys.MudRecords.KeyField]"></i>
+                                        }
+                                        @if (!string.IsNullOrEmpty(col.AbiType))
+                                        {
+                                            <small class="d-block text-color-dim text-xxs">@col.AbiType</small>
+                                        }
+                                    </th>
+                                }
+                            }
+                            <th>@L[ExplorerKeys.Table.Block]</th>
+                            <th>@L[ExplorerKeys.Table.Status]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var record in _decodedRecords)
+                        {
+                            <tr class="@(record.IsDeleted ? "opacity-50" : "")">
+                                @if (_columnHeaders.Any())
+                                {
+                                    @foreach (var col in _columnHeaders)
+                                    {
+                                        var field = record.Fields.FirstOrDefault(f => f.Name == col.Name);
+                                        <td>
+                                            @if (field != null)
+                                            {
+                                                @if (field.AbiType == "address" || IsEthereumAddress(field.Value))
+                                                {
+                                                    <HexDisplay Value="@field.Value" Link="@($"/account/{field.Value}")" MaxLength="20" />
+                                                }
+                                                else if (field.AbiType == "bytes32" && IsResourceId(field.Value))
+                                                {
+                                                    var decodedRaw = TryDecodeResourceId(field.Value);
+                                                    @if (decodedRaw != null)
+                                                    {
+                                                        <span title="@field.Value">
+                                                            <span class="text-color-accent">@decodedRaw</span>
+                                                            <small class="ms-1 font-monospace text-color-dim text-xxs">@field.Value[..10]...</small>
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <HexDisplay Value="@field.Value" MaxLength="18" />
+                                                    }
+                                                }
+                                                else if (IsHexValue(field.Value))
+                                                {
+                                                    <HexDisplay Value="@field.Value" MaxLength="18" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-color-primary word-break-all">@field.Value</span>
+                                                }
+                                            }
+                                        </td>
+                                    }
+                                }
+                                <td>
+                                    @if (!string.IsNullOrEmpty(record.BlockNumber))
+                                    {
+                                        <a href="@($"/block/{ExplorerFormatUtils.FormatBlockNumber(record.BlockNumber)}")">@ExplorerFormatUtils.FormatBlockNumber(record.BlockNumber)</a>
+                                    }
+                                </td>
+                                <td>
+                                    @if (record.IsDeleted)
+                                    {
+                                        <span class="badge badge-danger">Deleted</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-success">@L[ExplorerKeys.MudRecords.Active]</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <Pagination CurrentPage="@_page" HasMore="@_hasMore" TotalPages="@_totalPages" OnPageChanged="@GoToPage" />
+    </div>
+}
+else if (_rawRecords != null && _rawRecords.Any())
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Table ID</th>
+                            <th>@L[ExplorerKeys.MudRecords.Key]</th>
+                            <th>@L[ExplorerKeys.MudRecords.StaticData]</th>
+                            <th>@L[ExplorerKeys.MudRecords.DynamicData]</th>
+                            <th>@L[ExplorerKeys.Table.Block]</th>
+                            <th>@L[ExplorerKeys.Table.Status]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var record in _rawRecords)
+                        {
+                            <tr class="@(record.IsDeleted ? "opacity-50" : "")">
+                                <td><HexDisplay Value="@record.TableId" MaxLength="18" /></td>
+                                <td><HexDisplay Value="@record.Key" MaxLength="18" /></td>
+                                <td><HexDisplay Value="@record.StaticData" MaxLength="18" /></td>
+                                <td><HexDisplay Value="@record.DynamicData" MaxLength="18" /></td>
+                                <td>@ExplorerFormatUtils.FormatBlockNumber(record.BlockNumber)</td>
+                                <td>
+                                    @if (record.IsDeleted)
+                                    {
+                                        <span class="badge badge-danger">Deleted</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <Pagination CurrentPage="@_page" HasMore="@_hasMore" OnPageChanged="@GoToPage" />
+    </div>
+}
+else if (!string.IsNullOrEmpty(_activeAddress))
+{
+    <EmptyState IconClass="bi bi-database" Title="@L[ExplorerKeys.MudRecords.NoRecords]" Subtitle="@L[ExplorerKeys.MudRecords.NoRecordsSubtitle]" />
+}
+else
+{
+    <EmptyState IconClass="bi bi-database" Title="@L[ExplorerKeys.MudRecords.SelectAWorld]" Subtitle="@L[ExplorerKeys.MudRecords.SelectAWorldSubtitle]" />
+}
+
+@code {
+    [Parameter] public string? Address { get; set; }
+    [Parameter] public string? TableId { get; set; }
+
+    private enum ViewMode { Raw, Table }
+
+    private static readonly HashSet<string> ResourceIdColumnNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "systemid", "namespaceid", "resourceid", "tableid", "delegationcontrolid"
+    };
+
+    private List<string> _worlds = new();
+    private List<TableOption> _tableOptions = new();
+    private List<MudDecodedRecordView>? _decodedRecords;
+    private List<MudNormalisedRecordView>? _normalisedRecords;
+    private List<MudRecordView>? _rawRecords;
+    private List<ColumnHeader> _columnHeaders = new();
+    private List<string> _normalisedColumnNames = new();
+    private List<MudColumnInfo> _queryColumns = new();
+    private List<MudQueryCondition> _filterConditions = new();
+    private List<Breadcrumb.BreadcrumbItem> _breadcrumbs = new();
+    private string _selectedWorld = "";
+    private string _selectedTable = "";
+    private string _activeAddress = "";
+    private string _activeTableId = "";
+    private string _tableName = "";
+    private string? _normalisedTableName;
+    private string _orderByField = "";
+    private bool _orderByDesc;
+    private bool _hasActiveFilters;
+    private int _recordCount;
+    private int _page = 1;
+    private int _totalPages;
+    private bool _hasMore;
+    private bool _loading;
+    private string? _errorMessage;
+    private ViewMode _viewMode = ViewMode.Raw;
+    private const int PageSize = ExplorerConstants.DefaultPageSize;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Address) && !string.IsNullOrEmpty(TableId))
+        {
+            _activeAddress = Address;
+            _activeTableId = Uri.UnescapeDataString(TableId);
+            UpdateBreadcrumbs();
+            await LoadDecodedRecordsAsync();
+            await DetectNormalisedTableAsync();
+            if (!string.IsNullOrEmpty(_normalisedTableName))
+            {
+                await SwitchView(ViewMode.Table);
+            }
+        }
+        else
+        {
+            _worlds = await MudExplorer.GetWorldAddressesAsync();
+            UpdateBreadcrumbs();
+        }
+    }
+
+    private void UpdateBreadcrumbs()
+    {
+        _breadcrumbs = new List<Breadcrumb.BreadcrumbItem>
+        {
+            new() { Label = L[ExplorerKeys.MudWorlds.Title], Href = "/mud" }
+        };
+
+        if (!string.IsNullOrEmpty(_activeAddress))
+        {
+            _breadcrumbs.Add(new() { Label = L[ExplorerKeys.MudTables.Title], Href = $"/mud/tables/{_activeAddress}" });
+
+            if (!string.IsNullOrEmpty(_tableName))
+                _breadcrumbs.Add(new() { Label = _tableName });
+            else if (!string.IsNullOrEmpty(_activeTableId))
+                _breadcrumbs.Add(new() { Label = L[ExplorerKeys.MudRecords.Title] });
+        }
+        else
+        {
+            _breadcrumbs.Add(new() { Label = L[ExplorerKeys.MudRecords.Title] });
+        }
+    }
+
+    private async Task OnWorldChanged()
+    {
+        _activeAddress = _selectedWorld;
+        _activeTableId = "";
+        _selectedTable = "";
+        _decodedRecords = null;
+        _normalisedRecords = null;
+        _rawRecords = null;
+        _tableOptions = new();
+        _normalisedTableName = null;
+        _queryColumns = new();
+        _filterConditions = new();
+        _orderByField = "";
+        _orderByDesc = false;
+        _hasActiveFilters = false;
+        _viewMode = ViewMode.Raw;
+        _page = 1;
+
+        if (!string.IsNullOrEmpty(_activeAddress))
+        {
+            var tables = await MudExplorer.GetTablesForWorldAsync(_activeAddress);
+            _tableOptions = tables.Select(t => new TableOption
+            {
+                TableId = t.TableId,
+                DisplayName = string.IsNullOrEmpty(t.Namespace)
+                    ? (string.IsNullOrEmpty(t.Name) ? t.TableId : t.Name)
+                    : $"{t.Namespace}:{t.Name}",
+                NormalisedTableName = t.HasNormalisedTable ? t.NormalisedTableName : null
+            }).ToList();
+
+            await LoadRawRecordsAsync();
+        }
+
+        UpdateBreadcrumbs();
+    }
+
+    private async Task OnTableChanged()
+    {
+        _activeTableId = _selectedTable;
+        _page = 1;
+        _viewMode = ViewMode.Raw;
+        _normalisedRecords = null;
+        _filterConditions = new();
+        _orderByField = "";
+        _orderByDesc = false;
+        _hasActiveFilters = false;
+
+        if (!string.IsNullOrEmpty(_activeTableId))
+        {
+            await LoadDecodedRecordsAsync();
+            await DetectNormalisedTableAsync();
+            if (!string.IsNullOrEmpty(_normalisedTableName))
+            {
+                await SwitchView(ViewMode.Table);
+            }
+        }
+        else
+        {
+            _normalisedTableName = null;
+            _queryColumns = new();
+            await LoadRawRecordsAsync();
+        }
+
+        UpdateBreadcrumbs();
+    }
+
+    private async Task DetectNormalisedTableAsync()
+    {
+        _normalisedTableName = null;
+        _queryColumns = new();
+
+        if (string.IsNullOrEmpty(_activeAddress) || string.IsNullOrEmpty(_activeTableId))
+            return;
+
+        try
+        {
+            var tables = await MudExplorer.GetTablesForWorldAsync(_activeAddress);
+            var match = tables.FirstOrDefault(t => t.TableId == _activeTableId);
+            if (match is { HasNormalisedTable: true })
+                _normalisedTableName = match.NormalisedTableName;
+        }
+        catch { }
+
+        var selected = _tableOptions.FirstOrDefault(t => t.TableId == _activeTableId);
+        if (selected?.NormalisedTableName != null)
+            _normalisedTableName = selected.NormalisedTableName;
+
+        if (!string.IsNullOrEmpty(_normalisedTableName))
+        {
+            _queryColumns = await MudExplorer.GetNormalisedTableColumnsAsync(_normalisedTableName);
+        }
+    }
+
+    private async Task SwitchView(ViewMode mode)
+    {
+        if (_viewMode == mode) return;
+        _viewMode = mode;
+        _page = 1;
+
+        if (mode == ViewMode.Table && !string.IsNullOrEmpty(_normalisedTableName))
+        {
+            if (!_queryColumns.Any())
+                _queryColumns = await MudExplorer.GetNormalisedTableColumnsAsync(_normalisedTableName);
+            await LoadNormalisedRecordsAsync();
+        }
+        else
+        {
+            await LoadDecodedRecordsAsync();
+        }
+    }
+
+    private void AddFilterCondition()
+    {
+        _filterConditions.Add(new MudQueryCondition());
+    }
+
+    private async Task RemoveFilterCondition(int index)
+    {
+        if (index >= 0 && index < _filterConditions.Count)
+            _filterConditions.RemoveAt(index);
+
+        if (!_filterConditions.Any() && string.IsNullOrEmpty(_orderByField))
+        {
+            _hasActiveFilters = false;
+            _page = 1;
+            await LoadNormalisedRecordsAsync();
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        _filterConditions.Clear();
+        _orderByField = "";
+        _orderByDesc = false;
+        _hasActiveFilters = false;
+        _page = 1;
+        await LoadNormalisedRecordsAsync();
+    }
+
+    private async Task ExecuteQuery()
+    {
+        _page = 1;
+        _hasActiveFilters = _filterConditions.Any(c => !string.IsNullOrWhiteSpace(c.FieldName) && !string.IsNullOrWhiteSpace(c.Value))
+            || !string.IsNullOrEmpty(_orderByField);
+        await LoadNormalisedRecordsAsync();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        _page = page;
+
+        if (_viewMode == ViewMode.Table && !string.IsNullOrEmpty(_normalisedTableName))
+            await LoadNormalisedRecordsAsync();
+        else if (!string.IsNullOrEmpty(_activeTableId))
+            await LoadDecodedRecordsAsync();
+        else
+            await LoadRawRecordsAsync();
+    }
+
+    private async Task LoadDecodedRecordsAsync()
+    {
+        if (string.IsNullOrEmpty(_activeAddress) || string.IsNullOrEmpty(_activeTableId)) return;
+
+        _loading = true;
+        _rawRecords = null;
+        _normalisedRecords = null;
+        _errorMessage = null;
+
+        try
+        {
+            _decodedRecords = await MudExplorer.GetDecodedRecordsAsync(_activeAddress, _activeTableId, _page, PageSize);
+            _recordCount = await MudExplorer.GetRecordCountAsync(_activeAddress, _activeTableId);
+            _totalPages = (_recordCount + PageSize - 1) / PageSize;
+            _hasMore = _decodedRecords.Count == PageSize;
+
+            if (_decodedRecords.Any())
+            {
+                _tableName = _decodedRecords[0].TableName;
+                BuildColumnHeaders(_decodedRecords);
+            }
+        }
+        catch (Exception ex)
+        {
+            _decodedRecords = new();
+            Logger.LogError(ex, "Failed to load decoded MUD records for {Address}/{TableId}", _activeAddress, TableId);
+            _errorMessage = L[ExplorerKeys.MudRecords.FailedToLoadRecords];
+        }
+        finally
+        {
+            _loading = false;
+            UpdateBreadcrumbs();
+        }
+    }
+
+    private async Task LoadNormalisedRecordsAsync()
+    {
+        if (string.IsNullOrEmpty(_normalisedTableName)) return;
+
+        _loading = true;
+        _decodedRecords = null;
+        _rawRecords = null;
+        _errorMessage = null;
+
+        try
+        {
+            var activeConditions = _filterConditions
+                .Where(c => !string.IsNullOrWhiteSpace(c.FieldName) && !string.IsNullOrWhiteSpace(c.Value))
+                .ToList();
+
+            if (activeConditions.Any() || !string.IsNullOrEmpty(_orderByField))
+            {
+                _normalisedRecords = await MudExplorer.QueryNormalisedRecordsAsync(
+                    _normalisedTableName, activeConditions,
+                    string.IsNullOrEmpty(_orderByField) ? null : _orderByField, _orderByDesc,
+                    _page, PageSize);
+                _recordCount = await MudExplorer.CountNormalisedRecordsAsync(_normalisedTableName, activeConditions);
+            }
+            else
+            {
+                _normalisedRecords = await MudExplorer.GetNormalisedRecordsAsync(_normalisedTableName, _page, PageSize);
+                _recordCount = await MudExplorer.GetNormalisedRecordCountAsync(_normalisedTableName);
+            }
+
+            _totalPages = (_recordCount + PageSize - 1) / PageSize;
+            _hasMore = _normalisedRecords.Count == PageSize;
+
+            if (_normalisedRecords.Any())
+            {
+                _normalisedColumnNames = _normalisedRecords[0].Fields.Keys.ToList();
+            }
+            else if (_queryColumns.Any())
+            {
+                _normalisedColumnNames = _queryColumns.Select(c => c.Name).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            _normalisedRecords = new();
+            Logger.LogError(ex, "Normalised MUD query failed for {Table}", _normalisedTableName);
+            _errorMessage = L[ExplorerKeys.MudRecords.QueryFailed];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadRawRecordsAsync()
+    {
+        if (string.IsNullOrEmpty(_activeAddress)) return;
+
+        _loading = true;
+        _decodedRecords = null;
+        _normalisedRecords = null;
+        _columnHeaders = new();
+        _tableName = "";
+        _errorMessage = null;
+
+        try
+        {
+            _rawRecords = await MudExplorer.GetRecordsAsync(_activeAddress, null, _page, PageSize);
+            _recordCount = await MudExplorer.GetRecordCountAsync(_activeAddress, null);
+            _hasMore = _rawRecords.Count == PageSize;
+        }
+        catch (Exception ex)
+        {
+            _rawRecords = new();
+            Logger.LogError(ex, "Failed to load raw MUD records for {Address}", _activeAddress);
+            _errorMessage = L[ExplorerKeys.MudRecords.FailedToLoadRecords];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void BuildColumnHeaders(List<MudDecodedRecordView> records)
+    {
+        var fieldMap = new Dictionary<string, ColumnHeader>();
+        foreach (var record in records)
+        {
+            foreach (var field in record.Fields)
+            {
+                if (!fieldMap.ContainsKey(field.Name))
+                {
+                    fieldMap[field.Name] = new ColumnHeader
+                    {
+                        Name = field.Name,
+                        AbiType = field.AbiType,
+                        IsKey = field.IsKey
+                    };
+                }
+            }
+        }
+        _columnHeaders = fieldMap.Values.OrderByDescending(c => c.IsKey).ThenBy(c => c.Name).ToList();
+    }
+
+    private static bool IsHexValue(string value) =>
+        !string.IsNullOrEmpty(value) && value.StartsWith("0x") && value.Length > 10;
+
+    private static bool IsEthereumAddress(string value) =>
+        !string.IsNullOrEmpty(value) && value.StartsWith("0x") && value.Length == 42 &&
+        value[2..].All(c => char.IsAsciiHexDigit(c));
+
+    private static bool IsResourceId(string value) =>
+        !string.IsNullOrEmpty(value) && value.StartsWith("0x") && value.Length == 66;
+
+    private static string? TryDecodeResourceId(string hex)
+    {
+        try
+        {
+            var bytes = Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.HexToByteArray(hex);
+            if (bytes.Length != 32) return null;
+            var resource = Nethereum.Mud.EncodingDecoding.ResourceEncoder.Decode(bytes);
+            if (string.IsNullOrEmpty(resource.Name)) return null;
+            return string.IsNullOrEmpty(resource.Namespace)
+                ? resource.Name
+                : $"{resource.Namespace}:{resource.Name}";
+        }
+        catch { return null; }
+    }
+
+    private class TableOption
+    {
+        public string TableId { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string? NormalisedTableName { get; set; }
+    }
+
+    private class ColumnHeader
+    {
+        public string Name { get; set; } = "";
+        public string AbiType { get; set; } = "";
+        public bool IsKey { get; set; }
+    }
+}

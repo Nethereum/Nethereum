@@ -1,0 +1,23 @@
+@inject ExplorerLocalizer L
+
+<div class="text-center py-5">
+    <div class="mb-3 text-color-dim" style="opacity: 0.6;">
+        <i class="@IconClass" style="font-size: 3rem;"></i>
+    </div>
+    <h5>@(Title ?? L[ExplorerKeys.Shared.NoData])</h5>
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <p class="mb-0 text-color-secondary" style="max-width: 400px; margin: 0 auto;">@Subtitle</p>
+    }
+    @if (ChildContent != null)
+    {
+        <div class="mt-3">@ChildContent</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string IconClass { get; set; } = "bi bi-inbox";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

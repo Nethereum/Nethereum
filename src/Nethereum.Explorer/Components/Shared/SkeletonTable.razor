@@ -1,0 +1,34 @@
+<div class="table-responsive">
+    <table class="table mb-0">
+        <thead>
+            <tr>
+                @for (int i = 0; i < Columns; i++)
+                {
+                    <th><div class="skeleton-line" style="width: 60%;"></div></th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @for (int row = 0; row < Rows; row++)
+            {
+                <tr>
+                    @for (int col = 0; col < Columns; col++)
+                    {
+                        <td><div class="skeleton-line" style="width: @GetRandomWidth(row, col)%;"></div></td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public int Rows { get; set; } = 5;
+    [Parameter] public int Columns { get; set; } = 4;
+
+    private static int GetRandomWidth(int row, int col)
+    {
+        var hash = (row * 7 + col * 13) % 4;
+        return hash switch { 0 => 85, 1 => 70, 2 => 55, _ => 90 };
+    }
+}

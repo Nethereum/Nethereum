@@ -1,0 +1,12 @@
+@inherits LayoutComponentBase
+@inject ExplorerLocalizer L
+
+<article class="content">
+    @Body
+</article>
+
+<div id="blazor-error-ui" data-nosnippet>
+    @L[ExplorerKeys.Errors.UnhandledError]
+    <a href="." class="reload">@L[ExplorerKeys.Errors.Reload]</a>
+    <span class="dismiss">&#x1F5D9;</span>
+</div>

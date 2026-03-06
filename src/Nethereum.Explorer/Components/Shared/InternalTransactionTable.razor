@@ -1,0 +1,204 @@
+@using Nethereum.ABI.FunctionEncoding
+@inject ExplorerLocalizer L
+
+@if (InternalTransactions != null && InternalTransactions.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 text-base">
+            <thead>
+                <tr>
+                    @if (ShowTxHashColumn)
+                    {
+                        <th>@L[ExplorerKeys.Table.TxHash]</th>
+                    }
+                    @if (ShowBlockColumn)
+                    {
+                        <th>@L[ExplorerKeys.Table.Block]</th>
+                    }
+                    @if (!ShowTxHashColumn)
+                    {
+                        <th style="width: 4%;">@L[ExplorerKeys.Table.Number]</th>
+                    }
+                    <th style="width: 3%;">@L[ExplorerKeys.Table.Depth]</th>
+                    <th style="width: 8%;">@L[ExplorerKeys.Table.Type]</th>
+                    <th>@L[ExplorerKeys.Table.Method]</th>
+                    @if (ContextAddress != null)
+                    {
+                        <th style="width: 3%;"></th>
+                    }
+                    <th>@L[ExplorerKeys.Table.From]</th>
+                    <th style="width: 20px;"></th>
+                    <th>@L[ExplorerKeys.Table.To]</th>
+                    <th class="text-end">@L[ExplorerKeys.Table.Value] (@CurrencySymbol)</th>
+                    <th class="text-end">@L[ExplorerKeys.Table.GasUsed]</th>
+                    <th style="width: 28px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var idx = 0; }
+                @foreach (var itx in InternalTransactions)
+                {
+                    var hasError = !string.IsNullOrEmpty(itx.Error);
+                    var methodName = ItxHelper?.GetMethodName(itx) ?? ExplorerFormatUtils.GetMethodName(itx.Input);
+                    var isSelector = !string.IsNullOrEmpty(methodName) && methodName.StartsWith("0x");
+                    var decoded = ItxHelper?.GetDecodedFunction(itx);
+                    var hasInput = !string.IsNullOrEmpty(itx.Input) && itx.Input != "0x";
+                    var hasOutput = !string.IsNullOrEmpty(itx.Output) && itx.Output != "0x";
+                    var hasDecodedParams = decoded != null && decoded.Parameters.Any();
+                    var hasDetail = hasError || !string.IsNullOrEmpty(itx.RevertReason) || hasDecodedParams || hasInput || hasOutput;
+
+                    var isSelf = ContextAddress != null && ExplorerFormatUtils.IsAddressMatch(itx.AddressFrom, ContextAddress) && ExplorerFormatUtils.IsAddressMatch(itx.AddressTo, ContextAddress);
+                    var isIncoming = ContextAddress != null && !isSelf && ExplorerFormatUtils.IsAddressMatch(itx.AddressTo, ContextAddress);
+                    var isOutgoing = ContextAddress != null && !isSelf && ExplorerFormatUtils.IsAddressMatch(itx.AddressFrom, ContextAddress);
+
+                    var colSpan = 10 + (ShowTxHashColumn ? 1 : 0) + (ShowBlockColumn ? 1 : 0) + (ContextAddress != null ? 1 : 0) - (ShowTxHashColumn ? 1 : 0);
+
+                    <tr class="@(hasError ? "table-danger" : "")">
+                        @if (ShowTxHashColumn)
+                        {
+                            <td><HexDisplay Value="@itx.TransactionHash" Link="@($"/transaction/{itx.TransactionHash}")" MaxLength="16" ShowCopy="false" /></td>
+                        }
+                        @if (ShowBlockColumn)
+                        {
+                            <td><a href="@($"/block/{itx.BlockNumber}")">@itx.BlockNumber</a></td>
+                        }
+                        @if (!ShowTxHashColumn)
+                        {
+                            <td class="text-color-dim">@idx</td>
+                        }
+                        <td class="text-color-dim">@itx.Depth</td>
+                        <td>
+                            <span class="badge" style="background: @InternalTransactionDecodingHelper.GetCallTypeBadgeColor(itx.Type ?? "CALL"); color: var(--text-primary); font-size: 0.7rem;">@(itx.Type ?? "CALL")</span>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(methodName))
+                            {
+                                <span class="badge font-monospace" style="background: @(isSelector ? "rgba(168, 178, 209, 0.15)" : "rgba(100, 255, 218, 0.15)"); color: @(isSelector ? "var(--text-secondary)" : "var(--primary-color)"); font-size: 0.7rem;">@methodName</span>
+                            }
+                        </td>
+                        @if (ContextAddress != null)
+                        {
+                            <td class="text-center px-1">
+                                @if (isSelf)
+                                {
+                                    <span class="badge explorer-badge explorer-badge-warning text-xxs">SELF</span>
+                                }
+                                else if (isIncoming)
+                                {
+                                    <span class="badge badge-success">IN</span>
+                                }
+                                else if (isOutgoing)
+                                {
+                                    <span class="badge badge-danger">OUT</span>
+                                }
+                            </td>
+                        }
+                        <td><HexDisplay Value="@itx.AddressFrom" Link="@($"/account/{itx.AddressFrom}")" MaxLength="14" ShowCopy="false" /></td>
+                        <td class="text-center px-0">
+                            @if (itx.Type is "CREATE" or "CREATE2")
+                            {
+                                <i class="bi bi-plus-circle text-color-primary"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-right text-color-dim"></i>
+                            }
+                        </td>
+                        <td>
+                            @if (itx.Type is "CREATE" or "CREATE2")
+                            {
+                                <span class="text-color-secondary text-md">@L[ExplorerKeys.Table.ContractCreation]</span>
+                                @if (!string.IsNullOrEmpty(itx.AddressTo))
+                                {
+                                    <i class="bi bi-arrow-right mx-1 text-color-primary text-xs"></i>
+                                    <HexDisplay Value="@itx.AddressTo" Link="@($"/contract/{itx.AddressTo}")" MaxLength="14" ShowCopy="false" />
+                                }
+                            }
+                            else if (string.IsNullOrEmpty(itx.AddressTo))
+                            {
+                                <span class="explorer-subtitle">@L[ExplorerKeys.Table.ContractCreation]</span>
+                            }
+                            else
+                            {
+                                <HexDisplay Value="@itx.AddressTo" Link="@($"/account/{itx.AddressTo}")" MaxLength="14" ShowCopy="false" />
+                            }
+                        </td>
+                        <td class="text-end font-monospace text-color-primary">@ExplorerFormatUtils.FormatEth(itx.Value)</td>
+                        <td class="text-end text-color-secondary">@ExplorerFormatUtils.FormatNumber(itx.GasUsed)</td>
+                        <td class="text-center px-1">
+                            @if (hasError)
+                            {
+                                <i class="bi bi-exclamation-triangle text-color-danger text-md" title="@itx.Error"></i>
+                            }
+                        </td>
+                    </tr>
+                    @if (hasDetail)
+                    {
+                        <tr>
+                            <td colspan="12" style="padding: 0.25rem 1rem 0.5rem 1rem; border-top: none;">
+                                @if (hasError)
+                                {
+                                    <div class="mb-1">
+                                        <i class="bi bi-exclamation-triangle me-1 text-color-danger text-sm"></i>
+                                        <span class="text-color-danger text-md">@itx.Error</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(itx.RevertReason))
+                                {
+                                    <div class="mb-1">
+                                        <span class="text-color-warning text-md" style="font-weight: 600;">@L[ExplorerKeys.Table.Revert]: </span>
+                                        <span class="font-monospace text-color-warning text-md">@itx.RevertReason</span>
+                                    </div>
+                                }
+                                @if (AdditionalErrorContent != null && hasError && !string.IsNullOrEmpty(itx.Output) && itx.Output != "0x" && itx.Output.Length >= 10)
+                                {
+                                    @AdditionalErrorContent(new InternalTxErrorContext { Transaction = itx, Index = idx })
+                                }
+                                @if (hasDecodedParams)
+                                {
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="text-sm text-color-secondary">@L[ExplorerKeys.Table.CallData]:</span>
+                                        <span class="text-color-primary text-md" style="font-weight: 600;">@decoded!.FunctionName</span>
+                                        <span class="font-monospace text-color-dim text-xs">@decoded.Signature</span>
+                                    </div>
+                                    <DecodedParametersTable Parameters="@decoded.Parameters" CssClass="mb-1" />
+                                }
+                                @if (hasInput)
+                                {
+                                    <div class="d-flex align-items-start gap-2 @(hasDecodedParams || hasError || !string.IsNullOrEmpty(itx.RevertReason) ? "mt-1" : "")">
+                                        <span class="text-sm text-color-secondary" style="white-space: nowrap;">@L[ExplorerKeys.Table.Input]:</span>
+                                        <span class="font-monospace text-xs word-break-all text-color-dim">@itx.Input</span>
+                                    </div>
+                                }
+                                @if (hasOutput)
+                                {
+                                    <div class="d-flex align-items-start gap-2 mt-1">
+                                        <span class="text-sm text-color-secondary" style="white-space: nowrap;">@L[ExplorerKeys.Table.Output]:</span>
+                                        <span class="font-monospace text-xs word-break-all text-color-dim">@itx.Output</span>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    idx++;
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public List<IInternalTransactionView>? InternalTransactions { get; set; }
+    [Parameter] public string CurrencySymbol { get; set; } = "ETH";
+    [Parameter] public string? ContextAddress { get; set; }
+    [Parameter] public bool ShowTxHashColumn { get; set; }
+    [Parameter] public bool ShowBlockColumn { get; set; }
+    [Parameter] public InternalTransactionDecodingHelper? ItxHelper { get; set; }
+    [Parameter] public RenderFragment<InternalTxErrorContext>? AdditionalErrorContent { get; set; }
+
+    public class InternalTxErrorContext
+    {
+        public IInternalTransactionView Transaction { get; set; } = default!;
+        public int Index { get; set; }
+    }
+}

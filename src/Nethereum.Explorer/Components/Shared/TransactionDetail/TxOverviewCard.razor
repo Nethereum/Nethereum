@@ -1,0 +1,86 @@
+@using Nethereum.Util
+
+<div class="card mb-3">
+    <div class="card-header bg-transparent">
+        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>@L[ExplorerKeys.TransactionDetail.Overview]</h6>
+    </div>
+    <div class="card-body">
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.TransactionHash]</div>
+            <div class="col-sm-9 detail-value">
+                <HexDisplay Value="@Tx.Hash" MaxLength="66" />
+            </div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.Block]</div>
+            <div class="col-sm-9 detail-value">
+                <a href="@($"/block/{Tx.BlockNumber}")">@Tx.BlockNumber</a>
+            </div>
+        </div>
+        @if (Tx.TimeStamp != 0)
+        {
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.Timestamp]</div>
+                <div class="col-sm-9 detail-value">
+                    <i class="bi bi-clock me-1 text-color-primary"></i>
+                    <span class="text-color-primary">@ExplorerFormatUtils.FormatAge(Tx.TimeStamp)</span>
+                    <span class="ms-2 text-color-secondary">(@ExplorerFormatUtils.FormatTimestamp(Tx.TimeStamp))</span>
+                </div>
+            </div>
+        }
+        <hr class="my-2 explorer-detail-separator" />
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.From]</div>
+            <div class="col-sm-9 detail-value">
+                <HexDisplay Value="@ExplorerFormatUtils.FormatAddress(Tx.AddressFrom)" Link="@($"/account/{Tx.AddressFrom}")" MaxLength="42" />
+            </div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.To]</div>
+            <div class="col-sm-9 detail-value">
+                @if (ExplorerFormatUtils.IsContractCreation(Tx.AddressTo))
+                {
+                    var contractAddr = Tx.NewContractAddress;
+                    if (string.IsNullOrEmpty(contractAddr))
+                    {
+                        contractAddr = DbInternalTxs?.FirstOrDefault(i => i.Depth == 0)?.AddressTo;
+                    }
+                    <span class="badge explorer-badge explorer-badge-info">
+                        <i class="bi bi-file-earmark-code me-1"></i>@L[ExplorerKeys.Table.ContractCreation]
+                    </span>
+                    @if (!string.IsNullOrEmpty(contractAddr))
+                    {
+                        <i class="bi bi-arrow-right mx-2 text-color-primary"></i>
+                        <HexDisplay Value="@ExplorerFormatUtils.FormatAddress(contractAddr)" Link="@($"/contract/{contractAddr}")" MaxLength="42" />
+                    }
+                }
+                else
+                {
+                    <HexDisplay Value="@ExplorerFormatUtils.FormatAddress(Tx.AddressTo)" Link="@($"/account/{Tx.AddressTo}")" MaxLength="42" />
+                }
+            </div>
+        </div>
+        <hr class="my-2 explorer-detail-separator" />
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.Value]</div>
+            <div class="col-sm-9 detail-value">
+                <strong class="text-color-primary">@ExplorerFormatUtils.FormatEth(Tx.Value) @CurrencySymbol</strong>
+            </div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.TransactionFee]</div>
+            <div class="col-sm-9 detail-value">
+                @{ var fee = ExplorerFormatUtils.ComputeFee(Tx.GasUsed, Tx.GasPrice); }
+                @(UnitConversion.Convert.FromWei(fee)) @CurrencySymbol
+                <span class="ms-1 text-color-secondary">(@(UnitConversion.Convert.FromWei(fee, UnitConversion.EthUnit.Gwei)) Gwei)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ITransactionView Tx { get; set; } = default!;
+    [Parameter] public List<IInternalTransactionView>? DbInternalTxs { get; set; }
+    [Parameter, EditorRequired] public string CurrencySymbol { get; set; } = "ETH";
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+}

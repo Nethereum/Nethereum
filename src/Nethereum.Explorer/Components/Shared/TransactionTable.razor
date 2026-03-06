@@ -1,0 +1,112 @@
+@inject ExplorerLocalizer L
+
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th></th>
+                <th>@L[ExplorerKeys.Table.TxHash]</th>
+                <th>@L[ExplorerKeys.Table.Method]</th>
+                <th>@L[ExplorerKeys.Table.Block]</th>
+                <th>@L[ExplorerKeys.Table.Age]</th>
+                @if (ContextAddress != null)
+                {
+                    <th></th>
+                }
+                <th>@L[ExplorerKeys.Table.From]</th>
+                <th></th>
+                <th>@L[ExplorerKeys.Table.To]</th>
+                <th class="text-end">@L[ExplorerKeys.Table.Value] (@CurrencySymbol)</th>
+                @if (ShowFeeColumn)
+                {
+                    <th class="text-end">@L[ExplorerKeys.Table.TxFee] (@CurrencySymbol)</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (Transactions != null)
+            {
+                @foreach (var tx in Transactions)
+                {
+                    var txIsSelf = ContextAddress != null && ExplorerFormatUtils.IsAddressMatch(tx.AddressFrom, ContextAddress) && ExplorerFormatUtils.IsAddressMatch(tx.AddressTo, ContextAddress);
+                    var txIsIncoming = ContextAddress != null && !txIsSelf && ExplorerFormatUtils.IsAddressMatch(tx.AddressTo, ContextAddress);
+                    <tr>
+                        <td class="text-center px-1 explorer-tx-status-icon">
+                            @if (tx.Failed)
+                            {
+                                <i class="bi bi-x-circle-fill text-color-danger" title="@L[ExplorerKeys.TransactionDetail.Failed]"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-check-circle-fill text-color-success" title="@L[ExplorerKeys.TransactionDetail.Success]"></i>
+                            }
+                        </td>
+                        <td><HexDisplay Value="@tx.Hash" Link="@($"/transaction/{tx.Hash}")" MaxLength="18" ShowCopy="false" /></td>
+                        <td>
+                            <span class="badge @ExplorerFormatUtils.GetMethodBadgeCssClass(tx.Input)">@ExplorerFormatUtils.GetMethodName(tx.Input)</span>
+                        </td>
+                        <td><a href="@($"/block/{tx.BlockNumber}")">@tx.BlockNumber</a></td>
+                        <td class="text-nowrap" title="@ExplorerFormatUtils.FormatTimestamp(tx.TimeStamp)">
+                            <span class="text-color-primary text-md">@ExplorerFormatUtils.FormatAge(tx.TimeStamp)</span>
+                        </td>
+                        @if (ContextAddress != null)
+                        {
+                            <td class="text-center px-1">
+                                @if (txIsSelf)
+                                {
+                                    <span class="badge explorer-badge explorer-badge-warning text-xxs">SELF</span>
+                                }
+                                else if (txIsIncoming)
+                                {
+                                    <span class="badge badge-success">IN</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger">OUT</span>
+                                }
+                            </td>
+                        }
+                        <td><HexDisplay Value="@tx.AddressFrom" Link="@($"/account/{tx.AddressFrom}")" MaxLength="14" ShowCopy="false" /></td>
+                        <td class="text-center px-0">
+                            @if (ExplorerFormatUtils.IsContractCreation(tx.AddressTo))
+                            {
+                                <span class="badge badge-info">CREATE</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-arrow-right text-color-dim"></i>
+                            }
+                        </td>
+                        <td>
+                            @if (ExplorerFormatUtils.IsContractCreation(tx.AddressTo))
+                            {
+                                <span class="explorer-subtitle">@L[ExplorerKeys.Table.ContractCreation]</span>
+                                @if (!string.IsNullOrEmpty(tx.NewContractAddress))
+                                {
+                                    <i class="bi bi-arrow-right mx-1 text-color-primary text-xs"></i>
+                                    <HexDisplay Value="@tx.NewContractAddress" Link="@($"/contract/{tx.NewContractAddress}")" MaxLength="14" ShowCopy="false" />
+                                }
+                            }
+                            else
+                            {
+                                <HexDisplay Value="@tx.AddressTo" Link="@($"/account/{tx.AddressTo}")" MaxLength="14" ShowCopy="false" />
+                            }
+                        </td>
+                        <td class="text-end font-monospace text-color-primary">@ExplorerFormatUtils.FormatEth(tx.Value)</td>
+                        @if (ShowFeeColumn)
+                        {
+                            <td class="text-end explorer-subtitle">@ExplorerFormatUtils.FormatEth(ExplorerFormatUtils.ComputeFee(tx.GasUsed, tx.GasPrice).ToString())</td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public List<ITransactionView>? Transactions { get; set; }
+    [Parameter] public string CurrencySymbol { get; set; } = "ETH";
+    [Parameter] public string? ContextAddress { get; set; }
+    [Parameter] public bool ShowFeeColumn { get; set; }
+}

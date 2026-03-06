@@ -1,0 +1,66 @@
+@using Nethereum.Explorer.Components.Shared
+@using Nethereum.Explorer.Services
+@inject ExplorerLocalizer L
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-boxes me-2"></i>@L[ExplorerKeys.Home.LatestBlocks]</span>
+        <a href="/blocks" class="btn btn-outline-primary btn-sm">@L[ExplorerKeys.Shared.ViewAll]</a>
+    </div>
+    <div class="card-body p-0">
+        @if (Blocks == null || !Blocks.Any())
+        {
+            <EmptyState IconClass="bi bi-boxes" Title="@L[ExplorerKeys.Home.NoBlocksYet]" Subtitle="@L[ExplorerKeys.Home.WaitingForBlocks]" />
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[ExplorerKeys.Table.Block]</th>
+                            <th>@L[ExplorerKeys.Table.Age]</th>
+                            <th>@L[ExplorerKeys.Table.Txns]</th>
+                            <th>@L[ExplorerKeys.Table.GasUsed]</th>
+                            <th>@L[ExplorerKeys.Table.Validator]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var block in Blocks)
+                        {
+                            var gasPercent = ExplorerFormatUtils.GasPercentage(block.GasUsed, block.GasLimit);
+                            <tr>
+                                <td>
+                                    <a href="/block/@block.BlockNumber">
+                                        <i class="bi bi-box me-1"></i>@block.BlockNumber
+                                    </a>
+                                </td>
+                                <td class="text-nowrap" title="@ExplorerFormatUtils.FormatTimestamp(block.TimeStamp)">
+                                    <span class="text-color-primary text-xs">@ExplorerFormatUtils.FormatAge(block.TimeStamp)</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">@block.TransactionCount</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-color-warning text-base">@ExplorerFormatUtils.FormatGas(block.GasUsed)</span>
+                                        <div class="gas-bar explorer-gas-bar-sm">
+                                            <div class="gas-bar-fill" style="width: @gasPercent%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <HexDisplay Value="@block.Miner" Link="@($"/account/{block.Miner}")" MaxLength="14" ShowCopy="false" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<IBlockView>? Blocks { get; set; }
+}

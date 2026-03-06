@@ -1,0 +1,61 @@
+@using Nethereum.ABI.FunctionEncoding
+@inject ExplorerLocalizer L
+
+@if (Parameters.Any())
+{
+    var paramsJson = Parameters.ConvertToJObject();
+    <div class="table-responsive @CssClass">
+        <table class="table table-sm mb-0 text-md">
+            <thead>
+                <tr>
+                    <th style="width:5%">@L[ExplorerKeys.Table.Number]</th>
+                    <th style="width:@(ShowIndexedColumn ? "18%" : "20%")">@L[ExplorerKeys.Table.Name]</th>
+                    <th style="width:@(ShowIndexedColumn ? "12%" : "15%")">@L[ExplorerKeys.Table.Type]</th>
+                    @if (ShowIndexedColumn)
+                    {
+                        <th style="width:8%">@L[ExplorerKeys.Table.Indexed]</th>
+                    }
+                    <th>@L[ExplorerKeys.Table.Value]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Parameters.Count; i++)
+                {
+                    var p = Parameters[i];
+                    var pName = p.Parameter?.GetParameterNameUsingDefaultIfNotSet() ?? L[ExplorerKeys.DecodedParams.Unknown];
+                    var pValue = paramsJson[pName]?.ToString() ?? "";
+                    <tr>
+                        <td class="text-color-dim">@i</td>
+                        <td style="font-weight: 500;">@pName</td>
+                        <td><span class="badge explorer-badge explorer-badge-neutral">@(p.Parameter?.Type ?? L[ExplorerKeys.DecodedParams.Unknown])</span></td>
+                        @if (ShowIndexedColumn)
+                        {
+                            <td>
+                                @if (p.Parameter?.Indexed == true)
+                                {
+                                    <span class="badge explorer-badge explorer-badge-info">indexed</span>
+                                }
+                            </td>
+                        }
+                        <td class="font-monospace word-break-all">
+                            @if (p.Parameter?.Type == "address" && pValue.Length == 42)
+                            {
+                                <HexDisplay Value="@pValue" Link="@($"/account/{pValue}")" MaxLength="42" />
+                            }
+                            else
+                            {
+                                @pValue
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public List<ParameterOutput> Parameters { get; set; } = new();
+    [Parameter] public bool ShowIndexedColumn { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+}

@@ -1,0 +1,211 @@
+@page "/mud/tables"
+@page "/mud/tables/{Address}"
+@using Microsoft.Extensions.Options
+@inject IMudExplorerService MudExplorer
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerLocalizer L
+
+<PageTitle>@L[ExplorerKeys.MudTables.Title] - Nethereum Explorer</PageTitle>
+
+@if (!string.IsNullOrEmpty(Address))
+{
+    <Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+    {
+        new() { Label = L[ExplorerKeys.MudWorlds.Title], Href = "/mud" },
+        new() { Label = L[ExplorerKeys.MudTables.Title] }
+    })" />
+}
+else
+{
+    <Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+    {
+        new() { Label = L[ExplorerKeys.MudWorlds.Title], Href = "/mud" },
+        new() { Label = L[ExplorerKeys.MudTables.Title] }
+    })" />
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-table me-2"></i>@L[ExplorerKeys.MudTables.Title]</h4>
+    @if (!string.IsNullOrEmpty(Address))
+    {
+        <div class="d-flex align-items-center gap-2">
+            <span class="explorer-subtitle">@L[ExplorerKeys.MudTables.World]</span>
+            <HexDisplay Value="@Address" Link="@($"/account/{Address}")" MaxLength="16" />
+        </div>
+    }
+</div>
+
+@if (!Options.Value.EnableMud)
+{
+    <EmptyState IconClass="bi bi-table" Title="MUD Explorer Disabled" Subtitle="MUD World browsing is not enabled for this explorer instance." />
+}
+else if (string.IsNullOrEmpty(Address))
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <label class="form-label small text-muted">@L[ExplorerKeys.MudTables.SelectWorldAddress]</label>
+            <select class="form-select form-select-sm" @bind="_selectedWorld" @bind:after="OnWorldSelected">
+                <option value="">@L[ExplorerKeys.MudTables.SelectAWorld]</option>
+                @foreach (var world in _worlds)
+                {
+                    <option value="@world">@world</option>
+                }
+            </select>
+        </div>
+    </div>
+}
+
+@if (_loading)
+{
+    <LoadingSpinner Message="@L[ExplorerKeys.MudTables.LoadingTables]" />
+}
+else if (_tables == null || !_tables.Any())
+{
+    @if (!string.IsNullOrEmpty(_activeAddress))
+    {
+        <EmptyState IconClass="bi bi-table" Title="@L[ExplorerKeys.MudTables.NoTablesFound]" Subtitle="@L[ExplorerKeys.MudTables.NoTablesSubtitle]" />
+    }
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var table in _tables)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="text-color-primary">
+                            @if (!string.IsNullOrEmpty(table.Namespace))
+                            {
+                                <span class="text-color-secondary">@table.Namespace:</span>
+                            }
+                            <strong>@(string.IsNullOrEmpty(table.Name) ? L[ExplorerKeys.MudTables.Unnamed] : table.Name)</strong>
+                        </span>
+                        <div class="d-flex gap-1">
+                            @if (table.HasNormalisedTable)
+                            {
+                                <span class="badge explorer-badge explorer-badge-green text-xxs" title="Table view available: @table.NormalisedTableName">
+                                    <i class="bi bi-table me-1"></i>SQL
+                                </span>
+                            }
+                            <span class="badge @GetResourceBadgeClass(table.ResourceType)">@table.ResourceType</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2 explorer-subtitle">
+                            <span>@L[ExplorerKeys.MudWorlds.Records]</span>
+                            <span class="badge badge-info">@table.RecordCount</span>
+                        </div>
+
+                        @if (table.KeyFields.Any())
+                        {
+                            <div class="mb-2">
+                                <small class="text-color-dim">@L[ExplorerKeys.MudTables.KeyFields]</small>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    @foreach (var field in table.KeyFields)
+                                    {
+                                        <span class="badge explorer-badge explorer-badge-primary text-xs">
+                                            @field.Name <span class="text-opacity-70">(@field.AbiType)</span>
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (table.ValueFields.Any())
+                        {
+                            <div class="mb-2">
+                                <small class="text-color-dim">@L[ExplorerKeys.MudTables.ValueFields]</small>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    @foreach (var field in table.ValueFields)
+                                    {
+                                        <span class="badge explorer-badge explorer-badge-blue text-xs">
+                                            @field.Name <span class="text-opacity-70">(@field.AbiType)</span>
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (!table.KeyFields.Any() && !table.ValueFields.Any())
+                        {
+                            <div class="mb-2">
+                                <small class="text-color-dim">Table ID</small>
+                                <div class="mt-1">
+                                    <HexDisplay Value="@table.TableId" MaxLength="24" />
+                                </div>
+                            </div>
+                        }
+
+                        <a href="@($"/mud/records/{_activeAddress}/{Uri.EscapeDataString(table.TableId)}")" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                            <i class="bi bi-eye me-1"></i>@L[ExplorerKeys.MudTables.BrowseRecords]
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Address { get; set; }
+
+    private List<string> _worlds = new();
+    private List<MudTableInfo>? _tables;
+    private string _selectedWorld = "";
+    private string _activeAddress = "";
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Address))
+        {
+            _activeAddress = Address;
+            await LoadTablesAsync();
+        }
+        else
+        {
+            _worlds = await MudExplorer.GetWorldAddressesAsync();
+            if (_worlds.Count == 1)
+            {
+                _activeAddress = _worlds[0];
+                await LoadTablesAsync();
+            }
+        }
+    }
+
+    private async Task OnWorldSelected()
+    {
+        _activeAddress = _selectedWorld;
+        if (!string.IsNullOrEmpty(_activeAddress))
+            await LoadTablesAsync();
+        else
+            _tables = null;
+    }
+
+    private async Task LoadTablesAsync()
+    {
+        _loading = true;
+        try
+        {
+            _tables = await MudExplorer.GetTablesForWorldAsync(_activeAddress);
+        }
+        catch
+        {
+            _tables = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string GetResourceBadgeClass(string resourceType) => resourceType switch
+    {
+        "table" => "badge-info",
+        "system" => "badge-warning",
+        "namespace" => "badge-success",
+        "offchain" => "badge-secondary",
+        _ => "badge-secondary"
+    };
+}

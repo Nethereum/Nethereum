@@ -1,0 +1,43 @@
+@using Microsoft.Extensions.Options
+@inject IMudExplorerService MudExplorer
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerLocalizer L
+
+@if (_visible)
+{
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-grid-3x3 me-1"></i>MUD
+        </a>
+        <ul class="dropdown-menu dropdown-menu-dark">
+            <li>
+                <a class="dropdown-item" href="/mud">
+                    <i class="bi bi-globe me-2"></i>@L[ExplorerKeys.Nav.Worlds]
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="/mud/tables">
+                    <i class="bi bi-table me-2"></i>@L[ExplorerKeys.Nav.Tables]
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="/mud/records">
+                    <i class="bi bi-database me-2"></i>@L[ExplorerKeys.Nav.Records]
+                </a>
+            </li>
+        </ul>
+    </li>
+}
+
+@code {
+    private bool _visible;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _visible = Options.Value.EnableMud && MudExplorer.IsAvailable && await MudExplorer.HasDataAsync();
+            StateHasChanged();
+        }
+    }
+}

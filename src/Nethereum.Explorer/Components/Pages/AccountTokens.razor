@@ -1,0 +1,313 @@
+@page "/account/{Address}/tokens"
+@using Microsoft.Extensions.Options
+@using Nethereum.BlockchainProcessing.BlockStorage.Entities
+@using Nethereum.Explorer.Services
+@inject ITokenExplorerService TokenExplorer
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerLocalizer L
+
+<PageTitle>@L[ExplorerKeys.AccountTokens.Title] @ExplorerFormatUtils.TruncateHex(Address, 16) - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[ExplorerKeys.Account.Address], Href = $"/account/{Address}" },
+    new() { Label = L[ExplorerKeys.AccountTokens.Title] }
+})" />
+
+<h4 class="mb-3"><i class="bi bi-coin me-2"></i>@L[ExplorerKeys.AccountTokens.Title] <HexDisplay Value="@ExplorerFormatUtils.FormatAddress(Address)" MaxLength="18" ShowCopy="false" /></h4>
+
+@if (!Options.Value.EnableTokens)
+{
+    <div class="card">
+        <div class="card-body">
+            <EmptyState IconClass="bi bi-coin" Title="Token Explorer Disabled" Subtitle="Token browsing is not enabled for this explorer instance." />
+        </div>
+    </div>
+}
+else if (!TokenExplorer.IsAvailable)
+{
+    <div class="card">
+        <div class="card-body">
+            <EmptyState IconClass="bi bi-exclamation-triangle" Title="@L[ExplorerKeys.AccountTokens.TokenIndexingNotAvailable]" Subtitle="@L[ExplorerKeys.AccountTokens.TokenIndexingSubtitle]" />
+        </div>
+    </div>
+}
+else
+{
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "balances" ? "active" : "")" @onclick="@(() => SetTab("balances"))">
+                <i class="bi bi-wallet2 me-1"></i>@L[ExplorerKeys.AccountTokens.Balances]
+                @if (_balances != null) { <span class="badge badge-info ms-1">@_balances.Count</span> }
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "nfts" ? "active" : "")" @onclick="@(() => SetTab("nfts"))">
+                <i class="bi bi-image me-1"></i>@L[ExplorerKeys.AccountTokens.Nfts]
+                @if (_nfts != null) { <span class="badge badge-info ms-1">@_nfts.Count</span> }
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "transfers" ? "active" : "")" @onclick="@(() => SetTab("transfers"))">
+                <i class="bi bi-arrow-left-right me-1"></i>@L[ExplorerKeys.AccountTokens.Transfers]
+            </button>
+        </li>
+    </ul>
+
+    @if (_activeTab == "balances")
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                @if (_balances == null)
+                {
+                    <div class="text-center py-4"><LoadingSpinner Message="@L[ExplorerKeys.AccountTokens.LoadingBalances]" /></div>
+                }
+                else if (!_balances.Any())
+                {
+                    <EmptyState IconClass="bi bi-wallet2" Title="@L[ExplorerKeys.AccountTokens.NoTokenBalances]" Subtitle="@L[ExplorerKeys.AccountTokens.NoTokenBalancesSubtitle]" />
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>@L[ExplorerKeys.Table.Type]</th>
+                                    <th>@L[ExplorerKeys.Table.Contract]</th>
+                                    <th class="text-end">@L[ExplorerKeys.Table.Balance]</th>
+                                    <th class="text-end">@L[ExplorerKeys.Table.LastUpdated]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var bal in _balances)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge @ExplorerFormatUtils.GetTokenTypeBadgeCssClass(bal.TokenType)">@bal.TokenType</span>
+                                        </td>
+                                        <td><HexDisplay Value="@bal.ContractAddress" Link="@($"/contract/{bal.ContractAddress}")" MaxLength="20" ShowCopy="false" /></td>
+                                        <td class="text-end font-monospace text-color-primary">@bal.Balance</td>
+                                        <td class="text-end explorer-subtitle">@L.GetString(ExplorerKeys.AccountTokens.BlockPrefix, bal.LastUpdatedBlockNumber)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (_activeTab == "nfts")
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                @if (_nfts == null)
+                {
+                    <div class="text-center py-4"><LoadingSpinner Message="@L[ExplorerKeys.AccountTokens.LoadingNfts]" /></div>
+                }
+                else if (!_nfts.Any())
+                {
+                    <EmptyState IconClass="bi bi-image" Title="@L[ExplorerKeys.AccountTokens.NoNfts]" Subtitle="@L[ExplorerKeys.AccountTokens.NoNftsSubtitle]" />
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>@L[ExplorerKeys.Table.Type]</th>
+                                    <th>@L[ExplorerKeys.Table.Contract]</th>
+                                    <th>@L[ExplorerKeys.Table.TokenId]</th>
+                                    <th class="text-end">@L[ExplorerKeys.Table.Amount]</th>
+                                    <th class="text-end">@L[ExplorerKeys.Table.LastUpdated]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var nft in _nfts)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge explorer-badge explorer-badge-purple text-xs">@nft.TokenType</span>
+                                        </td>
+                                        <td><HexDisplay Value="@nft.ContractAddress" Link="@($"/contract/{nft.ContractAddress}")" MaxLength="20" ShowCopy="false" /></td>
+                                        <td><span class="font-monospace text-color-primary">#@nft.TokenId</span></td>
+                                        <td class="text-end font-monospace text-color-primary">@nft.Amount</td>
+                                        <td class="text-end explorer-subtitle">@L.GetString(ExplorerKeys.AccountTokens.BlockPrefix, nft.LastUpdatedBlockNumber)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (_activeTab == "transfers")
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                @if (_transfers == null)
+                {
+                    <div class="text-center py-4"><LoadingSpinner Message="@L[ExplorerKeys.AccountTokens.LoadingTransfers]" /></div>
+                }
+                else if (!_transfers.Any())
+                {
+                    <EmptyState IconClass="bi bi-arrow-left-right" Title="@L[ExplorerKeys.AccountTokens.NoTransfers]" Subtitle="@L[ExplorerKeys.AccountTokens.NoTransfersSubtitle]" />
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>@L[ExplorerKeys.Table.Type]</th>
+                                    <th>@L[ExplorerKeys.Table.TxHash]</th>
+                                    <th>@L[ExplorerKeys.Table.Block]</th>
+                                    <th></th>
+                                    <th>@L[ExplorerKeys.Table.From]</th>
+                                    <th></th>
+                                    <th>@L[ExplorerKeys.Table.To]</th>
+                                    <th>@L[ExplorerKeys.Table.Contract]</th>
+                                    <th class="text-end">@L[ExplorerKeys.Table.AmountOrTokenId]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in _transfers)
+                                {
+                                    var isIncoming = ExplorerFormatUtils.IsAddressMatch(t.ToAddress, Address);
+                                    <tr>
+                                        <td>
+                                            <span class="badge @ExplorerFormatUtils.GetTokenTypeBadgeCssClass(t.TokenType)">@t.TokenType</span>
+                                        </td>
+                                        <td><HexDisplay Value="@t.TransactionHash" Link="@($"/transaction/{t.TransactionHash}")" MaxLength="14" ShowCopy="false" /></td>
+                                        <td><a href="@($"/block/{t.BlockNumber}")">@t.BlockNumber</a></td>
+                                        <td class="text-center px-1">
+                                            @if (isIncoming)
+                                            {
+                                                <span class="badge badge-success">IN</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">OUT</span>
+                                            }
+                                        </td>
+                                        <td><HexDisplay Value="@t.FromAddress" Link="@($"/account/{t.FromAddress}")" MaxLength="14" ShowCopy="false" /></td>
+                                        <td class="text-center px-0"><i class="bi bi-arrow-right text-color-dim"></i></td>
+                                        <td><HexDisplay Value="@t.ToAddress" Link="@($"/account/{t.ToAddress}")" MaxLength="14" ShowCopy="false" /></td>
+                                        <td><HexDisplay Value="@t.ContractAddress" Link="@($"/contract/{t.ContractAddress}")" MaxLength="14" ShowCopy="false" /></td>
+                                        <td class="text-end font-monospace text-color-primary">
+                                            @if (!string.IsNullOrEmpty(t.TokenId))
+                                            {
+                                                <span>#@t.TokenId</span>
+                                                @if (!string.IsNullOrEmpty(t.Amount) && t.Amount != "1")
+                                                {
+                                                    <span class="ms-1">x@t.Amount</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @t.Amount
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (_transfers != null && _transfers.Any())
+        {
+            <div class="mt-3">
+                <Pagination CurrentPage="@_transferPage" HasMore="@_transferHasMore" OnPageChanged="@GoToTransferPage" />
+            </div>
+        }
+    }
+}
+
+@code {
+    [Parameter] public string Address { get; set; } = "";
+    private string _activeTab = "balances";
+    private List<ITokenBalanceView>? _balances;
+    private List<INFTInventoryView>? _nfts;
+    private List<ITokenTransferLogView>? _transfers;
+    private int _transferPage = 1;
+    private bool _transferHasMore;
+    private const int PageSize = ExplorerConstants.DefaultPageSize;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _activeTab = "balances";
+        _balances = null;
+        _nfts = null;
+        _transfers = null;
+        _transferPage = 1;
+
+        if (TokenExplorer.IsAvailable)
+        {
+            _ = LoadBalancesAsync();
+            _ = LoadNftsAsync();
+            _ = LoadTransfersAsync();
+        }
+    }
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+    }
+
+    private async Task LoadBalancesAsync()
+    {
+        try
+        {
+            _balances = await TokenExplorer.GetTokenBalancesAsync(Address);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            _balances = new();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadNftsAsync()
+    {
+        try
+        {
+            _nfts = await TokenExplorer.GetNFTInventoryAsync(Address);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            _nfts = new();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadTransfersAsync()
+    {
+        try
+        {
+            _transfers = await TokenExplorer.GetTransfersByAddressAsync(Address, _transferPage, PageSize);
+            _transferHasMore = _transfers.Count == PageSize;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            _transfers = new();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task GoToTransferPage(int page)
+    {
+        _transferPage = page;
+        _transfers = null;
+        await LoadTransfersAsync();
+    }
+
+}

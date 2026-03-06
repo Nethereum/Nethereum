@@ -1,0 +1,46 @@
+@page "/Error"
+@using global::Microsoft.AspNetCore.Diagnostics
+@using Microsoft.AspNetCore.Hosting
+@inject ExplorerLocalizer L
+
+<PageTitle>Error - Nethereum Explorer</PageTitle>
+
+<div class="d-flex flex-column align-items-center justify-content-center explorer-error-page">
+    <i class="bi bi-exclamation-triangle explorer-error-icon"></i>
+    <h2 class="mt-3">@L[ExplorerKeys.Errors.SomethingWentWrong]</h2>
+    <p class="explorer-error-desc">
+        @L[ExplorerKeys.Errors.UnexpectedError]
+    </p>
+    <a href="/" class="btn btn-outline-primary mt-3">
+        <i class="bi bi-house me-1"></i>@L[ExplorerKeys.Errors.BackToDashboard]
+    </a>
+
+    @if (_showDetails && !string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="card mt-4 explorer-error-detail-box">
+            <div class="card-header">@L[ExplorerKeys.Errors.ErrorDetails]</div>
+            <div class="card-body">
+                <pre class="explorer-error-pre">@_errorMessage</pre>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string? _errorMessage;
+    private bool _showDetails;
+
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var env = HttpContext?.RequestServices.GetService<IWebHostEnvironment>();
+        _showDetails = env?.IsDevelopment() == true;
+
+        if (_showDetails)
+        {
+            var exceptionFeature = HttpContext?.Features.Get<IExceptionHandlerFeature>();
+            _errorMessage = exceptionFeature?.Error?.ToString();
+        }
+    }
+}

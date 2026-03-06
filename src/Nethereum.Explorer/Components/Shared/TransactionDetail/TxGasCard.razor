@@ -1,0 +1,60 @@
+@using Nethereum.Util
+
+<div class="card mb-3">
+    <div class="card-header bg-transparent">
+        <h6 class="mb-0"><i class="bi bi-fuel-pump me-2"></i>@L[ExplorerKeys.TransactionDetail.GasAndFees]</h6>
+    </div>
+    <div class="card-body">
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.GasLimit]</div>
+            <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(Tx.Gas)</div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.GasUsed]</div>
+            <div class="col-sm-9 detail-value">
+                @{
+                    var gasPercent = ExplorerFormatUtils.GasPercentage(Tx.GasUsed, Tx.Gas);
+                }
+                <div class="d-flex align-items-center gap-2">
+                    <span>@ExplorerFormatUtils.FormatNumber(Tx.GasUsed)</span>
+                    <div class="progress" style="max-width:200px;height:8px;flex-grow:1;">
+                        <div class="progress-bar" style="width:@gasPercent%;background-color:@ExplorerFormatUtils.GasColor(gasPercent);"></div>
+                    </div>
+                    <span class="explorer-gas-pct-label @ExplorerFormatUtils.GasColorCssClass(gasPercent)">@gasPercent%</span>
+                </div>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(Tx.CumulativeGasUsed) && Tx.CumulativeGasUsed != "0")
+        {
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.CumulativeGas]</div>
+                <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(Tx.CumulativeGasUsed)</div>
+            </div>
+        }
+        <hr class="my-2 explorer-detail-separator" />
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.GasPrice]</div>
+            <div class="col-sm-9 detail-value">
+                <span class="text-color-warning">@ExplorerFormatUtils.FormatGwei(Tx.GasPrice) Gwei</span>
+                <span class="ms-1 text-color-secondary">(@ExplorerFormatUtils.FormatEth(Tx.GasPrice) @CurrencySymbol)</span>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(Tx.MaxFeePerGas) && Tx.MaxFeePerGas != "0")
+        {
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.MaxFeePerGas]</div>
+                <div class="col-sm-9 detail-value text-color-warning">@ExplorerFormatUtils.FormatGwei(Tx.MaxFeePerGas) Gwei</div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.MaxPriorityFee]</div>
+                <div class="col-sm-9 detail-value text-color-warning">@ExplorerFormatUtils.FormatGwei(Tx.MaxPriorityFeePerGas) Gwei</div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ITransactionView Tx { get; set; } = default!;
+    [Parameter, EditorRequired] public string CurrencySymbol { get; set; } = "ETH";
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+}

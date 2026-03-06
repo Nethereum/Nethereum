@@ -1,0 +1,44 @@
+@using Nethereum.Explorer.Services
+@inject IJSRuntime JS
+@inject ToastService Toast
+@inject ExplorerLocalizer L
+
+<span class="hex-display" title="@Value">
+    @if (!string.IsNullOrEmpty(Link))
+    {
+        <a href="@Link">@Truncated</a>
+    }
+    else
+    {
+        <span class="raw-data-value">@Truncated</span>
+    }
+    @if (ShowCopy && !string.IsNullOrEmpty(Value))
+    {
+        <button class="copy-btn @(_copied ? "copied" : "")" @onclick="CopyToClipboard" title="@L[ExplorerKeys.Shared.CopyToClipboard]">
+            <i class="bi @(_copied ? "bi-check" : "bi-clipboard")"></i>
+        </button>
+    }
+</span>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? Link { get; set; }
+    [Parameter] public int MaxLength { get; set; } = 16;
+    [Parameter] public bool ShowCopy { get; set; } = true;
+
+    private bool _copied;
+
+    private string Truncated => ExplorerFormatUtils.TruncateHex(Value, MaxLength);
+
+    private async Task CopyToClipboard()
+    {
+        if (string.IsNullOrEmpty(Value)) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", Value);
+        _copied = true;
+        Toast.ShowSuccess(L[ExplorerKeys.Shared.CopiedToClipboard]);
+        StateHasChanged();
+        await Task.Delay(1500);
+        _copied = false;
+        StateHasChanged();
+    }
+}

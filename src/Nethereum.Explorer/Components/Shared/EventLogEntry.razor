@@ -1,0 +1,70 @@
+@inject ExplorerLocalizer L
+
+<div class="log-entry">
+    <div class="d-flex align-items-center mb-2">
+        <span class="badge me-2 explorer-badge explorer-badge-neutral">@L.GetString(ExplorerKeys.EventLog.LogNumber, Log.LogIndex)</span>
+        @if (Decoded?.IsDecoded == true)
+        {
+            <span class="badge me-2 explorer-badge explorer-badge-primary">@Decoded.EventName</span>
+            <span class="font-monospace text-sm text-color-secondary">@Decoded.Signature</span>
+        }
+    </div>
+
+    <div class="row detail-row py-1">
+        <div class="col-sm-2 detail-label">@L[ExplorerKeys.Account.Address]</div>
+        <div class="col-sm-10">
+            <HexDisplay Value="@Log.Address" Link="@($"/contract/{Log.Address}")" MaxLength="42" />
+        </div>
+    </div>
+
+    @if (Decoded?.IsDecoded == true && Decoded.Parameters.Any())
+    {
+        <div class="mt-2 mb-2">
+            <h6 class="text-md text-color-primary" style="margin-bottom: 0.4rem;">@L[ExplorerKeys.EventLog.DecodedParameters]</h6>
+            <DecodedParametersTable Parameters="@Decoded.Parameters" ShowIndexedColumn="true" />
+        </div>
+    }
+
+    <div class="mt-2 ps-2 explorer-itx-tree-indent">
+        @if (!string.IsNullOrEmpty(Log.EventHash))
+        {
+            <div class="mb-1 d-flex align-items-start">
+                <span class="raw-data-label">topic[0]</span>
+                <HexDisplay Value="@Log.EventHash" MaxLength="66" />
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Log.IndexVal1))
+        {
+            <div class="mb-1 d-flex align-items-start">
+                <span class="raw-data-label">topic[1]</span>
+                <HexDisplay Value="@Log.IndexVal1" MaxLength="66" />
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Log.IndexVal2))
+        {
+            <div class="mb-1 d-flex align-items-start">
+                <span class="raw-data-label">topic[2]</span>
+                <HexDisplay Value="@Log.IndexVal2" MaxLength="66" />
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Log.IndexVal3))
+        {
+            <div class="mb-1 d-flex align-items-start">
+                <span class="raw-data-label">topic[3]</span>
+                <HexDisplay Value="@Log.IndexVal3" MaxLength="66" />
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Log.Data) && Log.Data != "0x")
+        {
+            <div class="mb-1 d-flex align-items-start">
+                <span class="raw-data-label">data</span>
+                <span class="raw-data-value word-break-all">@Log.Data</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ITransactionLogView Log { get; set; } = default!;
+    [Parameter] public DecodedEventLog? Decoded { get; set; }
+}

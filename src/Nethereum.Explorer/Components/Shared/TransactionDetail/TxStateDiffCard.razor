@@ -1,0 +1,159 @@
+@using System.Numerics
+@using Nethereum.Util
+
+@if (StateDiff != null && StateDiff.Entries.Any())
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <h6 class="mb-0"><i class="bi bi-file-diff me-2"></i>@L[ExplorerKeys.TransactionDetail.StateChanges]</h6>
+                <span class="badge ms-2 explorer-badge explorer-badge-primary">@StateDiff.Entries.Count @L[ExplorerKeys.TransactionDetail.Accounts]</span>
+                <span class="ms-2 text-xs text-color-dim">(@L[ExplorerKeys.TransactionDetail.ViaPrestateTracer])</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @foreach (var entry in StateDiff.Entries)
+            {
+                <div class="state-diff-entry explorer-itx-entry">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <HexDisplay Value="@entry.Address" Link="@($"/account/{entry.Address}")" MaxLength="42" ShowCopy="false" />
+                        @if (entry.CodeChanged)
+                        {
+                            <span class="badge explorer-badge explorer-badge-purple text-xxs">@L[ExplorerKeys.TransactionDetail.CodeChanged]</span>
+                        }
+                    </div>
+                    <div class="row text-md">
+                        @if (entry.BalanceBefore != null || entry.BalanceAfter != null)
+                        {
+                            <div class="col-auto me-4">
+                                <span class="text-color-dim">@L[ExplorerKeys.Table.Balance]:</span>
+                                @if (entry.BalanceBefore != entry.BalanceAfter)
+                                {
+                                    <span class="text-color-danger">@FormatStateBigInt(entry.BalanceBefore)</span>
+                                    <i class="bi bi-arrow-right mx-1 text-color-dim text-xs"></i>
+                                    <span class="text-color-success">@FormatStateBigInt(entry.BalanceAfter)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-color-secondary">@FormatStateBigInt(entry.BalanceBefore)</span>
+                                }
+                            </div>
+                        }
+                        @if (entry.NonceBefore != null || entry.NonceAfter != null)
+                        {
+                            <div class="col-auto">
+                                <span class="text-color-dim">@L[ExplorerKeys.BlockDetail.Nonce]:</span>
+                                @if (entry.NonceBefore != entry.NonceAfter)
+                                {
+                                    <span class="text-color-danger">@entry.NonceBefore</span>
+                                    <i class="bi bi-arrow-right mx-1 text-color-dim text-xs"></i>
+                                    <span class="text-color-success">@entry.NonceAfter</span>
+                                }
+                                else
+                                {
+                                    <span class="text-color-secondary">@entry.NonceBefore</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                    @if (entry.StorageChanges.Any())
+                    {
+                        <div class="mt-2 text-sm">
+                            <span class="text-color-dim">Storage (@entry.StorageChanges.Count @L[ExplorerKeys.TransactionDetail.StorageSlots]):</span>
+                            <div class="mt-1 ps-2 explorer-itx-tree-indent">
+                                @foreach (var storage in entry.StorageChanges.Take(50))
+                                {
+                                    <div class="mb-1 word-break-all">
+                                        <span class="font-monospace text-color-info">@storage.Slot</span>
+                                        <span class="mx-1 text-color-dim">:</span>
+                                        @if (storage.Before != null)
+                                        {
+                                            <span class="font-monospace text-color-danger">@storage.Before</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-color-dim">(@L[ExplorerKeys.TransactionDetail.New])</span>
+                                        }
+                                        <i class="bi bi-arrow-right mx-1 text-xxs text-color-dim"></i>
+                                        @if (storage.After != null)
+                                        {
+                                            <span class="font-monospace text-color-success">@storage.After</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-color-dim">(@L[ExplorerKeys.TransactionDetail.Deleted])</span>
+                                        }
+                                    </div>
+                                }
+                                @if (entry.StorageChanges.Count > 50)
+                                {
+                                    <div class="text-color-dim">... @L.GetString(ExplorerKeys.TransactionDetail.AndMore, entry.StorageChanges.Count - 50)</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (IsLoading)
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent">
+            <h6 class="mb-0"><i class="bi bi-file-diff me-2"></i>@L[ExplorerKeys.TransactionDetail.StateChanges]</h6>
+        </div>
+        <div class="card-body text-center py-3">
+            <div class="spinner-border spinner-border-sm me-2 text-color-primary" role="status"></div>
+            <span class="text-color-secondary">@L[ExplorerKeys.TransactionDetail.LoadingStateDiff]</span>
+        </div>
+    </div>
+}
+else if (StateDiff?.Error != null)
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent">
+            <h6 class="mb-0"><i class="bi bi-file-diff me-2"></i>@L[ExplorerKeys.TransactionDetail.StateChanges]</h6>
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-2 explorer-subtitle">
+                <i class="bi bi-info-circle"></i>
+                <span>@L[ExplorerKeys.TransactionDetail.StateDiffUnavailable]: @StateDiff.Error</span>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent">
+            <h6 class="mb-0"><i class="bi bi-file-diff me-2"></i>@L[ExplorerKeys.TransactionDetail.StateChanges]</h6>
+        </div>
+        <div class="card-body text-center py-3">
+            <button class="btn btn-outline-primary btn-sm" @onclick="OnLoadStateDiff">
+                <i class="bi bi-play-circle me-1"></i>@L[ExplorerKeys.TransactionDetail.LoadStateChanges]
+            </button>
+            <div class="mt-2 text-sm text-color-dim">
+                @L[ExplorerKeys.TransactionDetail.SimulatesTransaction]
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public StateDiffResult? StateDiff { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnLoadStateDiff { get; set; }
+    [Parameter, EditorRequired] public string CurrencySymbol { get; set; } = "ETH";
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+
+    private string FormatStateBigInt(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "0";
+        if (BigInteger.TryParse(value, out var big))
+        {
+            return UnitConversion.Convert.FromWei(big).ToString("0.######") + " " + CurrencySymbol;
+        }
+        return value;
+    }
+}

@@ -1,0 +1,85 @@
+@page "/transactions"
+@using Nethereum.Explorer.Services
+@inject ITransactionQueryService TransactionQuery
+@inject IJSRuntime JS
+@inject ExplorerChainService ChainService
+@inject ExplorerLocalizer L
+@inject ILogger<Transactions> Logger
+
+<PageTitle>@L[ExplorerKeys.Transactions.Title] - Nethereum Explorer</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>@L[ExplorerKeys.Transactions.Title]</h4>
+    <div class="d-flex align-items-center gap-2">
+        <span class="explorer-subtitle">@(_totalCount?.ToString("N0") ?? "...") @L[ExplorerKeys.Shared.Total]</span>
+        @if (_transactions != null && _transactions.Any())
+        {
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ExportCsvAsync" title="@L[ExplorerKeys.Shared.ExportCsv]">
+                <i class="bi bi-download me-1"></i>CSV
+            </button>
+        }
+    </div>
+</div>
+
+@if (_transactions == null)
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <SkeletonTable Rows="10" Columns="9" />
+        </div>
+    </div>
+}
+else if (!_transactions.Any())
+{
+    <EmptyState IconClass="bi bi-arrow-left-right" Title="@L[ExplorerKeys.Transactions.NoTransactionsIndexed]" Subtitle="@L[ExplorerKeys.Transactions.TransactionsWillAppear]" />
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <TransactionTable Transactions="_transactions" CurrencySymbol="@ChainService.CurrencySymbol" ShowFeeColumn="true" />
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <Pagination CurrentPage="@_page" HasMore="@_hasMore" TotalPages="@(_totalCount.HasValue ? (int)Math.Ceiling(_totalCount.Value / (double)PageSize) : 0)" OnPageChanged="@GoToPage" />
+    </div>
+}
+
+@code {
+    private List<ITransactionView>? _transactions;
+    private int _page = 1;
+    private bool _hasMore;
+    private int? _totalCount;
+    private const int PageSize = ExplorerConstants.DefaultPageSize;
+
+    protected override async Task OnInitializedAsync() => await LoadPageAsync();
+
+    private async Task GoToPage(int page)
+    {
+        _page = page;
+        await LoadPageAsync();
+    }
+
+    private async Task LoadPageAsync()
+    {
+        try
+        {
+            _transactions = await TransactionQuery.GetLatestTransactionsPagedAsync(_page, PageSize);
+            _hasMore = _transactions.Count == PageSize;
+            _totalCount = await TransactionQuery.GetTotalTransactionCountAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load transactions page {Page}", _page);
+            _transactions ??= new();
+        }
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        if (_transactions == null) return;
+        var csv = CsvExportService.ExportTransactions(_transactions);
+        await JS.InvokeVoidAsync("downloadCsv", $"transactions_page{_page}.csv", csv);
+    }
+}

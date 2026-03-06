@@ -1,0 +1,79 @@
+@using Nethereum.Explorer.Components.Shared
+@using Nethereum.Explorer.Services
+@inject ExplorerChainService ChainService
+@inject ExplorerLocalizer L
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-arrow-left-right me-2"></i>@L[ExplorerKeys.Home.LatestTransactions]</span>
+        <a href="/transactions" class="btn btn-outline-primary btn-sm">@L[ExplorerKeys.Shared.ViewAll]</a>
+    </div>
+    <div class="card-body p-0">
+        @if (Transactions == null || !Transactions.Any())
+        {
+            <EmptyState IconClass="bi bi-arrow-left-right" Title="@L[ExplorerKeys.Home.NoTransactionsYet]" Subtitle="@L[ExplorerKeys.Home.WaitingForTransactions]" />
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>@L[ExplorerKeys.Table.TxHash]</th>
+                            <th>@L[ExplorerKeys.Table.Method]</th>
+                            <th>@L[ExplorerKeys.Table.Block]</th>
+                            <th>@L[ExplorerKeys.Table.From]</th>
+                            <th>@L[ExplorerKeys.Table.To]</th>
+                            <th>@L[ExplorerKeys.Table.Value] (@ChainService.CurrencySymbol)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tx in Transactions)
+                        {
+                            <tr>
+                                <td class="text-center px-1 explorer-status-icon-cell">
+                                    @if (tx.Failed)
+                                    {
+                                        <i class="bi bi-x-circle-fill text-color-danger" title="@L[ExplorerKeys.TransactionDetail.Failed]"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle-fill text-color-success" title="@L[ExplorerKeys.TransactionDetail.Success]"></i>
+                                    }
+                                </td>
+                                <td>
+                                    <HexDisplay Value="@tx.Hash" Link="@($"/transaction/{tx.Hash}")" MaxLength="18" ShowCopy="false" />
+                                </td>
+                                <td>
+                                    <span class="badge @ExplorerFormatUtils.GetMethodBadgeCssClass(tx.Input)">@ExplorerFormatUtils.GetMethodName(tx.Input)</span>
+                                </td>
+                                <td>
+                                    <a href="/block/@tx.BlockNumber">@tx.BlockNumber</a>
+                                </td>
+                                <td>
+                                    <HexDisplay Value="@tx.AddressFrom" Link="@($"/account/{tx.AddressFrom}")" MaxLength="14" ShowCopy="false" />
+                                </td>
+                                <td>
+                                    @if (ExplorerFormatUtils.IsContractCreation(tx.AddressTo))
+                                    {
+                                        <span class="badge badge-info">Create</span>
+                                    }
+                                    else
+                                    {
+                                        <HexDisplay Value="@tx.AddressTo" Link="@($"/account/{tx.AddressTo}")" MaxLength="14" ShowCopy="false" />
+                                    }
+                                </td>
+                                <td class="text-color-primary">@ExplorerFormatUtils.FormatEth(tx.Value) @ChainService.CurrencySymbol</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ITransactionView>? Transactions { get; set; }
+}

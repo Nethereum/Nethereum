@@ -1,0 +1,25 @@
+@using QRCoder
+
+@if (!string.IsNullOrEmpty(Value))
+{
+    <div class="qr-code-container text-center">
+        <img src="@_dataUri" alt="QR Code" style="width: @(Size)px; height: @(Size)px; border-radius: 8px; border: 2px solid var(--card-border);" />
+    </div>
+}
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public int Size { get; set; } = 160;
+
+    private string _dataUri = "";
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrEmpty(Value)) return;
+        var generator = new QRCodeGenerator();
+        var data = generator.CreateQrCode(Value, QRCodeGenerator.ECCLevel.Q);
+        var pngQr = new PngByteQRCode(data);
+        var bytes = pngQr.GetGraphic(20);
+        _dataUri = $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+    }
+}

@@ -1,0 +1,693 @@
+@page "/account/{Address}"
+@using Microsoft.Extensions.Options
+@using Nethereum.Util
+@using Nethereum.BlockchainProcessing.BlockStorage.Entities
+@using Nethereum.Explorer.Services
+@inject ITransactionQueryService TransactionQuery
+@inject IInternalTransactionQueryService InternalTxQuery
+@inject ILogQueryService LogQuery
+@inject IRpcQueryService Rpc
+@inject IAccountQueryService AccountQuery
+@inject ITokenExplorerService TokenExplorer
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerChainService ChainService
+@inject InternalTransactionDecodingHelper ItxHelper
+@inject ILogger<Account> Logger
+@inject ExplorerLocalizer L
+@implements IDisposable
+
+<PageTitle>@L[ExplorerKeys.Account.Title] @ExplorerFormatUtils.TruncateHex(Address, 16) - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = _isContract ? L[ExplorerKeys.Account.ContractTitle] : L[ExplorerKeys.Account.Title] },
+    new() { Label = ExplorerFormatUtils.TruncateHex(Address, 16) }
+})" />
+
+<h4 class="mb-3">
+    @if (_isContract)
+    {
+        <i class="bi bi-file-earmark-code me-2"></i><span>@L[ExplorerKeys.Account.ContractTitle]</span>
+    }
+    else
+    {
+        <i class="bi bi-person-circle me-2"></i><span>@L[ExplorerKeys.Account.Title]</span>
+    }
+</h4>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-info-circle me-2"></i>@L[ExplorerKeys.Account.Overview]</div>
+    <div class="card-body">
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Account.Address]</div>
+            <div class="col-sm-9 detail-value">
+                <div class="d-flex align-items-start gap-2">
+                    <HexDisplay Value="@ExplorerFormatUtils.FormatAddress(Address)" MaxLength="42" />
+                    <button class="btn btn-outline-secondary btn-sm py-0 px-1" @onclick="@(() => _showQr = !_showQr)" title="QR Code">
+                        <i class="bi bi-qr-code text-base"></i>
+                    </button>
+                </div>
+                @if (_showQr)
+                {
+                    <div class="mt-2">
+                        <QrCode Value="@Address" Size="160" />
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.Balance]</div>
+            <div class="col-sm-9 detail-value">
+                @if (_balanceLoaded)
+                {
+                    <strong class="text-color-primary">@(UnitConversion.Convert.FromWei(_balance).ToString("0.######")) @ChainService.CurrencySymbol</strong>
+                    @if (_balance > 0)
+                    {
+                        <span class="ms-2 explorer-subtitle">(@_balance.ToString("N0") Wei)</span>
+                    }
+                }
+                else
+                {
+                    <span class="text-color-dim">@L[ExplorerKeys.Shared.Loading]</span>
+                }
+            </div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Account.Nonce]</div>
+            <div class="col-sm-9 detail-value">
+                @if (_balanceLoaded)
+                {
+                    <span>@_nonce</span>
+                }
+                else
+                {
+                    <span class="text-color-dim">@L[ExplorerKeys.Shared.Loading]</span>
+                }
+            </div>
+        </div>
+        @if (_isContract)
+        {
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.Type]</div>
+                <div class="col-sm-9 detail-value">
+                    <span class="badge explorer-badge explorer-badge-info">
+                        <i class="bi bi-file-earmark-code me-1"></i>@L[ExplorerKeys.Account.ContractTitle]
+                    </span>
+                </div>
+            </div>
+        }
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.Account.Actions]</div>
+            <div class="col-sm-9 detail-value">
+                @if (_isContract)
+                {
+                    <a href="@($"/contract/{Address}")" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-file-earmark-code me-1"></i>@L[ExplorerKeys.Account.InteractWithContract]
+                    </a>
+                }
+                else
+                {
+                    <a href="@($"/contract/{Address}")" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-file-earmark-code me-1"></i>@L[ExplorerKeys.Account.ViewAsContract]
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Options.Value.EnableTokens && _indexedBalances != null && _indexedBalances.Any())
+{
+    <div class="card mb-4 mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-coin me-2"></i>@L[ExplorerKeys.Account.TokenBalances]</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-info">@_indexedBalances.Count</span>
+                <a href="@($"/account/{Address}/tokens")" class="btn btn-outline-primary btn-sm py-0 px-2 text-sm">@L[ExplorerKeys.Shared.ViewAll]</a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[ExplorerKeys.Table.Type]</th>
+                            <th>@L[ExplorerKeys.Table.Contract]</th>
+                            <th class="text-end">@L[ExplorerKeys.Table.Balance]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bal in _indexedBalances.Take(10))
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge @ExplorerFormatUtils.GetTokenTypeBadgeCssClass(bal.TokenType)">@bal.TokenType</span>
+                                </td>
+                                <td><HexDisplay Value="@bal.ContractAddress" Link="@($"/contract/{bal.ContractAddress}")" MaxLength="18" ShowCopy="false" /></td>
+                                <td class="text-end font-monospace text-color-primary">@bal.Balance</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (Options.Value.EnableTokens && _tokenHoldings != null && _tokenHoldings.Any())
+{
+    <div class="card mb-4 mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-coin me-2"></i>@L[ExplorerKeys.Account.TokenHoldings]</span>
+            <span class="badge badge-info">@_tokenHoldings.Count</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[ExplorerKeys.Table.Token]</th>
+                            <th>@L[ExplorerKeys.Table.Contract]</th>
+                            <th class="text-end">@L[ExplorerKeys.Table.Balance]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var token in _tokenHoldings)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@token.Name</strong>
+                                    <span class="badge ms-1 explorer-badge explorer-badge-primary text-xs">@token.Symbol</span>
+                                </td>
+                                <td><HexDisplay Value="@token.Address" Link="@($"/contract/{token.Address}")" MaxLength="18" ShowCopy="false" /></td>
+                                <td class="text-end font-monospace text-color-primary">@ExplorerFormatUtils.FormatTokenAmount(token.Balance.ToString(), token.Decimals)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (Options.Value.EnableTokens && _tokensLoading)
+{
+    <div class="card mb-4 mt-4">
+        <div class="card-header"><i class="bi bi-coin me-2"></i>@L[ExplorerKeys.Account.TokenHoldings]</div>
+        <div class="card-body text-center py-3 text-color-dim">
+            <span class="spinner-border spinner-border-sm me-2"></span>@L[ExplorerKeys.Account.LoadingTokens]
+        </div>
+    </div>
+}
+
+@if (Options.Value.EnableTokens && _indexedNfts != null && _indexedNfts.Any())
+{
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-image me-2"></i>@L[ExplorerKeys.Account.NftInventory]</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-info">@_indexedNfts.Count</span>
+                <a href="@($"/account/{Address}/tokens")" class="btn btn-outline-primary btn-sm py-0 px-2 text-sm">@L[ExplorerKeys.Shared.ViewAll]</a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[ExplorerKeys.Table.Type]</th>
+                            <th>@L[ExplorerKeys.Table.TokenId]</th>
+                            <th>@L[ExplorerKeys.Table.Contract]</th>
+                            <th class="text-end">@L[ExplorerKeys.Table.Amount]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var nft in _indexedNfts.Take(10))
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge explorer-badge explorer-badge-purple text-xs">@nft.TokenType</span>
+                                </td>
+                                <td>
+                                    <span class="font-monospace text-color-primary">#@nft.TokenId</span>
+                                </td>
+                                <td><HexDisplay Value="@nft.ContractAddress" Link="@($"/contract/{nft.ContractAddress}")" MaxLength="18" ShowCopy="false" /></td>
+                                <td class="text-end font-monospace text-color-primary">@nft.Amount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (Options.Value.EnableTokens && _nftHoldings != null && _nftHoldings.Any())
+{
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-image me-2"></i>@L[ExplorerKeys.Account.NftHoldings]</span>
+            <span class="badge badge-info">@_nftHoldings.Count</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[ExplorerKeys.Table.Collection]</th>
+                            <th>@L[ExplorerKeys.Table.TokenId]</th>
+                            <th>@L[ExplorerKeys.Table.Contract]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var nft in _nftHoldings)
+                        {
+                            <tr>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(nft.Name))
+                                    {
+                                        <strong>@nft.Name</strong>
+                                        @if (!string.IsNullOrEmpty(nft.Symbol))
+                                        {
+                                            <span class="badge ms-1 explorer-badge explorer-badge-purple text-xs">@nft.Symbol</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-color-dim">@L[ExplorerKeys.Account.Unknown]</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="font-monospace text-color-primary">#@nft.TokenId</span>
+                                </td>
+                                <td><HexDisplay Value="@nft.ContractAddress" Link="@($"/contract/{nft.ContractAddress}")" MaxLength="18" ShowCopy="false" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (Options.Value.EnableTokens && _nftsLoading)
+{
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-image me-2"></i>@L[ExplorerKeys.Account.NftHoldings]</div>
+        <div class="card-body text-center py-3 text-color-dim">
+            <span class="spinner-border spinner-border-sm me-2"></span>@L[ExplorerKeys.Account.LoadingNfts]
+        </div>
+    </div>
+}
+
+<!-- Transaction Tabs -->
+<ul class="nav nav-tabs mb-0">
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == "tx" ? "active" : "")" @onclick="@(() => SwitchTab("tx"))">
+            <i class="bi bi-arrow-left-right me-1"></i>@L[ExplorerKeys.Transactions.Title]
+            @if (_totalTxCount > 0)
+            {
+                <span class="badge ms-1 explorer-badge explorer-badge-primary text-xs">@_totalTxCount</span>
+            }
+        </button>
+    </li>
+    @if (Options.Value.EnableInternalTransactions)
+    {
+        <li class="nav-item">
+            <button class="nav-link @(_activeTab == "itx" ? "active" : "")" @onclick="@(() => SwitchTab("itx"))">
+                <i class="bi bi-diagram-3 me-1"></i>@L[ExplorerKeys.TransactionDetail.InternalTransactions]
+                @if (_totalItxCount > 0)
+                {
+                    <span class="badge ms-1 explorer-badge explorer-badge-primary text-xs">@_totalItxCount</span>
+                }
+            </button>
+        </li>
+    }
+</ul>
+
+@if (_activeTab == "tx")
+{
+    <div class="card explorer-tab-card-body">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn @(_txFilter == "all" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetTxFilter("all"))">All</button>
+                    <button class="btn @(_txFilter == "in" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetTxFilter("in"))">IN</button>
+                    <button class="btn @(_txFilter == "out" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetTxFilter("out"))">OUT</button>
+                    <button class="btn @(_txFilter == "self" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetTxFilter("self"))">SELF</button>
+                </div>
+            </div>
+            @if (_transactions != null)
+            {
+                <span class="text-color-secondary text-md">Page @_txPage @(TotalTxPages > 0 ? $"of {TotalTxPages}" : "")</span>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (_transactions == null)
+            {
+                <div class="text-center py-4"><LoadingSpinner Message="@L[ExplorerKeys.Account.LoadingTransactions]" /></div>
+            }
+            else if (!_transactions.Any())
+            {
+                <EmptyState IconClass="bi bi-inbox" Title="@L[ExplorerKeys.Account.NoTransactionsFound]" Subtitle="@(_txFilter != "all" ? L[ExplorerKeys.Account.NoFilteredTx] : L[ExplorerKeys.Account.NoAddressTx])" />
+            }
+            else
+            {
+                <TransactionTable Transactions="_transactions" CurrencySymbol="@ChainService.CurrencySymbol" ContextAddress="@Address" />
+            }
+        </div>
+    </div>
+
+    @if (_transactions != null && _transactions.Any())
+    {
+        <div class="mt-3">
+            <Pagination CurrentPage="@_txPage" HasMore="@_txHasMore" TotalPages="@TotalTxPages" OnPageChanged="@GoToTxPage" />
+        </div>
+    }
+}
+else
+{
+    <div class="card explorer-tab-card-body">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn @(_itxFilter == "all" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetItxFilter("all"))">All</button>
+                    <button class="btn @(_itxFilter == "in" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetItxFilter("in"))">IN</button>
+                    <button class="btn @(_itxFilter == "out" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetItxFilter("out"))">OUT</button>
+                    <button class="btn @(_itxFilter == "self" ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetItxFilter("self"))">SELF</button>
+                </div>
+            </div>
+            @if (_internalTransactions != null)
+            {
+                <span class="text-color-secondary text-md">Page @_itxPage @(TotalItxPages > 0 ? $"of {TotalItxPages}" : "")</span>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (_internalTransactions == null)
+            {
+                <div class="text-center py-4"><LoadingSpinner Message="@L[ExplorerKeys.Account.LoadingInternalTx]" /></div>
+            }
+            else if (!_internalTransactions.Any())
+            {
+                <EmptyState IconClass="bi bi-diagram-3" Title="@L[ExplorerKeys.Account.NoInternalTransactions]" Subtitle="@(_itxFilter != "all" ? L[ExplorerKeys.Account.NoFilteredItx] : L[ExplorerKeys.Account.NoAddressItx])" />
+            }
+            else
+            {
+                <InternalTransactionTable InternalTransactions="_internalTransactions"
+                                          CurrencySymbol="@ChainService.CurrencySymbol"
+                                          ContextAddress="@Address"
+                                          ShowTxHashColumn="true"
+                                          ShowBlockColumn="true"
+                                          ItxHelper="ItxHelper" />
+            }
+        </div>
+    </div>
+
+    @if (_internalTransactions != null && _internalTransactions.Any())
+    {
+        <div class="mt-3">
+            <Pagination CurrentPage="@_itxPage" HasMore="@_itxHasMore" TotalPages="@TotalItxPages" OnPageChanged="@GoToItxPage" />
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string Address { get; set; } = "";
+
+    private string _activeTab = "tx";
+    private const int PageSize = ExplorerConstants.DefaultPageSize;
+
+    // Transactions state
+    private List<ITransactionView>? _transactions;
+    private int _txPage = 1;
+    private bool _txHasMore;
+    private int _totalTxCount;
+    private string _txFilter = "all";
+    private int TotalTxPages => _totalTxCount > 0 ? (int)Math.Ceiling((double)_totalTxCount / PageSize) : 0;
+
+    // Internal transactions state
+    private List<IInternalTransactionView>? _internalTransactions;
+    private int _itxPage = 1;
+    private bool _itxHasMore;
+    private int _totalItxCount;
+    private string _itxFilter = "all";
+    private bool _itxLoaded;
+    private int TotalItxPages => _totalItxCount > 0 ? (int)Math.Ceiling((double)_totalItxCount / PageSize) : 0;
+
+    // Account state
+    private System.Numerics.BigInteger _balance;
+    private System.Numerics.BigInteger _nonce;
+    private bool _balanceLoaded;
+    private bool _isContract;
+    private bool _showQr;
+    private List<TokenInfo>? _tokenHoldings;
+    private bool _tokensLoading;
+    private List<NftTokenInfo>? _nftHoldings;
+    private bool _nftsLoading;
+    private List<ITokenBalanceView>? _indexedBalances;
+    private List<INFTInventoryView>? _indexedNfts;
+    private CancellationTokenSource _cts = new();
+    private bool _disposed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        _cts = new CancellationTokenSource();
+
+        _activeTab = "tx";
+        _txPage = 1;
+        _txFilter = "all";
+        _itxPage = 1;
+        _itxFilter = "all";
+        _itxLoaded = false;
+        _internalTransactions = null;
+        _totalItxCount = 0;
+        ItxHelper.ClearCache();
+        _balanceLoaded = false;
+        _isContract = false;
+        _tokenHoldings = null;
+        _tokensLoading = false;
+        _nftHoldings = null;
+        _nftsLoading = false;
+        _indexedBalances = null;
+        _indexedNfts = null;
+        await LoadTransactionsAsync();
+        _ = LoadRpcDataAsync();
+        if (Options.Value.EnableTokens)
+        {
+            if (TokenExplorer.IsAvailable)
+            {
+                _ = LoadIndexedTokenDataAsync();
+            }
+            else
+            {
+                _ = LoadTokensAsync();
+                _ = LoadNftsAsync();
+            }
+        }
+    }
+
+    private async Task SwitchTab(string tab)
+    {
+        _activeTab = tab;
+        if (tab == "itx" && !_itxLoaded)
+        {
+            await LoadInternalTransactionsAsync();
+            _itxLoaded = true;
+        }
+    }
+
+    // --- Transactions ---
+
+    private async Task LoadTransactionsAsync()
+    {
+        var direction = _txFilter == "all" ? null : _txFilter;
+        _transactions = await TransactionQuery.GetAddressTransactionsAsync(Address, _txPage, PageSize, direction);
+        _totalTxCount = await TransactionQuery.GetAddressTransactionCountAsync(Address, direction);
+        _txHasMore = _transactions.Count == PageSize;
+    }
+
+    private async Task SetTxFilter(string filter)
+    {
+        _txFilter = filter;
+        _txPage = 1;
+        await LoadTransactionsAsync();
+    }
+
+    private async Task GoToTxPage(int p)
+    {
+        _txPage = p;
+        await LoadTransactionsAsync();
+    }
+
+    // --- Internal Transactions ---
+
+    private async Task LoadInternalTransactionsAsync()
+    {
+        var direction = _itxFilter == "self" ? "self" : (_itxFilter == "all" ? null : _itxFilter);
+        _internalTransactions = await InternalTxQuery.GetInternalTransactionsForAddressAsync(Address, _itxPage, PageSize, direction);
+        _totalItxCount = await InternalTxQuery.GetAddressInternalTransactionCountAsync(Address, direction);
+        _itxHasMore = _internalTransactions.Count == PageSize;
+        ItxHelper.ClearCache();
+        if (_internalTransactions != null)
+            await ItxHelper.DecodeAsync(_internalTransactions);
+    }
+
+    private async Task SetItxFilter(string filter)
+    {
+        _itxFilter = filter;
+        _itxPage = 1;
+        await LoadInternalTransactionsAsync();
+    }
+
+    private async Task GoToItxPage(int p)
+    {
+        _itxPage = p;
+        await LoadInternalTransactionsAsync();
+    }
+
+    // --- Account data loading ---
+
+    private async Task LoadRpcDataAsync()
+    {
+        if (Rpc.IsAvailable)
+        {
+            try
+            {
+                _balance = await Rpc.GetBalanceAsync(Address);
+                _nonce = await Rpc.GetTransactionCountAsync(Address);
+                var code = await Rpc.GetCodeAsync(Address);
+                _isContract = !string.IsNullOrEmpty(code) && code != "0x" && code != "0x0";
+                _balanceLoaded = true;
+                if (!_disposed) StateHasChanged();
+                return;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogDebug(ex, "Failed to load RPC data for {Address}", Address);
+            }
+        }
+
+        if (_disposed) return;
+
+        try
+        {
+            var state = await AccountQuery.GetAccountStateAsync(Address);
+            if (state != null)
+            {
+                if (System.Numerics.BigInteger.TryParse(state.Balance, out var bal))
+                    _balance = bal;
+                _nonce = state.Nonce;
+                _isContract = state.IsContract;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Failed to load DB account state for {Address}", Address);
+        }
+
+        _balanceLoaded = true;
+        if (!_disposed) StateHasChanged();
+    }
+
+    private async Task LoadTokensAsync()
+    {
+        if (!Rpc.IsAvailable) return;
+        _tokensLoading = true;
+        StateHasChanged();
+        try
+        {
+            var tokenAddresses = await LogQuery.GetTokenAddressesForAccountAsync(Address);
+            if (_disposed) return;
+            if (tokenAddresses.Any())
+            {
+                var tokens = new List<TokenInfo>();
+                foreach (var addr in tokenAddresses)
+                {
+                    if (_disposed) return;
+                    var info = await Rpc.GetTokenInfoAsync(addr, Address);
+                    if (info != null && info.Balance > 0)
+                        tokens.Add(info);
+                }
+                _tokenHoldings = tokens;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Failed to load token holdings for {Address}", Address);
+        }
+        finally
+        {
+            _tokensLoading = false;
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadNftsAsync()
+    {
+        if (!Rpc.IsAvailable) return;
+        _nftsLoading = true;
+        StateHasChanged();
+        try
+        {
+            var transfers = await LogQuery.GetNftTransfersForAccountAsync(Address);
+            if (_disposed) return;
+            if (transfers.Any())
+            {
+                var owned = new Dictionary<string, NftTransferRecord>();
+                foreach (var t in transfers)
+                {
+                    var key = $"{t.ContractAddress}:{t.TokenId}";
+                    if (ExplorerFormatUtils.IsAddressMatch(t.To, Address))
+                        owned[key] = t;
+                    else if (ExplorerFormatUtils.IsAddressMatch(t.From, Address))
+                        owned.Remove(key);
+                }
+
+                var nfts = new List<NftTokenInfo>();
+                foreach (var record in owned.Values.Take(50))
+                {
+                    if (_disposed) return;
+                    var info = await Rpc.GetNftTokenInfoAsync(record.ContractAddress, record.TokenId);
+                    nfts.Add(info ?? new NftTokenInfo
+                    {
+                        ContractAddress = record.ContractAddress,
+                        TokenId = record.TokenId
+                    });
+                }
+                _nftHoldings = nfts;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Failed to load NFT holdings for {Address}", Address);
+        }
+        finally
+        {
+            _nftsLoading = false;
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadIndexedTokenDataAsync()
+    {
+        if (!TokenExplorer.IsAvailable) return;
+        try
+        {
+            _indexedBalances = await TokenExplorer.GetTokenBalancesAsync(Address);
+            _indexedNfts = await TokenExplorer.GetNFTInventoryAsync(Address);
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Failed to load indexed token data for {Address}", Address);
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}

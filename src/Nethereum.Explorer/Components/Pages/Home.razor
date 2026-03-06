@@ -1,0 +1,146 @@
+@page "/"
+@using Nethereum.Explorer.Components.Home
+@using Nethereum.Explorer.Services
+@inject IBlockQueryService BlockQuery
+@inject ITransactionQueryService TransactionQuery
+@inject IRpcQueryService Rpc
+@inject ExplorerChainService ChainService
+@inject Nethereum.UI.SelectedEthereumHostProviderService HostProvider
+@inject ILogger<Home> Logger
+@inject ExplorerLocalizer L
+@implements IDisposable
+
+<PageTitle>Nethereum Explorer</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-grid me-2"></i>@L[ExplorerKeys.Home.Dashboard]</h4>
+    <div class="d-flex align-items-center gap-2">
+        <span class="pulse-dot"></span>
+        <span class="last-updated">@L[ExplorerKeys.Shared.Updated] @_lastUpdated</span>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <StatsCard Title="@L[ExplorerKeys.Home.LatestBlock]" Value="@_latestBlockNumber" IconClass="bi bi-box-seam" />
+    <StatsCard Title="@L[ExplorerKeys.Home.TotalTransactions]" Value="@_totalTxCount" IconClass="bi bi-arrow-left-right" />
+    <div class="col-md-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                        <div class="stat-icon">
+                            <i class="bi bi-link-45deg"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="card-subtitle mb-1 text-muted">@L[ExplorerKeys.Home.ChainId]</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="card-title mb-0">@(_chainId ?? "...")</h5>
+                            @if (HostProvider?.SelectedHost != null && _chainId != "...")
+                            {
+                                <button class="btn btn-outline-primary btn-sm py-0 px-2 text-xs" @onclick="AddChainToWalletAsync" disabled="@_addingChain">
+                                    @if (_addingChain)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1" style="width: 0.6rem; height: 0.6rem;"></span>
+                                    }
+                                    <i class="bi bi-wallet2 me-1"></i>@L[ExplorerKeys.Home.AddToWallet]
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <LatestBlocksTable Blocks="@_latestBlocks" />
+    </div>
+    <div class="col-lg-6">
+        <LatestTransactionsTable Transactions="@_latestTransactions" />
+    </div>
+</div>
+
+@code {
+    private List<IBlockView>? _latestBlocks;
+    private List<ITransactionView>? _latestTransactions;
+    private string? _latestBlockNumber;
+    private string? _totalTxCount;
+    private string _chainId = "...";
+    private string _lastUpdated = "";
+    private bool _addingChain;
+    private Timer? _timer;
+    private bool _disposed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        _timer = new Timer(OnTimerCallback, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    private async void OnTimerCallback(object? state)
+    {
+        if (_disposed) return;
+        try
+        {
+            await InvokeAsync(async () =>
+            {
+                if (_disposed) return;
+                await LoadDataAsync();
+                StateHasChanged();
+            });
+        }
+        catch (ObjectDisposedException) { }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            _latestBlocks = await BlockQuery.GetLatestBlocksAsync(10);
+            _latestTransactions = await TransactionQuery.GetLatestTransactionsAsync(10);
+
+            var latestBlock = _latestBlocks?.FirstOrDefault();
+            _latestBlockNumber = latestBlock?.BlockNumber.ToString() ?? "0";
+
+            var txCount = await TransactionQuery.GetTotalTransactionCountAsync();
+            _totalTxCount = txCount.ToString("N0");
+            _lastUpdated = DateTime.UtcNow.ToString("HH:mm:ss") + " UTC";
+
+            if (Rpc.IsAvailable && _chainId == "...")
+            {
+                var chainId = await Rpc.GetChainIdAsync();
+                _chainId = chainId.ToString();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to refresh dashboard stats");
+        }
+    }
+
+    private async Task AddChainToWalletAsync()
+    {
+        _addingChain = true;
+        try
+        {
+            await ChainService.AddChainToWalletAsync(HostProvider);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to add chain to wallet");
+        }
+        finally
+        {
+            _addingChain = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _timer?.Dispose();
+    }
+}

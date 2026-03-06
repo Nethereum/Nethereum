@@ -1,0 +1,42 @@
+<div class="card mb-3">
+    <div class="card-header bg-transparent">
+        <h6 class="mb-0"><i class="bi bi-gear me-2"></i>@L[ExplorerKeys.TransactionDetail.OtherAttributes]</h6>
+    </div>
+    <div class="card-body">
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.TransactionType]</div>
+            <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatTxType(Tx.TransactionType)</div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Nonce]</div>
+            <div class="col-sm-9 detail-value">@Tx.Nonce</div>
+        </div>
+        <div class="row detail-row">
+            <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.PositionInBlock]</div>
+            <div class="col-sm-9 detail-value">@Tx.TransactionIndex</div>
+        </div>
+        @if (!string.IsNullOrEmpty(Tx.BlockHash))
+        {
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.BlockHash]</div>
+                <div class="col-sm-9 detail-value">
+                    <HexDisplay Value="@Tx.BlockHash" Link="@($"/block/{Tx.BlockHash}")" MaxLength="66" />
+                </div>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(Tx.ReceiptHash))
+        {
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.TransactionDetail.ReceiptHash]</div>
+                <div class="col-sm-9 detail-value">
+                    <HexDisplay Value="@Tx.ReceiptHash" MaxLength="66" />
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ITransactionView Tx { get; set; } = default!;
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+}

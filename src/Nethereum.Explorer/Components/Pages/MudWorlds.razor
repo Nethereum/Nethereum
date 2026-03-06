@@ -1,0 +1,96 @@
+@page "/mud"
+@using Microsoft.Extensions.Options
+@inject IMudExplorerService MudExplorer
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerLocalizer L
+
+<PageTitle>@L[ExplorerKeys.MudWorlds.Title] - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem> { new() { Label = L[ExplorerKeys.MudWorlds.Title] } })" />
+
+<h4 class="mb-3"><i class="bi bi-globe me-2"></i>@L[ExplorerKeys.MudWorlds.Title]</h4>
+
+@if (!Options.Value.EnableMud)
+{
+    <EmptyState IconClass="bi bi-globe" Title="MUD Explorer Disabled" Subtitle="MUD World browsing is not enabled for this explorer instance." />
+}
+else if (_loading)
+{
+    <LoadingSpinner Message="@L[ExplorerKeys.MudWorlds.LoadingWorlds]" />
+}
+else if (!_worlds.Any())
+{
+    <EmptyState IconClass="bi bi-globe" Title="@L[ExplorerKeys.MudWorlds.NoWorldsFound]" Subtitle="@L[ExplorerKeys.MudWorlds.NoWorldsSubtitle]" />
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var world in _worlds)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="stat-icon me-3">
+                                <i class="bi bi-globe"></i>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <h6 class="mb-0 text-color-primary">@L[ExplorerKeys.MudWorlds.WorldContract]</h6>
+                                <HexDisplay Value="@world.Address" Link="@($"/account/{world.Address}")" MaxLength="16" />
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 explorer-subtitle">
+                            <span><i class="bi bi-table me-1"></i>@L[ExplorerKeys.MudWorlds.Tables]</span>
+                            <span class="badge badge-info">@world.TableCount</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3 explorer-subtitle">
+                            <span><i class="bi bi-database me-1"></i>@L[ExplorerKeys.MudWorlds.Records]</span>
+                            <span class="badge badge-info">@world.RecordCount</span>
+                        </div>
+                        <a href="@($"/mud/tables/{world.Address}")" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="bi bi-table me-1"></i>@L[ExplorerKeys.MudWorlds.BrowseTables]
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<WorldInfo> _worlds = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var addresses = await MudExplorer.GetWorldAddressesAsync();
+
+            foreach (var address in addresses)
+            {
+                var tableIds = await MudExplorer.GetTableIdsForWorldAsync(address);
+                var recordCount = await MudExplorer.GetRecordCountAsync(address, null);
+
+                _worlds.Add(new WorldInfo
+                {
+                    Address = address,
+                    TableCount = tableIds.Count,
+                    RecordCount = recordCount
+                });
+            }
+        }
+        catch { }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private class WorldInfo
+    {
+        public string Address { get; set; } = "";
+        public int TableCount { get; set; }
+        public int RecordCount { get; set; }
+    }
+}

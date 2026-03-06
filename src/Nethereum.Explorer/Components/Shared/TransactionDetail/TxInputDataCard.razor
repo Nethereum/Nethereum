@@ -1,0 +1,37 @@
+@using Nethereum.ABI.FunctionEncoding
+
+@if (!string.IsNullOrEmpty(Tx.Input) && Tx.Input != "0x")
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent d-flex align-items-center">
+            <h6 class="mb-0"><i class="bi bi-code-slash me-2"></i>@L[ExplorerKeys.TransactionDetail.InputData]</h6>
+            @if (DecodedFunction != null)
+            {
+                <span class="badge ms-2 explorer-badge explorer-badge-primary">@DecodedFunction.FunctionName</span>
+                <span class="font-monospace ms-1 text-sm text-color-secondary">@DecodedFunction.Signature</span>
+            }
+            else
+            {
+                <span class="font-monospace ms-2 text-md text-color-warning">@(Tx.Input.Length >= 10 ? Tx.Input[..10] : Tx.Input)</span>
+            }
+        </div>
+        <div class="card-body">
+            @if (DecodedFunction?.Parameters.Any() == true)
+            {
+                <h6 class="text-base text-color-primary mb-2">@L[ExplorerKeys.TransactionDetail.DecodedParameters]</h6>
+                <DecodedParametersTable Parameters="@DecodedFunction.Parameters" CssClass="mb-3" />
+            }
+
+            <h6 class="text-base text-color-secondary mb-2">@L[ExplorerKeys.TransactionDetail.RawInput]</h6>
+            <div class="explorer-decoded-panel">
+                <span class="font-monospace explorer-decoded-text">@Tx.Input</span>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public ITransactionView Tx { get; set; } = default!;
+    [Parameter] public DecodedFunctionCall? DecodedFunction { get; set; }
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+}

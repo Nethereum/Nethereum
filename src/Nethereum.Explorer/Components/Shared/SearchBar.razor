@@ -1,0 +1,140 @@
+@using Nethereum.Explorer.Services
+@inject NavigationManager Navigation
+@inject ISearchResolverService SearchResolver
+@inject RecentSearchService RecentSearch
+@inject ExplorerLocalizer L
+
+<div class="position-relative ms-auto" style="min-width: 350px;">
+    <form class="d-flex" role="search" @onsubmit="HandleSearchAsync" @onsubmit:preventDefault>
+        <div class="input-group">
+            <input class="form-control form-control-sm" type="search"
+                   placeholder="@L[ExplorerKeys.Search.Placeholder]"
+                   @bind="_searchQuery" @bind:event="oninput"
+                   @onfocus="ShowDropdown"
+                   @onblur="HideDropdown"
+                   disabled="@_searching" />
+            <button class="btn btn-primary btn-sm" type="submit" disabled="@_searching">
+                @if (_searching)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                }
+                else
+                {
+                    <i class="bi bi-search"></i>
+                }
+            </button>
+        </div>
+    </form>
+    @if (_showDropdown)
+    {
+        <div class="position-absolute w-100 mt-1" style="z-index: 1050;">
+            <div class="card" style="background: var(--card-bg); border: 1px solid var(--card-border);">
+                @if (!string.IsNullOrEmpty(_searchQuery))
+                {
+                    <div class="card-header py-1 px-2 text-color-dim text-sm">
+                        @if (long.TryParse(_searchQuery.Trim(), out _))
+                        {
+                            <i class="bi bi-box me-1"></i>@L.GetString(ExplorerKeys.Search.GoToBlock, _searchQuery.Trim())
+                        }
+                        else if (_searchQuery.Trim().StartsWith("0x", StringComparison.OrdinalIgnoreCase) && _searchQuery.Trim().Length == 42)
+                        {
+                            <i class="bi bi-person me-1"></i>@L[ExplorerKeys.Search.GoToAddress]
+                        }
+                        else if (_searchQuery.Trim().StartsWith("0x", StringComparison.OrdinalIgnoreCase) && _searchQuery.Trim().Length == 66)
+                        {
+                            <i class="bi bi-arrow-left-right me-1"></i>@L[ExplorerKeys.Search.TxOrBlockHash]
+                        }
+                        else if (_searchQuery.Trim().StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <i class="bi bi-hash me-1"></i>@L.GetString(ExplorerKeys.Search.HexValue, _searchQuery.Trim().Length)
+                        }
+                        else
+                        {
+                            <i class="bi bi-search me-1"></i>@L[ExplorerKeys.Search.SearchLabel]
+                        }
+                    </div>
+
+                    @if (MatchingRecent.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var entry in MatchingRecent)
+                            {
+                                <a href="@entry.Url" class="list-group-item list-group-item-action py-1 px-2 d-flex align-items-center gap-2"
+                                   style="background: var(--card-bg); color: var(--text-primary); border-color: var(--card-border); font-size: 0.8rem;"
+                                   @onmousedown:preventDefault @onmousedown="@(() => GoTo(entry.Url))">
+                                    <span class="badge explorer-badge explorer-badge-primary text-xxs">@entry.Type</span>
+                                    <span class="font-monospace text-truncate">@entry.Query</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                }
+                else if (RecentSearch.Searches.Any())
+                {
+                    <div class="card-header py-1 px-2 text-color-dim text-sm">@L[ExplorerKeys.Search.RecentSearches]</div>
+                    <div class="list-group list-group-flush">
+                        @foreach (var entry in RecentSearch.Searches)
+                        {
+                            <a href="@entry.Url" class="list-group-item list-group-item-action py-1 px-2 d-flex align-items-center gap-2"
+                               style="background: var(--card-bg); color: var(--text-primary); border-color: var(--card-border); font-size: 0.8rem;"
+                               @onmousedown:preventDefault @onmousedown="@(() => GoTo(entry.Url))">
+                                <span class="badge explorer-badge explorer-badge-primary text-xxs">@entry.Type</span>
+                                <span class="font-monospace text-truncate">@entry.Query</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string _searchQuery = "";
+    private bool _searching;
+    private bool _showDropdown;
+
+    private List<RecentSearchService.SearchEntry> MatchingRecent =>
+        string.IsNullOrEmpty(_searchQuery) ? new() :
+        RecentSearch.Searches
+            .Where(s => s.Query.Contains(_searchQuery.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Take(5).ToList();
+
+    private void ShowDropdown() => _showDropdown = true;
+
+    private void HideDropdown()
+    {
+        _ = Task.Delay(200).ContinueWith(_ =>
+        {
+            _showDropdown = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void GoTo(string url)
+    {
+        _showDropdown = false;
+        _searchQuery = "";
+        Navigation.NavigateTo(url);
+    }
+
+    private async Task HandleSearchAsync()
+    {
+        var query = _searchQuery?.Trim() ?? "";
+        if (string.IsNullOrEmpty(query)) return;
+
+        _searching = true;
+        _showDropdown = false;
+        try
+        {
+            var result = await SearchResolver.ResolveAsync(query);
+            RecentSearch.Add(result.DisplayQuery, result.Type, result.Url);
+            Navigation.NavigateTo(result.Url);
+        }
+        finally
+        {
+            _searching = false;
+            _searchQuery = "";
+        }
+    }
+}

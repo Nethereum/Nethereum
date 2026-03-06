@@ -1,0 +1,477 @@
+@page "/transaction/{TxHash}"
+@using System.Linq
+@using Microsoft.Extensions.Options
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.BlockchainProcessing.BlockStorage.Entities
+@using Nethereum.Explorer.Services
+@inject ITransactionQueryService TransactionQuery
+@inject ILogQueryService LogQuery
+@inject IInternalTransactionQueryService InternalTxQuery
+@inject IAbiDecodingService AbiDecoding
+@inject ITransactionTraceService TraceService
+@inject IRpcQueryService Rpc
+@inject IOptions<ExplorerOptions> Options
+@inject ExplorerChainService ChainService
+@inject InternalTransactionDecodingHelper ItxHelper
+@inject ILogger<TransactionDetail> Logger
+@inject ExplorerLocalizer L
+@implements IDisposable
+
+<PageTitle>@L[ExplorerKeys.TransactionDetail.Title] @ExplorerFormatUtils.TruncateHex(TxHash, 16) - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[ExplorerKeys.Transactions.Title], Href = "/transactions" },
+    new() { Label = ExplorerFormatUtils.TruncateHex(TxHash, 16) }
+})" />
+
+@if (_tx == null && !_notFound && !_error)
+{
+    <LoadingSpinner Message="@L[ExplorerKeys.TransactionDetail.LoadingTransaction]" />
+}
+else if (_error)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle display-4 text-color-danger"></i>
+        <h5 class="mt-3">@L[ExplorerKeys.TransactionDetail.FailedToLoad]</h5>
+        <p class="text-color-secondary">@_errorMessage</p>
+        <button class="btn btn-outline-primary mt-2" @onclick="RetryAsync">
+            <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Shared.Retry]
+        </button>
+    </div>
+}
+else if (_notFound)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle display-4 text-color-warning"></i>
+        <h5 class="mt-3">@L[ExplorerKeys.TransactionDetail.NotFound]</h5>
+        <p class="font-monospace small">@TxHash</p>
+        <button class="btn btn-outline-primary mt-2" @onclick="RetryAsync">
+            <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Shared.Retry]
+        </button>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center">
+            <h4 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>@L[ExplorerKeys.TransactionDetail.TransactionDetails]</h4>
+            <span class="ms-3">
+                @if (!_tx!.Failed)
+                {
+                    <span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>@L[ExplorerKeys.TransactionDetail.Success]</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger px-3 py-2"><i class="bi bi-x-circle me-1"></i>@L[ExplorerKeys.TransactionDetail.Failed]</span>
+                }
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            @if (Options.Value.EnableEvmDebugger && Rpc.IsAvailable)
+            {
+                <a href="/transaction/@TxHash/debug" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-bug me-1"></i>@L[ExplorerKeys.Debugger.Debug]
+                </a>
+            }
+            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _showJson = !_showJson">
+                <i class="bi @(_showJson ? "bi-card-text" : "bi-braces") me-1"></i>@(_showJson ? L[ExplorerKeys.BlockDetail.Details] : "JSON")
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_tx.Error) || _tx.Failed)
+    {
+        <div class="alert alert-danger d-flex align-items-start mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+            <div>
+                <div>@(!string.IsNullOrEmpty(_tx.Error) ? _tx.Error : L[ExplorerKeys.TransactionDetail.TransactionReverted])</div>
+                @{
+                    var revertReason = _tx.RevertReason ?? _dbInternalTxs?.FirstOrDefault()?.RevertReason;
+                }
+                @if (!string.IsNullOrEmpty(revertReason))
+                {
+                    <div class="mt-1 font-monospace explorer-revert-reason">
+                        @L[ExplorerKeys.TransactionDetail.RevertReason] @revertReason
+                    </div>
+                }
+                @if (_decodedTxError != null)
+                {
+                    <div class="mt-1 font-monospace explorer-revert-reason">
+                        <span>@(_decodedTxError.ErrorName)(@(string.Join(", ", _decodedTxError.Parameters.Select(p => $"{p.Parameter.Name}: {p.Result}"))))</span>
+                    </div>
+                }
+                @if (_dbInternalTxs?.FirstOrDefault() is { } firstItx && !string.IsNullOrEmpty(firstItx.Error))
+                {
+                    <div class="mt-1 text-base">
+                        @L[ExplorerKeys.TransactionDetail.Error] @firstItx.Error
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (_showJson)
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-braces me-2"></i>@L[ExplorerKeys.TransactionDetail.RawTransactionData]</h6>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0 font-monospace explorer-json-block">@GetTransactionJson()</pre>
+            </div>
+        </div>
+    }
+    else
+    {
+
+    <TxOverviewCard Tx="_tx" DbInternalTxs="_dbInternalTxs" CurrencySymbol="@ChainService.CurrencySymbol" L="L" />
+
+    <TxGasCard Tx="_tx" CurrencySymbol="@ChainService.CurrencySymbol" L="L" />
+
+    <TxAttributesCard Tx="_tx" L="L" />
+
+    <TxTokenTransfersCard TokenTransfers="_tokenTransfers" TokenDecimals="_tokenDecimals" L="L" />
+
+    <!-- Internal Transactions (from indexed DB data) -->
+    @if (Options.Value.EnableInternalTransactions && _dbInternalTxs != null && _dbInternalTxs.Any())
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-transparent d-flex align-items-center">
+                <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>@L[ExplorerKeys.TransactionDetail.InternalTransactions]</h6>
+                <span class="badge ms-2 explorer-badge explorer-badge-primary">@_dbInternalTxs.Count</span>
+            </div>
+            <div class="card-body p-0">
+                <InternalTransactionTable InternalTransactions="_dbInternalTxs"
+                                          CurrencySymbol="@ChainService.CurrencySymbol"
+                                          ItxHelper="ItxHelper">
+                    <AdditionalErrorContent Context="ctx">
+                        @{
+                            var errorKey = $"db_{ctx.Index}";
+                        }
+                        @if (_decodedInternalErrors.TryGetValue(errorKey, out var decodedErr))
+                        {
+                            <div class="mb-1 font-monospace text-md text-color-warning">
+                                @(decodedErr.ErrorName)(@(string.Join(", ", decodedErr.Parameters.Select(p => $"{p.Parameter.Name}: {p.Result}"))))
+                            </div>
+                        }
+                    </AdditionalErrorContent>
+                </InternalTransactionTable>
+            </div>
+        </div>
+    }
+    else if (Options.Value.EnableInternalTransactions && _traceLoading)
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>@L[ExplorerKeys.TransactionDetail.InternalTransactions]</h6>
+            </div>
+            <div class="card-body text-center py-3">
+                <div class="spinner-border spinner-border-sm me-2 text-color-primary" role="status"></div>
+                <span class="text-color-secondary">@L[ExplorerKeys.Shared.Loading]</span>
+            </div>
+        </div>
+    }
+
+    <TxBlobDataCard BlobInfo="_blobInfo" L="L" />
+
+    <TxAuthorizationListCard Authorizations="_authorizations" L="L" />
+
+    @if (Options.Value.EnableTracing)
+    {
+        <TxStateDiffCard StateDiff="_stateDiff" IsLoading="_stateDiffLoading" OnLoadStateDiff="LoadStateDiffAsync"
+                         CurrencySymbol="@ChainService.CurrencySymbol" L="L" />
+    }
+
+    <TxInputDataCard Tx="_tx" DecodedFunction="_decodedFunction" L="L" />
+
+    <TxEventLogsCard Logs="_logs" DecodedLogs="_decodedLogs" L="L" />
+
+    } @* end else (!_showJson) *@
+}
+
+@code {
+    [Parameter] public string TxHash { get; set; } = "";
+    private ITransactionView? _tx;
+    private List<ITransactionLogView>? _logs;
+    private DecodedFunctionCall? _decodedFunction;
+    private List<DecodedEventLog> _decodedLogs = new();
+    private List<ITransactionLogView> _tokenTransfers = new();
+    private bool _traceLoading;
+    private bool _showJson;
+    private List<AuthorizationInfo> _authorizations = new();
+    private BlobTransactionInfo? _blobInfo;
+    private StateDiffResult? _stateDiff;
+    private bool _stateDiffLoading;
+    private bool _notFound;
+    private bool _error;
+    private string? _errorMessage;
+    private DecodedError? _decodedTxError;
+    private Dictionary<string, DecodedError> _decodedInternalErrors = new();
+    private List<IInternalTransactionView>? _dbInternalTxs;
+    private Dictionary<string, int> _tokenDecimals = new(StringComparer.OrdinalIgnoreCase);
+    private CancellationTokenSource _cts = new();
+    private bool _disposed;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        _cts = new CancellationTokenSource();
+
+        _notFound = false;
+        _error = false;
+        _errorMessage = null;
+        _tx = null;
+        _logs = null;
+        _decodedFunction = null;
+        _decodedLogs = new();
+        _tokenTransfers = new();
+        _traceLoading = false;
+        _authorizations = new();
+        _blobInfo = null;
+        _stateDiff = null;
+        _stateDiffLoading = false;
+        _decodedTxError = null;
+        _decodedInternalErrors = new();
+        _dbInternalTxs = null;
+        ItxHelper.ClearCache();
+        _tokenDecimals = new(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            _tx = await TransactionQuery.GetTransactionAsync(TxHash);
+            if (_tx == null)
+            {
+                _notFound = true;
+                return;
+            }
+
+            _logs = await LogQuery.GetTransactionLogsAsync(TxHash);
+
+            var targetAddress = _tx.AddressTo;
+            if (string.IsNullOrEmpty(targetAddress))
+                targetAddress = _tx.NewContractAddress;
+
+            if (!string.IsNullOrEmpty(targetAddress))
+            {
+                if (!string.IsNullOrEmpty(_tx.Input) && _tx.Input != "0x")
+                {
+                    _decodedFunction = await AbiDecoding.DecodeFunctionInputAsync(targetAddress, _tx.Input);
+                }
+
+                if (_logs?.Any() == true)
+                {
+                    var logsByAddress = _logs.GroupBy(l => l.Address);
+                    foreach (var group in logsByAddress)
+                    {
+                        var rawLogs = group.Select(l => new RawEventLog
+                        {
+                            LogIndex = l.LogIndex.ToString(),
+                            Address = l.Address,
+                            EventHash = l.EventHash,
+                            IndexVal1 = l.IndexVal1,
+                            IndexVal2 = l.IndexVal2,
+                            IndexVal3 = l.IndexVal3,
+                            Data = l.Data
+                        });
+                        var decoded = await AbiDecoding.DecodeEventLogsAsync(group.Key, rawLogs);
+                        _decodedLogs.AddRange(decoded);
+                    }
+
+                    _decodedLogs = _decodedLogs.OrderBy(d => d.LogIndex).ToList();
+                }
+            }
+
+            if (_logs != null)
+            {
+                _tokenTransfers = _logs.Where(l => ExplorerFormatUtils.IsErc20Transfer(l.EventHash)).ToList();
+
+                if (_tokenTransfers.Any() && Rpc.IsAvailable)
+                {
+                    var uniqueTokens = _tokenTransfers.Select(t => t.Address).Where(a => !string.IsNullOrEmpty(a)).Distinct(StringComparer.OrdinalIgnoreCase);
+                    foreach (var tokenAddr in uniqueTokens)
+                    {
+                        try
+                        {
+                            var info = await Rpc.GetTokenInfoAsync(tokenAddr, "");
+                            if (info != null && info.Decimals > 0)
+                                _tokenDecimals[tokenAddr] = info.Decimals;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogDebug(ex, "Failed to fetch token decimals for {Address}", tokenAddr);
+                        }
+                    }
+                }
+            }
+
+            _ = LoadTraceAsync();
+            _ = LoadAuthorizationsAsync();
+            _ = LoadBlobInfoAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = true;
+            _errorMessage = "An error occurred while loading transaction details. Please try again.";
+            Logger.LogError(ex, "Failed to load transaction {TxHash}", TxHash);
+        }
+    }
+
+    private async Task RetryAsync() => await LoadAsync();
+
+    private async Task LoadTraceAsync()
+    {
+        var ct = _cts.Token;
+        _traceLoading = true;
+        _dbInternalTxs = null;
+        StateHasChanged();
+
+        try
+        {
+            var indexed = await InternalTxQuery.GetInternalTransactionsByTxHashAsync(TxHash);
+            if (ct.IsCancellationRequested || _disposed) return;
+
+            if (indexed.Any())
+            {
+                _dbInternalTxs = indexed;
+                await ItxHelper.DecodeAsync(_dbInternalTxs);
+            }
+
+            if (_tx?.Failed == true)
+            {
+                var outputData = _dbInternalTxs?.FirstOrDefault()?.Output;
+                var contractAddress = _tx.AddressTo;
+                if (!string.IsNullOrEmpty(outputData) && !string.IsNullOrEmpty(contractAddress))
+                {
+                    _decodedTxError = await AbiDecoding.DecodeErrorAsync(contractAddress, outputData);
+                }
+            }
+
+            if (ct.IsCancellationRequested || _disposed) return;
+
+            if (_dbInternalTxs != null)
+            {
+                for (int i = 0; i < _dbInternalTxs.Count; i++)
+                {
+                    var itx = _dbInternalTxs[i];
+                    if (!string.IsNullOrEmpty(itx.Error) && !string.IsNullOrEmpty(itx.Output) && !string.IsNullOrEmpty(itx.AddressTo))
+                    {
+                        var errorKey = $"db_{i}";
+                        try
+                        {
+                            var decoded = await AbiDecoding.DecodeErrorAsync(itx.AddressTo, itx.Output);
+                            if (decoded != null)
+                                _decodedInternalErrors[errorKey] = decoded;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogDebug(ex, "Failed to decode internal error for {Key}", errorKey);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load trace data for {TxHash}", TxHash);
+        }
+        finally
+        {
+            _traceLoading = false;
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadBlobInfoAsync()
+    {
+        if (!Rpc.IsAvailable || _tx == null) return;
+        if (_tx.TransactionType != 3) return;
+        try
+        {
+            _blobInfo = await Rpc.GetBlobTransactionInfoAsync(TxHash);
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Failed to load blob info for {TxHash}", TxHash);
+        }
+    }
+
+    private async Task LoadAuthorizationsAsync()
+    {
+        if (!Rpc.IsAvailable || _tx == null) return;
+        if (_tx.TransactionType != 4) return;
+        try
+        {
+            _authorizations = await Rpc.GetTransactionAuthorizationsAsync(TxHash);
+            if (!_disposed)
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Failed to load authorizations for {TxHash}", TxHash);
+        }
+    }
+
+    private async Task LoadStateDiffAsync()
+    {
+        _stateDiffLoading = true;
+        StateHasChanged();
+        try
+        {
+            _stateDiff = await TraceService.GetStateDiffAsync(TxHash);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to load state diff for {TxHash}", TxHash);
+        }
+        finally
+        {
+            _stateDiffLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetTransactionJson()
+    {
+        if (_tx == null) return "{}";
+        var obj = new
+        {
+            hash = _tx.Hash,
+            blockNumber = _tx.BlockNumber,
+            blockHash = _tx.BlockHash,
+            from = _tx.AddressFrom,
+            to = _tx.AddressTo,
+            value = _tx.Value,
+            gas = _tx.Gas,
+            gasUsed = _tx.GasUsed,
+            gasPrice = _tx.GasPrice,
+            cumulativeGasUsed = _tx.CumulativeGasUsed,
+            nonce = _tx.Nonce,
+            transactionIndex = _tx.TransactionIndex,
+            input = _tx.Input,
+            failed = _tx.Failed,
+            error = _tx.Error,
+            revertReason = _tx.RevertReason,
+            newContractAddress = _tx.NewContractAddress,
+            maxFeePerGas = _tx.MaxFeePerGas,
+            maxPriorityFeePerGas = _tx.MaxPriorityFeePerGas,
+            transactionType = _tx.TransactionType,
+            receiptHash = _tx.ReceiptHash,
+            timeStamp = _tx.TimeStamp
+        };
+        return Newtonsoft.Json.JsonConvert.SerializeObject(obj, Newtonsoft.Json.Formatting.Indented);
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}

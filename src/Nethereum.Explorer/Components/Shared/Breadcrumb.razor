@@ -1,0 +1,26 @@
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0 text-base">
+        <li class="breadcrumb-item"><a href="/"><i class="bi bi-house-door"></i></a></li>
+        @foreach (var item in Items)
+        {
+            if (item == Items.Last())
+            {
+                <li class="breadcrumb-item active text-color-secondary" aria-current="page">@item.Label</li>
+            }
+            else
+            {
+                <li class="breadcrumb-item"><a href="@item.Href">@item.Label</a></li>
+            }
+        }
+    </ol>
+</nav>
+
+@code {
+    [Parameter] public List<BreadcrumbItem> Items { get; set; } = new();
+
+    public class BreadcrumbItem
+    {
+        public string Label { get; set; } = "";
+        public string Href { get; set; } = "";
+    }
+}

@@ -1,0 +1,66 @@
+@inject ExplorerLocalizer L
+
+<nav aria-label="Page navigation">
+    <div class="d-flex justify-content-center align-items-center gap-2">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPageSafe(1)" title="@L[ExplorerKeys.Shared.FirstPage]">
+                    <i class="bi bi-chevron-bar-left"></i>
+                </a>
+            </li>
+            <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPageSafe(CurrentPage - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            @for (int i = StartPage; i <= EndPage; i++)
+            {
+                var pageNum = i;
+                <li class="page-item @(pageNum == CurrentPage ? "active" : "")">
+                    <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPageSafe(pageNum)">@pageNum</a>
+                </li>
+            }
+            <li class="page-item @(!HasMore ? "disabled" : "")">
+                <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPageSafe(CurrentPage + 1)">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            @if (TotalPages > 0)
+            {
+                <li class="page-item @(CurrentPage >= TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="javascript:void(0)" @onclick="() => GoToPageSafe(TotalPages)" title="@L[ExplorerKeys.Shared.LastPage]">
+                        <i class="bi bi-chevron-bar-right"></i>
+                    </a>
+                </li>
+            }
+        </ul>
+        <span class="text-color-secondary text-md" style="min-width: 60px;">
+            @L[ExplorerKeys.Shared.Page] @CurrentPage @(TotalPages > 0 ? L.GetString(ExplorerKeys.Shared.PageOf, TotalPages) : "")
+        </span>
+    </div>
+</nav>
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public bool HasMore { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private async Task GoToPageSafe(int page)
+    {
+        if (page < 1) return;
+        if (TotalPages > 0 && page > TotalPages) return;
+        if (page > CurrentPage && !HasMore && TotalPages <= 0) return;
+        await OnPageChanged.InvokeAsync(page);
+    }
+
+    private int StartPage => Math.Max(1, CurrentPage - 2);
+    private int EndPage
+    {
+        get
+        {
+            var maxPage = TotalPages > 0 ? TotalPages : (HasMore ? CurrentPage + 2 : CurrentPage);
+            return Math.Min(maxPage, CurrentPage + 2);
+        }
+    }
+}

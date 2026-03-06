@@ -1,0 +1,52 @@
+@using Nethereum.Explorer.Services
+@inject ToastService Toast
+@implements IDisposable
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    @foreach (var t in Toast.Toasts)
+    {
+        var bgColor = t.Type switch
+        {
+            ToastService.ToastType.Success => "rgba(34, 197, 94, 0.15)",
+            ToastService.ToastType.Error => "rgba(239, 68, 68, 0.15)",
+            ToastService.ToastType.Warning => "rgba(245, 158, 11, 0.15)",
+            _ => "rgba(56, 189, 248, 0.15)"
+        };
+        var borderColor = t.Type switch
+        {
+            ToastService.ToastType.Success => "rgba(34, 197, 94, 0.4)",
+            ToastService.ToastType.Error => "rgba(239, 68, 68, 0.4)",
+            ToastService.ToastType.Warning => "rgba(245, 158, 11, 0.4)",
+            _ => "rgba(56, 189, 248, 0.4)"
+        };
+        var textColor = t.Type switch
+        {
+            ToastService.ToastType.Success => "var(--success-color)",
+            ToastService.ToastType.Error => "var(--danger-color)",
+            ToastService.ToastType.Warning => "var(--warning-color)",
+            _ => "var(--info-color)"
+        };
+        var icon = t.Type switch
+        {
+            ToastService.ToastType.Success => "bi-check-circle-fill",
+            ToastService.ToastType.Error => "bi-exclamation-circle-fill",
+            ToastService.ToastType.Warning => "bi-exclamation-triangle-fill",
+            _ => "bi-info-circle-fill"
+        };
+        <div class="toast show" role="alert" style="background: @bgColor; border: 1px solid @borderColor; color: var(--text-primary); min-width: 300px;">
+            <div class="toast-body d-flex align-items-center gap-2 py-2 px-3">
+                <i class="bi @icon" style="color: @textColor;"></i>
+                <span class="flex-grow-1 small">@t.Message</span>
+                <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" @onclick="@(() => Toast.Remove(t.Id))"></button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized() => Toast.OnChange += OnToastChange;
+
+    private void OnToastChange() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Toast.OnChange -= OnToastChange;
+}

@@ -1,0 +1,440 @@
+@page "/block/{BlockNumberOrHash}"
+@using Nethereum.Explorer.Services
+@inject IBlockQueryService BlockQuery
+@inject ITransactionQueryService TransactionQuery
+@inject ExplorerChainService ChainService
+@inject ILogger<BlockDetail> Logger
+@inject ExplorerLocalizer L
+
+<PageTitle>@L[ExplorerKeys.BlockDetail.Title] @BlockNumberOrHash - Nethereum Explorer</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[ExplorerKeys.Blocks.Title], Href = "/blocks" },
+    new() { Label = L.GetString(ExplorerKeys.BlockDetail.Title, BlockNumberOrHash) }
+})" />
+
+@if (_block == null && !_notFound && !_error)
+{
+    <LoadingSpinner Message="@L[ExplorerKeys.BlockDetail.LoadingBlock]" />
+}
+else if (_error)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle display-4 text-color-danger"></i>
+        <h5 class="mt-3">@L[ExplorerKeys.BlockDetail.FailedToLoad]</h5>
+        <p class="text-color-secondary">@_errorMessage</p>
+        <button class="btn btn-outline-primary mt-2" @onclick="RetryAsync">
+            <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Shared.Retry]
+        </button>
+    </div>
+}
+else if (_notFound)
+{
+    <div class="text-center py-5">
+        <i class="bi bi-exclamation-triangle display-4 text-color-warning"></i>
+        <h5 class="mt-3">@L[ExplorerKeys.BlockDetail.NotFound] @BlockNumberOrHash</h5>
+        <p class="text-color-secondary">@L[ExplorerKeys.BlockDetail.NotIndexedYet]</p>
+        <button class="btn btn-outline-primary mt-2" @onclick="RetryAsync">
+            <i class="bi bi-arrow-clockwise me-1"></i>@L[ExplorerKeys.Shared.Retry]
+        </button>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-box me-2"></i>@L.GetString(ExplorerKeys.BlockDetail.Title, _block!.BlockNumber)</h4>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _showJson = !_showJson">
+                <i class="bi @(_showJson ? "bi-card-text" : "bi-braces") me-1"></i>@(_showJson ? L[ExplorerKeys.BlockDetail.Details] : "JSON")
+            </button>
+            @if (_blockNum > 0)
+            {
+                <a href="@($"/block/{_blockNum - 1}")" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-chevron-left"></i> @L[ExplorerKeys.BlockDetail.Prev]
+                </a>
+            }
+            <a href="@($"/block/{_blockNum + 1}")" class="btn btn-outline-primary btn-sm">
+                @L[ExplorerKeys.BlockDetail.Next] <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    @if (_showJson)
+    {
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-braces me-2"></i>@L[ExplorerKeys.BlockDetail.RawBlockData]</div>
+            <div class="card-body">
+                <pre class="mb-0 font-monospace explorer-json-block">@GetBlockJson()</pre>
+            </div>
+        </div>
+    }
+    else
+    {
+
+    <!-- Overview -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-info-circle me-2"></i>@L[ExplorerKeys.BlockDetail.Overview]</div>
+        <div class="card-body">
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.BlockNumber]</div>
+                <div class="col-sm-9 detail-value">@_block.BlockNumber</div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Timestamp]</div>
+                <div class="col-sm-9 detail-value">
+                    <i class="bi bi-clock me-1 text-color-primary"></i>
+                    <span class="text-color-primary">@ExplorerFormatUtils.FormatAge(_block.TimeStamp)</span>
+                    <span class="ms-2 text-color-secondary">(@ExplorerFormatUtils.FormatTimestamp(_block.TimeStamp))</span>
+                </div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Transactions]</div>
+                <div class="col-sm-9 detail-value">
+                    @L.GetString(ExplorerKeys.BlockDetail.TransactionsInBlock, _block.TransactionCount)
+                </div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.ValidatedBy]</div>
+                <div class="col-sm-9 detail-value">
+                    <HexDisplay Value="@_block.Miner" Link="@($"/account/{_block.Miner}")" MaxLength="42" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gas & Size -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-fuel-pump me-2"></i>@L[ExplorerKeys.BlockDetail.GasAndSize]</div>
+        <div class="card-body">
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.GasUsed]</div>
+                <div class="col-sm-9 detail-value">
+                    @{
+                        var gasPercent = ExplorerFormatUtils.GasPercentage(_block.GasUsed, _block.GasLimit);
+                    }
+                    <div class="d-flex align-items-center gap-3">
+                        <span>@ExplorerFormatUtils.FormatNumber(_block.GasUsed)</span>
+                        <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 300px;">
+                            <div class="progress flex-grow-1 explorer-gas-bar">
+                                <div class="progress-bar" style="width: @gasPercent%; background: @ExplorerFormatUtils.GasColor(gasPercent);"></div>
+                            </div>
+                            <span class="explorer-gas-pct-label @ExplorerFormatUtils.GasColorCssClass(gasPercent)">@gasPercent%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.Table.GasLimit]</div>
+                <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(_block.GasLimit)</div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Size]</div>
+                <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(_block.Size) @L[ExplorerKeys.BlockDetail.Bytes]</div>
+            </div>
+            @if (!string.IsNullOrEmpty(_block.BaseFeePerGas) && _block.BaseFeePerGas != "0")
+            {
+                <div class="row detail-row">
+                    <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.BaseFeePerGas]</div>
+                    <div class="col-sm-9 detail-value">
+                        <span class="text-color-warning">@ExplorerFormatUtils.FormatGwei(_block.BaseFeePerGas) Gwei</span>
+                        <span class="ms-1 text-color-secondary">(@ExplorerFormatUtils.FormatEth(_block.BaseFeePerGas) @ChainService.CurrencySymbol)</span>
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_block.BaseFeePerGas) && _block.BaseFeePerGas != "0")
+            {
+                var burnedWei = ExplorerFormatUtils.CalculateBurnedFees(_block.BaseFeePerGas, _block.GasUsed);
+                @if (burnedWei != null)
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.BurnedFees]</div>
+                        <div class="col-sm-9 detail-value">
+                            <span class="text-color-danger"><i class="bi bi-fire me-1"></i>@ExplorerFormatUtils.FormatWeiToEth(burnedWei.Value) @ChainService.CurrencySymbol</span>
+                        </div>
+                    </div>
+                }
+            }
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.BlockReward]</div>
+                <div class="col-sm-9 detail-value">
+                    @{
+                        var isPoA = string.IsNullOrEmpty(_block.Difficulty) || _block.Difficulty == "0" || _block.Difficulty == "1";
+                    }
+                    @if (isPoA)
+                    {
+                        <span>0 @ChainService.CurrencySymbol</span>
+                        <span class="badge ms-2 explorer-badge explorer-badge-primary text-xs">@L[ExplorerKeys.BlockDetail.PoADevChain]</span>
+                    }
+                    else
+                    {
+                        <span>@L[ExplorerKeys.BlockDetail.StaticReward]</span>
+                    }
+                </div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Difficulty]</div>
+                <div class="col-sm-9 detail-value">@(_block.Difficulty ?? "0")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hashes -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-hash me-2"></i>@L[ExplorerKeys.BlockDetail.HashesAndExtra]</div>
+        <div class="card-body">
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Hash]</div>
+                <div class="col-sm-9 detail-value">
+                    <HexDisplay Value="@_block.Hash" MaxLength="66" />
+                </div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.ParentHash]</div>
+                <div class="col-sm-9 detail-value">
+                    @if (_blockNum > 0)
+                    {
+                        <HexDisplay Value="@_block.ParentHash" Link="@($"/block/{_blockNum - 1}")" MaxLength="66" />
+                    }
+                    else
+                    {
+                        <HexDisplay Value="@_block.ParentHash" MaxLength="66" />
+                    }
+                </div>
+            </div>
+            <div class="row detail-row">
+                <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Nonce]</div>
+                <div class="col-sm-9 detail-value font-monospace">@_block.Nonce</div>
+            </div>
+            @if (!string.IsNullOrEmpty(_block.ExtraData))
+            {
+                <div class="row detail-row">
+                    <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.ExtraData]</div>
+                    <div class="col-sm-9 detail-value">
+                        @{
+                            var decoded = ExplorerFormatUtils.DecodeHexToUtf8(_block.ExtraData);
+                        }
+                        @if (!string.IsNullOrEmpty(decoded))
+                        {
+                            <span class="text-color-primary">"@decoded"</span>
+                            <br />
+                        }
+                        <div class="font-monospace mt-1 p-2 explorer-code-block-sm">
+                            @_block.ExtraData
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- State Roots -->
+    @if (!string.IsNullOrEmpty(_block.StateRoot) || !string.IsNullOrEmpty(_block.ReceiptsRoot))
+    {
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-tree me-2"></i>@L[ExplorerKeys.BlockDetail.StateAndReceipts]</div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(_block.StateRoot))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.StateRoot]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.StateRoot" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.ReceiptsRoot))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.ReceiptsRoot]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.ReceiptsRoot" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.WithdrawalsRoot))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.WithdrawalsRoot]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.WithdrawalsRoot" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.LogsBloom) && _block.LogsBloom != "0x" + new string('0', 512))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.LogsBloom]</div>
+                        <div class="col-sm-9 detail-value">
+                            <div class="font-monospace p-2 explorer-code-block-sm text-xs" style="max-height: 100px; overflow-y: auto;">
+                                @_block.LogsBloom
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    } @* end else (!_showJson) *@
+
+    <!-- Transactions -->
+    @if (_transactions != null && _transactions.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-arrow-left-right me-2"></i>@L[ExplorerKeys.BlockDetail.Transactions]</span>
+                <span class="badge badge-info">@_transactions.Count</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>@L[ExplorerKeys.Table.TxHash]</th>
+                                <th>@L[ExplorerKeys.Table.Method]</th>
+                                <th>@L[ExplorerKeys.Table.From]</th>
+                                <th></th>
+                                <th>@L[ExplorerKeys.Table.To]</th>
+                                <th class="text-end">@L[ExplorerKeys.Table.Value] (@ChainService.CurrencySymbol)</th>
+                                <th class="text-end">@L[ExplorerKeys.Table.Gas]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tx in _transactions)
+                            {
+                                <tr>
+                                    <td class="text-center px-1 explorer-tx-status-icon">
+                                        @if (tx.Failed)
+                                        {
+                                            <i class="bi bi-x-circle-fill text-color-danger" title="@L[ExplorerKeys.TransactionDetail.Failed]"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-check-circle-fill text-color-success" title="@L[ExplorerKeys.TransactionDetail.Success]"></i>
+                                        }
+                                    </td>
+                                    <td><HexDisplay Value="@tx.Hash" Link="@($"/transaction/{tx.Hash}")" MaxLength="18" ShowCopy="false" /></td>
+                                    <td>
+                                        <span class="badge @ExplorerFormatUtils.GetMethodBadgeCssClass(tx.Input)">@ExplorerFormatUtils.GetMethodName(tx.Input)</span>
+                                    </td>
+                                    <td><HexDisplay Value="@tx.AddressFrom" Link="@($"/account/{tx.AddressFrom}")" MaxLength="14" ShowCopy="false" /></td>
+                                    <td class="text-center px-0">
+                                        @if (ExplorerFormatUtils.IsContractCreation(tx.AddressTo))
+                                        {
+                                            <span class="badge badge-info">CREATE</span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-arrow-right text-color-dim"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (ExplorerFormatUtils.IsContractCreation(tx.AddressTo))
+                                        {
+                                            <span class="explorer-subtitle">@L[ExplorerKeys.Table.ContractCreation]</span>
+                                        }
+                                        else
+                                        {
+                                            <HexDisplay Value="@tx.AddressTo" Link="@($"/account/{tx.AddressTo}")" MaxLength="14" ShowCopy="false" />
+                                        }
+                                    </td>
+                                    <td class="text-end font-monospace text-color-primary">@ExplorerFormatUtils.FormatEth(tx.Value)</td>
+                                    <td class="text-end explorer-subtitle">@ExplorerFormatUtils.FormatNumber(tx.Gas)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_transactions != null)
+    {
+        <div class="card">
+            <div class="card-body">
+                <EmptyState IconClass="bi bi-inbox" Title="@L[ExplorerKeys.BlockDetail.NoTransactionsInBlock]" />
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string BlockNumberOrHash { get; set; } = "";
+    private IBlockView? _block;
+    private List<ITransactionView>? _transactions;
+    private bool _notFound;
+    private bool _error;
+    private string? _errorMessage;
+    private bool _showJson;
+    private long _blockNum;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _notFound = false;
+        _error = false;
+        _errorMessage = null;
+        _block = null;
+        _transactions = null;
+
+        try
+        {
+            if (long.TryParse(BlockNumberOrHash, out _blockNum))
+            {
+                _block = await BlockQuery.GetBlockAsync(_blockNum);
+            }
+            else if (BlockNumberOrHash.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && BlockNumberOrHash.Length == 66)
+            {
+                _block = await BlockQuery.GetBlockByHashAsync(BlockNumberOrHash);
+                if (_block != null)
+                    _blockNum = _block.BlockNumber;
+            }
+
+            if (_block == null)
+            {
+                _notFound = true;
+            }
+            else
+            {
+                _transactions = await TransactionQuery.GetBlockTransactionsAsync(_block.BlockNumber);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = true;
+            _errorMessage = "An error occurred while loading block details. Please try again.";
+            Logger.LogError(ex, "Failed to load block {BlockNumber}", BlockNumberOrHash);
+        }
+    }
+
+    private async Task RetryAsync() => await LoadAsync();
+
+    private string GetBlockJson()
+    {
+        if (_block == null) return "{}";
+        var obj = new
+        {
+            blockNumber = _block.BlockNumber,
+            hash = _block.Hash,
+            parentHash = _block.ParentHash,
+            miner = _block.Miner,
+            difficulty = _block.Difficulty,
+            totalDifficulty = _block.TotalDifficulty,
+            gasLimit = _block.GasLimit,
+            gasUsed = _block.GasUsed,
+            baseFeePerGas = _block.BaseFeePerGas,
+            size = _block.Size,
+            nonce = _block.Nonce,
+            extraData = _block.ExtraData,
+            stateRoot = _block.StateRoot,
+            receiptsRoot = _block.ReceiptsRoot,
+            withdrawalsRoot = _block.WithdrawalsRoot,
+            transactionCount = _block.TransactionCount,
+            timeStamp = _block.TimeStamp
+        };
+        return Newtonsoft.Json.JsonConvert.SerializeObject(obj, Newtonsoft.Json.Formatting.Indented);
+    }
+}

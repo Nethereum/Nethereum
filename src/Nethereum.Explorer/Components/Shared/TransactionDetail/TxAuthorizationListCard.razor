@@ -1,0 +1,46 @@
+@if (Authorizations.Any())
+{
+    <div class="card mb-3">
+        <div class="card-header bg-transparent d-flex align-items-center">
+            <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>@L[ExplorerKeys.TransactionDetail.AuthorizationList] (EIP-7702)</h6>
+            <span class="badge ms-2 explorer-badge explorer-badge-purple">@Authorizations.Count</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th>@L[ExplorerKeys.TransactionDetail.AuthorizedAddress]</th>
+                            <th>Chain ID</th>
+                            <th>@L[ExplorerKeys.BlockDetail.Nonce]</th>
+                            <th>@L[ExplorerKeys.TransactionDetail.Signature]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var ai = 0; ai < Authorizations.Count; ai++)
+                        {
+                            var auth = Authorizations[ai];
+                            <tr>
+                                <td class="text-color-dim">@ai</td>
+                                <td><HexDisplay Value="@auth.Address" Link="@($"/account/{auth.Address}")" MaxLength="42" /></td>
+                                <td>@auth.ChainId</td>
+                                <td>@auth.Nonce</td>
+                                <td>
+                                    <span class="font-monospace text-sm text-color-secondary">
+                                        v=@auth.YParity r=@ExplorerFormatUtils.TruncateHex(auth.R, 16) s=@ExplorerFormatUtils.TruncateHex(auth.S, 16)
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<AuthorizationInfo> Authorizations { get; set; } = new();
+    [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+}

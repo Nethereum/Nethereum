@@ -1,0 +1,127 @@
+@page "/blocks"
+@using Nethereum.Explorer.Services
+@inject IBlockQueryService BlockQuery
+@inject IJSRuntime JS
+@inject ExplorerLocalizer L
+@inject ILogger<Blocks> Logger
+
+<PageTitle>@L[ExplorerKeys.Blocks.Title] - Nethereum Explorer</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-boxes me-2"></i>@L[ExplorerKeys.Blocks.Title]</h4>
+    <div class="d-flex align-items-center gap-2">
+        <span class="explorer-subtitle">@(_totalCount?.ToString("N0") ?? "...") @L[ExplorerKeys.Shared.Total]</span>
+        @if (_blocks != null && _blocks.Any())
+        {
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ExportCsvAsync" title="@L[ExplorerKeys.Shared.ExportCsv]">
+                <i class="bi bi-download me-1"></i>CSV
+            </button>
+        }
+    </div>
+</div>
+
+@if (_blocks == null)
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <SkeletonTable Rows="10" Columns="6" />
+        </div>
+    </div>
+}
+else if (!_blocks.Any())
+{
+    <EmptyState IconClass="bi bi-boxes" Title="@L[ExplorerKeys.Blocks.NoBlocksIndexed]" Subtitle="@L[ExplorerKeys.Blocks.BlocksWillAppear]" />
+}
+else
+{
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[ExplorerKeys.Table.Block]</th>
+                            <th>@L[ExplorerKeys.Table.Age]</th>
+                            <th>@L[ExplorerKeys.Table.Txns]</th>
+                            <th>@L[ExplorerKeys.Table.GasUsed]</th>
+                            <th>@L[ExplorerKeys.Table.GasLimit]</th>
+                            <th>@L[ExplorerKeys.Table.Validator]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var block in _blocks)
+                        {
+                            var gasPercent = ExplorerFormatUtils.GasPercentage(block.GasUsed, block.GasLimit);
+                            <tr>
+                                <td>
+                                    <a href="/block/@block.BlockNumber"><i class="bi bi-box me-1"></i>@block.BlockNumber</a>
+                                </td>
+                                <td class="text-nowrap" title="@ExplorerFormatUtils.FormatTimestamp(block.TimeStamp)">
+                                    <span class="text-color-primary text-md">@ExplorerFormatUtils.FormatAge(block.TimeStamp)</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">@block.TransactionCount</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-color-warning text-base text-nowrap">@ExplorerFormatUtils.FormatGas(block.GasUsed)</span>
+                                        <div class="d-flex align-items-center gap-1" style="min-width: 80px;">
+                                            <div class="progress flex-grow-1 explorer-gas-bar-sm">
+                                                <div class="progress-bar" style="width: @gasPercent%; background: @ExplorerFormatUtils.GasColor(gasPercent);"></div>
+                                            </div>
+                                            <span class="explorer-gas-pct-label @ExplorerFormatUtils.GasColorCssClass(gasPercent)" style="min-width: 28px;">@gasPercent%</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-color-secondary">@ExplorerFormatUtils.FormatNumber(block.GasLimit)</td>
+                                <td><HexDisplay Value="@block.Miner" Link="@($"/account/{block.Miner}")" MaxLength="14" ShowCopy="false" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <Pagination CurrentPage="@_page" HasMore="@_hasMore" TotalPages="@(_totalCount.HasValue ? (int)Math.Ceiling(_totalCount.Value / (double)PageSize) : 0)" OnPageChanged="@GoToPage" />
+    </div>
+}
+
+@code {
+    private List<IBlockView>? _blocks;
+    private int _page = 1;
+    private bool _hasMore;
+    private int? _totalCount;
+    private const int PageSize = ExplorerConstants.DefaultPageSize;
+
+    protected override async Task OnInitializedAsync() => await LoadPageAsync();
+
+    private async Task GoToPage(int page)
+    {
+        _page = page;
+        await LoadPageAsync();
+    }
+
+    private async Task LoadPageAsync()
+    {
+        try
+        {
+            _blocks = await BlockQuery.GetBlocksPagedAsync(_page, PageSize);
+            _hasMore = _blocks.Count == PageSize;
+            _totalCount = await BlockQuery.GetTotalBlockCountAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load blocks page {Page}", _page);
+            _blocks ??= new();
+        }
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        if (_blocks == null) return;
+        var csv = CsvExportService.ExportBlocks(_blocks);
+        await JS.InvokeVoidAsync("downloadCsv", $"blocks_page{_page}.csv", csv);
+    }
+}

@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Nethereum.Explorer Blazor Server blockchain explorer component library for Ethereum-compatible chains. Provides pages for blocks, transactions, accounts, contracts, logs, token transfers, and MUD worlds with ABI decoding, contract interaction, and transaction tracing.</Description>
+		<AssemblyTitle>Nethereum.Explorer</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>Nethereum.Explorer</AssemblyName>
+		<PackageId>Nethereum.Explorer</PackageId>
+		<PackageTags>Nethereum;Explorer;Blazor;Ethereum;Blockchain;BlockExplorer</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="QRCoder" Version="1.4.3" />
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+		<ProjectReference Include="..\Nethereum.BlockchainStore.EFCore\Nethereum.BlockchainStore.EFCore.csproj" />
+		<ProjectReference Include="..\Nethereum.Mud.Repositories.EntityFramework\Nethereum.Mud.Repositories.EntityFramework.csproj" />
+		<ProjectReference Include="..\Nethereum.Blazor\Nethereum.Blazor.csproj" />
+		<ProjectReference Include="..\Nethereum.DataServices\Nethereum.DataServices.csproj" />
+		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+		<ProjectReference Include="..\Nethereum.Blazor.Solidity\Nethereum.Blazor.Solidity.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>
