@@ -33,6 +33,15 @@ namespace Nethereum.AppChain.Anchoring.Hub
             }
         }
 
+        public HubAnchorService(HubConfig config, Nethereum.Web3.IWeb3 web3, ILogger<HubAnchorService>? logger = null)
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            if (web3 == null) throw new ArgumentNullException(nameof(web3));
+            if (string.IsNullOrEmpty(config.HubContractAddress)) throw new ArgumentException("HubContractAddress is required", nameof(config));
+            _logger = logger;
+            _hubService = new AppChainHubService(web3, config.HubContractAddress);
+        }
+
         public ulong LastProcessedMessageId => (ulong)Interlocked.Read(ref _lastProcessedMessageId);
 
         public void SetProcessedUpToMessageId(ulong messageId)

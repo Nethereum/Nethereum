@@ -29,6 +29,13 @@ namespace Nethereum.AppChain.Anchoring
             }
         }
 
+        public EvmAnchorService(AnchorConfig config, IWeb3 web3, ILogger<EvmAnchorService>? logger = null)
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _web3 = (Web3.Web3)(web3 ?? throw new ArgumentNullException(nameof(web3)));
+            _logger = logger;
+        }
+
         public async Task<AnchorInfo> AnchorBlockAsync(
             BigInteger blockNumber,
             byte[] stateRoot,
