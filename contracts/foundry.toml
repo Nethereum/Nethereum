@@ -1,0 +1,191 @@
+# Nethereum Contracts - Foundry Configuration
+# Multi-profile configuration for different environments
+#
+# Usage:
+#   forge build                     # Uses default profile
+#   FOUNDRY_PROFILE=ci forge build  # Uses CI profile
+#   FOUNDRY_PROFILE=dev forge test  # Uses dev profile with verbose output
+
+# =============================================================
+#                     DEFAULT PROFILE
+# Production-ready settings with optimizations
+# =============================================================
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+ffi = false
+gas_reports = ["*"]
+
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "@account-abstraction/=lib/account-abstraction/contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "@nethereum-aa/=src/Nethereum.AccountAbstraction/",
+    # ERC-4337 EntryPoint (for Rhinestone compatibility)
+    # For modulekit compatibility, use kopy-kat fork
+    "@ERC4337/account-abstraction/=lib/aa-modulekit/",
+    "account-abstraction/=lib/account-abstraction/contracts/",
+    # Rhinestone ERC-7579 modules
+    "@rhinestone/core-modules/=lib/core-modules/src/",
+    "@rhinestone/modulekit/=lib/modulekit/src/",
+    "@rhinestone/sentinellist/=lib/sentinellist/src/",
+    "@rhinestone/erc4337-validation/=lib/erc4337-validation/src/",
+    "@rhinestone/checknsignatures/=lib/checknsignatures/src/",
+    "@rhinestone/flatbytes/=lib/flatbytes/src/",
+    "@rhinestone/module-bases/=lib/module-bases/src/",
+    "erc7579/=lib/erc7579-implementation/src/",
+    "solady/=lib/solady/src/",
+    "sentinellist/=lib/sentinellist/src/",
+    "checknsignatures/=lib/checknsignatures/src/",
+    "flatbytes/=lib/flatbytes/src/",
+    "module-bases/=lib/module-bases/src/",
+    # Specific modulekit/external/ redirects (must come before general modulekit/)
+    "modulekit/external/ERC7579.sol=lib/module-bases/src/external/ERC7579.sol",
+    "modulekit/=lib/modulekit/src/",
+    "solarray/=lib/solarray/src/",
+    "@prb/math/=lib/prb-math/src/",
+    "account-abstraction-v0.6/=lib/account-abstraction-v0.6/contracts/",
+    # SmartSessions (Rhinestone + Biconomy session key system)
+    "@smartsessions/=lib/smartsessions/contracts/",
+    "excessively-safe-call/=lib/excessively-safe-call/src/",
+    "stringutils/=lib/stringutils/src/"
+]
+
+exclude_paths = [
+    "lib/**/test/**",
+    "lib/**/fv/**",
+    "lib/modulekit/src/deployment/**",
+    "lib/modulekit/src/test/**",
+    "lib/erc4337-validation/**"
+]
+
+[profile.default.compiler.input.settings]
+exclude = ["**/certora/**", "**/test/**"]
+
+# =============================================================
+#                     DEVELOPMENT PROFILE
+# Fast compilation without optimizations for quick iteration
+# =============================================================
+[profile.dev]
+src = "src"
+out = "out-dev"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+optimizer = false
+via_ir = false
+ffi = false
+verbosity = 3
+
+# =============================================================
+#                     CI PROFILE
+# Extended testing with fuzzing for continuous integration
+# =============================================================
+[profile.ci]
+src = "src"
+out = "out-ci"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+ffi = false
+verbosity = 4
+gas_reports = ["*"]
+
+[profile.ci.fuzz]
+runs = 10000
+max_test_rejects = 65536
+seed = "0x1234567890abcdef"
+dictionary_weight = 40
+include_storage = true
+include_push_bytes = true
+
+[profile.ci.invariant]
+runs = 256
+depth = 15
+fail_on_revert = false
+
+# =============================================================
+#                     LITE PROFILE
+# Minimal build for quick checks
+# =============================================================
+[profile.lite]
+src = "src"
+out = "out-lite"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+optimizer = false
+via_ir = false
+ffi = false
+
+# =============================================================
+#                     GAS SNAPSHOT PROFILE
+# Optimized for gas measurement and reporting
+# =============================================================
+[profile.gas]
+src = "src"
+out = "out-gas"
+libs = ["lib"]
+solc = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 1000000
+via_ir = true
+ffi = false
+gas_reports = ["*"]
+
+# =============================================================
+#                     FORMATTING
+# =============================================================
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = true
+int_types = "long"
+multiline_func_header = "attributes_first"
+quote_style = "double"
+number_underscore = "thousands"
+single_line_statement_blocks = "preserve"
+
+# =============================================================
+#                     RPC ENDPOINTS
+# Configure via environment variables
+# =============================================================
+[rpc_endpoints]
+mainnet = "${ETH_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+goerli = "${GOERLI_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+base = "${BASE_RPC_URL}"
+anvil = "http://127.0.0.1:8545"
+localhost = "http://127.0.0.1:8545"
+
+# =============================================================
+#                     ETHERSCAN API KEYS
+# For contract verification
+# =============================================================
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+arbitrum = { key = "${ARBISCAN_API_KEY}" }
+optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
+polygon = { key = "${POLYGONSCAN_API_KEY}" }
+base = { key = "${BASESCAN_API_KEY}" }
+
+# =============================================================
+#                     DOCUMENTATION
+# =============================================================
+[doc]
+out = "docs"
+title = "Nethereum AA Contracts"

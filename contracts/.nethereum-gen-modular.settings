@@ -1,0 +1,18 @@
+[
+    {
+        "paths": [
+            "out/ModularSmartAccount.sol/ModularSmartAccount.json",
+            "out/SmartAccountFactory.sol/SmartAccountFactory.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Core",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Core",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    }
+]

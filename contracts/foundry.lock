@@ -1,0 +1,74 @@
+{
+  "lib/excessively-safe-call": {
+    "rev": "81cd99ce3e69117d665d7601c330ea03b97acce0"
+  },
+  "lib\\solady": {
+    "tag": {
+      "name": "v0.1.26",
+      "rev": "acd959aa4bd04720d640bf4e6a5c71037510cc4b"
+    }
+  },
+  "lib\\sentinellist": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "6dff696f39fb55bfdde9581544d788932f145e47"
+    }
+  },
+  "lib\\core-modules": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "7de2fb5330cbf2cf698e1822283b20fa29595dbe"
+    }
+  },
+  "lib\\erc7579-implementation": {
+    "tag": {
+      "name": "v0.0.2",
+      "rev": "0f321b8544cea7ad3be1b5669c7998329636ef84"
+    }
+  },
+  "lib\\smartsessions": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "dc20f0b90541ef93e88177690b0c882384896332"
+    }
+  },
+  "lib\\checknsignatures": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "9847c6b0d551c75ac337be1c9fe87f4449c352c9"
+    }
+  },
+  "lib\\erc4337-validation": {
+    "tag": {
+      "name": "v0.0.5",
+      "rev": "ae53f35cb9ef2d6623daeb64cdfa4c256280d771"
+    }
+  },
+  "lib/module-bases": {
+    "rev": "201f1dd92212a5875db330030af9e33f55b899e3"
+  },
+  "lib\\openzeppelin-contracts": {
+    "tag": {
+      "name": "v5.5.0",
+      "rev": "fcbae5394ae8ad52d8e580a3477db99814b9d565"
+    }
+  },
+  "lib\\modulekit": {
+    "tag": {
+      "name": "v0.5.9",
+      "rev": "b696ccbe1b16a55d8b1a1de192309500af0fae5e"
+    }
+  },
+  "lib\\account-abstraction": {
+    "tag": {
+      "name": "v0.9.0",
+      "rev": "b36a1ed52ae00da6f8a4c8d50181e2877e4fa410"
+    }
+  },
+  "lib\\flatbytes": {
+    "tag": {
+      "name": "v0.0.1",
+      "rev": "bb0859e85ef2213d08d6280c8af9a7da4596b30f"
+    }
+  }
+}

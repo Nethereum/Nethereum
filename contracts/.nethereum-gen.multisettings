@@ -1,0 +1,194 @@
+[
+    {
+        "paths": [
+            "out/core/EntryPoint.sol/EntryPoint.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction",
+                "basePath": "../src/Nethereum.AccountAbstraction",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/BaseSmartAccount.sol/BaseSmartAccount.json",
+            "out/NethereumAccount.sol/NethereumAccount.json",
+            "out/NethereumAccountFactory.sol/NethereumAccountFactory.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Core",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Core",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/BasePaymaster.sol/BasePaymaster.json",
+            "out/VerifyingPaymaster.sol/VerifyingPaymaster.json",
+            "out/DepositPaymaster.sol/DepositPaymaster.json",
+            "out/TokenPaymaster.sol/TokenPaymaster.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Paymaster",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Paymaster",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/IAccount.sol/IAccount.json",
+            "out/IAccount.sol/IAccountExecute.json",
+            "out/IAccountRegistry.sol/IAccountRegistry.json",
+            "out/IPaymaster.sol/IPaymaster.json",
+            "out/IPaymaster.sol/IVerifyingPaymaster.json",
+            "out/IPaymaster.sol/IDepositPaymaster.json",
+            "out/IPaymaster.sol/ITokenPaymaster.json",
+            "out/ISmartAccountFactoryGovernance.sol/ISmartAccountFactoryGovernance.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Interfaces",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Interfaces",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/IERC7579Module.sol/IModule.json",
+            "out/IERC7579Module.sol/IValidator.json",
+            "out/IERC7579Module.sol/IExecutor.json",
+            "out/IERC7579Module.sol/IHook.json",
+            "out/IERC7579Module.sol/IFallback.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Interfaces.ERC7579",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Interfaces/ERC7579",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/IERC7579Account.sol/IERC7579Account.json",
+            "out/IERC7579Account.sol/IERC7579AccountConfig.json",
+            "out/IERC7579Account.sol/IERC7579Execution.json",
+            "out/IERC7579Account.sol/IERC7579ModuleConfig.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Interfaces.ERC7579",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Interfaces/ERC7579",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/ECDSAValidator.sol/ECDSAValidator.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Modules.Native",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Modules/Native",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/OwnableValidator.sol/OwnableValidator.json",
+            "out/OwnableExecutor.sol/OwnableExecutor.json",
+            "out/SocialRecovery.sol/SocialRecovery.json",
+            "out/DeadmanSwitch.sol/DeadmanSwitch.json",
+            "out/MultiFactor.sol/MultiFactor.json",
+            "out/HookMultiPlexer.sol/HookMultiPlexer.json",
+            "out/RegistryHook.sol/RegistryHook.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Modules.Rhinestone",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Modules/Rhinestone",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/SmartSession.sol/SmartSession.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Modules/SmartSessions",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/SudoPolicy.sol/SudoPolicy.json",
+            "out/ERC20SpendingLimitPolicy.sol/ERC20SpendingLimitPolicy.json",
+            "out/UniActionPolicy.sol/UniActionPolicy.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions.Policies",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Modules/SmartSessions/Policies",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/ISmartSession.sol/ISmartSession.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Interfaces.SmartSessions",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Interfaces/SmartSessions",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    }
+]
