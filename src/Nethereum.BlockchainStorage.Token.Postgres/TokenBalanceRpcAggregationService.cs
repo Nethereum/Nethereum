@@ -239,14 +239,16 @@ namespace Nethereum.BlockchainStorage.Token.Postgres
 
             foreach (var (contract, tokenId) in erc721Tokens)
             {
-                var fn = new ERC721Def.OwnerOfFunction { TokenId = BigInteger.Parse(tokenId) };
+                if (!BigInteger.TryParse(tokenId, out var parsedTokenId)) continue;
+                var fn = new ERC721Def.OwnerOfFunction { TokenId = parsedTokenId };
                 calls.Add(new MulticallInputOutput<ERC721Def.OwnerOfFunction, ERC721Def.OwnerOfOutputDTO>(fn, contract));
                 callMeta.Add((null, contract, TokenTypeERC721Owner, tokenId));
             }
 
             foreach (var (address, contract, tokenId) in ExtractErc1155Items(logs))
             {
-                var fn = new ERC1155Def.BalanceOfFunction { Account = address, Id = BigInteger.Parse(tokenId) };
+                if (!BigInteger.TryParse(tokenId, out var parsedTokenId)) continue;
+                var fn = new ERC1155Def.BalanceOfFunction { Account = address, Id = parsedTokenId };
                 calls.Add(new MulticallInputOutput<ERC1155Def.BalanceOfFunction, ERC1155Def.BalanceOfOutputDTO>(fn, contract));
                 callMeta.Add((address, contract, TokenTypeERC1155, tokenId));
             }

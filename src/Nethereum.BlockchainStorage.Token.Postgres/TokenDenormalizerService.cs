@@ -61,6 +61,8 @@ namespace Nethereum.BlockchainStorage.Token.Postgres
                 lastRowIndex = rawLogs[rawLogs.Count - 1].RowIndex;
                 await _progressRepository.UpsertProgressAsync(lastRowIndex).ConfigureAwait(false);
 
+                _context.ChangeTracker.Clear();
+
                 _logger?.LogInformation(
                     "Denormalized {Count} transfer logs up to RowIndex {RowIndex}",
                     processed, lastRowIndex);
