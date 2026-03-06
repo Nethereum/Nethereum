@@ -82,6 +82,7 @@ namespace Nethereum.EVM.Debugging
             _loadedContracts.Clear();
             _contractSourceMaps.Clear();
             _pcToInstructionIndex.Clear();
+            _functionMaps.Clear();
             _functionNameCache.Clear();
             _checkedAddresses.Clear();
 
@@ -122,6 +123,7 @@ namespace Nethereum.EVM.Debugging
             _loadedContracts.Clear();
             _contractSourceMaps.Clear();
             _pcToInstructionIndex.Clear();
+            _functionMaps.Clear();
             _functionNameCache.Clear();
             _checkedAddresses.Clear();
 
@@ -194,7 +196,8 @@ namespace Nethereum.EVM.Debugging
                 return;
 
             _checkedAddresses.Add(normalizedAddress);
-            var abiInfo = await _abiStorage.GetABIInfoAsync((long)_chainId, normalizedAddress);
+            var chainIdLong = _chainId > long.MaxValue ? 0L : (long)_chainId;
+            var abiInfo = await _abiStorage.GetABIInfoAsync(chainIdLong, normalizedAddress);
             if (abiInfo != null)
             {
                 _loadedContracts[normalizedAddress] = abiInfo;
@@ -387,9 +390,13 @@ namespace Nethereum.EVM.Debugging
                 return 0;
             if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
                 hex = hex.Substring(2);
+            if (hex.Length == 0)
+                return 0;
             if (hex.Length > 8)
                 hex = hex.Substring(hex.Length - 8);
-            return int.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+            if (int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var result))
+                return result;
+            return 0;
         }
 
         public ABIInfo GetABIInfoForAddress(string address)
