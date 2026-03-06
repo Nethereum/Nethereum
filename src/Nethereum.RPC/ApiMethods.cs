@@ -108,6 +108,8 @@
         debug_getRawHeader,
         debug_getRawReceipts,
         debug_storageRangeAt,
+        debug_traceTransaction,
+        debug_traceCall,
 
         //wallet
         eth_requestAccounts,

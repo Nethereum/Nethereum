@@ -147,6 +147,24 @@ namespace Nethereum.RPC.Eth.DTOs
 #endif
         public string Root { get; set; }
 
+        [JsonProperty("revertReason")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("revertReason")]
+#endif
+        public string RevertReason { get; set; }
+
+        [JsonProperty("blobGasUsed")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("blobGasUsed")]
+#endif
+        public HexBigInteger BlobGasUsed { get; set; }
+
+        [JsonProperty("blobGasPrice")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("blobGasPrice")]
+#endif
+        public HexBigInteger BlobGasPrice { get; set; }
+
         public bool? HasErrors()
         {
             if (Status?.HexValue == null) return null;

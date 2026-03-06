@@ -83,9 +83,9 @@ namespace Nethereum.RPC.Eth.Blocks
             return false;
         }
 
-        private void LogWaitingForBlockAvailability(BigInteger currentBlock, uint minimumBlockConfirmations, BigInteger? maxBlockOnChain, uint attempt)
+        private void LogWaitingForBlockAvailability(BigInteger currentBlock, uint minimumBlockConfirmations, BigInteger? waitForBlockNumber, uint attempt)
         {
-            if (_log != null) _log.LogInformation($"Waiting for current block ({currentBlock}) to be more than {minimumBlockConfirmations} confirmations behind the max block on the chain ({maxBlockOnChain}). Attempt: {attempt}.");
+            if (_log != null) _log.LogInformation($"Waiting for block {waitForBlockNumber} to be confirmed ({minimumBlockConfirmations} confirmations required). Chain head: {currentBlock}. Attempt: {attempt}.");
         }
 
     }

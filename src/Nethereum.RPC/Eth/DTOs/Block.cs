@@ -227,6 +227,30 @@ namespace Nethereum.RPC.Eth.DTOs
 #endif
         public Withdrawal[] Withdrawals { get; set; }
 
+        [JsonProperty(PropertyName = "blobGasUsed")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blobGasUsed")]
+#endif
+        public HexBigInteger BlobGasUsed { get; set; }
+
+        [JsonProperty(PropertyName = "excessBlobGas")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("excessBlobGas")]
+#endif
+        public HexBigInteger ExcessBlobGas { get; set; }
+
+        [JsonProperty(PropertyName = "parentBeaconBlockRoot")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("parentBeaconBlockRoot")]
+#endif
+        public string ParentBeaconBlockRoot { get; set; }
+
+        [JsonProperty(PropertyName = "requestsHash")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("requestsHash")]
+#endif
+        public string RequestsHash { get; set; }
+
     }
 }
 

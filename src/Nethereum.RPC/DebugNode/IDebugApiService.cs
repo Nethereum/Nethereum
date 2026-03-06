@@ -8,5 +8,7 @@
         IDebugGetRawReceipts GetRawReceipts { get; }
         IDebugGetRawTransaction GetRawTransaction { get; }
         IDebugStorageRangeAt StorageRangeAt { get; }
+        IDebugTraceTransaction TraceTransaction { get; }
+        IDebugTraceCall TraceCall { get; }
     }
 }

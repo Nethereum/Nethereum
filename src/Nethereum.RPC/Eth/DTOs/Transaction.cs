@@ -197,5 +197,17 @@ namespace Nethereum.RPC.Eth.DTOs
 [System.Text.Json.Serialization.JsonPropertyName("authorizationList")]
 #endif
       public List<Authorisation> AuthorisationList { get; set; }
+
+      [JsonProperty(PropertyName = "maxFeePerBlobGas")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("maxFeePerBlobGas")]
+#endif
+      public HexBigInteger MaxFeePerBlobGas { get; set; }
+
+      [JsonProperty(PropertyName = "blobVersionedHashes")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blobVersionedHashes")]
+#endif
+      public string[] BlobVersionedHashes { get; set; }
     }
 }
