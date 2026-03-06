@@ -63,6 +63,31 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.FromResult(result);
         }
 
+        public Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash)
+        {
+            var result = new List<byte[]>();
+            if (blockHash == null) return Task.FromResult(result);
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_TX_BY_BLOCK);
+            var prefix = blockHash;
+            iterator.Seek(prefix);
+
+            while (iterator.Valid())
+            {
+                var key = iterator.Key();
+                if (!StartsWith(key, prefix))
+                    break;
+
+                var txHash = iterator.Value();
+                if (txHash != null)
+                    result.Add(txHash);
+
+                iterator.Next();
+            }
+
+            return Task.FromResult(result);
+        }
+
         public async Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber)
         {
             if (_blockStore == null)
@@ -75,7 +100,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return await GetByBlockHashAsync(blockHash);
         }
 
-        public Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex)
+        public Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber)
         {
             if (tx == null || blockHash == null) return Task.CompletedTask;
 
@@ -85,7 +110,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             var txHash = tx.Hash;
             var txRlp = tx.GetRLPEncoded();
-            var storedData = SerializeStoredTransaction(txRlp, blockHash, txIndex);
+            var storedData = SerializeStoredTransaction(txRlp, blockHash, txIndex, blockNumber);
             batch.Put(txHash, storedData, txCf);
 
             var blockTxKey = CreateBlockTxKey(blockHash, txIndex);
@@ -106,12 +131,43 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.FromResult(location);
         }
 
-        private static byte[] SerializeStoredTransaction(byte[] txRlp, byte[] blockHash, int txIndex)
+        public async Task DeleteByBlockNumberAsync(BigInteger blockNumber)
+        {
+            if (_blockStore == null) return;
+
+            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
+            if (blockHash == null) return;
+
+            using var batch = _manager.CreateWriteBatch();
+            var txCf = _manager.GetColumnFamily(RocksDbManager.CF_TRANSACTIONS);
+            var txByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_TX_BY_BLOCK);
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_TX_BY_BLOCK);
+            iterator.Seek(blockHash);
+
+            while (iterator.Valid())
+            {
+                var key = iterator.Key();
+                if (!StartsWith(key, blockHash))
+                    break;
+
+                var txHash = iterator.Value();
+                batch.Delete(txHash, txCf);
+                batch.Delete(key, txByBlockCf);
+
+                iterator.Next();
+            }
+
+            _manager.Write(batch);
+        }
+
+        private static byte[] SerializeStoredTransaction(byte[] txRlp, byte[] blockHash, int txIndex, BigInteger blockNumber)
         {
             return RLP.RLP.EncodeList(
                 RLP.RLP.EncodeElement(txRlp),
                 RLP.RLP.EncodeElement(blockHash),
-                RLP.RLP.EncodeElement(txIndex.ToBytesForRLPEncoding())
+                RLP.RLP.EncodeElement(txIndex.ToBytesForRLPEncoding()),
+                RLP.RLP.EncodeElement(blockNumber.ToBytesForRLPEncoding())
             );
         }
 
@@ -142,11 +198,18 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var decoded = RLP.RLP.Decode(data);
                 var elements = (RLPCollection)decoded;
 
-                return new TransactionLocation
+                var location = new TransactionLocation
                 {
                     BlockHash = elements[1].RLPData,
                     TransactionIndex = (int)elements[2].RLPData.ToLongFromRLPDecoded()
                 };
+
+                if (elements.Count > 3 && elements[3].RLPData != null)
+                {
+                    location.BlockNumber = elements[3].RLPData.ToBigIntegerFromRLPDecoded();
+                }
+
+                return location;
             }
             catch
             {

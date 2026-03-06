@@ -47,6 +47,10 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public byte[] Nonce { get; set; } = Array.Empty<byte>();
             public BigInteger? BaseFee { get; set; }
             public byte[]? WithdrawalsRoot { get; set; }
+            public long? BlobGasUsed { get; set; }
+            public long? ExcessBlobGas { get; set; }
+            public byte[]? ParentBeaconBlockRoot { get; set; }
+            public byte[]? RequestsHash { get; set; }
         }
 
         public class BlockData
@@ -55,6 +59,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public List<TransactionData> Transactions { get; set; } = new();
             public byte[] Rlp { get; set; } = Array.Empty<byte>();
             public int BlockNumber { get; set; }
+            public string? ExpectException { get; set; }
         }
 
         public class BlockHeader
@@ -77,7 +82,10 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public byte[] Nonce { get; set; } = Array.Empty<byte>();
             public BigInteger? BaseFee { get; set; }
             public byte[]? WithdrawalsRoot { get; set; }
+            public long? BlobGasUsed { get; set; }
+            public long? ExcessBlobGas { get; set; }
             public byte[]? ParentBeaconBlockRoot { get; set; }
+            public byte[]? RequestsHash { get; set; }
         }
 
         public class TransactionData
@@ -220,6 +228,26 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 header.WithdrawalsRoot = withdrawals.GetString()?.HexToByteArray();
             }
 
+            if (element.TryGetProperty("blobGasUsed", out var blobGasUsed))
+            {
+                header.BlobGasUsed = (long)ParseBigInteger(blobGasUsed.GetString());
+            }
+
+            if (element.TryGetProperty("excessBlobGas", out var excessBlobGas))
+            {
+                header.ExcessBlobGas = (long)ParseBigInteger(excessBlobGas.GetString());
+            }
+
+            if (element.TryGetProperty("parentBeaconBlockRoot", out var genesisBeaconRoot))
+            {
+                header.ParentBeaconBlockRoot = genesisBeaconRoot.GetString()?.HexToByteArray();
+            }
+
+            if (element.TryGetProperty("requestsRoot", out var genesisRequestsRoot))
+            {
+                header.RequestsHash = genesisRequestsRoot.GetString()?.HexToByteArray();
+            }
+
             return header;
         }
 
@@ -237,6 +265,11 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 if (blockEl.TryGetProperty("blocknumber", out var blockNum))
                 {
                     block.BlockNumber = int.Parse(blockNum.GetString() ?? "0");
+                }
+
+                if (blockEl.TryGetProperty("expectException", out var expectException))
+                {
+                    block.ExpectException = expectException.GetString();
                 }
 
                 if (blockEl.TryGetProperty("blockHeader", out var header))
@@ -271,9 +304,24 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                         block.BlockHeader.WithdrawalsRoot = withdrawals.GetString()?.HexToByteArray();
                     }
 
+                    if (header.TryGetProperty("blobGasUsed", out var blockBlobGasUsed))
+                    {
+                        block.BlockHeader.BlobGasUsed = (long)ParseBigInteger(blockBlobGasUsed.GetString());
+                    }
+
+                    if (header.TryGetProperty("excessBlobGas", out var blockExcessBlobGas))
+                    {
+                        block.BlockHeader.ExcessBlobGas = (long)ParseBigInteger(blockExcessBlobGas.GetString());
+                    }
+
                     if (header.TryGetProperty("parentBeaconBlockRoot", out var beaconRoot))
                     {
                         block.BlockHeader.ParentBeaconBlockRoot = beaconRoot.GetString()?.HexToByteArray();
+                    }
+
+                    if (header.TryGetProperty("requestsRoot", out var blockRequestsRoot))
+                    {
+                        block.BlockHeader.RequestsHash = blockRequestsRoot.GetString()?.HexToByteArray();
                     }
                 }
 

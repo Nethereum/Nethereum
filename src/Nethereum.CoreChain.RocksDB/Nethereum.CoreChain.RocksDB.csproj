@@ -4,7 +4,7 @@
     <Description>Nethereum CoreChain RocksDB - High-performance persistent storage for blockchain data using RocksDB</Description>
     <AssemblyTitle>Nethereum.CoreChain.RocksDB</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.CoreChain.RocksDB</AssemblyName>
     <PackageId>Nethereum.CoreChain.RocksDB</PackageId>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -17,10 +17,13 @@
   <ItemGroup>
     <PackageReference Include="RocksDB" Version="10.4.2.62149" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
   </ItemGroup>
 
   <!-- Strong naming disabled for this project because RocksDB dependency is not strong-named -->

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 using RocksDbSharp;
@@ -21,6 +22,7 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         private readonly HashSet<string> _clearedStorage = new HashSet<string>();
         private readonly HashSet<string> _modifiedAddresses = new HashSet<string>();
         private readonly HashSet<byte[]> _modifiedStorageKeys = new HashSet<byte[]>(ByteArrayComparer.Current);
+        private readonly HashSet<byte[]> _modifiedCodeHashes = new HashSet<byte[]>(ByteArrayComparer.Current);
 
         private bool _disposed;
 
@@ -81,6 +83,7 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         public ReadOptions SnapshotReadOptions => _readOptions;
         public HashSet<string> ModifiedAddresses => _modifiedAddresses;
         public HashSet<byte[]> ModifiedStorageKeys => _modifiedStorageKeys;
+        public HashSet<byte[]> ModifiedCodeHashes => _modifiedCodeHashes;
 
         public void TrackAccountModification(string address)
         {
@@ -90,6 +93,11 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         public void TrackStorageModification(byte[] storageKey)
         {
             _modifiedStorageKeys.Add(storageKey);
+        }
+
+        public void TrackCodeModification(byte[] codeHash)
+        {
+            _modifiedCodeHashes.Add(codeHash);
         }
 
         public void Dispose()
@@ -112,13 +120,9 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
 
         private static string NormalizeAddress(string address)
         {
-            return address?.ToLowerInvariant().Replace("0x", "") ?? "";
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
 
-        private static string ToHex(byte[] bytes)
-        {
-            if (bytes == null) return null;
-            return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-        }
+        private static string ToHex(byte[] bytes) => bytes?.ToHex();
     }
 }

@@ -8,19 +8,48 @@ using Nethereum.CoreChain.RocksDB.Snapshots;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
-    public class RocksDbStateStore : IStateStore
+    public class RocksDbStateStore : IStateStore, IDisposable
     {
         private readonly RocksDbManager _manager;
         private readonly object _lock = new object();
         private int _nextSnapshotId = 0;
         private readonly Dictionary<int, RocksDbStateSnapshot> _activeSnapshots = new Dictionary<int, RocksDbStateSnapshot>();
+        private readonly HashSet<string> _dirtyAccounts = new HashSet<string>();
+        private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots = new Dictionary<string, HashSet<BigInteger>>();
+        private bool _disposed;
 
         public RocksDbStateStore(RocksDbManager manager)
         {
             _manager = manager;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    lock (_lock)
+                    {
+                        foreach (var snapshot in _activeSnapshots.Values)
+                        {
+                            snapshot.Dispose();
+                        }
+                        _activeSnapshots.Clear();
+                    }
+                }
+                _disposed = true;
+            }
         }
 
         public Task<Account> GetAccountAsync(string address)
@@ -119,7 +148,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, value);
             }
 
-            TrackStorageModification(key);
+            TrackStorageModification(key, address, slot);
             return Task.CompletedTask;
         }
 
@@ -182,6 +211,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (codeHash == null) return Task.CompletedTask;
             _manager.Put(RocksDbManager.CF_STATE_CODE, codeHash, code);
+            TrackCodeModification(codeHash);
             return Task.CompletedTask;
         }
 
@@ -257,7 +287,12 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     batch.Put(key, kvp.Value, codeCf);
                 }
 
-                _manager.Write(batch);
+                lock (_lock)
+                {
+                    _manager.Write(batch);
+                    _activeSnapshots.Remove(rocksSnapshot.SnapshotId);
+                }
+                rocksSnapshot.Dispose();
             }
 
             return Task.CompletedTask;
@@ -272,6 +307,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     using var batch = _manager.CreateWriteBatch();
                     var accountsCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_ACCOUNTS);
                     var storageCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+                    var codeCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_CODE);
 
                     foreach (var address in rocksSnapshot.ModifiedAddresses)
                     {
@@ -302,9 +338,24 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                         }
                     }
 
+                    foreach (var codeHash in rocksSnapshot.ModifiedCodeHashes)
+                    {
+                        var originalData = _manager.Get(RocksDbManager.CF_STATE_CODE, codeHash, rocksSnapshot.SnapshotReadOptions);
+
+                        if (originalData != null)
+                        {
+                            batch.Put(codeHash, originalData, codeCf);
+                        }
+                        else
+                        {
+                            batch.Delete(codeHash, codeCf);
+                        }
+                    }
+
                     _manager.Write(batch);
                     _activeSnapshots.Remove(rocksSnapshot.SnapshotId);
                 }
+                rocksSnapshot.Dispose();
             }
 
             return Task.CompletedTask;
@@ -312,7 +363,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private static byte[] GetAccountKey(string address)
         {
-            var normalized = address?.ToLowerInvariant().Replace("0x", "") ?? "";
+            var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
             return normalized.HexToByteArray();
         }
 
@@ -324,16 +375,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private static byte[] GetStorageKeyFromBytes(byte[] addressBytes, BigInteger slot)
         {
-            var slotBytes = slot.ToByteArray(isUnsigned: true, isBigEndian: true);
-            var paddedSlot = new byte[32];
-            if (slotBytes.Length <= 32)
-            {
-                Buffer.BlockCopy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-            }
+            var slotBytes = slot.ToByteArray(isUnsigned: true, isBigEndian: true).PadBytes(32);
 
-            var key = new byte[addressBytes.Length + paddedSlot.Length];
+            var key = new byte[addressBytes.Length + slotBytes.Length];
             Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
-            Buffer.BlockCopy(paddedSlot, 0, key, addressBytes.Length, paddedSlot.Length);
+            Buffer.BlockCopy(slotBytes, 0, key, addressBytes.Length, slotBytes.Length);
             return key;
         }
 
@@ -353,6 +399,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             lock (_lock)
             {
+                var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+                _dirtyAccounts.Add(normalizedAddress);
                 foreach (var snapshot in _activeSnapshots.Values)
                 {
                     snapshot.TrackAccountModification(address);
@@ -360,15 +408,65 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
         }
 
-        private void TrackStorageModification(byte[] storageKey)
+        private void TrackStorageModification(byte[] storageKey, string address, BigInteger slot)
         {
             lock (_lock)
             {
+                var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+                _dirtyAccounts.Add(normalizedAddress);
+
+                if (!_dirtyStorageSlots.TryGetValue(normalizedAddress, out var dirtySlots))
+                {
+                    dirtySlots = new HashSet<BigInteger>();
+                    _dirtyStorageSlots[normalizedAddress] = dirtySlots;
+                }
+                dirtySlots.Add(slot);
+
                 foreach (var snapshot in _activeSnapshots.Values)
                 {
                     snapshot.TrackStorageModification(storageKey);
                 }
             }
+        }
+
+        private void TrackCodeModification(byte[] codeHash)
+        {
+            lock (_lock)
+            {
+                foreach (var snapshot in _activeSnapshots.Values)
+                {
+                    snapshot.TrackCodeModification(codeHash);
+                }
+            }
+        }
+
+        public Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync()
+        {
+            lock (_lock)
+            {
+                return Task.FromResult<IReadOnlyCollection<string>>(_dirtyAccounts.ToList());
+            }
+        }
+
+        public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
+        {
+            lock (_lock)
+            {
+                var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+                if (!_dirtyStorageSlots.TryGetValue(normalizedAddress, out var dirtySlots))
+                    return Task.FromResult<IReadOnlyCollection<BigInteger>>(Array.Empty<BigInteger>());
+                return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.ToList());
+            }
+        }
+
+        public Task ClearDirtyTrackingAsync()
+        {
+            lock (_lock)
+            {
+                _dirtyAccounts.Clear();
+                _dirtyStorageSlots.Clear();
+            }
+            return Task.CompletedTask;
         }
     }
 }

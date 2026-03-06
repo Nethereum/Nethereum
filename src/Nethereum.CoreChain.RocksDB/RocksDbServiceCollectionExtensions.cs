@@ -36,7 +36,11 @@ namespace Nethereum.CoreChain.RocksDB
                 var blockStore = sp.GetRequiredService<IBlockStore>();
                 return new RocksDbReceiptStore(manager, blockStore);
             });
-            services.AddSingleton<IStateStore, RocksDbStateStore>();
+            services.AddSingleton<IStateStore>(sp =>
+            {
+                var manager = sp.GetRequiredService<RocksDbManager>();
+                return new HistoricalStateStore(new RocksDbStateStore(manager), new RocksDbStateDiffStore(manager), HistoricalStateOptions.Default);
+            });
             services.AddSingleton<ILogStore, RocksDbLogStore>();
             services.AddSingleton<IFilterStore, RocksDbFilterStore>();
 

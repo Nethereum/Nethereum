@@ -139,7 +139,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.NotNull(block);
 
             var trie = new PatriciaTrie();
-            var key = 0.ToBytesForRLPEncoding();
+            var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
             var proof = trie.GenerateProof(key);

@@ -1,4 +1,6 @@
+using System;
 using System.Numerics;
+using System.Reflection;
 using Nethereum.CoreChain.Models;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
@@ -170,6 +172,135 @@ namespace Nethereum.CoreChain.UnitTests.Storage
 
             Assert.NotNull(state);
             Assert.Equal(50, state.LastCheckedBlock);
+        }
+
+        [Fact]
+        public void FilterState_HasCreatedAtAndLastAccessedAt()
+        {
+            var store = new InMemoryFilterStore();
+            var filter = new LogFilter();
+
+            var before = DateTime.UtcNow;
+            var filterId = store.CreateLogFilter(filter, 1);
+            var after = DateTime.UtcNow;
+
+            var state = store.GetFilter(filterId);
+
+            Assert.NotNull(state);
+            Assert.True(state.CreatedAt >= before && state.CreatedAt <= after);
+            Assert.True(state.LastAccessedAt >= before);
+        }
+
+        [Fact]
+        public void GetFilter_RefreshesLastAccessedAt()
+        {
+            var store = new InMemoryFilterStore();
+            var filter = new LogFilter();
+            var filterId = store.CreateLogFilter(filter, 1);
+
+            var state1 = store.GetFilter(filterId);
+            var firstAccess = state1.LastAccessedAt;
+
+            System.Threading.Thread.Sleep(10);
+
+            var state2 = store.GetFilter(filterId);
+
+            Assert.True(state2.LastAccessedAt >= firstAccess);
+        }
+
+        [Fact]
+        public void UpdateFilterLastBlock_RefreshesLastAccessedAt()
+        {
+            var store = new InMemoryFilterStore();
+            var filter = new LogFilter();
+            var filterId = store.CreateLogFilter(filter, 1);
+
+            var state1 = store.GetFilter(filterId);
+            var firstAccess = state1.LastAccessedAt;
+
+            System.Threading.Thread.Sleep(10);
+            store.UpdateFilterLastBlock(filterId, 100);
+
+            var state2 = store.GetFilter(filterId);
+            Assert.True(state2.LastAccessedAt >= firstAccess);
+        }
+
+        [Fact]
+        public void FilterTtl_DefaultIsFiveMinutes()
+        {
+            var store = new InMemoryFilterStore();
+            Assert.Equal(TimeSpan.FromMinutes(5), store.FilterTtl);
+        }
+
+        [Fact]
+        public void FilterTtl_IsConfigurable()
+        {
+            var store = new InMemoryFilterStore();
+            store.FilterTtl = TimeSpan.FromSeconds(30);
+            Assert.Equal(TimeSpan.FromSeconds(30), store.FilterTtl);
+        }
+
+        [Fact]
+        public void ExpiredFilter_EvictedAfterCleanupInterval()
+        {
+            var store = new InMemoryFilterStore();
+            store.FilterTtl = TimeSpan.FromMilliseconds(1);
+
+            var filterId = store.CreateLogFilter(new LogFilter(), 1);
+            Assert.NotNull(store.GetFilter(filterId));
+
+            System.Threading.Thread.Sleep(50);
+
+            ForceCleanupInterval(store);
+
+            var result = store.GetFilter(filterId);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void NonExpiredFilter_NotEvicted()
+        {
+            var store = new InMemoryFilterStore();
+            store.FilterTtl = TimeSpan.FromHours(1);
+
+            var filterId = store.CreateLogFilter(new LogFilter(), 1);
+
+            ForceCleanupInterval(store);
+
+            var result = store.GetFilter(filterId);
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public void MultipleFilters_OnlyExpiredEvicted()
+        {
+            var store = new InMemoryFilterStore();
+            store.FilterTtl = TimeSpan.FromMilliseconds(1);
+
+            var expiredId = store.CreateLogFilter(new LogFilter(), 1);
+
+            System.Threading.Thread.Sleep(50);
+
+            store.FilterTtl = TimeSpan.FromHours(1);
+            var freshId = store.CreateLogFilter(new LogFilter(), 2);
+
+            store.FilterTtl = TimeSpan.FromMilliseconds(1);
+            ForceCleanupInterval(store);
+
+            store.FilterTtl = TimeSpan.FromMilliseconds(1);
+            var expiredResult = store.GetFilter(expiredId);
+
+            store.FilterTtl = TimeSpan.FromHours(1);
+            var freshResult = store.GetFilter(freshId);
+
+            Assert.Null(expiredResult);
+            Assert.NotNull(freshResult);
+        }
+
+        private void ForceCleanupInterval(InMemoryFilterStore store)
+        {
+            var field = typeof(InMemoryFilterStore).GetField("_lastCleanup", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(store, DateTime.UtcNow.AddMinutes(-5));
         }
     }
 }

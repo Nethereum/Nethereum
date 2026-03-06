@@ -39,6 +39,9 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public byte[] UncleHash { get; set; } = Array.Empty<byte>();
             public byte[] LogsBloom { get; set; } = Array.Empty<byte>();
             public byte[] WithdrawalsRoot { get; set; } = Array.Empty<byte>();
+            public long BlobGasUsed { get; set; }
+            public long ExcessBlobGas { get; set; }
+            public byte[] ParentBeaconBlockRoot { get; set; } = Array.Empty<byte>();
         }
 
         public class BlockData
@@ -68,6 +71,9 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public byte[] UncleHash { get; set; } = Array.Empty<byte>();
             public byte[] LogsBloom { get; set; } = Array.Empty<byte>();
             public byte[] WithdrawalsRoot { get; set; } = Array.Empty<byte>();
+            public long BlobGasUsed { get; set; }
+            public long ExcessBlobGas { get; set; }
+            public byte[] ParentBeaconBlockRoot { get; set; } = Array.Empty<byte>();
         }
 
         public class TransactionData
@@ -118,7 +124,10 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                     Nonce = new byte[8],
                     UncleHash = "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray(),
                     LogsBloom = new byte[256],
-                    WithdrawalsRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray()
+                    WithdrawalsRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray(),
+                    BlobGasUsed = 0,
+                    ExcessBlobGas = 0,
+                    ParentBeaconBlockRoot = new byte[32]
                 },
                 Block = new BlockData
                 {
@@ -141,7 +150,10 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                         Nonce = new byte[8],
                         UncleHash = "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray(),
                         LogsBloom = new byte[256],
-                        WithdrawalsRoot = "0x27f166f1d7c789251299535cb176ba34116e44894476a7886fe5d73d9be5c973".HexToByteArray()
+                        WithdrawalsRoot = "0x27f166f1d7c789251299535cb176ba34116e44894476a7886fe5d73d9be5c973".HexToByteArray(),
+                        BlobGasUsed = 0,
+                        ExcessBlobGas = 0,
+                        ParentBeaconBlockRoot = new byte[32]
                     },
                     Transactions = new List<TransactionData>
                     {

@@ -364,7 +364,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             Assert.Equal(originalHeader.BaseFee, decoded.BaseFee);
         }
 
-        [Fact(Skip = "BlockHeaderEncoder doesn't support Cancun fields (withdrawalsRoot, blobGasUsed, excessBlobGas, parentBeaconBlockRoot)")]
+        [Fact]
         [Trait("Category", "BlockchainTests")]
         public void BlockHeaderHash_CancunFormat()
         {
@@ -383,7 +383,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 $"Encoded:  {encodedHeader.ToHex()}");
         }
 
-        [Fact(Skip = "BlockHeaderEncoder doesn't support Cancun fields (withdrawalsRoot, blobGasUsed, excessBlobGas, parentBeaconBlockRoot)")]
+        [Fact]
         [Trait("Category", "BlockchainTests")]
         public void GenesisBlockHeaderHash_CancunFormat()
         {
@@ -409,6 +409,18 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 Nonce = genesisData.Nonce,
                 BaseFee = genesisData.BaseFee
             };
+
+            if (genesisData.WithdrawalsRoot != null && genesisData.WithdrawalsRoot.Length > 0)
+            {
+                genesisHeader.WithdrawalsRoot = genesisData.WithdrawalsRoot;
+            }
+
+            if (genesisData.ParentBeaconBlockRoot != null && genesisData.ParentBeaconBlockRoot.Length > 0)
+            {
+                genesisHeader.BlobGasUsed = genesisData.BlobGasUsed;
+                genesisHeader.ExcessBlobGas = genesisData.ExcessBlobGas;
+                genesisHeader.ParentBeaconBlockRoot = genesisData.ParentBeaconBlockRoot;
+            }
 
             var encodedHeader = BlockHeaderEncoder.Current.Encode(genesisHeader);
             var actualHash = _keccak.CalculateHash(encodedHeader);
@@ -497,9 +509,124 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             return tx;
         }
 
+        [Fact]
+        [Trait("Category", "BlockchainTests")]
+        public void BlockHeaderRoundTrip_ShanghaiFormat()
+        {
+            var originalHeader = new Model.BlockHeader
+            {
+                ParentHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef".HexToByteArray(),
+                UnclesHash = "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray(),
+                Coinbase = "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+                StateRoot = DefaultValues.EMPTY_TRIE_HASH,
+                TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
+                ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
+                LogsBloom = new byte[256],
+                Difficulty = 0,
+                BlockNumber = 1,
+                GasLimit = 30000000,
+                GasUsed = 21000,
+                Timestamp = 1700000000,
+                ExtraData = Array.Empty<byte>(),
+                MixHash = new byte[32],
+                Nonce = new byte[8],
+                BaseFee = 7,
+                WithdrawalsRoot = DefaultValues.EMPTY_TRIE_HASH
+            };
+
+            var encoded = BlockHeaderEncoder.Current.Encode(originalHeader);
+            var decoded = BlockHeaderEncoder.Current.Decode(encoded);
+
+            Assert.Equal(originalHeader.BaseFee, decoded.BaseFee);
+            Assert.True(originalHeader.WithdrawalsRoot.ToHex().IsTheSameHex(decoded.WithdrawalsRoot.ToHex()));
+            Assert.Null(decoded.ParentBeaconBlockRoot);
+            Assert.Null(decoded.BlobGasUsed);
+        }
+
+        [Fact]
+        [Trait("Category", "BlockchainTests")]
+        public void BlockHeaderRoundTrip_CancunFormat()
+        {
+            var originalHeader = new Model.BlockHeader
+            {
+                ParentHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef".HexToByteArray(),
+                UnclesHash = "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray(),
+                Coinbase = "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+                StateRoot = DefaultValues.EMPTY_TRIE_HASH,
+                TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
+                ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
+                LogsBloom = new byte[256],
+                Difficulty = 0,
+                BlockNumber = 1,
+                GasLimit = 30000000,
+                GasUsed = 21000,
+                Timestamp = 1700000000,
+                ExtraData = Array.Empty<byte>(),
+                MixHash = new byte[32],
+                Nonce = new byte[8],
+                BaseFee = 7,
+                WithdrawalsRoot = DefaultValues.EMPTY_TRIE_HASH,
+                BlobGasUsed = 131072,
+                ExcessBlobGas = 0,
+                ParentBeaconBlockRoot = new byte[32]
+            };
+
+            var encoded = BlockHeaderEncoder.Current.Encode(originalHeader);
+            var decoded = BlockHeaderEncoder.Current.Decode(encoded);
+
+            Assert.Equal(originalHeader.BaseFee, decoded.BaseFee);
+            Assert.True(originalHeader.WithdrawalsRoot.ToHex().IsTheSameHex(decoded.WithdrawalsRoot.ToHex()));
+            Assert.Equal(originalHeader.BlobGasUsed, decoded.BlobGasUsed);
+            Assert.Equal(originalHeader.ExcessBlobGas, decoded.ExcessBlobGas);
+            Assert.NotNull(decoded.ParentBeaconBlockRoot);
+            Assert.Null(decoded.RequestsHash);
+        }
+
+        [Fact]
+        [Trait("Category", "BlockchainTests")]
+        public void BlockHeaderRoundTrip_PragueFormat()
+        {
+            var requestsHash = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890".HexToByteArray();
+            var originalHeader = new Model.BlockHeader
+            {
+                ParentHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef".HexToByteArray(),
+                UnclesHash = "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray(),
+                Coinbase = "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+                StateRoot = DefaultValues.EMPTY_TRIE_HASH,
+                TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
+                ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
+                LogsBloom = new byte[256],
+                Difficulty = 0,
+                BlockNumber = 1,
+                GasLimit = 30000000,
+                GasUsed = 21000,
+                Timestamp = 1700000000,
+                ExtraData = Array.Empty<byte>(),
+                MixHash = new byte[32],
+                Nonce = new byte[8],
+                BaseFee = 7,
+                WithdrawalsRoot = DefaultValues.EMPTY_TRIE_HASH,
+                BlobGasUsed = 0,
+                ExcessBlobGas = 0,
+                ParentBeaconBlockRoot = new byte[32],
+                RequestsHash = requestsHash
+            };
+
+            var encoded = BlockHeaderEncoder.Current.Encode(originalHeader);
+            var decoded = BlockHeaderEncoder.Current.Decode(encoded);
+
+            Assert.Equal(originalHeader.BaseFee, decoded.BaseFee);
+            Assert.True(originalHeader.WithdrawalsRoot.ToHex().IsTheSameHex(decoded.WithdrawalsRoot.ToHex()));
+            Assert.Equal(originalHeader.BlobGasUsed, decoded.BlobGasUsed);
+            Assert.Equal(originalHeader.ExcessBlobGas, decoded.ExcessBlobGas);
+            Assert.NotNull(decoded.ParentBeaconBlockRoot);
+            Assert.NotNull(decoded.RequestsHash);
+            Assert.True(requestsHash.ToHex().IsTheSameHex(decoded.RequestsHash.ToHex()));
+        }
+
         private Model.BlockHeader CreateBlockHeader(BlockchainTestVectors.BlockHeader headerData)
         {
-            return new Model.BlockHeader
+            var header = new Model.BlockHeader
             {
                 ParentHash = headerData.ParentHash,
                 UnclesHash = headerData.UncleHash,
@@ -518,6 +645,20 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 Nonce = headerData.Nonce,
                 BaseFee = headerData.BaseFee
             };
+
+            if (headerData.WithdrawalsRoot != null && headerData.WithdrawalsRoot.Length > 0)
+            {
+                header.WithdrawalsRoot = headerData.WithdrawalsRoot;
+            }
+
+            if (headerData.ParentBeaconBlockRoot != null && headerData.ParentBeaconBlockRoot.Length > 0)
+            {
+                header.BlobGasUsed = headerData.BlobGasUsed;
+                header.ExcessBlobGas = headerData.ExcessBlobGas;
+                header.ParentBeaconBlockRoot = headerData.ParentBeaconBlockRoot;
+            }
+
+            return header;
         }
     }
 }

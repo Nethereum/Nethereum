@@ -20,6 +20,15 @@ namespace Nethereum.CoreChain.RocksDB
         public const string CF_TRIE_NODES = "trie_nodes";
         public const string CF_FILTERS = "filters";
         public const string CF_METADATA = "metadata";
+        public const string CF_BLOCK_BLOOMS = "block_blooms";
+        public const string CF_RECEIPT_BY_BLOCK = "receipt_by_block";
+        public const string CF_LOG_BY_TX = "log_by_tx";
+        public const string CF_MSG_RESULTS = "msg_results";
+        public const string CF_MSG_RESULTS_BY_LEAF = "msg_results_by_leaf";
+        public const string CF_STATE_HISTORY_ACCOUNTS = "state_history_accounts";
+        public const string CF_STATE_HISTORY_STORAGE = "state_history_storage";
+        public const string CF_STATE_HISTORY_BLOCK_INDEX = "state_history_block_index";
+        public const string CF_STATE_HISTORY_META = "state_history_meta";
 
         private static readonly string[] ColumnFamilyNames = new[]
         {
@@ -36,7 +45,16 @@ namespace Nethereum.CoreChain.RocksDB
             CF_STATE_CODE,
             CF_TRIE_NODES,
             CF_FILTERS,
-            CF_METADATA
+            CF_METADATA,
+            CF_BLOCK_BLOOMS,
+            CF_RECEIPT_BY_BLOCK,
+            CF_LOG_BY_TX,
+            CF_MSG_RESULTS,
+            CF_MSG_RESULTS_BY_LEAF,
+            CF_STATE_HISTORY_ACCOUNTS,
+            CF_STATE_HISTORY_STORAGE,
+            CF_STATE_HISTORY_BLOCK_INDEX,
+            CF_STATE_HISTORY_META
         };
 
         private readonly RocksDb _database;

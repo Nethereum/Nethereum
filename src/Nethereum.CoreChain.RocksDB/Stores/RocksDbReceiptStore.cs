@@ -46,21 +46,27 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var result = new List<Receipt>();
             if (blockHash == null) return Task.FromResult(result);
 
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_RECEIPTS);
-            iterator.SeekToFirst();
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_RECEIPT_BY_BLOCK);
+            iterator.Seek(blockHash);
 
             while (iterator.Valid())
             {
-                var data = iterator.Value();
-                var info = RocksDbSerializer.DeserializeReceiptInfo(data);
-                if (info != null && ByteArrayEquals(info.BlockHash, blockHash))
+                var key = iterator.Key();
+                if (!StartsWith(key, blockHash))
+                    break;
+
+                var txHash = iterator.Value();
+                var receiptData = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
+                if (receiptData != null)
                 {
-                    result.Add(info.Receipt);
+                    var info = RocksDbSerializer.DeserializeReceiptInfo(receiptData);
+                    if (info != null)
+                        result.Add(info.Receipt);
                 }
+
                 iterator.Next();
             }
 
-            result.Sort((a, b) => 0);
             return Task.FromResult(result);
         }
 
@@ -92,21 +98,70 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 EffectiveGasPrice = effectiveGasPrice
             };
 
-            var data = RocksDbSerializer.SerializeReceiptInfo(info);
-            _manager.Put(RocksDbManager.CF_RECEIPTS, txHash, data);
+            using var batch = _manager.CreateWriteBatch();
+            var receiptsCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPTS);
+            var receiptByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPT_BY_BLOCK);
 
+            var data = RocksDbSerializer.SerializeReceiptInfo(info);
+            batch.Put(txHash, data, receiptsCf);
+
+            if (blockHash != null)
+            {
+                var blockReceiptKey = CreateBlockReceiptKey(blockHash, txIndex);
+                batch.Put(blockReceiptKey, txHash, receiptByBlockCf);
+            }
+
+            _manager.Write(batch);
             return Task.CompletedTask;
         }
 
-        private static bool ByteArrayEquals(byte[] a, byte[] b)
+        public async Task DeleteByBlockNumberAsync(BigInteger blockNumber)
         {
-            if (a == null && b == null) return true;
-            if (a == null || b == null) return false;
-            if (a.Length != b.Length) return false;
+            if (_blockStore == null) return;
 
-            for (int i = 0; i < a.Length; i++)
+            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
+            if (blockHash == null) return;
+
+            using var batch = _manager.CreateWriteBatch();
+            var receiptsCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPTS);
+            var receiptByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPT_BY_BLOCK);
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_RECEIPT_BY_BLOCK);
+            iterator.Seek(blockHash);
+
+            while (iterator.Valid())
             {
-                if (a[i] != b[i]) return false;
+                var key = iterator.Key();
+                if (!StartsWith(key, blockHash))
+                    break;
+
+                var txHash = iterator.Value();
+                batch.Delete(txHash, receiptsCf);
+                batch.Delete(key, receiptByBlockCf);
+
+                iterator.Next();
+            }
+
+            _manager.Write(batch);
+        }
+
+        private static byte[] CreateBlockReceiptKey(byte[] blockHash, int txIndex)
+        {
+            var indexBytes = BitConverter.GetBytes(txIndex);
+            var key = new byte[blockHash.Length + indexBytes.Length];
+            Buffer.BlockCopy(blockHash, 0, key, 0, blockHash.Length);
+            Buffer.BlockCopy(indexBytes, 0, key, blockHash.Length, indexBytes.Length);
+            return key;
+        }
+
+        private static bool StartsWith(byte[] data, byte[] prefix)
+        {
+            if (data == null || prefix == null) return false;
+            if (data.Length < prefix.Length) return false;
+
+            for (int i = 0; i < prefix.Length; i++)
+            {
+                if (data[i] != prefix[i]) return false;
             }
             return true;
         }

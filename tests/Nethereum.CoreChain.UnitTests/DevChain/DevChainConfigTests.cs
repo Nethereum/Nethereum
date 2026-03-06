@@ -1,5 +1,6 @@
 using System.Numerics;
 using Nethereum.DevChain;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.CoreChain.UnitTests.DevChain
@@ -12,7 +13,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
             var config = DevChainConfig.Default;
 
             Assert.Equal(1337, config.ChainId);
-            Assert.Equal("0x0000000000000000000000000000000000000000", config.Coinbase);
+            Assert.Equal(AddressUtil.ZERO_ADDRESS, config.Coinbase);
             Assert.Equal(30_000_000, config.BlockGasLimit);
             Assert.Equal(1_000_000_000, config.BaseFee);
             Assert.True(config.AutoMine);

@@ -215,5 +215,25 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
 
             Assert.Equal(0, balance);
         }
+
+        [Fact]
+        public async Task Dispose_CanBeCalledTwice_WithoutThrowing()
+        {
+            var node = new DevChainNode();
+            await node.StartAsync();
+
+            node.Dispose();
+            node.Dispose();
+        }
+
+        [Fact]
+        public async Task Dispose_AfterOperations_DoesNotThrow()
+        {
+            var node = new DevChainNode();
+            await node.StartAsync(new[] { "0x1234567890123456789012345678901234567890" });
+            await node.MineBlockAsync();
+
+            node.Dispose();
+        }
     }
 }

@@ -27,6 +27,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var logsCf = _manager.GetColumnFamily(RocksDbManager.CF_LOGS);
             var logByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_BLOCK);
             var logByAddressCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_ADDRESS);
+            var logByTxCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_TX);
 
             for (int i = 0; i < logs.Count; i++)
             {
@@ -40,6 +41,12 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var blockLogKey = CreateBlockLogKey(blockHash, txIndex, i);
                 batch.Put(blockLogKey, logKey, logByBlockCf);
 
+                if (txHash != null)
+                {
+                    var txLogKey = CreateTxLogKey(txHash, i);
+                    batch.Put(txLogKey, logKey, logByTxCf);
+                }
+
                 if (!string.IsNullOrEmpty(log.Address))
                 {
                     var addressLogKey = CreateAddressLogKey(log.Address, blockNumber, txIndex, i);
@@ -51,9 +58,57 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.CompletedTask;
         }
 
+        public Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom)
+        {
+            if (bloom == null || bloom.Length != 256)
+                return Task.CompletedTask;
+
+            var key = CreateBlockNumberKey(blockNumber);
+            _manager.Put(RocksDbManager.CF_BLOCK_BLOOMS, key, bloom);
+            return Task.CompletedTask;
+        }
+
         public Task<List<FilteredLog>> GetLogsAsync(LogFilter filter)
         {
             var result = new List<FilteredLog>();
+
+            var hasSingleAddress = filter.Addresses != null && filter.Addresses.Count == 1;
+            var hasTopics = filter.Topics != null && filter.Topics.Count > 0 &&
+                            filter.Topics.Exists(t => t != null && t.Count > 0);
+
+            if (hasSingleAddress)
+            {
+                var logs = GetLogsByAddressInternal(filter.Addresses[0], filter.FromBlock, filter.ToBlock);
+                foreach (var log in logs)
+                {
+                    if (filter.MatchesTopics(log.Topics))
+                    {
+                        result.Add(log);
+                    }
+                }
+                return Task.FromResult(result);
+            }
+
+            var queryBloom = BuildQueryBloom(filter);
+            var hasBloomFilter = queryBloom != null && !queryBloom.IsEmpty();
+
+            if (hasBloomFilter)
+            {
+                var matchingBlocks = GetMatchingBlocks(filter, queryBloom);
+                foreach (var blockNumber in matchingBlocks)
+                {
+                    var blockLogs = GetLogsByBlockNumberInternal(blockNumber);
+                    foreach (var log in blockLogs)
+                    {
+                        if (filter.MatchesAddress(log.Address) &&
+                            filter.MatchesTopics(log.Topics))
+                        {
+                            result.Add(log);
+                        }
+                    }
+                }
+                return Task.FromResult(result);
+            }
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOGS);
 
@@ -91,22 +146,190 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.FromResult(result);
         }
 
-        public Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash)
+        private List<FilteredLog> GetLogsByAddressInternal(string address, BigInteger? fromBlock, BigInteger? toBlock)
         {
             var result = new List<FilteredLog>();
-            if (txHash == null) return Task.FromResult(result);
+            var addressBytes = address.HexToByteArray();
+
+            var startBlockNumber = fromBlock ?? BigInteger.Zero;
+            var startKey = CreateAddressLogKey(address, startBlockNumber, 0, 0);
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOG_BY_ADDRESS);
+            iterator.Seek(startKey);
+
+            while (iterator.Valid())
+            {
+                var key = iterator.Key();
+
+                if (!StartsWith(key, addressBytes))
+                    break;
+
+                var logKey = iterator.Value();
+                var logData = _manager.Get(RocksDbManager.CF_LOGS, logKey);
+
+                if (logData != null)
+                {
+                    var log = RocksDbSerializer.DeserializeFilteredLog(logData);
+                    if (log != null)
+                    {
+                        if (toBlock.HasValue && log.BlockNumber > toBlock.Value)
+                            break;
+
+                        if (!fromBlock.HasValue || log.BlockNumber >= fromBlock.Value)
+                        {
+                            result.Add(log);
+                        }
+                    }
+                }
+
+                iterator.Next();
+            }
+
+            return result;
+        }
+
+        private List<BigInteger> GetMatchingBlocks(LogFilter filter, LogBloomFilter queryBloom)
+        {
+            var matchingBlocks = new List<BigInteger>();
+            var fromBlock = filter.FromBlock ?? BigInteger.Zero;
+            var toBlock = filter.ToBlock ?? BigInteger.Zero;
+
+            if (toBlock == BigInteger.Zero)
+            {
+                var metaKey = System.Text.Encoding.UTF8.GetBytes("height");
+                var metaData = _manager.Get(RocksDbManager.CF_METADATA, metaKey);
+                if (metaData != null)
+                {
+                    toBlock = new BigInteger(metaData, isUnsigned: true, isBigEndian: true);
+                }
+            }
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_BLOCK_BLOOMS);
+            var startKey = CreateBlockNumberKey(fromBlock);
+            iterator.Seek(startKey);
+
+            while (iterator.Valid())
+            {
+                var key = iterator.Key();
+                var blockNumber = new BigInteger(key, isUnsigned: true, isBigEndian: true);
+
+                if (blockNumber > toBlock)
+                    break;
+
+                var blockBloom = iterator.Value();
+                if (queryBloom.Matches(blockBloom))
+                {
+                    matchingBlocks.Add(blockNumber);
+                }
+
+                iterator.Next();
+            }
+
+            return matchingBlocks;
+        }
+
+        private List<FilteredLog> GetLogsByBlockNumberInternal(BigInteger blockNumber)
+        {
+            var result = new List<FilteredLog>();
+            var startKey = CreateLogKey(blockNumber, 0, 0);
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOGS);
-            iterator.SeekToFirst();
+            iterator.Seek(startKey);
 
             while (iterator.Valid())
             {
                 var data = iterator.Value();
                 var log = RocksDbSerializer.DeserializeFilteredLog(data);
 
-                if (log != null && ByteArrayEquals(log.TransactionHash, txHash))
+                if (log != null)
                 {
-                    result.Add(log);
+                    if (log.BlockNumber > blockNumber)
+                        break;
+
+                    if (log.BlockNumber == blockNumber)
+                    {
+                        result.Add(log);
+                    }
+                }
+
+                iterator.Next();
+            }
+
+            return result;
+        }
+
+        private static LogBloomFilter BuildQueryBloom(LogFilter filter)
+        {
+            if (filter == null)
+                return null;
+
+            var hasAddresses = filter.Addresses != null && filter.Addresses.Count > 0;
+            var hasTopics = filter.Topics != null && filter.Topics.Count > 0 &&
+                            filter.Topics.Exists(t => t != null && t.Count > 0);
+
+            if (!hasAddresses && !hasTopics)
+                return null;
+
+            var bloom = new LogBloomFilter();
+
+            if (hasAddresses)
+            {
+                foreach (var address in filter.Addresses)
+                {
+                    bloom.AddAddress(address);
+                }
+            }
+
+            if (hasTopics)
+            {
+                for (int i = 0; i < filter.Topics.Count; i++)
+                {
+                    var topicFilter = filter.Topics[i];
+                    if (topicFilter != null && topicFilter.Count > 0)
+                    {
+                        foreach (var topic in topicFilter)
+                        {
+                            bloom.AddTopic(topic);
+                        }
+                    }
+                }
+            }
+
+            return bloom;
+        }
+
+        private static byte[] CreateBlockNumberKey(BigInteger blockNumber)
+        {
+            var blockBytes = blockNumber.ToByteArray(isUnsigned: true, isBigEndian: true);
+            var paddedBlock = new byte[32];
+            if (blockBytes.Length <= 32)
+            {
+                Buffer.BlockCopy(blockBytes, 0, paddedBlock, 32 - blockBytes.Length, blockBytes.Length);
+            }
+            return paddedBlock;
+        }
+
+        public Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash)
+        {
+            var result = new List<FilteredLog>();
+            if (txHash == null) return Task.FromResult(result);
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOG_BY_TX);
+            iterator.Seek(txHash);
+
+            while (iterator.Valid())
+            {
+                var key = iterator.Key();
+                if (!StartsWith(key, txHash))
+                    break;
+
+                var logKey = iterator.Value();
+                var logData = _manager.Get(RocksDbManager.CF_LOGS, logKey);
+                if (logData != null)
+                {
+                    var log = RocksDbSerializer.DeserializeFilteredLog(logData);
+                    if (log != null)
+                        result.Add(log);
                 }
 
                 iterator.Next();
@@ -158,7 +381,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var result = new List<FilteredLog>();
 
             var startKey = CreateLogKey(blockNumber, 0, 0);
-            var endBlockNumber = blockNumber + 1;
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOGS);
             iterator.Seek(startKey);
@@ -189,6 +411,61 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             });
 
             return Task.FromResult(result);
+        }
+
+        public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
+        {
+            using var batch = _manager.CreateWriteBatch();
+            var logsCf = _manager.GetColumnFamily(RocksDbManager.CF_LOGS);
+            var bloomsCf = _manager.GetColumnFamily(RocksDbManager.CF_BLOCK_BLOOMS);
+            var logByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_BLOCK);
+            var logByAddressCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_ADDRESS);
+            var logByTxCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_TX);
+
+            var startKey = CreateLogKey(blockNumber, 0, 0);
+
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOGS);
+            iterator.Seek(startKey);
+
+            while (iterator.Valid())
+            {
+                var data = iterator.Value();
+                var log = RocksDbSerializer.DeserializeFilteredLog(data);
+
+                if (log == null || log.BlockNumber > blockNumber)
+                    break;
+
+                if (log.BlockNumber == blockNumber)
+                {
+                    batch.Delete(iterator.Key(), logsCf);
+
+                    if (log.BlockHash != null)
+                    {
+                        var blockLogKey = CreateBlockLogKey(log.BlockHash, log.TransactionIndex, log.LogIndex);
+                        batch.Delete(blockLogKey, logByBlockCf);
+                    }
+
+                    if (log.TransactionHash != null)
+                    {
+                        var txLogKey = CreateTxLogKey(log.TransactionHash, log.LogIndex);
+                        batch.Delete(txLogKey, logByTxCf);
+                    }
+
+                    if (!string.IsNullOrEmpty(log.Address))
+                    {
+                        var addressLogKey = CreateAddressLogKey(log.Address, blockNumber, log.TransactionIndex, log.LogIndex);
+                        batch.Delete(addressLogKey, logByAddressCf);
+                    }
+                }
+
+                iterator.Next();
+            }
+
+            var bloomKey = CreateBlockNumberKey(blockNumber);
+            batch.Delete(bloomKey, bloomsCf);
+
+            _manager.Write(batch);
+            return Task.CompletedTask;
         }
 
         private static byte[] CreateLogKey(BigInteger blockNumber, int txIndex, int logIndex)
@@ -236,6 +513,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return key;
         }
 
+        private static byte[] CreateTxLogKey(byte[] txHash, int logIndex)
+        {
+            var logBytes = BitConverter.GetBytes(logIndex);
+            var key = new byte[txHash.Length + logBytes.Length];
+            Buffer.BlockCopy(txHash, 0, key, 0, txHash.Length);
+            Buffer.BlockCopy(logBytes, 0, key, txHash.Length, logBytes.Length);
+            return key;
+        }
+
         private static bool StartsWith(byte[] data, byte[] prefix)
         {
             if (data == null || prefix == null) return false;
@@ -248,17 +534,5 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return true;
         }
 
-        private static bool ByteArrayEquals(byte[] a, byte[] b)
-        {
-            if (a == null && b == null) return true;
-            if (a == null || b == null) return false;
-            if (a.Length != b.Length) return false;
-
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i]) return false;
-            }
-            return true;
-        }
     }
 }

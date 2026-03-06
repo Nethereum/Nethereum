@@ -47,13 +47,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return GetByHashAsync(latestHashData);
         }
 
-        public Task<BigInteger> GetHeightAsync()
+        public Task<BigInteger> GetHeightAsync() => Task.FromResult(GetHeightInternal());
+
+        private BigInteger GetHeightInternal()
         {
             var heightData = _manager.Get(RocksDbManager.CF_METADATA, Encoding.UTF8.GetBytes(HEIGHT_KEY));
-            if (heightData == null) return Task.FromResult(BigInteger.MinusOne);
-
-            var height = RocksDbSerializer.BytesToBigInteger(heightData);
-            return Task.FromResult(height);
+            if (heightData == null) return BigInteger.MinusOne;
+            return RocksDbSerializer.BytesToBigInteger(heightData);
         }
 
         public Task SaveAsync(BlockHeader header, byte[] blockHash)
@@ -73,7 +73,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             batch.Put(Encoding.UTF8.GetBytes(LATEST_BLOCK_KEY), blockHash, metadataCf);
 
-            var currentHeight = GetHeightAsync().Result;
+            var currentHeight = GetHeightInternal();
             if (header.BlockNumber > currentHeight)
             {
                 var heightBytes = RocksDbSerializer.BigIntegerToBytes(header.BlockNumber);
@@ -98,9 +98,64 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.FromResult(hash);
         }
 
+        public Task UpdateBlockHashAsync(BigInteger blockNumber, byte[] newHash)
+        {
+            var hashKey = GetBlockNumberKey(blockNumber);
+            var oldHash = _manager.Get(RocksDbManager.CF_BLOCK_NUMBERS, hashKey);
+
+            if (oldHash == null || newHash == null) return Task.CompletedTask;
+
+            var headerData = _manager.Get(RocksDbManager.CF_BLOCKS, oldHash);
+            if (headerData == null) return Task.CompletedTask;
+
+            using var batch = _manager.CreateWriteBatch();
+            var blocksCf = _manager.GetColumnFamily(RocksDbManager.CF_BLOCKS);
+            var blockNumbersCf = _manager.GetColumnFamily(RocksDbManager.CF_BLOCK_NUMBERS);
+
+            batch.Delete(oldHash, blocksCf);
+            batch.Put(newHash, headerData, blocksCf);
+            batch.Put(hashKey, newHash, blockNumbersCf);
+
+            _manager.Write(batch);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteByNumberAsync(BigInteger blockNumber)
+        {
+            var hashKey = GetBlockNumberKey(blockNumber);
+            var hash = _manager.Get(RocksDbManager.CF_BLOCK_NUMBERS, hashKey);
+            if (hash == null) return Task.CompletedTask;
+
+            using var batch = _manager.CreateWriteBatch();
+            var blocksCf = _manager.GetColumnFamily(RocksDbManager.CF_BLOCKS);
+            var blockNumbersCf = _manager.GetColumnFamily(RocksDbManager.CF_BLOCK_NUMBERS);
+            var metadataCf = _manager.GetColumnFamily(RocksDbManager.CF_METADATA);
+
+            batch.Delete(hash, blocksCf);
+            batch.Delete(hashKey, blockNumbersCf);
+
+            var currentHeight = GetHeightInternal();
+            if (blockNumber == currentHeight)
+            {
+                var newHeight = blockNumber - 1;
+                var heightBytes = RocksDbSerializer.BigIntegerToBytes(newHeight);
+                batch.Put(Encoding.UTF8.GetBytes(HEIGHT_KEY), heightBytes, metadataCf);
+
+                var prevHashKey = GetBlockNumberKey(newHeight);
+                var prevHash = _manager.Get(RocksDbManager.CF_BLOCK_NUMBERS, prevHashKey);
+                if (prevHash != null)
+                {
+                    batch.Put(Encoding.UTF8.GetBytes(LATEST_BLOCK_KEY), prevHash, metadataCf);
+                }
+            }
+
+            _manager.Write(batch);
+            return Task.CompletedTask;
+        }
+
         private static byte[] GetBlockNumberKey(BigInteger number)
         {
-            var bytes = number.ToByteArray();
+            var bytes = number.ToByteArray(isUnsigned: true, isBigEndian: true);
             var padded = new byte[32];
             if (bytes.Length <= 32)
             {
