@@ -295,3 +295,11 @@ Temporary Items
 
 src/packagesFx/Nethereum.Fx.4.1.1.snupkg
 src/packagesFx/Nethereum.LiteFx.4.1.1.snupkg
+
+# Foundry build artifacts
+contracts/lib/
+contracts/out/
+contracts/cache/
+
+# Windows nul file artifacts
+nul
