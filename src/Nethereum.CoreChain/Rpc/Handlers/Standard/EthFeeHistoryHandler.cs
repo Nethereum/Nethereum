@@ -71,11 +71,11 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             }
             else if (blockCountParam is HexBigInteger hexBigInt)
             {
-                blockCount = (int)hexBigInt.Value;
+                blockCount = hexBigInt.Value > int.MaxValue ? int.MaxValue : (int)hexBigInt.Value;
             }
             else if (blockCountParam is BigInteger bigInt)
             {
-                blockCount = (int)bigInt;
+                blockCount = bigInt > int.MaxValue ? int.MaxValue : (int)bigInt;
             }
             else
             {

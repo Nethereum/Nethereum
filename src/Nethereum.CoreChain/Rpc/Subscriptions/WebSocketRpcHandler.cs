@@ -156,7 +156,8 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
             }
             catch (Exception ex)
             {
-                return $"{{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{{\"code\":-32603,\"message\":\"{ex.Message.Replace("\"", "'")}\"}}}}";
+                var escapedMessage = JsonSerializer.Serialize(ex.Message);
+                return $"{{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{{\"code\":-32603,\"message\":{escapedMessage}}}}}";
             }
         }
 
