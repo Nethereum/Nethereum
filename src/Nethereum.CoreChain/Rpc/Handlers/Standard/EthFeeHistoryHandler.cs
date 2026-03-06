@@ -20,6 +20,31 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
+            try
+            {
+                return await HandleCoreAsync(request, context);
+            }
+            catch
+            {
+                return BuildDefaultResponse(request, context.Node.Config.BaseFee);
+            }
+        }
+
+        private RpcResponseMessage BuildDefaultResponse(RpcRequestMessage request, BigInteger baseFee)
+        {
+            var baseFeeHex = new HexBigInteger(baseFee);
+            var result = new FeeHistoryResult
+            {
+                OldestBlock = new HexBigInteger(0),
+                BaseFeePerGas = new[] { baseFeeHex, baseFeeHex },
+                GasUsedRatio = new[] { 0m },
+                Reward = new[] { new[] { new HexBigInteger(0) } }
+            };
+            return Success(request.Id, result);
+        }
+
+        private async Task<RpcResponseMessage> HandleCoreAsync(RpcRequestMessage request, RpcContext context)
+        {
             var blockCountParam = GetParam<object>(request, 0);
             var newestBlockTag = GetParam<string>(request, 1);
             var rewardPercentiles = GetOptionalParam<List<double>>(request, 2, null);
@@ -41,7 +66,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 }
                 else
                 {
-                    throw RpcException.InvalidParams("Invalid block count parameter");
+                    return BuildDefaultResponse(request, context.Node.Config.BaseFee);
                 }
             }
             else if (blockCountParam is HexBigInteger hexBigInt)
@@ -73,64 +98,84 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 newestBlock = newestBlockTag.HexToBigInteger(false);
             }
 
-            var baseFeePerGas = new List<string>();
-            var gasUsedRatio = new List<double>();
-            var reward = rewardPercentiles != null ? new List<List<string>>() : null;
+            if (newestBlock < 0) newestBlock = 0;
+
+            var baseFeePerGas = new List<HexBigInteger>();
+            var gasUsedRatio = new List<decimal>();
+            var reward = rewardPercentiles != null ? new List<HexBigInteger[]>() : null;
 
             var oldestBlock = BigInteger.Max(0, newestBlock - blockCount + 1);
 
             for (var i = oldestBlock; i <= newestBlock; i++)
             {
-                var block = await context.Node.GetBlockByNumberAsync(i);
-                if (block != null)
+                try
                 {
-                    var blockBaseFee = block.BaseFee ?? context.Node.Config.BaseFee;
-                    baseFeePerGas.Add(new HexBigInteger(blockBaseFee).HexValue);
-                    var ratio = block.GasLimit > 0 ? (double)block.GasUsed / (double)block.GasLimit : 0;
-                    gasUsedRatio.Add(ratio);
+                    var block = await context.Node.GetBlockByNumberAsync(i);
+                    if (block != null)
+                    {
+                        var blockBaseFee = block.BaseFee ?? context.Node.Config.BaseFee;
+                        baseFeePerGas.Add(new HexBigInteger(blockBaseFee));
+                        var ratio = block.GasLimit > 0 ? (decimal)block.GasUsed / (decimal)block.GasLimit : 0m;
+                        gasUsedRatio.Add(ratio);
 
-                    if (reward != null && rewardPercentiles != null)
-                    {
-                        var blockHash = await context.Node.GetBlockHashByNumberAsync(i);
-                        var blockRewards = await CalculateRewardPercentilesAsync(
-                            context, blockHash, block.BaseFee ?? context.Node.Config.BaseFee, rewardPercentiles);
-                        reward.Add(blockRewards);
-                    }
-                }
-                else
-                {
-                    baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee).HexValue);
-                    gasUsedRatio.Add(0);
-                    if (reward != null && rewardPercentiles != null)
-                    {
-                        var blockRewards = new List<string>();
-                        foreach (var percentile in rewardPercentiles)
+                        if (reward != null && rewardPercentiles != null)
                         {
-                            blockRewards.Add(new HexBigInteger(0).HexValue);
+                            var blockHash = await context.Node.GetBlockHashByNumberAsync(i);
+                            var blockRewards = await CalculateRewardPercentilesAsync(
+                                context, blockHash, blockBaseFee, rewardPercentiles);
+                            reward.Add(blockRewards);
                         }
-                        reward.Add(blockRewards);
                     }
+                    else
+                    {
+                        AddDefaultBlockEntry(context, baseFeePerGas, gasUsedRatio, reward, rewardPercentiles);
+                    }
+                }
+                catch
+                {
+                    AddDefaultBlockEntry(context, baseFeePerGas, gasUsedRatio, reward, rewardPercentiles);
                 }
             }
 
-            baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee).HexValue);
-
-            var result = new Dictionary<string, object>
+            if (baseFeePerGas.Count == 0)
             {
-                ["oldestBlock"] = new HexBigInteger(oldestBlock).HexValue,
-                ["baseFeePerGas"] = baseFeePerGas,
-                ["gasUsedRatio"] = gasUsedRatio
-            };
-
-            if (reward != null)
-            {
-                result["reward"] = reward;
+                baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee));
+                gasUsedRatio.Add(0m);
+                if (reward != null && rewardPercentiles != null)
+                {
+                    reward.Add(rewardPercentiles.Select(_ => new HexBigInteger(0)).ToArray());
+                }
             }
+
+            baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee));
+
+            var result = new FeeHistoryResult
+            {
+                OldestBlock = new HexBigInteger(oldestBlock),
+                BaseFeePerGas = baseFeePerGas.ToArray(),
+                GasUsedRatio = gasUsedRatio.ToArray(),
+                Reward = reward?.ToArray()
+            };
 
             return Success(request.Id, result);
         }
 
-        private async Task<List<string>> CalculateRewardPercentilesAsync(
+        private static void AddDefaultBlockEntry(
+            RpcContext context,
+            List<HexBigInteger> baseFeePerGas,
+            List<decimal> gasUsedRatio,
+            List<HexBigInteger[]> reward,
+            List<double> rewardPercentiles)
+        {
+            baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee));
+            gasUsedRatio.Add(0m);
+            if (reward != null && rewardPercentiles != null)
+            {
+                reward.Add(rewardPercentiles.Select(_ => new HexBigInteger(0)).ToArray());
+            }
+        }
+
+        private async Task<HexBigInteger[]> CalculateRewardPercentilesAsync(
             RpcContext context,
             byte[] blockHash,
             BigInteger baseFee,
@@ -139,7 +184,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var transactions = await context.Node.Transactions.GetByBlockHashAsync(blockHash);
             if (transactions == null || transactions.Count == 0)
             {
-                return percentiles.Select(_ => new HexBigInteger(0).HexValue).ToList();
+                return percentiles.Select(_ => new HexBigInteger(0)).ToArray();
             }
 
             var priorityFees = new List<BigInteger>();
@@ -151,12 +196,12 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             priorityFees.Sort();
 
-            var results = new List<string>();
-            foreach (var percentile in percentiles)
+            var results = new HexBigInteger[percentiles.Count];
+            for (int p = 0; p < percentiles.Count; p++)
             {
-                var index = (int)Math.Floor(percentile / 100.0 * (priorityFees.Count - 1));
+                var index = (int)Math.Floor(percentiles[p] / 100.0 * (priorityFees.Count - 1));
                 index = Math.Max(0, Math.Min(index, priorityFees.Count - 1));
-                results.Add(new HexBigInteger(priorityFees[index]).HexValue);
+                results[p] = new HexBigInteger(priorityFees[index]);
             }
 
             return results;

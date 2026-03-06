@@ -17,7 +17,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var callInput = GetParam<CallInput>(request, 0);
             var blockTag = GetOptionalParam<string>(request, 1, "latest");
 
-            ValidateBlockParameterIsLatest(blockTag, MethodName);
+            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
 
             BigInteger? value = callInput.Value?.Value;
 
@@ -39,6 +39,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 // For contract creation, execute the init code to estimate gas
                 var createResult = await context.Node.EstimateContractCreationGasAsync(
                     callInput.Data?.HexToByteArray(),
+                    blockNumber,
                     callInput.From,
                     value,
                     estimationGasLimit - intrinsicGas
@@ -46,7 +47,8 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
                 if (!createResult.Success)
                 {
-                    return Error(request.Id, 3, $"execution reverted: {createResult.RevertReason}", createResult.ReturnData?.ToHex(true));
+                    var reason = !string.IsNullOrEmpty(createResult.RevertReason) ? createResult.RevertReason : "revert";
+                    return Error(request.Id, 3, $"execution reverted: {reason}", createResult.ReturnData?.ToHex(true) ?? "0x");
                 }
 
                 executionGas = createResult.GasUsed;
@@ -57,6 +59,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 var result = await context.Node.CallAsync(
                     callInput.To,
                     callInput.Data?.HexToByteArray(),
+                    blockNumber,
                     callInput.From,
                     value,
                     estimationGasLimit - intrinsicGas
@@ -64,7 +67,8 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
                 if (!result.Success)
                 {
-                    return Error(request.Id, 3, $"execution reverted: {result.RevertReason}", result.ReturnData?.ToHex(true));
+                    var reason = !string.IsNullOrEmpty(result.RevertReason) ? result.RevertReason : "revert";
+                    return Error(request.Id, 3, $"execution reverted: {reason}", result.ReturnData?.ToHex(true) ?? "0x");
                 }
 
                 executionGas = result.GasUsed;

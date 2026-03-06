@@ -23,6 +23,7 @@ namespace Nethereum.CoreChain
         private readonly ITransactionVerificationAndRecovery _txVerifier;
         private readonly TransactionExecutor _executor;
         private readonly HardforkConfig _hardforkConfig;
+        private readonly Sha3Keccack _keccak = new();
 
         public const int G_TRANSACTION = 21000;
         public const int G_TXDATAZERO = 4;
@@ -37,10 +38,10 @@ namespace Nethereum.CoreChain
             ITransactionVerificationAndRecovery txVerifier,
             HardforkConfig hardforkConfig = null)
         {
-            _stateStore = stateStore;
-            _blockStore = blockStore;
-            _config = config;
-            _txVerifier = txVerifier;
+            _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+            _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _txVerifier = txVerifier ?? throw new ArgumentNullException(nameof(txVerifier));
             _hardforkConfig = hardforkConfig ?? HardforkConfig.Default;
             _executor = new TransactionExecutor(_hardforkConfig);
         }
@@ -49,7 +50,8 @@ namespace Nethereum.CoreChain
             ISignedTransaction signedTx,
             BlockContext blockContext,
             int txIndex,
-            BigInteger cumulativeGasUsed)
+            BigInteger cumulativeGasUsed,
+            string? cachedSenderAddress = null)
         {
             var result = new TransactionExecutionResult
             {
@@ -60,7 +62,7 @@ namespace Nethereum.CoreChain
 
             try
             {
-                var senderAddress = _txVerifier.GetSenderAddress(signedTx);
+                var senderAddress = cachedSenderAddress ?? _txVerifier.GetSenderAddress(signedTx);
                 if (string.IsNullOrEmpty(senderAddress))
                 {
                     result.Success = false;
@@ -69,6 +71,18 @@ namespace Nethereum.CoreChain
                 }
 
                 var txData = GetTransactionData(signedTx);
+
+                var senderAccount = await _stateStore.GetAccountAsync(senderAddress);
+                var expectedNonce = senderAccount?.Nonce ?? BigInteger.Zero;
+                if (expectedNonce != txData.Nonce)
+                {
+                    result.Skipped = true;
+                    result.Success = false;
+                    result.RevertReason = $"Nonce mismatch: have {txData.Nonce}, expected {expectedNonce}";
+                    result.GasUsed = 0;
+                    result.CumulativeGasUsed = cumulativeGasUsed;
+                    return result;
+                }
 
                 var snapshot = await _stateStore.CreateSnapshotAsync();
 
@@ -87,11 +101,11 @@ namespace Nethereum.CoreChain
                     if (evmResult.IsValidationError)
                     {
                         await _stateStore.RevertSnapshotAsync(snapshot);
+                        result.Skipped = true;
                         result.Success = false;
                         result.RevertReason = evmResult.Error;
                         result.GasUsed = 0;
                         result.CumulativeGasUsed = cumulativeGasUsed;
-                        result.Receipt = Receipt.CreateStatusReceipt(false, result.CumulativeGasUsed, new byte[256], new List<Log>());
                         return result;
                     }
 
@@ -120,6 +134,7 @@ namespace Nethereum.CoreChain
                         result.CumulativeGasUsed,
                         bloom,
                         result.Logs);
+                    result.Receipt.TransactionType = GetTransactionType(signedTx);
                 }
                 catch (Exception ex)
                 {
@@ -129,12 +144,16 @@ namespace Nethereum.CoreChain
                     result.GasUsed = txData.GasLimit;
                     result.CumulativeGasUsed = cumulativeGasUsed + txData.GasLimit;
                     result.Receipt = Receipt.CreateStatusReceipt(false, result.CumulativeGasUsed, new byte[256], new List<Log>());
+                    result.Receipt.TransactionType = GetTransactionType(signedTx);
                 }
             }
             catch (Exception ex)
             {
+                result.Skipped = true;
                 result.Success = false;
                 result.RevertReason = ex.Message;
+                result.GasUsed = 0;
+                result.CumulativeGasUsed = cumulativeGasUsed;
             }
 
             return result;
@@ -160,6 +179,7 @@ namespace Nethereum.CoreChain
                 MaxPriorityFeePerGas = txData.MaxPriorityFeePerGas ?? BigInteger.Zero,
                 Nonce = txData.Nonce,
                 IsEip1559 = txData.MaxFeePerGas.HasValue,
+                IsType4Transaction = txData.AuthorisationList != null && txData.AuthorisationList.Count > 0,
                 IsContractCreation = isContractCreation,
                 BlockNumber = (long)blockContext.BlockNumber,
                 Timestamp = blockContext.Timestamp,
@@ -167,9 +187,11 @@ namespace Nethereum.CoreChain
                 BaseFee = blockContext.BaseFee,
                 Difficulty = blockContext.Difficulty,
                 BlockGasLimit = blockContext.GasLimit,
+                ChainId = blockContext.ChainId,
                 ExecutionState = executionState,
                 TraceEnabled = false,
-                AccessList = txData.AccessList
+                AccessList = txData.AccessList,
+                AuthorisationList = txData.AuthorisationList
             };
         }
 
@@ -189,21 +211,57 @@ namespace Nethereum.CoreChain
 
                 var existingAccount = await _stateStore.GetAccountAsync(address);
                 var account = existingAccount ?? new Account { Balance = 0, Nonce = 0 };
+
                 var needsSave = false;
 
-                if (accountState.Code != null && accountState.Code.Length > 0 && IsEmptyCodeHash(account.CodeHash))
+                if (accountState.Code != null)
                 {
-                    var codeHash = new Sha3Keccack().CalculateHash(accountState.Code);
-                    await _stateStore.SaveCodeAsync(codeHash, accountState.Code);
-                    account.CodeHash = codeHash;
-                    needsSave = true;
+                    if (accountState.Code.Length > 0 && IsEmptyCodeHash(account.CodeHash))
+                    {
+                        var codeHash = _keccak.CalculateHash(accountState.Code);
+                        await _stateStore.SaveCodeAsync(codeHash, accountState.Code);
+                        account.CodeHash = codeHash;
+                        needsSave = true;
+                    }
+                    else if (accountState.Code.Length > 0 && !IsEmptyCodeHash(account.CodeHash))
+                    {
+                        var newCodeHash = _keccak.CalculateHash(accountState.Code);
+                        if (!ByteUtil.AreEqual(account.CodeHash, newCodeHash))
+                        {
+                            await _stateStore.SaveCodeAsync(newCodeHash, accountState.Code);
+                            account.CodeHash = newCodeHash;
+                            needsSave = true;
+                        }
+                    }
+                    else if (accountState.Code.Length == 0 && !IsEmptyCodeHash(account.CodeHash))
+                    {
+                        account.CodeHash = DefaultValues.EMPTY_DATA_HASH;
+                        needsSave = true;
+                    }
                 }
 
-                var newBalance = accountState.Balance.GetTotalBalance();
-                if (account.Balance != newBalance)
+                // Only update balance if it was actually accessed during execution
+                // (InitialChainBalance being set indicates balance was queried/modified)
+                if (accountState.Balance.InitialChainBalance.HasValue || accountState.Balance.ExecutionBalance.HasValue)
                 {
-                    account.Balance = newBalance;
-                    needsSave = true;
+                    BigInteger newBalance;
+                    if (accountState.Balance.ExecutionBalance.HasValue && !accountState.Balance.InitialChainBalance.HasValue)
+                    {
+                        // ExecutionBalance was modified but InitialChainBalance was never loaded.
+                        // This happens when a contract is called (its code accessed) but its balance wasn't queried.
+                        // Use the existing account balance as the base and add the execution delta.
+                        newBalance = account.Balance + accountState.Balance.ExecutionBalance.Value;
+                    }
+                    else
+                    {
+                        newBalance = accountState.Balance.GetTotalBalance();
+                    }
+
+                    if (account.Balance != newBalance)
+                    {
+                        account.Balance = newBalance;
+                        needsSave = true;
+                    }
                 }
 
                 if (accountState.Nonce.HasValue && account.Nonce != accountState.Nonce.Value)
@@ -294,7 +352,7 @@ namespace Nethereum.CoreChain
 
         private void AddToBloom(byte[] bloom, byte[] data)
         {
-            var hash = new Sha3Keccack().CalculateHash(data);
+            var hash = _keccak.CalculateHash(data);
 
             for (int i = 0; i < 6; i += 2)
             {
@@ -310,6 +368,21 @@ namespace Nethereum.CoreChain
         {
             switch (tx)
             {
+                case Transaction7702 tx7702:
+                    return new TransactionData
+                    {
+                        Nonce = tx7702.Nonce ?? 0,
+                        GasLimit = tx7702.GasLimit ?? 21000,
+                        GasPrice = tx7702.MaxFeePerGas ?? 0,
+                        MaxFeePerGas = tx7702.MaxFeePerGas,
+                        MaxPriorityFeePerGas = tx7702.MaxPriorityFeePerGas,
+                        To = tx7702.ReceiverAddress,
+                        Value = tx7702.Amount ?? 0,
+                        Data = tx7702.Data?.HexToByteArray(),
+                        AccessList = ConvertAccessList(tx7702.AccessList),
+                        AuthorisationList = tx7702.AuthorisationList
+                    };
+
                 case Transaction1559 tx1559:
                     return new TransactionData
                     {
@@ -398,6 +471,18 @@ namespace Nethereum.CoreChain
             }
             return true;
         }
+
+        public static byte GetTransactionType(ISignedTransaction tx)
+        {
+            return tx switch
+            {
+                Transaction7702 => 4,
+                Transaction1559 => 2,
+                Transaction2930 => 1,
+                _ => 0
+            };
+        }
+
     }
 
     public class TransactionData
@@ -411,6 +496,7 @@ namespace Nethereum.CoreChain
         public BigInteger Value { get; set; }
         public byte[] Data { get; set; }
         public List<AccessListEntry> AccessList { get; set; }
+        public List<Authorisation7702Signed> AuthorisationList { get; set; }
 
         public BigInteger GetEffectiveGasPrice(BigInteger baseFee)
         {

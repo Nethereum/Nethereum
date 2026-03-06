@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -10,44 +12,37 @@ namespace Nethereum.CoreChain.Storage.InMemory
 {
     public class InMemoryLogStore : ILogStore
     {
-        private readonly object _lock = new object();
-        private readonly List<FilteredLog> _logs = new List<FilteredLog>();
-        private readonly Dictionary<string, List<int>> _logIndexesByTxHash = new Dictionary<string, List<int>>();
-        private readonly Dictionary<string, List<int>> _logIndexesByBlockHash = new Dictionary<string, List<int>>();
-        private readonly Dictionary<BigInteger, List<int>> _logIndexesByBlockNumber = new Dictionary<BigInteger, List<int>>();
-        private readonly Dictionary<BigInteger, byte[]> _bloomByBlockNumber = new Dictionary<BigInteger, byte[]>();
+        private int _nextLogIndex;
+        private readonly ConcurrentDictionary<int, FilteredLog> _logs = new();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, byte>> _logIndexesByTxHash = new();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, byte>> _logIndexesByBlockHash = new();
+        private readonly ConcurrentDictionary<BigInteger, ConcurrentDictionary<int, byte>> _logIndexesByBlockNumber = new();
+        private readonly ConcurrentDictionary<BigInteger, byte[]> _bloomByBlockNumber = new();
 
         public Task SaveLogsAsync(List<Log> logs, byte[] txHash, byte[] blockHash, BigInteger blockNumber, int txIndex)
         {
             if (logs == null || logs.Count == 0)
-                return Task.FromResult(0);
+                return Task.CompletedTask;
 
-            lock (_lock)
+            var txHashHex = ToHex(txHash);
+            var blockHashHex = ToHex(blockHash);
+
+            var txIndexes = _logIndexesByTxHash.GetOrAdd(txHashHex, _ => new ConcurrentDictionary<int, byte>());
+            var blockHashIndexes = _logIndexesByBlockHash.GetOrAdd(blockHashHex, _ => new ConcurrentDictionary<int, byte>());
+            var blockNumIndexes = _logIndexesByBlockNumber.GetOrAdd(blockNumber, _ => new ConcurrentDictionary<int, byte>());
+
+            for (int i = 0; i < logs.Count; i++)
             {
-                var txHashHex = ToHex(txHash);
-                var blockHashHex = ToHex(blockHash);
+                var filteredLog = FilteredLog.FromLog(logs[i], blockHash, blockNumber, txHash, txIndex, i);
+                var index = Interlocked.Increment(ref _nextLogIndex) - 1;
+                _logs[index] = filteredLog;
 
-                if (!_logIndexesByTxHash.ContainsKey(txHashHex))
-                    _logIndexesByTxHash[txHashHex] = new List<int>();
-
-                if (!_logIndexesByBlockHash.ContainsKey(blockHashHex))
-                    _logIndexesByBlockHash[blockHashHex] = new List<int>();
-
-                if (!_logIndexesByBlockNumber.ContainsKey(blockNumber))
-                    _logIndexesByBlockNumber[blockNumber] = new List<int>();
-
-                for (int i = 0; i < logs.Count; i++)
-                {
-                    var filteredLog = FilteredLog.FromLog(logs[i], blockHash, blockNumber, txHash, txIndex, i);
-                    var index = _logs.Count;
-                    _logs.Add(filteredLog);
-
-                    _logIndexesByTxHash[txHashHex].Add(index);
-                    _logIndexesByBlockHash[blockHashHex].Add(index);
-                    _logIndexesByBlockNumber[blockNumber].Add(index);
-                }
+                txIndexes.TryAdd(index, 0);
+                blockHashIndexes.TryAdd(index, 0);
+                blockNumIndexes.TryAdd(index, 0);
             }
-            return Task.FromResult(0);
+
+            return Task.CompletedTask;
         }
 
         public Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom)
@@ -55,61 +50,68 @@ namespace Nethereum.CoreChain.Storage.InMemory
             if (bloom == null || bloom.Length != 256)
                 return Task.CompletedTask;
 
-            lock (_lock)
-            {
-                _bloomByBlockNumber[blockNumber] = bloom;
-            }
+            _bloomByBlockNumber[blockNumber] = bloom;
             return Task.CompletedTask;
         }
 
         public Task<List<FilteredLog>> GetLogsAsync(LogFilter filter)
         {
-            lock (_lock)
+            var queryBloom = BuildQueryBloom(filter);
+            var hasBloomFilter = queryBloom != null && !queryBloom.IsEmpty() && !_bloomByBlockNumber.IsEmpty;
+
+            if (!hasBloomFilter)
             {
-                var queryBloom = BuildQueryBloom(filter);
-                var hasBloomFilter = queryBloom != null && !queryBloom.IsEmpty();
-
-                if (!hasBloomFilter)
+                var count = Volatile.Read(ref _nextLogIndex);
+                var result = new List<FilteredLog>();
+                for (int i = 0; i < count; i++)
                 {
-                    var result = _logs
-                        .Where(log => MatchesFilter(log, filter))
-                        .ToList();
-                    return Task.FromResult(result);
+                    if (_logs.TryGetValue(i, out var log) && MatchesFilter(log, filter))
+                        result.Add(log);
                 }
-
-                var matchingBlocks = new HashSet<BigInteger>();
-                var fromBlock = filter.FromBlock ?? BigInteger.Zero;
-                var toBlock = filter.ToBlock ?? _logIndexesByBlockNumber.Keys.DefaultIfEmpty(BigInteger.Zero).Max();
-
-                foreach (var kvp in _bloomByBlockNumber)
-                {
-                    if (kvp.Key >= fromBlock && kvp.Key <= toBlock)
-                    {
-                        if (queryBloom.Matches(kvp.Value))
-                        {
-                            matchingBlocks.Add(kvp.Key);
-                        }
-                    }
-                }
-
-                var resultLogs = new List<FilteredLog>();
-                foreach (var blockNumber in matchingBlocks)
-                {
-                    if (_logIndexesByBlockNumber.TryGetValue(blockNumber, out var indexes))
-                    {
-                        foreach (var index in indexes)
-                        {
-                            var log = _logs[index];
-                            if (MatchesAddressAndTopics(log, filter))
-                            {
-                                resultLogs.Add(log);
-                            }
-                        }
-                    }
-                }
-
-                return Task.FromResult(resultLogs);
+                return Task.FromResult(result);
             }
+
+            var matchingBlocks = new HashSet<BigInteger>();
+            var fromBlock = filter.FromBlock ?? BigInteger.Zero;
+            var toBlock = filter.ToBlock ?? GetMaxBlockNumber();
+
+            foreach (var kvp in _bloomByBlockNumber)
+            {
+                if (kvp.Key >= fromBlock && kvp.Key <= toBlock)
+                {
+                    if (queryBloom.Matches(kvp.Value))
+                    {
+                        matchingBlocks.Add(kvp.Key);
+                    }
+                }
+            }
+
+            var resultLogs = new List<FilteredLog>();
+            foreach (var blockNumber in matchingBlocks)
+            {
+                if (_logIndexesByBlockNumber.TryGetValue(blockNumber, out var indexes))
+                {
+                    foreach (var index in indexes.Keys)
+                    {
+                        if (_logs.TryGetValue(index, out var log) && MatchesAddressAndTopics(log, filter))
+                        {
+                            resultLogs.Add(log);
+                        }
+                    }
+                }
+            }
+
+            return Task.FromResult(resultLogs);
+        }
+
+        private BigInteger GetMaxBlockNumber()
+        {
+            BigInteger max = BigInteger.Zero;
+            foreach (var key in _logIndexesByBlockNumber.Keys)
+            {
+                if (key > max) max = key;
+            }
+            return max;
         }
 
         private LogBloomFilter BuildQueryBloom(LogFilter filter)
@@ -165,52 +167,84 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash)
         {
-            lock (_lock)
-            {
-                var hashHex = ToHex(txHash);
-                if (!_logIndexesByTxHash.TryGetValue(hashHex, out var indexes))
-                    return Task.FromResult(new List<FilteredLog>());
+            var hashHex = ToHex(txHash);
+            if (!_logIndexesByTxHash.TryGetValue(hashHex, out var indexes))
+                return Task.FromResult(new List<FilteredLog>());
 
-                var result = indexes.Select(i => _logs[i]).ToList();
-                return Task.FromResult(result);
+            var result = new List<FilteredLog>();
+            foreach (var index in indexes.Keys)
+            {
+                if (_logs.TryGetValue(index, out var log))
+                    result.Add(log);
             }
+            return Task.FromResult(result);
         }
 
         public Task<List<FilteredLog>> GetLogsByBlockHashAsync(byte[] blockHash)
         {
-            lock (_lock)
-            {
-                var hashHex = ToHex(blockHash);
-                if (!_logIndexesByBlockHash.TryGetValue(hashHex, out var indexes))
-                    return Task.FromResult(new List<FilteredLog>());
+            var hashHex = ToHex(blockHash);
+            if (!_logIndexesByBlockHash.TryGetValue(hashHex, out var indexes))
+                return Task.FromResult(new List<FilteredLog>());
 
-                var result = indexes.Select(i => _logs[i]).ToList();
-                return Task.FromResult(result);
+            var result = new List<FilteredLog>();
+            foreach (var index in indexes.Keys)
+            {
+                if (_logs.TryGetValue(index, out var log))
+                    result.Add(log);
             }
+            return Task.FromResult(result);
         }
 
         public Task<List<FilteredLog>> GetLogsByBlockNumberAsync(BigInteger blockNumber)
         {
-            lock (_lock)
-            {
-                if (!_logIndexesByBlockNumber.TryGetValue(blockNumber, out var indexes))
-                    return Task.FromResult(new List<FilteredLog>());
+            if (!_logIndexesByBlockNumber.TryGetValue(blockNumber, out var indexes))
+                return Task.FromResult(new List<FilteredLog>());
 
-                var result = indexes.Select(i => _logs[i]).ToList();
-                return Task.FromResult(result);
+            var result = new List<FilteredLog>();
+            foreach (var index in indexes.Keys)
+            {
+                if (_logs.TryGetValue(index, out var log))
+                    result.Add(log);
             }
+            return Task.FromResult(result);
+        }
+
+        public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
+        {
+            if (_logIndexesByBlockNumber.TryRemove(blockNumber, out var logIndexes))
+            {
+                foreach (var logIndex in logIndexes.Keys)
+                {
+                    if (_logs.TryRemove(logIndex, out var log))
+                    {
+                        var txHashHex = ToHex(log.TransactionHash);
+                        if (txHashHex != null && _logIndexesByTxHash.TryGetValue(txHashHex, out var txIndexes))
+                        {
+                            txIndexes.TryRemove(logIndex, out _);
+                        }
+
+                        var blockHashHex = ToHex(log.BlockHash);
+                        if (blockHashHex != null && _logIndexesByBlockHash.TryGetValue(blockHashHex, out var blockIndexes))
+                        {
+                            blockIndexes.TryRemove(logIndex, out _);
+                        }
+                    }
+                }
+            }
+
+            _bloomByBlockNumber.TryRemove(blockNumber, out _);
+
+            return Task.CompletedTask;
         }
 
         public void Clear()
         {
-            lock (_lock)
-            {
-                _logs.Clear();
-                _logIndexesByTxHash.Clear();
-                _logIndexesByBlockHash.Clear();
-                _logIndexesByBlockNumber.Clear();
-                _bloomByBlockNumber.Clear();
-            }
+            _logs.Clear();
+            _logIndexesByTxHash.Clear();
+            _logIndexesByBlockHash.Clear();
+            _logIndexesByBlockNumber.Clear();
+            _bloomByBlockNumber.Clear();
+            Interlocked.Exchange(ref _nextLogIndex, 0);
         }
 
         private bool MatchesFilter(FilteredLog log, LogFilter filter)
@@ -230,10 +264,6 @@ namespace Nethereum.CoreChain.Storage.InMemory
             return true;
         }
 
-        private static string ToHex(byte[] bytes)
-        {
-            if (bytes == null) return null;
-            return System.BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-        }
+        private static string ToHex(byte[] bytes) => bytes?.ToHex();
     }
 }

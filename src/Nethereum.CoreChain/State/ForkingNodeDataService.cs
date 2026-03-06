@@ -15,11 +15,15 @@ namespace Nethereum.CoreChain.State
 {
     public class ForkingNodeDataService : INodeDataService
     {
+        private const int MaxFetchedAccountsSize = 100_000;
+        private const int MaxFetchedStorageSize = 500_000;
+
         private readonly IStateStore _stateStore;
         private readonly IBlockStore _blockStore;
         private readonly RpcNodeDataService _remoteService;
-        private readonly HashSet<string> _fetchedAccounts = new HashSet<string>();
-        private readonly HashSet<string> _fetchedStorage = new HashSet<string>();
+        private readonly Sha3Keccack _keccak = new();
+        private HashSet<string> _fetchedAccounts = new HashSet<string>();
+        private HashSet<string> _fetchedStorage = new HashSet<string>();
         private readonly object _fetchLock = new object();
         private readonly SemaphoreSlim _asyncLock = new SemaphoreSlim(1, 1);
 
@@ -139,8 +143,9 @@ namespace Nethereum.CoreChain.State
                         await _stateStore.SaveStorageAsync(address, position, value);
                     }
                 }
-                catch
+                catch (Exception ex) when (ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException || ex is OperationCanceledException)
                 {
+                    System.Diagnostics.Debug.WriteLine($"ForkingNodeDataService: failed to fetch storage at {address}:{position} - {ex.Message}");
                     value = null;
                 }
 
@@ -208,8 +213,9 @@ namespace Nethereum.CoreChain.State
             {
                 return await _remoteService.GetBlockHashAsync(blockNumber);
             }
-            catch
+            catch (Exception ex) when (ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException || ex is OperationCanceledException)
             {
+                System.Diagnostics.Debug.WriteLine($"ForkingNodeDataService: failed to fetch block hash for #{blockNumber} - {ex.Message}");
                 return null;
             }
         }
@@ -224,9 +230,9 @@ namespace Nethereum.CoreChain.State
 
                 await Task.WhenAll(balanceTask, nonceTask, codeTask);
 
-                var balance = balanceTask.Result;
-                var nonce = nonceTask.Result;
-                var code = codeTask.Result;
+                var balance = await balanceTask;
+                var nonce = await nonceTask;
+                var code = await codeTask;
 
                 if (balance == BigInteger.Zero && nonce == BigInteger.Zero &&
                     (code == null || code.Length == 0))
@@ -243,7 +249,7 @@ namespace Nethereum.CoreChain.State
 
                 if (code != null && code.Length > 0)
                 {
-                    var codeHash = new Sha3Keccack().CalculateHash(code);
+                    var codeHash = _keccak.CalculateHash(code);
                     await _stateStore.SaveCodeAsync(codeHash, code);
                     account.CodeHash = codeHash;
                 }
@@ -251,8 +257,9 @@ namespace Nethereum.CoreChain.State
                 await _stateStore.SaveAccountAsync(address, account);
                 MarkAccountFetched(normalizedAddress);
             }
-            catch
+            catch (Exception ex) when (ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException || ex is OperationCanceledException)
             {
+                System.Diagnostics.Debug.WriteLine($"ForkingNodeDataService: failed to fetch account {address} - {ex.Message}");
                 MarkAccountFetched(normalizedAddress);
             }
         }
@@ -269,6 +276,8 @@ namespace Nethereum.CoreChain.State
         {
             lock (_fetchLock)
             {
+                if (_fetchedAccounts.Count >= MaxFetchedAccountsSize)
+                    _fetchedAccounts = new HashSet<string>();
                 _fetchedAccounts.Add(normalizedAddress);
             }
         }
@@ -285,6 +294,8 @@ namespace Nethereum.CoreChain.State
         {
             lock (_fetchLock)
             {
+                if (_fetchedStorage.Count >= MaxFetchedStorageSize)
+                    _fetchedStorage = new HashSet<string>();
                 _fetchedStorage.Add(storageKey);
             }
         }

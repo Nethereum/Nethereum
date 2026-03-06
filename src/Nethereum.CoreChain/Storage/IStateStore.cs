@@ -24,5 +24,9 @@ namespace Nethereum.CoreChain.Storage
         Task<IStateSnapshot> CreateSnapshotAsync();
         Task CommitSnapshotAsync(IStateSnapshot snapshot);
         Task RevertSnapshotAsync(IStateSnapshot snapshot);
+
+        Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync();
+        Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address);
+        Task ClearDirtyTrackingAsync();
     }
 }

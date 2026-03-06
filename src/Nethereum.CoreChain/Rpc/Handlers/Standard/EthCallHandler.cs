@@ -16,7 +16,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var callInput = GetParam<CallInput>(request, 0);
             var blockTag = GetOptionalParam<string>(request, 1, "latest");
 
-            ValidateBlockParameterIsLatest(blockTag, MethodName);
+            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
 
             BigInteger? gas = callInput.Gas?.Value;
             BigInteger? value = callInput.Value?.Value;
@@ -24,14 +24,16 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var result = await context.Node.CallAsync(
                 callInput.To,
                 callInput.Data?.HexToByteArray(),
+                blockNumber,
                 callInput.From,
                 value,
                 gas
             );
 
-            if (!result.Success && !string.IsNullOrEmpty(result.RevertReason))
+            if (!result.Success)
             {
-                return Error(request.Id, 3, $"execution reverted: {result.RevertReason}", result.ReturnData?.ToHex(true));
+                var reason = !string.IsNullOrEmpty(result.RevertReason) ? result.RevertReason : "revert";
+                return Error(request.Id, 3, $"execution reverted: {reason}", result.ReturnData?.ToHex(true) ?? "0x");
             }
 
             return Success(request.Id, result.ReturnData?.ToHex(true) ?? "0x");

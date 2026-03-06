@@ -11,5 +11,8 @@ namespace Nethereum.CoreChain
         public BigInteger Difficulty { get; set; }
         public byte[] PrevRandao { get; set; }
         public byte[] ExtraData { get; set; }
+        public BigInteger ChainId { get; set; }
+        public byte[] ParentBeaconBlockRoot { get; set; }
+        public byte[] Nonce { get; set; }
     }
 }

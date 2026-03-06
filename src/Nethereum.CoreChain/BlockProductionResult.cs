@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Numerics;
 using Nethereum.Model;
 
 namespace Nethereum.CoreChain
@@ -10,6 +11,7 @@ namespace Nethereum.CoreChain
         public List<TransactionResult> TransactionResults { get; set; } = new();
         public int SuccessfulTransactions { get; set; }
         public int FailedTransactions { get; set; }
+        public object? MessageBatchResult { get; set; }
     }
 
     public class TransactionResult
@@ -18,5 +20,7 @@ namespace Nethereum.CoreChain
         public bool Success { get; set; }
         public Receipt Receipt { get; set; }
         public string ErrorMessage { get; set; }
+        public BigInteger GasUsed { get; set; }
+        public byte[] ReturnData { get; set; }
     }
 }

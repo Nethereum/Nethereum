@@ -18,7 +18,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var callInput = GetParam<CallInput>(request, 0);
             var blockTag = GetOptionalParam<string>(request, 1, "latest");
 
-            ValidateBlockParameterIsLatest(blockTag, MethodName);
+            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
 
             BigInteger? gas = callInput.Gas?.Value;
             BigInteger? value = callInput.Value?.Value;
@@ -26,6 +26,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var result = await context.Node.CreateAccessListAsync(
                 callInput.To,
                 callInput.Data?.HexToByteArray(),
+                blockNumber,
                 callInput.From,
                 value,
                 gas

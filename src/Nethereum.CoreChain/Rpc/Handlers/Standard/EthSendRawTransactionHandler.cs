@@ -23,13 +23,30 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             }
             catch (Exception ex)
             {
-                return Error(request.Id, -32000, $"Invalid transaction: {ex.Message}");
+                return Error(request.Id, -32602, $"Invalid transaction: {ex.Message}");
             }
 
-            var result = await context.Node.SendTransactionAsync(signedTx);
+            TransactionExecutionResult result;
+            try
+            {
+                result = await context.Node.SendTransactionAsync(signedTx);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Error(request.Id, -32000, ex.Message);
+            }
+
+            if (result == null)
+            {
+                return Error(request.Id, -32603, "Internal error: SendTransactionAsync returned null");
+            }
 
             if (result.Success || result.Receipt != null)
             {
+                if (result.TransactionHash == null)
+                {
+                    return Error(request.Id, -32603, "Internal error: TransactionHash is null");
+                }
                 return Success(request.Id, result.TransactionHash.ToHex(true));
             }
 

@@ -4,7 +4,7 @@
     <Description>Nethereum CoreChain - Core blockchain infrastructure for state, transactions, and receipts root management</Description>
     <AssemblyTitle>Nethereum.CoreChain</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.CoreChain</AssemblyName>
     <PackageId>Nethereum.CoreChain</PackageId>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
   </ItemGroup>
 
   <ItemGroup>

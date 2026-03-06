@@ -1,321 +1,372 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage.InMemory
 {
     public class InMemoryStateStore : IStateStore
     {
-        private readonly object _lock = new object();
-        private readonly Dictionary<string, Account> _accounts = new Dictionary<string, Account>();
-        private readonly Dictionary<string, Dictionary<BigInteger, byte[]>> _storage = new Dictionary<string, Dictionary<BigInteger, byte[]>>();
-        private readonly Dictionary<string, byte[]> _code = new Dictionary<string, byte[]>();
+        private readonly object _snapshotLock = new object();
+        private readonly ConcurrentDictionary<string, Account> _accounts = new();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte[]>> _storage = new();
+        private readonly ConcurrentDictionary<string, byte[]> _code = new();
+        private readonly ConcurrentDictionary<string, byte> _dirtyAccounts = new();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _dirtyStorageSlots = new();
         private int _nextSnapshotId = 0;
+        private volatile CowStateSnapshot _activeSnapshot;
+
+        private static string NormalizeAddress(string address)
+        {
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+        }
 
         public Task<Account> GetAccountAsync(string address)
         {
-            lock (_lock)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                _accounts.TryGetValue(normalizedAddress, out var account);
-                return Task.FromResult(account);
-            }
+            var normalizedAddress = NormalizeAddress(address);
+            _accounts.TryGetValue(normalizedAddress, out var account);
+            return Task.FromResult(account);
         }
 
         public Task SaveAccountAsync(string address, Account account)
         {
-            lock (_lock)
+            var normalizedAddress = NormalizeAddress(address);
+            var snapshot = _activeSnapshot;
+            if (snapshot != null)
             {
-                var normalizedAddress = NormalizeAddress(address);
-                _accounts[normalizedAddress] = account;
+                _accounts.TryGetValue(normalizedAddress, out var existing);
+                snapshot.SaveAccountUndoIfNeeded(normalizedAddress, CloneAccount(existing));
             }
-            return Task.FromResult(0);
+            _accounts[normalizedAddress] = account;
+            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            return Task.CompletedTask;
         }
 
         public Task<bool> AccountExistsAsync(string address)
         {
-            lock (_lock)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                return Task.FromResult(_accounts.ContainsKey(normalizedAddress));
-            }
+            var normalizedAddress = NormalizeAddress(address);
+            return Task.FromResult(_accounts.ContainsKey(normalizedAddress));
         }
 
         public Task DeleteAccountAsync(string address)
         {
-            lock (_lock)
+            var normalizedAddress = NormalizeAddress(address);
+            var snapshot = _activeSnapshot;
+            if (snapshot != null)
             {
-                var normalizedAddress = NormalizeAddress(address);
-                _accounts.Remove(normalizedAddress);
-                _storage.Remove(normalizedAddress);
+                _accounts.TryGetValue(normalizedAddress, out var existing);
+                snapshot.SaveAccountUndoIfNeeded(normalizedAddress, CloneAccount(existing));
+                SaveStorageClearUndo(snapshot, normalizedAddress);
             }
-            return Task.FromResult(0);
+            _accounts.TryRemove(normalizedAddress, out _);
+            _storage.TryRemove(normalizedAddress, out _);
+            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            return Task.CompletedTask;
         }
 
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
-            lock (_lock)
-            {
-                return Task.FromResult(new Dictionary<string, Account>(_accounts));
-            }
+            return Task.FromResult(new Dictionary<string, Account>(_accounts));
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
         {
-            lock (_lock)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
-                    return Task.FromResult<byte[]>(null);
+            var normalizedAddress = NormalizeAddress(address);
+            if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
+                return Task.FromResult<byte[]>(null);
 
-                accountStorage.TryGetValue(slot, out var value);
-                return Task.FromResult(value);
-            }
+            accountStorage.TryGetValue(slot, out var value);
+            return Task.FromResult(value);
         }
 
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
-            lock (_lock)
+            var normalizedAddress = NormalizeAddress(address);
+            var snapshot = _activeSnapshot;
+            if (snapshot != null)
             {
-                var normalizedAddress = NormalizeAddress(address);
-                if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
-                {
-                    accountStorage = new Dictionary<BigInteger, byte[]>();
-                    _storage[normalizedAddress] = accountStorage;
-                }
-
-                if (value == null || value.All(b => b == 0))
-                    accountStorage.Remove(slot);
-                else
-                    accountStorage[slot] = value;
+                byte[] originalValue = null;
+                if (_storage.TryGetValue(normalizedAddress, out var existing))
+                    existing.TryGetValue(slot, out originalValue);
+                snapshot.SaveStorageUndoIfNeeded(normalizedAddress, slot, originalValue?.ToArray());
             }
-            return Task.FromResult(0);
+
+            var accountStorage = _storage.GetOrAdd(normalizedAddress, _ => new ConcurrentDictionary<BigInteger, byte[]>());
+
+            if (value == null || IsAllZero(value))
+                accountStorage.TryRemove(slot, out _);
+            else
+                accountStorage[slot] = value;
+
+            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+
+            var dirtySlots = _dirtyStorageSlots.GetOrAdd(normalizedAddress, _ => new ConcurrentDictionary<BigInteger, byte>());
+            dirtySlots.TryAdd(slot, 0);
+
+            return Task.CompletedTask;
         }
 
         public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
         {
-            lock (_lock)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
-                    return Task.FromResult(new Dictionary<BigInteger, byte[]>());
+            var normalizedAddress = NormalizeAddress(address);
+            if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
+                return Task.FromResult(new Dictionary<BigInteger, byte[]>());
 
-                return Task.FromResult(new Dictionary<BigInteger, byte[]>(accountStorage));
-            }
+            return Task.FromResult(new Dictionary<BigInteger, byte[]>(accountStorage));
         }
 
         public Task ClearStorageAsync(string address)
         {
-            lock (_lock)
+            var normalizedAddress = NormalizeAddress(address);
+            var snapshot = _activeSnapshot;
+            if (snapshot != null)
             {
-                var normalizedAddress = NormalizeAddress(address);
-                _storage.Remove(normalizedAddress);
+                SaveStorageClearUndo(snapshot, normalizedAddress);
             }
-            return Task.FromResult(0);
+            _storage.TryRemove(normalizedAddress, out _);
+            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            return Task.CompletedTask;
         }
 
         public Task<byte[]> GetCodeAsync(byte[] codeHash)
         {
-            lock (_lock)
-            {
-                var hashHex = ToHex(codeHash);
-                _code.TryGetValue(hashHex, out var code);
-                return Task.FromResult(code);
-            }
+            var hashHex = ToHex(codeHash);
+            _code.TryGetValue(hashHex, out var code);
+            return Task.FromResult(code);
         }
 
         public Task SaveCodeAsync(byte[] codeHash, byte[] code)
         {
-            lock (_lock)
+            var hashHex = ToHex(codeHash);
+            var snapshot = _activeSnapshot;
+            if (snapshot != null)
             {
-                var hashHex = ToHex(codeHash);
-                _code[hashHex] = code;
+                _code.TryGetValue(hashHex, out var existing);
+                snapshot.SaveCodeUndoIfNeeded(hashHex, existing?.ToArray());
             }
-            return Task.FromResult(0);
+            _code[hashHex] = code;
+            return Task.CompletedTask;
         }
 
         public Task<IStateSnapshot> CreateSnapshotAsync()
         {
-            lock (_lock)
+            lock (_snapshotLock)
             {
-                var snapshot = new InMemoryStateSnapshot(
-                    _nextSnapshotId++,
-                    CloneAccounts(),
-                    CloneStorage(),
-                    CloneCode()
+                var snapshot = new CowStateSnapshot(
+                    Interlocked.Increment(ref _nextSnapshotId),
+                    new HashSet<string>(_dirtyAccounts.Keys),
+                    CloneDirtyStorageSlots()
                 );
+                _activeSnapshot = snapshot;
                 return Task.FromResult<IStateSnapshot>(snapshot);
             }
         }
 
         public Task CommitSnapshotAsync(IStateSnapshot snapshot)
         {
-            return Task.FromResult(0);
+            if (snapshot is CowStateSnapshot cowSnapshot && _activeSnapshot == cowSnapshot)
+            {
+                _activeSnapshot = null;
+            }
+            return Task.CompletedTask;
         }
 
         public Task RevertSnapshotAsync(IStateSnapshot snapshot)
         {
-            if (snapshot is InMemoryStateSnapshot memSnapshot)
+            if (snapshot is CowStateSnapshot cowSnapshot)
             {
-                lock (_lock)
+                lock (_snapshotLock)
                 {
-                    _accounts.Clear();
-                    foreach (var kvp in memSnapshot.Accounts)
-                        _accounts[kvp.Key] = kvp.Value;
+                    foreach (var kvp in cowSnapshot.AccountUndoLog)
+                    {
+                        if (kvp.Value != null)
+                            _accounts[kvp.Key] = kvp.Value;
+                        else
+                            _accounts.TryRemove(kvp.Key, out _);
+                    }
 
-                    _storage.Clear();
-                    foreach (var kvp in memSnapshot.Storage)
-                        _storage[kvp.Key] = kvp.Value;
+                    foreach (var address in cowSnapshot.ClearedStorageAddresses)
+                    {
+                        _storage.TryRemove(address, out _);
+                    }
 
-                    _code.Clear();
-                    foreach (var kvp in memSnapshot.Code)
-                        _code[kvp.Key] = kvp.Value;
+                    foreach (var addrKvp in cowSnapshot.StorageUndoLog)
+                    {
+                        foreach (var slotKvp in addrKvp.Value)
+                        {
+                            if (slotKvp.Value != null)
+                            {
+                                var accountStorage = _storage.GetOrAdd(addrKvp.Key,
+                                    _ => new ConcurrentDictionary<BigInteger, byte[]>());
+                                accountStorage[slotKvp.Key] = slotKvp.Value;
+                            }
+                            else
+                            {
+                                if (_storage.TryGetValue(addrKvp.Key, out var accountStorage))
+                                    accountStorage.TryRemove(slotKvp.Key, out _);
+                            }
+                        }
+                    }
+
+                    foreach (var kvp in cowSnapshot.CodeUndoLog)
+                    {
+                        if (kvp.Value != null)
+                            _code[kvp.Key] = kvp.Value;
+                        else
+                            _code.TryRemove(kvp.Key, out _);
+                    }
+
+                    _dirtyAccounts.Clear();
+                    foreach (var addr in cowSnapshot.SnapshotDirtyAccounts)
+                        _dirtyAccounts.TryAdd(addr, 0);
+
+                    _dirtyStorageSlots.Clear();
+                    foreach (var kvp in cowSnapshot.SnapshotDirtyStorageSlots)
+                        _dirtyStorageSlots[kvp.Key] = new ConcurrentDictionary<BigInteger, byte>(
+                            kvp.Value.Select(s => new KeyValuePair<BigInteger, byte>(s, 0)));
+
+                    _activeSnapshot = null;
                 }
             }
-            return Task.FromResult(0);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync()
+        {
+            return Task.FromResult<IReadOnlyCollection<string>>(_dirtyAccounts.Keys.ToList());
+        }
+
+        public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
+        {
+            var normalizedAddress = NormalizeAddress(address);
+            if (!_dirtyStorageSlots.TryGetValue(normalizedAddress, out var dirtySlots))
+                return Task.FromResult<IReadOnlyCollection<BigInteger>>(Array.Empty<BigInteger>());
+            return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.Keys.ToList());
+        }
+
+        public Task ClearDirtyTrackingAsync()
+        {
+            _dirtyAccounts.Clear();
+            _dirtyStorageSlots.Clear();
+            return Task.CompletedTask;
         }
 
         public void Clear()
         {
-            lock (_lock)
-            {
-                _accounts.Clear();
-                _storage.Clear();
-                _code.Clear();
-            }
+            _accounts.Clear();
+            _storage.Clear();
+            _code.Clear();
+            _dirtyAccounts.Clear();
+            _dirtyStorageSlots.Clear();
         }
 
-        private Dictionary<string, Account> CloneAccounts()
+        private void SaveStorageClearUndo(CowStateSnapshot snapshot, string normalizedAddress)
         {
-            var clone = new Dictionary<string, Account>();
-            foreach (var kvp in _accounts)
+            if (_storage.TryGetValue(normalizedAddress, out var currentStorage))
             {
-                clone[kvp.Key] = new Account
+                foreach (var kvp in currentStorage)
                 {
-                    Nonce = kvp.Value.Nonce,
-                    Balance = kvp.Value.Balance,
-                    StateRoot = kvp.Value.StateRoot?.ToArray(),
-                    CodeHash = kvp.Value.CodeHash?.ToArray()
-                };
-            }
-            return clone;
-        }
-
-        private Dictionary<string, Dictionary<BigInteger, byte[]>> CloneStorage()
-        {
-            var clone = new Dictionary<string, Dictionary<BigInteger, byte[]>>();
-            foreach (var kvp in _storage)
-            {
-                clone[kvp.Key] = new Dictionary<BigInteger, byte[]>();
-                foreach (var storageKvp in kvp.Value)
-                {
-                    clone[kvp.Key][storageKvp.Key] = storageKvp.Value?.ToArray();
+                    snapshot.SaveStorageUndoIfNeeded(normalizedAddress, kvp.Key, kvp.Value?.ToArray());
                 }
             }
-            return clone;
+            snapshot.MarkStorageCleared(normalizedAddress);
         }
 
-        private Dictionary<string, byte[]> CloneCode()
+        private static Account CloneAccount(Account account)
         {
-            var clone = new Dictionary<string, byte[]>();
-            foreach (var kvp in _code)
+            if (account == null) return null;
+            return new Account
             {
-                clone[kvp.Key] = kvp.Value?.ToArray();
+                Nonce = account.Nonce,
+                Balance = account.Balance,
+                StateRoot = account.StateRoot?.ToArray(),
+                CodeHash = account.CodeHash?.ToArray()
+            };
+        }
+
+        private Dictionary<string, HashSet<BigInteger>> CloneDirtyStorageSlots()
+        {
+            var clone = new Dictionary<string, HashSet<BigInteger>>();
+            foreach (var kvp in _dirtyStorageSlots)
+            {
+                clone[kvp.Key] = new HashSet<BigInteger>(kvp.Value.Keys);
             }
             return clone;
         }
 
-        private static string NormalizeAddress(string address)
+        private static bool IsAllZero(byte[] value)
         {
-            return address?.ToLowerInvariant().Replace("0x", "") ?? "";
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] != 0) return false;
+            }
+            return true;
         }
 
-        private static string ToHex(byte[] bytes)
-        {
-            if (bytes == null) return null;
-            return System.BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-        }
+        private static string ToHex(byte[] bytes) => bytes?.ToHex();
     }
 
-    internal class InMemoryStateSnapshot : IStateSnapshot
+    internal class CowStateSnapshot : IStateSnapshot
     {
         public int SnapshotId { get; }
-        public Dictionary<string, Account> Accounts { get; }
-        public Dictionary<string, Dictionary<BigInteger, byte[]>> Storage { get; }
-        public Dictionary<string, byte[]> Code { get; }
+        public HashSet<string> SnapshotDirtyAccounts { get; }
+        public Dictionary<string, HashSet<BigInteger>> SnapshotDirtyStorageSlots { get; }
 
-        private readonly Dictionary<string, Account> _pendingAccounts = new Dictionary<string, Account>();
-        private readonly Dictionary<string, Dictionary<BigInteger, byte[]>> _pendingStorage = new Dictionary<string, Dictionary<BigInteger, byte[]>>();
-        private readonly Dictionary<string, byte[]> _pendingCode = new Dictionary<string, byte[]>();
-        private readonly HashSet<string> _deletedAccounts = new HashSet<string>();
-        private readonly HashSet<string> _clearedStorage = new HashSet<string>();
+        internal Dictionary<string, Account> AccountUndoLog { get; } = new();
+        internal Dictionary<string, Dictionary<BigInteger, byte[]>> StorageUndoLog { get; } = new();
+        internal Dictionary<string, byte[]> CodeUndoLog { get; } = new();
+        internal HashSet<string> ClearedStorageAddresses { get; } = new();
 
-        public InMemoryStateSnapshot(
+        public CowStateSnapshot(
             int snapshotId,
-            Dictionary<string, Account> accounts,
-            Dictionary<string, Dictionary<BigInteger, byte[]>> storage,
-            Dictionary<string, byte[]> code)
+            HashSet<string> dirtyAccounts,
+            Dictionary<string, HashSet<BigInteger>> dirtyStorageSlots)
         {
             SnapshotId = snapshotId;
-            Accounts = accounts;
-            Storage = storage;
-            Code = code;
+            SnapshotDirtyAccounts = dirtyAccounts;
+            SnapshotDirtyStorageSlots = dirtyStorageSlots;
         }
 
-        public void SetAccount(string address, Account account)
+        public void SaveAccountUndoIfNeeded(string address, Account original)
         {
-            var normalizedAddress = NormalizeAddress(address);
-            _pendingAccounts[normalizedAddress] = account;
-            _deletedAccounts.Remove(normalizedAddress);
+            if (!AccountUndoLog.ContainsKey(address))
+                AccountUndoLog[address] = original;
         }
 
-        public void SetStorage(string address, BigInteger slot, byte[] value)
+        public void SaveStorageUndoIfNeeded(string address, BigInteger slot, byte[] original)
         {
-            var normalizedAddress = NormalizeAddress(address);
-            if (!_pendingStorage.TryGetValue(normalizedAddress, out var accountStorage))
+            if (!StorageUndoLog.TryGetValue(address, out var slots))
             {
-                accountStorage = new Dictionary<BigInteger, byte[]>();
-                _pendingStorage[normalizedAddress] = accountStorage;
+                slots = new Dictionary<BigInteger, byte[]>();
+                StorageUndoLog[address] = slots;
             }
-            accountStorage[slot] = value;
+            if (!slots.ContainsKey(slot))
+                slots[slot] = original;
         }
 
-        public void SetCode(byte[] codeHash, byte[] code)
+        public void SaveCodeUndoIfNeeded(string hashHex, byte[] original)
         {
-            var hashHex = ToHex(codeHash);
-            _pendingCode[hashHex] = code;
+            if (!CodeUndoLog.ContainsKey(hashHex))
+                CodeUndoLog[hashHex] = original;
         }
 
-        public void DeleteAccount(string address)
+        public void MarkStorageCleared(string address)
         {
-            var normalizedAddress = NormalizeAddress(address);
-            _deletedAccounts.Add(normalizedAddress);
-            _pendingAccounts.Remove(normalizedAddress);
-            _pendingStorage.Remove(normalizedAddress);
+            ClearedStorageAddresses.Add(address);
         }
 
-        public void ClearStorage(string address)
-        {
-            var normalizedAddress = NormalizeAddress(address);
-            _clearedStorage.Add(normalizedAddress);
-            _pendingStorage.Remove(normalizedAddress);
-        }
+        public void SetAccount(string address, Account account) { }
+        public void SetStorage(string address, BigInteger slot, byte[] value) { }
+        public void SetCode(byte[] codeHash, byte[] code) { }
+        public void DeleteAccount(string address) { }
+        public void ClearStorage(string address) { }
 
-        public void Dispose()
-        {
-        }
-
-        private static string NormalizeAddress(string address)
-        {
-            return address?.ToLowerInvariant().Replace("0x", "") ?? "";
-        }
-
-        private static string ToHex(byte[] bytes)
-        {
-            if (bytes == null) return null;
-            return System.BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-        }
+        public void Dispose() { }
     }
 }

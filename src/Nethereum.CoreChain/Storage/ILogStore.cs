@@ -14,5 +14,6 @@ namespace Nethereum.CoreChain.Storage
         Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash);
         Task<List<FilteredLog>> GetLogsByBlockHashAsync(byte[] blockHash);
         Task<List<FilteredLog>> GetLogsByBlockNumberAsync(BigInteger blockNumber);
+        Task DeleteByBlockNumberAsync(BigInteger blockNumber);
     }
 }

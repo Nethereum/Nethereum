@@ -9,9 +9,11 @@ namespace Nethereum.CoreChain.Storage
     {
         Task<ISignedTransaction> GetByHashAsync(byte[] txHash);
         Task<List<ISignedTransaction>> GetByBlockHashAsync(byte[] blockHash);
+        Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash);
         Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber);
-        Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex);
+        Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber);
         Task<TransactionLocation> GetLocationAsync(byte[] txHash);
+        Task DeleteByBlockNumberAsync(BigInteger blockNumber);
     }
 
     public class TransactionLocation

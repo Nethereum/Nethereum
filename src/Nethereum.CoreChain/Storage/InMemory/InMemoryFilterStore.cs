@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Nethereum.CoreChain.Models;
 
@@ -10,11 +11,16 @@ namespace Nethereum.CoreChain.Storage.InMemory
         private readonly object _lock = new object();
         private readonly Dictionary<string, FilterState> _filters = new Dictionary<string, FilterState>();
         private long _filterIdCounter = 0;
+        private DateTime _lastCleanup = DateTime.UtcNow;
+
+        public TimeSpan FilterTtl { get; set; } = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan CleanupInterval = TimeSpan.FromMinutes(1);
 
         public string CreateLogFilter(LogFilter filter, BigInteger currentBlock)
         {
             lock (_lock)
             {
+                EvictExpiredFiltersLocked();
                 var filterId = GenerateFilterId();
                 var state = new FilterState
                 {
@@ -32,6 +38,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
+                EvictExpiredFiltersLocked();
                 var filterId = GenerateFilterId();
                 var state = new FilterState
                 {
@@ -48,6 +55,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
+                EvictExpiredFiltersLocked();
                 var filterId = GenerateFilterId();
                 var state = new FilterState
                 {
@@ -64,7 +72,14 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
-                return _filters.TryGetValue(filterId, out var state) ? state : null;
+                EvictExpiredFiltersLocked();
+
+                if (_filters.TryGetValue(filterId, out var state))
+                {
+                    state.LastAccessedAt = DateTime.UtcNow;
+                    return state;
+                }
+                return null;
             }
         }
 
@@ -83,7 +98,26 @@ namespace Nethereum.CoreChain.Storage.InMemory
                 if (_filters.TryGetValue(filterId, out var state))
                 {
                     state.LastCheckedBlock = blockNumber;
+                    state.LastAccessedAt = DateTime.UtcNow;
                 }
+            }
+        }
+
+        private void EvictExpiredFiltersLocked()
+        {
+            var now = DateTime.UtcNow;
+            if (now - _lastCleanup < CleanupInterval)
+                return;
+
+            _lastCleanup = now;
+            var expired = _filters
+                .Where(kvp => now - kvp.Value.LastAccessedAt > FilterTtl)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in expired)
+            {
+                _filters.Remove(key);
             }
         }
 

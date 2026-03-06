@@ -7,7 +7,6 @@ using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Signer;
 
 namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 {
@@ -88,22 +87,20 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                     tx.Nonce = new HexBigInteger(eip2930.Nonce ?? 0);
                     tx.Input = eip2930.Data ?? "0x";
                     break;
+
+                case Transaction7702 eip7702:
+                    tx.Type = new HexBigInteger(4);
+                    tx.To = eip7702.ReceiverAddress;
+                    tx.Gas = new HexBigInteger(eip7702.GasLimit ?? 0);
+                    tx.MaxFeePerGas = new HexBigInteger(eip7702.MaxFeePerGas ?? 0);
+                    tx.MaxPriorityFeePerGas = new HexBigInteger(eip7702.MaxPriorityFeePerGas ?? 0);
+                    tx.Value = new HexBigInteger(eip7702.Amount ?? 0);
+                    tx.Nonce = new HexBigInteger(eip7702.Nonce ?? 0);
+                    tx.Input = eip7702.Data ?? "0x";
+                    break;
             }
 
             return tx;
-        }
-
-        private static string GetSenderAddress(ISignedTransaction tx)
-        {
-            try
-            {
-                var key = EthECKeyBuilderFromSignedTransaction.GetEthECKey(tx);
-                return key?.GetPublicAddress();
-            }
-            catch
-            {
-                return null;
-            }
         }
     }
 }

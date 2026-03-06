@@ -10,6 +10,7 @@ namespace Nethereum.CoreChain
         public byte[] TransactionHash { get; set; }
         public int TransactionIndex { get; set; }
         public bool Success { get; set; }
+        public bool Skipped { get; set; }
         public BigInteger GasUsed { get; set; }
         public BigInteger CumulativeGasUsed { get; set; }
         public string ContractAddress { get; set; }

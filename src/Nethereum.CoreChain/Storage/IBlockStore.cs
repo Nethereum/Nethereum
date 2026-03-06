@@ -13,5 +13,7 @@ namespace Nethereum.CoreChain.Storage
         Task SaveAsync(BlockHeader header, byte[] blockHash);
         Task<bool> ExistsAsync(byte[] hash);
         Task<byte[]> GetHashByNumberAsync(BigInteger number);
+        Task UpdateBlockHashAsync(BigInteger blockNumber, byte[] newHash);
+        Task DeleteByNumberAsync(BigInteger blockNumber);
     }
 }

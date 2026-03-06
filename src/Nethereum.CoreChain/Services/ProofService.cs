@@ -34,13 +34,7 @@ namespace Nethereum.CoreChain.Services
             var sha3 = new Sha3Keccack();
             var account = await _stateStore.GetAccountAsync(address);
 
-            var addressBytesForProof = address.HexToByteArray();
-            if (addressBytesForProof.Length < 20)
-            {
-                var paddedAddress = new byte[20];
-                System.Array.Copy(addressBytesForProof, 0, paddedAddress, 20 - addressBytesForProof.Length, addressBytesForProof.Length);
-                addressBytesForProof = paddedAddress;
-            }
+            var addressBytesForProof = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
             var addressHash = sha3.CalculateHash(addressBytesForProof);
 
             List<string> accountProofHex;
@@ -56,42 +50,33 @@ namespace Nethereum.CoreChain.Services
                 accountProofHex = await GenerateAccountProofWithFullRebuildAsync(addressHash);
             }
 
-            var accountStorage = await _stateStore.GetAllStorageAsync(address);
+            byte[] storageRoot = account?.StateRoot;
             byte[] storageHash = DefaultValues.EMPTY_TRIE_HASH;
-            if (accountStorage.Count > 0)
+
+            if (storageRoot != null && storageRoot.Length == 32 && !storageRoot.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH))
             {
-                var storageDict = new Dictionary<byte[], byte[]>();
-                foreach (var storageKvp in accountStorage)
+                storageHash = storageRoot;
+            }
+            else
+            {
+                var accountStorage = await _stateStore.GetAllStorageAsync(address);
+                if (accountStorage.Count > 0)
                 {
-                    var slotBytes = storageKvp.Key.ToBytesForRLPEncoding();
-                    if (slotBytes.Length < 32)
+                    var storageDict = new Dictionary<byte[], byte[]>();
+                    foreach (var storageKvp in accountStorage)
                     {
-                        var paddedSlot = new byte[32];
-                        System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-                        slotBytes = paddedSlot;
+                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding().PadBytes(32);
+                        var hashedSlot = sha3.CalculateHash(slotBytes);
+                        storageDict[hashedSlot] = storageKvp.Value;
                     }
-                    var hashedSlot = sha3.CalculateHash(slotBytes);
-                    storageDict[hashedSlot] = storageKvp.Value;
+                    storageHash = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
                 }
-                storageHash = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
             }
 
             var storageProofs = new List<StorageProof>();
-            if (storageKeys != null && storageKeys.Count > 0 && accountStorage != null)
+            if (storageKeys != null && storageKeys.Count > 0)
             {
-                storageProofs = await GenerateStorageProofsAsync(address, storageKeys, accountStorage);
-            }
-            else if (storageKeys != null && storageKeys.Count > 0)
-            {
-                foreach (var key in storageKeys)
-                {
-                    storageProofs.Add(new StorageProof
-                    {
-                        Key = new HexBigInteger(key),
-                        Value = new HexBigInteger(BigInteger.Zero),
-                        Proof = new List<string>()
-                    });
-                }
+                storageProofs = await GenerateStorageProofsAsync(address, storageKeys, storageRoot);
             }
 
             return new AccountProof
@@ -118,13 +103,7 @@ namespace Nethereum.CoreChain.Services
             {
                 if (kvp.Value == null) continue;
 
-                var addressBytes = kvp.Key.HexToByteArray();
-                if (addressBytes.Length < 20)
-                {
-                    var paddedAddress = new byte[20];
-                    System.Array.Copy(addressBytes, 0, paddedAddress, 20 - addressBytes.Length, addressBytes.Length);
-                    addressBytes = paddedAddress;
-                }
+                var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(kvp.Key).HexToByteArray();
                 var hashedKey = sha3.CalculateHash(addressBytes);
 
                 var storage = await _stateStore.GetAllStorageAsync(kvp.Key);
@@ -140,13 +119,7 @@ namespace Nethereum.CoreChain.Services
                     var storageDict = new Dictionary<byte[], byte[]>();
                     foreach (var storageKvp in storage)
                     {
-                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding();
-                        if (slotBytes.Length < 32)
-                        {
-                            var paddedSlot = new byte[32];
-                            System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-                            slotBytes = paddedSlot;
-                        }
+                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding().PadBytes(32);
                         var hashedSlot = sha3.CalculateHash(slotBytes);
                         storageDict[hashedSlot] = storageKvp.Value;
                     }
@@ -168,10 +141,43 @@ namespace Nethereum.CoreChain.Services
         private async Task<List<StorageProof>> GenerateStorageProofsAsync(
             string address,
             List<BigInteger> storageKeys,
-            Dictionary<BigInteger, byte[]> storage)
+            byte[] storageRoot)
         {
             var sha3 = new Sha3Keccack();
             var proofs = new List<StorageProof>();
+
+            bool hasValidRoot = _trieNodeStore != null
+                && storageRoot != null
+                && storageRoot.Length == 32
+                && !storageRoot.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH);
+
+            if (hasValidRoot)
+            {
+                var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, _trieNodeStore);
+
+                foreach (var key in storageKeys)
+                {
+                    var slotBytes = key.ToBytesForRLPEncoding().PadBytes(32);
+                    var hashedSlot = sha3.CalculateHash(slotBytes);
+
+                    var proof = storageTrie.GenerateProof(hashedSlot, _trieNodeStore);
+                    var proofHex = proof?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
+
+                    var storageValue = await _stateStore.GetStorageAsync(address, key);
+                    var valueBigInt = storageValue != null ? storageValue.ToBigIntegerFromRLPDecoded() : BigInteger.Zero;
+
+                    proofs.Add(new StorageProof
+                    {
+                        Key = new HexBigInteger(key),
+                        Value = new HexBigInteger(valueBigInt),
+                        Proof = proofHex
+                    });
+                }
+
+                return proofs;
+            }
+
+            var storage = await _stateStore.GetAllStorageAsync(address);
 
             if (storage.Count == 0)
             {
@@ -187,37 +193,25 @@ namespace Nethereum.CoreChain.Services
                 return proofs;
             }
 
-            var storageTrie = new PatriciaTrie();
+            var rebuildTrie = new PatriciaTrie();
             var storageNodeStore = new InMemoryTrieNodeStore();
 
             foreach (var kvp in storage)
             {
                 if (kvp.Value == null) continue;
 
-                var slotBytes = kvp.Key.ToBytesForRLPEncoding();
-                if (slotBytes.Length < 32)
-                {
-                    var paddedSlot = new byte[32];
-                    System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-                    slotBytes = paddedSlot;
-                }
+                var slotBytes = kvp.Key.ToBytesForRLPEncoding().PadBytes(32);
                 var hashedSlot = sha3.CalculateHash(slotBytes);
                 var encodedValue = RLP.RLP.EncodeElement(kvp.Value);
-                storageTrie.Put(hashedSlot, encodedValue, storageNodeStore);
+                rebuildTrie.Put(hashedSlot, encodedValue, storageNodeStore);
             }
 
             foreach (var key in storageKeys)
             {
-                var slotBytes = key.ToBytesForRLPEncoding();
-                if (slotBytes.Length < 32)
-                {
-                    var paddedSlot = new byte[32];
-                    System.Array.Copy(slotBytes, 0, paddedSlot, 32 - slotBytes.Length, slotBytes.Length);
-                    slotBytes = paddedSlot;
-                }
+                var slotBytes = key.ToBytesForRLPEncoding().PadBytes(32);
                 var hashedSlot = sha3.CalculateHash(slotBytes);
 
-                var proof = storageTrie.GenerateProof(hashedSlot);
+                var proof = rebuildTrie.GenerateProof(hashedSlot);
                 var proofHex = proof?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
 
                 storage.TryGetValue(key, out var value);

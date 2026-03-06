@@ -21,10 +21,12 @@ namespace Nethereum.CoreChain.Storage
         public LogFilter LogFilter { get; set; }
         public BigInteger LastCheckedBlock { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime LastAccessedAt { get; set; }
 
         public FilterState()
         {
             CreatedAt = DateTime.UtcNow;
+            LastAccessedAt = DateTime.UtcNow;
         }
     }
 

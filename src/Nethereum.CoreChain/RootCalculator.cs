@@ -53,7 +53,15 @@ namespace Nethereum.CoreChain
             for (int i = 0; i < receipts.Count; i++)
             {
                 var key = GetIndexKey(i);
-                var encodedReceipt = ReceiptEncoder.Current.Encode(receipts[i]);
+                byte[] encodedReceipt;
+                if (receipts[i].TransactionType > 0)
+                {
+                    encodedReceipt = ReceiptEncoder.Current.EncodeTyped(receipts[i], receipts[i].TransactionType);
+                }
+                else
+                {
+                    encodedReceipt = ReceiptEncoder.Current.Encode(receipts[i]);
+                }
                 trie.Put(key, encodedReceipt, storage);
             }
 
@@ -150,7 +158,7 @@ namespace Nethereum.CoreChain
 
         private byte[] GetIndexKey(int index)
         {
-            return index.ToBytesForRLPEncoding();
+            return RLP.RLP.EncodeElement(index.ToBytesForRLPEncoding());
         }
     }
 }

@@ -97,20 +97,5 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             return Success(request.Id, txHashes);
         }
 
-        private object ConvertToRpcLog(FilteredLog log)
-        {
-            return new
-            {
-                address = log.Address,
-                topics = log.Topics?.Select(t => t.ToHex(true)).ToList() ?? new List<string>(),
-                data = log.Data?.ToHex(true) ?? "0x",
-                blockNumber = ToHex(log.BlockNumber),
-                transactionHash = log.TransactionHash?.ToHex(true),
-                transactionIndex = ToHex(log.TransactionIndex),
-                blockHash = log.BlockHash?.ToHex(true),
-                logIndex = ToHex(log.LogIndex),
-                removed = log.Removed
-            };
-        }
     }
 }

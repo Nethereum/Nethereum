@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Nethereum.Util;
 
@@ -5,19 +6,16 @@ namespace Nethereum.CoreChain.Storage
 {
     public class InMemoryTrieNodeStore : ITrieNodeStore
     {
-        private readonly Dictionary<byte[], byte[]> _storage;
+        private readonly ConcurrentDictionary<byte[], byte[]> _storage;
 
         public InMemoryTrieNodeStore()
         {
-            _storage = new Dictionary<byte[], byte[]>(new ByteArrayComparer());
+            _storage = new ConcurrentDictionary<byte[], byte[]>(new ByteArrayComparer());
         }
 
         public void Put(byte[] key, byte[] value)
         {
-            if (_storage.ContainsKey(key))
-                _storage[key] = value;
-            else
-                _storage.Add(key, value);
+            _storage[key] = value;
         }
 
         public byte[] Get(byte[] key)
@@ -29,7 +27,7 @@ namespace Nethereum.CoreChain.Storage
 
         public void Delete(byte[] key)
         {
-            _storage.Remove(key);
+            _storage.TryRemove(key, out _);
         }
 
         public bool ContainsKey(byte[] key)

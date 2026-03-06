@@ -14,9 +14,15 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var address = GetParam<string>(request, 0);
             var blockTag = GetOptionalParam<string>(request, 1, "latest");
 
-            ValidateBlockParameterIsLatest(blockTag, MethodName);
+            if (blockTag == "pending" && context.TxPool != null)
+            {
+                var confirmedNonce = await context.Node.GetNonceAsync(address);
+                var pendingNonce = await context.TxPool.GetPendingNonceAsync(address, confirmedNonce);
+                return Success(request.Id, new HexBigInteger(pendingNonce));
+            }
 
-            var nonce = await context.Node.GetNonceAsync(address);
+            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
+            var nonce = await context.Node.GetNonceAsync(address, blockNumber);
             return Success(request.Id, new HexBigInteger(nonce));
         }
     }

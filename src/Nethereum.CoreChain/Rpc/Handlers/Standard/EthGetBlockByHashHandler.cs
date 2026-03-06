@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
@@ -22,13 +24,23 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 return Success(request.Id, null);
             }
 
+            var txStore = context.GetService<ITransactionStore>();
             if (includeTransactions)
             {
-                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash));
+                var signedTxs = txStore != null ? await txStore.GetByBlockHashAsync(blockHash) : null;
+                var transactions = signedTxs?
+                    .Select((tx, index) => SignedTransactionExtensions.ToRpcTransaction(tx, blockHash, blockHeader.BlockNumber, index))
+                    .ToArray();
+                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions));
             }
             else
             {
-                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash));
+                var hashes = txStore != null ? await txStore.GetHashesByBlockHashAsync(blockHash) : null;
+                var txHashes = hashes?
+                    .Select(h => h?.ToHex(true))
+                    .Where(h => h != null)
+                    .ToArray();
+                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes));
             }
         }
     }

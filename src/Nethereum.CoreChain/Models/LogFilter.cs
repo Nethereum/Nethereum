@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Models
 {
@@ -21,10 +22,9 @@ namespace Nethereum.CoreChain.Models
             if (Addresses == null || Addresses.Count == 0)
                 return true;
 
-            var normalizedAddress = address?.ToLowerInvariant();
             foreach (var filterAddress in Addresses)
             {
-                if (filterAddress?.ToLowerInvariant() == normalizedAddress)
+                if (filterAddress.IsTheSameAddress(address))
                     return true;
             }
             return false;

@@ -8,6 +8,7 @@ namespace Nethereum.CoreChain.Rpc
         public IChainNode Node { get; }
         public BigInteger ChainId { get; }
         public IServiceProvider Services { get; }
+        public ITxPool TxPool { get; set; }
 
         public RpcContext(IChainNode node, BigInteger chainId, IServiceProvider services)
         {

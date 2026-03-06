@@ -1,5 +1,7 @@
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
@@ -16,19 +18,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var blockTag = GetParam<string>(request, 0);
             var includeTransactions = GetOptionalParam<bool>(request, 1, false);
 
-            BigInteger blockNumber;
-            if (blockTag == BlockParameter.BlockParameterType.latest.ToString() || blockTag == BlockParameter.BlockParameterType.pending.ToString())
-            {
-                blockNumber = await context.Node.GetBlockNumberAsync();
-            }
-            else if (blockTag == BlockParameter.BlockParameterType.earliest.ToString())
-            {
-                blockNumber = 0;
-            }
-            else
-            {
-                blockNumber = blockTag.HexToBigInteger(false);
-            }
+            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
 
             var blockHeader = await context.Node.GetBlockByNumberAsync(blockNumber);
             if (blockHeader == null)
@@ -38,13 +28,23 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             var blockHash = await context.Node.GetBlockHashByNumberAsync(blockNumber);
 
+            var txStore = context.GetService<ITransactionStore>();
             if (includeTransactions)
             {
-                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash));
+                var signedTxs = txStore != null ? await txStore.GetByBlockHashAsync(blockHash) : null;
+                var transactions = signedTxs?
+                    .Select((tx, index) => SignedTransactionExtensions.ToRpcTransaction(tx, blockHash, blockNumber, index))
+                    .ToArray();
+                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions));
             }
             else
             {
-                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash));
+                var hashes = txStore != null ? await txStore.GetHashesByBlockHashAsync(blockHash) : null;
+                var txHashes = hashes?
+                    .Select(h => h?.ToHex(true))
+                    .Where(h => h != null)
+                    .ToArray();
+                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes));
             }
         }
     }

@@ -28,8 +28,16 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new EthGetBlockTransactionCountByHashHandler());
             registry.Register(new EthGetBlockTransactionCountByNumberHandler());
             registry.Register(new EthGetBlockReceiptsHandler());
+            registry.Register(new EthGetTransactionByBlockHashAndIndexHandler());
+            registry.Register(new EthGetTransactionByBlockNumberAndIndexHandler());
+            registry.Register(new EthSyncingHandler());
+            registry.Register(new EthMiningHandler());
+            registry.Register(new EthCoinbaseHandler());
             registry.Register(new NetVersionHandler());
+            registry.Register(new NetListeningHandler());
+            registry.Register(new NetPeerCountHandler());
             registry.Register(new Web3ClientVersionHandler());
+            registry.Register(new Web3Sha3Handler());
 
             // Filter handlers
             registry.Register(new EthNewFilterHandler());
@@ -37,6 +45,10 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new EthGetFilterLogsHandler());
             registry.Register(new EthUninstallFilterHandler());
             registry.Register(new EthNewBlockFilterHandler());
+
+            // Debug handlers
+            registry.Register(new DebugTraceTransactionHandler());
+            registry.Register(new DebugTraceCallHandler());
 
             return registry;
         }

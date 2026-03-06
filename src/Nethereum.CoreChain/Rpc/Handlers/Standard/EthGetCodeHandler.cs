@@ -14,9 +14,8 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var address = GetParam<string>(request, 0);
             var blockTag = GetOptionalParam<string>(request, 1, "latest");
 
-            ValidateBlockParameterIsLatest(blockTag, MethodName);
-
-            var code = await context.Node.GetCodeAsync(address);
+            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
+            var code = await context.Node.GetCodeAsync(address, blockNumber);
             return Success(request.Id, code != null ? code.ToHex(true) : "0x");
         }
     }

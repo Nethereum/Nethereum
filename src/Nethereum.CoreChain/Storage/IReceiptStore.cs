@@ -12,5 +12,6 @@ namespace Nethereum.CoreChain.Storage
         Task<List<Receipt>> GetByBlockHashAsync(byte[] blockHash);
         Task<List<Receipt>> GetByBlockNumberAsync(BigInteger blockNumber);
         Task SaveAsync(Receipt receipt, byte[] txHash, byte[] blockHash, BigInteger blockNumber, int txIndex, BigInteger gasUsed, string contractAddress, BigInteger effectiveGasPrice);
+        Task DeleteByBlockNumberAsync(BigInteger blockNumber);
     }
 }
