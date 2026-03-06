@@ -22,12 +22,16 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
         private readonly ConcurrentDictionary<string, TableSchema> _tableSchemaCache = new();
         private readonly StoreNamespace _storeNamespace;
         private readonly ILogger _logger;
+        private readonly string _worldAddressPrefix;
 
-        public MudPostgresStoreRecordsNormaliser(NpgsqlConnection connection, StoreNamespace storeNamespace, ILogger logger)
+        public MudPostgresStoreRecordsNormaliser(NpgsqlConnection connection, StoreNamespace storeNamespace, ILogger logger, string worldAddress = null)
         {
             _connection = connection;
             _storeNamespace = storeNamespace;
             _logger = logger;
+            _worldAddressPrefix = string.IsNullOrWhiteSpace(worldAddress)
+                ? null
+                : worldAddress.Replace("0x", "").Substring(0, Math.Min(6, worldAddress.Replace("0x", "").Length)).ToLowerInvariant();
         }
 
         public async Task<TableSchema> GetTableSchemaAsync(byte[] tableId)
@@ -53,11 +57,13 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
 
         private string GetTableName(TableSchema schema)
         {
-            if (string.IsNullOrEmpty(schema.Namespace))
-            {
-                return schema.GetTableNameTrimmedForResource().ToLowerInvariant();
-            }
-            return schema.Namespace + "_" + schema.GetTableNameTrimmedForResource().ToLowerInvariant();
+            var baseName = string.IsNullOrEmpty(schema.Namespace)
+                ? schema.GetTableNameTrimmedForResource().ToLowerInvariant()
+                : schema.Namespace.ToLowerInvariant() + "_" + schema.GetTableNameTrimmedForResource().ToLowerInvariant();
+
+            return _worldAddressPrefix != null
+                ? $"w_{_worldAddressPrefix}_{baseName}"
+                : baseName;
         }
 
         // Create table if not exists, with lowercase table/column names

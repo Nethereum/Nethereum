@@ -7,6 +7,7 @@ Nethereum.Mud.Repositories.EntityFramework provides Entity Framework Core abstra
 - **Entity Framework Core Integration** - Abstract base repository for any EF Core provider
 - **StoredRecord Persistence** - Store raw MUD table records in relational databases
 - **Block Progress Tracking** - Resume synchronization from last processed block
+- **Chain State Tracking** - Store chainId + canonical/finalized pointers to prevent cross-chain corruption
 - **Batch Processing** - Efficient paging for large datasets
 - **SQL Predicate Builder** - Convert TablePredicates to SQL queries
 - **Change Tracker Optimization** - AsNoTracking for memory-efficient reads
@@ -60,6 +61,7 @@ public interface IMudStoreRecordsDbSets
 {
     public DbSet<StoredRecord> StoredRecords { get; set; }
     public DbSet<BlockProgress> BlockProgress { get; set; }
+    public DbSet<ChainState> ChainStates { get; set; }
 }
 ```
 
@@ -84,6 +86,18 @@ public interface IBlockProgressRepository
 }
 ```
 
+### ChainStateRepository
+
+Tracks chain identity and canonical/finalized pointers:
+
+```csharp
+public interface IChainStateRepository
+{
+    Task<ChainState> GetChainStateAsync();
+    Task UpsertChainStateAsync(ChainState chainState);
+}
+```
+
 ## Usage Examples
 
 ### Example 1: Create Custom DbContext
@@ -99,6 +113,7 @@ public class MyMudDbContext : DbContext, IMudStoreRecordsDbSets
 {
     public DbSet<StoredRecord> StoredRecords { get; set; }
     public DbSet<BlockProgress> BlockProgress { get; set; }
+    public DbSet<ChainState> ChainStates { get; set; }
 
     public MyMudDbContext(DbContextOptions<MyMudDbContext> options)
         : base(options) { }
@@ -122,6 +137,10 @@ public class MyMudDbContext : DbContext, IMudStoreRecordsDbSets
 
         // Configure BlockProgress primary key
         modelBuilder.Entity<BlockProgress>()
+            .HasKey(b => b.RowIndex);
+
+        // Configure ChainState primary key
+        modelBuilder.Entity<ChainState>()
             .HasKey(b => b.RowIndex);
     }
 }
@@ -403,7 +422,21 @@ using (var context = new MyMudDbContext(options))
 }
 ```
 
-### Example 10: Production Sync Service
+### Example 10: Validate ChainId
+
+Guard against pointing the same database at a different chain:
+
+```csharp
+using Nethereum.BlockchainProcessing.Services;
+using Nethereum.Web3;
+
+var web3 = new Web3("https://rpc.mud.game");
+var repositoryFactory = new MudStoreRecordsRepositoryFactory<MyMudDbContext>(context);
+
+await ChainStateValidationService.EnsureChainIdMatchesAsync(web3.Eth, repositoryFactory);
+```
+
+### Example 11: Production Sync Service
 
 Complete background service for MUD synchronization:
 
@@ -522,6 +555,17 @@ public class BlockProgressRepository<TDbContext> : IBlockProgressRepository
 {
     Task<BigInteger?> GetLastBlockNumberProcessedAsync();
     Task UpsertProgressAsync(BigInteger blockNumber);
+}
+```
+
+### ChainStateRepository<TDbContext>
+
+```csharp
+public class ChainStateRepository<TDbContext> : IChainStateRepository
+    where TDbContext : DbContext, IMudStoreRecordsDbSets
+{
+    Task<ChainState> GetChainStateAsync();
+    Task UpsertChainStateAsync(ChainState chainState);
 }
 ```
 

@@ -4,7 +4,7 @@
 		<Description>Nethereum.Mud.Repositories.EntityFramework Nethereum Web3 Class Library providing the EF context Table Repositories to sync with the Store contracts  of the Mud framework https://mud.dev/ (Encoding, Repositories, Resources, Schema, TableRecords)</Description>
 		<AssemblyTitle>Nethereum.Mud.Repositories.EntityFramework</AssemblyTitle>
 		<Version>$(NethereumVersion)</Version>
-		<TargetFrameworks>net8.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<AssemblyName>Nethereum.Mud.Repositories.EntityFramework</AssemblyName>
 		<PackageId>Nethereum.Mud.Repositories.EntityFramework</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Mud;EntityFrameworkd</PackageTags>
@@ -14,14 +14,20 @@
 	<ItemGroup>
 		<None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
-	<ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="[8.0.8,9)" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="[8.0.8,9)" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
 	</ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Mud.Contracts\Nethereum.Mud.Contracts.csproj" />
     <ProjectReference Include="..\Nethereum.Mud\Nethereum.Mud.csproj" />
+    <ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
   </ItemGroup>
 
 	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">

@@ -8,6 +8,8 @@ Nethereum.Mud.Repositories.Postgres provides a production-ready PostgreSQL imple
 - **MUD Schema Normalizer** - Automatically creates PostgreSQL tables from MUD schemas
 - **Binary Key Storage** - Stores keys as `bytea` for efficient indexing and queries
 - **Background Sync Service** - Process Store events and sync to PostgreSQL
+- **Chain State Validation** - Ensures chainId matches stored state to prevent cross-chain corruption
+- **Reorg Buffer Support** - Rewinds progress by N blocks to handle reorganizations
 - **Composite Indexes** - Optimized indexes for Address + TableId + Key queries
 - **Typed Table Creation** - Generate normalized tables with proper column types
 - **Snake Case Naming** - Lowercase naming convention for PostgreSQL best practices
@@ -49,6 +51,8 @@ Background service for syncing MUD Store events to PostgreSQL:
 - Tracks block progress to resume from last synced block
 - Configurable batch size and retry logic
 - Minimum block confirmations support
+- ChainId validation against stored `ChainStates` to prevent cross-chain DB misuse
+- Optional reorg buffer for safe log replays
 
 ### MudPostgresStoreRecordsNormaliser
 
@@ -104,6 +108,12 @@ using (var context = new MudPostgresStoreRecordsDbContext(optionsBuilder.Options
 }
 ```
 
+If you are upgrading an existing database without migrations, apply the chain state script:
+
+```sql
+-- src/Nethereum.Mud.Repositories.Postgres/Sql/MudPostgresStoreRecordsDbContext.ChainStates.sql
+```
+
 ### Example 3: Background Sync Service
 
 Use the processing service to sync MUD events:
@@ -123,7 +133,8 @@ var processingService = new MudPostgresStoreRecordsProcessingService(context, lo
     StartAtBlockNumberIfNotProcessed = 0,
     NumberOfBlocksToProcessPerRequest = 1000,
     RetryWeight = 50,
-    MinimumNumberOfConfirmations = 12
+    MinimumNumberOfConfirmations = 12,
+    ReorgBuffer = 25
 };
 
 // Start syncing (blocks until cancelled)
@@ -392,6 +403,7 @@ public class MudPostgresStoreRecordsDbContext : DbContext, IMudStoreRecordsDbSet
 {
     public DbSet<StoredRecord> StoredRecords { get; set; }
     public DbSet<BlockProgress> BlockProgress { get; set; }
+    public DbSet<ChainState> ChainStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -459,6 +471,7 @@ public class MudPostgresStoreRecordsProcessingService
     public int NumberOfBlocksToProcessPerRequest { get; set; } = 1000;
     public int RetryWeight { get; set; } = 50;
     public uint MinimumNumberOfConfirmations { get; set; } = 0;
+    public int ReorgBuffer { get; set; } = 0;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default);
 }
@@ -668,6 +681,22 @@ CREATE TABLE storedrecords (
 
 CREATE INDEX ix_rowid ON storedrecords (rowid);
 CREATE INDEX ix_address_tableid_key0 ON storedrecords (addressbytes, tableidbytes, key0bytes);
+```
+
+### ChainStates Table (Chain Validation)
+
+```sql
+CREATE TABLE chainstates (
+    rowindex BIGSERIAL PRIMARY KEY,
+    lastcanonicalblocknumber TEXT,
+    lastcanonicalblockhash TEXT,
+    finalizedblocknumber TEXT,
+    chainid INTEGER,
+    creationdate TIMESTAMP,
+    lastupdatedate TIMESTAMP
+);
+
+CREATE INDEX ix_chainstates_lastcanonicalblocknumber ON chainstates (lastcanonicalblocknumber);
 ```
 
 ### Example Normalized Table

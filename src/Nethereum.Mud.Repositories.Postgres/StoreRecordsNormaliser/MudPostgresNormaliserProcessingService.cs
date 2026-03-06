@@ -41,7 +41,7 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
             _logger.LogInformation("Starting processing service");
 
             var storeNamespace = new StoreNamespace(new Web3.Web3(RpcUrl), Address);
-            var postgresNormaliser = new MudPostgresStoreRecordsNormaliser(_connection, storeNamespace, _logger);
+            var postgresNormaliser = new MudPostgresStoreRecordsNormaliser(_connection, storeNamespace, _logger, Address);
 
             // Create progress table if it doesn't exist
             await progressService.CreateProgressTableIfNotExistsAsync();

@@ -9,6 +9,7 @@ namespace Nethereum.Mud.Repositories.EntityFramework
     {
         public DbSet<StoredRecord> StoredRecords { get; set; }
         public DbSet<BlockProgress> BlockProgress { get; set; }
+        public DbSet<ChainState> ChainStates { get; set; }
     }
 
 

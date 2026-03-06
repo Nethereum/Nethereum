@@ -23,8 +23,22 @@ namespace Nethereum.Mud.Repositories.Postgres
             var keyBytes = keyHex.HexToByteArray();
 
             return await Context.StoredRecords
-                .AsNoTracking()  // No tracking for read-only query
+                .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.TableIdBytes == tableIdBytes && r.KeyBytes == keyBytes);
+        }
+
+        public async Task<StoredRecord> GetRecordAsync(string tableIdHex, string keyHex, string address)
+        {
+            var tableIdBytes = tableIdHex.HexToByteArray();
+            var keyBytes = keyHex.HexToByteArray();
+            var addressBytes = address.HexToByteArray();
+
+            return await Context.StoredRecords
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r =>
+                    r.AddressBytes == addressBytes &&
+                    r.TableIdBytes == tableIdBytes &&
+                    r.KeyBytes == keyBytes);
         }
 
         // Optimized GetRecordsAsync using AsNoTracking and batch processing

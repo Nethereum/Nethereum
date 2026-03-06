@@ -6,7 +6,7 @@
 		<Description>Nethereum.MudBlazorComponents Nethereum MudBlazor Components to dynamically generate Deploy, Transact and Query smart contracts user interfaces using Deployment and Function Typed Messages or Nethereum Services. Mud.dev Table components to query and upsert data using TableServices.</Description>
 		<AssemblyTitle>Nethereum.MudBlazorComponents</AssemblyTitle>
 		<Version>$(NethereumVersion)</Version>
-		<TargetFrameworks>net9.0</TargetFrameworks>
+		<TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
 		<AssemblyName>Nethereum.MudBlazorComponents</AssemblyName>
 		<PackageId>Nethereum.MudBlazorComponents</PackageId>
 		<PackageTags>Netherum;EIP6963;Blazor;Metamask;Coinbase;Rabby;Ethereum;Blockchain</PackageTags>
@@ -15,7 +15,7 @@
 
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.*" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
 		<PackageReference Include="MudBlazor" Version="8.*" />
 	</ItemGroup>
 

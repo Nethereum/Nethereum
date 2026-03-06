@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
 using Nethereum.BlockchainProcessing;
+using Nethereum.BlockchainProcessing.Metrics;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.JsonRpc.Client;
 using Nethereum.BlockchainProcessing.Processor;
@@ -146,7 +147,21 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
             ILogger log = null,
             int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
                        int retryWeight = BlockchainLogProcessingService.RetryWeight,
-                       uint minimumNumberOfConfirmations = 0)
+                       uint minimumNumberOfConfirmations = 0,
+                       ILogProcessingObserver observer = null)
+        {
+            return CreateProcessor(tableRepository, 0, null, blockProgressRepository, log, numberOfBlocksPerRequest, retryWeight, minimumNumberOfConfirmations, observer);
+        }
+
+        public BlockchainProcessor CreateProcessor(ITableRepository tableRepository,
+            int reorgBuffer,
+            IChainStateRepository chainStateRepository,
+            IBlockProgressRepository blockProgressRepository = null,
+            ILogger log = null,
+            int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,
+            int retryWeight = BlockchainLogProcessingService.RetryWeight,
+            uint minimumNumberOfConfirmations = 0,
+            ILogProcessingObserver observer = null)
         {
             var topics = new List<object>
                 {
@@ -163,11 +178,23 @@ namespace Nethereum.Mud.Contracts.Core.StoreEvents
             };
 
             var logProcessorHandler = new ProcessorHandler<FilterLog>(
-                action: async (log) => 
+                action: async (log) =>
                 await ProcessAllStoreChangesFromLog(tableRepository, log),
                 criteria: (log) => log.Removed == false);
-           return _blockchainLogProcessing.CreateProcessor(new ProcessorHandler<FilterLog>[]{logProcessorHandler}, minimumNumberOfConfirmations, filterInput, blockProgressRepository, log, numberOfBlocksPerRequest, retryWeight);
 
+            if (chainStateRepository != null)
+            {
+                return _blockchainLogProcessing.CreateProcessor(
+                    new ProcessorHandler<FilterLog>[] { logProcessorHandler },
+                    minimumNumberOfConfirmations, reorgBuffer, chainStateRepository,
+                    filterInput, blockProgressRepository, log,
+                    numberOfBlocksPerRequest, retryWeight, observer);
+            }
+
+            return _blockchainLogProcessing.CreateProcessor(
+                new ProcessorHandler<FilterLog>[] { logProcessorHandler },
+                minimumNumberOfConfirmations, filterInput, blockProgressRepository, log,
+                numberOfBlocksPerRequest, retryWeight, observer);
         }
 
         public async Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, string nameSpace, string tableName, BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,

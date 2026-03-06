@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
-using Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
-namespace Nethereum.Mud.Repositories.EntityFramework    
+namespace Nethereum.Mud.Repositories.EntityFramework
 {
     public class BlockProgressRepository<TDbContext> : IBlockProgressRepository where TDbContext : DbContext, IMudStoreRecordsDbSets
     {
@@ -18,33 +18,32 @@ namespace Nethereum.Mud.Repositories.EntityFramework
 
         public async Task<BigInteger?> GetLastBlockNumberProcessedAsync()
         {
-           
-             var max = await context.BlockProgress.MaxAsync(b => b.LastBlockProcessed).ConfigureAwait(false);
-             return string.IsNullOrEmpty(max) ? (BigInteger?)null : BigInteger.Parse(max);
-            
+            var existing = await context.BlockProgress
+                .OrderByDescending(b => b.RowIndex)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            return existing == null ? (BigInteger?)null : new BigInteger(existing.LastBlockProcessed);
         }
 
         public async Task UpsertProgressAsync(BigInteger blockNumber)
         {
-            try
+            var value = (long)blockNumber;
+            var existing = await context.BlockProgress
+                .OrderByDescending(b => b.RowIndex)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+
+            if (existing != null)
             {
-              
-                var blockRange = blockNumber.MapToStorageEntityForUpsert<BlockProgress>();
-                blockRange.LastBlockProcessed = blockNumber.ToString().PadLeft(ColumnLengths.BigIntegerLength, '0');
+                existing.LastBlockProcessed = value;
+                existing.UpdateRowDates();
+            }
+            else
+            {
+                var blockRange = new BlockProgress { LastBlockProcessed = value };
+                blockRange.UpdateRowDates();
                 context.BlockProgress.Add(blockRange);
-                await context.SaveChangesAsync().ConfigureAwait(false);
-                
             }
-            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("String or binary data would be truncated") ?? false)
-            {
-                throw new DbUpdateException(
-                    $"{nameof(BlockProgressRepository<TDbContext>)} Data Truncation Error. Ensure that the LastBlockProcessed column length is {ColumnLengths.BigIntegerLength}."
-                    , ex);
-            }
+
+            await context.SaveChangesAsync().ConfigureAwait(false);
         }
     }
-
-
-
-
 }

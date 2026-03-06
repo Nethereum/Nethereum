@@ -13,7 +13,8 @@
         public string Address { get; set; }
 
         public string UnionOperator { get; set; }
-
+        public bool IsValueField { get; set; }
+        public object RawValue { get; set; }
     }
 
 }

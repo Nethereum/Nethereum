@@ -9,6 +9,7 @@
 @using Nethereum.Web3
 @using Nethereum.ABI.Model
 @using Newtonsoft.Json.Linq
+@inherits Nethereum.Blazor.ResultOutputBase
 
         <MudPaper Class="pa-4">
              @if (!string.IsNullOrEmpty(Title))
@@ -113,70 +114,4 @@
         </MudPaper>
 
 @code {
-    [Parameter] public object Result { get; set; }
-    [Parameter] public Type ResultType { get; set; }
-    [Parameter] public string Title { get; set; }
-    [Parameter] public ContractServiceBase ContractService { get; set; }
-    [Parameter] public IEnumerable<Type> AdditionalEventTypes { get; set; }
-
-    private List<object> DecodeEvents(TransactionReceipt receipt)
-    {
-
-        if (ContractService == null && AdditionalEventTypes == null) return new();
-
-        var types = new List<Type>();
-        if (ContractService != null)
-            types.AddRange(ContractService.GetAllEventTypes());
-
-        if (AdditionalEventTypes != null)
-            types.AddRange(AdditionalEventTypes);
-
-
-
-        var decoded = new List<object>();
-
-        foreach (var t in types.Distinct())
-        {
-            var eventAbi = ABITypedRegistry.GetEvent(t);
-            var decodeMethod = typeof(EventExtensions)
-                .GetMethods(BindingFlags.Static | BindingFlags.Public)
-                .FirstOrDefault(m => m.Name == "DecodeAllEvents"
-                                     && m.GetParameters().Length == 2
-                                     && m.GetGenericArguments().Length == 1);
-
-            if (decodeMethod == null) continue;
-
-            var genericMethod = decodeMethod.MakeGenericMethod(t);
-            var result = genericMethod.Invoke(null, new object[] { eventAbi, receipt.Logs });
-
-            if (result is IList enumerable)
-            {
-
-                foreach (var item in enumerable)
-                {
-                    var titem = item.GetType();
-                    PropertyInfo prop = titem.GetProperty("Event");
-
-                    object itemEvent = prop.GetValue(item);
-                    decoded.Add(itemEvent);
-
-                }
-            }
-        }
-
-        return decoded;
-    }
-
-
-
-    private bool IsSimple(Type type) =>
-        type.IsPrimitive || type == typeof(string) || type == typeof(BigInteger) || type == typeof(decimal);
-
-    private string FormatSimple(object value) =>
-        value switch
-        {
-            BigInteger bi => bi.ToString("N0"),
-            decimal d => d.ToString("G"),
-            _ => value?.ToString()
-        };
 }

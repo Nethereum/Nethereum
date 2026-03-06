@@ -13,6 +13,7 @@ namespace Nethereum.Mud.Repositories.Postgres
     {
         public DbSet<StoredRecord> StoredRecords { get; set; }
         public DbSet<BlockProgress> BlockProgress { get; set; }
+        public DbSet<ChainState> ChainStates { get; set; }
         public MudPostgresStoreRecordsDbContext()
         { }
 
@@ -38,7 +39,13 @@ namespace Nethereum.Mud.Repositories.Postgres
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<BlockProgress>().ToTable("mud_blockprogress");
             modelBuilder.Entity<BlockProgress>().HasKey(r => r.RowIndex);
+            modelBuilder.Entity<ChainState>().ToTable("mud_chainstates");
+            modelBuilder.Entity<ChainState>().HasKey(r => r.RowIndex);
+            modelBuilder.Entity<ChainState>()
+                .HasIndex(r => r.LastCanonicalBlockNumber)
+                .HasDatabaseName("IX_MudChainStates_LastCanonicalBlockNumber");
 
             modelBuilder.Entity<StoredRecord>()
                     .Property(e => e.RowId)

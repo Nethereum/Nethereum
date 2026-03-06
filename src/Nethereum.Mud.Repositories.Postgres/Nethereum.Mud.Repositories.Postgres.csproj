@@ -1,10 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
 	<PropertyGroup>
 		<Description>Nethereum.Mud.Repositories.Postgres Nethereum Web3 Class Library providing the EF Postgres context Table Repositories and Process Services to sync with the Store contracts  of the Mud framework https://mud.dev/ </Description>
 		<AssemblyTitle>Nethereum.Mud.Repositories.Postgres</AssemblyTitle>
 		<Version>$(NethereumVersion)</Version>
-		<TargetFrameworks>net8.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' != ''">
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup>
 		<AssemblyName>Nethereum.Mud.Repositories.Postgres</AssemblyName>
 		<PackageId>Nethereum.Mud.Repositories.Postgres</PackageId>
 		<PackageTags>Netherum;Ethereum;Blockchain;Mud;Postgres</PackageTags>
@@ -15,9 +21,27 @@
 		<None Include="README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.4,9)" />
 		<PackageReference Include="EFCore.NamingConventions" Version="[8.0.3,9)" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="[8.0.8,9)" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="[8.0.0,9)" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+		<PackageReference Include="EFCore.NamingConventions" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" PrivateAssets="all" />
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

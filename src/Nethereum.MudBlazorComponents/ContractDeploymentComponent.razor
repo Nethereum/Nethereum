@@ -7,6 +7,7 @@
 @using Nethereum.UI
 @using Nethereum.Util
 @typeparam TDeploymentMessage where TDeploymentMessage : ContractDeploymentMessage, new()
+@inherits Nethereum.Blazor.ContractDeploymentComponentBase<TDeploymentMessage>
 
 
 <MudExpansionPanels Elevation="1" Class="mb-4">
@@ -113,19 +114,7 @@
     </MudExpansionPanel>
 </MudExpansionPanels>
 @code {
-    [Parameter] public string Title { get; set; } = typeof(TDeploymentMessage).Name;
-    [Parameter] public SelectedEthereumHostProviderService HostProvider { get; set; }
-    [Parameter] public TDeploymentMessage DeploymentMessage { get; set; } = new();
-    [Parameter] public string ContractAddress { get; set; }
-    [Parameter] public EventCallback<string> ContractAddressChanged { get; set; }
-    [Parameter] public Type ServiceType { get; set; }
-    [Parameter] public IEnumerable<Type> AdditionalEventTypes { get; set; }
-
     private MudForm _form;
-    private TransactionReceipt Receipt;
-    private string ErrorMessage;
-    private bool IsLoading;
-    private ContractServiceBase contractService;
 
     private decimal AmountToSendEth
     {
@@ -189,48 +178,4 @@
             await DeployAsync();
         }
     }
-
-    private async Task DeployAsync()
-    {
-        ErrorMessage = null;
-        Receipt = null;
-        IsLoading = true;
-
-        try
-        {
-            var web3 = await HostProvider.SelectedHost.GetWeb3Async();
-            var handler = web3.Eth.GetContractDeploymentHandler<TDeploymentMessage>();
-            Receipt = await handler.SendRequestAndWaitForReceiptAsync(DeploymentMessage);
-            ContractAddress = Receipt.ContractAddress;
-            await ContractAddressChanged.InvokeAsync(ContractAddress);
-
-            if (ServiceType != null && !string.IsNullOrEmpty(ContractAddress))
-            {
-                var serviceInstance = Activator.CreateInstance(ServiceType, web3, ContractAddress);
-                contractService = serviceInstance as ContractServiceBase;
-            }
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = ex.ToString();
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private static readonly HashSet<string> DefaultExcludedDeploymentProps = new()
-    {
-        nameof(ContractDeploymentMessage.FromAddress),
-        nameof(ContractDeploymentMessage.AmountToSend),
-        nameof(ContractDeploymentMessage.Gas),
-        nameof(ContractDeploymentMessage.GasPrice),
-        nameof(ContractDeploymentMessage.Nonce),
-        nameof(ContractDeploymentMessage.MaxFeePerGas),
-        nameof(ContractDeploymentMessage.MaxPriorityFeePerGas),
-        nameof(ContractDeploymentMessage.TransactionType),
-        nameof(ContractDeploymentMessage.AccessList),
-        nameof(FunctionMessage.AuthorisationList)
-    };
 }
