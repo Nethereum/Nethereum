@@ -5,7 +5,7 @@
     <Description>Reusable wallet UI components, view models, and services for Nethereum applications.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <TargetFrameworks>net9.0</TargetFrameworks>
+    <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;UI;Components</PackageTags>
@@ -16,8 +16,8 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
