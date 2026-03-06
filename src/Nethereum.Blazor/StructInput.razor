@@ -1,0 +1,242 @@
+@if (!string.IsNullOrEmpty(Title))
+{
+    <div class="neth-struct-title">@Title</div>
+}
+
+@if (Model == null)
+{
+    <span class="neth-result-null">[null]</span>
+}
+else
+{
+    var allProps = ModelType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+    var parameterProps = allProps
+        .Where(p => p.GetCustomAttribute<Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute>() != null)
+        .ToList();
+
+    var otherProps = allProps
+        .Where(p => !parameterProps.Contains(p) && !ExcludedProperties.Contains(p.Name))
+        .ToList();
+
+    foreach (var prop in parameterProps.Concat(otherProps))
+    {
+        if (ExcludedProperties.Contains(prop.Name)) continue;
+
+        if (prop.GetValue(Model) == null)
+        {
+            object defaultValue = prop.PropertyType switch
+            {
+                Type t when t == typeof(byte[]) => new byte[0],
+                Type t when t == typeof(BigInteger) => BigInteger.Zero,
+                Type t when t.IsValueType => Activator.CreateInstance(t),
+                _ => null
+            };
+
+            if (defaultValue != null)
+            {
+                prop.SetValue(Model, defaultValue);
+            }
+        }
+    }
+
+    foreach (var prop in parameterProps.Concat(otherProps))
+    {
+        if (ExcludedProperties.Contains(prop.Name)) continue;
+
+        var propType = prop.PropertyType;
+        var propName = prop.Name;
+        var parameterAttr = prop.GetCustomAttribute<Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute>();
+
+        <div class="neth-field">
+            @if (parameterAttr?.Type == "address" && propType == typeof(string))
+            {
+                <label class="neth-field-label">@propName <span class="neth-field-type">(address)</span></label>
+                <input type="text"
+                       class="neth-input @(HasError(propName) ? "neth-input-error" : "")"
+                       placeholder="0x..."
+                       value="@TypedInputHelpers.BindString(Model, prop).Value"
+                       @oninput="@(e => OnAddressInput(prop, propName, e.Value?.ToString()))" />
+                @if (HasError(propName))
+                {
+                    <span class="neth-error">@GetError(propName)</span>
+                }
+            }
+            else if (parameterAttr?.Type?.StartsWith("bytes") == true && propType == typeof(byte[]))
+            {
+                <label class="neth-field-label">@propName <span class="neth-field-type">(@parameterAttr.Type)</span></label>
+                <input type="text"
+                       class="neth-input @(HasError(propName) ? "neth-input-error" : "")"
+                       placeholder="0x..."
+                       value="@TypedInputHelpers.BindByteArray(Model, prop).Value"
+                       @oninput="@(e => OnBytesInput(prop, propName, e.Value?.ToString()))" />
+                @if (HasError(propName))
+                {
+                    <span class="neth-error">@GetError(propName)</span>
+                }
+            }
+            else if (propType == typeof(string))
+            {
+                <label class="neth-field-label">@propName <span class="neth-field-type">(string)</span></label>
+                <input type="text"
+                       class="neth-input"
+                       placeholder="text"
+                       value="@TypedInputHelpers.BindString(Model, prop).Value"
+                       @oninput="@(e => TypedInputHelpers.BindString(Model, prop).Value = e.Value?.ToString() ?? "")" />
+            }
+            else if (propType == typeof(bool))
+            {
+                <label class="neth-checkbox-label">
+                    <input type="checkbox"
+                           checked="@TypedInputHelpers.BindBool(Model, prop).Value"
+                           @onchange="@(e => TypedInputHelpers.BindBool(Model, prop).Value = (bool)(e.Value ?? false))" />
+                    <span>@propName</span>
+                    <span class="neth-field-type">(bool)</span>
+                </label>
+            }
+            else if (propType == typeof(BigInteger))
+            {
+                <label class="neth-field-label">@propName <span class="neth-field-type">(uint256)</span></label>
+                <input type="text"
+                       class="neth-input @(HasError(propName) ? "neth-input-error" : "")"
+                       placeholder="0"
+                       value="@TypedInputHelpers.BindBigInteger(Model, prop).Value"
+                       @oninput="@(e => OnBigIntegerInput(prop, propName, e.Value?.ToString()))" />
+                @if (HasError(propName))
+                {
+                    <span class="neth-error">@GetError(propName)</span>
+                }
+            }
+            else if (propType == typeof(int) || propType == typeof(uint) || propType == typeof(long) ||
+                     propType == typeof(ulong) || propType == typeof(short) || propType == typeof(ushort) ||
+                     propType == typeof(byte) || propType == typeof(sbyte) || propType == typeof(decimal))
+            {
+                <label class="neth-field-label">@propName <span class="neth-field-type">(@propType.Name)</span></label>
+                <input type="text"
+                       class="neth-input @(HasError(propName) ? "neth-input-error" : "")"
+                       placeholder="0"
+                       value="@GetNumericString(prop)"
+                       @oninput="@(e => OnNumericInput(prop, propName, propType, e.Value?.ToString()))" />
+                @if (HasError(propName))
+                {
+                    <span class="neth-error">@GetError(propName)</span>
+                }
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(propType) && propType != typeof(string))
+            {
+                var listValue = (IList)prop.GetValue(Model);
+                if (listValue == null)
+                {
+                    listValue = (IList)Activator.CreateInstance(propType);
+                    prop.SetValue(Model, listValue);
+                }
+
+                var itemType = propType.IsArray ? propType.GetElementType() : propType.GetGenericArguments().FirstOrDefault();
+                if (itemType != null)
+                {
+                    <label class="neth-field-label">@propName <span class="neth-field-type">(@($"{itemType.Name}[]"))</span></label>
+                    <div class="neth-nested">
+                        <ArrayInput Items="listValue" ItemType="itemType" Title="@propName" />
+                    </div>
+                }
+            }
+            else if (propType.IsClass && propType != typeof(string))
+            {
+                var nestedModel = prop.GetValue(Model) ?? Activator.CreateInstance(propType);
+                prop.SetValue(Model, nestedModel);
+                <label class="neth-field-label">@propName <span class="neth-field-type">(struct)</span></label>
+                <div class="neth-nested">
+                    <StructInput Model="nestedModel" ModelType="propType" Title="" />
+                </div>
+            }
+            else
+            {
+                <label class="neth-field-label">@propName <span class="neth-field-type">(@propType.Name)</span></label>
+                <span class="neth-result-null">Unsupported type</span>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public object Model { get; set; }
+    [Parameter] public Type ModelType { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public HashSet<string> ExcludedProperties { get; set; } = new();
+
+    private readonly Dictionary<string, string> _errors = new();
+
+    private bool HasError(string propName) => _errors.TryGetValue(propName, out var err) && err != null;
+    private string GetError(string propName) => _errors.TryGetValue(propName, out var err) ? err : null;
+    private void SetError(string propName, string error) => _errors[propName] = error;
+    private void ClearError(string propName) => _errors.Remove(propName);
+
+    private void OnAddressInput(PropertyInfo prop, string propName, string value)
+    {
+        prop.SetValue(Model, value ?? "");
+        ClearError(propName);
+        if (!string.IsNullOrWhiteSpace(value) && !TypedInputHelpers.IsValidAddress(value))
+            SetError(propName, "Invalid Ethereum address");
+    }
+
+    private void OnBytesInput(PropertyInfo prop, string propName, string value)
+    {
+        ClearError(propName);
+        if (!string.IsNullOrWhiteSpace(value) && value.IsHex())
+        {
+            prop.SetValue(Model, value.HexToByteArray());
+        }
+        else if (!string.IsNullOrWhiteSpace(value))
+        {
+            SetError(propName, "Invalid hex value");
+        }
+    }
+
+    private void OnBigIntegerInput(PropertyInfo prop, string propName, string value)
+    {
+        ClearError(propName);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            prop.SetValue(Model, BigInteger.Zero);
+            return;
+        }
+        if (BigInteger.TryParse(value, out var result))
+            prop.SetValue(Model, result);
+        else
+            SetError(propName, "Invalid number");
+    }
+
+    private string GetNumericString(PropertyInfo prop)
+    {
+        var val = prop.GetValue(Model);
+        return val?.ToString() ?? "0";
+    }
+
+    private void OnNumericInput(PropertyInfo prop, string propName, Type propType, string value)
+    {
+        ClearError(propName);
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        try
+        {
+            object parsed = propType switch
+            {
+                Type t when t == typeof(int) => int.Parse(value),
+                Type t when t == typeof(uint) => uint.Parse(value),
+                Type t when t == typeof(long) => long.Parse(value),
+                Type t when t == typeof(ulong) => ulong.Parse(value),
+                Type t when t == typeof(short) => short.Parse(value),
+                Type t when t == typeof(ushort) => ushort.Parse(value),
+                Type t when t == typeof(byte) => byte.Parse(value),
+                Type t when t == typeof(sbyte) => sbyte.Parse(value),
+                Type t when t == typeof(decimal) => decimal.Parse(value),
+                _ => null
+            };
+            if (parsed != null)
+                prop.SetValue(Model, parsed);
+        }
+        catch
+        {
+            SetError(propName, "Invalid number");
+        }
+    }
+}

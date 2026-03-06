@@ -1,0 +1,70 @@
+@if (!string.IsNullOrEmpty(Title))
+{
+    <div class="neth-struct-title">@Title</div>
+}
+
+@if (Items != null)
+{
+    for (int i = 0; i < Items.Count; i++)
+    {
+        var index = i;
+        var item = Items[index];
+
+        <div class="neth-array-item" @key="item">
+            <span class="neth-array-index">#@(index + 1)</span>
+
+            @if (ItemType == typeof(BigInteger))
+            {
+                var val = item is BigInteger b ? b : BigInteger.Zero;
+                <input type="text"
+                       class="neth-input"
+                       value="@val.ToString()"
+                       @oninput="@(e => TypedInputHelpers.SetBigInteger(Items, index, e.Value?.ToString()))" />
+            }
+            else if (ItemType == typeof(byte[]))
+            {
+                var bytes = item as byte[] ?? new byte[0];
+                var hex = bytes.ToHex(true);
+                <input type="text"
+                       class="neth-input"
+                       placeholder="0x..."
+                       value="@hex"
+                       @oninput="@(e => TypedInputHelpers.SetByteArray(Items, index, e.Value?.ToString()))" />
+            }
+            else if (TypedInputHelpers.IsPrimitiveInput(ItemType))
+            {
+                <input type="text"
+                       class="neth-input"
+                       value="@(item?.ToString() ?? "")"
+                       @oninput="@(e => TypedInputHelpers.SetPrimitive(Items, index, ItemType, e.Value?.ToString()))" />
+            }
+            else
+            {
+                <StructInput Model="item" ModelType="ItemType" />
+            }
+
+            <button type="button" class="neth-btn-remove" @onclick="@(() => RemoveItem(index))">Remove</button>
+        </div>
+    }
+
+    <button type="button" class="neth-btn-add" @onclick="AddItem">+ Add Item</button>
+}
+
+@code {
+    [Parameter] public IList Items { get; set; }
+    [Parameter] public Type ItemType { get; set; }
+    [Parameter] public string Title { get; set; } = "Array";
+
+    private void AddItem()
+    {
+        if (Items == null) return;
+        var instance = TypedInputHelpers.CreateDefaultInstance(ItemType);
+        if (instance != null) Items.Add(instance);
+    }
+
+    private void RemoveItem(int index)
+    {
+        if (Items != null && index >= 0 && index < Items.Count)
+            Items.RemoveAt(index);
+    }
+}

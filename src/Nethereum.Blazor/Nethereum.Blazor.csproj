@@ -29,7 +29,10 @@
 		<None Include="..\..\NethereumKey.snk" />
 	</ItemGroup>
 	<ItemGroup>
+	  <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
 	  <ProjectReference Include="..\Nethereum.EIP6963WalletInterop\Nethereum.EIP6963WalletInterop.csproj" />
 	  <ProjectReference Include="..\Nethereum.Metamask\Nethereum.Metamask.csproj" />
+	  <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	  <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
 	</ItemGroup>
 </Project>

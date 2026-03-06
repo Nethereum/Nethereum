@@ -1,0 +1,204 @@
+<div class="neth-gas-settings">
+    <button type="button" class="neth-gas-toggle" @onclick="ToggleCollapsed">
+        <span class="neth-gas-toggle-icon">@(_collapsed ? "▶" : "▼")</span>
+        <span>Gas Settings</span>
+    </button>
+
+    @if (!_collapsed)
+    {
+        <div class="neth-gas-fields">
+            <div class="neth-field">
+                <label class="neth-field-label">Gas Limit</label>
+                <input type="text" class="neth-input @(!string.IsNullOrEmpty(_gasError) ? "neth-input-error" : "")"
+                       placeholder="Auto"
+                       value="@FormatBigInteger(Gas)"
+                       @oninput="@(e => OnGasChanged(e.Value?.ToString()))" />
+                @if (!string.IsNullOrEmpty(_gasError))
+                {
+                    <span class="neth-error">@_gasError</span>
+                }
+            </div>
+
+            <div class="neth-field">
+                <label class="neth-field-label">Nonce</label>
+                <input type="text" class="neth-input @(!string.IsNullOrEmpty(_nonceError) ? "neth-input-error" : "")"
+                       placeholder="Auto"
+                       value="@FormatBigInteger(Nonce)"
+                       @oninput="@(e => OnNonceChanged(e.Value?.ToString()))" />
+                @if (!string.IsNullOrEmpty(_nonceError))
+                {
+                    <span class="neth-error">@_nonceError</span>
+                }
+            </div>
+
+            <div class="neth-field">
+                <label class="neth-field-label">Gas Price (Gwei)</label>
+                <input type="text" class="neth-input @(!string.IsNullOrEmpty(_gasPriceError) ? "neth-input-error" : "")"
+                       placeholder="Auto"
+                       value="@FormatGwei(GasPrice)"
+                       @oninput="@(e => OnGasPriceGweiChanged(e.Value?.ToString()))" />
+                @if (!string.IsNullOrEmpty(_gasPriceError))
+                {
+                    <span class="neth-error">@_gasPriceError</span>
+                }
+            </div>
+
+            <div class="neth-field">
+                <label class="neth-field-label">Max Fee Per Gas (Gwei)</label>
+                <input type="text" class="neth-input @(!string.IsNullOrEmpty(_maxFeeError) ? "neth-input-error" : "")"
+                       placeholder="Auto"
+                       value="@FormatGwei(MaxFeePerGas)"
+                       @oninput="@(e => OnMaxFeeGweiChanged(e.Value?.ToString()))" />
+                @if (!string.IsNullOrEmpty(_maxFeeError))
+                {
+                    <span class="neth-error">@_maxFeeError</span>
+                }
+            </div>
+
+            <div class="neth-field">
+                <label class="neth-field-label">Max Priority Fee Per Gas (Gwei)</label>
+                <input type="text" class="neth-input @(!string.IsNullOrEmpty(_maxPriorityError) ? "neth-input-error" : "")"
+                       placeholder="Auto"
+                       value="@FormatGwei(MaxPriorityFeePerGas)"
+                       @oninput="@(e => OnMaxPriorityGweiChanged(e.Value?.ToString()))" />
+                @if (!string.IsNullOrEmpty(_maxPriorityError))
+                {
+                    <span class="neth-error">@_maxPriorityError</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public HexBigInteger? Gas { get; set; }
+    [Parameter] public EventCallback<HexBigInteger?> GasChanged { get; set; }
+
+    [Parameter] public HexBigInteger? Nonce { get; set; }
+    [Parameter] public EventCallback<HexBigInteger?> NonceChanged { get; set; }
+
+    [Parameter] public HexBigInteger? GasPrice { get; set; }
+    [Parameter] public EventCallback<HexBigInteger?> GasPriceChanged { get; set; }
+
+    [Parameter] public HexBigInteger? MaxFeePerGas { get; set; }
+    [Parameter] public EventCallback<HexBigInteger?> MaxFeePerGasChanged { get; set; }
+
+    [Parameter] public HexBigInteger? MaxPriorityFeePerGas { get; set; }
+    [Parameter] public EventCallback<HexBigInteger?> MaxPriorityFeePerGasChanged { get; set; }
+
+    [Parameter] public bool Collapsed { get; set; } = true;
+
+    private bool _collapsed = true;
+    private string? _gasError;
+    private string? _nonceError;
+    private string? _gasPriceError;
+    private string? _maxFeeError;
+    private string? _maxPriorityError;
+
+    protected override void OnParametersSet()
+    {
+        _collapsed = Collapsed;
+    }
+
+    private void ToggleCollapsed()
+    {
+        _collapsed = !_collapsed;
+    }
+
+    private static string FormatBigInteger(HexBigInteger? value)
+    {
+        return value?.Value.ToString() ?? "";
+    }
+
+    private static string FormatGwei(HexBigInteger? weiValue)
+    {
+        if (weiValue == null) return "";
+        return UnitConversion.Convert.FromWei(weiValue.Value, UnitConversion.EthUnit.Gwei).ToString();
+    }
+
+    private async Task OnGasChanged(string? input)
+    {
+        _gasError = null;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            await GasChanged.InvokeAsync(null);
+            return;
+        }
+        if (!BigInteger.TryParse(input, out var result))
+        {
+            _gasError = "Invalid number";
+            return;
+        }
+        await GasChanged.InvokeAsync(new HexBigInteger(result));
+    }
+
+    private async Task OnNonceChanged(string? input)
+    {
+        _nonceError = null;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            await NonceChanged.InvokeAsync(null);
+            return;
+        }
+        if (!BigInteger.TryParse(input, out var result))
+        {
+            _nonceError = "Invalid number";
+            return;
+        }
+        await NonceChanged.InvokeAsync(new HexBigInteger(result));
+    }
+
+    private async Task OnGasPriceGweiChanged(string? input)
+    {
+        _gasPriceError = null;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            await GasPriceChanged.InvokeAsync(null);
+            return;
+        }
+        if (!decimal.TryParse(input, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var gwei))
+        {
+            _gasPriceError = "Invalid number";
+            return;
+        }
+        var wei = UnitConversion.Convert.ToWei(gwei, UnitConversion.EthUnit.Gwei);
+        await GasPriceChanged.InvokeAsync(new HexBigInteger(wei));
+    }
+
+    private async Task OnMaxFeeGweiChanged(string? input)
+    {
+        _maxFeeError = null;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            await MaxFeePerGasChanged.InvokeAsync(null);
+            return;
+        }
+        if (!decimal.TryParse(input, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var gwei))
+        {
+            _maxFeeError = "Invalid number";
+            return;
+        }
+        var wei = UnitConversion.Convert.ToWei(gwei, UnitConversion.EthUnit.Gwei);
+        await MaxFeePerGasChanged.InvokeAsync(new HexBigInteger(wei));
+    }
+
+    private async Task OnMaxPriorityGweiChanged(string? input)
+    {
+        _maxPriorityError = null;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            await MaxPriorityFeePerGasChanged.InvokeAsync(null);
+            return;
+        }
+        if (!decimal.TryParse(input, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var gwei))
+        {
+            _maxPriorityError = "Invalid number";
+            return;
+        }
+        var wei = UnitConversion.Convert.ToWei(gwei, UnitConversion.EthUnit.Gwei);
+        await MaxPriorityFeePerGasChanged.InvokeAsync(new HexBigInteger(wei));
+    }
+}

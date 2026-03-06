@@ -1,0 +1,61 @@
+@using Nethereum.Contracts.Extensions
+
+@if (!string.IsNullOrEmpty(Error) || Exception != null)
+{
+    <div class="neth-error-display">
+        @if (_decodedErrorName != null)
+        {
+            <div class="neth-error-header">
+                <span class="neth-error-badge">@_decodedErrorName</span>
+                <span class="neth-error-label">Custom Error</span>
+            </div>
+            @if (_decodedErrorData != null)
+            {
+                <div class="neth-error-decoded">
+                    <DynamicResultOutput Result="_decodedErrorData" />
+                </div>
+            }
+        }
+        else
+        {
+            <div class="neth-error-message">@(Error ?? Exception?.Message ?? "Unknown error")</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public Exception? Exception { get; set; }
+    [Parameter] public ContractABI? ContractABI { get; set; }
+
+    private string? _decodedErrorName;
+    private JObject? _decodedErrorData;
+
+    protected override void OnParametersSet()
+    {
+        _decodedErrorName = null;
+        _decodedErrorData = null;
+
+        if (Exception is SmartContractCustomErrorRevertException revert
+            && ContractABI?.Errors != null
+            && ContractABI.Errors.Length > 0
+            && !string.IsNullOrEmpty(revert.ExceptionEncodedData))
+        {
+            var matchingError = ContractABI.Errors.ToList()
+                .FindErrorABIForExceptionData(revert.ExceptionEncodedData);
+            if (matchingError != null)
+            {
+                _decodedErrorName = matchingError.Name;
+                try
+                {
+                    _decodedErrorData = matchingError.DecodeErrorDataToDefaultToJObject(
+                        revert.ExceptionEncodedData);
+                }
+                catch
+                {
+                    // fallback to raw message if decoding fails
+                }
+            }
+        }
+    }
+}

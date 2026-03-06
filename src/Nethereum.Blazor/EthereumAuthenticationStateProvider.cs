@@ -23,7 +23,7 @@ namespace Nethereum.Blazor
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
-        private Task SelectedHostProviderChanged(IEthereumHostProvider newEthereumHostProvider)
+        private async Task SelectedHostProviderChanged(IEthereumHostProvider newEthereumHostProvider)
         {
             if(EthereumHostProvider != newEthereumHostProvider)
             {
@@ -34,8 +34,17 @@ namespace Nethereum.Blazor
                 InitSelectedHostProvider();
             }
 
-            return Task.CompletedTask;
-           
+            if (EthereumHostProvider != null && EthereumHostProvider.Available)
+            {
+                var currentAddress = await EthereumHostProvider.GetProviderSelectedAccountAsync();
+                if (!string.IsNullOrEmpty(currentAddress))
+                {
+                    await NotifyAuthenticationStateAsEthereumConnected(currentAddress);
+                    return;
+                }
+            }
+
+            NotifyStateHasChanged();
         }
 
         public void InitSelectedHostProvider()

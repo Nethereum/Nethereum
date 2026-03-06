@@ -1,0 +1,106 @@
+@inherits ResultOutputBase
+
+@if (!string.IsNullOrEmpty(Title))
+{
+    <div class="neth-result-title">@Title</div>
+}
+
+@if (Result == null)
+{
+    <span class="neth-result-null">[null]</span>
+}
+else if (Result is JValue jval)
+{
+    <span class="neth-result-value">@jval.ToString()</span>
+}
+else if (Result is JToken jtoken)
+{
+    <pre class="neth-result-value" style="white-space:pre-wrap; word-break:break-all;">@jtoken.ToString(Newtonsoft.Json.Formatting.Indented)</pre>
+}
+else if (IsSimple(ResultType))
+{
+    <span class="neth-result-value">@FormatSimple(Result)</span>
+}
+else
+{
+    <table class="neth-result-table">
+        @foreach (var prop in ResultType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (typeof(Delegate).IsAssignableFrom(prop.PropertyType)) continue;
+            if (prop.GetMethod == null || prop.GetMethod.GetParameters().Length > 0) continue;
+
+            var value = prop.GetValue(Result);
+            var name = prop.Name;
+            var type = prop.PropertyType;
+
+            <tr>
+                <td class="neth-result-name">@name</td>
+                <td class="neth-result-val">
+                    @if (value == null)
+                    {
+                        <span class="neth-result-null">[null]</span>
+                    }
+                    else if (value is HexBigInteger hexBigInt)
+                    {
+                        <span class="neth-result-value">@hexBigInt.Value.ToString()</span>
+                    }
+                    else if (type == typeof(byte[]))
+                    {
+                        <span class="neth-result-value neth-mono">@((value as byte[])?.ToHex(true))</span>
+                    }
+                    else if (value is IEnumerable enumerable && type != typeof(string))
+                    {
+                        <div class="neth-result-array">
+                            @{ var idx = 0; }
+                            @foreach (var item in enumerable)
+                            {
+                                @if (item != null && item.GetType().IsClass && item.GetType() != typeof(string))
+                                {
+                                    <div class="neth-result-array-struct">
+                                        <span class="neth-array-index">[&hairsp;@idx&hairsp;]</span>
+                                        <div class="neth-nested">
+                                            <ResultOutput Result="item" ResultType="@item.GetType()" />
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="neth-result-array-item">
+                                        <span class="neth-array-index">[&hairsp;@idx&hairsp;]</span>
+                                        <span class="neth-result-value">@(item?.ToString() ?? "")</span>
+                                    </div>
+                                }
+                                idx++;
+                            }
+                        </div>
+                    }
+                    else if (type.IsClass && type != typeof(string))
+                    {
+                        <div class="neth-nested">
+                            <ResultOutput Result="value" ResultType="@value.GetType()" />
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="neth-result-value">@FormatSimple(value)</span>
+                    }
+                </td>
+            </tr>
+        }
+    </table>
+
+    @if (Result is TransactionReceipt receipt)
+    {
+        var events = DecodeEvents(receipt);
+        if (events?.Count > 0)
+        {
+            <div class="neth-result-title" style="margin-top:0.75rem;">Emitted Events</div>
+            foreach (var evt in events)
+            {
+                <div class="neth-nested" style="margin-top:0.35rem;">
+                    <ResultOutput Result="evt" ResultType="@evt.GetType()" Title="@evt.GetType().Name" />
+                </div>
+            }
+        }
+    }
+}

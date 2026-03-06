@@ -1,0 +1,176 @@
+@using System.Numerics
+@using Nethereum.ABI
+@using Nethereum.ABI.Model
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.Util
+@using Nethereum.Hex.HexConvertors.Extensions
+@using Newtonsoft.Json.Linq
+
+@if (!string.IsNullOrEmpty(Title))
+{
+    <div class="neth-struct-title">@Title</div>
+}
+
+@if (Parameters != null && Values != null)
+{
+    var orderedParams = Parameters.OrderBy(p => p.Order);
+    foreach (var param in orderedParams)
+    {
+        var paramName = param.GetParameterNameUsingDefaultIfNotSet();
+        var abiType = param.ABIType;
+
+        <div class="neth-field">
+            @if (abiType is BoolType)
+            {
+                <label class="neth-checkbox-label">
+                    <input type="checkbox"
+                           checked="@GetBoolValue(paramName)"
+                           @onchange="@(e => SetBoolValue(paramName, (bool)(e.Value ?? false)))" />
+                    <span>@paramName</span>
+                    <span class="neth-field-type">(@param.Type)</span>
+                </label>
+            }
+            else if (abiType is TupleType tupleType && tupleType.Components != null)
+            {
+                <label class="neth-field-label">@paramName <span class="neth-field-type">(@param.Type)</span></label>
+                <div class="neth-nested">
+                    <DynamicStructInput Parameters="tupleType.Components" Values="GetOrCreateObject(paramName)" />
+                </div>
+            }
+            else if (abiType is ArrayType arrayType)
+            {
+                <label class="neth-field-label">@paramName <span class="neth-field-type">(@param.Type)</span></label>
+                <div class="neth-nested">
+                    <DynamicArrayInput ElementType="arrayType.ElementType" Items="GetOrCreateArray(paramName)" Title="@paramName" />
+                </div>
+            }
+            else
+            {
+                <label class="neth-field-label">@paramName <span class="neth-field-type">(@param.Type)</span></label>
+                <input type="text"
+                       class="neth-input @(HasError(paramName) ? "neth-input-error" : "")"
+                       placeholder="@GetPlaceholder(abiType)"
+                       value="@GetStringValue(paramName)"
+                       @oninput="@(e => SetTypedValue(paramName, abiType, e.Value?.ToString()))" />
+                @if (HasError(paramName))
+                {
+                    <span class="neth-error">@GetError(paramName)</span>
+                }
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Parameter[]? Parameters { get; set; }
+    [Parameter] public JObject? Values { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private readonly Dictionary<string, string?> _errors = new();
+    private static readonly AddressUtil _addressUtil = new();
+
+    protected override void OnParametersSet()
+    {
+        if (Parameters == null || Values == null) return;
+
+        foreach (var param in Parameters)
+        {
+            var paramName = param.GetParameterNameUsingDefaultIfNotSet();
+            if (Values[paramName] != null) continue;
+
+            var abiType = param.ABIType;
+            if (abiType is TupleType)
+                Values[paramName] = new JObject();
+            else if (abiType is ArrayType)
+                Values[paramName] = new JArray();
+            else if (abiType is BoolType)
+                Values[paramName] = false;
+            else
+                Values[paramName] = "";
+        }
+    }
+
+    private string GetStringValue(string paramName)
+    {
+        return Values?[paramName]?.ToString() ?? "";
+    }
+
+    private bool GetBoolValue(string paramName)
+    {
+        var token = Values?[paramName];
+        if (token == null) return false;
+        return token.Type == JTokenType.Boolean && token.Value<bool>();
+    }
+
+    private void SetBoolValue(string paramName, bool value)
+    {
+        if (Values == null) return;
+        Values[paramName] = value;
+    }
+
+    private void SetTypedValue(string paramName, ABIType abiType, string? value)
+    {
+        if (Values == null) return;
+        Values[paramName] = value ?? "";
+        ClearError(paramName);
+
+        if (string.IsNullOrWhiteSpace(value)) return;
+
+        if (abiType is AddressType)
+        {
+            if (!_addressUtil.IsValidEthereumAddressHexFormat(value))
+                SetError(paramName, "Invalid Ethereum address");
+        }
+        else if (abiType is IntType)
+        {
+            if (!BigInteger.TryParse(value, out _))
+                SetError(paramName, "Invalid number");
+        }
+        else if (abiType is Bytes32Type or BytesType)
+        {
+            if (!value.IsHex())
+                SetError(paramName, "Invalid hex value");
+        }
+    }
+
+    private JObject GetOrCreateObject(string paramName)
+    {
+        if (Values == null) return new JObject();
+        var existing = Values[paramName] as JObject;
+        if (existing == null)
+        {
+            existing = new JObject();
+            Values[paramName] = existing;
+        }
+        return existing;
+    }
+
+    private JArray GetOrCreateArray(string paramName)
+    {
+        if (Values == null) return new JArray();
+        var existing = Values[paramName] as JArray;
+        if (existing == null)
+        {
+            existing = new JArray();
+            Values[paramName] = existing;
+        }
+        return existing;
+    }
+
+    private static string GetPlaceholder(ABIType abiType)
+    {
+        return abiType switch
+        {
+            AddressType => "0x...",
+            IntType => "0",
+            Bytes32Type or BytesType => "0x...",
+            StringType => "text",
+            _ => ""
+        };
+    }
+
+    private bool HasError(string paramName) => _errors.TryGetValue(paramName, out var err) && err != null;
+    private string? GetError(string paramName) => _errors.TryGetValue(paramName, out var err) ? err : null;
+    private void SetError(string paramName, string error) => _errors[paramName] = error;
+    private void ClearError(string paramName) => _errors[paramName] = null;
+}

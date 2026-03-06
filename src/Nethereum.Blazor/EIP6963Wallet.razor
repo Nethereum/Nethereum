@@ -19,7 +19,7 @@
 
                 @if (AvailableWallets.Count > 1)
                 {
-                    <button type="button" class="btnWallet btnWalletSelected" @onclick="ToggleDropdown"> 
+                    <button type="button" class="btnWallet btnWalletSelected" @onclick="ToggleDropdown">
                         <div class="selected-wallet">
                             @if (SelectedWallet != null)
                             {
@@ -199,9 +199,9 @@
             await LocalStorage.RemoveItemAsync("selectedWalletRdns");
 
         if (OnDisconnect.HasDelegate)
-            await OnDisconnect.InvokeAsync();      
+            await OnDisconnect.InvokeAsync();
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
@@ -213,8 +213,7 @@
     private async Task WalletHostProvider_SelectedAccountChanged(string account)
     {
         Console.WriteLine($"EIP6963Wallet: Selected account changed: {account}");
-        //if (account == SelectedAccount) return; 
-        if (string.IsNullOrWhiteSpace(account))     
+        if (string.IsNullOrWhiteSpace(account))
         {
             await HandleDisconnectAsync();
             return;
@@ -222,7 +221,7 @@
 
         SelectedAccount = account;
         await SetEnsNameAsync();
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     protected async Task FetchWalletsAsync()

@@ -1,0 +1,263 @@
+<div class="neth-function-card">
+    <div class="neth-function-header" @onclick="() => _collapsed = !_collapsed">
+        <span class="neth-function-toggle">@(_collapsed ? "▶" : "▼")</span>
+        <span class="neth-function-badge neth-badge-tx">@(Title ?? FunctionABI?.Name ?? "Transaction")</span>
+        @if (FunctionABI != null)
+        {
+            <span class="neth-function-sig">@FunctionABI.Sha3Signature</span>
+        }
+        @if (EffectiveIsPayable)
+        {
+            <span class="neth-function-tag neth-tag-payable">payable</span>
+        }
+    </div>
+
+    @if (!_collapsed)
+    {
+    <div class="neth-function-body">
+        @if (FunctionABI?.InputParameters != null && FunctionABI.InputParameters.Length > 0)
+        {
+            <DynamicStructInput Parameters="FunctionABI.InputParameters" Values="_inputValues" />
+        }
+
+        @if (EffectiveIsPayable)
+        {
+            <div class="neth-field" style="max-width: 300px;">
+                <label class="neth-field-label">ETH Value</label>
+                <div class="neth-input-group">
+                    <input type="text" class="neth-input" placeholder="0.0"
+                           value="@_ethValue"
+                           @oninput="@(e => _ethValue = e.Value?.ToString() ?? "")" />
+                    <span class="neth-input-suffix">ETH</span>
+                </div>
+            </div>
+        }
+
+        <DynamicGasSettings Gas="_gas" GasChanged="@(v => _gas = v)"
+                            Nonce="_nonce" NonceChanged="@(v => _nonce = v)"
+                            GasPrice="_gasPrice" GasPriceChanged="@(v => _gasPrice = v)"
+                            MaxFeePerGas="_maxFeePerGas" MaxFeePerGasChanged="@(v => _maxFeePerGas = v)"
+                            MaxPriorityFeePerGas="_maxPriorityFeePerGas" MaxPriorityFeePerGasChanged="@(v => _maxPriorityFeePerGas = v)" />
+
+        <div class="neth-function-actions">
+            <button type="button" class="neth-btn neth-btn-primary" @onclick="SendTransactionAsync"
+                    disabled="@(_loading || HostProvider?.SelectedHost == null)">
+                @if (_loading)
+                {
+                    <span class="neth-spinner"></span>
+                }
+                Send
+            </button>
+            <button type="button" class="neth-btn neth-btn-secondary" @onclick="SendAndWaitAsync"
+                    disabled="@(_loading || HostProvider?.SelectedHost == null)">
+                @if (_loading)
+                {
+                    <span class="neth-spinner"></span>
+                }
+                Send &amp; Wait
+            </button>
+            <button type="button" class="neth-btn neth-btn-outline" @onclick="EstimateGasAsync"
+                    disabled="@(_loading || HostProvider?.SelectedHost == null)">
+                Estimate Gas
+            </button>
+            @if (!string.IsNullOrEmpty(_gasEstimate))
+            {
+                <span class="neth-gas-estimate">@_gasEstimate gas</span>
+            }
+        </div>
+
+        @if (_error != null || _exception != null)
+        {
+            <DynamicErrorDisplay Error="@_error" Exception="@_exception" ContractABI="ContractABI" />
+        }
+
+        @if (!string.IsNullOrEmpty(_txHash) && _receipt == null)
+        {
+            <div class="neth-tx-hash">
+                <span class="neth-result-name">Transaction Hash</span>
+                <span class="neth-result-val neth-mono">@_txHash</span>
+            </div>
+        }
+
+        @if (_receipt != null)
+        {
+            <DynamicReceiptDisplay Receipt="_receipt" ContractABI="ContractABI" />
+        }
+    </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string ContractAddress { get; set; } = "";
+    [Parameter] public string ABI { get; set; } = "";
+    [Parameter] public FunctionABI? FunctionABI { get; set; }
+    [Parameter] public ContractABI? ContractABI { get; set; }
+    [Parameter] public SelectedEthereumHostProviderService? HostProvider { get; set; }
+    [Parameter] public bool IsPayable { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private bool EffectiveIsPayable => IsPayable || FunctionABI?.StateMutability == "payable";
+    [Parameter] public HexBigInteger? ExpectedChainId { get; set; }
+    [Parameter] public AddEthereumChainParameter? AddChainParameter { get; set; }
+
+    private JObject _inputValues = new();
+    private string _ethValue = "";
+    private bool _collapsed = true;
+    private HexBigInteger? _gas;
+    private HexBigInteger? _nonce;
+    private HexBigInteger? _gasPrice;
+    private HexBigInteger? _maxFeePerGas;
+    private HexBigInteger? _maxPriorityFeePerGas;
+    private string? _txHash;
+    private TransactionReceipt? _receipt;
+    private string? _error;
+    private Exception? _exception;
+    private bool _loading;
+    private string? _gasEstimate;
+
+    private HexBigInteger? GetWeiValue()
+    {
+        if (string.IsNullOrWhiteSpace(_ethValue))
+            return null;
+        if (!decimal.TryParse(_ethValue, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var ethVal) || ethVal <= 0)
+            return null;
+        return new HexBigInteger(UnitConversion.Convert.ToWei(ethVal));
+    }
+
+    private async Task<(Nethereum.Contracts.Function function, string from)?> PrepareCallAsync()
+    {
+        if (FunctionABI == null || string.IsNullOrEmpty(ABI) || HostProvider?.SelectedHost == null)
+            return null;
+
+        if (ExpectedChainId != null && AddChainParameter != null)
+        {
+            var walletChainId = HostProvider.SelectedHost.SelectedNetworkChainId;
+            if (walletChainId <= 0 || walletChainId != (long)ExpectedChainId.Value)
+            {
+                try
+                {
+                    var walletWeb3 = await HostProvider.SelectedHost.GetWeb3Async();
+                    await walletWeb3.Eth.HostWallet.AddEthereumChain.SendRequestAsync(AddChainParameter);
+                }
+                catch (Exception ex)
+                {
+                    _error = $"Please switch your wallet to chain {ExpectedChainId.Value}: {ex.Message}";
+                    return null;
+                }
+            }
+        }
+
+        var web3 = await HostProvider.SelectedHost.GetWeb3Async();
+
+        var contract = web3.Eth.GetContract(ABI, ContractAddress);
+        var function = contract.GetFunction(FunctionABI.Name);
+        var from = await HostProvider.SelectedHost.GetProviderSelectedAccountAsync();
+        return (function, from);
+    }
+
+    private async Task SendTransactionAsync()
+    {
+        _loading = true;
+        _error = null;
+        _exception = null;
+        _txHash = null;
+        _receipt = null;
+        StateHasChanged();
+
+        try
+        {
+            var prepared = await PrepareCallAsync();
+            if (prepared == null) return;
+            var (function, from) = prepared.Value;
+
+            var values = function.ConvertJsonToObjectInputParameters(_inputValues);
+            var weiValue = GetWeiValue();
+            _txHash = await function.SendTransactionAsync(from, _gas, weiValue, values);
+        }
+        catch (SmartContractCustomErrorRevertException ex)
+        {
+            _exception = ex;
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SendAndWaitAsync()
+    {
+        _loading = true;
+        _error = null;
+        _exception = null;
+        _txHash = null;
+        _receipt = null;
+        StateHasChanged();
+
+        try
+        {
+            var prepared = await PrepareCallAsync();
+            if (prepared == null) return;
+            var (function, from) = prepared.Value;
+
+            var values = function.ConvertJsonToObjectInputParameters(_inputValues);
+            var weiValue = GetWeiValue();
+            var gas = _gas ?? await function.EstimateGasAsync(from, null, weiValue, values);
+            _receipt = await function.SendTransactionAndWaitForReceiptAsync(
+                from, gas, weiValue, CancellationToken.None, values);
+            _txHash = _receipt.TransactionHash;
+        }
+        catch (SmartContractCustomErrorRevertException ex)
+        {
+            _exception = ex;
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task EstimateGasAsync()
+    {
+        _loading = true;
+        _error = null;
+        _exception = null;
+        _gasEstimate = null;
+        StateHasChanged();
+
+        try
+        {
+            var prepared = await PrepareCallAsync();
+            if (prepared == null) return;
+            var (function, from) = prepared.Value;
+
+            var values = function.ConvertJsonToObjectInputParameters(_inputValues);
+            var weiValue = GetWeiValue();
+            var gas = await function.EstimateGasAsync(from, null, weiValue, values);
+            _gasEstimate = gas.Value.ToString("N0");
+        }
+        catch (SmartContractCustomErrorRevertException ex)
+        {
+            _exception = ex;
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Gas estimation failed: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

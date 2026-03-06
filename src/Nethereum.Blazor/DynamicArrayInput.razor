@@ -1,0 +1,79 @@
+@using Nethereum.ABI
+@using Nethereum.ABI.Model
+@using Newtonsoft.Json.Linq
+
+@if (!string.IsNullOrEmpty(Title))
+{
+    <div class="neth-struct-title">@Title</div>
+}
+
+@if (Items != null)
+{
+    for (int i = 0; i < Items.Count; i++)
+    {
+        var index = i;
+        var item = Items[index];
+
+        <div class="neth-array-item" @key="item">
+            <span class="neth-array-index">#@(index + 1)</span>
+
+            @if (ElementType is TupleType tupleType && tupleType.Components != null)
+            {
+                var itemObj = item as JObject ?? new JObject();
+                if (item != itemObj) Items[index] = itemObj;
+                <DynamicStructInput Parameters="tupleType.Components" Values="itemObj" />
+            }
+            else if (ElementType is ArrayType innerArray)
+            {
+                var itemArr = item as JArray ?? new JArray();
+                if (item != itemArr) Items[index] = itemArr;
+                <DynamicArrayInput ElementType="innerArray.ElementType" Items="itemArr" />
+            }
+            else if (ElementType is BoolType)
+            {
+                <label class="neth-checkbox-label">
+                    <input type="checkbox"
+                           checked="@(item?.Type == JTokenType.Boolean && item!.Value<bool>())"
+                           @onchange="@(e => Items![index] = (bool)(e.Value ?? false))" />
+                </label>
+            }
+            else
+            {
+                <input type="text"
+                       class="neth-input"
+                       value="@(item?.ToString() ?? "")"
+                       @oninput="@(e => Items![index] = e.Value?.ToString() ?? "")" />
+            }
+
+            <button type="button" class="neth-btn-remove" @onclick="@(() => RemoveItem(index))">Remove</button>
+        </div>
+    }
+
+    <button type="button" class="neth-btn-add" @onclick="AddItem">+ Add Item</button>
+}
+
+@code {
+    [Parameter] public ABIType? ElementType { get; set; }
+    [Parameter] public JArray? Items { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private void AddItem()
+    {
+        if (Items == null) return;
+
+        if (ElementType is TupleType)
+            Items.Add(new JObject());
+        else if (ElementType is ArrayType)
+            Items.Add(new JArray());
+        else if (ElementType is BoolType)
+            Items.Add(false);
+        else
+            Items.Add("");
+    }
+
+    private void RemoveItem(int index)
+    {
+        if (Items != null && index >= 0 && index < Items.Count)
+            Items.RemoveAt(index);
+    }
+}

@@ -1,0 +1,112 @@
+@using Nethereum.ABI.Model
+@using Nethereum.ABI.FunctionEncoding
+@using Newtonsoft.Json.Linq
+
+@if (!string.IsNullOrEmpty(Title))
+{
+    <div class="neth-result-title">@Title</div>
+}
+
+@if (Result == null)
+{
+    <span class="neth-result-null">[no result]</span>
+}
+else if (Result is JValue jval)
+{
+    <span class="neth-result-value">@jval.ToString()</span>
+}
+else if (Result is JObject jobj)
+{
+    <table class="neth-result-table">
+        @if (Parameters != null)
+        {
+            var orderedParams = Parameters.OrderBy(p => p.Order);
+            foreach (var param in orderedParams)
+            {
+                var paramName = param.GetParameterNameUsingDefaultIfNotSet();
+                var value = jobj[paramName];
+                <tr>
+                    <td class="neth-result-name">@paramName</td>
+                    <td class="neth-result-type">@param.Type</td>
+                    <td class="neth-result-val">
+                        @if (value is JObject or JArray)
+                        {
+                            <DynamicResultOutput Result="value" />
+                        }
+                        else
+                        {
+                            <span>@(value?.ToString() ?? "")</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            foreach (var prop in jobj.Properties())
+            {
+                <tr>
+                    <td class="neth-result-name">@prop.Name</td>
+                    <td class="neth-result-val" colspan="2">
+                        @if (prop.Value is JObject or JArray)
+                        {
+                            <DynamicResultOutput Result="prop.Value" />
+                        }
+                        else
+                        {
+                            <span>@(prop.Value?.ToString() ?? "")</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </table>
+}
+else if (Result is JArray jarr)
+{
+    @if (jarr.Count == 0)
+    {
+        <span class="neth-result-null">[empty array]</span>
+    }
+    else
+    {
+        <div class="neth-result-array">
+            <span class="neth-result-array-count">@jarr.Count item@(jarr.Count != 1 ? "s" : "")</span>
+            @for (int i = 0; i < jarr.Count; i++)
+            {
+                var item = jarr[i];
+                @if (item is JObject)
+                {
+                    <div class="neth-result-array-struct">
+                        <span class="neth-array-index">[&hairsp;@i&hairsp;]</span>
+                        <div class="neth-nested">
+                            <DynamicResultOutput Result="item" />
+                        </div>
+                    </div>
+                }
+                else if (item is JArray)
+                {
+                    <div class="neth-result-array-struct">
+                        <span class="neth-array-index">[&hairsp;@i&hairsp;]</span>
+                        <div class="neth-nested">
+                            <DynamicResultOutput Result="item" />
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="neth-result-array-item">
+                        <span class="neth-array-index">[&hairsp;@i&hairsp;]</span>
+                        <span class="neth-result-value">@(item?.ToString() ?? "")</span>
+                    </div>
+                }
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public JToken? Result { get; set; }
+    [Parameter] public Parameter[]? Parameters { get; set; }
+    [Parameter] public string? Title { get; set; }
+}

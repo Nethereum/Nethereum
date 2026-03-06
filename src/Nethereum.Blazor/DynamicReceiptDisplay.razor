@@ -1,0 +1,137 @@
+@using Nethereum.Contracts.Extensions
+
+@if (Receipt != null)
+{
+    <div class="neth-receipt">
+        <div class="neth-receipt-title">Transaction Receipt</div>
+
+        <table class="neth-result-table">
+            <tr>
+                <td class="neth-result-name">Transaction Hash</td>
+                <td class="neth-result-val neth-mono">@Receipt.TransactionHash</td>
+            </tr>
+            <tr>
+                <td class="neth-result-name">Status</td>
+                <td class="neth-result-val">
+                    @if (Receipt.HasErrors() == false)
+                    {
+                        <span class="neth-receipt-status-success">Success</span>
+                    }
+                    else
+                    {
+                        <span class="neth-receipt-status-failed">Failed</span>
+                    }
+                </td>
+            </tr>
+            <tr>
+                <td class="neth-result-name">Block Number</td>
+                <td class="neth-result-val">@Receipt.BlockNumber?.Value</td>
+            </tr>
+            <tr>
+                <td class="neth-result-name">Block Hash</td>
+                <td class="neth-result-val neth-mono">@Receipt.BlockHash</td>
+            </tr>
+            <tr>
+                <td class="neth-result-name">Gas Used</td>
+                <td class="neth-result-val">@Receipt.GasUsed?.Value.ToString("N0")</td>
+            </tr>
+            <tr>
+                <td class="neth-result-name">Cumulative Gas Used</td>
+                <td class="neth-result-val">@Receipt.CumulativeGasUsed?.Value.ToString("N0")</td>
+            </tr>
+            @if (Receipt.EffectiveGasPrice != null)
+            {
+                <tr>
+                    <td class="neth-result-name">Effective Gas Price</td>
+                    <td class="neth-result-val">@Receipt.EffectiveGasPrice.Value Wei (@UnitConversion.Convert.FromWei(Receipt.EffectiveGasPrice.Value, UnitConversion.EthUnit.Gwei) Gwei)</td>
+                </tr>
+            }
+            @if (!string.IsNullOrEmpty(Receipt.ContractAddress))
+            {
+                <tr>
+                    <td class="neth-result-name">Contract Created</td>
+                    <td class="neth-result-val neth-mono">@Receipt.ContractAddress</td>
+                </tr>
+            }
+        </table>
+
+        @if (_decodedEvents.Count > 0)
+        {
+            <div class="neth-receipt-events">
+                <div class="neth-receipt-title">Emitted Events (@_decodedEvents.Count)</div>
+                @foreach (var evt in _decodedEvents)
+                {
+                    <div class="neth-receipt-event">
+                        <span class="neth-event-badge">@evt.EventName</span>
+                        @if (evt.DecodedData != null)
+                        {
+                            <DynamicResultOutput Result="evt.DecodedData" Parameters="evt.Parameters" />
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (Receipt.Logs != null && Receipt.Logs.Length > 0 && _decodedEvents.Count == 0)
+        {
+            <div class="neth-receipt-events">
+                <div class="neth-receipt-title">Raw Logs (@Receipt.Logs.Length)</div>
+                @foreach (var log in Receipt.Logs)
+                {
+                    <div class="neth-receipt-event">
+                        <span class="neth-event-badge">Log #@log.LogIndex</span>
+                        <div class="neth-mono neth-result-value" style="word-break: break-all; font-size: 0.8em;">
+                            @(log.Topics != null && log.Topics.Length > 0 ? log.Topics[0].ToString() : "N/A")
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public TransactionReceipt? Receipt { get; set; }
+    [Parameter] public ContractABI? ContractABI { get; set; }
+
+    private List<DecodedEvent> _decodedEvents = new();
+
+    protected override void OnParametersSet()
+    {
+        _decodedEvents.Clear();
+
+        if (Receipt?.Logs == null || ContractABI?.Events == null || ContractABI.Events.Length == 0)
+            return;
+
+        foreach (var eventABI in ContractABI.Events)
+        {
+            try
+            {
+                var decoded = eventABI.DecodeAllEventsDefaultTopics(Receipt.Logs);
+                if (decoded == null) continue;
+
+                foreach (var item in decoded)
+                {
+                    var parameterOutputs = item.Event;
+                    _decodedEvents.Add(new DecodedEvent
+                    {
+                        EventName = eventABI.Name,
+                        Parameters = eventABI.InputParameters,
+                        DecodedData = parameterOutputs?.ConvertToJObject()
+                    });
+                }
+            }
+            catch
+            {
+                // Skip events that fail to decode
+            }
+        }
+    }
+
+    private class DecodedEvent
+    {
+        public string EventName { get; set; } = "";
+        public Parameter[]? Parameters { get; set; }
+        public JObject? DecodedData { get; set; }
+    }
+}

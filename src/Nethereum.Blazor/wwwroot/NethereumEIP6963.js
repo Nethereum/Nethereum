@@ -85,6 +85,14 @@ window.NethereumEIP6963Interop = {
             });
 
             this.eventsInitialized = true;
+
+            this.selectedEthereumProvider.request({ method: 'eth_chainId' }).then((chainId) => {
+                if (chainId) {
+                    DotNet.invokeMethodAsync('Nethereum.Blazor', 'EIP6963SelectedNetworkChanged', chainId.toString());
+                }
+            }).catch((err) => {
+                log("Error fetching initial chainId:", err);
+            });
         } catch (error) {
             log("Error initializing wallet:", error);
         }

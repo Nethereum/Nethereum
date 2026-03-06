@@ -1,0 +1,111 @@
+@typeparam TFunctionMessage where TFunctionMessage : FunctionMessage, new()
+@typeparam TFunctionOutput
+@inherits QueryFunctionComponentBase<TFunctionMessage, TFunctionOutput>
+
+<div class="neth-function-card">
+    <div class="neth-function-header" @onclick="() => _collapsed = !_collapsed">
+        <span class="neth-function-toggle">@(_collapsed ? "▶" : "▼")</span>
+        <span class="neth-function-badge neth-badge-query">@Title</span>
+    </div>
+
+    @if (!_collapsed)
+    {
+    <div class="neth-function-body">
+        <StructInput Model="FunctionInput"
+                     ModelType="typeof(TFunctionMessage)"
+                     ExcludedProperties="DefaultExcludedQueryProps"
+                     @key="FunctionInput" />
+
+        <div class="neth-gas-settings">
+            <button type="button" class="neth-gas-toggle" @onclick="ToggleCallSettings" @onclick:stopPropagation="true">
+                <span class="neth-gas-toggle-icon">@(_callSettingsCollapsed ? "▶" : "▼")</span>
+                <span>Optional Call Settings</span>
+            </button>
+
+            @if (!_callSettingsCollapsed)
+            {
+                <div class="neth-gas-fields">
+                    <div class="neth-field">
+                        <label class="neth-field-label">From Address</label>
+                        <input type="text" class="neth-input @(!string.IsNullOrEmpty(_fromAddressError) ? "neth-input-error" : "")"
+                               placeholder="0x..."
+                               value="@(FunctionInput.FromAddress ?? "")"
+                               @oninput="@(e => OnFromAddressChanged(e.Value?.ToString()))" />
+                        @if (!string.IsNullOrEmpty(_fromAddressError))
+                        {
+                            <span class="neth-error">@_fromAddressError</span>
+                        }
+                    </div>
+
+                    <div class="neth-field">
+                        <label class="neth-field-label">Amount to Send (ETH)</label>
+                        <input type="text" class="neth-input"
+                               placeholder="0"
+                               value="@AmountToSendEthString"
+                               @oninput="@(e => OnAmountChanged(e.Value?.ToString()))" />
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="neth-function-actions">
+            <button type="button" class="neth-btn neth-btn-primary" @onclick="QueryAsync"
+                    disabled="@IsLoading">
+                @if (IsLoading) { <span class="neth-spinner"></span> }
+                Query
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="neth-error-display">
+                <div class="neth-error-message">@ErrorMessage</div>
+            </div>
+        }
+
+        @if (HasQueried && Output != null)
+        {
+            <div class="neth-function-result">
+                <ResultOutput Result="Output"
+                              ResultType="typeof(TFunctionOutput)"
+                              Title="Result" />
+            </div>
+        }
+    </div>
+    }
+</div>
+
+@code {
+    private bool _collapsed = true;
+    private bool _callSettingsCollapsed = true;
+    private string _fromAddressError;
+
+    private static readonly AddressUtil _addressUtil = new();
+
+    private string AmountToSendEthString =>
+        FunctionInput?.AmountToSend > 0
+            ? Web3.Convert.FromWei(FunctionInput.AmountToSend).ToString()
+            : "";
+
+    private void ToggleCallSettings() => _callSettingsCollapsed = !_callSettingsCollapsed;
+
+    private void OnFromAddressChanged(string value)
+    {
+        FunctionInput.FromAddress = value;
+        _fromAddressError = null;
+        if (!string.IsNullOrWhiteSpace(value) && !_addressUtil.IsValidEthereumAddressHexFormat(value))
+            _fromAddressError = "Invalid address";
+    }
+
+    private void OnAmountChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            FunctionInput.AmountToSend = BigInteger.Zero;
+            return;
+        }
+        if (decimal.TryParse(value, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var eth))
+            FunctionInput.AmountToSend = Web3.Convert.ToWei(eth);
+    }
+}

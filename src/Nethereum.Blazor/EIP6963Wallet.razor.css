@@ -133,3 +133,33 @@
     border-radius: 50%;
     margin-right: 0.8em;
 }
+
+/* No Theme — colors via CSS custom properties for host app customization */
+.no-theme .btnWallet {
+    background-color: var(--wallet-btn-bg, #1e1e1e);
+    color: var(--wallet-text-color, white);
+    border: 0.07em solid var(--wallet-border-color, #333);
+}
+
+.no-theme .btnWallet:hover {
+    background-color: var(--wallet-btn-hover-bg, #2a2a2a);
+}
+
+.no-theme .btnWalletSelected {
+    background-color: var(--wallet-btn-selected-bg, #3a3a3a);
+    border: 0.07em solid var(--wallet-border-selected-color, #555);
+}
+
+.no-theme .wallet-dropdown {
+    background-color: var(--wallet-dropdown-bg, #1e1e1e);
+}
+
+.no-theme .dropdown-item {
+    color: var(--wallet-text-color, white);
+}
+
+.no-theme .dropdown-item:hover {
+    background-color: var(--wallet-item-hover-bg, rgba(255, 255, 255, 0.1));
+    color: var(--wallet-item-hover-color, white);
+}
+

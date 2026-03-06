@@ -1,0 +1,114 @@
+<div class="neth-function-card">
+    <div class="neth-function-header" @onclick="() => _collapsed = !_collapsed">
+        <span class="neth-function-toggle">@(_collapsed ? "▶" : "▼")</span>
+        <span class="neth-function-badge neth-badge-query">@(Title ?? FunctionABI?.Name ?? "Query")</span>
+        @if (FunctionABI != null)
+        {
+            <span class="neth-function-sig">@FunctionABI.Sha3Signature</span>
+            @if (FunctionABI.Constant)
+            {
+                <span class="neth-function-tag">view</span>
+            }
+        }
+    </div>
+
+    @if (!_collapsed)
+    {
+    <div class="neth-function-body">
+        @if (FunctionABI?.InputParameters != null && FunctionABI.InputParameters.Length > 0)
+        {
+            <DynamicStructInput Parameters="FunctionABI.InputParameters" Values="_inputValues" />
+        }
+
+        <div class="neth-function-actions">
+            <button type="button" class="neth-btn neth-btn-primary" @onclick="QueryAsync"
+                    disabled="@(_loading || (Web3 == null && HostProvider?.SelectedHost == null))">
+                @if (_loading)
+                {
+                    <span class="neth-spinner"></span>
+                }
+                Query
+            </button>
+        </div>
+
+        @if (_error != null || _exception != null)
+        {
+            <DynamicErrorDisplay Error="@_error" Exception="@_exception" ContractABI="ContractABI" />
+        }
+
+        @if (_result != null)
+        {
+            <div class="neth-function-result">
+                <DynamicResultOutput Result="_result" Parameters="@FunctionABI?.OutputParameters" />
+            </div>
+        }
+    </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string ContractAddress { get; set; } = "";
+    [Parameter] public string ABI { get; set; } = "";
+    [Parameter] public FunctionABI? FunctionABI { get; set; }
+    [Parameter] public ContractABI? ContractABI { get; set; }
+    [Parameter] public SelectedEthereumHostProviderService? HostProvider { get; set; }
+    [Parameter] public IWeb3? Web3 { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    private JObject _inputValues = new();
+    private JToken? _result;
+    private string? _error;
+    private Exception? _exception;
+    private bool _loading;
+    private bool _collapsed = true;
+
+    private async Task<IWeb3> GetWeb3Async()
+    {
+        if (Web3 != null) return Web3;
+        return await HostProvider!.SelectedHost.GetWeb3Async();
+    }
+
+    private async Task QueryAsync()
+    {
+        if (FunctionABI == null || string.IsNullOrEmpty(ABI) || (Web3 == null && HostProvider?.SelectedHost == null))
+            return;
+
+        _loading = true;
+        _error = null;
+        _exception = null;
+        _result = null;
+        StateHasChanged();
+
+        try
+        {
+            var web3 = await GetWeb3Async();
+            var contract = web3.Eth.GetContract(ABI, ContractAddress);
+            var function = contract.GetFunction(FunctionABI.Name);
+            object[] values;
+            try
+            {
+                values = function.ConvertJsonToObjectInputParameters(_inputValues);
+            }
+            catch (Exception ex)
+            {
+                _error = "Please fill in all required parameters: " + ex.Message;
+                return;
+            }
+            var result = await function.CallDecodingToDefaultAsync(values);
+            _result = result.ConvertToJObject();
+        }
+        catch (SmartContractCustomErrorRevertException ex)
+        {
+            _exception = ex;
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

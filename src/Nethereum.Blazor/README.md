@@ -866,6 +866,23 @@ Requires:
 
 Works with both Blazor WebAssembly and Blazor Server.
 
+## Dynamic Contract Interaction Components
+
+Nethereum.Blazor includes a set of ABI-driven components that render contract function UIs dynamically from a `FunctionABI` definition, without requiring generated code.
+
+| Component | Purpose |
+|-----------|---------|
+| `DynamicQueryFunction` | Renders a query (view/pure) function with input fields, a Query button, and result display |
+| `DynamicTransactionFunction` | Renders a state-changing function with inputs, gas settings, ETH value (if payable), and receipt display |
+| `DynamicStructInput` | Recursively renders input fields for function parameters, including nested tuples |
+| `DynamicArrayInput` | Handles dynamic array parameters with add/remove controls |
+| `DynamicResultOutput` | Displays decoded return values from query calls |
+| `DynamicErrorDisplay` | Shows revert reasons and decoded custom errors using the contract ABI |
+| `DynamicGasSettings` | Collapsible gas configuration (gas limit, nonce, gas price, EIP-1559 fees) |
+| `DynamicReceiptDisplay` | Shows transaction receipt details after submission |
+
+These components accept a `FunctionABI` parameter and a `Web3` instance (or `IEthereumHostProvider`), and handle encoding, RPC calls, and decoding automatically. They use the `neth-` CSS class prefix for styling.
+
 ## Related Packages
 
 ### Dependencies
@@ -880,6 +897,3 @@ Works with both Blazor WebAssembly and Blazor Server.
 - **Nethereum.Siwe** - SIWE message building and parsing
 - **Nethereum.Siwe.Core** - Core SIWE authentication interfaces
 
-## License
-
-This package is part of the Nethereum project and follows the same MIT license.

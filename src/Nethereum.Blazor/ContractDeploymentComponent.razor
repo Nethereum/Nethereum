@@ -1,0 +1,213 @@
+@typeparam TDeploymentMessage where TDeploymentMessage : ContractDeploymentMessage, new()
+@inherits ContractDeploymentComponentBase<TDeploymentMessage>
+
+<div class="neth-function-card">
+    <div class="neth-function-header" @onclick="() => _collapsed = !_collapsed">
+        <span class="neth-function-toggle">@(_collapsed ? "▶" : "▼")</span>
+        <span class="neth-function-badge neth-badge-tx">@Title</span>
+    </div>
+
+    @if (!_collapsed)
+    {
+    <div class="neth-function-body">
+        <StructInput Model="DeploymentMessage"
+                     ModelType="typeof(TDeploymentMessage)"
+                     Title="Deployment Inputs"
+                     ExcludedProperties="DefaultExcludedDeploymentProps"
+                     @key="DeploymentMessage" />
+
+        <div class="neth-gas-settings">
+            <button type="button" class="neth-gas-toggle" @onclick="ToggleGas" @onclick:stopPropagation="true">
+                <span class="neth-gas-toggle-icon">@(_gasCollapsed ? "▶" : "▼")</span>
+                <span>Optional Deployment Settings</span>
+            </button>
+
+            @if (!_gasCollapsed)
+            {
+                <div class="neth-gas-fields">
+                    <div class="neth-field">
+                        <label class="neth-field-label">Amount to Send (ETH)</label>
+                        <input type="text" class="neth-input"
+                               placeholder="0"
+                               value="@AmountToSendEthString"
+                               @oninput="@(e => OnAmountChanged(e.Value?.ToString()))" />
+                    </div>
+
+                    <div class="neth-field">
+                        <label class="neth-field-label">Gas (Units)</label>
+                        <input type="text" class="neth-input @(!string.IsNullOrEmpty(_gasError) ? "neth-input-error" : "")"
+                               placeholder="Auto"
+                               value="@(DeploymentMessage.Gas?.ToString() ?? "")"
+                               @oninput="@(e => OnGasChanged(e.Value?.ToString()))" />
+                        @if (!string.IsNullOrEmpty(_gasError))
+                        {
+                            <span class="neth-error">@_gasError</span>
+                        }
+                    </div>
+
+                    <div class="neth-field">
+                        <label class="neth-field-label">Nonce</label>
+                        <input type="text" class="neth-input @(!string.IsNullOrEmpty(_nonceError) ? "neth-input-error" : "")"
+                               placeholder="Auto"
+                               value="@(DeploymentMessage.Nonce?.ToString() ?? "")"
+                               @oninput="@(e => OnNonceChanged(e.Value?.ToString()))" />
+                        @if (!string.IsNullOrEmpty(_nonceError))
+                        {
+                            <span class="neth-error">@_nonceError</span>
+                        }
+                    </div>
+
+                    <div class="neth-field">
+                        <label class="neth-field-label">Gas Price (Gwei)</label>
+                        <input type="text" class="neth-input @(!string.IsNullOrEmpty(_gasPriceError) ? "neth-input-error" : "")"
+                               placeholder="Auto"
+                               value="@FormatGwei(DeploymentMessage.GasPrice)"
+                               @oninput="@(e => OnGasPriceGweiChanged(e.Value?.ToString()))" />
+                        @if (!string.IsNullOrEmpty(_gasPriceError))
+                        {
+                            <span class="neth-error">@_gasPriceError</span>
+                        }
+                    </div>
+
+                    <div class="neth-field">
+                        <label class="neth-field-label">Max Fee Per Gas (Gwei)</label>
+                        <input type="text" class="neth-input @(!string.IsNullOrEmpty(_maxFeeError) ? "neth-input-error" : "")"
+                               placeholder="Auto"
+                               value="@FormatGwei(DeploymentMessage.MaxFeePerGas)"
+                               @oninput="@(e => OnMaxFeeGweiChanged(e.Value?.ToString()))" />
+                        @if (!string.IsNullOrEmpty(_maxFeeError))
+                        {
+                            <span class="neth-error">@_maxFeeError</span>
+                        }
+                    </div>
+
+                    <div class="neth-field">
+                        <label class="neth-field-label">Max Priority Fee (Gwei)</label>
+                        <input type="text" class="neth-input @(!string.IsNullOrEmpty(_maxPriorityError) ? "neth-input-error" : "")"
+                               placeholder="Auto"
+                               value="@FormatGwei(DeploymentMessage.MaxPriorityFeePerGas)"
+                               @oninput="@(e => OnMaxPriorityGweiChanged(e.Value?.ToString()))" />
+                        @if (!string.IsNullOrEmpty(_maxPriorityError))
+                        {
+                            <span class="neth-error">@_maxPriorityError</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="neth-function-actions">
+            <button type="button" class="neth-btn neth-btn-primary" @onclick="DeployAsync"
+                    disabled="@IsLoading">
+                @if (IsLoading) { <span class="neth-spinner"></span> }
+                Deploy Contract
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="neth-error-display">
+                <div class="neth-error-message">@ErrorMessage</div>
+            </div>
+        }
+
+        @if (Receipt != null)
+        {
+            <div class="neth-tx-hash">
+                <span class="neth-result-name">Contract Address</span>
+                <span class="neth-result-val neth-mono">@Receipt.ContractAddress</span>
+            </div>
+
+            <div class="neth-function-result">
+                <ResultOutput Result="Receipt"
+                              ResultType="typeof(TransactionReceipt)"
+                              Title="Transaction Receipt"
+                              ContractService="contractService"
+                              AdditionalEventTypes="AdditionalEventTypes" />
+            </div>
+        }
+    </div>
+    }
+</div>
+
+@code {
+    private bool _collapsed = true;
+    private bool _gasCollapsed = true;
+    private string _gasError;
+    private string _nonceError;
+    private string _gasPriceError;
+    private string _maxFeeError;
+    private string _maxPriorityError;
+
+    private string AmountToSendEthString =>
+        DeploymentMessage.AmountToSend > 0
+            ? Web3.Convert.FromWei(DeploymentMessage.AmountToSend).ToString()
+            : "";
+
+    private void ToggleGas() => _gasCollapsed = !_gasCollapsed;
+
+    private void OnAmountChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            DeploymentMessage.AmountToSend = BigInteger.Zero;
+            return;
+        }
+        if (decimal.TryParse(value, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var eth))
+            DeploymentMessage.AmountToSend = Web3.Convert.ToWei(eth);
+    }
+
+    private void OnGasChanged(string value)
+    {
+        _gasError = null;
+        if (string.IsNullOrWhiteSpace(value)) { DeploymentMessage.Gas = null; return; }
+        if (BigInteger.TryParse(value, out var result))
+            DeploymentMessage.Gas = result;
+        else
+            _gasError = "Invalid number";
+    }
+
+    private void OnNonceChanged(string value)
+    {
+        _nonceError = null;
+        if (string.IsNullOrWhiteSpace(value)) { DeploymentMessage.Nonce = null; return; }
+        if (BigInteger.TryParse(value, out var result))
+            DeploymentMessage.Nonce = result;
+        else
+            _nonceError = "Invalid number";
+    }
+
+    private void OnGasPriceGweiChanged(string value)
+    {
+        _gasPriceError = null;
+        if (string.IsNullOrWhiteSpace(value)) { DeploymentMessage.GasPrice = null; return; }
+        if (decimal.TryParse(value, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var gwei))
+            DeploymentMessage.GasPrice = UnitConversion.Convert.ToWei(gwei, UnitConversion.EthUnit.Gwei);
+        else
+            _gasPriceError = "Invalid number";
+    }
+
+    private void OnMaxFeeGweiChanged(string value)
+    {
+        _maxFeeError = null;
+        if (string.IsNullOrWhiteSpace(value)) { DeploymentMessage.MaxFeePerGas = null; return; }
+        if (decimal.TryParse(value, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var gwei))
+            DeploymentMessage.MaxFeePerGas = UnitConversion.Convert.ToWei(gwei, UnitConversion.EthUnit.Gwei);
+        else
+            _maxFeeError = "Invalid number";
+    }
+
+    private void OnMaxPriorityGweiChanged(string value)
+    {
+        _maxPriorityError = null;
+        if (string.IsNullOrWhiteSpace(value)) { DeploymentMessage.MaxPriorityFeePerGas = null; return; }
+        if (decimal.TryParse(value, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var gwei))
+            DeploymentMessage.MaxPriorityFeePerGas = UnitConversion.Convert.ToWei(gwei, UnitConversion.EthUnit.Gwei);
+        else
+            _maxPriorityError = "Invalid number";
+    }
+}
