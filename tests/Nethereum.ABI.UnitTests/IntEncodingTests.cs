@@ -1,5 +1,4 @@
 using System;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -186,6 +185,20 @@ namespace Nethereum.ABI.UnitTests
             Assert.Equal(value128, intresult);
         }
 
+        [Fact]
+        public virtual void ShouldEncodeDecodeInt128MaxMin()
+        {
+            var intType = new IntType("int128");
+
+            var result = intType.Encode(Int128.MaxValue).ToHex();
+            var decoded = intType.Decode<Int128>(result);
+            Assert.Equal(Int128.MaxValue, decoded);
+
+            result = intType.Encode(Int128.MinValue).ToHex();
+            decoded = intType.Decode<Int128>(result);
+            Assert.Equal(Int128.MinValue, decoded);
+        }
+
         [Theory]
         [InlineData(ulong.MaxValue)]
         [InlineData(1)]
@@ -202,6 +215,15 @@ namespace Nethereum.ABI.UnitTests
             result = intType.Encode(value128).ToHex();
             intresult = intType.Decode<UInt128>(result);
             Assert.Equal(value128, intresult);
+        }
+
+        [Fact]
+        public virtual void ShouldEncodeDecodeUInt128Max()
+        {
+            var intType = new IntType("uint128");
+            var result = intType.Encode(UInt128.MaxValue).ToHex();
+            var decoded = intType.Decode<UInt128>(result);
+            Assert.Equal(UInt128.MaxValue, decoded);
         }
 
         [Theory]

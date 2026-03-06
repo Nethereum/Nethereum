@@ -28,101 +28,93 @@ namespace Nethereum.ABI.Decoders
             object result = null;
             int size = 32;
 
-            Byte expectedByteValue;
-            if (_signed && encoded.First() > 0) // Check that number is negative
-                expectedByteValue = 0xFF; // Expected leadings bytes for negative numbers
+            byte expectedByteValue;
+            if (_signed && encoded[0] >= 0x80)
+                expectedByteValue = 0xFF;
             else
-                expectedByteValue = 0x00; // Expected leading bytes for positive numbers
+                expectedByteValue = 0x00;
 
             if (type == typeof(byte))
             {
                 result = DecodeByte(encoded);
                 size = 1;
             }
-
-            if (type == typeof(sbyte))
+            else if (type == typeof(sbyte))
             {
                 var value = DecodeSbyte(encoded);
                 size = 1;
-                if (expectedByteValue == 0xFF && value >= 0
-                    || expectedByteValue == 0x00 && value < 0)
+                if ((expectedByteValue == 0xFF && value >= 0)
+                    || (expectedByteValue == 0x00 && value < 0))
                     throw new OverflowException();
                 result = value;
             }
-
-            if (type == typeof(short))
+            else if (type == typeof(short))
             {
                 var value = DecodeShort(encoded);
                 size = 2;
-                if (expectedByteValue == 0xFF && value >= 0
-                    || expectedByteValue == 0x00 && value < 0)
+                if ((expectedByteValue == 0xFF && value >= 0)
+                    || (expectedByteValue == 0x00 && value < 0))
                     throw new OverflowException();
                 result = value;
             }
-
-            if (type == typeof(ushort))
+            else if (type == typeof(ushort))
             {
                 result = DecodeUShort(encoded);
                 size = 2;
             }
-
-            if (type == typeof(int))
+            else if (type == typeof(int))
             {
                 var value = DecodeInt(encoded);
                 size = 4;
-                if (expectedByteValue == 0xFF && value >= 0
-                    || expectedByteValue == 0x00 && value < 0)
+                if ((expectedByteValue == 0xFF && value >= 0)
+                    || (expectedByteValue == 0x00 && value < 0))
                     throw new OverflowException();
                 result = value;
             }
-
-            if (type.GetTypeInfo().IsEnum)
+            else if (type.GetTypeInfo().IsEnum)
             {
                 var val = DecodeInt(encoded);
                 return Enum.ToObject(type, val);
             }
-
-            if (type == typeof(uint))
+            else if (type == typeof(uint))
             {
                 result = DecodeUInt(encoded);
                 size = 4;
             }
-
-            if (type == typeof(long))
+            else if (type == typeof(long))
             {
                 var value = DecodeLong(encoded);
                 size = 8;
-                if (expectedByteValue == 0xFF && value >= 0
-                    || expectedByteValue == 0x00 && value < 0)
+                if ((expectedByteValue == 0xFF && value >= 0)
+                    || (expectedByteValue == 0x00 && value < 0))
                     throw new OverflowException();
                 result = value;
             }
-
-            if (type == typeof(ulong))
+            else if (type == typeof(ulong))
             {
                 result = DecodeULong(encoded);
                 size = 8;
             }
-
 #if NET7_0_OR_GREATER
-            if (type == typeof(UInt128))
+            else if (type == typeof(UInt128))
             {
                 result = DecodeUInt128(encoded);
                 size = 16;
             }
-
-            if (type == typeof(Int128))
+            else if (type == typeof(Int128))
             {
                 var value = DecodeInt128(encoded);
                 size = 16;
-                if (expectedByteValue == 0xFF && value >= 0
-                    || expectedByteValue == 0x00 && value < 0)
+                if ((expectedByteValue == 0xFF && value >= 0)
+                    || (expectedByteValue == 0x00 && value < 0))
                     throw new OverflowException();
                 result = value;
             }
 #endif
-            if (type == typeof(BigInteger) || type == typeof(object))
+            else if (type == typeof(BigInteger) || type == typeof(object))
+            {
                 return DecodeBigInteger(encoded);
+            }
 
             for (int i = 0; i < encoded.Length - size; i++)
             {
@@ -132,8 +124,8 @@ namespace Nethereum.ABI.Decoders
 
             if (result is null)
                 throw new NotSupportedException(type + " is not a supported decoding type for IntType");
-            else
-                return result;
+
+            return result;
         }
 
         public BigInteger DecodeBigInteger(string hexString)
