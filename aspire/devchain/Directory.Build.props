@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <UseProjectReferences>true</UseProjectReferences>
+    <AspireVersion>13.1.1</AspireVersion>
+    <MicrosoftExtensionsVersion>10.0.2</MicrosoftExtensionsVersion>
+  </PropertyGroup>
+</Project>

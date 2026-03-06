@@ -1,0 +1,178 @@
+@page "/loadtest"
+@using Nethereum.Aspire.Explorer.Services
+@inject ILoadTestMetricsService MetricsService
+@implements IDisposable
+
+<PageTitle>Load Test Dashboard - Nethereum Explorer</PageTitle>
+
+<h2 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Load Test Dashboard</h2>
+
+@if (!_available)
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <h4 class="mt-3" style="color: var(--text-muted);">Load Generator Unavailable</h4>
+            <p style="color: var(--text-muted);">The load generator service is not running or not reachable.</p>
+            <p style="color: var(--text-muted);">Checking again in @_refreshInterval seconds...</p>
+        </div>
+    </div>
+}
+else if (_stats != null)
+{
+    <div class="row g-3 mb-4">
+        <StatsCard Title="Current TPS" Value="@_stats.CurrentTps.ToString("F1")" IconClass="bi bi-lightning-charge" />
+        <StatsCard Title="Peak TPS" Value="@_stats.PeakTps.ToString("F1")" IconClass="bi bi-trophy" />
+        <StatsCard Title="Total Success" Value="@_stats.TotalSuccess.ToString("N0")" IconClass="bi bi-check-circle" />
+        <StatsCard Title="Total Failed" Value="@_stats.TotalFailed.ToString("N0")" IconClass="bi bi-x-circle" />
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-clock-history me-2"></i>Latency Distribution
+                </div>
+                <div class="card-body">
+                    <div class="loadtest-metrics">
+                        <div class="metric-row">
+                            <span class="metric-label">Average</span>
+                            <span class="metric-value">@FormatLatency(_stats.AvgLatencyMs)</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="@GetBarStyle(_stats.AvgLatencyMs)"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">P50 (Median)</span>
+                            <span class="metric-value">@FormatLatency(_stats.P50LatencyMs)</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="@GetBarStyle(_stats.P50LatencyMs)"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">P95</span>
+                            <span class="metric-value">@FormatLatency(_stats.P95LatencyMs)</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="@GetBarStyle(_stats.P95LatencyMs)"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">P99</span>
+                            <span class="metric-value">@FormatLatency(_stats.P99LatencyMs)</span>
+                            <div class="metric-bar">
+                                <div class="metric-bar-fill" style="@GetBarStyle(_stats.P99LatencyMs)"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart me-2"></i>Summary
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <tr>
+                                <td style="color: var(--text-muted);">Uptime</td>
+                                <td class="text-end">@FormatUptime(_stats.UptimeSeconds)</td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--text-muted);">Success Rate</td>
+                                <td class="text-end">
+                                    <span class="@GetSuccessRateClass()">@GetSuccessRate()</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--text-muted);">Total Transactions</td>
+                                <td class="text-end">@((_stats.TotalSuccess + _stats.TotalFailed).ToString("N0"))</td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--text-muted);">Successful</td>
+                                <td class="text-end" style="color: var(--primary-color);">@_stats.TotalSuccess.ToString("N0")</td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--text-muted);">Failed</td>
+                                <td class="text-end" style="color: #ff6b6b;">@_stats.TotalFailed.ToString("N0")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <LoadingSpinner />
+}
+
+@code {
+    private LoadTestStats? _stats;
+    private bool _available;
+    private Timer? _timer;
+    private const int _refreshInterval = 3;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        _timer = new Timer(async _ =>
+        {
+            await LoadDataAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(_refreshInterval), TimeSpan.FromSeconds(_refreshInterval));
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _stats = await MetricsService.GetStatsAsync();
+        _available = _stats != null;
+    }
+
+    private static string FormatLatency(double ms)
+    {
+        if (ms < 1) return "< 1 ms";
+        if (ms < 1000) return $"{ms:F0} ms";
+        return $"{ms / 1000:F2} s";
+    }
+
+    private static string FormatUptime(long seconds)
+    {
+        var ts = TimeSpan.FromSeconds(seconds);
+        if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours}h {ts.Minutes}m {ts.Seconds}s";
+        if (ts.TotalMinutes >= 1) return $"{ts.Minutes}m {ts.Seconds}s";
+        return $"{ts.Seconds}s";
+    }
+
+    private string GetBarStyle(double ms)
+    {
+        var maxMs = Math.Max(_stats?.P99LatencyMs ?? 100, 100);
+        var pct = Math.Min(ms / maxMs * 100, 100);
+        var color = ms < 100 ? "var(--primary-color)" :
+                    ms < 500 ? "#ffd700" :
+                    ms < 1000 ? "#ff9800" : "#ff6b6b";
+        return $"width: {pct:F0}%; background: {color};";
+    }
+
+    private string GetSuccessRate()
+    {
+        if (_stats == null) return "N/A";
+        var total = _stats.TotalSuccess + _stats.TotalFailed;
+        if (total == 0) return "N/A";
+        return $"{(double)_stats.TotalSuccess / total * 100:F1}%";
+    }
+
+    private string GetSuccessRateClass()
+    {
+        if (_stats == null) return "";
+        var total = _stats.TotalSuccess + _stats.TotalFailed;
+        if (total == 0) return "";
+        var rate = (double)_stats.TotalSuccess / total * 100;
+        return rate >= 99 ? "text-success" : rate >= 95 ? "text-warning" : "text-danger";
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

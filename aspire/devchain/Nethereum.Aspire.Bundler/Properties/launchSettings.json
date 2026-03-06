@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Nethereum.Aspire.Bundler": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53415;http://localhost:53418"
+    }
+  }
+}

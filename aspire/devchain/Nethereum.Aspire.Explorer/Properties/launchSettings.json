@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Nethereum.Aspire.Explorer": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53413;http://localhost:53417"
+    }
+  }
+}
