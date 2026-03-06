@@ -1,4 +1,4 @@
-﻿using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
 {
@@ -23,12 +23,12 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
 
         public static void Map(this Block block, Nethereum.RPC.Eth.DTOs.Block source)
         {
-            block.BlockNumber = source.Number.Value.ToString();
+            block.BlockNumber = (long)source.Number.Value;
             block.Difficulty = source.Difficulty?.Value.ToString();
             block.GasLimit = source.GasLimit?.Value.ToString();
             block.GasUsed = source.GasUsed?.Value.ToString();
             block.Size = source.Size?.Value.ToString();
-            block.Timestamp = source.Timestamp?.Value.ToString();
+            block.Timestamp = (long)(source.Timestamp?.Value ?? 0);
             block.TotalDifficulty = source.TotalDifficulty?.Value.ToString();
             block.ExtraData = source.ExtraData ?? string.Empty;
             block.Hash = source.BlockHash ?? string.Empty;
@@ -36,9 +36,20 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             block.Miner = source.Miner ?? string.Empty;
             block.Nonce = source.Nonce;
             block.BaseFeePerGas = source.BaseFeePerGas?.Value.ToString();
+            block.StateRoot = source.StateRoot ?? string.Empty;
+            block.ReceiptsRoot = source.ReceiptsRoot ?? string.Empty;
+            block.LogsBloom = source.LogsBloom ?? string.Empty;
+            block.WithdrawalsRoot = source.WithdrawalsRoot?.Value.ToString();
             block.TransactionCount = TransactionCount(source);
-           
-         }
+            block.IsCanonical = true;
+            block.BlobGasUsed = source.BlobGasUsed?.Value.ToString();
+            block.ExcessBlobGas = source.ExcessBlobGas?.Value.ToString();
+            block.ParentBeaconBlockRoot = source.ParentBeaconBlockRoot;
+            block.RequestsHash = source.RequestsHash;
+            block.TransactionsRoot = source.TransactionsRoot;
+            block.MixHash = source.MixHash;
+            block.Sha3Uncles = source.Sha3Uncles;
+        }
 
         private static int TransactionCount(Nethereum.RPC.Eth.DTOs.Block block)
         {

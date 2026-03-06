@@ -1,4 +1,5 @@
-﻿using Nethereum.BlockchainProcessing.Orchestrator;
+﻿using Nethereum.BlockchainProcessing.Metrics;
+using Nethereum.BlockchainProcessing.Orchestrator;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.Contracts;
@@ -8,6 +9,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,18 +62,20 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
         private readonly IEnumerable<ProcessorHandler<FilterLog>> _logProcessors;
         private NewFilterInput _filterInput;
         private readonly ILogger _logger;
+        private readonly ILogProcessingObserver _observer;
         private BlockRangeRequestStrategy _blockRangeRequestStrategy;
         public ILogProcessStrategy LogProcessStrategy { get; set; } = new LogProcessParallelStrategy();
 
         protected IEthApiContractService EthApi { get; set; }
 
         public LogOrchestrator(IEthApiContractService ethApi,
-            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0, ILogger logger = null)
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors, NewFilterInput filterInput = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0, ILogger logger = null, ILogProcessingObserver observer = null)
         {
             EthApi = ethApi;
             _logProcessors = logProcessors;
             _filterInput = filterInput ?? new NewFilterInput();
             _logger = logger;
+            _observer = observer;
             _blockRangeRequestStrategy = new BlockRangeRequestStrategy(defaultNumberOfBlocksPerRequest, retryWeight);
         }
 
@@ -90,50 +94,47 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                     }
 
                     _logger?.LogInformation("Starting logs processing from block number: " + nextBlockNumberFrom.ToString());
+                    var batchStopwatch = Stopwatch.StartNew();
                     var getLogsResponse = await GetLogsAsync(progress, nextBlockNumberFrom, toNumber).ConfigureAwait(false);
 
-                    if (getLogsResponse == null || cancellationToken.IsCancellationRequested) return progress; //allowing all the logs to be processed if not cancelled before hand
+                    if (getLogsResponse == null || cancellationToken.IsCancellationRequested) return progress;
 
                     var logs = getLogsResponse.Value.Logs;
+                    var logCount = 0;
 
                     if (logs != null)
                     {
-                        _logger?.LogInformation("Total Logs found: " + logs.Count());
-                        logs = logs.Sort();
+                        logCount = logs.Length;
+                        _logger?.LogInformation("Total Logs found: " + logCount);
+                        logs = logs.SortLogs();
                         await InvokeLogProcessorsAsync(logs).ConfigureAwait(false);
                     }
                     progress.BlockNumberProcessTo = getLogsResponse.Value.To;
+                    batchStopwatch.Stop();
+
+                    _observer?.OnBatchProcessed(
+                        getLogsResponse.Value.From,
+                        getLogsResponse.Value.To,
+                        logCount,
+                        batchStopwatch.Elapsed.TotalSeconds);
+
                     if (blockProgressRepository != null)
                     {
                         _logger?.LogInformation("Logs processed completed to block number: " + progress.BlockNumberProcessTo.Value.ToString());
                         await blockProgressRepository.UpsertProgressAsync(progress.BlockNumberProcessTo.Value).ConfigureAwait(false);
                     }
-
                 }
-
             }
             catch (Exception ex)
             {
                 progress.Exception = ex;
             }
             return progress;
-
         }
 
         private async Task InvokeLogProcessorsAsync(FilterLog[] logs)
         {
-            await NewMethod(logs);
-        }
-
-        private async Task NewMethod(FilterLog[] logs)
-        {
-            await _logProcessors.ForEachAsync(async logProcessor =>
-            {
-                foreach (var log in logs)
-                {
-                    await logProcessor.ExecuteAsync(log).ConfigureAwait(false);
-                }
-            });
+            await LogProcessStrategy.ProcessLogs(logs, _logProcessors).ConfigureAwait(false);
         }
 
         struct GetLogsResponse
@@ -180,7 +181,6 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
             }
             catch (Exception ex)
             {
-
                 if (retryRequestNumber >= MaxGetLogsRetries || cancellationToken.IsCancellationRequested)
                 {
                     progress.Exception = ex;
@@ -188,6 +188,7 @@ namespace Nethereum.BlockchainProcessing.LogProcessing
                 }
                 else
                 {
+                    _observer?.OnGetLogsRetry(retryRequestNumber + 1);
                     return await GetLogsAsync(progress, fromBlock, toBlock, cancellationToken, retryRequestNumber + 1).ConfigureAwait(false);
                 }
             }

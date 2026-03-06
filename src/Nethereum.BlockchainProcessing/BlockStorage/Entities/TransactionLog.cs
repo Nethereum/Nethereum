@@ -1,17 +1,17 @@
-﻿ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
+namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
 {
     public class TransactionLog : TableRow, ITransactionLogView
     {
         public string TransactionHash { get; set; }
-        public string LogIndex { get; set; }
+        public long LogIndex { get; set; }
         public string Address { get; set; }
         public string EventHash { get; set; }
         public string IndexVal1 { get; set; }
         public string IndexVal2 { get; set; }
         public string IndexVal3 { get; set; }
         public string Data { get; set; }
-
-        //GB61HBUK40350571199315
-        //event hash, index1, index2, index3
+        public long BlockNumber { get; set; }
+        public string BlockHash { get; set; }
+        public bool IsCanonical { get; set; } = true;
     }
 }

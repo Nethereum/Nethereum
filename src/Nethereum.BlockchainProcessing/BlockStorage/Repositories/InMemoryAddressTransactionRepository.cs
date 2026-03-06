@@ -21,7 +21,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
         public Task<IAddressTransactionView> FindAsync(string address, HexBigInteger blockNumber, string transactionHash)
         {
             IAddressTransactionView result = Records.FirstOrDefault(
-                t => t.BlockNumber == blockNumber.Value.ToString() 
+                t => t.BlockNumber == (long)blockNumber.Value
                 && t.Hash == transactionHash 
                 && AddressUtil.Current.AreAddressesTheSame(t.Address, address));
 

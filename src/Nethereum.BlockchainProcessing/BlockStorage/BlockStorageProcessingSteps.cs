@@ -1,5 +1,9 @@
-﻿using Nethereum.BlockchainProcessing.BlockProcessing;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Nethereum.BlockchainProcessing.BlockProcessing;
 using Nethereum.BlockchainProcessing.BlockStorage.BlockStorageStepsHandlers;
+using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
 
 namespace Nethereum.BlockchainProcessing.BlockStorage
@@ -36,6 +40,14 @@ namespace Nethereum.BlockchainProcessing.BlockStorage
         {
             var handler = new FilterLogStorageStepHandler(repositoryFactory.CreateTransactionLogRepository());
             this.FilterLogStep.AddProcessorHandler(handler);
+        }
+
+        public virtual void AddInternalTransactionStepStorageHandler(
+            IInternalTransactionRepository repository,
+            Func<string, Task<List<InternalTransaction>>> traceProvider)
+        {
+            var handler = new InternalTransactionStorageStepHandler(repository, traceProvider);
+            this.TransactionReceiptStep.AddProcessorHandler(handler);
         }
     }
 }

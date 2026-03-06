@@ -1,8 +1,8 @@
-﻿namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
+namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
 {
     public interface IAddressTransactionView
     {
-        string BlockNumber { get;}
+        long BlockNumber { get;}
         string Hash { get;}
         string Address  { get; }
     }

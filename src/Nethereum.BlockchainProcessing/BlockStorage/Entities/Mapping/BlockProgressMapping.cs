@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 
 namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
 {
@@ -16,7 +16,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
 
         public static TEntity MapToStorageEntityForUpsert<TEntity>(this TEntity block, BigInteger source) where TEntity : BlockProgress, new()
         {
-            block.LastBlockProcessed = source.ToString();
+            block.LastBlockProcessed = (long)source;
             block.UpdateRowDates();
             return block;
         }

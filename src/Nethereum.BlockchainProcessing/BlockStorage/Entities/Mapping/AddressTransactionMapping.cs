@@ -4,7 +4,7 @@
     {
         public static void Map(this AddressTransaction to, Nethereum.RPC.Eth.DTOs.Transaction @from, string address)
         {
-            to.BlockNumber = @from.BlockNumber.Value.ToString();
+            to.BlockNumber = (long)@from.BlockNumber.Value;
             to.Hash = @from.TransactionHash;
             to.Address = address;
         }

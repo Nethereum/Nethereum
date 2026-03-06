@@ -1,4 +1,4 @@
-﻿namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
+namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
 {
     public interface ITransactionLogView
     {
@@ -8,7 +8,9 @@
         string IndexVal1 { get;  }
         string IndexVal2 { get;  }
         string IndexVal3 { get;  }
-        string LogIndex { get;  }
+        long LogIndex { get;  }
         string TransactionHash { get;  }
+        long BlockNumber { get; }
+        string BlockHash { get; }
     }
 }

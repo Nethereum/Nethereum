@@ -11,5 +11,6 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
         Task UpsertAsync(TransactionReceiptVO transactionReceiptVO);
 
         Task<Entities.ITransactionView> FindByBlockNumberAndHashAsync(HexBigInteger blockNumber, string hash);
+
     }
 }

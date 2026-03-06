@@ -11,7 +11,10 @@ This package enables applications to:
 - **Filter events** - Process specific event types or contracts
 - **Handle confirmations** - Wait for block confirmations before processing
 - **Batch process logs** - Efficiently retrieve and process event logs in batches
-- **Process ERC20/ERC721** - Built-in support for token event processing
+- **Process ERC20/ERC721/ERC1155** - Built-in support for token transfer indexing and balance aggregation
+- **Detect reorgs** - Chain consistency validation with automatic rewind and non-canonical marking
+- **Index internal transactions** - Trace-based call tree extraction via configurable trace provider
+- **Emit metrics** - OpenTelemetry-compatible instrumentation via `ILogProcessingObserver`
 
 ## Installation
 
@@ -27,21 +30,25 @@ The package follows a modular pipeline architecture with clear separation of con
 BlockchainProcessor (executor)
   ├── IBlockchainProcessingOrchestrator (strategy)
   │   ├── BlockCrawlOrchestrator (block-by-block crawling)
-  │   └── LogOrchestrator (batch log retrieval)
+  │   ├── LogOrchestrator (batch log retrieval)
+  │   └── InternalTransactionOrchestrator (trace-based indexing)
   ├── BlockProcessingSteps (pipeline stages)
   ├── IBlockProgressRepository (progress tracking)
-  └── ILastConfirmedBlockNumberService (confirmation management)
+  │   └── ReorgBufferedBlockProgressRepository (decorator)
+  ├── IChainStateRepository (reorg detection state)
+  ├── ILastConfirmedBlockNumberService (confirmation management)
+  └── ILogProcessingObserver (metrics/telemetry)
 ```
 
 ## Core Components
 
 ### BlockchainProcessor
 
-Main processor that manages continuous blockchain processing. Located in `BlockchainProcessor.cs:12-121`.
+Main processor that manages continuous blockchain processing. Located in `BlockchainProcessor.cs`.
 
 **Key Methods:**
-- `ExecuteAsync(CancellationToken, BigInteger?)` - Process until cancelled (Line 34)
-- `ExecuteAsync(BigInteger toBlockNumber, ...)` - Process to specific block (Line 66)
+- `ExecuteAsync(CancellationToken, BigInteger?)` - Process until cancelled
+- `ExecuteAsync(BigInteger toBlockNumber, ...)` - Process to specific block
 
 **Features:**
 - Progress tracking via `IBlockProgressRepository`
@@ -51,38 +58,38 @@ Main processor that manages continuous blockchain processing. Located in `Blockc
 
 ### BlockCrawlOrchestrator
 
-Orchestrates crawling of blocks, transactions, receipts, and logs. Located in `BlockProcessing/BlockCrawlOrchestrator.cs:10-113`.
+Orchestrates crawling of blocks, transactions, receipts, and logs. Located in `BlockProcessing/BlockCrawlOrchestrator.cs`.
 
 **Processing Flow:**
-1. **Fetch Block** → `BlockCrawlerStep` (Line 46)
+1. **Fetch Block** → `BlockCrawlerStep`
 2. **For Each Transaction:**
-   - Process Transaction → `TransactionCrawlerStep` (Line 62)
-   - Fetch Receipt → `TransactionReceiptCrawlerStep` (Line 73)
+   - Process Transaction → `TransactionCrawlerStep`
+   - Fetch Receipt → `TransactionReceiptCrawlerStep`
    - Extract Contract Creation → `ContractCreatedCrawlerStep` (if applicable)
 3. **For Each Log:**
-   - Process Log → `FilterLogCrawlerStep` (Line 103)
+   - Process Log → `FilterLogCrawlerStep`
 
 ### BlockProcessingSteps
 
-Defines processing pipeline stages. Located in `BlockProcessing/BlockProcessingSteps.cs:6-38`.
+Defines processing pipeline stages. Located in `BlockProcessing/BlockProcessingSteps.cs`.
 
 **Steps:**
-- `BlockStep` - Processes `BlockWithTransactions` (Line 8)
-- `TransactionStep` - Processes `TransactionVO` (Line 9)
-- `TransactionReceiptStep` - Processes `TransactionReceiptVO` (Line 10)
-- `FilterLogStep` - Processes `FilterLogVO` (Line 11)
-- `ContractCreationStep` - Processes `ContractCreationVO` (Line 12)
+- `BlockStep` - Processes `BlockWithTransactions`
+- `TransactionStep` - Processes `TransactionVO`
+- `TransactionReceiptStep` - Processes `TransactionReceiptVO`
+- `FilterLogStep` - Processes `FilterLogVO`
+- `ContractCreationStep` - Processes `ContractCreationVO`
 
 Each step is a `Processor<T>` that can have multiple handlers.
 
 ### Processor<T>
 
-Generic processor that executes multiple handlers. Located in `Processor/Processor.cs:9-71`.
+Generic processor that executes multiple handlers. Located in `Processor/Processor.cs`.
 
 **Key Features:**
-- Multiple handlers per processor (Line 22)
-- Optional match criteria for filtering (Line 13)
-- Sequential handler execution (Line 43)
+- Multiple handlers per processor
+- Optional match criteria for filtering
+- Sequential handler execution
 - Synchronous and asynchronous handler support
 
 ## Usage Examples
@@ -324,7 +331,7 @@ await processor.ExecuteAsync(new BigInteger(110), CancellationToken.None, new Bi
 
 ## Log Processing
 
-For event-focused processing, use `LogOrchestrator` for efficient batch retrieval. Located in `LogProcessing/LogOrchestrator.cs:13-214`.
+For event-focused processing, use `LogOrchestrator` for efficient batch retrieval. Located in `LogProcessing/LogOrchestrator.cs`.
 
 ### Example 8: Process All Logs
 
@@ -629,6 +636,63 @@ public class DatabaseProgressRepository : IBlockProgressRepository
 
 From interface: `ProgressRepositories/IBlockProgressRepository.cs:5-10`
 
+## Reorg Handling
+
+The processor supports chain reorganisation detection and recovery via `ChainConsistencyValidationService` and `IChainStateRepository`.
+
+### Chain State Tracking
+
+`ChainState` tracks the last known canonical block number and hash. After each block is processed, the state is updated. On startup, the stored hash is compared against the RPC node — if they differ, a reorg is detected.
+
+```csharp
+using Nethereum.BlockchainProcessing.BlockStorage.Entities;
+using Nethereum.BlockchainProcessing.ProgressRepositories;
+using Nethereum.BlockchainProcessing.Services;
+
+var chainStateRepo = new MyChainStateRepository(); // implements IChainStateRepository
+var validator = new ChainConsistencyValidationService(web3.Eth, chainStateRepo);
+validator.ReorgBuffer = 10; // rewind 10 blocks on reorg detection
+
+try
+{
+    await validator.ValidateAsync(cancellationToken);
+}
+catch (ReorgDetectedException ex)
+{
+    Console.WriteLine($"Reorg detected at block {ex.LastCanonicalBlockNumber}");
+    Console.WriteLine($"Rewinding to block {ex.RewindToBlockNumber}");
+    // Mark non-canonical records, rewind progress, restart processing
+}
+```
+
+From: `Services/ChainConsistencyValidationService.cs`
+
+### Chain ID Validation
+
+Prevents accidental indexing of the wrong chain by comparing the RPC chain ID against the stored value:
+
+```csharp
+await ChainStateValidationService.EnsureChainIdMatchesAsync(
+    web3.Eth, chainStateRepositoryFactory);
+// Throws InvalidOperationException if chain IDs don't match
+```
+
+From: `Services/ChainStateValidationService.cs`
+
+### ReorgBufferedBlockProgressRepository
+
+Wraps any `IBlockProgressRepository` to subtract a reorg buffer from the reported last block, ensuring blocks within the buffer are always re-processed:
+
+```csharp
+var innerProgress = new InMemoryBlockchainProgressRepository();
+var bufferedProgress = new ReorgBufferedBlockProgressRepository(innerProgress, reorgBuffer: 12);
+
+// If inner reports block 100 as last processed, buffered returns 88
+var lastBlock = await bufferedProgress.GetLastBlockNumberProcessedAsync();
+```
+
+From: `ProgressRepositories/ReorgBufferedBlockProgressRepository.cs`
+
 ## Storage System
 
 ### Implementing Custom Storage
@@ -684,25 +748,64 @@ From: `BlockStorage/Repositories/IBlockchainStoreRepositoryFactory.cs:5-11`
 The package provides ready-to-use entity models:
 
 **Block Entity** (`BlockStorage/Entities/Block.cs`):
-- BlockNumber, Hash, ParentHash, Nonce, Difficulty
-- Miner, GasUsed, GasLimit, Timestamp
-- TransactionCount, BaseFeePerGas
+- BlockNumber (long), Hash, ParentHash, Nonce, Difficulty
+- Miner, GasUsed, GasLimit, Timestamp (long)
+- TransactionCount (long), BaseFeePerGas
+- StateRoot, ReceiptsRoot, LogsBloom, WithdrawalsRoot
+- BlobGasUsed, ExcessBlobGas, ParentBeaconBlockRoot (EIP-4844/4788)
+- RequestsHash (EIP-7685), TransactionsRoot, MixHash, Sha3Uncles
+- IsCanonical, IsFinalized, ChainId
 
-**Transaction Entity** (`BlockStorage/Entities/Transaction.cs`):
-- Hash, BlockNumber, TransactionIndex
+**Transaction Entity** (`BlockStorage/Entities/TransactionBase.cs`):
+- Hash, BlockNumber (long), TransactionIndex (long)
 - AddressFrom, AddressTo, Value, Gas, GasPrice, GasUsed
+- Nonce (long), TransactionType (long), TimeStamp (long)
 - NewContractAddress, Failed, ReceiptHash
-- MaxFeePerGas, MaxPriorityFeePerGas (EIP-1559)
+- MaxFeePerGas, MaxPriorityFeePerGas, EffectiveGasPrice (EIP-1559)
+- MaxFeePerBlobGas, BlobGasUsed, BlobGasPrice (EIP-4844)
+- IsCanonical
 
 **TransactionLog Entity** (`BlockStorage/Entities/TransactionLog.cs`):
-- TransactionHash, LogIndex, Address
+- TransactionHash, LogIndex (long), BlockNumber (long), Address
 - EventHash (Topics[0])
 - IndexVal1, IndexVal2, IndexVal3 (Indexed parameters)
 - Data (Non-indexed parameters)
+- IsCanonical
 
 **Contract Entity** (`BlockStorage/Entities/Contract.cs`):
 - Address, Name, ABI, Code
 - Creator, TransactionHash
+
+**InternalTransaction Entity** (`BlockStorage/Entities/InternalTransaction.cs`):
+- TransactionHash, BlockNumber, BlockHash
+- TraceIndex, Depth, Type (CALL, DELEGATECALL, CREATE, etc.)
+- AddressFrom, AddressTo, Value, Gas, GasUsed
+- Input, Output, Error, RevertReason
+- IsCanonical
+
+**TokenTransferLog Entity** (`BlockStorage/Entities/TokenTransferLog.cs`):
+- TransactionHash, LogIndex, BlockNumber, BlockHash
+- ContractAddress, EventHash, FromAddress, ToAddress
+- Amount, TokenId, OperatorAddress, TokenType
+- IsCanonical
+
+**TokenBalance Entity** (`BlockStorage/Entities/TokenBalance.cs`):
+- Address, ContractAddress, Balance, TokenType, LastUpdatedBlockNumber
+
+**TokenMetadata Entity** (`BlockStorage/Entities/TokenMetadata.cs`):
+- ContractAddress, Name, Symbol, Decimals, TokenType
+
+**NFTInventory Entity** (`BlockStorage/Entities/NFTInventory.cs`):
+- Address, ContractAddress, TokenId, Amount, TokenType, LastUpdatedBlockNumber
+
+**AccountState Entity** (`BlockStorage/Entities/AccountState.cs`):
+- Address, Balance, Nonce, IsContract, LastUpdatedBlock
+
+**ChainState Entity** (`BlockStorage/Entities/ChainState.cs`):
+- LastCanonicalBlockNumber (long?), LastCanonicalBlockHash
+- FinalizedBlockNumber (long?), ChainId (int?)
+
+All numeric indexing fields (BlockNumber, LogIndex, TransactionIndex, Nonce, Timestamp, TransactionType, TransactionCount) use `long`. Gas and value fields (Value, Gas, GasPrice, GasUsed, Balance, Amount) remain `string` to preserve full uint256 precision.
 
 ## Advanced Configuration
 
@@ -1003,6 +1106,115 @@ var logProcessor = web3.Processing.Logs.CreateProcessor<TransferEventDTO>(
 await logProcessor.ExecuteAsync(CancellationToken.None);
 ```
 
+## Token Transfer Processing
+
+The `TokenTransferLogProcessingService` indexes ERC-20, ERC-721, and ERC-1155 transfer events into `ITokenTransferLogRepository` with a unified filter that matches all three token standards in a single log query.
+
+```csharp
+using Nethereum.BlockchainProcessing.Services.SmartContracts;
+
+var tokenService = new TokenTransferLogProcessingService(
+    web3.Processing.Logs, web3.Eth);
+
+var processor = tokenService.CreateProcessor(
+    transferLogRepository, blockProgressRepository,
+    numberOfBlocksPerRequest: 1000);
+
+await processor.ExecuteAsync(cancellationToken);
+```
+
+From: `Services/SmartContracts/TokenTransferLogProcessingService.cs`
+
+### Token Balance Aggregation
+
+The `TokenBalanceAggregationService` reads stored `TokenTransferLog` records and maintains running `TokenBalance` and `NFTInventory` tables:
+
+```csharp
+var aggregationService = new TokenBalanceAggregationService(
+    transferLogRepository, balanceRepository, nftRepository, progressRepository);
+
+await aggregationService.AggregateAsync(fromBlock, toBlock, cancellationToken);
+```
+
+From: `Services/SmartContracts/TokenBalanceAggregationService.cs`
+
+## Internal Transaction Processing
+
+The `InternalTransactionPostProcessor` orchestrates trace-based internal transaction indexing. It accepts a trace provider function (e.g., `debug_traceTransaction`) and stores results via `IInternalTransactionRepository`:
+
+```csharp
+var postProcessor = new InternalTransactionPostProcessor(
+    internalTransactionRepository,
+    traceProvider: async txHash => await GetTracesFromRpc(txHash),
+    getContractTransactionsInRange: async (from, to) => await GetContractTxs(from, to),
+    progressRepository, lastConfirmedBlockService);
+
+await postProcessor.ExecuteAsync(cancellationToken);
+```
+
+From: `Services/InternalTransactionPostProcessor.cs`
+
+## Metrics and Observability
+
+The `ILogProcessingObserver` interface enables telemetry integration. The built-in `LogProcessingMetrics` implementation uses `System.Diagnostics.Metrics` (net8.0+) for OpenTelemetry-compatible instrumentation:
+
+```csharp
+using Nethereum.BlockchainProcessing.Metrics;
+
+var metrics = new LogProcessingMetrics(
+    chainId: "1", processorType: "TokenTransfers", name: "MyApp");
+
+// Pass to log processing service
+var processor = logProcessingService.CreateProcessor(
+    transferLogRepository, blockProgressRepository,
+    observer: metrics);
+
+// Emitted metrics:
+// logprocessing.blocks.processed   - counter
+// logprocessing.logs.processed     - counter
+// logprocessing.errors             - counter
+// logprocessing.reorgs             - counter
+// logprocessing.getlogs.retries    - counter
+// logprocessing.batch.duration     - histogram
+// logprocessing.last_block         - gauge
+// logprocessing.lag                - gauge (blocks behind chain head)
+```
+
+From: `Metrics/LogProcessingMetrics.cs`
+
+## RetryRunner
+
+`RetryRunner.RunWithExponentialBackoffAsync` provides resilient execution with exponential backoff for long-running processing loops:
+
+```csharp
+using Nethereum.BlockchainProcessing;
+
+await RetryRunner.RunWithExponentialBackoffAsync(
+    async ct =>
+    {
+        await processor.ExecuteAsync(ct);
+    },
+    cancellationToken,
+    onRetry: (ex, attempt, delay) =>
+        logger.LogError(ex, "Processing failed (attempt {Attempt}), retrying in {Delay}s", attempt, delay),
+    initialDelaySeconds: 5,
+    maxDelaySeconds: 300);
+```
+
+From: `RetryRunner.cs`
+
+## Non-Canonical Record Management
+
+Repository interfaces for marking records as non-canonical during reorg recovery:
+
+- `INonCanonicalBlockRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
+- `INonCanonicalTransactionRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
+- `INonCanonicalTransactionLogRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
+- `INonCanonicalTokenTransferLogRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
+- `IReorgHandler` — composite interface combining all non-canonical operations with `HandleReorgAsync(BigInteger fromBlock)`
+
+From: `BlockStorage/Repositories/INonCanonical*.cs`, `BlockStorage/Repositories/IReorgHandler.cs`
+
 ## Dependencies
 
 Required packages:
@@ -1041,16 +1253,26 @@ Required packages:
 **Progress:**
 - `ProgressRepositories/IBlockProgressRepository.cs` - Progress interface
 - `ProgressRepositories/JsonBlockProgressRepository.cs` - JSON persistence
+- `ProgressRepositories/IChainStateRepository.cs` - Chain state tracking
+- `ProgressRepositories/ReorgBufferedBlockProgressRepository.cs` - Reorg-buffered progress
 
 **Services:**
 - `Services/BlockchainProcessingService.cs` - Service entry point
 - `Services/BlockchainLogProcessingService.cs` - Log processing service
+- `Services/ChainConsistencyValidationService.cs` - Reorg detection
+- `Services/ChainStateValidationService.cs` - Chain ID validation
+- `Services/InternalTransactionPostProcessor.cs` - Trace-based internal transaction indexing
 - `Services/SmartContracts/ERC20LogProcessingService.cs` - ERC20 utilities
 - `Services/SmartContracts/ERC721LogProcessingService.cs` - ERC721 utilities
+- `Services/SmartContracts/TokenTransferLogProcessingService.cs` - Unified token transfer indexing
+- `Services/SmartContracts/TokenBalanceAggregationService.cs` - Balance aggregation from transfers
 
-## License
+**Metrics:**
+- `Metrics/ILogProcessingObserver.cs` - Observer interface
+- `Metrics/LogProcessingMetrics.cs` - OpenTelemetry metrics implementation
 
-Nethereum is licensed under the MIT License.
+**Infrastructure:**
+- `RetryRunner.cs` - Exponential backoff retry runner
 
 ## Related Packages
 

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Nethereum.JsonRpc.Client;
 #endif
 using Nethereum.BlockchainProcessing.LogProcessing;
+using Nethereum.BlockchainProcessing.Metrics;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.BlockchainProcessing.Services.SmartContracts;
@@ -281,16 +282,75 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0)
+            ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0,
+            ILogProcessingObserver observer = null)
         {
-            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight, log);
+            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight, log, observer);
 
             var progressRepository = blockProgressRepository ??
                                      new InMemoryBlockchainProgressRepository();
             var lastConfirmedBlockNumberService =
                 new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber, minimumBlockConfirmations);
 
-            return new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockNumberService, log);
+            return new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockNumberService, log, observer);
+        }
+
+        public BlockchainProcessor CreateProcessor(
+
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors,
+            uint minimumBlockConfirmations,
+            int reorgBuffer,
+            NewFilterInput filter = null,
+            IBlockProgressRepository blockProgressRepository = null,
+            ILogger log = null,
+            int defaultNumberOfBlocksPerRequest = 100,
+            int retryWeight = 0,
+            ILogProcessingObserver observer = null)
+        {
+            var progressRepository = blockProgressRepository ??
+                                     new InMemoryBlockchainProgressRepository();
+
+            if (reorgBuffer > 0)
+            {
+                progressRepository = new ReorgBufferedBlockProgressRepository(
+                    progressRepository,
+                    reorgBuffer);
+            }
+
+            var orchestrator = new LogOrchestrator(_ethApiContractService, logProcessors, filter, defaultNumberOfBlocksPerRequest, retryWeight, log, observer);
+            var lastConfirmedBlockNumberService =
+                new LastConfirmedBlockNumberService(_ethApiContractService.Blocks.GetBlockNumber, minimumBlockConfirmations);
+
+            return new BlockchainProcessor(orchestrator, progressRepository, lastConfirmedBlockNumberService, log, observer);
+        }
+
+        public BlockchainProcessor CreateProcessor(
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors,
+            uint minimumBlockConfirmations,
+            int reorgBuffer,
+            IChainStateRepository chainStateRepository,
+            NewFilterInput filter = null,
+            IBlockProgressRepository blockProgressRepository = null,
+            ILogger log = null,
+            int defaultNumberOfBlocksPerRequest = 100,
+            int retryWeight = 0,
+            ILogProcessingObserver observer = null)
+        {
+            var processor = CreateProcessor(
+                logProcessors, minimumBlockConfirmations, reorgBuffer,
+                filter, blockProgressRepository, log,
+                defaultNumberOfBlocksPerRequest, retryWeight, observer);
+
+            if (chainStateRepository != null)
+            {
+                var chainValidator = new ChainConsistencyValidationService(
+                    _ethApiContractService, chainStateRepository);
+                chainValidator.ReorgBuffer = reorgBuffer;
+                processor.ChainConsistencyValidator = chainValidator.ValidateAsync;
+                processor.ChainStateUpdater = chainValidator.UpdateChainStateAsync;
+            }
+
+            return processor;
         }
 
     }

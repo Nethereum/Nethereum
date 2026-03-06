@@ -1,5 +1,6 @@
-﻿using Nethereum.Contracts;
+using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
+using System;
 using System.Linq;
 using System.Numerics;
 
@@ -29,9 +30,12 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
         public static void Map(this TransactionLog transactionLog, FilterLog log)
         {
             transactionLog.TransactionHash = log.TransactionHash;
-            transactionLog.LogIndex = log.LogIndex?.Value.ToString();
+            transactionLog.LogIndex = (long)(log.LogIndex?.Value ?? 0);
             transactionLog.Address = log.Address;
             transactionLog.Data = log.Data;
+            transactionLog.BlockNumber = (long)(log.BlockNumber?.Value ?? 0);
+            transactionLog.BlockHash = log.BlockHash;
+            transactionLog.IsCanonical = true;
 
             transactionLog.EventHash = log.EventSignature();
             transactionLog.IndexVal1 = log.IndexedVal1();
@@ -39,24 +43,34 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             transactionLog.IndexVal3 = log.IndexedVal3();
         }
 
-        /// <summary>
-        /// Create a partially populated FilterLog from the data stored in the view
-        /// The view does not contain all fields in 
-        /// </summary>
         public static FilterLog ToFilterLog(this ITransactionLogView transactionLogView)
         {
-            return new FilterLog
+            var filterLog = new FilterLog
             {
                 TransactionHash = transactionLogView.TransactionHash,
                 Address = transactionLogView.Address,
                 Data = transactionLogView.Data,
-                LogIndex = new Hex.HexTypes.HexBigInteger(BigInteger.Parse(transactionLogView.LogIndex)),
-                Topics = new[] {transactionLogView.EventHash, 
-                                transactionLogView.IndexVal1, 
-                                transactionLogView.IndexVal2, 
-                                transactionLogView.IndexVal3}
-                    .Where(s =>! string.IsNullOrEmpty(s)).ToArray()
+                LogIndex = new Hex.HexTypes.HexBigInteger(new BigInteger(transactionLogView.LogIndex)),
+                BlockHash = transactionLogView.BlockHash,
+                BlockNumber = new Hex.HexTypes.HexBigInteger(new BigInteger(transactionLogView.BlockNumber)),
+                Topics = TrimTrailingNulls(new[] {transactionLogView.EventHash,
+                                transactionLogView.IndexVal1,
+                                transactionLogView.IndexVal2,
+                                transactionLogView.IndexVal3})
             };
+
+            return filterLog;
+        }
+
+        private static string[] TrimTrailingNulls(string[] topics)
+        {
+            int last = topics.Length - 1;
+            while (last >= 0 && string.IsNullOrEmpty(topics[last]))
+                last--;
+            if (last < 0) return new string[0];
+            var result = new string[last + 1];
+            Array.Copy(topics, result, last + 1);
+            return result;
         }
     }
 }

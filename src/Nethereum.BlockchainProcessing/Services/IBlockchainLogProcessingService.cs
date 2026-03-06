@@ -8,12 +8,14 @@ using Microsoft.Extensions.Logging;
 #else
 using Nethereum.JsonRpc.Client;
 #endif
+using Nethereum.BlockchainProcessing.Metrics;
 using Nethereum.BlockchainProcessing.Processor;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.BlockchainProcessing.Services.SmartContracts;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.Blocks;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Contracts.Services;
 
 namespace Nethereum.BlockchainProcessing.Services
 {
@@ -122,7 +124,32 @@ namespace Nethereum.BlockchainProcessing.Services
             uint minimumBlockConfirmations = LastConfirmedBlockNumberService.DEFAULT_BLOCK_CONFIRMATIONS,
             NewFilterInput filter = null,
             IBlockProgressRepository blockProgressRepository = null,
-            ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0);
+            ILogger log = null, int defaultNumberOfBlocksPerRequest = 100, int retryWeight = 0,
+            ILogProcessingObserver observer = null);
+
+        BlockchainProcessor CreateProcessor(
+
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors,
+            uint minimumBlockConfirmations,
+            int reorgBuffer,
+            NewFilterInput filter = null,
+            IBlockProgressRepository blockProgressRepository = null,
+            ILogger log = null,
+            int defaultNumberOfBlocksPerRequest = 100,
+            int retryWeight = 0,
+            ILogProcessingObserver observer = null);
+
+        BlockchainProcessor CreateProcessor(
+            IEnumerable<ProcessorHandler<FilterLog>> logProcessors,
+            uint minimumBlockConfirmations,
+            int reorgBuffer,
+            IChainStateRepository chainStateRepository,
+            NewFilterInput filter = null,
+            IBlockProgressRepository blockProgressRepository = null,
+            ILogger log = null,
+            int defaultNumberOfBlocksPerRequest = 100,
+            int retryWeight = 0,
+            ILogProcessingObserver observer = null);
 
         Task<List<EventLog<TEventDTO>>> GetAllEvents<TEventDTO>(NewFilterInput filterInput,
             BigInteger? fromBlockNumber, BigInteger? toBlockNumber, CancellationToken cancellationToken, int numberOfBlocksPerRequest = BlockchainLogProcessingService.DefaultNumberOfBlocksPerRequest,

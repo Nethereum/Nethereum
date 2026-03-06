@@ -1,19 +1,19 @@
-﻿namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
+namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
 {
     public class TransactionBase : TableRow, ITransactionView
     {
         public string BlockHash { get; set; }
-        public string BlockNumber { get; set; }
+        public long BlockNumber { get; set; }
         public string Hash { get; set; }
         public string AddressFrom  { get; set; }
-        public string TimeStamp { get; set; }
-        public string TransactionIndex { get; set; }
+        public long TimeStamp { get; set; }
+        public long TransactionIndex { get; set; }
         public string Value { get; set; }
         public string AddressTo { get;set; }
         public string Gas { get; set; }
         public string GasPrice { get;set; }
         public string Input { get; set; }
-        public string Nonce { get; set;}
+        public long Nonce { get; set;}
         public bool Failed { get; set; }
         public string ReceiptHash { get; set; }
         public string GasUsed { get;set; }
@@ -24,7 +24,13 @@
         public bool HasVmStack { get; set; }
         public string NewContractAddress { get; set; }
         public bool FailedCreateContract { get; set; }
-        public string MaxFeePerGas { get; internal set; }
-        public string MaxPriorityFeePerGas { get; internal set; }
+        public string MaxFeePerGas { get; set; }
+        public string MaxPriorityFeePerGas { get; set; }
+        public long TransactionType { get; set; }
+        public string RevertReason { get; set; }
+        public bool IsCanonical { get; set; } = true;
+        public string MaxFeePerBlobGas { get; set; }
+        public string BlobGasUsed { get; set; }
+        public string BlobGasPrice { get; set; }
     }
 }

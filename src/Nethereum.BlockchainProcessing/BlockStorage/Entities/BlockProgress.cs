@@ -1,7 +1,7 @@
-﻿namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
+namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
 {
     public class BlockProgress : TableRow
     {
-        public string LastBlockProcessed { get; set; }
+        public long LastBlockProcessed { get; set; }
     }
 }

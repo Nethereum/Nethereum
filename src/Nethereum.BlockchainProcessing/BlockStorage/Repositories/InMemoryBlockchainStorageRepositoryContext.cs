@@ -9,6 +9,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
         public List<IBlockView> Blocks = new List<IBlockView>();
         public List<IContractView> Contracts = new List<IContractView>();
         public List<ITransactionLogView> TransactionLogs = new List<ITransactionLogView>();
+        public List<IInternalTransactionView> InternalTransactions = new List<IInternalTransactionView>();
         public List<ITransactionView> Transactions = new List<ITransactionView>();
         public List<ITransactionVmStackView> VmStacks = new List<ITransactionVmStackView>();
     }

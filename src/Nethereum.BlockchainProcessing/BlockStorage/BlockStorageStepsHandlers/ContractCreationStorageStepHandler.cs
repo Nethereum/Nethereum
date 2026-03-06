@@ -14,6 +14,9 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.BlockStorageStepsHandlers
         }
         protected override Task ExecuteInternalAsync(ContractCreationVO contractCreation)
         {
+            if (contractCreation.FailedCreatingContract)
+                return Task.FromResult(0);
+
             return _contractRepository.UpsertAsync(
                 contractCreation);
         }
