@@ -428,6 +428,14 @@ public class MudExplorerService : IMudExplorerService
         }
     }
 
+    private static readonly HashSet<string> AllowedOperators = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "=", "!=", "<>", ">", "<", ">=", "<=", "LIKE", "ILIKE"
+    };
+
+    private static readonly System.Text.RegularExpressions.Regex SafeColumnName =
+        new(@"^[a-zA-Z_][a-zA-Z0-9_]*$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     private static Mud.TableRepository.TablePredicate BuildPredicate(
         List<MudQueryCondition> conditions, string? orderByField, bool orderByDesc, int page, int pageSize)
     {
@@ -440,8 +448,14 @@ public class MudExplorerService : IMudExplorerService
                 if (string.IsNullOrWhiteSpace(c.FieldName) || string.IsNullOrWhiteSpace(c.Value))
                     continue;
 
-                var value = c.Value;
+                if (!SafeColumnName.IsMatch(c.FieldName))
+                    continue;
+
                 var op = c.Operator;
+                if (!AllowedOperators.Contains(op))
+                    continue;
+
+                var value = c.Value;
                 if (string.Equals(op, "LIKE", StringComparison.OrdinalIgnoreCase))
                 {
                     op = "ILIKE";
@@ -461,7 +475,7 @@ public class MudExplorerService : IMudExplorerService
             }
         }
 
-        if (!string.IsNullOrEmpty(orderByField))
+        if (!string.IsNullOrEmpty(orderByField) && SafeColumnName.IsMatch(orderByField))
         {
             predicate.OrderByField = orderByField;
             predicate.OrderByDescending = orderByDesc;

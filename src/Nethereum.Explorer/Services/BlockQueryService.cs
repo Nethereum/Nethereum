@@ -32,6 +32,7 @@ public class BlockQueryService : IBlockQueryService
 
     public async Task<List<IBlockView>> GetLatestBlocksAsync(int count)
     {
+        count = ExplorerConstants.ClampPageSize(count);
         using var context = _contextFactory.CreateContext();
         var blocks = await context.Blocks
             .AsNoTracking()

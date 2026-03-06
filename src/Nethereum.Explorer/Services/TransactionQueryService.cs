@@ -23,6 +23,7 @@ public class TransactionQueryService : ITransactionQueryService
 
     public async Task<List<ITransactionView>> GetLatestTransactionsAsync(int count)
     {
+        count = ExplorerConstants.ClampPageSize(count);
         using var context = _contextFactory.CreateContext();
         var txs = await context.Transactions
             .AsNoTracking()
@@ -56,6 +57,7 @@ public class TransactionQueryService : ITransactionQueryService
             .AsNoTracking()
             .Where(t => t.BlockNumber == blockNumber && t.IsCanonical)
             .OrderBy(t => t.TransactionIndex)
+            .Take(500)
             .ToListAsync();
         return txs.Cast<ITransactionView>().ToList();
     }

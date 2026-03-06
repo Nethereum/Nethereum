@@ -11,7 +11,7 @@ public static class CsvExportService
         sb.AppendLine("Hash,BlockNumber,From,To,Value,Gas,GasUsed,GasPrice,Nonce,Status,Timestamp");
         foreach (var tx in transactions)
         {
-            sb.AppendLine($"\"{tx.Hash}\",\"{tx.BlockNumber}\",\"{tx.AddressFrom}\",\"{tx.AddressTo}\",\"{tx.Value}\",\"{tx.Gas}\",\"{tx.GasUsed}\",\"{tx.GasPrice}\",\"{tx.Nonce}\",\"{(tx.Failed ? "Failed" : "Success")}\",\"{ExplorerFormatUtils.FormatTimestamp(tx.TimeStamp)}\"");
+            sb.AppendLine($"{Esc(tx.Hash)},{Esc(tx.BlockNumber)},{Esc(tx.AddressFrom)},{Esc(tx.AddressTo)},{Esc(tx.Value)},{Esc(tx.Gas)},{Esc(tx.GasUsed)},{Esc(tx.GasPrice)},{Esc(tx.Nonce)},{Esc(tx.Failed ? "Failed" : "Success")},{Esc(ExplorerFormatUtils.FormatTimestamp(tx.TimeStamp))}");
         }
         return sb.ToString();
     }
@@ -22,7 +22,7 @@ public static class CsvExportService
         sb.AppendLine("Address,Name,Creator,TransactionHash");
         foreach (var c in contracts)
         {
-            sb.AppendLine($"\"{c.Address}\",\"{c.Name}\",\"{c.Creator}\",\"{c.TransactionHash}\"");
+            sb.AppendLine($"{Esc(c.Address)},{Esc(c.Name)},{Esc(c.Creator)},{Esc(c.TransactionHash)}");
         }
         return sb.ToString();
     }
@@ -33,8 +33,17 @@ public static class CsvExportService
         sb.AppendLine("BlockNumber,Hash,Miner,GasUsed,GasLimit,TransactionCount,Timestamp");
         foreach (var block in blocks)
         {
-            sb.AppendLine($"\"{block.BlockNumber}\",\"{block.Hash}\",\"{block.Miner}\",\"{block.GasUsed}\",\"{block.GasLimit}\",\"{block.TransactionCount}\",\"{ExplorerFormatUtils.FormatTimestamp(block.TimeStamp)}\"");
+            sb.AppendLine($"{Esc(block.BlockNumber)},{Esc(block.Hash)},{Esc(block.Miner)},{Esc(block.GasUsed)},{Esc(block.GasLimit)},{Esc(block.TransactionCount)},{Esc(ExplorerFormatUtils.FormatTimestamp(block.TimeStamp))}");
         }
         return sb.ToString();
+    }
+
+    private static string Esc(object? value)
+    {
+        var s = value?.ToString() ?? "";
+        s = s.Replace("\"", "\"\"");
+        if (s.Length > 0 && (s[0] == '=' || s[0] == '+' || s[0] == '-' || s[0] == '@'))
+            s = "'" + s;
+        return $"\"{s}\"";
     }
 }

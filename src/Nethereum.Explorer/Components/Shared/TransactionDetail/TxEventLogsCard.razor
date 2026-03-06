@@ -9,7 +9,8 @@
             @for (int i = 0; i < Logs.Count; i++)
             {
                 var log = Logs[i];
-                var decoded = i < DecodedLogs.Count ? DecodedLogs[i] : null;
+                var logIndex = log.LogIndex.ToString();
+                var decoded = DecodedLogs.FirstOrDefault(d => d.LogIndex == logIndex);
                 <EventLogEntry Log="log" Decoded="decoded" />
             }
         </div>
