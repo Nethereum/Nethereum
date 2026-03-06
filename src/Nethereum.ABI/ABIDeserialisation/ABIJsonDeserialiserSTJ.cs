@@ -84,6 +84,7 @@ namespace Nethereum.ABI.ABIDeserialisation
             if (constructorElement != null && constructorElement.Type == "constructor")
             {
                 var constructorABI = new ConstructorABI();
+                constructorABI.StateMutability = constructorElement.StateMutability;
                 constructorABI.InputParameters = MapParameters(constructorElement.Inputs).ToArray();
                 return constructorABI;
             }
@@ -130,6 +131,7 @@ namespace Nethereum.ABI.ABIDeserialisation
             }
 
             var functionABI = new FunctionABI(functionElement.Name, constant);
+            functionABI.StateMutability = functionElement.StateMutability;
             functionABI.InputParameters = MapParameters(functionElement.Inputs).ToArray();
             functionABI.OutputParameters = MapParameters(functionElement.Outputs).ToArray();
             return functionABI;

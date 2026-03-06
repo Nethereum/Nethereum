@@ -20,6 +20,8 @@ namespace Nethereum.ABI.ABIDeserialisation
         public ConstructorABI BuildConstructor(IDictionary<string, object> constructor)
         {
             var constructorABI = new ConstructorABI();
+            if (constructor.ContainsKey("stateMutability"))
+                constructorABI.StateMutability = (string)constructor["stateMutability"];
             constructorABI.InputParameters = BuildFunctionParameters((List<object>) constructor["inputs"]);
             return constructorABI;
         }
@@ -99,6 +101,8 @@ namespace Nethereum.ABI.ABIDeserialisation
 
             var functionABI = new FunctionABI((string) function["name"], constant,
                 TryGetSerpentValue(function));
+            if (function.ContainsKey("stateMutability"))
+                functionABI.StateMutability = (string)function["stateMutability"];
             functionABI.InputParameters = BuildFunctionParameters((List<object>) function["inputs"]);
             functionABI.OutputParameters = BuildFunctionParameters((List<object>) function["outputs"]);
             return functionABI;

@@ -20,6 +20,8 @@ namespace Nethereum.ABI.Model
 
         public bool Constant { get; private set; }
 
+        public string StateMutability { get; set; }
+
         public string Name { get; }
 
         public Parameter[] InputParameters { get; set; }

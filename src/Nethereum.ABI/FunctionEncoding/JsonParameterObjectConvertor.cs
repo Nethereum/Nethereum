@@ -33,17 +33,15 @@ namespace Nethereum.ABI.FunctionEncoding
 
         private static void AddJTokenValueInputParameters(List<object> inputParameters, ABIType abiType, JToken jToken)
         {
-            var tupleAbi = abiType as TupleType;
-            if (tupleAbi != null)
+            if (abiType is TupleType tupleAbi)
             {
-                var tupleValue = jToken;
-                inputParameters.Add(ConvertToFunctionInputParameterValues(tupleValue, tupleAbi.Components));
+                inputParameters.Add(ConvertToFunctionInputParameterValues(jToken ?? new JObject(), tupleAbi.Components));
+                return;
             }
 
-            var arrayAbi = abiType as ArrayType;
-            if (arrayAbi != null)
+            if (abiType is ArrayType arrayAbi)
             {
-                var array = (JArray)jToken;
+                var array = jToken as JArray ?? new JArray();
                 var elementType = arrayAbi.ElementType;
                 var arrayOutput = new List<object>();
                 foreach (var element in array)
@@ -51,27 +49,33 @@ namespace Nethereum.ABI.FunctionEncoding
                     AddJTokenValueInputParameters(arrayOutput, elementType, element);
                 }
                 inputParameters.Add(arrayOutput);
+                return;
             }
 
             if (abiType is Bytes32Type || abiType is BytesType)
             {
-                var bytes = jToken.ToObject<string>().HexToByteArray();
-                inputParameters.Add(bytes);
+                var hex = jToken?.ToString();
+                inputParameters.Add(string.IsNullOrEmpty(hex) ? new byte[0] : hex.HexToByteArray());
+                return;
             }
 
             if (abiType is StringType || abiType is AddressType)
             {
-                inputParameters.Add(jToken.ToObject<string>());
+                inputParameters.Add(jToken?.ToString() ?? "");
+                return;
             }
 
             if (abiType is IntType)
             {
-                inputParameters.Add(BigInteger.Parse(jToken.ToObject<string>()));
+                var str = jToken?.ToString();
+                inputParameters.Add(string.IsNullOrEmpty(str) ? BigInteger.Zero : BigInteger.Parse(str));
+                return;
             }
 
             if (abiType is BoolType)
             {
-                inputParameters.Add(jToken.ToObject<bool>());
+                inputParameters.Add(jToken != null && jToken.Type == JTokenType.Boolean ? jToken.Value<bool>() : false);
+                return;
             }
         }
     }
