@@ -24,8 +24,8 @@ namespace Nethereum.Merkle
             IHashProvider hashProvider,
             PairingConcatType pairingConcatType = PairingConcatType.Sorted)
         {
-            if (depth < 1 || depth > 32)
-                throw new ArgumentOutOfRangeException(nameof(depth), "Depth must be between 1 and 32");
+            if (depth < 1 || depth > 30)
+                throw new ArgumentOutOfRangeException(nameof(depth), "Depth must be between 1 and 30");
             _depth = depth;
             _hashProvider = hashProvider ?? throw new ArgumentNullException(nameof(hashProvider));
             _pairConcatStrategy = PairingConcatFactory.GetPairConcatStrategy(pairingConcatType);
@@ -43,7 +43,8 @@ namespace Nethereum.Merkle
                 _filledSubtrees[i] = _zeros[i];
             }
 
-            Root = _zeros[_depth - 1];
+            // Root of a fully empty tree is one more level above _zeros[depth-1]
+            Root = HashPair(_zeros[_depth - 1], _zeros[_depth - 1]);
             _nextIndex = 0;
         }
 

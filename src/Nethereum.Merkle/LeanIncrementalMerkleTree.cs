@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 #endif
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Nethereum.Merkle.StrategyOptions.PairingConcat;
 using Nethereum.Util.ByteArrayConvertors;
@@ -20,7 +21,7 @@ namespace Nethereum.Merkle
         private readonly IByteArrayConvertor<T> _byteArrayConvertor;
         private readonly IPairConcatStrategy _pairConcatStrategy;
         private List<List<byte[]>> _layers = new List<List<byte[]>>();
-        public List<T> Leaves => _leaves;
+        public IReadOnlyList<T> Leaves => _leaves;
 
         public byte[] Root { get; private set; }
 
@@ -315,7 +316,14 @@ namespace Nethereum.Merkle
                     proofNodes.Add(_layers[level][siblingIdx]);
                 idx /= 2;
             }
-            return new MerkleProof { ProofNodes = proofNodes };
+            var pathIndices = new List<int>();
+            int pathIdx = leafIndex;
+            for (int level = 0; level < _layers.Count - 1; level++)
+            {
+                pathIndices.Add(pathIdx % 2);
+                pathIdx /= 2;
+            }
+            return new MerkleProof { ProofNodes = proofNodes, PathIndices = pathIndices };
         }
 
         public bool VerifyProof(MerkleProof proof, T leaf, byte[] root)
@@ -324,9 +332,14 @@ namespace Nethereum.Merkle
             if (leaf == null) throw new ArgumentNullException(nameof(leaf));
             if (root == null) throw new ArgumentNullException(nameof(root));
             var computedHash = _hashProvider.ComputeHash(_byteArrayConvertor.ConvertToByteArray(leaf));
-            foreach (var node in proof.ProofNodes)
+            for (int i = 0; i < proof.ProofNodes.Count; i++)
             {
-                computedHash = HashPair(computedHash, node);
+                var node = proof.ProofNodes[i];
+                // PathIndices[i] == 0 means current hash is on the left
+                if (proof.PathIndices != null && i < proof.PathIndices.Count && proof.PathIndices[i] == 1)
+                    computedHash = HashPair(node, computedHash);
+                else
+                    computedHash = HashPair(computedHash, node);
             }
             return computedHash.SequenceEqual(root);
         }
