@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Nethereum.BlockchainStore.EFCore;
-using Nethereum.Microsoft.Configuration.Utils;
 
 namespace Nethereum.BlockchainStore.Postgres
 {
@@ -9,26 +7,10 @@ namespace Nethereum.BlockchainStore.Postgres
     {
         private readonly string _connectionString;
 
-        public PostgresBlockchainDbContext() : this(GetConnectionString())
-        {
-        }
-
         public PostgresBlockchainDbContext(string connectionString)
         {
             ColumnTypeForUnlimitedText = "text";
             _connectionString = connectionString;
-        }
-
-        private static string GetConnectionString()
-        {
-            var config = ConfigurationUtils.Build();
-            var connectionString = config.GetConnectionString("PostgresConnection");
-            if (!string.IsNullOrWhiteSpace(connectionString))
-            {
-                return connectionString;
-            }
-
-            return config.GetBlockchainStorageConnectionString();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
