@@ -107,6 +107,16 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        public virtual void ShouldEncodeInt128()
+        {
+            var functionCallEncoder = new FunctionCallEncoder();
+            var sha3Signature = "c6888fa1";
+            var inputsParameters = new[] {CreateParam("int128", "a")};
+            var result = functionCallEncoder.EncodeRequest(sha3Signature, inputsParameters, (Int128)69);
+            Assert.Equal("0xc6888fa10000000000000000000000000000000000000000000000000000000000000045", result);
+		}
+
+        [Fact]
         public virtual void ShouldEncodeMultipleTypes()
         {
             var functionCallEncoder = new FunctionCallEncoder();

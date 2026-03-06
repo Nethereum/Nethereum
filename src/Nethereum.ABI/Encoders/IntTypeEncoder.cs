@@ -40,6 +40,12 @@ namespace Nethereum.ABI.Encoders
                 bigInt = intTypeDecoder.Decode<BigInteger>(stringValue);
             else if (value is BigInteger)
                 bigInt = (BigInteger)value;
+#if NET7_0_OR_GREATER
+            else if (value is Int128)
+                bigInt = (BigInteger)(Int128)value;
+			else if (value is UInt128)
+                bigInt = (BigInteger)(UInt128)value;
+#endif
             else if (value.IsNumber())
                 bigInt = BigInteger.Parse(value.ToString());
             else if (value is Enum)
