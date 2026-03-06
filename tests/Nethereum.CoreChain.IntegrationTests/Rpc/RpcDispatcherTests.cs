@@ -542,7 +542,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.NotNull(response.Error);
-            Assert.Equal(-32000, response.Error.Code);
+            Assert.Equal(-32602, response.Error.Code);
         }
 
         [Fact]
