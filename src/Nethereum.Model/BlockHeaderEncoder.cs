@@ -62,59 +62,35 @@ namespace Nethereum.Model
         public byte[] EncodeCliqueSigHeader(BlockHeader header, bool legacyMode = false)
         {
             var fields = new List<byte[]>(GetBaseFieldsCliqueSig(header));
-
-            if (!legacyMode && header.BaseFee != null)
-            {
-                fields.Add(header.BaseFee.Value.ToBytesForRLPEncoding());
-
-                if (header.WithdrawalsRoot != null)
-                {
-                    fields.Add(header.WithdrawalsRoot);
-
-                    if (header.ParentBeaconBlockRoot != null)
-                    {
-                        fields.Add((header.BlobGasUsed ?? 0).ToBytesForRLPEncoding());
-                        fields.Add((header.ExcessBlobGas ?? 0).ToBytesForRLPEncoding());
-                        fields.Add(header.ParentBeaconBlockRoot);
-
-                        if (header.RequestsHash != null)
-                        {
-                            fields.Add(header.RequestsHash);
-                        }
-                    }
-                }
-            }
-
+            AppendPostLondonFields(fields, header, legacyMode);
             return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(fields.ToArray());
         }
 
         public byte[] Encode(BlockHeader header, bool legacyMode = false)
         {
             var fields = new List<byte[]>(GetBaseFields(header));
-
-            if (!legacyMode && header.BaseFee != null)
-            {
-                fields.Add(header.BaseFee.Value.ToBytesForRLPEncoding());
-
-                if (header.WithdrawalsRoot != null)
-                {
-                    fields.Add(header.WithdrawalsRoot);
-
-                    if (header.ParentBeaconBlockRoot != null)
-                    {
-                        fields.Add((header.BlobGasUsed ?? 0).ToBytesForRLPEncoding());
-                        fields.Add((header.ExcessBlobGas ?? 0).ToBytesForRLPEncoding());
-                        fields.Add(header.ParentBeaconBlockRoot);
-
-                        if (header.RequestsHash != null)
-                        {
-                            fields.Add(header.RequestsHash);
-                        }
-                    }
-                }
-            }
-
+            AppendPostLondonFields(fields, header, legacyMode);
             return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(fields.ToArray());
+        }
+
+        private static void AppendPostLondonFields(List<byte[]> fields, BlockHeader header, bool legacyMode)
+        {
+            if (legacyMode || header.BaseFee == null) return;
+
+            fields.Add(header.BaseFee.Value.ToBytesForRLPEncoding());
+
+            if (header.WithdrawalsRoot == null) return;
+            fields.Add(header.WithdrawalsRoot);
+
+            if (header.ParentBeaconBlockRoot == null) return;
+            fields.Add((header.BlobGasUsed ?? 0).ToBytesForRLPEncoding());
+            fields.Add((header.ExcessBlobGas ?? 0).ToBytesForRLPEncoding());
+            fields.Add(header.ParentBeaconBlockRoot);
+
+            if (header.RequestsHash != null)
+            {
+                fields.Add(header.RequestsHash);
+            }
         }
 
         public BlockHeader Decode(byte[] rawdata, bool legacyMode = false)

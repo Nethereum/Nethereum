@@ -53,7 +53,10 @@ namespace Nethereum.Model
             {
                 var decoder = GetTransactionTypeDecoder((TransactionType) rlp[0]);
                 var tx = decoder.DecodeAsGeneric(rlp);
-                tx.OriginalRlpEncoded = rlp;
+                // Clone to prevent external mutation of the cached original encoding
+                var rlpCopy = new byte[rlp.Length];
+                Array.Copy(rlp, rlpCopy, rlp.Length);
+                tx.OriginalRlpEncoded = rlpCopy;
                 return tx;
             }
             else

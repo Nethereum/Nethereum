@@ -32,7 +32,7 @@ namespace Nethereum.Model
 
         public static bool IsTypedTransaction(this byte? value)
         {
-            return value != null && Enum.IsDefined(typeof(TransactionType), (int)value) && value >= 1 && value <= 127;
+            return value != null && value >= 1 && value <= 127 && Enum.IsDefined(typeof(TransactionType), (int)value);
         }
     }
 }
