@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<PropertyGroup>
+		<Description>SQL Server-specific DI registration for the Nethereum blockchain indexer hosted services.</Description>
+		<AssemblyTitle>Nethereum.BlockchainStorage.Processors.SqlServer</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>Nethereum.BlockchainStorage.Processors.SqlServer</AssemblyName>
+		<PackageId>Nethereum.BlockchainStorage.Processors.SqlServer</PackageId>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.BlockchainStorage.Processors\Nethereum.BlockchainStorage.Processors.csproj" />
+		<ProjectReference Include="..\Nethereum.BlockchainStore.SqlServer\Nethereum.BlockchainStore.SqlServer.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>
