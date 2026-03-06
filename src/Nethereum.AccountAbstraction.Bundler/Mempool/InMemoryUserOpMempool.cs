@@ -66,10 +66,10 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
 
         public Task<MempoolEntry[]> GetPendingAsync(int maxCount, BigInteger? maxGas = null)
         {
+            var currentTimestamp = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var pending = _entries.Values
                 .Where(e => e.State == MempoolEntryState.Pending)
-                .Where(e => !e.ValidAfter.HasValue || e.ValidAfter.Value <= (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                .Where(e => !e.ValidUntil.HasValue || e.ValidUntil.Value > (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                .Where(e => Validation.ValidationDataHelper.IsValidAtTime(e.ValidAfter, e.ValidUntil, currentTimestamp))
                 .OrderByDescending(e => e.Priority)
                 .ThenBy(e => e.SubmittedAt);
 

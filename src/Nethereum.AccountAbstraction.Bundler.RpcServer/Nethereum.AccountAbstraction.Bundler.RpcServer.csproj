@@ -1,16 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
-    <Description>Nethereum AccountAbstraction SimpleAccount - ERC-4337 SimpleAccount factory and wallet contract interactions</Description>
-    <AssemblyTitle>Nethereum.AccountAbstraction.SimpleAccount</AssemblyTitle>
+    <Description>Nethereum AccountAbstraction Bundler RpcServer - Standalone ERC-4337 bundler JSON-RPC server</Description>
+    <AssemblyTitle>Nethereum.AccountAbstraction.Bundler.RpcServer</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <TargetFrameworks>$(AppChainFrameworks)</TargetFrameworks>
-    <AssemblyName>Nethereum.AccountAbstraction.SimpleAccount</AssemblyName>
-    <PackageId>Nethereum.AccountAbstraction.SimpleAccount</PackageId>
+    <TargetFramework>$(ServerFrameworks)</TargetFramework>
+    <AssemblyName>Nethereum.AccountAbstraction.Bundler.RpcServer</AssemblyName>
+    <PackageId>Nethereum.AccountAbstraction.Bundler.RpcServer</PackageId>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Nethereum.AccountAbstraction.Bundler.RpcServer</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,10 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
     <ProjectReference Include="..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>
-
   <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>

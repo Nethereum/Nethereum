@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Nethereum.AccountAbstraction.Bundler.RpcServer": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:55487;http://localhost:55488"
+    }
+  }
+}

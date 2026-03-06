@@ -4,7 +4,7 @@
     <Description>Nethereum Account Abstraction Bundler RocksDB - Persistent storage for ERC-4337 bundler mempool and reputation</Description>
     <AssemblyTitle>Nethereum.AccountAbstraction.Bundler.RocksDB</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.AccountAbstraction.Bundler.RocksDB</AssemblyName>
     <PackageId>Nethereum.AccountAbstraction.Bundler.RocksDB</PackageId>
     <ImplicitUsings>enable</ImplicitUsings>

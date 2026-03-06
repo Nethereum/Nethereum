@@ -2,11 +2,20 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <Description>Nethereum AccountAbstraction Bundler - ERC-4337 bundler with UserOperation validation, mempool, gas estimation, and bundle submission</Description>
+    <AssemblyTitle>Nethereum.AccountAbstraction.Bundler</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>$(AppChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.AccountAbstraction.Bundler</AssemblyName>
+    <PackageId>Nethereum.AccountAbstraction.Bundler</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>ERC-4337 Bundler implementation for Nethereum - process and submit UserOperations</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
@@ -15,6 +24,14 @@
     <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
     <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

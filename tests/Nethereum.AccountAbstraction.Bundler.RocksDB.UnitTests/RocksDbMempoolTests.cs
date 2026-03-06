@@ -34,7 +34,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.UnitTests
             return new MempoolEntry
             {
                 UserOpHash = userOpHash,
-                EntryPoint = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+                EntryPoint = "0x433709009B8330FDa32311DF1C2AFA402eD8D009", // v0.9
                 UserOperation = new PackedUserOperation
                 {
                     Sender = sender,
