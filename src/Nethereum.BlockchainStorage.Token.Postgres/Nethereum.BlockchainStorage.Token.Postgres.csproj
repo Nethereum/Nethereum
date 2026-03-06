@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+	<PropertyGroup>
+		<Description>Nethereum.BlockchainStorage.Token.Postgres provides EF Postgres repositories and processing services for token transfer log indexing and balance aggregation (ERC20, ERC721, ERC1155)</Description>
+		<AssemblyTitle>Nethereum.BlockchainStorage.Token.Postgres</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' != ''">
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup>
+		<AssemblyName>Nethereum.BlockchainStorage.Token.Postgres</AssemblyName>
+		<PackageId>Nethereum.BlockchainStorage.Token.Postgres</PackageId>
+		<PackageTags>Nethereum;Ethereum;Blockchain;Token;ERC20;ERC721;ERC1155;Postgres</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.4,9)" />
+		<PackageReference Include="EFCore.NamingConventions" Version="[8.0.3,9)" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="[8.0.8,9)" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,9)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="[8.0.0,9)" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+		<PackageReference Include="EFCore.NamingConventions" Version="10.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" PrivateAssets="all" />
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<None Include="..\..\NethereumKey.snk" />
+	</ItemGroup>
+
+</Project>

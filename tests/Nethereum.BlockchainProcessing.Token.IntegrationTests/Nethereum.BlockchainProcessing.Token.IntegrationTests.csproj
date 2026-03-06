@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.BlockchainProcessing.Token.IntegrationTests - E2E tests for Token Processing Pipeline</Description>
+    <Authors>JuanFran</Authors>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Nethereum.BlockchainProcessing.Token.IntegrationTests</AssemblyName>
+    <PackageId>Nethereum.BlockchainProcessing.Token.IntegrationTests</PackageId>
+    <IsPackable>false</IsPackable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
