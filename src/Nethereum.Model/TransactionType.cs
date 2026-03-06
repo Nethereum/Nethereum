@@ -8,6 +8,7 @@ namespace Nethereum.Model
         LegacyChainTransaction = -2,
         LegacyEIP2930 = 0X01,
         EIP1559 = 0X02,
+        Blob = 0x03,
         EIP7702 = 0X04
     }
 
@@ -31,7 +32,7 @@ namespace Nethereum.Model
 
         public static bool IsTypedTransaction(this byte? value)
         {
-            return value != null && value == TransactionType.EIP1559.AsByte();
+            return value != null && Enum.IsDefined(typeof(TransactionType), (int)value) && value >= 1 && value <= 127;
         }
     }
 }

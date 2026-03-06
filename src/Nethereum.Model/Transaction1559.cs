@@ -48,7 +48,7 @@ namespace Nethereum.Model
 
         public override byte[] GetRLPEncoded()
         {
-            return Transaction1559Encoder.Current.Encode(this);
+            return OriginalRlpEncoded ?? Transaction1559Encoder.Current.Encode(this);
         }
 
         public override byte[] GetRLPEncodedRaw()

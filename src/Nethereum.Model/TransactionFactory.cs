@@ -52,7 +52,9 @@ namespace Nethereum.Model
             if (rlp.IsTypeTransaction())
             {
                 var decoder = GetTransactionTypeDecoder((TransactionType) rlp[0]);
-                return decoder.DecodeAsGeneric(rlp);
+                var tx = decoder.DecodeAsGeneric(rlp);
+                tx.OriginalRlpEncoded = rlp;
+                return tx;
             }
             else
             {

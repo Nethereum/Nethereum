@@ -27,5 +27,10 @@ namespace Nethereum.Model
         public byte[] ExtraData { get; set; }
         public byte[] Nonce { get; set; }
         public BigInteger? BaseFee { get; set; }
+        public byte[] WithdrawalsRoot { get; set; }
+        public long? BlobGasUsed { get; set; }
+        public long? ExcessBlobGas { get; set; }
+        public byte[] ParentBeaconBlockRoot { get; set; }
+        public byte[] RequestsHash { get; set; }
     }
 }

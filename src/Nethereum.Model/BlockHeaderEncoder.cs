@@ -1,4 +1,5 @@
-﻿using System.Linq;
+using System.Collections.Generic;
+using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
@@ -9,39 +10,31 @@ namespace Nethereum.Model
     {
         public static BlockHeaderEncoder Current { get; } = new BlockHeaderEncoder();
 
-
-        public byte[] EncodeCliqueSigHeaderAndHash(BlockHeader header, bool legacyMode = false)
+        private byte[][] GetBaseFields(BlockHeader header)
         {
-            return new Util.Sha3Keccack().CalculateHash(EncodeCliqueSigHeader(header, legacyMode));
+            return new byte[][]
+            {
+                header.ParentHash,
+                header.UnclesHash,
+                header.Coinbase.HexToByteArray(),
+                header.StateRoot,
+                header.TransactionsHash,
+                header.ReceiptHash,
+                header.LogsBloom,
+                header.Difficulty.ToBytesForRLPEncoding(),
+                header.BlockNumber.ToBytesForRLPEncoding(),
+                header.GasLimit.ToBytesForRLPEncoding(),
+                header.GasUsed.ToBytesForRLPEncoding(),
+                header.Timestamp.ToBytesForRLPEncoding(),
+                header.ExtraData,
+                header.MixHash,
+                header.Nonce
+            };
         }
 
-        public byte[] EncodeCliqueSigHeader(BlockHeader header, bool legacyMode = false)
+        private byte[][] GetBaseFieldsCliqueSig(BlockHeader header)
         {
-            if (!legacyMode && header.BaseFee != null)
-            {
-                return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][]
-                    {
-                        header.ParentHash,
-                        header.UnclesHash,
-                        header.Coinbase.HexToByteArray(),
-                        header.StateRoot,
-                        header.TransactionsHash,
-                        header.ReceiptHash,
-                        header.LogsBloom,
-                        header.Difficulty.ToBytesForRLPEncoding(),
-                        header.BlockNumber.ToBytesForRLPEncoding(),
-                        header.GasLimit.ToBytesForRLPEncoding(),
-                        header.GasUsed.ToBytesForRLPEncoding(),
-                        header.Timestamp.ToBytesForRLPEncoding(),
-                        header.ExtraData.Take(header.ExtraData.Length - 65).ToArray(),
-                        header.MixHash,
-                        header.Nonce,
-                        header.BaseFee.Value.ToBytesForRLPEncoding()
-                    }
-                );
-            }
-
-            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][]
+            return new byte[][]
             {
                 header.ParentHash,
                 header.UnclesHash,
@@ -58,54 +51,70 @@ namespace Nethereum.Model
                 header.ExtraData.Take(header.ExtraData.Length - 65).ToArray(),
                 header.MixHash,
                 header.Nonce
-            });
+            };
+        }
+
+        public byte[] EncodeCliqueSigHeaderAndHash(BlockHeader header, bool legacyMode = false)
+        {
+            return new Util.Sha3Keccack().CalculateHash(EncodeCliqueSigHeader(header, legacyMode));
+        }
+
+        public byte[] EncodeCliqueSigHeader(BlockHeader header, bool legacyMode = false)
+        {
+            var fields = new List<byte[]>(GetBaseFieldsCliqueSig(header));
+
+            if (!legacyMode && header.BaseFee != null)
+            {
+                fields.Add(header.BaseFee.Value.ToBytesForRLPEncoding());
+
+                if (header.WithdrawalsRoot != null)
+                {
+                    fields.Add(header.WithdrawalsRoot);
+
+                    if (header.ParentBeaconBlockRoot != null)
+                    {
+                        fields.Add((header.BlobGasUsed ?? 0).ToBytesForRLPEncoding());
+                        fields.Add((header.ExcessBlobGas ?? 0).ToBytesForRLPEncoding());
+                        fields.Add(header.ParentBeaconBlockRoot);
+
+                        if (header.RequestsHash != null)
+                        {
+                            fields.Add(header.RequestsHash);
+                        }
+                    }
+                }
+            }
+
+            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(fields.ToArray());
         }
 
         public byte[] Encode(BlockHeader header, bool legacyMode = false)
         {
+            var fields = new List<byte[]>(GetBaseFields(header));
+
             if (!legacyMode && header.BaseFee != null)
             {
-                return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][]
+                fields.Add(header.BaseFee.Value.ToBytesForRLPEncoding());
+
+                if (header.WithdrawalsRoot != null)
+                {
+                    fields.Add(header.WithdrawalsRoot);
+
+                    if (header.ParentBeaconBlockRoot != null)
                     {
-                        header.ParentHash,
-                        header.UnclesHash,
-                        header.Coinbase.HexToByteArray(),
-                        header.StateRoot,
-                        header.TransactionsHash,
-                        header.ReceiptHash,
-                        header.LogsBloom,
-                        header.Difficulty.ToBytesForRLPEncoding(),
-                        header.BlockNumber.ToBytesForRLPEncoding(),
-                        header.GasLimit.ToBytesForRLPEncoding(),
-                        header.GasUsed.ToBytesForRLPEncoding(),
-                        header.Timestamp.ToBytesForRLPEncoding(),
-                        header.ExtraData,
-                        header.MixHash,
-                        header.Nonce,
-                        header.BaseFee.Value.ToBytesForRLPEncoding()
+                        fields.Add((header.BlobGasUsed ?? 0).ToBytesForRLPEncoding());
+                        fields.Add((header.ExcessBlobGas ?? 0).ToBytesForRLPEncoding());
+                        fields.Add(header.ParentBeaconBlockRoot);
+
+                        if (header.RequestsHash != null)
+                        {
+                            fields.Add(header.RequestsHash);
+                        }
                     }
-                );
+                }
             }
 
-            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(new byte[][]
-                {
-                    header.ParentHash,
-                    header.UnclesHash,
-                    header.Coinbase.HexToByteArray(),
-                    header.StateRoot,
-                    header.TransactionsHash,
-                    header.ReceiptHash,
-                    header.LogsBloom,
-                    header.Difficulty.ToBytesForRLPEncoding(),
-                    header.BlockNumber.ToBytesForRLPEncoding(),
-                    header.GasLimit.ToBytesForRLPEncoding(),
-                    header.GasUsed.ToBytesForRLPEncoding(),
-                    header.Timestamp.ToBytesForRLPEncoding(),
-                    header.ExtraData,
-                    header.MixHash,
-                    header.Nonce
-                }
-            );
+            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(fields.ToArray());
         }
 
         public BlockHeader Decode(byte[] rawdata, bool legacyMode = false)
@@ -129,9 +138,35 @@ namespace Nethereum.Model
             blockHeader.ExtraData = decodedElements[12].RLPData;
             blockHeader.MixHash = decodedElements[13].RLPData;
             blockHeader.Nonce = decodedElements[14].RLPData;
-            if (!legacyMode)
+
+            if (legacyMode) return blockHeader;
+
+            var count = decodedElements.Count;
+
+            // London (16 fields)
+            if (count >= 16)
             {
                 blockHeader.BaseFee = decodedElements[15].RLPData.ToBigIntegerFromRLPDecoded();
+            }
+
+            // Shanghai (17 fields)
+            if (count >= 17)
+            {
+                blockHeader.WithdrawalsRoot = decodedElements[16].RLPData;
+            }
+
+            // Cancun (20 fields)
+            if (count >= 20)
+            {
+                blockHeader.BlobGasUsed = decodedElements[17].RLPData.ToLongFromRLPDecoded();
+                blockHeader.ExcessBlobGas = decodedElements[18].RLPData.ToLongFromRLPDecoded();
+                blockHeader.ParentBeaconBlockRoot = decodedElements[19].RLPData;
+            }
+
+            // Prague (21 fields)
+            if (count >= 21)
+            {
+                blockHeader.RequestsHash = decodedElements[20].RLPData;
             }
 
             return blockHeader;

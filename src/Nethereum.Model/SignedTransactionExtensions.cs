@@ -8,6 +8,8 @@ namespace Nethereum.Model
     {
         public static string GetReceiverAddress(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.ReceiverAddress;
             if (tx is Transaction1559 tx1559)
                 return tx1559.ReceiverAddress;
             if (tx is Transaction2930 tx2930)
@@ -21,6 +23,8 @@ namespace Nethereum.Model
 
         public static byte[] GetData(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.Data?.HexToByteArray();
             if (tx is Transaction1559 tx1559)
                 return tx1559.Data?.HexToByteArray();
             if (tx is Transaction2930 tx2930)
@@ -34,6 +38,8 @@ namespace Nethereum.Model
 
         public static BigInteger GetValue(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.Amount ?? BigInteger.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.Amount ?? BigInteger.Zero;
             if (tx is Transaction2930 tx2930)
@@ -47,6 +53,8 @@ namespace Nethereum.Model
 
         public static BigInteger GetGasLimit(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.GasLimit ?? 21000;
             if (tx is Transaction1559 tx1559)
                 return tx1559.GasLimit ?? 21000;
             if (tx is Transaction2930 tx2930)
@@ -60,6 +68,8 @@ namespace Nethereum.Model
 
         public static BigInteger GetNonce(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.Nonce ?? BigInteger.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.Nonce ?? BigInteger.Zero;
             if (tx is Transaction2930 tx2930)
@@ -73,6 +83,8 @@ namespace Nethereum.Model
 
         public static BigInteger GetMaxFeePerGas(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.MaxFeePerGas ?? BigInteger.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.MaxFeePerGas ?? BigInteger.Zero;
             if (tx is Transaction2930 tx2930)
@@ -86,6 +98,8 @@ namespace Nethereum.Model
 
         public static BigInteger GetMaxPriorityFeePerGas(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.MaxPriorityFeePerGas ?? BigInteger.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.MaxPriorityFeePerGas ?? BigInteger.Zero;
             return BigInteger.Zero;
@@ -93,6 +107,8 @@ namespace Nethereum.Model
 
         public static BigInteger GetChainId(this ISignedTransaction tx)
         {
+            if (tx is Transaction7702 tx7702)
+                return tx7702.ChainId;
             if (tx is Transaction1559 tx1559)
                 return tx1559.ChainId;
             if (tx is Transaction2930 tx2930)
