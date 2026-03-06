@@ -1,0 +1,35 @@
+@using Nethereum.EVM.Debugging
+
+<div class="solidity-debug-layout">
+    <DebugControlBar Session="Session" IsRevert="IsRevert" OnStepChanged="OnStepChangedAsync" />
+    <DebugOpcodeList @ref="_opcodeList" Session="Session" OnStepChanged="OnStepChangedAsync" />
+    <DebugSourcePanel @ref="_sourcePanel" Session="Session" HasSourceMaps="HasSourceMaps"
+                      SourceFiles="SourceFiles" FileContents="FileContents"
+                      Theme="@(Theme ?? "nethereum-dark")" />
+    <DebugStatePanel Session="Session" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EVMDebuggerSession Session { get; set; } = null!;
+    [Parameter] public bool IsRevert { get; set; }
+    [Parameter] public bool HasSourceMaps { get; set; }
+    [Parameter] public List<string> SourceFiles { get; set; } = new();
+    [Parameter] public Dictionary<string, string> FileContents { get; set; } = new();
+    [Parameter] public string? Theme { get; set; }
+
+    private DebugSourcePanel? _sourcePanel;
+    private DebugOpcodeList? _opcodeList;
+
+    private async Task OnStepChangedAsync()
+    {
+        if (_sourcePanel != null)
+        {
+            await _sourcePanel.UpdateSourceLocationAsync();
+        }
+        if (_opcodeList != null)
+        {
+            await _opcodeList.ScrollToStepAsync(Session.CurrentStep);
+        }
+        StateHasChanged();
+    }
+}

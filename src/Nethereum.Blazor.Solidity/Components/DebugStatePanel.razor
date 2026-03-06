@@ -1,0 +1,215 @@
+@using Nethereum.ABI.FunctionEncoding
+@using Nethereum.EVM.Debugging
+
+<div class="solidity-debug-state-panel">
+    <div class="solidity-debug-state-tabs">
+        <button class="solidity-debug-state-tab @(_activeTab == "stack" ? "active" : "")"
+                @onclick='() => _activeTab = "stack"'>Stack</button>
+        <button class="solidity-debug-state-tab @(_activeTab == "memory" ? "active" : "")"
+                @onclick='() => _activeTab = "memory"'>Memory</button>
+        <button class="solidity-debug-state-tab @(_activeTab == "storage" ? "active" : "")"
+                @onclick='() => _activeTab = "storage"'>Storage</button>
+        <button class="solidity-debug-state-tab @(_activeTab == "callinfo" ? "active" : "")"
+                @onclick='() => _activeTab = "callinfo"'>Call Info</button>
+    </div>
+
+    <div class="solidity-debug-state-content">
+        @if (_activeTab == "stack")
+        {
+            @if (Session.CurrentStack != null && Session.CurrentStack.Any())
+            {
+                @for (int i = 0; i < Session.CurrentStack.Count; i++)
+                {
+                    <div class="solidity-debug-stack-item">
+                        <span class="solidity-debug-stack-index">@i</span>
+                        <span class="solidity-debug-stack-value">@Session.CurrentStack[i]</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="solidity-debug-state-empty">Stack is empty</div>
+            }
+        }
+        else if (_activeTab == "memory")
+        {
+            @if (!string.IsNullOrEmpty(Session.CurrentMemory))
+            {
+                var trace = Session.CurrentTrace;
+                @if (trace?.MemoryAsArray != null && trace.MemoryAsArray.Any())
+                {
+                    var offset = 0;
+                    @foreach (var chunk in trace.MemoryAsArray)
+                    {
+                        <div class="solidity-debug-memory-row">
+                            <span class="solidity-debug-memory-offset">0x@(offset.ToString("X4"))</span>
+                            <span class="solidity-debug-memory-hex">@chunk</span>
+                        </div>
+                        offset += 32;
+                    }
+                }
+                else
+                {
+                    <div class="solidity-debug-memory-row">
+                        <span class="solidity-debug-memory-hex">@Session.CurrentMemory</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="solidity-debug-state-empty">Memory is empty</div>
+            }
+        }
+        else if (_activeTab == "storage")
+        {
+            @if (Session.CurrentStorage != null && Session.CurrentStorage.Any())
+            {
+                @foreach (var kvp in Session.CurrentStorage)
+                {
+                    <div class="solidity-debug-storage-item">
+                        <div class="solidity-debug-storage-key">@kvp.Key</div>
+                        <div class="solidity-debug-storage-value">@kvp.Value</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="solidity-debug-state-empty">No storage accessed</div>
+            }
+        }
+        else if (_activeTab == "callinfo")
+        {
+            <div class="solidity-debug-call-row">
+                <span class="solidity-debug-call-label">Contract</span>
+                <span class="solidity-debug-call-value" style="color: var(--primary-color, #64ffda);">@(Session.GetCurrentContractName() ?? "Unknown")</span>
+            </div>
+            <div class="solidity-debug-call-row">
+                <span class="solidity-debug-call-label">Code</span>
+                <span class="solidity-debug-call-value">@(Session.CurrentCodeAddress ?? "\u2014")</span>
+            </div>
+            <div class="solidity-debug-call-row">
+                <span class="solidity-debug-call-label">Caller</span>
+                <span class="solidity-debug-call-value">@(Session.CurrentProgramAddress ?? "\u2014")</span>
+            </div>
+            <div class="solidity-debug-call-row">
+                <span class="solidity-debug-call-label">Depth</span>
+                <span class="solidity-debug-call-value">@Session.CurrentDepth</span>
+            </div>
+            <div class="solidity-debug-call-row">
+                <span class="solidity-debug-call-label">Gas Cost</span>
+                <span class="solidity-debug-call-value">@Session.CurrentGasCost</span>
+            </div>
+            @if (Session.CurrentTrace != null)
+            {
+                <div class="solidity-debug-call-row">
+                    <span class="solidity-debug-call-label">Gas Left</span>
+                    <span class="solidity-debug-call-value">@Session.CurrentTrace.GasRemaining</span>
+                </div>
+                <div class="solidity-debug-call-row">
+                    <span class="solidity-debug-call-label">Opcode</span>
+                    <span class="solidity-debug-call-value">@(Session.CurrentInstruction?.Instruction?.ToString() ?? "\u2014")</span>
+                </div>
+                <div class="solidity-debug-call-row">
+                    <span class="solidity-debug-call-label">PC</span>
+                    <span class="solidity-debug-call-value">@(Session.CurrentInstruction?.StepAsHex() ?? "\u2014")</span>
+                </div>
+            }
+            @if (GetCurrentCallInfo() is { } callInfo)
+            {
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);">
+                    <div class="solidity-debug-call-row">
+                        <span class="solidity-debug-call-label">Call Type</span>
+                        <span class="solidity-debug-call-value" style="color: var(--purple-color, #a855f7);">@callInfo.CallType</span>
+                    </div>
+                    <div class="solidity-debug-call-row">
+                        <span class="solidity-debug-call-label">Target</span>
+                        <span class="solidity-debug-call-value">
+                            @if (!string.IsNullOrEmpty(callInfo.ContractName))
+                            {
+                                <span style="color: var(--primary-color, #64ffda);">@callInfo.ContractName</span>
+                                <span style="color: var(--text-dim, #8892b0); font-size: 0.65rem; margin-left: 4px;">@callInfo.TargetAddress</span>
+                            }
+                            else
+                            {
+                                @callInfo.TargetAddress
+                            }
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(callInfo.FunctionName))
+                    {
+                        <div class="solidity-debug-call-row">
+                            <span class="solidity-debug-call-label">Function</span>
+                            <span class="solidity-debug-call-value" style="color: #ffcb6b;">@callInfo.FunctionName</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(callInfo.Selector))
+                    {
+                        <div class="solidity-debug-call-row">
+                            <span class="solidity-debug-call-label">Selector</span>
+                            <span class="solidity-debug-call-value">@callInfo.Selector</span>
+                        </div>
+                    }
+                    @if (callInfo.DecodedInputs != null && callInfo.DecodedInputs.Any())
+                    {
+                        <div class="solidity-debug-params-section">
+                            <div class="solidity-debug-params-title">Parameters</div>
+                            @foreach (var param in callInfo.DecodedInputs)
+                            {
+                                <div class="solidity-debug-param-row">
+                                    <div class="solidity-debug-param-header">
+                                        <span class="solidity-debug-param-name">@(param.Parameter.Name ?? $"param{param.Parameter.Order}")</span>
+                                        <span class="solidity-debug-param-type">@param.Parameter.Type</span>
+                                    </div>
+                                    <div class="solidity-debug-param-value">@FormatParamValue(param)</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(callInfo.RawCalldata) && callInfo.RawCalldata.Length > 8)
+                    {
+                        <div class="solidity-debug-params-section">
+                            <div class="solidity-debug-params-title">Raw Calldata</div>
+                            <div class="solidity-debug-param-value" style="font-size: 0.68rem; opacity: 0.7;">
+                                0x@callInfo.RawCalldata
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EVMDebuggerSession Session { get; set; } = null!;
+
+    private string _activeTab = "stack";
+
+    private CallStepInfo? GetCurrentCallInfo() => Session?.GetCallInfoForStep(Session.CurrentStep);
+
+    private static string FormatParamValue(ParameterOutput param)
+    {
+        if (param.Result == null) return "null";
+
+        if (param.Result is byte[] bytes)
+            return "0x" + Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.ToHex(bytes);
+
+        if (param.Result is System.Numerics.BigInteger bi)
+            return bi.ToString();
+
+        if (param.Result is System.Collections.IEnumerable enumerable && param.Result is not string)
+        {
+            var items = new System.Collections.Generic.List<string>();
+            foreach (var item in enumerable)
+            {
+                if (item is byte[] b)
+                    items.Add("0x" + Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.ToHex(b));
+                else
+                    items.Add(item?.ToString() ?? "null");
+            }
+            return "[" + string.Join(", ", items) + "]";
+        }
+
+        return param.Result.ToString() ?? "null";
+    }
+}

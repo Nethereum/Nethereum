@@ -1,0 +1,188 @@
+@using Microsoft.JSInterop
+@using Nethereum.EVM
+@using Nethereum.EVM.Debugging
+@inject IJSRuntime JS
+
+<div class="solidity-debug-opcode-panel">
+    <div class="solidity-debug-opcode-header">
+        <span>Opcodes</span>
+        <button class="solidity-debug-filter-toggle @(_showCallsOnly ? "active" : "")"
+                @onclick="ToggleCallsOnly"
+                title="Show calls and events only">
+            <i class="bi bi-funnel"></i>
+            @if (_showCallsOnly)
+            {
+                <span>@_callItems.Count</span>
+            }
+        </button>
+    </div>
+    <div class="solidity-debug-opcode-list" id="@_listId">
+        @foreach (var item in _displayItems)
+        {
+            @if (item.IsGroupStart && !string.IsNullOrEmpty(item.GroupLabel))
+            {
+                <div class="solidity-debug-opcode-group-header">
+                    <span class="solidity-debug-opcode-group-label">@(item.GroupLabel)()</span>
+                </div>
+            }
+            else if (item.IsGroupStart)
+            {
+                <div class="solidity-debug-opcode-group-header"></div>
+            }
+            <div class="solidity-debug-opcode-row @(item.Index == Session.CurrentStep ? "solidity-debug-opcode-active" : "")"
+                 style="@GetDepthStyle(item.Trace)"
+                 data-step="@item.Index"
+                 @onclick="() => JumpToStep(item.Index)">
+                <span class="solidity-debug-opcode-step">@item.Index</span>
+                <span class="solidity-debug-opcode-pc">@(item.Trace.Instruction?.StepAsHex(false) ?? "")</span>
+                <span class="solidity-debug-opcode-name">@(item.Trace.Instruction?.Instruction?.ToString() ?? "?")</span>
+                @if (!string.IsNullOrEmpty(item.ContractName))
+                {
+                    <span class="solidity-debug-opcode-contract">@item.ContractName</span>
+                }
+                @if (item.CallInfo != null)
+                {
+                    <span class="solidity-debug-opcode-call">@("\u2192") @FormatCallInfo(item.CallInfo)</span>
+                }
+                else
+                {
+                    <span class="solidity-debug-opcode-gas">@item.Trace.GasCost</span>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EVMDebuggerSession Session { get; set; } = null!;
+    [Parameter] public EventCallback OnStepChanged { get; set; }
+
+    private string _listId = $"opcode-list-{Guid.NewGuid():N}";
+    private List<TraceItem> _traceItems = new();
+    private List<TraceItem> _callItems = new();
+    private bool _showCallsOnly;
+    private IJSObjectReference? _jsModule;
+
+    private List<TraceItem> _displayItems => _showCallsOnly ? _callItems : _traceItems;
+
+    private static readonly HashSet<Instruction> _interactionOpcodes = new()
+    {
+        Instruction.CALL,
+        Instruction.STATICCALL,
+        Instruction.DELEGATECALL,
+        Instruction.CALLCODE,
+        Instruction.CREATE,
+        Instruction.CREATE2,
+        Instruction.RETURN,
+        Instruction.REVERT,
+        Instruction.SSTORE,
+        Instruction.SLOAD,
+        Instruction.LOG0,
+        Instruction.LOG1,
+        Instruction.LOG2,
+        Instruction.LOG3,
+        Instruction.LOG4,
+    };
+
+    public async Task ScrollToStepAsync(int step)
+    {
+        _jsModule ??= await JS.InvokeAsync<IJSObjectReference>("import",
+            "./_content/Nethereum.Blazor.Solidity/solidity-monaco-interop.js");
+        await _jsModule.InvokeVoidAsync("scrollOpcodeList", _listId, step);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Session?.Trace != null && _traceItems.Count != Session.Trace.Count)
+        {
+            string prevFunc = null;
+            string prevAddr = null;
+            _traceItems = Session.Trace.Select((t, i) =>
+            {
+                var item = new TraceItem { Index = i, Trace = t };
+                item.ContractName = Session.GetContractNameForAddress(t.CodeAddress);
+                item.CallInfo = Session.GetCallInfoForStep(i);
+                item.FunctionName = Session.GetFunctionNameForStep(i);
+
+                var currentAddr = t.CodeAddress?.ToLowerInvariant();
+                var funcChanged = item.FunctionName != prevFunc || currentAddr != prevAddr;
+                if (funcChanged && !string.IsNullOrEmpty(item.FunctionName))
+                {
+                    item.IsGroupStart = true;
+                    item.IsFunctionEntry = true;
+                    item.GroupLabel = !string.IsNullOrEmpty(item.ContractName)
+                        ? $"{item.ContractName}.{item.FunctionName}"
+                        : item.FunctionName;
+                }
+                else if (funcChanged && item.FunctionName == null && prevFunc != null)
+                {
+                    item.IsGroupStart = true;
+                }
+
+                prevFunc = item.FunctionName;
+                prevAddr = currentAddr;
+                return item;
+            }).ToList();
+
+            _callItems = _traceItems.Where(t =>
+            {
+                if (t.IsGroupStart) return true;
+                var op = t.Trace.Instruction?.Instruction;
+                return op.HasValue && _interactionOpcodes.Contains(op.Value);
+            }).ToList();
+        }
+    }
+
+    private async Task JumpToStep(int step)
+    {
+        Session.GoToStep(step);
+        await ScrollToStepAsync(step);
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private void ToggleCallsOnly()
+    {
+        _showCallsOnly = !_showCallsOnly;
+    }
+
+    private string GetDepthStyle(ProgramTrace trace)
+    {
+        if (trace.Depth > 0)
+            return $"padding-left: {8 + trace.Depth * 12}px;";
+        return "";
+    }
+
+    private string FormatCallInfo(CallStepInfo info)
+    {
+        if (!string.IsNullOrEmpty(info.FunctionName))
+        {
+            var target = info.ContractName ?? TruncateAddress(info.TargetAddress);
+            return $"{target}.{info.FunctionName}()";
+        }
+        if (!string.IsNullOrEmpty(info.Selector))
+        {
+            var target = info.ContractName ?? TruncateAddress(info.TargetAddress);
+            return $"{target}[{info.Selector}]";
+        }
+        return info.CallType;
+    }
+
+    private static string TruncateAddress(string address)
+    {
+        if (string.IsNullOrEmpty(address) || address.Length < 10)
+            return address ?? "";
+        return address[..6] + "..." + address[^4..];
+    }
+
+    private class TraceItem
+    {
+        public int Index { get; set; }
+        public ProgramTrace Trace { get; set; } = null!;
+        public string? ContractName { get; set; }
+        public CallStepInfo? CallInfo { get; set; }
+        public string? FunctionName { get; set; }
+        public bool IsFunctionEntry { get; set; }
+        public bool IsGroupStart { get; set; }
+        public string? GroupLabel { get; set; }
+    }
+}

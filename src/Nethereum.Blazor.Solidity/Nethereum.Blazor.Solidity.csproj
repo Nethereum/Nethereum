@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+	<PropertyGroup>
+		<Description>Solidity source viewer and EVM transaction debugger Blazor components with Monaco editor integration.</Description>
+		<AssemblyTitle>Nethereum.Blazor.Solidity</AssemblyTitle>
+		<Version>$(NethereumVersion)</Version>
+		<TargetFramework>net10.0</TargetFramework>
+		<PackageId>Nethereum.Blazor.Solidity</PackageId>
+		<PackageTags>Nethereum;Solidity;Monaco;Debugger;EVM;Blazor</PackageTags>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
+		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+	</ItemGroup>
+
+</Project>

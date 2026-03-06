@@ -1,0 +1,165 @@
+@using Nethereum.EVM.Debugging
+@using Nethereum.EVM.SourceInfo
+
+<div class="solidity-debug-source-panel">
+    @if (_sourceFiles.Any())
+    {
+        <div class="solidity-debug-source-tabs">
+            @foreach (var file in _sourceFiles)
+            {
+                var shortName = GetShortFileName(file);
+                <button class="solidity-debug-file-tab @(file == _selectedFile ? "active" : "")"
+                        @onclick="() => SwitchFile(file)"
+                        title="@file">
+                    <i class="bi bi-file-earmark-code me-1"></i>@shortName
+                </button>
+            }
+        </div>
+        <SolidityCodeViewer @ref="_viewer"
+                            Content="@_initialContent"
+                            Theme="@Theme"
+                            MinHeight="300"
+                            OnInitialized="OnViewerInitializedAsync" />
+    }
+    else
+    {
+        <div class="solidity-debug-no-source">
+            <div>
+                <i class="bi bi-info-circle d-block mb-2"></i>
+                <div>No source maps available.</div>
+                <div class="mt-1" style="font-size:0.8rem;">Verify your contract on Sourcify to enable source-level debugging.</div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EVMDebuggerSession Session { get; set; } = null!;
+    [Parameter] public bool HasSourceMaps { get; set; }
+    [Parameter] public List<string> SourceFiles { get; set; } = new();
+    [Parameter] public Dictionary<string, string> FileContents { get; set; } = new();
+    [Parameter] public string Theme { get; set; } = "nethereum-dark";
+
+    private SolidityCodeViewer? _viewer;
+    private List<string> _sourceFiles = new();
+    private string _selectedFile = "";
+    private string _initialContent = "";
+    private bool _modelsRegistered;
+
+    protected override void OnParametersSet()
+    {
+        _sourceFiles = SourceFiles;
+        if (_sourceFiles.Any() && string.IsNullOrEmpty(_selectedFile))
+        {
+            _selectedFile = _sourceFiles[0];
+            if (FileContents.TryGetValue(_selectedFile, out var content))
+                _initialContent = content;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_viewer != null && !_modelsRegistered && _viewer.IsInitialized && FileContents.Any())
+        {
+            _modelsRegistered = true;
+            foreach (var kvp in FileContents)
+            {
+                await _viewer.RegisterFileAsync(kvp.Key, kvp.Value);
+            }
+            if (!string.IsNullOrEmpty(_selectedFile))
+            {
+                await _viewer.SwitchToFileAsync(_selectedFile);
+            }
+        }
+    }
+
+    private async Task OnViewerInitializedAsync()
+    {
+        if (_viewer != null && !_modelsRegistered && FileContents.Any())
+        {
+            _modelsRegistered = true;
+            foreach (var kvp in FileContents)
+            {
+                await _viewer.RegisterFileAsync(kvp.Key, kvp.Value);
+            }
+            if (!string.IsNullOrEmpty(_selectedFile))
+            {
+                await _viewer.SwitchToFileAsync(_selectedFile);
+            }
+        }
+    }
+
+    public async Task UpdateSourceLocationAsync()
+    {
+        if (Session == null || _viewer == null) return;
+
+        var location = Session.GetNearestSourceLocation(Session.CurrentStep);
+
+        var functionName = Session.GetFunctionNameForStep(Session.CurrentStep);
+        if (!string.IsNullOrEmpty(functionName) && !functionName.StartsWith("0x"))
+        {
+            if (location == null || location.Length > 500)
+            {
+                var (filePath, lineNumber) = FindFunctionInFileContents(functionName);
+                if (filePath != null)
+                {
+                    if (filePath != _selectedFile && _sourceFiles.Contains(filePath))
+                    {
+                        _selectedFile = filePath;
+                        await _viewer.SwitchToFileAsync(_selectedFile);
+                        StateHasChanged();
+                    }
+                    await _viewer.HighlightLineAsync(lineNumber);
+                    return;
+                }
+            }
+        }
+
+        if (location != null)
+        {
+            if (location.FilePath != _selectedFile && _sourceFiles.Contains(location.FilePath))
+            {
+                _selectedFile = location.FilePath;
+                await _viewer.SwitchToFileAsync(_selectedFile);
+                StateHasChanged();
+            }
+            await _viewer.HighlightLineAsync(location.LineNumber);
+        }
+        else
+        {
+            await _viewer.ClearHighlightsAsync();
+        }
+    }
+
+    private (string? filePath, int lineNumber) FindFunctionInFileContents(string functionName)
+    {
+        var pattern = "function " + functionName + "(";
+        foreach (var kvp in FileContents)
+        {
+            var lines = kvp.Value.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].TrimStart().Contains(pattern))
+                    return (kvp.Key, i + 1);
+            }
+        }
+        return (null, -1);
+    }
+
+    private async Task SwitchFile(string filePath)
+    {
+        if (filePath == _selectedFile) return;
+        _selectedFile = filePath;
+        if (_viewer != null)
+        {
+            await _viewer.SwitchToFileAsync(filePath);
+            await _viewer.ClearHighlightsAsync();
+        }
+    }
+
+    private static string GetShortFileName(string path)
+    {
+        var idx = path.LastIndexOfAny(new[] { '/', '\\' });
+        return idx >= 0 ? path[(idx + 1)..] : path;
+    }
+}

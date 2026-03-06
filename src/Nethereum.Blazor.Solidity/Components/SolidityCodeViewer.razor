@@ -1,0 +1,107 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div id="@_editorId" class="solidity-debug-monaco" style="min-height: @(MinHeight)px;"></div>
+
+@code {
+    [Parameter] public string Content { get; set; } = "";
+    [Parameter] public string? FileName { get; set; }
+    [Parameter] public int? HighlightLine { get; set; }
+    [Parameter] public string Theme { get; set; } = "nethereum-dark";
+    [Parameter] public int MinHeight { get; set; } = 400;
+    [Parameter] public EventCallback OnInitialized { get; set; }
+
+    private string _editorId = $"monaco-{Guid.NewGuid():N}";
+    private IJSObjectReference? _module;
+    private bool _initialized;
+    private string? _lastContent;
+
+    public string EditorId => _editorId;
+    public bool IsInitialized => _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>(
+                "import", "/_content/Nethereum.Blazor.Solidity/solidity-monaco-interop.js");
+            await _module.InvokeVoidAsync("initMonaco", _editorId, Content, "solidity", Theme);
+            await _module.InvokeVoidAsync("observeTheme");
+            _initialized = true;
+            _lastContent = Content;
+
+            if (OnInitialized.HasDelegate)
+                await OnInitialized.InvokeAsync();
+
+            if (HighlightLine.HasValue && HighlightLine.Value > 0)
+            {
+                await _module.InvokeVoidAsync("highlightLine", _editorId, HighlightLine.Value);
+                await _module.InvokeVoidAsync("revealLine", _editorId, HighlightLine.Value);
+            }
+        }
+        else if (_initialized && _module != null)
+        {
+            if (Content != _lastContent)
+            {
+                await _module.InvokeVoidAsync("setContent", _editorId, Content);
+                _lastContent = Content;
+            }
+
+            if (HighlightLine.HasValue && HighlightLine.Value > 0)
+            {
+                await _module.InvokeVoidAsync("highlightLine", _editorId, HighlightLine.Value);
+                await _module.InvokeVoidAsync("revealLine", _editorId, HighlightLine.Value);
+            }
+            else
+            {
+                await _module.InvokeVoidAsync("clearHighlights", _editorId);
+            }
+        }
+    }
+
+    public async Task RegisterFileAsync(string filePath, string content)
+    {
+        if (_module != null && _initialized)
+        {
+            await _module.InvokeVoidAsync("registerFile", _editorId, filePath, content);
+        }
+    }
+
+    public async Task SwitchToFileAsync(string filePath)
+    {
+        if (_module != null && _initialized)
+        {
+            await _module.InvokeVoidAsync("switchToFile", _editorId, filePath);
+        }
+    }
+
+    public async Task HighlightLineAsync(int lineNumber)
+    {
+        if (_module != null && _initialized)
+        {
+            await _module.InvokeVoidAsync("highlightLine", _editorId, lineNumber);
+            await _module.InvokeVoidAsync("revealLine", _editorId, lineNumber);
+        }
+    }
+
+    public async Task ClearHighlightsAsync()
+    {
+        if (_module != null && _initialized)
+        {
+            await _module.InvokeVoidAsync("clearHighlights", _editorId);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module != null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("dispose", _editorId);
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+        }
+    }
+}

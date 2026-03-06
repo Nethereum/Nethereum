@@ -1,0 +1,527 @@
+/* EVM Debugger Layout — inherits Explorer theme via CSS variables */
+.solidity-debug-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    height: calc(100vh - 160px);
+    min-height: 500px;
+    border: 1px solid var(--card-border, #233554);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.solidity-debug-controls {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--card-bg, #112240);
+    border-bottom: 1px solid var(--card-border, #233554);
+    flex-wrap: wrap;
+}
+
+.solidity-debug-controls .btn {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.solidity-debug-step-info {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a8b2d1);
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.solidity-debug-step-info .step-counter {
+    color: var(--text-primary, #e2e8f0);
+}
+
+.solidity-debug-step-info .gas-info {
+    color: var(--primary-color, #64ffda);
+}
+
+.solidity-debug-step-input {
+    width: 80px;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    font-family: monospace;
+    background: var(--input-bg, #1e2a47);
+    color: var(--input-color, #e2e8f0);
+    border: 1px solid var(--input-border, #233554);
+    border-radius: 4px;
+}
+
+/* Opcode List Panel */
+.solidity-debug-opcode-panel {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--card-border, #233554);
+    background: var(--dark-blue, #0a192f);
+}
+
+.solidity-debug-opcode-header {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary, #a8b2d1);
+    border-bottom: 1px solid var(--card-border, #233554);
+    background: var(--card-bg, #112240);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.solidity-debug-opcode-list {
+    overflow-y: auto;
+    flex: 1;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+}
+
+.solidity-debug-opcode-row {
+    display: flex;
+    align-items: center;
+    padding: 1px 8px;
+    cursor: pointer;
+    color: var(--text-primary, #e2e8f0);
+    border-left: 3px solid transparent;
+    transition: background 0.1s ease;
+}
+
+.solidity-debug-opcode-row:hover {
+    background: var(--primary-dim, rgba(100, 255, 218, 0.1));
+}
+
+.solidity-debug-opcode-active {
+    background: rgba(100, 255, 218, 0.22) !important;
+    border-left: 4px solid var(--primary-color, #64ffda) !important;
+    color: var(--text-primary, #e2e8f0);
+    font-weight: 600;
+    box-shadow: inset 0 0 12px rgba(100, 255, 218, 0.08);
+}
+
+[data-theme="light"] .solidity-debug-opcode-active {
+    background: rgba(13, 148, 136, 0.18) !important;
+    border-left: 4px solid var(--primary-color, #0d9488) !important;
+    box-shadow: inset 0 0 12px rgba(13, 148, 136, 0.06);
+}
+
+.solidity-debug-opcode-step {
+    width: 48px;
+    color: var(--text-dim, #8892b0);
+    flex-shrink: 0;
+}
+
+.solidity-debug-opcode-pc {
+    width: 52px;
+    color: var(--text-dim, #8892b0);
+    flex-shrink: 0;
+}
+
+.solidity-debug-opcode-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.solidity-debug-opcode-gas {
+    width: 40px;
+    text-align: right;
+    color: var(--text-dim, #8892b0);
+    flex-shrink: 0;
+}
+
+.solidity-debug-opcode-contract {
+    font-size: 0.65rem;
+    color: var(--primary-color, #64ffda);
+    opacity: 0.7;
+    margin-left: 4px;
+    flex-shrink: 0;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.solidity-debug-opcode-call {
+    font-size: 0.68rem;
+    color: var(--purple-color, #a855f7);
+    margin-left: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+
+.solidity-debug-opcode-group-header {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    background: var(--card-bg, #112240);
+    border-top: 1px solid var(--card-border, #233554);
+    border-bottom: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);
+    min-height: 4px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.solidity-debug-opcode-group-header::before {
+    content: '\25B8';
+    color: var(--text-dim, #8892b0);
+    margin-right: 6px;
+    font-size: 0.6rem;
+}
+
+.solidity-debug-opcode-group-label {
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #ffcb6b;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+[data-theme="light"] .solidity-debug-opcode-group-header {
+    background: #f8fafc;
+    border-top-color: #e2e8f0;
+}
+
+[data-theme="light"] .solidity-debug-opcode-group-label {
+    color: #b45309;
+}
+
+.solidity-debug-opcode-depth {
+    padding-left: calc(var(--depth, 0) * 12px);
+}
+
+/* Source Panel */
+.solidity-debug-source-panel {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--dark-blue, #0a192f);
+}
+
+/* File tabs */
+.solidity-debug-source-tabs {
+    display: flex;
+    overflow-x: auto;
+    background: var(--card-bg, #112240);
+    border-bottom: 1px solid var(--card-border, #233554);
+    scrollbar-width: thin;
+}
+
+.solidity-debug-file-tab {
+    padding: 5px 14px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--text-secondary, #a8b2d1);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-right: 1px solid var(--card-border, #233554);
+    white-space: nowrap;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    display: flex;
+    align-items: center;
+}
+
+.solidity-debug-file-tab:hover {
+    color: var(--text-primary, #e2e8f0);
+    background: var(--primary-dim, rgba(100, 255, 218, 0.1));
+}
+
+.solidity-debug-file-tab.active {
+    color: var(--primary-color, #64ffda);
+    border-bottom-color: var(--primary-color, #64ffda);
+    background: var(--dark-blue, #0a192f);
+}
+
+.solidity-debug-source-header {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--card-border, #233554);
+    background: var(--card-bg, #112240);
+}
+
+.solidity-debug-source-header select {
+    flex: 1;
+    font-size: 0.75rem;
+    font-family: monospace;
+    background: var(--input-bg, #1e2a47);
+    color: var(--input-color, #e2e8f0);
+    border: 1px solid var(--input-border, #233554);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.solidity-debug-monaco {
+    flex: 1;
+    min-height: 0;
+}
+
+.solidity-debug-no-source {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 32px;
+    text-align: center;
+    color: var(--text-secondary, #a8b2d1);
+}
+
+.solidity-debug-no-source i {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    color: var(--text-dim, #8892b0);
+}
+
+/* State Panel */
+.solidity-debug-state-panel {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--card-border, #233554);
+    background: var(--dark-blue, #0a192f);
+}
+
+.solidity-debug-state-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--card-border, #233554);
+    background: var(--card-bg, #112240);
+}
+
+.solidity-debug-state-tab {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--text-secondary, #a8b2d1);
+    border-bottom: 2px solid transparent;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+}
+
+.solidity-debug-state-tab:hover {
+    color: var(--text-primary, #e2e8f0);
+}
+
+.solidity-debug-state-tab.active {
+    color: var(--primary-color, #64ffda);
+    border-bottom-color: var(--primary-color, #64ffda);
+}
+
+.solidity-debug-state-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.solidity-debug-state-empty {
+    color: var(--text-dim, #8892b0);
+    text-align: center;
+    padding: 24px;
+    font-style: italic;
+}
+
+/* Stack items */
+.solidity-debug-stack-item {
+    display: flex;
+    padding: 2px 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);
+}
+
+.solidity-debug-stack-index {
+    width: 28px;
+    color: var(--text-dim, #8892b0);
+    flex-shrink: 0;
+}
+
+.solidity-debug-stack-value {
+    word-break: break-all;
+    color: var(--text-primary, #e2e8f0);
+}
+
+/* Memory rows */
+.solidity-debug-memory-row {
+    display: flex;
+    padding: 1px 4px;
+}
+
+.solidity-debug-memory-offset {
+    width: 52px;
+    color: var(--primary-color, #64ffda);
+    flex-shrink: 0;
+}
+
+.solidity-debug-memory-hex {
+    word-break: break-all;
+    color: var(--text-primary, #e2e8f0);
+}
+
+/* Storage rows */
+.solidity-debug-storage-item {
+    padding: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);
+}
+
+.solidity-debug-storage-key {
+    color: var(--primary-color, #64ffda);
+    font-size: 0.7rem;
+    word-break: break-all;
+}
+
+.solidity-debug-storage-value {
+    color: var(--text-primary, #e2e8f0);
+    word-break: break-all;
+    margin-top: 2px;
+}
+
+/* Call info */
+.solidity-debug-call-row {
+    display: flex;
+    padding: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);
+}
+
+.solidity-debug-call-label {
+    width: 80px;
+    color: var(--text-secondary, #a8b2d1);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+}
+
+.solidity-debug-call-value {
+    color: var(--text-primary, #e2e8f0);
+    word-break: break-all;
+}
+
+/* Monaco execution line decorations */
+.solidity-debug-current-line {
+    background: var(--primary-dim, rgba(100, 255, 218, 0.1)) !important;
+    border-left: 3px solid var(--primary-color, #64ffda);
+}
+
+.solidity-debug-glyph-arrow {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2364ffda' d='M5 3l6 5-6 5z'/%3E%3C/svg%3E") center center no-repeat;
+    background-size: 14px;
+}
+
+/* Revert indicator */
+.solidity-debug-revert {
+    color: var(--danger-color, #ef4444);
+    font-weight: 600;
+}
+
+/* Filter toggle */
+.solidity-debug-filter-toggle {
+    background: none;
+    border: 1px solid var(--card-border, #233554);
+    color: var(--text-dim, #8892b0);
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+}
+
+.solidity-debug-filter-toggle:hover {
+    color: var(--text-primary, #e2e8f0);
+    border-color: var(--text-secondary, #a8b2d1);
+}
+
+.solidity-debug-filter-toggle.active {
+    color: var(--primary-color, #64ffda);
+    border-color: var(--primary-color, #64ffda);
+    background: rgba(100, 255, 218, 0.1);
+}
+
+/* Decoded parameters */
+.solidity-debug-params-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);
+}
+
+.solidity-debug-params-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-secondary, #a8b2d1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.solidity-debug-param-row {
+    display: flex;
+    flex-direction: column;
+    padding: 3px 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--card-border, #233554), transparent 50%);
+}
+
+.solidity-debug-param-header {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+
+.solidity-debug-param-name {
+    color: #ffcb6b;
+    font-size: 0.72rem;
+}
+
+.solidity-debug-param-type {
+    color: var(--text-dim, #8892b0);
+    font-size: 0.65rem;
+}
+
+.solidity-debug-param-value {
+    color: var(--text-primary, #e2e8f0);
+    word-break: break-all;
+    font-size: 0.72rem;
+    margin-top: 1px;
+    padding-left: 4px;
+}
+
+/* Responsive: collapse to stacked on narrow screens */
+@media (max-width: 1200px) {
+    .solidity-debug-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 300px 300px 300px;
+        height: auto;
+    }
+
+    .solidity-debug-opcode-panel,
+    .solidity-debug-state-panel {
+        border-right: none;
+        border-left: none;
+        border-top: 1px solid var(--card-border, #233554);
+    }
+}

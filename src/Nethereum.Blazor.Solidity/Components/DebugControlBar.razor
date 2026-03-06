@@ -1,0 +1,94 @@
+@using Nethereum.EVM.Debugging
+
+<div class="solidity-debug-controls">
+    <button class="btn btn-outline-info btn-sm" @onclick="GoToStart" disabled="@(!Session.CanStepBack)" title="Go to start">
+        <i class="bi bi-skip-backward-fill"></i>
+    </button>
+    <button class="btn btn-outline-info btn-sm" @onclick="StepBack" disabled="@(!Session.CanStepBack)" title="Step back">
+        <i class="bi bi-caret-left-fill"></i>
+    </button>
+    <button class="btn btn-outline-info btn-sm" @onclick="PrevSourceLine" disabled="@(!Session.CanStepBack)" title="Previous source line">
+        <i class="bi bi-skip-start-fill"></i>
+    </button>
+    <button class="btn btn-outline-info btn-sm" @onclick="NextSourceLine" disabled="@(!Session.CanStepForward)" title="Next source line">
+        <i class="bi bi-skip-end-fill"></i>
+    </button>
+    <button class="btn btn-outline-info btn-sm" @onclick="StepForward" disabled="@(!Session.CanStepForward)" title="Step forward">
+        <i class="bi bi-caret-right-fill"></i>
+    </button>
+    <button class="btn btn-outline-info btn-sm" @onclick="GoToEnd" disabled="@(!Session.CanStepForward)" title="Go to end">
+        <i class="bi bi-skip-forward-fill"></i>
+    </button>
+
+    <input type="number" class="solidity-debug-step-input" min="0" max="@(Session.TotalSteps - 1)"
+           @bind="_stepInput" @bind:event="oninput" />
+    <button class="btn btn-outline-secondary btn-sm" @onclick="GoToInputStep" title="Go to step">Go</button>
+
+    <div class="solidity-debug-step-info">
+        @if (IsRevert)
+        {
+            <span class="solidity-debug-revert"><i class="bi bi-x-octagon me-1"></i>REVERTED</span>
+        }
+        <span class="step-counter">Step @(Session.CurrentStep + 1) / @Session.TotalSteps</span>
+        @if (Session.CurrentTrace != null)
+        {
+            <span class="gas-info">Gas: @Session.CurrentGasCost</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EVMDebuggerSession Session { get; set; } = null!;
+    [Parameter] public bool IsRevert { get; set; }
+    [Parameter] public EventCallback OnStepChanged { get; set; }
+
+    private int _stepInput;
+
+    private async Task GoToStart()
+    {
+        Session.GoToStart();
+        _stepInput = Session.CurrentStep;
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private async Task StepBack()
+    {
+        Session.StepBack();
+        _stepInput = Session.CurrentStep;
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private async Task PrevSourceLine()
+    {
+        Session.StepToPreviousSourceLine();
+        _stepInput = Session.CurrentStep;
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private async Task NextSourceLine()
+    {
+        Session.StepToNextSourceLine();
+        _stepInput = Session.CurrentStep;
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private async Task StepForward()
+    {
+        Session.StepForward();
+        _stepInput = Session.CurrentStep;
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private async Task GoToEnd()
+    {
+        Session.GoToEnd();
+        _stepInput = Session.CurrentStep;
+        await OnStepChanged.InvokeAsync();
+    }
+
+    private async Task GoToInputStep()
+    {
+        Session.GoToStep(_stepInput);
+        await OnStepChanged.InvokeAsync();
+    }
+}
