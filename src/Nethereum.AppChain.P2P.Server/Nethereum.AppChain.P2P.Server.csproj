@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum AppChain P2P Server - HTTP JSON-RPC server with pluggable consensus and DotNetty P2P networking</Description>
+    <AssemblyTitle>Nethereum.AppChain.P2P.Server</AssemblyTitle>
+    <Version>$(NethereumVersionPreview)</Version>
+    <TargetFramework>$(ServerFrameworks)</TargetFramework>
+    <AssemblyName>Nethereum.AppChain.P2P.Server</AssemblyName>
+    <PackageId>Nethereum.AppChain.P2P.Server</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="[2.0.0-beta4.22272.1,)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AppChain\Nethereum.AppChain.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.Sequencer\Nethereum.AppChain.Sequencer.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.P2P.DotNetty\Nethereum.AppChain.P2P.DotNetty.csproj" />
+    <ProjectReference Include="..\Nethereum.Consensus.Clique\Nethereum.Consensus.Clique.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
+    <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

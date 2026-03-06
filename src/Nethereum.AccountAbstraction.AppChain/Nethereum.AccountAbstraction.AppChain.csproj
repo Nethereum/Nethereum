@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum AccountAbstraction AppChain - ERC-4337 extensions for AppChain with session keys, account registry, and deterministic deployment</Description>
+    <AssemblyTitle>Nethereum.AccountAbstraction.AppChain</AssemblyTitle>
+    <Version>$(NethereumVersionPreview)</Version>
+    <TargetFrameworks>$(AppChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.AccountAbstraction.AppChain</AssemblyName>
+    <PackageId>Nethereum.AccountAbstraction.AppChain</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain\Nethereum.AppChain.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

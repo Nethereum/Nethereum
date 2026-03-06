@@ -1,0 +1,33 @@
+[
+    {
+        "paths": ["mud.config.ts"],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.DataChain.Templates.MudExample.Tables",
+                "basePath": "../Generated/Tables",
+                "generatorType": "MudTables"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/UserProfileSystem.sol/UserProfileSystem.json",
+            "out/InventorySystem.sol/InventorySystem.json",
+            "out/AdminSystem.sol/AdminSystem.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.DataChain.Templates.MudExample.Systems",
+                "basePath": "../Generated/Systems",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            },
+            {
+                "baseNamespace": "Nethereum.DataChain.Templates.MudExample.Systems",
+                "basePath": "../Generated/Systems",
+                "codeGenLang": 0,
+                "generatorType": "MudExtendedService"
+            }
+        ]
+    }
+]

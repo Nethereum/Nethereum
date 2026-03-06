@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum AppChain Sync - Block synchronization, batch file format, state snapshots, and follower sync services</Description>
+    <AssemblyTitle>Nethereum.AppChain.Sync</AssemblyTitle>
+    <Version>$(NethereumVersionPreview)</Version>
+    <TargetFrameworks>$(AppChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.AppChain.Sync</AssemblyName>
+    <PackageId>Nethereum.AppChain.Sync</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,494 @@
+using System;
+using System.Numerics;
+using System.Threading.Tasks;
+using Nethereum.AccountAbstraction;
+using Nethereum.AccountAbstraction.Contracts.Core.BaseSmartAccount.ContractDefinition;
+using Nethereum.AppChain.IntegrationTests.E2E.Fixtures;
+using Nethereum.Contracts;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Signer;
+using Nethereum.Util;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Nethereum.AppChain.IntegrationTests.E2E.Scenarios
+{
+    [Collection("Sequential")]
+    [Trait("Category", "SponsoredGas-E2E")]
+    public class SponsoredGasAATests : SponsoredGasAAFixture, IAsyncLifetime
+    {
+        private readonly ITestOutputHelper _output;
+
+        public SponsoredGasAATests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [Fact]
+        public async Task Given_SponsoredGasFixture_When_Initialized_Then_AllContractsDeployed()
+        {
+            Assert.NotNull(EntryPointService);
+            Assert.NotNull(AccountFactoryService);
+            Assert.NotNull(AccountRegistryService);
+            Assert.NotNull(SponsoredPaymasterService);
+            Assert.NotNull(BundlerService);
+
+            var entryPointCode = await Web3.Eth.GetCode.SendRequestAsync(EntryPointService.ContractAddress);
+            Assert.True(entryPointCode.Length > 2, "EntryPoint should have bytecode");
+
+            var factoryCode = await Web3.Eth.GetCode.SendRequestAsync(AccountFactoryService.ContractAddress);
+            Assert.True(factoryCode.Length > 2, "AccountFactory should have bytecode");
+
+            var registryCode = await Web3.Eth.GetCode.SendRequestAsync(AccountRegistryService.ContractAddress);
+            Assert.True(registryCode.Length > 2, "AccountRegistry should have bytecode");
+
+            var paymasterCode = await Web3.Eth.GetCode.SendRequestAsync(SponsoredPaymasterService.ContractAddress);
+            Assert.True(paymasterCode.Length > 2, "SponsoredPaymaster should have bytecode");
+
+            _output.WriteLine($"EntryPoint: {EntryPointService.ContractAddress}");
+            _output.WriteLine($"AccountFactory: {AccountFactoryService.ContractAddress}");
+            _output.WriteLine($"AccountRegistry: {AccountRegistryService.ContractAddress}");
+            _output.WriteLine($"SponsoredPaymaster: {SponsoredPaymasterService.ContractAddress}");
+        }
+
+        [Fact]
+        public async Task Given_NewUser_When_CounterfactualAddressCalculated_Then_IsDeterministic()
+        {
+            var ownerAccount = CreateTestAccount();
+            var salt = GenerateRandomSalt();
+
+            var address1 = await GetCounterfactualAddressAsync(ownerAccount.Address, salt);
+            var address2 = await GetCounterfactualAddressAsync(ownerAccount.Address, salt);
+
+            Assert.Equal(address1, address2);
+            Assert.True(address1.IsValidEthereumAddressHexFormat(), "Should be valid Ethereum address");
+
+            _output.WriteLine($"Owner: {ownerAccount.Address}");
+            _output.WriteLine($"Counterfactual Smart Account: {address1}");
+        }
+
+        [Fact]
+        public async Task Given_InvitedUser_When_FirstUserOpWithInitCode_Then_AccountDeployedAndSponsored()
+        {
+            await ResetBundlerServiceAsync();
+
+            var ownerAccount = CreateTestAccount();
+            var recipient = UserAccounts[0];
+            var transferAmount = Nethereum.Web3.Web3.Convert.ToWei(0.1m);
+
+            var salt = GenerateRandomSalt();
+            var smartAccountAddress = await GetCounterfactualAddressAsync(ownerAccount.Address, salt);
+
+            await SetBalanceAsync(smartAccountAddress, Nethereum.Web3.Web3.Convert.ToWei(10));
+
+            await InviteAndActivateAsync(smartAccountAddress);
+
+            var isActive = await IsAccountActiveAsync(smartAccountAddress);
+            Assert.True(isActive, "Account should be active after invitation");
+
+            var codeBefore = await Web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
+            Assert.Equal("0x", codeBefore);
+
+            var initCode = GetInitCode(ownerAccount.Address, salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient.Address,
+                Value = transferAmount,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                BigInteger.Zero,
+                initCode,
+                usePaymaster: true);
+
+            var signerKey = new EthECKey(ownerAccount.PrivateKey);
+            var packedUserOp = SignUserOperation(userOp, signerKey);
+
+            var smartAccountBalanceBefore = await GetBalanceAsync(smartAccountAddress);
+            var recipientBalanceBefore = await GetBalanceAsync(recipient.Address);
+
+            var (userOpHash, success, error) = await SubmitUserOperationAsync(packedUserOp);
+
+            Assert.True(success, $"UserOp should succeed: {error}");
+            Assert.NotNull(userOpHash);
+
+            var codeAfter = await Web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
+            Assert.True(codeAfter.Length > 2, "Smart account should be deployed");
+
+            var recipientBalanceAfter = await GetBalanceAsync(recipient.Address);
+            Assert.Equal(recipientBalanceBefore + transferAmount, recipientBalanceAfter);
+
+            var smartAccountBalanceAfter = await GetBalanceAsync(smartAccountAddress);
+            var gasSpent = smartAccountBalanceBefore - smartAccountBalanceAfter - transferAmount;
+
+            _output.WriteLine($"Smart Account: {smartAccountAddress}");
+            _output.WriteLine($"Transfer amount: {Nethereum.Web3.Web3.Convert.FromWei(transferAmount)} ETH");
+            _output.WriteLine($"Gas paid by user: {Nethereum.Web3.Web3.Convert.FromWei(gasSpent)} ETH");
+            _output.WriteLine($"UserOp Hash: {userOpHash}");
+
+            Assert.True(gasSpent <= 0, "User should not pay gas (sponsored by paymaster)");
+        }
+
+        [Fact]
+        public async Task Given_UninvitedUser_When_UserOpWithPaymaster_Then_Rejected()
+        {
+            await ResetBundlerServiceAsync();
+
+            var ownerAccount = CreateTestAccount();
+            var recipient = UserAccounts[1];
+
+            var salt = GenerateRandomSalt();
+            var smartAccountAddress = await GetCounterfactualAddressAsync(ownerAccount.Address, salt);
+
+            await SetBalanceAsync(smartAccountAddress, Nethereum.Web3.Web3.Convert.ToWei(10));
+
+            var isActive = await IsAccountActiveAsync(smartAccountAddress);
+            Assert.False(isActive, "Account should NOT be active without invitation");
+
+            var initCode = GetInitCode(ownerAccount.Address, salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient.Address,
+                Value = Nethereum.Web3.Web3.Convert.ToWei(0.1m),
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                BigInteger.Zero,
+                initCode,
+                usePaymaster: true);
+
+            var signerKey = new EthECKey(ownerAccount.PrivateKey);
+            var packedUserOp = SignUserOperation(userOp, signerKey);
+
+            var (userOpHash, success, error) = await SubmitUserOperationAsync(packedUserOp);
+
+            Assert.False(success, "UserOp should fail for uninvited user");
+            Assert.NotNull(error);
+
+            _output.WriteLine($"Expected rejection for uninvited user: {error}");
+        }
+
+        [Fact]
+        public async Task Given_DeployedAccount_When_SubsequentTx_Then_NoInitCodeNeeded()
+        {
+            await ResetBundlerServiceAsync();
+
+            var ownerAccount = CreateTestAccount();
+            var recipient = UserAccounts[2];
+            var transferAmount = Nethereum.Web3.Web3.Convert.ToWei(0.05m);
+
+            var (smartAccountAddress, _, deploySuccess) = await DeploySmartAccountWithTransferAsync(
+                ownerAccount, recipient.Address, transferAmount);
+
+            Assert.True(deploySuccess, "Initial deployment should succeed");
+
+            var nonce = await EntryPointService.GetNonceQueryAsync(smartAccountAddress, BigInteger.Zero);
+            Assert.Equal(BigInteger.One, nonce);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient.Address,
+                Value = transferAmount,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                nonce,
+                initCode: null,
+                usePaymaster: true);
+
+            var signerKey = new EthECKey(ownerAccount.PrivateKey);
+            var packedUserOp = SignUserOperation(userOp, signerKey);
+
+            var (userOpHash, success, error) = await SubmitUserOperationAsync(packedUserOp);
+
+            Assert.True(success, $"Subsequent transaction should succeed: {error}");
+
+            var newNonce = await EntryPointService.GetNonceQueryAsync(smartAccountAddress, BigInteger.Zero);
+            Assert.Equal(nonce + 1, newNonce);
+
+            _output.WriteLine($"First tx nonce: 0 -> 1");
+            _output.WriteLine($"Second tx nonce: 1 -> 2");
+            _output.WriteLine($"No initCode needed for second transaction");
+        }
+
+        [Fact]
+        public async Task Given_SponsoredAccount_When_MultipleTransactions_Then_AllSponsored()
+        {
+            await ResetBundlerServiceAsync();
+
+            var ownerAccount = CreateTestAccount();
+            var recipient = UserAccounts[3];
+            var transferAmount = Nethereum.Web3.Web3.Convert.ToWei(0.01m);
+
+            var (smartAccountAddress, _, deploySuccess) = await DeploySmartAccountWithTransferAsync(
+                ownerAccount, recipient.Address, transferAmount);
+
+            Assert.True(deploySuccess, "Initial deployment should succeed");
+
+            var initialBalance = await GetBalanceAsync(smartAccountAddress);
+
+            for (int i = 0; i < 3; i++)
+            {
+                var nonce = await EntryPointService.GetNonceQueryAsync(smartAccountAddress, BigInteger.Zero);
+
+                var executeFunction = new ExecuteFunction
+                {
+                    Target = recipient.Address,
+                    Value = transferAmount,
+                    Data = Array.Empty<byte>()
+                };
+
+                var userOp = CreateUserOperation(
+                    smartAccountAddress,
+                    executeFunction.GetCallData(),
+                    nonce,
+                    initCode: null,
+                    usePaymaster: true);
+
+                var signerKey = new EthECKey(ownerAccount.PrivateKey);
+                var packedUserOp = SignUserOperation(userOp, signerKey);
+
+                var (_, success, error) = await SubmitUserOperationAsync(packedUserOp);
+                Assert.True(success, $"Transaction {i + 1} should succeed: {error}");
+
+                _output.WriteLine($"Transaction {i + 1} completed with nonce {nonce}");
+            }
+
+            var finalBalance = await GetBalanceAsync(smartAccountAddress);
+            var totalTransferred = transferAmount * 4;
+            var expectedBalance = initialBalance - totalTransferred;
+
+            Assert.True(finalBalance >= expectedBalance - Nethereum.Web3.Web3.Convert.ToWei(0.001m),
+                "User should not pay significant gas (sponsored)");
+
+            _output.WriteLine($"Initial balance: {Nethereum.Web3.Web3.Convert.FromWei(initialBalance)} ETH");
+            _output.WriteLine($"Final balance: {Nethereum.Web3.Web3.Convert.FromWei(finalBalance)} ETH");
+            _output.WriteLine($"Total transferred: {Nethereum.Web3.Web3.Convert.FromWei(totalTransferred)} ETH");
+        }
+
+        [Fact]
+        public async Task Given_UserWithoutPaymaster_When_TransactionSubmitted_Then_UserPaysGas()
+        {
+            await ResetBundlerServiceAsync();
+
+            var ownerAccount = CreateTestAccount();
+            var recipient = UserAccounts[4];
+            var transferAmount = Nethereum.Web3.Web3.Convert.ToWei(0.05m);
+
+            var salt = GenerateRandomSalt();
+            var smartAccountAddress = await GetCounterfactualAddressAsync(ownerAccount.Address, salt);
+
+            await SetBalanceAsync(smartAccountAddress, Nethereum.Web3.Web3.Convert.ToWei(10));
+            await InviteAndActivateAsync(smartAccountAddress);
+
+            var initCode = GetInitCode(ownerAccount.Address, salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient.Address,
+                Value = transferAmount,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                BigInteger.Zero,
+                initCode,
+                usePaymaster: false);
+
+            await EntryPointService.DepositToRequestAndWaitForReceiptAsync(
+                new Nethereum.AccountAbstraction.EntryPoint.ContractDefinition.DepositToFunction
+                {
+                    Account = smartAccountAddress,
+                    AmountToSend = Nethereum.Web3.Web3.Convert.ToWei(1)
+                });
+
+            var signerKey = new EthECKey(ownerAccount.PrivateKey);
+            var packedUserOp = SignUserOperation(userOp, signerKey);
+
+            var balanceBefore = await GetBalanceAsync(smartAccountAddress);
+
+            var (userOpHash, success, error) = await SubmitUserOperationAsync(packedUserOp);
+
+            Assert.True(success, $"Transaction should succeed: {error}");
+
+            var balanceAfter = await GetBalanceAsync(smartAccountAddress);
+            var gasCost = balanceBefore - balanceAfter - transferAmount;
+
+            Assert.True(gasCost > 0, "User should pay gas when not using paymaster");
+
+            _output.WriteLine($"Gas paid by user (no paymaster): {Nethereum.Web3.Web3.Convert.FromWei(gasCost)} ETH");
+        }
+
+        [Fact]
+        public async Task Given_WhitelistModel_When_AdminInvitesUser_Then_CanUseSponsorship()
+        {
+            await ResetBundlerServiceAsync();
+
+            var newUser = CreateTestAccount();
+            var salt = GenerateRandomSalt();
+            var smartAccountAddress = await GetCounterfactualAddressAsync(newUser.Address, salt);
+
+            var isActiveBefore = await IsAccountActiveAsync(smartAccountAddress);
+            Assert.False(isActiveBefore, "User should not be active before admin invitation");
+
+            await InviteAndActivateAsync(smartAccountAddress);
+
+            var isActiveAfter = await IsAccountActiveAsync(smartAccountAddress);
+            Assert.True(isActiveAfter, "User should be active after admin invitation");
+
+            await SetBalanceAsync(smartAccountAddress, Nethereum.Web3.Web3.Convert.ToWei(10));
+
+            var initCode = GetInitCode(newUser.Address, salt);
+            var executeFunction = new ExecuteFunction
+            {
+                Target = OperatorAccount.Address,
+                Value = Nethereum.Web3.Web3.Convert.ToWei(0.01m),
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                BigInteger.Zero,
+                initCode,
+                usePaymaster: true);
+
+            var signerKey = new EthECKey(newUser.PrivateKey);
+            var packedUserOp = SignUserOperation(userOp, signerKey);
+
+            var (_, success, error) = await SubmitUserOperationAsync(packedUserOp);
+
+            Assert.True(success, $"Invited user should be able to use sponsored gas: {error}");
+
+            _output.WriteLine($"Admin invited user: {smartAccountAddress}");
+            _output.WriteLine("User successfully used sponsored gas after invitation");
+        }
+
+        [Fact]
+        public async Task Given_BannedUser_When_SubmittingUserOp_Then_Rejected()
+        {
+            await ResetBundlerServiceAsync();
+
+            var ownerAccount = CreateTestAccount();
+            var (smartAccountAddress, _, deploySuccess) = await DeploySmartAccountWithTransferAsync(
+                ownerAccount, UserAccounts[0].Address, Nethereum.Web3.Web3.Convert.ToWei(0.01m));
+
+            Assert.True(deploySuccess, "Initial deployment should succeed");
+
+            await AccountRegistryService.BanRequestAndWaitForReceiptAsync(
+                smartAccountAddress, "Test ban");
+
+            var isActive = await IsAccountActiveAsync(smartAccountAddress);
+            Assert.False(isActive, "Banned account should not be active");
+
+            var nonce = await EntryPointService.GetNonceQueryAsync(smartAccountAddress, BigInteger.Zero);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = UserAccounts[0].Address,
+                Value = Nethereum.Web3.Web3.Convert.ToWei(0.01m),
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                nonce,
+                initCode: null,
+                usePaymaster: true);
+
+            var signerKey = new EthECKey(ownerAccount.PrivateKey);
+            var packedUserOp = SignUserOperation(userOp, signerKey);
+
+            var (_, success, error) = await SubmitUserOperationAsync(packedUserOp);
+
+            Assert.False(success, "Banned user should not be able to submit transactions");
+
+            _output.WriteLine($"Banned account: {smartAccountAddress}");
+            _output.WriteLine($"Expected rejection: {error}");
+        }
+
+        [Fact]
+        public async Task Given_CompleteOnboardingFlow_When_Executed_Then_UserTransactsForFree()
+        {
+            await ResetBundlerServiceAsync();
+
+            _output.WriteLine("=== COMPLETE ONBOARDING FLOW ===");
+
+            var ownerKey = EthECKey.GenerateKey();
+            var ownerAccount = new Nethereum.Web3.Accounts.Account(ownerKey, DEFAULT_CHAIN_ID);
+            _output.WriteLine($"1. Generated EOA owner: {ownerAccount.Address}");
+
+            var salt = GenerateRandomSalt();
+            var smartAccountAddress = await GetCounterfactualAddressAsync(ownerAccount.Address, salt);
+            _output.WriteLine($"2. Calculated counterfactual address: {smartAccountAddress}");
+
+            await InviteAndActivateAsync(smartAccountAddress);
+            _output.WriteLine($"3. Admin invited and activated the counterfactual address");
+
+            await SetBalanceAsync(smartAccountAddress, Nethereum.Web3.Web3.Convert.ToWei(5));
+            _output.WriteLine($"4. Pre-funded the counterfactual address with 5 ETH");
+
+            var codeBefore = await Web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
+            Assert.Equal("0x", codeBefore);
+            _output.WriteLine($"5. Verified account not yet deployed (no bytecode)");
+
+            var recipient = UserAccounts[0];
+            var transferAmount = Nethereum.Web3.Web3.Convert.ToWei(0.1m);
+            var initCode = GetInitCode(ownerAccount.Address, salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient.Address,
+                Value = transferAmount,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = CreateUserOperation(
+                smartAccountAddress,
+                executeFunction.GetCallData(),
+                BigInteger.Zero,
+                initCode,
+                usePaymaster: true);
+
+            var packedUserOp = SignUserOperation(userOp, ownerKey);
+            _output.WriteLine($"6. Built and signed first UserOp with initCode + paymaster");
+
+            var balanceBefore = await GetBalanceAsync(smartAccountAddress);
+            var recipientBalanceBefore = await GetBalanceAsync(recipient.Address);
+
+            var (userOpHash, success, error) = await SubmitUserOperationAsync(packedUserOp);
+            Assert.True(success, $"First UserOp should succeed: {error}");
+            _output.WriteLine($"7. Submitted UserOp, hash: {userOpHash}");
+
+            var codeAfter = await Web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
+            Assert.True(codeAfter.Length > 2);
+            _output.WriteLine($"8. Verified Smart Account deployed (has bytecode)");
+
+            var recipientBalanceAfter = await GetBalanceAsync(recipient.Address);
+            Assert.Equal(recipientBalanceBefore + transferAmount, recipientBalanceAfter);
+            _output.WriteLine($"9. Verified transfer completed: {Nethereum.Web3.Web3.Convert.FromWei(transferAmount)} ETH");
+
+            var balanceAfter = await GetBalanceAsync(smartAccountAddress);
+            var actualGasPaid = balanceBefore - balanceAfter - transferAmount;
+            Assert.True(actualGasPaid <= 0, "User should not pay gas");
+            _output.WriteLine($"10. Verified user paid 0 gas (sponsored by paymaster)");
+
+            _output.WriteLine("=== ONBOARDING COMPLETE ===");
+            _output.WriteLine($"User can now transact freely with sponsored gas!");
+        }
+    }
+}

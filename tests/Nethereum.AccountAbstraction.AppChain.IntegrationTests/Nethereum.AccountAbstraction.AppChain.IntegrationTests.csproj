@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.AppChain\Nethereum.AccountAbstraction.AppChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.SimpleAccount\Nethereum.AccountAbstraction.SimpleAccount.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AppChain\Nethereum.AppChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AppChain.Sequencer\Nethereum.AppChain.Sequencer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

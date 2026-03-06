@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum AppChain - Application-specific blockchain with RocksDB storage, MUD World integration, and genesis configuration</Description>
+    <AssemblyTitle>Nethereum.AppChain</AssemblyTitle>
+    <Version>$(NethereumVersionPreview)</Version>
+    <TargetFrameworks>$(AppChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.AppChain</AssemblyName>
+    <PackageId>Nethereum.AppChain</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
+    <ProjectReference Include="..\Nethereum.Mud.Contracts\Nethereum.Mud.Contracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,78 @@
+// Quick balance verification - run separately
+using System;
+using System.Numerics;
+using System.Threading.Tasks;
+using Nethereum.Web3;
+using Nethereum.Web3.Accounts;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Hex.HexTypes;
+
+public class BalanceVerifier
+{
+    public static async Task Main()
+    {
+        var privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+        var account = new Account(privateKey, 420420);
+        var web3 = new Web3(account, "http://127.0.0.1:8546");
+        
+        Console.WriteLine("=== ERC20 Balance Verification Test ===\n");
+        
+        // Check ETH balance
+        var ethBalance = await web3.Eth.GetBalance.SendRequestAsync(account.Address);
+        Console.WriteLine($"ETH Balance: {Web3.Convert.FromWei(ethBalance)} ETH");
+        
+        // Deploy ERC20
+        Console.WriteLine("\nDeploying ERC20 token...");
+        var deployment = new ERC20Deployment { InitialSupply = BigInteger.Parse("1000000000000000000000000") };
+        var receipt = await web3.Eth.GetContractDeploymentHandler<ERC20Deployment>()
+            .SendRequestAndWaitForReceiptAsync(deployment);
+        var tokenAddress = receipt.ContractAddress;
+        Console.WriteLine($"Token deployed at: {tokenAddress}");
+        
+        // Get balance handler
+        var balanceOf = web3.Eth.GetContractQueryHandler<BalanceOfFunction>();
+        
+        // Check initial balance
+        var initialBalance = await balanceOf.QueryAsync<BigInteger>(tokenAddress, 
+            new BalanceOfFunction { Owner = account.Address });
+        Console.WriteLine($"\nInitial token balance: {initialBalance}");
+        
+        // Create recipient
+        var recipient = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8";
+        var recipientBalanceBefore = await balanceOf.QueryAsync<BigInteger>(tokenAddress,
+            new BalanceOfFunction { Owner = recipient });
+        Console.WriteLine($"Recipient balance before: {recipientBalanceBefore}");
+        
+        // Transfer 1000 tokens
+        var transferAmount = BigInteger.Parse("1000000000000000000000"); // 1000 tokens
+        Console.WriteLine($"\nTransferring {transferAmount} to {recipient}...");
+        
+        var transfer = new TransferFunction { To = recipient, Value = transferAmount };
+        var txReceipt = await web3.Eth.GetContractTransactionHandler<TransferFunction>()
+            .SendRequestAndWaitForReceiptAsync(tokenAddress, transfer);
+        Console.WriteLine($"TX Hash: {txReceipt.TransactionHash}");
+        Console.WriteLine($"Status: {(txReceipt.Status.Value == 1 ? "SUCCESS" : "FAILED")}");
+        
+        // Check balances after
+        var senderBalanceAfter = await balanceOf.QueryAsync<BigInteger>(tokenAddress,
+            new BalanceOfFunction { Owner = account.Address });
+        var recipientBalanceAfter = await balanceOf.QueryAsync<BigInteger>(tokenAddress,
+            new BalanceOfFunction { Owner = recipient });
+        
+        Console.WriteLine($"\nSender balance after: {senderBalanceAfter}");
+        Console.WriteLine($"Recipient balance after: {recipientBalanceAfter}");
+        
+        // Verify
+        var expectedSender = initialBalance - transferAmount;
+        var expectedRecipient = recipientBalanceBefore + transferAmount;
+        
+        Console.WriteLine($"\n=== VERIFICATION ===");
+        Console.WriteLine($"Sender balance correct: {senderBalanceAfter == expectedSender} (expected {expectedSender})");
+        Console.WriteLine($"Recipient balance correct: {recipientBalanceAfter == expectedRecipient} (expected {expectedRecipient})");
+        
+        if (senderBalanceAfter == expectedSender && recipientBalanceAfter == expectedRecipient)
+            Console.WriteLine("\n✅ BALANCE VERIFICATION PASSED!");
+        else
+            Console.WriteLine("\n❌ BALANCE VERIFICATION FAILED!");
+    }
+}

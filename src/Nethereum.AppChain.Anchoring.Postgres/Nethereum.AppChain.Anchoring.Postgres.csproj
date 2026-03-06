@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum AppChain Anchoring Postgres - EF Core Postgres persistence for the message indexer and block progress tracking</Description>
+    <AssemblyTitle>Nethereum.AppChain.Anchoring.Postgres</AssemblyTitle>
+    <Version>$(NethereumVersionPreview)</Version>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Nethereum.AppChain.Anchoring.Postgres</AssemblyName>
+    <PackageId>Nethereum.AppChain.Anchoring.Postgres</PackageId>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.4,9)" />
+    <PackageReference Include="EFCore.NamingConventions" Version="[8.0.3,9)" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="[8.0.8,9)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="[8.0.0,9)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="[8.0.0,9)" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,9)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="[8.0.0,9)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>

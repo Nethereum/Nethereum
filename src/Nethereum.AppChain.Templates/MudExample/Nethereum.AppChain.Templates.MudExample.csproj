@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AppChain.Templates.MudExample</RootNamespace>
+    <Description>Example MUD project template for AppChain applications</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Nethereum.AppChain\Nethereum.AppChain.csproj" />
+    <ProjectReference Include="..\..\Nethereum.AppChain.Sequencer\Nethereum.AppChain.Sequencer.csproj" />
+    <ProjectReference Include="..\..\Nethereum.AppChain.Policy\Nethereum.AppChain.Policy.csproj" />
+    <ProjectReference Include="..\..\Nethereum.Mud\Nethereum.Mud.csproj" />
+    <ProjectReference Include="..\..\Nethereum.Mud.Contracts\Nethereum.Mud.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="contracts\**\*" />
+    <None Include="README.md" />
+  </ItemGroup>
+
+</Project>

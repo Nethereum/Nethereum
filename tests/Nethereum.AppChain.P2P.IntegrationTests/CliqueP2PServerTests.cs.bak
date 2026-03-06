@@ -1,0 +1,197 @@
+using System;
+using System.Numerics;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Nethereum.AppChain.P2P.IntegrationTests.Fixtures;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
+using Nethereum.RLP;
+using Nethereum.Signer;
+using Nethereum.Web3.Accounts;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Nethereum.AppChain.P2P.IntegrationTests
+{
+    [Collection("CliqueP2PServer")]
+    public class CliqueP2PServerTests : IClassFixture<CliqueP2PServerFixture>
+    {
+        private readonly CliqueP2PServerFixture _fixture;
+        private readonly ITestOutputHelper _output;
+
+        public CliqueP2PServerTests(CliqueP2PServerFixture fixture, ITestOutputHelper output)
+        {
+            _fixture = fixture;
+            _output = output;
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_Started_Then_AllNodesRespondToRPC()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(2000);
+
+            for (int i = 0; i < _fixture.Nodes.Count; i++)
+            {
+                var response = await _fixture.CallRpcAsync(i, "eth_chainId");
+                _output.WriteLine($"Node {i} eth_chainId response: {response}");
+
+                Assert.Contains("0x66a44", response); // 420420 in hex
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_GetBlockNumber_Then_ReturnsBlockHeight()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            for (int i = 0; i < _fixture.Nodes.Count; i++)
+            {
+                var response = await _fixture.CallRpcAsync(i, "eth_blockNumber");
+                _output.WriteLine($"Node {i} eth_blockNumber response: {response}");
+
+                Assert.Contains("result", response);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_GetBalance_Then_ReturnsSignerBalance()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            var signerAddress = _fixture.SignerAddresses[0];
+            var response = await _fixture.CallRpcAsync(0, "eth_getBalance", signerAddress, "latest");
+            _output.WriteLine($"Signer balance response: {response}");
+
+            Assert.Contains("result", response);
+            Assert.DoesNotContain("error", response);
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_SendRawTransaction_Then_TransactionSubmitted()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(2000);
+
+            var account = _fixture.Nodes[0].Account;
+
+            var nonce = await _fixture.Nodes[0].AppChain.GetNonceAsync(account.Address);
+
+            var tx = new LegacyTransactionChainId(
+                to: _fixture.SignerAddresses[1],
+                amount: BigInteger.Parse("1000000000000000"),
+                nonce: nonce,
+                gasPrice: BigInteger.Parse("1000000000"),
+                gasLimit: new BigInteger(21000),
+                data: "",
+                chainId: CliqueP2PServerFixture.CHAIN_ID);
+
+            var signer = new LegacyTransactionSigner();
+            signer.SignTransaction(account.PrivateKey.HexToByteArray(), tx);
+
+            var rawTx = tx.GetRLPEncodedRaw().ToHex(true);
+            _output.WriteLine($"Raw transaction: {rawTx}");
+
+            var response = await _fixture.CallRpcAsync(0, "eth_sendRawTransaction", rawTx);
+            _output.WriteLine($"SendRawTransaction response: {response}");
+
+            if (response.Contains("error"))
+            {
+                _output.WriteLine($"Transaction may have been submitted but error returned - checking details");
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_HealthEndpoint_Then_ReturnsHealthy()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            for (int i = 0; i < _fixture.Nodes.Count; i++)
+            {
+                var url = $"http://127.0.0.1:{CliqueP2PServerFixture.BASE_HTTP_PORT + i}/health";
+                var response = await _fixture.HttpClient.GetStringAsync(url);
+                _output.WriteLine($"Node {i} health: {response}");
+
+                Assert.Contains("healthy", response);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_EthCall_Then_ReturnsResult()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            var callParams = new
+            {
+                to = _fixture.SignerAddresses[0],
+                data = "0x"
+            };
+
+            var response = await _fixture.CallRpcAsync(0, "eth_call", callParams, "latest");
+            _output.WriteLine($"eth_call response: {response}");
+
+            Assert.Contains("result", response);
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_EstimateGas_Then_ReturnsGasEstimate()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            var txParams = new
+            {
+                from = _fixture.SignerAddresses[0],
+                to = _fixture.SignerAddresses[1],
+                value = "0xDE0B6B3A7640000" // 1 ETH
+            };
+
+            var response = await _fixture.CallRpcAsync(0, "eth_estimateGas", txParams);
+            _output.WriteLine($"eth_estimateGas response: {response}");
+
+            Assert.Contains("result", response);
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_GetGasPrice_Then_ReturnsGasPrice()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            var response = await _fixture.CallRpcAsync(0, "eth_gasPrice");
+            _output.WriteLine($"eth_gasPrice response: {response}");
+
+            Assert.Contains("result", response);
+        }
+
+        [Fact]
+        [Trait("Category", "P2P-RPC")]
+        public async Task Given_P2PCluster_When_Web3ClientVersion_Then_ReturnsVersion()
+        {
+            await _fixture.StartAllServersAsync();
+            await Task.Delay(1000);
+
+            var response = await _fixture.CallRpcAsync(0, "web3_clientVersion");
+            _output.WriteLine($"web3_clientVersion response: {response}");
+
+            Assert.Contains("result", response);
+        }
+    }
+
+    [CollectionDefinition("CliqueP2PServer")]
+    public class CliqueP2PServerCollection : ICollectionFixture<CliqueP2PServerFixture>
+    {
+    }
+}

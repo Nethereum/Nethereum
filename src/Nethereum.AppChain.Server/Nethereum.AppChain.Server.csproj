@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(ServerFrameworks)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AppChain.Server</RootNamespace>
+    <AssemblyName>Nethereum.AppChain.Server</AssemblyName>
+    <PackageId>Nethereum.AppChain.Server</PackageId>
+    <Description>Nethereum AppChain Server - HTTP JSON-RPC application chain server with MUD World deployment, sequencer, and follower sync</Description>
+    <AssemblyTitle>Nethereum.AppChain.Server</AssemblyTitle>
+    <Version>$(NethereumVersionPreview)</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>nethereum-appchain</ToolCommandName>
+
+    <!-- AOT Compilation -->
+    <PublishAot Condition="'$(EnableAot)' == 'true'">true</PublishAot>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Set to false for full AOT, but requires all types registered in source generator -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AppChain\Nethereum.AppChain.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.Sequencer\Nethereum.AppChain.Sequencer.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.Sync\Nethereum.AppChain.Sync.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.P2P\Nethereum.AppChain.P2P.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.P2P.DotNetty\Nethereum.AppChain.P2P.DotNetty.csproj" />
+    <ProjectReference Include="..\Nethereum.Consensus.Clique\Nethereum.Consensus.Clique.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,41 @@
+[
+    {
+        "paths": [
+            "out/AppChainAnchor.sol/AppChainAnchor.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring.Contracts.AppChainAnchor",
+                "basePath": "../Nethereum.AppChain.Anchoring/Contracts/AppChainAnchor",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/AppChainPolicy.sol/AppChainPolicy.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Policy.Contracts.AppChainPolicy",
+                "basePath": "../Nethereum.AppChain.Policy/Contracts/AppChainPolicy",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/AppChainHub.sol/AppChainHub.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring.Hub.Contracts.AppChainHub",
+                "basePath": "../Nethereum.AppChain.Anchoring/Hub/Contracts/AppChainHub",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    }
+]

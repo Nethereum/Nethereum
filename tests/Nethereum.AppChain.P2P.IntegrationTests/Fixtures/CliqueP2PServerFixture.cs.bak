@@ -1,0 +1,329 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Numerics;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Nethereum.AppChain;
+using Nethereum.AppChain.Genesis;
+using Nethereum.AppChain.Metrics;
+using Nethereum.AppChain.P2P.Clique;
+using Nethereum.AppChain.P2P.DotNetty;
+using Nethereum.CoreChain;
+using Nethereum.CoreChain.Rpc;
+using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Storage.InMemory;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.Signer;
+using Nethereum.Web3.Accounts;
+using Xunit;
+
+namespace Nethereum.AppChain.P2P.IntegrationTests.Fixtures
+{
+    public class CliqueP2PServerFixture : IAsyncLifetime
+    {
+        public const int CHAIN_ID = 420420;
+        public const int BASE_HTTP_PORT = 8600;
+        public const int BASE_P2P_PORT = 30500;
+
+        private readonly List<CliqueServerNodeInstance> _nodes = new();
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly List<WebApplication> _webApps = new();
+
+        public IReadOnlyList<CliqueServerNodeInstance> Nodes => _nodes;
+        public HttpClient HttpClient { get; } = new HttpClient();
+
+        public static readonly string[] SignerPrivateKeys = new[]
+        {
+            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+            "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+            "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+        };
+
+        public string[] SignerAddresses { get; private set; } = Array.Empty<string>();
+
+        public CliqueP2PServerFixture()
+        {
+            _loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Information);
+            });
+        }
+
+        public async Task InitializeAsync()
+        {
+            EthECKey.SignRecoverable = true;
+
+            SignerAddresses = new string[SignerPrivateKeys.Length];
+            for (int i = 0; i < SignerPrivateKeys.Length; i++)
+            {
+                var key = new EthECKey(SignerPrivateKeys[i]);
+                SignerAddresses[i] = key.GetPublicAddress().ToLowerInvariant();
+            }
+
+            for (int i = 0; i < SignerPrivateKeys.Length; i++)
+            {
+                var node = await CreateNodeAsync(i);
+                _nodes.Add(node);
+            }
+
+            foreach (var node in _nodes)
+            {
+                await node.Transport.StartAsync();
+            }
+
+            await Task.Delay(500);
+
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                for (int j = i + 1; j < _nodes.Count; j++)
+                {
+                    var endpoint = $"127.0.0.1:{BASE_P2P_PORT + j}";
+                    await _nodes[i].Transport.ConnectAsync($"node-{j}", endpoint);
+                }
+            }
+
+            await Task.Delay(1000);
+        }
+
+        private async Task<CliqueServerNodeInstance> CreateNodeAsync(int index)
+        {
+            var privateKey = SignerPrivateKeys[index];
+            var account = new Account(privateKey, CHAIN_ID);
+            var httpPort = BASE_HTTP_PORT + index;
+            var p2pPort = BASE_P2P_PORT + index;
+
+            var blockStore = new InMemoryBlockStore();
+            var transactionStore = new InMemoryTransactionStore(blockStore);
+            var receiptStore = new InMemoryReceiptStore();
+            var logStore = new InMemoryLogStore();
+            var stateStore = new InMemoryStateStore();
+
+            var appChainConfig = AppChainConfig.CreateWithName($"CliqueP2PServer{index}", CHAIN_ID);
+            appChainConfig.SequencerAddress = account.Address;
+            appChainConfig.BaseFee = 0;
+            appChainConfig.BlockGasLimit = 30_000_000;
+
+            var appChain = new Nethereum.AppChain.AppChain(
+                appChainConfig,
+                blockStore,
+                transactionStore,
+                receiptStore,
+                logStore,
+                stateStore);
+
+            var genesisOptions = new GenesisOptions
+            {
+                PrefundedAddresses = SignerAddresses,
+                PrefundBalance = Web3.Web3.Convert.ToWei(10000),
+                DeployCreate2Factory = false
+            };
+            await appChain.InitializeAsync(genesisOptions);
+
+            var transportConfig = new DotNettyConfig
+            {
+                ListenAddress = "127.0.0.1",
+                ListenPort = p2pPort,
+                MaxConnections = 10,
+                ConnectionTimeoutMs = 5000,
+                NodeId = $"node-{index}"
+            };
+
+            var transport = new DotNettyTransport(
+                transportConfig,
+                _loggerFactory.CreateLogger<DotNettyTransport>());
+
+            var cliqueConfig = new CliqueConfig
+            {
+                BlockPeriodSeconds = 1,
+                EpochLength = 30000,
+                WiggleTimeMs = 200,
+                InitialSigners = new List<string>(SignerAddresses),
+                LocalSignerAddress = account.Address,
+                LocalSignerPrivateKey = privateKey,
+                AllowEmptyBlocks = false,
+                EnableVoting = true
+            };
+
+            var p2pConfig = new CliqueP2PConfig
+            {
+                CliqueConfig = cliqueConfig,
+                BlockPeriodMs = 1000,
+                MaxTransactionsPerBlock = 1000,
+                AllowEmptyBlocks = false,
+                EmptyBlockCheckIntervalMs = 100
+            };
+
+            var p2pNode = new CliqueP2PNode(
+                appChain,
+                transport,
+                cliqueConfig,
+                p2pConfig,
+                _loggerFactory.CreateLogger<CliqueP2PNode>());
+
+            var chainNode = new CliqueP2PChainNode(appChain, p2pNode);
+
+            return new CliqueServerNodeInstance
+            {
+                Index = index,
+                Account = account,
+                AppChain = appChain,
+                Transport = transport,
+                P2PNode = p2pNode,
+                ChainNode = chainNode,
+                HttpPort = httpPort,
+                P2PPort = p2pPort
+            };
+        }
+
+        public async Task StartAllServersAsync()
+        {
+            foreach (var node in _nodes)
+            {
+                await node.P2PNode.StartAsync();
+                await StartHttpServerAsync(node);
+            }
+        }
+
+        private async Task StartHttpServerAsync(CliqueServerNodeInstance node)
+        {
+            var builder = WebApplication.CreateBuilder();
+            builder.Services.AddSingleton(node.ChainNode);
+            builder.Services.AddSingleton<IChainNode>(node.ChainNode);
+            builder.Services.AddSingleton<IAppChain>(node.AppChain);
+            builder.Services.AddAppChainMetrics(CHAIN_ID);
+
+            var app = builder.Build();
+
+            var serializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                TypeInfoResolver = CoreChainJsonContext.Default
+            };
+
+            var rpcRegistry = new RpcHandlerRegistry();
+            rpcRegistry.AddStandardHandlers();
+
+            var logger = _loggerFactory.CreateLogger<CliqueP2PServerFixture>();
+            var rpcContext = new RpcContext(node.ChainNode, CHAIN_ID, app.Services);
+            var appChainMetrics = app.Services.GetRequiredService<AppChainMetrics>();
+            var rpcDispatcher = new InstrumentedRpcDispatcher(rpcRegistry, rpcContext, appChainMetrics.Rpc, logger, serializerOptions);
+
+            app.MapPost("/", async (HttpContext httpContext) =>
+            {
+                using var reader = new StreamReader(httpContext.Request.Body);
+                var body = await reader.ReadToEndAsync();
+
+                JsonRpcRequest? jsonRequest;
+                try
+                {
+                    jsonRequest = JsonSerializer.Deserialize<JsonRpcRequest>(body, serializerOptions);
+                }
+                catch
+                {
+                    httpContext.Response.StatusCode = 400;
+                    httpContext.Response.ContentType = "application/json";
+                    await httpContext.Response.WriteAsync("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"Parse error\"}}");
+                    return;
+                }
+
+                if (jsonRequest == null || string.IsNullOrEmpty(jsonRequest.Method))
+                {
+                    httpContext.Response.StatusCode = 400;
+                    httpContext.Response.ContentType = "application/json";
+                    await httpContext.Response.WriteAsync("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"Invalid Request\"}}");
+                    return;
+                }
+
+                var request = new RpcRequestMessage(jsonRequest.Id, jsonRequest.Method);
+                if (jsonRequest.Params.HasValue)
+                {
+                    request.RawParameters = jsonRequest.Params.Value;
+                }
+                var response = await rpcDispatcher.DispatchAsync(request);
+
+                var jsonResponse = new JsonRpcResponse
+                {
+                    Id = response.Id,
+                    Result = response.HasError ? null : response.Result,
+                    Error = response.HasError ? new JsonRpcError { Code = response.Error.Code, Message = response.Error.Message, Data = response.Error.Data } : null
+                };
+
+                var responseJson = JsonSerializer.Serialize(jsonResponse, serializerOptions);
+
+                httpContext.Response.ContentType = "application/json";
+                await httpContext.Response.WriteAsync(responseJson);
+            });
+
+            app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+
+            _webApps.Add(app);
+
+            _ = Task.Run(() => app.RunAsync($"http://127.0.0.1:{node.HttpPort}"));
+
+            await Task.Delay(500);
+        }
+
+        public string GetRpcUrl(int nodeIndex) => $"http://127.0.0.1:{BASE_HTTP_PORT + nodeIndex}";
+
+        public async Task<string> CallRpcAsync(int nodeIndex, string method, params object[] parameters)
+        {
+            var url = GetRpcUrl(nodeIndex);
+            var request = new
+            {
+                jsonrpc = "2.0",
+                method = method,
+                @params = parameters,
+                id = 1
+            };
+
+            var json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await HttpClient.PostAsync(url, content);
+            return await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task DisposeAsync()
+        {
+            foreach (var app in _webApps)
+            {
+                try { await app.StopAsync(); } catch { }
+            }
+
+            foreach (var node in _nodes)
+            {
+                try { await node.P2PNode.StopAsync(); } catch { }
+                try { await node.Transport.StopAsync(); } catch { }
+                node.P2PNode.Dispose();
+                node.Transport.Dispose();
+            }
+
+            _loggerFactory.Dispose();
+            HttpClient.Dispose();
+        }
+    }
+
+    public class CliqueServerNodeInstance
+    {
+        public int Index { get; set; }
+        public Account Account { get; set; } = null!;
+        public IAppChain AppChain { get; set; } = null!;
+        public DotNettyTransport Transport { get; set; } = null!;
+        public CliqueP2PNode P2PNode { get; set; } = null!;
+        public CliqueP2PChainNode ChainNode { get; set; } = null!;
+        public int HttpPort { get; set; }
+        public int P2PPort { get; set; }
+    }
+}
