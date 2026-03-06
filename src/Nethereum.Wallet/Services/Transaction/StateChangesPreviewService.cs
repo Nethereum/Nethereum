@@ -5,6 +5,8 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ABI.ABIRepository;
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.Model;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Decoding;
@@ -21,6 +23,25 @@ namespace Nethereum.Wallet.Services.Transaction
 {
     public class StateChangesPreviewService : IStateChangesPreviewService
     {
+        private static readonly Dictionary<string, string> WellKnownErrors = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["0x93dafdf1"] = "SafeCastOverflow()",
+            ["0x4e487b71"] = "Panic(uint256)",
+            ["0x08c379a0"] = "Error(string)",
+            ["0x098fb561"] = "InsufficientInputAmount()",
+            ["0x42301c23"] = "InsufficientOutputAmount()",
+            ["0xbb55fd27"] = "InsufficientLiquidity()",
+            ["0x203d82d8"] = "Expired()",
+            ["0x8baa579f"] = "InvalidSignature()",
+            ["0xe450d38c"] = "ERC20InsufficientBalance(address,uint256,uint256)",
+            ["0xfb8f41b2"] = "ERC20InsufficientAllowance(address,uint256,uint256)",
+            ["0xf4d678b8"] = "InsufficientBalance()",
+            ["0xf9067066"] = "AllowanceOverflow()",
+            ["0x8301ab38"] = "AllowanceUnderflow()",
+            ["0x4c14f64c"] = "InvalidSender(address)",
+            ["0x9cfea583"] = "InvalidReceiver(address)",
+        };
+
         private readonly IRpcClientFactory _rpcClientFactory;
         private readonly IChainManagementService _chainManagementService;
         private readonly IErc20TokenService _tokenService;
@@ -85,6 +106,15 @@ namespace Nethereum.Wallet.Services.Transaction
                     callInput.ChainId = new Hex.HexTypes.HexBigInteger(chainId);
                 }
 
+                try
+                {
+                    await web3.Eth.Transactions.Call.SendRequestAsync(callInput, new BlockParameter(blockNumber)).ConfigureAwait(false);
+                }
+                catch (Exception ethCallEx)
+                {
+                    return new StateChangesResult { Error = $"eth_call failed: {ethCallEx.Message}" };
+                }
+
                 var nodeDataService = new RpcNodeDataService(web3.Eth, new BlockParameter(blockNumber));
                 var executionStateService = new ExecutionStateService(nodeDataService);
 
@@ -123,6 +153,15 @@ namespace Nethereum.Wallet.Services.Transaction
                     CollectAddressesFromCalls(execResult.InnerCalls, allAddresses);
                 }
 
+                if (execResult.ProgramResult?.InnerCallResults != null)
+                {
+                    foreach (var icr in execResult.ProgramResult.InnerCallResults)
+                    {
+                        if (!string.IsNullOrEmpty(icr.CallInput?.To))
+                            allAddresses.Add(icr.CallInput.To);
+                    }
+                }
+
                 var fetchTasks = allAddresses.Select(addr =>
                     _abiStorage.GetABIInfoAsync(chainId, addr)).ToList();
                 await Task.WhenAll(fetchTasks).ConfigureAwait(false);
@@ -145,7 +184,12 @@ namespace Nethereum.Wallet.Services.Transaction
 
                 if (!execResult.Success)
                 {
-                    stateChanges.Error = execResult.RevertReason ?? execResult.Error ?? "Transaction would revert";
+                    var revertMsg = execResult.RevertReason ?? execResult.Error;
+                    if (string.IsNullOrEmpty(revertMsg) && execResult.ReturnData != null && execResult.ReturnData.Length >= 4)
+                    {
+                        revertMsg = await DecodeCustomErrorAsync(execResult.ReturnData, contractAddress, chainId).ConfigureAwait(false);
+                    }
+                    stateChanges.Error = revertMsg ?? "Transaction would revert";
                 }
 
                 stateChanges.Traces = execResult.Traces;
@@ -179,6 +223,7 @@ namespace Nethereum.Wallet.Services.Transaction
 
             return new TransactionExecutionContext
             {
+                Mode = ExecutionMode.Call,
                 Sender = callInput.From,
                 To = callInput.To,
                 Data = callInput.Data?.HexToByteArray(),
@@ -187,7 +232,7 @@ namespace Nethereum.Wallet.Services.Transaction
                 GasPrice = gasPrice,
                 MaxFeePerGas = callInput.MaxFeePerGas?.Value ?? gasPrice,
                 MaxPriorityFeePerGas = callInput.MaxPriorityFeePerGas?.Value ?? 1_000_000_000,
-                Nonce = callInput.Nonce?.Value ?? BigInteger.Zero,
+                Nonce = BigInteger.Zero,
                 IsEip1559 = callInput.MaxFeePerGas != null,
                 IsContractCreation = string.IsNullOrEmpty(callInput.To),
                 BlockNumber = (long)blockNumber.Value,
@@ -260,6 +305,55 @@ namespace Nethereum.Wallet.Services.Transaction
                         // Token not found in cache, leave symbol empty
                     }
                 }
+            }
+        }
+
+        private async Task<string> DecodeCustomErrorAsync(byte[] revertData, string contractAddress, long chainId)
+        {
+            try
+            {
+                var revertHex = revertData.ToHex(true);
+                var selector = revertHex.Substring(0, 10);
+
+                await _abiStorage.GetABIInfoAsync(chainId, contractAddress).ConfigureAwait(false);
+
+                var errorAbi = await _abiStorage.FindErrorABIAsync(
+                    new BigInteger(chainId), contractAddress, selector).ConfigureAwait(false);
+
+                if (errorAbi != null)
+                {
+                    var decoder = new FunctionCallDecoder();
+                    var decoded = decoder.DecodeError(errorAbi, revertHex);
+                    var paramStr = decoded != null && decoded.Count > 0
+                        ? string.Join(", ", decoded.Select(p => $"{p.Parameter.Name}: {p.Result}"))
+                        : "";
+                    return string.IsNullOrEmpty(paramStr)
+                        ? errorAbi.Name
+                        : $"{errorAbi.Name}({paramStr})";
+                }
+
+                var errorAbis = _abiStorage.FindErrorABI(selector);
+                if (errorAbis != null && errorAbis.Count > 0)
+                {
+                    var firstMatch = errorAbis[0];
+                    var decoder = new FunctionCallDecoder();
+                    var decoded = decoder.DecodeError(firstMatch, revertHex);
+                    var paramStr = decoded != null && decoded.Count > 0
+                        ? string.Join(", ", decoded.Select(p => $"{p.Parameter.Name}: {p.Result}"))
+                        : "";
+                    return string.IsNullOrEmpty(paramStr)
+                        ? firstMatch.Name
+                        : $"{firstMatch.Name}({paramStr})";
+                }
+
+                if (WellKnownErrors.TryGetValue(selector, out var knownError))
+                    return knownError;
+
+                return $"Custom error: {selector}";
+            }
+            catch
+            {
+                return $"Reverted with data: {revertData.ToHex(true)}";
             }
         }
 

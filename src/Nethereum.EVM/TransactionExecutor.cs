@@ -214,8 +214,16 @@ namespace Nethereum.EVM
                 ctx.BlobGasCost = IntrinsicGasCalculator.CalculateBlobGasCost(blobCount, ctx.BlobBaseFee);
             }
 
-            // Skip balance check for gas in Call mode - calls don't require gas payment
-            if (!ctx.IsCallMode)
+            // In Call mode (eth_call), give the sender unlimited balance so value transfers work
+            if (ctx.IsCallMode)
+            {
+                var maxUint256 = BigInteger.Pow(2, 256) - 1;
+                if (senderBalance < maxUint256 / 2)
+                {
+                    ctx.SenderAccount.Balance.UpdateExecutionBalance(maxUint256 / 2 - senderBalance);
+                }
+            }
+            else
             {
                 var maxCost = ctx.GasLimit * (ctx.IsEip1559 ? ctx.MaxFeePerGas : ctx.GasPrice) + ctx.Value + ctx.BlobGasCost;
 
