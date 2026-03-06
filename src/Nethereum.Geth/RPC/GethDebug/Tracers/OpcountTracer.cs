@@ -1,4 +1,4 @@
-using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
 
 namespace Nethereum.Geth.RPC.Debug.Tracers
 {

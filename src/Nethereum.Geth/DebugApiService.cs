@@ -1,6 +1,7 @@
 using Nethereum.Geth.RPC.Debug;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
+using Nethereum.RPC.DebugNode;
 
 namespace Nethereum.Geth
 {

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
 using Newtonsoft.Json;
 
 namespace Nethereum.Geth.RPC.Debug.Tracers

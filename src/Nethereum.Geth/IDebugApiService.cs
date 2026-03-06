@@ -1,4 +1,5 @@
 ﻿using Nethereum.Geth.RPC.Debug;
+using Nethereum.RPC.DebugNode;
 
 namespace Nethereum.Geth
 {
