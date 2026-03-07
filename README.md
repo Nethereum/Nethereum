@@ -1,163 +1,231 @@
 # Nethereum
- [![Documentation Status](https://readthedocs.org/projects/nethereum/badge/?version=latest)](https://nethereum.readthedocs.io/en/latest/) [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)
 
-Technical support, chat and collaboration at Discord: https://discord.gg/u3Ej2BReNn
+[![Documentation Status](https://readthedocs.org/projects/nethereum/badge/?version=latest)](https://nethereum.readthedocs.io/en/latest/) [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3) [![Discord](https://img.shields.io/discord/765580659816636426?label=Discord&logo=discord)](https://discord.gg/u3Ej2BReNn)
 
-# What is Nethereum ?
+Nethereum is the .NET integration platform for Ethereum and EVM-compatible blockchains. It provides a complete development stack — from smart contract interaction and transaction signing, through a full EVM simulator and in-process Ethereum node, to blockchain data indexing, an ERC-4337 account abstraction bundler, a Blazor blockchain explorer, MUD framework support, multi-platform wallet UIs, Unity game integration, and .NET Aspire orchestration. Nethereum targets netstandard 2.0 through .NET 10, .NET Framework 4.5.1+, and Unity, running on Windows, Linux, macOS, Android, iOS, WebAssembly, and game consoles.
 
-Nethereum is the .Net integration library for Ethereum, simplifying the access and smart contract interaction with Ethereum nodes both public like Geth (or your preferred client) L2 chains like Optimism, Arbitrum (or your preferred L2), any compatible EVM chain (Gnosis, etc) and permissioned chains like [Quorum](https://www.jpmorgan.com/global/Quorum).
+## Try Nethereum in Your Browser
 
-Nethereum is developed targeting netstandard 1.1, netstandard 2.0, netcore 3.1, net451, .net 6, .net 8 and also as a portable library, hence it is compatible with all the operating systems (Windows, Linux, MacOS, Android and OSX) and has been tested on cloud, mobile, desktop, consoles and IoT.
-
-# Nethereum Playground. Try Nethereum now in your browser.
-Go to http://playground.nethereum.com to browse and execute all the different samples on how to use Nethereum directly in your browser. 
+Go to [playground.nethereum.com](http://playground.nethereum.com) to browse and execute samples directly in your browser — no setup required.
 
 [![Nethereum Playground](screenshots/playground.png)](http://playground.nethereum.com)
 
-# Do you need support, want to have a chat, or want to help?
-Please join the Discord server using this link: https://discord.gg/u3Ej2BReNn
-We should be able to answer there any simple queries, general comments or requests, everyone is welcome.
-If you want to help or have any ideas for a pull request just come and chat.
-
-## Documentation
-The documentation and guides can be found at [Read the docs](https://nethereum.readthedocs.io/en/latest/). 
-
-## Features
-
-* JSON RPC / IPC Ethereum core methods.
-* Geth management API (admin, personal, debugging, miner).
-* [Parity](https://www.parity.io/) management API.
-* [Quorum](https://www.jpmorgan.com/global/Quorum) integration.
-* Simplified smart contract interaction for deployment, function calling, transaction and event filtering and decoding of topics.
-* [Unity 3d](https://unity3d.com/) Unity integration.
-* ABI to .Net type encoding and decoding, including attribute based for complex object deserialization.
-* Hd Wallet
-* External signers integration (Azure, AWS)
-* Wallet integration (Metamask, WalletConnect)
-* EVM Simulator
-* Transaction, RLP and message signing, verification and recovery of accounts.
-* Libraries for standard contracts Tokens, [ENS](https://ens.domains/), MUD (https://mud.dev/), Gnosis Safe
-* Integrated TestRPC testing to simplify TDD and BDD (Specflow) development.
-* Key storage using Web3 storage standard.
-* Simplified account life cycle for both managed by third party client (personal) or stand alone (signed transactions).
-* Low level Interception of RPC calls.
-* Code generation of smart contracts services.
-
-## Quick installation
-
-Nethereum provides two types of packages. Standalone packages targeting Netstandard 1.1, net451 and where possible net351 to support Unity3d. There is also a Nethereum.Portable library which combines all the packages into a single portable library. As netstandard evolves and is more widely supported, the portable library might be eventually deprecated.
-
-To install the latest version:
-
-#### Windows/Mac/Linux users
+## Quick Start
 
 ```
-dotnet add package Nethereum.Web3 
+dotnet add package Nethereum.Web3
 ```
 
-## Simple Code generation of Contract definitions
-If you are working with smart contracts, you can quickly code generate contract definitions using the vscode solidity extension (please check the documentation for other options)
+### Get an account balance
+
+```csharp
+var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_API_KEY");
+var balance = await web3.Eth.GetBalance.SendRequestAsync("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae");
+Console.WriteLine($"Balance: {Web3.Convert.FromWei(balance.Value)} ETH");
+```
+
+### Transfer ETH
+
+```csharp
+var account = new Account("YOUR_PRIVATE_KEY");
+var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR_API_KEY");
+
+var receipt = await web3.Eth.GetEtherTransferService()
+    .TransferEtherAndWaitForReceiptAsync("0xRecipientAddress", 0.01m);
+```
+
+### Interact with a smart contract
+
+```csharp
+// Use code-generated typed services (see Code Generation below)
+var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
+var receipt = await transferHandler.SendRequestAndWaitForReceiptAsync(contractAddress,
+    new TransferFunction { To = recipientAddress, Value = amount });
+```
+
+## What You Can Build
+
+Nethereum includes 130+ packages organised into focused libraries. Every item below links to the relevant section in **[COMPONENTS.md](./COMPONENTS.md)** where you'll find package names, descriptions, and links to individual project READMEs.
+
+### [Basics](./COMPONENTS.md#1-core-foundation)
+
+- Send ETH and interact with contracts
+- Work with ERC-20, ERC-721, or ERC-1155 tokens (typed contract services for all major standards)
+
+### [Signing & Key Management](./COMPONENTS.md#2-signing--key-management)
+
+- Sign transactions offline
+- Use an HD wallet (BIP32/BIP39)
+- Sign with Trezor or Ledger hardware wallets
+- Sign with AWS KMS or Azure Key Vault
+- Sign EIP-712 typed structured data
+
+### [Local Development](./COMPONENTS.md#5-in-process-ethereum-node)
+
+- Run a local dev chain — no external node required (pre-funded accounts, auto-mine, time manipulation)
+- Simulate EVM execution in-process with call tracing and [step-by-step debugging](./COMPONENTS.md#4-evm-simulator)
+- Preview transaction state changes before signing (EVM simulation)
+- Spin up a full dev environment with [.NET Aspire](./COMPONENTS.md#net-aspire-orchestration) (DevChain + PostgreSQL + Indexer + Explorer)
+
+### [Code Generation](./COMPONENTS.md#code-generation)
+
+- Generate C# contract services from Solidity ABI
+- Generate UI components from contract definitions
+- Generate MUD table services and queries
+
+### [Data & Indexing](./COMPONENTS.md#7-blockchain-data-processing--storage)
+
+- Index blockchain data to a database (PostgreSQL, SQL Server, or SQLite)
+- Index token transfers and compute balances
+- Build a [blockchain explorer](./COMPONENTS.md#explorer) (Blazor Server with ABI decoding, token pages, MUD table browsing)
+- Fetch ABI from Sourcify or Etherscan
+- Query Ethereum data services and external APIs
+- Get token prices, metadata, and logos (CoinGecko integration)
+- Discover and scan token balances across wallets (multicall batching)
+
+### [DeFi & Protocols](./COMPONENTS.md#3-smart-contracts--standards)
+
+- Swap tokens on Uniswap (V2/V3/V4)
+- Use Permit2 for gasless token approvals
+- Accept crypto payments in your API (x402 server middleware + facilitator)
+- Pay for x402-protected API endpoints (client with EIP-3009 signed authorizations)
+- Resolve ENS names (typed ENS services built-in)
+- Implement Sign-In with Ethereum (SIWE)
+- Use Gnosis Safe multi-sig
+- Interact with Circles UBI protocol
+
+### [Account Abstraction](./COMPONENTS.md#6-account-abstraction-erc-4337--erc-7579)
+
+- Use smart accounts (ERC-4337 UserOperations)
+- Build an ERC-4337 bundler (mempool, gas estimation, reputation tracking)
+- Run a bundler RPC server
+- Deploy ERC-7579 modular smart accounts (validators, executors, hooks, session keys, paymasters)
+
+### [MUD — Autonomous Worlds](./COMPONENTS.md#8-mud-framework)
+
+- Work with MUD World systems and tables — systems are smart contracts that must be registered and have their own lifecycle (registration, discovery, access control), while tables define on-chain schemas with typed encoding and store events
+- Index and normalise MUD store records to Postgres
+- Query normalised MUD tables with predicates
+- Build MUD table UIs in Blazor
+
+### [Wallet & UI](./COMPONENTS.md#9-wallet--ui-frameworks)
+
+- Build a multi-platform wallet app (MVVM architecture with Blazor and MAUI renderers)
+- Integrate browser wallets in Blazor (EIP-6963 multi-wallet discovery)
+- Connect via WalletConnect / Reown
+- Interact with any contract dynamically — no code generation needed (DynamicQueryFunction, DynamicTransactionFunction)
+- Build a [Unity game with Ethereum](./COMPONENTS.md#unity--gaming)
+
+### [Verification & Cryptography](./COMPONENTS.md#consensus--cryptography)
+
+- Verify beacon chain state via light client
+- Validate account balances and state against proofs
+- Calculate Merkle proofs and state roots (Patricia Trie)
+
+### [Infrastructure](./COMPONENTS.md#10-ecosystem--extensions)
+
+- Run a custom [application chain](./COMPONENTS.md#application-chain-preview) (Preview) — domain-specific chains for app data and rules, with L1/L2 anchoring and user data exit
+- Use System.Text.Json / AOT-friendly RPC
+- Stream real-time data via WebSocket subscriptions
+- Use reactive extensions (Rx.NET) for RPC
+
+## Code Generation
+
+Generate typed C# contract services directly from Solidity ABI using the [VS Code Solidity extension](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity) or the CLI tool:
 
 [![Code generation of Contract Definitions](https://github.com/juanfranblanco/vscode-solidity/raw/master/screenshots/compile-codegnerate-nethereum.png)](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
 
-## Main Libraries
+```
+dotnet tool install -g Nethereum.Generator.Console
+```
 
-|  Project Source | Nuget_Package |  Description |
-| ------------- |--------------------------|-----------|
-| [Nethereum.Web3](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Web3)    | [![NuGet version](https://badge.fury.io/nu/nethereum.web3.svg)](https://badge.fury.io/nu/nethereum.web3)| Ethereum Web3 Class Library simplifying the interaction via RPC. Includes contract interaction, deployment, transaction, encoding / decoding and event filters |
-| [Nethereum.Unity](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Unity) |  | Unity3d integration, libraries can be found in the Nethereum [releases](https://github.com/Nethereum/Nethereum/releases) |
+This generates typed service classes, function/event DTOs, deployment messages, and optionally Blazor UI components and MUD table services.
 
+## Unity
 
-## Core Libraries
+Nethereum supports Unity with pre-compiled libraries targeting .NET Framework 4.7.2 and netstandard 2.1. The Unity integration lives in its own repository: **[Nethereum.Unity](https://github.com/Nethereum/Nethereum.Unity)**. Compiled libraries are also included in each [GitHub release](https://github.com/Nethereum/Nethereum/releases) and in `src/compiledlibraries/`.
 
-|  Project Source | Nuget_Package |  Description |
-| ------------- |--------------------------|-----------|
-| [Nethereum.ABI](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.ABI) | [![NuGet version](https://badge.fury.io/nu/nethereum.abi.svg)](https://badge.fury.io/nu/nethereum.abi)| Encoding and decoding of ABI Types, functions, events of Ethereum contracts |
-| [Nethereum.EVM](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.EVM) | |Ethereum Virtual Machine API|
-| [Nethereum.Hex](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Hex) | [![NuGet version](https://badge.fury.io/nu/nethereum.hex.svg)](https://badge.fury.io/nu/nethereum.hex)| HexTypes for encoding and decoding String, BigInteger and different Hex helper functions|
-| [Nethereum.RPC](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.RPC)   | [![NuGet version](https://badge.fury.io/nu/nethereum.rpc.svg)](https://badge.fury.io/nu/nethereum.rpc) | Core RPC Class Library to interact via RCP with an Ethereum client |
-| [Nethereum.JsonRpc.Client](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.JsonRpc.Client)   | [![NuGet version](https://badge.fury.io/nu/nethereum.jsonrpc.client.svg)](https://badge.fury.io/nu/nethereum.jsonrpc.client) | Nethereum JsonRpc.Client core library to use in conjunction with either the JsonRpc.RpcClient, the JsonRpc.IpcClient or other custom Rpc provider |
-| [Nethereum.JsonRpc.RpcClient](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.JsonRpc.RpcClient)   | [![NuGet version](https://badge.fury.io/nu/nethereum.jsonrpc.rpcclient.svg)](https://badge.fury.io/nu/nethereum.jsonrpc.rpcclient) | JsonRpc Rpc Client using Http|
-| [Nethereum JsonRpc IpcClient](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.JsonRpc.IpcClient)| [![NuGet version](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient.svg)](https://badge.fury.io/nu/nethereum.jsonRpc.ipcclient) |JsonRpc IpcClient provider for Windows, Linux and Unix|
-| [Nethereum.RLP](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.RLP)  | [![NuGet version](https://badge.fury.io/nu/nethereum.rlp.svg)](https://badge.fury.io/nu/nethereum.rlp) | RLP encoding and decoding |
-| [Nethereum.KeyStore](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.KeyStore)  | [![NuGet version](https://badge.fury.io/nu/nethereum.keystore.svg)](https://badge.fury.io/nu/nethereum.keystore) | Keystore generation, encryption and decryption for Ethereum key files using the Web3 Secret Storage definition, https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition |
-| [Nethereum.Signer](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Signer)  | [![NuGet version](https://badge.fury.io/nu/nethereum.signer.svg)](https://badge.fury.io/nu/nethereum.signer) | Nethereum signer library to sign and verify messages, RLP and transactions using an Ethereum account private key |
-| [Nethereum.Contracts](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Contracts)  | [![NuGet version](https://badge.fury.io/nu/nethereum.contracts.svg)](https://badge.fury.io/nu/nethereum.contracts) | Core library to interact via RPC with Smart contracts in Ethereum |
-| [Nethereum.IntegrationTesting](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.IntegrationTesting)  |   | Integration testing module |
-| [Nethereum.HDWallet](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.HDWallet)  | [![NuGet version](https://badge.fury.io/nu/nethereum.HDWallet.svg)](https://badge.fury.io/nu/nethereum.HDWallet) | Generates an HD tree of Ethereum compatible addresses from a randomly generated seed phrase (using BIP32 and BIP39) |
+Key packages: `Nethereum.Unity` (coroutine-based RPC and contract interaction), `Nethereum.Unity.EIP6963` (browser wallet discovery for WebGL), and `Nethereum.Unity.Metamask`.
 
-Note: IPC is supported for Windows, Unix and Linux but is only available using Nethereum.Web3 not Nethereum.Portable
- 
-## Smart contract API Libraries
+Try the Unity samples in the [Nethereum Playground](http://playground.nethereum.com) or see the [Nethereum Flappy](https://github.com/Nethereum/Nethereum.Flappy) game example.
 
-|  Project Source | Nuget_Package |  Description |
-| ------------- |--------------------------|-----------
-| [Nethereum.ENS](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.ENS)| [![NuGet version](https://badge.fury.io/nu/nethereum.ens.svg)](https://badge.fury.io/nu/nethereum.ens)| Ethereum Name service library (original ENS) WIP to upgrade to latest ENS |
+## .NET Aspire Template
 
-## Utilities
+Spin up a complete Ethereum development environment with a single command:
 
-|  Project Source |  Description |
-| ------------- |--------------------------|
-| [Nethereum.Generator.Console](https://github.com/Nethereum/Nethereum/tree/master/generators/Nethereum.Generator.Console) |  |
-| [Nethereum.Console](https://github.com/Nethereum/Nethereum.Console) | A collection of command line utilities to interact with Ethereum and account management | |
-[Testchains](https://github.com/Nethereum/TestChains) | Pre-configured devchains for fast response (PoA) | | 
-[DappHybrid](https://github.com/Nethereum/Nethereum.DappHybrid) | A cross-platform hybrid hosting mechanism for web based decentralised applications |
-## Training modules
+```
+dotnet new install Nethereum.DevChain.Template
+dotnet new nethereum-devchain -n MyChain
+cd MyChain/AppHost && dotnet run
+```
 
-|  Project Source |  Description |
-| ------------- |--------------------------|
-|[Nethereum.Workbooks](https://github.com/Nethereum/Nethereum.Workbooks) | Xamarin Workbook tutorials including executable code | 
-|[Nethereum.Tutorials](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.Tutorials) | Tutorials to run on VS Studio |
+This creates an Aspire-orchestrated solution with a DevChain node, PostgreSQL database, blockchain indexer (blocks, transactions, tokens, MUD), and a Blazor blockchain explorer — all wired with service discovery, health checks, and OpenTelemetry.
 
-## Code samples
+## Examples & Demos
 
-|  Source |  Description |
-| ------------- |------------|
-[Keystore generator](https://github.com/Nethereum/Nethereum/tree/master/src/Nethereum.KeyStore.Console.Sample)| Keystore file generator|
-[Faucet](https://github.com/Nethereum/Nethereum.Faucet)| Web application template for an Ether faucet |
-[Nethereum Flappy](https://github.com/Nethereum/Nethereum.Flappy)| The source code files for the Unity3d game integrating with Ethereum |
-[Nethereum Game Sample](https://github.com/Nethereum/nethereum.game.sample)| Sample game demonstrating how to integrate Nethereum with [UrhoSharp's SamplyGame](https://github.com/xamarin/urho-samples/tree/master/SamplyGame) to build a cross-platform game interacting with Ethereum |
-[Nethereum UI wallet sample](https://github.com/Nethereum/nethereum.UI.wallet.sample)| Cross platform wallet example using Nethereum, Xamarin.Forms and MvvmCross, targeting: Android, iOS, Windows Mobile, Desktop (windows 10 uwp), IoT with the Raspberry PI and Xbox. |
-|[Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
-[Nethereum Windows wallet sample](https://github.com/Nethereum/Nethereum.SimpleWindowsWallet) | Windows forms wallet sample providing the core functionality for Loading accounts from different mediums, Ether transfer, Standard token interaction. This is going to be the basis for the future cross-platform wallet / dapp |
-[Blazor/Blockchain Explorer](https://github.com/Nethereum/NethereumBlazor) | Wasm blockchain explorer based on [Blazor](https://github.com/aspnet/Blazor) and [ReactiveUI](https://github.com/reactiveui/ReactiveUI)|
+The repository includes working examples you can run immediately:
 
-### Video guides
-There are a few video guides, which might be helpful to get started. 
-**NOTE: These videos are for version 1.0, so some areas have changed.**
+**Templates:**
+- `dotnet new nethereum-devchain` — full Aspire DevChain environment (see above)
 
-Please use the Nethereum playground for the latest samples.
+**Demos** (`src/demos/`):
+- [Wallet Blazor Demo](src/demos/Nethereum.Wallet.Blazor.Demo/) — Blazor Server wallet application
+- [X402 Simple Client](src/demos/Nethereum.X402.SimpleClient/) — pay for x402-protected API endpoints
+- [X402 Simple Server](src/demos/Nethereum.X402.SimpleServer/) — accept crypto payments in your API
+- [X402 Facilitator Server](src/demos/Nethereum.X402.FacilitatorServer/FacilitatorServer/) — payment verification service
 
-#### Introductions
+**Console Examples** (`consoletests/`):
+- [DevChain Integration Demo](consoletests/Nethereum.DevChain.IntegrationDemo/) — in-process Ethereum node usage
+- [WalletConnect Blazor](consoletests/NethereumWCBlazor/) — WalletConnect v2 integration
+- [Reown AppKit Blazor](consoletests/NethereumReownAppKitBlazor/) — Reown (WalletConnect) AppKit modal
+- [MUD Log Processing](consoletests/NethereumMudLogProcessing/) — MUD store event indexing
+- [MUD Store REST API](consoletests/NethereumMudStoredRecordsRestApi/) — serve MUD records via REST
+- [HD Wallet Blazor Test](consoletests/Nethereum.HDWallet.BlazorTest/) — BIP32/BIP39 wallet in Blazor
+- [Trezor Console](consoletests/Nethereum.Signer.Trezor.Console/) — Trezor hardware wallet signing
+- [Azure Key Vault Console](consoletests/Nethereum.Signer.AzureKeyVault.Console/) — Azure KMS signing
+- [WebSocket Streaming](consoletests/Nethereum.WebSocketsStreamingTest/) — real-time blockchain data
 
-These are two videos that can take you through all the initial steps from creating a contract to deployment, one in the classic windows, visual studio environment and another in a cross platform mac and visual studio code. 
+## Supported Platforms
 
-##### Windows, Visual Studio
-This video takes you through the steps of creating a smart contract, compiling it, starting a private chain and deploying it using Nethereum.
+| Target | Scope |
+|---|---|
+| netstandard 2.0, net451, net461, net6.0, net8.0, net9.0, net10.0 | Core libraries |
+| net8.0, net10.0 | CoreChain, AppChain, Server components |
+| net6.0–net10.0 | Blazor UI |
+| net461, net472, netstandard 2.1 | Unity |
 
-[![Smart contracts, private test chain and deployment to Ethereum with Nethereum](http://img.youtube.com/vi/4t5Z3eX59k4/0.jpg)](http://www.youtube.com/watch?v=4t5Z3eX59k4 "Smart contracts, private test chain and deployment to Ethereum with Nethereum")
+Compatible with Windows, Linux, macOS, Android, iOS, WebAssembly, and game consoles.
 
+## Full Component Catalog
 
-#### Introduction to Calls, Transactions, Events, Filters and Topics
+For a complete guide covering all 130+ packages organised by use case — with package names, descriptions, and links to individual READMEs — see **[COMPONENTS.md](./COMPONENTS.md)**.
 
-This hands on demo provides an introduction to calls, transactions, events filters and topics
+## Documentation & Community
 
-[![Introduction to Calls, Transactions, Events, Filters and Topics](http://img.youtube.com/vi/Yir_nu5mmw8/0.jpg)](https://www.youtube.com/watch?v=Yir_nu5mmw8 "Introduction to Calls, Transactions, Events, Filters and Topics")
- 
-#### Mappings, Structs, Arrays and complex Functions Output (DTOs) 
-
-This video provides an introduction on how to store and retrieve data from structs, mappings and arrays decoding multiple output parameters to Data Transfer Objects
-
-[![Mappings, Structs, Arrays and complex Functions Output (DTOs)](http://img.youtube.com/vi/o8UC96K0rg8/0.jpg)](https://www.youtube.com/watch?v=o8UC96K0rg8 "Mappings, Structs, Arrays and complex Functions Output (DTOs)")
-
+- **Documentation**: [nethereum.readthedocs.io](https://nethereum.readthedocs.io/en/latest/)
+- **Playground**: [playground.nethereum.com](http://playground.nethereum.com)
+- **Discord**: [Join the community](https://discord.gg/u3Ej2BReNn) — technical support, chat, and collaboration
 
 ## Thanks and Credits
 
-* Many thanks to Cass for the fantastic logo (https://github.com/c055) and recreating one of the @ethereumjs logo ideas for Nethereum https://github.com/ethereumjs/organization/issues/1
-* Many thanks to everyone in Maker for providing very early feedback.
-* Many thanks to everyone who has submitted a request for extra features, help or bugs either here in github, gitter/discord or other channels, you are continuously shaping this project. 
-  A big shout out specially to @slothbag, @matt.tan, @knocte, @TrekDev, @raymens, @rickzanux, @naddison36, @bobsummerwill, @brendan87, @dylanmckendry that were using Nethereum and providing great feedback from the beginning.
-  @djsowa Marcin Sowa for his help on IPC in Linux.
-* Everyone in the Ethereum, Consensys and the blockchain community. 
-* Huge shout out to everyone developing all the different Ethereum implementations Geth, Parity, EthereumJ, EthCpp, ethereum-js (and every other utility around it), python (in the different shapes), ruby (digix guys), solidity, vyper, serpent, web3 implementations (web3js the first) and ethjs, web3j, etc, etc and last but not least the .Net Bitcoin implementation.
-* And many thanks to all you that keep helping and encouraging directly or indirectily.
+Building Nethereum has been a journey of over ten years, and it would not exist without the incredible people and community around it.
+
+First and foremost, thank you to my family for their patience, support, and understanding through countless late nights, weekends, and "just one more commit" moments. You made this possible.
+
+Thank you to Cass ([@c055](https://github.com/c055)) for the fantastic Nethereum logo, recreating one of the @ethereumjs logo ideas for our project.
+
+To all my friends across the Ethereum ecosystem — the people I've met at conferences, hackathons, online chats, and working groups over the years. The friendships built through this shared passion for decentralised technology have been one of the most rewarding parts of the journey.
+
+A special thank you to Gael, Dave, Kevin, Caleb, Aaron, and Eva for their help and work on Nethereum — your contributions have been invaluable.
+
+To every contributor who has ever submitted a pull request, reported a bug, suggested a feature, or simply asked a question on GitHub, Discord, or Gitter — you are continuously shaping this project. Every issue filed, every piece of feedback, every "it doesn't work when..." has made Nethereum better.
+
+To the early adopters who believed in Nethereum when it was just getting started and provided invaluable feedback — your trust and patience in those early days meant everything.
+
+To the teams and projects I've had the privilege of collaborating with and trying to help over the years — from enterprise pilots to startup MVPs, from gaming studios to DeFi protocols. Seeing Nethereum used in real-world applications is the ultimate motivation.
+
+To everyone building the Ethereum ecosystem — the client teams (Geth, Besu, Nethermind, Erigon, Reth), the compiler teams (Solidity, Vyper), the tooling teams (Foundry, Hardhat, Remix), the library builders (web3.js, ethers.js, web3j, web3.py), the L2 teams, the researchers, the standard authors, and everyone else pushing this technology forward. We all build on each other's work.
+
+To Consensys, the Ethereum Foundation, and the broader blockchain community for fostering an environment where open-source collaboration thrives.
+
+And to everyone who continues to help, contribute, encourage, and inspire — directly or indirectly. The best is yet to come.
