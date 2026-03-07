@@ -149,7 +149,27 @@ Key packages: `Nethereum.Unity` (coroutine-based RPC and contract interaction), 
 
 Try the Unity samples in the [Nethereum Playground](http://playground.nethereum.com) or see the [Nethereum Flappy](https://github.com/Nethereum/Nethereum.Flappy) game example.
 
-## .NET Aspire Template
+## Templates
+
+### Nethereum.Templates.Pack
+
+The templates pack provides ready-to-use project templates for smart contract development, Blazor integration, and authentication.
+
+```
+dotnet new install Nethereum.Templates.Pack
+```
+
+| Template | Short Name | Description |
+|---|---|---|
+| Smart Contract Library + ERC20 XUnit | `smartcontract` | Smart contract library with ERC20 example, auto code generation, and integration tests |
+| ERC721/ERC1155 Open Zeppelin + XUnit | `nethereum-erc721-oz` | NFT and multi-token development with OpenZeppelin |
+| Blazor Metamask Wasm/Server | `nethereum-mm-blazor` | Blazor integration with MetaMask (Wasm and Server) |
+| Blazor SIWE Wasm/Server/REST API | `nethereum-siwe` | Sign-In with Ethereum authentication |
+| WebSocket Streaming | `nethereum-ws-stream` | Real-time blockchain data streaming |
+
+Source and details: [Nethereum.Templates.SmartContractDefault](https://github.com/Nethereum/Nethereum.Templates.SmartContractDefault), [Nethereum.Templates.SmartContracts.OZ-Erc721-Erc1155](https://github.com/Nethereum/Nethereum.Templates.SmartContracts.OZ-Erc721-Erc1155), [Nethereum.Templates.Metamask.Blazor](https://github.com/Nethereum/Nethereum.Templates.Metamask.Blazor), [Nethereum.Templates.Siwe](https://github.com/Nethereum/Nethereum.Templates.Siwe)
+
+### Nethereum.DevChain.Template (.NET Aspire)
 
 Spin up a complete Ethereum development environment with a single command:
 
@@ -161,12 +181,33 @@ cd MyChain/AppHost && dotnet run
 
 This creates an Aspire-orchestrated solution with a DevChain node, PostgreSQL database, blockchain indexer (blocks, transactions, tokens, MUD), and a Blazor blockchain explorer — all wired with service discovery, health checks, and OpenTelemetry.
 
-## Examples & Demos
+## Wallets & End-to-End Examples
 
-The repository includes working examples you can run immediately:
+### Blazor / MAUI Hybrid Explorer Wallet (Desktop, Mobile)
 
-**Templates:**
-- `dotnet new nethereum-devchain` — full Aspire DevChain environment (see above)
+A .NET Blazor Wasm SPA, Desktop (Windows/Mac), Android and iOS light blockchain explorer and wallet.
+
+Source: [Nethereum-Explorer-Wallet-Template-Blazor](https://github.com/Nethereum/Nethereum-Explorer-Wallet-Template-Blazor) | Try it: [explorer.nethereum.com](https://explorer.nethereum.com)
+
+### Desktop Wallet (Avalonia)
+
+A reactive cross-platform desktop wallet using Nethereum, Avalonia, and ReactiveUI.
+
+Source: [Nethereum.UI.Desktop](https://github.com/Nethereum/Nethereum.UI.Desktop)
+
+## Unity
+
+Nethereum supports Unity with pre-compiled libraries targeting .NET Framework 4.7.2 and netstandard 2.1.
+
+**Getting started:**
+- **Unity Package**: install via git URL from **[Nethereum.Unity](https://github.com/Nethereum/Nethereum.Unity)**
+- **Sample Template**: [Unity3dSampleTemplate](https://github.com/Nethereum/Unity3dSampleTemplate) — BlockNumber query, Ether transfer, ERC20 deploy/transfer/balance, MetaMask browser connectivity, cross-platform architecture (coroutines + async)
+- **WebGL + MetaMask**: [Nethereum.Unity.Webgl](https://github.com/Nethereum/Nethereum.Unity.Webgl) — deploy ERC721 NFTs and interact with them from a Unity WebGL build
+- **Game Example**: [Nethereum Flappy](https://github.com/Nethereum/Nethereum.Flappy) — Unity game integrating with Ethereum
+
+Compiled libraries are also included in each [GitHub release](https://github.com/Nethereum/Nethereum/releases) and in `src/compiledlibraries/`. Try the Unity samples in the [Nethereum Playground](http://playground.nethereum.com).
+
+## More Examples
 
 **Demos** (`src/demos/`):
 - [Wallet Blazor Demo](src/demos/Nethereum.Wallet.Blazor.Demo/) — Blazor Server wallet application
@@ -176,8 +217,12 @@ The repository includes working examples you can run immediately:
 
 **Console Examples** (`consoletests/`):
 - [DevChain Integration Demo](consoletests/Nethereum.DevChain.IntegrationDemo/) — in-process Ethereum node usage
+- [Metamask Blazor Example](consoletests/MetamaskExampleBlazor.Wasm/) — MetaMask Blazor Wasm integration
+- [Blazor Example Project](consoletests/BlazorExampleProject.Wasm/) — Blazor Wasm starter
 - [WalletConnect Blazor](consoletests/NethereumWCBlazor/) — WalletConnect v2 integration
+- [WalletConnect Avalonia](consoletests/NethereumWCAvalonia/) — WalletConnect with Avalonia desktop
 - [Reown AppKit Blazor](consoletests/NethereumReownAppKitBlazor/) — Reown (WalletConnect) AppKit modal
+- [Godot + WalletConnect Avalonia](consoletests/NethereumGodotWCAvalonia/) — Godot game engine integration
 - [MUD Log Processing](consoletests/NethereumMudLogProcessing/) — MUD store event indexing
 - [MUD Store REST API](consoletests/NethereumMudStoredRecordsRestApi/) — serve MUD records via REST
 - [HD Wallet Blazor Test](consoletests/Nethereum.HDWallet.BlazorTest/) — BIP32/BIP39 wallet in Blazor
