@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <VersionMajor>5</VersionMajor>
-    <VersionMinor>8</VersionMinor>
+    <VersionMajor>6</VersionMajor>
+    <VersionMinor>0</VersionMinor>
     <VersionPatch>0</VersionPatch>
     <NonDevAssemblyVersion>$(VersionMajor).$(VersionMinor).0</NonDevAssemblyVersion>
     <AssemblyVersion>$(NonDevAssemblyVersion)</AssemblyVersion>
@@ -14,6 +14,7 @@
     <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
 
     <NethereumVersion>$(NugetVersion)</NethereumVersion>
+    <NethereumVersionPreview>$(VersionMajor).$(VersionMinor).$(VersionPatch)-preview</NethereumVersionPreview>
 
   </PropertyGroup>
 </Project>
