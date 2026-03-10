@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Signer.IntegrationTests</Description>
     <Authors>Juan Blanco</Authors>
-	  <TargetFrameworks>net6.0</TargetFrameworks>
+	  <TargetFrameworks>net8.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

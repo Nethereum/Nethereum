@@ -1,5 +1,6 @@
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
+using Nethereum.XUnitEthereumClients;
 using Xunit;
 
 namespace Nethereum.Signer.UnitTests
@@ -64,6 +65,7 @@ namespace Nethereum.Signer.UnitTests
         //}
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "personal-sign", "Hash, sign, and recover signer address")]
         public void ShouldRecoverUsingShortcutHashes()
         {
             var signature =
@@ -81,6 +83,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "personal-sign", "Sign and verify a message (EIP-191)")]
         public void ShouldSignAndVerifyEncodingMessageAsUTF8()
         {
             var address = "0x12890D2cce102216644c59daE5baed380d84830c";

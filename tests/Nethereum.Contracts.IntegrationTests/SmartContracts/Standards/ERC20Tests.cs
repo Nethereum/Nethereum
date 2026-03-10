@@ -62,6 +62,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "erc20-tokens", "Deploy and interact with ERC-20 token")]
         public async void Test()
         {
             var addressOwner = EthereumClientIntegrationFixture.AccountAddress;

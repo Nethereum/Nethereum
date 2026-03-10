@@ -27,6 +27,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "multicall", "Batch multiple contract queries with Multicall")]
         public async void ShouldCheckBalanceOfMultipleAccounts()
         {
             //Connecting to Ethereum mainnet using Infura
@@ -50,6 +51,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "multicall", "Batch queries using RPC batch handler", Order = 1)]
         public async void ShouldCheckBalanceOfMultipleAccountsUsingRpcBatch()
         {
             //Connecting to Ethereum mainnet using Infura

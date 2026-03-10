@@ -18,6 +18,7 @@ namespace Nethereum.Contracts.IntegrationTests.Deployment
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "deploy-contract", "Deploy a contract and call its functions")]
         public async void ShouldDeployAContractAndPerformACall()
         {
             //The compiled solidity contract to be deployed

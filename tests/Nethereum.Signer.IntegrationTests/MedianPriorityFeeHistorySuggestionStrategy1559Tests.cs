@@ -20,6 +20,7 @@ namespace Nethereum.Signer.IntegrationTests
 
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "fee-estimation", "EIP-1559 fees with MedianPriorityFee strategy")]
         public async void ShouldBeAbleToCalculateHistoryMedium()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
@@ -39,6 +40,7 @@ namespace Nethereum.Signer.IntegrationTests
 
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "fee-estimation", "Send transactions with MedianPriorityFee strategy")]
         public async void ShouldBeAbleToCalculateHistoryAndSend1000sOfTransactions2()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)

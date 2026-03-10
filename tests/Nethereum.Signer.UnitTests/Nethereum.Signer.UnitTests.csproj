@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Signer.UnitTests Class Library</Description>
     <Authors>Juan Blanco</Authors>
-	  <TargetFrameworks>net6.0</TargetFrameworks>
+	  <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.UnitTests</AssemblyName>
     <PackageId>Nethereum.Signer.UnitTests</PackageId>
   </PropertyGroup>
@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Nethereum.Signer.EIP712\Nethereum.Signer.EIP712.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
   </ItemGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
 		<Reference Include="System.Numerics" />

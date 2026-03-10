@@ -18,6 +18,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "send-eth", "Transfer ETH with legacy gas price")]
         public async void ShouldTransferEtherWithGasPrice()
         {
             
@@ -34,6 +35,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "send-eth", "Transfer ETH (default gas)")]
         public async void ShouldTransferEther()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
@@ -64,6 +66,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "send-eth", "Transfer ETH with gas estimation", Order = 1)]
         public async void ShouldTransferEtherEstimatingAmount()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
@@ -106,6 +109,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "send-eth", "Transfer whole balance with EIP-1559 fees", Order = 2)]
         public async void ShouldTransferWholeBalanceInEtherEIP1599()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();

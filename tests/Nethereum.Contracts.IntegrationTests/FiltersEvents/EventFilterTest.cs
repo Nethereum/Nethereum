@@ -21,6 +21,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "events", "Filter and query contract events")]
         public async Task TestEvent()
         {
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;

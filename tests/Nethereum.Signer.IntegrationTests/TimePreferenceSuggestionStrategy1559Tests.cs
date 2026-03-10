@@ -21,6 +21,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
         
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "fee-estimation", "EIP-1559 fees with TimePreference strategy")]
         public async void ShouldBeAbleToCalculateHistoryAndSend1000sOfTransactions()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
