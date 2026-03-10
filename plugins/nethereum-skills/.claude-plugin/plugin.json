@@ -1,0 +1,23 @@
+{
+  "name": "nethereum-skills",
+  "description": "Nethereum Ethereum development skills for Claude Code. Provides verified, working code examples and step-by-step guidance for common Ethereum tasks using Nethereum (.NET). Includes skills for sending ETH, querying balances, ERC-20/721/1155 tokens, events, smart contracts, signing, DevChain, Account Abstraction, MUD, DeFi, and more.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Nethereum (Juan Blanco)"
+  },
+  "homepage": "https://docs.nethereum.com",
+  "repository": "https://github.com/Nethereum/Nethereum",
+  "license": "MIT",
+  "keywords": [
+    "ethereum",
+    "nethereum",
+    "dotnet",
+    "csharp",
+    "blockchain",
+    "smart-contracts",
+    "web3",
+    "erc20",
+    "solidity",
+    "devchain"
+  ]
+}
