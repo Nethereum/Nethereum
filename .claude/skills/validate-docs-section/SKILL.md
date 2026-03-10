@@ -55,6 +55,13 @@ When creating doc examples:
 3. **Guide pages and skills extract code from tagged tests** — never invent examples
 4. **The attribute is extractable via reflection** — tools can discover all doc examples by scanning for `[NethereumDocExample]` across test assemblies
 
+### Commit Integration
+
+The `/commit` skill (`.claude/commands/commit.md`) enforces documentation propagation:
+- When tagged tests change → README, guide, and skill updates are checked
+- When new public API is added without a tagged test → flagged for follow-up
+- This creates a closed loop: code change → test update → docs update → commit
+
 ### Adding to test projects
 
 The attribute lives in `Nethereum.XUnitEthereumClients`. To use it in a test project:
