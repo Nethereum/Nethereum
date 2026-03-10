@@ -9,6 +9,7 @@ using Nethereum.Signer.IntegrationTests.BatchCallAndSponsor;
 using Nethereum.Signer.IntegrationTests.BatchCallAndSponsor.ContractDefinition;
 using Nethereum.Signer.IntegrationTests.MockERC20;
 using Nethereum.Signer.IntegrationTests.MockERC20.ContractDefinition;
+using Nethereum.Documentation;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
 using System;
@@ -32,6 +33,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "eip7702", "Self-delegation and execute delegated smart contract")]
         public async Task ShouldCreateEip7022AuthorisationAndExecuteDelegatedSmartContractAsync()
         {
             //you could run these tests using foundry anvil --init genesis.json -v --hardfork prague 
@@ -141,6 +143,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "eip7702", "Encode and decode authorisation RLP")]
         public void ShouldDecodeEIP7022Authorisation()
         {
             var authorisation = new Authorisation7702()
@@ -161,6 +164,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "eip7702", "Batch sponsor multiple accounts")]
         public async Task ShouldCreateAuthoritiesForManyAccounts()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();

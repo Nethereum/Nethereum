@@ -3,6 +3,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.CoreChain.IntegrationTests.Contracts;
 using Nethereum.CoreChain.IntegrationTests.Fixtures;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -38,6 +39,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Get transaction by hash")]
         public async Task GetTransactionByHash_ReturnsCorrectTx()
         {
             var receipt = await DeployERC20Async();
@@ -51,6 +53,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Get block with transactions by number")]
         public async Task GetBlockByNumber_ContainsTransactions()
         {
             var receipt = await DeployERC20Async();
@@ -66,6 +69,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Get block by hash")]
         public async Task GetBlockByNumber_MatchesGetBlockByHash()
         {
             var receipt = await DeployERC20Async();
@@ -85,6 +89,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Get block number")]
         public async Task BlockParentHash_FormsValidChain()
         {
             await DeployERC20Async();
@@ -111,6 +116,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Get transaction receipt")]
         public async Task GetTransactionReceipt_HasAllFields()
         {
             var contractAddress = await DeployAndMintAsync(OneToken * 1000);
@@ -212,6 +218,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Decode events from receipt")]
         public async Task EventDecoding_TransferEvent()
         {
             var contractAddress = await DeployAndMintAsync(OneToken * 1000);
@@ -257,6 +264,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Get account balance")]
         public async Task GetBalance_ReflectsTransfers()
         {
             var senderBalanceBefore = await _fixture.Web3.Eth.GetBalance.SendRequestAsync(
@@ -275,6 +283,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "query-blocks", "Detect contract vs EOA")]
         public async Task GetCode_ReturnsDeployedBytecode()
         {
             var receipt = await DeployERC20Async();

@@ -1,6 +1,6 @@
 ---
 name: send-eth
-description: Send ETH between Ethereum addresses using Nethereum. Use when the user wants to transfer Ether, create a transaction, send crypto, or move funds between wallets. Also triggers for questions about gas, nonce, or transaction receipts.
+description: Send ETH between Ethereum addresses using Nethereum. Use when the user wants to transfer Ether, create a transaction, send crypto, or move funds between wallets. Also triggers for questions about gas, nonce, transaction receipts, EIP-1559 fees, or draining an account balance.
 user-invocable: true
 ---
 
@@ -8,42 +8,84 @@ user-invocable: true
 
 NuGet: `Nethereum.Web3`
 
-## Step 1: Create Account from private key
+Two approaches — `EtherTransferService` (handles gas/nonce/signing automatically) or manual transaction signing (full control).
+
+## Quick Start: EtherTransferService
 
 ```csharp
+using Nethereum.Web3;
+using Nethereum.Web3.Accounts;
+
 var privateKey = "0xYOUR_PRIVATE_KEY";
 var account = new Account(privateKey, Chain.MainNet);
-```
-
-## Step 2: Connect to node
-
-```csharp
 var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
-```
 
-## Step 3: Transfer ETH and wait for receipt
-
-```csharp
 var receipt = await web3.Eth.GetEtherTransferService()
     .TransferEtherAndWaitForReceiptAsync("0xRecipientAddress", 1.5m);
 ```
 
-## Multi-chain support
+Amount is in ETH (not wei) — `1.5m` sends 1.5 ETH.
+
+## Legacy Transfer with Gas Price
 
 ```csharp
-var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+var receipt = await web3.Eth.GetEtherTransferService()
+    .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, gasPriceGwei: 2);
+```
 
-var mainnet = new Account(privateKey, Chain.MainNet);
-var sepolia = new Account(privateKey, 11155111);
-var polygon = new Account(privateKey, 137);
+`gasPriceGwei` is in Gwei for convenience.
 
-// All derive the same address, different chain IDs
-// mainnet.Address == sepolia.Address == polygon.Address
+## EIP-1559 Transfer with Fee Suggestion
+
+```csharp
+var transferService = web3.Eth.GetEtherTransferService();
+var fee = await transferService.SuggestFeeToTransferWholeBalanceInEtherAsync();
+
+var receipt = await transferService
+    .TransferEtherAndWaitForReceiptAsync(
+        toAddress, 0.1m,
+        maxPriorityFee: fee.MaxPriorityFeePerGas.Value,
+        maxFeePerGas: fee.MaxFeePerGas.Value);
+```
+
+## Estimate Gas Before Sending
+
+```csharp
+var transferService = web3.Eth.GetEtherTransferService();
+var estimatedGas = await transferService.EstimateGasAsync(toAddress, 1.11m);
+
+var receipt = await transferService
+    .TransferEtherAndWaitForReceiptAsync(toAddress, 1.11m, gasPriceGwei: 2, estimatedGas);
+```
+
+## Send Entire Balance (EIP-1559)
+
+```csharp
+var transferService = web3.Eth.GetEtherTransferService();
+var fee = await transferService.SuggestFeeToTransferWholeBalanceInEtherAsync();
+
+var amount = await transferService
+    .CalculateTotalAmountToTransferWholeBalanceInEtherAsync(
+        fromAddress, maxFeePerGas: fee.MaxFeePerGas.Value);
+
+var receipt = await transferService
+    .TransferEtherAndWaitForReceiptAsync(
+        destinationAddress, amount,
+        fee.MaxPriorityFeePerGas.Value, fee.MaxFeePerGas.Value);
+```
+
+## Multi-chain Support
+
+```csharp
+var mainnet = new Account(privateKey, Chain.MainNet);    // Chain ID 1
+var sepolia = new Account(privateKey, 11155111);          // Sepolia testnet
+var polygon = new Account(privateKey, 137);               // Polygon mainnet
+// Same address on all chains, only chain ID differs
 ```
 
 Source: `AccountTypesDocExampleTests.ShouldCreateAccountForDifferentChains`
 
-## Manual signing: Legacy transaction
+## Manual Signing: Legacy Transaction
 
 ```csharp
 var signer = new LegacyTransactionSigner();
@@ -59,7 +101,7 @@ var signedRlpHex = signer.SignTransaction(
 
 Source: `SignerDocExampleTests.ShouldSignLegacyTransaction`
 
-## Manual signing: EIP-1559 transaction
+## Manual Signing: EIP-1559 Transaction
 
 ```csharp
 var signer = new Transaction1559Signer();
@@ -80,17 +122,12 @@ var signedRlpHex = signer.SignTransaction(privateKey, transaction);
 
 Source: `SignerDocExampleTests.ShouldSignEip1559Transaction`
 
-## EIP-155 with chain ID replay protection
-
+After manual signing, broadcast with:
 ```csharp
-var tx = new LegacyTransactionChainId(receiverAddress, amount, nonce, gasPrice, gasLimit, chainId);
-var signer = new LegacyTransactionSigner();
-signer.SignTransaction(privateKey.HexToByteArray(), tx);
+await web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + signedRlpHex);
 ```
 
-Source: `SignerDocExampleTests.ShouldSignEip155TransactionWithChainId`
-
-## Required usings
+## Required Usings
 
 ```csharp
 using Nethereum.Web3;

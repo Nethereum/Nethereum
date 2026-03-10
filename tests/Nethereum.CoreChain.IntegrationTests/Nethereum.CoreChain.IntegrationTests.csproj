@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Nethereum.Accounts\Nethereum.Accounts.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.KeyStore\Nethereum.KeyStore.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

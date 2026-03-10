@@ -1,6 +1,6 @@
 ---
 name: realtime-streaming
-description: Stream real-time blockchain data with Nethereum. Use when the user asks about WebSocket subscriptions, new block headers, pending transactions, event log streaming, or Rx observables.
+description: Stream real-time blockchain data with Nethereum. Use when the user asks about WebSocket subscriptions, new block headers, pending transactions, event log streaming, Rx observables, DEX monitoring, or live token transfer tracking.
 user-invocable: true
 ---
 
@@ -8,56 +8,81 @@ user-invocable: true
 
 NuGet: `Nethereum.RPC.Reactive`, `Nethereum.JsonRpc.WebSocketStreamingClient`
 
+Two approaches: WebSocket (sub-second latency) or HTTP polling (works everywhere).
+
 ## Connect
 
 ```csharp
 using Nethereum.JsonRpc.WebSocketStreamingClient;
+using Nethereum.RPC.Reactive.Eth.Subscriptions;
+
 var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/YOUR_KEY");
 await client.StartAsync();
 ```
 
+All subscriptions share the single connection.
+
 ## New Block Headers
 
-```csharp
-using Nethereum.RPC.Reactive.Eth.Subscriptions;
+Fires every time a new block is mined (~12s on mainnet). Headers include number, timestamp, gas — but not full transactions.
 
-var sub = new EthNewBlockHeadersObservableSubscription(client);
-sub.GetSubscriptionDataResponsesAsObservable()
-    .Subscribe(block => Console.WriteLine($"Block {block.Number}"));
-await sub.SubscribeAsync();
+```csharp
+var subscription = new EthNewBlockHeadersObservableSubscription(client);
+
+subscription.GetSubscriptionDataResponsesAsObservable()
+    .Subscribe(block =>
+    {
+        Console.WriteLine($"Block {block.Number} — {block.Timestamp}");
+        Console.WriteLine($"  Gas used: {block.GasUsed}");
+    });
+
+await subscription.SubscribeAsync();
 ```
 
 ## Pending Transactions
 
+Returns tx hashes only (not full objects). Very high volume on mainnet.
+
 ```csharp
-var sub = new EthNewPendingTransactionObservableSubscription(client);
-sub.GetSubscriptionDataResponsesAsObservable()
-    .Subscribe(txHash => Console.WriteLine($"Pending: {txHash}"));
-await sub.SubscribeAsync();
+var subscription = new EthNewPendingTransactionObservableSubscription(client);
+
+subscription.GetSubscriptionDataResponsesAsObservable()
+    .Subscribe(txHash =>
+    {
+        Console.WriteLine($"Pending tx: {txHash}");
+    });
+
+await subscription.SubscribeAsync();
 ```
 
-## ERC20 Transfer Event Streaming
+## ERC-20 Transfer Event Streaming
 
-Stream decoded ERC20 Transfer events from a specific contract (e.g. DAI):
+Use typed event DTOs for automatic filter creation and decoding:
 
 ```csharp
 using Nethereum.Contracts;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
-using Nethereum.RPC.Reactive.Eth.Subscriptions;
 
 var filterTransfers = Event<TransferEventDTO>.GetEventABI()
     .CreateFilterInput("0x6B175474E89094C44Da98b954EedeAC495271d0F");
 
-var sub = new EthLogsObservableSubscription(client);
-sub.GetSubscriptionDataResponsesAsObservable()
+var subscription = new EthLogsObservableSubscription(client);
+
+subscription.GetSubscriptionDataResponsesAsObservable()
     .Subscribe(log =>
     {
         var decoded = Event<TransferEventDTO>.DecodeEvent(log);
         if (decoded != null)
-            Console.WriteLine($"Transfer from {decoded.Event.From} value {decoded.Event.Value}");
+        {
+            Console.WriteLine($"Transfer: {decoded.Event.From} → {decoded.Event.To}");
+            Console.WriteLine($"  Value: {Web3.Convert.FromWei(decoded.Event.Value)}");
+        }
     });
-await sub.SubscribeAsync(filterTransfers);
+
+await subscription.SubscribeAsync(filterTransfers);
 ```
+
+`DecodeEvent` returns `null` for non-matching logs — safe on multi-event streams.
 
 ## DEX Trade Monitoring (Uniswap Swaps)
 
@@ -73,39 +98,52 @@ public class SwapEventDTO : IEventDTO
     [Parameter("address", "to", 6, true)]     public string To { get; set; }
 }
 
+var pairAddress = "0xa478c2975ab1ea89e8196811f51a7b7ade33eb11"; // DAI-ETH
 var filter = Event<SwapEventDTO>.GetEventABI().CreateFilterInput(pairAddress);
-var sub = new EthLogsObservableSubscription(client);
-sub.GetSubscriptionDataResponsesAsObservable()
+
+var subscription = new EthLogsObservableSubscription(client);
+subscription.GetSubscriptionDataResponsesAsObservable()
     .Subscribe(log =>
     {
         var swap = log.DecodeEvent<SwapEventDTO>();
-        var price = UnitConversion.Convert.FromWei(swap.Event.Amount0Out)
-                  / UnitConversion.Convert.FromWei(swap.Event.Amount1In);
-        Console.WriteLine($"Price: {price:F4}");
+        if (swap != null)
+        {
+            var amount0Out = UnitConversion.Convert.FromWei(swap.Event.Amount0Out);
+            var amount1In  = UnitConversion.Convert.FromWei(swap.Event.Amount1In);
+
+            if (swap.Event.Amount0In == 0 && swap.Event.Amount1Out == 0 && amount1In > 0)
+            {
+                var price = amount0Out / amount1In;
+                Console.WriteLine($"Sell ETH — Price: {price:F4} DAI/ETH");
+            }
+        }
     });
-await sub.SubscribeAsync(filter);
+
+await subscription.SubscribeAsync(filter);
 ```
 
 ## Pending Transaction Enrichment
 
-Subscribe to pending tx hashes, then fetch full transaction details:
+Fetch full transaction details from pending hashes:
 
 ```csharp
 using Nethereum.RPC.Reactive.Eth.Transactions;
 
-var sub = new EthNewPendingTransactionObservableSubscription(client);
-sub.GetSubscriptionDataResponsesAsObservable()
+var pendingSub = new EthNewPendingTransactionObservableSubscription(client);
+
+pendingSub.GetSubscriptionDataResponsesAsObservable()
     .Subscribe(txHash =>
     {
         var txByHash = new EthGetTransactionByHashObservableHandler(client);
         txByHash.GetResponseAsObservable().Subscribe(tx =>
         {
             if (tx != null)
-                Console.WriteLine($"{tx.TransactionHash} from {tx.From} to {tx.To}");
+                Console.WriteLine($"Pending: {tx.From} → {tx.To} ({Web3.Convert.FromWei(tx.Value)} ETH)");
         });
         txByHash.SendRequestAsync(txHash).Wait();
     });
-await sub.SubscribeAsync();
+
+await pendingSub.SubscribeAsync();
 ```
 
 ## Event Logs (Generic)
@@ -116,39 +154,49 @@ using Nethereum.RPC.Eth.DTOs;
 var filter = new NewFilterInput
 {
     Address = new[] { "0xContractAddress..." },
-    Topics = new[] { /* event signature */ }
+    Topics = new[] { /* event signature hash */ }
 };
 
-var sub = new EthLogsObservableSubscription(client);
-sub.GetSubscriptionDataResponsesAsObservable()
-    .Subscribe(log => Console.WriteLine($"Log from {log.Address}"));
-await sub.SubscribeAsync(filter);
+var subscription = new EthLogsObservableSubscription(client);
+
+subscription.GetSubscriptionDataResponsesAsObservable()
+    .Subscribe(log =>
+    {
+        Console.WriteLine($"Log from {log.Address} in block {log.BlockNumber}");
+    });
+
+await subscription.SubscribeAsync(filter);
 ```
 
-## Reconnection Pattern
+## Connection Management
+
+### Error Handling and Reconnection
 
 ```csharp
 client.Error += async (sender, ex) =>
 {
-    Console.WriteLine("Client error, restarting...");
-    ((StreamingWebSocketClient)sender).StopAsync().Wait();
-    await SubscribeAndRunAsync();
+    Console.WriteLine($"WebSocket error: {ex.Message}");
+    await ((StreamingWebSocketClient)sender).StopAsync();
+    await ReconnectAndSubscribeAsync();
 };
 ```
 
-## Keep-Alive Pinging
+### Keep-Alive Pinging
 
-For hosted providers, send periodic calls to keep the WebSocket alive:
+Most providers close idle connections after 1-2 minutes:
 
 ```csharp
-while (true)
+_ = Task.Run(async () =>
 {
-    var handler = new EthBlockNumberObservableHandler(client);
-    handler.GetResponseAsObservable()
-        .Subscribe(x => Console.WriteLine($"Block: {x.Value}"));
-    await handler.SendRequestAsync();
-    Thread.Sleep(30000);
-}
+    while (true)
+    {
+        var handler = new EthBlockNumberObservableHandler(client);
+        handler.GetResponseAsObservable()
+            .Subscribe(x => Console.WriteLine($"Keepalive — block {x.Value}"));
+        await handler.SendRequestAsync();
+        await Task.Delay(30000);
+    }
+});
 ```
 
 ## Rx Operators
@@ -156,12 +204,30 @@ while (true)
 ```csharp
 using System.Reactive.Linq;
 
-sub.GetSubscriptionDataResponsesAsObservable()
+subscription.GetSubscriptionDataResponsesAsObservable()
     .Where(block => block.GasUsed > 15_000_000)
-    .Subscribe(b => Console.WriteLine($"High-gas: {b.Number}"));
+    .Select(block => new { block.Number, block.GasUsed })
+    .Subscribe(b => Console.WriteLine($"High-gas block: {b.Number}"));
+```
+
+## Polling (HTTP Fallback)
+
+```csharp
+using Nethereum.Web3;
+
+var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_KEY");
+
+var blockStream = web3.Eth.Blocks
+    .GetBlockWithTransactionsByNumber
+    .CreateObservable(intervalMs: 2000);
+
+blockStream.Subscribe(block =>
+{
+    Console.WriteLine($"Block {block.Number} with {block.Transactions.Length} txs");
+});
 ```
 
 ## WebSocket vs Polling
 
-- **WebSocket**: Sub-second latency, requires WSS endpoint, persistent connection
-- **Polling** (HTTP): Works everywhere, configurable interval, higher latency
+- **WebSocket**: Sub-second latency, requires WSS endpoint, persistent connection, no missed events
+- **Polling** (HTTP): Works everywhere, configurable interval, higher latency, possible gaps between polls
