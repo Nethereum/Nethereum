@@ -22,7 +22,7 @@ You are perfecting the documentation for a section of the Nethereum Docusaurus s
 | **User skills plugin** | `C:/Users/SuperDev/Documents/Repos/Nethereum/plugins/nethereum-skills/skills/` |
 | Internal dev skills | `C:/Users/SuperDev/Documents/Repos/Nethereum/.claude/skills/` |
 | Tests & examples | `C:/Users/SuperDev/Documents/Repos/Nethereum/tests/` |
-| **Doc example attribute** | `tests/Nethereum.XUnitEthereumClients/NethereumDocExampleAttribute.cs` |
+| **Doc example attribute** | `src/Nethereum.Documentation/NethereumDocExampleAttribute.cs` |
 | Playground | `http://playground.nethereum.com` |
 | Progress tracking | `C:/Users/SuperDev/Documents/Repos/Nethereum.Docusaurus/website/docs/{section}/PROGRESS.md` |
 
@@ -32,7 +32,7 @@ You are perfecting the documentation for a section of the Nethereum Docusaurus s
 
 ### The `[NethereumDocExample]` Attribute
 
-Located in `tests/Nethereum.XUnitEthereumClients/NethereumDocExampleAttribute.cs`. Uses a `DocSection` enum to ensure section names match exactly:
+Located in `src/Nethereum.Documentation/NethereumDocExampleAttribute.cs` (namespace `Nethereum.Documentation`). Uses a `DocSection` enum to ensure section names match exactly:
 
 ```csharp
 [Fact]
@@ -64,10 +64,16 @@ The `/commit` skill (`.claude/commands/commit.md`) enforces documentation propag
 
 ### Adding to test projects
 
-The attribute lives in `Nethereum.XUnitEthereumClients`. To use it in a test project:
-1. Add `<ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />` to the test `.csproj`
-2. Add `using Nethereum.XUnitEthereumClients;` to the test file
-3. Ensure the test project targets `net8.0` or later (XUnitEthereumClients targets net8.0)
+The attribute lives in the standalone `Nethereum.Documentation` project (netstandard2.0, zero dependencies). To use it:
+
+**For xUnit test projects** (already referencing `Nethereum.XUnitEthereumClients`):
+1. The attribute is available transitively — `XUnitEthereumClients` references `Nethereum.Documentation`
+2. Add `using Nethereum.Documentation;` to the test file
+
+**For console test projects or any other project**:
+1. Add `<ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />` to the `.csproj`
+2. Add `using Nethereum.Documentation;` to the source file
+3. Works with any target framework (netstandard2.0 compatible)
 
 ## Plugin Architecture
 

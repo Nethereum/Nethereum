@@ -210,56 +210,6 @@ Per `docs/PACKAGE_DOCUMENTATION_GUIDE.md`:
 - [ ] No hallucinated capabilities
 - [ ] Dependencies listed match actual `.csproj` references
 
-### 5. Present Audit Summary & Changes for Approval
-
-Show the user:
-
-**Audit Results:**
-- Security: PASS/FAIL (list any findings)
-- SOLID: PASS/FAIL (list any findings)
-- .NET Standards: PASS/FAIL (list any findings)
-- Nethereum Standards: PASS/FAIL (list any findings)
-- Code Quality: PASS/FAIL (list any findings)
-- Build: PASS/FAIL
-- README: PASS/FAIL/N/A
-
-**Files to stage (N files):**
-
-```
-Modified:
-- file1.cs
-- file2.cs
-
-New:
-- file3.cs
-
-Deleted:
-- file4.cs
-```
-
-**Commit message:**
-```
-ProjectArea: concise title
-
-- Change 1
-- Change 2
-```
-
-### 6. Wait for Explicit Approval
-
-Do NOT proceed until the user explicitly approves. They may:
-- Approve as-is
-- Ask to fix audit findings first
-- Request changes to file list or commit message
-- Ask to split into multiple commits
-
-### 7. Execute
-
-```bash
-git add <files>
-git commit -m "Title" -m "- Detail 1" -m "- Detail 2"
-```
-
 ### 4b. Documentation Propagation Check
 
 When committing changes to test files or source code, check for documentation impact:
@@ -311,12 +261,76 @@ If any changed source file in `src/` adds new public classes, methods, or proper
 
 #### Attribute Reference
 
-The `[NethereumDocExample]` attribute lives in `tests/Nethereum.XUnitEthereumClients/NethereumDocExampleAttribute.cs`:
+The `[NethereumDocExample]` attribute lives in `src/Nethereum.Documentation/NethereumDocExampleAttribute.cs` (namespace `Nethereum.Documentation`):
 ```csharp
 [NethereumDocExample(DocSection.CoreFoundation, "use-case-slug", "Human-readable title")]
 ```
 
 `DocSection` enum values: `CoreFoundation`, `Signing`, `SmartContracts`, `DeFi`, `EvmSimulator`, `InProcessNode`, `AccountAbstraction`, `DataIndexing`, `MudFramework`, `WalletUI`, `Consensus`, `ClientExtensions`
+
+### 4c. Full Documentation Validation (when docs are in scope)
+
+If the commit touches documentation files (READMEs, guide pages, skills, or Docusaurus content), or if tagged tests were added/modified, invoke the `/validate-docs-section` skill to run the full validation workflow for the affected section. This ensures:
+
+- Every code example in READMEs is backed by a passing `[NethereumDocExample]` tagged test
+- Guide pages use verified code from tagged tests
+- Skills contain correct, compilable code examples
+- No hallucinated class names, methods, or namespaces
+
+The validate-docs-section skill lives at `.claude/skills/validate-docs-section/SKILL.md` and covers the staged workflow: define use cases → validate READMEs → fix issues → create guides → create skills → final verification.
+
+---
+
+### 5. Present Audit Summary & Changes for Approval
+
+Show the user:
+
+**Audit Results:**
+- Security: PASS/FAIL (list any findings)
+- SOLID: PASS/FAIL (list any findings)
+- .NET Standards: PASS/FAIL (list any findings)
+- Nethereum Standards: PASS/FAIL (list any findings)
+- Code Quality: PASS/FAIL (list any findings)
+- Build: PASS/FAIL
+- README: PASS/FAIL/N/A
+- Documentation Propagation: PASS/NEEDS-UPDATE/N/A
+
+**Files to stage (N files):**
+
+```
+Modified:
+- file1.cs
+- file2.cs
+
+New:
+- file3.cs
+
+Deleted:
+- file4.cs
+```
+
+**Commit message:**
+```
+ProjectArea: concise title
+
+- Change 1
+- Change 2
+```
+
+### 6. Wait for Explicit Approval
+
+Do NOT proceed until the user explicitly approves. They may:
+- Approve as-is
+- Ask to fix audit findings first
+- Request changes to file list or commit message
+- Ask to split into multiple commits
+
+### 7. Execute
+
+```bash
+git add <files>
+git commit -m "Title" -m "- Detail 1" -m "- Detail 2"
+```
 
 ---
 
