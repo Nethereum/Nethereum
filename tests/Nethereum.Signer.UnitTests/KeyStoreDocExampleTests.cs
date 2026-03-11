@@ -4,6 +4,7 @@ using Nethereum.KeyStore.Model;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Signer.UnitTests
@@ -28,7 +29,7 @@ namespace Nethereum.Signer.UnitTests
         };
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "keystore", "Generate and create Scrypt keystore")]
+        [NethereumDocExample(DocSection.Signing, "keystore", "Generate and create Scrypt keystore")]
         public void ShouldGenerateScryptKeystore()
         {
             var ecKey = EthECKey.GenerateKey();
@@ -43,7 +44,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "keystore", "Custom Scrypt parameters")]
+        [NethereumDocExample(DocSection.Signing, "keystore", "Custom Scrypt parameters")]
         public void ShouldCreateKeystoreWithCustomScryptParams()
         {
             var ecKey = EthECKey.GenerateKey();
@@ -61,7 +62,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "keystore", "PBKDF2 keystore (legacy)")]
+        [NethereumDocExample(DocSection.Signing, "keystore", "PBKDF2 keystore (legacy)")]
         public void ShouldCreatePbkdf2Keystore()
         {
             var ecKey = EthECKey.GenerateKey();
@@ -78,7 +79,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "keystore", "Detect KDF type")]
+        [NethereumDocExample(DocSection.Signing, "keystore", "Detect KDF type")]
         public void ShouldDetectKdfTypeInJson()
         {
             var ecKey = EthECKey.GenerateKey();
@@ -95,7 +96,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "keystore", "Default KeyStoreService facade")]
+        [NethereumDocExample(DocSection.Signing, "keystore", "Default KeyStoreService facade")]
         public void ShouldUseDefaultKeyStoreServiceWithScrypt()
         {
             var ecKey = EthECKey.GenerateKey();
@@ -112,7 +113,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "keystore", "Roundtrip: generate key, encrypt, decrypt, verify")]
+        [NethereumDocExample(DocSection.Signing, "keystore", "Roundtrip: generate key, encrypt, decrypt, verify")]
         public void ShouldRoundtripKeyThroughKeystore()
         {
             var ecKey = EthECKey.GenerateKey();
