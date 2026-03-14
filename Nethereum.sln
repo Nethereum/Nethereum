@@ -380,7 +380,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Wallet.UI.Compone
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Signer.Bls.Herumi", "src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj", "{03FC49E2-857B-42E6-A737-80520D2BA5A4}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Consensus", "Consensus", "{0D17D691-3274-4C95-A228-26052970266C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LightClient Consensus", "LightClient Consensus", "{0D17D691-3274-4C95-A228-26052970266C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Consensus.LightClient", "src\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj", "{46A99070-95FB-49E8-9979-FFC20A145D0C}"
 EndProject
