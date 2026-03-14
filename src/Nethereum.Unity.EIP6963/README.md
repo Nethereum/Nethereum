@@ -375,7 +375,7 @@ public class EIP6963Example : MonoBehaviour
         walletProvider = EIP6963WebglHostProvider.CreateOrGetCurrentInstance();
 
         // Check if EIP-6963 is available
-        var available = await walletProvider.CheckProviderAvailableAsync();
+        var available = await walletProvider.CheckProviderAvailabilityAsync();
         if (!available)
         {
             Debug.LogError("No EIP-6963 wallets available");
@@ -397,7 +397,7 @@ public class EIP6963Example : MonoBehaviour
         await walletProvider.SelectWalletAsync(wallets[0].Uuid);
 
         // Connect and get account
-        var selectedAccount = await walletProvider.ConnectAndGetSelectedAccountAsync();
+        var selectedAccount = await walletProvider.EnableProviderAsync();
         if (selectedAccount != null)
         {
             Debug.Log($"Connected to: {selectedAccount}");
@@ -465,7 +465,7 @@ public class WalletSelectionUI : MonoBehaviour
         try
         {
             await walletProvider.SelectWalletAsync(walletUuid);
-            var account = await walletProvider.ConnectAndGetSelectedAccountAsync();
+            var account = await walletProvider.EnableProviderAsync();
             Debug.Log($"Connected to {walletName}: {account}");
         }
         catch (System.Exception ex)
@@ -476,7 +476,28 @@ public class WalletSelectionUI : MonoBehaviour
 }
 ```
 
-### Send Transaction
+### Get Web3 and Interact
+
+After connecting, get a `Web3` instance to use the full Nethereum API:
+
+```csharp
+// Get Web3 configured with the selected wallet as the signer
+var web3 = await walletProvider.GetWeb3Async();
+
+// Use standard Nethereum APIs — transactions are signed by the browser wallet
+var balance = await web3.Eth.GetBalance.SendRequestAsync(walletProvider.SelectedAccount);
+Debug.Log($"Balance: {Web3.Convert.FromWei(balance.Value)} ETH");
+
+// Transfer ETH
+var receipt = await web3.Eth.GetEtherTransferService()
+    .TransferEtherAndWaitForReceiptAsync("0xRecipient", 0.01m);
+
+// Query ERC-20
+var erc20 = web3.Eth.ERC20.GetContractService(tokenAddress);
+var tokenBalance = await erc20.BalanceOfQueryAsync(walletProvider.SelectedAccount);
+```
+
+### Send Transaction (Low-Level)
 
 ```csharp
 using Nethereum.RPC.Eth.DTOs;
@@ -505,27 +526,31 @@ async void SendTransaction()
 
 ### Listen to Account/Chain Changes
 
+Events use `Func<T, Task>` delegates — handlers must return `Task`:
+
 ```csharp
 void OnEnable()
 {
     walletProvider.SelectedAccountChanged += OnAccountChanged;
-    walletProvider.ChainIdChanged += OnChainChanged;
+    walletProvider.NetworkChanged += OnNetworkChanged;
 }
 
 void OnDisable()
 {
     walletProvider.SelectedAccountChanged -= OnAccountChanged;
-    walletProvider.ChainIdChanged -= OnChainChanged;
+    walletProvider.NetworkChanged -= OnNetworkChanged;
 }
 
-private void OnAccountChanged(string newAccount)
+private Task OnAccountChanged(string newAccount)
 {
     Debug.Log($"Account changed to: {newAccount}");
+    return Task.CompletedTask;
 }
 
-private void OnChainChanged(long newChainId)
+private Task OnNetworkChanged(long newChainId)
 {
     Debug.Log($"Chain changed to: {newChainId}");
+    return Task.CompletedTask;
 }
 ```
 
@@ -551,7 +576,7 @@ public class MultiWalletDApp : MonoBehaviour
 
         // Listen for wallet events
         walletProvider.SelectedAccountChanged += OnAccountChanged;
-        walletProvider.ChainIdChanged += OnChainChanged;
+        walletProvider.NetworkChanged += OnNetworkChanged;
 
         // Display wallet selection
         await ShowWalletSelectionAsync();
@@ -559,7 +584,7 @@ public class MultiWalletDApp : MonoBehaviour
 
     async Task ShowWalletSelectionAsync()
     {
-        var available = await walletProvider.CheckProviderAvailableAsync();
+        var available = await walletProvider.CheckProviderAvailabilityAsync();
         if (!available)
         {
             Debug.LogError("No EIP-6963 wallets detected");
@@ -591,7 +616,7 @@ public class MultiWalletDApp : MonoBehaviour
             await walletProvider.SelectWalletAsync(walletUuid);
 
             Debug.Log("Requesting account access...");
-            connectedAccount = await walletProvider.ConnectAndGetSelectedAccountAsync();
+            connectedAccount = await walletProvider.EnableProviderAsync();
 
             Debug.Log($"✓ Connected to {walletName}");
             Debug.Log($"  Account: {connectedAccount}");
@@ -627,15 +652,17 @@ public class MultiWalletDApp : MonoBehaviour
         }
     }
 
-    private void OnAccountChanged(string newAccount)
+    private Task OnAccountChanged(string newAccount)
     {
         Debug.Log($"Account switched: {newAccount}");
         connectedAccount = newAccount;
+        return Task.CompletedTask;
     }
 
-    private void OnChainChanged(long newChainId)
+    private Task OnNetworkChanged(long newChainId)
     {
         Debug.Log($"Chain switched: {newChainId}");
+        return Task.CompletedTask;
     }
 
     void OnDestroy()
@@ -643,7 +670,7 @@ public class MultiWalletDApp : MonoBehaviour
         if (walletProvider != null)
         {
             walletProvider.SelectedAccountChanged -= OnAccountChanged;
-            walletProvider.ChainIdChanged -= OnChainChanged;
+            walletProvider.NetworkChanged -= OnNetworkChanged;
         }
     }
 }

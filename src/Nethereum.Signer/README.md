@@ -458,13 +458,14 @@ public class MessageSigner
 {
     public virtual string Sign(byte[] message, EthECKey key);
     public virtual string Sign(byte[] message, string privateKey);
-    public virtual string HashAndSign(string message, EthECKey key);
+    public virtual string HashAndSign(byte[] plainMessage, EthECKey key);
+    public string HashAndSign(string plainMessage, string privateKey);
+    public string HashAndSign(byte[] plainMessage, string privateKey);
 
-    public virtual string EcRecover(byte[] message, string signature);
-    public virtual string HashAndEcRecover(string message, string signature);
+    public virtual string EcRecover(byte[] hashMessage, string signature);
+    public virtual string HashAndEcRecover(string plainMessage, string signature);
 
-    public byte[] Hash(string message);
-    public byte[] Hash(byte[] message);
+    public byte[] Hash(byte[] plainMessage);
 }
 ```
 
@@ -508,11 +509,14 @@ public class EthECDSASignature
     public byte[] S { get; }
     public byte[] V { get; }
 
-    public EthECDSASignature(byte[] signatureBytes);
-    public EthECDSASignature(ECDSASignature signature, int recId);
+    public EthECDSASignature(BigInteger r, BigInteger s, byte[] v);
+    public EthECDSASignature(ECDSASignature signature);
+    public EthECDSASignature(byte[] derSig);
 
     public bool IsLowS { get; }
-    public byte[] ToByteArray();
+    public byte[] ToDER();
+    public static EthECDSASignature FromDER(byte[] sig);
+    public static string CreateStringSignature(EthECDSASignature signature);
 }
 ```
 

@@ -704,6 +704,72 @@ catch (AbiEncodingException ex)
 - `MemberValue` - Runtime value for encoding
 - `TypedDataRaw` - Raw typed data without generics
 
+### Example 14: Smart Contract Revert Error Handling
+
+```csharp
+using Nethereum.ABI.FunctionEncoding;
+
+var decoder = new FunctionCallDecoder();
+
+// Detect and decode standard revert errors (Error(string))
+// The output data from a failed call starts with 0x08c379a0
+if (ErrorFunction.IsErrorData(outputData))
+{
+    ErrorFunction error = decoder.DecodeFunctionError(outputData);
+    Console.WriteLine(error.Message);  // e.g. "Insufficient balance"
+}
+
+// ThrowIfErrorOnOutput checks the data and throws SmartContractRevertException
+// if it contains a standard Error(string) revert
+try
+{
+    decoder.ThrowIfErrorOnOutput(outputData);
+}
+catch (SmartContractRevertException ex)
+{
+    Console.WriteLine(ex.RevertMessage);  // The revert reason string
+    Console.WriteLine(ex.EncodedData);    // The raw hex data
+}
+```
+
+### Example 15: Custom Solidity Error Decoding
+
+```csharp
+using Nethereum.ABI.FunctionEncoding;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.ABI.Model;
+using System.Numerics;
+
+// Define a custom Solidity error: error InsufficientBalance(address account, uint256 balance)
+[Error("InsufficientBalance")]
+public class InsufficientBalanceError
+{
+    [Parameter("address", "account", 1)]
+    public string Account { get; set; }
+
+    [Parameter("uint256", "balance", 2)]
+    public BigInteger Balance { get; set; }
+}
+
+var decoder = new FunctionCallDecoder();
+
+// Decode custom error using the typed class
+var errorData = "0x..."; // revert data from failed transaction
+var decoded = (InsufficientBalanceError)decoder.DecodeError(
+    typeof(InsufficientBalanceError), errorData);
+// decoded.Account: "0x1234..."
+// decoded.Balance: 500
+
+// Alternatively, decode using ErrorABI from a deserialized contract
+var contract = new ABIJsonDeserialiser().DeserialiseContract(abiJson);
+ErrorABI errorAbi = contract.FindErrorABI(errorSignature);
+if (errorAbi != null)
+{
+    var parameters = errorAbi.DecodeErrorDataToDefault(errorData);
+    // parameters[0].Result, parameters[1].Result, etc.
+}
+```
+
 ## Related Packages
 
 - **Nethereum.Hex** - Hexadecimal encoding used throughout ABI operations

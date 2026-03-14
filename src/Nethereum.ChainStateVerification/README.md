@@ -124,6 +124,22 @@ Thread-safe cache for verified state. Located in `Caching/VerifiedStateCache.cs:
 
 Cache is automatically cleared when block changes.
 
+### VerifiedNodeDataService
+
+Adapter that implements `INodeDataService` (from `Nethereum.EVM.BlockchainState`) backed by verified state. This allows the EVM simulator to use proof-verified data for balance, code, storage, nonce, and block hash lookups. Located in `NodeData/VerifiedNodeDataService.cs:9-81`.
+
+**Constructor:**
+```csharp
+public VerifiedNodeDataService(IVerifiedStateService verifiedState)
+```
+
+**Implements:**
+- `GetBalanceAsync(string address)` - Verified balance via merkle proof
+- `GetCodeAsync(string address)` - Verified contract code with hash check
+- `GetStorageAtAsync(string address, BigInteger position)` - Verified storage slot
+- `GetTransactionCount(string address)` - Verified nonce
+- `GetBlockHashAsync(BigInteger blockNumber)` - Block hash from light client (within 256-block window)
+
 ### VerificationMode
 
 Enum for verification mode. Located in `VerificationMode.cs:3-8`.
@@ -542,6 +558,146 @@ Each verified query requires:
 3. **Disable verification** for non-critical paths (`VerifyCodeHash = false`)
 4. **Use Optimistic mode** when freshness > security
 
+## Web3 Integration (RPC Interceptor)
+
+The interceptor subsystem lets you transparently verify RPC responses by plugging into the standard Nethereum `Web3` pipeline. Instead of calling `IVerifiedStateService` directly, the `VerifiedStateInterceptor` hooks into the RPC client and replaces supported method responses with proof-verified data.
+
+### Quick Start: UseVerifiedState Extension
+
+The simplest way to enable verified state is the `UseVerifiedState()` extension method, available on both `IWeb3` and `IClient`:
+
+```csharp
+using Nethereum.ChainStateVerification.Interceptor;
+using Nethereum.Web3;
+
+var verifiedState = CreateVerifiedStateService(); // See earlier examples
+
+// Option 1: On Web3 (returns IWeb3 for fluent chaining)
+var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_KEY");
+web3.UseVerifiedState(verifiedState, config =>
+{
+    config.Mode = VerificationMode.Finalized;
+    config.FallbackOnError = true;
+});
+
+var blockNumber = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+var balance = await web3.Eth.GetBalance.SendRequestAsync("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+
+// Option 2: On IClient directly
+var rpcClient = new RpcClient(new Uri("https://mainnet.infura.io/v3/YOUR_KEY"));
+rpcClient.UseVerifiedState(verifiedState, config =>
+{
+    config.Mode = VerificationMode.Finalized;
+});
+var web3FromClient = new Web3(rpcClient);
+var nonce = await web3FromClient.Eth.Transactions.GetTransactionCount.SendRequestAsync("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+```
+
+### Fluent Chaining
+
+`UseVerifiedState()` on `IWeb3` returns the `IWeb3` instance, enabling one-liner queries:
+
+```csharp
+using Nethereum.ChainStateVerification.Interceptor;
+using Nethereum.Web3;
+
+var verifiedState = CreateVerifiedStateService();
+
+var balance = await new Web3("https://mainnet.infura.io/v3/YOUR_KEY")
+    .UseVerifiedState(verifiedState, config =>
+    {
+        config.Mode = VerificationMode.Finalized;
+        config.FallbackOnError = true;
+    })
+    .Eth.GetBalance.SendRequestAsync("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+
+Console.WriteLine($"Verified balance: {UnitConversion.Convert.FromWei(balance.Value)} ETH");
+```
+
+### VerifiedStateInterceptorConfiguration
+
+The configuration object controls interceptor behavior:
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `Mode` | `VerificationMode` | `Finalized` | Which consensus header to verify against (`Finalized` or `Optimistic`) |
+| `FallbackOnError` | `bool` | `true` | When `true`, falls back to normal RPC if verification fails; when `false`, exceptions propagate |
+| `EnabledMethods` | `HashSet<string>` | See below | Set of RPC methods the interceptor handles |
+
+**Default enabled methods:**
+- `eth_getBalance`
+- `eth_getTransactionCount`
+- `eth_getCode`
+- `eth_getStorageAt`
+- `eth_blockNumber`
+
+Any RPC method not in `EnabledMethods` passes through to the node unmodified. For example, `eth_gasPrice` and `eth_call` always go directly to the RPC node.
+
+### CreateVerifiedStateInterceptor Factory
+
+For advanced scenarios where you need direct access to the interceptor (e.g., to subscribe to events), use the `CreateVerifiedStateInterceptor()` factory method:
+
+```csharp
+using Nethereum.ChainStateVerification.Interceptor;
+using Nethereum.JsonRpc.Client;
+using Nethereum.Web3;
+
+var verifiedState = CreateVerifiedStateService();
+
+var interceptor = verifiedState.CreateVerifiedStateInterceptor(config =>
+{
+    config.Mode = VerificationMode.Finalized;
+    config.FallbackOnError = true;
+});
+
+var rpcClient = new RpcClient(new Uri("https://mainnet.infura.io/v3/YOUR_KEY"));
+rpcClient.OverridingRequestInterceptor = interceptor;
+
+var web3 = new Web3(rpcClient);
+var balance = await web3.Eth.GetBalance.SendRequestAsync("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+```
+
+### FallbackTriggered Event
+
+When `FallbackOnError = true` and verification fails (e.g., the RPC node cannot provide a valid proof for the finalized state root, often due to state pruning), the interceptor falls back to the unverified RPC response and raises the `FallbackTriggered` event:
+
+```csharp
+using Nethereum.ChainStateVerification.Interceptor;
+
+var verifiedState = CreateVerifiedStateService();
+
+var interceptor = verifiedState.CreateVerifiedStateInterceptor(config =>
+{
+    config.Mode = VerificationMode.Finalized;
+    config.FallbackOnError = true;
+});
+
+interceptor.FallbackTriggered += (sender, args) =>
+{
+    Console.WriteLine($"Fallback triggered for method: {args.Method}");
+    Console.WriteLine($"Reason: {args.Exception?.Message}");
+};
+
+rpcClient.OverridingRequestInterceptor = interceptor;
+var web3 = new Web3(rpcClient);
+
+// If proof verification fails, FallbackTriggered fires and the
+// balance is returned from the unverified RPC response instead
+var balance = await web3.Eth.GetBalance.SendRequestAsync(address);
+```
+
+The `VerificationFallbackEventArgs` provides:
+- `Method` - The RPC method that failed verification (e.g., `"eth_getBalance"`)
+- `Exception` - The exception that caused the fallback
+
+### Interceptor Behavior Summary
+
+1. **Intercepted method + verification succeeds** -> Returns proof-verified result
+2. **Intercepted method + verification fails + FallbackOnError=true** -> Falls back to RPC, fires `FallbackTriggered`
+3. **Intercepted method + verification fails + FallbackOnError=false** -> Exception propagates to caller
+4. **Non-intercepted method** (e.g., `eth_gasPrice`, `eth_call`) -> Passes through to RPC node directly
+5. **Historical block parameter** (e.g., block number or `"earliest"`) -> Passes through to RPC (interceptor only handles `latest`, `pending`, `finalized`, `safe`)
+
 ## Limitations
 
 1. **Requires Archive Node** (or recent state):
@@ -589,13 +745,19 @@ Core dependencies:
 - `VerificationMode.cs` - Finalized vs Optimistic enum
 - `InvalidChainDataException.cs` - Proof verification exception
 
+**Interceptor:**
+- `Interceptor/VerifiedStateInterceptor.cs` - RPC request interceptor for transparent verification
+- `Interceptor/VerifiedStateInterceptorConfiguration.cs` - Interceptor configuration options
+- `Interceptor/Web3VerifiedStateExtensions.cs` - Extension methods for IWeb3 and IClient
+
 **Node Data:**
-- `NodeData/VerifiedNodeDataService.cs` - Node data integration
+- `NodeData/VerifiedNodeDataService.cs` - INodeDataService adapter for EVM integration
 
 **Test Files:**
 - `tests/Nethereum.Consensus.LightClient.Tests/Live/VerifiedStorageProofLiveTests.cs` - Storage proof tests
 - `tests/Nethereum.Consensus.LightClient.Tests/Live/VerifiedEvmCallLiveTests.cs` - EVM call tests
 - `tests/Nethereum.ChainStateVerification.Tests/Caching/VerifiedStateCacheTests.cs` - Cache tests
+- `tests/Nethereum.Consensus.LightClient.Tests/Live/VerifiedStateInterceptorLiveTests.cs` - Interceptor live tests
 
 ## Related Packages
 

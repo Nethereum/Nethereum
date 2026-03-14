@@ -93,23 +93,29 @@ public class WorldService
 
     // Call a system with delegator
     Task<TransactionReceipt> CallFromRequestAndWaitForReceiptAsync(
-        address delegator,
+        string delegator,
         byte[] systemId,
         byte[] callData
     );
+}
 
-    // Access control
+// Access control (AccessManagementSystemService)
+public class AccessManagementSystemService
+{
     Task<TransactionReceipt> GrantAccessRequestAndWaitForReceiptAsync(
         byte[] resourceId,
-        address grantee
+        string grantee
     );
 
     Task<TransactionReceipt> RevokeAccessRequestAndWaitForReceiptAsync(
         byte[] resourceId,
-        address grantee
+        string grantee
     );
+}
 
-    // Batch calls
+// Batch calls (BatchCallSystemService)
+public class BatchCallSystemService
+{
     Task<TransactionReceipt> BatchCallRequestAndWaitForReceiptAsync(
         List<SystemCallData> systemCalls
     );
@@ -175,37 +181,39 @@ Console.WriteLine($"Level: {playerRecord.Values.Level}");
 Console.WriteLine($"Health: {playerRecord.Values.Health}");
 ```
 
-### Example 4: Subscribe to Store Events
+### Example 4: Query Store Events
 
 ```csharp
 using Nethereum.Mud.Contracts.Core.StoreEvents;
 
 var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
 
-// Subscribe to SetRecord events
-var setRecordFilter = storeEventsService.GetSetRecordEvent().CreateFilterInput();
-var setRecordSubscription = await setRecordFilter.SubscribeAsync(async (log) =>
+// Get all SetRecord events
+var setRecordEvents = await storeEventsService.GetAllSetRecord(
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
+
+foreach (var log in setRecordEvents)
 {
     var evt = log.Event;
     Console.WriteLine($"Record updated:");
     Console.WriteLine($"  TableId: {evt.TableId.ToHex()}");
     Console.WriteLine($"  Keys: {string.Join(", ", evt.KeyTuple.Select(k => k.ToHex()))}");
     Console.WriteLine($"  Block: {log.Log.BlockNumber.Value}");
-});
+}
 
-// Subscribe to DeleteRecord events
-var deleteRecordFilter = storeEventsService.GetDeleteRecordEvent().CreateFilterInput();
-var deleteRecordSubscription = await deleteRecordFilter.SubscribeAsync(async (log) =>
-{
-    var evt = log.Event;
-    Console.WriteLine($"Record deleted:");
-    Console.WriteLine($"  TableId: {evt.TableId.ToHex()}");
-    Console.WriteLine($"  Keys: {string.Join(", ", evt.KeyTuple.Select(k => k.ToHex()))}");
-});
+// Get SetRecord events for a specific table
+var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+var playerEvents = await storeEventsService.GetAllSetRecordForTable(
+    playerTableId,
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
 
-// Keep subscriptions alive
-Console.WriteLine("Subscribed to Store events. Press Ctrl+C to exit.");
-await Task.Delay(Timeout.Infinite);
+Console.WriteLine($"Found {playerEvents.Count} player table events");
 ```
 
 ### Example 5: Process Store Events to Repository
@@ -243,6 +251,7 @@ Console.WriteLine("Store events processed to repository");
 
 ```csharp
 using Nethereum.Mud.Contracts.World;
+using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem;
 
 // Prepare multiple system calls
 var systemCalls = new List<SystemCallData>
@@ -264,8 +273,9 @@ var systemCalls = new List<SystemCallData>
     }
 };
 
-// Execute all calls in one transaction
-var receipt = await worldService.BatchCallRequestAndWaitForReceiptAsync(systemCalls);
+// Execute all calls in one transaction via BatchCallSystemService
+var batchCallService = new BatchCallSystemService(web3, worldAddress);
+var receipt = await batchCallService.BatchCallRequestAndWaitForReceiptAsync(systemCalls);
 
 Console.WriteLine($"Batch call successful. Gas used: {receipt.GasUsed.Value}");
 ```
@@ -274,14 +284,18 @@ Console.WriteLine($"Batch call successful. Gas used: {receipt.GasUsed.Value}");
 
 ```csharp
 using Nethereum.Mud;
+using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem;
 
 // Create resource ID for a table
 var playerTableResource = new Resource("Game", "Player");
 var tableId = playerTableResource.ResourceIdEncoded;
 
+// Use AccessManagementSystemService for access control
+var accessService = new AccessManagementSystemService(web3, worldAddress);
+
 // Grant access to an address
 var granteeAddress = "0xGranteeAddress";
-var grantReceipt = await worldService.GrantAccessRequestAndWaitForReceiptAsync(
+var grantReceipt = await accessService.GrantAccessRequestAndWaitForReceiptAsync(
     tableId,
     granteeAddress
 );
@@ -289,7 +303,7 @@ var grantReceipt = await worldService.GrantAccessRequestAndWaitForReceiptAsync(
 Console.WriteLine($"Access granted to {granteeAddress}");
 
 // Revoke access
-var revokeReceipt = await worldService.RevokeAccessRequestAndWaitForReceiptAsync(
+var revokeReceipt = await accessService.RevokeAccessRequestAndWaitForReceiptAsync(
     tableId,
     granteeAddress
 );
@@ -329,8 +343,9 @@ var schema = SchemaEncoder.GetSchemaEncoded<PlayerKey, PlayerValue>(
     playerTableResource.ResourceIdEncoded
 );
 
-// Register table in World
-var registerTableReceipt = await worldService.RegisterTableRequestAndWaitForReceiptAsync(
+// Register table via RegistrationSystemService
+var registrationService = new RegistrationSystemService(web3, worldAddress);
+var registerTableReceipt = await registrationService.RegisterTableRequestAndWaitForReceiptAsync(
     tableId: playerTableResource.ResourceIdEncoded,
     fieldLayout: schema.FieldLayout,
     keySchema: schema.KeySchema,
@@ -381,13 +396,14 @@ public class WorldService : ContractWeb3ServiceBase
         byte[] systemId,
         byte[] callData
     );
+}
+```
 
-    // Batch operations
-    Task<TransactionReceipt> BatchCallRequestAndWaitForReceiptAsync(
-        List<SystemCallData> systemCalls
-    );
+### AccessManagementSystemService
 
-    // Access control
+```csharp
+public class AccessManagementSystemService
+{
     Task<TransactionReceipt> GrantAccessRequestAndWaitForReceiptAsync(
         byte[] resourceId,
         string grantee
@@ -397,8 +413,25 @@ public class WorldService : ContractWeb3ServiceBase
         byte[] resourceId,
         string grantee
     );
+}
+```
 
-    // Table registration
+### BatchCallSystemService
+
+```csharp
+public class BatchCallSystemService
+{
+    Task<TransactionReceipt> BatchCallRequestAndWaitForReceiptAsync(
+        List<SystemCallData> systemCalls
+    );
+}
+```
+
+### RegistrationSystemService
+
+```csharp
+public class RegistrationSystemService
+{
     Task<TransactionReceipt> RegisterTableRequestAndWaitForReceiptAsync(
         byte[] tableId,
         byte[] fieldLayout,
@@ -417,21 +450,18 @@ public class StoreEventsLogProcessingService
 {
     public StoreEventsLogProcessingService(Web3 web3, string contractAddress);
 
-    // Get event definitions
-    Event<StoreSetRecordEventDTO> GetSetRecordEvent();
-    Event<StoreDeleteRecordEventDTO> GetDeleteRecordEvent();
-    Event<StoreSpliceStaticDataEventDTO> GetSpliceStaticDataEvent();
-    Event<StoreSpliceDynamicDataEventDTO> GetSpliceDynamicDataEvent();
+    // Query all SetRecord events
+    Task<List<EventLog<StoreSetRecordEventDTO>>> GetAllSetRecord(...);
+    Task<List<EventLog<StoreSetRecordEventDTO>>> GetAllSetRecordForTable(byte[] tableId, ...);
 
-    // Create event processor
-    ILogProcessor CreateProcessor(
-        ITableRepository tableRepository,
-        IBlockProgressRepository progressRepository,
-        ILogger logger,
-        int blocksPerRequest,
-        int retryWeight,
-        uint minimumBlockConfirmations
-    );
+    // Query all SpliceStaticData events
+    Task<List<EventLog<StoreSpliceStaticDataEventDTO>>> GetAllSpliceStaticData(...);
+    Task<List<EventLog<StoreSpliceStaticDataEventDTO>>> GetAllSpliceStaticDataForTable(byte[] tableId, ...);
+
+    // Process all store changes (SetRecord, DeleteRecord, SpliceStaticData, SpliceDynamicData)
+    Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, ...);
+    Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, byte[] tableId, ...);
+    Task ProcessAllStoreChangesAsync(ITableRepository tableRepository, string nameSpace, string tableName, ...);
 }
 ```
 
@@ -540,24 +570,28 @@ nethereum-codegen generate
 
 ## Event Processing Patterns
 
-### Pattern 1: Real-Time Event Subscription
+### Pattern 1: Query and Process Events
 
 ```csharp
 var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
 
-var subscription = await storeEventsService
-    .GetSetRecordEvent()
-    .CreateFilterInput()
-    .SubscribeAsync(async (eventLog) =>
-    {
-        var evt = eventLog.Event;
+// Query all SetRecord events
+var events = await storeEventsService.GetAllSetRecord(
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
 
-        // Update local repository
-        await UpdateRepositoryFromEvent(evt);
+foreach (var eventLog in events)
+{
+    var evt = eventLog.Event;
 
-        // Notify UI
-        await NotifyUIAsync(evt);
-    });
+    // Update local repository
+    await UpdateRepositoryFromEvent(evt);
+
+    // Notify UI
+    await NotifyUIAsync(evt);
+}
 ```
 
 ### Pattern 2: Historical Event Processing
@@ -583,22 +617,29 @@ await processor.ExecuteAsync(
 );
 ```
 
-### Pattern 3: Hybrid (Historical + Real-Time)
+### Pattern 3: Process All Store Changes to Repository
 
 ```csharp
-// Step 1: Process historical events
-await processor.ExecuteAsync(startAtBlockNumberIfNotProcessed: 0);
+var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
+var tableRepo = new InMemoryTableRepository<PlayerTableRecord>();
 
-// Step 2: Subscribe to new events
-var subscription = await storeEventsService
-    .GetSetRecordEvent()
-    .CreateFilterInput()
-    .SubscribeAsync(async (eventLog) =>
-    {
-        await UpdateRepositoryFromEvent(eventLog.Event);
-    });
+// Process all store changes (SetRecord, DeleteRecord, SpliceStaticData, SpliceDynamicData)
+await storeEventsService.ProcessAllStoreChangesAsync(
+    tableRepo,
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
 
-// Now fully synced with real-time updates
+// Or process changes for a specific table only
+var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+await storeEventsService.ProcessAllStoreChangesAsync(
+    tableRepo,
+    playerTableId,
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
 ```
 
 ## Advanced Topics
@@ -630,36 +671,50 @@ public class CustomEventHandler
 ```csharp
 var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
 
-var filter = storeEventsService.GetSetRecordEvent().CreateFilterInput(
-    filterTopic1: new[] { playerTableId }
+// Use GetAllSetRecordForTable to query events for a specific table
+var playerEvents = await storeEventsService.GetAllSetRecordForTable(
+    playerTableId,
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
 );
 
-var subscription = await filter.SubscribeAsync(async (eventLog) =>
+foreach (var eventLog in playerEvents)
 {
     // Only receives events for Player table
     var playerEvent = eventLog.Event;
     await HandlePlayerUpdate(playerEvent);
-});
+}
 ```
 
 ### Handling Splice Events
 
 ```csharp
-// Subscribe to dynamic data updates (e.g., array push/pop)
-var spliceDynamicFilter = storeEventsService
-    .GetSpliceDynamicDataEvent()
-    .CreateFilterInput();
+// Query static data splice events
+var spliceStaticEvents = await storeEventsService.GetAllSpliceStaticData(
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
 
-var subscription = await spliceDynamicFilter.SubscribeAsync(async (eventLog) =>
+foreach (var eventLog in spliceStaticEvents)
 {
     var evt = eventLog.Event;
-
-    Console.WriteLine($"Dynamic data updated:");
+    Console.WriteLine($"Static data spliced:");
     Console.WriteLine($"  TableId: {evt.TableId.ToHex()}");
     Console.WriteLine($"  Start: {evt.Start}");
-    Console.WriteLine($"  DeleteCount: {evt.DeleteCount}");
     Console.WriteLine($"  New data length: {evt.Data.Length}");
-});
+}
+
+// Or use ProcessAllStoreChangesAsync to handle all event types
+// (SetRecord, DeleteRecord, SpliceStaticData, SpliceDynamicData)
+// and apply them to a table repository automatically
+await storeEventsService.ProcessAllStoreChangesAsync(
+    tableRepository,
+    fromBlockNumber: 0,
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
+);
 ```
 
 ## Production Patterns

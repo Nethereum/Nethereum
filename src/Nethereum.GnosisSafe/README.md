@@ -478,28 +478,19 @@ using Nethereum.Contracts.TransactionHandlers.MultiSend;
 
 var safeService = new GnosisSafeService(web3, safeAddress);
 
-// Create multiple transactions
-var multiSendInputs = new List<IMultiSendInput>
-{
-    new MultiSendInput
-    {
-        Operation = MultiSendOperationType.Call,
-        To = "0x...",
-        Value = 0,
-        Data = new byte[] { } // Encoded function call
-    },
-    new MultiSendInput
-    {
-        Operation = MultiSendOperationType.Call,
-        To = "0x...",
-        Value = 0,
-        Data = new byte[] { } // Another encoded function call
-    }
-};
+// Create typed inputs using MultiSendFunctionInput<TFunctionMessage>
+// Each input wraps a typed function message with a target contract address
+var input1 = new MultiSendFunctionInput<TransferFunction>(
+    new TransferFunction { To = recipient1, Value = amount1 },
+    tokenAddress);
+
+var input2 = new MultiSendFunctionInput<TransferFunction>(
+    new TransferFunction { To = recipient2, Value = amount2 },
+    tokenAddress);
 
 var transactionData = new EncodeTransactionDataFunction
 {
-    To = "0x...", // MultiSend contract address
+    To = multiSendContractAddress,
     Value = 0,
     SafeTxGas = 0,
     BaseGas = 0,
@@ -508,8 +499,9 @@ var transactionData = new EncodeTransactionDataFunction
     RefundReceiver = "0x0000000000000000000000000000000000000000"
 };
 
+// BuildMultiSendTransactionAsync sets Operation to DelegateCall automatically
 var execTx = await safeService.BuildMultiSendTransactionAsync(
-    transactionData, chainId, privateKey, false, multiSendInputs.ToArray());
+    transactionData, chainId, privateKey, false, input1, input2);
 
 var receipt = await safeService.ExecTransactionRequestAndWaitForReceiptAsync(execTx);
 ```

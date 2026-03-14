@@ -101,18 +101,17 @@ var scryptParams = new ScryptParams { Dklen = 32, N = 32, R = 1, P = 8 };
 var ecKey = EthECKey.GenerateKey();
 string password = "testPassword";
 
-// Encrypt with custom parameters
+// Encrypt with custom parameters — pass address and ScryptParams object
 var keyStore = keyStoreService.EncryptAndGenerateKeyStore(
     password,
     ecKey.GetPrivateKeyAsBytes(),
-    scryptParams.N,
-    scryptParams.R,
-    scryptParams.P,
-    null // salt (null = auto-generate)
+    ecKey.GetPublicAddress(),
+    scryptParams
 );
 
-// Serialize to JSON
-string json = keyStoreService.SerializeKeyStoreToJson(keyStore);
+// Or use the JSON shortcut directly
+string json = keyStoreService.EncryptAndGenerateKeyStoreAsJson(
+    password, ecKey.GetPrivateKeyAsBytes(), ecKey.GetPublicAddress(), scryptParams);
 
 // Decrypt
 byte[] decryptedKey = keyStoreService.DecryptKeyStoreFromJson(password, json);
@@ -235,13 +234,17 @@ public class KeyStoreScryptService
     // Encrypt and generate JSON (default parameters)
     public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string address);
 
+    // Encrypt with default Scrypt parameters
+    public KeyStore<ScryptParams> EncryptAndGenerateKeyStore(
+        string password, byte[] privateKey, string address);
+
     // Encrypt with custom Scrypt parameters
     public KeyStore<ScryptParams> EncryptAndGenerateKeyStore(
-        string password,
-        byte[] privateKey,
-        int n, int r, int p,
-        byte[] salt = null
-    );
+        string password, byte[] privateKey, string address, ScryptParams kdfParams);
+
+    // Encrypt with custom parameters directly to JSON
+    public string EncryptAndGenerateKeyStoreAsJson(
+        string password, byte[] privateKey, string address, ScryptParams kdfParams);
 
     // Serialize keystore to JSON
     public string SerializeKeyStoreToJson(KeyStore<ScryptParams> keyStore);

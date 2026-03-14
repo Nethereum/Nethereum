@@ -237,7 +237,6 @@ public class AppChainNode : ChainNodeBase
 
 ### Used By (Consumers)
 - **[Nethereum.AppChain.Server](../Nethereum.AppChain.Server/README.md)** - HTTP server hosting the sequencer
-- **[Nethereum.AppChain.Metrics](../Nethereum.AppChain.Metrics/README.md)** - Instruments sequencer operations
 
 ### Dependencies
 - **[Nethereum.AppChain](../Nethereum.AppChain/README.md)** - Core chain abstraction

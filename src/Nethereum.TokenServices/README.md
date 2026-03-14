@@ -74,29 +74,21 @@ decimal totalValue = portfolio.Sum(b => b.Value ?? 0);
 var tokenService = new Erc20TokenService();
 ulong lastScannedBlock = GetLastScannedBlock(); // From your storage
 
-// Scan for new Transfer events
-var result = await tokenService.RefreshBalancesFromEventsAsync(
+// Scan for Transfer events and get updated balances
+// Returns List<TokenBalance> — includes both existing and newly discovered tokens
+var updatedBalances = await tokenService.RefreshBalancesFromEventsAsync(
     web3, userAddress, chainId,
     fromBlock: lastScannedBlock,
     existingTokens: currentTokenList,
     vsCurrency: "usd");
 
-if (result.Success)
+// Update your local state with refreshed balances
+foreach (var balance in updatedBalances)
 {
-    // Only tokens with transfers were updated
-    foreach (var updated in result.UpdatedBalances)
-    {
-        UpdateLocalBalance(updated);
-    }
-
-    // New tokens discovered from events
-    if (result.NewTokensFound > 0)
-    {
-        AddNewTokensToPortfolio(result.UpdatedBalances.Where(IsNew));
-    }
-
-    SaveLastScannedBlock(result.ToBlock);
+    UpdateLocalBalance(balance);
 }
+
+Console.WriteLine($"Refreshed {updatedBalances.Count} token balances");
 ```
 
 ### Scenario 3: Multi-Wallet, Multi-Chain Scanning
@@ -437,6 +429,154 @@ After calling `AddErc20TokenServices()`, these services are available:
 
 *Use `UseFileDiffStorage = true` option or `UseTokenListDiffStorage<T>()` builder method for persistence.
 
+## Token Catalog Subsystem
+
+The Token Catalog provides a persistent, refreshable token registry that replaces the legacy diff-based storage. It acts as a local database of known tokens per chain, with automatic seeding from embedded lists and refresh from external sources like CoinGecko.
+
+### Setup
+
+```csharp
+using Nethereum.TokenServices.Catalog;
+
+// Basic setup with default file-based repository
+services.AddTokenCatalog(options =>
+{
+    options.CatalogDirectory = "/data/token-catalog";
+    options.AutoSeedFromEmbedded = true;
+    options.DefaultRefreshInterval = TimeSpan.FromHours(6);
+    options.RegisterCoinGeckoSource = true;
+});
+
+// With custom repository (e.g., database-backed)
+services.AddTokenCatalogWithCustomRepository<MyDatabaseCatalogRepository>();
+```
+
+### Querying the Catalog
+
+```csharp
+var repository = serviceProvider.GetRequiredService<ITokenCatalogRepository>();
+
+// Get all tokens for a chain
+var tokens = await repository.GetAllTokensAsync(chainId: 1);
+Console.WriteLine($"Known tokens on Ethereum: {tokens.Count}");
+
+// Look up a specific token
+var usdc = await repository.GetTokenByAddressAsync(chainId: 1, "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+Console.WriteLine($"{usdc.Symbol}: {usdc.Name} ({usdc.Decimals} decimals)");
+
+// Get tokens added since a date
+var recentTokens = await repository.GetTokensAddedSinceAsync(chainId: 1, DateTime.UtcNow.AddDays(-7));
+```
+
+### Refreshing from External Sources
+
+```csharp
+var refreshService = serviceProvider.GetRequiredService<ITokenCatalogRefreshService>();
+
+// Check if refresh is needed (based on min interval)
+if (await refreshService.ShouldRefreshAsync(chainId: 1))
+{
+    var result = await refreshService.RefreshAsync(chainId: 1, new CatalogRefreshOptions
+    {
+        ForceRefresh = false,
+        IncrementalOnly = true,
+        UpdateExistingTokens = false
+    });
+
+    Console.WriteLine($"Source: {result.SourceUsed}");
+    Console.WriteLine($"Added: {result.TotalTokensAdded}, Updated: {result.TotalTokensUpdated}");
+    Console.WriteLine($"Total in catalog: {result.TotalTokensInCatalog}");
+}
+```
+
+### Using Catalog as Token List Provider
+
+Bridge the catalog into the `ITokenListProvider` interface used by `Erc20TokenService`:
+
+```csharp
+var catalogProvider = new CatalogTokenListProviderAdapter(repository, autoSeed: true);
+var tokenService = new Erc20TokenService(tokenListProvider: catalogProvider);
+```
+
+### Custom Refresh Sources
+
+Implement `ITokenCatalogRefreshSource` to add your own token data sources:
+
+```csharp
+public class MyCustomTokenSource : ITokenCatalogRefreshSource
+{
+    public string SourceName => "MyCustomSource";
+    public int Priority => 10; // Lower = tried first
+
+    public Task<bool> SupportsChainAsync(long chainId, CancellationToken ct) =>
+        Task.FromResult(chainId == 1);
+
+    public async Task<TokenCatalogRefreshResult> FetchTokensAsync(
+        long chainId, DateTime? sinceUtc, CancellationToken ct)
+    {
+        var tokens = await FetchFromMyApi(chainId, sinceUtc);
+        return new TokenCatalogRefreshResult
+        {
+            Success = true,
+            Tokens = tokens.Select(t => new CatalogTokenInfo
+            {
+                Address = t.Address,
+                Symbol = t.Symbol,
+                Name = t.Name,
+                Decimals = t.Decimals,
+                ChainId = chainId,
+                Source = SourceName
+            }).ToList()
+        };
+    }
+
+    public Task<RateLimitInfo> GetRateLimitInfoAsync(CancellationToken ct) =>
+        Task.FromResult(new RateLimitInfo { IsRateLimited = false });
+}
+
+// Register
+services.AddTokenCatalog().AddRefreshSource<MyCustomTokenSource>();
+```
+
+### Migrating from Legacy Diff Storage
+
+```csharp
+var migrationService = new TokenCatalogMigrationService(catalogRepository, legacyDiffStorage);
+
+// Migrate a single chain
+var result = await migrationService.MigrateAsync(chainId: 1, new MigrationOptions
+{
+    ForceMigration = false,
+    ClearLegacyAfterMigration = true
+});
+Console.WriteLine($"Migrated {result.MigratedTokenCount} tokens ({result.EmbeddedTokenCount} embedded + {result.DiffTokenCount} custom)");
+
+// Migrate all chains
+var allResults = await migrationService.MigrateAllChainsAsync();
+```
+
+### CatalogTokenInfo Model
+
+```csharp
+public class CatalogTokenInfo
+{
+    public string Address { get; set; }
+    public string Symbol { get; set; }
+    public string Name { get; set; }
+    public int Decimals { get; set; }
+    public string LogoUri { get; set; }
+    public long ChainId { get; set; }
+    public string CoinGeckoId { get; set; }
+    public DateTime AddedAtUtc { get; set; }
+    public DateTime? UpdatedAtUtc { get; set; }
+    public string Source { get; set; }
+
+    // Convert to/from TokenInfo
+    public static CatalogTokenInfo FromTokenInfo(TokenInfo tokenInfo, string source = "embedded");
+    public TokenInfo ToTokenInfo();
+}
+```
+
 ## Architecture
 
 ```
@@ -472,6 +612,15 @@ Nethereum.TokenServices/
 │   ├── IMultiAccountTokenService.cs    # Multi-wallet scanning
 │   ├── MultiAccountTokenService.cs
 │   └── Models/
+├── Catalog/
+│   ├── ITokenCatalogRepository.cs      # Persistent catalog storage
+│   ├── ITokenCatalogRefreshService.cs  # Refresh orchestration
+│   ├── ITokenCatalogRefreshSource.cs   # Plugin interface for sources
+│   ├── TokenCatalogRefreshService.cs
+│   ├── CatalogTokenInfo.cs             # Catalog token model
+│   ├── CatalogTokenListProviderAdapter.cs  # Bridge to ITokenListProvider
+│   ├── TokenCatalogMigrationService.cs # Legacy diff → catalog migration
+│   └── TokenCatalogServiceCollectionExtensions.cs  # DI setup
 ├── Caching/
 │   ├── ICacheProvider.cs
 │   ├── MemoryCacheProvider.cs

@@ -551,13 +551,8 @@ var account2 = new Account("0xPRIVATE_KEY_2");
 var web3_1 = new Web3(account1, "http://localhost:8545");
 var web3_2 = new Web3(account2, "http://localhost:8545");
 
-// Or switch accounts dynamically
-var web3 = new Web3("http://localhost:8545");
-web3.TransactionManager.Account = account1; // Use account1
-await DoSomeWork(web3);
-
-web3.TransactionManager.Account = account2; // Switch to account2
-await DoSomeMoreWork(web3);
+// Each Web3 instance is bound to one account
+// Create separate instances for different accounts
 ```
 
 ### Contract Handler Pattern
@@ -614,16 +609,21 @@ var query1 = new BalanceOfFunction { Owner = address1 };
 var query2 = new BalanceOfFunction { Owner = address2 };
 var query3 = new BalanceOfFunction { Owner = address3 };
 
-// Execute all queries in one call
-var results = await multiQueryHandler.MultiCallAsync(
-    new MultiCallInput<BalanceOfFunction, BigInteger>(contractAddress, query1),
-    new MultiCallInput<BalanceOfFunction, BigInteger>(contractAddress, query2),
-    new MultiCallInput<BalanceOfFunction, BigInteger>(contractAddress, query3)
-);
+// Create multicall inputs (functionMessage first, then contractAddress)
+var call1 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(query1, contractAddress);
+var call2 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(query2, contractAddress);
+var call3 = new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(query3, contractAddress);
 
-Console.WriteLine($"Balance 1: {results[0]}");
-Console.WriteLine($"Balance 2: {results[1]}");
-Console.WriteLine($"Balance 3: {results[2]}");
+// Execute all queries in one call via Multicall contract
+await multiQueryHandler.MultiCallAsync(call1, call2, call3);
+
+Console.WriteLine($"Balance 1: {call1.Output.Balance}");
+Console.WriteLine($"Balance 2: {call2.Output.Balance}");
+Console.WriteLine($"Balance 3: {call3.Output.Balance}");
+
+// Alternative: use RPC batch (no Multicall contract needed)
+var batchHandler = web3.Eth.GetMultiQueryBatchRpcHandler();
+await batchHandler.MultiCallAsync(call1, call2, call3);
 ```
 
 ## Common Patterns

@@ -239,7 +239,7 @@ var playerRecord = new PlayerTableRecord
     }
 };
 
-var encodedValues = playerRecord.GetEncodedValues();
+var encodedValues = playerRecord.GetEncodeValues();
 Console.WriteLine($"Static data: {encodedValues.StaticData.ToHex()}");
 Console.WriteLine($"Dynamic data: {encodedValues.DynamicData.ToHex()}");
 Console.WriteLine($"Encoded lengths: {encodedValues.EncodedLengths.ToHex()}");
@@ -285,7 +285,7 @@ playerRecord.Values = new PlayerTableRecord.PlayerValue
 
 // Encode for on-chain storage
 var encodedKey = playerRecord.GetEncodedKey();
-var encodedValues = playerRecord.GetEncodedValues();
+var encodedValues = playerRecord.GetEncodeValues();
 
 // Decode from on-chain data
 playerRecord.DecodeKey(encodedKeyBytes);
@@ -379,20 +379,23 @@ repository.ClearChangeSet();
 ### Example 5: Resource Identifiers
 
 ```csharp
-using Nethereum.Mud;
+using Nethereum.Mud.EncodingDecoding;
 
-// Create resource for a table
-var playerTableResource = new Resource("Game", "Player");
+// Create resource ID for a table (returns bytes32)
+var playerTableResourceId = ResourceEncoder.EncodeTable("Game", "Player");
+Console.WriteLine($"Table Resource ID: {playerTableResourceId.ToHex()}");
 
-// Get resource ID (bytes32)
-var resourceId = playerTableResource.ResourceIdEncoded;
-Console.WriteLine($"Resource ID: {resourceId.ToHex()}");
+// Create resource ID for a system
+var moveSystemResourceId = ResourceEncoder.EncodeSystem("Game", "MoveSystem");
+Console.WriteLine($"System Resource ID: {moveSystemResourceId.ToHex()}");
 
-// Create system resource
-var moveSystemResource = new SystemResource("Game", "MoveSystem");
+// Create resource ID for a namespace
+var gameNamespaceId = ResourceEncoder.EncodeNamespace("Game");
+Console.WriteLine($"Namespace Resource ID: {gameNamespaceId.ToHex()}");
 
-// Namespace resource
-var gameNamespace = new NamespaceResource("Game");
+// Decode a resource ID back to its components
+var decoded = ResourceEncoder.Decode(playerTableResourceId);
+Console.WriteLine($"Namespace: {decoded.Namespace}, Name: {decoded.Name}");
 ```
 
 ### Example 6: Schema Encoding
@@ -415,7 +418,8 @@ Console.WriteLine($"Total dynamic fields: {schema.NumDynamicFields}");
 using Nethereum.Mud.TableRepository;
 
 // Connect to remote table repository API
-var apiClient = new StoredRecordRestApiClient("https://api.example.com/mud");
+var httpHelper = new RestHttpHelper(new HttpClient());
+var apiClient = new StoredRecordRestApiClient(httpHelper, "https://api.example.com/mud");
 
 // Query specific table
 var records = await apiClient.GetRecordsAsync<PlayerTableRecord>(
@@ -491,7 +495,7 @@ config.Values = new ConfigTableRecord.ConfigValue
 };
 
 // Only has values, no keys
-var encodedValues = config.GetEncodedValues();
+var encodedValues = config.GetEncodeValues();
 ```
 
 ### Example 10: Production MUD Application Pattern
@@ -552,7 +556,7 @@ public abstract class TableRecord<TKey, TValue> : ITableRecord
     public TValue Values { get; set; }
 
     public List<byte[]> GetEncodedKey();
-    public EncodedValues GetEncodedValues();
+    public EncodedValues GetEncodeValues();
     public void DecodeKey(List<byte[]> encodedKey);
     public void DecodeValues(EncodedValues encodedValues);
 }
@@ -568,7 +572,7 @@ public abstract class TableRecordSingleton<TValue> : ITableRecordSingleton
 {
     public TValue Values { get; set; }
 
-    public EncodedValues GetEncodedValues();
+    public EncodedValues GetEncodeValues();
     public void DecodeValues(EncodedValues encodedValues);
 }
 ```
@@ -588,18 +592,20 @@ public interface ITableRepository<TTableRecord> where TTableRecord : ITableRecor
 }
 ```
 
-### Resource
+### ResourceEncoder
 
-Represents a MUD resource identifier.
+Static utility for creating and decoding MUD resource identifiers (bytes32).
 
 ```csharp
-public class Resource
+public static class ResourceEncoder
 {
-    public Resource(string nameSpace, string name);
-
-    public string NameSpace { get; }
-    public string Name { get; }
-    public byte[] ResourceIdEncoded { get; }
+    public static byte[] EncodeTable(string @namespace, string name);
+    public static byte[] EncodeSystem(string @namespace, string name);
+    public static byte[] EncodeNamespace(string @namespace);
+    public static byte[] EncodeOffchainTable(string @namespace, string name);
+    public static byte[] EncodeRootTable(string name);
+    public static byte[] EncodeRootSystem(string name);
+    public static Resource Decode(byte[] resourceBytes);
 }
 ```
 
@@ -676,7 +682,8 @@ await SyncAllChangesToChainAsync(repositories);
 
 ```csharp
 // Load initial state from REST API
-var apiClient = new StoredRecordRestApiClient("https://api.mud.game");
+var httpHelper = new RestHttpHelper(new HttpClient());
+var apiClient = new StoredRecordRestApiClient(httpHelper, "https://api.mud.game");
 var records = await apiClient.GetRecordsAsync<PlayerTableRecord>(worldAddress, tableId);
 
 var localRepo = new InMemoryTableRepository<PlayerTableRecord>();

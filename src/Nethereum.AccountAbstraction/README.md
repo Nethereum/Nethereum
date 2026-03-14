@@ -253,7 +253,12 @@ myContract.ChangeContractHandlerToAA(...)
     .WithGasConfig(new AAGasConfig
     {
         ReceiptPollIntervalMs = 1000,  // How often to check for receipt
-        ReceiptTimeoutMs = 60000       // Max wait time for mining
+        ReceiptTimeoutMs = 60000,      // Max wait time for mining
+        VerificationGasBuffer = 5000,  // Extra gas buffer for verification
+        CallGasBuffer = 10000,         // Extra gas buffer for call execution
+        PreVerificationGasBuffer = 2000, // Extra gas buffer for pre-verification
+        CallGasMultiplier = 1.2,       // Multiplier for call gas estimation
+        VerificationGasMultiplier = 1.5 // Multiplier for verification gas estimation
     });
 ```
 
@@ -338,7 +343,7 @@ catch (TimeoutException ex)
     // UserOp wasn't mined within the timeout period
     Console.WriteLine($"Timeout waiting for UserOp: {ex.Message}");
 }
-catch (RpcClientException ex)
+catch (RpcClientUnknownException ex)
 {
     // Bundler rejected the UserOp or connection failed
     Console.WriteLine($"Bundler error: {ex.Message}");

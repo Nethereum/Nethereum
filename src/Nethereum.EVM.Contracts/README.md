@@ -383,10 +383,10 @@ var result = await simulator.SimulateTransferAndBalanceStateAsync(
     amount
 );
 
-// Validate sender has sufficient balance
-if (result.BalanceSenderAfter < 0)
+// Check if the transfer was successful (sufficient balance, no revert)
+if (result.BalanceSenderAfter > result.BalanceSenderBefore)
 {
-    throw new Exception("Insufficient balance");
+    throw new Exception("Unexpected sender balance increase");
 }
 
 // Validate expected balance changes
@@ -402,7 +402,7 @@ if (result.BalanceSenderAfter != expectedSenderBalance ||
 // Validate events
 if (!result.TransferLogs.Any(log =>
     log.Topics.Length > 0 &&
-    log.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"))
+    log.Topics[0].ToString() == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"))
 {
     throw new Exception("Missing Transfer event");
 }

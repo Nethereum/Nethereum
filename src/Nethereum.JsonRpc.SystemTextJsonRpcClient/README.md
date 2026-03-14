@@ -4,7 +4,7 @@ Modern, lightweight, and AOT-friendly HTTP/HTTPS JSON-RPC client using System.Te
 
 ## Overview
 
-Nethereum.JsonRpc.SystemTextJsonRpcClient provides a **modern, high-performance HTTP/HTTPS transport implementation** for Ethereum node communication using **System.Text.Json** instead of Newtonsoft.Json. This package is optimized for **.NET 9.0+** and supports **AOT (Ahead-of-Time) compilation** through source generators, making it ideal for modern cloud-native applications, serverless functions, and performance-critical scenarios.
+Nethereum.JsonRpc.SystemTextJsonRpcClient provides a **modern, high-performance HTTP/HTTPS transport implementation** for Ethereum node communication using **System.Text.Json** instead of Newtonsoft.Json. This package is optimized for **.NET 7.0+** and supports **AOT (Ahead-of-Time) compilation** through source generators, making it ideal for modern cloud-native applications, serverless functions, and performance-critical scenarios.
 
 **Key Features:**
 - **System.Text.Json** serialization (faster, lower memory)
@@ -13,11 +13,11 @@ Nethereum.JsonRpc.SystemTextJsonRpcClient provides a **modern, high-performance 
 - **Bearer token** authentication
 - **HTTP/2** and **HTTP/3** support
 - Lightweight and minimal dependencies
-- .NET 9.0+ only (modern runtime features)
+- .NET 7.0+ only (modern runtime features)
 - Production-ready connection management
 
 **Use Cases:**
-- Modern .NET 9.0+ applications
+- Modern .NET 7.0+ applications
 - Cloud-native and serverless deployments
 - Native AOT applications (smaller, faster startup)
 - Performance-critical blockchain indexers
@@ -31,7 +31,7 @@ dotnet add package Nethereum.JsonRpc.SystemTextJsonRpcClient
 ```
 
 **Requirements:**
-- **.NET 9.0 or higher**
+- **.NET 7.0 or higher**
 - For older .NET versions, use `Nethereum.JsonRpc.RpcClient` (Newtonsoft.Json)
 
 ## Dependencies
@@ -42,7 +42,7 @@ dotnet add package Nethereum.JsonRpc.SystemTextJsonRpcClient
 - **Nethereum.RPC** - RPC DTOs and services
 
 **External:**
-- **System.Text.Json** (built-in to .NET 9.0+)
+- **System.Text.Json** (built-in to .NET 7.0+)
 - **Microsoft.Extensions.Logging.Abstractions** - Logging support
 
 ## Quick Start
@@ -458,7 +458,7 @@ public RequestInterceptor? OverridingRequestInterceptor { get; set; }
 
 | Feature | SystemTextJsonRpcClient | RpcClient (Newtonsoft) |
 |---------|------------------------|------------------------|
-| **Target Framework** | .NET 9.0+ | .NET Standard 2.0+ |
+| **Target Framework** | .NET 7.0+ | .NET Standard 2.0+ |
 | **Serialization** | System.Text.Json | Newtonsoft.Json |
 | **AOT Support** | Yes (source generators) | No |
 | **Performance** | ~30% faster | Baseline |
@@ -470,7 +470,7 @@ public RequestInterceptor? OverridingRequestInterceptor { get; set; }
 ### When to Use This Package
 
 **Use SystemTextJsonRpcClient when:**
-- Building .NET 9.0+ applications
+- Building .NET 7.0+ applications
 - Using Native AOT compilation
 - Performance is critical (high throughput)
 - Cloud-native/serverless (Azure Functions, AWS Lambda)

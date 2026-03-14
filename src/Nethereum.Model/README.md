@@ -366,6 +366,7 @@ var encodedValue = AccountStorage.EncodeValueForStorage(storageValue);
 - `LegacyChainTransaction` (-2): EIP-155 transactions with chain ID
 - `LegacyEIP2930` (0x01): Transactions with access lists
 - `EIP1559` (0x02): Fee market transactions
+- `Blob` (0x03): EIP-4844 blob transactions
 - `EIP7702` (0x04): Account abstraction with authorization
 
 #### `LegacyTransaction`
@@ -413,10 +414,30 @@ EIP-2930 transaction with access list.
 Similar structure to `Transaction1559` but uses `GasPrice` instead of base/priority fees.
 
 #### `Transaction7702`
-EIP-7702 account abstraction transaction.
+EIP-7702 transaction that allows EOAs to temporarily set account code for a single transaction via signed authorizations.
 
-Extends `Transaction1559` with:
-- `List<Authorisation7702Signed> AuthorisationList`: Signed authorizations
+**Key Properties:**
+- `BigInteger ChainId`: Network chain identifier
+- `BigInteger? Nonce`: Transaction sequence number
+- `BigInteger? MaxPriorityFeePerGas`: Miner tip
+- `BigInteger? MaxFeePerGas`: Maximum total fee per gas
+- `BigInteger? GasLimit`: Gas limit
+- `string ReceiverAddress`: Recipient
+- `BigInteger? Amount`: Value to transfer
+- `string Data`: Call data
+- `List<AccessListItem> AccessList`: Optional access list
+- `List<Authorisation7702Signed> AuthorisationList`: Signed authorization tuples
+
+**Key Methods:**
+- `byte[] GetRLPEncoded()`: Get complete RLP-encoded transaction
+- `byte[] GetRLPEncodedRaw()`: Get RLP encoding for signing (without signature)
+
+#### `Gas7702`
+Gas cost constants for EIP-7702 authorization processing.
+
+**Constants:**
+- `PER_AUTH_BASE_COST = 12500`: Base gas cost per authorization entry
+- `PER_EMPTY_ACCOUNT_COST = 25000`: Additional gas cost when the authorized account is empty
 
 #### `TransactionFactory`
 Factory class for creating and decoding transactions.
@@ -533,11 +554,32 @@ RLP encoder/decoder for access lists.
 
 ### Authorization Models (EIP-7702)
 
-#### `Authorisation7702Signed`
-Signed authorization for account abstraction.
+#### `Authorisation7702`
+Unsigned authorization tuple specifying which contract code an EOA delegates to.
 
 **Properties:**
-- Authorization details for delegated transaction execution
+- `BigInteger ChainId`: Chain ID the authorization is valid for
+- `string Address`: Contract address whose code the EOA will execute
+- `BigInteger Nonce`: Nonce of the authorizing account at time of signing
+
+#### `Authorisation7702Signed`
+Signed authorization extending `Authorisation7702` with ECDSA signature components. Implements `ISignature`.
+
+**Properties (inherited from `Authorisation7702`):**
+- `BigInteger ChainId`: Chain ID the authorization is valid for
+- `string Address`: Contract address whose code the EOA will execute
+- `BigInteger Nonce`: Nonce of the authorizing account
+
+**Properties (signature):**
+- `byte[] V`: YParity value
+- `byte[] R`: Signature R component
+- `byte[] S`: Signature S component
+
+**Constructors:**
+- `Authorisation7702Signed()`: Default constructor
+- `Authorisation7702Signed(BigInteger chainId, string address, BigInteger nonce, byte[] r, byte[] s, byte[] v)`: Create with all fields
+- `Authorisation7702Signed(Authorisation7702 authorisation, Signature signature)`: Create from unsigned authorization and signature
+- `Authorisation7702Signed(Authorisation7702 authorisation, byte[] r, byte[] s, byte[] v)`: Create from unsigned authorization and raw signature bytes
 
 #### `AuthorisationListRLPEncoderDecoder`
 RLP encoder/decoder for authorization lists.
@@ -649,6 +691,7 @@ Account state is stored in a Patricia Merkle Trie:
 - [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718): Typed transaction envelope
 - [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930): Optional access lists
 - [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559): Fee market change (base fee + priority fee)
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844): Shard blob transactions
 - [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702): Set EOA account code for one transaction
 
 ### Ethereum Protocol

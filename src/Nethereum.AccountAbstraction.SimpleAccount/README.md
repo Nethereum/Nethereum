@@ -63,7 +63,8 @@ await web3.Eth.GetEtherTransferService()
 
 // Create and deploy via UserOperation
 var receipt = await factory.CreateAndDeployAccountAsync(
-    ownerKey, entryPointService, salt: 0);
+    ownerKey.GetPublicAddress(), beneficiaryAddress, entryPointAddress,
+    ownerKey, fundingAmountInEther: 0.01m, salt: 0);
 ```
 
 ### Example 2: Generate Init Code for UserOperation
@@ -92,7 +93,8 @@ Factory for deploying SimpleAccount instances.
 Key methods:
 - `GetCreateAccountInitCode(owner, salt) : byte[]` - Generate factory + calldata for init code
 - `CreateAccountQueryAsync(owner, salt) : string` - Predict account address via CREATE2
-- `CreateAndDeployAccountAsync(ownerKey, entryPointService, salt)` - Full deployment flow
+- `GetAddressQueryAsync(owner, salt) : Task<string>` - Predict counterfactual address without deploying
+- `CreateAndDeployAccountAsync(owner, beneficiary, entryPointAddress, ethKey, fundingAmountInEther, salt)` - Full deployment flow
 
 ### SimpleAccountService
 
@@ -104,7 +106,7 @@ Generated contract service for interacting with deployed SimpleAccount.
 - **[Nethereum.AccountAbstraction](../Nethereum.AccountAbstraction/README.md)** - Core ERC-4337 framework
 
 ### See Also
-- **[Nethereum.AccountAbstraction.SmartContracts](../Nethereum.AccountAbstraction.SmartContracts/README.md)** - Modular smart account with ERC-7579 support
+- **[Nethereum.AccountAbstraction](../Nethereum.AccountAbstraction/README.md)** - ERC-7579 modular account support (validators, executors, sessions)
 
 ## Additional Resources
 

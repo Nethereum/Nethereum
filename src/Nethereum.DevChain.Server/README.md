@@ -193,8 +193,18 @@ Create `appsettings.json` in the working directory:
 | `eth_getLogs` | Query logs |
 | `eth_getProof` | Merkle proof |
 | `eth_accounts` | List funded accounts |
+| `eth_coinbase` | Coinbase address |
 | `eth_syncing` | Sync status |
 | `eth_mining` | Mining status |
+| `eth_getBlockTransactionCountByHash` | Transaction count in block by hash |
+| `eth_getBlockTransactionCountByNumber` | Transaction count in block by number |
+| `eth_getTransactionByBlockHashAndIndex` | Transaction by block hash and index |
+| `eth_getTransactionByBlockNumberAndIndex` | Transaction by block number and index |
+| `eth_newFilter` | Create log filter |
+| `eth_newBlockFilter` | Create new block filter |
+| `eth_getFilterChanges` | Poll filter for changes |
+| `eth_getFilterLogs` | Get all logs for filter |
+| `eth_uninstallFilter` | Remove a filter |
 
 ### Development
 
@@ -226,7 +236,17 @@ Create `appsettings.json` in the working directory:
 
 ### Anvil Aliases
 
-All `hardhat_*` and `evm_*` methods are also available with `anvil_*` prefix for Foundry/Anvil compatibility.
+The following `anvil_*` aliases are registered for Foundry/Anvil compatibility:
+
+| Anvil Method | Routes To |
+|--------------|-----------|
+| `anvil_setBalance` | `hardhat_setBalance` |
+| `anvil_setCode` | `hardhat_setCode` |
+| `anvil_setNonce` | `hardhat_setNonce` |
+| `anvil_setStorageAt` | `hardhat_setStorageAt` |
+| `anvil_mine` | `evm_mine` |
+| `anvil_snapshot` | `evm_snapshot` |
+| `anvil_revert` | `evm_revert` |
 
 ## Usage Examples
 

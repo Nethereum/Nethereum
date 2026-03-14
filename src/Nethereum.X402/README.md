@@ -1,25 +1,18 @@
 # Nethereum.X402
 
-A .NET implementation of the x402 protocol for accepting HTTP 402 (Payment Required) payments using EIP-3009 USDC transfers on Ethereum-compatible blockchains.
+A .NET implementation of the [x402 protocol](https://github.com/x402/x402) for accepting HTTP 402 (Payment Required) cryptocurrency payments using EIP-3009 signed token authorizations.
 
 ## Overview
 
-Nethereum.X402 enables seamless cryptocurrency payment integration for HTTP APIs by implementing the x402 protocol. It supports both self-facilitated and facilitated payment patterns, allowing services to accept USDC payments with minimal friction.
+The x402 protocol adds a payment layer to HTTP APIs. When a client requests a protected resource, the server returns HTTP 402 with payment requirements. The client signs an EIP-3009 authorization (off-chain, no gas), retries the request with the signed payment header, and the server or facilitator settles the transfer on-chain.
 
-### Key Features
+Nethereum.X402 provides:
 
-- **HTTP 402 Payment Required**: Standards-compliant implementation of the x402 protocol
-- **EIP-3009 Integration**: Gasless token transfers using signed authorizations (USDC, PYUSD, EURC)
-- **Flexible Architecture**: Support for both self-facilitated and third-party facilitated payment flows
-- **ASP.NET Core Integration**: Middleware and filters for easy API integration
-- **Type-Safe**: Full .NET type safety with comprehensive DTOs
-- **Testable**: Built with dependency injection and testability in mind
-
-### Supported Payment Patterns
-
-1. **Self-Facilitated**: Service manages its own payment infrastructure
-2. **Facilitated**: Leverage third-party facilitators for payment processing
-3. **Hybrid**: Mix both patterns as needed
+- **`X402HttpClient`** — Client that handles the 402 flow automatically (detect → sign → retry)
+- **`X402Middleware`** — ASP.NET Core middleware for protecting API endpoints
+- **Two EIP-3009 payment processors** — TransferWithAuthorization (facilitator submits) and ReceiveWithAuthorization (receiver submits)
+- **Facilitator support** — Proxy payments through a third-party facilitator service
+- **Multi-chain support** — Pre-configured for Base, Ethereum, Polygon, Arbitrum, Optimism, Avalanche
 
 ## Installation
 
@@ -27,736 +20,495 @@ Nethereum.X402 enables seamless cryptocurrency payment integration for HTTP APIs
 dotnet add package Nethereum.X402
 ```
 
-### Prerequisites
+## Client: Pay for API Requests
 
-- .NET 8.0 or .NET 9.0
-- Nethereum.Web3 (automatically included)
-- Access to an Ethereum-compatible RPC endpoint
+`X402HttpClient` wraps `HttpClient` and handles the full 402 payment flow automatically.
 
-## Quick Start
+### Automatic Payment Flow
 
-### 1. Configure Services
-
-```csharp
-using Nethereum.X402;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add x402 services
-builder.Services.AddX402(options =>
-{
-    options.RpcUrl = "https://your-rpc-endpoint.com";
-    options.ChainId = 1; // Mainnet
-    options.UsdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-    options.PaymentReceiverAddress = "0xYourAddress";
-    options.FacilitatorUrl = "https://facilitator.x402.org"; // Optional
-});
-
-builder.Services.AddControllers();
-var app = builder.Build();
-app.MapControllers();
-app.Run();
-```
-
-### 2. Protect API Endpoints
-
-```csharp
-using Microsoft.AspNetCore.Mvc;
-using Nethereum.X402.Filters;
-
-[ApiController]
-[Route("api/[controller]")]
-public class PremiumController : ControllerBase
-{
-    [HttpGet("content")]
-    [X402PaymentRequired(
-        amount: 1_000000, // $1.00 USDC (6 decimals)
-        description: "Access to premium content"
-    )]
-    public IActionResult GetPremiumContent()
-    {
-        return Ok(new { data = "Premium content here" });
-    }
-}
-```
-
-### 3. Client Integration
+The client detects 402 responses, signs an EIP-3009 authorization, and retries with the payment header:
 
 ```csharp
 using Nethereum.X402.Client;
 
 var httpClient = new HttpClient();
-var x402Client = new X402Client(httpClient, web3, senderPrivateKey);
-
-// Make payment-required request
-var response = await x402Client.GetAsync(
-    "https://api.example.com/api/premium/content"
-);
-
-if (response.IsSuccessStatusCode)
+var options = new X402HttpClientOptions
 {
-    var content = await response.Content.ReadAsStringAsync();
-    Console.WriteLine($"Received: {content}");
+    MaxPaymentAmount = 0.1m,       // Max USDC per request (safety limit)
+    PreferredNetwork = "base",
+    TokenName = "USD Coin",
+    TokenVersion = "2",
+    ChainId = 8453,
+    TokenAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+};
+
+var x402Client = new X402HttpClient(httpClient, privateKey, options);
+
+// Automatic: detects 402 → signs EIP-3009 → retries with payment
+var response = await x402Client.GetAsync("https://api.example.com/premium/content");
+var content = await response.Content.ReadAsStringAsync();
+
+// Check payment result from response headers
+if (response.HasPaymentResponse())
+{
+    var txHash = response.GetTransactionHash();
+    var payer = response.GetPayerAddress();
+    var success = response.IsPaymentSuccessful();
 }
 ```
 
-## Architecture
+All HTTP methods are supported: `GetAsync`, `PostAsync`, `PutAsync`, `DeleteAsync`, `SendAsync`.
 
-### Core Components
+If the requested amount exceeds `MaxPaymentAmount`, the client throws `X402PaymentExceedsMaximumException` instead of signing.
 
-#### X402Service
-Central service for managing x402 payment flows. Handles payment verification, signature validation, and blockchain interaction.
+### Manual Payment Flow
+
+For full control, pass explicit `PaymentRequirements`:
 
 ```csharp
-public class X402Service
+var x402Client = new X402HttpClient(httpClient, privateKey, "USD Coin", "2", 8453, usdcAddress);
+
+var requirements = new PaymentRequirements
 {
-    Task<bool> VerifyPaymentAsync(X402PaymentHeader paymentHeader);
-    Task<X402PaymentProposal> CreatePaymentProposalAsync(PaymentRequest request);
-    Task<TransactionReceipt> SubmitPaymentAsync(X402PaymentHeader payment);
-}
+    Scheme = "exact",
+    Network = "base",
+    MaxAmountRequired = "1000000",  // $1.00 USDC (6 decimals)
+    Asset = "USDC",
+    PayTo = "0xReceiverAddress",
+    Resource = "/api/premium",
+    Description = "Premium content access",
+    MaxTimeoutSeconds = 60
+};
+
+var response = await x402Client.GetAsync("https://api.example.com/premium", requirements);
 ```
 
-#### X402PaymentHeader
-Complete payment information including EIP-3009 authorization signature.
+### Client DI Registration
 
 ```csharp
-public class X402PaymentHeader
-{
-    public string From { get; set; }
-    public string To { get; set; }
-    public decimal Amount { get; set; }
-    public string Token { get; set; }
-    public string Nonce { get; set; }
-    public long ValidAfter { get; set; }
-    public long ValidBefore { get; set; }
-    public string Signature { get; set; } // EIP-3009 signature (v,r,s)
-    public int ChainId { get; set; }
-}
+using Nethereum.X402.Extensions;
+
+builder.Services.AddX402Client(
+    privateKey: Environment.GetEnvironmentVariable("PAYER_PRIVATE_KEY"),
+    tokenName: "USD Coin",
+    tokenVersion: "2",
+    chainId: 8453,
+    tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
 ```
 
-#### X402PaymentProposal
-Server's payment request sent to clients via HTTP 402 response.
+## Server: Protect API Endpoints
+
+Use `X402Middleware` to gate endpoints behind payment. Define route-based payment requirements:
 
 ```csharp
-public class X402PaymentProposal
-{
-    public string PaymentId { get; set; }
-    public string To { get; set; }
-    public decimal Amount { get; set; }
-    public string Token { get; set; }
-    public int ChainId { get; set; }
-    public long ValidBefore { get; set; }
-    public string Description { get; set; }
-}
-```
-
-### Payment Flow
-
-```
-1. Client → Server: GET /api/premium/content
-2. Server → Client: 402 Payment Required + X402PaymentProposal
-3. Client: Signs EIP-3009 authorization
-4. Client → Server: GET /api/premium/content + X-Payment header
-5. Server: Verifies signature, submits to blockchain
-6. Server → Client: 200 OK + content
-```
-
-## Configuration
-
-### X402Options
-
-```csharp
-public class X402Options
-{
-    // Required: Blockchain configuration
-    public string RpcUrl { get; set; }
-    public int ChainId { get; set; }
-    public string UsdcAddress { get; set; }
-
-    // Self-facilitated mode
-    public string PaymentReceiverAddress { get; set; }
-    public string PaymentReceiverPrivateKey { get; set; }
-
-    // Facilitated mode
-    public string FacilitatorUrl { get; set; }
-    public string FacilitatorApiKey { get; set; }
-
-    // Payment defaults
-    public long DefaultValidityWindow { get; set; } = 3600; // 1 hour
-    public decimal MinimumPaymentAmount { get; set; } = 0.01m;
-}
-```
-
-### appsettings.json
-
-```json
-{
-  "X402": {
-    "RpcUrl": "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
-    "ChainId": 1,
-    "UsdcAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    "PaymentReceiverAddress": "0xYourAddress",
-    "FacilitatorUrl": "https://facilitator.x402.org"
-  }
-}
-```
-
-## Usage Examples
-
-### Self-Facilitated Payment Server
-
-A complete example of a server managing its own payment infrastructure:
-
-```csharp
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Nethereum.X402;
+using Nethereum.X402.AspNetCore;
+using Nethereum.X402.Server;
+using Nethereum.X402.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure self-facilitated mode
-builder.Services.AddX402(options =>
-{
-    options.RpcUrl = "https://mainnet.infura.io/v3/YOUR-PROJECT-ID";
-    options.ChainId = 1;
-    options.UsdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-    options.PaymentReceiverAddress = "0xYourReceiverAddress";
-    options.PaymentReceiverPrivateKey = Environment.GetEnvironmentVariable("PAYMENT_PRIVATE_KEY");
-});
-
-builder.Services.AddControllers();
+// Register x402 services with a facilitator
+builder.Services.AddX402Services("https://facilitator.x402.org");
 
 var app = builder.Build();
-app.MapControllers();
+
+// Add x402 middleware with route-specific payment requirements
+app.UseX402(options =>
+{
+    options.Routes.Add(new RoutePaymentConfig("/api/premium/*", new PaymentRequirements
+    {
+        Scheme = "exact",
+        Network = "base",
+        MaxAmountRequired = "1000000",  // $1.00 USDC
+        Asset = "USDC",
+        PayTo = "0xYourReceiverAddress",
+        Resource = "/api/premium",
+        Description = "Premium API access",
+        MaxTimeoutSeconds = 60
+    }));
+});
+
+app.MapGet("/api/premium/content", () => Results.Ok(new { data = "Premium content" }));
 app.Run();
 ```
 
-### Client Using Facilitator
+The middleware intercepts requests matching route patterns. If no `X-Payment` header is present, it returns 402 with `PaymentRequirements`. If a payment header is present, it verifies and settles through the facilitator before forwarding to the endpoint.
 
-Example client leveraging a facilitator for payment processing:
+### Self-Facilitated Server
+
+Instead of using an external facilitator, process payments directly on-chain:
 
 ```csharp
-using Nethereum.Web3;
-using Nethereum.Web3.Accounts;
-using Nethereum.X402.Client;
+using Nethereum.X402.Extensions;
 
-// Setup client with facilitator
-var account = new Account(privateKey);
-var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+// Register a Transfer processor (facilitator pays gas)
+builder.Services.AddX402TransferProcessor(
+    facilitatorPrivateKey: Environment.GetEnvironmentVariable("FACILITATOR_KEY"),
+    rpcEndpoints: new Dictionary<string, string> { ["base"] = "https://mainnet.base.org" },
+    tokenAddresses: new Dictionary<string, string> { ["base"] = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+    chainIds: new Dictionary<string, int> { ["base"] = 8453 },
+    tokenNames: new Dictionary<string, string> { ["base"] = "USD Coin" },
+    tokenVersions: new Dictionary<string, string> { ["base"] = "2" });
 
-var httpClient = new HttpClient();
-var x402Client = new X402Client(httpClient, web3, privateKey)
-{
-    FacilitatorUrl = "https://facilitator.x402.org"
-};
-
-// Make request - payment handled automatically
-var response = await x402Client.GetAsync("https://api.example.com/premium/data");
-var data = await response.Content.ReadAsStringAsync();
+// Or register a Receive processor (receiver pays gas)
+builder.Services.AddX402ReceiveProcessor(
+    receiverPrivateKey: Environment.GetEnvironmentVariable("RECEIVER_KEY"),
+    rpcEndpoints: new Dictionary<string, string> { ["base"] = "https://mainnet.base.org" },
+    tokenAddresses: new Dictionary<string, string> { ["base"] = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+    chainIds: new Dictionary<string, int> { ["base"] = 8453 },
+    tokenNames: new Dictionary<string, string> { ["base"] = "USD Coin" },
+    tokenVersions: new Dictionary<string, string> { ["base"] = "2" });
 ```
 
-### Custom Payment Validation
+## Payment Processors
 
-Implement custom validation logic for payments:
+The `IX402PaymentProcessor` interface defines three operations:
 
 ```csharp
-services.AddX402(options => { /* ... */ })
-    .AddPaymentValidator<CustomPaymentValidator>();
-
-public class CustomPaymentValidator : IPaymentValidator
+public interface IX402PaymentProcessor
 {
-    private readonly ILogger<CustomPaymentValidator> _logger;
-
-    public CustomPaymentValidator(ILogger<CustomPaymentValidator> logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<bool> ValidateAsync(X402PaymentHeader payment)
-    {
-        // Check minimum amount
-        if (payment.Amount < 1.0m)
-        {
-            _logger.LogWarning("Payment amount {Amount} below minimum", payment.Amount);
-            return false;
-        }
-
-        // Verify sender is not blacklisted
-        if (await IsBlacklistedAsync(payment.From))
-        {
-            _logger.LogWarning("Payment from blacklisted address {Address}", payment.From);
-            return false;
-        }
-
-        return true;
-    }
+    Task<VerificationResponse> VerifyPaymentAsync(PaymentPayload payload, PaymentRequirements requirements, CancellationToken ct = default);
+    Task<SettlementResponse> SettlePaymentAsync(PaymentPayload payload, PaymentRequirements requirements, CancellationToken ct = default);
+    Task<SupportedPaymentKindsResponse> GetSupportedAsync(CancellationToken ct = default);
 }
 ```
 
-### Dynamic Pricing
+Two implementations are provided:
 
-Implement dynamic pricing based on context:
+| Processor | Who Submits TX | Who Pays Gas | EIP-3009 Function |
+|-----------|---------------|-------------|-------------------|
+| `X402TransferWithAuthorisation3009Service` | Facilitator | Facilitator | `transferWithAuthorization` |
+| `X402ReceiveWithAuthorisation3009Service` | Receiver | Receiver | `receiveWithAuthorization` |
+
+### TransferWithAuthorization (Facilitator Model)
+
+The payer signs an authorization, and a facilitator submits the on-chain transfer:
 
 ```csharp
-[HttpGet("content/{contentId}")]
-[X402PaymentRequired(description: "Premium content")]
-public async Task<IActionResult> GetPremiumContent(
-    string contentId,
-    [FromServices] X402Service x402Service,
-    [FromServices] IPricingService pricingService)
+using Nethereum.X402.Blockchain;
+using Nethereum.X402.Models;
+using Nethereum.X402.Signers;
+
+// Create the service
+var service = new X402TransferWithAuthorisation3009Service(
+    facilitatorPrivateKey: "0x...",
+    rpcEndpoints: new Dictionary<string, string> { ["base-sepolia"] = "https://sepolia.base.org" },
+    tokenAddresses: new Dictionary<string, string> { ["base-sepolia"] = usdcAddress },
+    chainIds: new Dictionary<string, int> { ["base-sepolia"] = 84532 },
+    tokenNames: new Dictionary<string, string> { ["base-sepolia"] = "USDC" },
+    tokenVersions: new Dictionary<string, string> { ["base-sepolia"] = "2" });
+
+// Build and sign an authorization
+var builder = new TransferWithAuthorisationBuilder();
+var signer = new TransferWithAuthorisationSigner();
+
+var requirements = new PaymentRequirements
 {
-    // Calculate price based on content, user, time, etc.
-    var price = await pricingService.GetPriceAsync(contentId, User);
+    Scheme = "exact",
+    Network = "base-sepolia",
+    MaxAmountRequired = "1000000",
+    PayTo = receiverAddress
+};
 
-    if (!Request.Headers.ContainsKey("X-Payment"))
+var authorization = builder.BuildFromPaymentRequirements(requirements, payerAddress);
+
+var signature = await signer.SignWithPrivateKeyAsync(
+    authorization, "USDC", "2", 84532, usdcAddress, payerPrivateKey);
+
+// Encode signature to hex (r + s + v)
+var signatureBytes = new byte[signature.R.Length + signature.S.Length + signature.V.Length];
+signature.R.CopyTo(signatureBytes, 0);
+signature.S.CopyTo(signatureBytes, signature.R.Length);
+signature.V.CopyTo(signatureBytes, signature.R.Length + signature.S.Length);
+var signatureHex = signatureBytes.ToHex(true);
+
+// Create the payment payload
+var paymentPayload = new PaymentPayload
+{
+    X402Version = 1,
+    Scheme = "exact",
+    Network = "base-sepolia",
+    Payload = new ExactSchemePayload
     {
-        var proposal = await x402Service.CreatePaymentProposalAsync(
-            new PaymentRequest
-            {
-                Amount = price,
-                Description = $"Access to content {contentId}"
-            });
-        return StatusCode(402, proposal);
+        Authorization = authorization,
+        Signature = signatureHex
     }
+};
 
-    // Verify payment matches expected price
-    var payment = ParsePaymentHeader(Request.Headers["X-Payment"]);
-    if (payment.Amount < price)
-    {
-        return StatusCode(402, new { error = "Insufficient payment amount" });
-    }
-
-    var isValid = await x402Service.VerifyPaymentAsync(payment);
-    if (!isValid)
-    {
-        return Unauthorized(new { error = "Invalid payment" });
-    }
-
-    await x402Service.SubmitPaymentAsync(payment);
-    return Ok(await GetContentAsync(contentId));
+// Verify the payment (checks signature, balance, timestamps)
+var verification = await service.VerifyPaymentAsync(paymentPayload, requirements);
+if (verification.IsValid)
+{
+    // Settle on-chain
+    var settlement = await service.SettlePaymentAsync(paymentPayload, requirements);
+    Console.WriteLine($"TX: {settlement.Transaction}, Payer: {settlement.Payer}");
 }
 ```
 
-### Facilitator Discovery
+### ReceiveWithAuthorization (Receiver Model)
 
-Automatically discover facilitators for a service:
+The payer signs an authorization, and the receiver submits the on-chain transfer (receiver pays gas):
 
 ```csharp
-using Nethereum.X402.Client;
+using Nethereum.X402.Blockchain;
+using Nethereum.X402.Signers;
 
-var discoveryClient = new FacilitatorDiscoveryClient(httpClient);
+var service = new X402ReceiveWithAuthorisation3009Service(
+    receiverPrivateKey: "0x...",
+    rpcEndpoints: new Dictionary<string, string> { ["base-sepolia"] = "https://sepolia.base.org" },
+    tokenAddresses: new Dictionary<string, string> { ["base-sepolia"] = usdcAddress },
+    chainIds: new Dictionary<string, int> { ["base-sepolia"] = 84532 },
+    tokenNames: new Dictionary<string, string> { ["base-sepolia"] = "USDC" },
+    tokenVersions: new Dictionary<string, string> { ["base-sepolia"] = "2" });
 
-// Discover facilitator for a specific service
-var facilitator = await discoveryClient.DiscoverFacilitatorAsync(
-    "https://api.example.com"
-);
+// Build authorization using Receive builder
+var builder = new ReceiveWithAuthorisationBuilder();
+var signer = new TransferWithAuthorisationSigner();
 
-Console.WriteLine($"Found facilitator: {facilitator.Url}");
-Console.WriteLine($"Supported chains: {string.Join(", ", facilitator.SupportedChainIds)}");
-Console.WriteLine($"Fee: {facilitator.FeePercentage}%");
+var authorization = builder.BuildFromPaymentRequirements(requirements, payerAddress);
 
-// Use discovered facilitator
-var x402Client = new X402Client(httpClient, web3, privateKey)
-{
-    FacilitatorUrl = facilitator.Url
-};
+// Sign with the Receive-specific method
+var signature = await signer.SignReceiveWithPrivateKeyAsync(
+    authorization, "USDC", "2", 84532, usdcAddress, payerPrivateKey);
 ```
 
-### Payment Event Monitoring
+The key difference: `ReceiveWithAuthorisation3009Service` validates that the authorization's `To` address matches the receiver's address and uses `receiveWithAuthorization` on-chain (only the designated receiver can submit).
 
-Monitor and react to payment events:
-
-```csharp
-services.AddX402(options => { /* ... */ })
-    .AddPaymentEventHandler<PaymentEventLogger>();
-
-public class PaymentEventLogger : IPaymentEventHandler
-{
-    private readonly ILogger<PaymentEventLogger> _logger;
-    private readonly IEmailService _emailService;
-
-    public PaymentEventLogger(
-        ILogger<PaymentEventLogger> logger,
-        IEmailService emailService)
-    {
-        _logger = logger;
-        _emailService = emailService;
-    }
-
-    public async Task OnPaymentReceivedAsync(PaymentReceivedEvent evt)
-    {
-        _logger.LogInformation(
-            "Payment received: {Amount} USDC from {From} to {To}",
-            evt.Amount, evt.From, evt.To);
-
-        // Send notification
-        await _emailService.SendAsync(
-            to: "admin@example.com",
-            subject: "Payment Received",
-            body: $"Received ${evt.Amount} from {evt.From}");
-    }
-
-    public async Task OnPaymentFailedAsync(PaymentFailedEvent evt)
-    {
-        _logger.LogError(
-            "Payment failed: {Reason} for payment from {From}",
-            evt.Reason, evt.From);
-    }
-}
-```
-
-## EIP-3009 Integration
-
-Nethereum.X402 uses Nethereum's EIP-3009 standard implementation for gasless token transfers.
-
-### Overview
-
-EIP-3009 enables token transfers to be executed by relaying a signed authorization, allowing gas fees to be paid by a third party. This is perfect for x402 payments where the facilitator can submit the transaction.
-
-### Creating a Transfer Authorization
+### Cancel an Authorization
 
 ```csharp
-using Nethereum.Contracts.Standards.EIP3009;
-using Nethereum.Signer;
-using Nethereum.Signer.EIP712;
+var service = new X402TransferWithAuthorisation3009Service(...);
 
-// Get EIP-3009 service
-var web3 = new Web3("https://rpc-url");
-var eip3009Service = web3.Eth.EIP3009;
-var usdcService = eip3009Service.GetContractService(usdcAddress);
-
-// Create authorization parameters
-var from = senderAddress;
-var to = receiverAddress;
-var value = new BigInteger(1_000000); // $1.00 USDC
-var validAfter = new BigInteger(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-var validBefore = new BigInteger(DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds());
-var nonce = GenerateRandomNonce(); // 32-byte random nonce
-
-// Sign the authorization using EIP-712
-var domain = new EIP712Domain
-{
-    Name = "USD Coin",
-    Version = "2",
-    ChainId = chainId,
-    VerifyingContract = usdcAddress
-};
-
-var message = new TransferWithAuthorizationMessage
-{
-    From = from,
-    To = to,
-    Value = value,
-    ValidAfter = validAfter,
-    ValidBefore = validBefore,
-    Nonce = nonce
-};
-
-var signature = await signer.SignTypedDataAsync(domain, message);
-var (v, r, s) = ParseSignature(signature);
-
-// Submit the authorization (can be done by anyone)
-var receipt = await usdcService.TransferWithAuthorizationRequestAndWaitForReceiptAsync(
-    from, to, value, validAfter, validBefore, nonce, v, r, s
-);
-```
-
-### Checking Authorization State
-
-```csharp
-// Check if an authorization has been used
-bool isUsed = await usdcService.AuthorizationStateQueryAsync(
-    authorizer: senderAddress,
-    nonce: authorizationNonce
-);
-
-if (isUsed)
-{
-    Console.WriteLine("Authorization has already been used");
-}
-```
-
-### Canceling Authorization
-
-```csharp
-// Cancel an unused authorization
-var cancelReceipt = await usdcService.CancelAuthorizationRequestAndWaitForReceiptAsync(
-    authorizer: senderAddress,
+var cancelResponse = await service.CancelAuthorizationAsync(
+    authorizerAddress: payerAddress,
     nonce: authorizationNonce,
-    v: cancelV,
-    r: cancelR,
-    s: cancelS
-);
+    network: "base-sepolia");
 ```
+
+## Authorization Building
+
+`TransferWithAuthorisationBuilder` and `ReceiveWithAuthorisationBuilder` create `Authorization` objects from payment requirements:
+
+```csharp
+var builder = new TransferWithAuthorisationBuilder();
+
+// Generate a cryptographically random nonce
+byte[] nonce = builder.GenerateNonce();
+
+// Build from payment requirements (auto-generates nonce, sets time window)
+var authorization = builder.BuildFromPaymentRequirements(
+    requirements,
+    fromAddress: payerAddress,
+    validAfterTimestamp: null,   // Default: 10 minutes ago
+    validBeforeTimestamp: null); // Default: 1 hour from now
+```
+
+### EIP-712 Typed Data
+
+Get the EIP-712 typed data structure for custom signing flows:
+
+```csharp
+var typedData = builder.GetTypedDataForAuthorization(
+    tokenName: "USD Coin",
+    tokenVersion: "2",
+    chainId: 8453,
+    verifyingContract: usdcAddress);
+```
+
+### Signing with Web3 (External Signers)
+
+Sign with any Nethereum Web3 account (hardware wallets, KMS, etc.):
+
+```csharp
+var signer = new TransferWithAuthorisationSigner();
+
+// Sign with Web3 account (supports external signers)
+var signature = await signer.SignWithWeb3Async(
+    authorization, "USD Coin", "2", 8453, usdcAddress, web3, signerAddress);
+
+// Recover signer address from signature
+var recovered = signer.RecoverAddress(
+    authorization, "USD Coin", "2", 8453, usdcAddress, signature);
+```
+
+## Facilitator
+
+A facilitator is a service that verifies and settles payments on behalf of API servers, so servers don't need blockchain infrastructure.
+
+### Client
+
+```csharp
+using Nethereum.X402.Facilitator;
+
+var facilitatorClient = new HttpFacilitatorClient(httpClient, "https://facilitator.x402.org");
+
+var verification = await facilitatorClient.VerifyAsync(paymentPayload, requirements);
+var settlement = await facilitatorClient.SettleAsync(paymentPayload, requirements);
+var supported = await facilitatorClient.GetSupportedAsync();
+```
+
+### Host a Facilitator
+
+Expose a facilitator as an ASP.NET Core REST API:
+
+```csharp
+using Nethereum.X402.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Register a payment processor
+builder.Services.AddX402TransferProcessor(...);
+
+// Add facilitator controller endpoints
+builder.Services.AddControllers().AddX402FacilitatorControllers();
+
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+```
+
+This exposes:
+- `POST /facilitator/verify` — Verify a payment
+- `POST /facilitator/settle` — Settle a payment on-chain
+- `GET /facilitator/supported` — List supported payment kinds
+
+## Network Configuration
+
+`NetworkConfiguration` provides pre-configured RPC endpoints, token addresses, and chain IDs for common networks:
+
+```csharp
+using Nethereum.X402.Blockchain;
+
+var config = NetworkConfiguration.Default;
+
+var rpcUrl = config.GetRpcEndpoint("base");
+var usdcAddress = config.GetUSDCAddress("base");
+var chainId = config.GetChainId("base");
+```
+
+Supported networks include Base, Ethereum, Polygon, Avalanche, Arbitrum, and Optimism (mainnet and testnet variants).
+
+## Models
+
+### PaymentRequirements
+
+Server's payment request (returned in 402 response):
+
+```csharp
+public class PaymentRequirements
+{
+    public string Scheme { get; set; }             // "exact"
+    public string Network { get; set; }            // "base", "ethereum", etc.
+    public string MaxAmountRequired { get; set; }  // Amount in atomic units (string)
+    public string Asset { get; set; }              // "USDC"
+    public string PayTo { get; set; }              // Receiver address
+    public string Resource { get; set; }           // Protected resource path
+    public string Description { get; set; }        // Human-readable description
+    public string? MimeType { get; set; }
+    public object? OutputSchema { get; set; }
+    public int MaxTimeoutSeconds { get; set; }
+    public object? Extra { get; set; }
+}
+```
+
+### Authorization
+
+EIP-3009 transfer authorization:
+
+```csharp
+public class Authorization
+{
+    public string From { get; set; }        // Payer address
+    public string To { get; set; }          // Receiver address
+    public string Value { get; set; }       // Amount in atomic units
+    public string ValidAfter { get; set; }  // Unix timestamp
+    public string ValidBefore { get; set; } // Unix timestamp
+    public string Nonce { get; set; }       // Hex-encoded 32-byte nonce
+}
+```
+
+### PaymentPayload
+
+Client's signed payment (sent in X-Payment header):
+
+```csharp
+public class PaymentPayload
+{
+    public int X402Version { get; set; }  // 1
+    public string Scheme { get; set; }    // "exact"
+    public string Network { get; set; }
+    public object Payload { get; set; }   // ExactSchemePayload
+}
+
+public class ExactSchemePayload
+{
+    public string Signature { get; set; }            // Hex-encoded EIP-712 signature
+    public Authorization Authorization { get; set; }
+}
+```
+
+### Response Types
+
+```csharp
+public class VerificationResponse
+{
+    public bool IsValid { get; set; }
+    public string? InvalidReason { get; set; }  // X402ErrorCodes value
+    public string Payer { get; set; }
+}
+
+public class SettlementResponse
+{
+    public bool Success { get; set; }
+    public string? ErrorReason { get; set; }
+    public string Transaction { get; set; }  // TX hash
+    public string Network { get; set; }
+    public string Payer { get; set; }
+}
+```
+
+## Error Codes
+
+`X402ErrorCodes` defines standard error strings:
+
+| Code | Meaning |
+|------|---------|
+| `insufficient_funds` | Payer doesn't have enough tokens |
+| `invalid_exact_evm_payload_signature` | EIP-712 signature verification failed |
+| `invalid_exact_evm_payload_authorization_valid_after` | Authorization not yet valid |
+| `invalid_exact_evm_payload_authorization_valid_before` | Authorization expired |
+| `invalid_exact_evm_payload_authorization_value` | Amount mismatch |
+| `invalid_exact_evm_payload_recipient_mismatch` | Receiver address doesn't match (ReceiveWithAuthorization) |
+| `invalid_exact_evm_payload_authorization_nonce_used` | Nonce already consumed |
+| `invalid_network` | Unsupported network |
+| `invalid_scheme` | Invalid payment scheme |
 
 ## Supported Tokens
 
-Any EIP-3009 compliant token can be used with Nethereum.X402:
+Any EIP-3009 compliant token works. Common tokens with pre-configured addresses:
 
-| Token | Network | Address | Decimals |
-|-------|---------|---------|----------|
-| USDC | Ethereum Mainnet | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` | 6 |
-| USDC | Polygon | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | 6 |
-| USDC | Arbitrum | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | 6 |
-| USDC | Optimism | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` | 6 |
-| USDC | Base | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | 6 |
-| PYUSD | Ethereum Mainnet | `0x6c3ea9036406852006290770BEdFcAbA0e23A0e8` | 6 |
-| EURC | Ethereum Mainnet | `0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c` | 6 |
+| Token | Network | Address |
+|-------|---------|---------|
+| USDC | Ethereum | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
+| USDC | Base | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| USDC | Polygon | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` |
+| USDC | Arbitrum | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` |
+| USDC | Optimism | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` |
 
-## Security Considerations
+## Payment Flow
 
-### Private Key Management
-
-Never expose private keys in code, configuration files, or version control. Use secure key management:
-
-```csharp
-// Use environment variables
-var privateKey = Environment.GetEnvironmentVariable("PAYMENT_PRIVATE_KEY");
-
-// Or use Azure Key Vault, AWS Secrets Manager, etc.
-var keyVaultClient = new SecretClient(vaultUri, credential);
-var secret = await keyVaultClient.GetSecretAsync("payment-private-key");
-var privateKey = secret.Value.Value;
+```
+1. Client → Server:  GET /api/premium (no payment header)
+2. Server → Client:  402 + PaymentRequirements (amount, token, network, payTo)
+3. Client:           Signs EIP-3009 authorization (off-chain, no gas)
+4. Client → Server:  GET /api/premium + X-Payment header (PaymentPayload)
+5. Server/Facilitator: Verifies signature, balance, timestamps
+6. Server/Facilitator: Settles on-chain via transferWithAuthorization or receiveWithAuthorization
+7. Server → Client:  200 OK + content + settlement response headers
 ```
 
-### Signature Validation
-
-Always verify EIP-3009 signatures before accepting payments:
-
-```csharp
-public async Task<bool> VerifySignatureAsync(X402PaymentHeader payment)
-{
-    // Verify the signature matches the from address
-    var recoveredAddress = RecoverSignerAddress(payment);
-    if (!recoveredAddress.Equals(payment.From, StringComparison.OrdinalIgnoreCase))
-    {
-        _logger.LogWarning("Signature verification failed");
-        return false;
-    }
-
-    // Check authorization hasn't been used
-    var isUsed = await _usdcService.AuthorizationStateQueryAsync(
-        payment.From, payment.Nonce);
-    if (isUsed)
-    {
-        _logger.LogWarning("Authorization already used");
-        return false;
-    }
-
-    return true;
-}
-```
-
-### Nonce Management
-
-Ensure nonces are cryptographically random and never reused:
-
-```csharp
-using System.Security.Cryptography;
-
-public byte[] GenerateNonce()
-{
-    var nonce = new byte[32];
-    using (var rng = RandomNumberGenerator.Create())
-    {
-        rng.GetBytes(nonce);
-    }
-    return nonce;
-}
-```
-
-### Time Validity
-
-Enforce validity windows to prevent authorization reuse:
-
-```csharp
-public bool IsValidTimeWindow(X402PaymentHeader payment)
-{
-    var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-    if (now < payment.ValidAfter)
-    {
-        _logger.LogWarning("Payment not yet valid");
-        return false;
-    }
-
-    if (now > payment.ValidBefore)
-    {
-        _logger.LogWarning("Payment expired");
-        return false;
-    }
-
-    // Ensure reasonable validity window (e.g., max 24 hours)
-    if (payment.ValidBefore - payment.ValidAfter > 86400)
-    {
-        _logger.LogWarning("Validity window too large");
-        return false;
-    }
-
-    return true;
-}
-```
-
-### Amount Verification
-
-Always verify payment amounts match expectations:
-
-```csharp
-public bool VerifyAmount(X402PaymentHeader payment, decimal expectedAmount)
-{
-    // Allow small tolerance for rounding (0.01 USDC = 10000 units)
-    var tolerance = 10000;
-    var expectedUnits = (long)(expectedAmount * 1_000000);
-    var actualUnits = (long)(payment.Amount * 1_000000);
-
-    if (Math.Abs(actualUnits - expectedUnits) > tolerance)
-    {
-        _logger.LogWarning(
-            "Amount mismatch: expected {Expected}, got {Actual}",
-            expectedAmount, payment.Amount);
-        return false;
-    }
-
-    return true;
-}
-```
-
-### Rate Limiting
-
-Implement rate limiting to prevent abuse:
-
-```csharp
-services.AddRateLimiter(options =>
-{
-    options.AddPolicy("payment", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString(),
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                Window = TimeSpan.FromMinutes(1),
-                PermitLimit = 10
-            }));
-});
-
-// Apply to endpoints
-[HttpGet("content")]
-[EnableRateLimiting("payment")]
-[X402PaymentRequired(amount: 1_000000)]
-public IActionResult GetContent() { /* ... */ }
-```
-
-## Troubleshooting
-
-### Payment Verification Fails
-
-**Problem**: Payment header is rejected by server
-
-**Possible Causes**:
-- EIP-712 domain signature is incorrect for the chain ID
-- Nonce has been previously used
-- `validBefore` timestamp has expired
-- Sender doesn't have sufficient USDC balance
-- USDC contract address doesn't match the chain
-
-**Solutions**:
-```csharp
-// Verify chain ID matches
-if (payment.ChainId != _options.ChainId)
-{
-    return BadRequest("Incorrect chain ID");
-}
-
-// Check authorization state
-var isUsed = await _usdcService.AuthorizationStateQueryAsync(
-    payment.From, payment.Nonce);
-if (isUsed)
-{
-    return BadRequest("Authorization already used");
-}
-
-// Verify time window
-var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-if (now > payment.ValidBefore)
-{
-    return BadRequest("Authorization expired");
-}
-```
-
-### Transaction Reverts
-
-**Problem**: Blockchain transaction fails when submitting payment
-
-**Possible Causes**:
-- Authorization has been used or canceled
-- Invalid signature
-- Time constraints not met
-- Insufficient balance
-
-**Solutions**:
-```csharp
-try
-{
-    var receipt = await _usdcService.TransferWithAuthorizationRequestAndWaitForReceiptAsync(
-        payment.From, payment.To, payment.Value,
-        payment.ValidAfter, payment.ValidBefore, payment.Nonce,
-        payment.V, payment.R, payment.S
-    );
-
-    if (receipt.Status == 0)
-    {
-        // Transaction reverted - check error reason
-        var errorReason = await _web3.Eth.GetContractTransactionErrorReason
-            .SendRequestAsync(receipt.TransactionHash);
-        _logger.LogError("Transaction reverted: {Reason}", errorReason);
-    }
-}
-catch (Exception ex)
-{
-    _logger.LogError(ex, "Failed to submit payment");
-    throw;
-}
-```
-
-### Facilitator Unavailable
-
-**Problem**: Facilitator endpoint returns errors or is unreachable
-
-**Solutions**:
-
-Implement fallback strategies:
-
-```csharp
-public class ResilientX402Client
-{
-    private readonly List<string> _facilitatorUrls;
-    private readonly X402Client _client;
-
-    public async Task<HttpResponseMessage> GetWithFallbackAsync(string url)
-    {
-        foreach (var facilitatorUrl in _facilitatorUrls)
-        {
-            try
-            {
-                _client.FacilitatorUrl = facilitatorUrl;
-                return await _client.GetAsync(url);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogWarning(ex,
-                    "Facilitator {Url} failed, trying next", facilitatorUrl);
-            }
-        }
-
-        // Fall back to self-facilitated mode
-        _client.FacilitatorUrl = null;
-        return await _client.GetAsync(url);
-    }
-}
-```
-
-## Additional Resources
+## References
 
 - [x402 Protocol Specification](https://github.com/x402/x402)
 - [EIP-3009: Transfer With Authorization](https://eips.ethereum.org/EIPS/eip-3009)
 - [USDC Developer Documentation](https://developers.circle.com/stablecoins/docs)
-- [Nethereum Documentation](https://docs.nethereum.com)

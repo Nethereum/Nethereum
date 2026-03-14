@@ -31,7 +31,7 @@ dotnet add package Nethereum.Contracts
 - **Nethereum.Util.Rest** - REST utilities for HTTP metadata
 
 **External:**
-- **ADRaffy.ENSNormalize** (v0.1.5) - ENS name normalization (UTS-46/ENSIP-15)
+- **ADRaffy.ENSNormalize** (v0.3.1) - ENS name normalization (UTS-46/ENSIP-15)
 
 ## Key Concepts
 

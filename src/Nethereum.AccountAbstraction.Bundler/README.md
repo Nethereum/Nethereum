@@ -103,7 +103,7 @@ var config = new BundlerConfig
     BeneficiaryAddress = bundlerAddress,
     MaxBundleSize = 10,
     MaxMempoolSize = 1000,
-    AutoBundleIntervalMs = 5000,
+    AutoBundleIntervalMs = 10000,
     EnableERC7562Validation = true,
     StrictValidation = true
 };
@@ -115,12 +115,8 @@ var bundler = new BundlerService(web3, config);
 ### Example 2: Custom Mempool
 
 ```csharp
-var mempool = new InMemoryUserOpMempool(new MempoolConfig
-{
-    MaxSize = 5000,
-    MaxPerSender = 10,
-    TtlMinutes = 30
-});
+var mempool = new InMemoryUserOpMempool(
+    maxSize: 5000, entryTtl: TimeSpan.FromMinutes(30));
 
 var bundler = new BundlerService(web3, config, mempool: mempool);
 ```
@@ -138,7 +134,7 @@ await bundler.SendUserOperationAsync(userOp2, entryPoint);
 
 // Manually trigger bundle
 var result = await bundler.ExecuteBundleAsync();
-Console.WriteLine($"Bundled {result.IncludedCount} operations");
+Console.WriteLine($"Bundled {result?.UserOpResults?.Length ?? 0} operations");
 ```
 
 ## API Reference
@@ -151,14 +147,14 @@ Core bundler implementing `IBundlerServiceExtended`.
 public class BundlerService : IBundlerServiceExtended, IDisposable
 {
     // ERC-4337 spec methods
-    public Task<string> SendUserOperationAsync(UserOperation userOp, string entryPoint);
-    public Task<UserOperationGasEstimate> EstimateUserOperationGasAsync(UserOperation userOp, string entryPoint);
+    public Task<string> SendUserOperationAsync(PackedUserOperation userOp, string entryPoint);
+    public Task<UserOperationGasEstimate> EstimateUserOperationGasAsync(PackedUserOperation userOp, string entryPoint);
     public Task<UserOperationReceipt?> GetUserOperationReceiptAsync(string userOpHash);
     public Task<UserOperationInfo?> GetUserOperationByHashAsync(string userOpHash);
     public Task<string[]> SupportedEntryPointsAsync();
 
     // Extended methods
-    public Task<BundleExecutionResult> ExecuteBundleAsync();
+    public Task<BundleExecutionResult?> ExecuteBundleAsync();
     public Task<BundlerStats> GetStatsAsync();
 }
 ```
@@ -170,11 +166,11 @@ Thread-safe in-memory mempool.
 ```csharp
 public class InMemoryUserOpMempool : IUserOpMempool
 {
-    public Task AddAsync(MempoolEntry entry);
+    public Task<bool> AddAsync(MempoolEntry entry);
     public Task<MempoolEntry?> GetAsync(string userOpHash);
-    public Task<IReadOnlyList<MempoolEntry>> GetPendingAsync(int maxCount);
-    public Task MarkIncludedAsync(string userOpHash, string txHash, long blockNumber);
-    public Task MarkFailedAsync(string userOpHash, string error);
+    public Task<MempoolEntry[]> GetPendingAsync(int maxCount, BigInteger? maxGas = null);
+    public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber);
+    public Task MarkFailedAsync(string[] userOpHashes, string error);
     public Task PruneAsync();
 }
 ```
@@ -186,7 +182,7 @@ EVM-based validation for opcode and storage rules.
 ```csharp
 public class ERC7562SimulationService
 {
-    public Task<ERC7562ValidationResult> ValidateUserOperationAsync(UserOperation userOp, string entryPoint);
+    public Task<ERC7562ValidationResult> ValidateUserOperationAsync(PackedUserOperation userOp, string entryPoint);
 }
 ```
 
@@ -196,7 +192,7 @@ Key properties:
 - `SupportedEntryPoints` - EntryPoint contract addresses
 - `BeneficiaryAddress` - Address receiving bundle gas refunds
 - `MaxBundleSize` (default: 10) - Operations per bundle
-- `AutoBundleIntervalMs` (default: 5000) - Bundle trigger interval
+- `AutoBundleIntervalMs` (default: 10000) - Bundle trigger interval
 - `EnableERC7562Validation` - Enable opcode/storage simulation
 - `UnsafeMode` - Skip all validation (testing only)
 

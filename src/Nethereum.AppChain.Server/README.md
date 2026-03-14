@@ -44,7 +44,6 @@ dotnet run --project src/Nethereum.AppChain.Server -- [options]
 - **Nethereum.AppChain** - Core chain abstraction and genesis
 - **Nethereum.AppChain.Sequencer** - Block production and transaction ordering
 - **Nethereum.AppChain.Sync** - Multi-peer synchronization and batch import
-- **Nethereum.AppChain.Metrics** - Prometheus metrics instrumentation
 - **Nethereum.AppChain.P2P / P2P.DotNetty** - P2P networking for Clique mode
 - **Nethereum.Consensus.Clique** - Clique PoA consensus engine
 - **Nethereum.CoreChain** - RPC handler registry, storage interfaces
@@ -201,7 +200,6 @@ nethereum-appchain \
 - **[Nethereum.AppChain](../Nethereum.AppChain/README.md)** - Core chain abstraction
 - **[Nethereum.AppChain.Sequencer](../Nethereum.AppChain.Sequencer/README.md)** - Block production
 - **[Nethereum.AppChain.Sync](../Nethereum.AppChain.Sync/README.md)** - Synchronization
-- **[Nethereum.AppChain.Metrics](../Nethereum.AppChain.Metrics/README.md)** - Prometheus metrics
 - **[Nethereum.Consensus.Clique](../Nethereum.Consensus.Clique/README.md)** - PoA consensus
 
 ### See Also

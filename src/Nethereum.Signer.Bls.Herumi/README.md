@@ -46,7 +46,7 @@ using Nethereum.Signer.Bls;
 using Nethereum.Signer.Bls.Herumi;
 
 // Create Herumi BLS instance
-var blsBindings = new HerumiBlsBindings();
+var blsBindings = new HerumiNativeBindings();
 var bls = new NativeBls(blsBindings);
 
 // Initialize (loads native library)
@@ -65,15 +65,38 @@ Console.WriteLine($"Signature valid: {isValid}");
 
 ## API Reference
 
-### HerumiBlsBindings
+### NativeBls
 
-Native Herumi BLS bindings implementation.
+High-level BLS operations implementing `IBls`. This is the main entry point for consumers.
 
 ```csharp
-public class HerumiBlsBindings : INativeBlsBindings
+public class NativeBls : IBls
+{
+    public NativeBls(INativeBlsBindings bindings);
+    public Task InitializeAsync(CancellationToken cancellationToken = default);
+    public bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain);
+    public byte[] AggregateSignatures(byte[][] signatures);
+    public bool Verify(byte[] signature, byte[] publicKey, byte[] message);
+    public (byte[] Signature, byte[] PublicKey) ExtractSignatureAndPublicKey(byte[] signatureWithPubKey);
+}
+```
+
+- `VerifyAggregate` — verifies an aggregate BLS signature over one or more messages using ETH2-style domain separation.
+- `AggregateSignatures` — combines multiple BLS signatures into a single aggregated signature (used for ERC-4337 BLS aggregation).
+- `Verify` — verifies an individual BLS signature over a single message.
+- `ExtractSignatureAndPublicKey` — splits a combined `signatureWithPubKey` byte array into the 96-byte signature and 48-byte public key.
+
+### HerumiNativeBindings
+
+Low-level native Herumi BLS bindings implementing `INativeBlsBindings`. Used internally by `NativeBls`.
+
+```csharp
+public class HerumiNativeBindings : INativeBlsBindings
 {
     public Task EnsureAvailableAsync(CancellationToken cancellationToken = default);
     public bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain);
+    public byte[] AggregateSignatures(byte[][] signatures);
+    public bool Verify(byte[] signature, byte[] publicKey, byte[] message);
 }
 ```
 
@@ -88,17 +111,16 @@ public class HerumiBlsBindings : INativeBlsBindings
 
 ### Domain Separation
 
-Ethereum consensus layer domain types:
+Ethereum consensus layer uses domain types to prevent cross-context signature replay. The domain is a 4-byte prefix combined with the fork version and genesis validators root. Standard domain type prefixes:
 
-```csharp
-public static class DomainTypes
-{
-    public static readonly byte[] DOMAIN_BEACON_PROPOSER = new byte[] { 0x00, 0x00, 0x00, 0x00 };
-    public static readonly byte[] DOMAIN_BEACON_ATTESTER = new byte[] { 0x01, 0x00, 0x00, 0x00 };
-    public static readonly byte[] DOMAIN_RANDAO = new byte[] { 0x02, 0x00, 0x00, 0x00 };
-    public static readonly byte[] DOMAIN_SYNC_COMMITTEE = new byte[] { 0x07, 0x00, 0x00, 0x00 };
-}
-```
+| Domain | Prefix | Usage |
+|--------|--------|-------|
+| Beacon Proposer | `0x00000000` | Block proposals |
+| Beacon Attester | `0x01000000` | Attestations |
+| RANDAO | `0x02000000` | Randomness reveals |
+| Sync Committee | `0x07000000` | Light client sync |
+
+These domain bytes are passed to BLS signing/verification as the `domain` parameter.
 
 ### Native Library Loading
 
@@ -133,7 +155,7 @@ runtimes/
 
 ```csharp
 // Initialize once
-var bls = new NativeBls(new HerumiBlsBindings());
+var bls = new NativeBls(new HerumiNativeBindings());
 await bls.InitializeAsync();
 
 // Safe to use from multiple threads

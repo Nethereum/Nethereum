@@ -40,15 +40,15 @@ CoreChain defines pluggable interfaces for all blockchain data. Implementations 
 ```csharp
 public interface IBlockStore
 {
-    Task<BlockHeader> GetByHashAsync(byte[] blockHash);
-    Task<BlockHeader> GetByNumberAsync(BigInteger blockNumber);
-    Task<BlockHeader> GetLatestBlockAsync();
+    Task<BlockHeader> GetByHashAsync(byte[] hash);
+    Task<BlockHeader> GetByNumberAsync(BigInteger number);
+    Task<BlockHeader> GetLatestAsync();
     Task<BigInteger> GetHeightAsync();
-    Task SaveBlockAsync(BlockHeader block, byte[] blockHash);
-    Task<bool> ExistsAsync(byte[] blockHash);
-    Task<byte[]> GetBlockHashByNumberAsync(BigInteger blockNumber);
-    Task UpdateBlockHashAsync(BigInteger blockNumber, byte[] blockHash);
-    Task DeleteByBlockNumberAsync(BigInteger blockNumber);
+    Task SaveAsync(BlockHeader header, byte[] blockHash);
+    Task<bool> ExistsAsync(byte[] hash);
+    Task<byte[]> GetHashByNumberAsync(BigInteger number);
+    Task UpdateBlockHashAsync(BigInteger blockNumber, byte[] newHash);
+    Task DeleteByNumberAsync(BigInteger blockNumber);
 }
 ```
 
@@ -57,13 +57,20 @@ public interface IBlockStore
 ```csharp
 public interface ITransactionStore
 {
-    Task SaveTransactionAsync(SignedTransaction tx, byte[] txHash, byte[] blockHash,
-                              BigInteger blockNumber, int txIndex);
-    Task<SignedTransaction> GetByHashAsync(byte[] txHash);
-    Task<List<SignedTransaction>> GetByBlockHashAsync(byte[] blockHash);
-    Task<List<SignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber);
-    Task<(byte[] blockHash, int txIndex)?> GetTransactionLocationAsync(byte[] txHash);
+    Task<ISignedTransaction> GetByHashAsync(byte[] txHash);
+    Task<List<ISignedTransaction>> GetByBlockHashAsync(byte[] blockHash);
+    Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash);
+    Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber);
+    Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber);
+    Task<TransactionLocation> GetLocationAsync(byte[] txHash);
     Task DeleteByBlockNumberAsync(BigInteger blockNumber);
+}
+
+public class TransactionLocation
+{
+    public byte[] BlockHash { get; set; }
+    public BigInteger BlockNumber { get; set; }
+    public int TransactionIndex { get; set; }
 }
 ```
 
@@ -72,9 +79,9 @@ public interface ITransactionStore
 ```csharp
 public interface IReceiptStore
 {
-    Task SaveReceiptAsync(Receipt receipt, byte[] txHash, byte[] blockHash,
-                          BigInteger blockNumber, int txIndex, BigInteger gasUsed,
-                          string contractAddress, BigInteger effectiveGasPrice);
+    Task SaveAsync(Receipt receipt, byte[] txHash, byte[] blockHash,
+                   BigInteger blockNumber, int txIndex, BigInteger gasUsed,
+                   string contractAddress, BigInteger effectiveGasPrice);
     Task<ReceiptInfo> GetByTxHashAsync(byte[] txHash);
     Task<List<ReceiptInfo>> GetByBlockHashAsync(byte[] blockHash);
     Task<List<ReceiptInfo>> GetByBlockNumberAsync(BigInteger blockNumber);

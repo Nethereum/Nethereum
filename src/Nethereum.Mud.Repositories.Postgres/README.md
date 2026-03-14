@@ -246,8 +246,8 @@ var web3 = new Web3("https://rpc.mud.game");
 var worldAddress = "0xWorldAddress";
 var storeNamespace = new StoreNamespace(web3, worldAddress);
 
-// Create normalizer
-var normalizer = new MudPostgresStoreRecordsNormaliser(connection, storeNamespace, logger);
+// Create normalizer (worldAddress is optional, used to prefix table names)
+var normalizer = new MudPostgresStoreRecordsNormaliser(connection, storeNamespace, logger, worldAddress);
 
 // Get table schema from on-chain
 var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
@@ -296,16 +296,16 @@ Background service to continuously normalize records:
 ```csharp
 using Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser;
 
-var progressService = new MudPostgresNormaliserProgressService(connection, logger);
+var repository = new MudPostgresStoreRecordsTableRepository(context);
 
 var normaliserProcessingService = new MudPostgresNormaliserProcessingService(
+    repository,
     connection,
-    context,
-    storeNamespace,
-    progressService,
     logger
 )
 {
+    RpcUrl = "https://rpc.mud.game",
+    Address = "0xWorldAddress",
     PageSize = 100
 };
 
@@ -355,18 +355,17 @@ public class MudPipelineBackgroundService : BackgroundService
         {
             await Task.Delay(10000, stoppingToken); // Wait for initial sync
 
-            var web3 = new Web3(_rpcUrl);
-            var storeNamespace = new StoreNamespace(web3, _worldAddress);
             using var connection = new NpgsqlConnection(_postgresConnectionString);
-            var progressService = new MudPostgresNormaliserProgressService(connection, _logger);
-
+            var repository = new MudPostgresStoreRecordsTableRepository(_context);
             var normaliserService = new MudPostgresNormaliserProcessingService(
+                repository,
                 connection,
-                _context,
-                storeNamespace,
-                progressService,
                 _logger
-            );
+            )
+            {
+                RpcUrl = _rpcUrl,
+                Address = _worldAddress
+            };
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -496,6 +495,58 @@ public class MudPostgresStoreRecordsNormaliser
     public async Task DeleteRecordAsync(EncodedTableRecord encodedTableRecord);
     public async Task DeleteRecordAsync(TableSchema schema, List<FieldValue> fieldValues);
 }
+```
+
+### NormalisedTableQueryService
+
+Query normalized tables with filtering, pagination, and schema introspection:
+
+```csharp
+public class NormalisedTableQueryService
+{
+    public NormalisedTableQueryService(NpgsqlConnection connection, ILogger<NormalisedTableQueryService> logger = null);
+
+    // Query rows with optional predicate, pagination
+    public Task<List<Dictionary<string, object>>> QueryAsync(
+        string tableName, TablePredicate predicate = null, int pageSize = 100, int page = 0);
+
+    // Count rows matching a predicate
+    public Task<int> CountAsync(string tableName, TablePredicate predicate = null);
+
+    // List all normalized tables (filtered by prefix, default "w_")
+    public Task<List<string>> GetAvailableTablesAsync(string prefix = "w_");
+
+    // Get column metadata for a normalized table
+    public Task<List<NormalisedColumnInfo>> GetTableColumnsAsync(string tableName);
+}
+```
+
+Usage example:
+
+```csharp
+using Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser;
+
+var queryService = new NormalisedTableQueryService(connection, logger);
+
+// List all normalized tables
+var tables = await queryService.GetAvailableTablesAsync("w_");
+
+// Inspect columns
+var columns = await queryService.GetTableColumnsAsync("w_abc123_game_player");
+
+// Query with predicate
+var predicate = new TablePredicate();
+predicate.Conditions.Add(new KeyValueOperator
+{
+    Name = "level",
+    IsValueField = true,
+    ComparisonOperator = ">",
+    RawValue = 10,
+    AbiType = "uint8"
+});
+
+var players = await queryService.QueryAsync("w_abc123_game_player", predicate, pageSize: 50, page: 0);
+var totalCount = await queryService.CountAsync("w_abc123_game_player", predicate);
 ```
 
 ### Type Conversion Mapping

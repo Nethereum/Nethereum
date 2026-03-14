@@ -284,7 +284,8 @@ public class BlockMonitor
 
         // Stop and restart
         await ((StreamingWebSocketClient)sender).StopAsync();
-        await StartAsync(((StreamingWebSocketClient)sender).Path);
+        // Reconnect using your stored WebSocket URL
+        await StartAsync(webSocketUrl);
     }
 
     public async Task StopAsync()

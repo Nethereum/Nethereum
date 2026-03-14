@@ -664,11 +664,11 @@ public class EthereumLightClient
 {
     private readonly LightClientService _lightClient;
     private readonly TrustedHeaderProvider _headerProvider;
+    private readonly NativeBls _nativeBls;
     private readonly CancellationTokenSource _cts = new();
 
     public EthereumLightClient(string beaconNodeUrl, byte[] checkpointRoot)
     {
-        // Mainnet configuration
         var config = new LightClientConfig
         {
             GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
@@ -679,11 +679,10 @@ public class EthereumLightClient
         };
 
         var beaconClient = new BeaconApiClient(beaconNodeUrl);
-        var nativeBls = new NativeBls(new HerumiNativeBindings());
-        nativeBls.InitializeAsync().Wait(); // Initialize BLS in constructor
+        _nativeBls = new NativeBls(new HerumiNativeBindings());
         var store = new FileLightClientStore("lightclient.json");
 
-        _lightClient = new LightClientService(beaconClient.LightClient, nativeBls, config, store);
+        _lightClient = new LightClientService(beaconClient.LightClient, _nativeBls, config, store);
         _headerProvider = new TrustedHeaderProvider(_lightClient)
         {
             ThrowOnStaleHeader = false
@@ -692,8 +691,14 @@ public class EthereumLightClient
         _headerProvider.StaleHeaderDetected += OnStaleHeader;
     }
 
+    public async Task InitializeAsync()
+    {
+        await _nativeBls.InitializeAsync();
+    }
+
     public async Task StartAsync()
     {
+        await InitializeAsync();
         await _lightClient.InitializeAsync(_cts.Token);
         Console.WriteLine("Light client started");
 
@@ -752,7 +757,7 @@ var finalityUpdate = await beaconApi.LightClient.GetFinalityUpdateAsync();
 var checkpoint = LightClientResponseMapper.ToDomain(finalityUpdate).FinalizedHeader.Beacon.HashTreeRoot();
 
 var client = new EthereumLightClient("https://ethereum-beacon-api.publicnode.com", checkpoint);
-await client.StartAsync();
+await client.StartAsync(); // Calls InitializeAsync() then begins background updates
 
 // Access trusted headers
 var latest = client.GetLatestBlock();

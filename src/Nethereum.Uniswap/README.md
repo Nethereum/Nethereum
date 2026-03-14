@@ -102,13 +102,15 @@ var receipt = await universalRouter.ExecuteRequestAndWaitForReceiptAsync(execute
 ### Calculate Pool Prices from SqrtPriceX96
 ```csharp
 var uniswap = web3.UniswapV4();
-var prices = uniswap.Pricing.PriceCalculator.CalculatePricesFromSqrtPriceX96(
-    sqrtPriceX96,
-    token0Decimals: 18,
-    token1Decimals: 6);
 
-var priceToken0InToken1 = prices.Item1; // Price of token0 in terms of token1
-var priceToken1InToken0 = prices.Item2; // Price of token1 in terms of token0
+// Get the price of token0 in terms of token1 (adjusted for decimals)
+var priceToken0InToken1 = uniswap.Pricing.PriceCalculator.CalculatePriceFromSqrtPriceX96(
+    sqrtPriceX96,
+    decimals0: 18,
+    decimals1: 6);
+
+// Inverse gives token1 price in terms of token0
+var priceToken1InToken0 = priceToken0InToken1 == 0 ? 0 : 1 / priceToken0InToken1;
 ```
 
 ### Tick Math - Convert Between Ticks and Prices

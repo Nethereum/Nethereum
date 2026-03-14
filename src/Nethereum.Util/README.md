@@ -9,6 +9,8 @@ Nethereum.Util provides essential utility functions for Ethereum development. It
 ### Key Features
 
 - **Keccak-256 Hashing (SHA-3)**: Ethereum's primary cryptographic hash function
+- **Poseidon Hashing**: ZK-proof-friendly hash function with Circom-compatible presets
+- **Hash Provider Abstraction**: `IHashProvider` interface for pluggable hash implementations
 - **Address Utilities**: EIP-55 checksum address creation and validation
 - **Unit Conversion**: Convert between wei, gwei, ether, and 20+ Ethereum unit denominations
 - **BigDecimal Support**: High-precision decimal arithmetic for large value conversions
@@ -536,6 +538,48 @@ public class BigDecimal
 }
 ```
 
+### PoseidonHasher
+
+ZK-proof-friendly hash function with Circom-compatible parameter presets.
+
+```csharp
+public class PoseidonHasher
+{
+    public PoseidonHasher();                                 // Default (CircomT3)
+    public PoseidonHasher(PoseidonParameterPreset preset);   // Specific preset
+    public PoseidonHasher(PoseidonParameters parameters);    // Custom parameters
+
+    public BigInteger Hash(params BigInteger[] inputs);      // Hash field elements
+    public byte[] HashToBytes(params BigInteger[] inputs);   // Hash to 32 bytes
+    public BigInteger HashBytes(params byte[][] inputs);     // Hash byte arrays
+    public BigInteger HashHex(params string[] hexInputs);    // Hash hex strings
+    public byte[] HashBytesToBytes(params byte[][] inputs);  // Bytes in, bytes out
+}
+
+public enum PoseidonParameterPreset
+{
+    CircomT3,   // State width 3, rate 2 (default)
+    CircomT6,   // State width 6, rate 5
+    CircomT14,  // State width 14, rate 13
+    CircomT16   // State width 16, rate 15
+}
+```
+
+### IHashProvider
+
+Pluggable hash provider interface.
+
+```csharp
+public interface IHashProvider
+{
+    byte[] ComputeHash(byte[] data);
+}
+
+// Implementations:
+// - Sha3KeccackHashProvider (Keccak-256)
+// - PoseidonHashProvider (Poseidon with configurable preset)
+```
+
 ### Additional Utilities
 
 #### DateTimeHelper
@@ -554,6 +598,64 @@ public static class ByteUtil
     public static byte[] Merge(params byte[][] arrays);
     public static bool AreEqual(byte[] a, byte[] b);
 }
+```
+
+### Poseidon Hashing (ZK-Proof Friendly)
+
+Poseidon is a hash function designed for zero-knowledge proof circuits (zk-SNARKs). It operates over prime fields and is significantly more efficient inside circuits than Keccak-256.
+
+```csharp
+using Nethereum.Util;
+using System.Numerics;
+
+// Default hasher (CircomT3 preset - 2 inputs)
+var hasher = new PoseidonHasher();
+
+// Hash field elements
+BigInteger result = hasher.Hash(
+    BigInteger.Parse("1"),
+    BigInteger.Parse("2")
+);
+
+// Hash to bytes (32-byte big-endian output)
+byte[] hashBytes = hasher.HashToBytes(
+    BigInteger.Parse("1"),
+    BigInteger.Parse("2")
+);
+
+// Hash raw byte arrays
+byte[] input1 = new byte[] { 0x01, 0x02 };
+byte[] input2 = new byte[] { 0x03, 0x04 };
+BigInteger bytesResult = hasher.HashBytes(input1, input2);
+
+// Hash hex strings
+BigInteger hexResult = hasher.HashHex("0x1234", "0x5678");
+
+// Use specific Circom preset
+var hasherT6 = new PoseidonHasher(PoseidonParameterPreset.CircomT6);  // up to 5 inputs
+var hasherT14 = new PoseidonHasher(PoseidonParameterPreset.CircomT14); // up to 13 inputs
+var hasherT16 = new PoseidonHasher(PoseidonParameterPreset.CircomT16); // up to 15 inputs
+```
+
+Available presets: `CircomT3` (default, 2 inputs), `CircomT6` (5 inputs), `CircomT14` (13 inputs), `CircomT16` (15 inputs).
+
+### Hash Provider Abstraction
+
+`IHashProvider` provides a pluggable interface for different hash implementations:
+
+```csharp
+using Nethereum.Util.HashProviders;
+
+// Keccak-256 provider
+IHashProvider keccakProvider = new Sha3KeccackHashProvider();
+byte[] keccakHash = keccakProvider.ComputeHash(data);
+
+// Poseidon provider
+IHashProvider poseidonProvider = new PoseidonHashProvider();
+byte[] poseidonHash = poseidonProvider.ComputeHash(data);
+
+// Poseidon with specific preset
+IHashProvider poseidonT6 = new PoseidonHashProvider(PoseidonParameterPreset.CircomT6);
 ```
 
 ## Related Packages

@@ -78,7 +78,7 @@ var signingAccount = await account.GetAccountAsync();
 Derives keys from BIP39 mnemonic using BIP32 HD wallet at path m/44'/60'/0'/0/{index}.
 
 ```csharp
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet.WalletAccounts;
 
 // TypeName constant
@@ -103,7 +103,7 @@ account.GroupId; // "main-mnemonic-id"
 var signingAccount = await account.GetAccountAsync();
 ```
 
-**From:** `src/Nethereum.Wallet/WalletAccounts/MnemonicWalletAccount.cs:15`, `src/Nethereum.Wallet/Bip32/MinimalHDWallet.cs:108`
+**From:** `src/Nethereum.Wallet/WalletAccounts/MnemonicWalletAccount.cs:15`, `src/Nethereum.Accounts/Bip32/MinimalHDWallet.cs:108`
 
 ### View-Only Account
 
@@ -157,7 +157,7 @@ Full BIP32 hierarchical deterministic wallet implementation with BIP39 mnemonic 
 Generate 12/15/18/21/24 word mnemonics from 2048-word wordlist.
 
 ```csharp
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 
 // Generate 12-word mnemonic (default)
 var mnemonic12 = Bip39.GenerateMnemonic(12);
@@ -169,14 +169,14 @@ var mnemonic24 = Bip39.GenerateMnemonic(24);
 Bip39.WordList; // string[] with 2048 words
 ```
 
-**From:** `src/Nethereum.Wallet/Bip32/Bip39.cs:18`
+**From:** `src/Nethereum.Accounts/Bip32/Bip39.cs:18`
 
 ### Seed Derivation
 
 Convert mnemonic to 64-byte seed using PBKDF2 with 2048 iterations.
 
 ```csharp
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 
 var mnemonic = "word1 word2 ... word12";
 var passphrase = "optional passphrase";
@@ -186,7 +186,7 @@ var seed = Bip39.MnemonicToSeed(mnemonic, passphrase);
 // Returns 64-byte seed
 ```
 
-**From:** `src/Nethereum.Wallet/Bip32/Bip39.cs:59`
+**From:** `src/Nethereum.Accounts/Bip32/Bip39.cs:59`
 
 **Algorithm:**
 - Normalizes mnemonic and passphrase to NormalizationForm.FormKD
@@ -199,7 +199,7 @@ var seed = Bip39.MnemonicToSeed(mnemonic, passphrase);
 Derive Ethereum keys using BIP32 with HMACSHA512.
 
 ```csharp
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 
 var mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 var hdWallet = new MinimalHDWallet(mnemonic, passphrase: "");
@@ -215,7 +215,7 @@ var customKey = hdWallet.GetKeyFromPath("m/44'/60'/0'/0/5");
 var address5 = hdWallet.GetEthereumAddress(5);
 ```
 
-**From:** `src/Nethereum.Wallet/Bip32/MinimalHDWallet.cs:108`, `tests/Nethereum.Wallet.UnitTests/MinimalHDWalletTests.cs:47`
+**From:** `src/Nethereum.Accounts/Bip32/MinimalHDWallet.cs:108`, `tests/Nethereum.Wallet.UnitTests/MinimalHDWalletTests.cs:47`
 
 **BIP32 Implementation Details:**
 - Master key derived from seed using HMACSHA512 with key "Bitcoin seed"
@@ -223,7 +223,7 @@ var address5 = hdWallet.GetEthereumAddress(5);
 - Uses secp256k1 curve order for key addition
 - Default Ethereum path: m/44'/60'/0'/0/{index}
 
-**From:** `src/Nethereum.Wallet/Bip32/MinimalHDWallet.cs:31`
+**From:** `src/Nethereum.Accounts/Bip32/MinimalHDWallet.cs:31`
 
 ## Wallet Vault
 
@@ -291,7 +291,7 @@ Encrypt vault with password using AES-256.
 
 ```csharp
 using Nethereum.Wallet;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet.WalletAccounts;
 using Nethereum.Signer;
 
@@ -878,7 +878,7 @@ services.AddSingleton<IChainSwitchPromptService, NoOpChainSwitchPromptService>()
 
 ```csharp
 using Nethereum.Wallet;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet.WalletAccounts;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.RPC.Chain;

@@ -101,16 +101,9 @@ using Nethereum.Web3.Accounts;
 using Nethereum.Signer;
 
 // Custom external signer implementation
-public class MyHardwareWalletSigner : IEthExternalSigner
-{
-    public Task<string> GetAddressAsync() => Task.FromResult("0x...");
-
-    public Task<string> SignAsync(byte[] message) =>
-        Task.FromResult(/* Call hardware wallet API */);
-
-    public Task<string> SignAsync(byte[] rawHash, EthECKey.SigningVersion signingVersion) =>
-        Task.FromResult(/* Call hardware wallet API */);
-}
+// IEthExternalSigner requires implementing multiple SignAsync overloads
+// for legacy, EIP-1559, and EIP-7702 transaction types.
+// See Nethereum.Signer.EthExternalSignerBase for a base class that simplifies this.
 
 var externalSigner = new MyHardwareWalletSigner();
 var account = new ExternalAccount(externalSigner, chainId: 1);
@@ -127,7 +120,7 @@ No signing capabilities, useful for monitoring addresses.
 
 ```csharp
 using Nethereum.Web3;
-using Nethereum.Web3.Accounts;
+using Nethereum.Accounts.ViewOnly;
 
 var account = new ViewOnlyAccount("0xADDRESS_TO_MONITOR");
 var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
@@ -226,9 +219,9 @@ var transactionInput = new TransactionInput
     Gas = new HexBigInteger(21000)
 };
 
-// Sign transaction offline
+// Sign transaction offline (synchronous)
 var offlineSigner = new AccountOfflineTransactionSigner();
-var signedTransaction = await offlineSigner.SignTransactionAsync(transactionInput, account);
+var signedTransaction = offlineSigner.SignTransaction(account, transactionInput);
 
 Console.WriteLine($"Signed transaction: {signedTransaction}");
 
@@ -529,7 +522,7 @@ var receipt = await txManager.SendTransactionAndWaitForReceiptAsync(
 
 **Key Methods:**
 - `SendTransactionAsync(TransactionInput)` - Sign and send transaction
-- `SignTransactionAsync(TransactionInput)` - Sign transaction without sending
+- `SignTransactionAsync(TransactionInput)` - Sign transaction without sending (async)
 - `GetNonceAsync(TransactionInput)` - Get next nonce for account
 - `SignAuthorisationAsync(Authorisation)` - Sign EIP-7702 authorization
 
@@ -1138,7 +1131,7 @@ Common chain IDs available in the `Chain` enum:
 | Ethereum Mainnet | 1 | `Chain.MainNet` |
 | Sepolia | 11155111 | `Chain.Sepolia` |
 | Polygon | 137 | `Chain.Polygon` |
-| Binance Smart Chain | 56 | `Chain.BSC` |
+| Binance Smart Chain | 56 | `Chain.Binance` |
 | Arbitrum One | 42161 | `Chain.Arbitrum` |
 | Optimism | 10 | `Chain.Optimism` |
 

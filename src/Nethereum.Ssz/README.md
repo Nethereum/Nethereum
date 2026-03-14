@@ -457,6 +457,15 @@ Computes SHA-256 Merkle roots for SSZ types.
 - Returns `SHA256(root || length_as_32_bytes)`
 - Used for variable-size types
 
+**`bool VerifyProof(byte[] leaf, IList<byte[]> branch, int depth, int index, byte[] root)`**
+- Verify a Merkle proof against a known root
+- `leaf`: 32-byte leaf node to verify
+- `branch`: list of sibling hashes along the path (must contain at least `depth` entries)
+- `depth`: number of levels in the proof
+- `index`: position of the leaf in the tree (bit flags determine left/right at each level)
+- `root`: expected 32-byte Merkle root
+- Returns `true` if the proof is valid, `false` otherwise
+
 ### Element Reader Registry
 
 Registry for type-specific SSZ readers.

@@ -30,7 +30,6 @@ dotnet add package Nethereum.AppChain.P2P.Server
 - **Nethereum.AppChain** - Core chain abstraction and genesis
 - **Nethereum.AppChain.Sequencer** - Block production and transaction ordering
 - **Nethereum.AppChain.P2P.DotNetty** - DotNetty P2P transport
-- **Nethereum.AppChain.Metrics** - Prometheus metrics instrumentation
 - **Nethereum.Consensus.Clique** - Clique PoA consensus engine
 - **Nethereum.CoreChain** - RPC handler registry and storage
 - **System.CommandLine** - CLI argument parsing

@@ -147,17 +147,17 @@ using Nethereum.Consensus.Ssz;
 var syncCommittee = new SyncCommittee();
 
 // Each public key is 48 bytes (BLS12-381)
-syncCommittee.Pubkeys = new List<byte[]>();
+syncCommittee.PubKeys = new List<byte[]>();
 for (int i = 0; i < SszBasicTypes.SyncCommitteeSize; i++)
 {
     var pubkey = new byte[SszBasicTypes.PubKeyLength];
     pubkey[0] = (byte)(i % 256);
     pubkey[1] = (byte)(i / 256);
-    syncCommittee.Pubkeys.Add(pubkey);
+    syncCommittee.PubKeys.Add(pubkey);
 }
 
 // Aggregate public key
-syncCommittee.AggregatePubkey = new byte[SszBasicTypes.PubKeyLength];
+syncCommittee.AggregatePubKey = new byte[SszBasicTypes.PubKeyLength];
 
 // Encode (24,624 bytes total)
 byte[] encoded = syncCommittee.Encode();
@@ -165,7 +165,7 @@ Console.WriteLine($"Size: {encoded.Length}"); // 24,624
 
 // Decode
 var decoded = SyncCommittee.Decode(encoded);
-Assert.Equal(512, decoded.Pubkeys.Count);
+Assert.Equal(512, decoded.PubKeys.Count);
 ```
 
 ### Example 3: Hash Tree Root Computation
@@ -221,14 +221,14 @@ bootstrap.Header = new LightClientHeader
 // Current sync committee
 bootstrap.CurrentSyncCommittee = new SyncCommittee
 {
-    Pubkeys = new List<byte[]>(),
-    AggregatePubkey = new byte[48]
+    PubKeys = new List<byte[]>(),
+    AggregatePubKey = new byte[48]
 };
 
 // Add 512 validator pubkeys
 for (int i = 0; i < 512; i++)
 {
-    bootstrap.CurrentSyncCommittee.Pubkeys.Add(new byte[48]);
+    bootstrap.CurrentSyncCommittee.PubKeys.Add(new byte[48]);
 }
 
 // Merkle branch for verification (depth varies by spec)
@@ -407,13 +407,13 @@ bootstrap.Header = new LightClientHeader
 
 bootstrap.CurrentSyncCommittee = new SyncCommittee
 {
-    Pubkeys = new List<byte[]>(),
-    AggregatePubkey = new byte[48]
+    PubKeys = new List<byte[]>(),
+    AggregatePubKey = new byte[48]
 };
 
 for (int i = 0; i < 512; i++)
 {
-    bootstrap.CurrentSyncCommittee.Pubkeys.Add(new byte[48]);
+    bootstrap.CurrentSyncCommittee.PubKeys.Add(new byte[48]);
 }
 
 bootstrap.CurrentSyncCommitteeBranch = new List<byte[]>
@@ -434,7 +434,7 @@ Console.WriteLine($"Sync committee root: {syncCommitteeRoot.ToHex(true)}");
 
 // Step 5: Now light client can verify future updates using this committee
 Console.WriteLine($"Light client synced to slot: {decoded.Header.Beacon.Slot}");
-Console.WriteLine($"Sync committee size: {decoded.CurrentSyncCommittee.Pubkeys.Count}");
+Console.WriteLine($"Sync committee size: {decoded.CurrentSyncCommittee.PubKeys.Count}");
 ```
 
 ## API Reference
@@ -465,8 +465,8 @@ Sync committee of 512 validators (24,624 bytes).
 ```csharp
 public class SyncCommittee
 {
-    public List<byte[]> Pubkeys { get; set; }      // 512 x 48 bytes
-    public byte[] AggregatePubkey { get; set; }    // 48 bytes
+    public List<byte[]> PubKeys { get; set; }      // 512 x 48 bytes
+    public byte[] AggregatePubKey { get; set; }    // 48 bytes
 
     public byte[] Encode();
     public static SyncCommittee Decode(ReadOnlySpan<byte> data);
@@ -486,7 +486,7 @@ public class LightClientHeader
     public List<byte[]> ExecutionBranch { get; set; }
 
     public byte[] Encode();
-    public static LightClientHeader Decode(ReadOnlySpan<byte> data);
+    public static LightClientHeader Decode(byte[] data);
     public byte[] HashTreeRoot();
 }
 ```
@@ -503,7 +503,80 @@ public class LightClientBootstrap
     public List<byte[]> CurrentSyncCommitteeBranch { get; set; }
 
     public byte[] Encode();
-    public static LightClientBootstrap Decode(ReadOnlySpan<byte> data);
+    public static LightClientBootstrap Decode(byte[] data);
+    public byte[] HashTreeRoot();
+}
+```
+
+### LightClientUpdate
+
+Full light client update with next sync committee and finality proof.
+
+```csharp
+public class LightClientUpdate
+{
+    public LightClientHeader AttestedHeader { get; set; }
+    public SyncCommittee NextSyncCommittee { get; set; }
+    public IList<byte[]> NextSyncCommitteeBranch { get; set; }
+    public LightClientHeader FinalizedHeader { get; set; }
+    public IList<byte[]> FinalityBranch { get; set; }
+    public SyncAggregate SyncAggregate { get; set; }
+    public ulong SignatureSlot { get; set; }
+
+    public byte[] Encode();
+    public static LightClientUpdate Decode(byte[] data);
+    public byte[] HashTreeRoot();
+}
+```
+
+### LightClientFinalityUpdate
+
+Light client update proving finality without sync committee rotation.
+
+```csharp
+public class LightClientFinalityUpdate
+{
+    public LightClientHeader AttestedHeader { get; set; }
+    public LightClientHeader FinalizedHeader { get; set; }
+    public IList<byte[]> FinalityBranch { get; set; }
+    public SyncAggregate SyncAggregate { get; set; }
+    public ulong SignatureSlot { get; set; }
+
+    public byte[] Encode();
+    public static LightClientFinalityUpdate Decode(byte[] data);
+    public byte[] HashTreeRoot();
+}
+```
+
+### LightClientOptimisticUpdate
+
+Lightweight update for optimistic header tracking.
+
+```csharp
+public class LightClientOptimisticUpdate
+{
+    public LightClientHeader AttestedHeader { get; set; }
+    public SyncAggregate SyncAggregate { get; set; }
+    public ulong SignatureSlot { get; set; }
+
+    public byte[] Encode();
+    public static LightClientOptimisticUpdate Decode(byte[] data);
+    public byte[] HashTreeRoot();
+}
+```
+
+### SyncAggregate
+
+Aggregated sync committee participation bits and BLS signature (160 bytes fixed).
+
+```csharp
+public class SyncAggregate
+{
+    public byte[] SyncCommitteeBits { get; set; }         // 64 bytes (512 bits)
+    public byte[] SyncCommitteeSignature { get; set; }    // 96 bytes
+
+    public byte[] Encode();
+    public static SyncAggregate Decode(ReadOnlySpan<byte> data);
     public byte[] HashTreeRoot();
 }
 ```
@@ -551,16 +624,16 @@ public static class SszBasicTypes
 }
 ```
 
-### SszContainerEncoding
+### SszContainerEncoding (internal)
 
-Helper for encoding containers with fixed and dynamic sections.
+Internal helper for combining fixed and dynamic SSZ sections. Used internally by container `Encode()` methods.
 
 ```csharp
-public static class SszContainerEncoding
+internal static class SszContainerEncoding
 {
-    public static byte[] CombineFixedAndDynamicSections(
+    public static byte[] Combine(
         byte[] fixedSection,
-        byte[] dynamicSection);
+        params byte[][] dynamicSections);
 }
 ```
 
@@ -594,11 +667,11 @@ Many fields have **strict size requirements**:
 ```csharp
 // WRONG - incorrect sizes
 header.ParentRoot = new byte[16]; // Must be 32!
-syncCommittee.Pubkeys.Add(new byte[64]); // Must be 48!
+syncCommittee.PubKeys.Add(new byte[64]); // Must be 48!
 
 // CORRECT
 header.ParentRoot = new byte[32];
-syncCommittee.Pubkeys.Add(new byte[48]);
+syncCommittee.PubKeys.Add(new byte[48]);
 ```
 
 ### Hash Function
@@ -621,17 +694,17 @@ Sync committees **must have exactly 512 validators**:
 // WRONG
 var syncCommittee = new SyncCommittee
 {
-    Pubkeys = new List<byte[]>(256) // Wrong size!
+    PubKeys = new List<byte[]>(256) // Wrong size!
 };
 
 // CORRECT
 var syncCommittee = new SyncCommittee
 {
-    Pubkeys = new List<byte[]>(512)
+    PubKeys = new List<byte[]>(512)
 };
 for (int i = 0; i < SszBasicTypes.SyncCommitteeSize; i++)
 {
-    syncCommittee.Pubkeys.Add(new byte[48]);
+    syncCommittee.PubKeys.Add(new byte[48]);
 }
 ```
 

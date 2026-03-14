@@ -593,6 +593,83 @@ Console.WriteLine($"Suggested max priority fee: {suggestion.MaxPriorityFeePerGas
 Console.WriteLine($"Suggested max fee: {suggestion.MaxFeePerGas}");
 ```
 
+## Fee Estimation (EIP-1559)
+
+The `Fee1559Suggestions` namespace provides three strategies for estimating EIP-1559 gas fees, each with different trade-offs between simplicity and accuracy. All strategies implement `IFee1559SuggestionStrategy` and return a `Fee1559` object containing `BaseFee`, `MaxFeePerGas`, and `MaxPriorityFeePerGas`.
+
+### Using via Web3 (Recommended)
+
+```csharp
+var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+
+// Simple strategy: uses latest block base fee * 2 + default priority fee (2 gwei)
+var simpleStrategy = web3.FeeSuggestion.GetSimpleFeeSuggestionStrategy();
+var fee = await simpleStrategy.SuggestFeeAsync();
+
+// Median priority fee history strategy: analyzes fee history percentiles
+var medianStrategy = web3.FeeSuggestion.GetMedianPriorityFeeHistorySuggestionStrategy();
+var medianFee = await medianStrategy.SuggestFeeAsync();
+
+// Time preference strategy: exponentially-weighted base fee analysis over 100 blocks
+var timeStrategy = web3.FeeSuggestion.GetTimePreferenceFeeSuggestionStrategy();
+var timeFee = await timeStrategy.SuggestFeeAsync();
+
+Console.WriteLine($"Base fee: {fee.BaseFee}");
+Console.WriteLine($"Max priority fee: {fee.MaxPriorityFeePerGas}");
+Console.WriteLine($"Max fee: {fee.MaxFeePerGas}");
+```
+
+### Using Directly with an RPC Client
+
+```csharp
+using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Fee1559Suggestions;
+
+var client = new RpcClient(new Uri("https://mainnet.infura.io/v3/YOUR-PROJECT-ID"));
+
+// Simple strategy: baseFee * 2 + maxPriorityFeePerGas
+// Good for quick estimates, uses a default priority fee of 2 gwei
+var simple = new SimpleFeeSuggestionStrategy(client);
+var fee = await simple.SuggestFeeAsync();
+
+// Optionally override the priority fee (in wei)
+var feeCustomTip = await simple.SuggestFeeAsync(maxPriorityFeePerGas: 3_000_000_000);
+
+// Median strategy: queries eth_feeHistory for recent block reward percentiles
+// Uses a base fee multiplier that scales down as base fee increases (2x under 40 gwei, 1.2x above 200 gwei)
+var median = new MedianPriorityFeeHistorySuggestionStrategy(client);
+var medianFee = await median.SuggestFeeAsync();
+
+// Time preference strategy: returns suggestions for multiple urgency levels
+// SuggestFeeAsync() returns the most urgent (first) suggestion
+var timePref = new TimePreferenceFeeSuggestionStrategy(client);
+var urgentFee = await timePref.SuggestFeeAsync();
+
+// SuggestFeesAsync() returns the full array from most urgent to least urgent
+var allFees = await timePref.SuggestFeesAsync();
+foreach (var f in allFees)
+{
+    Console.WriteLine($"MaxFee: {f.MaxFeePerGas}, Tip: {f.MaxPriorityFeePerGas}");
+}
+```
+
+### Strategy Comparison
+
+| Strategy | RPC Calls | Best For |
+|----------|-----------|----------|
+| `SimpleFeeSuggestionStrategy` | 1 (`eth_getBlockByNumber`) | Quick estimates, low-traffic chains |
+| `MedianPriorityFeeHistorySuggestionStrategy` | 2 (`eth_getBlockByNumber` + `eth_feeHistory`) | Accurate priority fees on mainnet |
+| `TimePreferenceFeeSuggestionStrategy` | 2+ (`eth_feeHistory` with 100 blocks + tip sampling) | Multiple urgency levels, volatile markets |
+
+### API Reference
+
+- **`Fee1559`** - Result DTO with `BaseFee`, `MaxFeePerGas`, `MaxPriorityFeePerGas` (all `BigInteger?`)
+- **`IFee1559SuggestionStrategy`** - Common interface with `SuggestFeeAsync(BigInteger? maxPriorityFeePerGas = null)`
+- **`SimpleFeeSuggestionStrategy`** - Calculates `maxFeePerGas = baseFee * 2 + maxPriorityFeePerGas` using latest block
+- **`MedianPriorityFeeHistorySuggestionStrategy`** - Uses `eth_feeHistory` percentiles with adaptive base fee multiplier (configurable via `FeeHistoryNumberOfBlocks`, `DefaultPriorityFee`, `FallbackFeeSuggestion`)
+- **`TimePreferenceFeeSuggestionStrategy`** - Port of Felfodi Zsolt's algorithm; returns urgency-graded suggestions via `SuggestFeesAsync()` (configurable via `SampleMin`, `SampleMax`, `MaxTimeFactor`, `ExtraTipRatio`, `FallbackTip`)
+- **`FeeSuggestionService`** - Factory available via `web3.FeeSuggestion` with `GetSimpleFeeSuggestionStrategy()`, `GetMedianPriorityFeeHistorySuggestionStrategy()`, `GetTimePreferenceFeeSuggestionStrategy()`
+
 ## Related Packages
 
 - **Nethereum.Web3** - High-level Web3 API (builds on this package)

@@ -67,18 +67,16 @@ await node.StartAsync(fundedAddresses);
 ### Persistent SQLite
 
 ```csharp
-var node = new DevChainNode("./mychain/chain.db", persistDb: true);
+var node = new DevChainNode(DevChainConfig.Default, "./mychain/chain.db", persistDb: true);
 await node.StartAsync(fundedAddresses);
 // DB survives restart
 ```
 
-### Convenience Factory
+### Custom ChainId
 
 ```csharp
-var node = await DevChainNode.CreateAndStartAsync(
-    fundedAddresses,
-    new DevChainConfig { ChainId = 31337 }
-);
+var node = new DevChainNode(new DevChainConfig { ChainId = 31337 });
+await node.StartAsync(new[] { "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" });
 ```
 
 ## Storage Architecture
@@ -99,8 +97,10 @@ SQLite uses WAL journal mode for concurrent reads during block production. The d
 
 ## Configuration
 
+`DevChainConfig` inherits from `ChainConfig`. Properties like `ChainId`, `BlockGasLimit`, `BaseFee`, and `InitialBalance` come from the base class.
+
 ```csharp
-public class DevChainConfig
+public class DevChainConfig : ChainConfig
 {
     public int ChainId { get; set; } = 1337;
     public long BlockGasLimit { get; set; } = 30_000_000;
@@ -108,7 +108,7 @@ public class DevChainConfig
     public long BlockTime { get; set; } = 0;           // 0 = instant
     public int MaxTransactionsPerBlock { get; set; } = 100;
     public BigInteger BaseFee { get; set; } = 1_000_000_000; // 1 gwei
-    public BigInteger InitialBalance { get; set; };
+    public BigInteger InitialBalance { get; set; }; // Default: 10000 ETH (BigInteger.Parse("10000000000000000000000"))
 
     // Forking
     public string ForkUrl { get; set; }
@@ -116,7 +116,7 @@ public class DevChainConfig
 
     // Auto-mine batching
     public int AutoMineBatchSize { get; set; } = 1;
-    public int AutoMineBatchTimeoutMs { get; set; } = 100;
+    public int AutoMineBatchTimeoutMs { get; set; } = 10;
 }
 
 // Built-in presets
@@ -130,30 +130,28 @@ var config = DevChainConfig.Anvil;     // ChainId 31337
 ### Transaction Processing
 
 ```csharp
-// Send raw transaction
-var txHash = await node.SendRawTransactionAsync(signedTxBytes);
+// Send a signed transaction
+var txHash = await node.SendTransactionAsync(signedTransaction);
 
 // Get receipt
 var receipt = await node.GetTransactionReceiptAsync(txHash);
+
+// Raw byte sending (eth_sendRawTransaction) is available via the RPC layer
 ```
 
 ### Contract Execution
 
 ```csharp
-using Nethereum.RPC.Eth.DTOs;
+// Execute without state change (individual parameters)
+var result = await node.CallAsync(
+    to: contractAddress,
+    data: dataBytes,
+    from: senderAddress,
+    value: null,
+    gasLimit: null
+);
 
-var callInput = new CallInput
-{
-    From = "0x1234...",
-    To = contractAddress,
-    Data = "0x..."
-};
-
-// Execute without state change
-var result = await node.CallAsync(callInput);
-
-// Estimate gas
-var gasEstimate = await node.EstimateGasAsync(callInput);
+// eth_call and eth_estimateGas are also available via the RPC layer with CallInput objects
 ```
 
 ### State Access
@@ -162,7 +160,7 @@ var gasEstimate = await node.EstimateGasAsync(callInput);
 var balance = await node.GetBalanceAsync(address);
 var code = await node.GetCodeAsync(contractAddress);
 var storage = await node.GetStorageAtAsync(contractAddress, slot);
-var nonce = await node.GetTransactionCountAsync(address);
+var nonce = await node.GetNonceAsync(address);
 ```
 
 ### Account Management
@@ -179,13 +177,13 @@ await node.SetNonceAsync(address, nonce);
 ### Snapshots
 
 ```csharp
-// Take snapshot
-var snapshotId = await node.SnapshotAsync();
+// Take snapshot (returns IStateSnapshot)
+var snapshot = await node.TakeSnapshotAsync();
 
 // Execute transactions...
 
-// Revert all changes
-await node.RevertToSnapshotAsync(snapshotId);
+// Revert all changes (takes the snapshot object)
+await node.RevertToSnapshotAsync(snapshot);
 ```
 
 ### Block Mining
@@ -195,7 +193,7 @@ await node.RevertToSnapshotAsync(snapshotId);
 await node.MineBlockAsync();
 
 // Time manipulation
-node.Config.NextBlockTimestamp = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds();
+node.DevConfig.NextBlockTimestamp = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds();
 await node.MineBlockAsync();
 ```
 
@@ -206,9 +204,9 @@ await node.MineBlockAsync();
 Trace a mined transaction step-by-step:
 
 ```csharp
-using Nethereum.RPC.DebugNode.Tracers;
+using Nethereum.CoreChain.Tracing;
 
-var config = new OpcodeTracerConfigDto
+var config = new OpcodeTraceConfig
 {
     EnableMemory = true,
     DisableStack = false,
@@ -230,9 +228,11 @@ foreach (var log in trace.StructLogs)
 Trace a call without mining, with optional state overrides:
 
 ```csharp
-var stateOverrides = new Dictionary<string, StateOverrideDto>
+using Nethereum.CoreChain.Tracing;
+
+var stateOverrides = new Dictionary<string, StateOverride>
 {
-    [address] = new StateOverrideDto
+    [address] = new StateOverride
     {
         Balance = "0x1000000000000000000",
         Code = "0x...",
@@ -296,8 +296,6 @@ All `hardhat_*` methods are also available as `anvil_*` for compatibility:
 | `anvil_setCode` | `hardhat_setCode` |
 | `anvil_setNonce` | `hardhat_setNonce` |
 | `anvil_setStorageAt` | `hardhat_setStorageAt` |
-| `anvil_impersonateAccount` | `hardhat_impersonateAccount` |
-| `anvil_stopImpersonatingAccount` | `hardhat_stopImpersonatingAccount` |
 | `anvil_mine` | `evm_mine` |
 | `anvil_snapshot` | `evm_snapshot` |
 | `anvil_revert` | `evm_revert` |
@@ -336,7 +334,8 @@ var config = new DevChainConfig
     ForkBlockNumber = 19000000
 };
 
-var node = await DevChainNode.CreateAndStartAsync(fundedAddresses, config);
+var node = new DevChainNode(config);
+await node.StartAsync(fundedAddresses);
 
 // Reads hit fork source on cache miss, writes are local only
 var balance = await node.GetBalanceAsync("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
