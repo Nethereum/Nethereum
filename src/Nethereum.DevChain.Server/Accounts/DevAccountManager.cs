@@ -1,5 +1,5 @@
 using System.Numerics;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.DevChain.Server.Configuration;
 
 namespace Nethereum.DevChain.Server.Accounts

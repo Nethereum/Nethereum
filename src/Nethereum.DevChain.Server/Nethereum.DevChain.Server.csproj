@@ -33,13 +33,8 @@
     <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <!-- Link Bip32 files from Nethereum.Wallet (no NBitcoin dependency) -->
   <ItemGroup>
-    <Compile Include="..\Nethereum.Wallet\Bip32\MinimalHDWallet.cs" Link="Bip32\MinimalHDWallet.cs" />
-    <Compile Include="..\Nethereum.Wallet\Bip32\Bip39.cs" Link="Bip32\Bip39.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Accounts\Nethereum.Accounts.csproj" />
     <ProjectReference Include="..\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
