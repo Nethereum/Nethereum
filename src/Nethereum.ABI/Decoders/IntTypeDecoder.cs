@@ -166,68 +166,112 @@ namespace Nethereum.ABI.Decoders
         public short DecodeShort(byte[] encoded)
         {
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
-            return BinaryPrimitives.ReadInt16BigEndian(encoded[^2..]);
-#else
-            return (short) DecodeBigInteger(encoded);
+            if (encoded.Length >= 2)
+            {
+                var result = BinaryPrimitives.ReadInt16BigEndian(encoded[^2..]);
+                ValidateUpperBytes(encoded, 2, _signed && result < 0);
+                return result;
+            }
 #endif
+            return (short) DecodeBigInteger(encoded);
         }
 
         public ushort DecodeUShort(byte[] encoded)
         {
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
-            return BinaryPrimitives.ReadUInt16BigEndian(encoded[^2..]);
-#else
-            return (ushort) DecodeBigInteger(encoded);
+            if (encoded.Length >= 2)
+            {
+                ValidateUpperBytes(encoded, 2, false);
+                return BinaryPrimitives.ReadUInt16BigEndian(encoded[^2..]);
+            }
 #endif
+            return (ushort) DecodeBigInteger(encoded);
         }
 
         public int DecodeInt(byte[] encoded)
         {
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
-            return BinaryPrimitives.ReadInt32BigEndian(encoded[^4..]);
-#else
-            return (int) DecodeBigInteger(encoded);
+            if (encoded.Length >= 4)
+            {
+                var result = BinaryPrimitives.ReadInt32BigEndian(encoded[^4..]);
+                ValidateUpperBytes(encoded, 4, _signed && result < 0);
+                return result;
+            }
 #endif
+            return (int) DecodeBigInteger(encoded);
         }
 
         public long DecodeLong(byte[] encoded)
         {
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
-            return BinaryPrimitives.ReadInt64BigEndian(encoded[^8..]);
-#else
-            return (long) DecodeBigInteger(encoded);
+            if (encoded.Length >= 8)
+            {
+                var result = BinaryPrimitives.ReadInt64BigEndian(encoded[^8..]);
+                ValidateUpperBytes(encoded, 8, _signed && result < 0);
+                return result;
+            }
 #endif
+            return (long) DecodeBigInteger(encoded);
         }
 
         public uint DecodeUInt(byte[] encoded)
         {
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
-            return BinaryPrimitives.ReadUInt32BigEndian(encoded[^4..]);
-#else
-            return (uint) DecodeBigInteger(encoded);
+            if (encoded.Length >= 4)
+            {
+                ValidateUpperBytes(encoded, 4, false);
+                return BinaryPrimitives.ReadUInt32BigEndian(encoded[^4..]);
+            }
 #endif
+            return (uint) DecodeBigInteger(encoded);
         }
 
         public ulong DecodeULong(byte[] encoded)
         {
 #if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
-            return BinaryPrimitives.ReadUInt64BigEndian(encoded[^8..]);
-#else
-            return (ulong) DecodeBigInteger(encoded);
+            if (encoded.Length >= 8)
+            {
+                ValidateUpperBytes(encoded, 8, false);
+                return BinaryPrimitives.ReadUInt64BigEndian(encoded[^8..]);
+            }
 #endif
+            return (ulong) DecodeBigInteger(encoded);
         }
 
 #if NET7_0_OR_GREATER
         public UInt128 DecodeUInt128(byte[] encoded)
         {
-            return BinaryPrimitives.ReadUInt128BigEndian(encoded[^16..]);
+            if (encoded.Length >= 16)
+            {
+                ValidateUpperBytes(encoded, 16, false);
+                return BinaryPrimitives.ReadUInt128BigEndian(encoded[^16..]);
+            }
+            return (UInt128) DecodeBigInteger(encoded);
         }
 
         public Int128 DecodeInt128(byte[] encoded)
         {
-            return BinaryPrimitives.ReadInt128BigEndian(encoded[^16..]);
+            if (encoded.Length >= 16)
+            {
+                var result = BinaryPrimitives.ReadInt128BigEndian(encoded[^16..]);
+                ValidateUpperBytes(encoded, 16, _signed && result < 0);
+                return result;
+            }
+            return (Int128) DecodeBigInteger(encoded);
         }
 #endif
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
+        private static void ValidateUpperBytes(byte[] encoded, int valueSize, bool negative)
+        {
+            byte expected = negative ? (byte)0xFF : (byte)0x00;
+            for (int i = 0; i < encoded.Length - valueSize; i++)
+            {
+                if (encoded[i] != expected)
+                    throw new OverflowException();
+            }
+        }
+#endif
+
         public override Type GetDefaultDecodingType()
         {
             return typeof(BigInteger);
