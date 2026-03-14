@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Nethereum.RPC.Accounts;
 using Nethereum.Web3.Accounts;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Web3;
 using Nethereum.JsonRpc.Client;
 

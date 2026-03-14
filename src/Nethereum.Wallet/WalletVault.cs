@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet.WalletAccounts;
 using System.Threading.Tasks;
 

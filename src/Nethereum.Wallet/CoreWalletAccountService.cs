@@ -4,7 +4,7 @@ using Nethereum.Signer;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Accounts;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet.WalletAccounts;
 
 namespace Nethereum.Wallet

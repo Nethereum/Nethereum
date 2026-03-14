@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Nethereum.Wallet;
 using Nethereum.Wallet.WalletAccounts;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet.UI.Components.Core.Localization;
 using Nethereum.Wallet.UI.Components.WalletAccounts;
 

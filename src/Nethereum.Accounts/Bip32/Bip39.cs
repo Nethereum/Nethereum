@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nethereum.Wallet.Bip32
+namespace Nethereum.Accounts.Bip32
 {
     public static class Bip39
     {

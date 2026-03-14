@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using System.Collections.Generic;
 using System.Text.Json;
 

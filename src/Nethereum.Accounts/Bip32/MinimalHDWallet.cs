@@ -1,4 +1,4 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nethereum.Wallet.Bip32
+namespace Nethereum.Accounts.Bip32
 {
     public class MinimalHDWallet
     {
@@ -44,7 +44,7 @@ namespace Nethereum.Wallet.Bip32
                 chainCode = i[32..];
             }
 
-           
+
             for (int i = 1; i < segments.Length; i++)
             {
                 var segment = segments[i];
@@ -60,7 +60,7 @@ namespace Nethereum.Wallet.Bip32
                 if (BitConverter.IsLittleEndian)
                     Array.Reverse(indexBytes);
 
-                
+
 
                 if (hardened)
                 {
@@ -70,7 +70,7 @@ namespace Nethereum.Wallet.Bip32
                 else
                 {
                     var pubKey = new EthECKey(key, true).GetPubKey(true);
-                   
+
                     pubKey.CopyTo(data[0..33]);
                 }
 
@@ -82,7 +82,7 @@ namespace Nethereum.Wallet.Bip32
                 var IL = iBytes[..32];
                 var IR = iBytes[32..];
 
-               
+
 
                 var tweakInt = new BigInteger(IL, isUnsigned: true, isBigEndian: true);
                 var parentKeyInt = new BigInteger(key, isUnsigned: true, isBigEndian: true);
@@ -99,7 +99,7 @@ namespace Nethereum.Wallet.Bip32
                 }
 
                 chainCode = IR;
-                
+
             }
 
             return new EthECKey(key, true);
