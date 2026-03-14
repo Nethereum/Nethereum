@@ -6,6 +6,8 @@ user-invocable: true
 
 # Smart Contract Interaction
 
+Nethereum uses typed C# classes (DTOs) to represent every part of a smart contract — deployment bytecode, function calls, events, and return values. This gives you compile-time safety: if a parameter name or type is wrong, you catch it before sending a transaction, not after.
+
 NuGet: `Nethereum.Web3`
 
 ```bash
@@ -14,7 +16,12 @@ dotnet add package Nethereum.Web3
 
 ## Contract DTO Definitions
 
+Every interaction starts with defining C# classes that map to the Solidity contract. These can be hand-written or auto-generated with `Nethereum.Generator.Console`.
+
 ### Deployment Message
+
+A deployment message represents the contract constructor. It inherits from `ContractDeploymentMessage` and holds the compiled bytecode plus any constructor parameters:
+
 ```csharp
 public class StandardTokenDeployment : ContractDeploymentMessage
 {
@@ -27,6 +34,9 @@ public class StandardTokenDeployment : ContractDeploymentMessage
 ```
 
 ### Function Messages
+
+Each contract function maps to a class inheriting from `FunctionMessage`. The `[Function]` attribute takes the Solidity function name and return type:
+
 ```csharp
 [Function("balanceOf", "uint256")]
 public class BalanceOfFunction : FunctionMessage
@@ -47,6 +57,9 @@ public class TransferFunction : FunctionMessage
 ```
 
 ### Event DTOs
+
+Events implement `IEventDTO`. The fourth argument in `[Parameter]` marks indexed parameters, which enable server-side filtering:
+
 ```csharp
 [Event("Transfer")]
 public class TransferEventDTO : IEventDTO
@@ -63,6 +76,9 @@ public class TransferEventDTO : IEventDTO
 ```
 
 ### Function Output DTOs
+
+For functions returning complex values, define an output DTO implementing `IFunctionOutputDTO`:
+
 ```csharp
 [FunctionOutput]
 public class BalanceOfOutputDTO : IFunctionOutputDTO
@@ -73,6 +89,9 @@ public class BalanceOfOutputDTO : IFunctionOutputDTO
 ```
 
 ## Deploy
+
+The deployment handler encodes constructor parameters into the bytecode, estimates gas, and waits for the receipt. The returned `ContractAddress` is where your contract lives:
+
 ```csharp
 var deploymentMessage = new StandardTokenDeployment { TotalSupply = 100000 };
 var deploymentHandler = web3.Eth.GetContractDeploymentHandler<StandardTokenDeployment>();
@@ -80,20 +99,28 @@ var receipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deployme
 var contractAddress = receipt.ContractAddress;
 ```
 
-## Query
+Gas, gas price, and nonce are estimated automatically. Set them on the message only when you need explicit control.
+
+## Query (Read-Only)
+
+Use `GetContractQueryHandler<T>` to call `view` or `pure` functions. These are free — no gas, no transaction:
+
 ```csharp
 var balanceHandler = web3.Eth.GetContractQueryHandler<BalanceOfFunction>();
 
-// Single value
+// Single return value
 var balance = await balanceHandler.QueryAsync<BigInteger>(contractAddress,
     new BalanceOfFunction { Owner = ownerAddress });
 
-// Deserialize to output DTO
+// Deserialize to output DTO (for multiple return values)
 var output = await balanceHandler.QueryDeserializingToObjectAsync<BalanceOfOutputDTO>(
     balanceOfMessage, contractAddress);
 ```
 
-## Transact
+## Transact (State-Changing)
+
+Use `GetContractTransactionHandler<T>` for functions that modify state. This sends a real transaction and costs gas:
+
 ```csharp
 var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
 var transfer = new TransferFunction { To = receiverAddress, TokenAmount = 100 };
@@ -101,6 +128,9 @@ var receipt = await transferHandler.SendRequestAndWaitForReceiptAsync(contractAd
 ```
 
 ## Decode Events from Receipt
+
+After a transaction, extract events from the receipt logs. This decodes all matching events — if the transaction triggered multiple transfers, you get them all:
+
 ```csharp
 var transferEvents = receipt.DecodeAllEvents<TransferEventDTO>();
 var from = transferEvents[0].Event.From;
@@ -109,6 +139,9 @@ var value = transferEvents[0].Event.Value;
 ```
 
 ## Historical State Query
+
+All query methods accept `BlockParameter` to read contract state at a past block. The node must have archive state for the requested block:
+
 ```csharp
 var historicalBalance = await balanceHandler.QueryDeserializingToObjectAsync<BalanceOfOutputDTO>(
     balanceOfMessage, contractAddress,
@@ -116,23 +149,35 @@ var historicalBalance = await balanceHandler.QueryDeserializingToObjectAsync<Bal
 ```
 
 ## Gas Estimation
+
+Nethereum auto-estimates gas. For manual control — useful when you want to display costs or set a hard limit:
+
 ```csharp
 var estimate = await transferHandler.EstimateGasAsync(contractAddress, transfer);
 transfer.Gas = estimate.Value;
 transfer.GasPrice = Web3.Convert.ToWei(25, UnitConversion.EthUnit.Gwei);
 ```
 
-## Send Ether with Function Call
+## Payable Functions
+
+If a Solidity function is `payable`, set `AmountToSend` to include ETH with the call:
+
 ```csharp
-transfer.AmountToSend = Web3.Convert.ToWei(1); // payable functions
+transfer.AmountToSend = Web3.Convert.ToWei(1); // 1 ETH
 ```
 
 ## Nonce Control
+
+Nethereum manages nonces automatically, including an in-memory counter for rapid submissions. Only set manually for specific ordering needs:
+
 ```csharp
-transfer.Nonce = 42; // manual nonce
+transfer.Nonce = 42;
 ```
 
 ## Offline Signing
+
+Sign without broadcasting — useful for cold wallets or deferred submission. You must set `Nonce`, `Gas`, and `GasPrice` since there's no node to query:
+
 ```csharp
 transfer.Nonce = 2;
 transfer.Gas = 60000;
@@ -141,11 +186,11 @@ var signedTx = await transferHandler.SignTransactionAsync(contractAddress, trans
 ```
 
 ## Non-Type-Safe (ABI JSON)
-```csharp
-var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
-    abi, bytecode, senderAddress, new HexBigInteger(900000), null, totalSupply);
 
-var contract = web3.Eth.GetContract(abi, receipt.ContractAddress);
+When you have a raw ABI string and don't need typed classes. This approach is less safe — parameter mismatches fail at runtime, not compile time:
+
+```csharp
+var contract = web3.Eth.GetContract(abi, contractAddress);
 var balanceFunction = contract.GetFunction("balanceOf");
 var transferFunction = contract.GetFunction("transfer");
 
@@ -155,10 +200,14 @@ var txReceipt = await transferFunction.SendTransactionAndWaitForReceiptAsync(
     senderAddress, gas, null, null, toAddress, amount);
 ```
 
-## Key Rules
-- **ALWAYS define typed DTOs** (ContractDeploymentMessage, FunctionMessage, IEventDTO) — catches errors at compile time
-- Use `GetContractDeploymentHandler<T>` for deploy, `GetContractQueryHandler<T>` for reads, `GetContractTransactionHandler<T>` for writes
-- Gas, gas price, and nonce are auto-managed — only set manually for offline signing or specific control
-- For standard tokens use built-in services (`web3.Eth.ERC20`, `web3.Eth.ERC721`) instead of custom DTOs
-- Use `receipt.DecodeAllEvents<T>()` to decode events from transaction receipts
-- Pass `BlockParameter` to any query method for historical state reads
+## When to Use Which Handler
+
+| Handler | When | Gas Cost |
+|---------|------|----------|
+| `GetContractQueryHandler<T>` | Read-only (`view`/`pure` functions) | Free |
+| `GetContractTransactionHandler<T>` | State-changing functions | Yes |
+| `GetContractDeploymentHandler<T>` | Deploying new contracts | Yes |
+
+For standard tokens (ERC-20, ERC-721, ERC-1155), use the built-in services (`web3.Eth.ERC20`, `web3.Eth.ERC721`) instead of defining custom DTOs.
+
+For full documentation, see: https://docs.nethereum.com/docs/smart-contracts/guide-smart-contract-interaction
