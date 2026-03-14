@@ -45,115 +45,130 @@ var receipt = await transferHandler.SendRequestAndWaitForReceiptAsync(contractAd
 
 ## What You Can Build
 
-Nethereum includes 130+ packages organised into focused libraries. For a complete guide to every capability, package, and how-to — see **[What Do You Want to Do?](https://docs.nethereum.com/docs/what-do-you-want-to-do)** on the documentation site.
+Nethereum includes 130+ packages organised into focused libraries. Every row below links to a how-to guide on the [documentation site](https://docs.nethereum.com/docs/what-do-you-want-to-do).
 
 ### [Core Foundation](https://docs.nethereum.com/docs/core-foundation/overview)
 
-- Query balances (ETH, ERC-20, ERC-721, ERC-1155) with built-in typed services — no ABI needed
-- Send ETH and contract transactions (gas, nonce, EIP-1559 fees — all automatic)
-- Delegate an EOA to a smart contract with [EIP-7702](https://docs.nethereum.com/docs/core-foundation/guide-eip7702) (`web3.Eth.GetEIP7022AuthorisationService()`)
-- Query blocks, transactions, and receipts
-- Decode raw transaction input and recover sender addresses
-- ABI encoding/decoding, RLP serialization, hex/address utilities
+| I want to... | Guide |
+|---|---|
+| Query ETH, ERC-20, ERC-721, and ERC-1155 balances (built-in typed services, no ABI needed) | [Query Balance](https://docs.nethereum.com/docs/core-foundation/guide-query-balance) |
+| Send ETH (gas, nonce, EIP-1559 fees — all automatic) | [Transfer Ether](https://docs.nethereum.com/docs/core-foundation/guide-send-eth) |
+| Send a transaction with custom data or fees | [Send Transactions](https://docs.nethereum.com/docs/core-foundation/guide-send-transaction) |
+| Delegate an EOA to a smart contract (EIP-7702) | [EIP-7702](https://docs.nethereum.com/docs/core-foundation/guide-eip7702) |
+| Query blocks, transactions, and receipts | [Query Blocks](https://docs.nethereum.com/docs/core-foundation/guide-query-blocks) |
+| Estimate and customize gas fees | [Fee Estimation](https://docs.nethereum.com/docs/core-foundation/guide-fee-estimation) |
+| Replace or speed up a pending transaction | [Transaction Replacement](https://docs.nethereum.com/docs/core-foundation/guide-transaction-replacement) |
+| Decode function calls from transaction input data | [Decode Transactions](https://docs.nethereum.com/docs/core-foundation/guide-decode-transactions) |
+| ABI encode/decode (abi.encode, abi.encodePacked, EIP-712) | [ABI Encoding](https://docs.nethereum.com/docs/core-foundation/guide-abi-encoding) |
+| Stream real-time data (new blocks, pending txns, event logs) | [Real-Time Streaming](https://docs.nethereum.com/docs/core-foundation/guide-realtime-streaming) |
 
 ### [Signing & Key Management](https://docs.nethereum.com/docs/signing-and-key-management/overview)
 
-- Sign transactions offline
-- Use an HD wallet (BIP32/BIP39)
-- Sign with Trezor or Ledger hardware wallets
-- Sign with AWS KMS or Azure Key Vault
-- Sign EIP-712 typed structured data
+| I want to... | Guide |
+|---|---|
+| Generate keys and create accounts | [Keys & Accounts](https://docs.nethereum.com/docs/signing-and-key-management/guide-keys-accounts) |
+| Sign and verify messages | [Message Signing](https://docs.nethereum.com/docs/signing-and-key-management/guide-message-signing) |
+| Sign EIP-712 typed structured data | [EIP-712 Signing](https://docs.nethereum.com/docs/signing-and-key-management/guide-eip712-signing) |
+| Use HD wallets (BIP32/BIP39 mnemonic) | [HD Wallets](https://docs.nethereum.com/docs/signing-and-key-management/guide-hd-wallets) |
+| Sign with Ledger or Trezor hardware wallets | [Hardware Wallets](https://docs.nethereum.com/docs/signing-and-key-management/guide-hardware-wallets) |
+| Sign with AWS KMS or Azure Key Vault | [Cloud KMS](https://docs.nethereum.com/docs/signing-and-key-management/guide-cloud-kms) |
+
+### [Smart Contracts](https://docs.nethereum.com/docs/smart-contracts/overview)
+
+| I want to... | Guide |
+|---|---|
+| Deploy, call, and send transactions to contracts | [Smart Contract Interaction](https://docs.nethereum.com/docs/smart-contracts/guide-smart-contract-interaction) |
+| Work with ERC-20 tokens (balance, transfer, approve) | [ERC-20 Tokens](https://docs.nethereum.com/docs/smart-contracts/erc20) |
+| Generate C# services from Solidity ABI | [Code Generation](https://docs.nethereum.com/docs/smart-contracts/code-generation) |
+| Filter and query contract events | [Events](https://docs.nethereum.com/docs/smart-contracts/guide-events) |
+| Batch queries with Multicall or RPC batching | [Multicall](https://docs.nethereum.com/docs/smart-contracts/guide-multicall) |
+| Deploy to deterministic addresses with CREATE2 | [CREATE2](https://docs.nethereum.com/docs/smart-contracts/guide-create2-deployment) |
 
 ### [EVM Simulator](https://docs.nethereum.com/docs/evm-simulator/overview)
 
-- Simulate transactions in-process — preview state changes, token transfers, and balance impacts before signing
-- Step-by-step EVM debugging with opcode traces, stack, and storage inspection
-- Capture and compare full execution traces between local simulation and live chain
-- Extract state diffs, log emissions, and internal calls from any transaction
+| I want to... | Guide |
+|---|---|
+| Simulate a transaction and preview state changes | [Transaction Simulation](https://docs.nethereum.com/docs/evm-simulator/guide-transaction-simulation) |
+| Debug EVM execution step-by-step (opcodes, stack, storage) | [EVM Debugging](https://docs.nethereum.com/docs/evm-simulator/guide-evm-debugging) |
+| Decode nested call trees (contract-to-contract calls) | [Call Tree Decoding](https://docs.nethereum.com/docs/evm-simulator/guide-call-tree-decoding) |
+| Simulate ERC-20 transfers and approvals | [ERC-20 Simulation](https://docs.nethereum.com/docs/evm-simulator/guide-erc20-simulation) |
+| Execute and disassemble raw bytecode | [Bytecode Execution](https://docs.nethereum.com/docs/evm-simulator/guide-bytecode-execution) |
 
 ### [DevChain & Local Development](https://docs.nethereum.com/docs/devchain/overview)
 
-- Run a local dev chain — no external node required (pre-funded accounts, auto-mine, time manipulation)
-- Spin up a full dev environment with .NET Aspire (DevChain + PostgreSQL + Indexer + Explorer)
-
-### [Code Generation](https://docs.nethereum.com/docs/smart-contracts/overview)
-
-- Generate C# contract services from Solidity ABI
-- Generate UI components from contract definitions
-- Generate MUD table services and queries
-
-### [Data & Indexing](https://docs.nethereum.com/docs/data-and-indexing/overview)
-
-- Index blockchain data to a database (PostgreSQL, SQL Server, or SQLite)
-- Index token transfers and compute balances
-- Build a [blockchain explorer](https://docs.nethereum.com/docs/data-and-indexing/guide-explorer) (Blazor Server with ABI decoding, token pages, MUD table browsing)
-- Discover and scan token balances across wallets (multicall batching)
-
-### [Data Services](https://docs.nethereum.com/docs/data-services/overview)
-
-- Fetch ABI and source from Sourcify or Etherscan
-- Get token prices, metadata, and logos (CoinGecko integration)
-- Discover RPC endpoints via Chainlist
-- Look up function/event signatures (4Byte Directory)
+| I want to... | Guide |
+|---|---|
+| Run a local dev chain (no external node needed) | [DevChain Quickstart](https://docs.nethereum.com/docs/devchain/devchain-quickstart) |
+| Fork a live network and manipulate state/time | [Forking & State](https://docs.nethereum.com/docs/devchain/guide-forking-and-state) |
+| Trace and debug transactions (opcode-level) | [Debug & Trace](https://docs.nethereum.com/docs/devchain/guide-debug-trace) |
+| Spin up a full dev environment with Aspire (DevChain + PostgreSQL + Indexer + Explorer) | `dotnet new nethereum-devchain` |
 
 ### [DeFi & Protocols](https://docs.nethereum.com/docs/defi/overview)
 
-- Swap tokens on Uniswap (V2/V3/V4)
-- Use Permit2 for gasless token approvals
-- Accept crypto payments in your API (x402 server middleware + facilitator)
-- Pay for x402-protected API endpoints (client with EIP-3009 signed authorizations)
-- Resolve ENS names (typed ENS services built-in)
-- Use Gnosis Safe multi-sig
-- Interact with Circles UBI protocol
+| I want to... | Guide |
+|---|---|
+| Swap tokens on Uniswap (V2/V3/V4) | [Uniswap Swap](https://docs.nethereum.com/docs/defi/guide-uniswap-swap) |
+| Manage Uniswap liquidity positions | [Uniswap Liquidity](https://docs.nethereum.com/docs/defi/guide-uniswap-liquidity) |
+| Execute Gnosis Safe multi-sig transactions | [Gnosis Safe](https://docs.nethereum.com/docs/defi/guide-gnosis-safe) |
+| Accept or pay for crypto payments (x402) | [x402 Payments](https://docs.nethereum.com/docs/defi/guide-x402-payments) |
 
 ### [Account Abstraction](https://docs.nethereum.com/docs/account-abstraction/overview)
 
-- Use smart accounts (ERC-4337 UserOperations)
-- Build an ERC-4337 bundler (mempool, gas estimation, reputation tracking)
-- Run a bundler RPC server
-- Deploy ERC-7579 modular smart accounts (validators, executors, hooks, session keys, paymasters)
+| I want to... | Guide |
+|---|---|
+| Create and send a UserOperation | [Send UserOperation](https://docs.nethereum.com/docs/account-abstraction/guide-send-useroperation) |
+| Deploy a smart account | [Smart Account Deployment](https://docs.nethereum.com/docs/account-abstraction/guide-smart-account-deployment) |
+| Batch operations and use paymasters | [Batching & Paymasters](https://docs.nethereum.com/docs/account-abstraction/guide-batching-and-paymasters) |
+| Use ERC-7579 modular accounts (validators, hooks, session keys) | [Modular Accounts](https://docs.nethereum.com/docs/account-abstraction/guide-modular-accounts) |
+| Run an ERC-4337 bundler | [Run Bundler](https://docs.nethereum.com/docs/account-abstraction/guide-run-bundler) |
 
-### [MUD — Autonomous Worlds](https://docs.nethereum.com/docs/mud-framework/overview)
+### [Data, Indexing & Explorer](https://docs.nethereum.com/docs/data-and-indexing/overview)
 
-- Work with MUD World systems and tables — systems are smart contracts that must be registered and have their own lifecycle (registration, discovery, access control), while tables define on-chain schemas with typed encoding and store events
-- Index and normalise MUD store records to Postgres
-- Query normalised MUD tables with predicates
-- Build MUD table UIs in Blazor
+| I want to... | Guide |
+|---|---|
+| Index blockchain data to PostgreSQL / SQL Server / SQLite | [Database Storage](https://docs.nethereum.com/docs/data-and-indexing/guide-database-storage) |
+| Index ERC-20/721/1155 token transfers and balances | [Token Indexing](https://docs.nethereum.com/docs/data-and-indexing/guide-token-indexing) |
+| Build a blockchain explorer (ABI decoding, token pages, contract interaction) | [Blockchain Explorer](https://docs.nethereum.com/docs/data-and-indexing/guide-explorer) |
+| Scan token balances via multicall (no indexer needed) | [Token Portfolio](https://docs.nethereum.com/docs/data-services/guide-token-portfolio) |
+| Fetch ABI from Sourcify or Etherscan | [ABI Retrieval](https://docs.nethereum.com/docs/data-services/guide-abi-retrieval) |
+| Get token prices and metadata (CoinGecko) | [CoinGecko API](https://docs.nethereum.com/docs/data-services/guide-coingecko-api) |
 
-### [Wallet SDK](https://docs.nethereum.com/docs/wallet-sdk/overview)
+### [MUD](https://docs.nethereum.com/docs/mud-framework/overview)
 
-- Build a multi-platform wallet app (MVVM architecture with Blazor, MAUI, and Avalonia renderers)
-- Manage accounts (mnemonic, private key, keystore) with encrypted vault storage
-- Interact with any contract dynamically — no code generation needed
+| I want to... | Guide |
+|---|---|
+| Read, write, and query MUD table records | [MUD Tables](https://docs.nethereum.com/docs/mud-framework/guide-mud-tables) |
+| Index MUD Store events to PostgreSQL | [MUD Indexing](https://docs.nethereum.com/docs/mud-framework/guide-mud-indexing) |
+| Deploy a MUD World with tables and systems | [MUD Deployment](https://docs.nethereum.com/docs/mud-framework/guide-mud-deployment) |
 
-### [Blazor dApp Integration](https://docs.nethereum.com/docs/blazor-dapp-integration/overview)
+### [Wallet SDK](https://docs.nethereum.com/docs/wallet-sdk/overview) · [Blazor dApp](https://docs.nethereum.com/docs/blazor-dapp-integration/overview) · [Unity](https://docs.nethereum.com/docs/unity/overview)
 
-- Integrate browser wallets in Blazor (EIP-6963 multi-wallet discovery)
-- Connect via WalletConnect / Reown AppKit
-- Implement Sign-In with Ethereum (SIWE) authentication
-
-### [Unity](https://docs.nethereum.com/docs/unity/overview)
-
-- Build Unity games with Ethereum — coroutine-based RPC, ERC-20/721 tokens, WebGL wallet connectivity
+| I want to... | Guide |
+|---|---|
+| Build a multi-platform wallet app (Blazor, MAUI, Avalonia) | [Wallet Quickstart](https://docs.nethereum.com/docs/wallet-sdk/guide-wallet-quickstart) |
+| Create accounts (mnemonic, private key, vault encryption) | [Wallet Accounts](https://docs.nethereum.com/docs/wallet-sdk/guide-wallet-accounts) |
+| Connect browser wallets in Blazor (EIP-6963 discovery) | [Blazor Wallet Connect](https://docs.nethereum.com/docs/blazor-dapp-integration/guide-blazor-wallet-connect) |
+| Authenticate with Sign-In with Ethereum (SIWE) | [Blazor Authentication](https://docs.nethereum.com/docs/blazor-dapp-integration/guide-blazor-authentication) |
+| Interact with any contract dynamically (no codegen) | [Blazor Contract Interaction](https://docs.nethereum.com/docs/blazor-dapp-integration/guide-blazor-contract-interaction) |
+| Build Unity games with Ethereum | [Unity Quickstart](https://docs.nethereum.com/docs/unity/guide-unity-quickstart) |
 
 ### [Verification & Cryptography](https://docs.nethereum.com/docs/consensus-light-client/overview)
 
-- Verify beacon chain state via light client
-- Validate account balances and state against proofs
-- Calculate Merkle proofs and state roots (Patricia Trie)
-
-### [Client Extensions](https://docs.nethereum.com/docs/client-extensions/overview)
-
-- Access Geth admin, debug, miner, and personal APIs
-- Access Besu-specific permissioning and IBFT APIs
+| I want to... | Guide |
+|---|---|
+| Verify ETH balances without trusting RPC | [Verified State](https://docs.nethereum.com/docs/consensus-light-client/guide-verified-state) |
+| Track finalized beacon headers via light client | [Light Client](https://docs.nethereum.com/docs/consensus-light-client/guide-light-client) |
 
 ### [AppChains (Preview)](https://docs.nethereum.com/docs/application-chain/overview)
 
-- Run a custom application chain — domain-specific Ethereum extension layers with full EVM, sequencer, and L1 anchoring
-- Configure RocksDB persistent storage
-- Sync follower nodes with multi-peer failover and state verification
-- Use System.Text.Json / AOT-friendly RPC
-- Stream real-time data via WebSocket subscriptions
+| I want to... | Guide |
+|---|---|
+| Launch a sequencer and deploy contracts | [AppChain Quickstart](https://docs.nethereum.com/docs/application-chain/guide-appchain-quickstart) |
+| Use AppChainBuilder for embedded/testing | [AppChain Quickstart](https://docs.nethereum.com/docs/application-chain/guide-appchain-quickstart) |
+| Configure RocksDB persistent storage | [AppChain Storage](https://docs.nethereum.com/docs/application-chain/guide-appchain-storage) |
+| Sync follower nodes and verify state | [AppChain Sync](https://docs.nethereum.com/docs/application-chain/guide-appchain-sync) |
+
+> For the full list of 100+ use cases with packages, see **[What Do You Want to Do?](https://docs.nethereum.com/docs/what-do-you-want-to-do)** on the documentation site.
 
 ## Code Generation
 
