@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageId>Nethereum.Aspire.TemplatePack</PackageId>
+    <Title>Nethereum Aspire Templates</Title>
+    <Authors>Juan Blanco</Authors>
+    <Description>Aspire templates for Nethereum. Includes DevChain with PostgreSQL, blockchain indexer, Blazor explorer, ERC-4337 bundler, and load test generator.</Description>
+    <PackageTags>dotnet-new;templates;nethereum;ethereum;aspire;devchain;blockchain;explorer;indexer;bundler</PackageTags>
+    <PackageIcon>images\logo64x64.png</PackageIcon>
+    <PackageProjectUrl>https://nethereum.com</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Nethereum/Nethereum</RepositoryUrl>
+    <Copyright>Nethereum.com (Juan Blanco) 2015-2026</Copyright>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Condition="Exists('LICENSE.md')" Include="LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Condition="Exists('images\logo64x64.png')" Include="images\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+    <Compile Remove="**\*" />
+  </ItemGroup>
+</Project>
