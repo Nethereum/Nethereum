@@ -73,37 +73,29 @@ namespace Nethereum.Merkle.Sparse.Storage
         {
             if (level >= treeDepth) return true;
 
-            // Calculate hex characters needed: each hex char = 4 bits
             var hexCharsNeeded = (treeDepth + 3) / 4;
 
-            // Ensure both keys are properly padded
             var paddedLeafKey = leafKey.PadRight(hexCharsNeeded, '0');
             var paddedNodeKey = nodeKey.PadRight(hexCharsNeeded, '0');
 
-            // At level L, we check if the leaf would be in the subtree defined by nodeKey
-            // The key insight: at level L, we need to check if the paths from level L to the leaves match
-            // This means checking prefix bits [0, level-1] (path to this node) and 
-            // ensuring remaining bits can lead to the leaf
-            
-            // First, check if they share the same prefix up to this level
-            for (int bit = 0; bit < level; bit++)
+            // At level L, the tree has already decided bits [level, treeDepth-1] (from root down).
+            // Bits [0, level-1] are variable (decided by subtree below).
+            // So we check that the FIXED bits match — bits from level to treeDepth-1.
+            for (int bit = level; bit < treeDepth; bit++)
             {
                 int hexIndex = bit / 4;
                 int bitInHex = bit % 4;
-                
-                // Get the hex characters at this position
+
                 char leafHexChar = hexIndex < paddedLeafKey.Length ? paddedLeafKey[hexIndex] : '0';
                 char nodeHexChar = hexIndex < paddedNodeKey.Length ? paddedNodeKey[hexIndex] : '0';
-                
-                // Convert to int to extract specific bit
+
                 int leafHexValue = Convert.ToInt32(leafHexChar.ToString(), 16);
                 int nodeHexValue = Convert.ToInt32(nodeHexChar.ToString(), 16);
-                
-                // Check specific bit within the hex character (MSB first: bit 3,2,1,0)
+
                 int bitMask = 1 << (3 - bitInHex);
                 bool leafBit = (leafHexValue & bitMask) != 0;
                 bool nodeBit = (nodeHexValue & bitMask) != 0;
-                
+
                 if (leafBit != nodeBit)
                 {
                     return false;

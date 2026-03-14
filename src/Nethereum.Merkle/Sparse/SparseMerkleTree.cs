@@ -20,10 +20,13 @@ namespace Nethereum.Merkle.Sparse
         private readonly int _depth;
         private readonly string[] _emptyHashes;
         private readonly int _hexCharsNeeded;
-        
+
         // PERFORMANCE OPTIMIZATION: Lazy root computation
         private string _cachedRoot;
         private bool _isDirty = true; // Start dirty to force initial computation
+
+        // PERFORMANCE OPTIMIZATION: O(1) subtree emptiness check via ref-counted node tracking
+        private readonly Dictionary<string, int> _populatedNodeRefCounts = new Dictionary<string, int>();
 
         public int Depth => _depth;
         public string EmptyLeafHash => _emptyHashes[0];
@@ -49,6 +52,11 @@ namespace Nethereum.Merkle.Sparse
 
         public async Task SetLeafAsync(string key, T value)
         {
+            var normalizedKey = key.PadRight(_hexCharsNeeded, '0');
+            var existingValue = await _storage.GetLeafAsync(key);
+            var hadValue = existingValue != null;
+            var willHaveValue = value != null;
+
             if (value == null)
             {
                 await _storage.RemoveLeafAsync(key);
@@ -57,10 +65,19 @@ namespace Nethereum.Merkle.Sparse
             {
                 await _storage.SetLeafAsync(key, value);
             }
-            
+
+            if (!hadValue && willHaveValue)
+            {
+                IncrementPathRefCounts(normalizedKey);
+            }
+            else if (hadValue && !willHaveValue)
+            {
+                DecrementPathRefCounts(normalizedKey);
+            }
+
             // OPTIMIZATION: Only invalidate the path from this leaf to root (O(log N) instead of O(N))
             await InvalidatePathToRootAsync(key);
-            
+
             // Mark root as needing recomputation
             _isDirty = true;
             _cachedRoot = null;
@@ -82,22 +99,6 @@ namespace Nethereum.Merkle.Sparse
             var valueBytes = _byteArrayConvertor.ConvertToByteArray(storedValue);
             var hash = _hashProvider.ComputeHash(valueBytes);
             return hash.ToHex();
-        }
-
-        // Synchronous methods for test compatibility
-        public void SetLeaf(string key, T value)
-        {
-            SetLeafAsync(key, value).Wait();
-        }
-
-        public T GetLeaf(string key)
-        {
-            return GetLeafAsync(key).Result;
-        }
-
-        public string GetRootHash()
-        {
-            return GetRootHashAsync().Result;
         }
 
         public async Task<string> GetRootHashAsync()
@@ -130,12 +131,10 @@ namespace Nethereum.Merkle.Sparse
                 return cached.ToHex();
             }
 
-            // Check if subtree is empty
-            if (!await _storage.HasLeavesInSubtreeAsync(nodeKey, level, _depth))
+            // Check if subtree is empty using O(1) ref-count lookup
+            if (!_populatedNodeRefCounts.ContainsKey(cacheKey))
             {
-                var emptyHash = GetEmptyHash(level);
-                await _storage.SetCachedNodeAsync(cacheKey, emptyHash.HexToByteArray());
-                return emptyHash;
+                return GetEmptyHash(level);
             }
 
             // Compute from children
@@ -220,6 +219,9 @@ namespace Nethereum.Merkle.Sparse
         public async Task ClearAsync()
         {
             await _storage.ClearAsync();
+            _populatedNodeRefCounts.Clear();
+            _isDirty = true;
+            _cachedRoot = null;
         }
 
         public async Task<long> GetLeafCountAsync()
@@ -242,6 +244,11 @@ namespace Nethereum.Merkle.Sparse
             // Process all leaf updates first
             foreach (var kvp in keyValuePairs)
             {
+                var normalizedKey = kvp.Key.PadRight(_hexCharsNeeded, '0');
+                var existingValue = await _storage.GetLeafAsync(kvp.Key);
+                var hadValue = existingValue != null;
+                var willHaveValue = kvp.Value != null;
+
                 if (kvp.Value == null)
                 {
                     await _storage.RemoveLeafAsync(kvp.Key);
@@ -251,12 +258,20 @@ namespace Nethereum.Merkle.Sparse
                     await _storage.SetLeafAsync(kvp.Key, kvp.Value);
                 }
 
+                if (!hadValue && willHaveValue)
+                {
+                    IncrementPathRefCounts(normalizedKey);
+                }
+                else if (hadValue && !willHaveValue)
+                {
+                    DecrementPathRefCounts(normalizedKey);
+                }
+
                 // Collect all affected paths for batch invalidation
-                var normalizedKey = kvp.Key.PadRight(_hexCharsNeeded, '0');
                 for (int level = 0; level <= _depth; level++)
                 {
                     var nodeKey = GetNodeKeyAtLevel(normalizedKey, level);
-                    var cacheKey = $"{level}_{nodeKey}"; // FIX: Match the format used in ComputeNodeHashAsync
+                    var cacheKey = $"{level}_{nodeKey}";
                     affectedPaths.Add(cacheKey);
                 }
             }
@@ -291,10 +306,35 @@ namespace Nethereum.Merkle.Sparse
             }
         }
 
-        /// <summary>
-        /// Calculate the node key at a specific level for a given leaf key
-        /// This determines which nodes are affected by a leaf change
-        /// </summary>
+        private void IncrementPathRefCounts(string normalizedKey)
+        {
+            for (int level = 0; level <= _depth; level++)
+            {
+                var nodeKey = GetNodeKeyAtLevel(normalizedKey, level);
+                var cacheKey = $"{level}_{nodeKey}";
+                if (_populatedNodeRefCounts.TryGetValue(cacheKey, out var count))
+                    _populatedNodeRefCounts[cacheKey] = count + 1;
+                else
+                    _populatedNodeRefCounts[cacheKey] = 1;
+            }
+        }
+
+        private void DecrementPathRefCounts(string normalizedKey)
+        {
+            for (int level = 0; level <= _depth; level++)
+            {
+                var nodeKey = GetNodeKeyAtLevel(normalizedKey, level);
+                var cacheKey = $"{level}_{nodeKey}";
+                if (_populatedNodeRefCounts.TryGetValue(cacheKey, out var count))
+                {
+                    if (count <= 1)
+                        _populatedNodeRefCounts.Remove(cacheKey);
+                    else
+                        _populatedNodeRefCounts[cacheKey] = count - 1;
+                }
+            }
+        }
+
         private string GetNodeKeyAtLevel(string leafKey, int level)
         {
             if (level == 0)
