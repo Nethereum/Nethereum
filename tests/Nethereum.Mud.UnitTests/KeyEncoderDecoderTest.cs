@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Util;
@@ -59,6 +60,7 @@ namespace Nethereum.Mud.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-tables", "Key encoding with typed class", Order = 1)]
         public void ShouldEncodeComplexKeyUsingClass()
         {
             var key = new TestKey
@@ -80,6 +82,7 @@ namespace Nethereum.Mud.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-tables", "Key decoding to typed class", Order = 2)]
         public void ShouldDecodeComplexKeyUsingClass()
         {
             var keyEncoded = new List<byte[]>

@@ -2,6 +2,7 @@
 using Nethereum.Contracts.Standards.ERC721.ContractDefinition;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -56,6 +57,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "Deploy and interact with ERC-721 NFT using built-in service", SkillName = "built-in-standards")]
         public async void ShouldDeployCustomAndQueryInteractWithGenericService()
         {
 
@@ -129,7 +131,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
        
-        [Fact]
+        [Fact(Skip ="Too many calls fails on public node")]
         public async void ShouldRetriveAllOwnnedTokensUsingProcessor()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);

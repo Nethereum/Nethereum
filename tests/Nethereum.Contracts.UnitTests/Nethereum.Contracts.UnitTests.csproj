@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

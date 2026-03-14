@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.JsonRpc.SystemTextJsonRpcClient\Nethereum.JsonRpc.SystemTextJsonRpcClient.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>

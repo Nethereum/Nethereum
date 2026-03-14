@@ -14,7 +14,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        [Fact]
+        [Fact(Skip = "Need to move PoH to its own area, not standard anymore")]
         public async void ShouldRetrieveAddressRegistered()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
@@ -22,7 +22,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(isRegistered);
         }
 
-        [Fact]
+        [Fact(Skip = "Need to move PoH to its own area, not standard anymore")]
         public async void ShouldRetrieveMultipleAddressRegistered()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
@@ -35,7 +35,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             
         }
 
-        [Fact]
+        [Fact(Skip = "Need to move PoH to its own area, not standard anymore")]
         public async void ShouldRetrieveEvidenceFromLogs()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);

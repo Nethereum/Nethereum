@@ -3,6 +3,7 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Accounts.IntegrationTests

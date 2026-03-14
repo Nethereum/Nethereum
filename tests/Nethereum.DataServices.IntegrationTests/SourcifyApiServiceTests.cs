@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Nethereum.DataServices.ABIInfoStorage;
 using Nethereum.DataServices.Sourcify;
 using Nethereum.DataServices.Sourcify.Responses;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.DataServices.IntegrationTests
@@ -38,6 +39,7 @@ namespace Nethereum.DataServices.IntegrationTests
             Assert.NotEmpty(chains);
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Sourcify V2 contract lookup", Order = 3)]
         [Fact]
         public async Task ShouldGetContractV2()
         {
@@ -62,6 +64,7 @@ namespace Nethereum.DataServices.IntegrationTests
             Assert.Contains("function", abiString.ToLower());
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Sourcify V2 ABI-only retrieval", Order = 4)]
         [Fact]
         public async Task ShouldGetContractAbiOnlyV2()
         {
@@ -112,6 +115,7 @@ namespace Nethereum.DataServices.IntegrationTests
         private const string USDC_CONTRACT = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
         private const long MAINNET_CHAIN_ID = 1;
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Composite ABI lookup via SourcifyABIInfoStorage", Order = 5)]
         [Fact]
         public async Task ShouldGetABIInfoFromSourcify()
         {
@@ -123,6 +127,7 @@ namespace Nethereum.DataServices.IntegrationTests
             Assert.NotNull(abiInfo.ContractABI);
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Find function ABI by selector", Order = 6)]
         [Fact]
         public void ShouldFindFunctionABIFromSourcify()
         {
@@ -153,6 +158,7 @@ namespace Nethereum.DataServices.IntegrationTests
         private const string USDC_CONTRACT = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
         private const long MAINNET_CHAIN_ID = 1;
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "ABIInfoStorageFactory.CreateDefault", Order = 7)]
         [Fact]
         public void ShouldCreateDefaultStorage()
         {
@@ -182,6 +188,7 @@ namespace Nethereum.DataServices.IntegrationTests
 
     public class Sourcify4ByteSignatureServiceTests
     {
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Sourcify 4Byte function lookup", Order = 8)]
         [Fact]
         public async Task ShouldLookupFunctionSignature()
         {
@@ -217,6 +224,7 @@ namespace Nethereum.DataServices.IntegrationTests
             Assert.Contains(signatures, s => s.Name == "Transfer(address,address,uint256)");
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Batch function and event lookup", Order = 9)]
         [Fact]
         public async Task ShouldLookupMultipleFunctionsAndEvents()
         {
@@ -263,6 +271,7 @@ namespace Nethereum.DataServices.IntegrationTests
 
     public class SourcifyParquetExportServiceTests
     {
+        [NethereumDocExample(DocSection.DataServices, "etherscan-api", "Sourcify Parquet file listing", Order = 3)]
         [Fact]
         public async Task ShouldListFiles()
         {

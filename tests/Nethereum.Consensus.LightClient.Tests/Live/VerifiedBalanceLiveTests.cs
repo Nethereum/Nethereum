@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ChainStateVerification;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Xunit;
@@ -19,6 +20,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Verified Balance with Merkle Proof", Order = 3)]
         public async Task GetBalance_OptimisticMode_ReturnsVerifiedBalance_NoFallback()
         {
             TestHelpers.EnsureNativeLibrary();

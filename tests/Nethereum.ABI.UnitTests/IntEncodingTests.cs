@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Nethereum.ABI.UnitTests
 {
@@ -412,6 +413,151 @@ namespace Nethereum.ABI.UnitTests
             Debug.WriteLine(FromTwosComplement("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffc4653600"));
             Debug.WriteLine(FromTwosComplement("0xffffffffffffffffffffffffffffffffffffffffffffffffffff8ee84e68e144"));
             Debug.WriteLine(FromTwosComplement("0xffffffffffffffffffffffffffffffffffffffffffffffffff79b748d76fb767"));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeShortArrayAsInt()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(1, decoder.DecodeInt(new byte[] { 0x01 }));
+            Assert.Equal(0, decoder.DecodeInt(new byte[] { 0x00 }));
+            Assert.Equal(255, decoder.DecodeInt(new byte[] { 0xff }));
+            Assert.Equal(256, decoder.DecodeInt(new byte[] { 0x01, 0x00 }));
+            Assert.Equal(1, decoder.DecodeInt(new byte[] { 0x00, 0x01 }));
+            Assert.Equal(65535, decoder.DecodeInt(new byte[] { 0xff, 0xff }));
+            Assert.Equal(1, decoder.DecodeInt(new byte[] { 0x00, 0x00, 0x01 }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeShortArrayAsShort()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal((short)1, decoder.DecodeShort(new byte[] { 0x01 }));
+            Assert.Equal((short)0, decoder.DecodeShort(new byte[] { 0x00 }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeShortArrayAsUShort()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal((ushort)1, decoder.DecodeUShort(new byte[] { 0x01 }));
+            Assert.Equal((ushort)255, decoder.DecodeUShort(new byte[] { 0xff }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeShortArrayAsUInt()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(1u, decoder.DecodeUInt(new byte[] { 0x01 }));
+            Assert.Equal(255u, decoder.DecodeUInt(new byte[] { 0xff }));
+            Assert.Equal(256u, decoder.DecodeUInt(new byte[] { 0x01, 0x00 }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeShortArrayAsLong()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(1L, decoder.DecodeLong(new byte[] { 0x01 }));
+            Assert.Equal(0L, decoder.DecodeLong(new byte[] { 0x00 }));
+            Assert.Equal(65535L, decoder.DecodeLong(new byte[] { 0xff, 0xff }));
+            Assert.Equal(1L, decoder.DecodeLong(new byte[] { 0x00, 0x00, 0x00, 0x01 }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeShortArrayAsULong()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(1UL, decoder.DecodeULong(new byte[] { 0x01 }));
+            Assert.Equal(255UL, decoder.DecodeULong(new byte[] { 0xff }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeEmptyArrayAsInt()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(0, decoder.DecodeInt(new byte[] { }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeEmptyArrayAsLong()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(0L, decoder.DecodeLong(new byte[] { }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeEmptyArrayAsUInt()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            Assert.Equal(0u, decoder.DecodeUInt(new byte[] { }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeSingleByteViaBoolDecoder()
+        {
+            var decoder = new Decoders.BoolTypeDecoder();
+            Assert.True(decoder.Decode(new byte[] { 0x01 }));
+            Assert.False(decoder.Decode(new byte[] { 0x00 }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeEmptyArrayViaBoolDecoder()
+        {
+            var decoder = new Decoders.BoolTypeDecoder();
+            Assert.False(decoder.Decode(new byte[] { }));
+        }
+
+        [Fact]
+        public virtual void ShouldDecodeStandardArraysStillWork()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            var standard32 = "0000000000000000000000000000000000000000000000000000000000000045".HexToByteArray();
+            Assert.Equal(69, decoder.DecodeInt(standard32));
+            Assert.Equal(69L, decoder.DecodeLong(standard32));
+            Assert.Equal(69u, decoder.DecodeUInt(standard32));
+            Assert.Equal(69UL, decoder.DecodeULong(standard32));
+            Assert.Equal((short)69, decoder.DecodeShort(standard32));
+            Assert.Equal((ushort)69, decoder.DecodeUShort(standard32));
+        }
+
+        [Fact]
+        public virtual void DecodeInt_BinaryPrimitives_PerformanceBenchmark()
+        {
+            var decoder = new Decoders.IntTypeDecoder();
+            var encoded = "0000000000000000000000000000000000000000000000000000000000000045".HexToByteArray();
+            var iterations = 1_000_000;
+
+            // Warmup
+            for (int i = 0; i < 1000; i++)
+                decoder.DecodeInt(encoded);
+
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < iterations; i++)
+                decoder.DecodeInt(encoded);
+            sw.Stop();
+            var decodeIntNs = sw.Elapsed.TotalMilliseconds / iterations * 1_000_000;
+
+            sw.Restart();
+            for (int i = 0; i < iterations; i++)
+                decoder.DecodeUInt(encoded);
+            sw.Stop();
+            var decodeUIntNs = sw.Elapsed.TotalMilliseconds / iterations * 1_000_000;
+
+            sw.Restart();
+            for (int i = 0; i < iterations; i++)
+                decoder.DecodeLong(encoded);
+            sw.Stop();
+            var decodeLongNs = sw.Elapsed.TotalMilliseconds / iterations * 1_000_000;
+
+            sw.Restart();
+            for (int i = 0; i < iterations; i++)
+                decoder.DecodeBigInteger(encoded);
+            sw.Stop();
+            var decodeBigIntNs = sw.Elapsed.TotalMilliseconds / iterations * 1_000_000;
+
+            Assert.True(decodeIntNs < decodeBigIntNs, $"DecodeInt ({decodeIntNs:F0}ns) should be faster than DecodeBigInteger ({decodeBigIntNs:F0}ns)");
+            Assert.True(decodeUIntNs < decodeBigIntNs, $"DecodeUInt ({decodeUIntNs:F0}ns) should be faster than DecodeBigInteger ({decodeBigIntNs:F0}ns)");
+            Assert.True(decodeLongNs < decodeBigIntNs, $"DecodeLong ({decodeLongNs:F0}ns) should be faster than DecodeBigInteger ({decodeBigIntNs:F0}ns)");
         }
     }
 }

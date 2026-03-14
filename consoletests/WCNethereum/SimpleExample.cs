@@ -33,7 +33,7 @@ namespace WCNethereum
         {
             var options = new SignClientOptions()
             {
-                ProjectId = "",
+                ProjectId = "97d8fb2db9753c13645fd37d6920b2cc",
                 Metadata = new Metadata()
                 {
                     Description = "An example project to showcase WalletConnectSharpv2",
@@ -56,6 +56,8 @@ namespace WCNethereum
             File.WriteAllBytes("qr.png", qrCodeBytes);
 
             var session = await connectData.Approval;
+
+       
 
             var web3 = new Web3();
             web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor(client);

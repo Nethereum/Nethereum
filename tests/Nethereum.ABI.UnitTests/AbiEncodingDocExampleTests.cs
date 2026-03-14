@@ -8,6 +8,7 @@ using Nethereum.ABI.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests
@@ -205,6 +206,33 @@ namespace Nethereum.ABI.UnitTests
             var approveHash = keccak.CalculateHash(approveSignature);
             var approveSelector = approveHash.Substring(0, 8);
             Assert.Equal("095ea7b3", approveSelector);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "abi-encoding", "ABIEncode decode methods", Order = 10)]
+        public void ShouldDecodeEncodedValues()
+        {
+            var abiEncode = new ABIEncode();
+
+            // Encode then decode a BigInteger
+            var encoded = abiEncode.GetABIEncoded(new ABIValue("uint256", new BigInteger(42)));
+            var decoded = abiEncode.DecodeEncodedBigInteger(encoded);
+            Assert.Equal(new BigInteger(42), decoded);
+
+            // Encode then decode an address
+            var addressEncoded = abiEncode.GetABIEncoded(new ABIValue("address", "0x407D73d8a49eeb85D32Cf465507dd71d507100c1"));
+            var addressDecoded = abiEncode.DecodeEncodedAddress(addressEncoded);
+            Assert.True("0x407D73d8a49eeb85D32Cf465507dd71d507100c1".IsTheSameAddress(addressDecoded));
+
+            // Encode then decode a boolean
+            var boolEncoded = abiEncode.GetABIEncoded(new ABIValue("bool", true));
+            var boolDecoded = abiEncode.DecodeEncodedBoolean(boolEncoded);
+            Assert.True(boolDecoded);
+
+            // Encode then decode a string
+            var stringEncoded = abiEncode.GetABIEncoded(new ABIValue("string", "hello"));
+            var stringDecoded = abiEncode.DecodeEncodedString(stringEncoded);
+            Assert.Equal("hello", stringDecoded);
         }
 
         [Function("transfer")]

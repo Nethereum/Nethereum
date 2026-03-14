@@ -1,4 +1,5 @@
-﻿using Nethereum.JsonRpc.WebSocketStreamingClient;
+﻿using Nethereum.Documentation;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Reactive.Eth;
 using System;
@@ -16,12 +17,13 @@ namespace Nethereum.WebSocketsStreamingTest
         {
             this.url = url;
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "rpc-transport", "Normal RPC calls over WebSocket")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)
             {
                 client = new StreamingWebSocketClient(url);
-                
+
             }
 
             var ethGetBalance = new EthGetBalanceObservableHandler(client);

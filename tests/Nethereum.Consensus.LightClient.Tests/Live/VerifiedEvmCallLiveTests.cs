@@ -5,6 +5,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ChainStateVerification;
 using Nethereum.ChainStateVerification.NodeData;
 using Nethereum.Contracts;
+using Nethereum.Documentation;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -26,6 +27,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Verified EVM Call for ERC20 Balance", Order = 5)]
         public async Task VerifiedCall_ERC20_BalanceOf_ReturnsTokenBalance()
         {
             try

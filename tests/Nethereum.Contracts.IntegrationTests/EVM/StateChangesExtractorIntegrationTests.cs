@@ -83,7 +83,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
 
-            program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+            program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
             // Use SourcifyABIInfoStorage to fetch real ABIs (no fallbacks - Sourcify only)
             var abiStorage = new SourcifyABIInfoStorage();

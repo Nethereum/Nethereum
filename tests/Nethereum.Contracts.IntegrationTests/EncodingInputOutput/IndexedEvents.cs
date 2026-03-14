@@ -2,6 +2,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit; 
  // ReSharper disable ConsiderUsingConfigureAwait  
  // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
@@ -75,6 +76,7 @@ namespace Nethereum.Contracts.IntegrationTests.EncodingInputOutput
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "Decode events from receipt logs using DecodeAllEvents<T>", SkillName = "events", Order = 7)]
         public async void ShouldBeParsedInAnyOrderUsingExtensions()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();

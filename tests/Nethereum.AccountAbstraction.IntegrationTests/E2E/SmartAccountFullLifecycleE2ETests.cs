@@ -33,6 +33,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.StandardTokenEIP20;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
+using Nethereum.Documentation;
 using Nethereum.Web3;
 using Xunit;
 using Xunit.Abstractions;
@@ -157,6 +158,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Fact]
         [Trait("Category", "E2E-FullLifecycle")]
         [Trait("Workflow", "BestPractices")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-account-deployment", "Full lifecycle: account creation, modules, sessions, recovery", Order = 2)]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "Full lifecycle with ERC-7579 modules and session keys", Order = 1)]
         public async Task FullLifecycle_AccountCreation_Modules_Sessions_Recovery()
         {
             _output.WriteLine("\n========== SMART ACCOUNT FULL LIFECYCLE E2E TEST ==========\n");
@@ -460,6 +463,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Fact]
         [Trait("Category", "E2E-FullLifecycle")]
         [Trait("Workflow", "Web3Extensions")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-account-deployment", "Web3 extension methods for account management", Order = 3)]
         public async Task Web3Extensions_CreateAndManageAccounts()
         {
             _output.WriteLine("\n========== WEB3 EXTENSIONS E2E TEST ==========\n");
@@ -526,6 +530,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Fact]
         [Trait("Category", "E2E-FullLifecycle")]
         [Trait("Workflow", "SessionKeyStore")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "SessionKeyManager with InMemorySessionKeyStore", Order = 2)]
         public async Task SessionKeyStore_PersistenceAndRetrieval()
         {
             _output.WriteLine("\n========== SESSION KEY STORE E2E TEST ==========\n");

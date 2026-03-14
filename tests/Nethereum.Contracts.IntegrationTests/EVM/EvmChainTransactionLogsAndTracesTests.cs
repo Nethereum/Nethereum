@@ -463,7 +463,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
                 try
                 {
-                    program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+                    program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
                     return program;
 
                 }
@@ -539,7 +539,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
 
-            program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+            program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
             var capturedState = CapturedExecutionState.CaptureFromExecution(
                 executionStateService,
@@ -591,7 +591,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
 
-            program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+            program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
             Assert.Equal(capturedState.ExpectedIsRevert, program.ProgramResult.IsRevert);
             Assert.Equal(capturedState.ExpectedLogCount, program.ProgramResult.Logs.Count);
@@ -637,7 +637,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
 
-            program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+            program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
             var trace = program.Trace;
             Assert.Equal(externalTraces.Count, trace.Count);

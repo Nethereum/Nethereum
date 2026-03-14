@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
     <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.0.0" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

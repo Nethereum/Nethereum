@@ -1,4 +1,5 @@
 ﻿using Nethereum.Contracts;
+using Nethereum.Documentation;
 using Nethereum.Mud.Contracts.World;
 using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Mud.TableRepository;
@@ -40,6 +41,7 @@ namespace Nethereum.Mud.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-deployment", "Full World deployment E2E", Order = 1)]
         public async Task ShouldDeployWorldContractRegisterTablesSystemAndInteract()
         {
             

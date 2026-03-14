@@ -6,14 +6,11 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.X402.Blockchain;
 using Nethereum.X402.Models;
 using Nethereum.X402.Signers;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.X402.IntegrationTests.Blockchain;
 
-/// <summary>
-/// Integration tests for X402ReceiveWithAuthorisation3009Service.
-/// Tests the ReceiveWithAuthorization pattern where the receiver submits transactions and pays gas.
-/// </summary>
 public class X402ReceiveWithAuthorisation3009ServiceTests
 {
     private const string BaseSepoliaRpc = "https://sepolia.base.org";
@@ -29,6 +26,8 @@ public class X402ReceiveWithAuthorisation3009ServiceTests
     private const string ReceiverAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
     [Fact]
+    [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "EIP-3009 ReceiveWithAuthorization: verify valid payment", SkillName = "built-in-standards", Order = 12)]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "Receive model: verify payment authorization", Order = 12)]
     public async Task VerifyPaymentAsync_WithValidPayment_ReturnsValid()
     {
         // Arrange
@@ -343,6 +342,8 @@ public class X402ReceiveWithAuthorisation3009ServiceTests
     }
 
     [Fact]
+    [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "EIP-3009 ReceiveWithAuthorization: settle payment on-chain", SkillName = "built-in-standards", Order = 13)]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "Receive model: settle payment on-chain", Order = 13)]
     public async Task SettlePaymentAsync_WithValidPayment_SucceedsOnChain()
     {
         // Arrange

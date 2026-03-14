@@ -13,6 +13,7 @@ using Nethereum.Contracts.Standards.ERC20.TokenList;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -62,7 +63,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "erc20-tokens", "Deploy and interact with ERC-20 token")]
+        [NethereumDocExample(DocSection.SmartContracts, "erc20-tokens", "Deploy and interact with ERC-20 token")]
         public async void Test()
         {
             var addressOwner = EthereumClientIntegrationFixture.AccountAddress;

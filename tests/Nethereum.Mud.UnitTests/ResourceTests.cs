@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+﻿using Nethereum.Documentation;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.EncodingDecoding;
 
 namespace Nethereum.Mud.UnitTests
@@ -6,6 +7,7 @@ namespace Nethereum.Mud.UnitTests
     public class ResourceTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-quickstart", "Resource ID encoding", Order = 1)]
         public void ShouldEncodeResourceId()
         {
             var result = ResourceEncoder.Encode(Resource.RESOURCE_TABLE, "store", "Tables");

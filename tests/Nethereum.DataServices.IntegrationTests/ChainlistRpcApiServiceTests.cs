@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.DataServices.IntegrationTests
@@ -7,6 +8,7 @@ namespace Nethereum.DataServices.IntegrationTests
    
         public class ChainlistRpcApiServiceTests
         {
+            [NethereumDocExample(DocSection.DataServices, "chainlist-rpc", "Chainlist RPC chain discovery", Order = 1)]
             [Fact]
             public async Task ShouldGetAllChains()
             {
@@ -18,6 +20,7 @@ namespace Nethereum.DataServices.IntegrationTests
                 Assert.Contains(chains, c => c.ChainId == 1); // Ethereum Mainnet present
             }
 
+            [NethereumDocExample(DocSection.DataServices, "chainlist-rpc", "Chainlist Ethereum mainnet RPC URLs", Order = 2)]
             [Fact]
             public async Task ShouldContainEthereumMainnetWithRpcs()
             {

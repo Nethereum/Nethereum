@@ -8,6 +8,7 @@ using Nethereum.Beaconchain;
 using Nethereum.Beaconchain.LightClient;
 using Nethereum.ChainStateVerification;
 using Nethereum.Consensus.Ssz;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
@@ -73,6 +74,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "light-client", "Live Light Client Initialize and Update", Order = 4)]
         public async Task LightClient_InitializeAndUpdate_FromLiveFinalityUpdate()
         {
             EnsureNativeLibrary();
@@ -212,6 +214,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "light-client", "Optimistic vs Finalized Slot Comparison", Order = 5)]
         public async Task OptimisticUpdate_HasMoreRecentSlotThanFinalized()
         {
             var beaconClient = new BeaconApiClient(BeaconApiUrl);

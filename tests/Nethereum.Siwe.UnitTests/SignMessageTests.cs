@@ -1,4 +1,5 @@
-﻿using Nethereum.Signer;
+﻿using Nethereum.Documentation;
+using Nethereum.Signer;
 using Nethereum.Siwe.Core;
 using Nethereum.Util;
 using Xunit;
@@ -9,6 +10,7 @@ namespace Nethereum.Siwe.UnitTests
     {
 
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "Validate SIWE message signature", Order = 4)]
         public void ShouldValidateSignature()
         {
             var domain = "login.xyz";

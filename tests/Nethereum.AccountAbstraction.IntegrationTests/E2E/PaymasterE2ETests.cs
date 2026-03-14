@@ -11,6 +11,7 @@ using Nethereum.Signer;
 using Nethereum.StandardTokenEIP20;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.Web3;
+using Nethereum.Documentation;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -27,6 +28,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster sponsorship full flow without account funding", Order = 6)]
         public async Task E2E_PaymasterSponsorship_FullFlow_NoAccountFunding()
         {
             var paymasterService = await DeployAndFundPaymasterAsync(5m);
@@ -82,6 +84,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "ERC20 transfer with paymaster sponsorship", Order = 7)]
         public async Task E2E_PaymasterSponsorship_ERC20Transfer_UserPaysNoGas()
         {
             var paymasterService = await DeployAndFundPaymasterAsync(5m);
@@ -152,6 +155,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Batch transfer with paymaster sponsorship", Order = 8)]
         public async Task E2E_PaymasterSponsorship_BatchTransfer_MultipleRecipients()
         {
             var paymasterService = await DeployAndFundPaymasterAsync(10m);
@@ -230,6 +234,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Multiple sequential ops with paymaster sponsorship", Order = 9)]
         public async Task E2E_PaymasterSponsorship_MultipleSequentialOps()
         {
             var paymasterService = await DeployAndFundPaymasterAsync(10m);
@@ -304,6 +309,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster with insufficient deposit fails", Order = 10)]
         public async Task E2E_PaymasterSponsorship_InsufficientDeposit_Fails()
         {
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
@@ -353,6 +359,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster deposit balance tracking", Order = 11)]
         public async Task E2E_PaymasterDeposit_BalanceTracking()
         {
             var paymasterService = await DeployPaymasterAsync();
@@ -374,6 +381,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster gas accounting validation", Order = 12)]
         public async Task E2E_PaymasterSponsorship_GasAccountingValidation()
         {
             var paymasterService = await DeployAndFundPaymasterAsync(10m);
@@ -426,6 +434,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster with custom paymaster data", Order = 13)]
         public async Task E2E_PaymasterSponsorship_WithPaymasterData()
         {
             var paymasterService = await DeployAndFundPaymasterAsync(5m);

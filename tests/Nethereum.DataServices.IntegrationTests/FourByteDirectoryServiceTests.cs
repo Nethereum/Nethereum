@@ -1,4 +1,5 @@
 ﻿using Nethereum.DataServices.FourByteDirectory;
+using Nethereum.Documentation;
 using System.Linq;
 using Xunit;
 
@@ -6,6 +7,7 @@ namespace Nethereum.DataServices.IntegrationTests
 {
     public class FourByteDirectoryServiceTests
     {
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "4Byte function signature lookup", Order = 10)]
         [Fact]
         public async void ShouldGetFunctionSignatureByHexSignature()
         {
@@ -17,6 +19,7 @@ namespace Nethereum.DataServices.IntegrationTests
             Assert.Equal("balanceOf()", signature.Signatures[0].TextSignature);
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "4Byte event signature lookup", Order = 11)]
         [Fact]
         public async void ShouldGetEventSignatureByHexSignature()
         {

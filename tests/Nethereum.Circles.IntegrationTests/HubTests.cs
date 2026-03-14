@@ -8,6 +8,7 @@ using Nethereum.GnosisSafe;
 using Nethereum.GnosisSafe.ContractDefinition;
 using Nethereum.Model;
 using Nethereum.Web3;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Circles.IntegrationTests
@@ -24,6 +25,7 @@ namespace Nethereum.Circles.IntegrationTests
         int chainId = 100;
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "circles", "Hub contract: calculate issuance", Order = 5)]
         public async Task ShouldCalculateIssuance()
         {
             var web3 = new Nethereum.Web3.Web3("https://rpc.aboutcircles.com/");
@@ -33,6 +35,7 @@ namespace Nethereum.Circles.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "circles", "Mint personal CRC via Safe execution", Order = 6)]
         public async Task ShouldPersonalMint()
         {
             var privateKey = "";

@@ -1,5 +1,6 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Wallet.Bip32;
+﻿using Nethereum.Documentation;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Accounts.Bip32;
 using System.Diagnostics;
 
 namespace Nethereum.Wallet.UnitTests
@@ -32,6 +33,7 @@ namespace Nethereum.Wallet.UnitTests
         [InlineData("0x76933C9e4C1B635EaBB6F5273d4bd2DdFcc4379a", 17)]
         [InlineData("0x7cFfb4E2fdF3F40c210b21A972E73Df1cC3806B3", 18)]
         [InlineData("0xF07fB895F441C46264d1FABD6eb3C757A2E7f9e0", 19)]
+        [NethereumDocExample(DocSection.Signing, "hd-wallets", "Light HD wallet derivation (zero-dependency)", Order = 5)]
         public void ShouldFindAccountUsingIndex(string address, int index)
         {
             var wallet = new MinimalHDWallet(Words, Passphrase);
@@ -42,6 +44,7 @@ namespace Nethereum.Wallet.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "hd-wallets", "Light HD wallet with standard test mnemonic", Order = 6)]
         public void Test()
         {
             var wallet = new MinimalHDWallet("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about", null);

@@ -16,6 +16,7 @@ using Nethereum.Contracts.Standards.ENS;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
@@ -102,6 +103,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "ENS forward resolution: name to address", SkillName = "built-in-standards", Order = 3)]
         public async void ShouldResolveAddressFromMainnet()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
@@ -154,6 +156,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "ENS reverse resolution: address to name", SkillName = "built-in-standards", Order = 4)]
         public async void ShouldReverseResolveAddressFromMainnet()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
@@ -245,7 +248,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(description));
         }
 
-        [Fact]
+        [Fact(Skip = "This is an example of resolving a name that is only stored offchain, so it will fail if the offchain resolver not running")]
         public async void ShouldResolveAddressOfflineMatoken()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);

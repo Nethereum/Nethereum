@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Circles.IntegrationTests
@@ -21,6 +22,7 @@ namespace Nethereum.Circles.IntegrationTests
         string humanAddress2 = "0x42cEDde51198D1773590311E2A340DC06B24cB37";
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "circles", "Query total balance via Circles RPC", Order = 1)]
         public async Task ShouldGetBalances()
         {
             
@@ -38,6 +40,7 @@ namespace Nethereum.Circles.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "circles", "Paginated transaction history via Circles RPC", Order = 2)]
         public async Task ShouldGetTransactionHistoryAsync()
         {
             //var avatar = "0xc5d6c75087780e0c18820883cf5a580bb3a4d834";
@@ -66,6 +69,7 @@ namespace Nethereum.Circles.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "circles", "Query trust relationships via Circles RPC", Order = 3)]
         public async Task ShouldGetTrustRelationsAsync()
         {
             //var avatar = "0xc5d6c75087780e0c18820883cf5a580bb3a4d834";
@@ -95,6 +99,7 @@ namespace Nethereum.Circles.IntegrationTests
 
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "circles", "Query avatar info via Circles RPC", Order = 4)]
         public async Task ShouldGetAvatarInfoAsync()
         {
             //var avatar = "0xc5d6c75087780e0c18820883cf5a580bb3a4d834";

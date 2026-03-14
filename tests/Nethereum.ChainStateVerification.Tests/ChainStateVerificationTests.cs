@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.ChainStateVerification;
 using Nethereum.Consensus.LightClient;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Model;
@@ -15,6 +16,7 @@ namespace Nethereum.ChainStateVerification.Tests
     public class ChainStateVerificationTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Verified State Backend Account Proof", Order = 6)]
         public async Task VerifiedStateBackend_ReturnsAccountFromProof()
         {
             var trustedHeader = CreateTrustedHeader();
@@ -38,6 +40,7 @@ namespace Nethereum.ChainStateVerification.Tests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Storage Proof Verification", Order = 7)]
         public async Task StorageProofVerifier_ReturnsStorageValue()
         {
             var trustedHeader = CreateTrustedHeader();

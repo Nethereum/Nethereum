@@ -3,6 +3,7 @@ using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.ABI.UnitTests

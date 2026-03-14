@@ -1,4 +1,5 @@
-﻿using Nethereum.JsonRpc.WebSocketStreamingClient;
+﻿using Nethereum.Documentation;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.RPC.Reactive.Eth.Transactions;
 using System;
@@ -19,6 +20,7 @@ namespace Nethereum.WebSocketsStreamingTest
         {
             this.url = url;
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "Enrich pending transactions with full details")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)
@@ -26,7 +28,7 @@ namespace Nethereum.WebSocketsStreamingTest
                 client = new StreamingWebSocketClient(url);
                 client.Error += Client_Error;
             }
-            
+
             var pendingTransactionsSubscription = new EthNewPendingTransactionObservableSubscription(client);
 
             pendingTransactionsSubscription.GetSubscribeResponseAsObservable().SelectMany(async subscriptionId =>

@@ -1,5 +1,6 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Documentation;
 using System.Numerics;
 using Xunit; 
  // ReSharper disable ConsiderUsingConfigureAwait  
@@ -26,6 +27,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "Get FilterInputBuilder from web3.Eth", SkillName = "events", Order = 5)]
         public void GetEventFilterBuilderFromContractService()
         {
             var web3 = new Web3.Web3();
@@ -40,6 +42,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "Get FilterInputBuilder from Event<T>", SkillName = "events", Order = 6)]
         public void GetEventFilterBuilderFromEvent()
         {
             var web3 = new Web3.Web3();

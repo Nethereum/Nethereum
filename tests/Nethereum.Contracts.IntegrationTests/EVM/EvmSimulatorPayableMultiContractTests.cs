@@ -57,7 +57,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
-            program = await evmSimulator.ExecuteAsync(program);
+            program = await evmSimulator.ExecuteWithCallStackAsync(program);
             var totalBalanceReceiver = programContext.ExecutionStateService.CreateOrGetAccountExecutionState(payableReceiverContractAddress).Balance.ExecutionBalance;
             var totalBalanceSender = programContext.ExecutionStateService.CreateOrGetAccountExecutionState(payableTestSenderContractAddress).Balance.ExecutionBalance;
             Assert.Equal(5000, totalBalanceReceiver);
@@ -69,7 +69,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             programContext = new ProgramContext(callInput, executionStateService);
             var program2 = new Program(code.HexToByteArray(), programContext);
-            await evmSimulator.ExecuteAsync(program2);
+            await evmSimulator.ExecuteWithCallStackAsync(program2);
             var resultEncoded = program2.ProgramResult.Result;
             var result = new PaidAmountOutputDTO().DecodeOutput(resultEncoded.ToHex());
             Assert.Equal(5000, result.ReturnValue1);
@@ -104,7 +104,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
-            program = await evmSimulator.ExecuteAsync(program);
+            program = await evmSimulator.ExecuteWithCallStackAsync(program);
            
 
             var sourceMapUtil = new SourceMapUtil();

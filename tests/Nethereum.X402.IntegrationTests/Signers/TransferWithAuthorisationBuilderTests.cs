@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Documentation;
 using Nethereum.X402.Models;
 using Nethereum.X402.Signers;
 using Xunit;
@@ -32,6 +33,7 @@ public class TransferWithAuthorisationBuilderTests
     }
 
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "TransferWithAuthorisationBuilder: build authorization from payment requirements", Order = 20)]
     public void BuildFromPaymentRequirements_SetsCorrectAddresses()
     {
         var builder = new TransferWithAuthorisationBuilder();

@@ -1,4 +1,5 @@
 ﻿using Nethereum.Contracts;
+using Nethereum.Documentation;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
@@ -20,6 +21,7 @@ namespace Nethereum.WebSocketsStreamingTest
             this.url = url;
             this.rpcURl = rpcURl;
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "Track Uniswap pair price via sync events")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)

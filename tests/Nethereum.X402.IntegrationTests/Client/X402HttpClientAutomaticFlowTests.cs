@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.X402.Client;
 using Nethereum.X402.Models;
 using System.Net;
@@ -31,6 +32,7 @@ public class X402HttpClientAutomaticFlowTests
     /// Use Case: UC-C1 Scenario 1
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: create client with options", Order = 1)]
     public void Given_ValidOptions_When_CreatingClient_Then_ClientIsCreated()
     {
         // Arrange
@@ -132,6 +134,7 @@ public class X402HttpClientAutomaticFlowTests
     /// Use Case: UC-C2 Scenario 1 - Complete automatic payment flow
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: automatic 402 payment flow", Order = 2)]
     public async Task Given_402Response_When_MakingRequest_Then_PaymentIsAutomaticallySentAndRetried()
     {
         // Arrange
@@ -228,6 +231,7 @@ public class X402HttpClientAutomaticFlowTests
     /// Use Case: UC-C2 Scenario 3 - Amount exceeds maximum
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: max payment protection", Order = 3)]
     public async Task Given_PaymentExceedsMaximum_When_MakingRequest_Then_ExceptionIsThrown()
     {
         // Arrange
@@ -663,6 +667,7 @@ public class X402HttpClientAutomaticFlowTests
     /// Use Case: UC-C4 Scenario 1
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: parse payment response headers", Order = 4)]
     public void Given_ResponseWithPayment_When_UsingExtensions_Then_SettlementIsParsed()
     {
         // Arrange
@@ -752,6 +757,7 @@ public class X402HttpClientAutomaticFlowTests
     /// Use Case: UC-C4 Scenario 5
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: extract transaction hash from response", Order = 5)]
     public void Given_PaymentResponse_When_GettingTransactionHash_Then_HashIsReturned()
     {
         // Arrange
@@ -775,6 +781,7 @@ public class X402HttpClientAutomaticFlowTests
     /// Use Case: UC-C4 Scenario 6
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: extract payer address from response", Order = 6)]
     public void Given_PaymentResponse_When_GettingPayerAddress_Then_AddressIsReturned()
     {
         // Arrange

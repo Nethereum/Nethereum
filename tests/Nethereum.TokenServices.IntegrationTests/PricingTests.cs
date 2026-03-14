@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Nethereum.TokenServices.ERC20.Pricing;
 using Xunit;
 using Xunit.Abstractions;
@@ -34,6 +35,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output.WriteLine($"ETH price: ${prices["ethereum"].Price:N2}");
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Batch price service multi-chain", Order = 5)]
         [Fact]
         public async Task GetPrices_ReturnsBatchPrices()
         {
@@ -51,6 +53,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Native token price fetch", Order = 6)]
         [Fact]
         public async Task GetNativeTokenPrice_ReturnsPrice()
         {

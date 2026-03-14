@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Nethereum.Signer;
 using Nethereum.Siwe.Core;
 using Nethereum.Util;
@@ -10,6 +11,7 @@ namespace Nethereum.Siwe.UnitTests
     public class ServiceTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "Build, sign, and validate a SIWE message", Order = 1)]
         public async Task ShouldBuildANewMessageWithANewNonceAndValidateAfterSigning()
         {
             var domain = "login.xyz";
@@ -37,6 +39,7 @@ namespace Nethereum.Siwe.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "SIWE with in-memory session nonce management", Order = 2)]
         public async Task ShouldBuildANewMessageWithANewNonceAndValidateAfterSigning_UsingInMemoryNonceManagement()
         {
             var domain = "login.xyz";

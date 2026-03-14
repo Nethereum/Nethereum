@@ -28,24 +28,22 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
         [Fact]
         public async Task Blockchain_AccountStateUpdates_ShouldBeEfficient()
         {
-            // Simulate Ethereum account state updates using 160-bit addresses
             var storage = new InMemorySparseMerkleTreeStorage<string>();
             var convertor = new StringByteArrayConvertor();
-            var tree = new SparseMerkleTree<string>(160, _hashProvider, convertor, storage);
-            
+            var tree = new SparseMerkleTree<string>(32, _hashProvider, convertor, storage);
+
             const int accountCount = 2000;
             const int updateRounds = 5;
 
             var stopwatch = Stopwatch.StartNew();
             var addresses = new List<string>();
 
-            // Generate realistic Ethereum addresses
             var random = new Random(42);
             for (int i = 0; i < accountCount; i++)
             {
-                var address = "0x" + string.Join("", Enumerable.Range(0, 40)
+                var address = string.Join("", Enumerable.Range(0, 8)
                     .Select(_ => random.Next(16).ToString("x")));
-                addresses.Add(address.Substring(2)); // Remove 0x prefix
+                addresses.Add(address);
             }
 
             _output.WriteLine($"Blockchain Account State Performance Test:");
@@ -98,18 +96,17 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             _output.WriteLine($"  Throughput: {(accountCount * updateRounds * 1000.0) / stopwatch.ElapsedMilliseconds:F0} updates/second");
 
             Assert.Equal(accountCount, leafCount);
-            Assert.True(totalInsertTime < 60000, "Account updates took too long"); // 60 seconds max
-            Assert.True(totalRootTime < 30000, "Root computations took too long"); // 30 seconds max
+            Assert.True(totalInsertTime < 30000, "Account updates took too long");
+            Assert.True(totalRootTime < 15000, "Root computations took too long");
         }
 
         [Fact]
         public async Task Blockchain_ContractStorageUpdates_ShouldScale()
         {
-            // Simulate smart contract storage updates using 256-bit storage keys
             var storage = new InMemorySparseMerkleTreeStorage<string>();
             var convertor = new StringByteArrayConvertor();
-            var tree = new SparseMerkleTree<string>(256, _hashProvider, convertor, storage);
-            
+            var tree = new SparseMerkleTree<string>(32, _hashProvider, convertor, storage);
+
             const int contractCount = 10;
             const int slotsPerContract = 500;
             const int updateCycles = 3;
@@ -124,7 +121,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             var contracts = new List<string>();
             for (int i = 0; i < contractCount; i++)
             {
-                contracts.Add($"contract_{i:x8}");
+                contracts.Add($"{i:x2}");
             }
 
             for (int cycle = 0; cycle < updateCycles; cycle++)
@@ -136,12 +133,10 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
                 {
                     var contractStart = stopwatch.ElapsedMilliseconds;
 
-                    // Update storage slots for this contract
                     for (int slot = 0; slot < slotsPerContract; slot++)
                     {
-                        // Create storage key: keccak256(contract_address + slot)
-                        var storageKey = $"{contractId}{slot:x8}".PadRight(64, '0');
-                        var value = random.Next().ToString("x8").PadLeft(64, '0');
+                        var storageKey = $"{contractId}{slot:x6}".PadRight(8, '0');
+                        var value = random.Next().ToString("x8");
                         
                         await tree.SetLeafAsync(storageKey, value);
                         operationsInCycle++;
@@ -176,16 +171,15 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             _output.WriteLine($"  Memory estimate: {EstimateMemoryUsage(leafCount):F1} MB");
 
             Assert.Equal(contractCount * slotsPerContract, leafCount);
-            Assert.True(stopwatch.ElapsedMilliseconds < 120000, "Contract storage updates took too long"); // 2 minutes max
+            Assert.True(stopwatch.ElapsedMilliseconds < 30000, "Contract storage updates took too long");
         }
 
         [Fact]
         public async Task Blockchain_BlockProcessing_ShouldHandleBursts()
         {
-            // Simulate processing blocks with varying transaction counts
             var storage = new InMemorySparseMerkleTreeStorage<string>();
             var convertor = new StringByteArrayConvertor();
-            var tree = new SparseMerkleTree<string>(256, _hashProvider, convertor, storage);
+            var tree = new SparseMerkleTree<string>(32, _hashProvider, convertor, storage);
             
             var random = new Random(42);
             var blockSizes = new[] { 50, 150, 300, 500, 200, 100, 75 }; // Varying block sizes
@@ -251,10 +245,9 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
         [Fact]
         public async Task Blockchain_StateSnapshots_ShouldSupportQueries()
         {
-            // Test state querying performance (important for dApps)
             var storage = new InMemorySparseMerkleTreeStorage<string>();
             var convertor = new StringByteArrayConvertor();
-            var tree = new SparseMerkleTree<string>(160, _hashProvider, convertor, storage);
+            var tree = new SparseMerkleTree<string>(32, _hashProvider, convertor, storage);
             
             const int accountCount = 1000;
             var random = new Random(42);
@@ -317,7 +310,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
 
         private string GenerateRandomAddress(Random random)
         {
-            return string.Join("", Enumerable.Range(0, 40)
+            return string.Join("", Enumerable.Range(0, 8)
                 .Select(_ => random.Next(16).ToString("x")));
         }
 

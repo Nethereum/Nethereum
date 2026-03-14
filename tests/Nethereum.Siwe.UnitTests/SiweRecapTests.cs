@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Nethereum.Documentation;
 using Nethereum.Siwe.Core;
 using Nethereum.Siwe.Core.Recap;
 using Xunit;
@@ -8,6 +9,7 @@ namespace Nethereum.Siwe.UnitTests
     public class SiweRecapTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "RECAP capability-based authorization", Order = 6)]
         public void BasicTest()
         {
             string SiweRecapUri = "did:key:example";
@@ -68,6 +70,7 @@ namespace Nethereum.Siwe.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "RECAP fluent builder pattern", Order = 7)]
         public void BuilderTest()
         {
             string SiweRecapUri = "did:key:example";
@@ -114,6 +117,7 @@ namespace Nethereum.Siwe.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "RECAP statement-permission matching", Order = 8)]
         public void MatchTest()
         {
             string SiweRecapUri = "did:key:example";

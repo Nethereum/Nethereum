@@ -7,6 +7,7 @@ using Nethereum.Beaconchain.LightClient;
 using Nethereum.Beaconchain.LightClient.Responses;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
+using Nethereum.Documentation;
 using Nethereum.Signer.Bls;
 using Nethereum.Ssz;
 using Xunit;
@@ -16,6 +17,7 @@ namespace Nethereum.Consensus.LightClient.Tests
     public class LightClientServiceTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "light-client", "Merkle Proof Execution Branch Verification", Order = 1)]
         public void MerkleProof_ExecutionBranch_VerifiesCorrectly()
         {
             var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
@@ -87,6 +89,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "light-client", "Light Client Initialization and State Persistence", Order = 2)]
         public async Task InitializeAsync_PopulatesStateAndPersists()
         {
             var bootstrap = TestDataFactory.CreateBootstrap(slot: 1, blockNumber: 100);
@@ -106,6 +109,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "light-client", "Light Client Update with BLS Aggregate Verification", Order = 3)]
         public async Task UpdateAsync_VerifiesAggregateAndUpdatesState()
         {
             var bootstrap = TestDataFactory.CreateBootstrap(slot: 1, blockNumber: 100);

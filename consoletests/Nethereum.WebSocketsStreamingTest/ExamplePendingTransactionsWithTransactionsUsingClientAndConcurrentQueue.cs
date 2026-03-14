@@ -1,4 +1,5 @@
-﻿using Nethereum.JsonRpc.WebSocketStreamingClient;
+﻿using Nethereum.Documentation;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.RPC.Reactive.Eth.Transactions;
 using System;
@@ -58,6 +59,7 @@ namespace Nethereum.WebSocketsStreamingTest
             Console.WriteLine("Error on client Queue");
             EnqueueNewClient();
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "High-throughput pending tx with client pooling")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)

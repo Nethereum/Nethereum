@@ -5,9 +5,9 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text.Json.Nodes;
 using Newtonsoft.Json;
 
-await AssemblyPublisher.PublishAssemblies(@"../../../Staging", @"../../../Libraries/assemblies.json");
+//await AssemblyPublisher.PublishAssemblies(@"../../../Staging", @"../../../Libraries/assemblies.json");
 //await AssemblyPublisher.PublishAssemblies(@"../../../NetCore", @"../../../Libraries/core-assemblies.json");
-//await AssemblyPublisher.PublishAssemblies(@"../../../NetDapps", @"../../../Libraries/net-dapps.json");
+await AssemblyPublisher.PublishAssemblies(@"../../../NetDapps", @"../../../Libraries/net-dapps.json");
 
 public class AssemblyMetadata
 {
@@ -26,7 +26,7 @@ public class AssemblyPublisher
     {
 
         var files = Directory.GetFiles(path);
-        var ipfsService = new Nethereum.Web3.IpfsHttpService("https://ipfs.infura.io:5001", "", "");
+        var ipfsService = new Nethereum.Web3.IpfsHttpService("https://ipfs.infura.io:5001", "281C18Roe6qOWojynqpXk4QmZWk", "6cd75e73df418f1ce25c55b577db3287");
         var metadataList = new List<AssemblyMetadata>();
         foreach (var file in files)
         {

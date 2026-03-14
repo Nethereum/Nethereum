@@ -59,7 +59,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
-            await evmSimulator.ExecuteAsync(program);
+            await evmSimulator.ExecuteWithCallStackAsync(program);
             var resultEncoded = program.ProgramResult.Result;
             var result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());
 
@@ -71,7 +71,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             callInput = transferFunction.CreateCallInput(contractAddress);
             programContext = new ProgramContext(callInput, executionStateService);
             program = new Program(code.HexToByteArray(), programContext);
-            await evmSimulator.ExecuteAsync(program);
+            await evmSimulator.ExecuteWithCallStackAsync(program);
 
             balanceOfFunction.Owner = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045";
             callInput = balanceOfFunction.CreateCallInput(contractAddress);
@@ -79,7 +79,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             programContext = new ProgramContext(callInput, executionStateService);
             program = new Program(code.HexToByteArray(), programContext);
-            await evmSimulator.ExecuteAsync(program);
+            await evmSimulator.ExecuteWithCallStackAsync(program);
             resultEncoded = program.ProgramResult.Result;
             result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());
 

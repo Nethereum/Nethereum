@@ -3,6 +3,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 // ReSharper disable ConsiderUsingConfigureAwait
 

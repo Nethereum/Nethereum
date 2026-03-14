@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Nethereum.ChainStateVerification.Caching;
+using Nethereum.Documentation;
 using Nethereum.Model;
 using Xunit;
 
@@ -83,6 +84,7 @@ namespace Nethereum.ChainStateVerification.Tests.Caching
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Verified State Cache Account Storage", Order = 8)]
         public void SetAccount_StoresAndRetrievesAccount()
         {
             var stateRoot = new byte[] { 1, 2, 3, 4 };

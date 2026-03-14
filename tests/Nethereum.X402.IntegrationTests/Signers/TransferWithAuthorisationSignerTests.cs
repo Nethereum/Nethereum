@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
+using Nethereum.Documentation;
 using Nethereum.X402.Models;
 using Nethereum.X402.Signers;
 using Xunit;
@@ -20,6 +21,7 @@ public class TransferWithAuthorisationSignerTests
     private const string VerifyingContract = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "TransferWithAuthorisationSigner: sign authorization with private key", Order = 21)]
     public async Task SignWithPrivateKeyAsync_ProducesValidSignature()
     {
         var signer = new TransferWithAuthorisationSigner();

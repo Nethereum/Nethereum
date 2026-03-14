@@ -1,4 +1,5 @@
-﻿using MyProject.Contracts.MyWorld.Tables;
+﻿using Nethereum.Documentation;
+using MyProject.Contracts.MyWorld.Tables;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Mud.IntegrationTests.MudTest.Tables;
 using Nethereum.Mud.Repositories.EntityFramework;
@@ -11,6 +12,7 @@ namespace Nethereum.Mud.IntegrationTests
     public class TablePredicateBuilderTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-tables", "Predicate builder with SQL generation", Order = 5)]
         public void ShouldCreateEfSqlHexPredicateWithAndEqualOrEqualAndNotEqual()
         {
             var predicateBuilder = new TablePredicateBuilder<ItemTableRecord, ItemTableRecord.ItemKey, ItemTableRecord.ItemValue>("0xABC123");

@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.X402.Models;
 using Nethereum.X402.Server;
 
@@ -19,6 +20,7 @@ public class RoutePaymentConfigTests
     /// Use Case: UC-CORE-1 Scenario 1
     /// </summary>
     [Fact]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "RoutePaymentConfig: configure payment-protected endpoints", Order = 30)]
     public void Given_PaymentRequirements_When_CreatingRouteConfig_Then_ConfigurationIsValid()
     {
         // Arrange

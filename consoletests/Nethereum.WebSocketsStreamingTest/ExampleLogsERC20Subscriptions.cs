@@ -1,5 +1,6 @@
 ﻿using Nethereum.Contracts;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Documentation;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
@@ -19,6 +20,7 @@ namespace Nethereum.WebSocketsStreamingTest
         {
             this.url = url;
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "Stream ERC20 Transfer events")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)
@@ -27,7 +29,6 @@ namespace Nethereum.WebSocketsStreamingTest
                 client.Error += Client_Error;
             }
 
-            //Subscribing to blockHeaders to keep it alive 
             var blockHeaderSubscription = new EthNewBlockHeadersObservableSubscription(client);
 
             blockHeaderSubscription.GetSubscribeResponseAsObservable().Subscribe(subscriptionId =>

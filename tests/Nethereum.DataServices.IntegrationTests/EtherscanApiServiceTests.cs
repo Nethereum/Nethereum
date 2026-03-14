@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Xunit;
 using Nethereum.DataServices.Etherscan.Responses.Contract;
 using System.Runtime.Serialization;
@@ -32,6 +33,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
 
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Etherscan ABI retrieval", Order = 1)]
         [Fact]
         public async void ShouldGetAbi()
         {
@@ -61,8 +63,9 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
 
         }
 
+        [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Etherscan source code retrieval", Order = 2)]
         [Fact]
-        public async void ShouldGetContract()  
+        public async void ShouldGetContract()
         {
             await ThrottleEtherscanCallAsync(async () =>
             {
@@ -231,6 +234,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
             });
         }
 
+        [NethereumDocExample(DocSection.DataServices, "etherscan-api", "Etherscan gas oracle", Order = 1)]
         [Fact]
         public async Task ShouldGetGasOracle()
         {
@@ -247,6 +251,7 @@ namespace Nethereum.DataServices.Etherscan.IntegrationTests
             });
         }
 
+        [NethereumDocExample(DocSection.DataServices, "etherscan-api", "Etherscan confirmation time estimate", Order = 2)]
         [Fact]
         public async Task ShouldEstimateConfirmationTime()
         {

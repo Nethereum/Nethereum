@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Nethereum.Signer;
 using Nethereum.Web3.Accounts;
-using Nethereum.Wallet.Bip32;
+using Nethereum.Accounts.Bip32;
 using Nethereum.Wallet;
 using Nethereum.Wallet.WalletAccounts;
 

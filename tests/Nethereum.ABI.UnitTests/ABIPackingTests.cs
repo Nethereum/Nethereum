@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Xunit;
@@ -153,6 +154,7 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "abi-encoding", "keccak256(abi.encodePacked(...)) with explicit types", Order = 4)]
         public virtual void ShouldEncodeSha3UsingTypes()
         {
             //0x407D73d8a49eeb85D32Cf465507dd71d507100c1
@@ -180,6 +182,7 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "abi-encoding", "Packed encoding from Parameter-attributed class", Order = 5)]
         public virtual void ShouldEncodeParams()
         {
             var abiEncode = new ABIEncode();

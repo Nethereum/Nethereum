@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	<TargetFrameworks>net6.0</TargetFrameworks>
+	<TargetFrameworks>net8.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.JsonRpc.WebSocketClient\Nethereum.JsonRpc.WebSocketClient.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.RPC.Reactive\Nethereum.RPC.Reactive.csproj" />

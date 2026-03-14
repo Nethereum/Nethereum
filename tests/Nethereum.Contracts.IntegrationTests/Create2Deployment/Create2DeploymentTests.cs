@@ -1,6 +1,7 @@
 ﻿using Nethereum.Contracts.IntegrationTests.CQS;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "create2-deployment", "Deploy deterministic proxy and verify", SkillName = "create2-deployment")]
         public async Task ShouldDeployDeterministicDeployer()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
@@ -70,6 +72,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "create2-deployment", "Deploy contract via CREATE2 and verify address", SkillName = "create2-deployment", Order = 1)]
         public async Task ShouldDeployCreate2UsingDeterministicDeployer()
         {
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
@@ -101,6 +104,7 @@ namespace Nethereum.Contracts.IntegrationTests.Create2Deployment
 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "create2-deployment", "Deploy typed contract via CREATE2 with ERC-20 verification", SkillName = "create2-deployment", Order = 2)]
         public async Task ShouldDeployCreate2UsingDeterministicDeployerUsingTypedDeployment()
         {
             var privateKeyCustomSigner = "541dbf545002f8832bcabbe05dd5dd86ee11a3f21ea6711b2ed192afc103fa41";

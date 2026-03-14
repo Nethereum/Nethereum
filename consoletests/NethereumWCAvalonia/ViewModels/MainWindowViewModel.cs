@@ -145,7 +145,7 @@ namespace NethereumWCAvalonia.ViewModels
             {
                 var options = new SignClientOptions()
                 {
-                    ProjectId = "",
+                    ProjectId = "97d8fb2db9753c13645fd37d6920b2cc",
                     Metadata = new Metadata()
                     {
                         Description = "An example project to showcase WalletConnectSharpv2",

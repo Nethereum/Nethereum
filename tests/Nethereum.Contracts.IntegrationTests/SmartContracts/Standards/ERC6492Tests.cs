@@ -1,6 +1,7 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
     { 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "ERC-6492 signature validation for pre-deploy contracts", SkillName = "built-in-standards", Order = 2)]
         public async Task ShouldValidateOfflineAsync()
         {
             var create2FactoryAddress = "0xBf07a0Df119Ca234634588fbDb5625594E2a5BCA";
@@ -22,7 +24,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             var originalSignature = "0xc0f8db6019888d87a0afc1299e81ef45d3abce64f63072c8d7a6ef00f5f82c1522958ff110afa98b8c0d23b558376db1d2fbab4944e708f8bf6dc7b977ee07201b00";
 
 
-            var web3 = new Web3.Web3("https://polygon-mainnet.public.blastapi.io");
+            var web3 = new Web3.Web3("https://api.zan.top/polygon-mainnet");
             var signatureValidationERC6492 = web3.Eth.SignatureValidationPredeployContractERC6492;
           
             var signatureERC6492 = signatureValidationERC6492.BuildSignature(create2FactoryAddress, factoryCallData.HexToByteArray(), originalSignature.HexToByteArray());

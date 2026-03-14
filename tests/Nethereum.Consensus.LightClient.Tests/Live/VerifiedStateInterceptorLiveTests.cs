@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Nethereum.ChainStateVerification;
 using Nethereum.ChainStateVerification.Interceptor;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Util;
@@ -23,6 +24,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Verified Balance via Interceptor", Order = 1)]
         public async Task GetBalance_WithInterceptor_ReturnsVerifiedBalance()
         {
             TestHelpers.EnsureNativeLibrary();
@@ -246,6 +248,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Web3 UseVerifiedState Extension", Order = 2)]
         public async Task Web3Extension_UseVerifiedState_Works()
         {
             TestHelpers.EnsureNativeLibrary();

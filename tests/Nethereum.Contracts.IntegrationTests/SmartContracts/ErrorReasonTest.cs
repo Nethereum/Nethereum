@@ -2,6 +2,7 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using System.Numerics;
 using Xunit;
 using static Nethereum.Contracts.IntegrationTests.SmartContracts.ErrorReasonTest;
@@ -50,6 +51,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
          */
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "error-handling", "Catch SmartContractRevertException from query call", SkillName = "error-handling", Order = 3)]
         public async void ShouldThrowErrorDecodingCall()
         {
             //Parity does throw an RPC exception if the call is reverted, no info included
@@ -84,6 +86,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "error-handling", "Catch SmartContractRevertException on gas estimation", SkillName = "error-handling", Order = 4)]
         public async void ShouldThrowErrorOnEstimation()
         {
             //Parity does throw an RPC exception if the call is reverted, no info included

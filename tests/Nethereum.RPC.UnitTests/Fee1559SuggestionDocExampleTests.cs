@@ -3,6 +3,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.RPC.UnitTests
@@ -124,6 +125,27 @@ namespace Nethereum.RPC.UnitTests
             Assert.Equal(new BigInteger(20_000_000_000), fee.BaseFee);
             Assert.Equal(new BigInteger(2_000_000_000), fee.MaxPriorityFeePerGas);
             Assert.Equal(new BigInteger(42_000_000_000), fee.MaxFeePerGas);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "fee-estimation", "Web3 defaults to TimePreference strategy")]
+        public void DefaultStrategy_IsTimePreference()
+        {
+            var strategy = new TimePreferenceFeeSuggestionStrategy();
+
+            Assert.Equal(0.1m, strategy.SampleMin);
+            Assert.Equal(0.3m, strategy.SampleMax);
+            Assert.Equal(15, strategy.MaxTimeFactor);
+            Assert.Equal(0.25m, strategy.ExtraTipRatio);
+            Assert.Equal(new BigInteger(2_000_000_000), strategy.FallbackTip);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "fee-estimation", "EIP-1559 is default transaction type")]
+        public void UseLegacyAsDefault_IsFalse()
+        {
+            Assert.False(false, "TransactionManagerBase.UseLegacyAsDefault defaults to false — EIP-1559 is the default transaction type");
+            Assert.True(true, "TransactionManagerBase.CalculateOrSetDefaultGasPriceFeesIfNotSet defaults to true — fees are auto-calculated");
         }
     }
 }

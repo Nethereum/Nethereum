@@ -6,6 +6,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.X402.Blockchain;
 using Nethereum.X402.Models;
 using Nethereum.X402.Signers;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.X402.IntegrationTests.Blockchain;
@@ -24,6 +25,8 @@ public class X402TransferWithAuthorisation3009ServiceTests
     private const string FacilitatorPrivateKey = "0x7580e6fc491f1c871f00a0fae31c2224c6aba908e116b8da44ee8cd927b990b0";
 
     [Fact]
+    [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "EIP-3009 TransferWithAuthorization: verify valid payment", SkillName = "built-in-standards", Order = 10)]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "Transfer model: verify payment authorization", Order = 10)]
     public async Task VerifyPaymentAsync_WithValidPayment_ReturnsValid()
     {
         var service = CreateService();
@@ -211,6 +214,8 @@ public class X402TransferWithAuthorisation3009ServiceTests
     }
 
     [Fact]
+    [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "EIP-3009 TransferWithAuthorization: settle payment on-chain", SkillName = "built-in-standards", Order = 11)]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "Transfer model: settle payment on-chain", Order = 11)]
     public async Task SettlePaymentAsync_WithValidPayment_SucceedsOnChain()
     {
         var service = CreateService();

@@ -12,6 +12,7 @@ using Nethereum.Signer;
 using Nethereum.StandardTokenEIP20;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.Web3;
+using Nethereum.Documentation;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -28,6 +29,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "send-useroperation", "Full UserOp workflow: create account, deploy ERC20, transfer tokens", Order = 1)]
         public async Task E2E_CreateAccount_DeployERC20_TransferTokens_FullWorkflow()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -114,6 +116,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "send-useroperation", "Batch transfer to multiple ERC20 recipients via UserOp", Order = 2)]
         public async Task E2E_BatchTransfer_MultipleERC20Recipients()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -192,6 +195,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-account-deployment", "New account creation with InitCode deploys and executes", Order = 1)]
         public async Task E2E_NewAccountCreation_WithInitCode_DeploysAndExecutes()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -252,6 +256,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "send-useroperation", "Gas estimation accuracy for complex batch operations", Order = 3)]
         public async Task E2E_GasEstimation_AccurateForComplexOperations()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -326,6 +331,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "send-useroperation", "Sequential operations with nonce management", Order = 4)]
         public async Task E2E_MultipleSequentialOperations_NonceManagement()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -393,6 +399,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "send-useroperation", "Approve and TransferFrom two-step token operation", Order = 5)]
         public async Task E2E_ApproveAndTransferFrom_TwoStepTokenOperation()
         {
             var salt1 = (ulong)Random.Shared.NextInt64();
@@ -455,6 +462,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "send-useroperation", "Full validation flow: estimate, sign, submit, execute, verify", Order = 6)]
         public async Task E2E_FullValidationFlow_EstimateSignSubmitExecuteVerify()
         {
             var salt = (ulong)Random.Shared.NextInt64();

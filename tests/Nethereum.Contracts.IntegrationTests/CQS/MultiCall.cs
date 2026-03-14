@@ -7,6 +7,7 @@ using Xunit;
 using System.Numerics;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 // ReSharper disable ConsiderUsingConfigureAwait
 namespace Nethereum.Contracts.IntegrationTests.CQS
 {
@@ -27,7 +28,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "multicall", "Batch multiple contract queries with Multicall")]
+        [NethereumDocExample(DocSection.SmartContracts, "multicall", "Batch multiple contract queries with Multicall")]
         public async void ShouldCheckBalanceOfMultipleAccounts()
         {
             //Connecting to Ethereum mainnet using Infura
@@ -51,7 +52,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
 
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "multicall", "Batch queries using RPC batch handler", Order = 1)]
+        [NethereumDocExample(DocSection.SmartContracts, "multicall", "Batch queries using RPC batch handler", Order = 1)]
         public async void ShouldCheckBalanceOfMultipleAccountsUsingRpcBatch()
         {
             //Connecting to Ethereum mainnet using Infura

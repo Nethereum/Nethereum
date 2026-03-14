@@ -1,5 +1,6 @@
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.ABI.ABIDeserialisation;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Linq;
 using Xunit;
@@ -9,6 +10,7 @@ namespace Nethereum.ABI.UnitTests
     public class AbiEncodeTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "abi-encoding", "abi.encode with explicit types", Order = 1)]
         public virtual void ShouldEncodeMultipleTypesIncludingDynamicString()
         {
             var paramsEncoded =
@@ -21,6 +23,7 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "abi-encoding", "abi.encode with auto-detected types", Order = 2)]
         public virtual void ShouldEncodeMultipleValuesUsingDefaultConvertors()
         {
             var paramsEncoded =
@@ -31,6 +34,7 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "abi-encoding", "Encode from Parameter-attributed class", Order = 3)]
         public virtual void ShouldEncodeParams()
         {
             var paramsEncoded =

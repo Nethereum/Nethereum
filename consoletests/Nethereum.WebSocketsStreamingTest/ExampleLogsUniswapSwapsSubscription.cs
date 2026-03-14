@@ -1,6 +1,7 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Documentation;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.Web3;
@@ -21,6 +22,7 @@ namespace Nethereum.WebSocketsStreamingTest
         {
             this.url = url;
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "Monitor Uniswap swap events")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)

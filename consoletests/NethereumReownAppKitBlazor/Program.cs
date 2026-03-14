@@ -10,7 +10,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 
-var projectId = "";
+var projectId = "97d8fb2db9753c13645fd37d6920b2cc";
 if (string.IsNullOrEmpty(projectId)) {
 	throw new InvalidOperationException("Set your Reown project ID from https://cloud.reown.com/sign-in");
 }

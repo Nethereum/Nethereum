@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using System;
@@ -14,6 +15,7 @@ namespace Nethereum.WebSocketsStreamingTest
             _url = url;
         }
 
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "WebSocket reconnection stress test")]
         public async Task RunAsync(int iterations, int delayBetweenMs)
         {
             for (var i = 1; i <= iterations; i++)

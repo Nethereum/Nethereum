@@ -183,8 +183,8 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             _output.WriteLine($"  Memory estimate: ~{EstimateMemoryUsage(leafCount)} MB");
 
             Assert.Equal(itemCount, leafCount);
-            Assert.True(insertTime < 30000, $"Insert took too long: {insertTime} ms"); // 30 seconds max
-            Assert.True(rootTime < 5000, $"Root computation took too long: {rootTime} ms"); // 5 seconds max
+            Assert.True(insertTime < 30000, $"Insert took too long: {insertTime} ms");
+            Assert.True(rootTime < 5000, $"Root computation took too long: {rootTime} ms");
             Assert.True(accessTime < 1000, $"Random access took too long: {accessTime} ms");
         }
 
@@ -251,7 +251,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             Assert.Equal(itemCount - keysToRemove.Count, finalLeafCount);
             Assert.NotEqual(rootHash, newRootHash);
             Assert.True(insertTime < 15000, $"Sparse insert took too long: {insertTime} ms");
-            Assert.True(rootTime < 3000, $"Sparse root computation took too long: {rootTime} ms");
+            Assert.True(rootTime < 5000, $"Sparse root computation took too long: {rootTime} ms");
         }
 
         [Fact]

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ChainStateVerification;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Util;
@@ -22,6 +23,7 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Consensus, "verified-state", "Verified Storage Proof for Single Slot", Order = 4)]
         public async Task VerifiedStorage_GetSingleSlot_ReturnsProofVerifiedValue()
         {
             try

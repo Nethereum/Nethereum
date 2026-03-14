@@ -2,6 +2,7 @@ using System.Numerics;
 using Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions.SmartSession.ContractDefinition;
 using Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession;
 using Nethereum.AccountAbstraction.IntegrationTests.ERC7579;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
 
@@ -21,6 +22,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "SmartSessionConfig with ERC20 spending limit", Order = 3)]
         public void Scenario_DailyERC20Allowance_SessionKeyCanSpendUpToLimit()
         {
             // SCENARIO: A dApp wants to allow a session key to spend up to 100 USDC per day
@@ -58,6 +60,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "Multi-token spending limits session configuration", Order = 4)]
         public void Scenario_MultiTokenSpendingLimits_SessionKeyCanSpendDifferentTokens()
         {
             // SCENARIO: A gaming dApp allows session key to spend multiple tokens
@@ -99,6 +102,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "ActionDataBuilder for transfer and approve permissions", Order = 5)]
         public void Scenario_TransferAndApprovePermissions_SessionKeyCanDoMultipleERC20Operations()
         {
             // SCENARIO: A DeFi dApp needs a session that can both transfer and approve tokens
@@ -136,6 +140,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "ERC20SpendingLimitBuilder with multiple tokens", Order = 6)]
         public void Given_ERC20SpendingLimitBuilder_When_AddingMultipleTokens_Then_AllTokensAreIncluded()
         {
             // Given: A spending limit builder
@@ -156,6 +161,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "ERC20SpendingLimitBuilder throws on empty build", Order = 7)]
         public void Given_ERC20SpendingLimitBuilder_When_NoTokensAdded_Then_BuildThrows()
         {
             // Given: An empty spending limit builder
@@ -166,6 +172,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "ERC20SpendingLimitBuilder throws on zero limit", Order = 8)]
         public void Given_ERC20SpendingLimitBuilder_When_ZeroLimit_Then_Throws()
         {
             // Given: A spending limit builder
@@ -177,6 +184,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "modular-accounts", "ERC20SpendingLimitBuilder.SingleToken static helper", Order = 9)]
         public void Given_ERC20SpendingLimitBuilder_When_UsingSingleToken_Then_EncodeSucceeds()
         {
             // Given: A single token with limit

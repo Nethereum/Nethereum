@@ -67,7 +67,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             try
             {
-                program = await evmSimulator.ExecuteAsync(program, 0, 0, true);
+                program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
             }
             catch (Exception ex)
             {
@@ -121,7 +121,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var program = new Program(code.HexToByteArray(), programContext);
             var evmSimulator = new EVMSimulator();
 
-            return evmSimulator.ExecuteAsync(program, 0, 0, true);
+            return evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
         }
 
         protected string FindTraceFile(string transactionHash)

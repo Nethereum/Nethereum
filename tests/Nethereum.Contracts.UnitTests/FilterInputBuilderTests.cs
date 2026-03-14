@@ -1,6 +1,7 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Documentation;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -98,6 +99,7 @@ namespace Nethereum.Contracts.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "FilterInputBuilder: filter by single indexed param", SkillName = "events", Order = 1)]
         public void Can_Assign_To_Topic1()
         {
             var from = "0xc14934679e71ef4d18b6ae927fe2b953c7fd9b91";
@@ -134,6 +136,7 @@ namespace Nethereum.Contracts.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "FilterInputBuilder: OR matching with multiple values", SkillName = "events", Order = 2)]
         public void Can_Assign_Many_Values_To_A_Topic_At_Once()
         {
             var address1 = "0xc14934679e71ef4d18b6ae927fe2b953c7fd9b91";
@@ -184,6 +187,7 @@ namespace Nethereum.Contracts.UnitTests
 
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "FilterInputBuilder: multiple indexed params + block range", SkillName = "events", Order = 3)]
         public void Can_Assign_To_Multiple_Topics()
         {
             var from = "0xc14934679e71ef4d18b6ae927fe2b953c7fd9b91";
@@ -230,6 +234,7 @@ namespace Nethereum.Contracts.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "FilterInputBuilder: multiple contracts", SkillName = "events", Order = 4)]
         public void Assigns_Specified_Contract_Addresses()
         {
             var ContractAddresses = new []

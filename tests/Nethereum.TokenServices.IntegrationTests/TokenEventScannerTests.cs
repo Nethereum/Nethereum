@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Nethereum.TokenServices.ERC20;
 using Nethereum.TokenServices.ERC20.Balances;
 using Nethereum.TokenServices.ERC20.Events;
@@ -24,6 +25,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output = output;
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Token discovery via Transfer events", Order = 9)]
         [Fact]
         public async Task ScanTransferEvents_FindsRecentTransfers()
         {

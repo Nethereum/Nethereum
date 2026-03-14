@@ -4,6 +4,7 @@ using Nethereum.RLP;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using System.Collections.Generic;
 using System.Numerics;
 using Xunit;
@@ -119,6 +120,82 @@ namespace Nethereum.Signer.UnitTests
             var ethSignature = MessageSigner.ExtractEcdsaSignature(signature);
 
             Assert.True(ecKey.VerifyAllowingOnlyLowS(prefixedHash, ethSignature));
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-signing", "Sign EIP-2930 access list transaction")]
+        public void ShouldSignEip2930Transaction()
+        {
+            var signer = new TypeTransactionSigner<Transaction2930>();
+            BigInteger chainId = 1;
+            BigInteger nonce = 0;
+            BigInteger gasPrice = BigInteger.Parse("20000000000");
+            BigInteger gasLimit = 21000;
+            var receiverAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
+            BigInteger amount = BigInteger.Parse("1000000000000000000");
+
+            var transaction = new Transaction2930(
+                chainId, nonce, gasPrice, gasLimit,
+                receiverAddress, amount, null, new List<AccessListItem>());
+
+            var signedRlpHex = signer.SignTransaction(KnownPrivateKey, transaction);
+
+            Assert.False(string.IsNullOrEmpty(signedRlpHex));
+            Assert.NotNull(transaction.Signature);
+            Assert.NotNull(transaction.Signature.R);
+            Assert.NotNull(transaction.Signature.S);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-recovery", "Recover sender address from signed legacy tx")]
+        public void ShouldRecoverSenderFromSignedLegacy()
+        {
+            var signer = new LegacyTransactionSigner();
+            var receiverAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
+            var amount = BigInteger.Parse("1000000000000000000");
+            BigInteger nonce = 0;
+            BigInteger gasPrice = BigInteger.Parse("20000000000");
+            BigInteger gasLimit = 21000;
+
+            var signedRlpHex = signer.SignTransaction(
+                KnownPrivateKey, receiverAddress, amount, nonce, gasPrice, gasLimit);
+
+            var senderAddress = TransactionVerificationAndRecovery.GetSenderAddress(signedRlpHex);
+            Assert.True(KnownAddress.IsTheSameAddress(senderAddress));
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-recovery", "Recover sender address from signed EIP-1559 tx")]
+        public void ShouldRecoverSenderFromSigned1559()
+        {
+            var signer = new Transaction1559Signer();
+            var transaction = new Transaction1559(
+                1, 0, 2000000000, 100000000000,
+                21000, "0x13f022d72158410433cbd66f5dd8bf6d2d129924",
+                BigInteger.Parse("1000000000000000000"), null, new List<AccessListItem>());
+
+            var signedRlpHex = signer.SignTransaction(KnownPrivateKey, transaction);
+
+            var senderAddress = TransactionVerificationAndRecovery.GetSenderAddress(signedRlpHex);
+            Assert.True(KnownAddress.IsTheSameAddress(senderAddress));
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-recovery", "Verify a signed transaction")]
+        public void ShouldVerifySignedTransaction()
+        {
+            var signer = new LegacyTransactionSigner();
+            var receiverAddress = "0x13f022d72158410433cbd66f5dd8bf6d2d129924";
+            var amount = BigInteger.Parse("1000000000000000000");
+            BigInteger nonce = 0;
+            BigInteger gasPrice = BigInteger.Parse("20000000000");
+            BigInteger gasLimit = 21000;
+
+            var signedRlpHex = signer.SignTransaction(
+                KnownPrivateKey, receiverAddress, amount, nonce, gasPrice, gasLimit);
+
+            var isValid = TransactionVerificationAndRecovery.VerifyTransaction(signedRlpHex);
+            Assert.True(isValid);
         }
     }
 }

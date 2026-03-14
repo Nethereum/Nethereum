@@ -2,6 +2,7 @@ using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 using RlpEncoder = Nethereum.RLP.RLP;
 

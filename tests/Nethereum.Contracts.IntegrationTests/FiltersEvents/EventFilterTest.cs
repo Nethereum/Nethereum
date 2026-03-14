@@ -2,7 +2,8 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.XUnitEthereumClients;
-using Xunit; 
+using Nethereum.Documentation;
+using Xunit;
  // ReSharper disable ConsiderUsingConfigureAwait  
  // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
 
@@ -21,7 +22,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Fact]
-        [NethereumDocExample(DocSection.CoreFoundation, "events", "Filter and query contract events")]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "Filter and query contract events")]
         public async Task TestEvent()
         {
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;

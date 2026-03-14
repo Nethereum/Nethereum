@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Diagnostics;
 using System.Numerics;
@@ -34,6 +35,7 @@ namespace Nethereum.Mud.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-tables", "Decode values to typed class", Order = 4)]
         public void ShouldDecodeValuesToType()
         {
             var result = ValueEncoderDecoder.DecodeValues<TableValues>("0x0000000100000000000000000000000000000002000000000000000000000000000000000000000b0000000008000000000000130000000300000004736f6d6520737472696e67");
@@ -45,6 +47,7 @@ namespace Nethereum.Mud.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.MudFramework, "mud-tables", "Encode values from typed class", Order = 3)]
         public void ShouldEncodeValuesFromType()
         {
             var fieldValues = new TableValues()

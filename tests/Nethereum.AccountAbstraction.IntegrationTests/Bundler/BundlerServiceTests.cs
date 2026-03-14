@@ -4,6 +4,7 @@ using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
+using Nethereum.Documentation;
 using Nethereum.XUnitEthereumClients;
 using System.Numerics;
 using Xunit;
@@ -21,6 +22,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "run-bundler", "Send UserOperation returns UserOp hash", Order = 1)]
         public async Task SendUserOperation_WithValidOperation_ReturnsUserOpHash()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -162,6 +164,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "run-bundler", "Get UserOperation by hash after submission", Order = 2)]
         public async Task GetUserOperationByHash_AfterSubmission_ReturnsOperation()
         {
             var salt = (ulong)Random.Shared.NextInt64();
@@ -316,6 +319,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "run-bundler", "Query supported entry points", Order = 3)]
         public async Task SupportedEntryPoints_ReturnsConfiguredEntryPoints()
         {
             var entryPoints = await _fixture.BundlerService.SupportedEntryPointsAsync();
@@ -345,6 +349,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.AccountAbstraction, "run-bundler", "Flush executes pending operations", Order = 4)]
         public async Task Flush_ExecutesPendingOperations()
         {
             var salt = (ulong)Random.Shared.NextInt64();

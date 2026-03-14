@@ -1,7 +1,9 @@
 using Nethereum.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Signer;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using System.Numerics;
 using System.Collections.Generic;
 using Xunit;
@@ -179,6 +181,105 @@ namespace Nethereum.Signer.UnitTests
             Assert.Equal(2, accessListItem.StorageKeys.Count);
             Assert.Equal(storageKey1, accessListItem.StorageKeys[0]);
             Assert.Equal(storageKey2, accessListItem.StorageKeys[1]);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "Create EIP-2930 access list transaction")]
+        public void Transaction2930_CreateWithAccessList()
+        {
+            var chainId = new BigInteger(1);
+            var nonce = new BigInteger(0);
+            var gasPrice = new BigInteger(20000000000);
+            var gasLimit = new BigInteger(21000);
+            var receiverAddress = "0x13978aee95f38490e9769C39B2773Ed763d9cd5F";
+            var amount = new BigInteger(10000000000000000);
+
+            var storageKey = new byte[32];
+            storageKey[31] = 0x01;
+            var accessList = new List<AccessListItem>
+            {
+                new AccessListItem(receiverAddress, new List<byte[]> { storageKey })
+            };
+
+            var tx = new Transaction2930(chainId, nonce, gasPrice, gasLimit, receiverAddress, amount, null, accessList);
+
+            Assert.Equal(TransactionType.LegacyEIP2930, tx.TransactionType);
+            Assert.Equal(chainId, tx.ChainId);
+            Assert.Equal(nonce, tx.Nonce);
+            Assert.Equal(gasPrice, tx.GasPrice);
+            Assert.Equal(gasLimit, tx.GasLimit);
+            Assert.Equal(amount, tx.Amount);
+            Assert.Single(tx.AccessList);
+            Assert.Equal(receiverAddress, tx.AccessList[0].Address);
+
+            var rawEncoded = tx.GetRLPEncodedRaw();
+            Assert.NotNull(rawEncoded);
+            Assert.True(rawEncoded.Length > 0);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "Create EIP-7702 authorization transaction")]
+        public void Transaction7702_CreateWithAuthorisation()
+        {
+            var chainId = new BigInteger(1);
+            var nonce = new BigInteger(0);
+            var maxPriorityFeePerGas = new BigInteger(2000000000);
+            var maxFeePerGas = new BigInteger(100000000000);
+            var gasLimit = new BigInteger(100000);
+            var receiverAddress = "0x13978aee95f38490e9769C39B2773Ed763d9cd5F";
+            var amount = BigInteger.Zero;
+
+            var authChainId = new BigInteger(1);
+            var authAddress = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+            var authNonce = new BigInteger(0);
+
+            var authorisation = new Authorisation7702 { ChainId = authChainId, Address = authAddress, Nonce = authNonce };
+
+            var ecKey = new EthECKey("0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7");
+            var authSigner = new Authorisation7702Signer();
+            var signedAuth = authSigner.SignAuthorisation(ecKey, authorisation);
+
+            var tx = new Transaction7702(
+                chainId, nonce, maxPriorityFeePerGas, maxFeePerGas,
+                gasLimit, receiverAddress, amount, null,
+                new List<AccessListItem>(), new List<Authorisation7702Signed> { signedAuth });
+
+            Assert.Equal(TransactionType.EIP7702, tx.TransactionType);
+            Assert.Equal(chainId, tx.ChainId);
+            Assert.Single(tx.AuthorisationList);
+            Assert.Equal(authAddress, tx.AuthorisationList[0].Address);
+            Assert.NotNull(tx.AuthorisationList[0].R);
+            Assert.NotNull(tx.AuthorisationList[0].S);
+
+            var rawEncoded = tx.GetRLPEncodedRaw();
+            Assert.NotNull(rawEncoded);
+            Assert.True(rawEncoded.Length > 0);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "TransactionFactory detects EIP-1559 and EIP-2930")]
+        public void TransactionFactory_Detects1559And2930()
+        {
+            var chainId = new BigInteger(1);
+            var nonce = new BigInteger(0);
+
+            var tx1559 = new Transaction1559(chainId, nonce, 2000000000, 100000000000, 21000,
+                "0x13978aee95f38490e9769C39B2773Ed763d9cd5F", 10000000000000000, null, null);
+
+            var signer1559 = new Transaction1559Signer();
+            var signedHex1559 = signer1559.SignTransaction(
+                "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7", tx1559);
+            var decoded1559 = TransactionFactory.CreateTransaction(signedHex1559);
+            Assert.Equal(TransactionType.EIP1559, decoded1559.TransactionType);
+
+            var tx2930 = new Transaction2930(chainId, nonce, 20000000000, 21000,
+                "0x13978aee95f38490e9769C39B2773Ed763d9cd5F", 10000000000000000, null, new List<AccessListItem>());
+
+            var signer2930 = new TypeTransactionSigner<Transaction2930>();
+            var signedHex2930 = signer2930.SignTransaction(
+                "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7", tx2930);
+            var decoded2930 = TransactionFactory.CreateTransaction(signedHex2930);
+            Assert.Equal(TransactionType.LegacyEIP2930, decoded2930.TransactionType);
         }
     }
 }

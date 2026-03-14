@@ -1,4 +1,5 @@
 using NBitcoin;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Web3.Accounts;
 using System;
@@ -96,6 +97,7 @@ namespace Nethereum.HdWallet.UnitTests
         [InlineData("0x76933C9e4C1B635EaBB6F5273d4bd2DdFcc4379a", 17)]
         [InlineData("0x7cFfb4E2fdF3F40c210b21A972E73Df1cC3806B3", 18)]
         [InlineData("0xF07fB895F441C46264d1FABD6eb3C757A2E7f9e0", 19)]
+        [NethereumDocExample(DocSection.Signing, "hd-wallets", "Watch-only wallet via PublicWallet", Order = 4)]
         public void ShouldFindPublicKeysAccountUsingIndex(string address, int index)
         {
             var wallet = new Wallet(Words, Password);
@@ -200,6 +202,7 @@ namespace Nethereum.HdWallet.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "hd-wallets", "Restore wallet from mnemonic and derive account", Order = 1)]
         public void ShouldCreateTheDefaultWalletUsingGivenWords()
         {
             var wallet = new Wallet(Words, Password);
@@ -211,6 +214,7 @@ namespace Nethereum.HdWallet.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "hd-wallets", "Derive multiple addresses from mnemonic", Order = 2)]
         public void ShouldFindAddressesUsingGivenWords()
         {
             var wallet = new Wallet(Words, Password);
@@ -242,6 +246,7 @@ namespace Nethereum.HdWallet.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "hd-wallets", "Generate new mnemonic and derive account", Order = 3)]
         public void ShouldGenerateMnemonics()
         {
             var mnemonic = new NBitcoin.Mnemonic(Wordlist.English, WordCount.Twelve);

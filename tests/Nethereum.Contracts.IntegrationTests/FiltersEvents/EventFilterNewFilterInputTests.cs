@@ -5,6 +5,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts.IntegrationTests.CQS;
 using Nethereum.JsonRpc.Client;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit; 
  // ReSharper disable ConsiderUsingConfigureAwait  
  // ReSharper disable AsyncConverter.ConfigureAwaitHighlighting
@@ -60,6 +61,7 @@ namespace Nethereum.Contracts.IntegrationTests.FiltersEvents
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "events", "Filter events by indexed params (from, to, arrays, cross-contract)", SkillName = "events")]
         public async void Test()
         {
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;

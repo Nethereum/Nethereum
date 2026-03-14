@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Documentation;
 using Nethereum.Siwe.Core;
 using Xunit;
 
@@ -8,6 +9,7 @@ namespace Nethereum.Siwe.UnitTests
     {
 
         [Fact]
+        [NethereumDocExample(DocSection.Protocols, "siwe", "Validate SIWE message dates", Order = 5)]
         public void ShouldValidateDates()
         {
             var siweMessage = new SiweMessage();

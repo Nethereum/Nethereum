@@ -126,7 +126,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 "000000000000000000000800695e4bc70000000000000000000000025c17ca56".HexToByteArray());
         }
 
-        [Fact]
+        [Fact(Skip = "No captured state JSON - requires archive node to capture. Diverges at step 8597 due to missing contract code for Chainlink aggregator 0xfdfd9c85...")]
         public async void DebugAaveBorrowFindDivergence()
         {
             var txHash = "0xf5cd117cd777e3548871a0679e81f36625c3829cb57058da231a8188ceda3e97";

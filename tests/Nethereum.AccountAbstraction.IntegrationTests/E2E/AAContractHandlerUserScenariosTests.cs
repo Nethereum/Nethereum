@@ -12,6 +12,7 @@ using Nethereum.Contracts;
 using Nethereum.Contracts.CQS;
 using Nethereum.Contracts.Standards.ERC20;
 using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Web3;
@@ -81,6 +82,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "ERC20-Transfer")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "ERC20 transfer using ERC20ContractService with AA", Order = 10)]
         public async Task Scenario_ERC20Transfer_UsingERC20ContractService_WithAA()
         {
             // SCENARIO: User wants to transfer ERC20 tokens using a smart account
@@ -133,6 +135,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "ERC20-Approve-TransferFrom")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "ERC20 approve and transferFrom with AA", Order = 11)]
         public async Task Scenario_ERC20ApproveAndTransferFrom_WithAA()
         {
             // SCENARIO: User approves a spender, then spender uses transferFrom
@@ -199,6 +202,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "ERC20-StandardService")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "SwitchToAccountAbstraction on web3.Eth.ERC20 built-in service", Order = 12)]
         public async Task Scenario_Web3EthERC20_SwitchToAccountAbstraction()
         {
             // SCENARIO: User wants to use web3.Eth.ERC20 with Account Abstraction
@@ -250,6 +254,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Paymaster-Sponsorship")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster sponsorship via AAContractHandler", Order = 2)]
         public async Task Scenario_PaymasterSponsorship_WithAAHandler()
         {
             // SCENARIO: User wants gas sponsored by a paymaster
@@ -303,6 +308,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Paymaster-WithData")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Paymaster with static data via AAContractHandler", Order = 3)]
         public async Task Scenario_PaymasterWithStaticData_WithAAHandler()
         {
             // SCENARIO: Paymaster requires specific data for validation
@@ -340,6 +346,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Batch-MultipleContracts")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Batch execution across multiple contracts", Order = 4)]
         public async Task Scenario_BatchExecution_MultipleContractCalls()
         {
             // SCENARIO: User wants to execute multiple contract calls atomically
@@ -377,6 +384,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Batch-MultipleOperations")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Batch execution with mixed operations", Order = 5)]
         public async Task Scenario_BatchExecution_MixedOperations()
         {
             // SCENARIO: Execute multiple different operations in one UserOperation
@@ -417,6 +425,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Sequential-Operations")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Sequential operations with nonce increments", Order = 13)]
         public async Task Scenario_SequentialOperations_NonceIncrements()
         {
             // SCENARIO: Multiple sequential operations using the same handler
@@ -467,6 +476,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Full-AAContractHandler-Path")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Full AAContractHandler path with CountRequestAndWaitForReceipt", Order = 14)]
         public async Task Scenario_FullAAContractHandler_CountRequestAndWaitForReceipt()
         {
             // CRITICAL TEST: Uses the actual AAContractHandler path that was timing out
@@ -740,6 +750,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Receipt-Details")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Inspect AATransactionReceipt fields", Order = 15)]
         public async Task Scenario_InspectAAReceipt_AllFieldsPopulated()
         {
             // SCENARIO: User wants to inspect all details of the AA receipt
@@ -789,6 +800,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Config-GasSettings")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Custom gas config with AAGasConfig", Order = 16)]
         public async Task Scenario_CustomGasConfig_AffectsPolling()
         {
             // SCENARIO: User wants custom gas config for receipt polling
@@ -824,6 +836,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Config-FullFluent")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Full fluent configuration of AAContractHandler", Order = 17)]
         public async Task Scenario_FluentConfiguration_AllOptions()
         {
             // SCENARIO: User wants to configure all options using fluent API
@@ -909,6 +922,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Scenario", "Inspect-UserOp")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Create UserOperation for inspection without submitting", Order = 18)]
         public async Task Scenario_CreateUserOperationForInspection()
         {
             // SCENARIO: User wants to inspect the UserOperation before sending

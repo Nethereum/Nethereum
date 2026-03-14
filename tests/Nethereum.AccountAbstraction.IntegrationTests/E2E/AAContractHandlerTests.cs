@@ -5,6 +5,7 @@ using Nethereum.AccountAbstraction.IntegrationTests.E2E.Fixtures;
 using Nethereum.AccountAbstraction.IntegrationTests.TestCounter;
 using Nethereum.AccountAbstraction.IntegrationTests.TestCounter.ContractDefinition;
 using Nethereum.Contracts;
+using Nethereum.Documentation;
 using Nethereum.Signer;
 using Xunit;
 
@@ -45,6 +46,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-ContractHandler")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Switch contract service to AA with EthECKey", Order = 1)]
         public async Task Given_ContractService_When_SwitchedToAA_Then_CanExecuteTransaction()
         {
             // GIVEN: A smart account configured with factory (deployed on first use)
@@ -84,6 +86,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-ContractHandler")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Switch contract service to AA with private key string", Order = 2)]
         public async Task Given_ContractService_When_SwitchedToAAWithPrivateKey_Then_CanExecuteTransaction()
         {
             // GIVEN: A smart account configured with factory using private key string
@@ -117,6 +120,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "AA20-InitCode")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Auto-deploy undeployed account with FactoryConfig", Order = 3)]
         public async Task Given_UndeployedAccount_When_CallWithFactory_Then_AutoDeploys()
         {
             // GIVEN: An account address that doesn't exist yet
@@ -156,6 +160,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "AA20-InitCode")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "InitCode is empty after account is deployed", Order = 4)]
         public async Task Given_DeployedAccount_When_CheckInitCode_Then_InitCodeIsEmpty()
         {
             // GIVEN: A deployed smart account (first call deploys via initCode)
@@ -192,6 +197,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-Nonce")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Nonce management in AA handler", Order = 5)]
         public async Task Given_AAHandler_When_Transaction_Then_NonceIsUsed()
         {
             // GIVEN: A smart account configured with factory
@@ -227,6 +233,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-GasEstimation")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Gas estimation via AA handler", Order = 6)]
         public async Task Given_AAHandler_When_EstimateGas_Then_ReturnsTotal()
         {
             // GIVEN: A smart account configured with factory
@@ -256,6 +263,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-SendUserOperation")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Send request without waiting returns UserOp hash", Order = 7)]
         public async Task Given_AAHandler_When_SendRequestOnly_Then_ReturnsUserOpHash()
         {
             // GIVEN: A smart account configured with factory
@@ -288,6 +296,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-ExecuteBatch")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Batch execute multiple calls in one UserOp", Order = 1)]
         public async Task Given_AAHandler_When_BatchExecute_Then_AllCallsSucceed()
         {
             // GIVEN: A smart account configured with factory
@@ -324,6 +333,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-Query")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Query calls use eth_call not UserOp", Order = 8)]
         public async Task Given_AAHandler_When_QueryCall_Then_DoesNotUseUserOp()
         {
             // GIVEN: A smart account with a transaction already executed
@@ -353,6 +363,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-Configuration")]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Fluent configuration with WithGasConfig", Order = 9)]
         public async Task Given_AAHandler_When_FluentConfiguration_Then_ChainsCorrectly()
         {
             // GIVEN: A smart account configured with factory

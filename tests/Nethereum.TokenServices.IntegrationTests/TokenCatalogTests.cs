@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Nethereum.TokenServices.Caching;
 using Nethereum.TokenServices.ERC20.Catalog;
 using Nethereum.TokenServices.ERC20.Discovery;
@@ -33,6 +34,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Token catalog query", Order = 7)]
         [Fact]
         public async Task AddAndGetTokens_RoundTrip()
         {
@@ -173,6 +175,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Token catalog refresh", Order = 8)]
         [Fact]
         public async Task RefreshAsync_AddsNewTokens()
         {

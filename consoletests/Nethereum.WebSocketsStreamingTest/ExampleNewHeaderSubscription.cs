@@ -1,4 +1,5 @@
-﻿using Nethereum.JsonRpc.WebSocketStreamingClient;
+﻿using Nethereum.Documentation;
+using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using System;
 using System.Reactive.Linq;
@@ -16,6 +17,7 @@ namespace Nethereum.WebSocketsStreamingTest
         {
             this.url = url;
         }
+        [NethereumDocExample(DocSection.CoreFoundation, "realtime-streaming", "Subscribe to new block headers")]
         public async Task SubscribeAndRunAsync()
         {
             if (client == null)

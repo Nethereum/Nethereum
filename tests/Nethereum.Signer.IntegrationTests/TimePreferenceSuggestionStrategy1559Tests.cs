@@ -5,6 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Fee1559Suggestions;
 using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 // ReSharper disable ConsiderUsingConfigureAwait
 

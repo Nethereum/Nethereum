@@ -12,6 +12,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Signer.EIP712;
 using Nethereum.Util;
+using Nethereum.Documentation;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -29,6 +30,7 @@ namespace Nethereum.GnosisSafe.IntegrationTests
             
             
             [Fact]
+        [NethereumDocExample(DocSection.DeFi, "gnosis-safe", "EIP-712 Safe transaction encoding", Order = 3)]
         public async void ShouldBeAbleToEncodeTheSameAsTheSmartContract()
         {
             var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Rinkeby);
@@ -78,6 +80,7 @@ namespace Nethereum.GnosisSafe.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.DeFi, "gnosis-safe", "Generate Safe transaction hash for off-chain signing", Order = 4)]
         public void GenerateHash()
         {
             var hashBytes = GnosisSafeService.GetEncodedTransactionDataHash(json, 1, "0x2cF5869Eac6D7809DcF867c0e5cae1E9c5648e70");

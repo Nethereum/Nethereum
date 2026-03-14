@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
@@ -34,9 +35,10 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "Deploy and interact with ERC-1155 multi-token using built-in service", SkillName = "built-in-standards", Order = 1)]
         public async void ShouldDeployCustomAndQueryInteractWithGenericService()
         {
-         
+
             var web3 = _ethereumClientIntegrationFixture.GetWeb3();
             web3.Eth.TransactionManager.UseLegacyAsDefault = true;
 

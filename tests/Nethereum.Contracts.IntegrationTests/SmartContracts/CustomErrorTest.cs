@@ -1,6 +1,7 @@
 ﻿using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Newtonsoft.Json.Linq;
 using System.Numerics;
 using Xunit;
@@ -70,7 +71,8 @@ contract TestToken {
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
-        [Fact] //estimates are done when making a transaction
+        [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "error-handling", "Catch and decode custom error on estimate gas", SkillName = "error-handling")]
         public async void ShouldRetrieveErrorReasonMakingAnEstimateForTransaction()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
@@ -96,6 +98,7 @@ contract TestToken {
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "error-handling", "Catch and decode custom error on query", SkillName = "error-handling", Order = 1)]
         public async void ShouldRetrieveErrorReasonMakingAQuery()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)
@@ -123,6 +126,7 @@ contract TestToken {
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.SmartContracts, "error-handling", "Find and decode error from contract ABI", SkillName = "error-handling", Order = 2)]
         public async void ShouldFindError()
         {
             if (_ethereumClientIntegrationFixture.EthereumClient == EthereumClient.Geth)

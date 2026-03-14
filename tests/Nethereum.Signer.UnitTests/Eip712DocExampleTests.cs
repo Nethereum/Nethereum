@@ -5,6 +5,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Signer.EIP712;
 using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Signer.UnitTests

@@ -6,6 +6,7 @@ using Nethereum.TokenServices.ERC20;
 using Nethereum.TokenServices.ERC20.Balances;
 using Nethereum.TokenServices.ERC20.Discovery;
 using Nethereum.TokenServices.ERC20.Pricing;
+using Nethereum.Documentation;
 using Nethereum.TokenServices.Caching;
 using Xunit;
 using Xunit.Abstractions;
@@ -51,6 +52,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output = output;
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get token list for chain", Order = 4)]
         [Fact]
         public async Task GetTokenList_ReturnsTokensForEthereumMainnet()
         {
@@ -97,6 +99,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             Assert.True(supported, "Ethereum mainnet should be supported");
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get token balances without prices", Order = 2)]
         [Fact]
         public async Task GetAllBalances_ReturnsVitalikBalances()
         {
@@ -127,6 +130,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get all token balances with prices", Order = 1)]
         [Fact]
         public async Task GetBalancesWithPrices_ReturnsBalancesAndPrices()
         {
@@ -399,6 +403,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get balances for specific tokens", Order = 3)]
         [Fact]
         public async Task GetBalancesForTokens_WithSpecificTokens()
         {

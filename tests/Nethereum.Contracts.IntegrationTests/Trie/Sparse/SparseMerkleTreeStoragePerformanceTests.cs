@@ -25,19 +25,19 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             var storage = new InMemorySparseMerkleTreeStorage<string>();
             var iterations = 10000;
 
-            // Test 1: Sequential writes
+            // Test 1: Sequential writes (use hex keys for compatibility with IsInSubtree)
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < iterations; i++)
             {
-                await storage.SetLeafAsync($"key{i}", $"value{i}");
+                await storage.SetLeafAsync($"{i:x8}", $"value{i}");
             }
             sw.Stop();
             _output.WriteLine($"Sequential writes: {iterations} items in {sw.ElapsedMilliseconds}ms ({iterations * 1000.0 / sw.ElapsedMilliseconds:F2} ops/sec)");
 
             // Test 2: Random reads
             var random = new Random(42);
-            var readKeys = Enumerable.Range(0, 1000).Select(_ => $"key{random.Next(iterations)}").ToList();
-            
+            var readKeys = Enumerable.Range(0, 1000).Select(_ => $"{random.Next(iterations):x8}").ToList();
+
             sw.Restart();
             foreach (var key in readKeys)
             {
@@ -51,7 +51,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             var hasLeavesChecks = 100;
             for (int i = 0; i < hasLeavesChecks; i++)
             {
-                await storage.HasLeavesInSubtreeAsync($"key{i}", 4, 32);
+                await storage.HasLeavesInSubtreeAsync($"{i:x8}", 4, 32);
             }
             sw.Stop();
             _output.WriteLine($"HasLeavesInSubtree: {hasLeavesChecks} checks in {sw.ElapsedMilliseconds}ms ({hasLeavesChecks * 1000.0 / sw.ElapsedMilliseconds:F2} ops/sec)");
