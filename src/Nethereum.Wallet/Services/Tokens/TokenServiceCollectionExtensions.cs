@@ -5,6 +5,7 @@ using Nethereum.TokenServices;
 using Nethereum.TokenServices.Caching;
 using Nethereum.TokenServices.ERC20;
 using Nethereum.TokenServices.ERC20.Discovery;
+using Nethereum.DataServices.CoinGecko;
 using Nethereum.TokenServices.ERC20.Pricing;
 using Nethereum.TokenServices.Refresh;
 using Nethereum.Wallet.Storage;
@@ -63,12 +64,13 @@ namespace Nethereum.Wallet.Services.Tokens
 
             services.TryAddSingleton<ITokenPriceProvider>(sp =>
             {
+                var coinGeckoService = sp.GetRequiredService<CoinGeckoApiService>();
                 var cache = sp.GetRequiredService<ICacheProvider>();
                 var embedded = sp.GetRequiredService<EmbeddedCoinMappingProvider>();
                 var mappingDiffStorage = sp.GetRequiredService<ICoinMappingDiffStorage>();
                 var opts = sp.GetRequiredService<TokenServicesOptions>();
                 return new CoinGeckoPriceProvider(
-                    coinGeckoService: null,
+                    coinGeckoService: coinGeckoService,
                     cacheProvider: cache,
                     priceCacheExpiry: opts.PriceCacheExpiry,
                     platformsCacheExpiry: null,
@@ -85,6 +87,13 @@ namespace Nethereum.Wallet.Services.Tokens
                                        !string.IsNullOrEmpty(walletOptions.CacheDirectory);
             });
 
+            services.TryAddSingleton<IPriceRefreshService>(sp =>
+            {
+                var tokenStorage = sp.GetRequiredService<Storage.ITokenStorageService>();
+                var tokenService = sp.GetRequiredService<IErc20TokenService>();
+                return new PriceRefreshService(tokenStorage, tokenService);
+            });
+
             services.TryAddSingleton<ITokenManagementService>(sp =>
             {
                 var tokenService = sp.GetRequiredService<IErc20TokenService>();
@@ -92,13 +101,15 @@ namespace Nethereum.Wallet.Services.Tokens
                 var rpcClientFactory = sp.GetRequiredService<UI.IRpcClientFactory>();
                 var chainService = sp.GetRequiredService<Network.IChainManagementService>();
                 var refreshCoordinator = sp.GetService<IResourceRefreshCoordinator>();
+                var priceRefreshService = sp.GetRequiredService<IPriceRefreshService>();
 
                 return new TokenManagementService(
                     tokenStorage,
                     tokenService,
                     rpcClientFactory,
                     chainService,
-                    refreshCoordinator);
+                    refreshCoordinator,
+                    priceRefreshService);
             });
 
             return services;

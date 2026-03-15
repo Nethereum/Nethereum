@@ -27,27 +27,33 @@ namespace Nethereum.Wallet.Services.Tokens
         private const int DiscoveryDelayBetweenPagesMs = 300;
         private const int ReorgSafetyBuffer = 50;
         private const ulong MaxEventScanBlockRange = 100;
+        private static readonly TimeSpan MaxPriceAge = TimeSpan.FromMinutes(10);
 
         private readonly ITokenStorageService _tokenStorage;
         private readonly IErc20TokenService _tokenService;
         private readonly IRpcClientFactory _rpcClientFactory;
         private readonly IChainManagementService _chainService;
         private readonly IResourceRefreshCoordinator _refreshCoordinator;
+        private readonly IPriceRefreshService _priceRefreshService;
 
         public event EventHandler<TokensUpdatedEventArgs> TokensUpdated;
+
+        public IPriceRefreshService PriceRefreshService => _priceRefreshService;
 
         public TokenManagementService(
             ITokenStorageService tokenStorage,
             IErc20TokenService tokenService,
             IRpcClientFactory rpcClientFactory,
             IChainManagementService chainService,
-            IResourceRefreshCoordinator refreshCoordinator = null)
+            IResourceRefreshCoordinator refreshCoordinator = null,
+            IPriceRefreshService priceRefreshService = null)
         {
             _tokenStorage = tokenStorage ?? throw new ArgumentNullException(nameof(tokenStorage));
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
             _rpcClientFactory = rpcClientFactory ?? throw new ArgumentNullException(nameof(rpcClientFactory));
             _chainService = chainService ?? throw new ArgumentNullException(nameof(chainService));
             _refreshCoordinator = refreshCoordinator;
+            _priceRefreshService = priceRefreshService;
         }
 
         #region Discovery
@@ -437,55 +443,108 @@ namespace Nethereum.Wallet.Services.Tokens
             var settings = await _tokenStorage.GetTokenSettingsAsync();
             var currency = settings?.Currency ?? "usd";
 
-            try
+            if (_priceRefreshService != null)
             {
-                var tokenAddresses = data.Tokens
-                    .Where(t => !t.IsNative && t.Balance > 0)
-                    .Select(t => t.ContractAddress)
-                    .ToList();
+                ClearStalePrices(data);
+                await _tokenStorage.SaveAccountTokenDataAsync(accountAddress, chainId, data);
+                RaiseTokensUpdated(accountAddress, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
 
-                var hasNative = data.Tokens.Any(t => t.IsNative);
+                _priceRefreshService.QueuePriceRefresh(accountAddress, chainId, currency);
 
-                var priceRequest = new BatchPriceRequest(currency)
-                    .AddChain(chainId, tokenAddresses, hasNative);
-
-                var priceResult = await _tokenService.BatchPriceService.GetPricesAsync(priceRequest);
-
-                foreach (var token in data.Tokens.Where(t => !t.IsNative))
+                const int delayBetweenBatchesMs = 2000;
+                while (true)
                 {
-                    if (priceResult.TryGetPrice(chainId, token.ContractAddress, out var price))
+                    var result = await _priceRefreshService.ProcessNextBatchAsync();
+                    if (!result.Processed) break;
+
+                    data = await _tokenStorage.GetAccountTokenDataAsync(result.AccountAddress, result.ChainId);
+                    RaiseTokensUpdated(result.AccountAddress, result.ChainId, data.Tokens, TokenUpdateType.PriceUpdate);
+
+                    if (result.RateLimited) break;
+
+                    await Task.Delay(delayBetweenBatchesMs);
+                }
+            }
+            else
+            {
+                ClearStalePrices(data);
+                await _tokenStorage.SaveAccountTokenDataAsync(accountAddress, chainId, data);
+                RaiseTokensUpdated(accountAddress, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
+
+                await DecorateWithPricesDirectAsync(accountAddress, chainId, data, currency);
+            }
+
+            if (_refreshCoordinator != null)
+            {
+                await _refreshCoordinator.TryProcessNextJobAsync();
+            }
+        }
+
+        private async Task DecorateWithPricesDirectAsync(string accountAddress, long chainId, AccountTokenData data, string currency)
+        {
+            var nativeToken = data.Tokens.FirstOrDefault(t => t.IsNative);
+            if (nativeToken != null)
+            {
+                try
+                {
+                    var nativePrice = await _tokenService.GetNativeTokenPriceAsync(chainId, currency);
+                    if (nativePrice != null)
                     {
-                        token.Price = price.Price;
-                        token.PriceCurrency = currency;
-                        token.Value = CalculateValue(token.Balance, token.Decimals, price.Price);
-                        token.PriceLastUpdated = DateTime.UtcNow;
+                        nativeToken.Price = nativePrice.Price;
+                        nativeToken.PriceCurrency = currency;
+                        nativeToken.Value = CalculateValue(nativeToken.Balance, nativeToken.Decimals, nativePrice.Price);
+                        nativeToken.PriceLastUpdated = DateTime.UtcNow;
+                        data.LastPriceUpdate = DateTime.UtcNow;
+
+                        await _tokenStorage.SaveAccountTokenDataAsync(accountAddress, chainId, data);
+                        RaiseTokensUpdated(accountAddress, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
                     }
                 }
+                catch { }
+            }
 
-                var nativeToken = data.Tokens.FirstOrDefault(t => t.IsNative);
-                if (nativeToken != null && priceResult.TryGetNativePrice(chainId, out var nativePrice))
+            var tokensToPrice = data.Tokens
+                .Where(t => !t.IsNative && t.Balance > 0 && !string.IsNullOrEmpty(t.ContractAddress))
+                .ToList();
+
+            const int priceBatchSize = 25;
+            const int delayBetweenBatchesMs = 2000;
+
+            for (int i = 0; i < tokensToPrice.Count; i += priceBatchSize)
+            {
+                if (i > 0)
                 {
-                    nativeToken.Price = nativePrice.Price;
-                    nativeToken.PriceCurrency = currency;
-                    nativeToken.Value = CalculateValue(nativeToken.Balance, nativeToken.Decimals, nativePrice.Price);
-                    nativeToken.PriceLastUpdated = DateTime.UtcNow;
+                    await Task.Delay(delayBetweenBatchesMs);
                 }
 
-                data.LastPriceUpdate = DateTime.UtcNow;
-                await _tokenStorage.SaveAccountTokenDataAsync(accountAddress, chainId, data);
+                var batch = tokensToPrice.Skip(i).Take(priceBatchSize).ToList();
+                var batchAddresses = batch.Select(t => t.ContractAddress).ToList();
 
-                RaiseTokensUpdated(accountAddress, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
-            }
-            catch
-            {
-                // Price decoration failures are silent - balances still valid
-            }
-            finally
-            {
-                if (_refreshCoordinator != null)
+                try
                 {
-                    await _refreshCoordinator.TryProcessNextJobAsync();
+                    var prices = await _tokenService.GetPricesForTokensAsync(chainId, batchAddresses, currency);
+
+                    var updated = false;
+                    foreach (var token in batch)
+                    {
+                        if (prices.TryGetValue(token.ContractAddress.ToLowerInvariant(), out var price))
+                        {
+                            token.Price = price.Price;
+                            token.PriceCurrency = currency;
+                            token.Value = CalculateValue(token.Balance, token.Decimals, price.Price);
+                            token.PriceLastUpdated = DateTime.UtcNow;
+                            updated = true;
+                        }
+                    }
+
+                    if (updated)
+                    {
+                        data.LastPriceUpdate = DateTime.UtcNow;
+                        await _tokenStorage.SaveAccountTokenDataAsync(accountAddress, chainId, data);
+                        RaiseTokensUpdated(accountAddress, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
+                    }
                 }
+                catch { }
             }
         }
 
@@ -501,6 +560,51 @@ namespace Nethereum.Wallet.Services.Tokens
             var settings = await _tokenStorage.GetTokenSettingsAsync();
             var currency = settings?.Currency ?? "usd";
 
+            if (_priceRefreshService != null)
+            {
+                foreach (var account in accounts)
+                {
+                    foreach (var chainId in chains)
+                    {
+                        var data = await _tokenStorage.GetAccountTokenDataAsync(account, chainId);
+                        if (data?.Tokens != null)
+                        {
+                            ClearStalePrices(data);
+                            await _tokenStorage.SaveAccountTokenDataAsync(account, chainId, data);
+                            RaiseTokensUpdated(account, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
+                        }
+                    }
+                }
+
+                foreach (var account in accounts)
+                {
+                    _priceRefreshService.QueueAllChains(account, chains, currency);
+                }
+
+                const int delayBetweenBatchesMs = 2000;
+                while (true)
+                {
+                    var result = await _priceRefreshService.ProcessNextBatchAsync();
+                    if (!result.Processed) break;
+
+                    var data = await _tokenStorage.GetAccountTokenDataAsync(result.AccountAddress, result.ChainId);
+                    RaiseTokensUpdated(result.AccountAddress, result.ChainId, data.Tokens, TokenUpdateType.PriceUpdate);
+
+                    if (result.RateLimited) break;
+
+                    await Task.Delay(delayBetweenBatchesMs);
+                }
+                return;
+            }
+
+            await DecorateWithPricesDirectBatchAsync(accounts, chains, currency);
+        }
+
+        private async Task DecorateWithPricesDirectBatchAsync(
+            List<string> accounts,
+            List<long> chains,
+            string currency)
+        {
             var allTokensByChain = new Dictionary<long, HashSet<string>>();
             var hasNativeByChain = new Dictionary<long, bool>();
             var accountDataCache = new Dictionary<(string, long), AccountTokenData>();
@@ -579,12 +683,55 @@ namespace Nethereum.Wallet.Services.Tokens
             }
         }
 
+        public async Task RefreshTokenPriceAsync(string accountAddress, long chainId, string contractAddress)
+        {
+            if (_priceRefreshService != null)
+            {
+                var settings = await _tokenStorage.GetTokenSettingsAsync();
+                var currency = settings?.Currency ?? "usd";
+                var success = await _priceRefreshService.RefreshSingleTokenPriceAsync(
+                    accountAddress, chainId, contractAddress, currency);
+
+                if (success)
+                {
+                    var data = await _tokenStorage.GetAccountTokenDataAsync(accountAddress, chainId);
+                    RaiseTokensUpdated(accountAddress, chainId, data.Tokens, TokenUpdateType.PriceUpdate);
+                }
+            }
+        }
+
         private decimal CalculateValue(BigInteger balance, int decimals, decimal price)
         {
             if (balance == 0 || price == 0) return 0;
-            var divisor = BigInteger.Pow(10, decimals);
-            var balanceDecimal = (decimal)balance / (decimal)divisor;
-            return balanceDecimal * price;
+            try
+            {
+                var balanceBigDecimal = UnitConversion.Convert.FromWeiToBigDecimal(balance, decimals);
+                var value = balanceBigDecimal * (Nethereum.Util.BigDecimal)price;
+                return (decimal)value;
+            }
+            catch (OverflowException)
+            {
+                return 0;
+            }
+        }
+
+        private static void ClearStalePrices(AccountTokenData data)
+        {
+            var cutoff = DateTime.UtcNow - MaxPriceAge;
+            foreach (var token in data.Tokens)
+            {
+                if (token.PriceLastUpdated.HasValue && token.PriceLastUpdated.Value < cutoff)
+                {
+                    token.Price = null;
+                    token.Value = null;
+                    token.PriceLastUpdated = null;
+                }
+            }
+
+            if (data.LastPriceUpdate.HasValue && data.LastPriceUpdate.Value < cutoff)
+            {
+                data.LastPriceUpdate = null;
+            }
         }
 
         #endregion
@@ -690,12 +837,22 @@ namespace Nethereum.Wallet.Services.Tokens
 
             var chainResults = await Task.WhenAll(chainTasks);
 
-            await DecorateWithPricesAsync(accounts, chains);
-
             foreach (var chainResult in chainResults)
             {
                 result.ChainResults[chainResult.ChainId] = chainResult;
             }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await DecorateWithPricesAsync(accounts, chains);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Background price refresh failed: {ex.Message}");
+                }
+            });
 
             return result;
         }
@@ -850,7 +1007,17 @@ namespace Nethereum.Wallet.Services.Tokens
 
             await Task.WhenAll(chainTasks);
 
-            await DecorateWithPricesAsync(accounts, chains);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await DecorateWithPricesAsync(accounts, chains);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Background price refresh failed: {ex.Message}");
+                }
+            });
 
             return result;
         }

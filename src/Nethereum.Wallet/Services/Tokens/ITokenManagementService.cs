@@ -90,6 +90,12 @@ namespace Nethereum.Wallet.Services.Tokens
         // === CACHE ===
         Task InitializeCacheAsync(IEnumerable<long> chainIds);
 
+        // === SINGLE TOKEN PRICE REFRESH ===
+        Task RefreshTokenPriceAsync(string accountAddress, long chainId, string contractAddress);
+
+        // === PRICE REFRESH SERVICE ===
+        IPriceRefreshService PriceRefreshService { get; }
+
         // === EVENTS ===
         event EventHandler<TokensUpdatedEventArgs> TokensUpdated;
     }

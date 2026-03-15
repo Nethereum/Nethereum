@@ -4,11 +4,27 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Nethereum.DataServices.CoinGecko.Responses;
 
 namespace Nethereum.DataServices.CoinGecko
 {
+    public class PriceBatchResult
+    {
+        public Dictionary<string, Dictionary<string, decimal>> Prices { get; set; } = new Dictionary<string, Dictionary<string, decimal>>();
+        public List<PriceBatchError> Errors { get; set; } = new List<PriceBatchError>();
+        public bool HasErrors => Errors.Count > 0;
+        public bool HasRateLimitError => Errors.Any(e => e.IsRateLimited);
+    }
+
+    public class PriceBatchError
+    {
+        public List<string> FailedIds { get; set; } = new List<string>();
+        public string ErrorMessage { get; set; }
+        public bool IsRateLimited { get; set; }
+    }
+
     public class CoinGeckoCacheConfiguration
     {
         public bool Enabled { get; set; } = true;
@@ -21,6 +37,26 @@ namespace Nethereum.DataServices.CoinGecko
         public static CoinGeckoCacheConfiguration Disabled => new CoinGeckoCacheConfiguration { Enabled = false };
     }
 
+    public class CoinGeckoApiConfiguration
+    {
+        public string ApiKey { get; set; }
+        public bool IsProApi { get; set; }
+
+        public string BaseApiUrl => IsProApi
+            ? "https://pro-api.coingecko.com/api/v3"
+            : "https://api.coingecko.com/api/v3";
+
+        public string ApiKeyHeaderName => IsProApi
+            ? "x-cg-pro-api-key"
+            : "x-cg-demo-api-key";
+
+        public static CoinGeckoApiConfiguration Demo(string apiKey = null) =>
+            new CoinGeckoApiConfiguration { ApiKey = apiKey, IsProApi = false };
+
+        public static CoinGeckoApiConfiguration Pro(string apiKey) =>
+            new CoinGeckoApiConfiguration { ApiKey = apiKey, IsProApi = true };
+    }
+
     internal class TokenListCacheEntry
     {
         public CoinGeckoTokenList List { get; set; }
@@ -29,15 +65,13 @@ namespace Nethereum.DataServices.CoinGecko
 
     public class CoinGeckoApiService
     {
-        public const string BaseApiUrl = "https://api.coingecko.com/api/v3";
-        public const string AssetPlatformsUrl = BaseApiUrl + "/asset_platforms";
-        public const string CoinsListUrl = BaseApiUrl + "/coins/list?include_platform=true";
-        public const string SimplePriceUrl = BaseApiUrl + "/simple/price";
-        public const string TokenPriceUrlTemplate = BaseApiUrl + "/simple/token_price/{0}";
+        public const string DefaultBaseApiUrl = "https://api.coingecko.com/api/v3";
         public const string TokenListUrlTemplate = "https://tokens.coingecko.com/{0}/all.json";
 
+        private readonly string _baseApiUrl;
         private readonly IRestHttpHelper _restHttpHelper;
         private readonly CoinGeckoCacheConfiguration _cacheConfig;
+        private readonly Dictionary<string, string> _defaultHeaders;
 
         private ConcurrentDictionary<long, string> _chainToPlatformCache;
         private List<CoinGeckoAssetPlatform> _platformsCache;
@@ -52,31 +86,61 @@ namespace Nethereum.DataServices.CoinGecko
         {
         }
 
-        public CoinGeckoApiService(HttpClient httpClient, CoinGeckoCacheConfiguration cacheConfiguration)
+        public CoinGeckoApiService(HttpClient httpClient, CoinGeckoCacheConfiguration cacheConfiguration, CoinGeckoApiConfiguration apiConfiguration = null)
         {
+            var config = apiConfiguration ?? CoinGeckoApiConfiguration.Demo();
+            _baseApiUrl = config.BaseApiUrl;
             _restHttpHelper = new RestHttpHelper(httpClient);
             _cacheConfig = cacheConfiguration ?? CoinGeckoCacheConfiguration.Default;
+            _defaultHeaders = BuildDefaultHeaders(config);
         }
 
         public CoinGeckoApiService() : this(CoinGeckoCacheConfiguration.Default)
         {
         }
 
-        public CoinGeckoApiService(CoinGeckoCacheConfiguration cacheConfiguration)
+        public CoinGeckoApiService(CoinGeckoCacheConfiguration cacheConfiguration, CoinGeckoApiConfiguration apiConfiguration = null)
         {
+            var config = apiConfiguration ?? CoinGeckoApiConfiguration.Demo();
+            _baseApiUrl = config.BaseApiUrl;
             _restHttpHelper = new RestHttpHelper(new HttpClient());
             _cacheConfig = cacheConfiguration ?? CoinGeckoCacheConfiguration.Default;
+            _defaultHeaders = BuildDefaultHeaders(config);
         }
 
         public CoinGeckoApiService(IRestHttpHelper restHttpHelper) : this(restHttpHelper, CoinGeckoCacheConfiguration.Default)
         {
         }
 
-        public CoinGeckoApiService(IRestHttpHelper restHttpHelper, CoinGeckoCacheConfiguration cacheConfiguration)
+        public CoinGeckoApiService(IRestHttpHelper restHttpHelper, CoinGeckoCacheConfiguration cacheConfiguration, CoinGeckoApiConfiguration apiConfiguration = null)
         {
+            var config = apiConfiguration ?? CoinGeckoApiConfiguration.Demo();
+            _baseApiUrl = config.BaseApiUrl;
             _restHttpHelper = restHttpHelper;
             _cacheConfig = cacheConfiguration ?? CoinGeckoCacheConfiguration.Default;
+            _defaultHeaders = BuildDefaultHeaders(config);
         }
+
+        private static Dictionary<string, string> BuildDefaultHeaders(CoinGeckoApiConfiguration apiConfiguration)
+        {
+            var headers = new Dictionary<string, string>
+            {
+                { "accept", "application/json" },
+                { "User-Agent", "Nethereum" }
+            };
+
+            if (!string.IsNullOrEmpty(apiConfiguration?.ApiKey))
+            {
+                headers[apiConfiguration.ApiKeyHeaderName] = apiConfiguration.ApiKey;
+            }
+
+            return headers;
+        }
+
+        private string AssetPlatformsUrl => _baseApiUrl + "/asset_platforms";
+        private string CoinsListUrl => _baseApiUrl + "/coins/list?include_platform=true";
+        private string SimplePriceUrl => _baseApiUrl + "/simple/price";
+        private string SimpleTokenPriceUrlTemplate => _baseApiUrl + "/simple/token_price/{0}";
 
         public async Task<List<CoinGeckoAssetPlatform>> GetAssetPlatformsAsync(bool forceRefresh = false)
         {
@@ -85,8 +149,7 @@ namespace Nethereum.DataServices.CoinGecko
                 return _platformsCache;
             }
 
-            var headers = new Dictionary<string, string> { { "accept", "application/json" } };
-            var platforms = await _restHttpHelper.GetAsync<List<CoinGeckoAssetPlatform>>(AssetPlatformsUrl, headers);
+            var platforms = await _restHttpHelper.GetAsync<List<CoinGeckoAssetPlatform>>(AssetPlatformsUrl, _defaultHeaders);
 
             if (_cacheConfig.Enabled)
             {
@@ -122,8 +185,7 @@ namespace Nethereum.DataServices.CoinGecko
                 return _coinsListCache;
             }
 
-            var headers = new Dictionary<string, string> { { "accept", "application/json" } };
-            var coinsList = await _restHttpHelper.GetAsync<List<CoinGeckoCoin>>(CoinsListUrl, headers);
+            var coinsList = await _restHttpHelper.GetAsync<List<CoinGeckoCoin>>(CoinsListUrl, _defaultHeaders);
 
             if (_cacheConfig.Enabled)
             {
@@ -147,11 +209,10 @@ namespace Nethereum.DataServices.CoinGecko
             }
 
             var url = string.Format(TokenListUrlTemplate, platformId);
-            var headers = new Dictionary<string, string> { { "accept", "application/json" } };
 
             try
             {
-                var tokenList = await _restHttpHelper.GetAsync<CoinGeckoTokenList>(url, headers);
+                var tokenList = await _restHttpHelper.GetAsync<CoinGeckoTokenList>(url, _defaultHeaders);
                 if (_cacheConfig.Enabled)
                 {
                     _tokenListCache[platformId] = new TokenListCacheEntry { List = tokenList, Expiry = DateTime.UtcNow.Add(_cacheConfig.TokenListCacheDuration) };
@@ -185,13 +246,22 @@ namespace Nethereum.DataServices.CoinGecko
             IEnumerable<string> geckoIds,
             string vsCurrency = "usd")
         {
+            var batchResult = await GetPricesWithErrorsAsync(geckoIds, vsCurrency);
+            return batchResult.Prices;
+        }
+
+        public async Task<PriceBatchResult> GetPricesWithErrorsAsync(
+            IEnumerable<string> geckoIds,
+            string vsCurrency = "usd")
+        {
+            var result = new PriceBatchResult();
+
             if (geckoIds == null || !geckoIds.Any())
             {
-                return new Dictionary<string, Dictionary<string, decimal>>();
+                return result;
             }
 
             var idsList = geckoIds.Distinct().ToList();
-            var result = new Dictionary<string, Dictionary<string, decimal>>();
 
             var batchSize = 250;
             var isFirstBatch = true;
@@ -203,24 +273,104 @@ namespace Nethereum.DataServices.CoinGecko
                 }
                 isFirstBatch = false;
 
-                var batch = idsList.Skip(i).Take(batchSize);
+                var batch = idsList.Skip(i).Take(batchSize).ToList();
                 var idsParam = string.Join(",", batch);
                 var url = $"{SimplePriceUrl}?ids={Uri.EscapeDataString(idsParam)}&vs_currencies={vsCurrency}";
-                var headers = new Dictionary<string, string> { { "accept", "application/json" } };
 
                 try
                 {
-                    var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, decimal>>>(url, headers);
+                    var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JsonElement>>>(url, _defaultHeaders);
                     if (batchResult != null)
                     {
                         foreach (var kvp in batchResult)
                         {
-                            result[kvp.Key] = kvp.Value;
+                            var parsed = SafeParseJsonPrices(kvp.Value);
+                            if (parsed.Count > 0)
+                            {
+                                result.Prices[kvp.Key] = parsed;
+                            }
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    var isRateLimited = IsRateLimitError(ex);
+                    result.Errors.Add(new PriceBatchError
+                    {
+                        FailedIds = batch,
+                        ErrorMessage = ex.Message,
+                        IsRateLimited = isRateLimited
+                    });
+                    if (isRateLimited) break;
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<Dictionary<string, Dictionary<string, decimal>>> GetTokenPricesByContractAsync(
+            string platformId,
+            IEnumerable<string> contractAddresses,
+            string vsCurrency = "usd")
+        {
+            var batchResult = await GetTokenPricesByContractWithErrorsAsync(platformId, contractAddresses, vsCurrency);
+            return batchResult.Prices;
+        }
+
+        public async Task<PriceBatchResult> GetTokenPricesByContractWithErrorsAsync(
+            string platformId,
+            IEnumerable<string> contractAddresses,
+            string vsCurrency = "usd")
+        {
+            var result = new PriceBatchResult();
+
+            if (string.IsNullOrEmpty(platformId) || contractAddresses == null || !contractAddresses.Any())
+            {
+                return result;
+            }
+
+            var addressList = contractAddresses.Distinct().ToList();
+
+            var batchSize = 100;
+            var isFirstBatch = true;
+            for (int i = 0; i < addressList.Count; i += batchSize)
+            {
+                if (!isFirstBatch && _cacheConfig.RateLimitDelay > TimeSpan.Zero)
+                {
+                    await Task.Delay(_cacheConfig.RateLimitDelay).ConfigureAwait(false);
+                }
+                isFirstBatch = false;
+
+                var batch = addressList.Skip(i).Take(batchSize).ToList();
+                var addressesParam = string.Join(",", batch);
+                var url = string.Format(SimpleTokenPriceUrlTemplate, platformId) +
+                          $"?contract_addresses={Uri.EscapeDataString(addressesParam)}&vs_currencies={vsCurrency}";
+
+                try
+                {
+                    var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JsonElement>>>(url, _defaultHeaders);
+                    if (batchResult != null)
+                    {
+                        foreach (var kvp in batchResult)
+                        {
+                            var parsed = SafeParseJsonPrices(kvp.Value);
+                            if (parsed.Count > 0)
+                            {
+                                result.Prices[kvp.Key] = parsed;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var isRateLimited = IsRateLimitError(ex);
+                    result.Errors.Add(new PriceBatchError
+                    {
+                        FailedIds = batch,
+                        ErrorMessage = ex.Message,
+                        IsRateLimited = isRateLimited
+                    });
+                    if (isRateLimited) break;
                 }
             }
 
@@ -237,18 +387,20 @@ namespace Nethereum.DataServices.CoinGecko
                 return null;
             }
 
-            var url = string.Format(TokenPriceUrlTemplate, platformId) +
+            var url = string.Format(SimpleTokenPriceUrlTemplate, platformId) +
                       $"?contract_addresses={contractAddress}&vs_currencies={vsCurrency}";
-            var headers = new Dictionary<string, string> { { "accept", "application/json" } };
 
             try
             {
-                var result = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, decimal>>>(url, headers);
-                if (result != null &&
-                    result.TryGetValue(contractAddress.ToLowerInvariant(), out var priceData) &&
-                    priceData.TryGetValue(vsCurrency, out var price))
+                var rawResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JsonElement>>>(url, _defaultHeaders);
+                if (rawResult != null &&
+                    rawResult.TryGetValue(contractAddress.ToLowerInvariant(), out var rawPriceData))
                 {
-                    return price;
+                    var priceData = SafeParseJsonPrices(rawPriceData);
+                    if (priceData.TryGetValue(vsCurrency, out var price))
+                    {
+                        return price;
+                    }
                 }
             }
             catch
@@ -334,6 +486,38 @@ namespace Nethereum.DataServices.CoinGecko
             _coinsListCache = null;
             _coinsListCacheExpiry = DateTime.MinValue;
             _tokenListCache.Clear();
+        }
+
+        private static Dictionary<string, decimal> SafeParseJsonPrices(Dictionary<string, JsonElement> raw)
+        {
+            var result = new Dictionary<string, decimal>();
+            foreach (var kvp in raw)
+            {
+                try
+                {
+                    if (kvp.Value.ValueKind == JsonValueKind.Number)
+                    {
+                        if (kvp.Value.TryGetDecimal(out var decimalValue))
+                        {
+                            result[kvp.Key] = decimalValue;
+                        }
+                        else if (kvp.Value.TryGetDouble(out var doubleValue) &&
+                                 doubleValue >= (double)decimal.MinValue &&
+                                 doubleValue <= (double)decimal.MaxValue)
+                        {
+                            result[kvp.Key] = (decimal)doubleValue;
+                        }
+                    }
+                }
+                catch { }
+            }
+            return result;
+        }
+
+        private static bool IsRateLimitError(Exception ex)
+        {
+            var message = ex.Message?.ToLowerInvariant() ?? "";
+            return message.Contains("429") || message.Contains("rate limit") || message.Contains("too many requests");
         }
     }
 }

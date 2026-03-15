@@ -192,37 +192,79 @@ namespace Nethereum.TokenServices.ERC20.Pricing
             IEnumerable<string> contractAddresses,
             string vsCurrency = "usd")
         {
-            var addresses = contractAddresses?.Select(a => a.ToLowerInvariant()).ToList();
+            var addresses = contractAddresses?.Select(a => a.ToLowerInvariant()).Distinct().ToList();
             if (addresses == null || !addresses.Any())
             {
                 LastUnmappedAddresses = new List<string>();
                 return new Dictionary<string, TokenPrice>();
             }
 
-            var tokenIds = await GetTokenIdsAsync(chainId, addresses);
-
-            LastUnmappedAddresses = addresses
-                .Where(a => !tokenIds.ContainsKey(a))
-                .ToList();
-
-            if (!tokenIds.Any())
-            {
-                return new Dictionary<string, TokenPrice>();
-            }
-
-            var prices = await GetPricesAsync(tokenIds.Values, vsCurrency);
-
             var result = new Dictionary<string, TokenPrice>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kvp in tokenIds)
+            var uncachedAddresses = new List<string>();
+
+            foreach (var address in addresses)
             {
-                if (prices.TryGetValue(kvp.Value, out var price))
+                var cacheKey = $"price:contract:{chainId}:{address}:{vsCurrency}";
+                var cached = await _priceMemoryCache.GetAsync<TokenPrice>(cacheKey);
+                if (cached != null)
                 {
-                    price.ContractAddress = kvp.Key;
-                    result[kvp.Key] = price;
+                    result[address] = cached;
+                }
+                else
+                {
+                    uncachedAddresses.Add(address);
                 }
             }
 
+            if (uncachedAddresses.Any())
+            {
+                var tokenIds = await GetTokenIdsAsync(chainId, uncachedAddresses);
+                var mappedAddresses = new HashSet<string>(tokenIds.Keys, StringComparer.OrdinalIgnoreCase);
+
+                if (tokenIds.Any())
+                {
+                    var prices = await GetPricesAsync(tokenIds.Values, vsCurrency);
+
+                    foreach (var kvp in tokenIds)
+                    {
+                        if (prices.TryGetValue(kvp.Value, out var price))
+                        {
+                            var tokenPrice = new TokenPrice
+                            {
+                                TokenId = price.TokenId,
+                                ContractAddress = kvp.Key,
+                                Price = price.Price,
+                                Currency = vsCurrency,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+
+                            result[kvp.Key] = tokenPrice;
+
+                            var cacheKey = $"price:contract:{chainId}:{kvp.Key}:{vsCurrency}";
+                            await _priceMemoryCache.SetAsync(cacheKey, tokenPrice, _priceCacheExpiry);
+                        }
+                    }
+                }
+            }
+
+            LastUnmappedAddresses = addresses
+                .Where(a => !result.ContainsKey(a))
+                .ToList();
+
             return result;
+        }
+
+        private async Task<string> GetPlatformIdAsync(long chainId)
+        {
+            var platformId = _embeddedProvider.GetPlatform(chainId)?.Id;
+            if (!string.IsNullOrEmpty(platformId))
+                return platformId;
+
+            var platforms = await GetPlatformsAsync();
+            if (platforms.TryGetValue(chainId, out var platform))
+                return platform.Id;
+
+            return null;
         }
 
         public async Task<string> GetTokenIdAsync(long chainId, string contractAddress)
