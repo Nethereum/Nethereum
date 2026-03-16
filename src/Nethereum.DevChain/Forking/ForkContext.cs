@@ -1,6 +1,8 @@
-using Nethereum.DevChain.Server.Configuration;
+using System;
+using System.Threading.Tasks;
+using Nethereum.DevChain.Configuration;
 
-namespace Nethereum.DevChain.Server.Forking
+namespace Nethereum.DevChain.Forking
 {
     public class ForkContext
     {

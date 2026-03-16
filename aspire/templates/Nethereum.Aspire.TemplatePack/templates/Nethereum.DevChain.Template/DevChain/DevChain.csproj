@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nethereum.DevChain.Server" Version="NETHEREUM_VERSION" />
+    <PackageReference Include="Nethereum.DevChain" Version="NETHEREUM_VERSION" />
   </ItemGroup>
 
 </Project>

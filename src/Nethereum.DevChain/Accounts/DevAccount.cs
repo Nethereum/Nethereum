@@ -1,8 +1,9 @@
+using System;
 using System.Numerics;
 using Nethereum.Signer;
 using Nethereum.Web3.Accounts;
 
-namespace Nethereum.DevChain.Server.Accounts
+namespace Nethereum.DevChain.Accounts
 {
     public class DevAccount
     {

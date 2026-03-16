@@ -1,17 +1,17 @@
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
-using Nethereum.DevChain;
+using Nethereum.DevChain.Accounts;
+using Nethereum.DevChain.Configuration;
 using Nethereum.DevChain.Rpc;
-using Nethereum.DevChain.Server.Accounts;
-using Nethereum.DevChain.Server.Configuration;
-using Nethereum.DevChain.Server.Rpc.Handlers;
+using Nethereum.DevChain.Rpc.Handlers;
 using Nethereum.DevChain.Storage.Sqlite;
 
-namespace Nethereum.DevChain.Server.Server
+namespace Nethereum.DevChain.Hosting
 {
     public static class ServiceCollectionExtensions
     {

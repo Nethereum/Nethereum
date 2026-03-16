@@ -1,11 +1,13 @@
+using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Nethereum.DevChain;
-using Nethereum.DevChain.Server.Accounts;
+using Nethereum.DevChain.Accounts;
 
-namespace Nethereum.DevChain.Server.Hosting
+namespace Nethereum.DevChain.Hosting
 {
     public class DevChainHostedService : IHostedService, IDisposable
     {

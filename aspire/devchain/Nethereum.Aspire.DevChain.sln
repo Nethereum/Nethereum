@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Aspire.DevChain",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Aspire.ServiceDefaults", "..\shared\Nethereum.Aspire.ServiceDefaults\Nethereum.Aspire.ServiceDefaults.csproj", "{F8A11547-04C5-45D1-B7D7-1E39E1B06E5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.DevChain.Server", "..\..\src\Nethereum.DevChain.Server\Nethereum.DevChain.Server.csproj", "{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.DevChain", "..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj", "{6DE9950C-83C1-49D1-94A5-273F522AA4E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.CoreChain", "..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj", "{EBD46BE8-A165-41EE-B13D-9E52E2CDE961}"
@@ -153,18 +151,6 @@ Global
 		{F8A11547-04C5-45D1-B7D7-1E39E1B06E5D}.Release|x64.Build.0 = Release|Any CPU
 		{F8A11547-04C5-45D1-B7D7-1E39E1B06E5D}.Release|x86.ActiveCfg = Release|Any CPU
 		{F8A11547-04C5-45D1-B7D7-1E39E1B06E5D}.Release|x86.Build.0 = Release|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Debug|x64.Build.0 = Debug|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Debug|x86.Build.0 = Debug|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Release|x64.ActiveCfg = Release|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Release|x64.Build.0 = Release|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Release|x86.ActiveCfg = Release|Any CPU
-		{82A5F0D5-685A-4BDE-9280-F456D95CBAE2}.Release|x86.Build.0 = Release|Any CPU
 		{6DE9950C-83C1-49D1-94A5-273F522AA4E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6DE9950C-83C1-49D1-94A5-273F522AA4E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6DE9950C-83C1-49D1-94A5-273F522AA4E4}.Debug|x64.ActiveCfg = Debug|Any CPU

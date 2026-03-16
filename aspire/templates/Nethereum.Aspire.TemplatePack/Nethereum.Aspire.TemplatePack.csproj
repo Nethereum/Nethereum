@@ -21,10 +21,12 @@
 
   <PropertyGroup>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <None Condition="Exists('LICENSE.md')" Include="LICENSE.md" Pack="true" PackagePath="$(PackageLicenseFile)" />
+    <None Condition="Exists('README.md')" Include="README.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>
   <ItemGroup>
     <None Condition="Exists('images\logo64x64.png')" Include="images\logo64x64.png" Pack="true" Visible="false" PackagePath="images\logo64x64.png" />

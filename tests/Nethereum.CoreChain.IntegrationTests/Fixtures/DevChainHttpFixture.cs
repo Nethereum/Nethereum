@@ -5,9 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.DevChain;
-using Nethereum.DevChain.Server.Accounts;
-using Nethereum.DevChain.Server.Configuration;
-using Nethereum.DevChain.Server.Server;
+using Nethereum.DevChain.Accounts;
+using Nethereum.DevChain.Configuration;
+using Nethereum.DevChain.Hosting;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Xunit;
 

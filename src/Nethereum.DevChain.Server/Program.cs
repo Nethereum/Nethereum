@@ -1,18 +1,9 @@
-using System.Text.Json;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Nethereum.CoreChain.Rpc;
 using Nethereum.DevChain;
-using Nethereum.DevChain.Server.Accounts;
-using Nethereum.DevChain.Server.Configuration;
-using Nethereum.DevChain.Server.Hosting;
-using Nethereum.DevChain.Server.Server;
-using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.DevChain.Accounts;
+using Nethereum.DevChain.Configuration;
+using Nethereum.DevChain.Hosting;
 
 if (args.Any(a => a == "--help" || a == "-h" || a == "-?"))
 {
@@ -30,107 +21,22 @@ builder.Configuration.GetSection("DevChain").Bind(config);
 
 ApplyCommandLineOverrides(config, args);
 
-builder.Services.AddDevChainServer(config);
-builder.Services.AddCors(options =>
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+builder.AddDevChainServer(config);
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Logging.AddFilter("Nethereum", config.Verbose ? LogLevel.Debug : LogLevel.Information);
 
-builder.Services.AddHostedService(sp =>
-    new DevChainHostedService(
-        sp.GetRequiredService<DevChainNode>(),
-        sp.GetRequiredService<DevAccountManager>(),
-        sp,
-        sp.GetService<ILoggerFactory>()?.CreateLogger<DevChainHostedService>())
-    { AlreadyStarted = true });
-
 var app = builder.Build();
 
 var node = app.Services.GetRequiredService<DevChainNode>();
 var accountManager = app.Services.GetRequiredService<DevAccountManager>();
-var dispatcher = app.Services.GetRequiredService<RpcDispatcher>();
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 await node.StartAsync(accountManager.Accounts.Select(a => a.Address));
 
 PrintBanner(config, accountManager, app);
 
-app.UseCors();
-
-app.MapPost("/", async (HttpContext httpContext) =>
-{
-    try
-    {
-        using var reader = new StreamReader(httpContext.Request.Body);
-        var json = await reader.ReadToEndAsync();
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            httpContext.Response.StatusCode = 400;
-            await httpContext.Response.WriteAsJsonAsync(new { error = "Empty request body" });
-            return;
-        }
-
-        httpContext.Response.ContentType = "application/json";
-
-        if (json.TrimStart().StartsWith('['))
-        {
-            var requests = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequestArray);
-            if (requests != null)
-            {
-                var rpcRequests = requests.Select(ToRpcRequestMessage).ToArray();
-                var responses = await dispatcher.DispatchBatchAsync(rpcRequests);
-                var jsonResponses = responses.Select(ToJsonRpcResponse).ToArray();
-                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(jsonResponses, CoreChainJsonContext.Default.JsonRpcResponseArray));
-                return;
-            }
-        }
-
-        var request = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequest);
-        if (request == null)
-        {
-            httpContext.Response.StatusCode = 400;
-            await httpContext.Response.WriteAsync("{\"error\":\"Invalid JSON-RPC request\"}");
-            return;
-        }
-
-        var rpcRequest = ToRpcRequestMessage(request);
-        var response = await dispatcher.DispatchAsync(rpcRequest);
-        var jsonResponse = ToJsonRpcResponse(response);
-        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-    }
-    catch (JsonException ex)
-    {
-        logger.LogError(ex, "JSON parsing error");
-        httpContext.Response.StatusCode = 400;
-        httpContext.Response.ContentType = "application/json";
-        var errorResponse = new JsonRpcResponse
-        {
-            Id = null,
-            Error = new JsonRpcError { Code = -32700, Message = "Parse error: " + ex.Message }
-        };
-        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Unexpected error");
-        httpContext.Response.StatusCode = 500;
-        httpContext.Response.ContentType = "application/json";
-        var errorMessage = config.Verbose ? $"Internal error: {ex.Message}" : "Internal error";
-        var errorResponse = new JsonRpcResponse
-        {
-            Id = null,
-            Error = new JsonRpcError { Code = -32603, Message = errorMessage }
-        };
-        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-    }
-});
-
-var serverVersion = typeof(Program).Assembly.GetName().Version;
-app.MapGet("/", () => Results.Ok(new { status = "ok", version = $"Nethereum.DevChain/{serverVersion?.Major}.{serverVersion?.Minor}.{serverVersion?.Build}" }));
+app.MapDevChainEndpoints();
 
 app.Run($"http://{config.Host}:{config.Port}");
 
@@ -367,38 +273,4 @@ void PrintBanner(DevChainServerConfig config, DevAccountManager accounts, WebApp
     Console.WriteLine("  Derivation Path: m/44'/60'/0'/0/x");
     Console.ResetColor();
     Console.WriteLine();
-}
-
-RpcRequestMessage ToRpcRequestMessage(JsonRpcRequest request)
-{
-    return new RpcRequestMessage
-    {
-        Id = request.Id,
-        Method = request.Method,
-        JsonRpcVersion = request.Jsonrpc,
-        RawParameters = request.Params.HasValue ? request.Params.Value : null
-    };
-}
-
-JsonRpcResponse ToJsonRpcResponse(RpcResponseMessage response)
-{
-    if (response.HasError)
-    {
-        return new JsonRpcResponse
-        {
-            Id = response.Id,
-            Error = new JsonRpcError
-            {
-                Code = response.Error.Code,
-                Message = response.Error.Message,
-                Data = response.Error.Data
-            }
-        };
-    }
-
-    return new JsonRpcResponse
-    {
-        Id = response.Id,
-        Result = response.Result
-    };
 }

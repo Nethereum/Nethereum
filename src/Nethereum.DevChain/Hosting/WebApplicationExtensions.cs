@@ -1,79 +1,46 @@
+using System;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Rpc;
-using Nethereum.DevChain;
 using Nethereum.DevChain.Accounts;
 using Nethereum.DevChain.Configuration;
-using Nethereum.DevChain.Hosting;
 using Nethereum.JsonRpc.Client.RpcMessages;
-using Xunit;
 
-namespace Nethereum.CoreChain.IntegrationTests.Fixtures
+namespace Nethereum.DevChain.Hosting
 {
-    public class DevChainForkHttpFixture : IAsyncLifetime
+    public static class WebApplicationExtensions
     {
-        private WebApplication? _app;
-        private Task? _runTask;
-
-        public const string PrivateKey = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        public const string Address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-        public const int ChainId = 31337;
-        public const int Port = 18546;
-        public string Url => $"http://127.0.0.1:{Port}";
-
-        public const string UsdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-        public const string WethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-        public const string DaiAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-
-        public Nethereum.Web3.Web3 Web3 { get; private set; } = null!;
-        public Nethereum.Web3.Web3? MainnetWeb3 { get; private set; }
-        public Nethereum.Web3.Accounts.Account Account { get; private set; } = null!;
-        public bool IsAvailable { get; private set; }
-
-        private const string DefaultMainnetRpcUrl = "https://rpc.mevblocker.io";
-
-        public static string GetMainnetRpcUrl() =>
-            Environment.GetEnvironmentVariable("MAINNET_RPC_URL") ?? DefaultMainnetRpcUrl;
-
-        public async Task InitializeAsync()
+        public static WebApplicationBuilder AddDevChainServer(this WebApplicationBuilder builder, DevChainServerConfig config)
         {
-            var mainnetRpc = GetMainnetRpcUrl();
-
-            try
-            {
-                MainnetWeb3 = new Nethereum.Web3.Web3(mainnetRpc);
-                await MainnetWeb3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
-            }
-            catch
-            {
-                IsAvailable = false;
-                return;
-            }
-
-            var config = new DevChainServerConfig
-            {
-                Port = Port,
-                ChainId = ChainId,
-                Storage = "memory",
-                Fork = new ForkConfig { Url = mainnetRpc }
-            };
-
-            var builder = WebApplication.CreateBuilder();
             builder.Services.AddDevChainServer(config);
-            builder.Services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
 
-            _app = builder.Build();
+            builder.Services.AddCors(options =>
+                options.AddDefaultPolicy(policy =>
+                    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
-            var node = _app.Services.GetRequiredService<DevChainNode>();
-            var accountManager = _app.Services.GetRequiredService<DevAccountManager>();
-            var dispatcher = _app.Services.GetRequiredService<RpcDispatcher>();
+            builder.Services.AddHostedService(sp =>
+                new DevChainHostedService(
+                    sp.GetRequiredService<DevChainNode>(),
+                    sp.GetRequiredService<DevAccountManager>(),
+                    sp,
+                    sp.GetService<ILoggerFactory>()?.CreateLogger<DevChainHostedService>()));
 
-            await node.StartAsync(accountManager.Accounts.Select(a => a.Address));
+            return builder;
+        }
 
-            _app.MapPost("/", async (HttpContext httpContext) =>
+        public static WebApplication MapDevChainEndpoints(this WebApplication app)
+        {
+            var dispatcher = app.Services.GetRequiredService<RpcDispatcher>();
+
+            app.UseCors();
+
+            app.MapPost("/", async (HttpContext httpContext) =>
             {
                 try
                 {
@@ -129,67 +96,23 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
                     await httpContext.Response.WriteAsync(
                         JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     httpContext.Response.StatusCode = 500;
                     httpContext.Response.ContentType = "application/json";
                     var errorResponse = new JsonRpcResponse
                     {
                         Id = null,
-                        Error = new JsonRpcError { Code = -32603, Message = "Internal error: " + ex.Message }
+                        Error = new JsonRpcError { Code = -32603, Message = "Internal error" }
                     };
                     await httpContext.Response.WriteAsync(
                         JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
                 }
             });
 
-            _runTask = Task.Run(async () =>
-            {
-                try { await _app.RunAsync($"http://127.0.0.1:{Port}"); }
-                catch (OperationCanceledException) { }
-            });
+            app.MapGet("/", () => Results.Ok(new { status = "ok", service = "Nethereum.DevChain" }));
 
-            await WaitForServerReadyAsync();
-
-            Account = new Nethereum.Web3.Accounts.Account(PrivateKey, ChainId);
-            Account.TransactionManager.UseLegacyAsDefault = true;
-            Web3 = new Nethereum.Web3.Web3(Account, Url);
-            IsAvailable = true;
-        }
-
-        public async Task DisposeAsync()
-        {
-            if (_app != null)
-            {
-                await _app.StopAsync();
-                await _app.DisposeAsync();
-            }
-
-            if (_runTask != null)
-            {
-                try { await _runTask; }
-                catch (OperationCanceledException) { }
-            }
-        }
-
-        private async Task WaitForServerReadyAsync(int maxRetries = 50)
-        {
-            using var client = new HttpClient();
-            for (int i = 0; i < maxRetries; i++)
-            {
-                try
-                {
-                    var content = new StringContent(
-                        "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
-                        System.Text.Encoding.UTF8,
-                        "application/json");
-                    var response = await client.PostAsync(Url, content);
-                    if (response.IsSuccessStatusCode) return;
-                }
-                catch { }
-                await Task.Delay(100);
-            }
-            throw new Exception($"Fork server did not become ready at {Url}");
+            return app;
         }
 
         private static RpcRequestMessage ToRpcRequestMessage(JsonRpcRequest request)

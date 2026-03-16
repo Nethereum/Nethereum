@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Rpc;
-using Nethereum.DevChain.Server.Accounts;
+using Nethereum.DevChain.Accounts;
 using Nethereum.JsonRpc.Client.RpcMessages;
 
-namespace Nethereum.DevChain.Server.Rpc.Handlers
+namespace Nethereum.DevChain.Rpc.Handlers
 {
     public class HardhatStopImpersonatingAccountHandler : RpcHandlerBase
     {

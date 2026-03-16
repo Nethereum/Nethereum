@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Nethereum.Accounts.Bip32;
-using Nethereum.DevChain.Server.Configuration;
+using Nethereum.DevChain.Configuration;
 
-namespace Nethereum.DevChain.Server.Accounts
+namespace Nethereum.DevChain.Accounts
 {
     public class DevAccountManager
     {

@@ -31,6 +31,8 @@ namespace Nethereum.DevChain.Rpc
             registry.RegisterAlias("anvil_mine", "evm_mine");
             registry.RegisterAlias("anvil_snapshot", "evm_snapshot");
             registry.RegisterAlias("anvil_revert", "evm_revert");
+            registry.RegisterAlias("anvil_impersonateAccount", "hardhat_impersonateAccount");
+            registry.RegisterAlias("anvil_stopImpersonatingAccount", "hardhat_stopImpersonatingAccount");
 
             return registry;
         }

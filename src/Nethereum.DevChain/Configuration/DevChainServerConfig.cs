@@ -1,7 +1,6 @@
 using System.Numerics;
-using Nethereum.DevChain;
 
-namespace Nethereum.DevChain.Server.Configuration
+namespace Nethereum.DevChain.Configuration
 {
     public class DevChainServerConfig
     {

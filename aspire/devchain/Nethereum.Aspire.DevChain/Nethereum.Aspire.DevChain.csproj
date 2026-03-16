@@ -12,11 +12,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
-    <ProjectReference Include="..\..\..\src\Nethereum.DevChain.Server\Nethereum.DevChain.Server.csproj" />
+    <ProjectReference Include="..\..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
-    <PackageReference Include="Nethereum.DevChain.Server" Version="5.*" />
+    <PackageReference Include="Nethereum.DevChain" Version="6.*" />
   </ItemGroup>
 
 </Project>
