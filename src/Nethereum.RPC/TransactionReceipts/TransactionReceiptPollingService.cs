@@ -142,6 +142,13 @@ namespace Nethereum.RPC.TransactionReceipts
             }
             var ethGetCode = new EthGetCode(_transactionManager.Client);
             var code = await ethGetCode.SendRequestAsync(transactionReceipt.ContractAddress);
+            var retries = 0;
+            while (code == "0x" && retries < 10)
+            {
+                retries++;
+                await Task.Delay(GetPollingRetryIntervalInMilliseconds()).ConfigureAwait(false);
+                code = await ethGetCode.SendRequestAsync(transactionReceipt.ContractAddress);
+            }
             if (code == "0x")
             {
                 throw new ContractDeploymentException("Contract code not deployed successfully", transactionReceipt);
