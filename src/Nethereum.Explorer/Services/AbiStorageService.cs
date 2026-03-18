@@ -6,6 +6,7 @@ using Nethereum.ABI.ABIDeserialisation;
 using Nethereum.ABI.ABIRepository;
 using Nethereum.BlockchainStore.EFCore;
 using Nethereum.DataServices.ABIInfoStorage;
+using Nethereum.Web3;
 
 namespace Nethereum.Explorer.Services;
 
@@ -22,6 +23,8 @@ public class AbiStorageService : IAbiStorageService
 {
     private readonly IBlockchainDbContextFactory _contextFactory;
     private readonly IABIInfoStorage _compositeStorage;
+    private readonly FileSystemABIInfoStorage _fileSystemStorage;
+    private readonly IWeb3 _web3;
     private readonly ILogger<AbiStorageService> _logger;
     private readonly AbiCacheService _cache;
     private readonly long _chainId;
@@ -29,12 +32,16 @@ public class AbiStorageService : IAbiStorageService
     public AbiStorageService(
         IBlockchainDbContextFactory contextFactory,
         IABIInfoStorage compositeStorage,
+        FileSystemABIInfoStorage fileSystemStorage,
+        IWeb3 web3,
         ILogger<AbiStorageService> logger,
         AbiCacheService cache,
         IOptions<ExplorerOptions> options)
     {
         _contextFactory = contextFactory;
         _compositeStorage = compositeStorage;
+        _fileSystemStorage = fileSystemStorage;
+        _web3 = web3;
         _logger = logger;
         _cache = cache;
         _chainId = options.Value.ChainId;
@@ -73,6 +80,32 @@ public class AbiStorageService : IAbiStorageService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to fetch ABI from external source for {Address}", contractAddress);
+        }
+
+        try
+        {
+            var runtimeBytecode = await _web3.Eth.GetCode.SendRequestAsync(contractAddress);
+            if (!string.IsNullOrEmpty(runtimeBytecode) && runtimeBytecode != "0x")
+            {
+                var matched = _fileSystemStorage.FindABIInfoByRuntimeBytecode(runtimeBytecode);
+                if (matched != null)
+                {
+                    var bound = ABIInfo.FromABI(matched.ABI, contractAddress, matched.ContractName, null, _chainId);
+                    bound.RuntimeSourceMap = matched.RuntimeSourceMap;
+                    bound.RuntimeBytecode = matched.RuntimeBytecode;
+                    bound.Metadata = matched.Metadata;
+                    bound.SourceFileIndex = matched.SourceFileIndex;
+                    bound.InitialiseContractABI();
+                    _fileSystemStorage.RegisterContractAddress(matched.ContractName, contractAddress, _chainId);
+                    await PersistToContractsTableAsync(contractAddress, bound);
+                    _cache.Set(contractAddress, bound);
+                    return bound;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed bytecode-based ABI match for {Address}", contractAddress);
         }
 
         _cache.Set(contractAddress, null);
