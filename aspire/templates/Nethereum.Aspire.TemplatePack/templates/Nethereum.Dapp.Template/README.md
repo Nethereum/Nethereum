@@ -77,7 +77,7 @@ dotnet test IntegrationTests/
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--NethereumVersion` | `6.0.2` | Nethereum NuGet package version |
+| `--NethereumVersion` | `6.0.4` | Nethereum NuGet package version |
 | `--ChainId` | `31337` | Chain ID for the DevChain |
 | `--AspireVersion` | `13.1.1` | .NET Aspire SDK version |
 

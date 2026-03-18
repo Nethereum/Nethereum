@@ -34,7 +34,7 @@ With custom parameters:
 
 ```bash
 dotnet new nethereum-devchain -n MyChain \
-    --NethereumVersion 6.0.0 \
+    --NethereumVersion 6.0.4 \
     --ChainId 42069 \
     --AspireVersion 13.1.1
 ```
@@ -89,7 +89,7 @@ curl -X POST http://localhost:<port> \
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--NethereumVersion` | `6.0.0` | Nethereum NuGet package version for all services |
+| `--NethereumVersion` | `6.0.4` | Nethereum NuGet package version for all services |
 | `--ChainId` | `31337` | Chain ID for the DevChain node |
 | `--AspireVersion` | `13.1.1` | .NET Aspire SDK and hosting package version |
 
