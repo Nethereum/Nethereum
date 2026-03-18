@@ -1,0 +1,97 @@
+@using Nethereum.Explorer.Services
+@using Nethereum.Explorer.Components.Shared
+@using Microsoft.Extensions.Options
+@inject ExplorerLocalizer L
+@inject IOptions<ExplorerOptions> Options
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Options.Value.ExplorerTitle</title>
+    <base href="/" />
+    <link rel="icon" type="image/png" href="@(Options.Value.FaviconUrl ?? "_content/Nethereum.Explorer/favicon.png")" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="@($"{System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "Nethereum.Explorer"}.styles.css")" />
+    <link rel="stylesheet" href="_content/Nethereum.Explorer/app.css" />
+    <link rel="stylesheet" href="_content/Nethereum.Blazor.Solidity/solidity-debugger.css" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark-blue fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <img src="@(Options.Value.LogoUrl ?? "_content/Nethereum.Explorer/nethereum-logo.png")" alt="@Options.Value.ExplorerBrandName" width="28" height="28" class="me-2" />
+                <span class="explorer-brand-name">@Options.Value.ExplorerBrandName</span><span class="explorer-brand-suffix ms-1">@Options.Value.ExplorerBrandSuffix</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">@L[ExplorerKeys.Nav.Dashboard]</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/blocks">@L[ExplorerKeys.Nav.Blocks]</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/transactions">@L[ExplorerKeys.Nav.Txns]</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contracts">@L[ExplorerKeys.Nav.Contracts]</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accounts">@L[ExplorerKeys.Nav.AccountsNav]</a>
+                    </li>
+                    @if (Options.Value.EnablePendingTransactions)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/pending"><i class="bi bi-hourglass-split me-1"></i>Pending</a>
+                        </li>
+                    }
+                    <MudNavItem @rendermode="InteractiveServer" />
+                </ul>
+                <SearchBar @rendermode="InteractiveServer" />
+                <button class="theme-toggle ms-3" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="bi bi-sun-fill" id="themeIcon"></i>
+                </button>
+                <div class="ms-2">
+                    <LanguageSelector @rendermode="InteractiveServer" />
+                </div>
+                <div class="ms-2">
+                    <EIP6963Wallet @rendermode="InteractiveServer" Theme="EIP6963Wallet.ThemeType.None" />
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-fluid explorer-main">
+        <Routes @rendermode="InteractiveServer" />
+    </main>
+
+    <ToastContainer @rendermode="InteractiveServer" />
+
+    <footer class="container-fluid text-center py-4 explorer-footer">
+        <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap explorer-footer-inner">
+            <span class="text-color-secondary">@L[ExplorerKeys.Nav.ExplorerTitle]</span>
+            <span class="explorer-footer-sep">|</span>
+            <a href="https://nethereum.com" target="_blank" rel="noopener" class="explorer-footer-link">nethereum.com</a>
+            <span class="explorer-footer-sep">|</span>
+            <a href="https://github.com/Nethereum/Nethereum" target="_blank" rel="noopener" class="explorer-footer-link"><i class="bi bi-github me-1"></i>GitHub</a>
+            <span class="explorer-footer-sep">|</span>
+            <span class="explorer-footer-powered">@L[ExplorerKeys.Nav.PoweredBy]</span>
+        </div>
+    </footer>
+
+    <script src="_content/Nethereum.Explorer/explorer-interop.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="_content/Nethereum.Blazor/NethereumEIP6963.js"></script>
+    <script src="_framework/blazor.web.js"></script>
+</body>
+
+</html>
