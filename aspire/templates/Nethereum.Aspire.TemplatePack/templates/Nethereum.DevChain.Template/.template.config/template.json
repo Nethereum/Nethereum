@@ -17,7 +17,7 @@
     "NethereumVersion": {
       "type": "parameter",
       "datatype": "string",
-      "defaultValue": "6.0.3",
+      "defaultValue": "6.0.4",
       "description": "Nethereum NuGet package version",
       "replaces": "NETHEREUM_VERSION"
     },

@@ -1,3 +1,4 @@
+using NethereumDapp.Explorer.Components;
 using Nethereum.Explorer.Services;
 using Nethereum.BlockchainStorage.Token.Postgres;
 using Nethereum.BlockchainStore.Postgres;
@@ -62,9 +63,10 @@ app.UseHttpsRedirection();
 app.UseRateLimiter();
 app.UseAntiforgery();
 app.MapStaticAssets();
-app.MapRazorComponents<Nethereum.Explorer.Components.App>()
+app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(
+        typeof(Nethereum.Explorer.Components.App).Assembly,
         typeof(Nethereum.Blazor.EIP6963WalletInterop.EIP6963WalletBlazorInterop).Assembly);
 
 app.MapTokenApiEndpoints();
