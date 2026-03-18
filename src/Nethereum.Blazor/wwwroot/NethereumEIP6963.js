@@ -149,11 +149,13 @@ window.NethereumEIP6963Interop = {
 
     sign: async function (utf8HexMsg) {
         try {
-            const from = await this.getSelectedOrRequestAddress();
-            log("Signing from: " + from);
-            const params = [utf8HexMsg, from];
+            const fromResponse = await this.getSelectedOrRequestAddress();
+            log("Signing from response: " + fromResponse);
+            const parsed = JSON.parse(fromResponse);
+            const fromAddress = parsed.result[0];
+            const params = [utf8HexMsg, fromAddress];
             const method = 'personal_sign';
-            const rpcResponse = await this.eip6963WalletRequest({ method, params, from });
+            const rpcResponse = await this.eip6963WalletRequest({ method, params, fromAddress });
             return JSON.stringify(rpcResponse);
         } catch (e) {
             log("Error signing: " + e);
