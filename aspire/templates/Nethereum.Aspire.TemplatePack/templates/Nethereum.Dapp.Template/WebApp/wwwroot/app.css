@@ -1,0 +1,422 @@
+:root {
+    --bg: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-input: #ffffff;
+    --border: #e2e8f0;
+    --border-input: #cbd5e1;
+    --primary: #0d9488;
+    --primary-dim: rgba(13, 148, 136, 0.08);
+    --primary-hover: #0f766e;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --text-dim: #94a3b8;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --warning-bg: rgba(217, 119, 6, 0.08);
+    --warning-border: rgba(217, 119, 6, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --radius: 10px;
+    --radius-sm: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary-hover); }
+
+/* Navbar */
+.navbar {
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+}
+
+.navbar-brand {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.5px;
+}
+
+.navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.nav-link {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--primary);
+    background-color: var(--primary-dim);
+}
+
+/* Main content */
+.main-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* Cards */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Page headings */
+h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+}
+
+h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 1rem 0;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 0.75rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.3rem;
+}
+
+input[type="text"], input[type="number"], input[type="password"], input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-dim);
+}
+
+input::placeholder {
+    color: var(--text-dim);
+}
+
+/* Buttons */
+button, .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+button:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    box-shadow: var(--shadow-sm);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: var(--bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--border);
+    color: var(--text);
+}
+
+/* Status messages */
+.status-message {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-top: 1rem;
+}
+
+.status-success {
+    background-color: rgba(22, 163, 74, 0.08);
+    color: var(--success);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.status-error {
+    background-color: rgba(220, 38, 38, 0.06);
+    color: var(--danger);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+/* Warning banner (chain mismatch) */
+.warning-banner {
+    padding: 1.25rem 1.5rem;
+    background-color: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+}
+
+.warning-banner h2 {
+    color: var(--warning);
+    margin-bottom: 0.5rem;
+    border: none;
+    padding: 0;
+}
+
+.warning-banner p {
+    color: var(--text-secondary);
+    margin: 0 0 1rem 0;
+}
+
+.warning-banner button {
+    background-color: var(--warning);
+    color: #fff;
+}
+
+.warning-banner button:hover:not(:disabled) {
+    background-color: #b45309;
+}
+
+/* Connected account pill */
+.account-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    background-color: var(--primary-dim);
+    border: 1px solid rgba(13, 148, 136, 0.2);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--primary-hover);
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+.account-pill::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background-color: var(--success);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Contract address display */
+.contract-address {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: var(--primary);
+    background-color: var(--primary-dim);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Token info list */
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+}
+
+.info-list li:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-value {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* Not-connected state */
+.connect-prompt {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.connect-prompt p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Architecture table on home */
+.arch-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.arch-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.arch-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.arch-table td:first-child {
+    font-weight: 600;
+    color: var(--primary-hover);
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+}
+
+/* EIP-6963 Wallet — theme integration via CSS custom properties */
+:root {
+    --wallet-btn-bg: transparent;
+    --wallet-text-color: var(--text);
+    --wallet-border-color: var(--border);
+    --wallet-btn-hover-bg: var(--primary-dim);
+    --wallet-btn-selected-bg: transparent;
+    --wallet-border-selected-color: var(--border);
+    --wallet-dropdown-bg: var(--bg-card);
+    --wallet-item-hover-bg: var(--primary-dim);
+    --wallet-item-hover-color: var(--primary);
+}
+
+.no-theme.wallet-container {
+    width: auto !important;
+}
+
+.no-theme .btnWallet {
+    font-family: inherit !important;
+    font-size: 0.8rem !important;
+    padding: 0.35rem 0.75rem !important;
+    border-radius: var(--radius-sm) !important;
+    width: auto !important;
+    white-space: nowrap !important;
+}
+
+.no-theme .selected-wallet {
+    font-size: 0.8rem !important;
+    gap: 0.4em !important;
+}
+
+.no-theme .wallet-icon {
+    width: 1.25em !important;
+    height: 1.25em !important;
+}
+
+.no-theme .wallet-name {
+    font-size: 0.8rem !important;
+}
+
+.no-theme .wallet-dropdown {
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    right: 0 !important;
+    left: auto !important;
+    width: auto !important;
+    min-width: 14rem !important;
+}
+
+.no-theme .dropdown-item {
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.no-theme .dropdown-item img {
+    width: 1.25em !important;
+    height: 1.25em !important;
+    margin-right: 0.5em !important;
+}

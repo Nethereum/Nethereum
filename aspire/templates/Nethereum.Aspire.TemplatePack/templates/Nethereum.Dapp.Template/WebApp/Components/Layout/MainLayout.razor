@@ -1,0 +1,18 @@
+@inherits LayoutComponentBase
+
+<nav class="navbar">
+    <a href="/" class="navbar-brand">NethereumDapp</a>
+    <div class="navbar-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/token" class="nav-link">Token</a>
+        <EIP6963Wallet Theme="EIP6963Wallet.ThemeType.None" />
+    </div>
+</nav>
+
+<main class="main-content">
+    @Body
+</main>
+
+<footer class="footer">
+    Powered by Nethereum &amp; .NET Aspire
+</footer>

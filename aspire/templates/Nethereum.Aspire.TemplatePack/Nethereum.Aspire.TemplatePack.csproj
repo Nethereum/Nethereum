@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>1.0.3</PackageVersion>
     <PackageId>Nethereum.Aspire.TemplatePack</PackageId>
     <Title>Nethereum Aspire Templates</Title>
     <Authors>Juan Blanco</Authors>

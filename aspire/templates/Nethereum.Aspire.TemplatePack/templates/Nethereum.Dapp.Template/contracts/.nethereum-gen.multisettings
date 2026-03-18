@@ -1,0 +1,15 @@
+[
+    {
+        "paths": [
+            "out/MyToken.sol/MyToken.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "NethereumDapp.ContractServices",
+                "basePath": "../ContractServices",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    }
+]

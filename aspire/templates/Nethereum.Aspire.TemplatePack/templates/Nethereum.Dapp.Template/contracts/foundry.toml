@@ -1,0 +1,20 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/"
+]
+
+[profile.dev]
+optimizer = false
+verbosity = 3
+
+[profile.ci]
+optimizer = true
+optimizer_runs = 200
+verbosity = 1

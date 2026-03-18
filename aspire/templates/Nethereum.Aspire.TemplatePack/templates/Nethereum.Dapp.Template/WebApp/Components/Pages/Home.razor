@@ -1,0 +1,42 @@
+@page "/"
+
+<PageTitle>NethereumDapp</PageTitle>
+
+<h1>NethereumDapp</h1>
+
+<p style="color: var(--text-secondary); margin-bottom: 2rem;">A complete dApp development environment powered by <strong>Nethereum</strong> and <strong>.NET Aspire</strong>.</p>
+
+<div class="card">
+    <h2 class="card-title">Getting Started</h2>
+    <ul class="info-list">
+        <li>
+            <span class="info-label">Token Interaction</span>
+            <a href="/token">Connect your wallet, switch to the DevChain network, deploy &amp; interact with tokens</a>
+        </li>
+        <li>
+            <span class="info-label">Explorer</span>
+            <span>Browse blocks, transactions, and decoded contract calls in the Aspire dashboard</span>
+        </li>
+        <li>
+            <span class="info-label">Contracts</span>
+            <span>Edit Solidity in <code>contracts/src/</code>, rebuild with <code>forge build</code>, regenerate C#</span>
+        </li>
+    </ul>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Architecture</h2>
+    <table class="arch-table">
+        <thead>
+            <tr><th>Service</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>DevChain</td><td>Local Ethereum node with JSON-RPC, EIP-1559, debug tracing</td></tr>
+            <tr><td>Indexer</td><td>Indexes blocks, transactions, token transfers into PostgreSQL</td></tr>
+            <tr><td>Explorer</td><td>Blazor blockchain explorer with contract interaction</td></tr>
+            <tr><td>WebApp</td><td>This dApp UI with EIP-6963 wallet integration</td></tr>
+            <tr><td>LoadGenerator</td><td>Generates test transactions for load testing</td></tr>
+            <tr><td>ContractServices</td><td>Generated C# typed contract access from Solidity ABI</td></tr>
+        </tbody>
+    </table>
+</div>

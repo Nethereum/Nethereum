@@ -1,0 +1,373 @@
+@page "/token"
+@implements IDisposable
+@using Nethereum.Hex.HexTypes
+@using Nethereum.RPC.HostWallet
+@using NethereumDapp.ContractServices.MyToken
+@using NethereumDapp.ContractServices.MyToken.ContractDefinition
+@inject SelectedEthereumHostProviderService SelectedHostProviderService
+@inject IConfiguration Configuration
+
+<PageTitle>Token Interaction</PageTitle>
+
+<h1>MyToken Interaction</h1>
+
+<AuthorizeView Roles="EthereumConnected">
+    <Authorized>
+        @if (SelectedChainId != 0 && SelectedChainId != CHAIN_ID_VALUE)
+        {
+            <div class="warning-banner">
+                <h2>Wrong Network</h2>
+                <p>Your wallet is connected to chain <strong>@SelectedChainId</strong>, but this dApp requires chain <strong>CHAIN_ID_VALUE</strong>.</p>
+                <button @onclick="SwitchToDevChainAsync" disabled="@isSwitchingChain">
+                    @(isSwitchingChain ? "Switching..." : "Switch to NethereumDapp DevChain")
+                </button>
+                @if (!string.IsNullOrEmpty(chainSwitchError))
+                {
+                    <div class="status-message status-error">@chainSwitchError</div>
+                }
+            </div>
+        }
+        else
+        {
+        <div class="account-pill">@SelectedAccount</div>
+
+        <div class="card">
+            <h2 class="card-title">Deploy Token</h2>
+            <div class="form-group">
+                <label>Token Name</label>
+                <input @bind="tokenName" placeholder="MyToken" />
+            </div>
+            <div class="form-group">
+                <label>Token Symbol</label>
+                <input @bind="tokenSymbol" placeholder="MTK" />
+            </div>
+            <div class="form-group">
+                <label>Initial Supply</label>
+                <input @bind="initialSupplyEth" type="number" placeholder="1000000" />
+            </div>
+            <button @onclick="DeployAsync" disabled="@isLoading">
+                @(isLoading ? "Deploying..." : "Deploy")
+            </button>
+
+            @if (!string.IsNullOrEmpty(contractAddress))
+            {
+                <p style="margin-top: 0.75rem;">Contract: <span class="contract-address">@contractAddress</span></p>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(contractAddress))
+        {
+            <div class="card">
+                <h2 class="card-title">Token Info</h2>
+                <button class="btn-secondary" @onclick="LoadTokenInfoAsync" disabled="@isLoading">Refresh</button>
+                @if (tokenInfo != null)
+                {
+                    <ul class="info-list" style="margin-top: 0.75rem;">
+                        <li><span class="info-label">Name</span> <span class="info-value">@tokenInfo.Name</span></li>
+                        <li><span class="info-label">Symbol</span> <span class="info-value">@tokenInfo.Symbol</span></li>
+                        <li><span class="info-label">Decimals</span> <span class="info-value">@tokenInfo.Decimals</span></li>
+                        <li><span class="info-label">Total Supply</span> <span class="info-value">@Web3.Convert.FromWei(tokenInfo.TotalSupply) @tokenInfo.Symbol</span></li>
+                    </ul>
+                }
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Mint Tokens</h2>
+                <div class="form-group">
+                    <label>To Address</label>
+                    <input @bind="mintTo" placeholder="0x..." />
+                </div>
+                <div class="form-group">
+                    <label>Amount (tokens)</label>
+                    <input @bind="mintAmountEth" type="number" placeholder="100" />
+                </div>
+                <button @onclick="MintAsync" disabled="@isLoading">Mint</button>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Transfer Tokens</h2>
+                <div class="form-group">
+                    <label>To Address</label>
+                    <input @bind="transferTo" placeholder="0x..." />
+                </div>
+                <div class="form-group">
+                    <label>Amount (tokens)</label>
+                    <input @bind="transferAmountEth" type="number" placeholder="10" />
+                </div>
+                <button @onclick="TransferAsync" disabled="@isLoading">Transfer</button>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Check Balance</h2>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input @bind="balanceAddress" placeholder="0x..." />
+                </div>
+                <button @onclick="CheckBalanceAsync" disabled="@isLoading">Check</button>
+                @if (balanceResult != null)
+                {
+                    <p style="margin-top: 0.75rem;"><span class="info-label">Balance:</span> <strong>@Web3.Convert.FromWei(balanceResult.Value) tokens</strong></p>
+                }
+            </div>
+        }
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div class="connect-prompt">
+            <p>Connect your wallet using the button in the header to interact with tokens.</p>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="status-message @(isError ? "status-error" : "status-success")">@statusMessage</div>
+}
+
+@code {
+    private string tokenName = "MyToken";
+    private string tokenSymbol = "MTK";
+    private decimal initialSupplyEth = 1_000_000;
+
+    private string? contractAddress;
+    private string mintTo = "";
+    private decimal mintAmountEth = 100;
+    private string transferTo = "";
+    private decimal transferAmountEth = 10;
+    private string balanceAddress = "";
+    private BigInteger? balanceResult;
+
+    private bool isLoading;
+    private bool isError;
+    private string? statusMessage;
+    private string? SelectedAccount;
+    private long SelectedChainId;
+    private bool isSwitchingChain;
+    private string? chainSwitchError;
+
+    private TokenInfoModel? tokenInfo;
+    private MyTokenService? tokenService;
+    private IEthereumHostProvider? _ethereumHostProvider;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ethereumHostProvider = SelectedHostProviderService.SelectedHost;
+        if (_ethereumHostProvider != null)
+        {
+            _ethereumHostProvider.SelectedAccountChanged += OnAccountChanged;
+            _ethereumHostProvider.NetworkChanged += OnNetworkChanged;
+            SelectedAccount = _ethereumHostProvider.SelectedAccount;
+            if (_ethereumHostProvider.Enabled)
+                await ValidateChainAsync();
+        }
+    }
+
+    private async Task OnAccountChanged(string account)
+    {
+        SelectedAccount = account;
+        if (_ethereumHostProvider != null && _ethereumHostProvider.Enabled)
+            await ValidateChainAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnNetworkChanged(long chainId)
+    {
+        SelectedChainId = chainId;
+        contractAddress = null;
+        tokenService = null;
+        tokenInfo = null;
+        balanceResult = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ValidateChainAsync()
+    {
+        try
+        {
+            var web3 = await _ethereumHostProvider!.GetWeb3Async();
+            var chainId = await web3.Eth.ChainId.SendRequestAsync();
+            SelectedChainId = (long)chainId.Value;
+        }
+        catch
+        {
+            SelectedChainId = 0;
+        }
+    }
+
+    private async Task SwitchToDevChainAsync()
+    {
+        isSwitchingChain = true;
+        chainSwitchError = null;
+        try
+        {
+            var web3 = await _ethereumHostProvider!.GetWeb3Async();
+            var rpcUrl = Configuration["Web3:RpcUrl"] ?? "http://localhost:8545";
+            var addChainParam = new AddEthereumChainParameter
+            {
+                ChainId = new HexBigInteger(CHAIN_ID_VALUE),
+                ChainName = "NethereumDapp DevChain",
+                NativeCurrency = new NativeCurrency
+                {
+                    Name = "Ether",
+                    Symbol = "ETH",
+                    Decimals = 18
+                },
+                RpcUrls = new List<string> { rpcUrl }
+            };
+            await web3.Eth.HostWallet.AddEthereumChain.SendRequestAsync(addChainParam);
+        }
+        catch (Exception ex)
+        {
+            chainSwitchError = $"Failed to switch chain: {ex.Message}";
+        }
+        finally
+        {
+            isSwitchingChain = false;
+        }
+    }
+
+    private async Task<IWeb3> GetWeb3Async()
+    {
+        if (_ethereumHostProvider != null)
+            return await _ethereumHostProvider.GetWeb3Async();
+
+        var rpcUrl = Configuration["Web3:RpcUrl"] ?? "http://localhost:8545";
+        return new Web3(rpcUrl);
+    }
+
+    private async Task DeployAsync()
+    {
+        isLoading = true;
+        statusMessage = null;
+        isError = false;
+        try
+        {
+            var web3 = await GetWeb3Async();
+            var deployment = new MyTokenDeployment
+            {
+                Name = tokenName,
+                Symbol = tokenSymbol,
+                InitialSupply = Web3.Convert.ToWei(initialSupplyEth)
+            };
+            var receipt = await MyTokenService.DeployContractAndWaitForReceiptAsync(web3, deployment);
+            contractAddress = receipt.ContractAddress;
+            tokenService = new MyTokenService(web3, contractAddress);
+            statusMessage = $"Deployed successfully. Tx: {receipt.TransactionHash}";
+            await LoadTokenInfoAsync();
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"Deploy failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadTokenInfoAsync()
+    {
+        if (tokenService == null) return;
+        try
+        {
+            tokenInfo = new TokenInfoModel
+            {
+                Name = await tokenService.NameQueryAsync(),
+                Symbol = await tokenService.SymbolQueryAsync(),
+                Decimals = await tokenService.DecimalsQueryAsync(),
+                TotalSupply = await tokenService.TotalSupplyQueryAsync()
+            };
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"Failed to load token info: {ex.Message}";
+        }
+    }
+
+    private async Task MintAsync()
+    {
+        if (tokenService == null) return;
+        isLoading = true;
+        statusMessage = null;
+        isError = false;
+        try
+        {
+            var amount = Web3.Convert.ToWei(mintAmountEth);
+            var receipt = await tokenService.MintRequestAndWaitForReceiptAsync(mintTo, amount);
+            statusMessage = $"Minted {mintAmountEth} tokens. Tx: {receipt.TransactionHash}";
+            await LoadTokenInfoAsync();
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"Mint failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task TransferAsync()
+    {
+        if (tokenService == null) return;
+        isLoading = true;
+        statusMessage = null;
+        isError = false;
+        try
+        {
+            var amount = Web3.Convert.ToWei(transferAmountEth);
+            var receipt = await tokenService.TransferRequestAndWaitForReceiptAsync(transferTo, amount);
+            statusMessage = $"Transferred {transferAmountEth} tokens. Tx: {receipt.TransactionHash}";
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"Transfer failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CheckBalanceAsync()
+    {
+        if (tokenService == null) return;
+        isLoading = true;
+        statusMessage = null;
+        isError = false;
+        try
+        {
+            balanceResult = await tokenService.BalanceOfQueryAsync(balanceAddress);
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"Balance check failed: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_ethereumHostProvider != null)
+        {
+            _ethereumHostProvider.SelectedAccountChanged -= OnAccountChanged;
+            _ethereumHostProvider.NetworkChanged -= OnNetworkChanged;
+        }
+    }
+
+    private class TokenInfoModel
+    {
+        public string Name { get; set; } = "";
+        public string Symbol { get; set; } = "";
+        public byte Decimals { get; set; }
+        public BigInteger TotalSupply { get; set; }
+    }
+}
