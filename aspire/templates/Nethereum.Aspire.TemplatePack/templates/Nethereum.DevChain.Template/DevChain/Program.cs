@@ -18,7 +18,7 @@ builder.AddDevChainServer(config);
 
 var app = builder.Build();
 
-app.MapDevChainEndpoints();
+await app.MapDevChainEndpointsAsync();
 app.MapDefaultEndpoints();
 
 app.Run();

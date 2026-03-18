@@ -5,9 +5,9 @@ var postgresServer = builder.AddPostgres("postgres")
 
 var postgres = postgresServer.AddDatabase("nethereumdb");
 
-var devchain = builder.AddProject<Projects.NethereumDevChain_DevChain>("devchain");
+var devchain = builder.AddProject<Projects.DevChain>("devchain");
 
-var indexer = builder.AddProject<Projects.NethereumDevChain_Indexer>("indexer")
+var indexer = builder.AddProject<Projects.Indexer>("indexer")
     .WithReference(postgres)
     .WithReference(devchain)
     .WaitFor(devchain)
@@ -15,7 +15,7 @@ var indexer = builder.AddProject<Projects.NethereumDevChain_Indexer>("indexer")
 
 var devAccountKey = builder.AddParameter("devAccountPrivateKey", secret: true);
 
-var explorer = builder.AddProject<Projects.NethereumDevChain_Explorer>("explorer")
+var explorer = builder.AddProject<Projects.Explorer>("explorer")
     .WithReference(postgres)
     .WithReference(devchain)
     .WaitFor(indexer)

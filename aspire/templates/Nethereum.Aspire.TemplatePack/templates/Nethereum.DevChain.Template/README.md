@@ -36,7 +36,7 @@ With custom parameters:
 dotnet new nethereum-devchain -n MyChain \
     --NethereumVersion 6.0.0 \
     --ChainId 42069 \
-    --AspireVersion 9.2.0
+    --AspireVersion 13.1.1
 ```
 
 ### 2. Set the dev account private key
@@ -91,7 +91,7 @@ curl -X POST http://localhost:<port> \
 |-----------|---------|-------------|
 | `--NethereumVersion` | `6.0.0` | Nethereum NuGet package version for all services |
 | `--ChainId` | `31337` | Chain ID for the DevChain node |
-| `--AspireVersion` | `9.2.0` | .NET Aspire SDK and hosting package version |
+| `--AspireVersion` | `13.1.1` | .NET Aspire SDK and hosting package version |
 
 ## Architecture
 
