@@ -1,24 +1,86 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: Build & Pack
 
 on:
   push:
+    branches: [master]
   pull_request:
+    branches: [master]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   build:
-
     runs-on: windows-latest
+    permissions:
+      packages: write
+      contents: read
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
-    - name: Run
+        dotnet-version: |
+          6.0.x
+          8.0.x
+          9.0.x
+          10.0.x
+
+    - name: Install MAUI workload
+      run: dotnet workload install maui
+
+    - name: Generate prerelease suffix
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      id: suffix
+      shell: pwsh
+      run: |
+        $sha = "${{ github.sha }}".Substring(0, 7)
+        $ts = Get-Date -Format "yyyyMMddHHmmss"
+        $suffix = "ci.$ts.$sha"
+        echo "SUFFIX=$suffix" >> $env:GITHUB_OUTPUT
+
+    - name: Pack Herumi to nativeartifacts
+      shell: pwsh
+      run: |
+        $suffix = "${{ steps.suffix.outputs.SUFFIX }}"
+        $props = @("-c", "Release", "--include-symbols", "-p:SymbolPackageFormat=snupkg", "-o", "nativeartifacts")
+        if ($suffix) { $props += "/property:ReleaseSuffix=$suffix" }
+        dotnet pack src/Nethereum.Signer.Bls.Herumi/Nethereum.Signer.Bls.Herumi.csproj @props
+
+    - name: Build & Pack
+      shell: pwsh
       run: |
         cd src
-        & ".\nugetDevBuild.bat"
+        $suffix = "${{ steps.suffix.outputs.SUFFIX }}"
+        if ($suffix) {
+          .\nuget-fast.ps1 -ReleaseSuffix $suffix
+        } else {
+          .\nuget-fast.ps1
+        }
+
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: src/packages/*.nupkg
+        retention-days: 30
+
+    - name: Push to GitHub Packages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      shell: pwsh
+      run: |
+        dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" `
+          --name github `
+          --username ${{ github.actor }} `
+          --password ${{ secrets.GITHUB_TOKEN }} `
+          --store-password-in-clear-text
+
+        $packages = Get-ChildItem -Path src/packages -Filter "*.nupkg" -Recurse
+        foreach ($pkg in $packages) {
+          dotnet nuget push $pkg.FullName `
+            --source github `
+            --skip-duplicate
+        }

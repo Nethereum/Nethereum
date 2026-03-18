@@ -5,6 +5,12 @@ SET releaseSuffix=
 SET targetNet35=false
 SET projectName=
 
+rem Build Herumi into nativeartifacts first so dependent packages can resolve it
+cd Nethereum.Signer.Bls.Herumi
+dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
+dotnet build -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
+dotnet pack -c Release --include-symbols -p:SymbolPackageFormat=snupkg /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix% -o ..\..\nativeartifacts
+cd..
 
 cd Nethereum.Web3
 SET projectName=Nethereum.Web3.csproj
@@ -318,6 +324,102 @@ CALL :restorepack
 cd..
 
 cd Nethereum.X402
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.Bundler
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.Bundler.RocksDB
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.Bundler.RpcServer
+CALL :restorepack
+cd..
+
+cd Nethereum.AppChain
+CALL :restorepack
+cd..
+
+cd Nethereum.AppChain.Sequencer
+CALL :restorepack
+cd..
+
+cd Nethereum.AppChain.Sync
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStorage.Processors
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStorage.Processors.Postgres
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStorage.Processors.Sqlite
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStorage.Processors.SqlServer
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStorage.Token.Postgres
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStore.EFCore
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStore.Postgres
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStore.Sqlite
+CALL :restorepack
+cd..
+
+cd Nethereum.BlockchainStore.SqlServer
+CALL :restorepack
+cd..
+
+cd Nethereum.CoreChain
+CALL :restorepack
+cd..
+
+cd Nethereum.CoreChain.RocksDB
+CALL :restorepack
+cd..
+
+cd Nethereum.DevChain
+CALL :restorepack
+cd..
+
+cd Nethereum.DevChain.Server
+CALL :restorepack
+cd..
+
+cd Nethereum.EVM.Precompiles.Bls
+CALL :restorepack
+cd..
+
+cd Nethereum.EVM.Precompiles.Kzg
+CALL :restorepack
+cd..
+
+cd Nethereum.Blazor.Solidity
+CALL :restorepack
+cd..
+
+cd Nethereum.Explorer
+CALL :restorepack
+cd..
+
+cd Nethereum.Sourcify.Database
 CALL :restorepack
 cd..
 
