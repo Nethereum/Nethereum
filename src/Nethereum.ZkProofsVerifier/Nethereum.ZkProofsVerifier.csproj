@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+    <PropertyGroup>
+        <Description>ZK proof verification for Nethereum — Groth16 on BN128 with snarkjs/Circom support</Description>
+        <AssemblyTitle>Nethereum.ZkProofsVerifier</AssemblyTitle>
+        <Version>$(NethereumVersion)</Version>
+        <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
+        <AssemblyName>Nethereum.ZkProofsVerifier</AssemblyName>
+        <PackageId>Nethereum.ZkProofsVerifier</PackageId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+    </ItemGroup>
+
+    <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+        <SignAssembly>true</SignAssembly>
+        <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+    </PropertyGroup>
+    <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+        <None Include="..\..\NethereumKey.snk" />
+    </ItemGroup>
+</Project>
