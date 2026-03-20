@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.ZkProofsVerifier.Circom
 {
-    public static class SnarkjsPublicInputParser
+    internal static class SnarkjsPublicInputParser
     {
         public static BigInteger[] Parse(string json)
         {

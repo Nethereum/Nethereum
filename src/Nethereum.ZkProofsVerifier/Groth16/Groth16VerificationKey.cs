@@ -3,7 +3,7 @@ using Org.BouncyCastle.Math.EC;
 
 namespace Nethereum.ZkProofsVerifier.Groth16
 {
-    public class Groth16VerificationKey
+    internal class Groth16VerificationKey
     {
         public ECPoint Alpha { get; set; }
         public TwistPoint Beta { get; set; }

@@ -61,55 +61,28 @@ else
 }
 ```
 
-### Example 2: Step-by-Step Parsing and Verification
+### Example 2: Detecting Tampered Proofs
 
-Parse each component separately for inspection or custom logic before verification:
+Verification rejects any modification to the proof, inputs, or verification key:
 
 ```csharp
 using Nethereum.ZkProofsVerifier.Circom;
-using Nethereum.ZkProofsVerifier.Groth16;
 
-// Parse each component independently
-var proof = SnarkjsProofParser.Parse(proofJson);
-var vk = SnarkjsVerificationKeyParser.Parse(vkJson);
-var publicInputs = SnarkjsPublicInputParser.Parse(publicInputsJson);
+// Verify with wrong public inputs
+var tamperedPublicJson = "[\"999\"]";
+var result = CircomGroth16Adapter.Verify(proofJson, vkJson, tamperedPublicJson);
+// result.IsValid == false — inputs don't match what was proven
 
-// Inspect parsed structure
-Console.WriteLine($"Public inputs: {publicInputs.Length}");
-Console.WriteLine($"IC points: {vk.IC.Length}");  // Should be publicInputs.Length + 1
-
-// Verify
-var verifier = new Groth16Verifier();
-var result = verifier.Verify(proof, vk, publicInputs);
-
-Console.WriteLine(result.IsValid ? "Valid" : $"Invalid: {result.Error}");
-```
-
-### Example 3: Detecting Tampered Proofs
-
-```csharp
-var proof = SnarkjsProofParser.Parse(proofJson);
-var vk = SnarkjsVerificationKeyParser.Parse(vkJson);
-var publicInputs = SnarkjsPublicInputParser.Parse(publicInputsJson);
-
-// Tamper with proof point A
-var tamperedProof = new Groth16Proof
-{
-    A = proof.A.Negate(),  // Negate the first element
-    B = proof.B,
-    C = proof.C
-};
-
-var verifier = new Groth16Verifier();
-var result = verifier.Verify(tamperedProof, vk, publicInputs);
-// result.IsValid == false — tampered proof rejected
+// Verify with mismatched circuit files
+var result2 = CircomGroth16Adapter.Verify(proofJsonA, vkJsonB, publicJsonA);
+// result2.IsValid == false — VK doesn't match the proof's circuit
 ```
 
 ## API Reference
 
 ### CircomGroth16Adapter
 
-High-level convenience class for verifying snarkjs/Circom JSON output directly.
+The public entry point for verifying snarkjs/Circom proofs. Parses all three JSON files internally and runs the BN128 pairing check.
 
 ```csharp
 public static class CircomGroth16Adapter
@@ -118,17 +91,6 @@ public static class CircomGroth16Adapter
         string proofJson,
         string vkJson,
         string publicInputsJson);
-}
-```
-
-### IZkProofVerifier<TProof, TVerificationKey>
-
-Generic interface for zero-knowledge proof verification.
-
-```csharp
-public interface IZkProofVerifier<TProof, TVerificationKey>
-{
-    ZkVerificationResult Verify(TProof proof, TVerificationKey vk, BigInteger[] publicInputs);
 }
 ```
 
@@ -147,53 +109,17 @@ public class ZkVerificationResult
 }
 ```
 
-### Groth16Verifier
+### Verification Algorithm
 
-Implements `IZkProofVerifier<Groth16Proof, Groth16VerificationKey>`. Verifies the Groth16 pairing equation:
+Internally, the adapter parses the JSON inputs into BN128 curve points and checks the Groth16 pairing equation:
 
 ```
-e(-A, B) * e(Alpha, Beta) * e(vkX, Gamma) * e(C, Delta) == 1
+e(-A, B) · e(Alpha, Beta) · e(vkX, Gamma) · e(C, Delta) == 1
 ```
 
 Where `vkX = IC[0] + sum(IC[i+1] * publicInputs[i])`.
 
-### Groth16Proof
-
-```csharp
-public class Groth16Proof
-{
-    public ECPoint A { get; set; }      // G1 point
-    public TwistPoint B { get; set; }   // G2 point
-    public ECPoint C { get; set; }      // G1 point
-}
-```
-
-### Groth16VerificationKey
-
-```csharp
-public class Groth16VerificationKey
-{
-    public ECPoint Alpha { get; set; }      // G1 point
-    public TwistPoint Beta { get; set; }    // G2 point
-    public TwistPoint Gamma { get; set; }   // G2 point
-    public TwistPoint Delta { get; set; }   // G2 point
-    public ECPoint[] IC { get; set; }       // Length = publicInputs.Length + 1
-}
-```
-
-### Snarkjs Parsers
-
-| Parser | Input | Output |
-|--------|-------|--------|
-| `SnarkjsProofParser.Parse(json)` | `proof.json` | `Groth16Proof` |
-| `SnarkjsVerificationKeyParser.Parse(json)` | `verification_key.json` | `Groth16VerificationKey` |
-| `SnarkjsPublicInputParser.Parse(json)` | `public.json` | `BigInteger[]` |
-
-## G2 Coordinate Mapping (Fp2 Swap)
-
-When parsing snarkjs G2 points (`pi_b`, `vk_beta_2`, `vk_gamma_2`, `vk_delta_2`), the parsers perform a critical coordinate swap. Snarkjs stores Fp2 elements as `[c0, c1]` (imaginary, real), but the internal `Fp2` constructor takes `Fp2(a, b)` where `a` is imaginary and `b` is real. The parser reads `c0` and `c1` then constructs `new Fp2(c1, c0)` to produce the correct field element.
-
-This swap is handled automatically by the parsers — you only need to be aware of it when constructing G2 points manually or cross-validating with other implementations.
+All cryptographic types (curve points, field extensions, parsers) are internal implementation details — consumers only interact with `CircomGroth16Adapter` and `ZkVerificationResult`.
 
 ## Supported Formats
 

@@ -4,6 +4,8 @@
         <AssemblyName>Nethereum.ZkProofsVerifier.Tests</AssemblyName>
         <PackageId>Nethereum.ZkProofsVerifier.Tests</PackageId>
         <IsPackable>false</IsPackable>
+        <SignAssembly>true</SignAssembly>
+        <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
 
     <ItemGroup>

@@ -44,26 +44,6 @@ else
     Console.WriteLine($"Failed: {result.Error}");
 ```
 
-## Step-by-Step Parsing (When You Need to Inspect)
-
-Parse each component separately to inspect structure before verifying:
-
-```csharp
-using Nethereum.ZkProofsVerifier.Circom;
-using Nethereum.ZkProofsVerifier.Groth16;
-
-var proof = SnarkjsProofParser.Parse(proofJson);
-var vk = SnarkjsVerificationKeyParser.Parse(vkJson);
-var publicInputs = SnarkjsPublicInputParser.Parse(publicJson);
-
-// Inspect: IC array length must be publicInputs.Length + 1
-Console.WriteLine($"Public inputs: {publicInputs.Length}");
-Console.WriteLine($"IC points: {vk.IC.Length}");
-
-var verifier = new Groth16Verifier();
-var result = verifier.Verify(proof, vk, publicInputs);
-```
-
 ## Tamper Detection
 
 Verification rejects any modification to proof, inputs, or VK:
@@ -91,11 +71,9 @@ var result = CircomGroth16Adapter.Verify(proofJson, vkJson, tamperedPublicJson);
 | Type | Purpose |
 |------|---------|
 | `CircomGroth16Adapter` | One-liner verification from JSON strings |
-| `Groth16Verifier` | Lower-level verifier (accepts parsed proof/VK objects) |
 | `ZkVerificationResult` | Result with `IsValid` and `Error` properties |
-| `SnarkjsProofParser` | Parses `proof.json` → `Groth16Proof` |
-| `SnarkjsVerificationKeyParser` | Parses `verification_key.json` → `Groth16VerificationKey` |
-| `SnarkjsPublicInputParser` | Parses `public.json` → `BigInteger[]` |
+
+All parsing and cryptographic types (curve points, field extensions, verifier internals) are `internal` — consumers only interact with `CircomGroth16Adapter` and `ZkVerificationResult`.
 
 ## Supported Formats
 

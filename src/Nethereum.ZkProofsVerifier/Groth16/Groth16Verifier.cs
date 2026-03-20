@@ -7,7 +7,7 @@ using Org.BouncyCastle.Math.EC;
 
 namespace Nethereum.ZkProofsVerifier.Groth16
 {
-    public class Groth16Verifier : IZkProofVerifier<Groth16Proof, Groth16VerificationKey>
+    internal class Groth16Verifier : IZkProofVerifier<Groth16Proof, Groth16VerificationKey>
     {
         public ZkVerificationResult Verify(Groth16Proof proof, Groth16VerificationKey vk, BigInteger[] publicInputs)
         {
