@@ -676,7 +676,12 @@ Interface for custom pairing strategies.
 ### Dependencies
 
 - **Nethereum.ABI** - ABI encoding for struct-based leaves
-- **Nethereum.Util** - Keccak-256 hashing, byte conversions
+- **Nethereum.Util** - Keccak-256 and Poseidon hashing, byte conversions
+
+### Related ZK Packages
+
+- **Nethereum.ZkProofsVerifier** - Groth16 proof verification on BN128 (Circom/snarkjs)
+- **Nethereum.Merkle.Binary** - EIP-7864 Binary Merkle Trie for stateless execution
 
 ## Important Notes
 
@@ -792,6 +797,157 @@ Database storage is **critical** for:
 - Persisting tree across restarts
 - Handling millions of records
 - Enabling horizontal scaling
+
+## Sparse Merkle Binary Tree (ZK-Optimized)
+
+`SparseMerkleBinaryTree<T>` is a high-performance binary sparse Merkle tree designed for zero-knowledge circuits. It supports pluggable hash strategies (Poseidon for ZK, Celestia-compatible SHA-256, or generic hash providers), optional persistent storage with lazy node loading, and both synchronous and asynchronous APIs.
+
+### Quick Start
+
+```csharp
+using Nethereum.Merkle.Sparse;
+using Nethereum.Util.ByteArrayConvertors;
+
+// Create a Poseidon-based SMT for ZK circuits
+var smt = new SparseMerkleBinaryTree<byte[]>(
+    new PoseidonSmtHasher(),
+    new ByteArrayToByteArrayConvertor(),
+    new IdentitySmtKeyHasher(256));
+
+smt.Put(key1, value1);
+smt.Put(key2, value2);
+var root = smt.ComputeRoot();
+
+// Retrieve
+var value = smt.Get(key1);
+
+// Delete
+smt.Delete(key1);
+```
+
+### Async API with Persistent Storage
+
+```csharp
+using Nethereum.Merkle.Sparse;
+
+var storage = new InMemorySmtNodeStorage();
+var smt = new SparseMerkleBinaryTree<byte[]>(
+    new CelestiaSmtHasher(),
+    new ByteArrayToByteArrayConvertor(),
+    storage: storage);
+
+await smt.PutAsync(key1, value1);
+await smt.PutAsync(key2, value2);
+var root = await smt.ComputeRootAsync();
+await smt.FlushAsync();  // Persist to storage
+
+// Load from storage in a new instance
+var smt2 = new SparseMerkleBinaryTree<byte[]>(
+    new CelestiaSmtHasher(),
+    new ByteArrayToByteArrayConvertor(),
+    storage: storage);
+await smt2.LoadRootAsync(root);  // Lazy-loads nodes on demand
+var value = await smt2.GetAsync(key1);
+```
+
+### ISmtHasher — Hashing Strategies
+
+The `ISmtHasher` interface defines how leaves and internal nodes are hashed:
+
+```csharp
+public interface ISmtHasher
+{
+    bool MsbFirst { get; }              // Bit ordering for key path traversal
+    bool UseFixedEmptyHash { get; }     // Fixed vs per-level empty hash
+    bool CollapseSingleLeaf { get; }    // Skip hashing single leaf up to root
+    byte[] EmptyLeaf { get; }           // Hash of empty/zero leaf
+
+    byte[] HashLeaf(byte[] path, byte[] valueBytes);
+    byte[] HashNode(byte[] leftHash, byte[] rightHash);
+}
+```
+
+**Built-in implementations:**
+
+| Hasher | Hash Function | Bit Order | Use Case |
+|--------|--------------|-----------|----------|
+| `PoseidonSmtHasher` | Poseidon (CircomT3 leaf, CircomT2 node) | LSB-first | ZK circuits (Circom, Privacy Pools) |
+| `CelestiaSmtHasher` | SHA-256 with domain prefixes | MSB-first | Celestia namespace tree compatibility |
+| `DefaultSmtHasher` | Any `IHashProvider` (Keccak, SHA-256) | LSB-first | Generic use |
+
+### PoseidonSmtHasher
+
+Poseidon-based hasher optimized for zero-knowledge circuits:
+
+```csharp
+var hasher = new PoseidonSmtHasher();
+// Leaf: Poseidon(key, value, 1) using CircomT3 (3 inputs)
+// Node: Poseidon(leftHash, rightHash) using CircomT2 (2 inputs)
+
+var smt = new SparseMerkleBinaryTree<byte[]>(
+    hasher,
+    new ByteArrayToByteArrayConvertor(),
+    new IdentitySmtKeyHasher(140));  // 140-bit key paths
+```
+
+### CelestiaSmtHasher
+
+SHA-256-based hasher compatible with Celestia's sparse Merkle tree:
+
+```csharp
+var hasher = new CelestiaSmtHasher();
+// Leaf: SHA256(0x00 || SHA256(value) || path)
+// Node: SHA256(0x01 || leftHash || rightHash)
+
+var smt = new SparseMerkleBinaryTree<byte[]>(
+    hasher,
+    new ByteArrayToByteArrayConvertor());
+```
+
+### ISmtKeyHasher — Key Path Computation
+
+Controls how keys are mapped to tree paths:
+
+```csharp
+public interface ISmtKeyHasher
+{
+    byte[] ComputePath(byte[] key);  // Key → bit path
+    int PathBitLength { get; }       // Tree depth (1-256)
+}
+```
+
+| Implementation | Description |
+|---------------|-------------|
+| `IdentitySmtKeyHasher(n)` | Direct key as path (no hashing), n-bit depth |
+| `Sha256SmtKeyHasher` | SHA-256(key) → 256-bit path |
+
+### ISmtNodeStorage — Persistence
+
+```csharp
+public interface ISmtNodeStorage
+{
+    Task<byte[]> GetAsync(byte[] hash);
+    Task PutAsync(byte[] hash, byte[] data);
+    Task DeleteAsync(byte[] hash);
+}
+```
+
+`InMemorySmtNodeStorage` provides a thread-safe in-memory implementation using `ConcurrentDictionary`.
+
+### SmtNodeCodec — Node Serialization
+
+Encodes/decodes nodes for storage:
+
+- **Leaf**: `[0x00][pathLen:2][path][valueLen:2][value]`
+- **Branch**: `[0x01][leftHash:32][rightHash:32]`
+
+```csharp
+byte[] encoded = SmtNodeCodec.EncodeLeaf(path, valueBytes);
+SmtNodeCodec.DecodeLeaf(encoded, out var path, out var value);
+
+bool isLeaf = SmtNodeCodec.IsLeaf(data);
+bool isBranch = SmtNodeCodec.IsBranch(data);
+```
 
 ## Additional Resources
 
