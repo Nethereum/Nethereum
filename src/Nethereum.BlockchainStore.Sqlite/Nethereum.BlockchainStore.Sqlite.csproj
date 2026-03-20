@@ -11,8 +11,8 @@
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' != ''">
-		<TargetFramework>net10.0</TargetFramework>
+	<PropertyGroup>
+		<GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 	</PropertyGroup>
 
 	<ItemGroup>

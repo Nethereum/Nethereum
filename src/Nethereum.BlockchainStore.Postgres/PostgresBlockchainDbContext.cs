@@ -17,7 +17,10 @@ namespace Nethereum.BlockchainStore.Postgres
         {
             optionsBuilder.UseNpgsql(_connectionString)
                 .UseLowerCaseNamingConvention()
-                .ConfigureWarnings(w => w.Ignore(global::Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+#if NET10_0_OR_GREATER
+                .ConfigureWarnings(w => w.Ignore(global::Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
+#endif
+                ;
         }
     }
 }
