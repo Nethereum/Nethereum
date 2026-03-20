@@ -36,7 +36,7 @@ await node.StartAsync(accountManager.Accounts.Select(a => a.Address));
 
 PrintBanner(config, accountManager, app);
 
-app.MapDevChainEndpoints();
+await app.MapDevChainEndpointsAsync();
 
 app.Run($"http://{config.Host}:{config.Port}");
 

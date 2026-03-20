@@ -29,14 +29,20 @@ namespace Nethereum.DevChain.Hosting
                     sp.GetRequiredService<DevChainNode>(),
                     sp.GetRequiredService<DevAccountManager>(),
                     sp,
-                    sp.GetService<ILoggerFactory>()?.CreateLogger<DevChainHostedService>()));
+                    sp.GetService<ILoggerFactory>()?.CreateLogger<DevChainHostedService>())
+                { AlreadyStarted = true });
 
             return builder;
         }
 
-        public static WebApplication MapDevChainEndpoints(this WebApplication app)
+        public static async Task<WebApplication> MapDevChainEndpointsAsync(this WebApplication app)
         {
+            var node = app.Services.GetRequiredService<DevChainNode>();
+            var accountManager = app.Services.GetRequiredService<DevAccountManager>();
+            await node.StartAsync(accountManager.Accounts.Select(a => a.Address));
+
             var dispatcher = app.Services.GetRequiredService<RpcDispatcher>();
+            var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Nethereum.DevChain.Rpc");
 
             app.UseCors();
 
@@ -61,6 +67,10 @@ namespace Nethereum.DevChain.Hosting
                         var requests = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequestArray);
                         if (requests != null)
                         {
+                            logger.LogInformation("batch[{Count}]: {Methods}",
+                                requests.Length,
+                                string.Join(", ", requests.Select(r => r.Method)));
+
                             var rpcRequests = requests.Select(ToRpcRequestMessage).ToArray();
                             var responses = await dispatcher.DispatchBatchAsync(rpcRequests);
                             var jsonResponses = responses.Select(ToJsonRpcResponse).ToArray();
@@ -78,14 +88,24 @@ namespace Nethereum.DevChain.Hosting
                         return;
                     }
 
+                    logger.LogInformation("{Method}", request.Method);
+
                     var rpcRequest = ToRpcRequestMessage(request);
                     var response = await dispatcher.DispatchAsync(rpcRequest);
                     var jsonResponse = ToJsonRpcResponse(response);
+
+                    if (jsonResponse.Error != null)
+                    {
+                        logger.LogWarning("{Method} -> error {Code}: {Message}",
+                            request.Method, jsonResponse.Error.Code, jsonResponse.Error.Message);
+                    }
+
                     await httpContext.Response.WriteAsync(
                         JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
                 }
-                catch (JsonException)
+                catch (JsonException ex)
                 {
+                    logger.LogError(ex, "JSON parse error");
                     httpContext.Response.StatusCode = 400;
                     httpContext.Response.ContentType = "application/json";
                     var errorResponse = new JsonRpcResponse
@@ -96,8 +116,9 @@ namespace Nethereum.DevChain.Hosting
                     await httpContext.Response.WriteAsync(
                         JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    logger.LogError(ex, "Internal error");
                     httpContext.Response.StatusCode = 500;
                     httpContext.Response.ContentType = "application/json";
                     var errorResponse = new JsonRpcResponse

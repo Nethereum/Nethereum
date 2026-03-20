@@ -108,7 +108,7 @@ SQLite uses WAL journal mode for good read/write concurrency. State, filters, an
 | |\  |  __/ |_| | | |  __/ | |  __/ |_| | | | | | |
 |_| \_|\___|\__|_| |_|\___|_|  \___|\__,_|_| |_| |_|
 
-              DevChain Server v5.8.0
+              DevChain Server v6.0.1
 
   RPC:        http://127.0.0.1:8545
   Chain ID:   31337
@@ -247,6 +247,8 @@ The following `anvil_*` aliases are registered for Foundry/Anvil compatibility:
 | `anvil_mine` | `evm_mine` |
 | `anvil_snapshot` | `evm_snapshot` |
 | `anvil_revert` | `evm_revert` |
+| `anvil_impersonateAccount` | `hardhat_impersonateAccount` |
+| `anvil_stopImpersonatingAccount` | `hardhat_stopImpersonatingAccount` |
 
 ## Usage Examples
 
@@ -404,7 +406,7 @@ Additionally, Nethereum DevChain provides:
 
 ## Aspire Integration
 
-DevChain.Server integrates with .NET Aspire for orchestrated development environments. The `Nethereum.Aspire.DevChain` project wraps the server with Aspire service defaults:
+DevChain integrates with .NET Aspire for orchestrated development environments:
 
 ```csharp
 // AppHost/Program.cs
@@ -415,19 +417,43 @@ var indexer = builder.AddProject<Projects.Nethereum_Aspire_Indexer>("indexer")
     .WaitFor(devchain);
 ```
 
-The Aspire wrapper uses the same `AddDevChainServer(config)` DI extension and `DevChainHostedService`. Configuration via `appsettings.json` or environment variables works identically. The Aspire variant defaults to in-memory storage since lifecycle is managed by the orchestrator.
+The Aspire DevChain project uses the reusable hosting extensions from `Nethereum.DevChain.Hosting`:
+
+```csharp
+// DevChain/Program.cs
+using Nethereum.DevChain.Configuration;
+using Nethereum.DevChain.Hosting;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
+
+var config = new DevChainServerConfig();
+builder.Configuration.GetSection("DevChain").Bind(config);
+builder.AddDevChainServer(config);
+
+var app = builder.Build();
+app.MapDevChainEndpoints();
+app.MapDefaultEndpoints();
+app.Run();
+```
+
+Install the Aspire template: `dotnet new install Nethereum.Aspire.TemplatePack`
 
 ## Embedding in .NET Applications
 
-Use `AddDevChainServer` directly in any ASP.NET application:
+Use `AddDevChainServer` and `MapDevChainEndpoints` directly in any ASP.NET Core application:
 
 ```csharp
+using Nethereum.DevChain.Configuration;
+using Nethereum.DevChain.Hosting;
+
 var config = new DevChainServerConfig { ChainId = 31337, Storage = "memory" };
-builder.Services.AddDevChainServer(config);
-builder.Services.AddHostedService<DevChainHostedService>();
+builder.AddDevChainServer(config);
+// ...
+app.MapDevChainEndpoints();
 ```
 
-This registers `DevChainNode`, `RpcDispatcher`, `DevAccountManager`, and all storage providers as singletons. The `DevChainHostedService` handles startup and graceful shutdown.
+`AddDevChainServer` registers `DevChainNode`, `RpcDispatcher`, `DevAccountManager`, CORS, storage providers, and `DevChainHostedService` as singletons.
 
 ## Related Packages
 

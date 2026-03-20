@@ -24,8 +24,10 @@ dotnet add package Nethereum.DevChain
 - Nethereum.CoreChain - Core blockchain infrastructure
 - Nethereum.RPC.Extensions - Extended RPC utilities
 - Nethereum.JsonRpc.RpcClient - JSON-RPC client
-- Nethereum.RPC - Standard debug tracing DTOs
+- Nethereum.Web3 - Web3 and Accounts
 - Microsoft.Data.Sqlite - SQLite storage provider
+- Microsoft.Extensions.Hosting.Abstractions - IHostedService support
+- Microsoft.AspNetCore.App (FrameworkReference) - ASP.NET Core web extensions
 
 ## Quick Start
 
@@ -278,6 +280,8 @@ registry.AddAnvilAliases();      // Anvil compatibility
 | `hardhat_setCode` | Set contract code |
 | `hardhat_setNonce` | Set account nonce |
 | `hardhat_setStorageAt` | Set storage slot |
+| `hardhat_impersonateAccount` | Impersonate account |
+| `hardhat_stopImpersonatingAccount` | Stop impersonating |
 
 ### Debug Methods
 
@@ -299,28 +303,37 @@ All `hardhat_*` methods are also available as `anvil_*` for compatibility:
 | `anvil_mine` | `evm_mine` |
 | `anvil_snapshot` | `evm_snapshot` |
 | `anvil_revert` | `evm_revert` |
+| `anvil_impersonateAccount` | `hardhat_impersonateAccount` |
+| `anvil_stopImpersonatingAccount` | `hardhat_stopImpersonatingAccount` |
 
-## Usage with RPC Server
+## ASP.NET Core Hosting Extensions
 
-DevChain is typically used with `Nethereum.DevChain.Server`:
+DevChain includes reusable extensions for hosting in any ASP.NET Core application:
 
 ```csharp
-using Nethereum.DevChain;
-using Nethereum.DevChain.Rpc;
-using Nethereum.CoreChain.Rpc;
+using Nethereum.DevChain.Configuration;
+using Nethereum.DevChain.Hosting;
 
-var node = new DevChainNode(config);
-await node.StartAsync(fundedAddresses);
+var builder = WebApplication.CreateBuilder(args);
 
-var registry = new RpcHandlerRegistry();
-registry.AddStandardHandlers();
-registry.AddDevHandlers();
-registry.AddAnvilAliases();
+var config = new DevChainServerConfig { ChainId = 31337, Storage = "sqlite" };
+builder.AddDevChainServer(config); // Registers DI services, CORS, and hosted service
 
-var context = new RpcContext(node, chainId, services);
-var dispatcher = new RpcDispatcher(registry, context);
+var app = builder.Build();
+app.MapDevChainEndpoints(); // Maps JSON-RPC POST /, health GET /, and CORS middleware
+app.Run();
+```
 
-var response = await dispatcher.DispatchAsync(request);
+`AddDevChainServer` registers `DevChainNode`, `RpcDispatcher`, `DevAccountManager`, storage providers, CORS, and `DevChainHostedService` as singletons.
+
+### Manual RPC Setup
+
+For non-web scenarios, use the lower-level DI extension on `IServiceCollection`:
+
+```csharp
+using Nethereum.DevChain.Hosting;
+
+services.AddDevChainServer(config); // IServiceCollection extension
 ```
 
 ## Forking
