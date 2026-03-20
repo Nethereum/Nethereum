@@ -4,9 +4,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Nethereum.DataServices.CoinGecko.Responses;
+#if NET8_0_OR_GREATER
+using System.Text.Json;
+#else
+using Newtonsoft.Json.Linq;
+#endif
 
 namespace Nethereum.DataServices.CoinGecko
 {
@@ -279,7 +283,11 @@ namespace Nethereum.DataServices.CoinGecko
 
                 try
                 {
+#if NET8_0_OR_GREATER
                     var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JsonElement>>>(url, _defaultHeaders);
+#else
+                    var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JToken>>>(url, _defaultHeaders);
+#endif
                     if (batchResult != null)
                     {
                         foreach (var kvp in batchResult)
@@ -348,7 +356,11 @@ namespace Nethereum.DataServices.CoinGecko
 
                 try
                 {
+#if NET8_0_OR_GREATER
                     var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JsonElement>>>(url, _defaultHeaders);
+#else
+                    var batchResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JToken>>>(url, _defaultHeaders);
+#endif
                     if (batchResult != null)
                     {
                         foreach (var kvp in batchResult)
@@ -392,7 +404,11 @@ namespace Nethereum.DataServices.CoinGecko
 
             try
             {
+#if NET8_0_OR_GREATER
                 var rawResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JsonElement>>>(url, _defaultHeaders);
+#else
+                var rawResult = await _restHttpHelper.GetAsync<Dictionary<string, Dictionary<string, JToken>>>(url, _defaultHeaders);
+#endif
                 if (rawResult != null &&
                     rawResult.TryGetValue(contractAddress.ToLowerInvariant(), out var rawPriceData))
                 {
@@ -488,6 +504,7 @@ namespace Nethereum.DataServices.CoinGecko
             _tokenListCache.Clear();
         }
 
+#if NET8_0_OR_GREATER
         private static Dictionary<string, decimal> SafeParseJsonPrices(Dictionary<string, JsonElement> raw)
         {
             var result = new Dictionary<string, decimal>();
@@ -513,6 +530,36 @@ namespace Nethereum.DataServices.CoinGecko
             }
             return result;
         }
+#else
+        private static Dictionary<string, decimal> SafeParseJsonPrices(Dictionary<string, JToken> raw)
+        {
+            var result = new Dictionary<string, decimal>();
+            foreach (var kvp in raw)
+            {
+                try
+                {
+                    if (kvp.Value.Type == JTokenType.Float || kvp.Value.Type == JTokenType.Integer)
+                    {
+                        result[kvp.Key] = kvp.Value.Value<decimal>();
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        var doubleValue = kvp.Value.Value<double>();
+                        if (doubleValue >= (double)decimal.MinValue &&
+                            doubleValue <= (double)decimal.MaxValue)
+                        {
+                            result[kvp.Key] = (decimal)doubleValue;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            return result;
+        }
+#endif
 
         private static bool IsRateLimitError(Exception ex)
         {
