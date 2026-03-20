@@ -30,22 +30,12 @@ namespace Nethereum.Ssz.Tests
         }
 
         [Fact]
-        public void Merkleize_SingleChunk_PadsWithZero()
+        public void Merkleize_SingleChunk_ReturnsChunkDirectly()
         {
+            // Per SSZ spec: merkleize([chunk]) with 1 chunk, next_pow2(1)=1, returns the chunk itself
             var chunk = Enumerable.Repeat((byte)0x42, 32).ToArray();
-            var zero = new byte[32];
-            byte[] expected;
-            using (var sha = SHA256.Create())
-            {
-                var concat = new byte[64];
-                Buffer.BlockCopy(chunk, 0, concat, 0, 32);
-                Buffer.BlockCopy(zero, 0, concat, 32, 32);
-                expected = sha.ComputeHash(concat);
-            }
-
             var root = SszMerkleizer.Merkleize(new List<byte[]> { chunk });
-
-            Assert.Equal(expected, root);
+            Assert.Equal(chunk, root);
         }
 
         [Fact]
