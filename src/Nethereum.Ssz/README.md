@@ -457,6 +457,55 @@ Computes SHA-256 Merkle roots for SSZ types.
 - Returns `SHA256(root || length_as_32_bytes)`
 - Used for variable-size types
 
+**`byte[] Merkleize(IList<byte[]> chunks, int limit)`**
+- Compute Merkle root with a capacity limit (for capped lists)
+- Pads to `next_power_of_two(limit)` regardless of actual chunk count
+- Throws if `chunks.Count > limit`
+
+**`byte[] MerkleizeProgressive(IList<byte[]> chunks)`**
+- Progressive (streaming) Merkleization using recursive doubling
+- Processes chunks in exponentially growing subtrees
+- Used internally by `HashTreeRootProgressiveContainer`
+
+**`byte[] PackActiveFields(bool[] activeFields)`**
+- Pack a boolean array into a single 32-byte bitvector chunk
+- Used for StableContainer active field tracking (EIP-7495)
+
+**`byte[] MixInActiveFields(byte[] root, bool[] activeFields)`**
+- Mix packed active-field bitvector into a root hash
+- Returns `SHA256(root || PackActiveFields(activeFields))`
+
+**`byte[] HashTreeRootProgressiveContainer(IList<byte[]> fieldRoots, bool[] activeFields)`**
+- Compute hash tree root for ProgressiveContainer (EIP-7495 StableContainer)
+- Applies progressive Merkleization then mixes in active fields
+- Used by `Nethereum.Model.SSZ` for EIP-6404/6466/7807 types
+
+**`byte[] HashTreeRootProgressiveList(IList<byte[]> elementRoots)`**
+- Hash tree root for progressive lists of composite elements
+- Uses progressive Merkleization and mixes in element count
+
+**`byte[] HashTreeRootBasicProgressiveList(IList<byte[]> packedChunks, ulong elementCount)`**
+- Hash tree root for progressive lists of basic types
+- Takes pre-packed chunks and actual element count (which may differ from chunk count)
+
+**`byte[] HashTreeRootProgressiveBitlist(bool[] bits)`**
+- Hash tree root for progressive bitlists
+- Packs bits into chunks then applies progressive Merkleization with length mix-in
+
+**`IList<byte[]> PackBitsToChunks(bool[] bits)`**
+- Pack boolean array into 32-byte chunks (1 bit per boolean, LSB first)
+- Used internally by bitlist and bitvector operations
+
+**`byte[] MixInSelector(byte[] root, byte selector)`**
+- Mix a union type selector byte into a root hash
+- Returns `SHA256(root || selector_as_32_bytes)`
+- Used for CompatibleUnion encoding (EIP-7495)
+
+**`byte[] HashTreeRootCompatibleUnion(byte[] dataRoot, byte selector)`**
+- Hash tree root for CompatibleUnion types
+- Wraps `MixInSelector` — the canonical way to compute union roots
+- Used by `Nethereum.Model.SSZ` for transaction and receipt wrappers
+
 **`bool VerifyProof(byte[] leaf, IList<byte[]> branch, int depth, int index, byte[] root)`**
 - Verify a Merkle proof against a known root
 - `leaf`: 32-byte leaf node to verify
@@ -491,10 +540,10 @@ public interface ISszElementReader<T>
 
 ### Used By (Consumers)
 
+- **Nethereum.Model.SSZ** - SSZ execution layer type encoders (EIP-6404, EIP-6466, EIP-7807)
 - **Nethereum.Consensus.Ssz** - Consensus-specific SSZ containers
 - **Nethereum.Beaconchain** - Beacon chain API client
 - **Nethereum.Consensus.LightClient** - Light client implementation
-- **Consensus Layer Tools** - Validator, attestation handling
 
 ### Dependencies
 
