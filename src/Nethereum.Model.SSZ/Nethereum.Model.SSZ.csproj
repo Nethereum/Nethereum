@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>SSZ execution layer type definitions (EIP-6404, EIP-6466, EIP-7807) using ProgressiveContainer and CompatibleUnion.</Description>
+    <AssemblyTitle>Nethereum.Model.SSZ</AssemblyTitle>
+    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Nethereum.Model.SSZ</AssemblyName>
+    <PackageId>Nethereum.Model.SSZ</PackageId>
+    <PackageTags>Ethereum;SSZ;Transactions;Receipts;EIP-6404;EIP-6466;EIP-7807</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Ssz\Nethereum.Ssz.csproj" />
+    <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+</Project>
