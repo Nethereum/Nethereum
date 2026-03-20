@@ -13,6 +13,8 @@ namespace Nethereum.Util
         private static readonly IReadOnlyDictionary<PoseidonParameterPreset, PoseidonPresetProfile> CircomProfiles =
             new Dictionary<PoseidonParameterPreset, PoseidonPresetProfile>
             {
+                [PoseidonParameterPreset.CircomT1] = new PoseidonPresetProfile(inputs: 1, partialRounds: 56),
+                [PoseidonParameterPreset.CircomT2] = new PoseidonPresetProfile(inputs: 2, partialRounds: 57),
                 [PoseidonParameterPreset.CircomT3] = new PoseidonPresetProfile(inputs: 3, partialRounds: 56),
                 [PoseidonParameterPreset.CircomT6] = new PoseidonPresetProfile(inputs: 6, partialRounds: 63),
                 [PoseidonParameterPreset.CircomT14] = new PoseidonPresetProfile(inputs: 14, partialRounds: 60),

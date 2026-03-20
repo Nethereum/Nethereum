@@ -203,6 +203,27 @@ namespace Nethereum.Util
             }
             return true;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte[] BigIntegerToFixedLengthByteArrayLE(this BigInteger value, int length)
+        {
+            var result = new byte[length];
+            if (value.IsZero) return result;
+            var bytes = value.ToByteArray();
+            var copyLen = bytes.Length;
+            if (copyLen > 1 && bytes[copyLen - 1] == 0) copyLen--;
+            Buffer.BlockCopy(bytes, 0, result, 0, Math.Min(copyLen, length));
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger ToBigIntegerFromFixedLengthByteArrayLE(this byte[] data)
+        {
+            if (data == null || data.Length == 0) return BigInteger.Zero;
+            var withSign = new byte[data.Length + 1];
+            Buffer.BlockCopy(data, 0, withSign, 0, data.Length);
+            return new BigInteger(withSign);
+        }
     }
 
 
