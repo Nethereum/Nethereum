@@ -558,12 +558,12 @@ public class PoseidonHasher
 
 public enum PoseidonParameterPreset
 {
-    CircomT1,   // State width 1, rate 1 (nullifier hashing)
-    CircomT2,   // State width 2, rate 1 (Merkle node hashing)
-    CircomT3,   // State width 3, rate 2 (default, commitments)
-    CircomT6,   // State width 6, rate 5
-    CircomT14,  // State width 14, rate 13
-    CircomT16   // State width 16, rate 15
+    CircomT1,   // 1 input (nullifier hashing)
+    CircomT2,   // 2 inputs (Merkle node hashing)
+    CircomT3,   // 3 inputs (default, commitments)
+    CircomT6,   // 6 inputs
+    CircomT14,  // 14 inputs
+    CircomT16   // 16 inputs
 }
 ```
 
@@ -641,7 +641,7 @@ var hasherT14 = new PoseidonHasher(PoseidonParameterPreset.CircomT14); // up to 
 var hasherT16 = new PoseidonHasher(PoseidonParameterPreset.CircomT16); // up to 15 inputs
 ```
 
-Available presets: `CircomT1` (1 input), `CircomT2` (2 inputs), `CircomT3` (default, 2 inputs), `CircomT6` (5 inputs), `CircomT14` (13 inputs), `CircomT16` (15 inputs).
+Available presets: `CircomT1` (1 input), `CircomT2` (2 inputs), `CircomT3` (default, 3 inputs), `CircomT6` (6 inputs), `CircomT14` (14 inputs), `CircomT16` (16 inputs).
 
 **Privacy Pools usage:** `CircomT1` for nullifier hashing (single field element), `CircomT2` for Merkle tree node hashing (left + right children), `CircomT3` for commitment hashing (e.g., secret + nullifier + amount).
 

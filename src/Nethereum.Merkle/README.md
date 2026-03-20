@@ -896,7 +896,7 @@ SHA-256-based hasher compatible with Celestia's sparse Merkle tree:
 
 ```csharp
 var hasher = new CelestiaSmtHasher();
-// Leaf: SHA256(0x00 || SHA256(value) || path)
+// Leaf: SHA256(0x00 || path || SHA256(value))
 // Node: SHA256(0x01 || leftHash || rightHash)
 
 var smt = new SparseMerkleBinaryTree<byte[]>(
@@ -939,11 +939,14 @@ public interface ISmtNodeStorage
 Encodes/decodes nodes for storage:
 
 - **Leaf**: `[0x00][pathLen:2][path][valueLen:2][value]`
-- **Branch**: `[0x01][leftHash:32][rightHash:32]`
+- **Branch**: `[0x01][leftHash][rightHash]`
 
 ```csharp
 byte[] encoded = SmtNodeCodec.EncodeLeaf(path, valueBytes);
 SmtNodeCodec.DecodeLeaf(encoded, out var path, out var value);
+
+byte[] branch = SmtNodeCodec.EncodeBranch(leftHash, rightHash);
+SmtNodeCodec.DecodeBranch(branch, 32, out var left, out var right);
 
 bool isLeaf = SmtNodeCodec.IsLeaf(data);
 bool isBranch = SmtNodeCodec.IsBranch(data);

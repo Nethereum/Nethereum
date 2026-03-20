@@ -85,39 +85,7 @@ var result = verifier.Verify(proof, vk, publicInputs);
 Console.WriteLine(result.IsValid ? "Valid" : $"Invalid: {result.Error}");
 ```
 
-### Example 3: Custom Verification with Groth16Verifier Directly
-
-Construct proof and verification key objects from code when not using snarkjs JSON:
-
-```csharp
-using Nethereum.ZkProofsVerifier.Groth16;
-using Nethereum.Signer.Crypto.BN128;
-using System.Numerics;
-
-// Construct proof from known curve points
-var proof = new Groth16Proof
-{
-    A = /* G1 ECPoint */,
-    B = /* G2 TwistPoint */,
-    C = /* G1 ECPoint */
-};
-
-var vk = new Groth16VerificationKey
-{
-    Alpha = /* G1 ECPoint */,
-    Beta  = /* G2 TwistPoint */,
-    Gamma = /* G2 TwistPoint */,
-    Delta = /* G2 TwistPoint */,
-    IC    = new ECPoint[] { /* IC[0], IC[1], ... */ }
-};
-
-var publicInputs = new BigInteger[] { /* field elements */ };
-
-var verifier = new Groth16Verifier();
-var result = verifier.Verify(proof, vk, publicInputs);
-```
-
-### Example 4: Detecting Tampered Proofs
+### Example 3: Detecting Tampered Proofs
 
 ```csharp
 var proof = SnarkjsProofParser.Parse(proofJson);

@@ -11,7 +11,7 @@ EIP-7864 proposes replacing Ethereum's Patricia Merkle Trie with a binary trie s
 - **BasicDataLeaf packing** — version, code size, nonce, and balance in a single 32-byte leaf
 - **Code chunking** — split contract bytecode into 31-byte chunks with PUSH continuation tracking
 - **Proof generation and verification** — compact Merkle proofs for stateless validation
-- **Pluggable hashing** — BLAKE3 (default) or SHA-256
+- **Pluggable hashing** — SHA-256 (default) or BLAKE3
 
 ## Installation
 
@@ -192,11 +192,11 @@ using Nethereum.Merkle.Binary;
 using Nethereum.Merkle.Binary.Hashing;
 using Nethereum.Util.HashProviders;
 
-// BLAKE3 (default, faster)
-var blake3Trie = new BinaryTrie(new Blake3HashProvider());
-
-// SHA-256
+// SHA-256 (default)
 var sha256Trie = new BinaryTrie(new Sha256HashProvider());
+
+// BLAKE3 (faster, managed implementation)
+var blake3Trie = new BinaryTrie(new Blake3HashProvider());
 
 // Both produce deterministic roots given the same data
 ```
