@@ -1,0 +1,33 @@
+[
+    {
+        "paths": [
+            "out/Entrypoint.sol/Entrypoint.json",
+            "out/PrivacyPoolSimple.sol/PrivacyPoolSimple.json",
+            "out/WithdrawalVerifier.sol/WithdrawalVerifier.json",
+            "out/CommitmentVerifier.sol/CommitmentVerifier.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.PrivacyPools",
+                "basePath": "../src/Nethereum.PrivacyPools",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/PrivacyPoolComplex.sol/PrivacyPoolComplex.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.PrivacyPools",
+                "basePath": "../src/Nethereum.PrivacyPools",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.PrivacyPools.PrivacyPoolSimple.ContractDefinition"],
+                "structReferencedTypes": ["Withdrawal", "RagequitProof", "WithdrawProof", "DepositedEventDTO", "WithdrawnEventDTO", "RagequitEventDTO", "LeafInsertedEventDTO", "PoolDiedEventDTO"]
+            }
+        ]
+    }
+]
