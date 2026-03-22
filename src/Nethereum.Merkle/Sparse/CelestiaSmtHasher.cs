@@ -10,7 +10,7 @@ namespace Nethereum.Merkle.Sparse
 
         [ThreadStatic] private static SHA256 _sha256;
 
-        private static SHA256 Sha256 => _sha256 ??= SHA256.Create();
+        private static SHA256 Sha256 => _sha256 ?? (_sha256 = SHA256.Create());
 
         public bool MsbFirst => true;
 

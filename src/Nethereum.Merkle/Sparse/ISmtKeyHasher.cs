@@ -28,7 +28,7 @@ namespace Nethereum.Merkle.Sparse
 
         public byte[] ComputePath(byte[] key)
         {
-            var sha = _sha256 ??= System.Security.Cryptography.SHA256.Create();
+            var sha = _sha256 ?? (_sha256 = System.Security.Cryptography.SHA256.Create());
             return sha.ComputeHash(key);
         }
     }

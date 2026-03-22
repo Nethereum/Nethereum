@@ -18,13 +18,13 @@ namespace Nethereum.Merkle.Sparse
         public Task PutAsync(byte[] hash, byte[] data)
         {
             _store[hash] = data;
-            return Task.CompletedTask;
+            return Task.FromResult(0);
         }
 
         public Task DeleteAsync(byte[] hash)
         {
             _store.TryRemove(hash, out _);
-            return Task.CompletedTask;
+            return Task.FromResult(0);
         }
 
         public int Count => _store.Count;
