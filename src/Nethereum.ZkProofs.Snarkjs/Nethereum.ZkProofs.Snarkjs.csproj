@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum ZkProofs Snarkjs - Local snarkjs proof provider for desktop/server/CLI (Node.js process or native interop)</Description>
+    <AssemblyTitle>Nethereum.ZkProofs.Snarkjs</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <AssemblyName>Nethereum.ZkProofs.Snarkjs</AssemblyName>
+    <PackageId>Nethereum.ZkProofs.Snarkjs</PackageId>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.ZkProofs\Nethereum.ZkProofs.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+</Project>
