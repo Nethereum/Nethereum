@@ -1,6 +1,6 @@
 ---
 name: coingecko-api
-description: Fetch token metadata, prices by contract address or CoinGecko ID, asset platform mappings, and token lists via the CoinGecko API in Nethereum.DataServices
+description: "Fetch token metadata, prices by contract address or CoinGecko ID, asset platform mappings, and token lists via the CoinGecko API in Nethereum.DataServices. Use when the user asks about crypto prices, token lookup, token metadata, price feeds, coin prices, contract-to-price mapping, asset platforms, or CoinGecko integration in .NET/C#."
 user-invocable: true
 ---
 

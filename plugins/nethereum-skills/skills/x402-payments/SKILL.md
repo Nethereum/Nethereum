@@ -1,6 +1,6 @@
 ---
 name: x402-payments
-description: Accept HTTP 402 cryptocurrency payments using Nethereum (.NET/C#). Use this skill whenever the user asks about x402 protocol, HTTP 402 payments, pay-per-request APIs, EIP-3009 transfer authorization, USDC payments, crypto API monetization, payment middleware, or accepting cryptocurrency payments in ASP.NET with C# or .NET.
+description: "Implement payment middleware, validate EIP-3009 signatures, handle payment verification, and accept HTTP 402 cryptocurrency payments using Nethereum (.NET/C#). Use this skill whenever the user asks about x402 protocol, HTTP 402 payments, pay-per-request APIs, EIP-3009 transfer authorization, USDC payments, crypto API monetization, payment middleware, or accepting cryptocurrency payments in ASP.NET with C# or .NET."
 user-invocable: true
 ---
 
@@ -44,6 +44,22 @@ if (response.HasPaymentResponse())
 ```
 
 Supports `GetAsync`, `PostAsync`, `PutAsync`, `DeleteAsync`, `SendAsync`. Throws `X402PaymentExceedsMaximumException` if requested amount exceeds `MaxPaymentAmount`.
+
+### Verify Payment Settlement
+
+Always verify the payment was settled after receiving a response:
+
+```csharp
+if (response.HasPaymentResponse())
+{
+    if (!response.IsPaymentSuccessful())
+        throw new Exception($"Payment failed for tx: {response.GetTransactionHash()}");
+
+    var txHash = response.GetTransactionHash();
+    var payer = response.GetPayerAddress();
+    // Proceed with delivering the paid content
+}
+```
 
 ### Manual Payment Flow
 
@@ -154,6 +170,27 @@ var signature = await signer.SignWithWeb3Async(
 | `invalid_exact_evm_payload_authorization_valid_before` | Authorization expired |
 | `invalid_exact_evm_payload_recipient_mismatch` | Receiver mismatch (Receive model) |
 | `invalid_exact_evm_payload_authorization_nonce_used` | Nonce already used |
+
+## Error Handling Workflow
+
+```csharp
+try
+{
+    var response = await x402Client.GetAsync("https://api.example.com/premium/content");
+}
+catch (X402PaymentExceedsMaximumException ex)
+{
+    // Requested amount exceeds MaxPaymentAmount safety limit
+    Console.WriteLine($"Payment too large: {ex.Message}");
+}
+catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
+{
+    // Server requires payment but client could not fulfill
+    Console.WriteLine($"Payment required but failed: {ex.Message}");
+}
+```
+
+On the server side, check error codes in the `X402-Error` response header to diagnose failures (see Error Codes table).
 
 ## Supported Tokens
 

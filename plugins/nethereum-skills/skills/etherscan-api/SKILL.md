@@ -1,6 +1,6 @@
 ---
 name: etherscan-api
-description: Query Etherscan V2 API for gas prices, account transactions, balances, token transfers, contract source code, and compilation metadata via Nethereum.DataServices
+description: "Query Etherscan V2 API for gas prices, account transactions, balances, token transfers, contract source code, and compilation metadata via Nethereum.DataServices. Use when the user asks about Ethereum block explorer API, wallet transactions, crypto balances, gas prices, contract verification, token transfers, NFT transfers, or Etherscan integration in .NET/C#."
 user-invocable: true
 ---
 
