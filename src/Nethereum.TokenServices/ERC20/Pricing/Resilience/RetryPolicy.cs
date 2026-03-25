@@ -4,8 +4,8 @@ namespace Nethereum.TokenServices.ERC20.Pricing.Resilience
 {
     public class RetryPolicy
     {
-        public int MaxRetries { get; set; } = 3;
-        public TimeSpan InitialDelay { get; set; } = TimeSpan.FromSeconds(1);
+        public int MaxRetries { get; set; } = 1;
+        public TimeSpan InitialDelay { get; set; } = TimeSpan.FromSeconds(2);
         public double BackoffMultiplier { get; set; } = 2.0;
 
         public static RetryPolicy Default => new RetryPolicy();

@@ -48,7 +48,7 @@ namespace Nethereum.TokenServices.ERC20.Pricing
             var totalQueried = 0;
             var totalFound = 0;
 
-            var tasks = chainGroups.Select(async chainGroup =>
+            foreach (var chainGroup in chainGroups)
             {
                 var chainId = chainGroup.Key;
                 var allAddresses = chainGroup
@@ -60,13 +60,7 @@ namespace Nethereum.TokenServices.ERC20.Pricing
 
                 var needsNative = chainGroup.Any(r => r.IncludeNative);
 
-                return await FetchChainPricesAsync(chainId, allAddresses, needsNative, request.Currency, result, cancellationToken);
-            });
-
-            var chainResults = await Task.WhenAll(tasks);
-
-            foreach (var (queried, found) in chainResults)
-            {
+                var (queried, found) = await FetchChainPricesAsync(chainId, allAddresses, needsNative, request.Currency, result, cancellationToken);
                 totalQueried += queried;
                 totalFound += found;
             }
