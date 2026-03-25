@@ -22,6 +22,14 @@
     <EnableDefaultCssItems>false</EnableDefaultCssItems>
   </PropertyGroup>
 
+  <!-- Workaround: .NET 10 MAUI Razor SDK pack expects StaticWebAssetEndpoints.props but doesn't generate it for MAUI TFMs -->
+  <Target Name="_CreateMissingStaticWebAssetEndpointsProps" AfterTargets="Build" Condition="!Exists('$(IntermediateOutputPath)staticwebassets\msbuild.$(PackageId).Microsoft.AspNetCore.StaticWebAssetEndpoints.props')">
+    <MakeDir Directories="$(IntermediateOutputPath)staticwebassets" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)staticwebassets\msbuild.$(PackageId).Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+                     Lines="&lt;Project /&gt;"
+                     Overwrite="true" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
