@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -23,15 +23,10 @@
 
   <ItemGroup>
     <PackageReference Include="Nethereum.ZkProofs.RapidSnark" Version="6.0.4" />
-    <ProjectReference Include="..\..\src\Nethereum.PrivacyPools.Circuits\Nethereum.PrivacyPools.Circuits.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.ZkProofs.Snarkjs\Nethereum.ZkProofs.Snarkjs.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.ZkProofsVerifier\Nethereum.ZkProofsVerifier.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.PrivacyPools\Nethereum.PrivacyPools.csproj" />
-    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
-    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Remove="scripts\**" />
-    <None Remove="scripts\**" />
+    <ProjectReference Include="..\..\src\Nethereum.PrivacyPools.Circuits\Nethereum.PrivacyPools.Circuits.csproj" />
   </ItemGroup>
 
 </Project>

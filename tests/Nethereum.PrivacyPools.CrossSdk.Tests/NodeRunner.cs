@@ -77,6 +77,11 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
                     throw new TimeoutException(
                         $"Node script {scriptName} timed out after {timeoutMs}ms. Stderr: {stderr}");
                 }
+                finally
+                {
+                    try { process.CancelOutputRead(); } catch { }
+                    try { process.CancelErrorRead(); } catch { }
+                }
 
                 return new NodeRunnerResult
                 {

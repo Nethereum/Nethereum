@@ -10,7 +10,7 @@ using Nethereum.PrivacyPools.Processing;
 using Nethereum.PrivacyPools.Relayer;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
-using Nethereum.ZkProofs.Snarkjs;
+using Nethereum.ZkProofs.RapidSnark;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -122,7 +122,7 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             }
 
             var artifactSource = circuitSource;
-            var proofProvider = pp.CreateProofProvider(new SnarkjsProofProvider(), artifactSource);
+            var proofProvider = pp.CreateProofProvider(new NativeProofProvider(), artifactSource);
 
             var spendable = pp.GetSpendableAccounts();
             Assert.Single(spendable);

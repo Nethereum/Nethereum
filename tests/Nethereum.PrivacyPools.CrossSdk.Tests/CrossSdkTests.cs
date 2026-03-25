@@ -16,7 +16,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Nethereum.ZkProofs;
-using Nethereum.ZkProofs.Snarkjs;
+using Nethereum.ZkProofs.RapidSnark;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -109,7 +109,7 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
             var circuitSource = new PrivacyPoolCircuitSource();
             Assert.True(circuitSource.HasCircuit("commitment"), "Commitment circuit not found");
 
-            var proofProvider = new PrivacyPoolProofProvider(new SnarkjsProofProvider(), circuitSource);
+            var proofProvider = new PrivacyPoolProofProvider(new NativeProofProvider(), circuitSource);
             var ragequitResult = await proofProvider.GenerateRagequitProofAsync(new RagequitWitnessInput
             {
                 Nullifier = tsNullifier,
@@ -260,7 +260,7 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
             var circuitSource = new PrivacyPoolCircuitSource();
             Assert.True(circuitSource.HasCircuit("withdrawal"), "Withdrawal circuit not found");
 
-            var proofProvider = new PrivacyPoolProofProvider(new SnarkjsProofProvider(), circuitSource);
+            var proofProvider = new PrivacyPoolProofProvider(new NativeProofProvider(), circuitSource);
             var proofResult = await proofProvider.GenerateWithdrawalProofAsync(witnessInput);
             _output.WriteLine("Withdrawal proof generated");
 
@@ -388,7 +388,7 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
             var circuitSource = new PrivacyPoolCircuitSource();
             Assert.True(circuitSource.HasCircuit("commitment"), "Commitment circuit not found");
 
-            var proofProvider = new PrivacyPoolProofProvider(new SnarkjsProofProvider(), circuitSource);
+            var proofProvider = new PrivacyPoolProofProvider(new NativeProofProvider(), circuitSource);
             var ragequitResult = await proofProvider.GenerateRagequitProofAsync(new RagequitWitnessInput
             {
                 Nullifier = tsNullifier,
@@ -521,8 +521,8 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
                                 $"--http.api eth,net,web3,debug,personal,admin " +
                                 $"--verbosity 2",
                     UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
+                    RedirectStandardOutput = false,
+                    RedirectStandardError = false,
                     CreateNoWindow = true
                 }
             };

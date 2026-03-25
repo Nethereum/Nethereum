@@ -11,6 +11,7 @@ namespace Nethereum.PrivacyPools
     {
         private readonly IZkProofProvider _provider;
         private readonly ICircuitArtifactSource _artifactSource;
+        private readonly ICircuitGraphSource? _graphSource;
 
         private const string COMMITMENT_CIRCUIT = "commitment";
         private const string WITHDRAWAL_CIRCUIT = "withdrawal";
@@ -19,6 +20,7 @@ namespace Nethereum.PrivacyPools
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _artifactSource = artifactSource ?? throw new ArgumentNullException(nameof(artifactSource));
+            _graphSource = artifactSource as ICircuitGraphSource;
         }
 
         public async Task<RagequitProofResult> GenerateRagequitProofAsync(RagequitWitnessInput input, CancellationToken cancellationToken = default)
@@ -29,13 +31,19 @@ namespace Nethereum.PrivacyPools
             var wasm = await _artifactSource.GetWasmAsync(COMMITMENT_CIRCUIT, cancellationToken);
             var zkey = await _artifactSource.GetZkeyAsync(COMMITMENT_CIRCUIT, cancellationToken);
 
-            var result = await _provider.FullProveAsync(new ZkProofRequest
+            var request = new ZkProofRequest
             {
                 CircuitWasm = wasm,
                 CircuitZkey = zkey,
                 InputJson = inputJson,
+                CircuitName = COMMITMENT_CIRCUIT,
                 Scheme = _provider.Scheme
-            }, cancellationToken);
+            };
+
+            if (_graphSource != null && _graphSource.HasGraph(COMMITMENT_CIRCUIT))
+                request.CircuitGraph = _graphSource.GetGraphData(COMMITMENT_CIRCUIT);
+
+            var result = await _provider.FullProveAsync(request, cancellationToken);
 
             var signals = RagequitProofSignals.FromArray(result.PublicSignals);
 
@@ -55,13 +63,19 @@ namespace Nethereum.PrivacyPools
             var wasm = await _artifactSource.GetWasmAsync(WITHDRAWAL_CIRCUIT, cancellationToken);
             var zkey = await _artifactSource.GetZkeyAsync(WITHDRAWAL_CIRCUIT, cancellationToken);
 
-            var result = await _provider.FullProveAsync(new ZkProofRequest
+            var request = new ZkProofRequest
             {
                 CircuitWasm = wasm,
                 CircuitZkey = zkey,
                 InputJson = inputJson,
+                CircuitName = WITHDRAWAL_CIRCUIT,
                 Scheme = _provider.Scheme
-            }, cancellationToken);
+            };
+
+            if (_graphSource != null && _graphSource.HasGraph(WITHDRAWAL_CIRCUIT))
+                request.CircuitGraph = _graphSource.GetGraphData(WITHDRAWAL_CIRCUIT);
+
+            var result = await _provider.FullProveAsync(request, cancellationToken);
 
             var signals = WithdrawProofSignals.FromArray(result.PublicSignals);
 

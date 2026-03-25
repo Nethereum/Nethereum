@@ -23,7 +23,7 @@ using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Nethereum.ZkProofs;
 using Nethereum.ZkProofs.Groth16;
-using Nethereum.ZkProofs.Snarkjs;
+using Nethereum.ZkProofs.RapidSnark;
 using Xunit;
 using Xunit.Abstractions;
 using DepositFunction = Nethereum.PrivacyPools.Entrypoint.ContractDefinition.DepositFunction;
@@ -434,7 +434,7 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             ICircuitArtifactSource artifactSource = circuitSource;
 
             var proofProvider = new PrivacyPoolProofProvider(
-                new SnarkjsProofProvider(), artifactSource);
+                new NativeProofProvider(), artifactSource);
 
             var ragequitResult = await proofProvider.GenerateRagequitProofAsync(new RagequitWitnessInput
             {
@@ -531,7 +531,7 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             }
 
             var proofProvider = pp.CreateProofProvider(
-                new Nethereum.ZkProofs.Snarkjs.SnarkjsProofProvider(), circuitSource);
+                new NativeProofProvider(), circuitSource);
 
             var withdrawResult = await pp.Pool.WithdrawDirectAsync(
                 dep1.Commitment, 0, depositValue / 2, _account.Address,
@@ -650,7 +650,7 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
 
             ICircuitArtifactSource artifactSource = circuitSource;
             var proofProvider = new PrivacyPoolProofProvider(
-                new SnarkjsProofProvider(), artifactSource);
+                new NativeProofProvider(), artifactSource);
 
             var proofResult = await proofProvider.GenerateWithdrawalProofAsync(witnessInput);
 
@@ -728,7 +728,7 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             }
 
             var proofProvider = pp.CreateProofProvider(
-                new Nethereum.ZkProofs.Snarkjs.SnarkjsProofProvider(), circuitSource);
+                new NativeProofProvider(), circuitSource);
 
             var withdrawnValue = depositValue / 2;
             var withdrawResult = await pp.Pool.WithdrawDirectAsync(

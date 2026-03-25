@@ -7,7 +7,7 @@ using Nethereum.ZkProofs;
 
 namespace Nethereum.PrivacyPools.Circuits
 {
-    public class PrivacyPoolCircuitSource : ICircuitArtifactSource
+    public class PrivacyPoolCircuitSource : ICircuitArtifactSource, ICircuitGraphSource
     {
         private static readonly Assembly ResourceAssembly = typeof(PrivacyPoolCircuitSource).Assembly;
         private const string ResourcePrefix = "Nethereum.PrivacyPools.Circuits.circuits.";
@@ -39,6 +39,18 @@ namespace Nethereum.PrivacyPools.Circuits
         public bool HasCircuit(string circuitName)
         {
             var resourceName = $"{ResourcePrefix}{circuitName}.{circuitName}.wasm";
+            using var stream = ResourceAssembly.GetManifestResourceStream(resourceName);
+            return stream != null;
+        }
+
+        public byte[] GetGraphData(string circuitName)
+        {
+            return LoadResource(circuitName, $"{circuitName}.graph.bin");
+        }
+
+        public bool HasGraph(string circuitName)
+        {
+            var resourceName = $"{ResourcePrefix}{circuitName}.{circuitName}.graph.bin";
             using var stream = ResourceAssembly.GetManifestResourceStream(resourceName);
             return stream != null;
         }
