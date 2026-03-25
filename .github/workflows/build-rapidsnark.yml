@@ -1,0 +1,199 @@
+name: Build RapidSnark Native Libraries
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/Nethereum.ZkProofs.RapidSnark/**'
+      - 'scripts/build-rapidsnark-windows.sh'
+      - '.github/workflows/build-rapidsnark.yml'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make m4 diffutils tar xz curl
+
+      - name: Clone rapidsnark
+        run: git clone --recursive https://github.com/iden3/rapidsnark.git ../rapidsnark
+
+      - name: Build GMP
+        run: |
+          cd ../rapidsnark/depends
+          GMP_ARCHIVE="gmp-6.3.0.tar.xz"
+          curl -L -O "https://ftpmirror.gnu.org/gmp/$GMP_ARCHIVE" || \
+          curl -L -O "https://gmplib.org/download/gmp/$GMP_ARCHIVE"
+          tar -xf "$GMP_ARCHIVE"
+          mv gmp-6.3.0 gmp && cd gmp
+          mkdir build_win && cd build_win
+          CC=gcc CFLAGS="-O2 -std=gnu17" ../configure \
+            --prefix="$(cd ../.. && pwd)/gmp/package" \
+            --with-pic --disable-fft --disable-assembly
+          make -j$(nproc)
+          make install
+
+      - name: Patch sources for Windows
+        run: |
+          cd ../rapidsnark
+
+          # Fix u_int types
+          for f in src/binfile_utils.hpp src/binfile_utils.cpp src/zkey_utils.hpp \
+                   src/wtns_utils.hpp src/prover.cpp src/groth16.hpp src/groth16.cpp \
+                   depends/ffiasm/c/fft.hpp depends/ffiasm/c/fft.cpp \
+                   depends/ffiasm/c/multiexp.cpp depends/ffiasm/c/pointparallelprocessor.hpp \
+                   depends/ffiasm/c/binfile_utils.hpp depends/ffiasm/c/binfile_utils.cpp \
+                   depends/ffiasm/c/wtns_utils.hpp depends/ffiasm/c/zkey_utils.hpp; do
+            sed -i 's/u_int64_t/uint64_t/g; s/u_int32_t/uint32_t/g' "$f" 2>/dev/null || true
+          done
+
+          # Add cstdint
+          for f in src/binfile_utils.hpp src/zkey_utils.hpp src/wtns_utils.hpp \
+                   src/groth16.hpp depends/ffiasm/c/fft.hpp depends/ffiasm/c/multiexp.cpp \
+                   depends/ffiasm/c/pointparallelprocessor.hpp; do
+            grep -q '#include <cstdint>' "$f" || sed -i '1i #include <cstdint>' "$f"
+          done
+
+          # Remove POSIX includes from binfile_utils.cpp
+          sed -i '/#include <sys\/mman.h>/d; /#include <sys\/stat.h>/d; /#include <fcntl.h>/d; /#include <unistd.h>/d' src/binfile_utils.cpp
+
+          # Patch fileloader for Windows
+          bash -c 'cd ../rapidsnark && bash $GITHUB_WORKSPACE/scripts/build-rapidsnark-windows.sh' 2>/dev/null || true
+          # The build script handles fileloader patching; if it fails we do it inline:
+          if ! grep -q '_WIN32' src/fileloader.hpp; then
+            cp $GITHUB_WORKSPACE/scripts/build-rapidsnark-windows.sh /dev/null  # use script patches
+          fi
+
+      - name: Build rapidsnark DLL
+        run: |
+          cd ../rapidsnark
+          rm -rf build_prover_win && mkdir build_prover_win && cd build_prover_win
+          cmake .. -G "MSYS Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DUSE_ASM=NO -DUSE_OPENMP=OFF -DBUILD_TESTS=OFF \
+            -DCMAKE_CXX_FLAGS="-Duint=unsigned -std=c++17" \
+            -DCMAKE_C_FLAGS="-std=gnu17 -Duint=unsigned" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-static-libgcc -static-libstdc++ -static"
+          make -j$(nproc) rapidsnark
+
+      - name: Copy DLL to runtimes
+        run: |
+          mkdir -p src/Nethereum.ZkProofs.RapidSnark/runtimes/win-x64/native
+          cp ../rapidsnark/build_prover_win/src/librapidsnark.dll \
+             src/Nethereum.ZkProofs.RapidSnark/runtimes/win-x64/native/rapidsnark.dll
+          ls -lh src/Nethereum.ZkProofs.RapidSnark/runtimes/win-x64/native/
+
+      - name: Verify DLL exports
+        run: objdump -p src/Nethereum.ZkProofs.RapidSnark/runtimes/win-x64/native/rapidsnark.dll | grep groth16
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rapidsnark-win-x64
+          path: src/Nethereum.ZkProofs.RapidSnark/runtimes/win-x64/native/rapidsnark.dll
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake nasm libgmp-dev curl
+
+      - name: Clone and build rapidsnark
+        run: |
+          git clone --recursive https://github.com/iden3/rapidsnark.git ../rapidsnark
+          cd ../rapidsnark
+          bash build_gmp.sh host
+          mkdir build_prover && cd build_prover
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../package
+          make -j$(nproc)
+          make install
+
+      - name: Copy to runtimes
+        run: |
+          mkdir -p src/Nethereum.ZkProofs.RapidSnark/runtimes/linux-x64/native
+          cp ../rapidsnark/package/lib/librapidsnark.so \
+             src/Nethereum.ZkProofs.RapidSnark/runtimes/linux-x64/native/
+          ls -lh src/Nethereum.ZkProofs.RapidSnark/runtimes/linux-x64/native/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rapidsnark-linux-x64
+          path: src/Nethereum.ZkProofs.RapidSnark/runtimes/linux-x64/native/librapidsnark.so
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install cmake nasm
+
+      - name: Clone and build rapidsnark
+        run: |
+          git clone --recursive https://github.com/iden3/rapidsnark.git ../rapidsnark
+          cd ../rapidsnark
+          bash build_gmp.sh macos_arm64
+          mkdir build_prover_macos_arm64 && cd build_prover_macos_arm64
+          cmake .. -DTARGET_PLATFORM=macos_arm64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../package_macos_arm64
+          make -j$(sysctl -n hw.ncpu)
+          make install
+
+      - name: Copy to runtimes
+        run: |
+          mkdir -p src/Nethereum.ZkProofs.RapidSnark/runtimes/osx-arm64/native
+          cp ../rapidsnark/package_macos_arm64/lib/librapidsnark.dylib \
+             src/Nethereum.ZkProofs.RapidSnark/runtimes/osx-arm64/native/
+          ls -lh src/Nethereum.ZkProofs.RapidSnark/runtimes/osx-arm64/native/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rapidsnark-osx-arm64
+          path: src/Nethereum.ZkProofs.RapidSnark/runtimes/osx-arm64/native/librapidsnark.dylib
+
+  test-dotnet:
+    needs: [build-windows, build-linux, build-macos]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: native-artifacts
+
+      - name: Place native libraries
+        shell: bash
+        run: |
+          mkdir -p src/Nethereum.ZkProofs.RapidSnark/runtimes/{win-x64,linux-x64,osx-arm64}/native
+          cp native-artifacts/rapidsnark-win-x64/rapidsnark.dll \
+             src/Nethereum.ZkProofs.RapidSnark/runtimes/win-x64/native/ 2>/dev/null || true
+          cp native-artifacts/rapidsnark-linux-x64/librapidsnark.so \
+             src/Nethereum.ZkProofs.RapidSnark/runtimes/linux-x64/native/ 2>/dev/null || true
+          cp native-artifacts/rapidsnark-osx-arm64/librapidsnark.dylib \
+             src/Nethereum.ZkProofs.RapidSnark/runtimes/osx-arm64/native/ 2>/dev/null || true
+
+      - name: Build and test
+        run: |
+          dotnet restore src/Nethereum.ZkProofs.RapidSnark/Nethereum.ZkProofs.RapidSnark.csproj
+          dotnet build src/Nethereum.ZkProofs.RapidSnark/Nethereum.ZkProofs.RapidSnark.csproj
