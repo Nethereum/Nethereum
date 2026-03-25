@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nethereum.ZkProofs.RapidSnark" Version="6.0.4" />
+    <PackageReference Include="Nethereum.ZkProofs.RapidSnark" Version="6.1.0" />
     <ProjectReference Include="..\..\src\Nethereum.PrivacyPools.Circuits\Nethereum.PrivacyPools.Circuits.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.PrivacyPools\Nethereum.PrivacyPools.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ZkProofs.Snarkjs\Nethereum.ZkProofs.Snarkjs.csproj" />

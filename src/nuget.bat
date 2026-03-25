@@ -12,6 +12,20 @@ dotnet build -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuf
 dotnet pack -c Release --include-symbols -p:SymbolPackageFormat=snupkg /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix% -o ..\..\nativeartifacts
 cd..
 
+rem Build CircomWitnessCalc into nativeartifacts first so dependent packages can resolve it
+cd Nethereum.CircomWitnessCalc
+dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
+dotnet build -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
+dotnet pack -c Release --include-symbols -p:SymbolPackageFormat=snupkg /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix% -o ..\..\nativeartifacts
+cd..
+
+rem Build RapidSnark into nativeartifacts first so dependent packages can resolve it
+cd Nethereum.ZkProofs.RapidSnark
+dotnet restore /property:ReleaseSuffix=%releaseSuffix% /property:TargetNet35=%targetNet35%
+dotnet build -c Release /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix%
+dotnet pack -c Release --include-symbols -p:SymbolPackageFormat=snupkg /property:TargetNet35=%targetNet35% /property:ReleaseSuffix=%releaseSuffix% -o ..\..\nativeartifacts
+cd..
+
 cd Nethereum.Web3
 SET projectName=Nethereum.Web3.csproj
 CALL :restorepack
@@ -420,6 +434,46 @@ CALL :restorepack
 cd..
 
 cd Nethereum.Sourcify.Database
+CALL :restorepack
+cd..
+
+cd Nethereum.Merkle.Binary
+CALL :restorepack
+cd..
+
+cd Nethereum.Model.SSZ
+CALL :restorepack
+cd..
+
+cd Nethereum.ZkProofs
+CALL :restorepack
+cd..
+
+cd Nethereum.ZkProofsVerifier
+CALL :restorepack
+cd..
+
+cd Nethereum.CircomWitnessCalc
+CALL :restorepack
+cd..
+
+cd Nethereum.ZkProofs.RapidSnark
+CALL :restorepack
+cd..
+
+cd Nethereum.ZkProofs.Snarkjs
+CALL :restorepack
+cd..
+
+cd Nethereum.ZkProofs.Snarkjs.Blazor
+CALL :restorepack
+cd..
+
+cd Nethereum.PrivacyPools
+CALL :restorepack
+cd..
+
+cd Nethereum.PrivacyPools.Circuits
 CALL :restorepack
 cd..
 

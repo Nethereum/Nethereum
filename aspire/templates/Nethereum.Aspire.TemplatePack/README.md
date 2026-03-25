@@ -50,7 +50,7 @@ Open the Aspire dashboard, then:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--NethereumVersion` | `6.0.4` | Nethereum NuGet package version |
+| `--NethereumVersion` | `6.1.0` | Nethereum NuGet package version |
 | `--ChainId` | `31337` | Chain ID for the DevChain node |
 | `--AspireVersion` | `13.1.1` | .NET Aspire SDK and hosting package version |
 
@@ -113,7 +113,7 @@ dotnet run
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--NethereumVersion` | `6.0.4` | Nethereum NuGet package version |
+| `--NethereumVersion` | `6.1.0` | Nethereum NuGet package version |
 | `--ChainId` | `31337` | Chain ID for the DevChain node |
 | `--AspireVersion` | `13.1.1` | .NET Aspire SDK and hosting package version |
 

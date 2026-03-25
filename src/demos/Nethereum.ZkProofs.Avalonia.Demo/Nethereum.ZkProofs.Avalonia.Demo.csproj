@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nethereum.CircomWitnessCalc" Version="6.0.4" />
-    <PackageReference Include="Nethereum.ZkProofs.RapidSnark" Version="6.0.4" />
+    <PackageReference Include="Nethereum.CircomWitnessCalc" Version="6.1.0" />
+    <PackageReference Include="Nethereum.ZkProofs.RapidSnark" Version="6.1.0" />
     <ProjectReference Include="..\..\Nethereum.PrivacyPools.Circuits\Nethereum.PrivacyPools.Circuits.csproj" />
     <ProjectReference Include="..\..\Nethereum.ZkProofsVerifier\Nethereum.ZkProofsVerifier.csproj" />
   </ItemGroup>
