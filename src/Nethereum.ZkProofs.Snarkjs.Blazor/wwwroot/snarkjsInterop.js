@@ -3,11 +3,30 @@ let snarkjs = null;
 export async function initialize(snarkjsUrl) {
     if (!snarkjsUrl) {
         throw new Error(
-            'snarkjsUrl is required. Provide a local path (e.g. "./js/snarkjs.min.mjs") ' +
-            'or a CDN URL (e.g. "https://cdn.jsdelivr.net/npm/snarkjs@latest/build/snarkjs.min.mjs"). ' +
-            'To self-host: npm install snarkjs, then copy build/snarkjs.min.mjs to your wwwroot.');
+            'snarkjsUrl is required. Provide a local path (e.g. "./js/snarkjs.min.js") ' +
+            'or a CDN URL (e.g. "https://cdn.jsdelivr.net/npm/snarkjs@latest/build/snarkjs.min.js"). ' +
+            'To self-host: npm install snarkjs, then copy build/snarkjs.min.js to your wwwroot.');
     }
-    snarkjs = await import(snarkjsUrl);
+
+    if (window.snarkjs) {
+        snarkjs = window.snarkjs;
+        return;
+    }
+
+    await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = snarkjsUrl;
+        script.onload = () => {
+            snarkjs = window.snarkjs;
+            if (!snarkjs) {
+                reject(new Error('snarkjs loaded but window.snarkjs is not defined'));
+            } else {
+                resolve();
+            }
+        };
+        script.onerror = () => reject(new Error('Failed to load snarkjs from: ' + snarkjsUrl));
+        document.head.appendChild(script);
+    });
 }
 
 export async function fullProve(inputJson, wasmBase64, zkeyBase64) {
