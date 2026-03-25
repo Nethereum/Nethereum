@@ -1,0 +1,293 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Nethereum.ZkProofs.Avalonia.Demo"
+        x:Class="Nethereum.ZkProofs.Avalonia.Demo.MainWindow"
+        x:DataType="local:ZkProofViewModel"
+        Title="Nethereum ZK Proof Demo - Privacy Pools (Native)"
+        Width="900" Height="900"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <local:ZkProofViewModel />
+    </Window.DataContext>
+
+    <ScrollViewer>
+        <StackPanel Margin="24" Spacing="16">
+
+            <!-- Title -->
+            <TextBlock Text="Privacy Pools Commitment Proof (Native)"
+                       FontSize="24" FontWeight="Bold" />
+            <TextBlock Text="Generate a Groth16 zero-knowledge proof using native libraries (circom-witnesscalc + rapidsnark), then verify in pure C# using BN128 pairing."
+                       FontSize="14" Foreground="{DynamicResource SystemBaseMediumColor}"
+                       TextWrapping="Wrap" Margin="0,0,0,8" />
+
+            <!-- Educational: What is a ZK Proof -->
+            <Expander Header="What is a Zero-Knowledge Proof?" Margin="0,0,0,0">
+                <StackPanel Spacing="12" Margin="12">
+                    <TextBlock TextWrapping="Wrap" FontSize="13">
+                        A zero-knowledge proof (ZKP) lets you prove you know something without revealing what you know.
+                        For example, you can prove "I deposited funds into this pool" without revealing which specific deposit is yours.
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="13">
+                        This demo uses Groth16, a pairing-based proof system on the BN128 elliptic curve.
+                        Groth16 proofs are compact (just 3 curve points) and fast to verify, making them ideal for on-chain verification.
+                    </TextBlock>
+                    <TextBlock Text="How This Demo Works" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,4" />
+
+                    <Border Background="{DynamicResource SystemAltHighColor}" CornerRadius="8" Padding="16">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Background="#0078D4" CornerRadius="12" Width="24" Height="24">
+                                    <TextBlock Text="1" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" FontSize="12" />
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center">
+                                    <Run FontWeight="SemiBold">Compute Witness (Native C)</Run>
+                                    <Run> — circom-witnesscalc evaluates the circuit constraints using the graph.bin file and your inputs, producing witness bytes (.wtns). This is the native equivalent of WASM circuit evaluation in the browser.</Run>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Background="#E74856" CornerRadius="12" Width="24" Height="24">
+                                    <TextBlock Text="2" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" FontSize="12" />
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center">
+                                    <Run FontWeight="SemiBold">Generate Proof (Native C++)</Run>
+                                    <Run> — rapidsnark takes the witness bytes and the proving key (zkey) to produce a Groth16 proof. This is significantly faster than browser-based snarkjs because it uses optimised native multi-scalar multiplication.</Run>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Background="#16C60C" CornerRadius="12" Width="24" Height="24">
+                                    <TextBlock Text="3" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" FontSize="12" />
+                                </Border>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center">
+                                    <Run FontWeight="SemiBold">Verify Proof (Pure C#)</Run>
+                                    <Run> — Nethereum's BN128 pairing library verifies the proof against the verification key and public signals. This same verification can run on-chain in a Solidity verifier contract or off-chain in any .NET application.</Run>
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Expander>
+
+            <!-- Educational: What are Privacy Pools -->
+            <Expander Header="What are Privacy Pools?">
+                <StackPanel Spacing="12" Margin="12">
+                    <TextBlock TextWrapping="Wrap" FontSize="13">
+                        Privacy Pools (EIP-proposed) allow users to deposit and withdraw tokens privately while proving
+                        their funds are not associated with illicit activity. Each deposit creates a commitment —
+                        a hash of your secret values — that is added to a Merkle tree on-chain.
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="13">
+                        When withdrawing, you generate a ZK proof that you know the secret behind one of the commitments,
+                        without revealing which one. The nullifier hash prevents double-spending: it's unique to your deposit
+                        but can't be linked back to the commitment.
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" FontSize="13">
+                        This demo generates the commitment proof — the first step in the Privacy Pools protocol. In production,
+                        this would be combined with a Merkle inclusion proof and an Association Set Provider (ASP) attestation.
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
+
+            <!-- Educational: Nethereum Packages (Native vs Browser) -->
+            <Expander Header="Nethereum Packages Used (Native vs Browser)">
+                <StackPanel Spacing="8" Margin="12">
+                    <TextBlock Text="This desktop demo uses native libraries instead of browser-based JavaScript:"
+                               TextWrapping="Wrap" FontSize="13" Margin="0,0,0,8" />
+
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,4">
+                        <!-- Header -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Package" FontWeight="Bold" FontSize="12" Margin="0,0,8,8" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Role" FontWeight="Bold" FontSize="12" Margin="0,0,8,8" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Replaces (Blazor)" FontWeight="Bold" FontSize="12" Margin="0,0,0,8" />
+
+                        <!-- Row 1 -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Nethereum.CircomWitnessCalc" FontSize="12" FontFamily="Cascadia Code,Consolas,monospace" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="Native witness generation via iden3/circom-witnesscalc (C)" FontSize="12" TextWrapping="Wrap" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="circuit.wasm (WASM in browser)" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,0,6" />
+
+                        <!-- Row 2 -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Nethereum.ZkProofs.RapidSnark" FontSize="12" FontFamily="Cascadia Code,Consolas,monospace" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="Native Groth16 proof generation via iden3/rapidsnark (C++)" FontSize="12" TextWrapping="Wrap" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="snarkjs (JavaScript in browser)" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,0,6" />
+
+                        <!-- Row 3 -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Nethereum.PrivacyPools.Circuits" FontSize="12" FontFamily="Cascadia Code,Consolas,monospace" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="Embedded circuit artifacts (graph.bin, zkey, verification key)" FontSize="12" TextWrapping="Wrap" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="Same package (both platforms)" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,0,6" />
+
+                        <!-- Row 4 -->
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Nethereum.ZkProofsVerifier" FontSize="12" FontFamily="Cascadia Code,Consolas,monospace" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="Pure C# Groth16 verifier using BN128 elliptic curve pairing" FontSize="12" TextWrapping="Wrap" Margin="0,0,8,6" />
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="Same package (both platforms)" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,0,6" />
+                    </Grid>
+
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,4,0,0">
+                        The native pipeline (circom-witnesscalc + rapidsnark) is typically 10-50x faster than browser-based snarkjs,
+                        making it suitable for server-side proof generation, mobile apps, and desktop wallets.
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
+
+            <!-- Status Bar -->
+            <Border Background="{DynamicResource SystemAltHighColor}" CornerRadius="6" Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ProgressBar IsIndeterminate="True" Width="16" Height="16"
+                                 IsVisible="{Binding IsProving}" />
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="13" TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- Circuit Inputs -->
+            <Border Background="{DynamicResource SystemAltHighColor}" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Circuit Inputs" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="These are the inputs to the Circom circuit. The nullifier and secret are private (they never leave your machine). The value and label are public and will appear in the output signals."
+                               FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+
+                    <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto">
+                        <!-- Nullifier -->
+                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4" Margin="0,0,0,12">
+                            <TextBlock Text="Nullifier" FontWeight="SemiBold" FontSize="13" />
+                            <TextBox Text="{Binding Nullifier}" IsEnabled="{Binding !IsProving}" />
+                            <TextBlock Text="Private: a random number that prevents double-spending. Its hash is revealed, not the value itself."
+                                       FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                        </StackPanel>
+
+                        <!-- Secret -->
+                        <StackPanel Grid.Row="0" Grid.Column="2" Spacing="4" Margin="0,0,0,12">
+                            <TextBlock Text="Secret" FontWeight="SemiBold" FontSize="13" />
+                            <TextBox Text="{Binding Secret}" IsEnabled="{Binding !IsProving}" />
+                            <TextBlock Text="Private: combined with the nullifier to create the commitment hash. Never revealed."
+                                       FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                        </StackPanel>
+
+                        <!-- Value -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Value (wei)" FontWeight="SemiBold" FontSize="13" />
+                            <TextBox Text="{Binding Value}" IsEnabled="{Binding !IsProving}" />
+                            <TextBlock Text="Public: the deposit amount in wei (1 ETH = 10^18 wei). Included in the commitment."
+                                       FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                        </StackPanel>
+
+                        <!-- Label -->
+                        <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
+                            <TextBlock Text="Label" FontWeight="SemiBold" FontSize="13" />
+                            <TextBox Text="{Binding Label}" IsEnabled="{Binding !IsProving}" />
+                            <TextBlock Text="Public: an identifier for the Association Set (pool membership group)."
+                                       FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Button Content="Generate Proof"
+                            Command="{Binding GenerateProofCommand}"
+                            IsEnabled="{Binding IsInitialized}"
+                            Classes="accent"
+                            HorizontalAlignment="Left"
+                            Padding="24,10" FontSize="14" />
+                </StackPanel>
+            </Border>
+
+            <!-- Results -->
+            <Border Background="{DynamicResource SystemAltHighColor}" CornerRadius="8" Padding="20"
+                    IsVisible="{Binding CommitmentHash, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="Results" FontSize="18" FontWeight="SemiBold" />
+                        <Border Background="#0078D4" CornerRadius="4" Padding="8,2">
+                            <TextBlock FontSize="12" Foreground="White">
+                                <Run Text="Witness: " /><Run Text="{Binding WitnessTimeMs}" /><Run Text="ms" />
+                                <Run Text=" | Proof: " /><Run Text="{Binding ProofTimeMs}" /><Run Text="ms" />
+                                <Run Text=" | Verify: " /><Run Text="{Binding VerifyTimeMs}" /><Run Text="ms" />
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock Text="The proof is complete. Below are the public signals — these are the only values visible to a verifier. Notice that the nullifier and secret themselves do not appear; only their hashes are revealed."
+                               FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+
+                    <TextBlock Text="Public Signals" FontWeight="SemiBold" FontSize="14" Margin="0,8,0,4" />
+
+                    <!-- Signals Table -->
+                    <Grid ColumnDefinitions="140,*,200" RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,4">
+                        <!-- Header -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Signal" FontWeight="Bold" FontSize="12" Margin="0,0,8,8" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Value" FontWeight="Bold" FontSize="12" Margin="0,0,8,8" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Explanation" FontWeight="Bold" FontSize="12" Margin="0,0,0,8" />
+
+                        <Border Grid.Row="0" Grid.ColumnSpan="3" BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,0,0,1" VerticalAlignment="Bottom" />
+
+                        <!-- Commitment Hash -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Commitment Hash" FontSize="12" Margin="0,8,8,6" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CommitmentHash}" FontSize="11"
+                                   FontFamily="Cascadia Code,Consolas,monospace" TextWrapping="Wrap" Margin="0,8,8,6" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Hash(nullifier, secret, value, label) — uniquely identifies this deposit on-chain"
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,8,0,6" />
+
+                        <!-- Nullifier Hash -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Nullifier Hash" FontSize="12" Margin="0,4,8,6" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding NullifierHash}" FontSize="11"
+                                   FontFamily="Cascadia Code,Consolas,monospace" TextWrapping="Wrap" Margin="0,4,8,6" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="Hash(nullifier) — published on withdrawal to prevent double-spending"
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,4,0,6" />
+
+                        <!-- Value -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Value" FontSize="12" Margin="0,4,8,6" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding OutputValue}" FontSize="11"
+                                   FontFamily="Cascadia Code,Consolas,monospace" Margin="0,4,8,6" />
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="The deposit amount (public input, passed through)"
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,4,0,6" />
+
+                        <!-- Label -->
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Label" FontSize="12" Margin="0,4,8,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding OutputLabel}" FontSize="11"
+                                   FontFamily="Cascadia Code,Consolas,monospace" Margin="0,4,8,0" />
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="Association Set identifier (public input, passed through)"
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,4,0,0" />
+                    </Grid>
+
+                    <!-- Proof JSON -->
+                    <Expander Header="Proof JSON (Groth16 curve points)">
+                        <StackPanel Spacing="8" Margin="8">
+                            <TextBlock Text="The proof consists of three BN128 elliptic curve points (pi_a, pi_b, pi_c). Together with the public signals and verification key, these allow anyone to verify the proof using a bilinear pairing check — without knowing the private inputs."
+                                       FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                            <TextBox Text="{Binding ProofJson}" IsReadOnly="True" TextWrapping="Wrap"
+                                     FontFamily="Cascadia Code,Consolas,monospace" FontSize="11"
+                                     MaxHeight="200" />
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </Border>
+
+            <!-- Verification Result -->
+            <Border CornerRadius="8" Padding="20"
+                    IsVisible="{Binding Verified, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <Border.Background>
+                    <SolidColorBrush Color="{DynamicResource SystemAltHighColor}" />
+                </Border.Background>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Verification (Pure C#)" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="The proof is verified using Nethereum's pure C# BN128 pairing library. This performs the same elliptic curve pairing check that a Solidity Groth16Verifier contract would execute on-chain. No native dependencies are needed for verification."
+                               FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" />
+
+                    <!-- Success -->
+                    <Border Background="#16C60C" CornerRadius="6" Padding="16,12"
+                            IsVisible="{Binding Verified}">
+                        <TextBlock Text="Proof verified successfully — the prover knows a valid (nullifier, secret) for this commitment."
+                                   Foreground="White" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- Failure -->
+                    <Border Background="#E74856" CornerRadius="6" Padding="16,12"
+                            IsVisible="{Binding !Verified}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Proof verification failed" Foreground="White" FontSize="14" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding VerifyError}" Foreground="White" FontSize="12" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Window>

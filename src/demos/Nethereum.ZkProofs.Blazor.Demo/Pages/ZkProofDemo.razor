@@ -1,0 +1,369 @@
+@page "/"
+@using System.Diagnostics
+@using System.Text.Json
+@using Nethereum.ZkProofs.Snarkjs.Blazor
+@using Nethereum.PrivacyPools.Circuits
+@using Nethereum.ZkProofs
+@using Nethereum.ZkProofsVerifier.Circom
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>ZK Proof Demo - Nethereum Privacy Pools</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudText Typo="Typo.h4" Class="mb-2">Privacy Pools Commitment Proof</MudText>
+    <MudText Typo="Typo.body1" Class="mb-4" Color="Color.Secondary">
+        Generate a Groth16 zero-knowledge proof client-side using snarkjs, then verify it in pure C# using BN128 pairing.
+    </MudText>
+
+    <MudExpansionPanels Class="mb-6">
+        <MudExpansionPanel Text="What is a Zero-Knowledge Proof?" MaxHeight="1000">
+            <MudText Typo="Typo.body2" Class="mb-3">
+                A <strong>zero-knowledge proof (ZKP)</strong> lets you prove you know something without revealing what you know.
+                For example, you can prove "I deposited funds into this pool" without revealing which specific deposit is yours.
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-3">
+                This demo uses <strong>Groth16</strong>, a pairing-based proof system on the BN128 elliptic curve.
+                Groth16 proofs are compact (just 3 curve points) and fast to verify, making them ideal for on-chain verification.
+            </MudText>
+            <MudText Typo="Typo.subtitle2" Class="mb-2">How This Demo Works</MudText>
+            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                    <MudText Typo="Typo.body2">
+                        <strong>1. Load Circuit</strong> — The browser loads a pre-compiled Circom circuit (WASM) and proving key (zkey).
+                        These define the mathematical constraints the proof must satisfy.
+                    </MudText>
+                </MudTimelineItem>
+                <MudTimelineItem Color="Color.Secondary" Size="Size.Small">
+                    <MudText Typo="Typo.body2">
+                        <strong>2. Generate Proof (Browser/JS)</strong> — snarkjs takes your private inputs (nullifier, secret) and public inputs (value, label),
+                        evaluates the circuit, and produces a cryptographic proof. This runs entirely in your browser — private inputs never leave your machine.
+                    </MudText>
+                </MudTimelineItem>
+                <MudTimelineItem Color="Color.Tertiary" Size="Size.Small">
+                    <MudText Typo="Typo.body2">
+                        <strong>3. Verify Proof (C# / .NET)</strong> — Nethereum's pure C# BN128 pairing library verifies the proof against the
+                        verification key and public signals. This same verification can run on-chain in a Solidity verifier contract or off-chain in any .NET application.
+                    </MudText>
+                </MudTimelineItem>
+            </MudTimeline>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="What are Privacy Pools?" MaxHeight="1000">
+            <MudText Typo="Typo.body2" Class="mb-3">
+                <strong>Privacy Pools</strong> (EIP-proposed) allow users to deposit and withdraw tokens privately while proving
+                their funds are not associated with illicit activity. Each deposit creates a <em>commitment</em> —
+                a hash of your secret values — that is added to a Merkle tree on-chain.
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-3">
+                When withdrawing, you generate a ZK proof that you know the secret behind one of the commitments,
+                without revealing which one. The <strong>nullifier hash</strong> prevents double-spending: it's unique to your deposit
+                but can't be linked back to the commitment.
+            </MudText>
+            <MudText Typo="Typo.body2">
+                This demo generates the <em>commitment proof</em> — the first step in the Privacy Pools protocol. In production,
+                this would be combined with a Merkle inclusion proof and an Association Set Provider (ASP) attestation.
+            </MudText>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Nethereum Packages Used" MaxHeight="1000">
+            <MudSimpleTable Dense Hover>
+                <thead>
+                    <tr>
+                        <th>Package</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Nethereum.ZkProofs.Snarkjs.Blazor</code></td>
+                        <td>JS interop layer — calls snarkjs in the browser to generate Groth16 proofs from Circom circuits</td>
+                    </tr>
+                    <tr>
+                        <td><code>Nethereum.PrivacyPools.Circuits</code></td>
+                        <td>Embedded circuit artifacts (WASM, zkey, verification key) for the Privacy Pools commitment circuit</td>
+                    </tr>
+                    <tr>
+                        <td><code>Nethereum.ZkProofsVerifier</code></td>
+                        <td>Pure C# Groth16 verifier using BN128 elliptic curve pairing — no native dependencies</td>
+                    </tr>
+                </tbody>
+            </MudSimpleTable>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    @if (!_initialized && _initError is null)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                <MudProgressCircular Size="Size.Small" Indeterminate />
+                <MudText>Initializing snarkjs and loading circuit artifacts...</MudText>
+            </MudStack>
+        </MudAlert>
+    }
+
+    @if (_initError is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            Initialization failed: @_initError
+        </MudAlert>
+    }
+
+    <MudPaper Class="pa-6 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2">Circuit Inputs</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
+            These are the inputs to the Circom circuit. The <strong>nullifier</strong> and <strong>secret</strong> are private
+            (they stay in your browser). The <strong>value</strong> and <strong>label</strong> are public and will appear in the output signals.
+        </MudText>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_nullifier" Label="Nullifier" Variant="Variant.Outlined"
+                              Disabled="@(!_initialized || _proving)"
+                              HelperText="Private: a random number that prevents double-spending. Its hash is revealed, not the value itself." />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_secret" Label="Secret" Variant="Variant.Outlined"
+                              Disabled="@(!_initialized || _proving)"
+                              HelperText="Private: combined with the nullifier to create the commitment hash. Never revealed." />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_value" Label="Value (wei)" Variant="Variant.Outlined"
+                              Disabled="@(!_initialized || _proving)"
+                              HelperText="Public: the deposit amount in wei (1 ETH = 10^18 wei). Included in the commitment." />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_label" Label="Label" Variant="Variant.Outlined"
+                              Disabled="@(!_initialized || _proving)"
+                              HelperText="Public: an identifier for the Association Set (pool membership group)." />
+            </MudItem>
+        </MudGrid>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4"
+                   Disabled="@(!_initialized || _proving)"
+                   OnClick="GenerateProofAsync">
+            @if (_proving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate Class="mr-2" />
+                @("Generating Proof...")
+            }
+            else
+            {
+                @("Generate Proof")
+            }
+        </MudButton>
+    </MudPaper>
+
+    @if (_proving)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4" Variant="Variant.Outlined">
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                <MudProgressCircular Size="Size.Small" Indeterminate />
+                <MudText Typo="Typo.body2">
+                    snarkjs is evaluating the circuit constraints and computing the Groth16 proof in your browser...
+                </MudText>
+            </MudStack>
+        </MudAlert>
+    }
+
+    @if (_proofError is not null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            Proof generation failed: @_proofError
+        </MudAlert>
+    }
+
+    @if (_result is not null)
+    {
+        <MudPaper Class="pa-6 mb-4" Elevation="2">
+            <MudStack Row AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                <MudText Typo="Typo.h6">Results</MudText>
+                <MudChip T="string" Size="Size.Small" Color="Color.Info">@($"Proof generated in {_proofTimeMs} ms")</MudChip>
+            </MudStack>
+            <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
+                The proof is complete. Below are the <strong>public signals</strong> — these are the only values visible to a verifier.
+                Notice that the nullifier and secret themselves do not appear; only their hashes are revealed.
+            </MudText>
+
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Public Signals</MudText>
+            <MudSimpleTable Dense Hover Class="mb-4">
+                <thead>
+                    <tr>
+                        <th>Signal</th>
+                        <th>Value</th>
+                        <th style="min-width:200px;">Explanation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var signals = _result.PublicSignals; }
+                    @if (signals.Length >= 1)
+                    {
+                        <tr>
+                            <td>Commitment Hash</td>
+                            <td style="font-family:monospace;word-break:break-all;">@signals[0]</td>
+                            <td><MudText Typo="Typo.caption">Hash(nullifier, secret, value, label) — uniquely identifies this deposit on-chain</MudText></td>
+                        </tr>
+                    }
+                    @if (signals.Length >= 2)
+                    {
+                        <tr>
+                            <td>Nullifier Hash</td>
+                            <td style="font-family:monospace;word-break:break-all;">@signals[1]</td>
+                            <td><MudText Typo="Typo.caption">Hash(nullifier) — published on withdrawal to prevent double-spending</MudText></td>
+                        </tr>
+                    }
+                    @if (signals.Length >= 3)
+                    {
+                        <tr>
+                            <td>Value</td>
+                            <td style="font-family:monospace;">@signals[2]</td>
+                            <td><MudText Typo="Typo.caption">The deposit amount (public input, passed through)</MudText></td>
+                        </tr>
+                    }
+                    @if (signals.Length >= 4)
+                    {
+                        <tr>
+                            <td>Label</td>
+                            <td style="font-family:monospace;">@signals[3]</td>
+                            <td><MudText Typo="Typo.caption">Association Set identifier (public input, passed through)</MudText></td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+
+            <MudExpansionPanels Class="mb-4">
+                <MudExpansionPanel Text="Proof JSON (Groth16 curve points)">
+                    <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Secondary">
+                        The proof consists of three BN128 elliptic curve points (pi_a, pi_b, pi_c). Together with the public signals
+                        and verification key, these allow anyone to verify the proof using a bilinear pairing check — without knowing the private inputs.
+                    </MudText>
+                    <div class="proof-json">@_result.ProofJson</div>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </MudPaper>
+
+        @if (_verified.HasValue)
+        {
+            <MudPaper Class="pa-6 mb-4" Elevation="2">
+                <MudText Typo="Typo.h6" Class="mb-2">Verification (Pure C#)</MudText>
+                <MudText Typo="Typo.body2" Class="mb-3" Color="Color.Secondary">
+                    The proof is verified using Nethereum's pure C# BN128 pairing library. This performs the same elliptic curve
+                    pairing check that a Solidity <code>Groth16Verifier</code> contract would execute on-chain.
+                    No JavaScript or native dependencies are needed.
+                </MudText>
+                <MudAlert Severity="@(_verified.Value ? Severity.Success : Severity.Error)" Variant="Variant.Filled">
+                    @if (_verified.Value)
+                    {
+                        <MudText>Proof verified successfully — the prover knows a valid (nullifier, secret) for this commitment.</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Proof verification failed: @_verifyError</MudText>
+                    }
+                </MudAlert>
+            </MudPaper>
+        }
+    }
+</MudContainer>
+
+@code {
+    private SnarkjsBlazorProvider? _provider;
+    private byte[]? _wasmBytes;
+    private byte[]? _zkeyBytes;
+    private string? _vkJson;
+
+    private bool _initialized;
+    private string? _initError;
+    private bool _proving;
+    private string? _proofError;
+    private ZkProofResult? _result;
+    private long _proofTimeMs;
+    private bool? _verified;
+    private string? _verifyError;
+
+    private string _nullifier = "12345";
+    private string _secret = "67890";
+    private string _value = "1000000000000000000";
+    private string _label = "1";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            _provider = new SnarkjsBlazorProvider(JSRuntime, "./js/snarkjs.min.js");
+            await _provider.InitializeAsync();
+
+            var source = new PrivacyPoolCircuitSource();
+            _wasmBytes = await source.GetWasmAsync("commitment");
+            _zkeyBytes = await source.GetZkeyAsync("commitment");
+            _vkJson = source.GetVerificationKeyJson("commitment");
+
+            _initialized = true;
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GenerateProofAsync()
+    {
+        if (_provider is null || _wasmBytes is null || _zkeyBytes is null || _vkJson is null) return;
+
+        _proving = true;
+        _proofError = null;
+        _result = null;
+        _verified = null;
+        _verifyError = null;
+
+        try
+        {
+            var inputJson = JsonSerializer.Serialize(new
+            {
+                nullifier = _nullifier,
+                secret = _secret,
+                value = _value,
+                label = _label
+            });
+
+            var sw = Stopwatch.StartNew();
+            _result = await _provider.FullProveAsync(new ZkProofRequest
+            {
+                CircuitWasm = _wasmBytes,
+                CircuitZkey = _zkeyBytes,
+                InputJson = inputJson
+            });
+            sw.Stop();
+            _proofTimeMs = sw.ElapsedMilliseconds;
+
+            await Task.Yield();
+            StateHasChanged();
+
+            var verification = CircomGroth16Adapter.Verify(_result.ProofJson, _vkJson, _result.PublicSignalsJson);
+            _verified = verification.IsValid;
+            if (!verification.IsValid)
+            {
+                _verifyError = verification.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _proofError = ex.Message;
+        }
+        finally
+        {
+            _proving = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_provider is not null)
+        {
+            await _provider.DisposeAsync();
+        }
+    }
+}
