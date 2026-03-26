@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Nethereum.Util;
 using Nethereum.Util.HashProviders;
 
 namespace Nethereum.Merkle.Binary.Keys
@@ -30,7 +31,7 @@ namespace Nethereum.Merkle.Binary.Keys
             var tiBytes = new byte[32];
             if (treeIndex.Sign > 0)
             {
-                var raw = BigIntegerExtensions.ToByteArrayUnsignedBigEndian(treeIndex);
+                var raw = treeIndex.ToByteArrayUnsignedBigEndian();
                 for (int i = 0; i < raw.Length && i < 32; i++)
                     tiBytes[i] = raw[raw.Length - 1 - i];
             }

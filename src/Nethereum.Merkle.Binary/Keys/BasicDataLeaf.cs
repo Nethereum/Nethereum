@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Nethereum.Util;
 
 namespace Nethereum.Merkle.Binary.Keys
 {
@@ -31,7 +32,7 @@ namespace Nethereum.Merkle.Binary.Keys
 
             if (balance.Sign > 0)
             {
-                var b = BigIntegerExtensions.ToByteArrayUnsignedBigEndian(balance);
+                var b = balance.ToByteArrayUnsignedBigEndian();
                 int len = Math.Min(b.Length, 16);
                 Array.Copy(b, b.Length - len, leaf, BalanceOffset + 16 - len, len);
             }
@@ -61,7 +62,7 @@ namespace Nethereum.Merkle.Binary.Keys
 
             var balanceBytes = new byte[16];
             Array.Copy(leaf, BalanceOffset, balanceBytes, 0, 16);
-            balance = BigIntegerExtensions.FromByteArrayUnsignedBigEndian(balanceBytes);
+            balance = balanceBytes.ToBigIntegerFromUnsignedBigEndian();
         }
     }
 }

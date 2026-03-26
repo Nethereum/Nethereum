@@ -182,47 +182,15 @@ namespace Nethereum.Util
 
         private BigInteger ConvertBytesToFieldElement(byte[] bytes)
         {
-            if (bytes == null || bytes.Length == 0)
-            {
-                return BigInteger.Zero;
-            }
-
-            var unsigned = new byte[bytes.Length + 1];
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                unsigned[i] = bytes[bytes.Length - 1 - i];
-            }
-
-            return Normalize(new BigInteger(unsigned));
+            return Normalize(bytes.ToBigIntegerFromUnsignedBigEndian());
         }
 
         private byte[] ToBigEndianBytes(BigInteger value)
         {
-            var normalized = Normalize(value);
-            var littleEndian = normalized.ToByteArray();
-            var reversed = new byte[littleEndian.Length];
-            for (var i = 0; i < littleEndian.Length; i++)
-            {
-                reversed[i] = littleEndian[littleEndian.Length - 1 - i];
-            }
-
-            var firstNonZero = Array.FindIndex(reversed, b => b != 0);
-            byte[] bigEndian;
-            if (firstNonZero == -1)
-            {
-                bigEndian = new byte[] { 0x00 };
-            }
-            else
-            {
-                var length = reversed.Length - firstNonZero;
-                bigEndian = new byte[length];
-                Array.Copy(reversed, firstNonZero, bigEndian, 0, length);
-            }
+            var bigEndian = Normalize(value).ToByteArrayUnsignedBigEndian();
 
             if (bigEndian.Length >= 32)
-            {
                 return bigEndian;
-            }
 
             var padded = new byte[32];
             Array.Copy(bigEndian, 0, padded, 32 - bigEndian.Length, bigEndian.Length);
