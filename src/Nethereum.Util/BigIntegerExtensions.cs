@@ -20,9 +20,15 @@ namespace Nethereum.Util
 
         public static byte[] ToByteArrayUnsignedBigEndian(this BigInteger value)
         {
+            if (value.Sign < 0)
+                throw new ArgumentException("Value must be non-negative for unsigned conversion", nameof(value));
+            if (value.Sign == 0)
+                return new byte[] { 0 };
+            // BigInteger.ToByteArray() always returns little-endian per .NET spec,
+            // with a trailing 0x00 if the high bit is set (sign byte for positive values)
             var littleEndian = value.ToByteArray();
             int len = littleEndian.Length;
-            if (len > 1 && littleEndian[len - 1] == 0)
+            if (littleEndian[len - 1] == 0)
                 len--;
             var result = new byte[len];
             for (int i = 0; i < len; i++)
