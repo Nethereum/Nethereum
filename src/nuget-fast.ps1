@@ -121,6 +121,16 @@ $projects = @(
     "Nethereum.Blazor.Solidity"
     "Nethereum.Explorer"
     "Nethereum.Sourcify.Database"
+    "Nethereum.Merkle.Binary"
+    "Nethereum.Model.SSZ"
+    "Nethereum.ZkProofs"
+    "Nethereum.ZkProofsVerifier"
+    "Nethereum.CircomWitnessCalc"
+    "Nethereum.ZkProofs.RapidSnark"
+    "Nethereum.ZkProofs.Snarkjs"
+    "Nethereum.ZkProofs.Snarkjs.Blazor"
+    "Nethereum.PrivacyPools"
+    "Nethereum.PrivacyPools.Circuits"
 )
 
 # Resolve csproj paths
@@ -134,11 +144,23 @@ function Get-CsprojPath($entry) {
     return $null
 }
 
-# Step 1: Pack Herumi to nativeartifacts first (needed as a dependency)
-Write-Host "`n=== Step 1: Pack Herumi to nativeartifacts ===" -ForegroundColor Cyan
-$herumiCsproj = Join-Path $scriptDir "Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj"
-dotnet pack $herumiCsproj -c $Configuration --include-symbols -p:SymbolPackageFormat=snupkg @props -o $nativeArtifacts
-if ($LASTEXITCODE -ne 0) { Write-Host "Herumi pack failed" -ForegroundColor Red; exit 1 }
+# Step 1: Pack native packages to nativeartifacts first (needed as dependencies)
+Write-Host "`n=== Step 1: Pack native packages to nativeartifacts ===" -ForegroundColor Cyan
+$nativeProjects = @(
+    "Nethereum.Signer.Bls.Herumi"
+    "Nethereum.CircomWitnessCalc"
+    "Nethereum.ZkProofs.RapidSnark"
+)
+foreach ($nativeProject in $nativeProjects) {
+    $nativeCsproj = Join-Path $scriptDir "$nativeProject\$nativeProject.csproj"
+    if (Test-Path $nativeCsproj) {
+        Write-Host "  Packing $nativeProject to nativeartifacts..." -ForegroundColor Gray
+        dotnet pack $nativeCsproj -c $Configuration --include-symbols -p:SymbolPackageFormat=snupkg @props -o $nativeArtifacts
+        if ($LASTEXITCODE -ne 0) { Write-Host "$nativeProject pack failed" -ForegroundColor Red; exit 1 }
+    } else {
+        Write-Host "  SKIP: $nativeProject (not found)" -ForegroundColor Yellow
+    }
+}
 
 # Resolve all csproj paths
 $csprojPaths = @()
