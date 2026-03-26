@@ -139,6 +139,31 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
 
         [Fact]
         [Trait("Category", "E2E-Integration")]
+        public async Task SafeOnlySyncFromChain_RecoversSafeDeposits()
+        {
+            var pp = PrivacyPool.FromDeployment(_web3, _deployment, TEST_MNEMONIC);
+            await pp.InitializeAsync();
+
+            var depositValue = Web3.Web3.Convert.ToWei(1);
+            var depositResult = await pp.DepositAsync(depositValue, depositIndex: 0);
+            Assert.False(depositResult.Receipt.HasErrors());
+
+            var safeOnly = PrivacyPool.FromDeployment(
+                _web3,
+                _deployment,
+                new PrivacyPoolAccount(TEST_MNEMONIC));
+            await safeOnly.InitializeAsync();
+
+            var sync = await safeOnly.SyncSafeFromChainAsync();
+
+            var recovered = Assert.Single(sync.PoolAccounts);
+            Assert.Equal(depositResult.Commitment.CommitmentHash, recovered.Deposit.Commitment.CommitmentHash);
+            Assert.Equal(depositValue, recovered.SpendableValue);
+            Assert.True(recovered.IsSpendable);
+        }
+
+        [Fact]
+        [Trait("Category", "E2E-Integration")]
         [NethereumDocExample(DocSection.Protocols, "event-processing", "Process events and recover multiple accounts")]
         public async Task MultipleDeposits_ProcessAndRecover()
         {
