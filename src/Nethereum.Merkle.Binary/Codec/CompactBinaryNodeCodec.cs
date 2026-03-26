@@ -12,7 +12,7 @@ namespace Nethereum.Merkle.Binary
                 return EncodeInternal(internalNode, hashProvider);
             if (node is StemBinaryNode stemNode)
                 return EncodeStem(stemNode);
-            return Array.Empty<byte>();
+            return new byte[0];
         }
 
         private static byte[] EncodeInternal(InternalBinaryNode node, IHashProvider hashProvider)

@@ -11,7 +11,7 @@ namespace Nethereum.Merkle.Binary.Keys
         public static byte[][] ChunkifyCode(byte[] code)
         {
             if (code == null || code.Length == 0)
-                return Array.Empty<byte[]>();
+                return new byte[0][];
 
             int padded = code.Length;
             int rem = code.Length % BinaryTrieConstants.StemSize;

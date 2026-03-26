@@ -29,7 +29,7 @@ namespace Nethereum.Merkle.Binary.Hashing
     {
         public byte[] ComputeHash(byte[] data)
         {
-            return Blake3Managed.Hash(data ?? Array.Empty<byte>());
+            return Blake3Managed.Hash(data ?? new byte[0]);
         }
     }
 
