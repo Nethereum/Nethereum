@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -21,7 +21,7 @@ using Org.BouncyCastle.Utilities;
 namespace Nethereum.Signer
 {
 
-    public class EthECKey
+    public class EthECKey : IDisposable
     {
         private static readonly SecureRandom SecureRandom = new SecureRandom();
 
@@ -40,6 +40,7 @@ namespace Nethereum.Signer
         private string _ethereumAddress;
         private byte[] _privateKey;
         private string _privateKeyHex;
+        private bool _disposed = false;
 
 
         public EthECKey(string privateKey)
@@ -116,9 +117,16 @@ namespace Nethereum.Signer
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
             var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArrayUnsigned();
-            if (privateBytes.Length != 32)
-                return GenerateKey();
-            return new EthECKey(privateBytes, true);
+            try
+            {
+                if (privateBytes.Length != 32)
+                    return GenerateKey();
+                return new EthECKey(privateBytes, true);
+            }
+            finally
+            {
+                Array.Clear(privateBytes, 0, privateBytes.Length);
+            }
         }
 
         public static EthECKey GenerateKey()
@@ -128,9 +136,16 @@ namespace Nethereum.Signer
             gen.Init(keyGenParam);
             var keyPair = gen.GenerateKeyPair();
             var privateBytes = ((ECPrivateKeyParameters)keyPair.Private).D.ToByteArrayUnsigned();
-            if (privateBytes.Length != 32)
-                return GenerateKey();
-            return new EthECKey(privateBytes, true);
+            try
+            {
+                if (privateBytes.Length != 32)
+                    return GenerateKey();
+                return new EthECKey(privateBytes, true);
+            }
+            finally
+            {
+                Array.Clear(privateBytes, 0, privateBytes.Length);
+            }
         }
 
         public byte[] GetPrivateKeyAsBytes()
@@ -144,6 +159,7 @@ namespace Nethereum.Signer
 
         public string GetPrivateKey()
         {
+            if (_disposed) return null;
             if (_privateKeyHex == null)
             {
                 _privateKeyHex = GetPrivateKeyAsBytes().ToHex(true);
@@ -151,9 +167,9 @@ namespace Nethereum.Signer
             return _privateKeyHex;
         }
 
-        public byte[] GetPubKey(bool compresseed = false)
+        public byte[] GetPubKey(bool compressed = false)
         {
-            if (!compresseed)
+            if (!compressed)
             {
                 if (_publicKey == null)
                 {
@@ -375,6 +391,19 @@ namespace Nethereum.Signer
             var currentSignature = sig as EthECDSASignature;
             if (!sig.IsLowS) return false;
             return _ecKey.Verify(hash, currentSignature.ECDSASignature);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            if (_privateKey != null)
+            {
+                Array.Clear(_privateKey, 0, _privateKey.Length);
+            }
+
+            _privateKeyHex = null;
+            _disposed = true;
         }
     }
 }

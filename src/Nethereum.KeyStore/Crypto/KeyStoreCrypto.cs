@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Threading;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -132,11 +132,25 @@ namespace Nethereum.KeyStore.Crypto
 
         public byte[] Decrypt(byte[] mac, byte[] iv, byte[] cipherText, byte[] derivedKey)
         {
-            ValidateMac(mac, cipherText, derivedKey);
-            var encryptKey = new byte[16];
-            Array.Copy(derivedKey, encryptKey, 16);
-            var privateKey = GenerateAesCtrCipher(iv, encryptKey, cipherText);
-            return privateKey;
+            try
+            {
+                ValidateMac(mac, cipherText, derivedKey);
+                var encryptKey = new byte[16];
+                try
+                {
+                    Array.Copy(derivedKey, 0, encryptKey, 0, 16);
+                    var privateKey = GenerateAesCtrCipher(iv, encryptKey, cipherText);
+                    return privateKey;
+                }
+                finally
+                {
+                    Array.Clear(encryptKey, 0, encryptKey.Length);
+                }
+            }
+            finally
+            {
+                Array.Clear(derivedKey, 0, derivedKey.Length);
+            }
         }
 
         private void ValidateMac(byte[] mac, byte[] cipherText, byte[] derivedKey)
