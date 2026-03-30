@@ -1,0 +1,15 @@
+[
+    {
+        "paths": [
+            "out/EthereumDIDRegistry.sol/EthereumDIDRegistry.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.DID.EthrDID",
+                "basePath": "../src/Nethereum.DID.EthrDID",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    }
+]
