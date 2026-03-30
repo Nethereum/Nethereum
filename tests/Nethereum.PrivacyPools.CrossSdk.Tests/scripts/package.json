@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@0xbow/privacy-pools-core-sdk": "file:../../../../privacy-pools-core/packages/sdk",
+    "@0xbow/privacy-pools-core-sdk": "1.2.0",
+    "maci-crypto": "2.5.0",
     "viem": "^2.22.0",
     "snarkjs": "^0.7.5"
   }

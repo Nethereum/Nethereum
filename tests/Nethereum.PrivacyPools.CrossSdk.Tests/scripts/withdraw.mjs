@@ -4,8 +4,7 @@ import {
   generateWithdrawalSecrets,
   hashPrecommitment,
   generateMerkleProof,
-  calculateContext,
-  bigintToHex
+  calculateContext
 } from '@0xbow/privacy-pools-core-sdk';
 import { parseEventLogs } from 'viem';
 import { readInput, createClients, entrypointAbi, poolAbi, formatProofForSolidity, buildRelayData } from './helpers.mjs';
@@ -17,14 +16,14 @@ const {
   existingValue, existingLabel, existingNullifier, existingSecret,
   stateLeaves, stateLeafIndex,
   aspLeaves, aspLeafIndex,
-  withdrawnValue, recipientAddress, relayerAddress, relayFeeBps
+  withdrawnValue, recipientAddress, relayerAddress, relayFeeBps, childIndex
 } = input;
 
 const { publicClient, walletClient } = createClients(rpcUrl, chainId, privateKey);
 
 const keys = generateMasterKeys(mnemonic);
 const { nullifier: newNullifier, secret: newSecret } = generateWithdrawalSecrets(
-  keys, BigInt(existingLabel), 0n
+  keys, BigInt(existingLabel), BigInt(childIndex ?? '0')
 );
 
 const stateLeavesBigInt = stateLeaves.map(l => BigInt(l));
@@ -61,8 +60,8 @@ const witnessInput = {
   context: BigInt(context).toString()
 };
 
-const wasmPath = `${artifactsDir}/withdrawal.wasm`;
-const zkeyPath = `${artifactsDir}/withdrawal.zkey`;
+const wasmPath = `${artifactsDir}/withdraw.wasm`;
+const zkeyPath = `${artifactsDir}/withdraw.zkey`;
 
 const { proof, publicSignals } = await fullProve(witnessInput, wasmPath, zkeyPath);
 

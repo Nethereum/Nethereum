@@ -12,9 +12,18 @@ Derive deterministic master keys from a BIP-39 mnemonic. The same mnemonic alway
 var account = new PrivacyPoolAccount(mnemonic);
 // account.MasterNullifier — derived from m/44'/60'/0'/0/0
 // account.MasterSecret    — derived from m/44'/60'/1'/0/0
+
+var legacyAccount = PrivacyPoolAccount.CreateLegacy(mnemonic);
+// Use only when recovering deposits created by older SDKs that derived
+// master keys via JavaScript's lossy bytesToNumber() path.
+
+var pp = PrivacyPool.FromDeployment(web3, deployment, account, legacyAccount);
+// Pass both accounts when you want mnemonic-equivalent recovery without
+// constructing PrivacyPool directly from the mnemonic.
 ```
 
-<!-- Verified: AccountTests.CreateAccount_FromMnemonic_DerivesMasterKeys -->
+<!-- Verified: AccountTests.Legacy_CreateAccount_FromMnemonic_DerivesMasterKeys -->
+<!-- Verified: AccountTests.Safe_CreateAccount_FromMnemonic_DerivesMasterKeys -->
 
 ### Deposit with Deterministic Secrets
 
@@ -60,7 +69,15 @@ await pp.InitializeAsync();
 
 var recovered = pp.RecoverAccounts(deposits, withdrawals, ragequits, leaves);
 var spendable = pp.GetSpendableAccounts();
-// Each PoolAccount tracks: Deposit, Withdrawals, SpendableValue, IsRagequitted
+// Each PoolAccount tracks: Deposit, Withdrawals, SpendableValue,
+// IsRagequitted, and IsMigrated
+
+var safeOnly = PrivacyPool.FromDeployment(web3, deployment, new PrivacyPoolAccount(mnemonic));
+await safeOnly.InitializeAsync();
+var safeRecovered = safeOnly.RecoverSafeAccounts(deposits, withdrawals, ragequits, leaves);
+// RecoverSafeAccounts intentionally scans only v1.2.0 safe-key deposits.
+// RecoverAccounts requires a mnemonic or an explicit legacy companion account
+// so migrated funds are not skipped.
 ```
 
 <!-- Verified: PrivacyPoolIntegrationTests.FullJourney_Deposit_Process_Recover_Ragequit -->
@@ -176,13 +193,13 @@ if (source.HasCircuit("commitment"))
 
 ### Download Circuit Artifacts from URL
 
-Alternatively, fetch circuit artifacts from a remote URL with automatic local caching via `UrlCircuitArtifactSource`.
+Alternatively, fetch circuit artifacts from a remote URL with automatic local caching via `UrlCircuitArtifactSource`. The built-in v1.2.0 artifact hash manifest is applied by default, so every downloaded artifact is integrity-checked before use.
 
 ```csharp
 var source = new UrlCircuitArtifactSource(
     "https://example.com/circuits/v1",
     cacheDir: "./circuit-cache");
-await source.InitializeAsync("commitment", "withdrawal");
+await source.InitializeAsync("commitment", "withdraw");
 
 var proofProvider = new PrivacyPoolProofProvider(new SnarkjsProofProvider(), source);
 ```
@@ -256,6 +273,10 @@ var pp = PrivacyPool.FromDeployment(web3, deployment, mnemonic);
 await pp.InitializeAsync();
 
 var sync = await pp.SyncFromChainAsync();
+var safeOnly = PrivacyPool.FromDeployment(web3, deployment, new PrivacyPoolAccount(mnemonic));
+await safeOnly.InitializeAsync();
+var safeSync = await safeOnly.SyncSafeFromChainAsync();
+// Safe-only sync skips legacy/migration recovery by design.
 // sync.PoolAccounts — recovered accounts with spendable balances
 // sync.StateTree — Merkle tree of all commitments
 // sync.ASPTree — ASP tree built from deposit labels
@@ -474,7 +495,7 @@ The C# and TypeScript implementations produce identical outputs for the same inp
 - **Unit tests** (`CrossCompatibilityTests`) — hardcoded value matching for master keys, deposit/withdrawal secrets, commitment hashes, and context hashes against the JavaScript SDK
 - **E2E cross-SDK tests** (`CrossSdkTests`) — deposits made by the 0xbow TypeScript SDK are withdrawn/ragequitted by Nethereum, and vice versa, on a shared Geth dev chain with real Groth16 proof generation and on-chain verification. Covers both native ETH and ERC20 token flows
 
-One key detail: the TypeScript SDK converts private key bytes to BigInteger by first converting to a JavaScript `Number` (IEEE 754 double), which loses precision for values > 2^53. The C# implementation replicates this via `PrivacyPoolAccount.BytesToBigIntViaDouble` to ensure identical master key derivation.
+As of SDK v1.2.0, the TypeScript SDK derives master keys with `bytesToBigInt`, which matches `new PrivacyPoolAccount(mnemonic)` in C#. Older deposits created before that change used JavaScript's lossy `bytesToNumber()` path; Nethereum preserves compatibility for those historical accounts via `PrivacyPoolAccount.CreateLegacy(...)` and migration-aware recovery.
 
 ## Dependencies
 

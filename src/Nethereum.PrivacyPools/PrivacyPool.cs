@@ -12,6 +12,7 @@ namespace Nethereum.PrivacyPools
     public class PrivacyPool
     {
         public PrivacyPoolAccount Account { get; }
+        public PrivacyPoolAccount LegacyAccount { get; }
         public PrivacyPoolService Pool { get; }
         public PrivacyPoolProofVerifier Verifier { get; private set; }
 
@@ -29,17 +30,27 @@ namespace Nethereum.PrivacyPools
             PoolAddress = poolAddress;
 
             Account = new PrivacyPoolAccount(mnemonic, mnemonicPassword);
+            LegacyAccount = PrivacyPoolAccount.CreateLegacy(mnemonic, mnemonicPassword);
             Pool = new PrivacyPoolService(web3, entrypointAddress, poolAddress, commitmentStore);
         }
 
+        // Safe-key-only constructor. LegacyAccount will be null, so RecoverAccounts()
+        // will throw — use RecoverSafeAccounts() or supply a legacyAccount explicitly.
         public PrivacyPool(IWeb3 web3, string entrypointAddress, string poolAddress,
             PrivacyPoolAccount account, ICommitmentStore commitmentStore = null)
+            : this(web3, entrypointAddress, poolAddress, account, legacyAccount: null, commitmentStore)
+        {
+        }
+
+        public PrivacyPool(IWeb3 web3, string entrypointAddress, string poolAddress,
+            PrivacyPoolAccount account, PrivacyPoolAccount legacyAccount, ICommitmentStore commitmentStore = null)
         {
             Web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
             EntrypointAddress = entrypointAddress;
             PoolAddress = poolAddress;
 
             Account = account ?? throw new ArgumentNullException(nameof(account));
+            LegacyAccount = legacyAccount;
             Pool = new PrivacyPoolService(web3, entrypointAddress, poolAddress, commitmentStore);
         }
 
@@ -61,6 +72,15 @@ namespace Nethereum.PrivacyPools
                 account, commitmentStore);
         }
 
+        public static PrivacyPool FromDeployment(IWeb3 web3, PrivacyPoolDeploymentResult deployment,
+            PrivacyPoolAccount account, PrivacyPoolAccount legacyAccount, ICommitmentStore commitmentStore = null)
+        {
+            return new PrivacyPool(web3,
+                deployment.Entrypoint.ContractAddress,
+                deployment.Pool.ContractAddress,
+                account, legacyAccount, commitmentStore);
+        }
+
         public async Task InitializeAsync()
         {
             await Pool.InitializeAsync();
@@ -74,11 +94,66 @@ namespace Nethereum.PrivacyPools
             IEnumerable<PoolLeafEventData> leafInserts,
             int maxConsecutiveMisses = 10)
         {
+            if (LegacyAccount == null)
+                throw new InvalidOperationException(
+                    "Migration-aware recovery requires a legacy account. " +
+                    "Construct with a mnemonic or supply a PrivacyPoolAccount.CreateLegacy(...) instance.");
+
+            return RecoverAccountsInternal(
+                deposits, withdrawals, ragequits, leafInserts, maxConsecutiveMisses);
+        }
+
+        public List<PoolAccount> RecoverSafeAccounts(
+            IEnumerable<PoolDepositEventData> deposits,
+            IEnumerable<PoolWithdrawalEventData> withdrawals,
+            IEnumerable<PoolRagequitEventData> ragequits,
+            IEnumerable<PoolLeafEventData> leafInserts,
+            int maxConsecutiveMisses = 10)
+        {
             var recovered = PrivacyPoolAccountRecovery.RecoverAccounts(
                 Account, Scope, deposits, withdrawals, ragequits, leafInserts, maxConsecutiveMisses);
+
             PoolAccounts.Clear();
             PoolAccounts.AddRange(recovered);
             return recovered;
+        }
+
+        private List<PoolAccount> RecoverAccountsInternal(
+            IEnumerable<PoolDepositEventData> deposits,
+            IEnumerable<PoolWithdrawalEventData> withdrawals,
+            IEnumerable<PoolRagequitEventData> ragequits,
+            IEnumerable<PoolLeafEventData> leafInserts,
+            int maxConsecutiveMisses)
+        {
+            var lookups = PrivacyPoolAccountRecovery.BuildLookups(deposits, withdrawals, ragequits, leafInserts);
+
+            var legacyRecovered = PrivacyPoolAccountRecovery.RecoverAccountsFromLookups(
+                LegacyAccount, Scope, lookups, maxConsecutiveMisses);
+
+            var migrated = PrivacyPoolAccountRecovery.DiscoverMigratedCommitments(
+                Account, Scope, legacyRecovered, lookups);
+
+            var safeRecovered = PrivacyPoolAccountRecovery.RecoverAccountsFromLookups(
+                Account, Scope, lookups, maxConsecutiveMisses, startIndex: migrated.Count);
+
+            var seen = new HashSet<BigInteger>();
+            var merged = new List<PoolAccount>();
+
+            foreach (var pa in legacyRecovered)
+                if (seen.Add(pa.Deposit.Commitment.CommitmentHash))
+                    merged.Add(pa);
+
+            foreach (var pa in migrated)
+                if (seen.Add(pa.Deposit.Commitment.CommitmentHash))
+                    merged.Add(pa);
+
+            foreach (var pa in safeRecovered)
+                if (seen.Add(pa.Deposit.Commitment.CommitmentHash))
+                    merged.Add(pa);
+
+            PoolAccounts.Clear();
+            PoolAccounts.AddRange(merged);
+            return merged;
         }
 
         public List<PoolAccount> GetSpendableAccounts()
@@ -125,15 +200,36 @@ namespace Nethereum.PrivacyPools
             PoseidonMerkleTree aspTree)
         {
             if (poolAccount == null) throw new ArgumentNullException(nameof(poolAccount));
+            if (poolAccount.LatestCommitment.LeafIndex < 0)
+                throw new InvalidOperationException(
+                    "Cannot withdraw: commitment leaf index is unknown. Re-sync with complete leaf events.");
             return await Pool.WithdrawDirectAsync(
                 poolAccount.LatestCommitment.Commitment,
                 poolAccount.LatestCommitment.LeafIndex,
                 withdrawnValue, recipient, proofProvider, stateTree, aspTree);
         }
 
-        public async Task<SyncResult> SyncFromChainAsync(
+        public Task<SyncResult> SyncFromChainAsync(
             BigInteger? fromBlock = null,
             PoseidonMerkleTree existingStateTree = null)
+        {
+            return SyncFromChainCoreAsync(
+                (d, w, r, l) => RecoverAccounts(d, w, r, l), fromBlock, existingStateTree);
+        }
+
+        public Task<SyncResult> SyncSafeFromChainAsync(
+            BigInteger? fromBlock = null,
+            PoseidonMerkleTree existingStateTree = null)
+        {
+            return SyncFromChainCoreAsync(
+                (d, w, r, l) => RecoverSafeAccounts(d, w, r, l), fromBlock, existingStateTree);
+        }
+
+        private async Task<SyncResult> SyncFromChainCoreAsync(
+            Func<IEnumerable<PoolDepositEventData>, IEnumerable<PoolWithdrawalEventData>,
+                IEnumerable<PoolRagequitEventData>, IEnumerable<PoolLeafEventData>, List<PoolAccount>> recover,
+            BigInteger? fromBlock,
+            PoseidonMerkleTree existingStateTree)
         {
             var repository = new InMemoryPrivacyPoolRepository();
             var stateTree = existingStateTree ?? new PoseidonMerkleTree();
@@ -149,7 +245,7 @@ namespace Nethereum.PrivacyPools
             var ragequits = await repository.GetRagequitsAsync();
             var leaves = await repository.GetLeavesAsync();
 
-            var recovered = RecoverAccounts(deposits, withdrawals, ragequits, leaves);
+            var recovered = recover(deposits, withdrawals, ragequits, leaves);
 
             var asp = CreateASPTreeService();
             asp.BuildFromDeposits(deposits);
