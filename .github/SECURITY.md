@@ -17,7 +17,7 @@ If you've discovered a security vulnerability in Nethereum, we appreciate your h
 
 Instead, please report vulnerabilities by:
 - Opening a draft security advisory on GitHub under the "Security" tab.
-- Or by emailing the core maintainer at [juanfranblanco@hotmail.com](mailto:juanfranblanco@hotmail.com).
+- Or by emailing the core maintainer at [info@nethereum.com](mailto:info@nethereum.com).
 
 Please include the following information in your report:
 - A description of the vulnerability.
