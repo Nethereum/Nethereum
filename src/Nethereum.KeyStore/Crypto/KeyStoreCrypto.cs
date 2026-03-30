@@ -144,12 +144,12 @@ namespace Nethereum.KeyStore.Crypto
                 }
                 finally
                 {
-                    Array.Clear(encryptKey, 0, encryptKey.Length);
+                    SecureMemoryHelper.ZeroMemory(encryptKey);
                 }
             }
             finally
             {
-                Array.Clear(derivedKey, 0, derivedKey.Length);
+                SecureMemoryHelper.ZeroMemory(derivedKey);
             }
         }
 

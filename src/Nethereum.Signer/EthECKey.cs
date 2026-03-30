@@ -39,7 +39,6 @@ namespace Nethereum.Signer
         private byte[] _publicKeyNoPrefixCompressed;
         private string _ethereumAddress;
         private byte[] _privateKey;
-        private string _privateKeyHex;
         private bool _disposed = false;
 
 
@@ -125,7 +124,7 @@ namespace Nethereum.Signer
             }
             finally
             {
-                Array.Clear(privateBytes, 0, privateBytes.Length);
+                SecureMemoryHelper.ZeroMemory(privateBytes);
             }
         }
 
@@ -144,7 +143,7 @@ namespace Nethereum.Signer
             }
             finally
             {
-                Array.Clear(privateBytes, 0, privateBytes.Length);
+                SecureMemoryHelper.ZeroMemory(privateBytes);
             }
         }
 
@@ -160,11 +159,7 @@ namespace Nethereum.Signer
         public string GetPrivateKey()
         {
             if (_disposed) return null;
-            if (_privateKeyHex == null)
-            {
-                _privateKeyHex = GetPrivateKeyAsBytes().ToHex(true);
-            }
-            return _privateKeyHex;
+            return GetPrivateKeyAsBytes().ToHex(true);
         }
 
         public byte[] GetPubKey(bool compressed = false)
@@ -399,10 +394,9 @@ namespace Nethereum.Signer
 
             if (_privateKey != null)
             {
-                Array.Clear(_privateKey, 0, _privateKey.Length);
+                SecureMemoryHelper.ZeroMemory(_privateKey);
             }
 
-            _privateKeyHex = null;
             _disposed = true;
         }
     }
