@@ -305,4 +305,4 @@ contracts/cache/
 nul
 
 # Zisk build artifacts (ELF binaries, raw outputs, generated witnesses)
-scripts/zisk-output/
+zisk/output/
