@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.RLP
@@ -381,13 +380,18 @@ namespace Nethereum.RLP
         public static byte[] EncodeDataItemsAsElementOrListAndCombineAsList(byte[][] dataItems, int[] indexOfListDataItems = null)
         {
             if(indexOfListDataItems == null)
-            return EncodeList(dataItems.Select(EncodeElement).ToArray());
+            {
+                var encoded = new byte[dataItems.Length][];
+                for (int i = 0; i < dataItems.Length; i++)
+                    encoded[i] = EncodeElement(dataItems[i]);
+                return EncodeList(encoded);
+            }
             
             var encodedData = new List<byte[]>();
 
             for (var i = 0; i < dataItems.Length; i++)
             {
-                if (indexOfListDataItems.Contains(i))
+                if (Array.IndexOf(indexOfListDataItems, i) >= 0)
                 {
                     var item = dataItems[i];
                     encodedData.Add(EncodeList(item));

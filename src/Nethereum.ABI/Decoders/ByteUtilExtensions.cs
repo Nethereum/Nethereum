@@ -11,11 +11,20 @@ namespace Nethereum.ABI.Decoders
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BigInteger ConvertToInt256(this byte[] bytes)
         {
+#if NETCOREAPP3_0_OR_GREATER
+            var padded = bytes;
+            if (bytes.Length < 32)
+            {
+                padded = new byte[32];
+                System.Array.Copy(bytes, 0, padded, 32 - bytes.Length, bytes.Length);
+            }
+            var value = new BigInteger(padded, isUnsigned: true, isBigEndian: true);
+#else
             var value = CachedInt256Type.Decode<BigInteger>(bytes);
-
+#endif
             if (value > IntType.MAX_INT256_VALUE)
             {
-                value = 1 + IntType.MAX_UINT256_VALUE - value;
+                value -= (IntType.MAX_UINT256_VALUE + 1);
             }
 
             return value;
@@ -24,7 +33,11 @@ namespace Nethereum.ABI.Decoders
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BigInteger ConvertToUInt256(this byte[] bytes)
         {
+#if NETCOREAPP3_0_OR_GREATER
+            return new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
+#else
             return CachedUInt256Type.Decode<BigInteger>(bytes);
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

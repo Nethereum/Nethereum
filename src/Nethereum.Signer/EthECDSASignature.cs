@@ -47,6 +47,8 @@ namespace Nethereum.Signer
 
         public bool IsLowS => ECDSASignature.IsLowS;
 
+        public bool IsCanonical => ECDSASignature.IsCanonical;
+
         public static EthECDSASignature FromDER(byte[] sig)
         {
             return new EthECDSASignature(sig);
