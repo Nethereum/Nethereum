@@ -8,6 +8,7 @@ Nethereum.Util provides essential utility functions for Ethereum development. It
 
 ### Key Features
 
+- **EVM 256-bit Integer Types**: `EvmUInt256` / `EvmInt256` — stack-allocated 4×u64 readonly structs with Knuth long division, BigInteger-free hot paths for AOT/trim targets (zkVM, small-binary scenarios)
 - **Keccak-256 Hashing (SHA-3)**: Ethereum's primary cryptographic hash function
 - **Poseidon Hashing**: ZK-proof-friendly hash function with Circom-compatible presets
 - **Hash Provider Abstraction**: `IHashProvider` interface for pluggable hash implementations
@@ -57,6 +58,30 @@ Ethereum uses wei as the smallest unit (10^-18 ether). Common denominations:
 | Ether | 10^18 | User-facing amounts |
 
 The `UnitConversion` class handles conversions between 20+ denominations including wei, kwei, mwei, gwei, szabo, finney, ether, kether, and more.
+
+### EVM 256-bit Integer Types
+
+Ethereum's native word size is 256 bits. For EVM execution paths that need
+hundreds of millions of arithmetic operations per proof (zkVM, stateless
+block verification, gas-metered simulation), `System.Numerics.BigInteger`
+allocates on every operation and pulls in reflection/dynamic code that AOT
+compilation and binary trimmers cannot eliminate.
+
+`EvmUInt256` is a `readonly struct` holding four `ulong` limbs
+(little-endian limb order: `U0` is bits 0–63, `U3` is bits 192–255). All
+arithmetic is stack-allocated and inlined. Public API mirrors the EVM's
+unsigned 256-bit word semantics: wrap-around add/sub/mul, truncated
+div/mod, modular `AddMod`/`MulMod`, full 512-bit `BigMul`, bitwise and
+shift ops, hex / big-endian / little-endian byte conversions.
+
+`EvmInt256` is the signed counterpart built on `EvmUInt256` — two's
+complement with wrap-around arithmetic, sign extension (EVM `SIGNEXTEND`
+semantics), arithmetic right shift (`SAR`), and signed comparisons.
+
+`BigInteger` interop is intentionally isolated in partial
+(`EvmUInt256.BigInteger.cs`, `EvmInt256.BigInteger.cs`) and extension
+(`EvmUInt256BigIntegerExtensions.cs`) classes so consumers that don't
+need it never drag `System.Numerics` into the trimmed binary.
 
 ## Quick Start
 
@@ -392,6 +417,110 @@ byte[] longAddress = new byte[32]; // e.g., from uint256 in Solidity
 // ... populate longAddress ...
 string fromLong = addressUtil.ConvertToChecksumAddress(longAddress);
 // Uses last 20 bytes
+```
+
+### Example 10: EvmUInt256 Core Arithmetic
+
+All examples below are drawn verbatim from `tests/Nethereum.Util.UnitTests/EvmUInt256Tests.cs`.
+
+```csharp
+using Nethereum.Util;
+
+// Construction — implicit from int / long / ulong, explicit via 4-limb ctor
+EvmUInt256 a = 3_000_000;                       // limb U0 only
+var b = new EvmUInt256(42UL);                   // ulong ctor
+var c = new EvmUInt256(0xA, 0xB, 0xC, 0xD);     // u3..u0 explicit
+
+// Constants
+EvmUInt256 zero = EvmUInt256.Zero;
+EvmUInt256 one = EvmUInt256.One;
+EvmUInt256 max = EvmUInt256.MaxValue;
+
+// Addition — wraps on overflow (EVM semantics)
+Assert.Equal(new EvmUInt256(8), new EvmUInt256(3) + new EvmUInt256(5));
+Assert.Equal(EvmUInt256.Zero, EvmUInt256.MaxValue + EvmUInt256.One);
+
+// Subtraction — wraps on underflow
+Assert.Equal(new EvmUInt256(7), new EvmUInt256(10) - new EvmUInt256(3));
+Assert.Equal(EvmUInt256.MaxValue, EvmUInt256.Zero - EvmUInt256.One);
+
+// Multiplication — low 256 bits (EVM MUL)
+Assert.Equal(new EvmUInt256(42), new EvmUInt256(6) * new EvmUInt256(7));
+
+// Full 512-bit product (EVM MULMOD prep / extended precision)
+EvmUInt256 upper = EvmUInt256.BigMul(EvmUInt256.MaxValue, new EvmUInt256(2), out EvmUInt256 lower);
+// upper = high 256 bits, lower = low 256 bits of the true product
+
+// Division / modulus — div-by-zero returns zero (EVM semantics)
+Assert.Equal(new EvmUInt256(7), new EvmUInt256(42) / new EvmUInt256(6));
+Assert.Equal(EvmUInt256.Zero, new EvmUInt256(42) / EvmUInt256.Zero);
+Assert.Equal(new EvmUInt256(1), new EvmUInt256(10) % new EvmUInt256(3));
+
+// Modular arithmetic (EVM ADDMOD / MULMOD)
+var addmod = EvmUInt256.AddMod(new EvmUInt256(10), new EvmUInt256(15), new EvmUInt256(7));
+var mulmod = EvmUInt256.MulMod(new EvmUInt256(10), new EvmUInt256(10), new EvmUInt256(8));
+
+// Comparison, IsZero
+Assert.True(new EvmUInt256(3) < new EvmUInt256(5));
+Assert.True(EvmUInt256.Zero.IsZero);
+```
+
+### Example 11: EvmUInt256 Byte / Hex / BigInteger Interop
+
+```csharp
+using Nethereum.Util;
+using System.Numerics;
+
+// Hex
+var v = EvmUInt256.FromHex("0xdeadbeef");
+string hex = v.ToHexString();            // "00000000...deadbeef" (32-byte padded)
+
+// Big-endian byte roundtrip
+byte[] be = v.ToBigEndian();             // always 32 bytes
+var back = EvmUInt256.FromBigEndian(be);
+Assert.Equal(v, back);
+
+// Short byte arrays pad on the left
+var small = EvmUInt256.FromBigEndian(new byte[] { 0x12, 0x34 });
+Assert.Equal(new EvmUInt256(0x1234), small);
+
+// BigInteger roundtrip (opt-in via the .BigInteger.cs partial / extensions)
+var big = BigInteger.Pow(2, 256) - 1;
+var fromBig = EvmUInt256BigIntegerExtensions.FromBigInteger(big);
+Assert.Equal(EvmUInt256.MaxValue, fromBig);
+Assert.Equal(big, fromBig.ToBigInteger());
+```
+
+### Example 12: EvmInt256 Signed Arithmetic
+
+Examples drawn from `tests/Nethereum.Util.UnitTests/EvmInt256Tests.cs`.
+
+```csharp
+using Nethereum.Util;
+
+// Two's-complement constants
+EvmInt256 minusOne = EvmInt256.MinusOne;       // all-ones bit pattern
+EvmInt256 min = EvmInt256.MinValue;            // 0x8000...0000
+EvmInt256 max = EvmInt256.MaxValue;            // 0x7FFF...FFFF
+
+// Sign inspection (backed by EvmUInt256.IsHighBitSet)
+Assert.True(minusOne.IsNegative);
+Assert.False(EvmInt256.One.IsNegative);
+
+// Signed comparisons — EvmInt256 implements < > <= >=
+Assert.True(minusOne < EvmInt256.Zero);
+Assert.True(EvmInt256.MinValue < EvmInt256.MaxValue);
+
+// Arithmetic — wraps on overflow, like the EVM
+Assert.Equal(new EvmInt256(-7), new EvmInt256(-3) + new EvmInt256(-4));
+Assert.Equal(minusOne, -EvmInt256.One);
+
+// Signed division / modulus (EVM SDIV / SMOD)
+Assert.Equal(new EvmInt256(-5), new EvmInt256(10) / new EvmInt256(-2));
+
+// Arithmetic right shift (EVM SAR) via operator >>
+// SAR of -1 preserves the sign bit regardless of shift count.
+Assert.Equal(EvmInt256.MinusOne, EvmInt256.MinusOne >> 1);
 ```
 
 ## API Reference

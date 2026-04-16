@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Text;
+﻿using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util.Keccak;
 
@@ -19,7 +18,10 @@ namespace Nethereum.Util
 
         public string CalculateHashFromHex(params string[] hexValues)
         {
-            var joinedHex = string.Join("", hexValues.Select(x => x.RemoveHexPrefix()).ToArray());
+            var parts = new string[hexValues.Length];
+            for (int i = 0; i < hexValues.Length; i++)
+                parts[i] = hexValues[i].RemoveHexPrefix();
+            var joinedHex = string.Join("", parts);
             return CalculateHash(joinedHex.HexToByteArray()).ToHex();
         }
 

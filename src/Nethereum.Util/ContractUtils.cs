@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿#if !EVM_SYNC
+using System.Numerics;
+#endif
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 
@@ -10,6 +12,21 @@ namespace Nethereum.Util
 
         public const int MAXIMUM_BYTECODE_SIZE = 24576;
 
+        public static string CalculateContractAddress(string address, long nonce)
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                throw new System.ArgumentException($"'{nameof(address)}' cannot be null or empty.", nameof(address));
+            }
+
+            var sha3 = new Sha3Keccack();
+            return
+                sha3.CalculateHash(RLP.RLP.EncodeList(RLP.RLP.EncodeElement(address.HexToByteArray()),
+                        RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24)
+                    .ConvertToEthereumChecksumAddress();
+        }
+
+#if !EVM_SYNC
         public static string CalculateContractAddress(string address, BigInteger nonce)
         {
             if (string.IsNullOrEmpty(address))
@@ -23,6 +40,7 @@ namespace Nethereum.Util
                         RLP.RLP.EncodeElement(nonce.ToBytesForRLPEncoding()))).ToHex().Substring(24)
                     .ConvertToEthereumChecksumAddress();
         }
+#endif
 
         public static string CalculateCreate2AddressMinimalProxy(string address, string saltHex,
             string deploymentAddress)
