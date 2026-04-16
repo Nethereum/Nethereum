@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<PropertyGroup>
+    <Description>Nethereum.EVM.Core - AOT-compatible synchronous EVM execution engine</Description>
+    <AssemblyTitle>Nethereum.EVM.Core</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
+    <DefineConstants>EVM_SYNC</DefineConstants>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsTrimmable>true</IsTrimmable>
+    <TrimMode>link</TrimMode>
+    <PackageId>Nethereum.EVM.Core</PackageId>
+    <PackageTags>Nethereum;Ethereum;Blockchain;EVM;AOT;RISC-V;ZK</PackageTags>
+</PropertyGroup>
+
+<ItemGroup>
+    <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
+</ItemGroup>
+
+<!-- Remove Newtonsoft.Json pulled in by dir.props Generic.props -->
+<ItemGroup>
+    <PackageReference Remove="Newtonsoft.Json" />
+</ItemGroup>
+</Project>
