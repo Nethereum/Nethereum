@@ -131,7 +131,8 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
             while (dir != null)
             {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
                 {
                     var path = Path.Combine(dir.FullName, "external", "ethereum-tests", "BlockchainTests");
                     if (Directory.Exists(path)) return path;

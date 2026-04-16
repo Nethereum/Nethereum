@@ -31,7 +31,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
 
             if (projectRoot == null)
-                throw new FileNotFoundException("Could not find project root (Nethereum.sln)");
+                throw new FileNotFoundException("Could not find project root (Nethereum.slnx / Nethereum.sln)");
 
             var gethToolsDir = Path.Combine(projectRoot, "geth-tools");
             if (!Directory.Exists(gethToolsDir))
@@ -49,7 +49,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var dir = new DirectoryInfo(startDir);
             while (dir != null)
             {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
                     return dir.FullName;
                 dir = dir.Parent;
             }

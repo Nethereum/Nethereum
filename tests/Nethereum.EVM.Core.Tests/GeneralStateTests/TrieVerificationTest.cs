@@ -74,7 +74,8 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             var dir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
             while (dir != null)
             {
-                if (System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.sln")))
                     return System.IO.Path.Combine(dir.FullName, "external", "ethereum-tests", "BlockchainTests", relativePath);
                 dir = dir.Parent;
             }

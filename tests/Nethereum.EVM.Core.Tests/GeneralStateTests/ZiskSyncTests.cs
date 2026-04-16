@@ -163,7 +163,8 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         {
             while (dir != null)
             {
-                if (System.IO.File.Exists(System.IO.Path.Combine(dir, "Nethereum.sln")))
+                if (System.IO.File.Exists(System.IO.Path.Combine(dir, "Nethereum.slnx")) ||
+                    System.IO.File.Exists(System.IO.Path.Combine(dir, "Nethereum.sln")))
                     return dir;
                 dir = System.IO.Path.GetDirectoryName(dir);
             }

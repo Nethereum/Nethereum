@@ -218,9 +218,10 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             var dir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
             while (dir != null)
             {
-                if (System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.sln")))
                 {
-                    var p = System.IO.Path.Combine(dir.FullName, "scripts", "zisk-output", "nethereum_evm_elf");
+                    var p = System.IO.Path.Combine(dir.FullName, "zisk", "output", "nethereum_evm_elf");
                     return System.IO.File.Exists(p) ? p : null;
                 }
                 dir = dir.Parent;

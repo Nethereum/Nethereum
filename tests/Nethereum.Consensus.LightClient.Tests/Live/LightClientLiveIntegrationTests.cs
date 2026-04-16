@@ -362,7 +362,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
             while (directory != null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(directory.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(directory.FullName, "Nethereum.sln")))
                     return directory.FullName;
                 directory = directory.Parent;
             }

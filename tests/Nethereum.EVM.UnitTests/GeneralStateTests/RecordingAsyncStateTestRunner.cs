@@ -333,7 +333,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var dir = new DirectoryInfo(startDir);
             while (dir != null)
             {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
                     return dir.FullName;
                 dir = dir.Parent;
             }
