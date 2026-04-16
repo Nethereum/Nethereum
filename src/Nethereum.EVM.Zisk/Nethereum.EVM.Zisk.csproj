@@ -1,0 +1,120 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <DefineConstants>EVM_SYNC</DefineConstants>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <TrimMode>full</TrimMode>
+  </PropertyGroup>
+
+  <!-- Zisk.Core (general-purpose Zisk runtime) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Zisk.Core\**\*.cs" Link="Zisk\%(RecursiveDir)%(Filename).cs" Exclude="..\Nethereum.Zisk.Core\obj\**;..\Nethereum.Zisk.Core\bin\**" />
+  </ItemGroup>
+
+  <!-- EVM-Zisk bridge (needs both EVM.Core and Zisk.Core types) -->
+  <ItemGroup>
+    <Compile Include="Zisk\ZiskBinaryWitness.cs" />
+    <Compile Include="Zisk\ZiskPrecompileBackends.cs" />
+    <Compile Include="Zisk\Backends\*.cs" />
+  </ItemGroup>
+
+  <!-- Util (minimal — no BigDecimal, no UnitConversion, no BigIntegerExtensions) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Util\EvmUInt256.cs" Link="Util\EvmUInt256.cs" />
+    <Compile Include="..\Nethereum.Util\EvmInt256.cs" Link="Util\EvmInt256.cs" />
+    <Compile Include="..\Nethereum.Util\AddressUtil.cs" Link="Util\AddressUtil.cs" />
+    <Compile Include="..\Nethereum.Util\AddressExtensions.cs" Link="Util\AddressExtensions.cs" />
+    <Compile Include="..\Nethereum.Util\ContractUtils.cs" Link="Util\ContractUtils.cs" />
+    <Compile Include="..\Nethereum.Util\Sha3Keccack.cs" Link="Util\Sha3Keccack.cs" />
+    <Compile Include="..\Nethereum.Util\ByteUtil.cs" Link="Util\ByteUtil.cs" />
+    <Compile Include="..\Nethereum.Util\Keccak\KeccakDigest.cs" Link="Util\KeccakDigest.cs" />
+    <Compile Include="..\Nethereum.Util\HashProviders\IHashProvider.cs" Link="Util\IHashProvider.cs" />
+    <Compile Include="..\Nethereum.Util\HashProviders\Sha3KeccackHashProvider.cs" Link="Util\Sha3KeccackHashProvider.cs" />
+    <Compile Include="..\Nethereum.Util\EvmUInt256RLPExtensions.cs" Link="Util\EvmUInt256RLPExtensions.cs" />
+  </ItemGroup>
+
+  <!-- Hex (only byte conversion extensions) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Hex\HexConvertors\Extensions\HexByteConvertorExtensions.cs" Link="Hex\HexByteConvertorExtensions.cs" />
+  </ItemGroup>
+
+  <!-- EVM.Core (all source files) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.EVM.Core\**\*.cs" Link="EVM\%(RecursiveDir)%(Filename).cs" Exclude="..\Nethereum.EVM.Core\obj\**;..\Nethereum.EVM.Core\bin\**" />
+  </ItemGroup>
+
+  <!-- Merkle Patricia Trie (LINQ-free) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Merkle.Patricia\**\*.cs" Link="Merkle\%(RecursiveDir)%(Filename).cs"
+             Exclude="..\Nethereum.Merkle.Patricia\obj\**;..\Nethereum.Merkle.Patricia\bin\**;..\Nethereum.Merkle.Patricia\**\*ProofVerification*.cs" />
+  </ItemGroup>
+
+  <!-- CoreChain (state root calculators only) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.CoreChain\PatriciaStateRootCalculator.cs" Link="CoreChain\PatriciaStateRootCalculator.cs" />
+    <Compile Include="..\Nethereum.CoreChain\PatriciaMerkleTreeBuilder.cs" Link="CoreChain\PatriciaMerkleTreeBuilder.cs" />
+    <Compile Include="..\Nethereum.CoreChain\PatriciaBlockRootCalculator.cs" Link="CoreChain\PatriciaBlockRootCalculator.cs" />
+  </ItemGroup>
+
+  <!-- Model types (transaction decoders, receipts, block header for block proofs) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Model\AccessListItem.cs" Link="Model\AccessListItem.cs" />
+    <Compile Include="..\Nethereum.Model\IBlockEncodingProvider.cs" Link="Model\IBlockEncodingProvider.cs" />
+    <Compile Include="..\Nethereum.Model\RlpBlockEncodingProvider.cs" Link="Model\RlpBlockEncodingProvider.cs" />
+    <Compile Include="..\Nethereum.Model\Authorisation7702Signed.cs" Link="Model\Authorisation7702Signed.cs" />
+    <Compile Include="..\Nethereum.Model\Signature.cs" Link="Model\Signature.cs" />
+    <Compile Include="..\Nethereum.Model\ISignature.cs" Link="Model\ISignature.cs" />
+    <Compile Include="..\Nethereum.Model\DefaultValues.cs" Link="Model\DefaultValues.cs" />
+    <Compile Include="..\Nethereum.Model\Account.cs" Link="Model\Account.cs" />
+    <Compile Include="..\Nethereum.Model\AccountEncoder.cs" Link="Model\AccountEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\Receipt.cs" Link="Model\Receipt.cs" />
+    <Compile Include="..\Nethereum.Model\ReceiptEncoder.cs" Link="Model\ReceiptEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\Log.cs" Link="Model\Log.cs" />
+    <Compile Include="..\Nethereum.Model\LogEncoder.cs" Link="Model\LogEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\LogBloomFilter.cs" Link="Model\LogBloomFilter.cs" />
+    <Compile Include="..\Nethereum.Model\BlockHeader.cs" Link="Model\BlockHeader.cs" />
+    <Compile Include="..\Nethereum.Model\BlockHeaderEncoder.cs" Link="Model\BlockHeaderEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\TransactionFactory.cs" Link="Model\TransactionFactory.cs" />
+    <Compile Include="..\Nethereum.Model\TransactionType.cs" Link="Model\TransactionType.cs" />
+    <Compile Include="..\Nethereum.Model\TransactionTypeEncoder.cs" Link="Model\TransactionTypeEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\ISignedTransaction.cs" Link="Model\ISignedTransaction.cs" />
+    <Compile Include="..\Nethereum.Model\ITransactionTypeDecoder.cs" Link="Model\ITransactionTypeDecoder.cs" />
+    <Compile Include="..\Nethereum.Model\SignedTransaction.cs" Link="Model\SignedTransaction.cs" />
+    <Compile Include="..\Nethereum.Model\SignedTypeTransaction.cs" Link="Model\SignedTypeTransaction.cs" />
+    <Compile Include="..\Nethereum.Model\SignedLegacyTransaction.cs" Link="Model\SignedLegacyTransaction.cs" />
+    <Compile Include="..\Nethereum.Model\SignedTransactionBase.cs" Link="Model\SignedTransactionBase.cs" />
+    <Compile Include="..\Nethereum.Model\SignedTransactionExtensions.cs" Link="Model\SignedTransactionExtensions.cs" />
+    <Compile Include="..\Nethereum.Model\SignatureExtensions.cs" Link="Model\SignatureExtensions.cs" />
+    <Compile Include="..\Nethereum.Model\VRecoveryAndChainCalculations.cs" Link="Model\VRecoveryAndChainCalculations.cs" />
+    <Compile Include="..\Nethereum.Model\LegacyTransaction.cs" Link="Model\LegacyTransaction.cs" />
+    <Compile Include="..\Nethereum.Model\LegacyTransactionChainId.cs" Link="Model\LegacyTransactionChainId.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction1559.cs" Link="Model\Transaction1559.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction1559Encoder.cs" Link="Model\Transaction1559Encoder.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction2930.cs" Link="Model\Transaction2930.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction2930Encoder.cs" Link="Model\Transaction2930Encoder.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction7702.cs" Link="Model\Transaction7702.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction7702Encoder.cs" Link="Model\Transaction7702Encoder.cs" />
+    <Compile Include="..\Nethereum.Model\RLPSignedDataHashBuilder.cs" Link="Model\RLPSignedDataHashBuilder.cs" />
+    <Compile Include="..\Nethereum.Model\RLPSignedDataDecoder.cs" Link="Model\RLPSignedDataDecoder.cs" />
+    <Compile Include="..\Nethereum.Model\SignedData.cs" Link="Model\SignedData.cs" />
+    <Compile Include="..\Nethereum.Model\AccessListRLPEncoderDecoder.cs" Link="Model\AccessListRLPEncoderDecoder.cs" />
+    <Compile Include="..\Nethereum.Model\AuthorisationListRLPEncoderDecoder.cs" Link="Model\AuthorisationListRLPEncoderDecoder.cs" />
+    <Compile Include="..\Nethereum.Model\Authorisation7702RLPEncoderAndHasher.cs" Link="Model\Authorisation7702RLPEncoderAndHasher.cs" />
+    <Compile Include="..\Nethereum.Model\RLPSignedDataEncoder.cs" Link="Model\RLPSignedDataEncoder.cs" />
+  </ItemGroup>
+
+  <!-- RLP -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.RLP\**\*.cs" Link="RLP\%(RecursiveDir)%(Filename).cs" Exclude="..\Nethereum.RLP\obj\**;..\Nethereum.RLP\bin\**;..\Nethereum.RLP\Properties\**" />
+  </ItemGroup>
+
+  <!-- No external NuGet dependencies -->
+  <ItemGroup>
+    <PackageReference Remove="Newtonsoft.Json" />
+  </ItemGroup>
+</Project>
