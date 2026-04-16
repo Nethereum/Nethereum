@@ -42,7 +42,7 @@ namespace Nethereum.CoreChain
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _txVerifier = txVerifier ?? throw new ArgumentNullException(nameof(txVerifier));
-            _hardforkConfig = hardforkConfig ?? HardforkConfig.Default;
+            _hardforkConfig = hardforkConfig ?? config.GetHardforkConfig();
             _executor = new TransactionExecutor(_hardforkConfig);
         }
 
@@ -50,7 +50,7 @@ namespace Nethereum.CoreChain
             ISignedTransaction signedTx,
             BlockContext blockContext,
             int txIndex,
-            BigInteger cumulativeGasUsed,
+            long cumulativeGasUsed,
             string? cachedSenderAddress = null)
         {
             var result = new TransactionExecutionResult
@@ -73,7 +73,7 @@ namespace Nethereum.CoreChain
                 var txData = GetTransactionData(signedTx);
 
                 var senderAccount = await _stateStore.GetAccountAsync(senderAddress);
-                var expectedNonce = senderAccount?.Nonce ?? BigInteger.Zero;
+                var expectedNonce = senderAccount?.Nonce ?? EvmUInt256.Zero;
                 if (expectedNonce != txData.Nonce)
                 {
                     result.Skipped = true;
@@ -244,7 +244,7 @@ namespace Nethereum.CoreChain
                 // (InitialChainBalance being set indicates balance was queried/modified)
                 if (accountState.Balance.InitialChainBalance.HasValue || accountState.Balance.ExecutionBalance.HasValue)
                 {
-                    BigInteger newBalance;
+                    EvmUInt256 newBalance;
                     if (accountState.Balance.ExecutionBalance.HasValue && !accountState.Balance.InitialChainBalance.HasValue)
                     {
                         // ExecutionBalance was modified but InitialChainBalance was never loaded.
@@ -487,22 +487,23 @@ namespace Nethereum.CoreChain
 
     public class TransactionData
     {
-        public BigInteger Nonce { get; set; }
-        public BigInteger GasLimit { get; set; }
-        public BigInteger GasPrice { get; set; }
-        public BigInteger? MaxFeePerGas { get; set; }
-        public BigInteger? MaxPriorityFeePerGas { get; set; }
+        public EvmUInt256 Nonce { get; set; }
+        public EvmUInt256 GasLimit { get; set; }
+        public EvmUInt256 GasPrice { get; set; }
+        public EvmUInt256? MaxFeePerGas { get; set; }
+        public EvmUInt256? MaxPriorityFeePerGas { get; set; }
         public string To { get; set; }
-        public BigInteger Value { get; set; }
+        public EvmUInt256 Value { get; set; }
         public byte[] Data { get; set; }
         public List<AccessListEntry> AccessList { get; set; }
         public List<Authorisation7702Signed> AuthorisationList { get; set; }
 
-        public BigInteger GetEffectiveGasPrice(BigInteger baseFee)
+        public EvmUInt256 GetEffectiveGasPrice(EvmUInt256 baseFee)
         {
             if (MaxFeePerGas.HasValue && MaxPriorityFeePerGas.HasValue)
             {
-                var priorityFee = BigInteger.Min(MaxPriorityFeePerGas.Value, MaxFeePerGas.Value - baseFee);
+                var diff = MaxFeePerGas.Value - baseFee;
+                var priorityFee = MaxPriorityFeePerGas.Value < diff ? MaxPriorityFeePerGas.Value : diff;
                 return baseFee + priorityFee;
             }
             return GasPrice;

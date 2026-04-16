@@ -32,12 +32,12 @@ namespace Nethereum.CoreChain
         Task<BigInteger> GetBalanceAsync(string address);
         Task<BigInteger> GetNonceAsync(string address);
         Task<byte[]> GetCodeAsync(string address);
-        Task<byte[]> GetStorageAtAsync(string address, BigInteger slot);
+        Task<byte[]> GetStorageAtAsync(string address, Nethereum.Util.EvmUInt256 slot);
 
         Task<BigInteger> GetBalanceAsync(string address, BigInteger blockNumber);
         Task<BigInteger> GetNonceAsync(string address, BigInteger blockNumber);
         Task<byte[]> GetCodeAsync(string address, BigInteger blockNumber);
-        Task<byte[]> GetStorageAtAsync(string address, BigInteger slot, BigInteger blockNumber);
+        Task<byte[]> GetStorageAtAsync(string address, Nethereum.Util.EvmUInt256 slot, BigInteger blockNumber);
 
         Task<CallResult> CallAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
         Task<CallResult> CallAsync(string to, byte[] data, BigInteger blockNumber, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);

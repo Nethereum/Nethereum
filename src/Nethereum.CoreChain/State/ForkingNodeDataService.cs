@@ -13,7 +13,7 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.State
 {
-    public class ForkingNodeDataService : INodeDataService
+    public class ForkingNodeDataService : IStateReader
     {
         private const int MaxFetchedAccountsSize = 100_000;
         private const int MaxFetchedStorageSize = 500_000;
@@ -38,7 +38,7 @@ namespace Nethereum.CoreChain.State
             _remoteService = new RpcNodeDataService(remoteEthApi, forkBlock);
         }
 
-        public async Task<BigInteger> GetBalanceAsync(string address)
+        public async Task<EvmUInt256> GetBalanceAsync(string address)
         {
             var normalizedAddress = NormalizeAddress(address);
 
@@ -47,7 +47,7 @@ namespace Nethereum.CoreChain.State
                 return account.Balance;
 
             if (HasFetchedAccount(normalizedAddress))
-                return BigInteger.Zero;
+                return EvmUInt256.Zero;
 
             await _asyncLock.WaitAsync();
             try
@@ -57,7 +57,7 @@ namespace Nethereum.CoreChain.State
                     return account.Balance;
 
                 if (HasFetchedAccount(normalizedAddress))
-                    return BigInteger.Zero;
+                    return EvmUInt256.Zero;
 
                 await FetchAndCacheAccountAsync(address, normalizedAddress);
 
@@ -70,7 +70,7 @@ namespace Nethereum.CoreChain.State
             }
         }
 
-        public Task<BigInteger> GetBalanceAsync(byte[] address)
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address)
         {
             return GetBalanceAsync(address.ToHex());
         }
@@ -115,7 +115,7 @@ namespace Nethereum.CoreChain.State
             return GetCodeAsync(address.ToHex());
         }
 
-        public async Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
+        public async Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
         {
             var value = await _stateStore.GetStorageAsync(address, position);
             if (value != null)
@@ -158,12 +158,12 @@ namespace Nethereum.CoreChain.State
             }
         }
 
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
         {
             return GetStorageAtAsync(address.ToHex(), position);
         }
 
-        public async Task<BigInteger> GetTransactionCount(string address)
+        public async Task<EvmUInt256> GetTransactionCountAsync(string address)
         {
             var normalizedAddress = NormalizeAddress(address);
 
@@ -172,7 +172,7 @@ namespace Nethereum.CoreChain.State
                 return account.Nonce;
 
             if (HasFetchedAccount(normalizedAddress))
-                return BigInteger.Zero;
+                return EvmUInt256.Zero;
 
             await _asyncLock.WaitAsync();
             try
@@ -182,7 +182,7 @@ namespace Nethereum.CoreChain.State
                     return account.Nonce;
 
                 if (HasFetchedAccount(normalizedAddress))
-                    return BigInteger.Zero;
+                    return EvmUInt256.Zero;
 
                 await FetchAndCacheAccountAsync(address, normalizedAddress);
 
@@ -195,12 +195,12 @@ namespace Nethereum.CoreChain.State
             }
         }
 
-        public Task<BigInteger> GetTransactionCount(byte[] address)
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
         {
-            return GetTransactionCount(address.ToHex());
+            return GetTransactionCountAsync(address.ToHex());
         }
 
-        public async Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
+        public async Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             if (_blockStore != null)
             {
@@ -225,7 +225,7 @@ namespace Nethereum.CoreChain.State
             try
             {
                 var balanceTask = _remoteService.GetBalanceAsync(address);
-                var nonceTask = _remoteService.GetTransactionCount(address);
+                var nonceTask = _remoteService.GetTransactionCountAsync(address);
                 var codeTask = _remoteService.GetCodeAsync(address);
 
                 await Task.WhenAll(balanceTask, nonceTask, codeTask);
@@ -234,7 +234,7 @@ namespace Nethereum.CoreChain.State
                 var nonce = await nonceTask;
                 var code = await codeTask;
 
-                if (balance == BigInteger.Zero && nonce == BigInteger.Zero &&
+                if (balance == EvmUInt256.Zero && nonce == EvmUInt256.Zero &&
                     (code == null || code.Length == 0))
                 {
                     MarkAccountFetched(normalizedAddress);
@@ -307,7 +307,7 @@ namespace Nethereum.CoreChain.State
             return address.ToLowerInvariant().Replace("0x", "");
         }
 
-        private static string GetStorageKey(string address, BigInteger position)
+        private static string GetStorageKey(string address, EvmUInt256 position)
         {
             return $"{NormalizeAddress(address)}:{position}";
         }

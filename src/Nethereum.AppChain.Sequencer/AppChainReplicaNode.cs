@@ -39,7 +39,8 @@ namespace Nethereum.AppChain.Sequencer
                     appChain.Config,
                     new TransactionVerificationAndRecoveryImp()),
                 new TransactionVerificationAndRecoveryImp(),
-                new StateStoreNodeDataService(appChain.State, appChain.Blocks))
+                new StateStoreNodeDataService(appChain.State, appChain.Blocks),
+                hardforkConfig: appChain.Config.GetHardforkConfig())
         {
             _appChain = appChain ?? throw new ArgumentNullException(nameof(appChain));
             _txProxy = txProxy ?? throw new ArgumentNullException(nameof(txProxy));

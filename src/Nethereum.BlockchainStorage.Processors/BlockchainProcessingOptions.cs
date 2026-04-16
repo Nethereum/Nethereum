@@ -19,6 +19,21 @@ namespace Nethereum.BlockchainStorage.Processors
         public int ReorgBuffer { get; set; } = 0;
         public bool UseBatchReceipts { get; set; } = true;
 
+        /// <summary>
+        /// When true, internal-transaction processing uses local EVM replay
+        /// (<see cref="Nethereum.BlockchainProcessing.Services.EvmReplayInternalTransactionSource"/>)
+        /// instead of <c>debug_traceTransaction</c>. Use on providers that gate
+        /// the debug namespace.
+        /// </summary>
+        public bool UseLocalEvmReplayForInternalTransactions { get; set; } = false;
+
+        /// <summary>
+        /// Hardfork name for the EVM replay source (ignored when
+        /// <see cref="UseLocalEvmReplayForInternalTransactions"/> is false).
+        /// Must match the chain; defaults to "osaka".
+        /// </summary>
+        public string Hardfork { get; set; } = "osaka";
+
         public static BlockchainProcessingOptions Load(IConfiguration configuration)
         {
             var options = new BlockchainProcessingOptions();
@@ -45,6 +60,10 @@ namespace Nethereum.BlockchainStorage.Processors
             options.UseBatchReceipts =
                 ParseBool(configuration["UseBatchReceipts"])
                 ?? options.UseBatchReceipts;
+            options.UseLocalEvmReplayForInternalTransactions =
+                ParseBool(configuration["UseLocalEvmReplayForInternalTransactions"])
+                ?? options.UseLocalEvmReplayForInternalTransactions;
+            options.Hardfork = configuration["Hardfork"] ?? options.Hardfork;
 
             return options;
         }

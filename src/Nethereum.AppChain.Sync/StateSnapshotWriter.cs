@@ -62,14 +62,14 @@ namespace Nethereum.AppChain.Sync
                 var account = kvp.Value;
 
                 WriteString(writer, address);
-                WriteBytes(writer, account.Nonce.ToByteArray());
-                WriteBytes(writer, account.Balance.ToByteArray());
+                WriteBytes(writer, account.Nonce.ToBigEndian());
+                WriteBytes(writer, account.Balance.ToBigEndian());
                 WriteBytes(writer, account.CodeHash ?? new byte[32]);
                 WriteBytes(writer, account.StateRoot ?? new byte[32]);
 
                 hashStream.Write(System.Text.Encoding.UTF8.GetBytes(address));
-                hashStream.Write(account.Nonce.ToByteArray());
-                hashStream.Write(account.Balance.ToByteArray());
+                hashStream.Write(account.Nonce.ToBigEndian());
+                hashStream.Write(account.Balance.ToBigEndian());
 
                 var storage = await _stateStore.GetAllStorageAsync(address);
                 writer.Write(storage.Count);

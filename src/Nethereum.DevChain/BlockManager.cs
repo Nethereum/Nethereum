@@ -330,7 +330,7 @@ namespace Nethereum.DevChain
             var isContractCreation = string.IsNullOrEmpty(txData.To);
 
             var intrinsicGas = CoreChain.TransactionProcessor.CalculateIntrinsicGas(txData.Data, isContractCreation);
-            if (txData.GasLimit < intrinsicGas)
+            if (txData.GasLimit.ToBigInteger() < intrinsicGas)
             {
                 result.Success = false;
                 result.RevertReason = $"Intrinsic gas too low: have {txData.GasLimit}, want {intrinsicGas}";
@@ -347,9 +347,9 @@ namespace Nethereum.DevChain
             {
                 var expectedNonce = _pendingNonces.TryGetValue(senderAddress, out var pendingNonce)
                     ? pendingNonce
-                    : senderAccount.Nonce;
+                    : senderAccount.Nonce.ToBigInteger();
 
-                if (expectedNonce != txData.Nonce)
+                if (expectedNonce != txData.Nonce.ToBigInteger())
                 {
                     result.Success = false;
                     result.RevertReason = $"Invalid nonce: have {txData.Nonce}, want {expectedNonce}";
@@ -364,7 +364,7 @@ namespace Nethereum.DevChain
                     return result;
                 }
 
-                _pendingNonces[senderAddress] = txData.Nonce + 1;
+                _pendingNonces[senderAddress] = (txData.Nonce + 1).ToBigInteger();
             }
 
             result.Success = true;

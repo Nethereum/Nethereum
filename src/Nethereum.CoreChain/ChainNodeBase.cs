@@ -24,7 +24,7 @@ namespace Nethereum.CoreChain
         protected readonly IStateStore _stateStore;
         protected readonly IFilterStore _filterStore;
         protected readonly ITrieNodeStore _trieNodeStore;
-        protected readonly INodeDataService _nodeDataService;
+        protected readonly IStateReader _nodeDataService;
         protected readonly TransactionProcessor _transactionProcessor;
         protected readonly ITransactionVerificationAndRecovery _txVerifier;
         protected readonly TransactionExecutor _executor;
@@ -38,7 +38,7 @@ namespace Nethereum.CoreChain
             IFilterStore filterStore,
             TransactionProcessor transactionProcessor,
             ITransactionVerificationAndRecovery txVerifier,
-            INodeDataService nodeDataService = null,
+            IStateReader nodeDataService = null,
             ITrieNodeStore trieNodeStore = null,
             HardforkConfig hardforkConfig = null)
         {
@@ -52,7 +52,7 @@ namespace Nethereum.CoreChain
             _txVerifier = txVerifier ?? throw new ArgumentNullException(nameof(txVerifier));
             _nodeDataService = nodeDataService ?? new StateStoreNodeDataService(_stateStore, _blockStore);
             _trieNodeStore = trieNodeStore;
-            _executor = new TransactionExecutor(hardforkConfig ?? HardforkConfig.Default);
+            _executor = new TransactionExecutor(hardforkConfig ?? throw new ArgumentNullException(nameof(hardforkConfig)));
         }
 
         public abstract ChainConfig Config { get; }
@@ -111,7 +111,7 @@ namespace Nethereum.CoreChain
 
         public virtual async Task<BigInteger> GetNonceAsync(string address)
         {
-            return await _nodeDataService.GetTransactionCount(address);
+            return await _nodeDataService.GetTransactionCountAsync(address);
         }
 
         public virtual async Task<byte[]> GetCodeAsync(string address)
@@ -119,7 +119,7 @@ namespace Nethereum.CoreChain
             return await _nodeDataService.GetCodeAsync(address);
         }
 
-        public virtual async Task<byte[]> GetStorageAtAsync(string address, BigInteger slot)
+        public virtual async Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 slot)
         {
             return await _nodeDataService.GetStorageAtAsync(address, slot);
         }
@@ -133,7 +133,7 @@ namespace Nethereum.CoreChain
         public virtual async Task<BigInteger> GetNonceAsync(string address, BigInteger blockNumber)
         {
             var dataService = GetNodeDataServiceAtBlock(blockNumber);
-            return await dataService.GetTransactionCount(address);
+            return await dataService.GetTransactionCountAsync(address);
         }
 
         public virtual async Task<byte[]> GetCodeAsync(string address, BigInteger blockNumber)
@@ -142,7 +142,7 @@ namespace Nethereum.CoreChain
             return await dataService.GetCodeAsync(address);
         }
 
-        public virtual async Task<byte[]> GetStorageAtAsync(string address, BigInteger slot, BigInteger blockNumber)
+        public virtual async Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 slot, BigInteger blockNumber)
         {
             var dataService = GetNodeDataServiceAtBlock(blockNumber);
             return await dataService.GetStorageAtAsync(address, slot);
@@ -296,7 +296,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(initCode, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
             var gasUsed = program.TotalGasUsed;
@@ -304,7 +304,7 @@ namespace Nethereum.CoreChain
 
             if (!program.ProgramResult.IsRevert && returnData.Length > 0)
             {
-                gasUsed += (BigInteger)returnData.Length * TransactionProcessor.G_CODEDEPOSIT;
+                gasUsed += (long)returnData.Length * TransactionProcessor.G_CODEDEPOSIT;
             }
 
             return new CallResult
@@ -362,7 +362,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(initCode, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
             var gasUsed = program.TotalGasUsed;
@@ -370,7 +370,7 @@ namespace Nethereum.CoreChain
 
             if (!program.ProgramResult.IsRevert && returnData.Length > 0)
             {
-                gasUsed += (BigInteger)returnData.Length * TransactionProcessor.G_CODEDEPOSIT;
+                gasUsed += (long)returnData.Length * TransactionProcessor.G_CODEDEPOSIT;
             }
 
             return new CallResult
@@ -427,7 +427,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
             if (program.ProgramResult.IsRevert)
@@ -493,7 +493,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
             if (program.ProgramResult.IsRevert)
@@ -551,7 +551,7 @@ namespace Nethereum.CoreChain
                 ChainId = Config.ChainId
             };
 
-            INodeDataService traceNodeDataService;
+            IStateReader traceNodeDataService;
             if (_stateStore is IHistoricalStateProvider historyProvider)
             {
                 var targetBlock = block.BlockNumber > 0 ? block.BlockNumber - 1 : 0;
@@ -614,7 +614,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: traceEnabled);
 
             return new TraceExecutionResult
@@ -647,7 +647,7 @@ namespace Nethereum.CoreChain
 
                 if (!executionStateService.ContainsInitialChainBalanceForAddress(senderAddress))
                 {
-                    var senderBalance = await executionStateService.NodeDataService.GetBalanceAsync(senderAddress);
+                    var senderBalance = await executionStateService.StateReader.GetBalanceAsync(senderAddress);
                     executionStateService.SetInitialChainBalance(senderAddress, senderBalance);
                 }
 
@@ -933,7 +933,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
 
             return new TraceExecutionResult
@@ -1008,7 +1008,7 @@ namespace Nethereum.CoreChain
             programContext.Difficulty = blockContext.Difficulty;
 
             var program = new Program(code, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(Config.GetHardforkConfig());
             await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
 
             return new TraceExecutionResult
@@ -1079,7 +1079,7 @@ namespace Nethereum.CoreChain
             };
         }
 
-        protected INodeDataService GetNodeDataServiceAtBlock(BigInteger blockNumber)
+        protected IStateReader GetNodeDataServiceAtBlock(BigInteger blockNumber)
         {
             if (_stateStore is IHistoricalStateProvider historyProvider)
             {

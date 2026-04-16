@@ -63,6 +63,8 @@ Options are bound from `IConfiguration`. The extension method checks for a `"Blo
 | `RetryWeight` | `int` | `50` | Reduce batch size on retry failures |
 | `ProcessBlockTransactionsInParallel` | `bool` | `true` | Parallel transaction processing within a block |
 | `PostVm` | `bool` | `false` | Include VM stack traces |
+| `UseLocalEvmReplayForInternalTransactions` | `bool` | `false` | Source internal transactions via local EVM replay (`EvmReplayInternalTransactionSource`) instead of `debug_traceTransaction` — useful against RPC nodes that don't expose the `debug_` namespace |
+| `Hardfork` | `string` | `"osaka"` | Hardfork name to resolve when `UseLocalEvmReplayForInternalTransactions` is true. Parsed via `Nethereum.EVM.HardforkNames.Parse` and looked up in `DefaultMainnetHardforkRegistry` |
 
 ## Related Packages
 

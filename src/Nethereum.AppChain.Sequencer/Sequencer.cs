@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Nethereum.Util;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Consensus;
 using Nethereum.AppChain.Anchoring.Messaging;
@@ -212,24 +213,25 @@ namespace Nethereum.AppChain.Sequencer
             }
 
             var intrinsicGas = TransactionProcessor.CalculateIntrinsicGas(txData.Data, isContractCreation);
-            if (txData.GasLimit < intrinsicGas)
+            if (txData.GasLimit.ToBigInteger() < intrinsicGas)
             {
                 throw new InvalidOperationException(
                     $"intrinsic gas too low: have {txData.GasLimit}, want {intrinsicGas}");
             }
 
             var senderAccount = await _appChain.State.GetAccountAsync(senderAddress);
-            var confirmedNonce = senderAccount?.Nonce ?? BigInteger.Zero;
+            var confirmedNonce = senderAccount?.Nonce.ToBigInteger() ?? BigInteger.Zero;
 
             var expectedNonce = await _txPool.GetPendingNonceAsync(senderAddress, confirmedNonce);
+            var txNonceBig = txData.Nonce.ToBigInteger();
 
-            if (txData.Nonce < expectedNonce)
+            if (txNonceBig < expectedNonce)
             {
                 throw new InvalidOperationException(
                     $"nonce too low: address {senderAddress}, tx: {txData.Nonce} state: {expectedNonce}");
             }
 
-            if (txData.Nonce > expectedNonce)
+            if (txNonceBig > expectedNonce)
             {
                 throw new InvalidOperationException(
                     $"nonce too high: address {senderAddress}, tx: {txData.Nonce} state: {expectedNonce}");
