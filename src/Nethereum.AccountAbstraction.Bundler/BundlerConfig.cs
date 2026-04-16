@@ -109,6 +109,13 @@ namespace Nethereum.AccountAbstraction.Bundler
         public BigInteger? ChainId { get; set; }
 
         /// <summary>
+        /// Hardfork name used by EVM simulation (gas estimation, ERC-7562 validation).
+        /// Mainnet bundlers should track the chain's current fork; default is the
+        /// latest registered fork ("osaka").
+        /// </summary>
+        public string Hardfork { get; set; } = "osaka";
+
+        /// <summary>
         /// Whether to enable BLS signature aggregation for UserOperations.
         /// When enabled, operations with BLS signatures can be aggregated to reduce gas costs.
         /// </summary>

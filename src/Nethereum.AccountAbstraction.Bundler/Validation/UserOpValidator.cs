@@ -21,7 +21,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
         private readonly Dictionary<string, EntryPointService> _entryPoints = new();
         private readonly IStakingInfoService _stakingInfoService;
         private readonly ERC7562SimulationService? _erc7562SimulationService;
-        private readonly INodeDataService _nodeDataService;
+        private readonly IStateReader _nodeDataService;
 
         public UserOpValidator(IWeb3 web3, BundlerConfig config)
             : this(web3, config, null, null)
@@ -31,7 +31,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
         public UserOpValidator(
             IWeb3 web3,
             BundlerConfig config,
-            INodeDataService? nodeDataService,
+            IStateReader? nodeDataService,
             IStakingInfoService? stakingInfoService)
         {
             _web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
@@ -47,7 +47,9 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
 
             if (config.EnableERC7562Validation)
             {
-                _erc7562SimulationService = new ERC7562SimulationService(_nodeDataService, HardforkConfig.Default);
+                var hardforkConfig = Nethereum.EVM.Precompiles.DefaultMainnetHardforkRegistry.Instance.Get(
+                    Nethereum.EVM.HardforkNames.Parse(config.Hardfork));
+                _erc7562SimulationService = new ERC7562SimulationService(_nodeDataService, hardforkConfig);
             }
         }
 

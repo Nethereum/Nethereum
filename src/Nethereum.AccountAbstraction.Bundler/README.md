@@ -177,12 +177,32 @@ public class InMemoryUserOpMempool : IUserOpMempool
 
 ### ERC7562SimulationService
 
-EVM-based validation for opcode and storage rules.
+EVM-based validation for opcode and storage rules. Takes an
+`IStateReader` (state source) and a non-null `HardforkConfig` (which
+EVM rules to apply). The recommended way to resolve the config is via
+`DefaultMainnetHardforkRegistry.Instance.Get(HardforkNames.Parse(name))`.
 
 ```csharp
 public class ERC7562SimulationService
 {
+    public ERC7562SimulationService(IStateReader stateReader, HardforkConfig hardforkConfig);
     public Task<ERC7562ValidationResult> ValidateUserOperationAsync(PackedUserOperation userOp, string entryPoint);
+}
+```
+
+### TransactionExecutorGasEstimator
+
+EVM-based gas estimator for user operations. Takes the same
+`IStateReader` + non-null `HardforkConfig` pair as the simulation
+service.
+
+```csharp
+public class TransactionExecutorGasEstimator : IEvmGasEstimator
+{
+    public TransactionExecutorGasEstimator(
+        IStateReader stateReader,
+        BigInteger chainId,
+        HardforkConfig hardforkConfig);
 }
 ```
 
@@ -194,6 +214,11 @@ Key properties:
 - `MaxBundleSize` (default: 10) - Operations per bundle
 - `AutoBundleIntervalMs` (default: 10000) - Bundle trigger interval
 - `EnableERC7562Validation` - Enable opcode/storage simulation
+- `Hardfork` (default: `"osaka"`) - Hardfork name used by EVM
+  simulation (gas estimation and ERC-7562 validation). Parsed via
+  `HardforkNames.Parse` and looked up in
+  `DefaultMainnetHardforkRegistry`. Mainnet bundlers should track the
+  chain's current fork.
 - `UnsafeMode` - Skip all validation (testing only)
 
 ## Related Packages

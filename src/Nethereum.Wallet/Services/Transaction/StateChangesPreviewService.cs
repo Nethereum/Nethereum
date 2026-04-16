@@ -128,7 +128,7 @@ namespace Nethereum.Wallet.Services.Transaction
 
                 var ctx = BuildExecutionContext(callInput, executionStateService, blockNumber, timestamp, baseFee, enableTracing);
 
-                var config = HardforkConfig.Default;
+                var config = Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka;
                 var executor = new TransactionExecutor(config);
                 var execResult = await executor.ExecuteAsync(ctx).ConfigureAwait(false);
 
@@ -357,7 +357,7 @@ namespace Nethereum.Wallet.Services.Transaction
             }
         }
 
-        private void CollectAddressesFromCalls(List<CallInput> calls, HashSet<string> addresses)
+        private void CollectAddressesFromCalls(List<Nethereum.EVM.Types.EvmCallContext> calls, HashSet<string> addresses)
         {
             if (calls == null) return;
             foreach (var call in calls)
