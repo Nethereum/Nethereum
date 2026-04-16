@@ -13,6 +13,17 @@
 </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Nethereum.EVM.Core\**\*.cs"
+             Link="Core\%(RecursiveDir)%(Filename)%(Extension)"
+             Exclude="..\Nethereum.EVM.Core\obj\**;..\Nethereum.EVM.Core\bin\**" />
+    <Compile Include="..\Nethereum.EVM.Precompiles\DefaultPrecompileRegistries.cs" Link="Precompiles\DefaultPrecompileRegistries.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles\DefaultHardforkConfigs.cs" Link="Precompiles\DefaultHardforkConfigs.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles\DefaultMainnetHardforkRegistry.cs" Link="Precompiles\DefaultMainnetHardforkRegistry.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles\DefaultPrecompileBackends.cs" Link="Precompiles\DefaultPrecompileBackends.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles\Backends\*.cs" Link="Precompiles\Backends\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />

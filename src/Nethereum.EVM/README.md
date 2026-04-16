@@ -2,6 +2,165 @@
 
 **Nethereum.EVM** is a production-ready Ethereum Virtual Machine (EVM) execution engine that runs bytecode instruction-by-instruction with full trace support and gas calculation. Passes all Ethereum VM and State tests.
 
+## Architecture
+
+The EVM is split across two packages:
+
+- [`Nethereum.EVM.Core`](../Nethereum.EVM.Core/README.md) — the
+  AOT-/trim-friendly execution engine. Pure `EvmUInt256` arithmetic,
+  no `BigInteger` on the hot path, every async API has a `#if EVM_SYNC`
+  synchronous counterpart. Consumable by zkVM guests (Zisk) and
+  small-binary scenarios. Defines `HardforkRegistry`,
+  `MainnetChainActivations`, `PrecompileBackends`, `IStateReader`,
+  `BinaryBlockWitness`, opcode handlers, gas rules, and the EIP-2935
+  BLOCKHASH routing.
+- **`Nethereum.EVM`** (this package) — source-links the core (`<Compile
+  Include="..\Nethereum.EVM.Core\**\*.cs" />` in the csproj) and adds
+  RPC-backed state (`RpcNodeDataService`), compatibility shims
+  (`Compatibility/EvmTypeConversions`), state-diff extractors,
+  program-result decoders, and the existing tooling surface that has
+  always lived in `Nethereum.EVM`.
+
+For new applications targeting standard .NET hosts, depend on
+`Nethereum.EVM` — you get everything below plus the tooling. For zkVM
+guests or when minimising the dependency footprint, depend on
+`Nethereum.EVM.Core` directly.
+
+### Upgrading from the pre-refactor API
+
+- **`HardforkConfig` is now required on the simulator / executor.**
+  Before the refactor, `new EVMSimulator()` and
+  `new TransactionExecutor()` took no configuration and defaulted
+  internally to Prague semantics. Both parameterless constructors are
+  removed; callers must pass a `HardforkConfig` explicitly. The new
+  satellite package `Nethereum.EVM.Precompiles` ships ready-made
+  per-fork configs:
+
+  ```csharp
+  using Nethereum.EVM.Precompiles;
+
+  var simulator = new EVMSimulator(DefaultHardforkConfigs.Prague);
+  var executor  = new TransactionExecutor(DefaultHardforkConfigs.Cancun);
+  ```
+
+  For block-level code where the fork is data-driven (from the
+  witness / block header), resolve via the registry:
+
+  ```csharp
+  var cfg = DefaultMainnetHardforkRegistry.Instance.Get(block.Features.Fork);
+  ```
+
+- 256-bit numeric fields on `Nethereum.Model` transaction / block /
+  receipt / account types are `EvmUInt256` (migrated from `BigInteger`).
+  Existing `BigInteger.Parse(...)` arguments continue to compile via
+  implicit conversion; new code should use `EvmUInt256` directly.
+- The `INodeDataService` interface is renamed to `IStateReader` and
+  the `GetBlockHashAsync(BigInteger blockNumber)` method is removed.
+  BLOCKHASH now routes through EIP-2935 history-contract storage
+  (`0x0000F90827F1C53a10cb7A02335B175320002935`, slot `blockNumber %
+  8191`) on Prague+, so it's a regular storage read covered by
+  `GetStorageAtAsync`. Consumers that supplied their own
+  `INodeDataService` implementation: rename to `IStateReader`, delete
+  the `GetBlockHashAsync` override, and the host `BlockProducer`
+  (or equivalent block pre-processor) writes the ancestor hash into
+  the history contract's storage at block start — witness recorders
+  capture the slot automatically as a normal storage read.
+- `Nethereum.EVM.Precompiles` (new satellite) ships the default
+  `PrecompileBackends` bundle. `Nethereum.EVM.Precompiles.Bls` and
+  `.Kzg` provide the BLS12-381 / KZG extension methods.
+
+### Common configurations
+
+**Latest mainnet fork (Osaka).** When you just want "run the newest
+mainnet rules" — typical for dev tooling, fresh simulations, unit
+tests that aren't fork-sensitive:
+
+```csharp
+using Nethereum.EVM.Precompiles;
+
+var simulator = new EVMSimulator(DefaultHardforkConfigs.Osaka);
+```
+
+**Fork-per-block on mainnet.** When replaying historical blocks or
+building a witness and you need the correct fork for that block:
+
+```csharp
+using Nethereum.EVM;
+using Nethereum.EVM.Precompiles;
+
+var fork = MainnetChainActivations.Instance.ResolveAt(
+    blockNumber: block.Number.ToLong(),
+    timestamp:   (ulong)block.Timestamp.ToLong());
+// → HardforkName.Cancun for a block before Prague activation
+
+var cfg = DefaultMainnetHardforkRegistry.Instance.Get(fork);
+var executor = new TransactionExecutor(cfg);
+```
+
+For chain-ids other than mainnet, register your own `IChainActivations`
+once at startup and dispatch through `ChainActivationsRegistry`:
+
+```csharp
+ChainActivationsRegistry.Instance.Register(10, OptimismActivations.Instance);
+var fork = ChainActivationsRegistry.Instance.ResolveAt(chainId, blockNumber, ts);
+```
+
+**L2 / AppChain pinned to one fork.** Many L2s pin an EVM version. If
+your chain always runs, say, Osaka, skip resolution entirely:
+
+```csharp
+var registry = DefaultMainnetHardforkRegistry.Instance;
+var executor = new TransactionExecutor(registry.Get(HardforkName.Osaka));
+```
+
+If your L2 uses a non-mainnet precompile set (witness-backed crypto,
+custom opcode gas, alternative registry), build your own registry:
+
+```csharp
+using Nethereum.EVM;
+using Nethereum.EVM.Execution.Precompiles;
+
+// Your own PrecompileBackends bundle — mix defaults with custom impls
+var backends = new PrecompileBackends(
+    ecRecover: DefaultEcRecoverBackend.Instance,
+    sha256:    myHardwareAcceleratedSha256,
+    ripemd160: DefaultRipemd160Backend.Instance,
+    modExp:    DefaultModExpBackend.Instance,
+    bn128:     DefaultBn128Backend.Instance,
+    blake2f:   DefaultBlake2fBackend.Instance,
+    p256Verify:DefaultP256VerifyBackend.Instance);
+
+var registry = MainnetHardforkRegistry.Build(backends);
+var cfg      = registry.Get(HardforkName.Osaka);
+```
+
+The same pattern is used by `Nethereum.EVM.Zisk` — its
+`ZiskPrecompileBackends` routes every backend to a witness-backed Zisk
+P/Invoke and the zkVM guest calls
+`MainnetHardforkRegistry.Build(ZiskPrecompileBackends.Instance)`.
+
+**Full custom hardfork.** Opcode handlers, gas rules, call-frame
+init, transaction setup / validation — every `HardforkConfig` field
+is composable. Start from a base and override specific rule-sets:
+
+```csharp
+using Nethereum.EVM;
+using Nethereum.EVM.Execution.Opcodes;
+
+var custom = DefaultHardforkConfigs.Osaka
+    .WithOpcodeHandlers(myOpcodeTable)        // e.g. custom arithmetic
+    .WithIntrinsicGasRules(myIntrinsicRules)  // e.g. different calldata pricing
+    .WithPrecompiles(myPrecompileRegistry);
+
+// Register it into your own HardforkRegistry, or use directly:
+var executor = new TransactionExecutor(custom);
+```
+
+`HardforkConfigExtensions` provides `With*` extension methods for
+every field; `PrecompileRegistryBlsExtensions.WithBlsBackend(...)` and
+`PrecompileRegistryKzgExtensions.WithKzgBackend(...)` compose on top
+of an existing registry.
+
 ## Overview
 
 This package provides a local EVM implementation that can:
@@ -11,7 +170,7 @@ This package provides a local EVM implementation that can:
 - Maintain execution traces with stack, memory, and storage snapshots
 - Interact with real blockchain state via RPC
 - Parse and disassemble bytecode
-- Support all EVM opcodes including recent additions (Cancun, Shanghai forks)
+- Support all EVM opcodes including recent additions (Cancun, Shanghai, Prague, Osaka forks)
 
 **Status**: Production - passes all Ethereum VM and State tests. Purpose-built for development tooling, testing, debugging, and simulation.
 
