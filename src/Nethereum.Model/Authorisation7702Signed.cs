@@ -3,17 +3,16 @@ using Nethereum.RLP;
 using Nethereum.Util;
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 
 namespace Nethereum.Model
 {
     public class Authorisation7702
     {
-        public BigInteger ChainId { get; set; }
+        public EvmUInt256 ChainId { get; set; }
         public string Address { get; set; }
-        public BigInteger Nonce { get; set; }
+        public EvmUInt256 Nonce { get; set; }
     }
-       
+
     public class Authorisation7702Signed: Authorisation7702, ISignature
     {
 
@@ -21,7 +20,7 @@ namespace Nethereum.Model
         {
         }
 
-        public Authorisation7702Signed(BigInteger chainId, string address, BigInteger nonce, byte[] r, byte[] s, byte[] v)
+        public Authorisation7702Signed(EvmUInt256 chainId, string address, EvmUInt256 nonce, byte[] r, byte[] s, byte[] v)
         {
             ChainId = chainId;
             Address = address;

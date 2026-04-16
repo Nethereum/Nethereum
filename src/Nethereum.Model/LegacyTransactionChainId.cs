@@ -1,7 +1,7 @@
-﻿using System;
-using System.Numerics;
+using System;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -12,7 +12,7 @@ namespace Nethereum.Model
         private static readonly byte[] RHASH_DEFAULT = 0.ToBytesForRLPEncoding();
         private static readonly byte[] SHASH_DEFAULT = 0.ToBytesForRLPEncoding();
 
-        public LegacyTransactionChainId(byte[] rawData, BigInteger chainId)
+        public LegacyTransactionChainId(byte[] rawData, EvmUInt256 chainId)
         {
             //Instantiate and decode
             RlpSignerEncoder = new RLPSignedDataHashBuilder(rawData, NUMBER_ENCODING_ELEMENTS);
@@ -41,7 +41,7 @@ namespace Nethereum.Model
             AppendDataForHashRecovery(chainId);
         }
 
-        private void AppendDataForHashRecovery(BigInteger chainId)
+        private void AppendDataForHashRecovery(EvmUInt256 chainId)
         {
             //append the chainId, r and s so it can be recovered using the raw hash
             //the encoding has only the default 6 values
@@ -57,9 +57,9 @@ namespace Nethereum.Model
             GetChainIdFromVAndAppendDataForHashRecovery();
         }
 
-        private BigInteger GetChainFromVChain()
+        private EvmUInt256 GetChainFromVChain()
         {
-            return VRecoveryAndChainCalculations.GetChainFromVChain(Signature.V.ToBigIntegerFromRLPDecoded());
+            return VRecoveryAndChainCalculations.GetChainFromVChain(Signature.V.ToEvmUInt256FromRLPDecoded());
         }
 
         public LegacyTransactionChainId(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress, byte[] value,
@@ -78,24 +78,24 @@ namespace Nethereum.Model
                 r, s, v, NUMBER_ENCODING_ELEMENTS);
         }
 
-        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger chainId)
+        public LegacyTransactionChainId(string to, EvmUInt256 amount, EvmUInt256 nonce, EvmUInt256 chainId)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, chainId)
         {
         }
 
-        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, string data, BigInteger chainId)
+        public LegacyTransactionChainId(string to, EvmUInt256 amount, EvmUInt256 nonce, string data, EvmUInt256 chainId)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, data, chainId)
         {
         }
 
-        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, BigInteger chainId)
+        public LegacyTransactionChainId(string to, EvmUInt256 amount, EvmUInt256 nonce, EvmUInt256 gasPrice,
+            EvmUInt256 gasLimit, EvmUInt256 chainId)
             : this(to, amount, nonce, gasPrice, gasLimit, "", chainId)
         {
         }
 
-        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, string data, BigInteger chainId) : this(nonce.ToBytesForRLPEncoding(),
+        public LegacyTransactionChainId(string to, EvmUInt256 amount, EvmUInt256 nonce, EvmUInt256 gasPrice,
+            EvmUInt256 gasLimit, string data, EvmUInt256 chainId) : this(nonce.ToBytesForRLPEncoding(),
             gasPrice.ToBytesForRLPEncoding(),
             gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(),
             data.HexToByteArray(), chainId.ToBytesForRLPEncoding()
@@ -103,8 +103,8 @@ namespace Nethereum.Model
         {
         }
 
-        public LegacyTransactionChainId(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-          BigInteger gasLimit, string data, BigInteger chainId, byte[] r, byte[] s, byte[] v) : this(nonce.ToBytesForRLPEncoding(),
+        public LegacyTransactionChainId(string to, EvmUInt256 amount, EvmUInt256 nonce, EvmUInt256 gasPrice,
+          EvmUInt256 gasLimit, string data, EvmUInt256 chainId, byte[] r, byte[] s, byte[] v) : this(nonce.ToBytesForRLPEncoding(),
           gasPrice.ToBytesForRLPEncoding(),
           gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(),
           data.HexToByteArray(), chainId.ToBytesForRLPEncoding(), r, s, v
@@ -112,9 +112,9 @@ namespace Nethereum.Model
         {
         }
 
-        public BigInteger GetChainIdAsBigInteger()
+        public EvmUInt256 GetChainIdAsBigInteger()
         {
-            return ChainId.ToBigIntegerFromRLPDecoded();
+            return ChainId.ToEvmUInt256FromRLPDecoded();
         }
 
         public byte[] ChainId => RlpSignerEncoder.Data[6];
@@ -123,7 +123,7 @@ namespace Nethereum.Model
 
         public byte[] SHash => RlpSignerEncoder.Data[8];
 
-       
+
 
         public string ToJsonHex()
         {
@@ -135,7 +135,7 @@ namespace Nethereum.Model
             return data + "]";
         }
 
-      
+
 
         private byte[][] GetElementsInOrder(byte[] nonce, byte[] gasPrice, byte[] gasLimit, byte[] receiveAddress,
             byte[] value,

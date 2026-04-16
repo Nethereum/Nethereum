@@ -1,6 +1,5 @@
 ﻿using Nethereum.Util;
 using Nethereum.Util.HashProviders;
-using System.Numerics;
 
 namespace Nethereum.Model
 {
@@ -28,11 +27,11 @@ namespace Nethereum.Model
         // of accounts with associated code, the number of
         // contract-creations made by this account
         /// </summary>
-        public BigInteger Nonce { get; set; }
+        public EvmUInt256 Nonce { get; set; }
         /// <summary>
         /// YP:4.1 A scalar value equal to the number of We owned by this address.
         /// </summary>
-        public BigInteger Balance { get; set; }
+        public EvmUInt256 Balance { get; set; }
 
         /// <summary>
         /// / YP:4.1 A 256-bit hash of the root node of a

@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using System.Numerics;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
     public class Receipt
     {
         public byte[] PostStateOrStatus { get; set; }
-        public BigInteger CumulativeGasUsed { get; set; }
+        public EvmUInt256 CumulativeGasUsed { get; set; }
         public byte[] Bloom { get; set; }
         public List<Log> Logs { get; set; } = new List<Log>();
         public byte TransactionType { get; set; } = 0;
@@ -23,7 +23,7 @@ namespace Nethereum.Model
             }
         }
 
-        public static Receipt CreateStatusReceipt(bool success, BigInteger cumulativeGasUsed, byte[] bloom, List<Log> logs)
+        public static Receipt CreateStatusReceipt(bool success, EvmUInt256 cumulativeGasUsed, byte[] bloom, List<Log> logs)
         {
             return new Receipt
             {
@@ -36,7 +36,7 @@ namespace Nethereum.Model
             };
         }
 
-        public static Receipt CreatePostStateReceipt(byte[] postStateRoot, BigInteger cumulativeGasUsed, byte[] bloom, List<Log> logs)
+        public static Receipt CreatePostStateReceipt(byte[] postStateRoot, EvmUInt256 cumulativeGasUsed, byte[] bloom, List<Log> logs)
         {
             return new Receipt
             {

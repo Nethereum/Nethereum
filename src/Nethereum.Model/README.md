@@ -55,6 +55,32 @@ Ethereum uses ECDSA signatures with three components:
 
 The `Chain` enum provides constants for major Ethereum networks (MainNet, Sepolia, Polygon, Arbitrum, Optimism, Base, etc.) and is used with EIP-155 to prevent cross-chain replay attacks.
 
+### Numeric Types — `EvmUInt256`
+
+Transaction amounts, gas limits, fees, nonces, chain IDs, block numbers,
+balances, and cumulative gas — every 256-bit scalar field on the model
+types — are typed as `Nethereum.Util.EvmUInt256`. The struct provides
+EVM-semantic unsigned arithmetic (wrap-around, divide-by-zero → zero)
+without `System.Numerics.BigInteger` allocations in hot paths.
+
+`BigInteger` remains supported at the API boundary through an implicit
+conversion, so existing consumer code like
+`amount: BigInteger.Parse("1000000000000000000")` continues to compile
+and behave identically. For new code, prefer the direct `EvmUInt256`
+constructor for small values (`new EvmUInt256(1_000_000_000_000_000_000UL)`)
+or the conversion helpers in `EvmUInt256BigIntegerExtensions` for
+arbitrary-precision input.
+
+### Block / Receipt Encoding Providers
+
+`IBlockEncodingProvider` abstracts over the binary encoding of block
+headers, receipts, accounts, logs, and withdrawals so callers outside
+`Nethereum.Model` (state-root calculators, witness producers, SSZ
+encoders) can swap in alternative encoders without taking a direct RLP
+dependency. The default implementation is `RlpBlockEncodingProvider`
+(RLP canonical encoding for Ethereum mainnet); `Nethereum.Model.SSZ`
+supplies the beacon-chain SSZ variant.
+
 ## Quick Start
 
 ```csharp

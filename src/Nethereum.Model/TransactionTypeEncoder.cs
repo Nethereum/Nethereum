@@ -1,6 +1,6 @@
-﻿using System;
-using System.Numerics;
+using System;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -14,7 +14,7 @@ namespace Nethereum.Model
             return returnBytes;
         }
 
-        public byte[] GetBigIntegerForEncoding(BigInteger? value)
+        public byte[] GetValueForEncoding(EvmUInt256? value)
         {
             if (value == null) return DefaultValues.ZERO_BYTE_ARRAY;
             return value.Value.ToBytesForRLPEncoding();

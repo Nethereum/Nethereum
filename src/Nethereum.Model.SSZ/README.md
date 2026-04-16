@@ -29,6 +29,18 @@ dotnet add package Nethereum.Model.SSZ
 
 - **Nethereum.Ssz** — SszWriter, SszReader, SszMerkleizer
 - **Nethereum.Model** — Transaction1559, Transaction7702, BlockHeader, Log, AccessListItem
+- **Nethereum.Util** — `EvmUInt256` (base-fee, blob-fee, and other 256-bit model fields)
+
+## Note on Numeric Types
+
+The SSZ encoders consume `Nethereum.Model` types whose 256-bit fields
+(`BlockHeader.BaseFee`, `Receipt.CumulativeGasUsed`, transaction amounts
+/ fees / nonces / gas limits, etc.) are now `EvmUInt256`. `BigInteger`
+remains interoperable via `EvmUInt256`'s implicit conversion, so
+existing call sites like `Value = BigInteger.Parse("1000...")` continue
+to compile. Internally, the SSZ encoders use `EvmUInt256.ToLittleEndian`
+and `EvmUInt256.FromLittleEndian` for the 32-byte fixed-length binary
+encoding required by the SSZ spec.
 
 ## Quick Start
 

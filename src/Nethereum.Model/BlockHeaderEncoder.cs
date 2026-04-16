@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 
 namespace Nethereum.Model
@@ -48,7 +49,7 @@ namespace Nethereum.Model
                 header.GasLimit.ToBytesForRLPEncoding(),
                 header.GasUsed.ToBytesForRLPEncoding(),
                 header.Timestamp.ToBytesForRLPEncoding(),
-                header.ExtraData.Take(header.ExtraData.Length - 65).ToArray(),
+                header.ExtraData.Slice(0, header.ExtraData.Length - 65),
                 header.MixHash,
                 header.Nonce
             };
@@ -106,8 +107,8 @@ namespace Nethereum.Model
             blockHeader.TransactionsHash = decodedElements[4].RLPData;
             blockHeader.ReceiptHash = decodedElements[5].RLPData;
             blockHeader.LogsBloom = decodedElements[6].RLPData;
-            blockHeader.Difficulty = decodedElements[7].RLPData.ToBigIntegerFromRLPDecoded();
-            blockHeader.BlockNumber = decodedElements[8].RLPData.ToBigIntegerFromRLPDecoded();
+            blockHeader.Difficulty = decodedElements[7].RLPData.ToEvmUInt256FromRLPDecoded();
+            blockHeader.BlockNumber = decodedElements[8].RLPData.ToEvmUInt256FromRLPDecoded();
             blockHeader.GasLimit = decodedElements[9].RLPData.ToLongFromRLPDecoded();
             blockHeader.GasUsed = decodedElements[10].RLPData.ToLongFromRLPDecoded();
             blockHeader.Timestamp = decodedElements[11].RLPData.ToLongFromRLPDecoded();
@@ -122,7 +123,7 @@ namespace Nethereum.Model
             // London (16 fields)
             if (count >= 16)
             {
-                blockHeader.BaseFee = decodedElements[15].RLPData.ToBigIntegerFromRLPDecoded();
+                blockHeader.BaseFee = decodedElements[15].RLPData.ToEvmUInt256FromRLPDecoded();
             }
 
             // Shanghai (17 fields)
@@ -147,5 +148,6 @@ namespace Nethereum.Model
 
             return blockHeader;
         }
+
     }
 }

@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
+using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -15,12 +16,12 @@ namespace Nethereum.Model
             var encodedData = new List<byte[]>
             {
                 RLP.RLP.EncodeElement(transaction.ChainId.ToBytesForRLPEncoding()),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.Nonce)),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.MaxPriorityFeePerGas)),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.MaxFeePerGas)),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.GasLimit)),
+                RLP.RLP.EncodeElement(GetValueForEncoding(transaction.Nonce)),
+                RLP.RLP.EncodeElement(GetValueForEncoding(transaction.MaxPriorityFeePerGas)),
+                RLP.RLP.EncodeElement(GetValueForEncoding(transaction.MaxFeePerGas)),
+                RLP.RLP.EncodeElement(GetValueForEncoding(transaction.GasLimit)),
                 RLP.RLP.EncodeElement(transaction.ReceiverAddress.HexToByteArray()),
-                RLP.RLP.EncodeElement(GetBigIntegerForEncoding(transaction.Amount)),
+                RLP.RLP.EncodeElement(GetValueForEncoding(transaction.Amount)),
                 RLP.RLP.EncodeElement(transaction.Data.HexToByteArray()),
                 AccessListRLPEncoderDecoder.EncodeAccessList(transaction.AccessList),
                 AuthorisationListRLPEncoderDecoder.Encode(transaction.AuthorisationList)
@@ -50,18 +51,18 @@ namespace Nethereum.Model
         {
             if (rlpData[0] == Type)
             {
-                rlpData = rlpData.Skip(1).ToArray();
+                rlpData = rlpData.SliceFrom(1);
             }
 
             var decodedList = RLP.RLP.Decode(rlpData);
             var decodedElements = (RLPCollection)decodedList;
-            var chainId = decodedElements[0].RLPData.ToBigIntegerFromRLPDecoded();
-            var nonce = decodedElements[1].RLPData.ToBigIntegerFromRLPDecoded();
-            var maxPriorityFeePerGas = decodedElements[2].RLPData.ToBigIntegerFromRLPDecoded();
-            var maxFeePerGas = decodedElements[3].RLPData.ToBigIntegerFromRLPDecoded();
-            var gasLimit = decodedElements[4].RLPData.ToBigIntegerFromRLPDecoded();
+            var chainId = decodedElements[0].RLPData.ToEvmUInt256FromRLPDecoded();
+            var nonce = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
+            var maxPriorityFeePerGas = decodedElements[2].RLPData.ToEvmUInt256FromRLPDecoded();
+            var maxFeePerGas = decodedElements[3].RLPData.ToEvmUInt256FromRLPDecoded();
+            var gasLimit = decodedElements[4].RLPData.ToEvmUInt256FromRLPDecoded();
             var receiverAddress = decodedElements[5].RLPData?.ToHex(true);
-            var amount = decodedElements[6].RLPData.ToBigIntegerFromRLPDecoded();
+            var amount = decodedElements[6].RLPData.ToEvmUInt256FromRLPDecoded();
             var data = decodedElements[7].RLPData?.ToHex(true);
             var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[8].RLPData);
             var authorizationList = AuthorisationListRLPEncoderDecoder.Decode(decodedElements[9].RLPData);
