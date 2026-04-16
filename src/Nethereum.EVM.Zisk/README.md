@@ -70,23 +70,45 @@ block, and writes the output slots.
 
 ## Build Pipeline
 
-See `scripts/build-evm-zisk.sh` in the repo root for the full
-pipeline. Two modes:
+The build orchestration lives in [`zisk/`](../../zisk/README.md) at
+the repo root. It uses the `nethereum/bflat-riscv64` Docker image
+built from the [Nethereum/bflat-riscv64 fork on the `nethereum`
+branch](https://github.com/Nethereum/bflat-riscv64/tree/nethereum).
+
+Two modes:
 
 - **Source mode (default)** — `bflat` compiles all linked `.cs` files
   directly from the EVM.Core, Zisk.Core, and EVM.Zisk source trees.
-- **DLL mode** (`--dll`) — `dotnet build` produces a managed DLL;
-  `bflat` links against it for faster iteration when only the guest
-  entry changes.
+  Smaller ELF; use for production proofs.
+- **DLL mode** (`--dll`) — `dotnet build` produces the managed DLL
+  first and `bflat` links against it. ~25% larger ELF but faster
+  iteration when only the guest entry changes.
 
-Both modes produce `scripts/zisk-output/nethereum_evm_elf`. Run it via:
+First-time setup (clones the fork, builds the image, installs Zisk on
+the host):
 
 ```bash
-wsl -d Ubuntu -- ~/.zisk/bin/ziskemu \
-    -e scripts/zisk-output/nethereum_evm_elf \
-    --legacy-inputs scripts/zisk-output/witnesses/my_witness.bin \
+bash zisk/scripts/setup-host.sh
+```
+
+Build:
+
+```bash
+bash zisk/scripts/build.sh           # source mode
+bash zisk/scripts/build.sh --dll     # DLL mode
+```
+
+Output lands in `zisk/output/nethereum_evm_elf`. Run it:
+
+```bash
+ziskemu -e zisk/output/nethereum_evm_elf \
+    --legacy-inputs zisk/output/witnesses/my_witness.bin \
     -n 500000000
 ```
+
+See [`zisk/README.md`](../../zisk/README.md) for proving flow,
+verification checklist, and environment overrides (`ZISK_IMAGE`,
+`LIBZISKOS_DIR`).
 
 ## See Also
 
