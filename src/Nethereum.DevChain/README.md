@@ -174,7 +174,16 @@ await node.SetBalanceAsync(address, newBalance);
 await node.SetCodeAsync(address, bytecode);
 await node.SetStorageAtAsync(address, slot, value);
 await node.SetNonceAsync(address, nonce);
+await node.SetBlockHashAsync(blockNumber, hash);
 ```
+
+`SetBlockHashAsync` stamps the hash into the block store **and**
+mirrors it into the EIP-2935 history contract's storage at
+`0x0000F90827F1C53a10cb7A02335B175320002935`, slot `blockNumber %
+8191`. That mirror keeps the BLOCKHASH opcode consistent with the
+in-guest state-reader view for state tests and stateless replays
+where the block-hash history is seeded explicitly rather than built
+up from actual block production.
 
 ### Snapshots
 

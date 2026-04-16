@@ -38,8 +38,24 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
         public static string GetMainnetRpcUrl() =>
             Environment.GetEnvironmentVariable("MAINNET_RPC_URL") ?? DefaultMainnetRpcUrl;
 
+        /// <summary>
+        /// Mainnet fork-proxy tests are opt-in because the ForkingNodeDataService
+        /// path depends on an RPC that returns state proofs and contract storage
+        /// reliably — many free/public endpoints return 0 for eth_call against
+        /// contracts, which would produce spurious test failures. Set
+        /// <c>RUN_MAINNET_FORK_TESTS=1</c> to enable.
+        /// </summary>
+        public static bool MainnetForkTestsEnabled() =>
+            Environment.GetEnvironmentVariable("RUN_MAINNET_FORK_TESTS") == "1";
+
         public async Task InitializeAsync()
         {
+            if (!MainnetForkTestsEnabled())
+            {
+                IsAvailable = false;
+                return;
+            }
+
             var mainnetRpc = GetMainnetRpcUrl();
 
             try

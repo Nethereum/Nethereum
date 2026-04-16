@@ -1,6 +1,7 @@
 using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -36,22 +37,22 @@ namespace Nethereum.Model
             return null;
         }
 
-        public static BigInteger GetValue(this ISignedTransaction tx)
+        public static EvmUInt256 GetValue(this ISignedTransaction tx)
         {
             if (tx is Transaction7702 tx7702)
-                return tx7702.Amount ?? BigInteger.Zero;
+                return tx7702.Amount ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
-                return tx1559.Amount ?? BigInteger.Zero;
+                return tx1559.Amount ?? EvmUInt256.Zero;
             if (tx is Transaction2930 tx2930)
-                return tx2930.Amount ?? BigInteger.Zero;
+                return tx2930.Amount ?? EvmUInt256.Zero;
             if (tx is LegacyTransaction legacyTx)
-                return legacyTx.Value.ToBigIntegerFromRLPDecoded();
+                return legacyTx.Value.ToEvmUInt256FromRLPDecoded();
             if (tx is LegacyTransactionChainId legacyChainTx)
-                return legacyChainTx.Value.ToBigIntegerFromRLPDecoded();
-            return BigInteger.Zero;
+                return legacyChainTx.Value.ToEvmUInt256FromRLPDecoded();
+            return EvmUInt256.Zero;
         }
 
-        public static BigInteger GetGasLimit(this ISignedTransaction tx)
+        public static EvmUInt256 GetGasLimit(this ISignedTransaction tx)
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.GasLimit ?? 21000;
@@ -60,52 +61,52 @@ namespace Nethereum.Model
             if (tx is Transaction2930 tx2930)
                 return tx2930.GasLimit ?? 21000;
             if (tx is LegacyTransaction legacyTx)
-                return legacyTx.GasLimit.ToBigIntegerFromRLPDecoded();
+                return legacyTx.GasLimit.ToEvmUInt256FromRLPDecoded();
             if (tx is LegacyTransactionChainId legacyChainTx)
-                return legacyChainTx.GasLimit.ToBigIntegerFromRLPDecoded();
+                return legacyChainTx.GasLimit.ToEvmUInt256FromRLPDecoded();
             return 21000;
         }
 
-        public static BigInteger GetNonce(this ISignedTransaction tx)
+        public static EvmUInt256 GetNonce(this ISignedTransaction tx)
         {
             if (tx is Transaction7702 tx7702)
-                return tx7702.Nonce ?? BigInteger.Zero;
+                return tx7702.Nonce ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
-                return tx1559.Nonce ?? BigInteger.Zero;
+                return tx1559.Nonce ?? EvmUInt256.Zero;
             if (tx is Transaction2930 tx2930)
-                return tx2930.Nonce ?? BigInteger.Zero;
+                return tx2930.Nonce ?? EvmUInt256.Zero;
             if (tx is LegacyTransaction legacyTx)
-                return legacyTx.Nonce.ToBigIntegerFromRLPDecoded();
+                return legacyTx.Nonce.ToEvmUInt256FromRLPDecoded();
             if (tx is LegacyTransactionChainId legacyChainTx)
-                return legacyChainTx.Nonce.ToBigIntegerFromRLPDecoded();
-            return BigInteger.Zero;
+                return legacyChainTx.Nonce.ToEvmUInt256FromRLPDecoded();
+            return EvmUInt256.Zero;
         }
 
-        public static BigInteger GetMaxFeePerGas(this ISignedTransaction tx)
+        public static EvmUInt256 GetMaxFeePerGas(this ISignedTransaction tx)
         {
             if (tx is Transaction7702 tx7702)
-                return tx7702.MaxFeePerGas ?? BigInteger.Zero;
+                return tx7702.MaxFeePerGas ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
-                return tx1559.MaxFeePerGas ?? BigInteger.Zero;
+                return tx1559.MaxFeePerGas ?? EvmUInt256.Zero;
             if (tx is Transaction2930 tx2930)
-                return tx2930.GasPrice ?? BigInteger.Zero;
+                return tx2930.GasPrice ?? EvmUInt256.Zero;
             if (tx is LegacyTransaction legacyTx)
-                return legacyTx.GasPrice.ToBigIntegerFromRLPDecoded();
+                return legacyTx.GasPrice.ToEvmUInt256FromRLPDecoded();
             if (tx is LegacyTransactionChainId legacyChainTx)
-                return legacyChainTx.GasPrice.ToBigIntegerFromRLPDecoded();
-            return BigInteger.Zero;
+                return legacyChainTx.GasPrice.ToEvmUInt256FromRLPDecoded();
+            return EvmUInt256.Zero;
         }
 
-        public static BigInteger GetMaxPriorityFeePerGas(this ISignedTransaction tx)
+        public static EvmUInt256 GetMaxPriorityFeePerGas(this ISignedTransaction tx)
         {
             if (tx is Transaction7702 tx7702)
-                return tx7702.MaxPriorityFeePerGas ?? BigInteger.Zero;
+                return tx7702.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
-                return tx1559.MaxPriorityFeePerGas ?? BigInteger.Zero;
-            return BigInteger.Zero;
+                return tx1559.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
+            return EvmUInt256.Zero;
         }
 
-        public static BigInteger GetChainId(this ISignedTransaction tx)
+        public static EvmUInt256 GetChainId(this ISignedTransaction tx)
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.ChainId;
@@ -115,7 +116,7 @@ namespace Nethereum.Model
                 return tx2930.ChainId;
             if (tx is LegacyTransactionChainId legacyChainTx)
                 return legacyChainTx.GetChainIdAsBigInteger();
-            return BigInteger.Zero;
+            return EvmUInt256.Zero;
         }
 
         public static bool IsContractCreation(this ISignedTransaction tx)

@@ -68,7 +68,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                 var storageValid = StorageProofVerification.ValidateValueFromStorageProof(
                     sp.Key.HexValue.HexToByteArray(),
                     sp.Value.HexValue.HexToByteArray(),
-                    sp.Proof.Select(x => x.HexToByteArray()),
+                    sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                     proof.StorageHash.HexToByteArray());
                 Assert.True(storageValid, "Storage proof should verify cryptographically");
             }
@@ -173,7 +173,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                     var valid = StorageProofVerification.ValidateValueFromStorageProof(
                         sp.Key.HexValue.HexToByteArray(),
                         sp.Value.HexValue.HexToByteArray(),
-                        sp.Proof.Select(x => x.HexToByteArray()),
+                        sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                         proof.StorageHash.HexToByteArray());
                     Assert.True(valid, $"Storage proof for key {sp.Key.Value} should verify");
                 }
@@ -274,7 +274,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var storageValid = StorageProofVerification.ValidateValueFromStorageProof(
                 sp.Key.HexValue.HexToByteArray(),
                 tamperedValue,
-                sp.Proof.Select(x => x.HexToByteArray()),
+                sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                 proof.StorageHash.HexToByteArray());
 
             Assert.False(storageValid, "Tampered storage value should cause storage proof verification to fail");

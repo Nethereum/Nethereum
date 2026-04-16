@@ -1,4 +1,6 @@
-﻿namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
+﻿using Nethereum.BlockchainProcessing.ProgressRepositories;
+
+namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 {
     public interface IBlockchainStoreRepositoryFactory
     {
@@ -8,5 +10,8 @@
         ITransactionLogRepository CreateTransactionLogRepository();
         ITransactionRepository CreateTransactionRepository();
         ITransactionVMStackRepository CreateTransactionVmStackRepository();
+        IInternalTransactionRepository CreateInternalTransactionRepository();
+        IReorgHandler CreateReorgHandler();
+        IBlockProgressRepository CreateInternalTransactionBlockProgressRepository();
     }
 }

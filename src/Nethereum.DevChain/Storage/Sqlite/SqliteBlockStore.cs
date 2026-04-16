@@ -95,7 +95,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 var currentHeight = GetHeightInternal();
                 if (blockNum > currentHeight)
                 {
-                    var heightBytes = header.BlockNumber.ToByteArray(isUnsigned: true, isBigEndian: true);
+                    var heightBytes = header.BlockNumber.ToBigEndian();
                     using var cmd = _manager.Connection.CreateCommand();
                     cmd.CommandText = "INSERT OR REPLACE INTO metadata (key, value) VALUES ('height', @val)";
                     cmd.Parameters.AddWithValue("@val", heightBytes);

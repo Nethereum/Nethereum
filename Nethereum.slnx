@@ -1,0 +1,960 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="ExportDebug" />
+    <BuildType Name="ExportRelease" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/" />
+  <Folder Name="/src/ABI/">
+    <Project Path="src/Nethereum.ABI/Nethereum.ABI.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.ABI.UnitTests/Nethereum.ABI.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/AccountAbstraction/">
+    <Project Path="src/Nethereum.AccountAbstraction.Bundler.RocksDB/Nethereum.AccountAbstraction.Bundler.RocksDB.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AccountAbstraction.Bundler.RpcServer/Nethereum.AccountAbstraction.Bundler.RpcServer.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AccountAbstraction.Bundler/Nethereum.AccountAbstraction.Bundler.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AccountAbstraction.SimpleAccount/Nethereum.AccountAbstraction.SimpleAccount.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.AccountAbstraction/Nethereum.AccountAbstraction.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.AccountAbstraction.AppChain.IntegrationTests/Nethereum.AccountAbstraction.AppChain.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AccountAbstraction.Bundler.RocksDB.UnitTests/Nethereum.AccountAbstraction.Bundler.RocksDB.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests/Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AccountAbstraction.IntegrationTests/Nethereum.AccountAbstraction.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.AccountAbstraction.UnitTests/Nethereum.AccountAbstraction.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Accounts/">
+    <Project Path="src/Nethereum.Accounts/Nethereum.Accounts.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Accounts.IntegrationTests/Nethereum.Accounts.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Besu/">
+    <Project Path="src/Nethereum.Besu/Nethereum.Besu.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Besu.IntegrationTests/Nethereum.Besu.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Chain/" />
+  <Folder Name="/src/Chain/AppChain/">
+    <Project Path="src/Nethereum.AccountAbstraction.AppChain/Nethereum.AccountAbstraction.AppChain.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.Anchoring.Postgres/Nethereum.AppChain.Anchoring.Postgres.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.Anchoring/Nethereum.AppChain.Anchoring.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.P2P.DotNetty/Nethereum.AppChain.P2P.DotNetty.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.P2P/Nethereum.AppChain.P2P.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.Policy/Nethereum.AppChain.Policy.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.Sequencer/Nethereum.AppChain.Sequencer.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.Server/Nethereum.AppChain.Server.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain.Sync/Nethereum.AppChain.Sync.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.AppChain/Nethereum.AppChain.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Consensus.Clique/Nethereum.Consensus.Clique.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.Anchoring.IntegrationTests/Nethereum.AppChain.Anchoring.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.Anchoring.UnitTests/Nethereum.AppChain.Anchoring.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.IntegrationTests/Nethereum.AppChain.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.LoadTest/Nethereum.AppChain.LoadTest.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.Metrics.UnitTests/Nethereum.AppChain.Metrics.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.P2P.IntegrationTests/Nethereum.AppChain.P2P.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.Policy.UnitTests/Nethereum.AppChain.Policy.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.Sequencer.UnitTests/Nethereum.AppChain.Sequencer.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.Sync.UnitTests/Nethereum.AppChain.Sync.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.SyncPerformanceTests/Nethereum.AppChain.SyncPerformanceTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.AppChain.UnitTests/Nethereum.AppChain.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Chain/CoreChain/">
+    <Project Path="src/Nethereum.CoreChain.RocksDB/Nethereum.CoreChain.RocksDB.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.CoreChain/Nethereum.CoreChain.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.CoreChain.IntegrationTests/Nethereum.CoreChain.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.CoreChain.RocksDB.UnitTests/Nethereum.CoreChain.RocksDB.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.CoreChain.UnitTests/Nethereum.CoreChain.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Chain/DevChain/">
+    <Project Path="src/Nethereum.DevChain.Server/Nethereum.DevChain.Server.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.DevChain/Nethereum.DevChain.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/ClassDiagrams/">
+    <File Path="src/Nethereum.Signer.AzureKeyVault/AzureKeyVaultExternalSigner.cs" />
+    <Project Path="src/Nethereum.ClassDiagrams/Nethereum.ClassDiagrams.csproj" Id="5bbeae99-333e-4b98-8453-c5667fb22184">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Contracts/">
+    <Project Path="src/Nethereum.Contracts/Nethereum.Contracts.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Contracts.IntegrationTests/Nethereum.Contracts.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Contracts.UnitTests/Nethereum.Contracts.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/DataServices/">
+    <Project Path="src/Nethereum.DataServices/Nethereum.DataServices.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.TokenServices/Nethereum.TokenServices.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.DataServices.IntegrationTests/Nethereum.DataServices.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.TokenServices.IntegrationTests/Nethereum.TokenServices.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/EVM/">
+    <Project Path="src/Nethereum.EVM.Contracts/Nethereum.EVM.Contracts.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.EVM.Core/Nethereum.EVM.Core.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.EVM.Precompiles.Bls/Nethereum.EVM.Precompiles.Bls.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.EVM.Precompiles.Kzg/Nethereum.EVM.Precompiles.Kzg.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.EVM.Precompiles/Nethereum.EVM.Precompiles.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.EVM.Zisk/Nethereum.EVM.Zisk.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.EVM/Nethereum.EVM.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Zisk.Core/Nethereum.Zisk.Core.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.EVM.Benchmark/Nethereum.EVM.Benchmark.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.EVM.UnitTests/Nethereum.EVM.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.EVM.Core.Tests/Nethereum.EVM.Core.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Geth/">
+    <Project Path="src/Nethereum.Geth/Nethereum.Geth.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Geth.IntegrationTests/Nethereum.Geth.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/GSN/">
+    <Project Path="src/Nethereum.GSN/Nethereum.GSN.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.GSN.UnitTests/Nethereum.GSN.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/HdWallet/">
+    <Project Path="consoletests/Nethereum.HDWallet.BlazorTest/nethereum.hdwallet.blazortest.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.HDWallet/Nethereum.HdWallet.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.HdWallet.IntegrationTests/Nethereum.HdWallet.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.HdWallet.UnitTests/Nethereum.HdWallet.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Hex/">
+    <Project Path="src/Nethereum.BigInteger.N351/Nethereum.BigInteger.N351.csproj" Id="b6f7564d-de39-4724-894a-ee49ce2aee47">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Hex/Nethereum.Hex.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Identity/">
+    <Project Path="src/Nethereum.DID.EthrDID/Nethereum.DID.EthrDID.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.DID/Nethereum.DID.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.DID.EthrDID.Tests/Nethereum.DID.EthrDID.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.DID.Tests/Nethereum.DID.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Indexer/">
+    <Project Path="src/Nethereum.BlockchainStorage.Processors.Postgres/Nethereum.BlockchainStorage.Processors.Postgres.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.BlockchainStorage.Token.Postgres/Nethereum.BlockchainStorage.Token.Postgres.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.BlockchainStore.EFCore/Nethereum.BlockchainStore.EFCore.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.BlockchainStore.Postgres/Nethereum.BlockchainStore.Postgres.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Explorer/Nethereum.Explorer.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.BlockchainProcessing.Token.IntegrationTests/Nethereum.BlockchainProcessing.Token.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.BlockchainProcessing.Token.UnitTests/Nethereum.BlockchainProcessing.Token.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/KeyStore/">
+    <Project Path="consoletests/Nethereum.KeyStore.Console.Sample/Nethereum.KeyStore.Console.Sample.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.KeyStore/Nethereum.KeyStore.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.KeyStore.UnitTests/Nethereum.KeyStore.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/L2/" />
+  <Folder Name="/src/L2/Optimism/">
+    <Project Path="src/Nethereum.Optimism/Nethereum.Optimism.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Optimism.Testing/Nethereum.Optimism.Testing.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/LightClient Consensus/">
+    <Project Path="src/Nethereum.Beaconchain/Nethereum.Beaconchain.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.ChainStateVerification/Nethereum.ChainStateVerification.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Consensus.LightClient/Nethereum.Consensus.LightClient.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Consensus.Ssz/Nethereum.Consensus.Ssz.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.ChainStateVerification.Tests/Nethereum.ChainStateVerification.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Consensus.LightClient.Tests/Nethereum.Consensus.LightClient.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Consensus.Ssz.Tests/Nethereum.Consensus.Ssz.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Merkle/">
+    <Project Path="src/Nethereum.Merkle.Patricia/Nethereum.Merkle.Patricia.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Merkle/Nethereum.Merkle.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Model/">
+    <Project Path="src/Nethereum.Model/Nethereum.Model.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Model.UnitTests/Nethereum.Model.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Mud/">
+    <Project Path="src/Nethereum.Mud.Contracts/Nethereum.Mud.Contracts.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Mud.Repositories.EntityFramework/Nethereum.Mud.Repositories.EntityFramework.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Mud.Repositories.Postgres/Nethereum.Mud.Repositories.Postgres.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Mud/Nethereum.Mud.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Mud.IntegrationTests/Nethereum.Mud.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Mud.UnitTests/Nethereum.Mud.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Mud/TestExampleProjects/">
+    <Project Path="consoletests/NethereumMudLogProcessing/NethereumMudLogProcessing.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/NethereumMudStoredRecordsRestApi/NethereumMudStoredRecordsRestApi.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/NethereumMudStoreRestApiClient/NethereumMudStoreRestApiClient.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Parity/">
+    <Project Path="consoletests/Nethereum.Parity.Reactive.ConsoleTest/Nethereum.Parity.Reactive.ConsoleTest.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Parity.Reactive/Nethereum.Parity.Reactive.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Parity/Nethereum.Parity.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Parity.IntegrationTests/Nethereum.Parity.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Processing/">
+    <Project Path="src/Nethereum.BlockchainProcessing/Nethereum.BlockchainProcessing.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.BlockchainProcessing.UnitTests/Nethereum.BlockchainProcessing.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Quorum/">
+    <Project Path="src/Nethereum.Quorum/Nethereum.Quorum.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Quorum.Tests/Nethereum.Quorum.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/RLP/">
+    <Project Path="src/Nethereum.RLP/Nethereum.RLP.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Ssz/Nethereum.Ssz.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.RLP.UnitTests/Nethereum.RLP.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Ssz.Tests/Nethereum.Ssz.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/RPC/">
+    <Project Path="consoletests/Nethereum.WebSocketsStreamingTest/Nethereum.WebSocketsStreamingTest.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.JsonRpc.Client/Nethereum.JsonRpc.Client.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.JsonRpc.IpcClient/Nethereum.JsonRpc.IpcClient.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.JsonRpc.RpcClient/Nethereum.JsonRpc.RpcClient.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.JsonRpc.SystemTextJsonRpcClient/Nethereum.JsonRpc.SystemTextJsonRpcClient.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.JsonRpc.WebSocketClient/Nethereum.JsonRpc.WebSocketClient.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.RPC.Extensions/Nethereum.RPC.Extensions.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.RPC.Reactive/Nethereum.RPC.Reactive.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.RPC/Nethereum.RPC.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.RPC.IntegrationTests/Nethereum.RPC.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.RPC.Reactive.UnitTests/Nethereum.RPC.Reactive.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.RPC.UnitTests/Nethereum.RPC.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/RSK/">
+    <Project Path="src/Nethereum.RSK/Nethereum.Rsk.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Rsk.IntegrationTests/Nethereum.Rsk.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Signer/">
+    <Project Path="consoletests/Nethereum.AOTSigningTest/Nethereum.AOTSigningTest.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/Nethereum.Signer.AzureKeyVault.Console/Nethereum.Signer.AzureKeyVault.Console.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/Nethereum.Signer.Trezor.Console/Nethereum.Signer.Trezor.Console.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.AWSKeyManagement/Nethereum.Signer.AWSKeyManagement.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.AzureKeyVault/Nethereum.Signer.AzureKeyVault.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.Bls.Herumi/Nethereum.Signer.Bls.Herumi.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.Bls/Nethereum.Signer.Bls.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.EIP712/Nethereum.Signer.EIP712.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.Ledger/Nethereum.Signer.Ledger.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer.Trezor/Nethereum.Signer.Trezor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Signer/Nethereum.Signer.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Signer.Bls.Tests/Nethereum.Signer.Bls.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Signer.IntegrationTests/Nethereum.Signer.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Signer.Ledger.IntegrationTests/Nethereum.Signer.Ledger.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Signer.UnitTests/Nethereum.Signer.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="utils/Nethereum.Signer.Performance/Nethereum.Signer.Performance.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SIWE/">
+    <Project Path="src/Nethereum.Siwe.Core/Nethereum.Siwe.Core.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Siwe/Nethereum.Siwe.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Siwe.IntegrationTests/Nethereum.Siwe.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Siwe.UnitTests/Nethereum.Siwe.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SmartContractsApis/" />
+  <Folder Name="/src/SmartContractsApis/Circles/">
+    <Project Path="src/Nethereum.Circles/Nethereum.Circles.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.Circles.IntegrationTests/Nethereum.Circles.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SmartContractsApis/ENS/">
+    <Project Path="src/Nethereum.ENS/Nethereum.ENS.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.ENS.IntegrationTests/Nethereum.ENS.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.ENS.UnitTests/Nethereum.ENS.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SmartContractsApis/ERC20/">
+    <Project Path="src/Nethereum.StandardTokenEIP20/Nethereum.StandardTokenEIP20.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.StandardTokenEIP20.IntegrationTests/Nethereum.StandardTokenEIP20.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SmartContractsApis/ERC721/">
+    <Project Path="src/Nethereum.StandardNonFungibleTokenERC721/Nethereum.StandardNonFungibleTokenERC721.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SmartContractsApis/GnosisSafe/">
+    <Project Path="src/Nethereum.GnosisSafe/Nethereum.GnosisSafe.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.GnosisSafe.IntegrationTests/Nethereum.GnosisSafe.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/SmartContractsApis/Uniswap/">
+    <Project Path="src/Nethereum.Uniswap/Nethereum.Uniswap.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Test/">
+    <Project Path="tests/Nethereum.XUnitEthereumClients/Nethereum.XUnitEthereumClients.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/">
+    <Project Path="src/Nethereum.UI/Nethereum.UI.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/Blazor/">
+    <Project Path="src/Nethereum.Blazor.Solidity/Nethereum.Blazor.Solidity.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Blazor/Nethereum.Blazor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.MudBlazorComponents/Nethereum.MudBlazorComponents.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/EIP6963BrowserWalletInterop/">
+    <Project Path="src/Nethereum.EIP6963WalletInterop/Nethereum.EIP6963WalletInterop.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/MetaMask/">
+    <Project Path="src/Nethereum.Metamask.Blazor/Nethereum.Metamask.Blazor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Metamask/Nethereum.Metamask.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/Reown/">
+    <Project Path="src/Nethereum.Reown.AppKit.Blazor/Nethereum.Reown.AppKit.Blazor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/Tests/">
+    <Project Path="consoletests/BlazorExampleProject.Wasm/ExampleProject.Wasm.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/MetamaskExampleBlazor.Wasm/MetamaskExampleBlazor.Wasm.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/NethereumGodotWCAvalonia/NethereumGodotWCAvalonia.csproj">
+      <BuildType Solution="Release|*" Project="ExportRelease" />
+    </Project>
+    <Project Path="consoletests/NethereumReownAppKitBlazor/NethereumReownAppKitBlazor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/NethereumWCAvalonia/NethereumWCAvalonia.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/NethereumWCBlazor/NethereumWCBlazor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="consoletests/WCNethereum/WCNethereum.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/UI/WalletConnect/">
+    <Project Path="src/Nethereum.WalletConnect/Nethereum.WalletConnect.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Unity/">
+    <Project Path="src/Nethereum.Unity.EIP6963/Nethereum.Unity.EIP6963.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Unity.Metamask/Nethereum.Unity.Metamask.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Unity/Nethereum.Unity.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Util/">
+    <Project Path="src/Nethereum.Util.Rest/Nethereum.Util.Rest.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Util/Nethereum.Util.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Util.UnitTests/Nethereum.Util.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Wallet/">
+    <Project Path="src/demos/Nethereum.Wallet.Avalonia.Demo/Nethereum.Wallet.Avalonia.Demo.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/demos/Nethereum.Wallet.Blazor.Demo/Nethereum.Wallet.Blazor.Demo.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/demos/Nethereum.Wallet.MauiBlazor.Demo/Nethereum.Wallet.MauiBlazor.Demo.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+      <Deploy Solution="Debug|Any CPU" />
+    </Project>
+    <Project Path="src/NetDapps/NetDapps.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+      <Deploy Solution="Debug|Any CPU" />
+    </Project>
+    <Project Path="src/Nethereum.HybridWebView/Nethereum.HybridWebView.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Maui.AndroidUsb/Nethereum.Maui.AndroidUsb.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.RpcRequests/Nethereum.Wallet.RpcRequests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.Trezor/Nethereum.Wallet.Trezor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.UI.Components.Avalonia/Nethereum.Wallet.UI.Components.Avalonia.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.UI.Components.Blazor.Trezor/Nethereum.Wallet.UI.Components.Blazor.Trezor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.UI.Components.Blazor/Nethereum.Wallet.UI.Components.Blazor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.UI.Components.Maui/Nethereum.Wallet.UI.Components.Maui.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.UI.Components.Trezor/Nethereum.Wallet.UI.Components.Trezor.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet.UI.Components/Nethereum.Wallet.UI.Components.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Wallet/Nethereum.Wallet.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Wallet.UnitTests/Nethereum.Wallet.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/Web3/">
+    <Project Path="src/Nethereum.Web3/Nethereum.Web3.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.Web3/Nethereum.Web3Lite.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/x402/">
+    <Project Path="src/Nethereum.X402/Nethereum.X402.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.X402.IntegrationTests/Nethereum.X402.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+  </Folder>
+</Solution>

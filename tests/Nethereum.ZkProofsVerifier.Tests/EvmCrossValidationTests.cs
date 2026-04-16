@@ -15,17 +15,17 @@ using BigIntegerBouncyCastle = Org.BouncyCastle.Math.BigInteger;
 
 namespace Nethereum.ZkProofsVerifier.Tests
 {
-    public class MockNodeDataServiceLocal : INodeDataService
+    public class MockNodeDataServiceLocal : IStateReader
     {
-        public Task<BigInteger> GetBalanceAsync(byte[] address) => Task.FromResult(BigInteger.Zero);
-        public Task<BigInteger> GetBalanceAsync(string address) => Task.FromResult(BigInteger.Zero);
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address) => Task.FromResult(EvmUInt256.Zero);
+        public Task<EvmUInt256> GetBalanceAsync(string address) => Task.FromResult(EvmUInt256.Zero);
         public Task<byte[]> GetCodeAsync(byte[] address) => Task.FromResult(Array.Empty<byte>());
         public Task<byte[]> GetCodeAsync(string address) => Task.FromResult(Array.Empty<byte>());
-        public Task<byte[]> GetBlockHashAsync(BigInteger blockNumber) => Task.FromResult(new byte[32]);
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position) => Task.FromResult(Array.Empty<byte>());
-        public Task<byte[]> GetStorageAtAsync(string address, BigInteger position) => Task.FromResult(Array.Empty<byte>());
-        public Task<BigInteger> GetTransactionCount(byte[] address) => Task.FromResult(BigInteger.Zero);
-        public Task<BigInteger> GetTransactionCount(string address) => Task.FromResult(BigInteger.Zero);
+        public Task<byte[]> GetBlockHashAsync(long blockNumber) => Task.FromResult(new byte[32]);
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position) => Task.FromResult(Array.Empty<byte>());
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position) => Task.FromResult(Array.Empty<byte>());
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address) => Task.FromResult(EvmUInt256.Zero);
+        public Task<EvmUInt256> GetTransactionCountAsync(string address) => Task.FromResult(EvmUInt256.Zero);
     }
 
     public class EvmCrossValidationTests
@@ -109,7 +109,7 @@ namespace Nethereum.ZkProofsVerifier.Tests
             var program = new Program(initCode, ctx);
             program.GasRemaining = 30000000;
 
-            var vm = new EVMSimulator();
+            var vm = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             await vm.ExecuteWithCallStackAsync(program, 0, 0, false);
 
             return program.ProgramResult.Result;
@@ -143,7 +143,7 @@ namespace Nethereum.ZkProofsVerifier.Tests
             var program = new Program(runtimeCode, programContext);
             program.GasRemaining = 30000000;
 
-            var vm = new EVMSimulator();
+            var vm = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             await vm.ExecuteWithCallStackAsync(program, 0, 0, false);
 
             var result = program.ProgramResult.Result;

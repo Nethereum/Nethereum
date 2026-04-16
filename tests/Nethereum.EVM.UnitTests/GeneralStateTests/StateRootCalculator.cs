@@ -13,7 +13,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         private static readonly byte[] EMPTY_TRIE_ROOT = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray();
         private static readonly byte[] EMPTY_CODE_HASH = Sha3Keccack.Current.CalculateHash(new byte[0]);
 
-        public static byte[] CalculateStateRoot(Dictionary<string, AccountState> accounts)
+        public static byte[] CalculateStateRoot(Dictionary<string, AccountState> accounts, bool skipEmptyAccounts = true)
         {
             if (accounts == null || accounts.Count == 0)
                 return EMPTY_TRIE_ROOT;
@@ -25,7 +25,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var addressHex = accountEntry.Key.EnsureHexPrefix().ToLowerInvariant();
                 var account = accountEntry.Value;
 
-                if (IsEmptyAccount(account))
+                if (skipEmptyAccounts && IsEmptyAccount(account))
                     continue;
 
                 var storageRoot = CalculateStorageRoot(account.Storage);

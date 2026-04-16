@@ -54,7 +54,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         private readonly ERC7562SimulationService _simulationService;
         private readonly BundleStorageConflictDetector _conflictDetector;
 
-        public BundleValidationService(INodeDataService nodeDataService, HardforkConfig hardforkConfig = null)
+        public BundleValidationService(IStateReader nodeDataService, HardforkConfig hardforkConfig = null)
         {
             _simulationService = new ERC7562SimulationService(nodeDataService, hardforkConfig);
             _conflictDetector = new BundleStorageConflictDetector();

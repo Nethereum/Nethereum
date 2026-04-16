@@ -4,10 +4,11 @@ using Nethereum.CoreChain.Storage;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.State
 {
-    public class HistoricalNodeDataService : INodeDataService
+    public class HistoricalNodeDataService : IStateReader
     {
         private readonly IHistoricalStateProvider _historyProvider;
         private readonly IStateStore _stateStore;
@@ -26,15 +27,15 @@ namespace Nethereum.CoreChain.State
             _blockNumber = blockNumber;
         }
 
-        public async Task<BigInteger> GetBalanceAsync(byte[] address)
+        public async Task<EvmUInt256> GetBalanceAsync(byte[] address)
         {
             return await GetBalanceAsync(address.ToHex());
         }
 
-        public async Task<BigInteger> GetBalanceAsync(string address)
+        public async Task<EvmUInt256> GetBalanceAsync(string address)
         {
             var account = await _historyProvider.GetAccountAtBlockAsync(address, _blockNumber);
-            return account?.Balance ?? BigInteger.Zero;
+            return account?.Balance ?? EvmUInt256.Zero;
         }
 
         public async Task<byte[]> GetCodeAsync(byte[] address)
@@ -54,7 +55,7 @@ namespace Nethereum.CoreChain.State
             return await _stateStore.GetCodeAsync(account.CodeHash);
         }
 
-        public async Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
+        public async Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             if (_blockStore == null)
                 return null;
@@ -62,25 +63,25 @@ namespace Nethereum.CoreChain.State
             return await _blockStore.GetHashByNumberAsync(blockNumber);
         }
 
-        public async Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)
+        public async Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
         {
             return await GetStorageAtAsync(address.ToHex(), position);
         }
 
-        public async Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
+        public async Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
         {
             return await _historyProvider.GetStorageAtBlockAsync(address, position, _blockNumber);
         }
 
-        public async Task<BigInteger> GetTransactionCount(byte[] address)
+        public async Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
         {
-            return await GetTransactionCount(address.ToHex());
+            return await GetTransactionCountAsync(address.ToHex());
         }
 
-        public async Task<BigInteger> GetTransactionCount(string address)
+        public async Task<EvmUInt256> GetTransactionCountAsync(string address)
         {
             var account = await _historyProvider.GetAccountAtBlockAsync(address, _blockNumber);
-            return account?.Nonce ?? BigInteger.Zero;
+            return account?.Nonce ?? EvmUInt256.Zero;
         }
 
         private static bool IsEmptyCodeHash(byte[] codeHash)

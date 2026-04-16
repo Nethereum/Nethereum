@@ -3,24 +3,25 @@ using Nethereum.AccountAbstraction.GasEstimation;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
 {
     public class TransactionExecutorGasEstimator : IEvmGasEstimator
     {
-        private readonly INodeDataService _nodeDataService;
+        private readonly IStateReader _nodeDataService;
         private readonly TransactionExecutor _executor;
         private readonly HardforkConfig _hardforkConfig;
         private readonly BigInteger _chainId;
 
         public TransactionExecutorGasEstimator(
-            INodeDataService nodeDataService,
+            IStateReader nodeDataService,
             BigInteger chainId,
-            HardforkConfig hardforkConfig = null)
+            HardforkConfig hardforkConfig)
         {
             _nodeDataService = nodeDataService ?? throw new ArgumentNullException(nameof(nodeDataService));
             _chainId = chainId;
-            _hardforkConfig = hardforkConfig ?? HardforkConfig.Default;
+            _hardforkConfig = hardforkConfig ?? throw new ArgumentNullException(nameof(hardforkConfig));
             _executor = new TransactionExecutor(_hardforkConfig);
         }
 
@@ -39,9 +40,10 @@ namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
 
                 // Set up sender balance if needed
                 var senderBalance = await _nodeDataService.GetBalanceAsync(from);
-                if (senderBalance < value)
+                var valueEvmUInt256 = EvmUInt256BigIntegerExtensions.FromBigInteger(value);
+                if (senderBalance < valueEvmUInt256)
                 {
-                    senderBalance = value + (BigInteger)gasLimit * 1_000_000_000;
+                    senderBalance = EvmUInt256BigIntegerExtensions.FromBigInteger(value + (BigInteger)gasLimit * 1_000_000_000);
                 }
                 executionState.SetInitialChainBalance(from, senderBalance);
 
@@ -50,7 +52,7 @@ namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
                     Sender = from,
                     To = to,
                     Data = data,
-                    Value = value,
+                    Value = valueEvmUInt256,
                     GasLimit = gasLimit,
                     GasPrice = 1,
                     MaxFeePerGas = 1,
@@ -64,7 +66,7 @@ namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
                     BaseFee = 1,
                     Difficulty = 0,
                     BlockGasLimit = 30_000_000,
-                    ChainId = _chainId,
+                    ChainId = EvmUInt256BigIntegerExtensions.FromBigInteger(_chainId),
                     ExecutionState = executionState,
                     TraceEnabled = false // No tracing needed for gas estimation
                 };

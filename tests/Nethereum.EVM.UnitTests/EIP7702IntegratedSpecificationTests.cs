@@ -9,6 +9,7 @@ using Nethereum.EVM.Gas;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Signer;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests
@@ -567,7 +568,7 @@ namespace Nethereum.EVM.UnitTests
 
             // THEN: Authority nonce should be incremented to 6
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
-            Assert.Equal(6ul, authorityAccountState.Nonce);
+            Assert.Equal((ulong?)6, authorityAccountState.Nonce);
         }
 
         #endregion
@@ -721,7 +722,7 @@ namespace Nethereum.EVM.UnitTests
         #endregion
     }
 
-    public class EIP7702TestNodeDataService : INodeDataService
+    public class EIP7702TestNodeDataService : IStateReader
     {
         private readonly Dictionary<string, byte[]> _code = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, BigInteger> _balances = new(StringComparer.OrdinalIgnoreCase);
@@ -739,22 +740,23 @@ namespace Nethereum.EVM.UnitTests
             return GetCodeAsync("0x" + address.ToHex());
         }
 
-        public Task<BigInteger> GetBalanceAsync(string address)
+        public Task<EvmUInt256> GetBalanceAsync(string address)
         {
             _balances.TryGetValue(address, out var balance);
-            return Task.FromResult(balance);
+            return Task.FromResult(EvmUInt256BigIntegerExtensions.FromBigInteger(balance));
         }
 
-        public Task<BigInteger> GetBalanceAsync(byte[] address)
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address)
         {
             return GetBalanceAsync("0x" + address.ToHex());
         }
 
-        public Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
         {
+            var positionBig = position.ToBigInteger();
             if (_storage.TryGetValue(address, out var slots))
             {
-                if (slots.TryGetValue(position, out var value))
+                if (slots.TryGetValue(positionBig, out var value))
                 {
                     return Task.FromResult(value);
                 }
@@ -762,20 +764,20 @@ namespace Nethereum.EVM.UnitTests
             return Task.FromResult(new byte[32]);
         }
 
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
         {
             return GetStorageAtAsync("0x" + address.ToHex(), position);
         }
 
-        public Task<BigInteger> GetTransactionCount(string address)
+        public Task<EvmUInt256> GetTransactionCountAsync(string address)
         {
             _nonces.TryGetValue(address, out var nonce);
-            return Task.FromResult(nonce);
+            return Task.FromResult(EvmUInt256BigIntegerExtensions.FromBigInteger(nonce));
         }
 
-        public Task<BigInteger> GetTransactionCount(byte[] address)
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
         {
-            return GetTransactionCount("0x" + address.ToHex());
+            return GetTransactionCountAsync("0x" + address.ToHex());
         }
 
         public Task SetCodeAsync(string address, byte[] code)
@@ -807,7 +809,7 @@ namespace Nethereum.EVM.UnitTests
             return Task.CompletedTask;
         }
 
-        public Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
+        public Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             return Task.FromResult(new byte[32]);
         }

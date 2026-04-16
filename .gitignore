@@ -303,3 +303,6 @@ contracts/cache/
 
 # Windows nul file artifacts
 nul
+
+# Zisk build artifacts (ELF binaries, raw outputs, generated witnesses)
+scripts/zisk-output/

@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI;
 using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -15,7 +16,7 @@ namespace Nethereum.EVM.UnitTests
 {
     public class EvmCallAndCreateTests
     {
-        private readonly EVMSimulator _vm = new EVMSimulator();
+        private readonly EVMSimulator _vm = new EVMSimulator(DefaultHardforkConfigs.Cancun);
 
         #region RETURNDATASIZE and RETURNDATACOPY Tests
 
@@ -23,7 +24,7 @@ namespace Nethereum.EVM.UnitTests
         public async Task ReturnDataSize_BeforeAnyCall_ShouldBeZero()
         {
             var program = await ExecuteProgram("3D");
-            Assert.Equal(0, (int)program.StackPeekAtAndConvertToUBigInteger(0));
+            Assert.Equal(0, (int)program.StackPeekAtU256(0));
         }
 
         [Fact]
@@ -53,7 +54,7 @@ namespace Nethereum.EVM.UnitTests
 
             await ExecuteProgramToEnd(program);
 
-            Assert.True(program.ProgramResult.LastCallReturnData == null || program.ProgramResult.LastCallReturnData.Length == 32 || program.StackPeekAtAndConvertToUBigInteger(0) >= 0);
+            Assert.True(program.ProgramResult.LastCallReturnData == null || program.ProgramResult.LastCallReturnData.Length == 32 || program.StackPeekAtU256(0) >= 0);
         }
 
         [Fact]
@@ -98,7 +99,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var callerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(callerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, callerAddress);
@@ -146,11 +147,11 @@ namespace Nethereum.EVM.UnitTests
                 $"Stack should have at least 2 items (success, returnDataSize) but has {stackItems.Count}");
 
             // Top of stack should be RETURNDATASIZE = 32
-            var returnDataSize = program.StackPeekAtAndConvertToUBigInteger(0);
+            var returnDataSize = program.StackPeekAtU256(0);
             Assert.Equal(32, (int)returnDataSize);
 
             // Second on stack should be success = 1
-            var success = program.StackPeekAtAndConvertToUBigInteger(1);
+            var success = program.StackPeekAtU256(1);
             Assert.Equal(1, (int)success);
         }
 
@@ -199,7 +200,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var callerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(callerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, callerAddress);
@@ -264,8 +265,8 @@ namespace Nethereum.EVM.UnitTests
 
             // Stack: [recoveredAddr (MLOAD), returnDataSize, success]
             var recoveredAddrBytes = program.StackPeekAt(0);
-            var returnDataSize = program.StackPeekAtAndConvertToUBigInteger(1);
-            var success = program.StackPeekAtAndConvertToUBigInteger(2);
+            var returnDataSize = program.StackPeekAtU256(1);
+            var success = program.StackPeekAtU256(2);
 
             Assert.Equal(1, (int)success);
             Assert.Equal(32, (int)returnDataSize);
@@ -286,7 +287,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var callerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(callerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, callerAddress);
@@ -401,7 +402,7 @@ namespace Nethereum.EVM.UnitTests
             // Stack should have: [recoveredAddress (top), returnDataSize]
             // Top of stack is the recovered address (from MLOAD)
             var recoveredAddressBytes = program.StackPeekAt(0);
-            var returnDataSize = program.StackPeekAtAndConvertToUBigInteger(1);
+            var returnDataSize = program.StackPeekAtU256(1);
 
             // RETURNDATASIZE should be 32
             Assert.Equal(32, (int)returnDataSize);
@@ -426,7 +427,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var deployerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(deployerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(deployerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = new CallInput
             {
@@ -468,7 +469,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var deployerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(deployerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(deployerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = new CallInput
             {
@@ -509,7 +510,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var deployerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(deployerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(deployerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(deployerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, deployerAddress);
@@ -535,7 +536,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var deployerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(deployerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(deployerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(deployerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, deployerAddress);
@@ -570,7 +571,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var deployerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(deployerAddress, BigInteger.Parse("2000000000000000000"));
+            executionStateService.SetInitialChainBalance(deployerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("2000000000000000000")));
 
             var callInput = CreateDefaultCallInput(deployerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, deployerAddress);
@@ -628,7 +629,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var callerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(callerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, callerAddress);
@@ -662,7 +663,7 @@ namespace Nethereum.EVM.UnitTests
             var executionStateService = new ExecutionStateService(nodeDataService);
 
             var callerAddress = "0x1111111111111111111111111111111111111111";
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(callerAddress);
             var programContext = new ProgramContext(callInput, executionStateService, callerAddress);
@@ -698,7 +699,7 @@ namespace Nethereum.EVM.UnitTests
             var callerAddress = "0x1111111111111111111111111111111111111111";
             var targetAddress = "0x2222222222222222222222222222222222222222";
 
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
             executionStateService.SaveCode(targetAddress, "00".HexToByteArray());
 
             var callInput = CreateDefaultCallInput(callerAddress);
@@ -732,7 +733,7 @@ namespace Nethereum.EVM.UnitTests
             var callerAddress = "0x1111111111111111111111111111111111111111";
             var targetAddress = "0x2222222222222222222222222222222222222222";
 
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
             executionStateService.SaveCode(targetAddress, "6042600055".HexToByteArray());
 
             var callInput = CreateDefaultCallInput(callerAddress);
@@ -765,7 +766,7 @@ namespace Nethereum.EVM.UnitTests
             var callerAddress = "0x1111111111111111111111111111111111111111";
             var targetAddress = "0x2222222222222222222222222222222222222222";
 
-            executionStateService.SetInitialChainBalance(callerAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(callerAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
             executionStateService.SaveCode(targetAddress, "6001600055".HexToByteArray());
 
             var callInput = CreateDefaultCallInput(callerAddress);
@@ -905,7 +906,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var size = program.StackPeekAtAndConvertToUBigInteger(0);
+            var size = program.StackPeekAtU256(0);
             Assert.Equal(0, size);
         }
 
@@ -935,7 +936,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var size = program.StackPeekAtAndConvertToUBigInteger(0);
+            var size = program.StackPeekAtU256(0);
             Assert.Equal(contractCode.Length, (int)size);
         }
 
@@ -1031,7 +1032,7 @@ namespace Nethereum.EVM.UnitTests
             var contractAddress = "0x1111111111111111111111111111111111111111";
             var beneficiaryAddress = "0x2222222222222222222222222222222222222222";
 
-            executionStateService.SetInitialChainBalance(contractAddress, BigInteger.Parse("1000000000000000000"));
+            executionStateService.SetInitialChainBalance(contractAddress, EvmUInt256BigIntegerExtensions.FromBigInteger(BigInteger.Parse("1000000000000000000")));
 
             var callInput = CreateDefaultCallInput(contractAddress);
             var programContext = new ProgramContext(callInput, executionStateService, contractAddress);

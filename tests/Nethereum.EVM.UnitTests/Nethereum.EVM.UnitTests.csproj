@@ -3,18 +3,20 @@
   <PropertyGroup>
     <Description>Nethereum.EVM.UnitTests Class Library</Description>
     <Authors>JuanFran</Authors>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>Nethereum.EVM.UnitTests</AssemblyName>
     <PackageId>Nethereum.EVM.UnitTests</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Bls\Nethereum.EVM.Precompiles.Bls.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
     <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.8.0" />
   </ItemGroup>
 

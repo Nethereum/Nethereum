@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -32,8 +31,29 @@ namespace Nethereum.Util
                 end = org.Length + end;
             start = Math.Max(0, start);
             end = Math.Max(start, end);
+            if (end > org.Length) end = org.Length;
 
-            return org.Skip(start).Take(end - start).ToArray();
+            var length = end - start;
+            if (length <= 0) return new byte[0];
+            var result = new byte[length];
+            Array.Copy(org, start, result, 0, length);
+            return result;
+        }
+
+        public static byte[] SliceFrom(this byte[] arr, int start)
+        {
+            if (start >= arr.Length) return new byte[0];
+            var result = new byte[arr.Length - start];
+            Array.Copy(arr, start, result, 0, result.Length);
+            return result;
+        }
+
+        public static byte[] ConcatArrays(this byte[] a, byte[] b)
+        {
+            var result = new byte[a.Length + b.Length];
+            Array.Copy(a, 0, result, 0, a.Length);
+            Array.Copy(b, 0, result, a.Length, b.Length);
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,7 +73,17 @@ namespace Nethereum.Util
         /// <returns> - merged array </returns>
         public static byte[] Merge(params byte[][] arrays)
         {
-            return MergeToEnum(arrays).ToArray();
+            int totalLen = 0;
+            foreach (var a in arrays)
+                totalLen += a.Length;
+            var result = new byte[totalLen];
+            int offset = 0;
+            foreach (var a in arrays)
+            {
+                Array.Copy(a, 0, result, offset, a.Length);
+                offset += a.Length;
+            }
+            return result;
         }
 
         public static byte[] XOR(this byte[] a, byte[] b)
@@ -244,7 +274,7 @@ namespace Nethereum.Util
                 result = x[index].CompareTo(y[index]);
                 if (result != 0) return result;
             }
-            return x.Count().CompareTo(y.Count());
+            return x.Length.CompareTo(y.Length);
         }
 
         public bool Equals(byte[] x, byte[] y)
@@ -275,7 +305,7 @@ namespace Nethereum.Util
                 result = x[index].CompareTo(y[index]);
                 if (result != 0) return result;
             }
-            return x.Count().CompareTo(y.Count());
+            return x.Count.CompareTo(y.Count);
         }
     }
 }

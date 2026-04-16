@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Model
@@ -10,9 +9,9 @@ namespace Nethereum.Model
 
         public byte[] Encode(Log log)
         {
-            var encodedTopics = log.Topics
-                .Select(t => RLP.RLP.EncodeElement(t))
-                .ToArray();
+            var encodedTopics = new byte[log.Topics.Count][];
+            for (int i = 0; i < log.Topics.Count; i++)
+                encodedTopics[i] = RLP.RLP.EncodeElement(log.Topics[i]);
 
             return RLP.RLP.EncodeList(
                 RLP.RLP.EncodeElement(log.Address.HexToByteArray()),

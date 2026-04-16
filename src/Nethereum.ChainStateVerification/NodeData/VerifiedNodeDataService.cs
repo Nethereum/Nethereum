@@ -3,10 +3,11 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.ChainStateVerification.NodeData
 {
-    public class VerifiedNodeDataService : INodeDataService
+    public class VerifiedNodeDataService : IStateReader
     {
         private readonly IVerifiedStateService _verifiedState;
 
@@ -15,67 +16,49 @@ namespace Nethereum.ChainStateVerification.NodeData
             _verifiedState = verifiedState ?? throw new ArgumentNullException(nameof(verifiedState));
         }
 
-        public async Task<BigInteger> GetBalanceAsync(byte[] address)
-        {
-            var addressHex = address.ToHex(true);
-            return await GetBalanceAsync(addressHex).ConfigureAwait(false);
-        }
+        public async Task<EvmUInt256> GetBalanceAsync(byte[] address)
+            => await GetBalanceAsync(address.ToHex(true)).ConfigureAwait(false);
 
-        public async Task<BigInteger> GetBalanceAsync(string address)
+        public async Task<EvmUInt256> GetBalanceAsync(string address)
         {
-            return await _verifiedState.GetBalanceAsync(address).ConfigureAwait(false);
+            var balance = await _verifiedState.GetBalanceAsync(address).ConfigureAwait(false);
+            return EvmUInt256BigIntegerExtensions.FromBigInteger(balance);
         }
 
         public async Task<byte[]> GetCodeAsync(byte[] address)
-        {
-            var addressHex = address.ToHex(true);
-            return await GetCodeAsync(addressHex).ConfigureAwait(false);
-        }
+            => await GetCodeAsync(address.ToHex(true)).ConfigureAwait(false);
 
-        public async Task<byte[]> GetCodeAsync(string address)
-        {
-            return await _verifiedState.GetCodeAsync(address).ConfigureAwait(false);
-        }
+        public Task<byte[]> GetCodeAsync(string address)
+            => _verifiedState.GetCodeAsync(address);
 
-        public Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
+        public Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             if (blockNumber < 0)
-            {
                 return Task.FromResult(new byte[32]);
-            }
 
             var blockNum = (ulong)blockNumber;
             var header = _verifiedState.GetCurrentHeader();
 
             if (blockNum > header.BlockNumber || (header.BlockNumber - blockNum) > 256)
-            {
                 return Task.FromResult(new byte[32]);
-            }
 
             var hash = _verifiedState.GetBlockHash(blockNum);
             return Task.FromResult(hash ?? new byte[32]);
         }
 
-        public async Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)
-        {
-            var addressHex = address.ToHex(true);
-            return await GetStorageAtAsync(addressHex, position).ConfigureAwait(false);
-        }
+        public async Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
+            => await GetStorageAtAsync(address.ToHex(true), position).ConfigureAwait(false);
 
-        public async Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
-        {
-            return await _verifiedState.GetStorageAtAsync(address, position).ConfigureAwait(false);
-        }
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
+            => _verifiedState.GetStorageAtAsync(address, position.ToBigInteger());
 
-        public async Task<BigInteger> GetTransactionCount(byte[] address)
-        {
-            var addressHex = address.ToHex(true);
-            return await GetTransactionCount(addressHex).ConfigureAwait(false);
-        }
+        public async Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
+            => await GetTransactionCountAsync(address.ToHex(true)).ConfigureAwait(false);
 
-        public async Task<BigInteger> GetTransactionCount(string address)
+        public async Task<EvmUInt256> GetTransactionCountAsync(string address)
         {
-            return await _verifiedState.GetNonceAsync(address).ConfigureAwait(false);
+            var nonce = await _verifiedState.GetNonceAsync(address).ConfigureAwait(false);
+            return EvmUInt256BigIntegerExtensions.FromBigInteger(nonce);
         }
     }
 }

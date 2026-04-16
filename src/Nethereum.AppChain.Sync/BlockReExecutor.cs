@@ -60,7 +60,7 @@ namespace Nethereum.AppChain.Sync
                         tx,
                         blockContext,
                         i,
-                        cumulativeGasUsed);
+                        (long)cumulativeGasUsed);
 
                     cumulativeGasUsed = txResult.CumulativeGasUsed;
 

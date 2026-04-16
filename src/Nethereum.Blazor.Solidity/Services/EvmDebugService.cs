@@ -142,8 +142,8 @@ public class EvmDebugService : IEvmDebugService
                     Step = step["pc"]?.Value<int>() ?? 0,
                     Instruction = opcode,
                 },
-                GasCost = step["gasCost"]?.Value<ulong>() ?? 0,
-                GasRemaining = step["gas"]?.Value<ulong>() ?? 0,
+                GasCost = step["gasCost"]?.Value<long>() ?? 0,
+                GasRemaining = step["gas"]?.Value<long>() ?? 0,
             };
 
             var stackArray = step["stack"] as JArray;
@@ -232,7 +232,7 @@ public class EvmDebugService : IEvmDebugService
         programContext.GasLimit = (long)block.GasLimit.Value;
 
         var program = new Program(codeBytes, programContext);
-        var evmSimulator = new EVMSimulator();
+        var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try

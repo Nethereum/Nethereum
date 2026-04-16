@@ -783,6 +783,51 @@ The package provides ready-to-use entity models:
 - Input, Output, Error, RevertReason
 - IsCanonical
 
+**TransactionToTrace Entity** (`BlockStorage/Entities/TransactionToTrace.cs`):
+- TransactionHash, BlockNumber, BlockHash, AddressFrom, AddressTo,
+  Value, Gas, Input. Carried by
+  `IInternalTransactionRepository.GetContractTransactionsInRangeAsync`
+  as the set of contract-interacting transactions that want internal-tx
+  tracing in a given block range.
+
+### Internal-Transaction Sources
+
+`IInternalTransactionSource.ProduceAsync(transactionHash)` abstracts
+over how internal-tx entries are produced for a given top-level
+transaction:
+
+- **`DebugTraceInternalTransactionSource`** — calls `debug_traceTransaction`
+  against an RPC node (Geth call-tracer format) and flattens the nested
+  call tree into `InternalTransaction` entries. Requires a node that
+  exposes the `debug_` namespace.
+- **`EvmReplayInternalTransactionSource`** — replays the transaction
+  locally against `Nethereum.EVM`'s `TransactionExecutor` using the
+  pre-transaction state fetched by RPC (`eth_getTransactionByHash` +
+  `eth_getBlockByNumber` + parent-state reads via
+  `RpcNodeDataService`). Works against RPC nodes that don't expose
+  `debug_traceTransaction`. Configured with a `HardforkConfig`
+  obtained from `DefaultMainnetHardforkRegistry` (or
+  `ChainActivationsRegistry` for per-block fork resolution).
+
+Both sources produce byte-identical `InternalTransaction` output for
+the same tx hash — verified by
+`tests/Nethereum.CoreChain.IntegrationTests/DevChain/InternalTransactionSourceParityTests.cs`
+against the in-process DevChain.
+
+### Repository Interface Additions
+
+`IInternalTransactionRepository` and `ITransactionRepository` gained
+persistence methods so orchestrators don't need to cast to a concrete
+implementation:
+
+- `ITransactionRepository.UpdateRevertReasonAsync(string txHash, string revertReason)`
+- `IInternalTransactionRepository.GetContractTransactionsInRangeAsync(BigInteger fromBlock, BigInteger toBlock)`
+
+In-memory implementations (`InMemoryTransactionRepository`,
+`InMemoryInternalTransactionRepository`,
+`InMemoryBlockchainStorageRepositoryFactory`) provide trivial versions
+so tests and no-DB scenarios keep working without an EF backend.
+
 **TokenTransferLog Entity** (`BlockStorage/Entities/TokenTransferLog.cs`):
 - TransactionHash, LogIndex, BlockNumber, BlockHash
 - ContractAddress, EventHash, FromAddress, ToAddress

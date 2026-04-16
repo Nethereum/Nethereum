@@ -8,6 +8,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Model;
+using Nethereum.Util;
 using Nethereum.RLP;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
@@ -207,30 +208,31 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             return results;
         }
 
-        private BigInteger CalculateEffectivePriorityFee(ISignedTransaction tx, BigInteger baseFee)
+        private EvmUInt256 CalculateEffectivePriorityFee(ISignedTransaction tx, EvmUInt256 baseFee)
         {
             if (tx is Transaction1559 tx1559)
             {
-                var maxPriorityFee = tx1559.MaxPriorityFeePerGas ?? BigInteger.Zero;
-                var maxFee = tx1559.MaxFeePerGas ?? BigInteger.Zero;
-                return BigInteger.Min(maxPriorityFee, maxFee - baseFee);
+                var maxPriorityFee = tx1559.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
+                var maxFee = tx1559.MaxFeePerGas ?? EvmUInt256.Zero;
+                var diff = maxFee - baseFee;
+                return maxPriorityFee < diff ? maxPriorityFee : diff;
             }
             if (tx is Transaction2930 tx2930)
             {
-                var gasPrice = tx2930.GasPrice ?? BigInteger.Zero;
-                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+                var gasPrice = tx2930.GasPrice ?? EvmUInt256.Zero;
+                return gasPrice > baseFee ? gasPrice - baseFee : EvmUInt256.Zero;
             }
             if (tx is LegacyTransaction legacyTx)
             {
-                var gasPrice = legacyTx.GasPrice.ToBigIntegerFromRLPDecoded();
-                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+                var gasPrice = legacyTx.GasPrice.ToEvmUInt256FromRLPDecoded();
+                return gasPrice > baseFee ? gasPrice - baseFee : EvmUInt256.Zero;
             }
             if (tx is LegacyTransactionChainId legacyChainIdTx)
             {
-                var gasPrice = legacyChainIdTx.GasPrice.ToBigIntegerFromRLPDecoded();
-                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+                var gasPrice = legacyChainIdTx.GasPrice.ToEvmUInt256FromRLPDecoded();
+                return gasPrice > baseFee ? gasPrice - baseFee : EvmUInt256.Zero;
             }
-            return BigInteger.Zero;
+            return EvmUInt256.Zero;
         }
     }
 }

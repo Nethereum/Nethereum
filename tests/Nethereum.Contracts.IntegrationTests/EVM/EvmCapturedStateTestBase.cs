@@ -63,7 +63,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             var programContext = new ProgramContext(txnInput, executionStateService, null, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             try
             {
@@ -119,7 +119,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             var programContext = new ProgramContext(txnInput, executionStateService, null, null, capturedState.BlockNumber, capturedState.Timestamp);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             return evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
         }

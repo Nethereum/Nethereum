@@ -1,6 +1,7 @@
 using Nethereum.ABI.ABIRepository;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
+using Nethereum.EVM.Compatibility;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using System;
@@ -47,7 +48,7 @@ namespace Nethereum.EVM.Decoding
                 Result = executionResult.ReturnData,
                 IsRevert = !executionResult.Success,
                 Logs = executionResult.Logs ?? new List<RPC.Eth.DTOs.FilterLog>(),
-                InnerCalls = executionResult.InnerCalls ?? new List<RPC.Eth.DTOs.CallInput>(),
+                InnerCalls = executionResult.InnerCalls ?? new List<Types.EvmCallContext>(),
                 CreatedContractAccounts = executionResult.CreatedAccounts ?? new List<string>(),
                 DeletedContractAccounts = executionResult.DeletedAccounts ?? new List<string>()
             };
@@ -72,7 +73,7 @@ namespace Nethereum.EVM.Decoding
 
             foreach (var innerCall in programResult.InnerCalls)
             {
-                var decodedInnerCall = DecodeCall(innerCall, chainId, 1);
+                var decodedInnerCall = DecodeCall(innerCall.ToCallInput(), chainId, 1);
                 result.RootCall.InnerCalls.Add(decodedInnerCall);
             }
 

@@ -1,11 +1,10 @@
-﻿using Nethereum.Util;
-using System.Numerics;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
     public class IndexedSignedTransaction
     {
-        public BigInteger Index { get; set; }
+        public EvmUInt256 Index { get; set; }
         public ISignedTransaction SignedTransaction { get; set; }
 
     }
@@ -39,6 +38,6 @@ namespace Nethereum.Model
         public virtual ISignature Signature { get; protected set; }
 
         public abstract void SetSignature(ISignature signature);
-       
+
     }
 }

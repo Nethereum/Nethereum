@@ -83,6 +83,17 @@ namespace Nethereum.CoreChain
                 await ExecuteBeaconRootSystemCallAsync(options.Timestamp, options.ParentBeaconBlockRoot);
             }
 
+            // EIP-2935 (Prague+): record parent hash at history_contract.storage[(N-1) % 8191]
+            // so BLOCKHASH inside this block resolves via a normal storage read.
+            if (latestBlock != null)
+            {
+                var parentHash2935 = await _blockStore.GetHashByNumberAsync(latestBlock.BlockNumber);
+                if (parentHash2935 != null && parentHash2935.Length == 32)
+                {
+                    await ExecuteHistoryStorageSystemCallAsync(latestBlock.BlockNumber.ToBigInteger(), parentHash2935);
+                }
+            }
+
             if (_stateStore is IHistoricalStateProvider historyProvider)
                 historyProvider.SetCurrentBlockNumber(nextBlockNumber);
 
@@ -93,7 +104,7 @@ namespace Nethereum.CoreChain
             var execResults = new List<TransactionExecutionResult>();
             var receipts = new List<Receipt>();
             var encodedTransactions = new List<byte[]>();
-            BigInteger cumulativeGasUsed = 0;
+            long cumulativeGasUsed = 0;
             var combinedBloom = new byte[256];
             int successCount = 0;
             int failCount = 0;
@@ -104,7 +115,7 @@ namespace Nethereum.CoreChain
                 var tx = orderedTransactions[i];
 
                 var txGasLimit = tx.GetGasLimit();
-                if (cumulativeGasUsed + txGasLimit > options.BlockGasLimit)
+                if (cumulativeGasUsed + (long)txGasLimit > (long)options.BlockGasLimit)
                     continue;
 
                 senderCache.TryGetValue(i, out var cachedSender);
@@ -136,7 +147,7 @@ namespace Nethereum.CoreChain
                     CombineBloom(combinedBloom, execResult.Receipt.Bloom);
                 }
                 encodedTransactions.Add(tx.GetRLPEncoded());
-                cumulativeGasUsed = execResult.CumulativeGasUsed;
+                cumulativeGasUsed = (long)execResult.CumulativeGasUsed;
 
                 if (execResult.Success)
                     successCount++;
@@ -343,6 +354,17 @@ namespace Nethereum.CoreChain
             var rootValue = new BigInteger(parentBeaconBlockRoot, isUnsigned: true, isBigEndian: true);
             var rootBytes = rootValue.ToBytesForRLPEncoding();
             await _stateStore.SaveStorageAsync(BEACON_ROOTS_ADDRESS, rootIndex, rootBytes);
+        }
+
+        private async Task ExecuteHistoryStorageSystemCallAsync(BigInteger parentBlockNumber, byte[] parentBlockHash)
+        {
+            var slot = parentBlockNumber % Nethereum.EVM.Witness.HistoryContractHelpers.HISTORY_SERVE_WINDOW;
+            var value = new BigInteger(parentBlockHash, isUnsigned: true, isBigEndian: true);
+            var bytes = value.ToBytesForRLPEncoding();
+            await _stateStore.SaveStorageAsync(
+                Nethereum.EVM.Witness.HistoryContractHelpers.HISTORY_STORAGE_ADDRESS,
+                slot,
+                bytes);
         }
     }
 }

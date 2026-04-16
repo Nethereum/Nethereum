@@ -8,19 +8,20 @@ using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Gas;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 
 namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 {
     public class ERC7562SimulationService
     {
-        private readonly INodeDataService _nodeDataService;
+        private readonly IStateReader _nodeDataService;
         private readonly TransactionExecutor _executor;
         private readonly HardforkConfig _hardforkConfig;
 
-        public ERC7562SimulationService(INodeDataService nodeDataService, HardforkConfig hardforkConfig = null)
+        public ERC7562SimulationService(IStateReader nodeDataService, HardforkConfig hardforkConfig)
         {
             _nodeDataService = nodeDataService ?? throw new ArgumentNullException(nameof(nodeDataService));
-            _hardforkConfig = hardforkConfig ?? HardforkConfig.Default;
+            _hardforkConfig = hardforkConfig ?? throw new ArgumentNullException(nameof(hardforkConfig));
             _executor = new TransactionExecutor(_hardforkConfig);
         }
 
@@ -306,7 +307,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 Sender = from,
                 To = to,
                 Data = data,
-                Value = value,
+                Value = EvmUInt256BigIntegerExtensions.FromBigInteger(value),
                 GasLimit = 10_000_000,
                 GasPrice = 1,
                 MaxFeePerGas = 1,
@@ -320,7 +321,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 BaseFee = 1,
                 Difficulty = 0,
                 BlockGasLimit = 30_000_000,
-                ChainId = chainId > 0 ? chainId : 1,
+                ChainId = EvmUInt256BigIntegerExtensions.FromBigInteger(chainId > 0 ? chainId : 1),
                 ExecutionState = executionState,
                 TraceEnabled = true
             };

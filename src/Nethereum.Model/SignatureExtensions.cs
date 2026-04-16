@@ -9,18 +9,18 @@ namespace Nethereum.Model
     {
         public static bool IsVSignedForChain(this ISignature signature)
         {
-            return signature.V.ToBigIntegerFromRLPDecoded() >= 35;
+            return signature.V.ToEvmUInt256FromRLPDecoded() >= 35;
         }
 
         public static bool IsVSignedForLegacy(this ISignature signature)
         {
-            var v = signature.V.ToBigIntegerFromRLPDecoded();
+            var v = signature.V.ToEvmUInt256FromRLPDecoded();
             return v >= 27;
         }
 
         public static bool IsVSignedForYParity(this ISignature signature)
         {
-            var v = signature.V.ToBigIntegerFromRLPDecoded();
+            var v = signature.V.ToEvmUInt256FromRLPDecoded();
             return v == 0 || v == 1;
         }
 

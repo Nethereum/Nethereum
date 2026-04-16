@@ -330,8 +330,8 @@ namespace Nethereum.EVM.StateChanges
                     var balance = accountState.Balance;
                     if (balance != null)
                     {
-                        change.BalanceBefore = balance.InitialChainBalance;
-                        change.BalanceAfter = balance.GetTotalBalance();
+                        change.BalanceBefore = balance.InitialChainBalance?.ToBigInteger();
+                        change.BalanceAfter = balance.GetTotalBalance().ToBigInteger();
 
                         if (change.BalanceAfter.HasValue && change.BalanceBefore.HasValue)
                         {

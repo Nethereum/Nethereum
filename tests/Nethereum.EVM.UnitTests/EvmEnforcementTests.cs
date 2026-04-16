@@ -6,6 +6,7 @@ using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Exceptions;
 using Nethereum.EVM.Execution;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests
@@ -66,20 +67,20 @@ namespace Nethereum.EVM.UnitTests
             var service = new ExecutionStateService(new MockNodeDataService());
             var address = "0x1234567890123456789012345678901234567890";
 
-            service.SaveToStorage(address, 1, new byte[] { 0x42 });
+            service.SaveToStorage(address, (EvmUInt256)1, new byte[] { 0x42 });
 
             var snapshotId = service.TakeSnapshot();
 
-            service.SaveToStorage(address, 1, new byte[] { 0xFF });
-            service.SaveToStorage(address, 2, new byte[] { 0xAB });
+            service.SaveToStorage(address, (EvmUInt256)1, new byte[] { 0xFF });
+            service.SaveToStorage(address, (EvmUInt256)2, new byte[] { 0xAB });
 
             service.RevertToSnapshot(snapshotId);
 
-            var value1 = await service.GetFromStorageAsync(address, 1);
+            var value1 = await service.GetFromStorageAsync(address, (EvmUInt256)1);
             var state = service.CreateOrGetAccountExecutionState(address);
 
             Assert.Equal(0x42, value1[0]);
-            Assert.False(state.StorageContainsKey(2));
+            Assert.False(state.StorageContainsKey((EvmUInt256)2));
         }
 
         [Fact]
@@ -89,11 +90,11 @@ namespace Nethereum.EVM.UnitTests
             var address = "0x1234567890123456789012345678901234567890";
 
             service.SetInitialChainBalance(address, 1000);
-            service.UpsertInternalBalance(address, 500);
+            service.CreditBalance(address, 500);
 
             var snapshotId = service.TakeSnapshot();
 
-            service.UpsertInternalBalance(address, -300);
+            service.DebitBalance(address, 300);
 
             service.RevertToSnapshot(snapshotId);
 
@@ -114,7 +115,7 @@ namespace Nethereum.EVM.UnitTests
             service.RevertToSnapshot(snapshotId);
 
             var state = service.CreateOrGetAccountExecutionState(address);
-            Assert.Equal(5, state.Nonce);
+            Assert.Equal((ulong?)5, state.Nonce);
         }
 
         [Fact]
@@ -145,16 +146,34 @@ namespace Nethereum.EVM.UnitTests
         private readonly EvmPreCompiledContractsExecution _precompiles = new EvmPreCompiledContractsExecution();
 
         [Fact]
-        public void IsPrecompiledAddress_ShouldReturnTrueForAddresses1ThroughA()
+        public void IsPrecompiledAddress_Cancun_ShouldReturnTrueForAddresses1Through9()
         {
-            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000001"));
-            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000002"));
-            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000003"));
-            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000004"));
-            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000005"));
-            Assert.True(_precompiles.IsPrecompiledAddress("0x0000000000000000000000000000000000000009"));
-            Assert.True(_precompiles.IsPrecompiledAddress("0x000000000000000000000000000000000000000A")); // KZG (EIP-4844)
-            Assert.False(_precompiles.IsPrecompiledAddress("0x000000000000000000000000000000000000000B")); // BLS12-381 not yet implemented
+            var cancun = Nethereum.EVM.Precompiles.DefaultPrecompileRegistries.CancunBase();
+            Assert.True(cancun.CanHandle(1));
+            Assert.True(cancun.CanHandle(2));
+            Assert.True(cancun.CanHandle(5));
+            Assert.True(cancun.CanHandle(9));
+            Assert.True(cancun.CanHandle(0x0a)); // KZG placeholder
+            Assert.False(cancun.CanHandle(0x0b));
+        }
+
+        [Fact]
+        public void IsPrecompiledAddress_Prague_IncludesBls()
+        {
+            var prague = Nethereum.EVM.Precompiles.DefaultPrecompileRegistries.PragueBase();
+            Assert.True(prague.CanHandle(0x0b)); // BLS placeholder
+            Assert.True(prague.CanHandle(0x11));
+            Assert.False(prague.CanHandle(0x100));
+        }
+
+        [Fact]
+        public void IsPrecompiledAddress_Osaka_IncludesP256Verify()
+        {
+            var osaka = Nethereum.EVM.Precompiles.DefaultPrecompileRegistries.OsakaBase();
+            Assert.True(osaka.CanHandle(1));
+            Assert.True(osaka.CanHandle(0x11));
+            Assert.True(osaka.CanHandle(0x100)); // P256VERIFY
+            Assert.False(osaka.CanHandle(0x12));
         }
 
         [Fact]

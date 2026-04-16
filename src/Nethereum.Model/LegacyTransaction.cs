@@ -1,7 +1,7 @@
-﻿using System;
-using System.Numerics;
+using System;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -43,23 +43,23 @@ namespace Nethereum.Model
                 r, s, v);
         }
 
-        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce)
+        public LegacyTransaction(string to, EvmUInt256 amount, EvmUInt256 nonce)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT)
         {
         }
 
-        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce, string data)
+        public LegacyTransaction(string to, EvmUInt256 amount, EvmUInt256 nonce, string data)
             : this(to, amount, nonce, DEFAULT_GAS_PRICE, DEFAULT_GAS_LIMIT, data)
         {
         }
 
-        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice, BigInteger gasLimit)
+        public LegacyTransaction(string to, EvmUInt256 amount, EvmUInt256 nonce, EvmUInt256 gasPrice, EvmUInt256 gasLimit)
             : this(to, amount, nonce, gasPrice, gasLimit, "")
         {
         }
 
-        public LegacyTransaction(string to, BigInteger amount, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, string data) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
+        public LegacyTransaction(string to, EvmUInt256 amount, EvmUInt256 nonce, EvmUInt256 gasPrice,
+            EvmUInt256 gasLimit, string data) : this(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(),
             gasLimit.ToBytesForRLPEncoding(), to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray()
         )
         {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -10,9 +10,9 @@ namespace Nethereum.Model
 
         public byte[] Encode(Receipt receipt)
         {
-            var encodedLogs = receipt.Logs
-                .Select(log => LogEncoder.Current.Encode(log))
-                .ToArray();
+            var encodedLogs = new byte[receipt.Logs.Count][];
+            for (int i = 0; i < receipt.Logs.Count; i++)
+                encodedLogs[i] = LogEncoder.Current.Encode(receipt.Logs[i]);
 
             return RLP.RLP.EncodeList(
                 RLP.RLP.EncodeElement(receipt.PostStateOrStatus ?? RLP.RLP.EMPTY_BYTE_ARRAY),
@@ -52,8 +52,8 @@ namespace Nethereum.Model
             var decodedElements = (RLPCollection)decodedList;
 
             var receipt = new Receipt();
-            receipt.PostStateOrStatus = decodedElements[0].RLPData;
-            receipt.CumulativeGasUsed = decodedElements[1].RLPData.ToBigIntegerFromRLPDecoded();
+            receipt.PostStateOrStatus = decodedElements[0].RLPData ?? new byte[0];
+            receipt.CumulativeGasUsed = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
             receipt.Bloom = decodedElements[2].RLPData;
 
             var logsCollection = (RLPCollection)decodedElements[3];

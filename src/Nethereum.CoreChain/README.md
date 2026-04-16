@@ -164,6 +164,61 @@ var result = await producer.ProduceBlockAsync(pendingTransactions);
 // - Gas used and logs bloom
 ```
 
+Before executing transactions in a block, the producer runs the
+pre-block system calls required by recent forks:
+
+- **EIP-4788** (Cancun+) — if the block carries a
+  `ParentBeaconBlockRoot`, stamp it into the beacon-roots contract at
+  `0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02`.
+- **EIP-2935** (Prague+) — stamp the parent block's hash into the
+  history contract at
+  `0x0000F90827F1C53a10cb7A02335B175320002935`, slot
+  `parentBlockNumber % 8191`. This is what the BLOCKHASH opcode reads
+  from (no separate block-hash channel — the ancestor history lives in
+  ordinary storage and is covered by the storage witness).
+
+## Hardfork Configuration
+
+`TransactionProcessor` (invoked by `BlockProducer`) requires a
+`HardforkConfig` at construction. Use `ChainConfig.GetHardforkConfig()`
+to resolve from your chain configuration:
+
+```csharp
+using Nethereum.EVM;
+using Nethereum.EVM.Precompiles;   // DefaultMainnetHardforkRegistry
+
+var hardforkConfig = chainConfig.GetHardforkConfig();
+var txProcessor    = new TransactionProcessor(
+    stateStore, blockStore, chainConfig, txVerifier, hardforkConfig);
+```
+
+For multi-chain scenarios (forked mainnet replay, L2 with mainnet
+activations, historical block replay), resolve the fork per-block
+via `ChainActivationsRegistry` and pick the `HardforkConfig` from
+`DefaultMainnetHardforkRegistry`:
+
+```csharp
+var fork = ChainActivationsRegistry.Instance.ResolveAt(
+    chainId: 1, blockNumber: 19_000_000, timestamp: 1_710_000_000);
+var cfg  = DefaultMainnetHardforkRegistry.Instance.Get(fork);
+```
+
+## State-Root and Block-Root Calculators
+
+`Nethereum.CoreChain` ships the concrete implementations of
+`IStateRootCalculator` and `IBlockRootCalculator` declared in
+`Nethereum.EVM.Core`:
+
+- `PatriciaStateRootCalculator` — computes the MPT state root over
+  an `IStateStore`. Used by witness verification and block production.
+- `PatriciaBlockRootCalculator` — transactions-root / receipts-root /
+  withdrawals-root computation over RLP-encoded items.
+- `PatriciaMerkleTreeBuilder` — shared trie-building helper.
+- `StatelessStateRootCalculator` — witness-only variant that avoids
+  touching the full state store; useful inside stateless verifiers.
+- `WitnessProofVerifier` — validates account and storage Merkle
+  proofs against a supplied pre-state root.
+
 ## RPC Framework
 
 ### RpcHandlerRegistry

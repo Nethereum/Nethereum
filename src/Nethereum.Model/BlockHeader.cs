@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Numerics;
 using System.Text;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -17,16 +17,16 @@ namespace Nethereum.Model
         public byte[] TransactionsHash { get; set; }
         //Trie root
         public byte[] ReceiptHash { get; set; }
-        public BigInteger BlockNumber { get; set; }
+        public EvmUInt256 BlockNumber { get; set; }
         public byte[] LogsBloom { get; set; }
-        public BigInteger Difficulty { get; set; }
+        public EvmUInt256 Difficulty { get; set; }
         public long Timestamp { get; set; }
         public long GasLimit { get; set; }
         public long GasUsed { get; set; }
         public byte[] MixHash { get; set; }
         public byte[] ExtraData { get; set; }
         public byte[] Nonce { get; set; }
-        public BigInteger? BaseFee { get; set; }
+        public EvmUInt256? BaseFee { get; set; }
         public byte[] WithdrawalsRoot { get; set; }
         public long? BlobGasUsed { get; set; }
         public long? ExcessBlobGas { get; set; }

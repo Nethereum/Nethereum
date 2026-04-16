@@ -8,7 +8,7 @@ using Nethereum.Web3;
 
 namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 {
-    public class Web3NodeDataServiceAdapter : INodeDataService
+    public class Web3NodeDataServiceAdapter : IStateReader
     {
         private readonly IWeb3 _web3;
         private readonly BlockParameter _blockParameter;
@@ -34,18 +34,18 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return new Web3NodeDataServiceAdapter(web3, new BlockParameter(new HexBigInteger(blockNumber)));
         }
 
-        public async Task<BigInteger> GetBalanceAsync(string address)
+        public async Task<EvmUInt256> GetBalanceAsync(string address)
         {
             var balance = await _web3.Eth.GetBalance.SendRequestAsync(address, _blockParameter);
-            return balance.Value;
+            return EvmUInt256BigIntegerExtensions.FromBigInteger(balance.Value);
         }
 
-        public Task<BigInteger> GetBalanceAsync(byte[] address)
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address)
         {
             return GetBalanceAsync(address.ConvertToEthereumChecksumAddress());
         }
 
-        public async Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
+        public async Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             var block = await _web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
                 .SendRequestAsync(new BlockParameter(new HexBigInteger(blockNumber)));
@@ -73,10 +73,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return GetCodeAsync(address.ConvertToEthereumChecksumAddress());
         }
 
-        public async Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
+        public async Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
         {
+            var positionBig = position.ToBigInteger();
             var storage = await _web3.Eth.GetStorageAt
-                .SendRequestAsync(address, new HexBigInteger(position), _blockParameter);
+                .SendRequestAsync(address, new HexBigInteger(positionBig), _blockParameter);
 
             if (string.IsNullOrEmpty(storage) || storage == "0x")
             {
@@ -94,21 +95,21 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return bytes;
         }
 
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
         {
             return GetStorageAtAsync(address.ConvertToEthereumChecksumAddress(), position);
         }
 
-        public async Task<BigInteger> GetTransactionCount(string address)
+        public async Task<EvmUInt256> GetTransactionCountAsync(string address)
         {
             var count = await _web3.Eth.Transactions.GetTransactionCount
                 .SendRequestAsync(address, _blockParameter);
-            return count.Value;
+            return EvmUInt256BigIntegerExtensions.FromBigInteger(count.Value);
         }
 
-        public Task<BigInteger> GetTransactionCount(byte[] address)
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
         {
-            return GetTransactionCount(address.ConvertToEthereumChecksumAddress());
+            return GetTransactionCountAsync(address.ConvertToEthereumChecksumAddress());
         }
     }
 }

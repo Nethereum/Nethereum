@@ -212,7 +212,7 @@ namespace Nethereum.EVM.UnitTests
         private static byte[] AnotherNonZeroValue => new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF };
         private static byte[] ZeroValue => ByteUtil.InitialiseEmptyByteArray(32);
 
-        private (Program program, ExecutionStateService stateService) CreateProgramWithStorage(BigInteger key, byte[] initialValue)
+        private (Program program, ExecutionStateService stateService) CreateProgramWithStorage(EvmUInt256 key, byte[] initialValue)
         {
             var stateService = new ExecutionStateService(new MockNodeDataService());
 
@@ -242,7 +242,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_NoOp_ShouldNotAddRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
             program.StackPush(NonZeroValue);
             program.StackPush(1);
@@ -255,7 +255,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_FreshClearToZero_ShouldAddClearsScheduleRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
             program.StackPush(ZeroValue);
             program.StackPush(1);
@@ -268,7 +268,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_FreshSetFromZero_ShouldNotAddRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, null);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, null);
 
             program.StackPush(NonZeroValue);
             program.StackPush(1);
@@ -281,7 +281,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_FreshResetNonZeroToNonZero_ShouldNotAddRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
             program.StackPush(AnotherNonZeroValue);
             program.StackPush(1);
@@ -294,9 +294,9 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_DirtyClearToZero_ShouldAddClearsScheduleRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
-            stateService.SaveToStorage(TestAddress, 1, AnotherNonZeroValue);
+            stateService.SaveToStorage(TestAddress, (EvmUInt256)1, AnotherNonZeroValue);
 
             program.StackPush(ZeroValue);
             program.StackPush(1);
@@ -309,9 +309,9 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_RestoreFromZeroToPreviouslyCleared_ShouldRemoveClearsScheduleRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
-            stateService.SaveToStorage(TestAddress, 1, ZeroValue);
+            stateService.SaveToStorage(TestAddress, (EvmUInt256)1, ZeroValue);
 
             program.StackPush(AnotherNonZeroValue);
             program.StackPush(1);
@@ -324,12 +324,12 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_RestoreToOriginalZero_ShouldAddSetRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, null);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, null);
 
             var state = stateService.CreateOrGetAccountExecutionState(TestAddress);
-            state.OriginalStorageValues[1] = ZeroValue;
+            state.OriginalStorageValues[(EvmUInt256)1] = ZeroValue;
 
-            stateService.SaveToStorage(TestAddress, 1, NonZeroValue);
+            stateService.SaveToStorage(TestAddress, (EvmUInt256)1, NonZeroValue);
 
             program.StackPush(ZeroValue);
             program.StackPush(1);
@@ -342,9 +342,9 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_RestoreToOriginalNonZero_ShouldAddResetRefund()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
-            stateService.SaveToStorage(TestAddress, 1, AnotherNonZeroValue);
+            stateService.SaveToStorage(TestAddress, (EvmUInt256)1, AnotherNonZeroValue);
 
             program.StackPush(NonZeroValue);
             program.StackPush(1);
@@ -357,9 +357,9 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_ComplexScenario_ClearThenRestoreOriginal()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
-            stateService.SaveToStorage(TestAddress, 1, ZeroValue);
+            stateService.SaveToStorage(TestAddress, (EvmUInt256)1, ZeroValue);
 
             program.StackPush(NonZeroValue);
             program.StackPush(1);
@@ -378,7 +378,7 @@ namespace Nethereum.EVM.UnitTests
             Assert.Equal(19900, GasConstants.SSTORE_SET_REFUND);
             Assert.Equal(2800, GasConstants.SSTORE_RESET_REFUND);
 
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
             program.StackPush(ZeroValue);
             program.StackPush(1);
@@ -391,7 +391,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_EffectiveRefund_CappedAtTwentyPercent()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
             program.StackPush(ZeroValue);
             program.StackPush(1);
@@ -409,11 +409,11 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task SStore_MultipleOperations_AccumulatesRefunds()
         {
-            var (program, stateService) = CreateProgramWithStorage(1, NonZeroValue);
+            var (program, stateService) = CreateProgramWithStorage((EvmUInt256)1, NonZeroValue);
 
-            stateService.SaveToStorage(TestAddress, 2, AnotherNonZeroValue);
+            stateService.SaveToStorage(TestAddress, (EvmUInt256)2, AnotherNonZeroValue);
             var state = stateService.CreateOrGetAccountExecutionState(TestAddress);
-            state.OriginalStorageValues[2] = AnotherNonZeroValue;
+            state.OriginalStorageValues[(EvmUInt256)2] = AnotherNonZeroValue;
 
             program.StackPush(ZeroValue);
             program.StackPush(1);

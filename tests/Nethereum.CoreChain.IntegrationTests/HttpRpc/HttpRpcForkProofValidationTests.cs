@@ -90,7 +90,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                 var storageValid = StorageProofVerification.ValidateValueFromStorageProof(
                     sp.Key.HexValue.HexToByteArray(),
                     sp.Value.HexValue.HexToByteArray(),
-                    sp.Proof.Select(x => x.HexToByteArray()),
+                    sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                     proof.StorageHash.HexToByteArray());
                 Assert.True(storageValid, "USDC storage proof should verify cryptographically");
             }

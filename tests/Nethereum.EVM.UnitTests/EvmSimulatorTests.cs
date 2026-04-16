@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -333,7 +334,7 @@ namespace Nethereum.EVM.UnitTests
 
         private async Task AssertSteps(string hexBytes, string expected, int numberOfSteps = 1)
         {
-            var vm = new EVMSimulator();
+            var vm = new EVMSimulator(DefaultHardforkConfigs.Cancun);
             var program = new Program(hexBytes.HexToByteArray());
             await vm.ExecuteWithCallStackAsync(program, traceEnabled: false);
 

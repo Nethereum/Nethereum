@@ -12,5 +12,11 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
 
         Task<Entities.ITransactionView> FindByBlockNumberAndHashAsync(HexBigInteger blockNumber, string hash);
 
+        /// <summary>
+        /// Persists a revert reason for a stored transaction, if the transaction exists and does not
+        /// already have a revert reason set. Implementations own the transactional boundary so callers
+        /// (orchestration services) can remain storage-agnostic.
+        /// </summary>
+        Task UpdateRevertReasonAsync(string txHash, string revertReason);
     }
 }

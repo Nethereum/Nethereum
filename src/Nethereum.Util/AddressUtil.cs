@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
@@ -46,12 +45,28 @@ namespace Nethereum.Util
         {
             if (address.Length > 20)
             {
-                return ConvertToChecksumAddress(address.Skip(address.Length - 20).ToArray().ToHex());
+                var trimmed = new byte[20];
+                Array.Copy(address, address.Length - 20, trimmed, 0, 20);
+                return ConvertToChecksumAddress(trimmed.ToHex());
             }
             else
             {
                 return ConvertToChecksumAddress(address.ToHex());
             }
+        }
+
+        public static byte[] EncodeAddressTo32Bytes(string address)
+        {
+            var hex = address;
+            if (hex.StartsWith("0x") || hex.StartsWith("0X"))
+                hex = hex.Substring(2);
+            if (hex.Length % 2 != 0) hex = "0" + hex;
+
+            var addressBytes = HexByteConvertorExtensions.HexToByteArray(hex);
+            var result = new byte[32];
+            int len = Math.Min(addressBytes.Length, 32);
+            Array.Copy(addressBytes, 0, result, 32 - len, len);
+            return result;
         }
 
         public bool IsAnEmptyAddress(string address)

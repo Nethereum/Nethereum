@@ -1,6 +1,7 @@
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using System.Linq;
@@ -72,7 +73,7 @@ namespace Nethereum.EVM.UnitTests
                 blockNumber: 0, timestamp: 1000, coinbase: "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba", baseFee: 10);
 
             var program = new Program(outerCode, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
 
             _output.WriteLine($"\nStarting execution with gas: {program.GasRemaining}");
             program = await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);

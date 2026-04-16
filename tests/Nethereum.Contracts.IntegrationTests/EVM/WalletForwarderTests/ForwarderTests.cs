@@ -79,7 +79,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM.WalletForwarderTests
             var executionStateService = new ExecutionStateService(nodeDataService);
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(factoryServiceCode.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, false);
 
             //var txnReceipt = await factoryService.CloneForwarderRequestAndWaitForReceiptAsync(defaultForwaderContractAddress, salt);

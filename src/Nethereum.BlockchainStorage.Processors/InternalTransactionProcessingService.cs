@@ -1,22 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.BlockchainProcessing;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
-using Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using Nethereum.BlockchainProcessing.Services;
 using Nethereum.BlockchainStore.EFCore;
-using Nethereum.BlockchainStore.EFCore.Repositories;
-using Nethereum.RPC.DebugNode;
-using Nethereum.RPC.DebugNode.Dtos.Tracing;
-using Nethereum.RPC.DebugNode.Tracers;
 using Nethereum.RPC.Eth.Blocks;
 
 namespace Nethereum.BlockchainStorage.Processors
@@ -48,36 +41,20 @@ namespace Nethereum.BlockchainStorage.Processors
             var repoFactory = new BlockchainStoreRepositoryFactory(_dbContextFactory);
 
             var internalTxRepo = repoFactory.CreateInternalTransactionRepository();
-            var efCoreRepo = (InternalTransactionRepository)internalTxRepo;
+            var transactionRepo = repoFactory.CreateTransactionRepository();
 
-            var debugTrace = new DebugTraceTransaction(web3.Client);
-            var tracingOptions = new TracingOptions
+            IInternalTransactionSource source;
+            if (_options.UseLocalEvmReplayForInternalTransactions)
             {
-                TracerInfo = new CallTracerInfo(onlyTopCall: false, withLog: false)
-            };
-
-            System.Func<string, Task<List<InternalTransaction>>> traceProvider = async (txHash) =>
+                var hardforkConfig = Nethereum.EVM.Precompiles.DefaultMainnetHardforkRegistry.Instance
+                    .Get(Nethereum.EVM.HardforkNames.Parse(_options.Hardfork));
+                source = new EvmReplayInternalTransactionSource(web3.Eth, hardforkConfig);
+                _logger.LogInformation("Internal transaction processor using local EVM replay (hardfork: {Hardfork}).", _options.Hardfork);
+            }
+            else
             {
-                var callTrace = await debugTrace.SendRequestAsync<CallTracerResponse>(txHash, tracingOptions)
-                    .ConfigureAwait(false);
-
-                if (callTrace == null)
-                    return new List<InternalTransaction>();
-
-                return InternalTransactionMapping.FlattenCallTrace(
-                    txHash,
-                    callTrace.Type,
-                    callTrace.From,
-                    callTrace.To,
-                    callTrace.Value?.Value.ToString() ?? "0",
-                    callTrace.Gas?.Value.ToString() ?? "0",
-                    callTrace.GasUsed?.Value.ToString() ?? "0",
-                    callTrace.Input,
-                    callTrace.Output,
-                    callTrace.Error,
-                    ConvertCalls(callTrace.Calls),
-                    revertReason: callTrace.RevertReason);
-            };
+                source = new DebugTraceInternalTransactionSource(web3.Client);
+            }
 
             IBlockProgressRepository rawInternalProgressRepo = repoFactory.CreateInternalTransactionBlockProgressRepository();
             IBlockProgressRepository progressRepo = rawInternalProgressRepo;
@@ -98,31 +75,15 @@ namespace Nethereum.BlockchainStorage.Processors
             var lastConfirmedBlockNumberService = new BlockProgressCappedLastConfirmedBlockNumberService(
                 chainBlockNumberService, mainBlockProgressRepo, rawInternalProgressRepo, _logger);
 
-            Func<string, string, Task> revertReasonUpdater = async (txHash, revertReason) =>
-            {
-                using (var ctx = _dbContextFactory.CreateContext())
-                {
-                    var tx = await ctx.Transactions
-                        .FirstOrDefaultAsync(t => t.Hash == txHash)
-                        .ConfigureAwait(false);
-                    if (tx != null && string.IsNullOrEmpty(tx.RevertReason))
-                    {
-                        tx.RevertReason = revertReason;
-                        ctx.Transactions.Update(tx);
-                        await ctx.SaveChangesAsync().ConfigureAwait(false);
-                    }
-                }
-            };
-
             var service = new InternalTransactionPostProcessorService();
             var processor = service.CreateProcessor(
                 internalTxRepo,
-                traceProvider,
-                efCoreRepo.GetContractTransactionsInRangeAsync,
+                source.ProduceAsync,
+                internalTxRepo.GetContractTransactionsInRangeAsync,
                 progressRepo,
                 lastConfirmedBlockNumberService,
                 _logger,
-                revertReasonUpdater);
+                transactionRepo.UpdateRevertReasonAsync);
 
             if (_options.ToBlock != null)
             {
@@ -134,24 +95,6 @@ namespace Nethereum.BlockchainStorage.Processors
             }
         }
 
-        private static List<CallTraceEntry> ConvertCalls(List<CallTracerResponse> calls)
-        {
-            if (calls == null) return null;
-            return calls.Select(c => new CallTraceEntry
-            {
-                Type = c.Type,
-                From = c.From,
-                To = c.To,
-                Value = c.Value?.Value.ToString() ?? "0",
-                Gas = c.Gas?.Value.ToString() ?? "0",
-                GasUsed = c.GasUsed?.Value.ToString() ?? "0",
-                Input = c.Input,
-                Output = c.Output,
-                Error = c.Error,
-                RevertReason = c.RevertReason,
-                Calls = ConvertCalls(c.Calls)
-            }).ToList();
-        }
     }
 
     internal class BlockProgressCappedLastConfirmedBlockNumberService : ILastConfirmedBlockNumberService

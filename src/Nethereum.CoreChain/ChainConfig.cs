@@ -1,5 +1,6 @@
 using System.Numerics;
 using Nethereum.EVM;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Util;
 
 namespace Nethereum.CoreChain
@@ -14,6 +15,7 @@ namespace Nethereum.CoreChain
         public BigInteger InitialBalance { get; set; } = BigInteger.Parse("10000000000000000000000"); // 10000 ETH
         public string Hardfork { get; set; } = "prague";
 
-        public HardforkConfig GetHardforkConfig() => HardforkConfig.FromName(Hardfork);
+        public HardforkConfig GetHardforkConfig()
+            => DefaultMainnetHardforkRegistry.Instance.Get(HardforkNames.Parse(Hardfork));
     }
 }

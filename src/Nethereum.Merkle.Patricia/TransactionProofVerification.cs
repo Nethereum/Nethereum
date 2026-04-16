@@ -1,6 +1,7 @@
 ﻿using Nethereum.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using Nethereum.Util;
 using System.Collections.Generic;
 
 namespace Nethereum.Merkle.Patricia

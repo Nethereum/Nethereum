@@ -98,7 +98,8 @@ namespace Nethereum.DevChain
                 CreateTransactionProcessor(stateStore, blockStore, config, SharedTxVerifier),
                 SharedTxVerifier,
                 CreateNodeDataService(stateStore, blockStore, config),
-                trieNodeStore)
+                trieNodeStore,
+                (config ?? DevChainConfig.Default).GetHardforkConfig())
         {
             _config = config ?? DevChainConfig.Default;
 
@@ -128,7 +129,7 @@ namespace Nethereum.DevChain
                 effectiveConfig.GetHardforkConfig());
         }
 
-        private static INodeDataService CreateNodeDataService(
+        private static IStateReader CreateNodeDataService(
             IStateStore stateStore, IBlockStore blockStore, DevChainConfig config)
         {
             if (config?.IsForkEnabled == true)
@@ -364,6 +365,21 @@ namespace Nethereum.DevChain
         public async Task SetBlockHashAsync(BigInteger blockNumber, byte[] hash)
         {
             await _blockStore.UpdateBlockHashAsync(blockNumber, hash);
+            // EIP-2935: BLOCKHASH reads from the history contract's storage at
+            // slot (blockNumber % 8191). Persist the hash there so in-guest
+            // execution resolves it without a side-channel.
+            await WriteToHistoryStorageAsync(blockNumber, hash);
+        }
+
+        private async Task WriteToHistoryStorageAsync(BigInteger blockNumber, byte[] hash)
+        {
+            if (hash == null || hash.Length == 0) return;
+            var slot = (BigInteger)((long)(blockNumber % Nethereum.EVM.Witness.HistoryContractHelpers.HISTORY_SERVE_WINDOW));
+            var value = hash.Length == 32 ? hash : hash.PadTo32Bytes();
+            await _stateStore.SaveStorageAsync(
+                Nethereum.EVM.Witness.HistoryContractHelpers.HISTORY_STORAGE_ADDRESS,
+                slot,
+                value);
         }
 
         public async Task SetNonceAsync(string address, BigInteger nonce)
@@ -446,7 +462,7 @@ namespace Nethereum.DevChain
             var latestBlock = await _blockStore.GetLatestAsync();
             if (latestBlock == null) return;
 
-            for (var blockNum = latestBlock.BlockNumber; blockNum > snapshotBlockHeight; blockNum--)
+            for (var blockNum = latestBlock.BlockNumber.ToBigInteger(); blockNum > snapshotBlockHeight; blockNum--)
             {
                 await _logStore.DeleteByBlockNumberAsync(blockNum);
                 await _receiptStore.DeleteByBlockNumberAsync(blockNum);
