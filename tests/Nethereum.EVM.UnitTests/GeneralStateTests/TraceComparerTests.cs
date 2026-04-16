@@ -416,8 +416,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var neth = new List<NethTraceStep>
             {
-                new NethTraceStep { PC = 0, Op = "PUSH1", Gas = 30000, GasCost = 3, Depth = 0, Stack = new List<string>() },
-                new NethTraceStep { PC = 2, Op = "PUSH1", Gas = 29997, GasCost = 3, Depth = 0, Stack = new List<string> { "80" } }
+                new NethTraceStep { PC = 0, Op = "PUSH1", Gas = 30000, GasCost = 3, Depth = 1, Stack = new List<string>() },
+                new NethTraceStep { PC = 2, Op = "PUSH1", Gas = 29997, GasCost = 3, Depth = 1, Stack = new List<string> { "80" } }
             };
 
             var validator = new TraceValidator();
@@ -439,8 +439,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var neth = new List<NethTraceStep>
             {
-                new NethTraceStep { PC = 0, Op = "PUSH1", Gas = 30000, GasCost = 3, Depth = 0, Stack = new List<string>() },
-                new NethTraceStep { PC = 2, Op = "CALL", Gas = 29997, GasCost = 100, Depth = 0, Stack = new List<string>() }
+                new NethTraceStep { PC = 0, Op = "PUSH1", Gas = 30000, GasCost = 3, Depth = 1, Stack = new List<string>() },
+                new NethTraceStep { PC = 2, Op = "CALL", Gas = 29997, GasCost = 100, Depth = 1, Stack = new List<string>() }
             };
 
             var validator = new TraceValidator();
@@ -461,7 +461,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var neth = new List<NethTraceStep>
             {
-                new NethTraceStep { PC = 0, Op = "SLOAD", Gas = 30000, GasCost = 100, Depth = 0, Stack = new List<string>() }
+                new NethTraceStep { PC = 0, Op = "SLOAD", Gas = 30000, GasCost = 100, Depth = 1, Stack = new List<string>() }
             };
 
             var validator = new TraceValidator();
@@ -483,7 +483,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var neth = new List<NethTraceStep>
             {
-                new NethTraceStep { PC = 0, Op = "CALL", Gas = 30000, GasCost = 100, Depth = 0, Stack = new List<string>() }
+                new NethTraceStep { PC = 0, Op = "CALL", Gas = 30000, GasCost = 100, Depth = 1, Stack = new List<string>() }
             };
 
             var validator = new TraceValidator();
@@ -503,7 +503,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var neth = new List<NethTraceStep>
             {
-                new NethTraceStep { PC = 0, Op = "PUSH1", Gas = 30000, GasCost = 3, Depth = 0, Stack = new List<string>() }
+                new NethTraceStep { PC = 0, Op = "PUSH1", Gas = 30000, GasCost = 3, Depth = 1, Stack = new List<string>() }
             };
 
             var validator = new TraceValidator();

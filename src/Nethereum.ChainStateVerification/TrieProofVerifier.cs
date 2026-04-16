@@ -34,7 +34,7 @@ namespace Nethereum.ChainStateVerification
 
             var key = storageProof.Key.HexValue.HexToByteArray();
             var value = storageProof.Value.HexValue.HexToByteArray();
-            var proofNodes = storageProof.Proof.Select(p => p.HexToByteArray());
+            var proofNodes = storageProof.Proof.Select(p => p.HexToByteArray()).ToList();
 
             var valid = StorageProofVerification.ValidateValueFromStorageProof(key, value, proofNodes, account.StateRoot);
             if (!valid)

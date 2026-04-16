@@ -58,7 +58,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var executionStateService = new ExecutionStateService(nodeDataService);
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             await evmSimulator.ExecuteWithCallStackAsync(program);
             var resultEncoded = program.ProgramResult.Result;
             var result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());

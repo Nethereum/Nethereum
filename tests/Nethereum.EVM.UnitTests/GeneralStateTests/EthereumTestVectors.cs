@@ -120,17 +120,160 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.Equal(0, totalFailed);
         }
 
-        private async Task RunCategoryAsync(string categoryName) => await RunCategoryAsync(categoryName, "Prague");
-
-        private async Task RunCategoryAsync(string categoryName, string hardfork)
+        [Fact]
+        [Trait("Category", "Sanity")]
+        public async Task SanityCheck_AllLegacyCategories()
         {
-            if (_testVectorsPath == null)
+            if (_testVectorsPath == null || !Directory.Exists(_testVectorsPath))
             {
                 Assert.True(false, "Test vectors not found");
                 return;
             }
 
-            var categoryPath = Path.Combine(_testVectorsPath, categoryName);
+            // stPreCompiledContracts / stPreCompiledContracts2 are omitted
+            // here: they run against execution-spec-tests static fixtures via
+            // RunSpecificCategory_stPreCompiledContracts(2) because the legacy
+            // ethereum-tests precompsEIP2929Cancun.json Prague post-state
+            // predates EIP-2537.
+            var categories = new[]
+            {
+                "stBadOpcode", "stCallCodes", "stCallCreateCallCodeTest", "stChainId",
+                "stCodeCopyTest", "stCodeSizeLimit", "stCreate2", "stCreateTest",
+                "stDelegatecallTestHomestead", "stEIP150singleCodeGasPrices", "stEIP150Specific",
+                "stEIP1559", "stEIP158Specific", "stExample", "stExtCodeHash", "stInitCodeTest",
+                "stMemoryTest", "stNonZeroCallsTest",
+                "stRecursiveCreate", "stRefundTest",
+                "stReturnDataTest", "stSLoadTest", "stSolidityTest", "stSStoreTest",
+                "stStaticCall", "stTransactionTest", "stZeroCallsTest"
+            };
+
+            var runner = new GeneralStateTestRunner(_output, "Prague");
+            var totalPassed = 0;
+            var totalFailed = 0;
+            var failedCategories = new System.Collections.Generic.List<string>();
+
+            foreach (var categoryName in categories)
+            {
+                var categoryPath = Path.Combine(_testVectorsPath, categoryName);
+                if (!Directory.Exists(categoryPath)) continue;
+
+                var testFiles = Directory.GetFiles(categoryPath, "*.json", SearchOption.AllDirectories);
+                var catPassed = 0;
+                var catFailed = 0;
+
+                foreach (var testFile in testFiles)
+                {
+                    var result = await runner.RunTestWithExecutorAsync(testFile);
+                    catPassed += result.PassedCount;
+                    catFailed += result.FailedCount;
+                }
+
+                totalPassed += catPassed;
+                totalFailed += catFailed;
+
+                if (catFailed > 0)
+                    failedCategories.Add($"{categoryName}: {catPassed} passed, {catFailed} failed");
+
+                _output.WriteLine($"{categoryName}: {catPassed} passed, {catFailed} failed");
+            }
+
+            _output.WriteLine($"\n=== SANITY CHECK TOTAL: {totalPassed} passed, {totalFailed} failed ===");
+            if (failedCategories.Count > 0)
+            {
+                _output.WriteLine("\nFailing categories:");
+                foreach (var fc in failedCategories)
+                    _output.WriteLine($"  {fc}");
+            }
+
+            Assert.Equal(0, totalFailed);
+        }
+
+        [Fact]
+        [Trait("Category", "Sanity")]
+        public async Task SanityCheck_ExecutionSpecTests()
+        {
+            var forkCategories = new (string fork, string category, string hardfork)[]
+            {
+                // Cancun EIPs — run for Cancun, Prague, Osaka
+                ("cancun", "eip1153_tstore", "Cancun"),
+                ("cancun", "eip1153_tstore", "Prague"),
+                ("cancun", "eip5656_mcopy", "Cancun"),
+                ("cancun", "eip5656_mcopy", "Prague"),
+                ("cancun", "eip6780_selfdestruct", "Cancun"),
+                ("cancun", "eip6780_selfdestruct", "Prague"),
+                ("cancun", "eip7516_blobgasfee", "Cancun"),
+                // Prague EIPs
+                ("prague", "eip7623_increase_calldata_cost", "Prague"),
+                // Osaka EIPs
+                ("osaka", "eip7951_p256verify_precompiles", "Osaka"),
+                ("osaka", "eip7883_modexp_gas_increase", "Osaka"),
+                ("osaka", "eip7823_modexp_upper_bounds", "Osaka"),
+                ("osaka", "eip7825_transaction_gas_limit_cap", "Osaka"),
+                ("osaka", "eip7939_count_leading_zeros", "Osaka"),
+            };
+
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var totalPassed = 0;
+            var totalFailed = 0;
+            var failedCategories = new System.Collections.Generic.List<string>();
+
+            foreach (var (fork, category, hardfork) in forkCategories)
+            {
+                var fixturesPath = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                    "fixtures", "state_tests", fork, category);
+
+                if (!Directory.Exists(fixturesPath))
+                {
+                    _output.WriteLine($"SKIP {fork}/{category}: fixtures not found");
+                    continue;
+                }
+
+                var runner = new GeneralStateTestRunner(_output, hardfork);
+                var testFiles = Directory.GetFiles(fixturesPath, "*.json", SearchOption.AllDirectories);
+                var catPassed = 0;
+                var catFailed = 0;
+
+                foreach (var testFile in testFiles)
+                {
+                    var result = await runner.RunTestWithExecutorAsync(testFile);
+                    catPassed += result.PassedCount;
+                    catFailed += result.FailedCount;
+                }
+
+                totalPassed += catPassed;
+                totalFailed += catFailed;
+
+                if (catFailed > 0)
+                    failedCategories.Add($"{fork}/{category}: {catPassed} passed, {catFailed} failed");
+
+                _output.WriteLine($"{fork}/{category}: {catPassed} passed, {catFailed} failed");
+            }
+
+            _output.WriteLine($"\n=== EXECUTION-SPEC-TESTS TOTAL: {totalPassed} passed, {totalFailed} failed ===");
+            if (failedCategories.Count > 0)
+            {
+                _output.WriteLine("\nFailing categories:");
+                foreach (var fc in failedCategories)
+                    _output.WriteLine($"  {fc}");
+            }
+
+            Assert.Equal(0, totalFailed);
+        }
+
+        private async Task RunCategoryAsync(string categoryName) => await RunCategoryAsync(categoryName, "Prague");
+
+        private async Task RunCategoryAsync(string categoryName, string hardfork) => await RunCategoryAsync(categoryName, hardfork, categoryRootOverride: null);
+
+        private async Task RunCategoryAsync(string categoryName, string hardfork, string categoryRootOverride)
+        {
+            string root = categoryRootOverride ?? _testVectorsPath;
+            if (root == null)
+            {
+                Assert.True(false, "Test vectors not found");
+                return;
+            }
+
+            var categoryPath = Path.Combine(root, categoryName);
             if (!Directory.Exists(categoryPath))
             {
                 _output.WriteLine($"Category {categoryName} not found at {categoryPath}");
@@ -734,16 +877,406 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         // Precompiled Contracts Tests
         // ============================================================
 
+        // stPreCompiledContracts / stPreCompiledContracts2 run against the
+        // execution-spec-tests static fixtures instead of the legacy
+        // ethereum-tests fixtures. The legacy precompsEIP2929Cancun.json
+        // post-state predates EIP-2537 and treats addresses 0x0b..0x11 as
+        // empty accounts at Prague; the execution-spec-tests version of the
+        // same file has EIP-2537 aware post-states for Cancun / Prague / Osaka.
         [Fact]
         public async Task RunSpecificCategory_stPreCompiledContracts()
         {
-            await RunCategoryAsync("stPreCompiledContracts");
+            await RunCategoryAsync("stPreCompiledContracts", "Prague", ExecutionSpecStaticRoot());
         }
 
         [Fact]
         public async Task RunSpecificCategory_stPreCompiledContracts2()
         {
-            await RunCategoryAsync("stPreCompiledContracts2");
+            await RunCategoryAsync("stPreCompiledContracts2", "Prague", ExecutionSpecStaticRoot());
+        }
+
+        private static string ExecutionSpecStaticRoot()
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            if (projectRoot == null) return null;
+            return Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", "static", "state_tests");
+        }
+
+        // === Execution-Spec-Tests (v5.4.0 fixtures) ===
+        // Source: https://github.com/ethereum/execution-spec-tests/releases/tag/v5.4.0
+        // Extract: tar xzf fixtures_develop.tar.gz fixtures/state_tests/
+
+        // --- Cancun EIPs ---
+
+        // --- Cancun EIPs (run against all forks in fixture) ---
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP1153")]
+        public async Task RunEIP1153_TStore(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip1153_tstore", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP5656")]
+        public async Task RunEIP5656_MCopy(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip5656_mcopy", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP6780")]
+        public async Task RunEIP6780_Selfdestruct(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip6780_selfdestruct", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP7516")]
+        public async Task RunEIP7516_BlobGasFee(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip7516_blobgasfee", hardfork);
+        }
+
+        // --- Prague EIPs ---
+
+        [Theory]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP7623")]
+        public async Task RunEIP7623_IncreaseCalldataCost(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("prague", "eip7623_increase_calldata_cost", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP7702")]
+        public async Task RunEIP7702_SetCodeTx(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("prague", "eip7702_set_code_tx", hardfork);
+        }
+
+        [Fact(DisplayName = "Debug: EIP-7823 modexp_upper_bounds near_uint64_max_base (Osaka)")]
+        [Trait("Category", "EIP7823-Debug")]
+        public async Task Debug_EIP7823_ModExpUpperBounds_NearUint64MaxBase_Osaka()
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var testFile = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", "osaka", "eip7823_modexp_upper_bounds",
+                "test_modexp_upper_bounds.json");
+            if (!File.Exists(testFile))
+            {
+                _output.WriteLine($"Test file not found: {testFile}");
+                Assert.True(false, "Test file missing");
+                return;
+            }
+
+            var runner = new GeneralStateTestRunner(_output, "Osaka", TimeSpan.FromMinutes(2));
+            var result = await runner.RunTestWithExecutorAsync(testFile);
+
+            _output.WriteLine($"Passed: {result.PassedCount}, Failed: {result.FailedCount}");
+            foreach (var r in result.Results.Where(x => x.TestName != null && x.TestName.Contains("near_uint64_max_base")))
+            {
+                _output.WriteLine($"Test: {r.TestName} [{r.DataIndex},{r.GasIndex},{r.ValueIndex}]");
+                _output.WriteLine($"  Passed: {r.Passed}");
+                _output.WriteLine($"  Expected state root: {r.ExpectedStateRoot}");
+                _output.WriteLine($"  Actual state root:   {r.ActualStateRoot}");
+                _output.WriteLine($"  Message: {r.Message}");
+                if (r.AccountDiffs != null)
+                {
+                    _output.WriteLine($"  Account diffs ({r.AccountDiffs.Count}):");
+                    foreach (var d in r.AccountDiffs)
+                        _output.WriteLine($"    {d}");
+                }
+            }
+
+            var nearUint64 = result.Results.FirstOrDefault(x =>
+                x.TestName != null && x.TestName.Contains("near_uint64_max_base"));
+            Assert.NotNull(nearUint64);
+            Assert.True(nearUint64.Passed, $"near_uint64_max_base failed: {nearUint64.Message}");
+        }
+
+        [Fact(DisplayName = "Debug: EIP-7702 set_code_max_depth_call_stack (Prague)")]
+        [Trait("Category", "EIP7702-Debug")]
+        public async Task Debug_EIP7702_SetCodeMaxDepthCallStack_Prague()
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var testFile = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", "prague", "eip7702_set_code_tx",
+                "test_set_code_max_depth_call_stack.json");
+            if (!File.Exists(testFile))
+            {
+                _output.WriteLine($"Test file not found: {testFile}");
+                Assert.True(false, "Test file missing");
+                return;
+            }
+
+            var runner = new GeneralStateTestRunner(_output, "Prague", TimeSpan.FromMinutes(2));
+            var result = await runner.RunTestWithExecutorAsync(testFile);
+
+            _output.WriteLine($"Passed: {result.PassedCount}, Failed: {result.FailedCount}");
+            foreach (var r in result.Results)
+            {
+                _output.WriteLine($"Test: {r.TestName} [{r.DataIndex},{r.GasIndex},{r.ValueIndex}]");
+                _output.WriteLine($"  Passed: {r.Passed}");
+                _output.WriteLine($"  Expected state root: {r.ExpectedStateRoot}");
+                _output.WriteLine($"  Actual state root:   {r.ActualStateRoot}");
+                _output.WriteLine($"  Message: {r.Message}");
+                if (r.AccountDiffs != null)
+                {
+                    _output.WriteLine($"  Account diffs ({r.AccountDiffs.Count}):");
+                    foreach (var d in r.AccountDiffs)
+                        _output.WriteLine($"    {d}");
+                }
+            }
+
+            Assert.Equal(0, result.FailedCount);
+        }
+
+        // --- Osaka EIPs ---
+
+        [Fact]
+        [Trait("Category", "EIP7951")]
+        public async Task RunEIP7951_P256Verify()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7951_p256verify_precompiles", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7883")]
+        public async Task RunEIP7883_ModExpGasIncrease()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7883_modexp_gas_increase", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7825")]
+        public async Task RunEIP7825_TransactionGasLimitCap()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7825_transaction_gas_limit_cap", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7939")]
+        public async Task RunEIP7939_CountLeadingZeros()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7939_count_leading_zeros", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7823")]
+        public async Task RunEIP7823_ModExpUpperBounds()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7823_modexp_upper_bounds", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7594")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7594_PeerDAS()
+        {
+            // 7/10 pass. 3 fail on blob count validation — needs EIP-7594 per-TX blob limit.
+            await RunExecutionSpecCategoryAsync("osaka", "eip7594_peerdas", "Osaka");
+        }
+
+        // --- Historical Fork EIPs (Frontier → Shanghai) ---
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Create()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "create", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Opcodes()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "opcodes", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Precompiles()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "precompiles", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Homestead")]
+        public async Task RunHomestead_Coverage()
+        {
+            await RunExecutionSpecCategoryAsync("homestead", "coverage", "Homestead");
+        }
+
+        [Fact]
+        [Trait("Category", "Byzantium")]
+        public async Task RunByzantium_EIP196_EcAddMul()
+        {
+            await RunExecutionSpecCategoryAsync("byzantium", "eip196_ec_add_mul", "Byzantium");
+        }
+
+        [Fact]
+        [Trait("Category", "Byzantium")]
+        public async Task RunByzantium_EIP197_EcPairing()
+        {
+            await RunExecutionSpecCategoryAsync("byzantium", "eip197_ec_pairing", "Byzantium");
+        }
+
+        [Fact]
+        [Trait("Category", "Byzantium")]
+        public async Task RunByzantium_EIP198_ModExpPrecompile()
+        {
+            await RunExecutionSpecCategoryAsync("byzantium", "eip198_modexp_precompile", "Byzantium");
+        }
+
+        [Fact]
+        [Trait("Category", "Constantinople")]
+        public async Task RunConstantinople_EIP1014_Create2()
+        {
+            await RunExecutionSpecCategoryAsync("constantinople", "eip1014_create2", "Constantinople");
+        }
+
+        [Fact]
+        [Trait("Category", "Constantinople")]
+        public async Task RunConstantinople_EIP145_BitwiseShift()
+        {
+            await RunExecutionSpecCategoryAsync("constantinople", "eip145_bitwise_shift", "Constantinople");
+        }
+
+        [Fact]
+        [Trait("Category", "Istanbul")]
+        public async Task RunIstanbul_EIP1344_ChainId()
+        {
+            await RunExecutionSpecCategoryAsync("istanbul", "eip1344_chainid", "Istanbul");
+        }
+
+        [Fact]
+        [Trait("Category", "Istanbul")]
+        public async Task RunIstanbul_EIP152_Blake2()
+        {
+            await RunExecutionSpecCategoryAsync("istanbul", "eip152_blake2", "Istanbul");
+        }
+
+        [Fact]
+        [Trait("Category", "Berlin")]
+        public async Task RunBerlin_EIP2929_GasCostIncreases()
+        {
+            await RunExecutionSpecCategoryAsync("berlin", "eip2929_gas_cost_increases", "Berlin");
+        }
+
+        [Fact]
+        [Trait("Category", "Berlin")]
+        public async Task RunBerlin_EIP2930_AccessList()
+        {
+            await RunExecutionSpecCategoryAsync("berlin", "eip2930_access_list", "Berlin");
+        }
+
+        [Fact]
+        [Trait("Category", "London")]
+        public async Task RunLondon_EIP1559_FeeMarket()
+        {
+            await RunExecutionSpecCategoryAsync("london", "eip1559_fee_market_change", "London");
+        }
+
+        [Fact]
+        [Trait("Category", "Shanghai")]
+        public async Task RunShanghai_EIP3651_WarmCoinbase()
+        {
+            await RunExecutionSpecCategoryAsync("shanghai", "eip3651_warm_coinbase", "Shanghai");
+        }
+
+        [Fact]
+        [Trait("Category", "Shanghai")]
+        public async Task RunShanghai_EIP3855_Push0()
+        {
+            await RunExecutionSpecCategoryAsync("shanghai", "eip3855_push0", "Shanghai");
+        }
+
+        [Fact]
+        [Trait("Category", "Shanghai")]
+        public async Task RunShanghai_EIP3860_Initcode()
+        {
+            await RunExecutionSpecCategoryAsync("shanghai", "eip3860_initcode", "Shanghai");
+        }
+
+        [Fact]
+        [Trait("Category", "Paris")]
+        public async Task RunParis_EIP7610_CreateCollision()
+        {
+            await RunExecutionSpecCategoryAsync("paris", "eip7610_create_collision", "Paris");
+        }
+
+        private async Task RunExecutionSpecCategoryAsync(string fork, string categoryName, string hardfork)
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var fixturesPath = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", fork, categoryName);
+
+            if (!Directory.Exists(fixturesPath))
+            {
+                _output.WriteLine($"Fixtures not found at: {fixturesPath}");
+                _output.WriteLine("Download: curl -L -o fixtures_develop.tar.gz https://github.com/ethereum/execution-spec-tests/releases/download/v5.4.0/fixtures_develop.tar.gz");
+                _output.WriteLine($"Extract: tar xzf fixtures_develop.tar.gz fixtures/state_tests/{fork}/");
+                Assert.True(false, $"{fork}/{categoryName} fixtures not found");
+                return;
+            }
+
+            var runner = new GeneralStateTestRunner(_output, hardfork);
+            var testFiles = Directory.GetFiles(fixturesPath, "*.json", SearchOption.AllDirectories);
+            _output.WriteLine($"Found {testFiles.Length} {categoryName} test files");
+
+            var totalPassed = 0;
+            var totalFailed = 0;
+            var totalSkipped = 0;
+            var failedTests = new System.Collections.Generic.List<string>();
+
+            foreach (var testFile in testFiles)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(testFile);
+                _output.WriteLine($"Running: {fileName}");
+
+                var result = await runner.RunTestWithExecutorAsync(testFile);
+
+                totalPassed += result.PassedCount;
+                totalFailed += result.FailedCount;
+                totalSkipped += result.SkippedCount;
+
+                foreach (var r in result.Results.Where(x => !x.Passed && !x.Skipped))
+                {
+                    failedTests.Add($"{fileName}/{r.TestName}[{r.DataIndex},{r.GasIndex},{r.ValueIndex}]: {r.Message}");
+                    _output.WriteLine($"  FAILED: {fileName} [{r.DataIndex},{r.GasIndex},{r.ValueIndex}]: {r.Message}");
+                    if (r.AccountDiffs != null && failedTests.Count <= 5)
+                        foreach (var diff in r.AccountDiffs)
+                            _output.WriteLine($"    {diff}");
+                }
+            }
+
+            _output.WriteLine($"\n{fork}/{categoryName} Results: {totalPassed} passed, {totalFailed} failed, {totalSkipped} skipped");
+
+            if (failedTests.Count > 0)
+            {
+                _output.WriteLine("\nFailed tests:");
+                foreach (var ft in failedTests.Take(30))
+                    _output.WriteLine($"  {ft}");
+            }
+
+            Assert.Equal(0, totalFailed);
         }
 
         [Fact]
@@ -1451,7 +1984,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         [InlineData("Prague")]
         public async Task RunCategory_stPreCompiledContracts_MultiFork(string hardfork)
         {
-            await RunCategoryAsync("stPreCompiledContracts", hardfork);
+            await RunCategoryAsync("stPreCompiledContracts", hardfork, ExecutionSpecStaticRoot());
         }
 
         [Theory]
@@ -1473,8 +2006,12 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         }
 
         [Fact]
+        [Trait("Category", "Skip")]
         public async Task RunSpecificCategory_Prague()
         {
+            // Prague category doesn't exist in legacy ethereum-tests.
+            // Prague-specific tests are covered by execution-spec-tests fixtures
+            // via RunEIP7623/RunEIP7702 and the stPreCompiledContracts2 tests.
             await RunCategoryAsync("Prague");
         }
 

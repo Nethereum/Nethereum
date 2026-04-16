@@ -459,7 +459,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
                 var programContext = new ProgramContext(txnInput, executionStateService, null, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
                 var program = new Program(code.HexToByteArray(), programContext);
-                var evmSimulator = new EVMSimulator();
+                var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
                 try
                 {
@@ -537,7 +537,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             var programContext = new ProgramContext(txnInput, executionStateService, null, null, (long)txn.BlockNumber.Value, (long)block.Timestamp.Value);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
@@ -589,7 +589,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             var programContext = new ProgramContext(txnInput, executionStateService, null, null, capturedState.BlockNumber, capturedState.Timestamp);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
@@ -635,7 +635,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
             var programContext = new ProgramContext(txnInput, executionStateService, null, null, capturedState.BlockNumber, capturedState.Timestamp);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 
@@ -657,16 +657,16 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
         }
     }
 
-    public class InMemoryNodeDataService : INodeDataService
+    public class InMemoryNodeDataService : IStateReader
     {
-        public Task<BigInteger> GetBalanceAsync(string address) => Task.FromResult(BigInteger.Zero);
-        public Task<BigInteger> GetBalanceAsync(byte[] address) => Task.FromResult(BigInteger.Zero);
+        public Task<EvmUInt256> GetBalanceAsync(string address) => Task.FromResult(EvmUInt256.Zero);
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address) => Task.FromResult(EvmUInt256.Zero);
         public Task<byte[]> GetCodeAsync(string address) => Task.FromResult(new byte[0]);
         public Task<byte[]> GetCodeAsync(byte[] address) => Task.FromResult(new byte[0]);
-        public Task<byte[]> GetStorageAtAsync(string address, BigInteger key) => Task.FromResult(new byte[32]);
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger key) => Task.FromResult(new byte[32]);
-        public Task<BigInteger> GetTransactionCount(string address) => Task.FromResult(BigInteger.Zero);
-        public Task<BigInteger> GetTransactionCount(byte[] address) => Task.FromResult(BigInteger.Zero);
-        public Task<byte[]> GetBlockHashAsync(BigInteger blockNumber) => Task.FromResult(new byte[32]);
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 key) => Task.FromResult(new byte[32]);
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 key) => Task.FromResult(new byte[32]);
+        public Task<EvmUInt256> GetTransactionCountAsync(string address) => Task.FromResult(EvmUInt256.Zero);
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address) => Task.FromResult(EvmUInt256.Zero);
+        public Task<byte[]> GetBlockHashAsync(long blockNumber) => Task.FromResult(new byte[32]);
     }
 }

@@ -2,16 +2,18 @@ using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests
 {
     public class EvmContractDeploymentWithParamsTests
     {
-        private readonly EVMSimulator _vm = new EVMSimulator();
+        private readonly EVMSimulator _vm = new EVMSimulator(DefaultHardforkConfigs.Cancun);
 
         [Fact]
         public async Task ShouldReadConstructorParameterFromEndOfInitCode()
@@ -91,7 +93,7 @@ namespace Nethereum.EVM.UnitTests
             Assert.True(program.ProgramResult.Result.Length > 0, "No runtime code returned");
 
             // Verify storage slot 0 was set to the constructor parameter
-            var storageValue = await programContext.GetFromStorageAsync(BigInteger.Zero);
+            var storageValue = await programContext.GetFromStorageAsync(EvmUInt256.Zero);
             Assert.NotNull(storageValue);
 
             var storedValue = new BigInteger(storageValue, isUnsigned: true, isBigEndian: true);
@@ -293,12 +295,12 @@ namespace Nethereum.EVM.UnitTests
                 $"Execution reverted: {program.ProgramResult.GetRevertMessage()}");
 
             // Verify slot 0 = 0x11
-            var slot0Value = await programContext.GetFromStorageAsync(BigInteger.Zero);
+            var slot0Value = await programContext.GetFromStorageAsync(EvmUInt256.Zero);
             Assert.NotNull(slot0Value);
             Assert.Equal(new BigInteger(0x11), new BigInteger(slot0Value, isUnsigned: true, isBigEndian: true));
 
             // Verify slot 1 = 0x22
-            var slot1Value = await programContext.GetFromStorageAsync(BigInteger.One);
+            var slot1Value = await programContext.GetFromStorageAsync(EvmUInt256.One);
             Assert.NotNull(slot1Value);
             Assert.Equal(new BigInteger(0x22), new BigInteger(slot1Value, isUnsigned: true, isBigEndian: true));
         }

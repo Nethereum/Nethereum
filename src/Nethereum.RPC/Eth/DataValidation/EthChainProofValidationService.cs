@@ -80,7 +80,7 @@ namespace Nethereum.RPC.Eth.ChainValidation
 
         public bool ValidateValueFromStorageProof(StorageProof storageProof, byte[] stateRoot)
         {
-            return StorageProofVerification.ValidateValueFromStorageProof(storageProof.Key.HexValue.HexToByteArray(), storageProof.Value.HexValue.HexToByteArray(), storageProof.Proof.Select(x => x.HexToByteArray()), stateRoot);
+            return StorageProofVerification.ValidateValueFromStorageProof(storageProof.Key.HexValue.HexToByteArray(), storageProof.Value.HexValue.HexToByteArray(), storageProof.Proof.Select(x => x.HexToByteArray()).ToList(), stateRoot);
         }
 
         public async Task<Transaction[]> GetAndValidateTransactions(BlockParameter blockNumber, string transactionsRoot = null, BigInteger? chainId = null)

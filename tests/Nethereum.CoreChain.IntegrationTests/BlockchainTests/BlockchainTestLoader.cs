@@ -57,9 +57,18 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
         {
             public BlockHeader BlockHeader { get; set; } = new();
             public List<TransactionData> Transactions { get; set; } = new();
+            public List<WithdrawalData> Withdrawals { get; set; } = new();
             public byte[] Rlp { get; set; } = Array.Empty<byte>();
             public int BlockNumber { get; set; }
             public string? ExpectException { get; set; }
+        }
+
+        public class WithdrawalData
+        {
+            public ulong Index { get; set; }
+            public ulong ValidatorIndex { get; set; }
+            public string Address { get; set; } = "";
+            public ulong Amount { get; set; }
         }
 
         public class BlockHeader
@@ -354,6 +363,20 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                         }
 
                         block.Transactions.Add(tx);
+                    }
+                }
+
+                if (blockEl.TryGetProperty("withdrawals", out var wdls))
+                {
+                    foreach (var wEl in wdls.EnumerateArray())
+                    {
+                        block.Withdrawals.Add(new WithdrawalData
+                        {
+                            Index = (ulong)ParseBigInteger(GetStringOrDefault(wEl, "index")),
+                            ValidatorIndex = (ulong)ParseBigInteger(GetStringOrDefault(wEl, "validatorIndex")),
+                            Address = GetStringOrDefault(wEl, "address"),
+                            Amount = (ulong)ParseBigInteger(GetStringOrDefault(wEl, "amount"))
+                        });
                     }
                 }
 

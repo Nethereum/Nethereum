@@ -140,6 +140,30 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         [JsonProperty("blobVersionedHashes")]
         public List<string> BlobVersionedHashes { get; set; }
+
+        [JsonProperty("authorizationList")]
+        public List<AuthorizationListItem> AuthorizationList { get; set; }
+    }
+
+    public class AuthorizationListItem
+    {
+        [JsonProperty("chainId")]
+        public string ChainId { get; set; }
+
+        [JsonProperty("address")]
+        public string Address { get; set; }
+
+        [JsonProperty("nonce")]
+        public string Nonce { get; set; }
+
+        [JsonProperty("v")]
+        public string V { get; set; }
+
+        [JsonProperty("r")]
+        public string R { get; set; }
+
+        [JsonProperty("s")]
+        public string S { get; set; }
     }
 
     public class AccessListItem
@@ -202,6 +226,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         Paris,
         Shanghai,
         Cancun,
-        Prague
+        Prague,
+        Osaka
     }
 }

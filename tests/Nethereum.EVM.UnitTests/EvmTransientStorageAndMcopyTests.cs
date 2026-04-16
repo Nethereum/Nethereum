@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -11,7 +12,7 @@ namespace Nethereum.EVM.UnitTests
 {
     public class EvmTransientStorageAndMcopyTests
     {
-        private readonly EVMSimulator _vm = new EVMSimulator();
+        private readonly EVMSimulator _vm = new EVMSimulator(DefaultHardforkConfigs.Cancun);
 
         #region TSTORE/TLOAD Tests (EIP-1153)
 
@@ -39,7 +40,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var result = program.StackPeekAtAndConvertToUBigInteger(0);
+            var result = program.StackPeekAtU256(0);
             Assert.Equal(0x42, (int)result);
         }
 
@@ -64,7 +65,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var result = program.StackPeekAtAndConvertToUBigInteger(0);
+            var result = program.StackPeekAtU256(0);
             Assert.Equal(0, (int)result);
         }
 
@@ -97,8 +98,8 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var value2 = program.StackPeekAtAndConvertToUBigInteger(0);
-            var value1 = program.StackPeekAtAndConvertToUBigInteger(1);
+            var value2 = program.StackPeekAtU256(0);
+            var value1 = program.StackPeekAtU256(1);
             Assert.Equal(0xBB, (int)value2);
             Assert.Equal(0xAA, (int)value1);
         }
@@ -130,7 +131,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var result = program.StackPeekAtAndConvertToUBigInteger(0);
+            var result = program.StackPeekAtU256(0);
             Assert.Equal(0x22, (int)result);
         }
 
@@ -160,7 +161,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var result = program.StackPeekAtAndConvertToUBigInteger(0);
+            var result = program.StackPeekAtU256(0);
             Assert.Equal(0x42, (int)result);
         }
 
@@ -191,7 +192,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var result = program.StackPeekAtAndConvertToUBigInteger(0);
+            var result = program.StackPeekAtU256(0);
             Assert.Equal(0, (int)result);
         }
 
@@ -241,7 +242,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var result = program.StackPeekAtAndConvertToUBigInteger(0);
+            var result = program.StackPeekAtU256(0);
             Assert.Equal(0, (int)result);
         }
 
@@ -340,7 +341,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var persistentValue = program.StackPeekAtAndConvertToUBigInteger(0);
+            var persistentValue = program.StackPeekAtU256(0);
             Assert.Equal(0, (int)persistentValue);
         }
 
@@ -368,7 +369,7 @@ namespace Nethereum.EVM.UnitTests
             await ExecuteProgramToEnd(program);
 
             Assert.True(program.Stopped);
-            var transientValue = program.StackPeekAtAndConvertToUBigInteger(0);
+            var transientValue = program.StackPeekAtU256(0);
             Assert.Equal(0, (int)transientValue);
         }
 

@@ -2,6 +2,7 @@ using System.Numerics;
 using Nethereum.CoreChain.IntegrationTests.Contracts;
 using Nethereum.CoreChain.IntegrationTests.Fixtures;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.CoreChain.IntegrationTests.DevChain
@@ -23,7 +24,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var genesisBlock = await _fixture.Node.GetBlockByNumberAsync(0);
             Assert.NotNull(genesisBlock);
-            Assert.Equal(BigInteger.Zero, genesisBlock.BlockNumber);
+            Assert.Equal(BigInteger.Zero, genesisBlock.BlockNumber.ToBigInteger());
         }
 
         [Fact]
@@ -127,9 +128,9 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(block);
 
-            Assert.Equal(block.BlockNumber, receiptInfo.BlockNumber);
+            Assert.Equal(block.BlockNumber.ToBigInteger(), receiptInfo.BlockNumber);
 
-            var blockHash = await _fixture.Node.GetBlockHashByNumberAsync(block.BlockNumber);
+            var blockHash = await _fixture.Node.GetBlockHashByNumberAsync(block.BlockNumber.ToBigInteger());
             Assert.Equal(blockHash, receiptInfo.BlockHash);
         }
 
@@ -179,7 +180,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetBlockByNumberAsync(blockNumber);
 
             Assert.NotNull(block);
-            Assert.Equal(blockNumber, block.BlockNumber);
+            Assert.Equal(blockNumber, block.BlockNumber.ToBigInteger());
         }
 
         [Fact]

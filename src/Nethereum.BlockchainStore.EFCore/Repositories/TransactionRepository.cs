@@ -29,6 +29,22 @@ namespace Nethereum.BlockchainStore.EFCore.Repositories
             }
         }
 
+        public async Task UpdateRevertReasonAsync(string txHash, string revertReason)
+        {
+            using (var context = _contextFactory.CreateContext())
+            {
+                var tx = await context.Transactions
+                    .FirstOrDefaultAsync(t => t.Hash == txHash)
+                    .ConfigureAwait(false);
+                if (tx != null && string.IsNullOrEmpty(tx.RevertReason))
+                {
+                    tx.RevertReason = revertReason;
+                    context.Transactions.Update(tx);
+                    await context.SaveChangesAsync().ConfigureAwait(false);
+                }
+            }
+        }
+
         public async Task UpsertAsync(TransactionReceiptVO transactionReceiptVO, string code, bool failedCreatingContract)
         {
             using (var context = _contextFactory.CreateContext())

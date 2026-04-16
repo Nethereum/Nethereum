@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Model.SSZ;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Model.SSZ.Tests
@@ -113,10 +113,10 @@ namespace Nethereum.Model.SSZ.Tests
             var encoded = SszTransactionEncoder.Current.EncodeTransaction1559Payload(original);
             var decoded = SszTransactionEncoder.Current.DecodeTransaction1559Payload(encoded, false);
 
-            Assert.Equal(BigInteger.Zero, decoded.Nonce);
-            Assert.Equal(BigInteger.Zero, decoded.MaxPriorityFeePerGas);
-            Assert.Equal(BigInteger.Zero, decoded.MaxFeePerGas);
-            Assert.Equal(BigInteger.Zero, decoded.Amount);
+            Assert.Equal((EvmUInt256?)EvmUInt256.Zero, decoded.Nonce);
+            Assert.Equal((EvmUInt256?)EvmUInt256.Zero, decoded.MaxPriorityFeePerGas);
+            Assert.Equal((EvmUInt256?)EvmUInt256.Zero, decoded.MaxFeePerGas);
+            Assert.Equal((EvmUInt256?)EvmUInt256.Zero, decoded.Amount);
         }
 
         [Fact]
@@ -125,20 +125,20 @@ namespace Nethereum.Model.SSZ.Tests
             // Max uint64 nonce, large fee values
             var original = new Transaction1559(
                 chainId: 137, // Polygon
-                nonce: (BigInteger)ulong.MaxValue,
+                nonce: ulong.MaxValue,
                 maxPriorityFeePerGas: 30000000000000, // 30 Twei
                 maxFeePerGas: 100000000000000, // 100 Twei
                 gasLimit: 10000000,
                 receiverAddress: "0xbeef000000000000000000000000000000000001",
-                amount: BigInteger.Parse("115792089237316195423570985008687907853269984665640564039457584007913129639935"), // uint256 max
+                amount: EvmUInt256.MaxValue, // uint256 max
                 data: "",
                 accessList: new List<AccessListItem>());
 
             var encoded = SszTransactionEncoder.Current.EncodeTransaction1559Payload(original);
             var decoded = SszTransactionEncoder.Current.DecodeTransaction1559Payload(encoded, false);
 
-            Assert.Equal((BigInteger)137, decoded.ChainId);
-            Assert.Equal((BigInteger)ulong.MaxValue, decoded.Nonce);
+            Assert.Equal((EvmUInt256)137, decoded.ChainId);
+            Assert.Equal<EvmUInt256?>((EvmUInt256)ulong.MaxValue, decoded.Nonce);
             Assert.Equal(original.Amount, decoded.Amount);
         }
 

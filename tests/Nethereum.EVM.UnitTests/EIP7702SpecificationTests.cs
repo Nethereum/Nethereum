@@ -539,7 +539,8 @@ namespace Nethereum.EVM.UnitTests
             // SPEC: EIP-7702 is enabled in Prague hardfork
             var pragueConfig = HardforkConfig.Prague;
 
-            Assert.True(pragueConfig.EnableEIP7702);
+            Assert.NotNull(pragueConfig.TransactionSetupRules);
+            Assert.NotSame(Nethereum.EVM.Execution.TransactionSetup.TransactionSetupRules.Empty, pragueConfig.TransactionSetupRules);
         }
 
         [Fact]
@@ -547,10 +548,9 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "HardforkConfig")]
         public void Given_CancunHardfork_Then_EIP7702IsDisabled()
         {
-            // SPEC: EIP-7702 is NOT in Cancun
             var cancunConfig = HardforkConfig.Cancun;
 
-            Assert.False(cancunConfig.EnableEIP7702);
+            Assert.Same(Nethereum.EVM.Execution.TransactionSetup.TransactionSetupRules.Empty, cancunConfig.TransactionSetupRules);
         }
 
         #endregion

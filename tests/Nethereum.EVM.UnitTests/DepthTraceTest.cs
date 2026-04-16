@@ -1,6 +1,7 @@
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using System.Threading.Tasks;
@@ -51,7 +52,7 @@ namespace Nethereum.EVM.UnitTests
             var programContext = new ProgramContext(transaction, executionState, null,
                 blockNumber: 1, timestamp: 1000, coinbase: "0x0000000000000000000000000000000000000000", baseFee: 10);
             var program = new Program(outerContractCode, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
 
             _output.WriteLine($"Starting gas: {program.GasRemaining}");
             program = await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);

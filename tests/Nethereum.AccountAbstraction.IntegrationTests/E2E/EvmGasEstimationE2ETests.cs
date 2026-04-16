@@ -57,7 +57,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             return new TransactionExecutorGasEstimator(
                 nodeDataService,
                 DevChainBundlerFixture.CHAIN_ID,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
         }
 
         private async Task<(string tokenAddress, ERC20ContractService erc20Service)> DeployERC20TokenAsync(string name, string symbol, BigInteger initialSupply)

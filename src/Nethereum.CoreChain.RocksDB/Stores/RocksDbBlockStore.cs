@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Model;
+using Nethereum.Util;
 using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
@@ -74,9 +75,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             batch.Put(Encoding.UTF8.GetBytes(LATEST_BLOCK_KEY), blockHash, metadataCf);
 
             var currentHeight = GetHeightInternal();
-            if (header.BlockNumber > currentHeight)
+            if (header.BlockNumber.ToBigInteger() > currentHeight)
             {
-                var heightBytes = RocksDbSerializer.BigIntegerToBytes(header.BlockNumber);
+                var heightBytes = RocksDbSerializer.BigIntegerToBytes(header.BlockNumber.ToBigInteger());
                 batch.Put(Encoding.UTF8.GetBytes(HEIGHT_KEY), heightBytes, metadataCf);
             }
 
