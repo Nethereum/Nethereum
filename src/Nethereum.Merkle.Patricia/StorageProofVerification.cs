@@ -1,6 +1,5 @@
 ﻿using Nethereum.Util.HashProviders;
 using System.Collections.Generic;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Diagnostics;
 using System.Xml.Linq;
@@ -14,13 +13,13 @@ namespace Nethereum.Merkle.Patricia
     {
 
        
-        public static bool ValidateValueFromStorageProof(byte[] key, byte[] value, IEnumerable<byte[]> proofs, byte[] stateRoot = null)
+        public static bool ValidateValueFromStorageProof(byte[] key, byte[] value, IList<byte[]> proofs, byte[] stateRoot = null)
         {
             var sha3Provider = new Sha3KeccackHashProvider();
 
             if (stateRoot == null) //should be the same
             {
-                stateRoot = sha3Provider.ComputeHash(proofs.First());
+                stateRoot = sha3Provider.ComputeHash(proofs[0]);
             }
 
             var trie = new PatriciaTrie(stateRoot);

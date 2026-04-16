@@ -1,5 +1,5 @@
 ﻿using Nethereum.RLP;
-using System.Linq;
+using Nethereum.Util;
 
 namespace Nethereum.Merkle.Patricia
 {
@@ -43,11 +43,11 @@ namespace Nethereum.Merkle.Patricia
                         var leafNode = new LeafNode();
                         if (keyAsNibbles[0] == 2)
                         {
-                            leafNode.Nibbles = keyAsNibbles.Skip(2).ToArray();
+                            leafNode.Nibbles = keyAsNibbles.SliceFrom(2);
                         }
                         else
                         {
-                            leafNode.Nibbles = keyAsNibbles.Skip(1).ToArray();
+                            leafNode.Nibbles = keyAsNibbles.SliceFrom(1);
                         }
                         leafNode.Value = decodedRlp[1].RLPData;
                         return leafNode;
@@ -59,11 +59,11 @@ namespace Nethereum.Merkle.Patricia
                         var extendedNode = new ExtendedNode();
                         if (keyAsNibbles[0] == 0)
                         {
-                            extendedNode.Nibbles = keyAsNibbles.Skip(2).ToArray();
+                            extendedNode.Nibbles = keyAsNibbles.SliceFrom(2);
                         }
                         else
                         {
-                            extendedNode.Nibbles = keyAsNibbles.Skip(1).ToArray();
+                            extendedNode.Nibbles = keyAsNibbles.SliceFrom(1);
                         }
                         extendedNode.InnerNode = DecodeNodeFromRlpData(decodedRlp[1].RLPData, decodeHashNodes, storage);
                         return extendedNode;

@@ -24,6 +24,7 @@ dotnet add package Nethereum.Merkle.Patricia
 **Nethereum Dependencies:**
 - **Nethereum.Model** - Account and transaction models
 - **Nethereum.RLP** - RLP encoding/decoding for trie nodes
+- **Nethereum.Util** - Byte-array helpers (`SliceFrom`) used by trie traversal
 
 ## Key Concepts
 

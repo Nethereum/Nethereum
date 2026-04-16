@@ -1,6 +1,6 @@
-﻿using Nethereum.Util.HashProviders;
+﻿using Nethereum.Util;
+using Nethereum.Util.HashProviders;
 using System;
-using System.Linq;
 
 
 namespace Nethereum.Merkle.Patricia
@@ -97,7 +97,7 @@ namespace Nethereum.Merkle.Patricia
         {
             var foundSameNibbles = currentNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
             if (currentNode.Nibbles.Length > foundSameNibbles.Length) return null; //No entry in between
-            return Get(currentNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), storage);
+            return Get(currentNode.InnerNode, keyAsNibbles.SliceFrom(foundSameNibbles.Length), storage);
         }
 
         public byte[] GetFromLeafNode(LeafNode currentNode, byte[] keyAsNibbles)
@@ -119,7 +119,7 @@ namespace Nethereum.Merkle.Patricia
             {
                 return currentNode.Value;
             }
-            return Get(currentNode.Children[keyAsNibbles[0]], keyAsNibbles.Skip(1).ToArray(), storage);
+            return Get(currentNode.Children[keyAsNibbles[0]], keyAsNibbles.SliceFrom(1), storage);
         }
 
         public Node Put(Node node, byte[] keyAsNibbles, byte[] value, ITrieStorage storage = null)
@@ -173,7 +173,7 @@ namespace Nethereum.Merkle.Patricia
             if (extendedNodeHasNonSameNibbles)
             {
                 var newBranchCurrentNodeNibble = currentNode.Nibbles[foundSameNibbles.Length];
-                var currentNodeNonSameNibbles = currentNode.Nibbles.Skip(foundSameNibbles.Length + 1).ToArray();
+                var currentNodeNonSameNibbles = currentNode.Nibbles.SliceFrom(foundSameNibbles.Length + 1);
                 var newBranch = new BranchNode(HashProvider);
                 //Extension node if more nibbles
                 if (currentNodeNonSameNibbles.Length > 0)
@@ -194,7 +194,7 @@ namespace Nethereum.Merkle.Patricia
                 if (keyHasMoreNibblesThanFoundTheSame)
                 {
                     var newLeafBranchNibble = keyAsNibbles[foundSameNibbles.Length];
-                    var keyNonSameNibbles = keyAsNibbles.Skip(foundSameNibbles.Length + 1).ToArray();
+                    var keyNonSameNibbles = keyAsNibbles.SliceFrom(foundSameNibbles.Length + 1);
                     var newLeafValue = new LeafNode(HashProvider);
                     newLeafValue.Value = value;
                     newLeafValue.Nibbles = keyNonSameNibbles;
@@ -222,7 +222,7 @@ namespace Nethereum.Merkle.Patricia
             }
             else
             {
-                currentNode.InnerNode = Put(currentNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), value, storage);
+                currentNode.InnerNode = Put(currentNode.InnerNode, keyAsNibbles.SliceFrom(foundSameNibbles.Length), value, storage);
                 return currentNode;
             }
 
@@ -237,7 +237,7 @@ namespace Nethereum.Merkle.Patricia
             }
 
             var nibbleBranch = keyAsNibbles[0];
-            var newChild = Put(currentNode.Children[nibbleBranch], keyAsNibbles.Skip(1).ToArray(), value, storage);
+            var newChild = Put(currentNode.Children[nibbleBranch], keyAsNibbles.SliceFrom(1), value, storage);
             currentNode.SetChild(nibbleBranch, newChild);
             return currentNode;
         }
@@ -273,7 +273,7 @@ namespace Nethereum.Merkle.Patricia
                 var newLeafNode = new LeafNode(HashProvider);
                 newLeafNode.Value = value;
                 //Set the nibbles as the reminder that are not found the same
-                newLeafNode.Nibbles = keyAsNibbles.Skip(foundSameNibbles.Length + 1).ToArray();
+                newLeafNode.Nibbles = keyAsNibbles.SliceFrom(foundSameNibbles.Length + 1);
                 //set the child as the first nibble not found
                 branchNode.SetChild(keyAsNibbles[foundSameNibbles.Length], newLeafNode);
             }
@@ -290,7 +290,7 @@ namespace Nethereum.Merkle.Patricia
                 var newLeafNode = new LeafNode(HashProvider);
                 newLeafNode.Value = currentNode.Value;
                 //Set the nibbles as the reminder that are not found the same
-                newLeafNode.Nibbles = currentNode.Nibbles.Skip(foundSameNibbles.Length + 1).ToArray();
+                newLeafNode.Nibbles = currentNode.Nibbles.SliceFrom(foundSameNibbles.Length + 1);
                 //set the child as the first nibble not found
                 branchNode.SetChild(currentNode.Nibbles[foundSameNibbles.Length], newLeafNode);
             }
@@ -384,7 +384,7 @@ namespace Nethereum.Merkle.Patricia
             else
             {
                 var nibble = keyAsNibbles[0];
-                var newChild = Delete(branchNode.Children[nibble], keyAsNibbles.Skip(1).ToArray(), storage);
+                var newChild = Delete(branchNode.Children[nibble], keyAsNibbles.SliceFrom(1), storage);
                 branchNode.SetChild(nibble, newChild);
             }
             return NormalizeBranchNode(branchNode);
@@ -397,7 +397,7 @@ namespace Nethereum.Merkle.Patricia
             {
                 return extendedNode;
             }
-            extendedNode.InnerNode = Delete(extendedNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), storage);
+            extendedNode.InnerNode = Delete(extendedNode.InnerNode, keyAsNibbles.SliceFrom(foundSameNibbles.Length), storage);
             return NormalizeExtendedNode(extendedNode);
         }
 
@@ -443,14 +443,14 @@ namespace Nethereum.Merkle.Patricia
                 if (child is LeafNode leafChild)
                 {
                     var newLeaf = new LeafNode(HashProvider);
-                    newLeaf.Nibbles = nibblePrefix.Concat(leafChild.Nibbles).ToArray();
+                    newLeaf.Nibbles = nibblePrefix.ConcatArrays(leafChild.Nibbles);
                     newLeaf.Value = leafChild.Value;
                     return newLeaf;
                 }
                 else if (child is ExtendedNode extChild)
                 {
                     var newExt = new ExtendedNode(HashProvider);
-                    newExt.Nibbles = nibblePrefix.Concat(extChild.Nibbles).ToArray();
+                    newExt.Nibbles = nibblePrefix.ConcatArrays(extChild.Nibbles);
                     newExt.InnerNode = extChild.InnerNode;
                     return newExt;
                 }
@@ -476,7 +476,7 @@ namespace Nethereum.Merkle.Patricia
             if (extendedNode.InnerNode is LeafNode leafChild)
             {
                 var newLeaf = new LeafNode(HashProvider);
-                newLeaf.Nibbles = extendedNode.Nibbles.Concat(leafChild.Nibbles).ToArray();
+                newLeaf.Nibbles = extendedNode.Nibbles.ConcatArrays(leafChild.Nibbles);
                 newLeaf.Value = leafChild.Value;
                 return newLeaf;
             }
@@ -484,7 +484,7 @@ namespace Nethereum.Merkle.Patricia
             if (extendedNode.InnerNode is ExtendedNode extChild)
             {
                 var newExt = new ExtendedNode(HashProvider);
-                newExt.Nibbles = extendedNode.Nibbles.Concat(extChild.Nibbles).ToArray();
+                newExt.Nibbles = extendedNode.Nibbles.ConcatArrays(extChild.Nibbles);
                 newExt.InnerNode = extChild.InnerNode;
                 return newExt;
             }
@@ -631,7 +631,7 @@ namespace Nethereum.Merkle.Patricia
                     }
                     return proofStorage;
                 }
-                return GenerateProof(branchNode.Children[keyAsNibbles[0]], keyAsNibbles.Skip(1).ToArray(), proofStorage, nodeStorage);
+                return GenerateProof(branchNode.Children[keyAsNibbles[0]], keyAsNibbles.SliceFrom(1), proofStorage, nodeStorage);
             }
 
             if (currentNode is ExtendedNode extendedNode)
@@ -642,7 +642,7 @@ namespace Nethereum.Merkle.Patricia
                     return null;
                 }
 
-                return GenerateProof(extendedNode.InnerNode, keyAsNibbles.Skip(foundSameNibbles.Length).ToArray(), proofStorage, nodeStorage);
+                return GenerateProof(extendedNode.InnerNode, keyAsNibbles.SliceFrom(foundSameNibbles.Length), proofStorage, nodeStorage);
             }
 
             return proofStorage;

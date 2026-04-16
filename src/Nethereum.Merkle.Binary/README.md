@@ -147,20 +147,25 @@ Pack account state into a single 32-byte leaf:
 
 ```csharp
 using Nethereum.Merkle.Binary.Keys;
-using System.Numerics;
+using Nethereum.Util;
 
 byte version = 1;
 uint codeSize = 24576;
 ulong nonce = 42;
-var balance = BigInteger.Parse("1000000000000000000");  // 1 ETH in wei
+EvmUInt256 balance = 1_000_000_000_000_000_000UL;  // 1 ETH in wei
 
 // Pack into 32 bytes
 var packed = BasicDataLeaf.Pack(version, codeSize, nonce, balance);
 
 // Unpack
-BasicDataLeaf.Unpack(packed, out var v, out var cs, out var n, out var b);
-// v == 1, cs == 24576, n == 42, b == 1000000000000000000
+BasicDataLeaf.Unpack(packed, out var v, out var cs, out var n, out EvmUInt256 b);
+// v == 1, cs == 24576, n == 42, b == 1_000_000_000_000_000_000
+
+// balance is a 128-bit field in the leaf — Pack throws
+// ArgumentOutOfRangeException if balance.U2 or balance.U3 is non-zero.
 ```
+
+The `balance` parameter is `EvmUInt256`, not `BigInteger` — the leaf layout allocates **16 bytes** (128 bits) for balance, so values above `2^128 - 1` are rejected up front to preserve round-trip safety. `BigInteger` callers can pass directly via `EvmUInt256`'s implicit conversion.
 
 **Leaf layout (32 bytes):**
 

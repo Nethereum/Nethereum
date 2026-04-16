@@ -1,5 +1,4 @@
 using System;
-using System.Numerics;
 using Nethereum.Util;
 using Nethereum.Util.HashProviders;
 
@@ -12,7 +11,8 @@ namespace Nethereum.Merkle.Binary.Keys
         public const int HeaderStorageOffset = 64;
         public const int CodeOffset = 128;
 
-        private static readonly BigInteger MainStorageOffset = BigInteger.Pow(256, BinaryTrieConstants.StemSize);
+        // 256^31 = 2^248; u3 = 1 << 56 places the single bit at position 248.
+        private static readonly EvmUInt256 MainStorageOffset = new EvmUInt256(1UL << 56, 0UL, 0UL, 0UL);
 
         private readonly IHashProvider _hashProvider;
 
@@ -21,23 +21,14 @@ namespace Nethereum.Merkle.Binary.Keys
             _hashProvider = hashProvider ?? throw new ArgumentNullException(nameof(hashProvider));
         }
 
-        public byte[] GetTreeKey(byte[] address32, BigInteger treeIndex, byte subIndex)
+        public byte[] GetTreeKey(byte[] address32, EvmUInt256 treeIndex, byte subIndex)
         {
             if (address32 == null || address32.Length != 32)
                 throw new ArgumentException("address32 must be 32 bytes");
-            if (treeIndex.Sign < 0)
-                throw new ArgumentException("treeIndex must be non-negative", nameof(treeIndex));
-
-            var tiBytes = new byte[32];
-            if (treeIndex.Sign > 0)
-            {
-                var raw = treeIndex.ToByteArrayUnsignedBigEndian();
-                for (int i = 0; i < raw.Length && i < 32; i++)
-                    tiBytes[i] = raw[raw.Length - 1 - i];
-            }
 
             var input = new byte[64];
             Array.Copy(address32, 0, input, 0, 32);
+            var tiBytes = treeIndex.ToLittleEndian();
             Array.Copy(tiBytes, 0, input, 32, 32);
 
             var digest = _hashProvider.ComputeHash(input);
@@ -50,42 +41,39 @@ namespace Nethereum.Merkle.Binary.Keys
 
         public byte[] GetTreeKeyForBasicData(byte[] address)
         {
-            return GetTreeKey(AddressTo32(address), BigInteger.Zero, BasicDataLeafKey);
+            return GetTreeKey(AddressTo32(address), EvmUInt256.Zero, BasicDataLeafKey);
         }
 
         public byte[] GetTreeKeyForCodeHash(byte[] address)
         {
-            return GetTreeKey(AddressTo32(address), BigInteger.Zero, CodeHashLeafKey);
+            return GetTreeKey(AddressTo32(address), EvmUInt256.Zero, CodeHashLeafKey);
         }
 
         public byte[] GetTreeKeyForCodeChunk(byte[] address, ulong chunkId)
         {
             ulong pos = (ulong)CodeOffset + chunkId;
-            var treeIndex = new BigInteger(pos / BinaryTrieConstants.StemNodeWidth);
+            var treeIndex = (EvmUInt256)(pos / BinaryTrieConstants.StemNodeWidth);
             byte subIndex = (byte)(pos % BinaryTrieConstants.StemNodeWidth);
             return GetTreeKey(AddressTo32(address), treeIndex, subIndex);
         }
 
-        public byte[] GetTreeKeyForStorageSlot(byte[] address, BigInteger storageKey)
+        public byte[] GetTreeKeyForStorageSlot(byte[] address, EvmUInt256 storageKey)
         {
-            if (storageKey.Sign < 0)
-                throw new ArgumentException("storageKey must be non-negative", nameof(storageKey));
-
             const int inlineThreshold = CodeOffset - HeaderStorageOffset;
 
-            BigInteger pos;
-            if (storageKey >= 0 && storageKey < inlineThreshold)
+            EvmUInt256 pos;
+            if (storageKey < (EvmUInt256)inlineThreshold)
             {
-                pos = HeaderStorageOffset + storageKey;
+                pos = (EvmUInt256)HeaderStorageOffset + storageKey;
             }
             else
             {
-                pos = MainStorageOffset + storageKey;
+                pos = MainStorageOffset + storageKey; // wraps mod 2^256, matching EIP-6800 spec
             }
 
-            var stemWidth = new BigInteger(BinaryTrieConstants.StemNodeWidth);
-            var treeIndex = BigInteger.Divide(pos, stemWidth);
-            var subMod = BigInteger.Remainder(pos, stemWidth);
+            var stemWidth = (EvmUInt256)BinaryTrieConstants.StemNodeWidth;
+            var treeIndex = pos / stemWidth;
+            var subMod = pos % stemWidth;
             return GetTreeKey(AddressTo32(address), treeIndex, (byte)subMod);
         }
 

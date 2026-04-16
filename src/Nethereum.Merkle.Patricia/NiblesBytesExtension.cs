@@ -92,7 +92,7 @@ namespace Nethereum.Merkle.Patricia
 
 
 
-    public static byte[] ConvertFromNibbles(this byte[] values)
+        public static byte[] ConvertFromNibbles(this byte[] values)
         {
             var converted = new List<byte>();
             for(int i = 0; i < values.Length; i = i + 2)
