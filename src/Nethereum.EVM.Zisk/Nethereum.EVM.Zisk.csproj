@@ -35,6 +35,16 @@
     <Compile Include="..\Nethereum.Util\Keccak\KeccakDigest.cs" Link="Util\KeccakDigest.cs" />
     <Compile Include="..\Nethereum.Util\HashProviders\IHashProvider.cs" Link="Util\IHashProvider.cs" />
     <Compile Include="..\Nethereum.Util\HashProviders\Sha3KeccackHashProvider.cs" Link="Util\Sha3KeccackHashProvider.cs" />
+    <Compile Include="..\Nethereum.Util\HashProviders\Sha256HashProvider.cs" Link="Util\Sha256HashProvider.cs" />
+    <Compile Include="..\Nethereum.Util\HashProviders\PoseidonPairHashProvider.cs" Link="Util\PoseidonPairHashProvider.cs" />
+    <Compile Include="..\Nethereum.Util\HashProviders\PoseidonHashProvider.cs" Link="Util\PoseidonHashProvider.cs" />
+    <Compile Include="..\Nethereum.Util\Poseidon\IPoseidonFieldOps.cs" Link="Util\Poseidon\IPoseidonFieldOps.cs" />
+    <Compile Include="..\Nethereum.Util\Poseidon\PoseidonCore.cs" Link="Util\Poseidon\PoseidonCore.cs" />
+    <Compile Include="..\Nethereum.Util\Poseidon\EvmUInt256PoseidonField.cs" Link="Util\Poseidon\EvmUInt256PoseidonField.cs" />
+    <Compile Include="..\Nethereum.Util\PoseidonEvmHasher.cs" Link="Util\PoseidonEvmHasher.cs" />
+    <Compile Include="..\Nethereum.Util\PoseidonPrecomputedConstants.cs" Link="Util\PoseidonPrecomputedConstants.cs" />
+    <Compile Include="..\Nethereum.Util\PoseidonPrecomputedPresets.cs" Link="Util\PoseidonPrecomputedPresets.cs" />
+    <Compile Include="..\Nethereum.Util\PoseidonParameterPreset.cs" Link="Util\PoseidonParameterPreset.cs" />
     <Compile Include="..\Nethereum.Util\EvmUInt256RLPExtensions.cs" Link="Util\EvmUInt256RLPExtensions.cs" />
   </ItemGroup>
 
@@ -54,11 +64,18 @@
              Exclude="..\Nethereum.Merkle.Patricia\obj\**;..\Nethereum.Merkle.Patricia\bin\**;..\Nethereum.Merkle.Patricia\**\*ProofVerification*.cs" />
   </ItemGroup>
 
+  <!-- Merkle Binary Trie (EIP-7864) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Merkle.Binary\**\*.cs" Link="MerkleBinary\%(RecursiveDir)%(Filename).cs"
+             Exclude="..\Nethereum.Merkle.Binary\obj\**;..\Nethereum.Merkle.Binary\bin\**" />
+  </ItemGroup>
+
   <!-- CoreChain (state root calculators only) -->
   <ItemGroup>
     <Compile Include="..\Nethereum.CoreChain\PatriciaStateRootCalculator.cs" Link="CoreChain\PatriciaStateRootCalculator.cs" />
     <Compile Include="..\Nethereum.CoreChain\PatriciaMerkleTreeBuilder.cs" Link="CoreChain\PatriciaMerkleTreeBuilder.cs" />
     <Compile Include="..\Nethereum.CoreChain\PatriciaBlockRootCalculator.cs" Link="CoreChain\PatriciaBlockRootCalculator.cs" />
+    <Compile Include="..\Nethereum.CoreChain\BinaryStateRootCalculator.cs" Link="CoreChain\BinaryStateRootCalculator.cs" />
   </ItemGroup>
 
   <!-- Model types (transaction decoders, receipts, block header for block proofs) -->

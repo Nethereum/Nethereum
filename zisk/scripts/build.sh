@@ -97,6 +97,19 @@ done
 SRC="$SRC /src/src/Nethereum.Util/Keccak/KeccakDigest.cs"
 SRC="$SRC /src/src/Nethereum.Util/HashProviders/IHashProvider.cs"
 SRC="$SRC /src/src/Nethereum.Util/HashProviders/Sha3KeccackHashProvider.cs"
+SRC="$SRC /src/src/Nethereum.Util/HashProviders/Sha256HashProvider.cs"
+SRC="$SRC /src/src/Nethereum.Util/HashProviders/PoseidonPairHashProvider.cs"
+SRC="$SRC /src/src/Nethereum.Util/HashProviders/PoseidonHashProvider.cs"
+SRC="$SRC /src/src/Nethereum.Util/Poseidon/IPoseidonFieldOps.cs"
+SRC="$SRC /src/src/Nethereum.Util/Poseidon/PoseidonCore.cs"
+SRC="$SRC /src/src/Nethereum.Util/Poseidon/EvmUInt256PoseidonField.cs"
+SRC="$SRC /src/src/Nethereum.Util/PoseidonEvmHasher.cs"
+SRC="$SRC /src/src/Nethereum.Util/PoseidonPrecomputedConstants.cs"
+SRC="$SRC /src/src/Nethereum.Util/PoseidonPrecomputedPresets.cs"
+SRC="$SRC /src/src/Nethereum.Util/PoseidonParameterPreset.cs"
+
+# Merkle Binary (EIP-7864 binary trie — all source)
+for f in $(find /src/src/Nethereum.Merkle.Binary -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -name "PLAN.md" 2>/dev/null); do SRC="$SRC $f"; done
 
 # Hex
 SRC="$SRC /src/src/Nethereum.Hex/HexConvertors/Extensions/HexByteConvertorExtensions.cs"
@@ -108,7 +121,7 @@ for f in $(find /src/src/Nethereum.EVM.Core -name "*.cs" -not -path "*/obj/*" -n
 for f in $(find /src/src/Nethereum.Merkle.Patricia -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -name "*ProofVerification*.cs" 2>/dev/null); do SRC="$SRC $f"; done
 
 # CoreChain (state root calculators)
-for cc in PatriciaStateRootCalculator PatriciaMerkleTreeBuilder PatriciaBlockRootCalculator; do
+for cc in PatriciaStateRootCalculator PatriciaMerkleTreeBuilder PatriciaBlockRootCalculator BinaryStateRootCalculator; do
     [ -f "/src/src/Nethereum.CoreChain/${cc}.cs" ] && SRC="$SRC /src/src/Nethereum.CoreChain/${cc}.cs"
 done
 
