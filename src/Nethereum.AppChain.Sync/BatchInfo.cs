@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Nethereum.AppChain.Sync
@@ -17,7 +18,12 @@ namespace Nethereum.AppChain.Sync
         public byte[] ToBlockReceiptRoot { get; set; } = Array.Empty<byte>();
 
         public byte[]? PrevBatchHash { get; set; }
+        public byte[]? FromBlockStateRoot { get; set; }
         public int PolicyVersion { get; set; }
+
+        public BatchContentType ContentType { get; set; } = BatchContentType.FullBlocks;
+        public List<byte[]>? DiffHashes { get; set; }
+        public long TotalDiffBytes { get; set; }
 
         public string? Uri { get; set; }
         public long CreatedAt { get; set; }
@@ -48,5 +54,11 @@ namespace Nethereum.AppChain.Sync
         Verified,
         Imported,
         Failed
+    }
+
+    public enum BatchContentType
+    {
+        FullBlocks,
+        StateDiffs
     }
 }
