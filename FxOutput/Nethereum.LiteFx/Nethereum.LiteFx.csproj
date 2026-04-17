@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
@@ -35,7 +35,7 @@
     <PackageReference Include="Common.Logging.Core">
       <Version>3.4.1</Version>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
+    <PackageReference Include="Newtonsoft.Json" Version="[13.0.1, 14)" />
 
   </ItemGroup>
 
