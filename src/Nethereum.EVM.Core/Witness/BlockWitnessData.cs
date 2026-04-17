@@ -75,6 +75,8 @@ namespace Nethereum.EVM.Witness
     {
         public HardforkName Fork { get; set; } = HardforkName.Unspecified;
         public int MaxBlobsPerBlock { get; set; } = 6;
+        public WitnessStateTreeType StateTree { get; set; } = WitnessStateTreeType.Patricia;
+        public WitnessHashFunction HashFunction { get; set; } = WitnessHashFunction.Keccak;
 
         public static BlockFeatureConfig Cancun => new BlockFeatureConfig
         {
@@ -89,6 +91,18 @@ namespace Nethereum.EVM.Witness
         public static BlockFeatureConfig Osaka => new BlockFeatureConfig
         {
             Fork = HardforkName.Osaka, MaxBlobsPerBlock = 9
+        };
+
+        public static BlockFeatureConfig BinaryBlake3(HardforkName fork = HardforkName.Osaka) => new BlockFeatureConfig
+        {
+            Fork = fork, MaxBlobsPerBlock = 9,
+            StateTree = WitnessStateTreeType.Binary, HashFunction = WitnessHashFunction.Blake3
+        };
+
+        public static BlockFeatureConfig BinaryPoseidon(HardforkName fork = HardforkName.Osaka) => new BlockFeatureConfig
+        {
+            Fork = fork, MaxBlobsPerBlock = 9,
+            StateTree = WitnessStateTreeType.Binary, HashFunction = WitnessHashFunction.Poseidon
         };
     }
 
