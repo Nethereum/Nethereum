@@ -154,12 +154,21 @@ namespace Nethereum.Merkle.Binary.Tests
 
             Assert.Equal(originalNodes.Count, importedNodes.Count);
 
-            for (int i = 0; i < originalNodes.Count; i++)
+            foreach (var orig in originalNodes)
             {
-                Assert.Equal(originalNodes[i].Hash, importedNodes[i].Hash);
-                Assert.Equal(originalNodes[i].Encoded, importedNodes[i].Encoded);
-                Assert.Equal(originalNodes[i].Depth, importedNodes[i].Depth);
-                Assert.Equal(originalNodes[i].NodeType, importedNodes[i].NodeType);
+                var match = false;
+                foreach (var imp in importedNodes)
+                {
+                    if (StemStartsWith(orig.Hash, imp.Hash) && orig.Hash.Length == imp.Hash.Length)
+                    {
+                        Assert.Equal(orig.Encoded, imp.Encoded);
+                        Assert.Equal(orig.Depth, imp.Depth);
+                        Assert.Equal(orig.NodeType, imp.NodeType);
+                        match = true;
+                        break;
+                    }
+                }
+                Assert.True(match, $"Node with hash {orig.Hash[0]:x2}{orig.Hash[1]:x2}... not found in imported store");
             }
 
             _output.WriteLine($"Checkpoint: {checkpoint.Length} bytes, {originalNodes.Count} nodes at depth 0-{maxDepth}");
