@@ -5,9 +5,9 @@ using Nethereum.Merkle.Binary.Storage;
 
 namespace Nethereum.Merkle.Binary.StateDiff
 {
-    public class BlockStateDiffProducer
+    public class BinaryTrieStateDiffProducer
     {
-        public static BlockStateDiff Produce(
+        public static BinaryTrieStateDiff Produce(
             long blockNumber,
             byte[] preStateRoot,
             byte[] postStateRoot,
@@ -15,7 +15,7 @@ namespace Nethereum.Merkle.Binary.StateDiff
         {
             if (nodeStore == null) throw new ArgumentNullException(nameof(nodeStore));
 
-            var diff = new BlockStateDiff
+            var diff = new BinaryTrieStateDiff
             {
                 BlockNumber = blockNumber,
                 PreStateRoot = preStateRoot ?? new byte[32],
@@ -39,7 +39,7 @@ namespace Nethereum.Merkle.Binary.StateDiff
                                 stemDiff.SuffixDiffs.Add(new SuffixDiff
                                 {
                                     SuffixIndex = (byte)i,
-                                    OldValue = new byte[32],
+                                    OldValue = null,
                                     NewValue = stemNode.Values[i]
                                 });
                             }

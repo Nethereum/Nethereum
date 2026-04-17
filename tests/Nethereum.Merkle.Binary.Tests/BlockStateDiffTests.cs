@@ -11,12 +11,12 @@ using Xunit.Abstractions;
 
 namespace Nethereum.Merkle.Binary.Tests
 {
-    public class BlockStateDiffTests
+    public class BinaryTrieStateDiffTests
     {
         private readonly ITestOutputHelper _output;
         private readonly IHashProvider _hashProvider = new Blake3HashProvider();
 
-        public BlockStateDiffTests(ITestOutputHelper output)
+        public BinaryTrieStateDiffTests(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -24,15 +24,15 @@ namespace Nethereum.Merkle.Binary.Tests
         [Fact]
         public void SszRoundTrip_EmptyDiff()
         {
-            var diff = new BlockStateDiff
+            var diff = new BinaryTrieStateDiff
             {
                 BlockNumber = 42,
                 PreStateRoot = new byte[32],
                 PostStateRoot = new byte[32]
             };
 
-            var encoded = BlockStateDiffSszEncoder.Encode(diff);
-            var decoded = BlockStateDiffSszEncoder.Decode(encoded);
+            var encoded = BinaryTrieStateDiffEncoder.Encode(diff);
+            var decoded = BinaryTrieStateDiffEncoder.Decode(encoded);
 
             Assert.Equal(42, decoded.BlockNumber);
             Assert.Equal(diff.PreStateRoot, decoded.PreStateRoot);
@@ -46,7 +46,7 @@ namespace Nethereum.Merkle.Binary.Tests
         [Fact]
         public void SszRoundTrip_WithStemDiffs()
         {
-            var diff = new BlockStateDiff
+            var diff = new BinaryTrieStateDiff
             {
                 BlockNumber = 100,
                 PreStateRoot = GenerateHash(1),
@@ -66,8 +66,8 @@ namespace Nethereum.Merkle.Binary.Tests
                 ProofSiblings = new List<byte[]> { GenerateHash(20), GenerateHash(21) }
             };
 
-            var encoded = BlockStateDiffSszEncoder.Encode(diff);
-            var decoded = BlockStateDiffSszEncoder.Decode(encoded);
+            var encoded = BinaryTrieStateDiffEncoder.Encode(diff);
+            var decoded = BinaryTrieStateDiffEncoder.Decode(encoded);
 
             Assert.Equal(100, decoded.BlockNumber);
             Assert.Equal(diff.PreStateRoot, decoded.PreStateRoot);
@@ -85,7 +85,7 @@ namespace Nethereum.Merkle.Binary.Tests
         [Fact]
         public void SszRoundTrip_MultipleStemsMultipleSuffixes()
         {
-            var diff = new BlockStateDiff
+            var diff = new BinaryTrieStateDiff
             {
                 BlockNumber = 1000,
                 PreStateRoot = GenerateHash(1),
@@ -110,8 +110,8 @@ namespace Nethereum.Merkle.Binary.Tests
             for (int i = 0; i < 31; i++)
                 diff.ProofSiblings.Add(GenerateHash(200 + i));
 
-            var encoded = BlockStateDiffSszEncoder.Encode(diff);
-            var decoded = BlockStateDiffSszEncoder.Decode(encoded);
+            var encoded = BinaryTrieStateDiffEncoder.Encode(diff);
+            var decoded = BinaryTrieStateDiffEncoder.Decode(encoded);
 
             Assert.Equal(5, decoded.StemDiffs.Count);
             Assert.Equal(10, decoded.StemDiffs[2].SuffixDiffs.Count);
@@ -141,15 +141,15 @@ namespace Nethereum.Merkle.Binary.Tests
             var postRoot = trie.ComputeRoot();
             trie.SaveToStorage(store);
 
-            var diff = BlockStateDiffProducer.Produce(1, preRoot, postRoot, store);
+            var diff = BinaryTrieStateDiffProducer.Produce(1, preRoot, postRoot, store);
 
             Assert.Equal(1, diff.BlockNumber);
             Assert.Equal(preRoot, diff.PreStateRoot);
             Assert.Equal(postRoot, diff.PostStateRoot);
             Assert.True(diff.StemDiffs.Count > 0, "Should have at least one dirty stem");
 
-            var encoded = BlockStateDiffSszEncoder.Encode(diff);
-            var decoded = BlockStateDiffSszEncoder.Decode(encoded);
+            var encoded = BinaryTrieStateDiffEncoder.Encode(diff);
+            var decoded = BinaryTrieStateDiffEncoder.Decode(encoded);
             Assert.Equal(diff.StemDiffs.Count, decoded.StemDiffs.Count);
 
             _output.WriteLine($"Block 1 diff: {diff.StemDiffs.Count} stems, {diff.ProofSiblings.Count} proof nodes, {encoded.Length} bytes");
@@ -179,8 +179,8 @@ namespace Nethereum.Merkle.Binary.Tests
             trie.Put(keyDeriv.GetTreeKeyForStorageSlot(addr1, EvmUInt256.Zero),
                 PadTo32(new byte[] { 0xFF }));
             trie.SaveToStorage(store);
-            var diff1 = BlockStateDiffProducer.Produce(1, baseRoot, trie.ComputeRoot(), store);
-            var size1 = BlockStateDiffSszEncoder.Encode(diff1).Length;
+            var diff1 = BinaryTrieStateDiffProducer.Produce(1, baseRoot, trie.ComputeRoot(), store);
+            var size1 = BinaryTrieStateDiffEncoder.Encode(diff1).Length;
 
             store.ClearDirtyTracking();
             store.MarkBlockCommitted(2);
@@ -192,8 +192,8 @@ namespace Nethereum.Merkle.Binary.Tests
                     PadTo32(new byte[] { (byte)(i + 0x10) }));
             }
             trie.SaveToStorage(store);
-            var diff2 = BlockStateDiffProducer.Produce(2, diff1.PostStateRoot, trie.ComputeRoot(), store);
-            var size2 = BlockStateDiffSszEncoder.Encode(diff2).Length;
+            var diff2 = BinaryTrieStateDiffProducer.Produce(2, diff1.PostStateRoot, trie.ComputeRoot(), store);
+            var size2 = BinaryTrieStateDiffEncoder.Encode(diff2).Length;
 
             _output.WriteLine($"1 account change: {size1} bytes ({diff1.StemDiffs.Count} stems)");
             _output.WriteLine($"10 account changes: {size2} bytes ({diff2.StemDiffs.Count} stems)");
