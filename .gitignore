@@ -306,3 +306,4 @@ nul
 
 # Zisk build artifacts (ELF binaries, raw outputs, generated witnesses)
 zisk/output/
+zisk/.libziskos/

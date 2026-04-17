@@ -40,13 +40,13 @@ namespace Nethereum.EVM.Core.Tests
             var bytes = BinaryBlockWitness.Serialize(block);
             var outputPath = Path.Combine(
                 Path.GetDirectoryName(typeof(GenerateTestWitness).Assembly.Location),
-                "..", "..", "..", "..", "..", "scripts", "zisk-output", "test_sstore.bin");
+                "..", "..", "..", "..", "..", "zisk", "output", "test_sstore.bin");
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, bytes);
 
             Assert.True(bytes.Length > 0);
-            Assert.Equal(3, bytes[0]);
+            Assert.Equal(1, bytes[0]);
 
             var deserialized = BinaryBlockWitness.Deserialize(bytes);
             Assert.Equal(block.Transactions[0].From, deserialized.Transactions[0].From);

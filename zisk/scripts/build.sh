@@ -28,7 +28,7 @@ EXTLIB_FLAG=""
 LIBZISKOS_MOUNT=""
 if [ -n "${LIBZISKOS_DIR:-}" ] && [ -f "$LIBZISKOS_DIR/libziskos.bflat.manifest" ]; then
     EXTLIB_FLAG="--extlib /libziskos/libziskos.bflat.manifest"
-    LIBZISKOS_MOUNT="-v $LIBZISKOS_DIR:/libziskos:ro"
+    LIBZISKOS_MOUNT="-v $LIBZISKOS_DIR:/libziskos"
     echo "Using host libziskos: $LIBZISKOS_DIR"
 fi
 MODE="source"
