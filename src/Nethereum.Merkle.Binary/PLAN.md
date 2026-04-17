@@ -162,6 +162,60 @@ A wallet or DApp syncs only the contracts it cares about (e.g. USDC, Uniswap rou
 - [ ] Batch manifest assembly: collect diffs until anchor threshold
 - [ ] P2P protocol: topic-based pubsub keyed on chain ID + batch sequence
 
+## Realistic Sizing and Open Problems
+
+### Proof sizes (honest math)
+
+| Scenario | Stems touched | Diff size | Per-contract filtered |
+|----------|---------------|-----------|----------------------|
+| Simple transfer (2 accounts) | 2 | ~1.2 KB | ~1.2 KB |
+| Realistic DeFi block (200 txs) | ~500 | ~200 KB | ~2-4 KB (per contract) |
+| Heavy block (1000 txs, DEX arb) | ~2000 | ~800 KB | ~5-10 KB |
+| Per day at 1 block/sec | | ~17 GB full | ~350 MB per contract |
+
+The per-contract filtering makes wallet-side bandwidth manageable even at high throughput. Full validators pay the full cost.
+
+### Gossip heterogeneity
+
+Three client types with different needs → separate gossip topics, not one-size-fits-all:
+- `chain/{id}/blocks/full` — full BlockStateDiff (validators, full nodes)
+- `chain/{id}/blocks/roots` — just block number + roots (light clients pull diffs on demand)
+- `chain/{id}/contract/{address}` — server-side filtered diffs (wallets subscribe per contract)
+
+Open: relay nodes that serve the filtered topics need to hold full state or at minimum the address→stem index. This is a relay infrastructure cost.
+
+### Bootstrap / cold-start problem
+
+A new USDC wallet doesn't know which stems hold USDC data. Key derivation is deterministic (given the contract address, you CAN compute stems), but you don't know which treeIndexes have data without scanning.
+
+Realistic cold-start paths:
+1. **Address index RPC**: `eth_getContractStems(address)` → returns all stem hashes for that contract. Any full node can serve this. Our `IBinaryTrieNodeStore.GetStemNodesByAddress()` provides the backing data.
+2. **Contract manifest**: the contract publisher registers its address when joining the network. Initial sync downloads all stems + proofs from any peer.
+3. **Incremental discovery**: subscribe to the contract's gossip topic, accumulate diffs over time. Eventually converges to full contract state. Slower but requires no special sync protocol.
+
+Open: none of these are trustless without verifying against a known state root. The wallet needs to either (a) have a trusted root from L1, or (b) verify a checkpoint proof.
+
+### DA coordination (unsolved, operational)
+
+18-day blob retention on L1 means diffs need external archiving for historical access. This is a hard coordination problem:
+- AppChain with a known operator → operator archives, retention is an SLA
+- Decentralised → needs economic incentives for redundant archiving (EigenDA, Celestia, etc.)
+- The architecture provides the encoding and anchor format; the DA layer is pluggable but not free
+
+Open: archiving economics, redundancy guarantees, archive discovery protocol.
+
+### Economic sustainability (business model, not just technical)
+
+| Cost | Who pays | How |
+|------|----------|-----|
+| Tree proving (Poseidon, per block) | Sequencer/block producer | Amortised into block production |
+| EVM proving (per block) | Outsourced market | Prover marketplace, bid per block |
+| L1 blob costs (per batch) | Batch submitter | Amortised over N blocks in the batch |
+| Archive storage | Operator or protocol treasury | Per-GB pricing, long-term commitment |
+| Relay infrastructure | Relay operators | Fee market or altruistic / protocol-subsidised |
+
+Open: pricing models, who-subsidises-what during bootstrap, prover marketplace design.
+
 ## Architecture Summary
 
 ```
@@ -185,8 +239,8 @@ BlockStateDiff (SSZ)                     Full Light Client   Per-Contract Client
     └─ Anchor to L1 / DA (Phase 4)           │                    │
                                               ▼                    ▼
                                     Apply full diff          Apply filtered diff
-                                    (~350 KB/block)          (~few KB/block, only
-                                                              subscribed contracts)
+                                    (~200 KB/block           (~2-4 KB/block per
+                                     realistic DeFi)          subscribed contract)
                                               │                    │
                                               └───── both ─────────┘
                                                       │
