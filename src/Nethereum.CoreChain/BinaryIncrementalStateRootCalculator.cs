@@ -15,7 +15,7 @@ using Nethereum.Util.HashProviders;
 
 namespace Nethereum.CoreChain
 {
-    public class BinaryIncrementalStateRootCalculator
+    public class BinaryIncrementalStateRootCalculator : IIncrementalStateRootCalculator
     {
         private static readonly byte[] EMPTY_ROOT = new byte[32];
         private static readonly byte[] EMPTY_CODE_HASH = Sha3Keccack.Current.CalculateHash(new byte[0]);

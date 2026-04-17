@@ -62,7 +62,7 @@ namespace Nethereum.AppChain.Sequencer
             IMessageProcessor? messageProcessor = null,
             ILogger<Sequencer>? logger = null,
             string? nodeId = null,
-            CoreChain.IncrementalStateRootCalculator? stateRootCalculator = null)
+            CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null)
         {
             _appChain = appChain ?? throw new ArgumentNullException(nameof(appChain));
             _sequencerConfig = config ?? throw new ArgumentNullException(nameof(config));

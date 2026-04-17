@@ -14,7 +14,7 @@ using Nethereum.Util.HashProviders;
 
 namespace Nethereum.CoreChain
 {
-    public class IncrementalStateRootCalculator
+    public class IncrementalStateRootCalculator : IIncrementalStateRootCalculator
     {
         private readonly IStateStore _stateStore;
         private readonly ITrieNodeStore _trieNodeStore;

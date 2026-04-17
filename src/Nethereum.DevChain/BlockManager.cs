@@ -57,6 +57,10 @@ namespace Nethereum.DevChain
             _config = config;
             _trieNodeStore = trieNodeStore;
 
+            IIncrementalStateRootCalculator stateRootCalc = config.StateTree == StateTreeType.Binary
+                ? config.CreateBinaryIncrementalStateRootCalculator(stateStore)
+                : new IncrementalStateRootCalculator(stateStore, trieNodeStore);
+
             _blockProducer = new BlockProducer(
                 blockStore,
                 transactionStore,
@@ -64,7 +68,8 @@ namespace Nethereum.DevChain
                 logStore,
                 stateStore,
                 transactionProcessor,
-                trieNodeStore);
+                trieNodeStore,
+                stateRootCalc);
         }
 
         public async Task InitializeAsync()

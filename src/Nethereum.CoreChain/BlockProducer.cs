@@ -26,7 +26,7 @@ namespace Nethereum.CoreChain
         private readonly IStateStore _stateStore;
         private readonly TransactionProcessor _transactionProcessor;
         private readonly RootCalculator _rootCalculator;
-        private readonly IncrementalStateRootCalculator _stateRootCalculator;
+        private readonly IIncrementalStateRootCalculator _stateRootCalculator;
         private readonly ITrieNodeStore _trieNodeStore;
         private readonly Sha3Keccack _keccak = new();
         private readonly SemaphoreSlim _produceLock = new SemaphoreSlim(1, 1);
@@ -39,7 +39,7 @@ namespace Nethereum.CoreChain
             IStateStore stateStore,
             TransactionProcessor transactionProcessor,
             ITrieNodeStore trieNodeStore = null,
-            IncrementalStateRootCalculator stateRootCalculator = null)
+            IIncrementalStateRootCalculator stateRootCalculator = null)
         {
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _transactionStore = transactionStore ?? throw new ArgumentNullException(nameof(transactionStore));

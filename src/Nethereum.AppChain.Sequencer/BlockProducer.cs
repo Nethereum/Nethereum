@@ -18,7 +18,7 @@ namespace Nethereum.AppChain.Sequencer
             IAppChain appChain,
             TransactionProcessor transactionProcessor,
             IBlockProductionStrategy? strategy = null,
-            CoreChain.IncrementalStateRootCalculator? stateRootCalculator = null)
+            CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null)
         {
             if (appChain == null) throw new ArgumentNullException(nameof(appChain));
             if (transactionProcessor == null) throw new ArgumentNullException(nameof(transactionProcessor));
