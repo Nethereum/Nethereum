@@ -108,22 +108,32 @@ namespace Nethereum.Merkle.Binary
 
         public void SaveToStorage(IBinaryTrieStorage storage)
         {
-            SaveNode(_root, storage);
+            SaveNode(_root, storage, 0);
         }
 
-        private void SaveNode(IBinaryNode node, IBinaryTrieStorage storage)
+        private void SaveNode(IBinaryNode node, IBinaryTrieStorage storage, int depth)
         {
             if (node is EmptyBinaryNode || node is HashedBinaryNode)
                 return;
 
             var hash = node.ComputeHash(_hashProvider);
             var encoded = CompactBinaryNodeCodec.Encode(node, _hashProvider);
-            storage.Put(hash, encoded);
+
+            if (storage is IBinaryTrieNodeStore nodeStore)
+            {
+                byte nodeType = node is StemBinaryNode ? BinaryTrieConstants.NodeTypeStem : BinaryTrieConstants.NodeTypeInternal;
+                byte[] stem = node is StemBinaryNode stemNode ? stemNode.Stem : null;
+                nodeStore.PutNode(hash, encoded, depth, nodeType, stem);
+            }
+            else
+            {
+                storage.Put(hash, encoded);
+            }
 
             if (node is InternalBinaryNode internalNode)
             {
-                SaveNode(internalNode.Left, storage);
-                SaveNode(internalNode.Right, storage);
+                SaveNode(internalNode.Left, storage, depth + 1);
+                SaveNode(internalNode.Right, storage, depth + 1);
             }
         }
 
