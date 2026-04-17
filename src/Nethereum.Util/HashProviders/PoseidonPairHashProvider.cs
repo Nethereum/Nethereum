@@ -28,7 +28,9 @@ namespace Nethereum.Util.HashProviders
                 return _hasher.HashBytesToBytes(left, right);
             }
 
-            return _hasher.HashBytesToBytes(data);
+            throw new ArgumentException(
+                $"PoseidonPairHashProvider expects 32 or 64 bytes (CircomT2 with 1 or 2 inputs), got {data.Length}",
+                nameof(data));
         }
     }
 }

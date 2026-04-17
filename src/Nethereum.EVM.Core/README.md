@@ -149,6 +149,8 @@ Merkle proofs), and execution flags.
 [u8  flags]        bit0 VerifyWitnessProofs
                    bit1 ComputePostStateRoot
                    bit2 ProduceBlockCommitments
+                   bit3 StateTree (0=Patricia, 1=Binary EIP-7864)
+                   bit4-5 HashFunction (00=Keccak, 01=Blake3, 10=Poseidon, 11=Sha256)
 [u8  fork]         HardforkName — Unspecified rejected on both sides
 [BlockContext]     number, ts, baseFee, gasLimit, chainId, coinbase,
                    difficulty, parentHash, extraData, mixHash, nonce

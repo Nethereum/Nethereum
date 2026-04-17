@@ -141,7 +141,11 @@ namespace Nethereum.EVM.Zisk
                 else if (features.HashFunction == WitnessHashFunction.Sha256)
                     hashProvider = new Sha256HashProvider();
                 else
-                    hashProvider = new Blake3HashProvider();
+                {
+                    ZiskIO.Write("BIN:unknown hash "); ZiskIO.WriteLong((int)features.HashFunction); ZiskIO.Write('\n');
+                    ZiskIO.SetOutput(0, 4);
+                    return new PatriciaStateRootCalculator(encoding);
+                }
                 return new BinaryStateRootCalculator(hashProvider);
             }
             return new PatriciaStateRootCalculator(encoding);

@@ -17,11 +17,13 @@ The guest pipeline:
 3. **Registry** — `MainnetHardforkRegistry.Build(ZiskPrecompileBackends.Instance)`
    builds a fork registry wired with witness-backed crypto (see
    Backends section). Osaka is omitted unless a P256Verify backend is
-   supplied — today it is not, so the guest supports Frontier → Prague.
+   supplied — today it is not, so Osaka runs with Prague-level
+   precompiles (all forks Frontier → Osaka available).
 4. **Execute** — `BlockExecutor.Execute` (the `#if EVM_SYNC` sync
    build) walks transactions, computes state roots via
-   `PatriciaStateRootCalculator`, and populates receipts / block
-   commitments.
+   `PatriciaStateRootCalculator` or `BinaryStateRootCalculator`
+   (selected by witness `Features.StateTree`), and populates
+   receipts / block commitments.
 5. **Output** — `ZiskIO.SetOutput(slot, value)` emits: result flag,
    cumulative gas (2 × 32-bit), block hash (8 slots), state root
    (8 slots), transactions root (8 slots), receipts root (8 slots),
@@ -57,8 +59,22 @@ bundle whose fields route to witness-backed native Zisk operations:
 
 P256Verify is not yet wired (the Zisk runtime doesn't yet ship a
 P/Invoke binding). `MainnetHardforkRegistry.Build` detects a `null`
-`P256Verify` backend and omits the Osaka fork registration, leaving
-Frontier → Prague available to the guest.
+`P256Verify` backend and registers Osaka with Prague-level precompiles
+(all Osaka EVM rules active, just the P256 precompile at 0x100 absent).
+
+## State Tree Selection
+
+The witness `BlockFeatureConfig.StateTree` field selects the trie:
+
+| StateTree | HashFunction | Calculator |
+|-----------|-------------|-----------|
+| Patricia (default) | Keccak | `PatriciaStateRootCalculator` |
+| Binary (EIP-7864) | Blake3 | `BinaryStateRootCalculator(Blake3HashProvider)` |
+| Binary | Poseidon | `BinaryStateRootCalculator(PoseidonPairHashProvider)` |
+| Binary | Sha256 | `BinaryStateRootCalculator(Sha256HashProvider)` |
+
+Poseidon uses `PoseidonEvmHasher` — fully BigInteger-free via
+`PoseidonCore<EvmUInt256>` with precomputed BN254 round constants.
 
 ## Guest entry point
 

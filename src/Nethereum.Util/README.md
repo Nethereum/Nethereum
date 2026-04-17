@@ -696,6 +696,27 @@ public enum PoseidonParameterPreset
 }
 ```
 
+### PoseidonEvmHasher
+
+BigInteger-free Poseidon using `EvmUInt256` field arithmetic. Designed for
+NativeAOT and zkVM builds where `System.Runtime.Numerics` cannot be linked.
+Uses precomputed round constants (no runtime parameter generation).
+
+```csharp
+public class PoseidonEvmHasher
+{
+    public PoseidonEvmHasher();                                  // Default (CircomT3)
+    public PoseidonEvmHasher(PoseidonParameterPreset preset);    // Specific preset
+
+    public EvmUInt256 Hash(params EvmUInt256[] inputs);          // Hash field elements
+    public byte[] HashBytesToBytes(params byte[][] inputs);      // Bytes in, bytes out
+}
+```
+
+Both `PoseidonHasher` (BigInteger API) and `PoseidonEvmHasher` (EvmUInt256 API)
+share the same generic permutation via `PoseidonCore<T>` parameterised by
+`IPoseidonFieldOps<T>`. Cross-validated to produce identical results.
+
 ### IHashProvider
 
 Pluggable hash provider interface.
@@ -708,7 +729,9 @@ public interface IHashProvider
 
 // Implementations:
 // - Sha3KeccackHashProvider (Keccak-256)
-// - PoseidonHashProvider (Poseidon with configurable preset)
+// - Sha256HashProvider (SHA-256)
+// - PoseidonHashProvider (Poseidon, uses PoseidonEvmHasher internally)
+// - PoseidonPairHashProvider (Poseidon CircomT2, expects 32 or 64-byte input)
 ```
 
 ### Additional Utilities
