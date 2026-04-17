@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.EVM.Core\Nethereum.EVM.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Binary\Nethereum.Merkle.Binary.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles\Nethereum.EVM.Precompiles.csproj" />
@@ -23,6 +24,7 @@
     <Compile Include="..\..\src\Nethereum.CoreChain\PatriciaStateRootCalculator.cs" Link="PatriciaStateRootCalculator.cs" />
     <Compile Include="..\..\src\Nethereum.CoreChain\PatriciaMerkleTreeBuilder.cs" Link="PatriciaMerkleTreeBuilder.cs" />
     <Compile Include="..\..\src\Nethereum.CoreChain\PatriciaBlockRootCalculator.cs" Link="PatriciaBlockRootCalculator.cs" />
+    <Compile Include="..\..\src\Nethereum.CoreChain\BinaryStateRootCalculator.cs" Link="BinaryStateRootCalculator.cs" />
     <Compile Include="..\..\src\Nethereum.CoreChain\StatelessStateRootCalculator.cs" Link="StatelessStateRootCalculator.cs" />
     <Compile Include="..\..\src\Nethereum.CoreChain\WitnessProofVerifier.cs" Link="WitnessProofVerifier.cs" />
   </ItemGroup>
