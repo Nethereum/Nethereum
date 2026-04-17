@@ -261,7 +261,7 @@ namespace Nethereum.Util
             if (a < b) { quotient = Zero; remainder = a; return; }
             if (a == b) { quotient = One; remainder = Zero; return; }
 
-            if (b._u3 == 0 && b._u2 == 0 && b._u1 == 0)
+            if (b._u3 == 0 && b._u2 == 0 && b._u1 == 0 && b._u0 <= 0xFFFFFFFF)
             {
                 ulong d = b._u0;
                 ulong rem = 0;
