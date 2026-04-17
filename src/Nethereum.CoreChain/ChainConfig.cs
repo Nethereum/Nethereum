@@ -1,7 +1,9 @@
 using System.Numerics;
+using Nethereum.CoreChain.Storage;
 using Nethereum.EVM;
 using Nethereum.EVM.Precompiles;
 using Nethereum.Merkle.Binary.Hashing;
+using Nethereum.Merkle.Binary.Storage;
 using Nethereum.Model;
 using Nethereum.Util;
 using Nethereum.Util.HashProviders;
@@ -32,6 +34,20 @@ namespace Nethereum.CoreChain
                     StateTreeHashProvider ?? new Blake3HashProvider()),
                 _ => new PatriciaStateRootCalculator(new RlpBlockEncodingProvider())
             };
+        }
+
+        public IncrementalStateRootCalculator CreateIncrementalStateRootCalculator(
+            IStateStore stateStore, ITrieNodeStore trieNodeStore = null)
+        {
+            return new IncrementalStateRootCalculator(stateStore, trieNodeStore,
+                new Sha3KeccackHashProvider());
+        }
+
+        public BinaryIncrementalStateRootCalculator CreateBinaryIncrementalStateRootCalculator(
+            IStateStore stateStore, IBinaryTrieStorage trieStorage = null)
+        {
+            return new BinaryIncrementalStateRootCalculator(stateStore,
+                StateTreeHashProvider ?? new Blake3HashProvider(), trieStorage);
         }
     }
 }
