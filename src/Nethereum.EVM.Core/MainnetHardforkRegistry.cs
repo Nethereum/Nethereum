@@ -74,14 +74,21 @@ namespace Nethereum.EVM
                 .WithPrecompiles(PrecompileRegistries.PragueBase(
                     backends.EcRecover, backends.Sha256, backends.Ripemd160, backends.ModExp, backends.Bn128, backends.Blake2f)));
 
-            // Osaka: adds P256VERIFY (EIP-7951). Registered only when a P256Verify
-            // backend is supplied — environments without one (e.g. zkVMs lacking a
-            // P256 binding) register Frontier→Prague only.
+            // Osaka: adds P256VERIFY (EIP-7951) when available. When P256Verify is
+            // null (e.g. zkVMs lacking a P256 binding), Osaka is still registered
+            // with Prague-level precompiles so the fork's EVM rules (opcodes, gas)
+            // are available — only the P256 precompile at 0x100 is absent.
             if (backends.P256Verify != null)
             {
                 r.Register(HardforkName.Osaka, HardforkConfig.Osaka
                     .WithPrecompiles(PrecompileRegistries.OsakaBase(
                         backends.EcRecover, backends.Sha256, backends.Ripemd160, backends.ModExp, backends.Bn128, backends.Blake2f, backends.P256Verify)));
+            }
+            else
+            {
+                r.Register(HardforkName.Osaka, HardforkConfig.Osaka
+                    .WithPrecompiles(PrecompileRegistries.PragueBase(
+                        backends.EcRecover, backends.Sha256, backends.Ripemd160, backends.ModExp, backends.Bn128, backends.Blake2f)));
             }
 
             return r;

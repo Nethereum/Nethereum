@@ -33,11 +33,19 @@ namespace Nethereum.EVM.Witness
             using var w = new BinaryWriter(ms);
 
             w.Write(VERSION);
-            // Flags byte: bit 0 = VerifyWitnessProofs, bit 1 = ComputePostStateRoot, bit 2 = ProduceBlockCommitments
+            // Flags byte:
+            //   bit 0: VerifyWitnessProofs
+            //   bit 1: ComputePostStateRoot
+            //   bit 2: ProduceBlockCommitments
+            //   bit 3: StateTree (0=Patricia, 1=Binary)
+            //   bit 4-5: HashFunction (00=Keccak, 01=Blake3, 10=Poseidon, 11=Sha256)
             byte flags = 0;
             if (data.VerifyWitnessProofs) flags |= 1;
             if (data.ComputePostStateRoot) flags |= 2;
             if (data.ProduceBlockCommitments) flags |= 4;
+            var features = data.Features ?? new BlockFeatureConfig();
+            if (features.StateTree == WitnessStateTreeType.Binary) flags |= 8;
+            flags |= (byte)(((byte)features.HashFunction & 0x03) << 4);
             w.Write(flags);
 
             // Fork (HardforkName enum, required)
@@ -115,11 +123,19 @@ namespace Nethereum.EVM.Witness
             result.ComputePostStateRoot = (flags & 2) != 0;
             result.ProduceBlockCommitments = (flags & 4) != 0;
 
+            var stateTree = (flags & 8) != 0 ? WitnessStateTreeType.Binary : WitnessStateTreeType.Patricia;
+            var hashFunction = (WitnessHashFunction)((flags >> 4) & 0x03);
+
             // Fork
             var fork = (HardforkName)data[offset++];
             if (fork == HardforkName.Unspecified)
                 throw new InvalidOperationException("Witness has Fork=Unspecified — producer did not stamp a fork.");
-            result.Features = new BlockFeatureConfig { Fork = fork };
+            result.Features = new BlockFeatureConfig
+            {
+                Fork = fork,
+                StateTree = stateTree,
+                HashFunction = hashFunction
+            };
 
             // Block context
             result.BlockNumber = (long)BinaryWitness.ReadU64(data, ref offset);
