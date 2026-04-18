@@ -59,5 +59,10 @@ namespace Nethereum.Zisk.Core
 
         [DllImport("__Internal")]
         public static extern byte bls12_381_fp2_to_g2_c(byte[] ret, byte[] fp2);
+
+        // TODO: Raw Zisk precompile syscalls (zkvm_poseidon2, zkvm_keccakf, etc.)
+        // Adding DllImport for zkvm_* symbols from zisk_syscalls.S currently causes
+        // the NativeAOT linker to emit code triggering an invalid DMA memcpy sequence.
+        // Needs investigation with the bflat RISC-V linker before enabling.
     }
 }

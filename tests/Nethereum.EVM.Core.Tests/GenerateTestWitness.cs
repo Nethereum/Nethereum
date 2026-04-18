@@ -53,10 +53,20 @@ namespace Nethereum.EVM.Core.Tests
             Assert.Equal(block.Accounts.Count, deserialized.Accounts.Count);
         }
 
-        [Fact]
-        public void GenerateBinaryTrieBlake3Witness()
+        [Theory]
+        [InlineData("blake3", WitnessHashFunction.Blake3)]
+        [InlineData("poseidon", WitnessHashFunction.Poseidon)]
+        public void GenerateBinaryTrieWitness(string name, WitnessHashFunction hashFunction)
         {
             var contractCode = new byte[] { 0x60, 0x42, 0x60, 0x00, 0x55, 0x00 };
+
+            var features = new BlockFeatureConfig
+            {
+                Fork = HardforkName.Osaka,
+                MaxBlobsPerBlock = 9,
+                StateTree = WitnessStateTreeType.Binary,
+                HashFunction = hashFunction
+            };
 
             var block = new BlockWitnessData
             {
@@ -66,7 +76,7 @@ namespace Nethereum.EVM.Core.Tests
                 Difficulty = new byte[32], ParentHash = new byte[32],
                 ExtraData = new byte[0], MixHash = new byte[32], Nonce = new byte[8],
                 ProduceBlockCommitments = true, ComputePostStateRoot = true,
-                Features = BlockFeatureConfig.BinaryBlake3(),
+                Features = features,
                 Transactions = new List<BlockWitnessTransaction>
                 {
                     TestTransactionHelper.CreateSignedContractCall(CONTRACT, new byte[0], EvmUInt256.Zero, 0, 10, 100000, SENDER_KEY)
@@ -81,7 +91,7 @@ namespace Nethereum.EVM.Core.Tests
             var bytes = BinaryBlockWitness.Serialize(block);
             var outputPath = Path.Combine(
                 Path.GetDirectoryName(typeof(GenerateTestWitness).Assembly.Location),
-                "..", "..", "..", "..", "..", "zisk", "output", "test_sstore_binary_blake3.bin");
+                "..", "..", "..", "..", "..", "zisk", "output", $"test_sstore_binary_{name}.bin");
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, bytes);
@@ -91,7 +101,7 @@ namespace Nethereum.EVM.Core.Tests
 
             var deserialized = BinaryBlockWitness.Deserialize(bytes);
             Assert.Equal(WitnessStateTreeType.Binary, deserialized.Features.StateTree);
-            Assert.Equal(WitnessHashFunction.Blake3, deserialized.Features.HashFunction);
+            Assert.Equal(hashFunction, deserialized.Features.HashFunction);
         }
     }
 }
