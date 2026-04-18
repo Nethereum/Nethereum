@@ -111,31 +111,42 @@ Serving patterns:
 
 **Native Poseidon2 in Zisk guest — BLOCKER IDENTIFIED (2026-04-18):**
 
-`zkvm_poseidon2` (CSR 0x812) exists in `zisk_syscalls.S` and is linked in `libziskos.a`.
-Adding `[DllImport("__Internal")] extern void zkvm_poseidon2(ulong* state)` causes the
-NativeAOT linker to extract `zisk_syscalls.o` from the archive, which includes
-`zkvm_dma_memcpy` (CSR 0x813). The .NET runtime's `memcpy` is `--wrap`'d to route
-through `zkvm_dma_memcpy`, but the instruction sequence (`csrs; ret`) doesn't match
-what the Zisk transpiler expects (`csrs; addi` for DMA protocol). This breaks ALL
-witness types, not just Poseidon.
+Root cause: ANY new `[DllImport("__Internal")]` declaration triggers NativeAOT to
+generate a P/Invoke thunk that uses `memcpy` in its codegen. The runtime's `memcpy`
+is `--wrap`'d to `zkvm_dma_memcpy` (CSR 0x813), but the Zisk transpiler rejects the
+instruction sequence (`csrs; ret` instead of `csrs; addi` DMA protocol). This breaks
+ALL witnesses, not just Poseidon. Existing DllImports (keccak256_c etc.) work because
+they were present in the original NativeAOT compilation and don't trigger new thunks.
 
-Fix options:
-- **Option A**: Write our own `zisk_syscalls.S` WITHOUT `zkvm_dma_memcpy`/`zkvm_dma_memcmp`
-  (omit CSR 0x813/0x814). Linking `zkvm_poseidon2` won't pull in DMA symbols.
-- **Option B**: Inline RISC-V assembly in C# (`[MethodImpl(MethodImplOptions.InternalCall)]`
-  or custom ILC intrinsic) to emit `csrs 0x812, a0` directly — bypasses DllImport entirely.
-- **Option C**: Patch bflat's `--wrap memcpy` to not route through `zkvm_dma_memcpy`.
+Attempted fixes (all verified):
+- ❌ Separate `.a` with only `zkvm_poseidon2` (no DMA symbols) — still crashes
+- ❌ C wrapper (`poseidon2_c` calling `zkvm_poseidon2`) in separate `.a` — still crashes
+- ❌ `unsafe ulong*` parameters (no array marshalling) — still crashes
+- ✅ Trivial stub (no DllImport, `return new byte[32]`) — works
+- ✅ No `ZiskPoseidonHashProvider.cs` in build — works
+
+Conclusion: the DllImport THUNK is the problem, not the symbol resolution.
+
+Fix options (for next session):
+- **Option A**: Add `poseidon2_c` to the Rust runtime in `libziskos.a` (same pattern as
+  `keccak256_c`) — then the DllImport resolves from the same object file as existing
+  wrappers, which already have working thunks. Contribute upstream to NethermindEth/bflat-libziskos.
+- **Option B**: Use `calli` / `Marshal.GetDelegateForFunctionPointer` in C# to call
+  `poseidon2_c` address without generating a DllImport thunk.
+- **Option C**: Fork `bflat-libziskos`, add `poseidon2_c` to the Rust `zisklib/lib/` and
+  rebuild `libziskos.a` with it included.
 
 Current state:
-- [x] `ZiskPoseidonHashProvider` exists as stub (throws NotSupportedException)
-- [x] Managed Poseidon (`PoseidonEvmHasher`) works in .NET tests, NOT in Zisk guest
-  (large static array init triggers DMA memcpy + NativeAOT devirt issues)
+- [x] `ZiskPoseidonHashProvider` exists as trivial stub (`new byte[32]`)
+- [x] `nethereum_syscalls.S` + `nethereum_poseidon2.c` in `zisk/` (assembly + C wrapper)
+- [x] `build.sh` assembles + compiles into `libnethereum_precompiles.a`
+- [x] Managed Poseidon (`PoseidonEvmHasher`) works in .NET tests, cross-validated
 - [x] Blake3 binary trie works in Zisk guest (BIN:OK)
-- [x] `ZiskCrypto.cs` has raw syscall P/Invokes documented but disabled
-- [ ] Resolve DMA memcpy linker issue (Option A recommended — simplest)
+- [x] Patricia works in Zisk guest (BIN:OK)
+- [ ] Resolve DllImport thunk memcpy issue (Option A or C recommended)
 - [ ] Wire native `zkvm_poseidon2` into `ZiskPoseidonHashProvider`
 - [ ] Also wire `zkvm_secp256r1_add`/`_dbl` for P256Verify (Osaka)
-- [ ] Consider native keccak/sha256 via `zkvm_keccakf`/`zkvm_sha256f` for perf
+- [ ] Native keccak/sha256 via `zkvm_keccakf`/`zkvm_sha256f` for perf
 
 Separated proving (after native crypto works):
 - [ ] Tree-only prover: proves state root transition (Poseidon, fast, local)

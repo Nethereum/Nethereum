@@ -175,7 +175,7 @@ bflat build $SRC \
     --no-exception-messages \
     -Os --no-pie \
     -d EVM_SYNC \
-    '"$EXTLIB_FLAG"' '"$NETHEREUM_EXTLIB"' \
+    '"$EXTLIB_FLAG"' $NETHEREUM_EXTLIB \
     -o /src/'"$OUTPUT_DIR"'/'"$OUTPUT_NAME"'_raw
 '
 
