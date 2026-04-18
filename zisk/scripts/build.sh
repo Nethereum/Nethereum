@@ -150,6 +150,23 @@ done
 # RLP (all)
 for f in $(find /src/src/Nethereum.RLP -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -path "*/Properties/*" 2>/dev/null); do SRC="$SRC $f"; done
 
+# Assemble Nethereum syscalls (poseidon2 etc. — separate from libziskos to avoid DMA symbols)
+NETHEREUM_EXTLIB=""
+if [ -f /src/zisk/nethereum_syscalls.S ]; then
+    riscv64-linux-gnu-as --march=rv64ima --mabi=lp64 /src/zisk/nethereum_syscalls.S -o /tmp/nethereum_syscalls.o
+    riscv64-linux-gnu-gcc -c -march=rv64ima -mabi=lp64 -O2 -fno-builtin /src/zisk/nethereum_poseidon2.c -o /tmp/nethereum_poseidon2.o
+    riscv64-linux-gnu-ar rcs /tmp/libnethereum_precompiles.a /tmp/nethereum_syscalls.o /tmp/nethereum_poseidon2.o
+    cat > /tmp/nethereum_precompiles.bflat.manifest << MANIFEST
+{
+  "name": "nethereum_precompiles",
+  "package_version": "1.0.0",
+  "builds": [{ "arch": "riscv64", "os": "linux", "libc": "zisk", "static_lib": "/tmp/libnethereum_precompiles.a" }]
+}
+MANIFEST
+    NETHEREUM_EXTLIB="--extlib /tmp/nethereum_precompiles.bflat.manifest"
+    echo "[BUILD] Assembled nethereum_precompiles.a"
+fi
+
 echo "[BUILD] Compiling $(echo $SRC | wc -w) source files..."
 
 bflat build $SRC \
@@ -158,7 +175,7 @@ bflat build $SRC \
     --no-exception-messages \
     -Os --no-pie \
     -d EVM_SYNC \
-    '"$EXTLIB_FLAG"' \
+    '"$EXTLIB_FLAG"' '"$NETHEREUM_EXTLIB"' \
     -o /src/'"$OUTPUT_DIR"'/'"$OUTPUT_NAME"'_raw
 '
 

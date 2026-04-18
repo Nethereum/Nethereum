@@ -10,51 +10,26 @@ namespace Nethereum.Zisk.Core
         private const int DIGEST_LONGS = 4;
 
         [DllImport("__Internal")]
-        private static extern unsafe void zkvm_poseidon2(ulong* state);
+        private static extern unsafe void poseidon2_c(ulong* state);
 
         public byte[] ComputeHash(byte[] data)
         {
             if (data == null || data.Length == 0)
-                return HashEmpty();
-
+                return DoHash(null, 0, null, 0);
             if (data.Length == 32)
-                return HashSingle(data);
-
+                return DoHash(data, 0, null, 0);
             if (data.Length == 64)
-                return HashPair(data);
-
+                return DoHash(data, 0, data, 32);
             return HashGeneric(data);
         }
 
-        private static unsafe void Permute(ulong* state)
-        {
-            zkvm_poseidon2(state);
-        }
-
-        private static unsafe byte[] HashEmpty()
+        private static unsafe byte[] DoHash(byte[] a, int aOff, byte[] b, int bOff)
         {
             var state = stackalloc ulong[STATE_WIDTH];
             for (int i = 0; i < STATE_WIDTH; i++) state[i] = 0;
-            Permute(state);
-            return ExtractDigest(state);
-        }
-
-        private static unsafe byte[] HashSingle(byte[] data)
-        {
-            var state = stackalloc ulong[STATE_WIDTH];
-            for (int i = 0; i < STATE_WIDTH; i++) state[i] = 0;
-            AbsorbBytes(state, data, 0, 32);
-            Permute(state);
-            return ExtractDigest(state);
-        }
-
-        private static unsafe byte[] HashPair(byte[] data)
-        {
-            var state = stackalloc ulong[STATE_WIDTH];
-            for (int i = 0; i < STATE_WIDTH; i++) state[i] = 0;
-            AbsorbBytes(state, data, 0, 32);
-            AbsorbBytes(state, data, 32, 32);
-            Permute(state);
+            if (a != null) AbsorbBytes(state, a, aOff, 32);
+            if (b != null) AbsorbBytes(state, b, bOff, 32);
+            poseidon2_c(state);
             return ExtractDigest(state);
         }
 
@@ -69,24 +44,21 @@ namespace Nethereum.Zisk.Core
             {
                 int chunkSize = data.Length - offset;
                 if (chunkSize > 8) chunkSize = 8;
-
                 ulong val = 0;
                 for (int i = 0; i < chunkSize; i++)
                     val |= (ulong)data[offset + i] << (i * 8);
-
                 state[rateIndex] ^= val;
                 offset += chunkSize;
                 rateIndex++;
-
                 if (rateIndex == RATE)
                 {
-                    Permute(state);
+                    poseidon2_c(state);
                     rateIndex = 0;
                 }
             }
 
             if (rateIndex > 0)
-                Permute(state);
+                poseidon2_c(state);
 
             return ExtractDigest(state);
         }
@@ -96,16 +68,13 @@ namespace Nethereum.Zisk.Core
             int stateIdx = 0;
             int pos = dataOffset;
             int end = dataOffset + length;
-
             while (pos < end && stateIdx < RATE)
             {
                 int chunkSize = end - pos;
                 if (chunkSize > 8) chunkSize = 8;
-
                 ulong val = 0;
                 for (int i = 0; i < chunkSize; i++)
                     val |= (ulong)data[pos + i] << (i * 8);
-
                 state[stateIdx] ^= val;
                 pos += chunkSize;
                 stateIdx++;
