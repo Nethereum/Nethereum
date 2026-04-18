@@ -107,9 +107,37 @@ Serving patterns:
 - [ ] Extend `BinaryTrieProver` for batch proofs
 - [ ] Diff verification: apply `BinaryTrieStateDiff` + verify post-state root
 
-### Phase 3 — Zisk v2 (Separated Proving)
-- [ ] Poseidon precompile backend for Zisk guest
-- [ ] BinaryTrieStateDiff deserialization in guest
+### Phase 3 — Zisk Native Crypto + Separated Proving
+
+**Native Poseidon2 in Zisk guest — BLOCKER IDENTIFIED (2026-04-18):**
+
+`zkvm_poseidon2` (CSR 0x812) exists in `zisk_syscalls.S` and is linked in `libziskos.a`.
+Adding `[DllImport("__Internal")] extern void zkvm_poseidon2(ulong* state)` causes the
+NativeAOT linker to extract `zisk_syscalls.o` from the archive, which includes
+`zkvm_dma_memcpy` (CSR 0x813). The .NET runtime's `memcpy` is `--wrap`'d to route
+through `zkvm_dma_memcpy`, but the instruction sequence (`csrs; ret`) doesn't match
+what the Zisk transpiler expects (`csrs; addi` for DMA protocol). This breaks ALL
+witness types, not just Poseidon.
+
+Fix options:
+- **Option A**: Write our own `zisk_syscalls.S` WITHOUT `zkvm_dma_memcpy`/`zkvm_dma_memcmp`
+  (omit CSR 0x813/0x814). Linking `zkvm_poseidon2` won't pull in DMA symbols.
+- **Option B**: Inline RISC-V assembly in C# (`[MethodImpl(MethodImplOptions.InternalCall)]`
+  or custom ILC intrinsic) to emit `csrs 0x812, a0` directly — bypasses DllImport entirely.
+- **Option C**: Patch bflat's `--wrap memcpy` to not route through `zkvm_dma_memcpy`.
+
+Current state:
+- [x] `ZiskPoseidonHashProvider` exists as stub (throws NotSupportedException)
+- [x] Managed Poseidon (`PoseidonEvmHasher`) works in .NET tests, NOT in Zisk guest
+  (large static array init triggers DMA memcpy + NativeAOT devirt issues)
+- [x] Blake3 binary trie works in Zisk guest (BIN:OK)
+- [x] `ZiskCrypto.cs` has raw syscall P/Invokes documented but disabled
+- [ ] Resolve DMA memcpy linker issue (Option A recommended — simplest)
+- [ ] Wire native `zkvm_poseidon2` into `ZiskPoseidonHashProvider`
+- [ ] Also wire `zkvm_secp256r1_add`/`_dbl` for P256Verify (Osaka)
+- [ ] Consider native keccak/sha256 via `zkvm_keccakf`/`zkvm_sha256f` for perf
+
+Separated proving (after native crypto works):
 - [ ] Tree-only prover: proves state root transition (Poseidon, fast, local)
 - [ ] Execution prover: proves EVM correctness (outsourceable, stateless)
 - [ ] Proof composition: tree proof + execution proof → single verifiable proof

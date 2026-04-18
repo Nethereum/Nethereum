@@ -137,7 +137,7 @@ namespace Nethereum.EVM.Zisk
                 if (features.HashFunction == WitnessHashFunction.Blake3)
                     hashProvider = new Blake3HashProvider();
                 else if (features.HashFunction == WitnessHashFunction.Poseidon)
-                    hashProvider = new PoseidonPairHashProvider();
+                    hashProvider = new Nethereum.Zisk.Core.ZiskPoseidonHashProvider();
                 else if (features.HashFunction == WitnessHashFunction.Sha256)
                     hashProvider = new Sha256HashProvider();
                 else
