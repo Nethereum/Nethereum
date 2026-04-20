@@ -58,9 +58,6 @@ mkdir -p ~/tools
 if [ ! -d ~/tools/bflat-riscv64 ]; then
     git clone --branch nethereum --depth 1 https://github.com/Nethereum/bflat-riscv64.git ~/tools/bflat-riscv64
 fi
-if [ ! -d ~/tools/bflat-libziskos ]; then
-    git clone --depth 1 https://github.com/NethermindEth/bflat-libziskos.git ~/tools/bflat-libziskos
-fi
 echo "DONE: tools cloned"
 
 echo ""

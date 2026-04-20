@@ -66,7 +66,11 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 
         [Fact]
         public void ZiskEmu_stPreCompiledContracts()
-            => _runner.RunCategoryZiskEmu("stPreCompiledContracts", maxTests: 3);
+            => _runner.RunCategoryZiskEmu("stPreCompiledContracts", maxTests: 100);
+
+        [Fact]
+        public void ZiskEmu_stPreCompiledContracts2()
+            => _runner.RunCategoryZiskEmu("stPreCompiledContracts2", maxTests: 100);
 
         [Fact]
         public void ZiskEmu_stShift()

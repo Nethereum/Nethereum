@@ -139,7 +139,9 @@ namespace Nethereum.EVM.Zisk
                 else if (features.HashFunction == WitnessHashFunction.Poseidon)
                     hashProvider = new Nethereum.Zisk.Core.ZiskPoseidonHashProvider();
                 else if (features.HashFunction == WitnessHashFunction.Sha256)
-                    hashProvider = new Sha256HashProvider();
+                    hashProvider = new Nethereum.Zisk.Core.ZiskSha256HashProvider();
+                else if (features.HashFunction == WitnessHashFunction.Keccak)
+                    hashProvider = new Nethereum.Zisk.Core.ZiskKeccakHashProvider();
                 else
                 {
                     ZiskIO.Write("BIN:unknown hash "); ZiskIO.WriteLong((int)features.HashFunction); ZiskIO.Write('\n');

@@ -513,7 +513,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             var psi = new ProcessStartInfo
             {
                 FileName = "wsl",
-                Arguments = $"-d Ubuntu -e bash -c \"export PATH=$HOME/.zisk/bin:$HOME/.cargo/bin:$PATH && ziskemu -e {wslElf} --legacy-inputs {wslWitness} -n 100000000\"",
+                Arguments = $"-d Ubuntu -e bash -c \"export PATH=$HOME/.zisk/bin:$HOME/.cargo/bin:$PATH && ziskemu -e {wslElf} --legacy-inputs {wslWitness} -n 500000000\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = false,
@@ -522,7 +522,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 
             var process = Process.Start(psi);
             var output = process.StandardOutput.ReadToEnd();
-            if (!process.WaitForExit(120000))
+            if (!process.WaitForExit(300000))
             {
                 try { process.Kill(); } catch { }
                 return new ZiskResult { Error = "ziskemu timeout" };
@@ -565,7 +565,9 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         {
             var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
             if (projectRoot == null) return null;
-            var elfPath = Path.Combine(projectRoot, "scripts", "zisk-output", "nethereum_evm_elf");
+            var elfPath = Path.Combine(projectRoot, "zisk", "output", "nethereum_evm_elf");
+            if (File.Exists(elfPath)) return elfPath;
+            elfPath = Path.Combine(projectRoot, "scripts", "zisk-output", "nethereum_evm_elf");
             return File.Exists(elfPath) ? elfPath : null;
         }
 

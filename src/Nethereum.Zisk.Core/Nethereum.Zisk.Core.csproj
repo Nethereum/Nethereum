@@ -4,4 +4,7 @@
     <LangVersion>12.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+  </ItemGroup>
 </Project>
