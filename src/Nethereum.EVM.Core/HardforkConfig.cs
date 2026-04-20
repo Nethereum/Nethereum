@@ -76,63 +76,63 @@ namespace Nethereum.EVM
         }
 
         private static readonly HardforkConfig _frontier = Build(
-            IntrinsicGasRuleSets.Frontier, OpcodeHandlerSets.Frontier(),
+            IntrinsicGasRuleSets.Frontier, OpcodeHandlerSets.Frontier,
             codeDepositRule: FrontierCodeDepositRule.Instance,
             gasForwarding: FullGasForwarding.Instance, maxCodeSize: 0, maxInitcodeSize: 0, rejectEfPrefix: false, contractInitialNonce: 0,
             refundQuotient: 2, sstoreClearsSchedule: 15000, cleanEmptyAccounts: false);
         private static readonly HardforkConfig _homestead = Build(
-            IntrinsicGasRuleSets.Homestead, OpcodeHandlerSets.Homestead(),
+            IntrinsicGasRuleSets.Homestead, OpcodeHandlerSets.Homestead,
             gasForwarding: FullGasForwarding.Instance, maxCodeSize: 0, maxInitcodeSize: 0, rejectEfPrefix: false, contractInitialNonce: 0,
             refundQuotient: 2, sstoreClearsSchedule: 15000, cleanEmptyAccounts: false);
         private static readonly HardforkConfig _tangerineWhistle = Build(
-            IntrinsicGasRuleSets.TangerineWhistle, OpcodeHandlerSets.TangerineWhistle(),
+            IntrinsicGasRuleSets.TangerineWhistle, OpcodeHandlerSets.TangerineWhistle,
             maxCodeSize: 0, maxInitcodeSize: 0, rejectEfPrefix: false, contractInitialNonce: 0,
             refundQuotient: 2, sstoreClearsSchedule: 15000, cleanEmptyAccounts: false);
         private static readonly HardforkConfig _spuriousDragon = Build(
-            IntrinsicGasRuleSets.SpuriousDragon, OpcodeHandlerSets.SpuriousDragon(),
+            IntrinsicGasRuleSets.SpuriousDragon, OpcodeHandlerSets.SpuriousDragon,
             maxInitcodeSize: 0, rejectEfPrefix: false,
             refundQuotient: 2, sstoreClearsSchedule: 15000);
         private static readonly HardforkConfig _byzantium = Build(
-            IntrinsicGasRuleSets.Byzantium, OpcodeHandlerSets.Byzantium(),
+            IntrinsicGasRuleSets.Byzantium, OpcodeHandlerSets.Byzantium,
             maxInitcodeSize: 0, rejectEfPrefix: false,
             refundQuotient: 2, sstoreClearsSchedule: 15000);
         private static readonly HardforkConfig _constantinople = Build(
-            IntrinsicGasRuleSets.Constantinople, OpcodeHandlerSets.Constantinople(),
+            IntrinsicGasRuleSets.Constantinople, OpcodeHandlerSets.Constantinople,
             maxInitcodeSize: 0, rejectEfPrefix: false,
             refundQuotient: 2, sstoreClearsSchedule: 15000);
         private static readonly HardforkConfig _petersburg = Build(
-            IntrinsicGasRuleSets.Petersburg, OpcodeHandlerSets.Petersburg(),
+            IntrinsicGasRuleSets.Petersburg, OpcodeHandlerSets.Petersburg,
             maxInitcodeSize: 0, rejectEfPrefix: false,
             refundQuotient: 2, sstoreClearsSchedule: 15000);
         private static readonly HardforkConfig _istanbul = Build(
-            IntrinsicGasRuleSets.Istanbul, OpcodeHandlerSets.Istanbul(),
+            IntrinsicGasRuleSets.Istanbul, OpcodeHandlerSets.Istanbul,
             maxInitcodeSize: 0, rejectEfPrefix: false,
             refundQuotient: 2, sstoreClearsSchedule: 15000);
         private static readonly HardforkConfig _berlin = Build(
-            IntrinsicGasRuleSets.Berlin, OpcodeHandlerSets.Berlin(),
+            IntrinsicGasRuleSets.Berlin, OpcodeHandlerSets.Berlin,
             maxInitcodeSize: 0, rejectEfPrefix: false,
             refundQuotient: 2, sstoreClearsSchedule: 15000);
         private static readonly HardforkConfig _london = Build(
-            IntrinsicGasRuleSets.London, OpcodeHandlerSets.London(),
+            IntrinsicGasRuleSets.London, OpcodeHandlerSets.London,
             maxInitcodeSize: 0);
         private static readonly HardforkConfig _paris = Build(
-            IntrinsicGasRuleSets.Paris, OpcodeHandlerSets.Paris(),
+            IntrinsicGasRuleSets.Paris, OpcodeHandlerSets.Paris,
             maxInitcodeSize: 0);
         private static readonly HardforkConfig _shanghai = Build(
-            IntrinsicGasRuleSets.Shanghai, OpcodeHandlerSets.Shanghai());
+            IntrinsicGasRuleSets.Shanghai, OpcodeHandlerSets.Shanghai);
 
         private static readonly HardforkConfig _cancun = Build(
-            IntrinsicGasRuleSets.Cancun, OpcodeHandlerSets.Cancun(),
+            IntrinsicGasRuleSets.Cancun, OpcodeHandlerSets.Cancun,
             CallFrameInitRuleSets.Cancun, TransactionValidationRuleSets.Cancun, TransactionSetupRuleSets.Cancun,
             maxBlobs: 6);
 
         private static readonly HardforkConfig _prague = Build(
-            IntrinsicGasRuleSets.Prague, OpcodeHandlerSets.Prague(),
+            IntrinsicGasRuleSets.Prague, OpcodeHandlerSets.Prague,
             CallFrameInitRuleSets.Prague, TransactionValidationRuleSets.Prague, TransactionSetupRuleSets.Prague,
             maxBlobs: 9);
 
         private static readonly HardforkConfig _osaka = Build(
-            IntrinsicGasRuleSets.Osaka, OpcodeHandlerSets.Osaka(),
+            IntrinsicGasRuleSets.Osaka, OpcodeHandlerSets.Osaka,
             CallFrameInitRuleSets.Osaka, TransactionValidationRuleSets.Osaka, TransactionSetupRuleSets.Osaka,
             maxBlobs: 9);
 

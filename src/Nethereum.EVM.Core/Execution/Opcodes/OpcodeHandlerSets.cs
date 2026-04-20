@@ -189,10 +189,40 @@ namespace Nethereum.EVM.Execution.Opcodes
         }
 
         // ---------------------------------------------------------------
-        // Per-fork builders
+        // Per-fork handler tables — exposed as frozen static readonly
+        // singletons so every consumer shares one immutable instance per
+        // fork. HardforkConfig.Build (re-)freezes the reference it hands
+        // out, so even direct consumers of these fields cannot mutate
+        // them post-construction (Register* throws InvalidOperationException
+        // on frozen tables). Build* helpers remain private and return
+        // fresh mutable tables so the incremental fork chain
+        // (Osaka inherits Prague inherits Cancun ...) can layer changes
+        // without mutating a shared parent.
         // ---------------------------------------------------------------
 
-        public static OpcodeHandlerTable Frontier()
+        public static readonly OpcodeHandlerTable Frontier = BuildFrontier().Freeze();
+        public static readonly OpcodeHandlerTable Homestead = Frontier;
+        public static readonly OpcodeHandlerTable TangerineWhistle = BuildTangerineWhistle().Freeze();
+        public static readonly OpcodeHandlerTable SpuriousDragon = BuildSpuriousDragon().Freeze();
+        public static readonly OpcodeHandlerTable Byzantium = BuildByzantium().Freeze();
+        public static readonly OpcodeHandlerTable Constantinople = BuildConstantinople().Freeze();
+        public static readonly OpcodeHandlerTable Petersburg = Constantinople;
+        public static readonly OpcodeHandlerTable Istanbul = BuildIstanbul().Freeze();
+        public static readonly OpcodeHandlerTable Berlin = BuildBerlin().Freeze();
+        public static readonly OpcodeHandlerTable London = BuildLondon().Freeze();
+        public static readonly OpcodeHandlerTable Paris = London;
+        public static readonly OpcodeHandlerTable Shanghai = BuildShanghai().Freeze();
+        public static readonly OpcodeHandlerTable Cancun = BuildCancun().Freeze();
+        public static readonly OpcodeHandlerTable Prague = Cancun;
+        public static readonly OpcodeHandlerTable Osaka = BuildOsaka().Freeze();
+
+        // ---------------------------------------------------------------
+        // Private builders — return fresh mutable tables. Each non-alias
+        // fork calls its parent builder (not the frozen field) so layered
+        // mutations stay local to one chain.
+        // ---------------------------------------------------------------
+
+        private static OpcodeHandlerTable BuildFrontier()
         {
             var t = new OpcodeHandlerTable();
 
@@ -232,11 +262,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Homestead() => Frontier();
-
-        public static OpcodeHandlerTable TangerineWhistle()
+        private static OpcodeHandlerTable BuildTangerineWhistle()
         {
-            var t = Frontier();
+            var t = BuildFrontier();
             t.RegisterGas(Instruction.EXP, new ExpGasCost(byteCost: 10));
             t.RegisterGas(Instruction.BALANCE, new FixedGasCost(400));
             t.RegisterGas(Instruction.EXTCODESIZE, new FixedGasCost(700));
@@ -250,17 +278,17 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable SpuriousDragon()
+        private static OpcodeHandlerTable BuildSpuriousDragon()
         {
-            var t = TangerineWhistle();
+            var t = BuildTangerineWhistle();
             t.RegisterGas(Instruction.EXP, new ExpGasCost(byteCost: 50));
             t.RegisterGasAsync(Instruction.CALL, new CallGasCost(fixedAccessCost: 700, newAccountRequiresValue: true));
             return t;
         }
 
-        public static OpcodeHandlerTable Byzantium()
+        private static OpcodeHandlerTable BuildByzantium()
         {
-            var t = SpuriousDragon();
+            var t = BuildSpuriousDragon();
             t.RegisterGas(Instruction.RETURNDATASIZE, FixedGasCost.G2);
             t.RegisterGas(Instruction.RETURNDATACOPY, CopyGasCost.Instance);
             t.RegisterGas(Instruction.STATICCALL, new StaticCallGasCost(fixedAccessCost: 700));
@@ -274,9 +302,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Constantinople()
+        private static OpcodeHandlerTable BuildConstantinople()
         {
-            var t = Byzantium();
+            var t = BuildByzantium();
             t.RegisterGas(Instruction.SHL, FixedGasCost.G3);
             t.RegisterGas(Instruction.SHR, FixedGasCost.G3);
             t.RegisterGas(Instruction.SAR, FixedGasCost.G3);
@@ -294,11 +322,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Petersburg() => Constantinople();
-
-        public static OpcodeHandlerTable Istanbul()
+        private static OpcodeHandlerTable BuildIstanbul()
         {
-            var t = Constantinople();
+            var t = BuildConstantinople();
             t.RegisterGas(Instruction.SLOAD, new FixedGasCost(800));
             t.RegisterGasAsync(Instruction.SSTORE, new SstoreFixedGasCost(sloadGas: 800));
             t.RegisterGas(Instruction.BALANCE, new FixedGasCost(700));
@@ -316,9 +342,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Berlin()
+        private static OpcodeHandlerTable BuildBerlin()
         {
-            var t = Istanbul();
+            var t = BuildIstanbul();
             t.RegisterGas(Instruction.BALANCE, new AccountAccessGasCost(_eip2929Account));
             t.RegisterGas(Instruction.EXTCODESIZE, new AccountAccessGasCost(_eip2929Account));
             t.RegisterGas(Instruction.EXTCODEHASH, new AccountAccessGasCost(_eip2929Account));
@@ -333,9 +359,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable London()
+        private static OpcodeHandlerTable BuildLondon()
         {
-            var t = Berlin();
+            var t = BuildBerlin();
             t.RegisterGas(Instruction.BASEFEE, FixedGasCost.G2);
             // New executor capabilities
             var ctx = new ContextExecutor(_pe.CallInput, _pe.CallData, _pe.Code, _pe.BlockchainCurrentContractContext, hasChainId: true, hasBaseFee: true, hasBlobOps: false);
@@ -347,11 +373,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Paris() => London();
-
-        public static OpcodeHandlerTable Shanghai()
+        private static OpcodeHandlerTable BuildShanghai()
         {
-            var t = London();
+            var t = BuildLondon();
             t.RegisterGas(Instruction.PUSH0, FixedGasCost.G2);
             t.RegisterGas(Instruction.CREATE, new CreateGasCost(hasInitCodeWordGas: true));
             t.RegisterGas(Instruction.CREATE2, new Create2GasCost(hasInitCodeWordGas: true));
@@ -362,9 +386,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Cancun()
+        private static OpcodeHandlerTable BuildCancun()
         {
-            var t = Shanghai();
+            var t = BuildShanghai();
             t.RegisterGas(Instruction.TLOAD, FixedGasCost.G100);
             t.RegisterGas(Instruction.TSTORE, FixedGasCost.G100);
             t.RegisterGas(Instruction.MCOPY, MCopyGasCost.Instance);
@@ -388,16 +412,11 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable Prague()
+        private static OpcodeHandlerTable BuildOsaka()
         {
-            // BLOCKHASH semantics are the same across forks under the single-codepath
-            // EIP-2935 implementation; Cancun's table already has the correct executor.
-            return Cancun();
-        }
-
-        public static OpcodeHandlerTable Osaka()
-        {
-            var t = Prague();
+            // Prague has no opcode-layer changes over Cancun (EIP-2935 BLOCKHASH uses
+            // the same executor). Osaka layers CLZ on top.
+            var t = BuildCancun();
             t.RegisterGas(Instruction.CLZ, FixedGasCost.G5);
             var arith = new ArithmeticBitwiseExecutor(_pe.Arithmetic, _pe.Bitwise, hasShifts: true, hasClz: true);
             RegisterArithmeticBitwise(t, arith);
@@ -408,29 +427,5 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
-        public static OpcodeHandlerTable FromName(string hardfork)
-        {
-            if (string.IsNullOrEmpty(hardfork)) return Cancun();
-
-            return hardfork.ToLowerInvariant() switch
-            {
-                "frontier" => Frontier(),
-                "homestead" => Homestead(),
-                "tangerinewhistle" or "eip150" => TangerineWhistle(),
-                "spuriousdragon" or "eip158" => SpuriousDragon(),
-                "byzantium" => Byzantium(),
-                "constantinople" => Constantinople(),
-                "petersburg" or "constantinoplefix" => Petersburg(),
-                "istanbul" => Istanbul(),
-                "berlin" => Berlin(),
-                "london" => London(),
-                "merge" or "paris" or "themerge" => Paris(),
-                "shanghai" => Shanghai(),
-                "cancun" => Cancun(),
-                "prague" => Prague(),
-                "osaka" => Osaka(),
-                _ => Cancun()
-            };
-        }
     }
 }
