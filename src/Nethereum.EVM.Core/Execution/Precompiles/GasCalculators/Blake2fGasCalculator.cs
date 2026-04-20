@@ -5,8 +5,7 @@ namespace Nethereum.EVM.Execution.Precompiles.GasCalculators
     /// where <c>rounds</c> is a big-endian u32 in the first four input
     /// bytes. Malformed input (fewer than four bytes) returns 0 — the
     /// precompile itself will fail at execution time, consuming the
-    /// available call gas. Matches the legacy
-    /// <c>EvmPreCompiledContractsExecution</c> behaviour.
+    /// available call gas.
     /// </summary>
     public sealed class Blake2fGasCalculator : IPrecompileGasCalculator
     {

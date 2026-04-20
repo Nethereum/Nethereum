@@ -4,10 +4,7 @@ namespace Nethereum.EVM.Execution.Precompiles.GasCalculators
     /// EIP-2537 multi-scalar-multiplication discount table, indexed by
     /// <c>k - 1</c>, in permille (values divided by 1000 when applied).
     /// Used by both <c>BLS12_G1MSM</c> (0x0c) and <c>BLS12_G2MSM</c> (0x0e)
-    /// via <see cref="Bls12MsmGasCalculator"/>. Taken verbatim from
-    /// EIP-2537 and matches the table previously duplicated inside the
-    /// legacy <c>EvmPreCompiledContractsExecution</c> and the Prague
-    /// precompile gas schedule.
+    /// via <see cref="Bls12MsmGasCalculator"/>. Taken verbatim from EIP-2537.
     ///
     /// For <c>k &gt; Length</c>, callers must clamp to
     /// <c>Discount[Length - 1]</c> (the last entry, 525).
