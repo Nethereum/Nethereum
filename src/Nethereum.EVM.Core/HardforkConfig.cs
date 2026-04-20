@@ -68,7 +68,7 @@ namespace Nethereum.EVM
                 CleanEmptyAccounts = cleanEmptyAccounts,
                 CodeDepositRule = codeDepositRule ?? HomesteadCodeDepositRule.Instance,
                 IntrinsicGasRules = intrinsic,
-                OpcodeHandlers = handlers,
+                OpcodeHandlers = handlers.Freeze(),
                 CallFrameInitRules = callFrame ?? CallFrameInitRules.Empty,
                 TransactionValidationRules = validation ?? TransactionValidationRules.Empty,
                 TransactionSetupRules = setup ?? TransactionSetupRules.Empty,

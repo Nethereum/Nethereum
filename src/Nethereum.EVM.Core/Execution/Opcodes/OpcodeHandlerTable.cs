@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Nethereum.EVM.Gas.Opcodes.Costs;
 #if !EVM_SYNC
@@ -12,11 +13,29 @@ namespace Nethereum.EVM.Execution.Opcodes
         private readonly IOpcodeGasCostAsync[] _asyncGas = new IOpcodeGasCostAsync[256];
         private readonly IOpcodeExecutor[] _syncExec = new IOpcodeExecutor[256];
         private readonly IOpcodeExecutorAsync[] _asyncExec = new IOpcodeExecutorAsync[256];
+        private bool _frozen;
+
+        public bool IsFrozen => _frozen;
+
+        public OpcodeHandlerTable Freeze()
+        {
+            _frozen = true;
+            return this;
+        }
+
+        private void ThrowIfFrozen()
+        {
+            if (_frozen)
+                throw new InvalidOperationException(
+                    "OpcodeHandlerTable is frozen. Per-fork tables are immutable after HardforkConfig.Build. " +
+                    "Clone the table into a new instance before registering additional handlers.");
+        }
 
         // --- Registration: gas + executor together ---
 
         public OpcodeHandlerTable Register(Instruction opcode, IOpcodeGasCost gas, IOpcodeExecutor exec)
         {
+            ThrowIfFrozen();
             _syncGas[(int)opcode] = gas;
             _syncExec[(int)opcode] = exec;
             return this;
@@ -24,6 +43,7 @@ namespace Nethereum.EVM.Execution.Opcodes
 
         public OpcodeHandlerTable RegisterAsync(Instruction opcode, IOpcodeGasCostAsync gas, IOpcodeExecutorAsync exec)
         {
+            ThrowIfFrozen();
             _asyncGas[(int)opcode] = gas;
             _asyncExec[(int)opcode] = exec;
             return this;
@@ -33,12 +53,14 @@ namespace Nethereum.EVM.Execution.Opcodes
 
         public OpcodeHandlerTable RegisterGas(Instruction opcode, IOpcodeGasCost gas)
         {
+            ThrowIfFrozen();
             _syncGas[(int)opcode] = gas;
             return this;
         }
 
         public OpcodeHandlerTable RegisterGasAsync(Instruction opcode, IOpcodeGasCostAsync gas)
         {
+            ThrowIfFrozen();
             _asyncGas[(int)opcode] = gas;
             return this;
         }
@@ -47,12 +69,14 @@ namespace Nethereum.EVM.Execution.Opcodes
 
         public OpcodeHandlerTable RegisterExec(Instruction opcode, IOpcodeExecutor exec)
         {
+            ThrowIfFrozen();
             _syncExec[(int)opcode] = exec;
             return this;
         }
 
         public OpcodeHandlerTable RegisterExecAsync(Instruction opcode, IOpcodeExecutorAsync exec)
         {
+            ThrowIfFrozen();
             _asyncExec[(int)opcode] = exec;
             return this;
         }
