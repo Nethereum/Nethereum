@@ -80,6 +80,42 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         public void ZiskEmu_stCallCodes()
             => _runner.RunCategoryZiskEmu("stCallCodes", maxTests: 3);
 
+        // === ziskemu precompile coverage — execution-spec-tests fixtures ===
+        // These exercise the _c crypto primitives in libziskos.a through real
+        // EVM state-test vectors. Each category hits a different precompile
+        // group at a specific fork: BLS12-381 (Prague, 0x0b..0x11), KZG point
+        // evaluation (Cancun, 0x0a), and P256VERIFY (Osaka, 0x100).
+        //
+        // The fixtures live in external/execution-spec-tests/ and are passed
+        // as absolute paths — Path.Combine keeps a rooted second arg intact,
+        // so the runner reads them directly.
+
+        [Fact]
+        public void ZiskEmu_Prague_Eip2537_Bls12_381()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/prague/eip2537_bls_12_381_precompiles"),
+                maxTests: 20, hardfork: "Prague");
+
+        [Fact]
+        public void ZiskEmu_Cancun_Eip4844_KzgPointEvaluation()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/cancun/eip4844_blobs"),
+                maxTests: 10, hardfork: "Cancun");
+
+        [Fact]
+        public void ZiskEmu_Osaka_Eip7951_P256Verify()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/osaka/eip7951_p256verify_precompiles"),
+                maxTests: 20, hardfork: "Osaka");
+
+        private static string GetExecutionSpecTestPath(string relative)
+        {
+            var projectRoot = FindProjectRoot(System.IO.Directory.GetCurrentDirectory());
+            return projectRoot == null
+                ? null
+                : System.IO.Path.Combine(projectRoot, "external", "execution-spec-tests", "fixtures", relative);
+        }
+
         // === Witness Sync: JSON → WitnessData → Serialize → Deserialize → sync Execute ===
         // Validates witness roundtrip AND sync EVM — same pipeline as Zisk binary
 
