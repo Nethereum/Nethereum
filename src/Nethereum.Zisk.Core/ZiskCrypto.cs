@@ -62,5 +62,8 @@ namespace Nethereum.Zisk.Core
 
         [DllImport("__Internal")]
         public static extern unsafe void poseidon2_c(ulong* state);
+
+        [DllImport("__Internal")]
+        public static extern byte secp256r1_ecdsa_verify_c(byte[] msg, byte[] sig, byte[] pk);
     }
 }

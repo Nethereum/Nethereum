@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Nethereum.EVM.Execution.Precompiles;
 using Nethereum.Util;
 
@@ -72,7 +71,7 @@ namespace Nethereum.EVM.Precompiles.Kzg.Handlers
             var proof = input.Slice(144, 192);
 
             var computedVersionedHash = _ops.ComputeVersionedHash(commitment);
-            if (!versionedHash.SequenceEqual(computedVersionedHash))
+            if (!ByteUtil.AreEqual(versionedHash, computedVersionedHash))
                 throw new ArgumentException("KZG versioned hash mismatch");
 
             if (!_ops.VerifyKzgProof(commitment, z, y, proof))
