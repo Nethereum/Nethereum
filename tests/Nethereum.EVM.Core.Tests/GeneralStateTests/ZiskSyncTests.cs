@@ -94,7 +94,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         public void ZiskEmu_Prague_Eip2537_Bls12_381()
             => _runner.RunCategoryZiskEmu(
                 GetExecutionSpecTestPath("state_tests/prague/eip2537_bls_12_381_precompiles"),
-                maxTests: 20, hardfork: "Prague");
+                maxTests: 50, hardfork: "Prague");
 
         [Fact]
         public void ZiskEmu_Cancun_Eip4844_KzgPointEvaluation()
