@@ -150,6 +150,19 @@ done
 # RLP (all)
 for f in $(find /src/src/Nethereum.RLP -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -path "*/Properties/*" 2>/dev/null); do SRC="$SRC $f"; done
 
+# BLS12-381 EIP-2537 precompiles (Prague+) — 7 handlers + interface + registry/config extensions
+SRC="$SRC /src/src/Nethereum.Signer.Bls/IBls12381Operations.cs"
+for f in $(find /src/src/Nethereum.EVM.Precompiles.Bls/Handlers -name "*.cs" 2>/dev/null); do SRC="$SRC $f"; done
+SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Bls/PrecompileRegistryBlsExtensions.cs"
+SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Bls/HardforkConfigBlsExtensions.cs"
+
+# KZG EIP-4844 precompile (Cancun+) — handler + interface only.
+# CkzgOperations.cs / HardforkConfigKzgExtensions.cs / PrecompileRegistryKzgExtensions.cs
+# are intentionally omitted: they pull in BCL IO and embedded trusted-setup loading
+# which do not belong in the zkVM guest.
+SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Kzg/IKzgOperations.cs"
+SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Kzg/Handlers/KzgPointEvaluationPrecompile.cs"
+
 echo "[BUILD] Compiling $(echo $SRC | wc -w) source files..."
 
 bflat build $SRC \

@@ -4,12 +4,19 @@ using Nethereum.EVM.Zisk.Backends;
 namespace Nethereum.EVM.Zisk
 {
     /// <summary>
-    /// Zisk / zkVM witness-backed crypto backend bundle. Wire this into
-    /// <see cref="MainnetHardforkRegistry.Build"/> to obtain a mainnet
-    /// registry that runs the self-contained precompiles 0x01..0x09 via
-    /// ZiskCrypto P/Invoke. P256Verify is null — Osaka is not registered
-    /// until a ZiskP256VerifyBackend exists. BLS12-381 and KZG still flow
-    /// through the legacy <c>ZiskPrecompileProvider</c> fallback.
+    /// Zisk / zkVM witness-backed crypto backend bundle for the Frontier-to-Istanbul
+    /// precompiles (0x01..0x09). Wire this into <see cref="MainnetHardforkRegistry.Build"/>
+    /// to obtain a mainnet registry whose core crypto dispatches to ZiskCrypto P/Invokes
+    /// (CSR precompile instructions under the hood).
+    ///
+    /// BLS12-381 (0x0b..0x11, Prague+) and KZG point evaluation (0x0a, Cancun+) are
+    /// layered on top of the registry at runtime by
+    /// <c>ZiskBinaryWitness.LayerKzgAndBlsBackends</c>, using
+    /// <see cref="ZiskBls12381Operations"/> and <see cref="ZiskKzgOperations"/>.
+    ///
+    /// P256Verify (0x100, Osaka) is null — Osaka is still registered with Prague-level
+    /// precompiles so the fork's EVM rules (opcodes, gas) are available; only the P256
+    /// precompile at 0x100 is absent until a <c>ZiskP256VerifyBackend</c> exists.
     /// </summary>
     public static class ZiskPrecompileBackends
     {

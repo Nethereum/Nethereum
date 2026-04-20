@@ -1,6 +1,9 @@
 using Nethereum.CoreChain;
 using Nethereum.EVM;
+using Nethereum.EVM.Execution.Precompiles;
+using Nethereum.EVM.Precompiles.Kzg.Handlers;
 using Nethereum.EVM.Witness;
+using Nethereum.EVM.Zisk.Backends;
 using Nethereum.Merkle.Binary.Hashing;
 using Nethereum.Model;
 using Nethereum.Util.HashProviders;
@@ -40,6 +43,7 @@ namespace Nethereum.EVM.Zisk
 
             var encoding = RlpBlockEncodingProvider.Instance;
             var registry = MainnetHardforkRegistry.Build(ZiskPrecompileBackends.Instance);
+            LayerKzgAndBlsBackends(registry);
             var stateRootCalc = ResolveStateRootCalculator(block.Features, encoding);
             var isBinary = stateRootCalc is BinaryStateRootCalculator;
 
@@ -127,6 +131,26 @@ namespace Nethereum.EVM.Zisk
         }
 
         static int HexNibble(int n) => n < 10 ? '0' + n : 'a' + n - 10;
+
+        static void LayerKzgAndBlsBackends(HardforkRegistry registry)
+        {
+            // KZG (EIP-4844) — Cancun and every fork after inherit the 0x0a handler.
+            var kzgHandler = new KzgPointEvaluationPrecompile(ZiskKzgOperations.Instance);
+            foreach (var fork in new[] { HardforkName.Cancun, HardforkName.Prague, HardforkName.Osaka })
+            {
+                if (!registry.Contains(fork)) continue;
+                var cfg = registry.Get(fork);
+                registry.Register(fork, cfg.WithPrecompiles(cfg.Precompiles.WithHandlers(kzgHandler)));
+            }
+
+            // BLS12-381 (EIP-2537) — Prague and forward.
+            foreach (var fork in new[] { HardforkName.Prague, HardforkName.Osaka })
+            {
+                if (!registry.Contains(fork)) continue;
+                var cfg = registry.Get(fork);
+                registry.Register(fork, cfg.WithBlsBackend(ZiskBls12381Operations.Instance));
+            }
+        }
 
         static IStateRootCalculator ResolveStateRootCalculator(
             BlockFeatureConfig features, IBlockEncodingProvider encoding)

@@ -23,6 +23,24 @@
     <Compile Include="Zisk\Backends\*.cs" />
   </ItemGroup>
 
+  <!-- BLS12-381 EIP-2537 precompile handlers + interface (Prague+) -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.Signer.Bls\IBls12381Operations.cs" Link="Bls\IBls12381Operations.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles.Bls\Handlers\*.cs" Link="Bls\Handlers\%(Filename).cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles.Bls\PrecompileRegistryBlsExtensions.cs" Link="Bls\PrecompileRegistryBlsExtensions.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles.Bls\HardforkConfigBlsExtensions.cs" Link="Bls\HardforkConfigBlsExtensions.cs" />
+  </ItemGroup>
+
+  <!-- KZG EIP-4844 precompile handler + interface (Cancun+). CkzgOperations and the
+       HardforkConfigKzgExtensions / PrecompileRegistryKzgExtensions files are NOT
+       linked — they pull in BCL IO and embedded-trusted-setup loading which don't
+       fit the Zisk guest. ZiskBinaryWitness wires the KZG handler directly via
+       PrecompileRegistry.WithHandlers. -->
+  <ItemGroup>
+    <Compile Include="..\Nethereum.EVM.Precompiles.Kzg\IKzgOperations.cs" Link="Kzg\IKzgOperations.cs" />
+    <Compile Include="..\Nethereum.EVM.Precompiles.Kzg\Handlers\KzgPointEvaluationPrecompile.cs" Link="Kzg\KzgPointEvaluationPrecompile.cs" />
+  </ItemGroup>
+
   <!-- Util (minimal — no BigDecimal, no UnitConversion, no BigIntegerExtensions) -->
   <ItemGroup>
     <Compile Include="..\Nethereum.Util\EvmUInt256.cs" Link="Util\EvmUInt256.cs" />
