@@ -1,12 +1,10 @@
 ---
 name: uniswap-liquidity
-description: Manage Uniswap V4 liquidity positions using Nethereum (.NET/C#). Use this skill whenever the user asks about providing liquidity, LP positions, concentrated liquidity, collecting fees, minting/burning positions, rebalancing, or any Uniswap liquidity operation with C# or .NET.
+description: "Manage Uniswap V4 liquidity positions using Nethereum (.NET/C#). Use when the user asks about providing liquidity, LP positions, concentrated liquidity, collecting fees, minting/burning positions, rebalancing, or any Uniswap liquidity operation with C# or .NET."
 user-invocable: true
 ---
 
 # Uniswap: Manage Liquidity
-
-Providing liquidity on Uniswap V4 means depositing tokens into a concentrated price range to earn trading fees. Nethereum's Position Manager service handles the full lifecycle: mint, increase, decrease, collect fees, rebalance, and burn. Each position is an ERC-721 NFT with a unique token ID.
 
 NuGet: `Nethereum.Uniswap`
 
@@ -55,7 +53,19 @@ var receipt = await positionManager.ModifyLiquiditiesRequestAndWaitForReceiptAsy
 var tokenId = V4PositionReceiptHelper.GetMintedTokenId(receipt, positionManagerAddress);
 ```
 
-`Amount0Max`/`Amount1Max` are slippage protection — the tx reverts if the pool price moves too much. After minting, extract the NFT token ID from the receipt.
+`Amount0Max`/`Amount1Max` are slippage protection -- the tx reverts if the pool price moves too much. After minting, extract the NFT token ID from the receipt.
+
+**Validation checkpoint:** Always verify the receipt status and token ID after minting:
+
+```csharp
+if (receipt.Status.Value == 0)
+    throw new Exception("Mint transaction reverted -- check token approvals and slippage parameters");
+if (tokenId == 0)
+    throw new Exception("Failed to extract token ID from receipt");
+var liquidity = await positionManager.GetPositionLiquidityQueryAsync(tokenId);
+if (liquidity == 0)
+    throw new Exception("Position has zero liquidity -- verify Amount0Max/Amount1Max are sufficient");
+```
 
 ## Query Position Info
 
@@ -166,5 +176,15 @@ actionsBuilder.AddCommand(new DecreaseLiquidity { TokenId = tokenId, Liquidity =
 actionsBuilder.AddCommand(new BurnPosition { TokenId = tokenId, Amount0Min = 0, Amount1Min = 0, HookData = new byte[0] });
 actionsBuilder.AddCommand(new TakePair { Currency0 = eth, Currency1 = usdc, Recipient = account });
 ```
+
+## Error Handling
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "Price slippage check" revert | Pool price moved beyond `Amount0Max`/`Amount1Max` | Increase max amounts or set wider slippage tolerance |
+| "STF" (Safe Transfer Failed) revert | Insufficient token balance or missing approval | Approve the Position Manager to spend tokens before minting |
+| Transaction reverts with no message | Deadline expired | Increase the `Deadline` value (e.g., `+ 300` seconds instead of `+ 60`) |
+| Zero liquidity after mint | Tick range is entirely out of range for current price | Adjust `TickLower`/`TickUpper` to bracket the current pool price |
+| "NOT_AUTHORIZED" on decrease/burn | Caller is not the position owner | Verify the calling account owns the NFT via `OwnerOfQueryAsync(tokenId)` |
 
 For full documentation, see: https://docs.nethereum.com/docs/defi/guide-uniswap-liquidity

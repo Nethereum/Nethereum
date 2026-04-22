@@ -1,21 +1,12 @@
 ---
 name: verified-state
-description: Help users verify Ethereum state (balances, nonces, storage, code) without trusting their RPC provider using beacon chain light client proofs. Use this skill whenever the user mentions trustless queries, verified balances, light client verification, proof verification, Merkle proofs for state, eth_getProof, UseVerifiedState, VerifiedStateService, or wants to verify data from an RPC provider they don't trust.
+description: "Verify Ethereum state (balances, nonces, storage, code) without trusting an RPC provider using beacon chain light client proofs. Use this skill whenever the user mentions trustless queries, verified balances, light client verification, proof verification, Merkle proofs for state, eth_getProof, UseVerifiedState, VerifiedStateService, or wants to verify data from an RPC provider they don't trust."
 user-invocable: true
 ---
 
 # Verified State Queries — Nethereum.ChainStateVerification
 
-Verified state queries let your application cryptographically confirm that balances, nonces, contract code, and storage values returned by an RPC provider are genuine. Instead of trusting the RPC node, the data is verified against a beacon chain state root using Merkle proofs.
-
-## When to Use This
-
-- **Trustless balance checks**: Verify ETH balances before signing transactions or displaying in a wallet
-- **Nonce verification**: Confirm transaction counts to prevent replay or stuck transactions
-- **Contract code verification**: Ensure contract bytecode has not been tampered with by a malicious RPC
-- **Storage proof verification**: Read and verify individual storage slots in smart contracts
-- **Financial dashboards**: Display balances with cryptographic proof of correctness
-- **Self-custodial wallets**: Eliminate trust in third-party RPC providers
+Cryptographically verify balances, nonces, contract code, and storage values against beacon chain state roots using Merkle proofs — eliminating trust in RPC providers.
 
 ## Required Packages
 

@@ -1,6 +1,6 @@
 ---
 name: built-in-standards
-description: Use Nethereum's built-in typed services for ERC-20, ERC-721, ERC-1155, ENS, ERC-165, ERC-1271, ERC-6492, EIP-3009, and ERC-2535 Diamond. Use this skill whenever the user asks about token standards, NFTs, multi-tokens, interface detection, signature validation, gasless transfers, diamond proxy, ENS resolution, or any standard contract interaction in C#/.NET.
+description: "Transfer tokens, query balances, mint NFTs, resolve ENS names, and detect interfaces using Nethereum's built-in typed services for ERC-20, ERC-721, ERC-1155, ENS, ERC-165, ERC-1271, ERC-6492, EIP-3009, and ERC-2535 Diamond. Use when the user asks about token standards, NFTs, multi-tokens, interface detection, signature validation, gasless transfers, diamond proxy, ENS resolution, or any standard contract interaction in C#/.NET."
 user-invocable: true
 ---
 

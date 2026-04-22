@@ -1,12 +1,10 @@
 ---
 name: deploy-contract
-description: Deploy smart contracts to Ethereum using Nethereum typed deployment handlers (.NET/C#). Use this skill whenever the user asks about deploying a contract, publishing a smart contract, contract deployment, constructor parameters, deployment gas estimation, or getting a contract address after deployment.
+description: "Deploy smart contracts to Ethereum using Nethereum typed deployment handlers (.NET/C#). Use when the user asks about deploying a contract, publishing a smart contract, contract deployment, constructor parameters, deployment gas estimation, or getting a contract address after deployment."
 user-invocable: true
 ---
 
 # Deploy a Contract
-
-Deploying a contract sends a transaction containing the compiled bytecode and encoded constructor parameters. Nethereum's typed deployment handler takes care of gas estimation, nonce management, and receipt tracking — you just define the deployment message and send it.
 
 NuGet: `Nethereum.Web3`
 
@@ -15,8 +13,6 @@ dotnet add package Nethereum.Web3
 ```
 
 ## Typed Deployment (Recommended)
-
-Define a deployment message class that inherits from `ContractDeploymentMessage`. It holds the compiled bytecode and maps constructor parameters as properties with `[Parameter]` attributes:
 
 ```csharp
 using Nethereum.Web3;
@@ -35,8 +31,6 @@ public class StandardTokenDeployment : ContractDeploymentMessage
 }
 ```
 
-Then create a `Web3` instance with your account and deploy. The handler encodes the constructor args into the bytecode, estimates gas, and waits for the receipt:
-
 ```csharp
 var account = new Account("0xYOUR_PRIVATE_KEY");
 var web3 = new Web3(account, "https://your-rpc-url");
@@ -48,11 +42,7 @@ var receipt = await handler.SendRequestAndWaitForReceiptAsync(
 Console.WriteLine($"Deployed at: {receipt.ContractAddress}");
 ```
 
-Gas estimation, nonce, and EIP-1559 fees are all automatic.
-
 ## Estimate Gas Before Deploying
-
-If you want to check the cost before committing, call `EstimateGasAsync`. This simulates the deployment without sending a transaction:
 
 ```csharp
 var deployment = new StandardTokenDeployment { TotalSupply = Web3.Convert.ToWei(1000000) };
@@ -60,11 +50,7 @@ var estimatedGas = await handler.EstimateGasAsync(deployment);
 Console.WriteLine($"Estimated gas: {estimatedGas.Value}");
 ```
 
-Note: `SendRequestAndWaitForReceiptAsync` estimates gas automatically if you don't set `Gas` on the message — this step is only needed when you want to display costs to a user.
-
 ## Deploy Without Code-Generated Classes
-
-For quick prototyping when you have raw ABI and bytecode strings. Less safe — constructor argument types aren't checked at compile time:
 
 ```csharp
 var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
@@ -74,8 +60,6 @@ var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
 ```
 
 ## Multiple Constructor Parameters
-
-Contracts often take multiple constructor arguments. Each maps to a property on the deployment class:
 
 ```csharp
 public class MyNFTDeployment : ContractDeploymentMessage
@@ -99,8 +83,6 @@ var receipt = await handler.SendRequestAndWaitForReceiptAsync(
 
 ## Check Deployment Status
 
-The receipt's `Status` tells you if the deployment succeeded. A status of `1` means success; `0` means the constructor reverted (often a `require` failure):
-
 ```csharp
 if (receipt.Status.Value == 1)
 {
@@ -117,5 +99,33 @@ if (receipt.Status.Value == 1)
 | **Typed deployment** (`GetContractDeploymentHandler<T>`) | Recommended for all projects — type-safe, auto gas estimation |
 | **Code-generated deployment** | Best — use `Nethereum.Generator.Console` to generate the deployment class from ABI |
 | **Raw ABI deployment** (`DeployContract.SendRequestAsync`) | Quick prototyping when you have ABI/bytecode strings |
+
+## Error Handling
+
+```csharp
+try
+{
+    var receipt = await handler.SendRequestAndWaitForReceiptAsync(deployment);
+    if (receipt.Status.Value == 0)
+        throw new Exception($"Constructor reverted. Gas used: {receipt.GasUsed.Value}");
+    Console.WriteLine($"Deployed at: {receipt.ContractAddress}");
+}
+catch (Nethereum.RPC.Eth.DTOs.ContractDeploymentException ex)
+{
+    // Bytecode or constructor encoding error
+    Console.Error.WriteLine($"Deployment failed: {ex.Message}");
+}
+catch (RpcResponseException ex)
+{
+    // RPC-level failure (insufficient funds, nonce too low, gas too low)
+    Console.Error.WriteLine($"RPC error: {ex.Message}");
+}
+```
+
+Common failure causes:
+- **`receipt.Status == 0`**: Constructor `require` failed or ran out of gas. Check constructor arguments and increase gas limit if needed.
+- **"insufficient funds"**: Account balance too low to cover gas cost. Fund the account or reduce gas price.
+- **"nonce too low"**: Pending transaction conflict. Wait for pending transactions to confirm or manually set the nonce.
+- **Null `ContractAddress`**: Transaction was sent but not mined as a contract creation. Verify bytecode is not empty.
 
 For full documentation, see: https://docs.nethereum.com/docs/smart-contracts/deploy-a-contract

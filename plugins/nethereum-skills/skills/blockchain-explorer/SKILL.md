@@ -1,6 +1,6 @@
 ---
 name: blockchain-explorer
-description: Embed a full Blazor blockchain explorer with block/transaction browsing, ABI-decoded contract interaction, token pages, EVM debugger, and MUD World browser (.NET/C#). Use this skill when the user asks about blockchain explorer, block explorer, embedding explorer UI, contract interaction UI, EVM debugger, or MUD browser.
+description: "Embed a full Blazor blockchain explorer with block/transaction browsing, ABI-decoded contract interaction, token pages, EVM debugger, and MUD World browser (.NET/C#). Use when the user asks about blockchain explorer, block explorer, embedding explorer UI, contract interaction UI, EVM debugger, or MUD browser."
 user-invocable: true
 ---
 
@@ -92,44 +92,25 @@ All options are bound from `appsettings.json` section `Explorer`:
 }
 ```
 
-### ExplorerOptions Properties
+### Key ExplorerOptions Properties
 
-| Property | Type | Default | Purpose |
-|----------|------|---------|---------|
-| `RpcUrl` | `string?` | `null` | JSON-RPC endpoint for the target chain |
-| `ChainName` | `string` | `"DevChain"` | Display name for the chain |
-| `ChainId` | `long` | `31337` | EIP-155 chain ID |
-| `CurrencySymbol` | `string` | `"ETH"` | Native currency ticker |
-| `CurrencyName` | `string` | `"Ether"` | Native currency full name |
-| `CurrencyDecimals` | `uint` | `18` | Native currency decimals |
-| `BlockExplorerUrl` | `string?` | `null` | External explorer link (optional) |
-| `ExplorerTitle` | `string` | `"Nethereum Explorer"` | Browser tab title |
-| `ExplorerBrandName` | `string` | `"Nethereum"` | Navbar brand name |
-| `ExplorerBrandSuffix` | `string` | `"Explorer"` | Navbar brand suffix |
-| `LogoUrl` | `string?` | `null` | Custom logo URL |
-| `FaviconUrl` | `string?` | `null` | Custom favicon URL |
-| `ApiKey` | `string?` | `null` | Protects write API endpoints (X-Api-Key header) |
-| `EnableMud` | `bool` | `true` | Show MUD World browser pages |
-| `EnableTokens` | `bool` | `true` | Show token balance and transfer pages |
-| `EnableTracing` | `bool` | `true` | Enable transaction tracing |
-| `EnableInternalTransactions` | `bool` | `true` | Show internal transactions tab |
-| `EnablePendingTransactions` | `bool` | `false` | Show pending transactions page |
-| `EnableEvmDebugger` | `bool` | `true` | Enable EVM step debugger |
-| `RpcRequestTimeoutSeconds` | `int` | `30` | RPC call timeout |
+| Property | Default | Purpose |
+|----------|---------|---------|
+| `RpcUrl` | `null` | JSON-RPC endpoint for the target chain |
+| `ChainName` / `ChainId` | `"DevChain"` / `31337` | Chain display name and EIP-155 ID |
+| `CurrencySymbol` / `CurrencyName` | `"ETH"` / `"Ether"` | Native currency ticker and name |
+| `ApiKey` | `null` | Protects write API endpoints (X-Api-Key header) |
+| `EnableMud` | `true` | Show MUD World browser pages |
+| `EnableTokens` | `true` | Show token balance and transfer pages |
+| `EnableTracing` | `true` | Enable transaction tracing (requires `debug_traceTransaction` RPC support) |
+| `EnableEvmDebugger` | `true` | Enable EVM step debugger |
+| `RpcRequestTimeoutSeconds` | `30` | RPC call timeout |
+
+Branding properties (`ExplorerTitle`, `ExplorerBrandName`, `ExplorerBrandSuffix`, `LogoUrl`, `FaviconUrl`) and remaining feature toggles (`EnableInternalTransactions`, `EnablePendingTransactions`) are also available -- see the JSON example above for all options.
 
 ### AbiSourceOptions
 
-| Property | Type | Default | Purpose |
-|----------|------|---------|---------|
-| `SourcifyEnabled` | `bool` | `true` | Fetch verified ABIs from Sourcify |
-| `FourByteEnabled` | `bool` | `false` | Use 4byte.directory for function signature lookup |
-| `EtherscanEnabled` | `bool` | `false` | Fetch ABIs from Etherscan API |
-| `EtherscanApiKey` | `string?` | `null` | Etherscan API key (required when enabled) |
-| `LocalStorageEnabled` | `bool` | `false` | Load ABIs from local filesystem |
-| `LocalStoragePath` | `string?` | `null` | Directory path for local ABI JSON files |
-| `SourceBasePath` | `string?` | `null` | Base path for Solidity source files |
-
-ABI sources are chained as a composite: in-memory cache is checked first, then each enabled source in order (local -> Sourcify -> Etherscan -> 4Byte).
+ABI sources are chained as a composite: in-memory cache is checked first, then each enabled source in order (local -> Sourcify -> Etherscan -> 4Byte). Key options: `SourcifyEnabled` (default `true`), `EtherscanEnabled` (default `false`, requires `EtherscanApiKey`), `FourByteEnabled` (default `false`), `LocalStorageEnabled` (default `false`, requires `LocalStoragePath`).
 
 ## Features
 
@@ -298,3 +279,23 @@ With `appsettings.json`:
 ```
 
 This gives a fully functional explorer against a local dev chain with Sourcify ABI resolution, no database required. Add `AddPostgresBlockchainStorage` and `AddTokenPostgresRepositories` for indexed data.
+
+### Validate Setup
+
+After starting the application, verify the home page loads and displays chain stats:
+
+```
+GET http://localhost:5000/
+```
+
+The home page should show the latest blocks table, latest transactions table, and chain stats (chain name, chain ID, currency symbol). If the page loads but shows no data, confirm the RPC endpoint is reachable and returning blocks.
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Home page shows no blocks | RPC endpoint unreachable or wrong URL | Verify `Explorer:RpcUrl` in `appsettings.json`; test with `curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' <RPC_URL>` |
+| "Token indexing not configured" message | `AddTokenPostgresRepositories` not registered | Add `builder.Services.AddTokenPostgresRepositories(connString)` in `Program.cs` |
+| ABI not decoded for contract | No ABI source found the contract | Enable additional ABI sources (Etherscan, local storage) in `AbiSources` config; upload ABI via POST `/api/contracts/{address}/abi` |
+| MUD pages not visible | MUD repositories not registered or `EnableMud` is false | Register `AddMudPostgresRepositories(connString)` and set `EnableMud: true` |
+| 500 errors on transaction detail | Tracing not supported by RPC node | Set `EnableTracing: false` and `EnableInternalTransactions: false` if the RPC node does not support `debug_traceTransaction` |
