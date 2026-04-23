@@ -77,7 +77,23 @@ namespace Nethereum.RPC.Eth.DTOs
 #endif
         public List<Authorisation> AuthorisationList { get; set; }
 
+        /// <summary>
+        ///   EIP-4844: Maximum fee per blob gas the sender is willing to pay
+        /// </summary>
+        [JsonProperty(PropertyName = "maxFeePerBlobGas")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("maxFeePerBlobGas")]
+#endif
+        public HexBigInteger MaxFeePerBlobGas { get; set; }
 
+        /// <summary>
+        ///   EIP-4844: List of versioned blob hashes (each 32 bytes, version 0x01 prefix)
+        /// </summary>
+        [JsonProperty(PropertyName = "blobVersionedHashes")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blobVersionedHashes")]
+#endif
+        public List<string> BlobVersionedHashes { get; set; }
 
     }
 }

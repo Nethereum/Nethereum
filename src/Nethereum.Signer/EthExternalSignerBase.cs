@@ -20,6 +20,7 @@ namespace Nethereum.Signer
         public abstract Task SignAsync(LegacyTransaction transaction);
         public abstract Task SignAsync(Transaction1559 transaction);
         public abstract Task SignAsync(Transaction7702 transaction);
+        public abstract Task SignAsync(Transaction4844 transaction);
         public abstract bool Supported1559 { get; }
         public abstract ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; }
         public abstract bool CalculatesV { get; protected set; }
@@ -154,6 +155,24 @@ namespace Nethereum.Signer
         }
 
         protected async Task SignRLPTransactionAsync(Transaction7702 transaction)
+        {
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
+            {
+                var signature = await SignAndCalculateYParityVAsync(transaction.GetRLPEncodedRaw()).ConfigureAwait(false);
+                transaction.SetSignature(signature);
+            }
+        }
+
+        protected async Task SignHashTransactionAsync(Transaction4844 transaction)
+        {
+            if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.Hash)
+            {
+                var signature = await SignAndCalculateYParityVAsync(transaction.RawHash).ConfigureAwait(false);
+                transaction.SetSignature(signature);
+            }
+        }
+
+        protected async Task SignRLPTransactionAsync(Transaction4844 transaction)
         {
             if (ExternalSignerTransactionFormat == ExternalSignerTransactionFormat.RLP)
             {

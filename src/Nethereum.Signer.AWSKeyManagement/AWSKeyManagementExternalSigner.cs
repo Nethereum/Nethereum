@@ -86,6 +86,7 @@ namespace Nethereum.Signer.AWSKeyManagement
         public override Task SignAsync(Transaction1559 transaction) => SignHashTransactionAsync(transaction);
 
         public override Task SignAsync(Transaction7702 transaction) => SignHashTransactionAsync(transaction);
+        public override Task SignAsync(Transaction4844 transaction) => SignHashTransactionAsync(transaction);
 
 
         public override bool CalculatesV { get; protected set; } = false;

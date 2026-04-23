@@ -40,6 +40,8 @@ namespace Nethereum.Model
 
                 case TransactionType.EIP7702:
                     return new Transaction7702Encoder();
+                case TransactionType.Blob:
+                    return new Transaction4844Encoder();
                 default:
                     throw new ArgumentOutOfRangeException(nameof(transactionType), transactionType, null);
             }
@@ -137,6 +139,21 @@ namespace Nethereum.Model
         }
 
 
+
+        public static ISignedTransaction Create4844Transaction(EvmUInt256? chainId, EvmUInt256? nonce,
+            EvmUInt256? maxPriorityFeePerGas, EvmUInt256? maxFeePerGas,
+            EvmUInt256? gasLimit, string to, EvmUInt256? amount, string data,
+            List<AccessListItem> accessList, EvmUInt256? maxFeePerBlobGas, List<byte[]> blobVersionedHashes,
+            string r, string s, string v)
+        {
+            var rBytes = r.HexToByteArray();
+            var sBytes = s.HexToByteArray();
+            var vBytes = v.HexToByteArray();
+
+            var signature = new Signature(rBytes, sBytes, vBytes);
+            return new Transaction4844(chainId ?? 0, nonce ?? 0, maxPriorityFeePerGas ?? 0, maxFeePerGas ?? 0,
+                gasLimit ?? 0, to, amount ?? 0, data, accessList, maxFeePerBlobGas ?? 0, blobVersionedHashes ?? new List<byte[]>(), signature);
+        }
 
         public static ISignedTransaction CreateTransaction(EvmUInt256? chainId, byte? transactionType, EvmUInt256? nonce,
             EvmUInt256? maxPriorityFeePerGas, EvmUInt256? maxFeePerGas, EvmUInt256? gasPrice,

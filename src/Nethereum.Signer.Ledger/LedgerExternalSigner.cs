@@ -139,6 +139,11 @@ namespace Nethereum.Ledger
         {
             throw new NotImplementedException();
         }
+
+        public override Task SignAsync(Transaction4844 transaction)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     internal static class ExtensionMethods

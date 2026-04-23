@@ -356,6 +356,11 @@ namespace Nethereum.Signer.Trezor
             throw new System.NotSupportedException("Not supported by Trezor");
         }
 
+        public override async Task SignAsync(Transaction4844 transaction)
+        {
+            throw new System.NotSupportedException("Not supported by Trezor");
+        }
+
         private static string? NormaliseAddress(string? address)
         {
             if (string.IsNullOrWhiteSpace(address))

@@ -15,13 +15,14 @@ namespace Nethereum.Web3.Accounts
         private readonly LegacyTransactionSigner _legacyTransactionSigner;
         private readonly Transaction1559Signer _transaction1559Signer;
         private readonly Transaction7702Signer _transaction7702Signer;
+        private readonly Transaction4844Signer _transaction4844Signer;
 
-        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner, Transaction1559Signer transaction1559Signer, Transaction7702Signer transaction7702Signer)
+        public AccountOfflineTransactionSigner(LegacyTransactionSigner legacyTransactionSigner, Transaction1559Signer transaction1559Signer, Transaction7702Signer transaction7702Signer, Transaction4844Signer transaction4844Signer)
         {
             _legacyTransactionSigner = legacyTransactionSigner;
             _transaction1559Signer = transaction1559Signer;
             _transaction7702Signer = transaction7702Signer;
-
+            _transaction4844Signer = transaction4844Signer;
         }
 
         public AccountOfflineTransactionSigner()
@@ -29,6 +30,7 @@ namespace Nethereum.Web3.Accounts
             _legacyTransactionSigner = new LegacyTransactionSigner();
             _transaction1559Signer = new Transaction1559Signer();
             _transaction7702Signer = new Transaction7702Signer();
+            _transaction4844Signer = new Transaction4844Signer();
         }
 
         public string SignTransaction(Account account, TransactionInput transaction, BigInteger? overridingAccountChainId = null)
@@ -76,6 +78,26 @@ namespace Nethereum.Web3.Accounts
                     transaction.AccessList.ToSignerAccessListItemArray(), transaction.AuthorisationList.ToAuthorisation7720SignedList());
                 _transaction7702Signer.SignTransaction(new EthECKey(account.PrivateKey), transaction7702);
                 signedTransaction = transaction7702.GetRLPEncoded().ToHex();
+            }
+            else if (transaction.Type != null && transaction.Type.Value == TransactionType.Blob.AsByte())
+            {
+                var maxPriorityFeePerGas = transaction.MaxPriorityFeePerGas.Value;
+                var maxFeePerGas = transaction.MaxFeePerGas.Value;
+                var maxFeePerBlobGas = transaction.MaxFeePerBlobGas?.Value ?? BigInteger.Zero;
+                if (chainId == null) throw new ArgumentException("ChainId required for TransactionType 0X03 EIP4844");
+
+                var blobHashes = new System.Collections.Generic.List<byte[]>();
+                if (transaction.BlobVersionedHashes != null)
+                {
+                    foreach (var hash in transaction.BlobVersionedHashes)
+                        blobHashes.Add(hash.HexToByteArray());
+                }
+
+                var transaction4844 = new Transaction4844(chainId.Value, nonce, maxPriorityFeePerGas, maxFeePerGas,
+                    gasLimit, transaction.To, value, transaction.Data,
+                    transaction.AccessList.ToSignerAccessListItemArray(), maxFeePerBlobGas, blobHashes);
+                _transaction4844Signer.SignTransaction(new EthECKey(account.PrivateKey), transaction4844);
+                signedTransaction = transaction4844.GetRLPEncoded().ToHex();
             }
             else
             {
