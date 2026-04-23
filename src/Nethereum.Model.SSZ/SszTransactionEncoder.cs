@@ -310,16 +310,70 @@ namespace Nethereum.Model.SSZ
 
         public byte[] EncodeTransaction(byte selector, byte[] payloadData, byte[] signatureBytes)
         {
-            // CompatibleUnion: [selector][payload_data]
-            // Then wrapped in Container { payload, signature }
-            // For wire format: [selector][payload_data][signature_length(4)][signature_data]
+            // Wire format: [selector(1)][payload_length(4)][payload_data][signature_length(4)][signature_data]
+            // The payload length is explicit so the full transaction bytes are
+            // self-delimited: EIP-6404 defines the CompatibleUnion hash_tree_root
+            // (which has no size prefix) separately from the on-disk record,
+            // which must be parseable without external length info.
             using var writer = new SszWriter();
             writer.WriteBytes(new[] { selector });
-            writer.WriteBytes(payloadData);
+            var payloadLength = payloadData?.Length ?? 0;
+            writer.WriteUInt32((uint)payloadLength);
+            if (payloadLength > 0)
+                writer.WriteBytes(payloadData);
             writer.WriteUInt32((uint)(signatureBytes?.Length ?? 0));
             if (signatureBytes != null && signatureBytes.Length > 0)
                 writer.WriteBytes(signatureBytes);
             return writer.ToArray();
+        }
+
+        /// <summary>
+        /// Parses a transaction record produced by <see cref="EncodeTransaction"/>
+        /// into <c>(selector, payload, signatureBytes)</c>. Callers dispatch on
+        /// <paramref name="selector"/> and hand the payload to the matching
+        /// concrete-type decoder (<see cref="DecodeTransaction1559Payload"/>,
+        /// <see cref="DecodeTransaction7702Payload"/>, etc.).
+        /// </summary>
+        public void ParseTransaction(byte[] data,
+            out byte selector, out byte[] payload, out byte[] signatureBytes)
+        {
+            if (data == null || data.Length < 1 + 4 + 4)
+                throw new ArgumentException("SSZ transaction record too short.", nameof(data));
+
+            selector = data[0];
+            var payloadLength = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(1, 4));
+            var payloadStart = 1 + 4;
+            payload = new byte[payloadLength];
+            Buffer.BlockCopy(data, payloadStart, payload, 0, (int)payloadLength);
+
+            var sigLengthOffset = payloadStart + (int)payloadLength;
+            var sigLength = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(sigLengthOffset, 4));
+            signatureBytes = new byte[sigLength];
+            if (sigLength > 0)
+                Buffer.BlockCopy(data, sigLengthOffset + 4, signatureBytes, 0, (int)sigLength);
+        }
+
+        /// <summary>
+        /// Unpacks the secp256k1 signature bytes produced by
+        /// <see cref="PackSignatureBytes"/> back into a <see cref="Signature"/>.
+        /// Returns <c>null</c> when no signature was attached.
+        /// </summary>
+        public static Signature UnpackSignature(byte[] packed)
+        {
+            if (packed == null || packed.Length == 0) return null;
+            if (packed[0] != Secp256k1Algorithm)
+                throw new ArgumentException(
+                    $"Unsupported signature algorithm 0x{packed[0]:x2}.", nameof(packed));
+            if (packed.Length < 1 + 32 + 32 + 1)
+                throw new ArgumentException("Signature bytes too short.", nameof(packed));
+
+            var r = new byte[32];
+            var s = new byte[32];
+            Buffer.BlockCopy(packed, 1, r, 0, 32);
+            Buffer.BlockCopy(packed, 33, s, 0, 32);
+            var v = new byte[packed.Length - (1 + 32 + 32)];
+            Buffer.BlockCopy(packed, 1 + 32 + 32, v, 0, v.Length);
+            return new Signature(r, s, v);
         }
 
         // ================================================================

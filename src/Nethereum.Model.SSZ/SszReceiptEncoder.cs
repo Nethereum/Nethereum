@@ -52,6 +52,48 @@ namespace Nethereum.Model.SSZ
             return writer.ToArray();
         }
 
+        public byte[] EncodeSetCodeReceipt(string from, ulong gasUsed, List<Log> logs,
+            bool status, List<string> authorities)
+        {
+            // EIP-6466 SetCodeReceipt (ProgressiveContainer active_fields = [1,1,0,1,1,1]):
+            //   slot 0: from              (fixed 20)
+            //   slot 1: gas_used          (fixed 8)
+            //   slot 2: <reserved gap>
+            //   slot 3: logs              (variable — ProgressiveList[Log])
+            //   slot 4: status            (fixed 1)
+            //   slot 5: authorities       (variable — ProgressiveList[ExecutionAddress])
+            // Per EIP-7495, ProgressiveContainer serialisation is identical to
+            // Container, skipping the reserved gap. Two variable fields → two
+            // offsets in the fixed section.
+            byte[] logsBytes;
+            using (var logsWriter = new SszWriter())
+            {
+                WriteLogList(logsWriter, logs);
+                logsBytes = logsWriter.ToArray();
+            }
+
+            byte[] authoritiesBytes;
+            using (var authWriter = new SszWriter())
+            {
+                WriteAuthorityList(authWriter, authorities);
+                authoritiesBytes = authWriter.ToArray();
+            }
+
+            var fixedSize = AddressLength + 8 + 4 + 1 + 4; // from + gas_used + logs_offset + status + authorities_offset
+            var logsOffset = fixedSize;
+            var authoritiesOffset = fixedSize + logsBytes.Length;
+
+            using var writer = new SszWriter();
+            writer.WriteFixedBytes(GetAddressBytes(from), AddressLength);
+            writer.WriteUInt64(gasUsed);
+            writer.WriteUInt32((uint)logsOffset);
+            writer.WriteBoolean(status);
+            writer.WriteUInt32((uint)authoritiesOffset);
+            writer.WriteBytes(logsBytes);
+            writer.WriteBytes(authoritiesBytes);
+            return writer.ToArray();
+        }
+
         public byte[] EncodeReceipt(byte selector, byte[] receiptData)
         {
             // CompatibleUnion: [selector_byte][data]
@@ -59,6 +101,17 @@ namespace Nethereum.Model.SSZ
             result[0] = selector;
             Buffer.BlockCopy(receiptData, 0, result, 1, receiptData.Length);
             return result;
+        }
+
+        private void WriteAuthorityList(SszWriter writer, List<string> authorities)
+        {
+            var count = authorities?.Count ?? 0;
+            writer.WriteUInt32((uint)count);
+            if (authorities != null)
+            {
+                foreach (var auth in authorities)
+                    writer.WriteFixedBytes(GetAddressBytes(auth), AddressLength);
+            }
         }
 
         // --- Decode ---
@@ -85,6 +138,32 @@ namespace Nethereum.Model.SSZ
             var logsOffset = reader.ReadUInt32();
             status = reader.ReadBoolean();
             logs = ReadLogList(ref reader);
+        }
+
+        public void DecodeSetCodeReceipt(ReadOnlySpan<byte> data,
+            out string from, out ulong gasUsed, out List<Log> logs,
+            out bool status, out List<string> authorities)
+        {
+            // EIP-6466 SetCodeReceipt layout:
+            //   fixed: from(20) + gas_used(8) + logs_offset(4) + status(1) + authorities_offset(4)
+            //   variable: logs, authorities (each ProgressiveList)
+            var reader = new SszReader(data);
+            from = "0x" + reader.ReadFixedBytes(AddressLength).ToHex();
+            gasUsed = reader.ReadUInt64();
+            var logsOffset = reader.ReadUInt32();
+            status = reader.ReadBoolean();
+            var authoritiesOffset = reader.ReadUInt32();
+
+            var logsSlice = data.Slice((int)logsOffset, (int)(authoritiesOffset - logsOffset));
+            var logsReader = new SszReader(logsSlice);
+            logs = ReadLogList(ref logsReader);
+
+            var authoritiesSlice = data.Slice((int)authoritiesOffset);
+            var authoritiesReader = new SszReader(authoritiesSlice);
+            var count = (int)authoritiesReader.ReadUInt32();
+            authorities = new List<string>(count);
+            for (var i = 0; i < count; i++)
+                authorities.Add("0x" + authoritiesReader.ReadFixedBytes(AddressLength).ToHex());
         }
 
         public byte DecodeReceiptSelector(ReadOnlySpan<byte> data)
