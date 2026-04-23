@@ -27,6 +27,14 @@ namespace Nethereum.Merkle.Binary
         })
         { }
 
+        public static BinaryTrie FromRootHash(byte[] rootHash, BinaryTrieOptions options)
+        {
+            var trie = new BinaryTrie(options);
+            if (rootHash != null && !BinaryTrieConstants.IsZeroHash(rootHash))
+                trie._root = new Nodes.HashedBinaryNode(rootHash, 0);
+            return trie;
+        }
+
         public byte[] Get(byte[] key)
         {
             ValidateKey(key);
@@ -44,8 +52,7 @@ namespace Nethereum.Merkle.Binary
         public void Delete(byte[] key)
         {
             ValidateKey(key);
-            var zeroVal = new byte[BinaryTrieConstants.HashSize];
-            _root = _root.Insert(key, zeroVal, _resolver, 0);
+            _root = _root.Insert(key, null, _resolver, 0);
         }
 
         public byte[] ComputeRoot()

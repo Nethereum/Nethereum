@@ -36,7 +36,7 @@ namespace Nethereum.Merkle.Binary.Hashing
                     if (right != null)
                         System.Array.Copy(right, 0, pair, BinaryTrieConstants.HashSize, BinaryTrieConstants.HashSize);
 
-                    data[i] = hashProvider.ComputeHash(pair);
+                    data[i] = BinaryTrieHash.Compute(hashProvider, pair);
                 }
             }
 
