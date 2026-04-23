@@ -149,6 +149,32 @@ namespace Nethereum.DevChain
         public DevChainConfig DevConfig => _config;
         public BlockManager BlockManager => _blockManager;
 
+        private CoreChain.Services.IProofService _binaryProofService;
+
+        public override CoreChain.Services.IProofService ProofService
+        {
+            get
+            {
+                if (_config.StateTree == StateTreeType.Binary)
+                {
+                    if (_binaryProofService != null)
+                        return _binaryProofService;
+
+                    var binaryCalc = _blockManager.StateRootCalculator
+                        as BinaryIncrementalStateRootCalculator;
+                    if (binaryCalc?.Trie != null)
+                    {
+                        _binaryProofService = new CoreChain.Services.BinaryProofService(
+                            binaryCalc.Trie,
+                            _config.StateTreeHashProvider
+                                ?? new Merkle.Binary.Hashing.Blake3HashProvider());
+                        return _binaryProofService;
+                    }
+                }
+                return base.ProofService;
+            }
+        }
+
         public async Task StartAsync()
         {
             if (_initialized)

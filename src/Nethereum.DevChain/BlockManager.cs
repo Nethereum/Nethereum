@@ -57,9 +57,10 @@ namespace Nethereum.DevChain
             _config = config;
             _trieNodeStore = trieNodeStore;
 
-            IIncrementalStateRootCalculator stateRootCalc = config.StateTree == StateTreeType.Binary
+            StateRootCalculator = config.StateTree == StateTreeType.Binary
                 ? config.CreateBinaryIncrementalStateRootCalculator(stateStore)
                 : new IncrementalStateRootCalculator(stateStore, trieNodeStore);
+            var stateRootCalc = StateRootCalculator;
 
             _blockProducer = new BlockProducer(
                 blockStore,
@@ -124,8 +125,7 @@ namespace Nethereum.DevChain
 
         private async Task CreateGenesisBlockAsync()
         {
-            var stateRootCalculator = new StateRootCalculator();
-            var stateRoot = await stateRootCalculator.ComputeStateRootAsync(_stateStore);
+            var stateRoot = await StateRootCalculator.ComputeStateRootAsync();
 
             var genesisHeader = new BlockHeader
             {
@@ -181,6 +181,8 @@ namespace Nethereum.DevChain
                 }
             }
         }
+
+        public IIncrementalStateRootCalculator StateRootCalculator { get; }
 
         public async Task<byte[]> MineBlockAsync() => await MineBlockAsync(null);
 

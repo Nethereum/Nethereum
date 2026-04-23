@@ -15,15 +15,17 @@ namespace Nethereum.DevChain.Storage.Sqlite
     public class SqliteStateStore : IStateStore
     {
         private readonly SqliteStorageManager _manager;
+        private readonly IAccountLayoutStrategy _accountLayout;
         private readonly object _lock = new object();
         private int _nextSnapshotId = 0;
         private readonly Dictionary<int, SqliteStateSnapshot> _activeSnapshots = new Dictionary<int, SqliteStateSnapshot>();
         private readonly HashSet<string> _dirtyAccounts = new HashSet<string>();
         private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots = new Dictionary<string, HashSet<BigInteger>>();
 
-        public SqliteStateStore(SqliteStorageManager manager)
+        public SqliteStateStore(SqliteStorageManager manager, IAccountLayoutStrategy accountLayout = null)
         {
             _manager = manager;
+            _accountLayout = accountLayout ?? RlpAccountLayout.Instance;
         }
 
         private static string NormalizeAddress(string address)
@@ -40,22 +42,39 @@ namespace Nethereum.DevChain.Storage.Sqlite
         private Account GetAccountInternal(string normalizedAddress)
         {
             using var cmd = _manager.Connection.CreateCommand();
-            cmd.CommandText = "SELECT account_data FROM accounts WHERE address = @addr";
+            cmd.CommandText = _accountLayout.HasExternalCodeHash
+                ? "SELECT account_data, code_hash FROM accounts WHERE address = @addr"
+                : "SELECT account_data FROM accounts WHERE address = @addr";
             cmd.Parameters.AddWithValue("@addr", normalizedAddress);
 
-            var data = cmd.ExecuteScalar() as byte[];
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read()) return null;
+
+            var data = reader["account_data"] as byte[];
             if (data == null) return null;
 
-            return AccountEncoder.Current.Decode(data);
+            var account = _accountLayout.DecodeAccount(data);
+            if (account != null && _accountLayout.HasExternalCodeHash)
+                account.CodeHash = reader["code_hash"] as byte[];
+
+            return account;
         }
 
         public Task SaveAccountAsync(string address, Account account)
         {
             var normalized = NormalizeAddress(address);
-            var data = AccountEncoder.Current.Encode(account);
+            var data = _accountLayout.EncodeAccount(account);
 
             using var cmd = _manager.Connection.CreateCommand();
-            cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data) VALUES (@addr, @data)";
+            if (_accountLayout.HasExternalCodeHash)
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, code_hash) VALUES (@addr, @data, @ch)";
+                cmd.Parameters.AddWithValue("@ch", (object)account.CodeHash ?? System.DBNull.Value);
+            }
+            else
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data) VALUES (@addr, @data)";
+            }
             cmd.Parameters.AddWithValue("@addr", normalized);
             cmd.Parameters.AddWithValue("@data", data);
             cmd.ExecuteNonQuery();
@@ -104,16 +123,23 @@ namespace Nethereum.DevChain.Storage.Sqlite
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
             var result = new Dictionary<string, Account>();
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
 
             using var cmd = _manager.Connection.CreateCommand();
-            cmd.CommandText = "SELECT address, account_data FROM accounts";
+            cmd.CommandText = hasExtCodeHash
+                ? "SELECT address, account_data, code_hash FROM accounts"
+                : "SELECT address, account_data FROM accounts";
 
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
                 var addr = reader.GetString(0);
                 var data = (byte[])reader[1];
-                result[addr] = AccountEncoder.Current.Decode(data);
+                var account = _accountLayout.DecodeAccount(data);
+                if (account != null && hasExtCodeHash)
+                    account.CodeHash = reader[2] as byte[];
+                if (account != null)
+                    result[addr] = account;
             }
 
             return Task.FromResult(result);

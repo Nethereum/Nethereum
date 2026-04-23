@@ -11,11 +11,13 @@ namespace Nethereum.DevChain.Storage.Sqlite
     public class SqliteBlockStore : IBlockStore
     {
         private readonly SqliteStorageManager _manager;
+        private readonly IBlockEncodingProvider _provider;
         private long _savepointCounter;
 
-        public SqliteBlockStore(SqliteStorageManager manager)
+        public SqliteBlockStore(SqliteStorageManager manager, IBlockEncodingProvider provider = null)
         {
             _manager = manager;
+            _provider = provider ?? RlpBlockEncodingProvider.Instance;
         }
 
         public Task<BlockHeader> GetByHashAsync(byte[] hash)
@@ -29,7 +31,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var data = cmd.ExecuteScalar() as byte[];
             if (data == null) return Task.FromResult<BlockHeader>(null);
 
-            return Task.FromResult(BlockHeaderEncoder.Current.Decode(data));
+            return Task.FromResult(_provider.DecodeBlockHeader(data));
         }
 
         public Task<BlockHeader> GetByNumberAsync(BigInteger number)
@@ -41,7 +43,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var data = cmd.ExecuteScalar() as byte[];
             if (data == null) return Task.FromResult<BlockHeader>(null);
 
-            return Task.FromResult(BlockHeaderEncoder.Current.Decode(data));
+            return Task.FromResult(_provider.DecodeBlockHeader(data));
         }
 
         public Task<BlockHeader> GetLatestAsync()
@@ -68,7 +70,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             if (header == null || blockHash == null) return Task.CompletedTask;
 
             var hashHex = blockHash.ToHex();
-            var headerData = BlockHeaderEncoder.Current.Encode(header);
+            var headerData = _provider.EncodeBlockHeader(header);
             var blockNum = (long)header.BlockNumber;
 
             var sp = NextSavepoint();

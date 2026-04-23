@@ -15,13 +15,15 @@ namespace Nethereum.DevChain.Storage.Sqlite
         private const string META_NEWEST_BLOCK = "newest_block";
 
         private readonly SqliteStorageManager _manager;
+        private readonly IAccountLayoutStrategy _accountLayout;
         private readonly object _lock = new();
         private bool _initialized;
         private long _savepointCounter;
 
-        public SqliteStateDiffStore(SqliteStorageManager manager)
+        public SqliteStateDiffStore(SqliteStorageManager manager, IAccountLayoutStrategy accountLayout = null)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _accountLayout = accountLayout ?? RlpAccountLayout.Instance;
             EnsureTablesCreated();
         }
 
@@ -91,7 +93,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
                         byte[] accountData = entry.PreValue != null
-                            ? AccountEncoder.Current.Encode(entry.PreValue)
+                            ? _accountLayout.EncodeAccount(entry.PreValue)
                             : null;
 
                         using var cmd = _manager.Connection.CreateCommand();
@@ -156,7 +158,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                         return Task.FromResult((true, (Account)null));
 
                     var data = (byte[])reader[0];
-                    var account = AccountEncoder.Current.Decode(data);
+                    var account = _accountLayout.DecodeAccount(data);
                     return Task.FromResult((true, account));
                 }
             }

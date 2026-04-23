@@ -98,7 +98,8 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
                 CREATE TABLE IF NOT EXISTS accounts (
                     address TEXT PRIMARY KEY,
-                    account_data BLOB NOT NULL
+                    account_data BLOB NOT NULL,
+                    code_hash BLOB
                 );
 
                 CREATE TABLE IF NOT EXISTS account_storage (
@@ -116,6 +117,22 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 CREATE TABLE IF NOT EXISTS trie_nodes (
                     node_hash BLOB PRIMARY KEY,
                     node_data BLOB NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS binary_trie_nodes (
+                    node_hash BLOB PRIMARY KEY,
+                    node_data BLOB NOT NULL,
+                    depth INTEGER NOT NULL DEFAULT -1,
+                    node_type INTEGER NOT NULL DEFAULT 0,
+                    block_number INTEGER NOT NULL DEFAULT 0,
+                    stem BLOB
+                );
+                CREATE INDEX IF NOT EXISTS idx_btn_depth ON binary_trie_nodes(depth);
+
+                CREATE TABLE IF NOT EXISTS binary_trie_addr_stems (
+                    address BLOB NOT NULL,
+                    node_hash BLOB NOT NULL,
+                    PRIMARY KEY (address, node_hash)
                 );
             ";
             cmd.ExecuteNonQuery();
