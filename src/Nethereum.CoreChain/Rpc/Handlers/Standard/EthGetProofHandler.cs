@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Nethereum.CoreChain.Services;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
@@ -27,8 +26,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 return Error(request.Id, -32602, "Block not found");
             }
 
-            var proofService = new ProofService(context.Node.State, context.Node.TrieNodes);
-            var proof = await proofService.GenerateAccountProofAsync(address, storageKeys, block.StateRoot);
+            var proof = await context.Node.ProofService.GenerateAccountProofAsync(address, storageKeys, block.StateRoot);
 
             return Success(request.Id, proof);
         }

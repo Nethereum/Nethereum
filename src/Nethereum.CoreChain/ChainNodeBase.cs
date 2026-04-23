@@ -64,6 +64,10 @@ namespace Nethereum.CoreChain
         public IFilterStore Filters => _filterStore;
         public ITrieNodeStore TrieNodes => _trieNodeStore;
 
+        private Services.IProofService _proofService;
+        public virtual Services.IProofService ProofService =>
+            _proofService ??= new Services.ProofService(_stateStore, _trieNodeStore);
+
         public virtual async Task<BigInteger> GetBlockNumberAsync()
         {
             return await _blockStore.GetHeightAsync();

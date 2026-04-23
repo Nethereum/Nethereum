@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Services;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.Model;
@@ -18,6 +19,7 @@ namespace Nethereum.CoreChain
         IStateStore State { get; }
         IFilterStore Filters { get; }
         ITrieNodeStore TrieNodes { get; }
+        IProofService ProofService { get; }
 
         Task<BigInteger> GetBlockNumberAsync();
         Task<BlockHeader> GetBlockByHashAsync(byte[] hash);

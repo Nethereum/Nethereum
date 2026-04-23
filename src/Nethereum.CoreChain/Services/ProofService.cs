@@ -13,7 +13,7 @@ using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.CoreChain.Services
 {
-    public class ProofService
+    public class ProofService : IProofService
     {
         private readonly IStateStore _stateStore;
         private readonly ITrieNodeStore _trieNodeStore;

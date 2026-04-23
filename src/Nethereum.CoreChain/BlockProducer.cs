@@ -25,10 +25,11 @@ namespace Nethereum.CoreChain
         private readonly ILogStore _logStore;
         private readonly IStateStore _stateStore;
         private readonly TransactionProcessor _transactionProcessor;
-        private readonly RootCalculator _rootCalculator;
         private readonly IIncrementalStateRootCalculator _stateRootCalculator;
         private readonly ITrieNodeStore _trieNodeStore;
-        private readonly Sha3Keccack _keccak = new();
+        private readonly IBlockHashProvider _blockHashProvider;
+        private readonly IBlockEncodingProvider _blockEncodingProvider;
+        private readonly IBlockRootsProvider _blockRootsProvider;
         private readonly SemaphoreSlim _produceLock = new SemaphoreSlim(1, 1);
 
         public BlockProducer(
@@ -39,7 +40,10 @@ namespace Nethereum.CoreChain
             IStateStore stateStore,
             TransactionProcessor transactionProcessor,
             ITrieNodeStore trieNodeStore = null,
-            IIncrementalStateRootCalculator stateRootCalculator = null)
+            IIncrementalStateRootCalculator stateRootCalculator = null,
+            IBlockHashProvider blockHashProvider = null,
+            IBlockEncodingProvider blockEncodingProvider = null,
+            IBlockRootsProvider blockRootsProvider = null)
         {
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _transactionStore = transactionStore ?? throw new ArgumentNullException(nameof(transactionStore));
@@ -48,8 +52,10 @@ namespace Nethereum.CoreChain
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _transactionProcessor = transactionProcessor ?? throw new ArgumentNullException(nameof(transactionProcessor));
             _trieNodeStore = trieNodeStore;
-            _rootCalculator = new RootCalculator();
             _stateRootCalculator = stateRootCalculator ?? new IncrementalStateRootCalculator(stateStore, trieNodeStore);
+            _blockHashProvider = blockHashProvider ?? RlpKeccakBlockHashProvider.Instance;
+            _blockEncodingProvider = blockEncodingProvider ?? RlpBlockEncodingProvider.Instance;
+            _blockRootsProvider = blockRootsProvider ?? new PatriciaBlockRootsProvider(_blockEncodingProvider, trieNodeStore: _trieNodeStore);
         }
 
         public async Task<BlockProductionResult> ProduceBlockAsync(
@@ -103,7 +109,6 @@ namespace Nethereum.CoreChain
             var results = new List<TransactionResult>();
             var execResults = new List<TransactionExecutionResult>();
             var receipts = new List<Receipt>();
-            var encodedTransactions = new List<byte[]>();
             long cumulativeGasUsed = 0;
             var combinedBloom = new byte[256];
             int successCount = 0;
@@ -146,7 +151,6 @@ namespace Nethereum.CoreChain
                     receipts.Add(execResult.Receipt);
                     CombineBloom(combinedBloom, execResult.Receipt.Bloom);
                 }
-                encodedTransactions.Add(tx.GetRLPEncoded());
                 cumulativeGasUsed = (long)execResult.CumulativeGasUsed;
 
                 if (execResult.Success)
@@ -155,13 +159,8 @@ namespace Nethereum.CoreChain
                     failCount++;
             }
 
-            var transactionsRoot = includedTransactions.Count > 0
-                ? _rootCalculator.CalculateTransactionsRoot(encodedTransactions, _trieNodeStore)
-                : DefaultValues.EMPTY_TRIE_HASH;
-
-            var receiptsRoot = receipts.Count > 0
-                ? _rootCalculator.CalculateReceiptsRoot(receipts, _trieNodeStore)
-                : DefaultValues.EMPTY_TRIE_HASH;
+            var transactionsRoot = _blockRootsProvider.CalculateTransactionsRoot(includedTransactions);
+            var receiptsRoot = _blockRootsProvider.CalculateReceiptsRoot(receipts);
 
             var parentHash = latestBlock != null
                 ? (await _blockStore.GetHashByNumberAsync(latestBlock.BlockNumber) ?? new byte[32])
@@ -337,11 +336,7 @@ namespace Nethereum.CoreChain
         }
 
         private byte[] CalculateBlockHash(BlockHeader header)
-        {
-            var encoder = BlockHeaderEncoder.Current;
-            var encoded = encoder.Encode(header);
-            return _keccak.CalculateHash(encoded);
-        }
+            => _blockHashProvider.ComputeBlockHash(header);
 
         private async Task ExecuteBeaconRootSystemCallAsync(long timestamp, byte[] parentBeaconBlockRoot)
         {
