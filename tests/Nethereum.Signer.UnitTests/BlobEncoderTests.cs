@@ -1,4 +1,5 @@
 using System.Text;
+using Nethereum.Documentation;
 using Nethereum.Model;
 using Xunit;
 
@@ -7,6 +8,7 @@ namespace Nethereum.Signer.UnitTests
     public class BlobEncoderTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "eip4844-blob-encoding", "Encode and decode blob data")]
         public void ShouldRoundTripSmallData()
         {
             var data = Encoding.UTF8.GetBytes("Hello Ethereum Blobs!");
@@ -65,6 +67,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.CoreFoundation, "eip4844-blob-encoding", "Multi-blob encoding for large data")]
         public void ShouldSplitAcrossMultipleBlobs()
         {
             var data = new byte[BlobEncoder.USABLE_BYTES_PER_BLOB + 1];

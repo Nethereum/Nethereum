@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Nethereum.DevChain;
+using Nethereum.Documentation;
 using Nethereum.EVM.Precompiles.Kzg;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
@@ -20,6 +21,7 @@ namespace Nethereum.CoreChain.IntegrationTests
         public BlobTransactionRoundTripTests(ITestOutputHelper output) { _output = output; }
 
         [Fact]
+        [NethereumDocExample(DocSection.InProcessNode, "eip4844-blob-roundtrip", "Send blob tx to DevChain and decode stored blobs")]
         public async Task ShouldRoundTripBlobDataViaDevChain()
         {
             CkzgOperations.InitializeFromEmbeddedSetup();

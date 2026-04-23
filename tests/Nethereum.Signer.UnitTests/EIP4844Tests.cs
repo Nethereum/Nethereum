@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
@@ -86,6 +87,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "eip4844-blob-tx", "Sign EIP-4844 blob transaction")]
         public void ShouldSignAndMatchExpectedRlp()
         {
             var tx = CreateTestTransaction();
@@ -97,6 +99,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "eip4844-blob-tx", "RLP round-trip encode/decode blob transaction")]
         public void ShouldRoundTripEncodeDecode()
         {
             var tx = CreateTestTransaction();
@@ -120,6 +123,7 @@ namespace Nethereum.Signer.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.Signing, "eip4844-blob-tx", "Decode blob transaction via TransactionFactory")]
         public void ShouldDecodeViaTransactionFactory()
         {
             var rlpBytes = ExpectedSignedRlpHex.HexToByteArray();
