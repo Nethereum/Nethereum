@@ -5,7 +5,8 @@
   "dependencies": {
     "@0xbow/privacy-pools-core-sdk": "1.2.0",
     "maci-crypto": "2.5.0",
-    "viem": "^2.22.0",
-    "snarkjs": "^0.7.5"
+    "privacy-pools-cross-sdk-scripts": "file:",
+    "snarkjs": "^0.7.5",
+    "viem": "^2.22.0"
   }
 }

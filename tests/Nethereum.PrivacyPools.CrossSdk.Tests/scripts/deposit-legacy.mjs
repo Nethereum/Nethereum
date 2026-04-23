@@ -3,22 +3,30 @@ import {
   hashPrecommitment,
   getCommitment
 } from '@0xbow/privacy-pools-core-sdk';
-import { bytesToNumber } from 'viem/utils';
 import { mnemonicToAccount } from 'viem/accounts';
 import { poseidon } from 'maci-crypto/build/ts/hashing.js';
 import { parseEventLogs } from 'viem';
 import { readInput, createClients, entrypointAbi, poolAbi } from './helpers.mjs';
+
+// Replicates old viem bytesToNumber: IEEE 754 double truncation (53-bit mantissa)
+function bytesToNumberLossy(bytes) {
+  let value = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    value = value * 256 + bytes[i];
+  }
+  return value;
+}
 
 const input = readInput();
 const { rpcUrl, chainId, entrypointAddress, poolAddress, privateKey, mnemonic, depositIndex, valueWei, scope: scopeStr } = input;
 
 const { publicClient, walletClient, account } = createClients(rpcUrl, chainId, privateKey);
 
-// Legacy key derivation using bytesToNumber (53-bit lossy)
-const key1 = bytesToNumber(
+// Legacy key derivation using double-precision truncation (53-bit lossy)
+const key1 = bytesToNumberLossy(
   mnemonicToAccount(mnemonic, { accountIndex: 0 }).getHdKey().privateKey
 );
-const key2 = bytesToNumber(
+const key2 = bytesToNumberLossy(
   mnemonicToAccount(mnemonic, { accountIndex: 1 }).getHdKey().privateKey
 );
 const masterNullifier = poseidon([BigInt(key1)]);
