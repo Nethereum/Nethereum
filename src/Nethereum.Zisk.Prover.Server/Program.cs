@@ -1,13 +1,23 @@
 using System.Text.Json;
 using Nethereum.CoreChain.Proving;
+using Nethereum.Zisk.Prover.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var mode = builder.Configuration.GetValue<string>("ProverMode") ?? "Mock";
+var elfPath = builder.Configuration.GetValue<string>("ElfPath");
+
+var proverCommand = builder.Configuration.GetValue<string>("ProverCommand") ?? "ziskemu";
+var proverArgs = builder.Configuration.GetValue<string>("ProverArgs")
+    ?? "-e {elf} --legacy-inputs {witness} -n 100000000";
+
 IBlockProver prover = mode switch
 {
-    "Emulate" => throw new NotImplementedException("Emulate mode requires ziskemu — coming soon"),
-    "Prove" => throw new NotImplementedException("Prove mode requires cargo-zisk — coming soon"),
+    "Emulate" or "Prove" => new ZiskEmuBlockProver(
+        elfPath ?? throw new InvalidOperationException(
+            "ElfPath required for Emulate/Prove mode. Set via --ElfPath or appsettings.json"),
+        command: proverCommand,
+        argsTemplate: proverArgs),
     _ => new MockBlockProver()
 };
 
