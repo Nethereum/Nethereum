@@ -10,55 +10,47 @@ using Nethereum.RLP;
 
 namespace Nethereum.CoreChain.RocksDB.Serialization
 {
-    public static class RocksDbSerializer
+    /// <summary>
+    /// Serialisation helpers for RocksDB storage. The four on-the-wire
+    /// block-level objects (header / account / receipt / log) route through
+    /// the supplied <see cref="IBlockEncodingProvider"/> so that an AppChain
+    /// can persist them as either RLP or SSZ. The other helpers
+    /// (ReceiptInfo, TransactionLocation, FilteredLog, FilterState,
+    /// LogFilter) are internal storage envelopes with RLP wire format that
+    /// is a RocksDB implementation detail — they are never the canonical
+    /// on-chain encoding, so they stay RLP regardless of provider.
+    ///
+    /// Static wrappers preserved for back-compat; they route through
+    /// <see cref="Default"/> which uses <see cref="RlpBlockEncodingProvider"/>.
+    /// </summary>
+    public class RocksDbSerializer
     {
-        public static byte[] SerializeBlockHeader(BlockHeader header)
+        public static readonly RocksDbSerializer Default = new RocksDbSerializer(RlpBlockEncodingProvider.Instance);
+
+        private readonly IBlockEncodingProvider _provider;
+
+        public RocksDbSerializer(IBlockEncodingProvider provider)
         {
-            return BlockHeaderEncoder.Current.Encode(header);
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
 
-        public static BlockHeader DeserializeBlockHeader(byte[] data)
-        {
-            if (data == null || data.Length == 0) return null;
-            return BlockHeaderEncoder.Current.Decode(data);
-        }
+        // --- Instance API: routes through the injected provider ---
 
-        public static byte[] SerializeAccount(Account account)
-        {
-            return AccountEncoder.Current.Encode(account);
-        }
+        public byte[] SerializeBlockHeaderWith(BlockHeader header) => _provider.EncodeBlockHeader(header);
+        public BlockHeader DeserializeBlockHeaderWith(byte[] data) => _provider.DecodeBlockHeader(data);
 
-        public static Account DeserializeAccount(byte[] data)
-        {
-            if (data == null || data.Length == 0) return null;
-            return AccountEncoder.Current.Decode(data);
-        }
+        public byte[] SerializeAccountWith(Account account) => _provider.EncodeAccount(account);
+        public Account DeserializeAccountWith(byte[] data) => _provider.DecodeAccount(data);
 
-        public static byte[] SerializeReceipt(Receipt receipt)
-        {
-            return ReceiptEncoder.Current.Encode(receipt);
-        }
+        public byte[] SerializeReceiptWith(Receipt receipt) => _provider.EncodeReceipt(receipt);
+        public Receipt DeserializeReceiptWith(byte[] data) => _provider.DecodeReceipt(data);
 
-        public static Receipt DeserializeReceipt(byte[] data)
-        {
-            if (data == null || data.Length == 0) return null;
-            return ReceiptEncoder.Current.Decode(data);
-        }
+        public byte[] SerializeLogWith(Log log) => _provider.EncodeLog(log);
+        public Log DeserializeLogWith(byte[] data) => _provider.DecodeLog(data);
 
-        public static byte[] SerializeLog(Log log)
+        public byte[] SerializeReceiptInfoWith(ReceiptInfo info)
         {
-            return LogEncoder.Current.Encode(log);
-        }
-
-        public static Log DeserializeLog(byte[] data)
-        {
-            if (data == null || data.Length == 0) return null;
-            return LogEncoder.Current.Decode(data);
-        }
-
-        public static byte[] SerializeReceiptInfo(ReceiptInfo info)
-        {
-            var receiptData = ReceiptEncoder.Current.Encode(info.Receipt);
+            var receiptData = _provider.EncodeReceipt(info.Receipt);
             return RLP.RLP.EncodeList(
                 RLP.RLP.EncodeElement(receiptData),
                 RLP.RLP.EncodeElement(info.TxHash),
@@ -71,7 +63,7 @@ namespace Nethereum.CoreChain.RocksDB.Serialization
             );
         }
 
-        public static ReceiptInfo DeserializeReceiptInfo(byte[] data)
+        public ReceiptInfo DeserializeReceiptInfoWith(byte[] data)
         {
             if (data == null || data.Length == 0) return null;
 
@@ -80,7 +72,7 @@ namespace Nethereum.CoreChain.RocksDB.Serialization
 
             return new ReceiptInfo
             {
-                Receipt = ReceiptEncoder.Current.Decode(elements[0].RLPData),
+                Receipt = _provider.DecodeReceipt(elements[0].RLPData),
                 TxHash = elements[1].RLPData,
                 BlockHash = elements[2].RLPData,
                 BlockNumber = elements[3].RLPData.ToBigIntegerFromRLPDecoded(),
@@ -90,6 +82,23 @@ namespace Nethereum.CoreChain.RocksDB.Serialization
                 EffectiveGasPrice = elements[7].RLPData.ToBigIntegerFromRLPDecoded()
             };
         }
+
+        // --- Static back-compat wrappers — delegate to Default (RLP) ---
+
+        public static byte[] SerializeBlockHeader(BlockHeader header) => Default.SerializeBlockHeaderWith(header);
+        public static BlockHeader DeserializeBlockHeader(byte[] data) => Default.DeserializeBlockHeaderWith(data);
+
+        public static byte[] SerializeAccount(Account account) => Default.SerializeAccountWith(account);
+        public static Account DeserializeAccount(byte[] data) => Default.DeserializeAccountWith(data);
+
+        public static byte[] SerializeReceipt(Receipt receipt) => Default.SerializeReceiptWith(receipt);
+        public static Receipt DeserializeReceipt(byte[] data) => Default.DeserializeReceiptWith(data);
+
+        public static byte[] SerializeLog(Log log) => Default.SerializeLogWith(log);
+        public static Log DeserializeLog(byte[] data) => Default.DeserializeLogWith(data);
+
+        public static byte[] SerializeReceiptInfo(ReceiptInfo info) => Default.SerializeReceiptInfoWith(info);
+        public static ReceiptInfo DeserializeReceiptInfo(byte[] data) => Default.DeserializeReceiptInfoWith(data);
 
         public static byte[] SerializeTransactionLocation(TransactionLocation location)
         {

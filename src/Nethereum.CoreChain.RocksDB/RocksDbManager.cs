@@ -18,6 +18,12 @@ namespace Nethereum.CoreChain.RocksDB
         public const string CF_STATE_STORAGE = "state_storage";
         public const string CF_STATE_CODE = "state_code";
         public const string CF_TRIE_NODES = "trie_nodes";
+        // EIP-7864 binary-trie node storage. Three CFs: nodes (hash→metadata+encoded),
+        // depth index (depth||hash→∅ for range scans), address-stem index
+        // (address||hash→∅ for per-contract queries).
+        public const string CF_BINARY_TRIE_NODES = "binary_trie_nodes";
+        public const string CF_BINARY_TRIE_DEPTH_IDX = "binary_trie_depth_idx";
+        public const string CF_BINARY_TRIE_ADDR_STEMS = "binary_trie_addr_stems";
         public const string CF_FILTERS = "filters";
         public const string CF_METADATA = "metadata";
         public const string CF_BLOCK_BLOOMS = "block_blooms";
@@ -44,6 +50,9 @@ namespace Nethereum.CoreChain.RocksDB
             CF_STATE_STORAGE,
             CF_STATE_CODE,
             CF_TRIE_NODES,
+            CF_BINARY_TRIE_NODES,
+            CF_BINARY_TRIE_DEPTH_IDX,
+            CF_BINARY_TRIE_ADDR_STEMS,
             CF_FILTERS,
             CF_METADATA,
             CF_BLOCK_BLOOMS,

@@ -20,10 +20,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private static readonly byte[] META_KEY_NEWEST = System.Text.Encoding.UTF8.GetBytes("newest_block");
 
         private readonly RocksDbManager _manager;
+        private readonly RocksDbSerializer _serializer;
+        private readonly IAccountLayoutStrategy _accountLayout;
 
-        public RocksDbStateDiffStore(RocksDbManager manager)
+        public RocksDbStateDiffStore(
+            RocksDbManager manager,
+            RocksDbSerializer serializer = null,
+            IAccountLayoutStrategy accountLayout = null)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _serializer = serializer ?? RocksDbSerializer.Default;
+            _accountLayout = accountLayout ?? RlpAccountLayout.Instance;
         }
 
         public Task SaveBlockDiffAsync(BlockStateDiff diff)
@@ -39,7 +46,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             {
                 var addressBytes = NormalizeAddressToBytes(entry.Address);
                 var dataKey = BuildAccountDataKey(addressBytes, blockBytes);
-                var value = entry.PreValue != null ? RocksDbSerializer.SerializeAccount(entry.PreValue) : SENTINEL_NOT_EXIST;
+                var value = entry.PreValue != null ? _accountLayout.EncodeAccount(entry.PreValue) : SENTINEL_NOT_EXIST;
                 batch.Put(dataKey, value, cfAccounts);
 
                 var indexKey = BuildAccountIndexKey(blockBytes, addressBytes);
@@ -81,7 +88,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     if (value.Length == 1 && value[0] == 0x00)
                         return Task.FromResult((true, (Account)null));
 
-                    var account = RocksDbSerializer.DeserializeAccount(value);
+                    var account = _accountLayout.DecodeAccount(value);
                     return Task.FromResult((true, account));
                 }
             }

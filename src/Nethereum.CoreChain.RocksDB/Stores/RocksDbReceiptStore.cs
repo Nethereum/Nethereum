@@ -12,11 +12,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly RocksDbManager _manager;
         private readonly IBlockStore _blockStore;
+        private readonly RocksDbSerializer _serializer;
 
-        public RocksDbReceiptStore(RocksDbManager manager, IBlockStore blockStore = null)
+        public RocksDbReceiptStore(RocksDbManager manager, IBlockStore blockStore = null, RocksDbSerializer serializer = null)
         {
             _manager = manager;
             _blockStore = blockStore;
+            _serializer = serializer ?? RocksDbSerializer.Default;
         }
 
         public Task<Receipt> GetByTxHashAsync(byte[] txHash)
@@ -26,7 +28,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var data = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
             if (data == null) return Task.FromResult<Receipt>(null);
 
-            var info = RocksDbSerializer.DeserializeReceiptInfo(data);
+            var info = _serializer.DeserializeReceiptInfoWith(data);
             return Task.FromResult(info?.Receipt);
         }
 
@@ -37,7 +39,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var data = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
             if (data == null) return Task.FromResult<ReceiptInfo>(null);
 
-            var info = RocksDbSerializer.DeserializeReceiptInfo(data);
+            var info = _serializer.DeserializeReceiptInfoWith(data);
             return Task.FromResult(info);
         }
 
@@ -52,14 +54,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, blockHash))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, blockHash))
                     break;
 
                 var txHash = iterator.Value();
                 var receiptData = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
                 if (receiptData != null)
                 {
-                    var info = RocksDbSerializer.DeserializeReceiptInfo(receiptData);
+                    var info = _serializer.DeserializeReceiptInfoWith(receiptData);
                     if (info != null)
                         result.Add(info.Receipt);
                 }
@@ -102,7 +104,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var receiptsCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPTS);
             var receiptByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPT_BY_BLOCK);
 
-            var data = RocksDbSerializer.SerializeReceiptInfo(info);
+            var data = _serializer.SerializeReceiptInfoWith(info);
             batch.Put(txHash, data, receiptsCf);
 
             if (blockHash != null)
@@ -132,7 +134,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, blockHash))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, blockHash))
                     break;
 
                 var txHash = iterator.Value();
@@ -154,16 +156,5 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return key;
         }
 
-        private static bool StartsWith(byte[] data, byte[] prefix)
-        {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (data[i] != prefix[i]) return false;
-            }
-            return true;
-        }
     }
 }

@@ -15,10 +15,12 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private const string HEIGHT_KEY = "height";
 
         private readonly RocksDbManager _manager;
+        private readonly RocksDbSerializer _serializer;
 
-        public RocksDbBlockStore(RocksDbManager manager)
+        public RocksDbBlockStore(RocksDbManager manager, RocksDbSerializer serializer = null)
         {
             _manager = manager;
+            _serializer = serializer ?? RocksDbSerializer.Default;
         }
 
         public Task<BlockHeader> GetByHashAsync(byte[] hash)
@@ -26,7 +28,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (hash == null) return Task.FromResult<BlockHeader>(null);
 
             var data = _manager.Get(RocksDbManager.CF_BLOCKS, hash);
-            var header = RocksDbSerializer.DeserializeBlockHeader(data);
+            var header = _serializer.DeserializeBlockHeaderWith(data);
             return Task.FromResult(header);
         }
 
@@ -66,7 +68,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var blockNumbersCf = _manager.GetColumnFamily(RocksDbManager.CF_BLOCK_NUMBERS);
             var metadataCf = _manager.GetColumnFamily(RocksDbManager.CF_METADATA);
 
-            var headerData = RocksDbSerializer.SerializeBlockHeader(header);
+            var headerData = _serializer.SerializeBlockHeaderWith(header);
             batch.Put(blockHash, headerData, blocksCf);
 
             var numberKey = GetBlockNumberKey(header.BlockNumber);

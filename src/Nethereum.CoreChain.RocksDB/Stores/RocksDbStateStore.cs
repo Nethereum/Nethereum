@@ -22,9 +22,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots = new Dictionary<string, HashSet<BigInteger>>();
         private bool _disposed;
 
-        public RocksDbStateStore(RocksDbManager manager)
+        private readonly RocksDbSerializer _serializer;
+        private readonly IAccountLayoutStrategy _accountLayout;
+
+        public RocksDbStateStore(
+            RocksDbManager manager,
+            RocksDbSerializer serializer = null,
+            IAccountLayoutStrategy accountLayout = null)
         {
             _manager = manager;
+            _serializer = serializer ?? RocksDbSerializer.Default;
+            _accountLayout = accountLayout ?? RlpAccountLayout.Instance;
         }
 
         public void Dispose()
@@ -56,15 +64,29 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var key = GetAccountKey(address);
             var data = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, key);
-            var account = RocksDbSerializer.DeserializeAccount(data);
+            var account = _accountLayout.DecodeAccount(data);
+
+            if (account != null && _accountLayout.HasExternalCodeHash)
+            {
+                var chKey = GetCodeHashKey(key);
+                account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, chKey);
+            }
+
             return Task.FromResult(account);
         }
 
         public Task SaveAccountAsync(string address, Account account)
         {
             var key = GetAccountKey(address);
-            var data = RocksDbSerializer.SerializeAccount(account);
+            var data = _accountLayout.EncodeAccount(account);
             _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, key, data);
+
+            if (_accountLayout.HasExternalCodeHash && account.CodeHash != null)
+            {
+                var chKey = GetCodeHashKey(key);
+                _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, chKey, account.CodeHash);
+            }
+
             TrackAccountModification(address);
             return Task.CompletedTask;
         }
@@ -86,6 +108,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             batch.Delete(key, accountsCf);
 
+            if (_accountLayout.HasExternalCodeHash)
+                batch.Delete(GetCodeHashKey(key), accountsCf);
+
             var prefix = key;
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
             iterator.Seek(prefix);
@@ -93,7 +118,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var storageKey = iterator.Key();
-                if (!StartsWith(storageKey, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(storageKey, prefix))
                     break;
                 batch.Delete(storageKey, storageCf);
                 iterator.Next();
@@ -105,6 +130,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
             var result = new Dictionary<string, Account>();
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_ACCOUNTS);
@@ -113,12 +139,24 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                var data = iterator.Value();
 
+                if (hasExtCodeHash && key.Length != 20)
+                {
+                    iterator.Next();
+                    continue;
+                }
+
+                var data = iterator.Value();
                 var address = "0x" + key.ToHex();
-                var account = RocksDbSerializer.DeserializeAccount(data);
+                var account = _accountLayout.DecodeAccount(data);
                 if (account != null)
                 {
+                    if (hasExtCodeHash)
+                    {
+                        var chKey = GetCodeHashKey(key);
+                        account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, chKey);
+                    }
+
                     result[address.ToLowerInvariant()] = account;
                 }
 
@@ -163,7 +201,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
                 var slotBytes = new byte[key.Length - prefix.Length];
@@ -190,7 +228,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
                 batch.Delete(key, storageCf);
                 iterator.Next();
@@ -250,7 +288,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     while (iterator.Valid())
                     {
                         var key = iterator.Key();
-                        if (!StartsWith(key, prefix))
+                        if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                             break;
                         batch.Delete(key, storageCf);
                         iterator.Next();
@@ -260,7 +298,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 foreach (var kvp in rocksSnapshot.PendingAccounts)
                 {
                     var key = kvp.Key.HexToByteArray();
-                    var data = RocksDbSerializer.SerializeAccount(kvp.Value);
+                    var data = _accountLayout.EncodeAccount(kvp.Value);
                     batch.Put(key, data, accountsCf);
                 }
 
@@ -367,6 +405,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return normalized.HexToByteArray();
         }
 
+        // EIP-7864: code hash is stored in a separate trie leaf (sub-index 1) from
+        // basic data (sub-index 0). The state store mirrors this by appending 0x01
+        // to the 20-byte address key, keeping both in CF_STATE_ACCOUNTS.
+        private static byte[] GetCodeHashKey(byte[] accountKey)
+        {
+            var chKey = new byte[accountKey.Length + 1];
+            Buffer.BlockCopy(accountKey, 0, chKey, 0, accountKey.Length);
+            chKey[accountKey.Length] = 0x01;
+            return chKey;
+        }
+
         private static byte[] GetStorageKey(string address, BigInteger slot)
         {
             var addressBytes = GetAccountKey(address);
@@ -381,18 +430,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
             Buffer.BlockCopy(slotBytes, 0, key, addressBytes.Length, slotBytes.Length);
             return key;
-        }
-
-        private static bool StartsWith(byte[] data, byte[] prefix)
-        {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (data[i] != prefix[i]) return false;
-            }
-            return true;
         }
 
         private void TrackAccountModification(string address)

@@ -51,7 +51,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
                 var data = iterator.Value();
@@ -80,7 +80,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid() && results.Count < count)
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
                 if (skipped < offset)
@@ -144,7 +144,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
                 count++;
                 iterator.Next();
@@ -305,15 +305,5 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return false;
         }
 
-        private static bool StartsWith(byte[] data, byte[] prefix)
-        {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (data[i] != prefix[i]) return false;
-            }
-            return true;
-        }
     }
 }

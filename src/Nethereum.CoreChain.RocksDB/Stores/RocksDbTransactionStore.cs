@@ -13,11 +13,16 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly RocksDbManager _manager;
         private readonly IBlockStore _blockStore;
+        private readonly IBlockEncodingProvider _provider;
 
-        public RocksDbTransactionStore(RocksDbManager manager, IBlockStore blockStore = null)
+        public RocksDbTransactionStore(
+            RocksDbManager manager,
+            IBlockStore blockStore = null,
+            IBlockEncodingProvider provider = null)
         {
             _manager = manager;
             _blockStore = blockStore;
+            _provider = provider ?? RlpBlockEncodingProvider.Instance;
         }
 
         public Task<ISignedTransaction> GetByHashAsync(byte[] txHash)
@@ -27,7 +32,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var data = _manager.Get(RocksDbManager.CF_TRANSACTIONS, txHash);
             if (data == null) return Task.FromResult<ISignedTransaction>(null);
 
-            var tx = DeserializeStoredTransaction(data);
+            var tx = DeserializeStoredTransaction(data, _provider);
             return Task.FromResult(tx);
         }
 
@@ -43,14 +48,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
                 var txHash = iterator.Value();
                 var txData = _manager.Get(RocksDbManager.CF_TRANSACTIONS, txHash);
                 if (txData != null)
                 {
-                    var tx = DeserializeStoredTransaction(txData);
+                    var tx = DeserializeStoredTransaction(txData, _provider);
                     if (tx != null)
                     {
                         result.Add(tx);
@@ -75,7 +80,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
                 var txHash = iterator.Value();
@@ -109,8 +114,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var txByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_TX_BY_BLOCK);
 
             var txHash = tx.Hash;
-            var txRlp = tx.GetRLPEncoded();
-            var storedData = SerializeStoredTransaction(txRlp, blockHash, txIndex, blockNumber);
+            var txBytes = _provider.EncodeTransaction(tx);
+            var storedData = SerializeStoredTransaction(txBytes, blockHash, txIndex, blockNumber);
             batch.Put(txHash, storedData, txCf);
 
             var blockTxKey = CreateBlockTxKey(blockHash, txIndex);
@@ -148,7 +153,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, blockHash))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, blockHash))
                     break;
 
                 var txHash = iterator.Value();
@@ -171,7 +176,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             );
         }
 
-        private static ISignedTransaction DeserializeStoredTransaction(byte[] data)
+        private static ISignedTransaction DeserializeStoredTransaction(byte[] data, IBlockEncodingProvider provider)
         {
             if (data == null || data.Length == 0) return null;
 
@@ -180,8 +185,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var decoded = RLP.RLP.Decode(data);
                 var elements = (RLPCollection)decoded;
 
-                var txRlp = elements[0].RLPData;
-                return TransactionFactory.CreateTransaction(txRlp);
+                var txBytes = elements[0].RLPData;
+                return provider.DecodeTransaction(txBytes);
             }
             catch
             {
@@ -226,16 +231,5 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return key;
         }
 
-        private static bool StartsWith(byte[] data, byte[] prefix)
-        {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (data[i] != prefix[i]) return false;
-            }
-            return true;
-        }
     }
 }
