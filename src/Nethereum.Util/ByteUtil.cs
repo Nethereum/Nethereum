@@ -224,6 +224,16 @@ namespace Nethereum.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith(byte[] data, byte[] prefix)
+        {
+            if (data == null || prefix == null) return false;
+            if (data.Length < prefix.Length) return false;
+            for (int i = 0; i < prefix.Length; i++)
+                if (data[i] != prefix[i]) return false;
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsZero(byte[] value)
         {
             if (value == null) return true;
