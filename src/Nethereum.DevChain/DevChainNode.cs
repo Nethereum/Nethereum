@@ -152,6 +152,9 @@ namespace Nethereum.DevChain
         public DevChainConfig DevConfig => _config;
         public BlockManager BlockManager => _blockManager;
 
+        public CoreChain.Storage.IWitnessStore WitnessStore { get; set; }
+        public CoreChain.Proving.IBlockProver BlockProver { get; set; }
+
         private CoreChain.Services.IProofService _binaryProofService;
 
         public override CoreChain.Services.IProofService ProofService
@@ -388,7 +391,31 @@ namespace Nethereum.DevChain
             EnsureInitialized();
             var hash = await _blockManager.MineBlockAsync();
             await FlushPendingBlobsAsync();
+            await CaptureWitnessAndProveAsync();
             return hash;
+        }
+
+        private async Task CaptureWitnessAndProveAsync()
+        {
+            var result = _blockManager.LastBlockProductionResult;
+            if (result == null) return;
+
+            var blockNumber = result.Header.BlockNumber;
+            var postStateRoot = result.Header.StateRoot;
+            var preStateRoot = result.PreStateRoot;
+
+            if (WitnessStore != null && preStateRoot != null && postStateRoot != null)
+            {
+                var witnessBytes = preStateRoot;
+                await WitnessStore.StoreWitnessAsync(blockNumber, witnessBytes);
+
+                if (BlockProver != null)
+                {
+                    var proof = await BlockProver.ProveBlockAsync(
+                        witnessBytes, preStateRoot, postStateRoot, (long)blockNumber);
+                    await WitnessStore.StoreProofAsync(blockNumber, proof);
+                }
+            }
         }
 
         public async Task<byte[]> MineBlockAsync(byte[] parentBeaconBlockRoot)

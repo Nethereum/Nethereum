@@ -258,10 +258,13 @@ namespace Nethereum.DevChain
                 };
             }
 
+            LastBlockProductionResult = result;
             await InitializePendingBlockAsync();
 
             return result.BlockHash;
         } // end MineBlockInternalAsync
+
+        public BlockProductionResult LastBlockProductionResult { get; private set; }
 
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
         {

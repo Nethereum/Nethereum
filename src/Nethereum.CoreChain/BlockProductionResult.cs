@@ -11,6 +11,8 @@ namespace Nethereum.CoreChain
         public List<TransactionResult> TransactionResults { get; set; } = new();
         public int SuccessfulTransactions { get; set; }
         public int FailedTransactions { get; set; }
+        public byte[] WitnessBytes { get; set; }
+        public byte[] PreStateRoot { get; set; }
         public object? MessageBatchResult { get; set; }
     }
 

@@ -103,6 +103,9 @@ namespace Nethereum.CoreChain
             if (_stateStore is IHistoricalStateProvider historyProvider)
                 historyProvider.SetCurrentBlockNumber(nextBlockNumber);
 
+            byte[] preStateRoot = null;
+            try { preStateRoot = await _stateRootCalculator.ComputeStateRootAsync(); } catch { }
+
             var (orderedTransactions, senderCache) = OrderTransactionsByNonce(transactions);
 
             var includedTransactions = new List<ISignedTransaction>();
@@ -236,7 +239,8 @@ namespace Nethereum.CoreChain
                 BlockHash = blockHash,
                 TransactionResults = results,
                 SuccessfulTransactions = successCount,
-                FailedTransactions = failCount
+                FailedTransactions = failCount,
+                PreStateRoot = preStateRoot
             };
         }
 
