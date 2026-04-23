@@ -82,6 +82,7 @@ namespace Nethereum.Util.Poseidon
         private void Permute(T[] state)
         {
             var halfFullRounds = _fullRounds / 2;
+            var next = new T[_stateWidth];
 
             for (var round = 0; round < _totalRounds; round++)
             {
@@ -99,7 +100,6 @@ namespace Nethereum.Util.Poseidon
                     state[0] = _field.ModPow(state[0], _sBoxExponent);
                 }
 
-                var next = new T[_stateWidth];
                 for (int row = 0; row < _stateWidth; row++)
                 {
                     var acc = _field.Zero;

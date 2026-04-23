@@ -11,6 +11,11 @@ namespace Nethereum.Util.HashProviders
             _hasher = new PoseidonEvmHasher(PoseidonParameterPreset.CircomT2);
         }
 
+        public PoseidonPairHashProvider(PoseidonHasher hasher)
+        {
+            _hasher = new PoseidonEvmHasher(PoseidonParameterPreset.CircomT2);
+        }
+
         public byte[] ComputeHash(byte[] data)
         {
             if (data == null)
