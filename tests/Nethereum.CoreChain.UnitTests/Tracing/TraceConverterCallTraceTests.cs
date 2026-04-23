@@ -1,16 +1,20 @@
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.EVM;
+using Nethereum.EVM.Types;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.CoreChain.UnitTests.Tracing
 {
     public class TraceConverterCallTraceTests
     {
-        private static CallInput MakeCall(string from, string to, string data = "0x")
+        private static CallInput MakeCallInput(string from, string to, string data = "0x")
         {
             return new CallInput
             {
@@ -19,6 +23,18 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
                 Data = data,
                 Value = new HexBigInteger(0),
                 Gas = new HexBigInteger(100000)
+            };
+        }
+
+        private static EvmCallContext MakeCall(string from, string to, string data = "0x")
+        {
+            return new EvmCallContext
+            {
+                From = from,
+                To = to,
+                Data = data != null ? data.HexToByteArray() : Array.Empty<byte>(),
+                Value = EvmUInt256.Zero,
+                Gas = 100000
             };
         }
 
@@ -65,7 +81,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             };
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -123,7 +139,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             };
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -184,7 +200,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             };
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -252,7 +268,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             };
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -289,7 +305,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             };
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -324,7 +340,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             };
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -337,7 +353,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
         public void NoInnerCalls_ReturnsNullCalls()
         {
             var program = new Program(new byte[] { 0x00 });
-            var callInput = MakeCall("0xsender", "0xcontract");
+            var callInput = MakeCallInput("0xsender", "0xcontract");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 
@@ -351,7 +367,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
         public void ContractCreation_SetsTypeToCreate()
         {
             var program = new Program(new byte[] { 0x00 });
-            var callInput = MakeCall("0xsender", null);
+            var callInput = MakeCallInput("0xsender", null);
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, true);
 
@@ -379,7 +395,7 @@ namespace Nethereum.CoreChain.UnitTests.Tracing
             }
 
             var program = CreateProgramWithInnerCalls(innerCalls);
-            var callInput = MakeCall("0xsender", "0xroot");
+            var callInput = MakeCallInput("0xsender", "0xroot");
 
             var result = TraceConverter.ConvertToCallTraceResult(program, callInput, false);
 

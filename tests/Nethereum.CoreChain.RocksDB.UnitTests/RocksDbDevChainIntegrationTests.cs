@@ -258,7 +258,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.NotNull(retrievedBlock);
             Assert.Equal(1, retrievedBlock.BlockNumber);
 
-            var retrievedBalance = (await newStateStore.GetAccountAsync(address))?.Balance ?? 0;
+            var retrievedAccount = await newStateStore.GetAccountAsync(address);
+            var retrievedBalance = retrievedAccount != null ? (BigInteger)retrievedAccount.Balance : BigInteger.Zero;
             Assert.Equal(balance, retrievedBalance);
         }
     }

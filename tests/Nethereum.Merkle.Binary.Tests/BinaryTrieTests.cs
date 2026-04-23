@@ -129,7 +129,7 @@ namespace Nethereum.Merkle.Binary.Tests
 
         [Fact]
         [Trait("Category", "BinaryTrie")]
-        public void Delete_SetsValueToZero()
+        public void Delete_SetsValueToAbsent()
         {
             var trie = new BinaryTrie();
             var key = MakeKey(0x00, 0x01);
@@ -137,7 +137,7 @@ namespace Nethereum.Merkle.Binary.Tests
             trie.Delete(key);
 
             var result = trie.Get(key);
-            Assert.Equal(new byte[32], result);
+            Assert.Null(result);
         }
 
         [Fact]

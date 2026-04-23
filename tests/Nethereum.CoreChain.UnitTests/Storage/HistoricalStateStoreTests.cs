@@ -266,7 +266,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var newest = await diffStore.GetNewestDiffBlockAsync();
             var atNewest = await store.GetAccountAtBlockAsync(Addr1, newest.Value);
             Assert.NotNull(atNewest);
-            Assert.Equal(100 + newest.Value * 10, atNewest.Balance);
+            Assert.Equal(100 + newest.Value * 10, (BigInteger)atNewest.Balance);
         }
 
         [Fact]

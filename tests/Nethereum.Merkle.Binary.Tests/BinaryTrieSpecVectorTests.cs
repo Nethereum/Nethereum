@@ -256,7 +256,73 @@ namespace Nethereum.Merkle.Binary.Tests
 
             trie.Delete(key);
             got = trie.Get(key);
-            Assert.Equal(new byte[32], got);
+            Assert.Null(got);
+        }
+
+        /// <summary>
+        /// EIP-7864: hash([0x00]*64) = [0x00]*32 (zero-propagation shortcut).
+        /// An all-None StemNode with a zero stem produces a 64-byte preimage
+        /// of all zeros (stem=31_zeros || 0x00 || values_root=32_zeros). The
+        /// shortcut makes this hash to 32 zeros, matching jsign behavior.
+        /// Without the shortcut, blake3(64_zeros) = 4d006976... (non-zero).
+        /// Cross-validated against jsign/binary-tree-spec on 2026-04-21.
+        /// </summary>
+        [Fact]
+        [Trait("Category", "BinaryTrie-SpecVectors")]
+        public void ZeroPropagation_AllNoneStemWithZeroStem_ProducesZeroRoot_Blake3()
+        {
+            var trie = CreateBlake3Trie();
+            var key = new byte[32]; key[31] = 0x05;
+            var val = "deadbeef00000000000000000000000000000000000000000000000000000000".HexToByteArray();
+
+            trie.Put(key, val);
+            Assert.Equal(
+                "ad26dacde9cdc28c0151eca46393acf38ab48d045f5b01ef2fc4ba1bd9ba7c61",
+                trie.ComputeRoot().ToHex());
+
+            trie.Delete(key);
+
+            // With the zero-propagation shortcut: stem is 31 zeros,
+            // values_root is 32 zeros (all null), so preimage = 64 zeros.
+            // hash(64_zeros) = 32_zeros per EIP-7864.
+            Assert.Equal(new byte[32], trie.ComputeRoot());
+        }
+
+        /// <summary>
+        /// Cross-validated against jsign/binary-tree-spec on 2026-04-21.
+        /// Delete sets Values[sub] = null (absent), NOT 32-zero-bytes.
+        /// Per EIP-7864 merkleization: _hash(None) = 32-zeros via the
+        /// zero-propagation shortcut; _hash(32-zero-bytes) = blake3(zeros)
+        /// which is non-zero. These produce distinct roots.
+        /// </summary>
+        [Fact]
+        [Trait("Category", "BinaryTrie-SpecVectors")]
+        public void Delete_ProducesAbsentRoot_NotZeroValueRoot_Blake3()
+        {
+            var trie = CreateBlake3Trie();
+            var key = new byte[32]; key[0] = 0xAA; key[31] = 0x01;
+            var val = "deadbeef00000000000000000000000000000000000000000000000000000000".HexToByteArray();
+
+            trie.Put(key, val);
+            Assert.Equal(
+                "e37ea9e2062a01a4620dcdb58040fbc17e4c3a6a1272a584c74810da32bac50c",
+                trie.ComputeRoot().ToHex());
+
+            trie.Delete(key);
+
+            // After delete: StemNode persists with all values null.
+            // Stem is non-zero (0xAA...) so stem_hash != zeros.
+            Assert.Equal(
+                "4c6d6a671a3e0bd295e360547ac5017e1affc2020e9c836cea80f08673508c95",
+                trie.ComputeRoot().ToHex());
+
+            // A tree with explicit 32-zero-bytes (present-but-zero) produces
+            // a DIFFERENT root — confirming absent ≠ present-zero per spec.
+            var trie2 = CreateBlake3Trie();
+            trie2.Put(key, new byte[32]);
+            Assert.Equal(
+                "57d5beffc7a394dd236e4aa10d428fbe996f9526ba44803027555e0191577db4",
+                trie2.ComputeRoot().ToHex());
         }
 
         /// <summary>
