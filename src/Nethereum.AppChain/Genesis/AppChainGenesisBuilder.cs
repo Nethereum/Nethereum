@@ -23,11 +23,13 @@ namespace Nethereum.AppChain.Genesis
         private readonly Dictionary<string, BigInteger> _prefundedAccounts = new Dictionary<string, BigInteger>();
         private readonly Sha3Keccack _keccak = new Sha3Keccack();
         private readonly StateRootCalculator _stateRootCalculator = new StateRootCalculator();
+        private readonly IBlockHashProvider _blockHashProvider;
 
-        public AppChainGenesisBuilder(AppChainConfig config, IStateStore stateStore)
+        public AppChainGenesisBuilder(AppChainConfig config, IStateStore stateStore, IBlockHashProvider blockHashProvider = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+            _blockHashProvider = blockHashProvider ?? RlpKeccakBlockHashProvider.Instance;
         }
 
         public void AddPrefundedAccount(string address, BigInteger balance)
@@ -87,9 +89,6 @@ namespace Nethereum.AppChain.Genesis
         }
 
         private byte[] ComputeBlockHash(BlockHeader header)
-        {
-            var encoded = BlockHeaderEncoder.Current.Encode(header);
-            return _keccak.CalculateHash(encoded);
-        }
+            => _blockHashProvider.ComputeBlockHash(header);
     }
 }

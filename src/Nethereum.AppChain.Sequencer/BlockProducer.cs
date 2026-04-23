@@ -18,7 +18,10 @@ namespace Nethereum.AppChain.Sequencer
             IAppChain appChain,
             TransactionProcessor transactionProcessor,
             IBlockProductionStrategy? strategy = null,
-            CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null)
+            CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null,
+            IBlockHashProvider? blockHashProvider = null,
+            IBlockEncodingProvider? blockEncodingProvider = null,
+            IBlockRootsProvider? blockRootsProvider = null)
         {
             if (appChain == null) throw new ArgumentNullException(nameof(appChain));
             if (transactionProcessor == null) throw new ArgumentNullException(nameof(transactionProcessor));
@@ -34,7 +37,10 @@ namespace Nethereum.AppChain.Sequencer
                 appChain.State,
                 transactionProcessor,
                 appChain.TrieNodes,
-                stateRootCalculator);
+                stateRootCalculator,
+                blockHashProvider,
+                blockEncodingProvider,
+                blockRootsProvider);
         }
 
         public async Task<BlockProductionResult> ProduceBlockAsync(IReadOnlyList<ISignedTransaction> transactions)
