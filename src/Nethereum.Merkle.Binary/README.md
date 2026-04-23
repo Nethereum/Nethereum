@@ -405,6 +405,35 @@ public class InMemoryBinaryTrieStorage : IBinaryTrieStorage
 | Specification | Various | EIP-7864 |
 | Proofs | OpenZeppelin-compatible | Binary inclusion proofs |
 
+## Performance
+
+Block production benchmarks comparing Patricia Merkle Trie (Keccak) vs Binary Trie with Blake3 and Poseidon (BN254 Montgomery) hash providers. All tests use simple ETH transfers with JIT warmup. Release build, .NET 10.
+
+### In-Memory (100 blocks x 100 txs = 10,000 transactions)
+
+| | Patricia | Binary (Blake3) | Binary (Poseidon) |
+|---|---|---|---|
+| Avg/block | 127ms | 145ms | 207ms |
+| Ratio | 1.0x | 1.14x | 1.63x |
+
+### SQLite (50 blocks x 50 txs = 2,500 transactions)
+
+| | Patricia | Binary (Blake3) | Binary (Poseidon) |
+|---|---|---|---|
+| Avg/block | 109ms | 95ms | 136ms |
+| Ratio | 1.0x | 0.87x | 1.25x |
+
+### RocksDB (50 blocks x 50 txs = 2,500 transactions)
+
+| | Patricia | Binary (Blake3) | Binary (Poseidon) |
+|---|---|---|---|
+| Avg/block | 69ms | 70ms | 113ms |
+| Ratio | 1.0x | 1.01x | 1.64x |
+
+Blake3 binary trie matches Patricia performance and is faster on SQLite due to simpler tree structure (binary vs hex branching, no RLP encoding). Poseidon adds 1.25-1.64x overhead depending on backend — the algebraic hash cost is offset by incremental hashing (only dirty paths recomputed) and Montgomery CIOS field arithmetic.
+
+The tradeoff: Poseidon is ZK-native. State trie validation accounts for ~43% of total ZK proving cost with Keccak. Replacing it with Poseidon eliminates that cost entirely in the proving circuit.
+
 ## Related Packages
 
 - **Nethereum.Util** — `IHashProvider` interface, `Sha256HashProvider`, byte utilities
