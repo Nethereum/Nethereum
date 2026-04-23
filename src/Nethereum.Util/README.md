@@ -717,6 +717,24 @@ Both `PoseidonHasher` (BigInteger API) and `PoseidonEvmHasher` (EvmUInt256 API)
 share the same generic permutation via `PoseidonCore<T>` parameterised by
 `IPoseidonFieldOps<T>`. Cross-validated to produce identical results.
 
+### BN254 Montgomery Poseidon
+
+For performance-critical paths (binary trie state root computation), `BN254PoseidonPairHashProvider` uses Montgomery CIOS field arithmetic instead of generic `EvmUInt256.MulMod`:
+
+```csharp
+// Opt-in fast Poseidon for binary trie (BN254 scalar field, Montgomery form)
+IHashProvider fast = new BN254PoseidonPairHashProvider();
+
+// Original Poseidon (EvmUInt256, generic — used by PrivacyPools, LeanIMT, etc.)
+IHashProvider standard = new PoseidonPairHashProvider();
+
+// Both produce byte-identical output — cross-validated with 400+ random inputs
+```
+
+- `BN254FieldElement` — 4×ulong struct in Montgomery form, CIOS multiply (no division)
+- `BN254PoseidonCore` — specialised CircomT2 permuter, direct static calls (no interface dispatch), unrolled 3×3 MDS
+- `BN254PoseidonPairHashProvider` — `IHashProvider` implementation, reads 64-byte inputs directly without allocation
+
 ### IHashProvider
 
 Pluggable hash provider interface.
@@ -732,6 +750,8 @@ public interface IHashProvider
 // - Sha256HashProvider (SHA-256)
 // - PoseidonHashProvider (Poseidon, uses PoseidonEvmHasher internally)
 // - PoseidonPairHashProvider (Poseidon CircomT2, expects 32 or 64-byte input)
+// - BN254PoseidonPairHashProvider (Poseidon CircomT2 with BN254 Montgomery CIOS,
+//     ~10x faster than PoseidonPairHashProvider, opt-in for binary trie)
 ```
 
 ### Additional Utilities

@@ -211,6 +211,9 @@ var cfg  = DefaultMainnetHardforkRegistry.Instance.Get(fork);
 
 - `PatriciaStateRootCalculator` — computes the MPT state root over
   an `IStateStore`. Used by witness verification and block production.
+- `BinaryIncrementalStateRootCalculator` — EIP-7864 binary trie state
+  root with incremental dirty-account updates and hash caching.
+  Supports Blake3 and Poseidon (BN254 Montgomery) hash providers.
 - `PatriciaBlockRootCalculator` — transactions-root / receipts-root /
   withdrawals-root computation over RLP-encoded items.
 - `PatriciaMerkleTreeBuilder` — shared trie-building helper.
@@ -218,6 +221,9 @@ var cfg  = DefaultMainnetHardforkRegistry.Instance.Get(fork);
   touching the full state store; useful inside stateless verifiers.
 - `WitnessProofVerifier` — validates account and storage Merkle
   proofs against a supplied pre-state root.
+- `BinaryProofService` — generates and verifies binary trie Merkle
+  proofs for accounts and storage slots (`IProofService`).
+  Returns `BinaryAccountProofResult` / `BinaryStorageProofResult`.
 
 ## RPC Framework
 

@@ -112,6 +112,10 @@ public class DevChainConfig : ChainConfig
     public BigInteger BaseFee { get; set; } = 1_000_000_000; // 1 gwei
     public BigInteger InitialBalance { get; set; }; // Default: 10000 ETH (BigInteger.Parse("10000000000000000000000"))
 
+    // State trie (inherited from ChainConfig)
+    public StateTreeType StateTree { get; set; } = StateTreeType.Patricia;
+    public IHashProvider StateTreeHashProvider { get; set; }; // null = Blake3 for Binary, Keccak for Patricia
+
     // Forking
     public string ForkUrl { get; set; }
     public long? ForkBlockNumber { get; set; }
@@ -125,6 +129,20 @@ public class DevChainConfig : ChainConfig
 var config = DevChainConfig.Default;   // ChainId 1337
 var config = DevChainConfig.Hardhat;   // ChainId 31337
 var config = DevChainConfig.Anvil;     // ChainId 31337
+
+// Binary trie with Poseidon (ZK-friendly)
+var zkConfig = new DevChainConfig
+{
+    StateTree = StateTreeType.Binary,
+    StateTreeHashProvider = new BN254PoseidonPairHashProvider()
+};
+
+// Binary trie with Blake3 (fastest)
+var fastConfig = new DevChainConfig
+{
+    StateTree = StateTreeType.Binary,
+    StateTreeHashProvider = new Blake3HashProvider()
+};
 ```
 
 ## Core Features
