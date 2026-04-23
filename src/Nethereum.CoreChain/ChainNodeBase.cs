@@ -524,6 +524,12 @@ namespace Nethereum.CoreChain
         public abstract Task<TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx);
         public abstract Task<List<ISignedTransaction>> GetPendingTransactionsAsync();
 
+        public virtual async Task<List<Storage.BlobSidecarRecord>> GetBlobSidecarsByBlockNumberAsync(System.Numerics.BigInteger blockNumber)
+        {
+            if (_blobStore == null) return new List<Storage.BlobSidecarRecord>();
+            return await _blobStore.GetBlobsByBlockNumberAsync(blockNumber);
+        }
+
         #region Tracing
 
         protected virtual async Task<TraceExecutionResult> PrepareAndExecuteTraceAsync(string txHash, bool traceEnabled = true)

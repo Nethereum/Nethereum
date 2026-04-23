@@ -52,6 +52,8 @@ namespace Nethereum.CoreChain
 
         Task<List<ISignedTransaction>> GetPendingTransactionsAsync();
 
+        Task<List<Storage.BlobSidecarRecord>> GetBlobSidecarsByBlockNumberAsync(System.Numerics.BigInteger blockNumber);
+
         Task<OpcodeTraceResult> TraceTransactionAsync(string txHash, OpcodeTraceConfig config = null);
         Task<CallTraceResult> TraceTransactionCallTracerAsync(string txHash);
         Task<PrestateTraceResult> TraceTransactionPrestateAsync(string txHash);

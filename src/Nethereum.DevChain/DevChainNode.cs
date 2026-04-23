@@ -76,7 +76,8 @@ namespace Nethereum.DevChain
                 new InMemoryLogStore(),
                 new HistoricalStateStore(new InMemoryStateStore(), new InMemoryStateDiffStore(), HistoricalStateOptions.DevChainDefault),
                 new InMemoryFilterStore(),
-                new InMemoryTrieNodeStore());
+                new InMemoryTrieNodeStore(),
+                new Storage.InMemoryBlobStore());
         }
 
         public DevChainNode(
@@ -87,7 +88,8 @@ namespace Nethereum.DevChain
             ILogStore logStore,
             IStateStore stateStore,
             IFilterStore filterStore,
-            ITrieNodeStore trieNodeStore = null)
+            ITrieNodeStore trieNodeStore = null,
+            IBlobStore blobStore = null)
             : base(
                 blockStore,
                 transactionStore,
@@ -99,7 +101,7 @@ namespace Nethereum.DevChain
                 SharedTxVerifier,
                 CreateNodeDataService(stateStore, blockStore, config),
                 trieNodeStore,
-                null,
+                blobStore,
                 (config ?? DevChainConfig.Default).GetHardforkConfig())
         {
             _config = config ?? DevChainConfig.Default;

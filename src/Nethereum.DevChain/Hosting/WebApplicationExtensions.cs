@@ -133,6 +133,32 @@ namespace Nethereum.DevChain.Hosting
 
             app.MapGet("/", () => Results.Ok(new { status = "ok", service = "Nethereum.DevChain" }));
 
+            app.MapGet("/eth/v1/beacon/blob_sidecars/{blockId}", async (string blockId, HttpContext httpContext) =>
+            {
+                try
+                {
+                    var sidecars = await CoreChain.Rpc.BeaconBlobSidecarsHandler.GetBlobSidecarsAsync(node, blockId);
+                    var data = sidecars.Select(s => new
+                    {
+                        index = s.Index.ToString(),
+                        blob = s.Blob,
+                        kzg_commitment = s.KzgCommitment,
+                        kzg_proof = s.KzgProof
+                    }).ToArray();
+
+                    httpContext.Response.ContentType = "application/json";
+                    await httpContext.Response.WriteAsync(
+                        JsonSerializer.Serialize(new { version = "deneb", data },
+                            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }));
+                }
+                catch (Exception ex)
+                {
+                    httpContext.Response.StatusCode = 404;
+                    await httpContext.Response.WriteAsync(
+                        JsonSerializer.Serialize(new { code = 404, message = $"Block not found: {ex.Message}" }));
+                }
+            });
+
             return app;
         }
 

@@ -52,6 +52,20 @@ namespace Nethereum.Model
 
             var decodedList = RLP.RLP.Decode(rlpData);
             var decodedElements = (RLPCollection)decodedList;
+
+            if (IsNetworkWrapper(decodedElements))
+            {
+                var txElements = (RLPCollection)decodedElements[0];
+                var tx = DecodeTxFields(txElements);
+                tx.Sidecar = DecodeSidecar(decodedElements);
+                return tx;
+            }
+
+            return DecodeTxFields(decodedElements);
+        }
+
+        private static Transaction4844 DecodeTxFields(RLPCollection decodedElements)
+        {
             var chainId = decodedElements[0].RLPData.ToEvmUInt256FromRLPDecoded();
             var nonce = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
             var maxPriorityFeePerGas = decodedElements[2].RLPData.ToEvmUInt256FromRLPDecoded();
@@ -68,6 +82,30 @@ namespace Nethereum.Model
 
             return new Transaction4844(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit,
                 receiverAddress, amount, data, accessList, maxFeePerBlobGas, blobVersionedHashes, signature);
+        }
+
+        private static bool IsNetworkWrapper(RLPCollection elements)
+        {
+            return elements.Count == 4 && elements[0] is RLPCollection;
+        }
+
+        private static BlobSidecar DecodeSidecar(RLPCollection wrapperElements)
+        {
+            var blobs = DecodeByteArrayList(wrapperElements[1]);
+            var commitments = DecodeByteArrayList(wrapperElements[2]);
+            var proofs = DecodeByteArrayList(wrapperElements[3]);
+            return new BlobSidecar(blobs, commitments, proofs);
+        }
+
+        private static List<byte[]> DecodeByteArrayList(IRLPElement element)
+        {
+            var result = new List<byte[]>();
+            if (element is RLPCollection collection)
+            {
+                foreach (var item in collection)
+                    result.Add(item.RLPData);
+            }
+            return result;
         }
 
         public byte[] EncodeWithSidecar(Transaction4844 transaction)
