@@ -99,6 +99,7 @@ namespace Nethereum.DevChain
                 SharedTxVerifier,
                 CreateNodeDataService(stateStore, blockStore, config),
                 trieNodeStore,
+                null,
                 (config ?? DevChainConfig.Default).GetHardforkConfig())
         {
             _config = config ?? DevChainConfig.Default;

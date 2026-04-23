@@ -24,6 +24,7 @@ namespace Nethereum.CoreChain
         protected readonly IStateStore _stateStore;
         protected readonly IFilterStore _filterStore;
         protected readonly ITrieNodeStore _trieNodeStore;
+        protected readonly IBlobStore _blobStore;
         protected readonly IStateReader _nodeDataService;
         protected readonly TransactionProcessor _transactionProcessor;
         protected readonly ITransactionVerificationAndRecovery _txVerifier;
@@ -40,6 +41,7 @@ namespace Nethereum.CoreChain
             ITransactionVerificationAndRecovery txVerifier,
             IStateReader nodeDataService = null,
             ITrieNodeStore trieNodeStore = null,
+            IBlobStore blobStore = null,
             HardforkConfig hardforkConfig = null)
         {
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
@@ -52,6 +54,7 @@ namespace Nethereum.CoreChain
             _txVerifier = txVerifier ?? throw new ArgumentNullException(nameof(txVerifier));
             _nodeDataService = nodeDataService ?? new StateStoreNodeDataService(_stateStore, _blockStore);
             _trieNodeStore = trieNodeStore;
+            _blobStore = blobStore;
             _executor = new TransactionExecutor(hardforkConfig ?? throw new ArgumentNullException(nameof(hardforkConfig)));
         }
 
@@ -63,6 +66,7 @@ namespace Nethereum.CoreChain
         public IStateStore State => _stateStore;
         public IFilterStore Filters => _filterStore;
         public ITrieNodeStore TrieNodes => _trieNodeStore;
+        public IBlobStore BlobStore => _blobStore;
 
         private Services.IProofService _proofService;
         public virtual Services.IProofService ProofService =>

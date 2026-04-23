@@ -19,6 +19,7 @@ namespace Nethereum.CoreChain
         IStateStore State { get; }
         IFilterStore Filters { get; }
         ITrieNodeStore TrieNodes { get; }
+        IBlobStore BlobStore { get; }
         IProofService ProofService { get; }
 
         Task<BigInteger> GetBlockNumberAsync();
