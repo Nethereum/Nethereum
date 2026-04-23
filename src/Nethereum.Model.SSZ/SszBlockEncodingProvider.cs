@@ -92,6 +92,10 @@ namespace Nethereum.Model.SSZ
 
             switch (transaction)
             {
+                case Transaction4844 blob:
+                    selector = SszTransactionEncoder.SelectorRlpBlob;
+                    payload = encoder.EncodeTransaction4844Payload(blob);
+                    break;
                 case Transaction7702 setCode:
                     selector = SszTransactionEncoder.SelectorRlpSetCode;
                     payload = encoder.EncodeTransaction7702Payload(setCode);
@@ -106,8 +110,8 @@ namespace Nethereum.Model.SSZ
                     throw new NotImplementedException(
                         $"SSZ EncodeTransaction not yet implemented for {transaction.GetType().Name} " +
                         $"(TransactionType={transaction.TransactionType}). EIP-6404 defines 10 " +
-                        "selectors (0x01-0x0a); currently only 1559 (0x07/0x08) and 7702 (0x0a) " +
-                        "are wired in SszTransactionEncoder. See backlog A-02a.");
+                        "selectors (0x01-0x0a); currently only 1559 (0x07/0x08), 4844 (0x09) " +
+                        "and 7702 (0x0a) are wired in SszTransactionEncoder.");
             }
 
             var signature = transaction.Signature;
@@ -214,13 +218,15 @@ namespace Nethereum.Model.SSZ
                     return encoder.DecodeTransaction1559Payload(payload, isCreate: false, signature);
                 case SszTransactionEncoder.SelectorRlpCreate:
                     return encoder.DecodeTransaction1559Payload(payload, isCreate: true, signature);
+                case SszTransactionEncoder.SelectorRlpBlob:
+                    return encoder.DecodeTransaction4844Payload(payload, signature);
                 case SszTransactionEncoder.SelectorRlpSetCode:
                     return encoder.DecodeTransaction7702Payload(payload, signature);
                 default:
                     throw new NotImplementedException(
                         $"SSZ DecodeTransaction not implemented for selector 0x{selector:x2}. " +
-                        "EIP-6404 defines 10 selectors (0x01-0x0a); currently only 0x07 / 0x08 " +
-                        "(1559 basic/create) and 0x0a (7702 set-code) are wired. See backlog A-02a.");
+                        "EIP-6404 defines 10 selectors (0x01-0x0a); currently 0x07/0x08 (1559), " +
+                        "0x09 (4844 blob) and 0x0a (7702) are wired.");
             }
         }
     }

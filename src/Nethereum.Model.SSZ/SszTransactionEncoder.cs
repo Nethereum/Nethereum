@@ -148,6 +148,117 @@ namespace Nethereum.Model.SSZ
         //   input_(ProgressiveByteList), access_list(ProgressiveList),
         //   max_priority_fees_per_gas(BasicFeesPerGas), authorization_list(ProgressiveList)
 
+        public byte[] EncodeTransaction4844Payload(Transaction4844 tx)
+        {
+            var inputBytes = tx.Data?.HexToByteArray() ?? Array.Empty<byte>();
+            var accessListEncoded = SszAccessListEncoder.Current.EncodeAccessList(tx.AccessList);
+            var maxFeeEncoded = EncodeBlobFees(tx.MaxFeePerGas, tx.MaxFeePerBlobGas);
+            var maxPriorityFeeEncoded = EncodeBasicFees(tx.MaxPriorityFeePerGas);
+            var blobHashesEncoded = EncodeBlobVersionedHashes(tx.BlobVersionedHashes);
+
+            // Fixed: type(1) + chain_id(32) + nonce(8) + offset_maxFees(4) + gas(8) +
+            //        to(20) + value(32) + offset_input(4) + offset_accessList(4) +
+            //        offset_maxPriorityFees(4) + offset_blobHashes(4)
+            var fixedSize = 1 + 32 + 8 + 4 + 8 + 20 + 32 + 4 + 4 + 4 + 4;
+
+            var maxFeesOffset = (uint)fixedSize;
+            var inputOffset = maxFeesOffset + (uint)maxFeeEncoded.Length;
+            var accessListOffset = inputOffset + 4 + (uint)inputBytes.Length;
+            var maxPriorityFeesOffset = accessListOffset + (uint)accessListEncoded.Length;
+            var blobHashesOffset = maxPriorityFeesOffset + (uint)maxPriorityFeeEncoded.Length;
+
+            using var writer = new SszWriter();
+            writer.WriteBytes(new[] { TransactionType.Blob.AsByte() });
+            writer.WriteFixedBytes(tx.ChainId.ToLittleEndian(), 32);
+            writer.WriteUInt64((ulong)(tx.Nonce ?? EvmUInt256.Zero));
+            writer.WriteUInt32(maxFeesOffset);
+            writer.WriteUInt64((ulong)(tx.GasLimit ?? EvmUInt256.Zero));
+            writer.WriteFixedBytes(tx.ReceiverAddress.HexToByteArray(), AddressLength);
+            writer.WriteFixedBytes((tx.Amount ?? EvmUInt256.Zero).ToLittleEndian(), 32);
+            writer.WriteUInt32(inputOffset);
+            writer.WriteUInt32(accessListOffset);
+            writer.WriteUInt32(maxPriorityFeesOffset);
+            writer.WriteUInt32(blobHashesOffset);
+
+            writer.WriteBytes(maxFeeEncoded);
+            writer.WriteUInt32((uint)inputBytes.Length);
+            writer.WriteBytes(inputBytes);
+            writer.WriteBytes(accessListEncoded);
+            writer.WriteBytes(maxPriorityFeeEncoded);
+            writer.WriteBytes(blobHashesEncoded);
+
+            return writer.ToArray();
+        }
+
+        public Transaction4844 DecodeTransaction4844Payload(ReadOnlySpan<byte> data, ISignature signature = null)
+        {
+            var reader = new SszReader(data);
+
+            var typeByte = reader.ReadFixedBytes(1)[0];
+            var chainId = EvmUInt256.FromLittleEndian(reader.ReadFixedBytes(32));
+            var nonce = reader.ReadUInt64();
+            var maxFeesOffset = reader.ReadUInt32();
+            var gas = reader.ReadUInt64();
+            var toBytes = reader.ReadFixedBytes(AddressLength);
+            var receiverAddress = "0x" + toBytes.ToHex();
+            var value = EvmUInt256.FromLittleEndian(reader.ReadFixedBytes(32));
+            var inputOffset = reader.ReadUInt32();
+            var accessListOffset = reader.ReadUInt32();
+            var maxPriorityFeesOffset = reader.ReadUInt32();
+            var blobHashesOffset = reader.ReadUInt32();
+
+            var maxFeeData = data.Slice((int)maxFeesOffset, (int)(inputOffset - maxFeesOffset));
+            var maxFee = DecodeBasicFees(maxFeeData.Slice(0, 32));
+            var maxBlobFee = DecodeBasicFees(maxFeeData.Length >= 64 ? maxFeeData.Slice(32, 32) : ReadOnlySpan<byte>.Empty);
+
+            var inputLengthSpan = data.Slice((int)inputOffset, 4);
+            var inputLength = BinaryPrimitives.ReadUInt32LittleEndian(inputLengthSpan);
+            var inputBytes = data.Slice((int)inputOffset + 4, (int)inputLength);
+            var inputHex = inputBytes.Length > 0 ? "0x" + inputBytes.ToArray().ToHex() : null;
+
+            var accessListData = data.Slice((int)accessListOffset,
+                (int)(maxPriorityFeesOffset - accessListOffset));
+            var accessList = SszAccessListEncoder.Current.DecodeAccessList(accessListData);
+
+            var maxPriorityFeeData = data.Slice((int)maxPriorityFeesOffset,
+                (int)(blobHashesOffset - maxPriorityFeesOffset));
+            var maxPriorityFee = DecodeBasicFees(maxPriorityFeeData);
+
+            var blobHashesData = data.Slice((int)blobHashesOffset);
+            var blobHashes = new List<byte[]>();
+            for (int i = 0; i + 32 <= blobHashesData.Length; i += 32)
+                blobHashes.Add(blobHashesData.Slice(i, 32).ToArray());
+
+            if (signature != null)
+            {
+                return new Transaction4844(chainId, nonce, maxPriorityFee, maxFee, gas,
+                    receiverAddress, value, inputHex, accessList, maxBlobFee, blobHashes,
+                    new Signature(signature.R, signature.S, signature.V));
+            }
+
+            return new Transaction4844(chainId, nonce, maxPriorityFee, maxFee, gas,
+                receiverAddress, value, inputHex, accessList, maxBlobFee, blobHashes);
+        }
+
+        private byte[] EncodeBlobFees(EvmUInt256? regularFee, EvmUInt256? blobFee)
+        {
+            using var writer = new SszWriter();
+            writer.WriteFixedBytes((regularFee ?? EvmUInt256.Zero).ToLittleEndian(), 32);
+            writer.WriteFixedBytes((blobFee ?? EvmUInt256.Zero).ToLittleEndian(), 32);
+            return writer.ToArray();
+        }
+
+        private static byte[] EncodeBlobVersionedHashes(List<byte[]> hashes)
+        {
+            if (hashes == null || hashes.Count == 0)
+                return Array.Empty<byte>();
+
+            using var writer = new SszWriter();
+            foreach (var hash in hashes)
+                writer.WriteFixedBytes(hash, 32);
+            return writer.ToArray();
+        }
+
         public byte[] EncodeTransaction7702Payload(Transaction7702 tx)
         {
             var inputBytes = tx.Data?.HexToByteArray() ?? Array.Empty<byte>();
@@ -473,6 +584,45 @@ namespace Nethereum.Model.SSZ
 
             var payloadRoot = SszMerkleizer.HashTreeRootProgressiveContainer(fieldRoots, activeFields);
             return HashTreeRootTransactionContainer(payloadRoot, SelectorRlpSetCode, tx.Signature);
+        }
+
+        public byte[] HashTreeRootTransaction4844(Transaction4844 tx)
+        {
+            var activeFields = new[] { true, true, true, true, true, true, true, true, true, true, true };
+
+            var blobHashRoots = new List<byte[]>();
+            if (tx.BlobVersionedHashes != null)
+            {
+                foreach (var h in tx.BlobVersionedHashes)
+                {
+                    if (h.Length == 32)
+                        blobHashRoots.Add(h);
+                    else
+                    {
+                        var padded = new byte[32];
+                        Array.Copy(h, 0, padded, 0, Math.Min(h.Length, 32));
+                        blobHashRoots.Add(padded);
+                    }
+                }
+            }
+
+            var fieldRoots = new List<byte[]>
+            {
+                SszHashTreeRootHelper.HashTreeRootUint8(TransactionType.Blob.AsByte()),
+                SszHashTreeRootHelper.HashTreeRootUint256(tx.ChainId),
+                SszHashTreeRootHelper.HashTreeRootUint64(tx.Nonce),
+                HashTreeRootBlobFees(tx.MaxFeePerGas, tx.MaxFeePerBlobGas),
+                SszHashTreeRootHelper.HashTreeRootUint64(tx.GasLimit),
+                SszHashTreeRootHelper.HashTreeRootAddress(tx.ReceiverAddress),
+                SszHashTreeRootHelper.HashTreeRootUint256(tx.Amount),
+                SszHashTreeRootHelper.HashTreeRootProgressiveByteList(tx.Data?.HexToByteArray()),
+                SszAccessListEncoder.Current.HashTreeRootAccessList(tx.AccessList),
+                HashTreeRootBasicFees(tx.MaxPriorityFeePerGas),
+                SszMerkleizer.HashTreeRootProgressiveList(blobHashRoots)
+            };
+
+            var payloadRoot = SszMerkleizer.HashTreeRootProgressiveContainer(fieldRoots, activeFields);
+            return HashTreeRootTransactionContainer(payloadRoot, SelectorRlpBlob, tx.Signature);
         }
 
         public byte[] HashTreeRootAuthorisation7702(Authorisation7702Signed auth)
