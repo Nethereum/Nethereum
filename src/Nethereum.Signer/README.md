@@ -501,6 +501,12 @@ public class Transaction7702Signer
     public void SignTransaction(byte[] privateKey, Transaction7702 transaction);
 }
 
+// EIP-4844 blob transactions
+public class Transaction4844Signer
+{
+    public void SignTransaction(byte[] privateKey, Transaction4844 transaction);
+}
+
 // Authorization lists (EIP-7702)
 public class Authorisation7702Signer
 {

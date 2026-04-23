@@ -147,6 +147,24 @@ var fastConfig = new DevChainConfig
 
 ## Core Features
 
+### EIP-4844 Blob Transactions
+
+DevChain stores blob sidecars in-memory and exposes a beacon-compatible REST endpoint:
+
+```csharp
+// Send blob transaction with sidecar
+var tx = new Transaction4844(..., blobVersionedHashes);
+tx.Sidecar = sidecar;
+await node.SendTransactionAsync(tx);
+await node.MineBlockAsync();
+
+// Fetch stored blobs by block number
+var blobs = await node.BlobStore.GetBlobsByBlockNumberAsync(blockNumber);
+var originalData = BlobEncoder.DecodeBlobs(blobs.Select(b => b.Blob).ToList());
+```
+
+When running as an ASP.NET hosted service, blobs are also available via the beacon REST API at `GET /eth/v1/beacon/blob_sidecars/{block_id}`.
+
 ### Transaction Processing
 
 ```csharp

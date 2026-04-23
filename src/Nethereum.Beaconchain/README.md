@@ -24,6 +24,8 @@ Install-Package Nethereum.Beaconchain
 | `ILightClientApi` | Interface for light client API operations |
 | `LightClientResponseMapper` | Maps JSON response DTOs to Nethereum.Consensus.Ssz domain models |
 | `StateForkResponse` | DTO for beacon state fork information (previous/current version, epoch) |
+| `BlobSidecarResponse` | DTO for EIP-4844 blob sidecar data from `/eth/v1/beacon/blob_sidecars/{block_id}` |
+| `BlobSidecarHelper` | Converts beacon blob responses to raw byte arrays for `BlobEncoder.DecodeBlobs` |
 
 ## Quick Start
 
@@ -55,6 +57,27 @@ var fork = await beaconClient.GetStateForkAsync();
 var currentVersion = fork.Data.CurrentVersion;
 var previousVersion = fork.Data.PreviousVersion;
 var epoch = fork.Data.Epoch;
+```
+
+### Fetching Blob Sidecars (EIP-4844)
+
+```csharp
+using Nethereum.Beaconchain;
+using Nethereum.Model;
+
+var beaconClient = new BeaconApiClient("https://ethereum-beacon-api.publicnode.com");
+
+// Fetch blobs for a specific slot
+var response = await beaconClient.GetBlobSidecarsAsync("9000000");
+
+// Or fetch latest
+var latest = await beaconClient.GetBlobSidecarsAsync("head");
+
+// Decode blob data back to original bytes
+var originalData = BlobSidecarHelper.DecodeData(response);
+
+// Or get raw blobs + commitments + proofs
+var sidecar = BlobSidecarHelper.ToBlobSidecar(response);
 ```
 
 ### Getting Finality Updates

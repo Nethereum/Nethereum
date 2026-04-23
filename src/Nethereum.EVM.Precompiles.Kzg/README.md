@@ -74,6 +74,29 @@ handler layers on top of the Cancun base registry. Obtain the
 `HardforkConfig` through `MainnetHardforkRegistry.Build(backends).Get(HardforkName.Cancun)`
 or `DefaultHardforkConfigs.Cancun` before calling the extension.
 
+## Blob Transaction Support
+
+Beyond the precompile, this package provides the KZG operations needed to build EIP-4844 blob transactions:
+
+```csharp
+using Nethereum.EVM.Precompiles.Kzg;
+using Nethereum.Model;
+
+// Initialize KZG trusted setup (once per process)
+CkzgOperations.InitializeFromEmbeddedSetup();
+var kzg = new CkzgOperations();
+
+// Full pipeline: data → blobs → KZG commitments → proofs → versioned hashes
+var builder = new BlobSidecarBuilder(kzg);
+var (sidecar, versionedHashes) = builder.BuildFromData(myData);
+
+// Or use individual operations
+byte[] commitment = kzg.BlobToKzgCommitment(blob);       // 131072 bytes → 48 bytes
+byte[] proof = kzg.ComputeBlobKzgProof(blob, commitment); // 48 bytes
+byte[] versionedHash = kzg.ComputeVersionedHash(commitment); // 0x01 || SHA256[1:]
+bool valid = kzg.VerifyBlobKzgProof(blob, commitment, proof);
+```
+
 ## See Also
 
 - [`Nethereum.EVM.Precompiles`](../Nethereum.EVM.Precompiles/README.md)

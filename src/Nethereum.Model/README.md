@@ -36,6 +36,30 @@ Ethereum has evolved to support multiple transaction formats:
 - **EIP-2930** (`Transaction2930`): Transactions with access lists for gas optimization
 - **EIP-1559** (`Transaction1559`): Fee market transactions with base fee and priority fee
 - **EIP-7702** (`Transaction7702`): Account abstraction with authorization lists
+- **EIP-4844** (`Transaction4844`): Blob transactions with KZG commitments for data availability
+
+### Blob Encoding
+
+`BlobEncoder` converts arbitrary data to/from EIP-4844 blobs (131,072 bytes each, 4096 field elements):
+
+```csharp
+// Encode data into blobs (auto-splits if > 126,976 bytes)
+var blobs = BlobEncoder.EncodeBlobs(myData);
+
+// Decode blobs back to original data
+var decoded = BlobEncoder.DecodeBlobs(blobs);
+```
+
+`BlobSidecar` carries the blob data alongside the transaction for network transmission:
+
+```csharp
+var tx = new Transaction4844(chainId, nonce, maxPriorityFee, maxFee, gasLimit,
+    to, value, data, accessList, maxFeePerBlobGas, blobVersionedHashes);
+tx.Sidecar = new BlobSidecar(blobs, commitments, proofs);
+
+// Encode with sidecar for eth_sendRawTransaction
+var networkBytes = tx.GetRLPEncodedWithSidecar();
+```
 
 ### RLP Encoding
 
