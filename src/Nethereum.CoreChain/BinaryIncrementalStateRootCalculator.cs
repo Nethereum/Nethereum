@@ -40,19 +40,34 @@ namespace Nethereum.CoreChain
             _trieStorage = trieStorage;
         }
 
+        public static readonly byte[] ROOT_META_KEY =
+            System.Text.Encoding.UTF8.GetBytes("__binary_trie_last_root__");
+
+        public BinaryTrie Trie => _trie;
+
         public async Task<byte[]> ComputeStateRootAsync()
         {
             if (!_initialized)
             {
-                await InitializeFromFullStateAsync();
+                if (!TryWarmStartFromStorage())
+                {
+                    await InitializeFromFullStateAsync();
+                    _initialized = true;
+                    _cachedRoot = _trie.ComputeRoot();
+
+                    if (_trieStorage != null)
+                    {
+                        _trie.SaveToStorage(_trieStorage);
+                        _trieStorage.Put(ROOT_META_KEY, _cachedRoot);
+                    }
+
+                    await _stateStore.ClearDirtyTrackingAsync();
+                    return _cachedRoot;
+                }
+
+                // Warm-started from stored root — fall through to the
+                // incremental path so any pending dirty accounts get applied.
                 _initialized = true;
-                _cachedRoot = _trie.ComputeRoot();
-
-                if (_trieStorage != null)
-                    _trie.SaveToStorage(_trieStorage);
-
-                await _stateStore.ClearDirtyTrackingAsync();
-                return _cachedRoot;
             }
 
             var hasDirty = await UpdateFromDirtyAccountsAsync();
@@ -64,9 +79,35 @@ namespace Nethereum.CoreChain
             _cachedRoot = _trie.ComputeRoot();
 
             if (_trieStorage != null)
+            {
                 _trie.SaveToStorage(_trieStorage);
+                _trieStorage.Put(ROOT_META_KEY, _cachedRoot);
+            }
 
             return _cachedRoot;
+        }
+
+        private bool TryWarmStartFromStorage()
+        {
+            if (_trieStorage == null)
+                return false;
+
+            var lastRoot = _trieStorage.Get(ROOT_META_KEY);
+            if (lastRoot == null || IsAllZero(lastRoot))
+                return false;
+
+            _trie = BinaryTrie.FromRootHash(lastRoot, new BinaryTrieOptions
+            {
+                HashProvider = _hashProvider,
+                NodeResolver = ResolveNode
+            });
+            _cachedRoot = lastRoot;
+            return true;
+        }
+
+        private byte[] ResolveNode(byte[] stem, byte[] hash)
+        {
+            return _trieStorage?.Get(hash);
         }
 
         public async Task<byte[]> ComputeFullStateRootAsync()
@@ -131,9 +172,16 @@ namespace Nethereum.CoreChain
         {
             var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
 
-            PutBasicData(addressBytes, account);
-            PutCodeHash(addressBytes, account);
-            await PutCodeChunksAsync(addressBytes, account);
+            var basicDataKey = _keyDerivation.GetTreeKeyForBasicData(addressBytes);
+            var codeHashKey = _keyDerivation.GetTreeKeyForCodeHash(addressBytes);
+
+            var oldChunkCount = ReadChunkCountFromKey(basicDataKey);
+
+            var code = await _stateStore.GetCodeAsync(account.CodeHash ?? EMPTY_CODE_HASH);
+
+            PutBasicData(basicDataKey, account, code);
+            PutCodeHash(codeHashKey, account);
+            PutCodeChunks(addressBytes, code, oldChunkCount);
 
             if (useAllStorage)
                 await PutAllStorageAsync(address, addressBytes);
@@ -141,37 +189,62 @@ namespace Nethereum.CoreChain
                 await PutDirtyStorageAsync(address, addressBytes);
         }
 
-        private void PutBasicData(byte[] addressBytes, Account account)
+        private void PutBasicData(byte[] key, Account account, byte[] code)
         {
             var nonce = (ulong)account.Nonce;
             var balance = account.Balance;
-            var code = _stateStore.GetCodeAsync(account.CodeHash ?? EMPTY_CODE_HASH).GetAwaiter().GetResult();
-            var codeSize = (uint)(code != null ? code.Length : 0);
+            var codeSize = (uint)(code?.Length ?? 0);
 
             var leaf = BasicDataLeaf.Pack(0, codeSize, nonce, balance);
-            var key = _keyDerivation.GetTreeKeyForBasicData(addressBytes);
             _trie.Put(key, leaf);
         }
 
-        private void PutCodeHash(byte[] addressBytes, Account account)
+        private void PutCodeHash(byte[] key, Account account)
         {
             var codeHash = account.CodeHash ?? EMPTY_CODE_HASH;
-            var key = _keyDerivation.GetTreeKeyForCodeHash(addressBytes);
             _trie.Put(key, codeHash);
         }
 
-        private async Task PutCodeChunksAsync(byte[] addressBytes, Account account)
+        private void PutCodeChunks(byte[] addressBytes, byte[] code, int oldChunkCount)
         {
-            var code = await _stateStore.GetCodeAsync(account.CodeHash ?? EMPTY_CODE_HASH);
-            if (code == null || code.Length == 0)
-                return;
+            var newChunks = code == null || code.Length == 0
+                ? Array.Empty<byte[]>()
+                : CodeChunker.ChunkifyCode(code);
 
-            var chunks = CodeChunker.ChunkifyCode(code);
-            for (int i = 0; i < chunks.Length; i++)
+            for (int i = 0; i < newChunks.Length; i++)
             {
                 var key = _keyDerivation.GetTreeKeyForCodeChunk(addressBytes, (ulong)i);
-                _trie.Put(key, chunks[i]);
+                _trie.Put(key, newChunks[i]);
             }
+
+            // Put(key, null) — not Delete(key) — sets Values[sub] = null so the
+            // merkleizer's zero-propagation shortcut applies. Delete writes 32
+            // zero bytes as a present leaf, which hashes non-zero.
+            for (int i = newChunks.Length; i < oldChunkCount; i++)
+            {
+                var key = _keyDerivation.GetTreeKeyForCodeChunk(addressBytes, (ulong)i);
+                _trie.Put(key, null);
+            }
+        }
+
+        private int ReadChunkCountFromTrie(byte[] addressBytes)
+        {
+            var basicKey = _keyDerivation.GetTreeKeyForBasicData(addressBytes);
+            return ReadChunkCountFromKey(basicKey);
+        }
+
+        private int ReadChunkCountFromKey(byte[] basicKey)
+        {
+            var leaf = _trie.Get(basicKey);
+            if (leaf == null || IsAllZero(leaf))
+                return 0;
+
+            BasicDataLeaf.Unpack(leaf, out _, out var codeSize, out _, out _);
+            if (codeSize == 0)
+                return 0;
+
+            var stemSize = (uint)BinaryTrieConstants.StemSize;
+            return (int)((codeSize + stemSize - 1) / stemSize);
         }
 
         private async Task PutAllStorageAsync(string address, byte[] addressBytes)
@@ -216,10 +289,13 @@ namespace Nethereum.CoreChain
         private void DeleteAccountFromTrie(string address)
         {
             var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
-            var basicKey = _keyDerivation.GetTreeKeyForBasicData(addressBytes);
-            var codeHashKey = _keyDerivation.GetTreeKeyForCodeHash(addressBytes);
-            _trie.Delete(basicKey);
-            _trie.Delete(codeHashKey);
+
+            var oldChunkCount = ReadChunkCountFromTrie(addressBytes);
+            for (int i = 0; i < oldChunkCount; i++)
+                _trie.Delete(_keyDerivation.GetTreeKeyForCodeChunk(addressBytes, (ulong)i));
+
+            _trie.Delete(_keyDerivation.GetTreeKeyForBasicData(addressBytes));
+            _trie.Delete(_keyDerivation.GetTreeKeyForCodeHash(addressBytes));
         }
 
         private static bool IsAllZero(byte[] bytes)
