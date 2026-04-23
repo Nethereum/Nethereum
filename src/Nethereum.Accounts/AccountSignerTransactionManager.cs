@@ -183,7 +183,7 @@ namespace Nethereum.Web3.Accounts
                 Value = value ?? new HexBigInteger(0),
                 Data = inputData,
                 Type = new HexBigInteger(TransactionType.Blob.AsByte()),
-                MaxFeePerBlobGas = maxFeePerBlobGas ?? new HexBigInteger(10_000_000_000),
+                MaxFeePerBlobGas = maxFeePerBlobGas ?? await EstimateBlobFeeAsync().ConfigureAwait(false),
                 BlobVersionedHashes = versionedHashes
             };
 
@@ -206,6 +206,24 @@ namespace Nethereum.Web3.Accounts
         public async Task<string> SendBlobTransactionAsync(byte[] data, string to, IBlobKzgProvider kzg)
         {
             return await SendBlobTransactionAsync(data, to, kzg, null, null, null).ConfigureAwait(false);
+        }
+
+        private async Task<HexBigInteger> EstimateBlobFeeAsync()
+        {
+            if (Client == null) return new HexBigInteger(10_000_000_000);
+            try
+            {
+                var block = await new RPC.Eth.Blocks.EthGetBlockWithTransactionsHashesByNumber(Client)
+                    .SendRequestAsync(RPC.Eth.DTOs.BlockParameter.CreateLatest()).ConfigureAwait(false);
+                if (block?.ExcessBlobGas != null)
+                {
+                    var suggested = BlobGasCalculator.SuggestMaxFeePerBlobGas(
+                        (Util.EvmUInt256)block.ExcessBlobGas.Value);
+                    return new HexBigInteger((System.Numerics.BigInteger)suggested);
+                }
+            }
+            catch { }
+            return new HexBigInteger(10_000_000_000);
         }
 
         public override async Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)

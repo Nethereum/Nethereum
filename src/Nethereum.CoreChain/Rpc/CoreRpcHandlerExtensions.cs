@@ -46,6 +46,9 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new EthUninstallFilterHandler());
             registry.Register(new EthNewBlockFilterHandler());
 
+            // Blob gas
+            registry.Register(new EthBlobBaseFeeHandler());
+
             // Debug handlers
             registry.Register(new DebugTraceTransactionHandler());
             registry.Register(new DebugTraceCallHandler());
