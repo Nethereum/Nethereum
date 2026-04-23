@@ -1,10 +1,12 @@
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Nethereum.EVM.Precompiles.Kzg;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
+using Nethereum.Web3.Accounts;
 using Nethereum.XUnitEthereumClients;
 using Xunit;
 
@@ -80,6 +82,29 @@ namespace Nethereum.Signer.IntegrationTests
             Assert.NotNull(txFromChain.MaxFeePerBlobGas);
             Assert.NotNull(txFromChain.BlobVersionedHashes);
             Assert.Single(txFromChain.BlobVersionedHashes);
+        }
+
+        [Fact]
+        [NethereumDocExample(DocSection.Signing, "eip4844-blob-tx", "Send blob transaction via high-level API")]
+        public async Task ShouldSendBlobViaHighLevelApi()
+        {
+            var web3 = _fixture.GetWeb3();
+
+            CkzgOperations.InitializeFromEmbeddedSetup();
+            var kzg = new CkzgOperations();
+
+            var data = Encoding.UTF8.GetBytes("High-level blob API test!");
+            var txHash = await ((AccountSignerTransactionManager)web3.TransactionManager)
+                .SendBlobTransactionAsync(data, "0x1ad91ee08f21be3de0ba2ba6918e714da6b45836", kzg)
+                .ConfigureAwait(false);
+
+            Assert.NotNull(txHash);
+
+            var receipt = await web3.TransactionReceiptPolling
+                .PollForReceiptAsync(txHash).ConfigureAwait(false);
+            Assert.NotNull(receipt);
+            Assert.Equal("0x1", receipt.Status.HexValue);
+            Assert.True(receipt.BlobGasUsed.Value > 0);
         }
     }
 }

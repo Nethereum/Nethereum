@@ -154,6 +154,60 @@ namespace Nethereum.Web3.Accounts
         }
 
       
+        public async Task<string> SendBlobTransactionAsync(byte[] data, string to, IBlobKzgProvider kzg,
+            HexBigInteger maxFeePerBlobGas = null, HexBigInteger value = null, string inputData = null)
+        {
+            if (data == null || data.Length == 0) throw new ArgumentException("Blob data must not be empty", nameof(data));
+            if (kzg == null) throw new ArgumentNullException(nameof(kzg));
+            if (string.IsNullOrEmpty(to)) throw new ArgumentException("Blob transactions require a recipient address", nameof(to));
+
+            var blobs = BlobEncoder.EncodeBlobs(data);
+            var commitments = new List<byte[]>();
+            var proofs = new List<byte[]>();
+            var versionedHashes = new List<string>();
+
+            foreach (var blob in blobs)
+            {
+                var commitment = kzg.BlobToKzgCommitment(blob);
+                var proof = kzg.ComputeBlobKzgProof(blob, commitment);
+                var hash = kzg.ComputeVersionedHash(commitment);
+                commitments.Add(commitment);
+                proofs.Add(proof);
+                versionedHashes.Add(hash.ToHex(true));
+            }
+
+            var txInput = new TransactionInput
+            {
+                From = Account.Address,
+                To = to,
+                Value = value ?? new HexBigInteger(0),
+                Data = inputData,
+                Type = new HexBigInteger(TransactionType.Blob.AsByte()),
+                MaxFeePerBlobGas = maxFeePerBlobGas ?? new HexBigInteger(10_000_000_000),
+                BlobVersionedHashes = versionedHashes
+            };
+
+            await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
+
+            var nonce = await GetNonceAsync(txInput).ConfigureAwait(false);
+            txInput.Nonce = nonce;
+            await SetTransactionFeesOrPricingAsync(txInput).ConfigureAwait(false);
+
+            var signedHex = SignTransaction(txInput);
+            var signedBytes = signedHex.HexToByteArray();
+            var tx4844 = (Transaction4844)TransactionFactory.CreateTransaction(signedBytes);
+            tx4844.Sidecar = new BlobSidecar(blobs, commitments, proofs);
+
+            var rawWithSidecar = tx4844.GetRLPEncodedWithSidecar().ToHex(true);
+            var ethSendTransaction = new EthSendRawTransaction(Client);
+            return await ethSendTransaction.SendRequestAsync(rawWithSidecar).ConfigureAwait(false);
+        }
+
+        public async Task<string> SendBlobTransactionAsync(byte[] data, string to, IBlobKzgProvider kzg)
+        {
+            return await SendBlobTransactionAsync(data, to, kzg, null, null, null).ConfigureAwait(false);
+        }
+
         public override async Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)
         {
             if (authorisation == null) throw new ArgumentNullException(nameof(authorisation));

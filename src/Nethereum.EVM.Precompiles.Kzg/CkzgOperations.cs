@@ -1,10 +1,11 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using Nethereum.Model;
 
 namespace Nethereum.EVM.Precompiles.Kzg
 {
-    public class CkzgOperations : IKzgOperations, IDisposable
+    public class CkzgOperations : IKzgOperations, IBlobKzgProvider, IDisposable
     {
         private static readonly object InitLock = new object();
         private static bool _initialized;
