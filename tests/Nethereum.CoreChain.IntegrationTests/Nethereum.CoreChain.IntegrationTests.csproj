@@ -30,6 +30,7 @@
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
   </ItemGroup>
 
   <ItemGroup>

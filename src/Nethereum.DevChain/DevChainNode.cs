@@ -359,16 +359,36 @@ namespace Nethereum.DevChain
             return accounts;
         }
 
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(Model.BlobSidecar Sidecar, System.Collections.Generic.List<byte[]> VersionedHashes, byte[] TxHash)>
+            _pendingBlobSidecars = new();
+
         public override async Task<CoreChain.TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx)
         {
             EnsureInitialized();
+
+            if (tx is Model.Transaction4844 blobTx && blobTx.Sidecar != null)
+            {
+                var sidecar = blobTx.Sidecar;
+                var hashes = blobTx.BlobVersionedHashes;
+                blobTx.Sidecar = null;
+
+                var result = await _blockManager.SendTransactionAsync(tx);
+
+                if ((result.Success || result.Receipt != null) && result.TransactionHash != null)
+                    _pendingBlobSidecars.Enqueue((sidecar, hashes, result.TransactionHash));
+
+                return result;
+            }
+
             return await _blockManager.SendTransactionAsync(tx);
         }
 
         public async Task<byte[]> MineBlockAsync()
         {
             EnsureInitialized();
-            return await _blockManager.MineBlockAsync();
+            var hash = await _blockManager.MineBlockAsync();
+            await FlushPendingBlobsAsync();
+            return hash;
         }
 
         public async Task<byte[]> MineBlockAsync(byte[] parentBeaconBlockRoot)
@@ -380,7 +400,33 @@ namespace Nethereum.DevChain
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
         {
             EnsureInitialized();
-            return await _blockManager.MineBlockWithTransactionAsync(tx);
+            var hash = await _blockManager.MineBlockWithTransactionAsync(tx);
+            await FlushPendingBlobsAsync();
+            return hash;
+        }
+
+        private async Task FlushPendingBlobsAsync()
+        {
+            if (_blobStore == null) return;
+            var blockNumber = await GetBlockNumberAsync();
+
+            while (_pendingBlobSidecars.TryDequeue(out var pending))
+            {
+                var records = new System.Collections.Generic.List<CoreChain.Storage.BlobSidecarRecord>();
+                for (int i = 0; i < pending.Sidecar.Blobs.Count; i++)
+                {
+                    records.Add(new CoreChain.Storage.BlobSidecarRecord
+                    {
+                        Index = i,
+                        Blob = pending.Sidecar.Blobs[i],
+                        KzgCommitment = i < pending.Sidecar.Commitments.Count ? pending.Sidecar.Commitments[i] : null,
+                        KzgProof = i < pending.Sidecar.Proofs.Count ? pending.Sidecar.Proofs[i] : null,
+                        VersionedHash = i < pending.VersionedHashes.Count ? pending.VersionedHashes[i] : null,
+                        TransactionHash = pending.TxHash
+                    });
+                }
+                await _blobStore.StoreBlobsAsync(blockNumber, pending.TxHash, records);
+            }
         }
 
         public async Task SetBalanceAsync(string address, BigInteger balance)

@@ -368,6 +368,20 @@ namespace Nethereum.CoreChain
         {
             switch (tx)
             {
+                case Transaction4844 tx4844:
+                    return new TransactionData
+                    {
+                        Nonce = tx4844.Nonce ?? 0,
+                        GasLimit = tx4844.GasLimit ?? 21000,
+                        GasPrice = tx4844.MaxFeePerGas ?? 0,
+                        MaxFeePerGas = tx4844.MaxFeePerGas,
+                        MaxPriorityFeePerGas = tx4844.MaxPriorityFeePerGas,
+                        To = tx4844.ReceiverAddress,
+                        Value = tx4844.Amount ?? 0,
+                        Data = tx4844.Data?.HexToByteArray(),
+                        AccessList = ConvertAccessList(tx4844.AccessList)
+                    };
+
                 case Transaction7702 tx7702:
                     return new TransactionData
                     {
