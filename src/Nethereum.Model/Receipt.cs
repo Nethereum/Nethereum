@@ -11,6 +11,34 @@ namespace Nethereum.Model
         public List<Log> Logs { get; set; } = new List<Log>();
         public byte TransactionType { get; set; } = 0;
 
+        // --- EIP-6466 extensions (SSZ receipts) ---
+        // These fields are ignored by the RLP encoder for backward compatibility.
+        // The SSZ receipt encoder uses them to populate BasicReceipt / CreateReceipt /
+        // SetCodeReceipt per the variant-selection rules:
+        //   Authorities != null (and non-empty) → SetCodeReceipt
+        //   ContractAddress != null             → CreateReceipt
+        //   otherwise                           → BasicReceipt
+        // Producers populate these at transaction-execution time. See
+        // docs/superpowers/plans/2026-04-20-appchain-config-surface-A-plan.md.
+
+        /// <summary>
+        /// Transaction sender address (EIP-6466). Hex string (e.g. "0xabc…").
+        /// Null for receipts produced before SSZ receipt support landed in the producer.
+        /// </summary>
+        public string From { get; set; }
+
+        /// <summary>
+        /// Deployment address for contract-creation transactions (EIP-6466).
+        /// Hex string. Null for non-creation transactions.
+        /// </summary>
+        public string ContractAddress { get; set; }
+
+        /// <summary>
+        /// EIP-7702 authorization addresses applied by this transaction. Null or
+        /// empty for non-SetCode transactions.
+        /// </summary>
+        public List<string> Authorities { get; set; }
+
         public bool IsStatusReceipt => PostStateOrStatus != null && PostStateOrStatus.Length <= 1;
 
         public bool? HasSucceeded

@@ -1,3 +1,4 @@
+using System;
 using Nethereum.Util;
 
 namespace Nethereum.Model
@@ -19,6 +20,42 @@ namespace Nethereum.Model
                 RLP.RLP.EncodeElement(address),
                 RLP.RLP.EncodeElement(new EvmUInt256(amountInGwei).ToBytesForRLPEncoding())
             );
+        }
+
+        public byte[] EncodeTransaction(ISignedTransaction transaction)
+        {
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction));
+            return transaction.GetRLPEncoded();
+        }
+
+        public Receipt DecodeReceipt(byte[] data)
+        {
+            if (data == null || data.Length == 0) return null;
+            return ReceiptEncoder.Current.Decode(data);
+        }
+
+        public BlockHeader DecodeBlockHeader(byte[] data)
+        {
+            if (data == null || data.Length == 0) return null;
+            return BlockHeaderEncoder.Current.Decode(data);
+        }
+
+        public Account DecodeAccount(byte[] data)
+        {
+            if (data == null || data.Length == 0) return null;
+            return AccountEncoder.Current.Decode(data);
+        }
+
+        public Log DecodeLog(byte[] data)
+        {
+            if (data == null || data.Length == 0) return null;
+            return LogEncoder.Current.Decode(data);
+        }
+
+        public ISignedTransaction DecodeTransaction(byte[] data)
+        {
+            if (data == null || data.Length == 0) return null;
+            return TransactionFactory.CreateTransaction(data);
         }
     }
 }
