@@ -527,6 +527,10 @@ zisk/
 │   ├── analyze-elf.sh        # Diagnostic: dump text symbol sizes
 │   ├── analyze-sections.sh   # Diagnostic: section sizes + flags
 │   └── setup-host.sh         # Host-side install (system deps, .NET, Rust, Zisk, bflat image)
+├── test-artifacts/           # Pre-built EVM binary, witnesses, and verified proofs
+│   ├── evm_lazy_nocookie     # RISC-V ELF (5.6MB)
+│   ├── witness_*_standard.bin # 4 witness variants (standard input format)
+│   └── proofs/               # 4 verified STARK proofs (329KB each)
 └── output/                   # ELF + witness artefacts (gitignored)
 ```
 
@@ -585,7 +589,42 @@ ziskemu -e zisk/output/nethereum_evm_elf --legacy-inputs zisk/output/test_sstore
 
 ## Proving notes
 
-- Use the **standard input format** for `cargo-zisk prove` (`-i`). Convert legacy witness files with `cargo-zisk convert-input`. `ZiskInput.Read()` auto-detects both formats.
+### Environment — CRITICAL
+
+OpenMPI's hwloc component tries to probe GPU topology via X11. On headless servers (SSH, CI) this causes `Authorization required, but no authorization protocol specified` and hangs the process. **Always set:**
+
+```bash
+export HWLOC_COMPONENTS=-gl
+```
+
+Add this to `~/.bashrc` or prefix every `cargo-zisk` command with it.
+
+### Input format — CRITICAL
+
+Three formats exist. Using the wrong one causes `BIN:bad version` errors.
+
+| Format | Header | Used by |
+|---|---|---|
+| **Native** | `[u8 version][witness data...]` | `BinaryBlockWitness.Serialize()` output |
+| **Legacy** | `[u64 zero][u64 len][native...]` (16-byte header) | `ziskemu --legacy-inputs` |
+| **Standard** | `[u64 legacy_size][u64 zero][u64 len][native...]` (24-byte header) | `cargo-zisk prove -i` |
+
+**`cargo-zisk prove -i` REQUIRES standard format.** Native or legacy files will fail with `BIN:bad version`.
+
+Convert native → standard:
+```python
+import struct
+with open('witness.bin', 'rb') as f: data = f.read()
+header = struct.pack('<QQQ', 16 + len(data), 0, len(data))
+with open('witness_standard.bin', 'wb') as f: f.write(header + data)
+```
+
+Or in C#: `ZiskBinaryWriter.ToStandardInputFormat()` wraps native bytes in standard format.
+
+Auto-detection in the RISC-V binary (`ZiskInput.Read()`): checks byte at offset 16 — if zero → standard, if non-zero → legacy. This works when the tool passes data correctly, but **the tool must frame it properly**.
+
+- `ziskemu --legacy-inputs file.bin` → reads file, prepends legacy header, maps to memory
+- `cargo-zisk prove -i file.bin` → reads file AS-IS, maps to memory (file must already be in standard format)
 - **WSL2 users**: Zisk's prover needs ≥28 GB allocated to the WSL VM. Add to `%USERPROFILE%\.wslconfig`:
   ```ini
   [wsl2]
@@ -593,3 +632,249 @@ ziskemu -e zisk/output/nethereum_evm_elf --legacy-inputs zisk/output/test_sstore
   swap=8GB
   ```
   Then `wsl --shutdown` to apply.
+
+## Zisk constraint fixes (Nethereum/zisk fork)
+
+NativeAOT-compiled ELFs trigger several Zisk constraint violations that don't appear with standard Rust/Go programs. We maintain a fork at [Nethereum/zisk](https://github.com/Nethereum/zisk/tree/fix/nativeaot-constraints) with the following fixes.
+
+### Bug #1 — `get_read_value` double shift in `mem_helpers.rs`
+
+**File:** `state-machines/mem-common/src/mem_helpers.rs` line 146
+
+The cross-word-boundary read value computation had an extra `>> offset`:
+
+```rust
+// BEFORE (wrong):
+value |= read_values[1] << (64 - offset) >> offset;
+// AFTER (correct):
+value |= read_values[1] << (64 - offset);
+```
+
+This caused ~104 MemAlign constraint violations for any program with unaligned 8-byte reads crossing a word boundary.
+
+### Bug #2 — Read-before-write in MemAlign `TwoWrites` path
+
+**File:** `state-machines/mem/src/mem_align_sm.rs`
+
+The TwoWrites path read values from `first_write_row.get_reg(i)` and `second_write_row.get_reg(i)` before those rows were populated. Fixed by computing values directly from `value_first_write` and `value_second_write` using `Self::get_byte()`.
+
+### Bug #3 — Overlapping section merge in `elf_extraction.rs`
+
+**File:** `core/src/elf_extraction.rs`
+
+When `patch_elf --split-code-data` creates a `.text_overlay` section, LIEF (the ELF library used by `patch_elf`) pads it past its declared size, overlapping into `.rodata`. The `merge_adjacent_ro_sections` function had no overlap handling — it would merge overlapping sections, corrupting rodata bytes. Fixed by truncating the first section at the overlap point:
+
+```rust
+} else if current_end > section.addr {
+    let overlap = (current_end - section.addr) as usize;
+    let new_len = current.data.len().saturating_sub(overlap);
+    current.data.truncate(new_len);
+    if !current.data.is_empty() { merged.push(current); }
+    current = section;
+}
+```
+
+This fixed 447/451 RomData constraint violations.
+
+### Bug #5 — `is_full_aligned` checking 4-byte instead of 8-byte alignment
+
+**File:** `core/src/mem.rs` (3 locations)
+
+The alignment check used `0x03` (4-byte mask) instead of `0x07` (8-byte mask):
+
+```rust
+// BEFORE (wrong):
+((addr & 0x03) == 0) && (width == 8)
+// AFTER (correct):
+((addr & 0x07) == 0) && (width == 8)
+```
+
+An 8-byte read at address `0xAFFF1B04` passed the 4-byte alignment check but actually crossed a word boundary, causing 18/160 `read_same_addr` Mem SM violations.
+
+### Cookie NOP — `__security_cookie` write
+
+**Problem:** NativeAOT's `RhInitialize` writes a non-deterministic stack canary (`__security_cookie`) to `.rodata` at startup. This value differs between emulator runs and prover runs, causing 1 RomData constraint violation.
+
+**Fix:** Binary-patch the `sd a0, 0(s1)` instruction that writes the cookie to a NOP (`0x00000013`). The cookie address varies per binary — find it via disassembly:
+
+```bash
+riscv64-linux-gnu-objdump -d binary | grep -B20 'minipal_lowres_ticks' | grep 'sd.*a0.*s1'
+```
+
+Pattern: `addi s1, aX, <cookie_offset>` → `call minipal_lowres_ticks` → `sd a0, 0(s1)` ← NOP this last instruction.
+
+### Float library rebuild
+
+**Problem:** Zisk's prebuilt `ziskfloat.elf` (110,208 bytes) has a bus accounting bug that causes the Global constraint to fail for ALL programs.
+
+**Fix:** Rebuild from source: `cd lib-float/c && make`. Produces 112,120 bytes with correct bus accounting. Must be done on every fresh Zisk checkout.
+
+### Bug #5 — Hardcoded `bytes=8` in cross-word-boundary sub-word bus payload
+
+**File:** `emulator/src/emu.rs` (2 locations: read path line 847, write path line 1281)
+
+In `source_b_mem_reads_consume_databus()`, the `SRC_IND` double_not_aligned paths hardcoded `8` in the bus payload width field instead of using `instruction.ind_width`. Sub-word operations (LW/LH/LB) at addresses where `offset + width > 8` (crossing an 8-byte word boundary) emitted `bytes=8` on the bus, but Main PIL emits assumes with the actual width (4, 2, 1). MemAlign processed these as width=8 TwoReads, so its bus entries never matched Main's sub-word assumes.
+
+```rust
+// BEFORE (wrong):
+let payload = MemHelpers::mem_load(address as u32, ..., 8, [raw_data_1, raw_data_2]);
+// AFTER (correct):
+let payload = MemHelpers::mem_load(address as u32, ..., instruction.ind_width as u8, [raw_data_1, raw_data_2]);
+```
+
+**Diagnosis:** `cargo-zisk verify-constraints -d` reports `opids do not match [10]` (MEMORY_ID). Full debug mode shows unmatched assumes at `bytes=4` and unmatched proves at `bytes=8` with identical addresses and steps.
+
+**Impact:** This was the root cause of the previously reported multi-instance global constraint failure. It was never a multi-instance issue — it was a bus accounting bug that only manifested when programs did enough sub-word unaligned memory access (which correlated with higher step counts).
+
+## Proving end-to-end
+
+With all 5 fixes applied (our Zisk fork at `Nethereum/zisk` branch `fix/nativeaot-constraints` + cookie NOP + float rebuild):
+
+```bash
+export HWLOC_COMPONENTS=-gl
+
+# 1. Verify all constraints pass (fast check, no proof generated)
+cargo-zisk verify-constraints \
+    -e zisk/test-artifacts/evm_lazy_nocookie \
+    -i zisk/test-artifacts/witness_eth_transfer_noroot_standard.bin -l -d
+
+# 2. Generate STARK + VADCOP proof
+cargo-zisk prove \
+    -e zisk/test-artifacts/evm_lazy_nocookie \
+    -i zisk/test-artifacts/witness_eth_transfer_noroot_standard.bin -l -n \
+    -o evm_proof
+
+# 3. Verify proof
+cargo-zisk verify -p evm_proof
+
+# Or verify the pre-built proofs (no proving key needed):
+cargo-zisk verify -p zisk/test-artifacts/proofs/proof_eth_transfer_noroot
+```
+
+**Test results (2026-05-06, 12-core server, 128GB RAM):**
+
+| Witness | Steps | Main instances | Prove time | Proof size | Verify time |
+|---------|-------|---------------|------------|------------|-------------|
+| ETH transfer (no root) | 3,963,526 | 1 | 225s | 329KB | 187ms |
+| SSTORE (no root) | 5,267,838 | 2 | 255s | 329KB | 187ms |
+| ETH transfer (patricia) | 6,593,834 | 2 | 257s | 329KB | 187ms |
+| SSTORE (patricia) | 8,044,287 | 2 | 255s | 329KB | 187ms |
+
+Pre-built proofs and witnesses are in `zisk/test-artifacts/`.
+
+**Phase breakdown (ETH transfer, 3.96M steps):**
+
+| Phase | Time | Notes |
+|-------|------|-------|
+| Execution | ~0.6s | 3.96M steps, 12 air instances |
+| Contributions | ~30s | Witness polynomial computation |
+| Inner STARK proofs | ~189s | Per-air FRI proofs |
+| VADCOP aggregation | ~5s | Recursive proof composition |
+| **Total** | **~225s** | **329KB proof file** |
+
+## Generating a provingKey from source
+
+The official `ziskup` installs a pre-built provingKey. To generate one yourself (e.g. for a newer Zisk version before official keys are published), follow these steps.
+
+### Prerequisites
+
+```bash
+# 1. pil2-compiler (JavaScript PIL → protobuf compiler)
+git clone https://github.com/0xPolygonHermez/pil2-compiler /tmp/pil2-compiler
+cd /tmp/pil2-compiler && npm install
+
+# 2. pil2-proofman-js (provingKey generator)
+git clone https://github.com/0xPolygonHermez/pil2-proofman /tmp/pil2-proofman-js
+cd /tmp/pil2-proofman-js && npm install
+
+# 2b. Fix missing PIL standard library for recursive setup
+# The stark-recurser npm package is missing std PIL files needed by circom2pil.
+# Copy them from the Rust proofman checkout (created when building Zisk):
+STD_PIL=$(find ~/.cargo/git/checkouts/pil2-proofman-* -path "*/pil2-components/lib/std/pil" | head -1)
+cp $STD_PIL/*.pil /tmp/pil2-proofman-js/node_modules/stark-recurser/src/circom2pil/pil/
+
+# 3. Zisk source (contains PIL definitions)
+git clone https://github.com/0xPolygonHermez/zisk /tmp/zisk
+cd /tmp/zisk
+```
+
+### Step 1: Compile PIL (with fixed-to-file optimization)
+
+The PIL compiler converts `.pil` files into a protobuf `pilout.bin`. Without optimization it needs 115+ GB of RAM because it embeds all fixed columns in the protobuf. The `-f` flag writes fixed columns to separate files instead, reducing memory to ~8 GB.
+
+```bash
+cd /tmp/zisk
+
+# Find the proofman PIL include path (matches Cargo.lock commit)
+PROOFMAN_PIL=$(find ~/.cargo/git/checkouts/pil2-proofman-* -path "*/pil2-components/lib/std/pil" | head -1)
+
+# Compile — the key flags are:
+#   -f <dir>           Write fixed columns to separate files (CRITICAL for memory)
+#   -O no-proto-fixed-data   Skip embedding fixed data in protobuf
+mkdir -p /tmp/pil_fixed_out
+node --max-old-space-size=32000 /tmp/pil2-compiler/src/pil.js \
+    pil/zisk.pil \
+    -I $PROOFMAN_PIL,pil,state-machines,precompiles \
+    -o /tmp/pilout_nofixed.bin \
+    -n zisk \
+    -f /tmp/pil_fixed_out \
+    -O no-proto-fixed-data
+```
+
+**Expected:** ~4 minutes, ~8 GB RAM, produces `pilout_nofixed.bin` (4.3 MB) + fixed files in `/tmp/pil_fixed_out/` (~3.2 GB total).
+
+**Without `-f`:** The compiler tries to hold all fixed columns in V8 heap. At column ~309 of ~320, it OOMs at 115+ GB. The `-f` flag is the fix — it streams each column to disk immediately.
+
+### Step 2: Generate provingKey (basic + recursive)
+
+```bash
+# stdPath = circom standard library for recursive proofs
+STD_PATH=/tmp/pil2-proofman-js/node_modules/stark-recurser/src/pil2circom/circuits.gl
+
+# The key flags are:
+#   -r                  Enable recursive/aggregation setup (compressor + vadcop)
+#   -t <stdPath>        Circom standard library path (required with -r)
+#   -u <fixedPath>      Point to fixed column files from Step 1
+#   --stack-size=65536  Prevent stack overflow in calculateExpDeg recursion
+node --max-old-space-size=64000 --stack-size=65536 \
+    /tmp/pil2-proofman-js/src/main_setup.js \
+    -a /tmp/pilout_nofixed.bin \
+    -b /tmp/new_proving_key \
+    -u /tmp/pil_fixed_out \
+    -r \
+    -t $STD_PATH
+```
+
+**Without `-r`:** Only generates basic per-air STARK setup. The prover will panic looking for `compressor/compressor.starkinfo.json` and `vadcop_final/vadcop_final.verkey.bin`. You MUST use `-r` for a usable provingKey.
+
+**Expected output:** `/tmp/new_proving_key/provingKey/` containing:
+- `pilout.globalConstraints.bin` + `.json` — global constraint formulas
+- `pilout.globalInfo.json` — air metadata and sizes
+- `zisk/Zisk/airs/<AirName>/air/` — per-air STARK keys
+- `zisk/Zisk/airs/<AirName>/compressor/` — per-air compressor circuits
+- `zisk/Zisk/airs/<AirName>/recursive1/` + `recursive2/` — recursive proof circuits
+- `zisk/vadcop_final/` — VADCOP aggregation circuit
+- `zisk/vadcop_final_compressed/` — compressed final circuit
+
+### Step 3: Install the provingKey
+
+```bash
+# Back up existing key
+cp -r ~/.zisk/provingKey ~/.zisk/provingKey.bak
+
+# Install new key
+rm -rf ~/.zisk/provingKey
+cp -r /tmp/new_proving_key/provingKey ~/.zisk/provingKey
+
+# Regenerate constant trees (one-time, done automatically on first prove)
+HWLOC_COMPONENTS=-gl cargo-zisk check-setup -a
+```
+
+### Key generation timeline
+
+| Phase | Time | Memory | Notes |
+|-------|------|--------|-------|
+| PIL compile | ~4 min | ~8 GB | With `-f` flag |
+| Basic setup (35 airs) | ~2 min | ~1 GB | Per-air STARK keys |
+| Recursive setup (compressor + circom) | ~30-60 min | ~4 GB | Circom compilation per air |
+| First prove (const tree regen) | ~2 min | ~6 GB | One-time on first use |

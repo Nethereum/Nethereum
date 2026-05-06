@@ -35,30 +35,33 @@ namespace Nethereum.EVM.Zisk
             }
 
             var block = BinaryBlockWitness.Deserialize(inputBytes.ToArray());
-            block.ProduceBlockCommitments = true;
-            block.ComputePostStateRoot = true;
 
             ZiskIO.Write("BIN:block txs="); ZiskIO.WriteLong(block.Transactions.Count);
             ZiskIO.Write(" accounts="); ZiskIO.WriteLong(block.Accounts.Count); ZiskIO.Write('\n');
 
             var encoding = RlpBlockEncodingProvider.Instance;
-            var registry = MainnetHardforkRegistry.Build(ZiskPrecompileBackends.Instance);
-            LayerKzgAndBlsBackends(registry);
-            var stateRootCalc = ResolveStateRootCalculator(block.Features, encoding);
-            var isBinary = stateRootCalc is BinaryStateRootCalculator;
+            var registry = BuildMinimalRegistry(block.Features);
+
+            bool needsStateRoot = block.ComputePostStateRoot || block.ProduceBlockCommitments;
+            IStateRootCalculator stateRootCalc = null;
+            bool isBinary = false;
+
+            if (needsStateRoot)
+            {
+                LayerKzgAndBlsBackends(registry);
+                stateRootCalc = ResolveStateRootCalculator(block.Features, encoding);
+                isBinary = stateRootCalc is BinaryStateRootCalculator;
+                if (isBinary) block.ComputePostStateRoot = false;
+            }
 
             ZiskIO.WriteLine("BIN:exec");
 
-            // NativeAOT devirtualises IStateRootCalculator.ComputeStateRoot inside
-            // BlockExecutor to always call Patricia. Work around by computing the
-            // binary trie root outside the executor via a direct concrete call.
-            block.ComputePostStateRoot = !isBinary;
             var result = Nethereum.EVM.Execution.BlockExecutor.Execute(
                 block,
                 encoding,
                 registry,
-                isBinary ? null : stateRootCalc,
-                new PatriciaBlockRootCalculator());
+                needsStateRoot && !isBinary ? stateRootCalc : null,
+                needsStateRoot ? new PatriciaBlockRootCalculator() : null);
 
             if (isBinary)
             {
@@ -93,6 +96,12 @@ namespace Nethereum.EVM.Zisk
             WriteBytes32ToSlots(19, result.TransactionsRoot ?? new byte[32]);
             WriteBytes32ToSlots(27, result.ReceiptsRoot ?? new byte[32]);
             ZiskIO.SetOutput(35, (uint)result.TxResults.Count);
+            WriteBytes32ToSlots(36, block.PreStateRoot ?? new byte[32]);
+            ZiskIO.SetOutput(44, (uint)(block.BlockNumber & 0xFFFFFFFF));
+            ZiskIO.SetOutput(45, (uint)(block.BlockNumber >> 32));
+            ZiskIO.SetOutput(46, (uint)(block.ChainId & 0xFFFFFFFF));
+            ZiskIO.SetOutput(47, (uint)(block.ChainId >> 32));
+            WriteBytes32ToSlots(48, block.ParentHash ?? new byte[32]);
 
             ZiskIO.Write("BIN:block_hash=");
             WriteHex(result.BlockHash ?? new byte[32]); ZiskIO.Write('\n');
@@ -175,6 +184,34 @@ namespace Nethereum.EVM.Zisk
                 return new BinaryStateRootCalculator(hashProvider);
             }
             return new PatriciaStateRootCalculator(encoding);
+        }
+
+        static HardforkRegistry BuildMinimalRegistry(BlockFeatureConfig features)
+        {
+            var backends = ZiskPrecompileBackends.Instance;
+            var fork = features?.Fork ?? HardforkName.Prague;
+
+            var r = new HardforkRegistry();
+            var precompiles = PrecompileRegistries.PragueBase(
+                backends.EcRecover, backends.Sha256, backends.Ripemd160,
+                backends.ModExp, backends.Bn128, backends.Blake2f);
+
+            HardforkConfig baseCfg;
+            if (fork == HardforkName.Osaka)
+            {
+                baseCfg = HardforkConfig.Osaka;
+                if (backends.P256Verify != null)
+                    precompiles = PrecompileRegistries.OsakaBase(
+                        backends.EcRecover, backends.Sha256, backends.Ripemd160,
+                        backends.ModExp, backends.Bn128, backends.Blake2f, backends.P256Verify);
+            }
+            else
+            {
+                baseCfg = HardforkConfig.Prague;
+            }
+
+            r.Register(fork, baseCfg.WithPrecompiles(precompiles));
+            return r;
         }
     }
 }
