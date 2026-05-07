@@ -10,10 +10,11 @@ namespace Nethereum.CoreChain.Proving
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
 
-        public HttpBlockProverClient(string baseUrl, HttpClient httpClient = null)
+        public HttpBlockProverClient(string baseUrl, HttpClient httpClient = null, TimeSpan? timeout = null)
         {
             _baseUrl = baseUrl.TrimEnd('/');
             _httpClient = httpClient ?? new HttpClient();
+            _httpClient.Timeout = timeout ?? TimeSpan.FromMinutes(30);
         }
 
         public async Task<BlockProofResult> ProveBlockAsync(byte[] witnessBytes,
@@ -49,8 +50,14 @@ namespace Nethereum.CoreChain.Proving
                 ProofBytes = !string.IsNullOrEmpty(result.ProofBytes) ? Convert.FromBase64String(result.ProofBytes) : null,
                 PreStateRoot = !string.IsNullOrEmpty(result.PreStateRoot) ? Convert.FromBase64String(result.PreStateRoot) : null,
                 PostStateRoot = !string.IsNullOrEmpty(result.PostStateRoot) ? Convert.FromBase64String(result.PostStateRoot) : null,
+                ProverComputedStateRoot = !string.IsNullOrEmpty(result.ProverComputedStateRoot) ? Convert.FromBase64String(result.ProverComputedStateRoot) : null,
+                ProverComputedBlockHash = !string.IsNullOrEmpty(result.ProverComputedBlockHash) ? Convert.FromBase64String(result.ProverComputedBlockHash) : null,
+                StateRootVerified = result.StateRootVerified,
+                BlockHashVerified = result.BlockHashVerified,
                 WitnessHash = !string.IsNullOrEmpty(result.WitnessHash) ? Convert.FromBase64String(result.WitnessHash) : null,
+                ElfHash = !string.IsNullOrEmpty(result.ElfHash) ? Convert.FromBase64String(result.ElfHash) : null,
                 BlockNumber = result.BlockNumber,
+                GasUsed = result.GasUsed,
                 ProverMode = result.ProverMode
             };
         }

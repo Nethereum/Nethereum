@@ -61,10 +61,46 @@ namespace Nethereum.CoreChain.Proving
 #endif
         public long BlockNumber { get; set; }
 
+        [JsonProperty("elfHash")]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("elfHash")]
+#endif
+        public string ElfHash { get; set; }
+
         [JsonProperty("proverMode")]
 #if NET6_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("proverMode")]
 #endif
         public string ProverMode { get; set; }
+
+        [JsonProperty("stateRootVerified")]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("stateRootVerified")]
+#endif
+        public bool StateRootVerified { get; set; }
+
+        [JsonProperty("proverComputedStateRoot")]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("proverComputedStateRoot")]
+#endif
+        public string ProverComputedStateRoot { get; set; }
+
+        [JsonProperty("gasUsed")]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("gasUsed")]
+#endif
+        public long GasUsed { get; set; }
+
+        [JsonProperty("proverComputedBlockHash")]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("proverComputedBlockHash")]
+#endif
+        public string ProverComputedBlockHash { get; set; }
+
+        [JsonProperty("blockHashVerified")]
+#if NET6_0_OR_GREATER
+        [System.Text.Json.Serialization.JsonPropertyName("blockHashVerified")]
+#endif
+        public bool BlockHashVerified { get; set; }
     }
 }

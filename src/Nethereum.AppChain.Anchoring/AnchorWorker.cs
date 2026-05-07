@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Nethereum.CoreChain.DataAvailability;
 
 namespace Nethereum.AppChain.Anchoring
 {
@@ -12,6 +13,7 @@ namespace Nethereum.AppChain.Anchoring
         private readonly IChainAnchorable _chain;
         private readonly IAnchorService _anchorService;
         private readonly AnchorConfig _config;
+        private readonly AnchorPublicationPipeline? _pipeline;
         private readonly ILogger<AnchorWorker>? _logger;
 
         private Timer? _timer;
@@ -24,11 +26,13 @@ namespace Nethereum.AppChain.Anchoring
             IChainAnchorable chain,
             IAnchorService anchorService,
             AnchorConfig config,
+            AnchorPublicationPipeline? pipeline = null,
             ILogger<AnchorWorker>? logger = null)
         {
             _chain = chain ?? throw new ArgumentNullException(nameof(chain));
             _anchorService = anchorService ?? throw new ArgumentNullException(nameof(anchorService));
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _pipeline = pipeline;
             _logger = logger;
         }
 
@@ -118,18 +122,45 @@ namespace Nethereum.AppChain.Anchoring
 
             _logger?.LogInformation("Anchoring block {BlockNumber}", blockNumber);
 
+            byte[]? extraData = null;
+
+            if (_pipeline != null)
+            {
+                var scope = new AnchorScope
+                {
+                    ChainId = (long)_config.ChainId,
+                    Kind = _config.AnchorCadence == 1 ? AnchorKind.Block : AnchorKind.Batch,
+                    StartBlock = (long)(_lastAnchoredBlock + 1),
+                    EndBlock = (long)blockNumber,
+                    StateRoot = block.StateRoot,
+                    TransactionsRoot = block.TransactionsHash,
+                    ReceiptsRoot = block.ReceiptHash
+                };
+
+                var pubResult = await _pipeline.ExecuteAsync(scope);
+                extraData = pubResult.EncodedPayload;
+
+                if (pubResult.PreviousValidatedBlock.HasValue)
+                    _logger?.LogInformation("Proof pointer advanced to block {Block}",
+                        pubResult.PreviousValidatedBlock.Value);
+            }
+
             var retries = 0;
             while (retries < _config.MaxRetries)
             {
-                var result = await _anchorService.AnchorBlockAsync(
-                    blockNumber,
-                    block.StateRoot,
-                    block.TransactionsHash,
-                    block.ReceiptHash);
+                var result = extraData != null
+                    ? await _anchorService.AnchorBlockAsync(
+                        blockNumber, block.StateRoot, block.TransactionsHash, block.ReceiptHash, extraData)
+                    : await _anchorService.AnchorBlockAsync(
+                        blockNumber, block.StateRoot, block.TransactionsHash, block.ReceiptHash);
 
                 if (result.Status == AnchorStatus.Confirmed)
                 {
                     lock (_stateLock) { _lastAnchoredBlock = blockNumber; }
+
+                    if (_pipeline != null && result.AnchorTxHash != null && extraData != null)
+                        _pipeline.RecordAnchorTx((long)blockNumber, result.AnchorTxHash, extraData);
+
                     _logger?.LogInformation("Successfully anchored block {BlockNumber}", blockNumber);
                     return;
                 }
