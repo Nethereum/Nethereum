@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AppChain.AnchorTarget</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Nethereum.Aspire.ServiceDefaults\Nethereum.Aspire.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
+    <ProjectReference Include="..\..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
+    <ProjectReference Include="..\..\..\src\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
+    <PackageReference Include="Nethereum.DevChain" Version="6.*" />
+    <PackageReference Include="Nethereum.AppChain.Anchoring" Version="6.*" />
+    <PackageReference Include="Nethereum.Web3" Version="6.*" />
+  </ItemGroup>
+
+</Project>

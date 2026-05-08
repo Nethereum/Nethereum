@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Nethereum.AppChain.Prover": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53521;http://localhost:53520"
+    }
+  }
+}

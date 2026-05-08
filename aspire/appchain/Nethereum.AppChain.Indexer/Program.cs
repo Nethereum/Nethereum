@@ -1,0 +1,40 @@
+using Microsoft.EntityFrameworkCore;
+using Nethereum.BlockchainStorage.Processors.Postgres;
+using Nethereum.BlockchainStorage.Token.Postgres;
+using Nethereum.BlockchainStore.Postgres;
+using Npgsql;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.AddServiceDefaults();
+
+var appchainUrl = builder.Configuration["services:appchain:http:0"]
+    ?? builder.Configuration["BlockchainProcessing:BlockchainUrl"]
+    ?? "http://localhost:8545";
+
+builder.Configuration["BlockchainProcessing:BlockchainUrl"] = appchainUrl;
+builder.Configuration["BlockchainProcessing:MinimumBlockConfirmations"] = "0";
+builder.Configuration["TokenBalanceAggregation:RpcUrl"] = appchainUrl;
+
+var connectionString = builder.Configuration.GetConnectionString("appchaindb")
+    ?? builder.Configuration.GetConnectionString("PostgresConnection")
+    ?? builder.Configuration.GetConnectionString("BlockchainDbStorage");
+
+using (var blockchainContext = new PostgresBlockchainDbContext(connectionString))
+{
+    await blockchainContext.Database.MigrateAsync();
+}
+
+var tokenDbOptions = new DbContextOptionsBuilder<TokenPostgresDbContext>();
+tokenDbOptions.UseNpgsql(connectionString).UseLowerCaseNamingConvention();
+using (var tokenContext = new TokenPostgresDbContext(tokenDbOptions.Options))
+{
+    await tokenContext.Database.MigrateAsync();
+}
+
+builder.Services.AddPostgresBlockchainProcessor(builder.Configuration, connectionString);
+builder.Services.AddPostgresInternalTransactionProcessor();
+builder.Services.AddTokenDenormalizerProcessing(builder.Configuration, connectionString);
+builder.Services.AddTokenBalanceAggregationProcessing(builder.Configuration, connectionString);
+
+builder.Build().Run();
