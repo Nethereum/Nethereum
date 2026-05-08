@@ -20,7 +20,7 @@ var intervalMs = int.TryParse(builder.Configuration["LoadGenerator:IntervalMs"],
 var chainId = int.TryParse(builder.Configuration["LoadGenerator:ChainId"], out var c) ? c : 420420;
 
 var senderKey = builder.Configuration["LoadGenerator:PrivateKey"]
-    ?? "0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f";
+    ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 var receiver = "0x1111111111111111111111111111111111111111";
 
 long txCount = 0;

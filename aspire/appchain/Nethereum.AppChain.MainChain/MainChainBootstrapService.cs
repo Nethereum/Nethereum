@@ -30,7 +30,7 @@ public class MainChainBootstrapService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         var operatorKey = _config["MainChain:OperatorKey"]
-            ?? "0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f";
+            ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
         var chainId = int.TryParse(_config["MainChain:ChainId"], out var cid) ? cid : 1337;
         var appChainId = ulong.TryParse(_config["MainChain:AppChainId"], out var acid) ? acid : 420420UL;
 

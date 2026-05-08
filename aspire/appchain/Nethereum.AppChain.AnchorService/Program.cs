@@ -21,7 +21,7 @@ var appchainUrl = builder.Configuration["services:appchain:http:0"]
     ?? "http://localhost:53510";
 
 var operatorKey = builder.Configuration["Anchoring:OperatorKey"]
-    ?? "0x8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f";
+    ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 var cadence = int.TryParse(builder.Configuration["Anchoring:Cadence"], out var c) ? c : 10;
 var intervalMs = int.TryParse(builder.Configuration["Anchoring:IntervalMs"], out var i) ? i : 30000;
