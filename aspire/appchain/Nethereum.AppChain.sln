@@ -107,6 +107,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.AppChain.MainChai
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.Mud.Repositories.Postgres", "..\..\src\Nethereum.Mud.Repositories.Postgres\Nethereum.Mud.Repositories.Postgres.csproj", "{E9754E07-A51F-45CD-893B-9A06D10ED3C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.AppChain.LoadGenerator", "Nethereum.AppChain.LoadGenerator\Nethereum.AppChain.LoadGenerator.csproj", "{F999AC4E-2DDA-4F23-9A29-1E541566823A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nethereum.AppChain.AnchorService", "Nethereum.AppChain.AnchorService\Nethereum.AppChain.AnchorService.csproj", "{1CBF1ABB-B44D-4CC6-B638-C5870724D761}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -741,6 +745,30 @@ Global
 		{E9754E07-A51F-45CD-893B-9A06D10ED3C2}.Release|x64.Build.0 = Release|Any CPU
 		{E9754E07-A51F-45CD-893B-9A06D10ED3C2}.Release|x86.ActiveCfg = Release|Any CPU
 		{E9754E07-A51F-45CD-893B-9A06D10ED3C2}.Release|x86.Build.0 = Release|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Debug|x64.Build.0 = Debug|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Debug|x86.Build.0 = Debug|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Release|x64.ActiveCfg = Release|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Release|x64.Build.0 = Release|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Release|x86.ActiveCfg = Release|Any CPU
+		{F999AC4E-2DDA-4F23-9A29-1E541566823A}.Release|x86.Build.0 = Release|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Debug|x64.Build.0 = Debug|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Debug|x86.Build.0 = Debug|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Release|x64.ActiveCfg = Release|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Release|x64.Build.0 = Release|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Release|x86.ActiveCfg = Release|Any CPU
+		{1CBF1ABB-B44D-4CC6-B638-C5870724D761}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
