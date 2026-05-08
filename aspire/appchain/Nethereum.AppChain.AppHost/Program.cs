@@ -6,30 +6,42 @@ if (!isTest)
 {
     postgresServer.WithDataVolume("appchain-pgdata");
 }
-var postgres = postgresServer.AddDatabase("appchaindb");
+var mainchainDb = postgresServer.AddDatabase("mainchaindb");
+var appchainDb = postgresServer.AddDatabase("appchaindb");
 
-var anchorChain = builder.AddProject<Projects.Nethereum_AppChain_AnchorTarget>("anchor-chain");
+var mainchain = builder.AddProject<Projects.Nethereum_AppChain_MainChain>("mainchain");
+
+var mainchainIndexer = builder.AddProject<Projects.Nethereum_AppChain_MainChain_Indexer>("mainchain-indexer")
+    .WithReference(mainchain)
+    .WithReference(mainchainDb)
+    .WaitFor(mainchain)
+    .WaitFor(mainchainDb);
+
+var mainchainExplorer = builder.AddProject<Projects.Nethereum_AppChain_MainChain_Explorer>("mainchain-explorer")
+    .WithReference(mainchain)
+    .WithReference(mainchainDb)
+    .WaitFor(mainchainIndexer);
 
 var appchain = builder.AddProject<Projects.Nethereum_AppChain_Node>("appchain")
-    .WithReference(anchorChain)
-    .WithReference(postgres)
-    .WaitFor(anchorChain)
-    .WaitFor(postgres);
+    .WithReference(mainchain)
+    .WithReference(appchainDb)
+    .WaitFor(mainchain)
+    .WaitFor(appchainDb);
 
 var prover = builder.AddProject<Projects.Nethereum_AppChain_Prover>("block-prover")
     .WithReference(appchain)
-    .WithReference(postgres)
+    .WithReference(appchainDb)
     .WaitFor(appchain);
 
-var indexer = builder.AddProject<Projects.Nethereum_AppChain_Indexer>("indexer")
+var appchainIndexer = builder.AddProject<Projects.Nethereum_AppChain_Indexer>("appchain-indexer")
     .WithReference(appchain)
-    .WithReference(postgres)
+    .WithReference(appchainDb)
     .WaitFor(appchain)
-    .WaitFor(postgres);
+    .WaitFor(appchainDb);
 
-var explorer = builder.AddProject<Projects.Nethereum_AppChain_Explorer>("explorer")
+var appchainExplorer = builder.AddProject<Projects.Nethereum_AppChain_Explorer>("appchain-explorer")
     .WithReference(appchain)
-    .WithReference(postgres)
-    .WaitFor(indexer);
+    .WithReference(appchainDb)
+    .WaitFor(appchainIndexer);
 
 builder.Build().Run();

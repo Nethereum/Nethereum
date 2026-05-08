@@ -17,7 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nethereum.AppChain.AnchorTarget\Nethereum.AppChain.AnchorTarget.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.MainChain\Nethereum.AppChain.MainChain.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.MainChain.Indexer\Nethereum.AppChain.MainChain.Indexer.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.MainChain.Explorer\Nethereum.AppChain.MainChain.Explorer.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.Node\Nethereum.AppChain.Node.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.Prover\Nethereum.AppChain.Prover.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.Indexer\Nethereum.AppChain.Indexer.csproj" />
