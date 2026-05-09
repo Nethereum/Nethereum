@@ -1,12 +1,10 @@
 ---
 name: uniswap-swap
-description: Swap tokens on Uniswap V2/V3/V4 using Nethereum (.NET/C#). Use this skill whenever the user asks about token swaps, DEX trading, Uniswap integration, quoting prices, slippage protection, price impact, Universal Router, Permit2, or any DeFi swap operation with C# or .NET.
+description: "Swap tokens on Uniswap V2/V3/V4 using Nethereum (.NET/C#). Use this skill whenever the user asks about token swaps, DEX trading, Uniswap integration, quoting prices, slippage protection, price impact, Universal Router, Permit2, or any DeFi swap operation with C# or .NET."
 user-invocable: true
 ---
 
 # Uniswap: Swap Tokens
-
-Nethereum provides a complete Uniswap integration covering V2, V3, and V4. The `web3.UniswapV4()` extension gives you access to quoting, routing, pool discovery, and swap execution — all through typed C# services. This is the standard way to execute on-chain token swaps from .NET.
 
 NuGet: `Nethereum.Uniswap`
 
@@ -50,8 +48,23 @@ The `V4PathEncoder` encodes the swap route. For single-hop, pass one pool key. F
 
 ## Execute a Swap
 
-Swaps go through the Universal Router. The pattern is: build actions (swap + settle input + take output), then execute:
+Follow these steps for a complete swap:
 
+**Step 1: Validate balance**
+```csharp
+var balanceResult = await uniswap.Accounts.Balances.ValidateBalanceAsync(
+    tokenAddress, owner, amountIn);
+if (!balanceResult.HasSufficientBalance)
+    throw new Exception($"Need {balanceResult.Deficit} more tokens");
+```
+
+**Step 2: Check and approve token spending (ERC-20 only, skip for native ETH)**
+```csharp
+await uniswap.Accounts.Approvals.CheckAndApproveIfNeededAsync(
+    tokenAddress, owner, spender, amountIn);
+```
+
+**Step 3: Build and execute the swap via Universal Router**
 ```csharp
 var v4ActionBuilder = uniswap.GetUniversalRouterV4ActionsBuilder();
 
@@ -73,7 +86,11 @@ var executeFunction = routerBuilder.GetExecuteFunction(amountIn);
 var receipt = await uniswap.UniversalRouter.ExecuteRequestAndWaitForReceiptAsync(executeFunction);
 ```
 
-The three actions form the standard swap pattern: **swap** exchanges tokens in the pool, **settle** pays the input, **take** collects the output. `AmountOutMinimum` is your slippage protection.
+**Step 4: Verify transaction success**
+```csharp
+if (receipt.Status.Value != 1)
+    throw new Exception($"Swap failed — tx: {receipt.TransactionHash}");
+```
 
 ## Slippage and Price Impact
 

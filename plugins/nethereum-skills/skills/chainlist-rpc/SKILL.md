@@ -1,6 +1,6 @@
 ---
 name: chainlist-rpc
-description: Discover EVM chains, RPC endpoints, native currencies, block explorers, and faucets using the Chainlist registry via Nethereum.DataServices
+description: "Discover EVM chains, RPC endpoints, native currencies, block explorers, and faucets using the Chainlist registry via Nethereum.DataServices. Use when the user asks about blockchain networks, network configuration, chain IDs, RPC URLs, finding an endpoint, available EVM chains, testnet faucets, or chain metadata lookup in .NET/C#."
 user-invocable: true
 ---
 

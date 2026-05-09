@@ -1,6 +1,6 @@
 ---
 name: blockchain-indexing
-description: Index blockchain data (blocks, transactions, logs, tokens) to PostgreSQL/SqlServer/SQLite with progress tracking, reorg handling, and hosted services (.NET/C#). Use this skill when the user asks about blockchain indexing, block processing, event log crawling, database storage for blockchain data, token transfer indexing, balance aggregation, or chain reorganisation handling.
+description: "Index blockchain data (blocks, transactions, logs, tokens) to PostgreSQL/SqlServer/SQLite with progress tracking, reorg handling, and hosted services (.NET/C#). Use when the user asks about blockchain indexing, block processing, event log crawling, database storage for blockchain data, token transfer indexing, balance aggregation, or chain reorganisation handling."
 user-invocable: true
 ---
 
@@ -55,6 +55,15 @@ await host.RunAsync();
 ```
 
 This registers `BlockchainProcessingHostedService` (a `BackgroundService`) that continuously crawls blocks, persists them to Postgres, and auto-retries with exponential backoff on failure.
+
+**Validation checkpoint:** After starting the hosted service, query the database to confirm rows are being written:
+
+```sql
+SELECT COUNT(*) FROM "Blocks";
+SELECT MAX("BlockNumber") FROM "Blocks";
+```
+
+If the count remains zero after 30 seconds, check the RPC URL and `FromBlock` configuration.
 
 ## Database Providers
 
@@ -312,118 +321,18 @@ var processor = web3.Processing.Logs.CreateProcessor(
 
 ## Entity Models
 
-All entities inherit from `TableRow` (provides `RowIndex`, `RowCreated`, `RowUpdated`).
+All entities inherit from `TableRow` (provides `RowIndex`, `RowCreated`, `RowUpdated`). Key entities:
 
-### Block
+| Entity | Interface | Key Fields |
+|--------|-----------|------------|
+| `Block` | `IBlockView` | `BlockNumber`, `Hash`, `ParentHash`, `Miner`, `GasUsed`, `Timestamp`, `TransactionCount`, `IsCanonical` |
+| `TransactionBase` | `ITransactionView` | `Hash`, `BlockNumber`, `AddressFrom`, `AddressTo`, `Value`, `Gas`, `GasUsed`, `Failed`, `IsCanonical` |
+| `TransactionLog` | `ITransactionLogView` | `TransactionHash`, `LogIndex`, `Address`, `EventHash`, `IndexVal1-3`, `Data`, `IsCanonical` |
+| `Contract` | `IContractView` | `Address`, `Name`, `ABI`, `Code`, `Creator`, `TransactionHash` |
+| `TokenMetadata` | `ITokenMetadataView` | `ContractAddress`, `Name`, `Symbol`, `Decimals`, `TokenType` |
+| `TokenBalance` | `ITokenBalanceView` | `Address`, `ContractAddress`, `Balance`, `TokenType`, `LastUpdatedBlockNumber` |
 
-```csharp
-public class Block : TableRow, IBlockView
-{
-    public long BlockNumber { get; set; }
-    public string Hash { get; set; }
-    public string ParentHash { get; set; }
-    public string Miner { get; set; }
-    public string GasLimit { get; set; }
-    public string GasUsed { get; set; }
-    public long Timestamp { get; set; }
-    public long TransactionCount { get; set; }
-    public string BaseFeePerGas { get; set; }
-    public string StateRoot { get; set; }
-    public bool IsCanonical { get; set; } = true;
-    public bool IsFinalized { get; set; }
-    public int? ChainId { get; set; }
-    // + Difficulty, TotalDifficulty, Nonce, ExtraData, Size,
-    //   ReceiptsRoot, LogsBloom, WithdrawalsRoot, BlobGasUsed,
-    //   ExcessBlobGas, ParentBeaconBlockRoot, RequestsHash, etc.
-}
-```
-
-### Transaction
-
-```csharp
-public class TransactionBase : TableRow, ITransactionView
-{
-    public string BlockHash { get; set; }
-    public long BlockNumber { get; set; }
-    public string Hash { get; set; }
-    public string AddressFrom { get; set; }
-    public string AddressTo { get; set; }
-    public string Value { get; set; }
-    public string Gas { get; set; }
-    public string GasPrice { get; set; }
-    public string GasUsed { get; set; }
-    public string Input { get; set; }
-    public long Nonce { get; set; }
-    public bool Failed { get; set; }
-    public string Error { get; set; }
-    public string NewContractAddress { get; set; }
-    public bool IsCanonical { get; set; } = true;
-    public string MaxFeePerGas { get; set; }
-    public string MaxPriorityFeePerGas { get; set; }
-    public long TransactionType { get; set; }
-    // + EffectiveGasPrice, CumulativeGasUsed, RevertReason,
-    //   MaxFeePerBlobGas, BlobGasUsed, BlobGasPrice, etc.
-}
-```
-
-### TransactionLog
-
-```csharp
-public class TransactionLog : TableRow, ITransactionLogView
-{
-    public string TransactionHash { get; set; }
-    public long LogIndex { get; set; }
-    public string Address { get; set; }
-    public string EventHash { get; set; }
-    public string IndexVal1 { get; set; }
-    public string IndexVal2 { get; set; }
-    public string IndexVal3 { get; set; }
-    public string Data { get; set; }
-    public long BlockNumber { get; set; }
-    public string BlockHash { get; set; }
-    public bool IsCanonical { get; set; } = true;
-}
-```
-
-### Contract
-
-```csharp
-public class Contract : TableRow, IContractView
-{
-    public string Address { get; set; }
-    public string Name { get; set; }
-    public string ABI { get; set; }
-    public string Code { get; set; }
-    public string Creator { get; set; }
-    public string TransactionHash { get; set; }
-}
-```
-
-### TokenMetadata
-
-```csharp
-public class TokenMetadata : TableRow, ITokenMetadataView
-{
-    public string ContractAddress { get; set; }
-    public string Name { get; set; }
-    public string Symbol { get; set; }
-    public int Decimals { get; set; }
-    public string TokenType { get; set; }
-}
-```
-
-### TokenBalance
-
-```csharp
-public class TokenBalance : TableRow, ITokenBalanceView
-{
-    public string Address { get; set; }
-    public string ContractAddress { get; set; }
-    public string Balance { get; set; }
-    public string TokenType { get; set; }
-    public long LastUpdatedBlockNumber { get; set; }
-}
-```
+All block/transaction/log entities include `IsCanonical` flags for reorg handling. `Block` also includes EIP-4844 blob fields, `TransactionBase` includes EIP-1559 and blob gas fields.
 
 ## Repository Interfaces
 
@@ -551,6 +460,17 @@ services.AddBlockchainProcessor();
 // Optional: internal transaction processor
 services.AddInternalTransactionProcessor();
 ```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| No blocks written to database | RPC URL unreachable or `FromBlock` set beyond chain head | Verify `BlockchainUrl`; set `FromBlock` to a recent block number |
+| Processor stops after a few batches | Rate limiting by RPC provider | Increase `RetryWeight` (e.g., 100); reduce `NumberOfBlocksToProcessPerRequest` |
+| `ReorgDetectedException` in logs | Chain reorganisation detected | Expected behavior -- the processor rewinds and re-processes. Increase `ReorgBuffer` if frequent |
+| Missing token balances | Token processing not registered | Ensure `AddTokenPostgresRepositories` is called in DI setup |
+| Database migration errors | Schema out of date | Run `dotnet ef database update` or let EF Core auto-migrate on startup |
+| Duplicate key violations | Re-processing blocks without upsert support | Use the built-in repository factory which handles upserts; do not use raw INSERT |
 
 ## Metrics / Observability
 
