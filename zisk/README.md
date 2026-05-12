@@ -878,3 +878,21 @@ HWLOC_COMPONENTS=-gl cargo-zisk check-setup -a
 | Basic setup (35 airs) | ~2 min | ~1 GB | Per-air STARK keys |
 | Recursive setup (compressor + circom) | ~30-60 min | ~4 GB | Circom compilation per air |
 | First prove (const tree regen) | ~2 min | ~6 GB | One-time on first use |
+
+### Proving cost profile (v16 binary, 12-core CPU, May 2026)
+
+Base cost is **293.6M (constant)** — ELF initialization, NativeAOT runtime bootstrap, static constructors. This is independent of what the transaction does.
+
+| Scenario | Steps | Base % | Main % | Opcodes % | Precompiles % | Memory % | Prove Time |
+|----------|-------|--------|--------|-----------|---------------|----------|------------|
+| eth_transfer (noroot) | 3.47M | 48.0% | 38.5% | 7.8% | 0.0% | 5.6% | 227s |
+| sstore (noroot) | 4.77M | 40.0% | 44.3% | 9.0% | 0.0% | 6.7% | 256s |
+| sstore (patricia root) | 7.55M | 29.7% | 51.9% | 10.5% | 0.0% | 7.9% | 257s |
+| sstore (poseidon2 root) | 7.79M | 29.1% | 52.5% | 10.5% | 0.01% | 7.9% | 283s |
+| ecrecover | 8.08M | 28.3% | 52.9% | 10.7% | 0.07% | 8.1% | 312s |
+| bn128 pairing | 8.13M | 28.2% | 53.0% | 10.7% | 0.00% | 8.1% | 282s |
+| multi_tx_mixed (3tx) | 12.87M | 19.9% | 59.3% | 12.2% | 0.0% | 8.6% | 340s |
+
+Poseidon2 CSR cost: **66K** (0.01%) — hardware-accelerated, effectively free.
+ECRECOVER CSR cost: **690K** (0.07%) — secp256k1 curve math via CSR.
+BN128 pairing CSR cost: **5.7K** (0.00%) — heavy computation is in Main (Rust orchestration).
