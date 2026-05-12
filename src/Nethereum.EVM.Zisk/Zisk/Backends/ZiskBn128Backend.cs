@@ -4,14 +4,6 @@ using Nethereum.Zisk.Core;
 
 namespace Nethereum.EVM.Zisk.Backends
 {
-    /// <summary>
-    /// Zisk / zkVM alt_bn128 (BN254) backend for precompiles 0x06 / 0x07
-    /// / 0x08. Wraps the native
-    /// <c>ZiskCrypto.bn254_g1_add_c</c> / <c>bn254_g1_mul_c</c> /
-    /// <c>bn254_pairing_check_c</c> primitives. Input/output shapes match
-    /// what the handlers pass through — full precompile input in, full
-    /// precompile output out.
-    /// </summary>
     public sealed class ZiskBn128Backend : IBn128Backend
     {
         public static readonly ZiskBn128Backend Instance = new ZiskBn128Backend();
@@ -32,8 +24,8 @@ namespace Nethereum.EVM.Zisk.Backends
             Array.Copy(data, 64, p2, 0, 64);
             var result = new byte[64];
 
-            byte success = ZiskCrypto.bn254_g1_add_c(p1, p2, result);
-            if (success != 0) throw new ArgumentException("BN254 G1ADD failed");
+            uint status = ZiskCrypto.zkvm_bn254_g1_add(p1, p2, result);
+            if (status != 0) throw new ArgumentException("BN254 G1ADD failed");
             return result;
         }
 
@@ -53,8 +45,8 @@ namespace Nethereum.EVM.Zisk.Backends
             Array.Copy(data, 64, scalar, 0, 32);
             var result = new byte[64];
 
-            byte success = ZiskCrypto.bn254_g1_mul_c(point, scalar, result);
-            if (success != 0) throw new ArgumentException("BN254 G1MUL failed");
+            uint status = ZiskCrypto.zkvm_bn254_g1_mul(point, scalar, result);
+            if (status != 0) throw new ArgumentException("BN254 G1MUL failed");
             return result;
         }
 
@@ -65,8 +57,8 @@ namespace Nethereum.EVM.Zisk.Backends
             if (data.Length % 192 != 0) throw new ArgumentException("Invalid BN254 pairing input length");
 
             int numPairs = data.Length / 192;
-            byte success = ZiskCrypto.bn254_pairing_check_c(data, (nuint)numPairs);
-            return success == 0 ? PairingSuccess() : PairingFailure();
+            byte result = ZiskCrypto.bn254_pairing_check_c(data, (nuint)numPairs);
+            return result == 0 ? PairingSuccess() : PairingFailure();
         }
 
         private static byte[] PairingSuccess()

@@ -44,14 +44,11 @@ namespace Nethereum.EVM.Zisk
 
             bool needsStateRoot = block.ComputePostStateRoot || block.ProduceBlockCommitments;
             IStateRootCalculator stateRootCalc = null;
-            bool isBinary = false;
 
             if (needsStateRoot)
             {
                 LayerKzgAndBlsBackends(registry);
                 stateRootCalc = ResolveStateRootCalculator(block.Features, encoding);
-                isBinary = stateRootCalc is BinaryStateRootCalculator;
-                if (isBinary) block.ComputePostStateRoot = false;
             }
 
             ZiskIO.WriteLine("BIN:exec");
@@ -60,27 +57,8 @@ namespace Nethereum.EVM.Zisk
                 block,
                 encoding,
                 registry,
-                needsStateRoot && !isBinary ? stateRootCalc : null,
+                needsStateRoot ? stateRootCalc : null,
                 needsStateRoot ? new PatriciaBlockRootCalculator() : null);
-
-            if (isBinary)
-            {
-                var accounts = Nethereum.EVM.Witness.WitnessStateBuilder.BuildAccountState(block.Accounts);
-                var reader = new Nethereum.EVM.BlockchainState.InMemoryStateReader(accounts);
-                var es = new Nethereum.EVM.BlockchainState.ExecutionStateService(reader);
-                foreach (var addr in accounts.Keys)
-                {
-                    es.LoadBalanceNonceAndCodeFromStorage(addr);
-                    var acct = reader.GetAccountState(addr);
-                    if (acct?.Storage != null)
-                    {
-                        var state = es.CreateOrGetAccountExecutionState(addr);
-                        foreach (var s in acct.Storage)
-                            state.SetPreStateStorage(s.Key, s.Value);
-                    }
-                }
-                result.StateRoot = ((BinaryStateRootCalculator)stateRootCalc).ComputeStateRoot(es);
-            }
 
             int txFailed = 0;
             foreach (var tx in result.TxResults)

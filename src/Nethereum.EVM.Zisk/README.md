@@ -48,19 +48,21 @@ The build produces a RISC-V ELF consumed by `ziskemu` (emulator) or
 `ZiskPrecompileBackends.Instance` is a singleton `PrecompileBackends`
 bundle whose fields route to witness-backed native Zisk operations:
 
-| Backend | Routes to |
-|---------|----------|
-| `ZiskEcRecoverBackend` | `ZiskCrypto.secp256k1_recover` |
-| `ZiskSha256Backend` | `ZiskCrypto.sha256` |
-| `ZiskRipemd160Backend` | `ZiskCrypto.ripemd160` (fallback: managed `Nethereum.Zisk.Core.Ripemd160`) |
-| `ZiskModExpBackend` | `ZiskCrypto.modexp` |
-| `ZiskBn128Backend` | `ZiskCrypto.bn128_*` |
-| `ZiskBlake2fBackend` | `ZiskCrypto.blake2f_compress` |
+| Backend | Routes to | CSRs |
+|---------|----------|------|
+| `ZiskEcRecoverBackend` | `zkvm_secp256k1_ecrecover` → keccak address derivation | secp256k1_add/dbl |
+| `ZiskSha256Backend` | `zkvm_sha256` | sha256_f (0x805) |
+| `ZiskRipemd160Backend` | Managed `Ripemd160` (no native CSR) | — |
+| `ZiskModExpBackend` | `zkvm_modexp` | arith256_mod |
+| `ZiskBn128Backend` | `zkvm_bn254_g1_add`, `zkvm_bn254_g1_mul`, `bn254_pairing_check_c` | bn254_curve_add/dbl, bn254_complex_* |
+| `ZiskBlake2fBackend` | `zkvm_blake2f` | blake2b_round (0x819) |
+| `ZiskP256VerifyBackend` | `zkvm_secp256r1_verify` | secp256r1_add/dbl |
+| `ZiskBls12381Operations` | `zkvm_bls12_g1_add/msm`, `zkvm_bls12_g2_add/msm`, `bls12_381_pairing_check_c`, `zkvm_bls12_map_fp_to_g1/fp2_to_g2` | bls12_381_curve_add/dbl, bls12_381_complex_* |
+| `ZiskKzgOperations` | `zkvm_kzg_point_eval`, `zkvm_sha256` (versioned hash) | BLS12-381 CSRs + sha256_f |
 
-P256Verify is not yet wired (the Zisk runtime doesn't yet ship a
-P/Invoke binding). `MainnetHardforkRegistry.Build` detects a `null`
-`P256Verify` backend and registers Osaka with Prague-level precompiles
-(all Osaka EVM rules active, just the P256 precompile at 0x100 absent).
+BN254 pairing and BLS12-381 pairing use direct `_check_c` exports
+instead of the `zkvm_*` wrappers, which have an allocator bug in
+libziskos 0.17.1 (`Vec::with_capacity` crashes in the Zisk memory model).
 
 ## State Tree Selection
 
@@ -70,11 +72,13 @@ The witness `BlockFeatureConfig.StateTree` field selects the trie:
 |-----------|-------------|-----------|
 | Patricia (default) | Keccak | `PatriciaStateRootCalculator` |
 | Binary (EIP-7864) | Blake3 | `BinaryStateRootCalculator(Blake3HashProvider)` |
-| Binary | Poseidon | `BinaryStateRootCalculator(PoseidonPairHashProvider)` |
-| Binary | Sha256 | `BinaryStateRootCalculator(Sha256HashProvider)` |
+| Binary | Poseidon | `BinaryStateRootCalculator(ZiskPoseidonHashProvider)` |
+| Binary | Sha256 | `BinaryStateRootCalculator(ZiskSha256HashProvider)` |
 
-Poseidon uses `PoseidonEvmHasher` — fully BigInteger-free via
-`PoseidonCore<EvmUInt256>` with precomputed BN254 round constants.
+Poseidon uses `ZiskPoseidonHashProvider` — Poseidon2 over Goldilocks
+field via CSR 0x812 (width=16, rate=12, x^7 S-box). The managed
+equivalent is `GoldilocksPoseidon2HashProvider` in Nethereum.Util,
+validated to produce identical state roots.
 
 ## Guest entry point
 

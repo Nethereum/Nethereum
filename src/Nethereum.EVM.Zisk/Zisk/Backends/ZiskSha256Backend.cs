@@ -3,10 +3,6 @@ using Nethereum.Zisk.Core;
 
 namespace Nethereum.EVM.Zisk.Backends
 {
-    /// <summary>
-    /// Zisk / zkVM SHA-256 backend for precompile 0x02. Wraps the native
-    /// witness-backed <c>ZiskCrypto.sha256_c</c> primitive.
-    /// </summary>
     public sealed class ZiskSha256Backend : ISha256Backend
     {
         public static readonly ZiskSha256Backend Instance = new ZiskSha256Backend();
@@ -15,7 +11,8 @@ namespace Nethereum.EVM.Zisk.Backends
         {
             var data = input ?? new byte[0];
             var output = new byte[32];
-            ZiskCrypto.sha256_c(data, (nuint)data.Length, output);
+            uint status = ZiskCrypto.zkvm_sha256(data, (nuint)data.Length, output);
+            if (status != 0) throw new System.ArgumentException($"SHA256 failed (status {status})");
             return output;
         }
     }
