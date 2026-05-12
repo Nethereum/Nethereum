@@ -79,6 +79,42 @@ namespace Nethereum.EVM.Core.Tests
         }
 
         [Fact]
+        public void BinaryPoseidon_AllOutputsMatchZisk()
+        {
+            var block = CreateSstoreBlock(BlockFeatureConfig.BinaryPoseidon());
+            block.ProduceBlockCommitments = true;
+            block.ComputePostStateRoot = true;
+            var result = BlockExecutionHelper.ExecuteBlock(block);
+
+            _output.WriteLine($"state_root:  {result.StateRoot.ToHex(true)}");
+            _output.WriteLine($"block_hash:  {result.BlockHash.ToHex(true)}");
+            _output.WriteLine($"gas:         {result.CumulativeGasUsed}");
+
+            Assert.Equal("0x0b3895e5a62c18c1dfe47b8ed0eba0522bea1e7fc444801ab6858a0520d758ec", result.StateRoot.ToHex(true));
+            Assert.Equal("0x59874593eba5c3bbe3bdd5d2d82f020349597a6b7119a8edc137411736f4fb94", result.BlockHash.ToHex(true));
+            Assert.Equal(43106L, result.CumulativeGasUsed);
+        }
+
+        [Fact]
+        public void Patricia_AllOutputsMatchZisk()
+        {
+            var block = CreateSstoreBlock(BlockFeatureConfig.Prague);
+            block.ProduceBlockCommitments = true;
+            block.ComputePostStateRoot = true;
+            var result = BlockExecutionHelper.ExecuteBlock(block);
+
+            _output.WriteLine($"state_root:  {result.StateRoot.ToHex(true)}");
+            _output.WriteLine($"block_hash:  {result.BlockHash.ToHex(true)}");
+            _output.WriteLine($"tx_root:     {result.TransactionsRoot.ToHex(true)}");
+            _output.WriteLine($"receipt_root: {result.ReceiptsRoot.ToHex(true)}");
+            _output.WriteLine($"gas:         {result.CumulativeGasUsed}");
+
+            Assert.Equal("0x2fc84afa1e66eaef44a179f33c5a2bbacfa458bdc97b12cd7c3c29750dd8142d", result.StateRoot.ToHex(true));
+            Assert.Equal("0xade9ca96b102dc95cc86b1fd6e21b796f6fd334b909aaac3268b73578e8e543f", result.BlockHash.ToHex(true));
+            Assert.Equal(43106L, result.CumulativeGasUsed);
+        }
+
+        [Fact]
         public void BinaryPoseidon_DeterministicAcrossRuns()
         {
             var block1 = CreateSstoreBlock(BlockFeatureConfig.BinaryPoseidon());

@@ -40,7 +40,7 @@ namespace Nethereum.EVM.Core.Tests
                 var hashProvider = features.HashFunction switch
                 {
                     WitnessHashFunction.Blake3 => (IHashProvider)new Blake3HashProvider(),
-                    WitnessHashFunction.Poseidon => new PoseidonPairHashProvider(),
+                    WitnessHashFunction.Poseidon => new GoldilocksPoseidon2HashProvider(),
                     WitnessHashFunction.Sha256 => new Sha256HashProvider(),
                     _ => new Blake3HashProvider()
                 };
