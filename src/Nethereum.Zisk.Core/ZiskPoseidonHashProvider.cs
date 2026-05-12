@@ -6,7 +6,7 @@ namespace Nethereum.Zisk.Core
     public class ZiskPoseidonHashProvider : IHashProvider
     {
         private const int STATE_WIDTH = 16;
-        private const int RATE = 8;
+        private const int RATE = 12;
         private const int DIGEST_LONGS = 4;
 
         [DllImport("__Internal")]
@@ -28,8 +28,9 @@ namespace Nethereum.Zisk.Core
         {
             var state = stackalloc ulong[STATE_WIDTH];
             for (int i = 0; i < STATE_WIDTH; i++) state[i] = 0;
-            if (a != null) AbsorbBytes(state, a, aOff, 32);
-            if (b != null) AbsorbBytes(state, b, bOff, 32);
+            int idx = 0;
+            if (a != null) idx = AbsorbBytes(state, a, aOff, 32, idx);
+            if (b != null) idx = AbsorbBytes(state, b, bOff, 32, idx);
             poseidon2_c(state);
             return ExtractDigest(state);
         }
@@ -64,9 +65,8 @@ namespace Nethereum.Zisk.Core
             return ExtractDigest(state);
         }
 
-        private static unsafe void AbsorbBytes(ulong* state, byte[] data, int dataOffset, int length)
+        private static unsafe int AbsorbBytes(ulong* state, byte[] data, int dataOffset, int length, int stateIdx)
         {
-            int stateIdx = 0;
             int pos = dataOffset;
             int end = dataOffset + length;
             while (pos < end && stateIdx < RATE)
@@ -80,6 +80,7 @@ namespace Nethereum.Zisk.Core
                 pos += chunkSize;
                 stateIdx++;
             }
+            return stateIdx;
         }
 
         private static unsafe byte[] ExtractDigest(ulong* state)

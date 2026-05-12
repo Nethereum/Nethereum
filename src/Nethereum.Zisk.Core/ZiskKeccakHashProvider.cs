@@ -8,7 +8,7 @@ namespace Nethereum.Zisk.Core
         {
             if (data == null) data = new byte[0];
             var output = new byte[32];
-            ZiskCrypto.keccak256_c(data, (nuint)data.Length, output);
+            ZiskCrypto.zkvm_keccak256(data, (nuint)data.Length, output);
             return output;
         }
     }

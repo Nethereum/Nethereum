@@ -28,9 +28,15 @@ C# onto Zisk's execution environment:
 - **`ZiskBinaryReader`** / **`ZiskBinaryWriter`** — AOT-safe readers
   / writers over byte spans, replacing `System.IO.BinaryReader` in the
   trimmed guest build.
-- **`ZiskCrypto`** — P/Invoke surface for Zisk's witness-backed
-  cryptographic primitives (keccak, sha256, ecrecover, …). These
-  produce cheaper proof traces than naive managed crypto.
+- **`ZiskCrypto`** — P/Invoke surface for Zisk's `zkvm_*` accelerator
+  API (keccak, sha256, ecrecover, modexp, bn254, bls12-381, blake2f,
+  kzg, secp256r1, poseidon2). These map to CSR hardware instructions
+  inside the zkVM for near-zero proving cost.
+- **`ZiskKeccakHashProvider`** / **`ZiskSha256HashProvider`** — `IHashProvider`
+  wrappers over the native keccak and sha256 accelerators.
+- **`ZiskPoseidonHashProvider`** — `IHashProvider` wrapping the Poseidon2
+  CSR (0x812) for Goldilocks-field binary trie state roots.
+  Width=16, rate=12, capacity=4, XOR-based sponge, 32-byte digest.
 - **`Ripemd160`** — managed implementation used as a fallback when the
   Zisk P/Invoke isn't available.
 

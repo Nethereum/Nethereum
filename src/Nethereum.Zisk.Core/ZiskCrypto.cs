@@ -6,64 +6,68 @@ namespace Nethereum.Zisk.Core
     public static class ZiskCrypto
     {
         [DllImport("__Internal")]
-        public static extern void keccak256_c(byte[] input, nuint input_len, byte[] output);
+        public static extern uint zkvm_keccak256(byte[] data, nuint len, byte[] output);
 
         [DllImport("__Internal")]
-        public static extern void sha256_c(byte[] input, nuint input_len, byte[] output);
+        public static extern uint zkvm_sha256(byte[] data, nuint len, byte[] output);
 
         [DllImport("__Internal")]
-        public static extern byte secp256k1_ecdsa_address_recover_c(
-            byte[] sig, byte recid, byte[] msg, byte[] output);
+        public static extern uint zkvm_ripemd160(byte[] data, nuint len, byte[] output);
 
         [DllImport("__Internal")]
-        public static extern nuint modexp_bytes_c(
+        public static extern uint zkvm_secp256k1_ecrecover(
+            byte[] msg, byte[] sig, byte recid, byte[] output);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_modexp(
             byte[] base_ptr, nuint base_len,
             byte[] exp_ptr, nuint exp_len,
-            byte[] modulus_ptr, nuint modulus_len,
-            byte[] result_ptr);
+            byte[] modulus_ptr, nuint mod_len,
+            byte[] output);
 
         [DllImport("__Internal")]
-        public static extern byte bn254_g1_add_c(byte[] p1, byte[] p2, byte[] ret);
+        public static extern uint zkvm_bn254_g1_add(byte[] p1, byte[] p2, byte[] result);
 
         [DllImport("__Internal")]
-        public static extern byte bn254_g1_mul_c(byte[] point, byte[] scalar, byte[] ret);
+        public static extern uint zkvm_bn254_g1_mul(byte[] point, byte[] scalar, byte[] result);
 
         [DllImport("__Internal")]
         public static extern byte bn254_pairing_check_c(byte[] pairs, nuint num_pairs);
 
         [DllImport("__Internal")]
-        public static extern void blake2b_compress_c(
-            uint rounds, ulong[] state, ulong[] message, ulong[] offset, byte final_block);
-
-        [DllImport("__Internal")]
-        public static extern byte verify_kzg_proof_c(
-            byte[] z, byte[] y, byte[] commitment, byte[] proof);
-
-        [DllImport("__Internal")]
-        public static extern byte bls12_381_g1_add_c(byte[] ret, byte[] a, byte[] b);
-
-        [DllImport("__Internal")]
-        public static extern byte bls12_381_g1_msm_c(byte[] ret, byte[] pairs, nuint num_pairs);
-
-        [DllImport("__Internal")]
-        public static extern byte bls12_381_g2_add_c(byte[] ret, byte[] a, byte[] b);
-
-        [DllImport("__Internal")]
-        public static extern byte bls12_381_g2_msm_c(byte[] ret, byte[] pairs, nuint num_pairs);
-
-        [DllImport("__Internal")]
         public static extern byte bls12_381_pairing_check_c(byte[] pairs, nuint num_pairs);
 
         [DllImport("__Internal")]
-        public static extern byte bls12_381_fp_to_g1_c(byte[] ret, byte[] fp);
+        public static extern uint zkvm_blake2f(
+            uint rounds, ulong[] h, ulong[] m, ulong[] t, byte f);
 
         [DllImport("__Internal")]
-        public static extern byte bls12_381_fp2_to_g2_c(byte[] ret, byte[] fp2);
+        public static extern unsafe uint zkvm_kzg_point_eval(
+            byte[] commitment, byte[] z, byte[] y, byte[] proof, bool* verified);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_bls12_g1_add(byte[] p1, byte[] p2, byte[] result);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_bls12_g1_msm(byte[] pairs, nuint num_pairs, byte[] result);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_bls12_g2_add(byte[] p1, byte[] p2, byte[] result);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_bls12_g2_msm(byte[] pairs, nuint num_pairs, byte[] result);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_bls12_map_fp_to_g1(byte[] fp, byte[] result);
+
+        [DllImport("__Internal")]
+        public static extern uint zkvm_bls12_map_fp2_to_g2(byte[] fp2, byte[] result);
+
+        [DllImport("__Internal")]
+        public static extern unsafe uint zkvm_secp256r1_verify(
+            byte[] msg, byte[] sig, byte[] pk, bool* verified);
 
         [DllImport("__Internal")]
         public static extern unsafe void poseidon2_c(ulong* state);
-
-        [DllImport("__Internal")]
-        public static extern byte secp256r1_ecdsa_verify_c(byte[] msg, byte[] sig, byte[] pk);
     }
 }
