@@ -222,7 +222,7 @@ namespace Nethereum.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Mul64(ulong a, ulong b, out ulong lo, out ulong hi)
+        internal static void Mul64(ulong a, ulong b, out ulong lo, out ulong hi)
         {
 #if NET5_0_OR_GREATER
             hi = Math.BigMul(a, b, out lo);

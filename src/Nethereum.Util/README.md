@@ -748,10 +748,12 @@ public interface IHashProvider
 // Implementations:
 // - Sha3KeccackHashProvider (Keccak-256)
 // - Sha256HashProvider (SHA-256)
-// - PoseidonHashProvider (Poseidon, uses PoseidonEvmHasher internally)
-// - PoseidonPairHashProvider (Poseidon CircomT2, expects 32 or 64-byte input)
-// - BN254PoseidonPairHashProvider (Poseidon CircomT2 with BN254 Montgomery CIOS,
-//     ~10x faster than PoseidonPairHashProvider, opt-in for binary trie)
+// - PoseidonHashProvider (Poseidon1 BN254, uses PoseidonEvmHasher internally)
+// - PoseidonPairHashProvider (Poseidon1 BN254 CircomT2, expects 32 or 64-byte input)
+// - BN254PoseidonPairHashProvider (Poseidon1 CircomT2 with BN254 Montgomery CIOS,
+//     ~10x faster than PoseidonPairHashProvider, for Privacy Pools / SMT)
+// - GoldilocksPoseidon2HashProvider (Poseidon2 over Goldilocks field p=2^64-2^32+1,
+//     width=16, rate=12, x^7 S-box, for Zisk zkVM binary trie state roots)
 ```
 
 ### Additional Utilities
@@ -817,6 +819,19 @@ Available presets: `CircomT1` (1 input), `CircomT2` (2 inputs), `CircomT3` (defa
 
 **Privacy Pools usage:** `CircomT1` for nullifier hashing (single field element), `CircomT2` for Merkle tree node hashing (left + right children), `CircomT3` for commitment hashing (e.g., secret + nullifier + amount).
 
+### Poseidon2 / Goldilocks (zkVM State Trie)
+
+Poseidon2 over the Goldilocks field (p = 2^64 - 2^32 + 1) for binary trie state roots in Zisk zkVM proving. Width=16, rate=12, capacity=4, S-box x^7. Constants from pil2-proofman (= HorizenLabs reference).
+
+```csharp
+using Nethereum.Util.HashProviders;
+
+IHashProvider poseidon2 = new GoldilocksPoseidon2HashProvider();
+byte[] hash = poseidon2.ComputeHash(data); // 32-byte digest (4 Goldilocks elements)
+```
+
+The permutation is implemented in `Poseidon2Core` with `GoldilocksField` arithmetic. Validated against pil2-proofman test vectors for width 4, 8, 12, and 16.
+
 ### Hash Provider Abstraction
 
 `IHashProvider` provides a pluggable interface for different hash implementations:
@@ -828,12 +843,13 @@ using Nethereum.Util.HashProviders;
 IHashProvider keccakProvider = new Sha3KeccackHashProvider();
 byte[] keccakHash = keccakProvider.ComputeHash(data);
 
-// Poseidon provider
+// Poseidon1 BN254 provider (Privacy Pools, Circom)
 IHashProvider poseidonProvider = new PoseidonHashProvider();
 byte[] poseidonHash = poseidonProvider.ComputeHash(data);
 
-// Poseidon with specific preset
-IHashProvider poseidonT6 = new PoseidonHashProvider(PoseidonParameterPreset.CircomT6);
+// Poseidon2 Goldilocks provider (Zisk zkVM binary trie)
+IHashProvider poseidon2Provider = new GoldilocksPoseidon2HashProvider();
+byte[] poseidon2Hash = poseidon2Provider.ComputeHash(data);
 ```
 
 ## Related Packages
