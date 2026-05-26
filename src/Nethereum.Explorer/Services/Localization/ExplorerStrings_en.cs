@@ -17,7 +17,7 @@ public static class ExplorerStrings_en
 
         // Shared
         [Shared.Page] = "Page",
-        [Shared.PageOf] = "of",
+        [Shared.PageOf] = "of {0}",
         [Shared.NoData] = "No data",
         [Shared.Loading] = "Loading...",
         [Shared.CopiedToClipboard] = "Copied to clipboard",
