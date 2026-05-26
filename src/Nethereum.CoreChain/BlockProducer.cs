@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
+using Nethereum.EVM;
+using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Witness;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Model;
 using Nethereum.RLP;
@@ -108,6 +112,15 @@ namespace Nethereum.CoreChain
 
             var (orderedTransactions, senderCache) = OrderTransactionsByNonce(transactions);
 
+            WitnessRecordingStateReader witnessRecorder = null;
+            IStateReader stateReaderForExecution = null;
+            if (options.CaptureWitness)
+            {
+                var baseReader = new StateStoreNodeDataService(_stateStore, _blockStore);
+                witnessRecorder = new WitnessRecordingStateReader(baseReader);
+                stateReaderForExecution = witnessRecorder;
+            }
+
             var includedTransactions = new List<ISignedTransaction>();
             var results = new List<TransactionResult>();
             var execResults = new List<TransactionExecutionResult>();
@@ -128,7 +141,8 @@ namespace Nethereum.CoreChain
 
                 senderCache.TryGetValue(i, out var cachedSender);
                 var execResult = await _transactionProcessor.ExecuteTransactionAsync(
-                    tx, blockContext, txIndexInBlock, cumulativeGasUsed, cachedSender);
+                    tx, blockContext, txIndexInBlock, cumulativeGasUsed, cachedSender,
+                    stateReaderForExecution);
 
                 if (execResult.Skipped)
                     continue;
@@ -233,6 +247,52 @@ namespace Nethereum.CoreChain
             if (_stateStore is IHistoricalStateProvider historyProvider2)
                 await historyProvider2.ClearCurrentBlockNumberAsync().ConfigureAwait(false);
 
+            byte[] witnessBytes = null;
+            if (witnessRecorder != null)
+            {
+                try
+                {
+                    var witnessTxs = new List<BlockWitnessTransaction>(includedTransactions.Count);
+                    for (int i = 0; i < includedTransactions.Count; i++)
+                    {
+                        var itx = includedTransactions[i];
+                        senderCache.TryGetValue(i, out var sender);
+                        witnessTxs.Add(new BlockWitnessTransaction
+                        {
+                            From = sender ?? "",
+                            RlpEncoded = itx.GetRLPEncoded()
+                        });
+                    }
+
+                    var witnessData = new BlockWitnessData
+                    {
+                        BlockNumber = (long)nextBlockNumber,
+                        Timestamp = options.Timestamp,
+                        BaseFee = (long)options.BaseFee,
+                        BlockGasLimit = (long)options.BlockGasLimit,
+                        ChainId = (long)options.ChainId,
+                        Coinbase = options.Coinbase,
+                        Difficulty = options.PrevRandao ?? new byte[32],
+                        PreStateRoot = preStateRoot,
+                        ParentHash = parentHash ?? new byte[32],
+                        ExtraData = options.ExtraData ?? Array.Empty<byte>(),
+                        MixHash = options.PrevRandao ?? new byte[32],
+                        Nonce = options.Nonce ?? new byte[8],
+                        ComputePostStateRoot = true,
+                        Features = new BlockFeatureConfig
+                        {
+                            Fork = options.HardforkName,
+                            MaxBlobsPerBlock = options.HardforkName >= HardforkName.Prague ? 9 : 6
+                        },
+                        Transactions = witnessTxs,
+                        Accounts = witnessRecorder.GetWitnessAccounts()
+                    };
+
+                    witnessBytes = BinaryBlockWitness.Serialize(witnessData);
+                }
+                catch { }
+            }
+
             return new BlockProductionResult
             {
                 Header = blockHeader,
@@ -240,7 +300,8 @@ namespace Nethereum.CoreChain
                 TransactionResults = results,
                 SuccessfulTransactions = successCount,
                 FailedTransactions = failCount,
-                PreStateRoot = preStateRoot
+                PreStateRoot = preStateRoot,
+                WitnessBytes = witnessBytes
             };
         }
 

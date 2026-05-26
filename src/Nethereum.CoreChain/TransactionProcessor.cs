@@ -51,7 +51,8 @@ namespace Nethereum.CoreChain
             BlockContext blockContext,
             int txIndex,
             long cumulativeGasUsed,
-            string? cachedSenderAddress = null)
+            string? cachedSenderAddress = null,
+            IStateReader stateReader = null)
         {
             var result = new TransactionExecutionResult
             {
@@ -88,7 +89,7 @@ namespace Nethereum.CoreChain
 
                 try
                 {
-                    var nodeDataService = new StateStoreNodeDataService(_stateStore, _blockStore);
+                    IStateReader nodeDataService = stateReader ?? new StateStoreNodeDataService(_stateStore, _blockStore);
                     var executionStateService = new ExecutionStateService(nodeDataService);
 
                     var senderBalance = await nodeDataService.GetBalanceAsync(senderAddress);

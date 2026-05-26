@@ -7,6 +7,7 @@ using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Witness;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
@@ -756,6 +757,129 @@ namespace Nethereum.CoreChain
 
             return TraceConverter.ConvertToPrestateResult(
                 result.StateService, _nodeDataService);
+        }
+
+        public virtual async Task<byte[]> CaptureBlockWitnessAsync(long blockNumber)
+        {
+            var block = await _blockStore.GetByNumberAsync(blockNumber);
+            if (block == null)
+                throw new InvalidOperationException($"Block {blockNumber} not found");
+
+            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
+
+            IStateReader baseReader;
+            if (_stateStore is IHistoricalStateProvider histProvider)
+            {
+                var parentBlock = blockNumber > 0 ? blockNumber - 1 : 0;
+                baseReader = new HistoricalNodeDataService(histProvider, _stateStore, _blockStore, parentBlock);
+            }
+            else
+            {
+                baseReader = _nodeDataService;
+            }
+
+            var recorder = new WitnessRecordingStateReader(baseReader);
+            var executionStateService = new ExecutionStateService(recorder);
+
+            var blockContext = new BlockContext
+            {
+                BlockNumber = block.BlockNumber,
+                Timestamp = block.Timestamp,
+                Coinbase = block.Coinbase ?? Config.Coinbase,
+                Difficulty = block.Difficulty,
+                GasLimit = block.GasLimit,
+                BaseFee = block.BaseFee ?? 0,
+                ChainId = Config.ChainId
+            };
+
+            var blockTxs = await _transactionStore.GetByBlockHashAsync(blockHash);
+            var witnessTxs = new List<BlockWitnessTransaction>();
+
+            if (blockTxs != null)
+            {
+                for (int i = 0; i < blockTxs.Count; i++)
+                {
+                    var tx = blockTxs[i];
+                    var senderAddress = _txVerifier.GetSenderAddress(tx);
+                    if (string.IsNullOrEmpty(senderAddress)) continue;
+
+                    if (!executionStateService.ContainsInitialChainBalanceForAddress(senderAddress))
+                    {
+                        var balance = await recorder.GetBalanceAsync(senderAddress);
+                        executionStateService.SetInitialChainBalance(senderAddress, balance);
+                    }
+
+                    var txData = TransactionProcessor.GetTransactionData(tx);
+                    var isCreate = string.IsNullOrEmpty(txData.To) || txData.To == "0x";
+
+                    var ctx = new TransactionExecutionContext
+                    {
+                        Mode = ExecutionMode.Transaction,
+                        Sender = senderAddress,
+                        To = isCreate ? null : txData.To,
+                        Data = txData.Data,
+                        Value = txData.Value,
+                        GasLimit = txData.GasLimit,
+                        GasPrice = txData.GasPrice,
+                        MaxFeePerGas = txData.MaxFeePerGas ?? txData.GasPrice,
+                        MaxPriorityFeePerGas = txData.MaxPriorityFeePerGas ?? System.Numerics.BigInteger.Zero,
+                        Nonce = txData.Nonce,
+                        IsEip1559 = txData.MaxFeePerGas.HasValue,
+                        IsContractCreation = isCreate,
+                        BlockNumber = (long)blockContext.BlockNumber,
+                        Timestamp = blockContext.Timestamp,
+                        Coinbase = blockContext.Coinbase,
+                        BaseFee = blockContext.BaseFee,
+                        Difficulty = blockContext.Difficulty,
+                        BlockGasLimit = blockContext.GasLimit,
+                        ChainId = blockContext.ChainId,
+                        ExecutionState = executionStateService,
+                        TraceEnabled = false,
+                        AccessList = txData.AccessList,
+                        AuthorisationList = txData.AuthorisationList
+                    };
+
+                    await _executor.ExecuteAsync(ctx);
+
+                    witnessTxs.Add(new BlockWitnessTransaction
+                    {
+                        From = senderAddress,
+                        RlpEncoded = tx.GetRLPEncoded()
+                    });
+                }
+            }
+
+            var hardforkName = HardforkNames.Parse(Config.Hardfork ?? "prague");
+
+            var parentHash = blockNumber > 0
+                ? await _blockStore.GetHashByNumberAsync(blockNumber - 1) ?? new byte[32]
+                : new byte[32];
+
+            var witnessData = new BlockWitnessData
+            {
+                BlockNumber = blockNumber,
+                Timestamp = block.Timestamp,
+                BaseFee = (long)(block.BaseFee ?? 0),
+                BlockGasLimit = block.GasLimit,
+                ChainId = (long)Config.ChainId,
+                Coinbase = block.Coinbase ?? Config.Coinbase,
+                Difficulty = block.MixHash ?? new byte[32],
+                PreStateRoot = null,
+                ParentHash = parentHash,
+                ExtraData = block.ExtraData ?? Array.Empty<byte>(),
+                MixHash = block.MixHash ?? new byte[32],
+                Nonce = block.Nonce ?? new byte[8],
+                ComputePostStateRoot = true,
+                Features = new BlockFeatureConfig
+                {
+                    Fork = hardforkName,
+                    MaxBlobsPerBlock = hardforkName >= HardforkName.Prague ? 9 : 6
+                },
+                Transactions = witnessTxs,
+                Accounts = recorder.GetWitnessAccounts()
+            };
+
+            return BinaryBlockWitness.Serialize(witnessData);
         }
 
         public virtual async Task<OpcodeTraceResult> TraceCallAsync(

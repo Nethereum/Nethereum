@@ -19,6 +19,7 @@ namespace Nethereum.CoreChain.DataAvailability
     {
         public byte[] CommitmentHash { get; init; }
         public byte[] TransactionHash { get; init; }
+        public byte[] SnarkProofBytes { get; init; }
     }
 
     public interface IProofPublisher

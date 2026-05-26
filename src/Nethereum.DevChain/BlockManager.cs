@@ -182,6 +182,8 @@ namespace Nethereum.DevChain
             }
         }
 
+        public bool CaptureWitness { get; set; }
+
         public IIncrementalStateRootCalculator StateRootCalculator { get; }
 
         public async Task<byte[]> MineBlockAsync() => await MineBlockAsync(null);
@@ -227,7 +229,8 @@ namespace Nethereum.DevChain
                 PrevRandao = prevRandao,
                 ExtraData = Array.Empty<byte>(),
                 ChainId = blockContext.ChainId,
-                ParentBeaconBlockRoot = parentBeaconBlockRoot
+                ParentBeaconBlockRoot = parentBeaconBlockRoot,
+                CaptureWitness = CaptureWitness
             };
 
             var result = await _blockProducer.ProduceBlockAsync(transactions, options);

@@ -47,45 +47,45 @@ namespace Nethereum.AppChain.Anchoring.Hub
                 AmountToSend = fee
             };
 
-            return await _hubService.RegisterAppChainRequestAndWaitForReceiptAsync(registerFunction);
+            return await _hubService.RegisterAppChainRequestAndWaitForReceiptAsync(registerFunction).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> UpdateMetadataAsync(ulong chainId, string name, string description, string url)
         {
             _logger?.LogInformation("Updating metadata for AppChain {ChainId}", chainId);
-            return await _hubService.UpdateMetadataRequestAndWaitForReceiptAsync(chainId, name, description, url);
+            return await _hubService.UpdateMetadataRequestAndWaitForReceiptAsync(chainId, name, description, url).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> SetSequencerAsync(ulong chainId, string newSequencer)
         {
             _logger?.LogInformation("Setting sequencer for AppChain {ChainId} to {Sequencer}", chainId, newSequencer);
-            return await _hubService.SetSequencerRequestAndWaitForReceiptAsync(chainId, newSequencer);
+            return await _hubService.SetSequencerRequestAndWaitForReceiptAsync(chainId, newSequencer).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> SetAuthorizedSenderAsync(ulong chainId, string sender, bool authorized)
         {
             _logger?.LogInformation("Setting authorized sender {Sender} for AppChain {ChainId} to {Authorized}",
                 sender, chainId, authorized);
-            return await _hubService.SetAuthorizedSenderRequestAndWaitForReceiptAsync(chainId, sender, authorized);
+            return await _hubService.SetAuthorizedSenderRequestAndWaitForReceiptAsync(chainId, sender, authorized).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> SetVerifierAsync(ulong chainId, string verifierAddress)
         {
             _logger?.LogInformation("Setting verifier for AppChain {ChainId} to {Verifier}", chainId, verifierAddress);
-            return await _hubService.SetVerifierRequestAndWaitForReceiptAsync(chainId, verifierAddress);
+            return await _hubService.SetVerifierRequestAndWaitForReceiptAsync(chainId, verifierAddress).ConfigureAwait(false);
         }
 
         public async Task<TransactionReceipt> TransferOwnershipAsync(ulong chainId, string newOwner)
         {
             _logger?.LogInformation("Transferring ownership of AppChain {ChainId} to {NewOwner}", chainId, newOwner);
-            return await _hubService.TransferAppChainOwnershipRequestAndWaitForReceiptAsync(chainId, newOwner);
+            return await _hubService.TransferAppChainOwnershipRequestAndWaitForReceiptAsync(chainId, newOwner).ConfigureAwait(false);
         }
 
         public async Task<HubInfo?> GetAppChainInfoAsync(ulong chainId)
         {
             try
             {
-                var result = await _hubService.GetAppChainInfoQueryAsync(chainId);
+                var result = await _hubService.GetAppChainInfoQueryAsync(chainId).ConfigureAwait(false);
                 if (!result.Registered) return null;
 
                 return new HubInfo
@@ -110,7 +110,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
         {
             try
             {
-                return await _hubService.AuthorizedSendersQueryAsync(chainId, sender);
+                return await _hubService.AuthorizedSendersQueryAsync(chainId, sender).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -122,7 +122,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
         public async Task<TransactionReceipt> WithdrawFeesAsync(ulong chainId)
         {
             _logger?.LogInformation("Withdrawing fees for AppChain {ChainId}", chainId);
-            return await _hubService.WithdrawFeesRequestAndWaitForReceiptAsync(chainId);
+            return await _hubService.WithdrawFeesRequestAndWaitForReceiptAsync(chainId).ConfigureAwait(false);
         }
     }
 }

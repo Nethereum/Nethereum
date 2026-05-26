@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Nethereum.CoreChain.Proving;
 using Nethereum.DevChain;
 using Nethereum.DevChain.Storage;
+using Nethereum.EVM.Witness;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Signer;
@@ -50,7 +51,7 @@ namespace Nethereum.CoreChain.IntegrationTests
             var proof = await node.WitnessStore.GetProofAsync(blockNumber);
             Assert.NotNull(proof);
             Assert.NotNull(proof.ProofBytes);
-            Assert.Equal(32, proof.ProofBytes.Length);
+            Assert.Equal(MockBlockProver.Groth16ProofSize, proof.ProofBytes.Length);
             Assert.Equal("Mock", proof.ProverMode);
             Assert.Equal((long)blockNumber, proof.BlockNumber);
             Assert.NotNull(proof.PreStateRoot);
@@ -106,6 +107,54 @@ namespace Nethereum.CoreChain.IntegrationTests
         }
 
         [Fact]
+        public async Task ShouldReplayBlockForWitnessWithoutMutatingState()
+        {
+            BigInteger chainId = 31337;
+            var node = DevChainNode.CreateInMemory(new DevChainConfig
+            {
+                ChainId = chainId, BlockGasLimit = 30_000_000, AutoMine = false
+            });
+            await node.StartAsync(new[] { _sender });
+
+            var tx = TransactionFactory.CreateTransaction(
+                _signer.SignTransaction(_pk.HexToByteArray(), chainId,
+                    "0x1111111111111111111111111111111111111111",
+                    1000, 0, 1_000_000_000, 21_000, ""));
+            await node.SendTransactionAsync(tx);
+            await node.MineBlockAsync();
+
+            var blockNumber = await node.GetBlockNumberAsync();
+            var stateRootBefore = (await node.GetBlockByNumberAsync(blockNumber)).StateRoot;
+            var senderBalanceBefore = await node.GetBalanceAsync(_sender);
+
+            var witness = await node.CaptureBlockWitnessAsync((long)blockNumber);
+
+            var stateRootAfter = (await node.GetBlockByNumberAsync(blockNumber)).StateRoot;
+            var senderBalanceAfter = await node.GetBalanceAsync(_sender);
+            var latestBlockAfter = await node.GetBlockNumberAsync();
+
+            Assert.Equal(stateRootBefore, stateRootAfter);
+            Assert.Equal(senderBalanceBefore, senderBalanceAfter);
+            Assert.Equal(blockNumber, latestBlockAfter);
+
+            Assert.NotNull(witness);
+            Assert.True(witness.Length > 100, $"Witness should be substantial, got {witness.Length} bytes");
+
+            var deserialized = BinaryBlockWitness.Deserialize(witness);
+            Assert.Equal((long)blockNumber, deserialized.BlockNumber);
+            Assert.True(deserialized.Accounts.Count > 0, "Should have recorded accounts");
+            Assert.Single(deserialized.Transactions);
+            Assert.Equal(_sender.ToLower(), deserialized.Transactions[0].From.ToLower());
+
+            _output.WriteLine($"Block {blockNumber}: replay witness = {witness.Length} bytes");
+            _output.WriteLine($"Accounts recorded: {deserialized.Accounts.Count}");
+            _output.WriteLine($"State root unchanged: {stateRootBefore.ToHex(true)}");
+            _output.WriteLine("Replay is read-only: VERIFIED");
+
+            node.Dispose();
+        }
+
+        [Fact]
         public async Task ShouldNotProveWithoutProverConfigured()
         {
             BigInteger chainId = 31337;
@@ -124,6 +173,203 @@ namespace Nethereum.CoreChain.IntegrationTests
             await node.MineBlockAsync();
 
             Assert.Null(node.WitnessStore);
+            node.Dispose();
+        }
+
+        [Fact]
+        public async Task ShouldRespectPeriodicCadence()
+        {
+            BigInteger chainId = 31337;
+            var node = DevChainNode.CreateInMemory(new DevChainConfig
+            {
+                ChainId = chainId, BlockGasLimit = 30_000_000, AutoMine = false
+            });
+            node.WitnessStore = new InMemoryWitnessStore();
+            node.BlockProver = new MockBlockProver();
+            node.ProofCadence = CoreChain.Proving.ProofCadence.Periodic(3);
+            await node.StartAsync(new[] { _sender });
+
+            ulong nonce = 0;
+            for (int b = 0; b < 6; b++)
+            {
+                var tx = TransactionFactory.CreateTransaction(
+                    _signer.SignTransaction(_pk.HexToByteArray(), chainId,
+                        $"0x{(b + 1):x40}", 1000, nonce++, 1_000_000_000, 21_000, ""));
+                await node.SendTransactionAsync(tx);
+                await node.MineBlockAsync();
+            }
+
+            for (int b = 1; b <= 6; b++)
+            {
+                var witness = await node.WitnessStore.GetWitnessAsync(b);
+                Assert.NotNull(witness);
+
+                var proof = await node.WitnessStore.GetProofAsync(b);
+                if (b % 3 == 0)
+                {
+                    Assert.NotNull(proof);
+                    _output.WriteLine($"Block {b}: proved (periodic hit)");
+                }
+                else
+                {
+                    Assert.Null(proof);
+                    _output.WriteLine($"Block {b}: witness only (periodic skip)");
+                }
+            }
+
+            node.Dispose();
+        }
+
+        [Fact]
+        public async Task ShouldProveOnDemand()
+        {
+            BigInteger chainId = 31337;
+            var node = DevChainNode.CreateInMemory(new DevChainConfig
+            {
+                ChainId = chainId, BlockGasLimit = 30_000_000, AutoMine = false
+            });
+            node.WitnessStore = new InMemoryWitnessStore();
+            node.BlockProver = new MockBlockProver();
+            node.ProofCadence = CoreChain.Proving.ProofCadence.OnDemand;
+            await node.StartAsync(new[] { _sender });
+
+            var tx = TransactionFactory.CreateTransaction(
+                _signer.SignTransaction(_pk.HexToByteArray(), chainId,
+                    "0x1111111111111111111111111111111111111111",
+                    1000, 0, 1_000_000_000, 21_000, ""));
+            await node.SendTransactionAsync(tx);
+            await node.MineBlockAsync();
+
+            var proof = await node.WitnessStore.GetProofAsync(1);
+            Assert.Null(proof);
+            _output.WriteLine("Block 1: no auto proof (OnDemand mode)");
+
+            var witness = await node.WitnessStore.GetWitnessAsync(1);
+            Assert.NotNull(witness);
+            _output.WriteLine($"Block 1: witness stored ({witness.Length} bytes)");
+
+            var result = await node.ProveBlockOnDemandAsync(1);
+            Assert.NotNull(result);
+            Assert.NotNull(result.ProofBytes);
+            Assert.Equal("Mock", result.ProverMode);
+            _output.WriteLine($"Block 1: proved on demand, proof={result.ProofBytes.ToHex(true)}");
+
+            var storedProof = await node.WitnessStore.GetProofAsync(1);
+            Assert.NotNull(storedProof);
+
+            node.Dispose();
+        }
+
+        [Fact]
+        public async Task ShouldPurgeWitnessesUntilProven()
+        {
+            BigInteger chainId = 31337;
+            var node = DevChainNode.CreateInMemory(new DevChainConfig
+            {
+                ChainId = chainId, BlockGasLimit = 30_000_000, AutoMine = false
+            });
+            node.WitnessStore = new InMemoryWitnessStore();
+            node.BlockProver = new MockBlockProver();
+            node.ProofCadence = CoreChain.Proving.ProofCadence.Continuous;
+            node.WitnessRetention = CoreChain.Proving.WitnessRetentionPolicy.UntilProven;
+            await node.StartAsync(new[] { _sender });
+
+            ulong nonce = 0;
+            for (int b = 0; b < 3; b++)
+            {
+                var tx = TransactionFactory.CreateTransaction(
+                    _signer.SignTransaction(_pk.HexToByteArray(), chainId,
+                        $"0x{(b + 1):x40}", 1000, nonce++, 1_000_000_000, 21_000, ""));
+                await node.SendTransactionAsync(tx);
+                await node.MineBlockAsync();
+            }
+
+            for (int b = 1; b <= 3; b++)
+            {
+                var proof = await node.WitnessStore.GetProofAsync(b);
+                Assert.NotNull(proof);
+
+                var witness = await node.WitnessStore.GetWitnessAsync(b);
+                Assert.Null(witness);
+                _output.WriteLine($"Block {b}: proof exists, witness purged (UntilProven)");
+            }
+
+            node.Dispose();
+        }
+
+        [Fact]
+        public async Task ShouldPurgeWitnessesByBlockCount()
+        {
+            BigInteger chainId = 31337;
+            var node = DevChainNode.CreateInMemory(new DevChainConfig
+            {
+                ChainId = chainId, BlockGasLimit = 30_000_000, AutoMine = false
+            });
+            node.WitnessStore = new InMemoryWitnessStore();
+            node.ProofCadence = CoreChain.Proving.ProofCadence.Off;
+            node.WitnessRetention = CoreChain.Proving.WitnessRetentionPolicy.Blocks(3);
+            await node.StartAsync(new[] { _sender });
+
+            ulong nonce = 0;
+            for (int b = 0; b < 6; b++)
+            {
+                var tx = TransactionFactory.CreateTransaction(
+                    _signer.SignTransaction(_pk.HexToByteArray(), chainId,
+                        $"0x{(b + 1):x40}", 1000, nonce++, 1_000_000_000, 21_000, ""));
+                await node.SendTransactionAsync(tx);
+                await node.MineBlockAsync();
+            }
+
+            for (int b = 1; b <= 3; b++)
+            {
+                var witness = await node.WitnessStore.GetWitnessAsync(b);
+                Assert.Null(witness);
+                _output.WriteLine($"Block {b}: witness purged (older than 3 blocks)");
+            }
+
+            for (int b = 4; b <= 6; b++)
+            {
+                var witness = await node.WitnessStore.GetWitnessAsync(b);
+                Assert.NotNull(witness);
+                _output.WriteLine($"Block {b}: witness retained ({witness.Length} bytes)");
+            }
+
+            node.Dispose();
+        }
+
+        [Fact]
+        public async Task ShouldRetainWitnessesForever()
+        {
+            BigInteger chainId = 31337;
+            var node = DevChainNode.CreateInMemory(new DevChainConfig
+            {
+                ChainId = chainId, BlockGasLimit = 30_000_000, AutoMine = false
+            });
+            node.WitnessStore = new InMemoryWitnessStore();
+            node.BlockProver = new MockBlockProver();
+            node.ProofCadence = CoreChain.Proving.ProofCadence.Continuous;
+            node.WitnessRetention = CoreChain.Proving.WitnessRetentionPolicy.Forever;
+            await node.StartAsync(new[] { _sender });
+
+            ulong nonce = 0;
+            for (int b = 0; b < 5; b++)
+            {
+                var tx = TransactionFactory.CreateTransaction(
+                    _signer.SignTransaction(_pk.HexToByteArray(), chainId,
+                        $"0x{(b + 1):x40}", 1000, nonce++, 1_000_000_000, 21_000, ""));
+                await node.SendTransactionAsync(tx);
+                await node.MineBlockAsync();
+            }
+
+            for (int b = 1; b <= 5; b++)
+            {
+                var witness = await node.WitnessStore.GetWitnessAsync(b);
+                Assert.NotNull(witness);
+                var proof = await node.WitnessStore.GetProofAsync(b);
+                Assert.NotNull(proof);
+            }
+
+            _output.WriteLine("All 5 blocks: witnesses + proofs retained (Forever)");
             node.Dispose();
         }
     }

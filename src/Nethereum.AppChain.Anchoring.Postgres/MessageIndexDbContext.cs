@@ -8,8 +8,8 @@ namespace Nethereum.AppChain.Anchoring.Postgres
         {
         }
 
-        public DbSet<IndexedMessage> IndexedMessages { get; set; } = null!;
-        public DbSet<MessageBlockProgress> MessageBlockProgress { get; set; } = null!;
+        public DbSet<IndexedMessage> IndexedMessages { get; set; }
+        public DbSet<MessageBlockProgress> MessageBlockProgress { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

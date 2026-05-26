@@ -154,6 +154,8 @@ namespace Nethereum.DevChain
 
         public CoreChain.Storage.IWitnessStore WitnessStore { get; set; }
         public CoreChain.Proving.IBlockProver BlockProver { get; set; }
+        public CoreChain.Proving.ProofCadence ProofCadence { get; set; }
+        public CoreChain.Proving.WitnessRetentionPolicy WitnessRetention { get; set; }
 
         private CoreChain.Services.IProofService _binaryProofService;
 
@@ -389,6 +391,7 @@ namespace Nethereum.DevChain
         public async Task<byte[]> MineBlockAsync()
         {
             EnsureInitialized();
+            _blockManager.CaptureWitness = WitnessStore != null;
             var hash = await _blockManager.MineBlockAsync();
             await FlushPendingBlobsAsync();
             await CaptureWitnessAndProveAsync();
@@ -404,18 +407,60 @@ namespace Nethereum.DevChain
             var postStateRoot = result.Header.StateRoot;
             var preStateRoot = result.PreStateRoot;
 
-            if (WitnessStore != null && preStateRoot != null && postStateRoot != null)
+            if (WitnessStore != null && result.WitnessBytes != null && result.WitnessBytes.Length > 0)
             {
-                var witnessBytes = preStateRoot;
-                await WitnessStore.StoreWitnessAsync(blockNumber, witnessBytes);
+                await WitnessStore.StoreWitnessAsync(blockNumber, result.WitnessBytes);
 
-                if (BlockProver != null)
+                var cadence = ProofCadence;
+                var shouldProve = cadence == null
+                    ? BlockProver != null
+                    : cadence.ShouldProve((long)blockNumber);
+
+                if (shouldProve && BlockProver != null)
                 {
                     var proof = await BlockProver.ProveBlockAsync(
-                        witnessBytes, preStateRoot, postStateRoot, (long)blockNumber);
+                        result.WitnessBytes, preStateRoot, postStateRoot, (long)blockNumber);
                     await WitnessStore.StoreProofAsync(blockNumber, proof);
                 }
+
+                if (WitnessRetention != null)
+                    await WitnessStore.PurgeWitnessesAsync(WitnessRetention, blockNumber);
             }
+        }
+
+        public async Task<CoreChain.Proving.BlockProofResult> ProveBlockOnDemandAsync(long blockNumber)
+        {
+            if (BlockProver == null)
+                throw new System.InvalidOperationException("No BlockProver configured");
+
+            byte[] witnessBytes;
+            if (WitnessStore != null)
+            {
+                witnessBytes = await WitnessStore.GetWitnessAsync(blockNumber);
+            }
+            else
+            {
+                witnessBytes = await CaptureBlockWitnessAsync(blockNumber);
+            }
+
+            if (witnessBytes == null || witnessBytes.Length == 0)
+                throw new System.InvalidOperationException($"No witness available for block {blockNumber}");
+
+            var block = await GetBlockByNumberAsync(blockNumber);
+            byte[] preStateRoot = null;
+            if (blockNumber > 0)
+            {
+                var prevBlock = await GetBlockByNumberAsync(blockNumber - 1);
+                preStateRoot = prevBlock?.StateRoot;
+            }
+
+            var proof = await BlockProver.ProveBlockAsync(
+                witnessBytes, preStateRoot, block?.StateRoot, blockNumber);
+
+            if (WitnessStore != null)
+                await WitnessStore.StoreProofAsync(blockNumber, proof);
+
+            return proof;
         }
 
         public async Task<byte[]> MineBlockAsync(byte[] parentBeaconBlockRoot)

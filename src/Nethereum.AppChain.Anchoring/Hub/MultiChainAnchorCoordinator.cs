@@ -51,7 +51,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
             _timer = new Timer(
                 async _ =>
                 {
-                    try { await AnchorAllChainsAsync(); }
+                    try { await AnchorAllChainsAsync().ConfigureAwait(false); }
                     catch (Exception ex) { _logger?.LogError(ex, "Unhandled error in multi-chain anchor timer callback"); }
                 },
                 null,
@@ -76,8 +76,8 @@ namespace Nethereum.AppChain.Anchoring.Hub
 
             try
             {
-                var currentBlock = await _chain.GetBlockNumberAsync();
-                var header = await _chain.GetBlockByNumberAsync(currentBlock);
+                var currentBlock = await _chain.GetBlockNumberAsync().ConfigureAwait(false);
+                var header = await _chain.GetBlockByNumberAsync(currentBlock).ConfigureAwait(false);
                 if (header == null) return;
 
                 var tasks = new List<Task>();
@@ -95,7 +95,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
 
                 if (tasks.Count > 0)
                 {
-                    await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -120,7 +120,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
                     blockNumber,
                     header.StateRoot,
                     header.TransactionsHash,
-                    header.ReceiptHash);
+                    header.ReceiptHash).ConfigureAwait(false);
 
                 if (result.Status == AnchorStatus.Confirmed)
                 {

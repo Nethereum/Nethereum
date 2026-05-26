@@ -43,7 +43,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             _timer = new Timer(
                 async _ =>
                 {
-                    try { await PollAsync(); }
+                    try { await PollAsync().ConfigureAwait(false); }
                     catch (Exception ex) { _logger?.LogError(ex, "Unhandled error in messaging timer callback"); }
                 },
                 null,
@@ -68,7 +68,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
 
             try
             {
-                await _messagingService.PollAllSourcesAsync();
+                await _messagingService.PollAllSourcesAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

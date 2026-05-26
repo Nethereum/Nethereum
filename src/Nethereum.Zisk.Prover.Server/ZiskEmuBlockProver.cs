@@ -13,10 +13,13 @@ namespace Nethereum.Zisk.Prover.Server
         private readonly string _outputDir;
         private readonly string _command;
         private readonly string _argsTemplate;
+        private readonly bool _convertPathsForWsl;
+        private readonly byte[] _elfHash;
 
         public ZiskEmuBlockProver(string elfPath, string outputDir = null,
             string command = "ziskemu",
-            string argsTemplate = "-e {elf} --legacy-inputs {witness} -n 100000000")
+            string argsTemplate = "-e {elf} --legacy-inputs {witness} -n 100000000",
+            bool convertPathsForWsl = false)
         {
             _elfPath = elfPath ?? throw new ArgumentNullException(nameof(elfPath));
             if (!File.Exists(_elfPath))
@@ -24,7 +27,11 @@ namespace Nethereum.Zisk.Prover.Server
             _outputDir = outputDir ?? Path.Combine(Path.GetTempPath(), "zisk-prover");
             _command = command;
             _argsTemplate = argsTemplate;
+            _convertPathsForWsl = convertPathsForWsl;
             Directory.CreateDirectory(_outputDir);
+
+            using (var sha = SHA256.Create())
+                _elfHash = sha.ComputeHash(File.ReadAllBytes(_elfPath));
         }
 
         public Task<BlockProofResult> ProveBlockAsync(byte[] witnessBytes,
@@ -34,11 +41,37 @@ namespace Nethereum.Zisk.Prover.Server
 
             try
             {
-                var emuResult = RunZiskEmu(_command, _argsTemplate, _elfPath, witnessFile);
+                var elfForCmd = _convertPathsForWsl ? ToWslPath(_elfPath) : _elfPath;
+                var witnessForCmd = _convertPathsForWsl ? ToWslPath(witnessFile) : witnessFile;
+                var emuResult = RunZiskEmu(_command, _argsTemplate, elfForCmd, witnessForCmd);
 
                 byte[] witnessHash;
                 using (var sha = SHA256.Create())
                     witnessHash = sha.ComputeHash(witnessBytes);
+
+                byte[] proverComputedRoot = ParseHexBytes(emuResult.StateRootHex);
+                byte[] proverComputedBlockHash = ParseHexBytes(emuResult.BlockHashHex);
+
+                bool stateRootVerified = BytesMatch(proverComputedRoot, postStateRoot);
+
+                if (proverComputedRoot != null && postStateRoot != null && !stateRootVerified)
+                {
+                    return Task.FromResult(new BlockProofResult
+                    {
+                        ProofBytes = null,
+                        PreStateRoot = preStateRoot,
+                        PostStateRoot = postStateRoot,
+                        ProverComputedStateRoot = proverComputedRoot,
+                        ProverComputedBlockHash = proverComputedBlockHash,
+                        StateRootVerified = false,
+                        BlockHashVerified = false,
+                        BlockNumber = blockNumber,
+                        WitnessHash = witnessHash,
+                        ElfHash = _elfHash,
+                        GasUsed = emuResult.GasUsed,
+                        ProverMode = "Emulate"
+                    });
+                }
 
                 byte[] proofBytes = null;
                 if (emuResult.Success)
@@ -59,8 +92,14 @@ namespace Nethereum.Zisk.Prover.Server
                     ProofBytes = proofBytes,
                     PreStateRoot = preStateRoot,
                     PostStateRoot = postStateRoot,
+                    ProverComputedStateRoot = proverComputedRoot,
+                    ProverComputedBlockHash = proverComputedBlockHash,
+                    StateRootVerified = stateRootVerified,
+                    BlockHashVerified = proverComputedBlockHash != null,
                     BlockNumber = blockNumber,
                     WitnessHash = witnessHash,
+                    ElfHash = _elfHash,
+                    GasUsed = emuResult.GasUsed,
                     ProverMode = "Emulate"
                 });
             }
@@ -103,12 +142,13 @@ namespace Nethereum.Zisk.Prover.Server
                 Arguments = args,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError = false,
+                RedirectStandardError = true,
                 CreateNoWindow = true
             };
 
             var process = Process.Start(psi);
             var output = process.StandardOutput.ReadToEnd();
+            var stderr = process.StandardError.ReadToEnd();
             if (!process.WaitForExit(timeoutMs))
             {
                 try { process.Kill(); } catch { }
@@ -134,12 +174,40 @@ namespace Nethereum.Zisk.Prover.Server
                 {
                     result.StateRootHex = trimmed.Substring("BIN:state_root=".Length);
                 }
+                else if (trimmed.StartsWith("BIN:block_hash="))
+                {
+                    result.BlockHashHex = trimmed.Substring("BIN:block_hash=".Length);
+                }
             }
 
             if (!result.Success && string.IsNullOrEmpty(result.Error))
-                result.Error = $"exit code {process.ExitCode}";
+                result.Error = !string.IsNullOrEmpty(stderr) ? stderr.Trim() : $"exit code {process.ExitCode}";
 
             return result;
+        }
+
+        private static byte[] ParseHexBytes(string hex)
+        {
+            if (string.IsNullOrEmpty(hex)) return null;
+            if (hex.StartsWith("0x")) hex = hex.Substring(2);
+            if (hex.Length == 0) return null;
+            return Nethereum.Hex.HexConvertors.Extensions
+                .HexByteConvertorExtensions.HexToByteArray(hex);
+        }
+
+        private static bool BytesMatch(byte[] a, byte[] b)
+        {
+            if (a == null || b == null) return a == null && b == null;
+            return Nethereum.Util.ByteUtil.AreEqual(a, b);
+        }
+
+        private static string ToWslPath(string windowsPath)
+        {
+            if (string.IsNullOrEmpty(windowsPath)) return windowsPath;
+            var p = windowsPath.Replace('\\', '/');
+            if (p.Length >= 2 && p[1] == ':')
+                p = "/mnt/" + char.ToLowerInvariant(p[0]) + p.Substring(2);
+            return p;
         }
     }
 
@@ -148,6 +216,7 @@ namespace Nethereum.Zisk.Prover.Server
         public bool Success { get; set; }
         public long GasUsed { get; set; }
         public string StateRootHex { get; set; }
+        public string BlockHashHex { get; set; }
         public string Error { get; set; }
         public string RawOutput { get; set; }
     }
