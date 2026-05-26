@@ -60,7 +60,7 @@ if [ "$MODE" = "dll" ]; then
   echo "Note: DLL mode produces ~25% larger ELF than source mode due to cross-assembly"
   echo "boundary (bflat ILC cannot inline/devirt across DLL refs). Use source mode for"
   echo "production builds; DLL mode is kept for faster iteration."
-  MSYS_NO_PATHCONV=1 docker run --rm -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c '
+  MSYS_NO_PATHCONV=1 docker run --rm --entrypoint="" -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c '
     set -e
     bflat build /src/src/Nethereum.EVM.Zisk/Stub.cs \
       --os linux --arch riscv64 --libc zisk \
@@ -79,7 +79,7 @@ else
 echo ""
 echo "=== Step 1: Compile C# → RISC-V64 ==="
 
-MSYS_NO_PATHCONV=1 docker run --rm -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c '
+MSYS_NO_PATHCONV=1 docker run --rm --entrypoint="" -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c '
 set -e
 SRC=""
 
@@ -98,7 +98,7 @@ SRC="$SRC /src/src/Nethereum.Util/Keccak/KeccakDigest.cs"
 SRC="$SRC /src/src/Nethereum.Util/HashProviders/IHashProvider.cs"
 SRC="$SRC /src/src/Nethereum.Util/HashProviders/Sha3KeccackHashProvider.cs"
 SRC="$SRC /src/src/Nethereum.Util/HashProviders/Sha256HashProvider.cs"
-SRC="$SRC /src/src/Nethereum.Util/HashProviders/PoseidonPairHashProvider.cs"
+# PoseidonPairHashProvider excluded — depends on PoseidonHasher which pulls BigInteger
 SRC="$SRC /src/src/Nethereum.Util/HashProviders/PoseidonHashProvider.cs"
 SRC="$SRC /src/src/Nethereum.Util/Poseidon/IPoseidonFieldOps.cs"
 SRC="$SRC /src/src/Nethereum.Util/Poseidon/PoseidonCore.cs"
@@ -140,6 +140,8 @@ for model in \
     Transaction1559 Transaction1559Encoder \
     Transaction2930 Transaction2930Encoder \
     Transaction7702 Transaction7702Encoder \
+    Transaction4844 Transaction4844Encoder \
+    IBlobKzgProvider \
     RLPSignedDataHashBuilder RLPSignedDataDecoder SignedData \
     AccessListRLPEncoderDecoder AuthorisationListRLPEncoderDecoder \
     Authorisation7702RLPEncoderAndHasher RLPSignedDataEncoder
@@ -177,20 +179,12 @@ bflat build $SRC \
 
 fi  # end MODE branch
 
-# --- Step 2: Post-process ELF ---
-echo ""
-echo "=== Step 2: Post-process ELF ==="
-
-MSYS_NO_PATHCONV=1 docker run --rm -v "$NETHEREUM:/src" "$IMAGE" \
-    patch_elf "/src/$OUTPUT_DIR/${OUTPUT_NAME}_raw" "/src/$OUTPUT_DIR/${OUTPUT_NAME}_elf" \
-    --fix-init-array --fix-tdata --remove-eh --split-code-data
-
-# --- Step 3: Signal patching ---
-echo ""
-echo "=== Step 3: Signal patching ==="
-
-MSYS_NO_PATHCONV=1 docker run --rm -v "$NETHEREUM:/src" "$IMAGE" \
-    signal_patch "/src/$OUTPUT_DIR/${OUTPUT_NAME}_elf"
+# BuildCommand internally runs patch_elf and outputs .patched file
+if [ -f "$NETHEREUM/$OUTPUT_DIR/${OUTPUT_NAME}_raw.patched" ]; then
+    mv "$NETHEREUM/$OUTPUT_DIR/${OUTPUT_NAME}_raw.patched" "$NETHEREUM/$OUTPUT_DIR/${OUTPUT_NAME}_elf"
+else
+    cp "$NETHEREUM/$OUTPUT_DIR/${OUTPUT_NAME}_raw" "$NETHEREUM/$OUTPUT_DIR/${OUTPUT_NAME}_elf"
+fi
 
 echo ""
 ls -lh "$NETHEREUM/$OUTPUT_DIR/${OUTPUT_NAME}_elf"
