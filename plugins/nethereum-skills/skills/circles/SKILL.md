@@ -1,6 +1,6 @@
 ---
 name: circles
-description: Interact with the Circles UBI protocol using Nethereum (.NET/C#). Use this skill whenever the user asks about Circles protocol, Universal Basic Income, CRC tokens, Circles balances, trust relationships, personal minting, demurrage tokens, or any Circles UBI interaction on Gnosis Chain with C# or .NET.
+description: "Query balances, create trust relationships, mint CRC tokens, and calculate demurrage on the Circles UBI protocol using Nethereum (.NET/C#). Use this skill whenever the user asks about Circles protocol, Universal Basic Income, CRC tokens, Circles balances, trust relationships, personal minting, demurrage tokens, or any Circles UBI interaction on Gnosis Chain with C# or .NET."
 user-invocable: true
 ---
 
@@ -47,10 +47,35 @@ Circles avatars typically use Gnosis Safe wallets. Mint through Safe execution u
 ```csharp
 var hubService = new HubService(web3, hubAddress);
 hubService.ChangeContractHandlerToSafeExecTransaction(safeAddress, privateKey);
-await hubService.PersonalMintRequestAndWaitForReceiptAsync();
+var receipt = await hubService.PersonalMintRequestAndWaitForReceiptAsync();
+
+// Validate mint succeeded
+if (receipt.Status.Value != 1)
+    throw new Exception($"Mint failed — tx: {receipt.TransactionHash}");
 ```
 
 The Safe is the registered avatar, not the EOA. The extension method wraps the mint call in a Safe `execTransaction`.
+
+## Error Handling
+
+Wrap RPC calls in try/catch to handle network and contract errors:
+
+```csharp
+try
+{
+    var balance = await getTotalBalance.SendRequestAsync("0xAvatarAddress");
+}
+catch (Nethereum.JsonRpc.Client.RpcResponseException ex)
+{
+    // Handle RPC errors (node unavailable, rate limiting, invalid params)
+    Console.WriteLine($"RPC error: {ex.Message}");
+}
+catch (SmartContractCustomErrorRevertException ex)
+{
+    // Handle contract reverts (not registered, not trusted)
+    Console.WriteLine($"Contract error: {ex.Message}");
+}
+```
 
 ## Transaction History
 

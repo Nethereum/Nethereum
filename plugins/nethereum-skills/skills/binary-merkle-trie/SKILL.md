@@ -1,6 +1,6 @@
 ---
 name: binary-merkle-trie
-description: Help users work with EIP-7864 Binary Merkle Tries for stateless Ethereum execution using Nethereum.Merkle.Binary (.NET). Use this skill whenever the user mentions binary trie, EIP-7864, stateless execution, stem nodes, binary Merkle, BasicDataLeaf, code chunking, BLAKE3, or Verkle-style trie structures in a C#/.NET context.
+description: "Create binary tries, verify Merkle proofs, chunk contract code, and compute BLAKE3 hashes for EIP-7864 stateless Ethereum execution using Nethereum.Merkle.Binary (.NET). Use this skill whenever the user mentions binary trie, EIP-7864, stateless execution, stem nodes, binary Merkle, BasicDataLeaf, code chunking, BLAKE3, or Verkle-style trie structures in a C#/.NET context."
 user-invocable: true
 ---
 
@@ -139,6 +139,15 @@ var blake3Trie = new BinaryTrie(new Blake3HashProvider());
 | `BinaryTrieProver` | Generate inclusion proofs |
 | `BinaryTrieProofVerifier` | Verify proofs against a root hash |
 | `Blake3HashProvider` | BLAKE3 managed hash implementation |
+
+## End-to-End Workflow
+
+1. Create a `BinaryTrie` with a `Blake3HashProvider`
+2. Derive keys using `BinaryTreeKeyDerivation` for addresses, storage slots, or code chunks
+3. Pack account state into `BasicDataLeaf` format and insert with `trie.Put()`
+4. Chunk contract bytecode with `CodeChunker.ChunkifyCode()` and insert each chunk
+5. Compute the root hash with `trie.ComputeRoot()`
+6. Generate proofs with `BinaryTrieProver.BuildProof()` and verify with `BinaryTrieProofVerifier.VerifyProof()`
 
 ## Common Gotchas
 
