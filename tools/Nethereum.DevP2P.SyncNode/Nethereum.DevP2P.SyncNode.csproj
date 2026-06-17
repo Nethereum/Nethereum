@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Nethereum.DevP2P.SyncNode</RootNamespace>
+    <AssemblyName>nethereum-syncnode</AssemblyName>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\MainnetGenesis.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="[8.0.0,)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="[8.0.0,)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.RLP\Nethereum.RLP.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Model\Nethereum.Model.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.RPC\Nethereum.RPC.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.JsonRpc.Client\Nethereum.JsonRpc.Client.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
+  </ItemGroup>
+
+</Project>
