@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Tests Nethereum's DevP2P stack against the official ethereum/devp2p and ethereum/tests specification vectors. Separate from UnitTests so failures here clearly indicate spec non-compliance.</Description>
+    <Authors>Juan Blanco</Authors>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Eth\Nethereum.DevP2P.Eth.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Model\Nethereum.Model.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.RLP\Nethereum.RLP.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Geth\Nethereum.Geth.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

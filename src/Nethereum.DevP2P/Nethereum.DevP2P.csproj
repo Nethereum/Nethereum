@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum DevP2P - RLPx transport and Ethereum peer-to-peer networking</Description>
+    <AssemblyTitle>Nethereum.DevP2P</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.DevP2P</AssemblyName>
+    <PackageId>Nethereum.DevP2P</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IronSnappy" Version="1.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+  </ItemGroup>
+
+</Project>
