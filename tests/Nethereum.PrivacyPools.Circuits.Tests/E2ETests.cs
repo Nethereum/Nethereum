@@ -220,6 +220,9 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             {
                 try { Directory.Delete(_gethDataDir, recursive: true); } catch { }
             }
+
+            _node?.Dispose();
+            _node = null;
         }
 
         [Fact]

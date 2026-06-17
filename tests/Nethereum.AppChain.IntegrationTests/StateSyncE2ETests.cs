@@ -209,7 +209,8 @@ namespace Nethereum.AppChain.IntegrationTests
             var blockReExecutor = new BlockReExecutor(
                 transactionProcessor,
                 _replicaChain.State,
-                chainConfig);
+                chainConfig,
+                new IncrementalStateRootCalculator(_replicaChain.State, new InMemoryTrieNodeStore()));
 
             var (liveSync, peerManager) = CreateSyncService(mockRpcClient, finalityTracker, blockReExecutor);
             peerManager.Peers.First().BlockNumber = 5;
@@ -341,7 +342,8 @@ namespace Nethereum.AppChain.IntegrationTests
             var blockReExecutor = new BlockReExecutor(
                 transactionProcessor,
                 _replicaChain.State,
-                chainConfig);
+                chainConfig,
+                new IncrementalStateRootCalculator(_replicaChain.State, new InMemoryTrieNodeStore()));
 
             var (liveSync, peerManager) = CreateSyncService(mockRpcClient, finalityTracker, blockReExecutor);
 

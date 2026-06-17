@@ -11,10 +11,13 @@ using Nethereum.AppChain.Server.Rpc;
 using Nethereum.AppChain.Sync;
 using Nethereum.AppChain.Sync.Metrics;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Metrics;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Sync;
 using Nethereum.Model;
+using Nethereum.Signer;
 using OpenTelemetry.Metrics;
 
 namespace Nethereum.AppChain.Server.Hosting
@@ -85,28 +88,37 @@ namespace Nethereum.AppChain.Server.Hosting
 
             if (enableStateSync)
             {
-                services.AddSingleton<IBlockReExecutor>(provider =>
+                services.AddSingleton<IBlockExecutor>(provider =>
                 {
                     var stateStore = provider.GetRequiredService<IStateStore>();
                     var blockStore = provider.GetRequiredService<IBlockStore>();
                     var chainConfig = provider.GetRequiredService<ChainConfig>();
-                    var txVerifier = provider.GetRequiredService<ITransactionVerificationAndRecovery>();
+                    var trieNodeStore = provider.GetService<ITrieNodeStore>() ?? new InMemoryTrieNodeStore();
                     var loggerFactory = provider.GetService<ILoggerFactory>();
-                    var sharedCalculator = provider.GetService<IncrementalStateRootCalculator>();
+                    var sharedCalculator = provider.GetRequiredService<IncrementalStateRootCalculator>();
 
-                    var transactionProcessor = new TransactionProcessor(
+                    var pinnedFork = Nethereum.EVM.HardforkNames.Parse(chainConfig.Hardfork ?? "prague");
+                    var activations = new FixedChainActivations(pinnedFork);
+                    var hardforkConfig = chainConfig.GetHardforkConfig();
+                    var engine = new BlockExecutor(
                         stateStore,
                         blockStore,
-                        chainConfig,
-                        txVerifier,
-                        chainConfig.GetHardforkConfig());
+                        activations,
+                        chainConfigFactory: _ => chainConfig,
+                        hardforkConfigFactory: _ => hardforkConfig,
+                        stateRootCalculator: sharedCalculator,
+                        rewardPolicy: NoRewardPolicy.Instance,
+                        trieNodeStore: trieNodeStore);
 
-                    return new BlockReExecutor(
-                        transactionProcessor,
+                    return new BlockImporter(
+                        engine,
+                        blockStore,
                         stateStore,
-                        chainConfig,
-                        loggerFactory?.CreateLogger<BlockReExecutor>(),
-                        sharedCalculator);
+                        provider.GetService<ITransactionStore>(),
+                        provider.GetService<IReceiptStore>(),
+                        provider.GetService<ILogStore>(),
+                        provider.GetService<IUncleStore>(),
+                        loggerFactory?.CreateLogger<BlockImporter>());
                 });
             }
 
@@ -119,7 +131,7 @@ namespace Nethereum.AppChain.Server.Hosting
                 var logStore = provider.GetRequiredService<ILogStore>();
                 var finalityTracker = provider.GetRequiredService<IFinalityTracker>();
                 var peerManager = provider.GetRequiredService<IPeerManager>();
-                var blockReExecutor = provider.GetService<IBlockReExecutor>();
+                var blockReExecutor = provider.GetService<IBlockExecutor>();
                 var loggerFactory = provider.GetService<ILoggerFactory>();
 
                 return new MultiPeerSyncService(

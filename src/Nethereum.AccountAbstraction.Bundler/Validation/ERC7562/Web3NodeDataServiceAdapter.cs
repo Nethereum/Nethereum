@@ -111,5 +111,14 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         {
             return GetTransactionCountAsync(address.ConvertToEthereumChecksumAddress());
         }
+
+        public async Task<bool> AccountExistsAsync(string address)
+        {
+            var checksum = address.ConvertToEthereumChecksumAddress();
+            if ((await _web3.Eth.GetBalance.SendRequestAsync(checksum, _blockParameter)).Value > 0) return true;
+            if ((await _web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(checksum, _blockParameter)).Value > 0) return true;
+            var code = await _web3.Eth.GetCode.SendRequestAsync(checksum, _blockParameter);
+            return !string.IsNullOrEmpty(code) && code != "0x" && code != "0x0";
+        }
     }
 }

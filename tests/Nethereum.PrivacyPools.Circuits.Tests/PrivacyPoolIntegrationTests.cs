@@ -56,7 +56,11 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             _output.WriteLine($"Pool: {_deployment.Pool.ContractAddress}");
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public Task DisposeAsync()
+        {
+            _node?.Dispose();
+            return Task.CompletedTask;
+        }
 
         private async Task ProcessEventsToCurrentBlockAsync(
             InMemoryPrivacyPoolRepository repository,
