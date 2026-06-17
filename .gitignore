@@ -307,3 +307,8 @@ nul
 # Zisk build artifacts (ELF binaries, raw outputs, generated witnesses)
 zisk/output/
 zisk/.libziskos/
+
+# SyncNode runtime artefacts
+tools/Nethereum.DevP2P.SyncNode/peer-cache.json
+geth-tools/
+docs/
