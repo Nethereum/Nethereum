@@ -1,4 +1,5 @@
 using System;
+using Nethereum.Consensus.Ssz;
 
 namespace Nethereum.Consensus.LightClient
 {
@@ -13,5 +14,10 @@ namespace Nethereum.Consensus.LightClient
         public ulong SecondsPerSlot { get; set; } = 12;
         public byte[] WeakSubjectivityRoot { get; set; } = Array.Empty<byte>();
         public ulong WeakSubjectivityPeriod { get; set; } = 256 * 32;
+        /// <summary>
+        /// Fork activation schedule used by <see cref="ChainSpec.GetForkAtSlot"/> when stamping
+        /// inbound SSZ containers with their active <see cref="ConsensusFork"/>. Defaults to mainnet.
+        /// </summary>
+        public ChainSpec ChainSpec { get; set; } = ChainSpec.Mainnet;
     }
 }

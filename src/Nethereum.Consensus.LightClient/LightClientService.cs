@@ -427,7 +427,16 @@ namespace Nethereum.Consensus.LightClient
 
         private static bool VerifyExecutionBranch(LightClientHeader header)
         {
-            if (header?.Beacon == null || header.Execution == null || header.ExecutionBranch == null)
+            if (header?.Beacon == null)
+                return false;
+
+            // Pre-Bellatrix forks (Altair) have no ExecutionPayloadHeader and
+            // no ExecutionBranch in the spec. The verification is vacuously
+            // satisfied — there is nothing to prove.
+            if (header.Fork < ConsensusFork.Bellatrix)
+                return true;
+
+            if (header.Execution == null || header.ExecutionBranch == null)
                 return false;
 
             if (header.ExecutionBranch.Count < SszBasicTypes.ExecutionBranchDepth)
@@ -449,7 +458,14 @@ namespace Nethereum.Consensus.LightClient
             if (attestedHeader?.Beacon == null || finalizedHeader?.Beacon == null || finalityBranch == null)
                 return false;
 
-            if (finalityBranch.Count < SszBasicTypes.FinalityBranchDepth)
+            // Branch length/depth/gindex depend on the active fork at the finalized header's slot.
+            // EIP-7251 (Electra) reshaped BeaconState so the merkle path to FINALIZED_CHECKPOINT.root
+            // is longer (depth 7 vs 6) and rooted at a different generalised index (169 vs 105).
+            var fork = finalizedHeader.Fork;
+            var depth = LightClientForkSpec.FinalityBranchDepth(fork);
+            var index = LightClientForkSpec.FinalityBranchIndex(fork);
+
+            if (finalityBranch.Count < depth)
                 return false;
 
             var finalizedRoot = finalizedHeader.Beacon.HashTreeRoot();
@@ -457,8 +473,8 @@ namespace Nethereum.Consensus.LightClient
             return SszMerkleizer.VerifyProof(
                 finalizedRoot,
                 finalityBranch,
-                SszBasicTypes.FinalityBranchDepth,
-                SszBasicTypes.FinalityBranchIndex,
+                depth,
+                index,
                 attestedHeader.Beacon.StateRoot
             );
         }

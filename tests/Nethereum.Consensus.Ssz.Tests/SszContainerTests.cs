@@ -37,7 +37,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             var header = SampleData.CreateExecutionHeader();
             var encoded = header.Encode();
-            var decoded = ExecutionPayloadHeader.Decode(encoded);
+            var decoded = ExecutionPayloadHeader.Decode(encoded, ConsensusFork.Electra);
 
             Assert.Equal(header.ParentHash, decoded.ParentHash);
             Assert.Equal(header.FeeRecipient, decoded.FeeRecipient);
@@ -84,7 +84,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             var bootstrap = SampleData.CreateBootstrap();
             var encoded = bootstrap.Encode();
-            var decoded = LightClientBootstrap.Decode(encoded);
+            var decoded = LightClientBootstrap.Decode(encoded, ConsensusFork.Electra);
 
             AssertLightClientHeaderEqual(bootstrap.Header, decoded.Header);
             Assert.Equal(bootstrap.CurrentSyncCommittee.HashTreeRoot(), decoded.CurrentSyncCommittee.HashTreeRoot());
@@ -98,7 +98,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             var header = SampleData.CreateLightClientHeader();
             var encoded = header.Encode();
-            var decoded = LightClientHeader.Decode(encoded);
+            var decoded = LightClientHeader.Decode(encoded, ConsensusFork.Electra);
 
             AssertLightClientHeaderEqual(header, decoded);
             Assert.Equal(header.HashTreeRoot(), decoded.HashTreeRoot());
@@ -110,7 +110,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             var update = SampleData.CreateFinalityUpdate();
             var encoded = update.Encode();
-            var decoded = LightClientFinalityUpdate.Decode(encoded);
+            var decoded = LightClientFinalityUpdate.Decode(encoded, ConsensusFork.Electra);
 
             AssertLightClientHeaderEqual(update.AttestedHeader, decoded.AttestedHeader);
             AssertLightClientHeaderEqual(update.FinalizedHeader, decoded.FinalizedHeader);
@@ -126,7 +126,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             var update = SampleData.CreateOptimisticUpdate();
             var encoded = update.Encode();
-            var decoded = LightClientOptimisticUpdate.Decode(encoded);
+            var decoded = LightClientOptimisticUpdate.Decode(encoded, ConsensusFork.Electra);
 
             AssertLightClientHeaderEqual(update.AttestedHeader, decoded.AttestedHeader);
             Assert.Equal(update.SyncAggregate.HashTreeRoot(), decoded.SyncAggregate.HashTreeRoot());
@@ -140,7 +140,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             var update = SampleData.CreateUpdate();
             var encoded = update.Encode();
-            var decoded = LightClientUpdate.Decode(encoded);
+            var decoded = LightClientUpdate.Decode(encoded, ConsensusFork.Electra);
 
             AssertLightClientHeaderEqual(update.AttestedHeader, decoded.AttestedHeader);
             Assert.Equal(update.NextSyncCommittee.HashTreeRoot(), decoded.NextSyncCommittee.HashTreeRoot());
@@ -177,10 +177,11 @@ namespace Nethereum.Consensus.Ssz.Tests
         [MemberData(nameof(ExecutionPayloadHeaderSpecVectors))]
         public void ExecutionPayloadHeader_ConsensusSpecVectors(ConsensusSpecTestCase testCase)
         {
-            var header = ExecutionPayloadHeader.Decode(testCase.SerializedSpan);
+            const ConsensusFork fork = ConsensusFork.Deneb;
+            var header = ExecutionPayloadHeader.Decode(testCase.SerializedSpan, fork);
             Assert.Equal(testCase.Serialized, header.Encode());
             Assert.Equal(testCase.Root, header.HashTreeRoot());
-            var expected = ConsensusSpecValueProvider.LoadExecutionPayloadHeader(testCase.CaseName);
+            var expected = ConsensusSpecValueProvider.LoadExecutionPayloadHeader(fork, testCase.CaseName);
             AssertExecutionHeaderEqual(expected, header);
             LogConsensusCase(testCase);
         }
@@ -213,11 +214,12 @@ namespace Nethereum.Consensus.Ssz.Tests
         [MemberData(nameof(LightClientBootstrapSpecVectors))]
         public void LightClientBootstrap_ConsensusSpecVectors(ConsensusSpecTestCase testCase)
         {
-            var bootstrap = LightClientBootstrap.Decode(testCase.Serialized);
+            const ConsensusFork fork = ConsensusFork.Deneb;
+            var bootstrap = LightClientBootstrap.Decode(testCase.Serialized, fork);
             var encoded = bootstrap.Encode();
             Assert.Equal(testCase.Serialized, encoded);
             Assert.Equal(testCase.Root, bootstrap.HashTreeRoot());
-            var expected = ConsensusSpecValueProvider.LoadLightClientBootstrap(testCase.CaseName);
+            var expected = ConsensusSpecValueProvider.LoadLightClientBootstrap(fork, testCase.CaseName);
             AssertLightClientHeaderEqual(expected.Header, bootstrap.Header);
             AssertSyncCommitteeEqual(expected.CurrentSyncCommittee, bootstrap.CurrentSyncCommittee);
             AssertBranchesEqual(expected.CurrentSyncCommitteeBranch, bootstrap.CurrentSyncCommitteeBranch);
@@ -228,11 +230,12 @@ namespace Nethereum.Consensus.Ssz.Tests
         [MemberData(nameof(LightClientHeaderSpecVectors))]
         public void LightClientHeader_ConsensusSpecVectors(ConsensusSpecTestCase testCase)
         {
-            var header = LightClientHeader.Decode(testCase.Serialized);
+            const ConsensusFork fork = ConsensusFork.Deneb;
+            var header = LightClientHeader.Decode(testCase.Serialized, fork);
             var encoded = header.Encode();
             Assert.Equal(testCase.Serialized, encoded);
             Assert.Equal(testCase.Root, header.HashTreeRoot());
-            var expected = ConsensusSpecValueProvider.LoadLightClientHeader(testCase.CaseName);
+            var expected = ConsensusSpecValueProvider.LoadLightClientHeader(fork, testCase.CaseName);
             AssertLightClientHeaderEqual(expected, header);
             LogConsensusCase(testCase);
         }
@@ -241,10 +244,11 @@ namespace Nethereum.Consensus.Ssz.Tests
         [MemberData(nameof(LightClientFinalityUpdateSpecVectors))]
         public void LightClientFinalityUpdate_ConsensusSpecVectors(ConsensusSpecTestCase testCase)
         {
-            var update = LightClientFinalityUpdate.Decode(testCase.Serialized);
+            const ConsensusFork fork = ConsensusFork.Deneb;
+            var update = LightClientFinalityUpdate.Decode(testCase.Serialized, fork);
             Assert.Equal(testCase.Serialized, update.Encode());
             Assert.Equal(testCase.Root, update.HashTreeRoot());
-            var expected = ConsensusSpecValueProvider.LoadLightClientFinalityUpdate(testCase.CaseName);
+            var expected = ConsensusSpecValueProvider.LoadLightClientFinalityUpdate(fork, testCase.CaseName);
             AssertLightClientHeaderEqual(expected.AttestedHeader, update.AttestedHeader);
             AssertLightClientHeaderEqual(expected.FinalizedHeader, update.FinalizedHeader);
             AssertBranchesEqual(expected.FinalityBranch, update.FinalityBranch);
@@ -257,10 +261,11 @@ namespace Nethereum.Consensus.Ssz.Tests
         [MemberData(nameof(LightClientOptimisticUpdateSpecVectors))]
         public void LightClientOptimisticUpdate_ConsensusSpecVectors(ConsensusSpecTestCase testCase)
         {
-            var update = LightClientOptimisticUpdate.Decode(testCase.Serialized);
+            const ConsensusFork fork = ConsensusFork.Deneb;
+            var update = LightClientOptimisticUpdate.Decode(testCase.Serialized, fork);
             Assert.Equal(testCase.Serialized, update.Encode());
             Assert.Equal(testCase.Root, update.HashTreeRoot());
-            var expected = ConsensusSpecValueProvider.LoadLightClientOptimisticUpdate(testCase.CaseName);
+            var expected = ConsensusSpecValueProvider.LoadLightClientOptimisticUpdate(fork, testCase.CaseName);
             AssertLightClientHeaderEqual(expected.AttestedHeader, update.AttestedHeader);
             AssertSyncAggregateEqual(expected.SyncAggregate, update.SyncAggregate);
             Assert.Equal(expected.SignatureSlot, update.SignatureSlot);
@@ -275,10 +280,11 @@ namespace Nethereum.Consensus.Ssz.Tests
             {
                 _output.WriteLine($"expected start {HexPrefix(testCase.Serialized, 8)}");
             }
-            var update = LightClientUpdate.Decode(testCase.Serialized);
+            const ConsensusFork fork = ConsensusFork.Deneb;
+            var update = LightClientUpdate.Decode(testCase.Serialized, fork);
             Assert.Equal(testCase.Serialized, update.Encode());
             Assert.Equal(testCase.Root, update.HashTreeRoot());
-            var expected = ConsensusSpecValueProvider.LoadLightClientUpdate(testCase.CaseName);
+            var expected = ConsensusSpecValueProvider.LoadLightClientUpdate(fork, testCase.CaseName);
             AssertLightClientHeaderEqual(expected.AttestedHeader, update.AttestedHeader);
             AssertSyncCommitteeEqual(expected.NextSyncCommittee, update.NextSyncCommittee);
             AssertBranchesEqual(expected.NextSyncCommitteeBranch, update.NextSyncCommitteeBranch);
@@ -529,7 +535,7 @@ namespace Nethereum.Consensus.Ssz.Tests
                 NextSyncCommittee = CreateSyncCommittee(),
                 NextSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength, 0x70),
                 FinalizedHeader = CreateLightClientHeader(0x80),
-                FinalityBranch = CreateBranch(SszBasicTypes.FinalityBranchLength, 0x80),
+                FinalityBranch = CreateBranch(LightClientForkSpec.FinalityBranchLength(ConsensusFork.Electra),0x80),
                 SyncAggregate = CreateSyncAggregate(),
                 SignatureSlot = 987654
             };
@@ -551,7 +557,7 @@ namespace Nethereum.Consensus.Ssz.Tests
             {
                 AttestedHeader = CreateLightClientHeader(0xA0),
                 FinalizedHeader = CreateLightClientHeader(0xB0),
-                FinalityBranch = CreateBranch(SszBasicTypes.FinalityBranchLength, 0xA0),
+                FinalityBranch = CreateBranch(LightClientForkSpec.FinalityBranchLength(ConsensusFork.Electra),0xA0),
                 SyncAggregate = CreateSyncAggregate(),
                 SignatureSlot = 456789
             };

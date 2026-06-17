@@ -20,7 +20,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         [NethereumDocExample(DocSection.Consensus, "light-client", "Merkle Proof Execution Branch Verification", Order = 1)]
         public void MerkleProof_ExecutionBranch_VerifiesCorrectly()
         {
-            var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+            var update = TestDataFactory.CreateUpdate(slot: 11649024, blockNumber: 100);
 
             var executionRoot = update.AttestedHeader.Execution.HashTreeRoot();
             var result = SszMerkleizer.VerifyProof(
@@ -36,14 +36,14 @@ namespace Nethereum.Consensus.LightClient.Tests
         [Fact]
         public void MerkleProof_FinalityBranch_VerifiesCorrectly()
         {
-            var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+            var update = TestDataFactory.CreateUpdate(slot: 11649024, blockNumber: 100);
 
             var finalizedRoot = update.FinalizedHeader.Beacon.HashTreeRoot();
             var result = SszMerkleizer.VerifyProof(
                 finalizedRoot,
                 update.FinalityBranch,
-                SszBasicTypes.FinalityBranchDepth,
-                SszBasicTypes.FinalityBranchIndex,
+                LightClientForkSpec.FinalityBranchDepth(ConsensusFork.Electra),
+                LightClientForkSpec.FinalityBranchIndex(ConsensusFork.Electra),
                 update.AttestedHeader.Beacon.StateRoot);
 
             Assert.True(result, "Finality branch verification failed");
@@ -52,7 +52,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         [Fact]
         public void MerkleProof_FinalizedHeaderExecutionBranch_VerifiesCorrectly()
         {
-            var update = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+            var update = TestDataFactory.CreateUpdate(slot: 11649024, blockNumber: 100);
 
             var executionRoot = update.FinalizedHeader.Execution.HashTreeRoot();
             var result = SszMerkleizer.VerifyProof(
@@ -68,7 +68,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         [Fact]
         public void MerkleProof_RoundTrip_PreservesVerification()
         {
-            var originalUpdate = TestDataFactory.CreateUpdate(slot: 1, blockNumber: 100);
+            var originalUpdate = TestDataFactory.CreateUpdate(slot: 11649024, blockNumber: 100);
             var response = TestDataFactory.CreateUpdateResponse(originalUpdate);
             var roundTrippedUpdate = LightClientResponseMapper.ToDomain(response);
 
@@ -92,7 +92,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         [NethereumDocExample(DocSection.Consensus, "light-client", "Light Client Initialization and State Persistence", Order = 2)]
         public async Task InitializeAsync_PopulatesStateAndPersists()
         {
-            var bootstrap = TestDataFactory.CreateBootstrap(slot: 1, blockNumber: 100);
+            var bootstrap = TestDataFactory.CreateBootstrap(slot: 11649024, blockNumber: 100);
             var beaconClient = new StubLightClientApi(bootstrap, Array.Empty<LightClientUpdate>());
             var config = TestDataFactory.CreateConfig();
             var store = new InMemoryLightClientStore();
@@ -112,8 +112,8 @@ namespace Nethereum.Consensus.LightClient.Tests
         [NethereumDocExample(DocSection.Consensus, "light-client", "Light Client Update with BLS Aggregate Verification", Order = 3)]
         public async Task UpdateAsync_VerifiesAggregateAndUpdatesState()
         {
-            var bootstrap = TestDataFactory.CreateBootstrap(slot: 1, blockNumber: 100);
-            var update = TestDataFactory.CreateUpdate(slot: 2, blockNumber: 101);
+            var bootstrap = TestDataFactory.CreateBootstrap(slot: 11649024, blockNumber: 100);
+            var update = TestDataFactory.CreateUpdate(slot: 11649025, blockNumber: 101);
             var beaconClient = new StubLightClientApi(bootstrap, new[] { update });
             var config = TestDataFactory.CreateConfig();
             var store = new InMemoryLightClientStore();
@@ -181,6 +181,12 @@ namespace Nethereum.Consensus.LightClient.Tests
                 LastDomain = domain;
                 return VerificationResult;
             }
+
+            public byte[] AggregateSignatures(byte[][] signatures) => throw new NotSupportedException();
+
+            public bool Verify(byte[] signature, byte[] publicKey, byte[] message) => throw new NotSupportedException();
+
+            public (byte[] Signature, byte[] PublicKey) ExtractSignatureAndPublicKey(byte[] signatureWithPubKey) => throw new NotSupportedException();
         }
 
         private static class TestDataFactory
@@ -412,9 +418,9 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             private static List<byte[]> CreateValidFinalityBranch(byte[] finalizedRoot, out byte[] stateRoot)
             {
-                var branch = new List<byte[]>(SszBasicTypes.FinalityBranchDepth);
+                var branch = new List<byte[]>(LightClientForkSpec.FinalityBranchDepth(ConsensusFork.Electra));
 
-                for (int i = 0; i < SszBasicTypes.FinalityBranchDepth; i++)
+                for (int i = 0; i < LightClientForkSpec.FinalityBranchDepth(ConsensusFork.Electra); i++)
                 {
                     var sibling = new byte[SszBasicTypes.RootLength];
                     for (int j = 0; j < sibling.Length; j++)
@@ -425,9 +431,9 @@ namespace Nethereum.Consensus.LightClient.Tests
                 }
 
                 var current = finalizedRoot;
-                for (int i = 0; i < SszBasicTypes.FinalityBranchDepth; i++)
+                for (int i = 0; i < LightClientForkSpec.FinalityBranchDepth(ConsensusFork.Electra); i++)
                 {
-                    if ((SszBasicTypes.FinalityBranchIndex & (1 << i)) != 0)
+                    if ((LightClientForkSpec.FinalityBranchIndex(ConsensusFork.Electra) & (1 << i)) != 0)
                     {
                         current = HashPair(branch[i], current);
                     }

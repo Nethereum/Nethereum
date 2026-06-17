@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Nethereum.Ssz;
 
 namespace Nethereum.Consensus.Ssz
@@ -10,13 +10,17 @@ namespace Nethereum.Consensus.Ssz
             SszBasicTypes.SyncAggregateLength +
             sizeof(ulong);
 
+        public ConsensusFork Fork { get; set; } = ConsensusFork.Electra;
+
         public LightClientHeader AttestedHeader { get; set; } = new LightClientHeader();
         public SyncAggregate SyncAggregate { get; set; } = new SyncAggregate();
         public ulong SignatureSlot { get; set; }
 
-        public byte[] Encode()
+        public byte[] Encode() => Encode(Fork);
+
+        public byte[] Encode(ConsensusFork fork)
         {
-            var headerBytes = AttestedHeader.Encode();
+            var headerBytes = AttestedHeader.Encode(fork);
             var aggregateBytes = SyncAggregate.Encode();
             SszBasicTypes.ValidateFixedLength(aggregateBytes, SszBasicTypes.SyncAggregateLength, nameof(SyncAggregate));
 
@@ -29,7 +33,7 @@ namespace Nethereum.Consensus.Ssz
             return SszContainerEncoding.Combine(fixedSection, headerBytes);
         }
 
-        public static LightClientOptimisticUpdate Decode(byte[] data)
+        public static LightClientOptimisticUpdate Decode(byte[] data, ConsensusFork fork)
         {
             var reader = new SszReader(data);
             var headerOffset = reader.ReadUInt32();
@@ -45,17 +49,20 @@ namespace Nethereum.Consensus.Ssz
 
             return new LightClientOptimisticUpdate
             {
-                AttestedHeader = LightClientHeader.Decode(headerBytes),
+                Fork = fork,
+                AttestedHeader = LightClientHeader.Decode(headerBytes, fork),
                 SyncAggregate = SyncAggregate.Decode(aggregateBytes),
                 SignatureSlot = slot
             };
         }
 
-        public byte[] HashTreeRoot()
+        public byte[] HashTreeRoot() => HashTreeRoot(Fork);
+
+        public byte[] HashTreeRoot(ConsensusFork fork)
         {
             return SszMerkleizer.Merkleize(new[]
             {
-                AttestedHeader.HashTreeRoot(),
+                AttestedHeader.HashTreeRoot(fork),
                 SyncAggregate.HashTreeRoot(),
                 SszBasicTypes.HashTreeRootUInt64(SignatureSlot)
             });

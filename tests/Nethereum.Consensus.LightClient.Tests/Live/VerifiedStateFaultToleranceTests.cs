@@ -54,9 +54,9 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
                 var header = verifiedState.GetCurrentHeader();
                 _output.WriteLine($"Using finalized block: {header.BlockNumber}");
 
-                var code = await verifiedState.GetCodeAsync(TestConstants.VitalikAddress);
+                var code = await verifiedState.GetCodeAsync(TestConstants.BurnAddress);
 
-                _output.WriteLine($"Code length for EOA {TestConstants.VitalikAddress}: {code?.Length ?? 0} bytes");
+                _output.WriteLine($"Code length for EOA {TestConstants.BurnAddress}: {code?.Length ?? 0} bytes");
                 Assert.True(code == null || code.Length == 0, "EOA should have no code");
             }
             catch (RpcResponseException ex) when (TestHelpers.IsPrunedHistoryError(ex))
@@ -159,9 +159,9 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
                 var header = verifiedState.GetCurrentHeader();
                 _output.WriteLine($"Using finalized block: {header.BlockNumber}");
 
-                var codeHash = await verifiedState.GetCodeHashAsync(TestConstants.VitalikAddress);
+                var codeHash = await verifiedState.GetCodeHashAsync(TestConstants.BurnAddress);
 
-                _output.WriteLine($"Code hash for EOA {TestConstants.VitalikAddress}: {codeHash?.ToHex(true) ?? "null"}");
+                _output.WriteLine($"Code hash for EOA {TestConstants.BurnAddress}: {codeHash?.ToHex(true) ?? "null"}");
 
                 var emptyCodeHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".HexToByteArray();
                 Assert.Equal(emptyCodeHash, codeHash);

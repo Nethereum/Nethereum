@@ -73,16 +73,20 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             _output.WriteLine($"Finalized beacon header hash tree root (leaf): {finalizedRoot.ToHex(true)}");
             _output.WriteLine($"Attested beacon state root (expected root): {update.AttestedHeader.Beacon.StateRoot.ToHex(true)}");
 
-            Assert.True(update.FinalityBranch.Count >= SszBasicTypes.FinalityBranchDepth,
-                $"Expected at least {SszBasicTypes.FinalityBranchDepth} branch nodes, got {update.FinalityBranch.Count}");
+            var fork = ChainSpec.Mainnet.GetForkAtSlot(update.FinalizedHeader.Beacon.Slot);
+            var finalityDepth = LightClientForkSpec.FinalityBranchDepth(fork);
+            var finalityIndex = LightClientForkSpec.FinalityBranchIndex(fork);
 
-            _output.WriteLine($"Finality branch depth: {SszBasicTypes.FinalityBranchDepth}, index: {SszBasicTypes.FinalityBranchIndex}");
+            Assert.True(update.FinalityBranch.Count >= finalityDepth,
+                $"Expected at least {finalityDepth} branch nodes, got {update.FinalityBranch.Count}");
+
+            _output.WriteLine($"Fork: {fork}; finality branch depth: {finalityDepth}, index: {finalityIndex}");
 
             var verified = SszMerkleizer.VerifyProof(
                 finalizedRoot,
                 update.FinalityBranch,
-                SszBasicTypes.FinalityBranchDepth,
-                SszBasicTypes.FinalityBranchIndex,
+                finalityDepth,
+                finalityIndex,
                 update.AttestedHeader.Beacon.StateRoot);
 
             Assert.True(verified, "Finality branch Merkle proof verification failed");
@@ -164,11 +168,12 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             _output.WriteLine($"Tampered slot: {update.FinalizedHeader.Beacon.Slot}");
             _output.WriteLine($"Tampered finalized root: {tamperedFinalizedRoot.ToHex(true)}");
 
+            var fork = ChainSpec.Mainnet.GetForkAtSlot(update.FinalizedHeader.Beacon.Slot);
             var verified = SszMerkleizer.VerifyProof(
                 tamperedFinalizedRoot,
                 update.FinalityBranch,
-                SszBasicTypes.FinalityBranchDepth,
-                SszBasicTypes.FinalityBranchIndex,
+                LightClientForkSpec.FinalityBranchDepth(fork),
+                LightClientForkSpec.FinalityBranchIndex(fork),
                 update.AttestedHeader.Beacon.StateRoot);
 
             Assert.False(verified, "Tampered finalized header should NOT verify");

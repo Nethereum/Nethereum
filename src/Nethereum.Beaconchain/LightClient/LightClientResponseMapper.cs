@@ -8,32 +8,45 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Beaconchain.LightClient
 {
+    /// <summary>
+    /// Maps beacon-node JSON DTOs into our SSZ container types.
+    /// The active <see cref="ConsensusFork"/> is derived from the AttestedHeader slot via
+    /// <see cref="ChainSpec.GetForkAtSlot"/>; pass a custom <see cref="ChainSpec"/> for non-mainnet chains.
+    /// </summary>
     public static class LightClientResponseMapper
     {
-        public static LightClientBootstrap ToDomain(LightClientBootstrapResponse response)
+        public static LightClientBootstrap ToDomain(LightClientBootstrapResponse response, ChainSpec chainSpec = null)
         {
             if (response?.Data == null) return null;
 
+            var spec = chainSpec ?? ChainSpec.Mainnet;
+            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.Header?.Beacon?.Slot));
+
             return new LightClientBootstrap
             {
-                Header = MapHeader(response.Data.Header),
+                Fork = fork,
+                Header = MapHeader(response.Data.Header, fork),
                 CurrentSyncCommittee = MapSyncCommittee(response.Data.CurrentSyncCommittee),
                 CurrentSyncCommitteeBranch = response.Data.CurrentSyncCommitteeBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>()
             };
         }
 
-        public static LightClientUpdate ToDomain(LightClientUpdateResponse response)
+        public static LightClientUpdate ToDomain(LightClientUpdateResponse response, ChainSpec chainSpec = null)
         {
             if (response?.Data == null) return null;
+
+            var spec = chainSpec ?? ChainSpec.Mainnet;
+            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.AttestedHeader?.Beacon?.Slot));
 
             return new LightClientUpdate
             {
-                AttestedHeader = MapHeader(response.Data.AttestedHeader),
+                Fork = fork,
+                AttestedHeader = MapHeader(response.Data.AttestedHeader, fork),
                 NextSyncCommittee = MapSyncCommittee(response.Data.NextSyncCommittee),
                 NextSyncCommitteeBranch = response.Data.NextSyncCommitteeBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>(),
-                FinalizedHeader = MapHeader(response.Data.FinalizedHeader),
+                FinalizedHeader = MapHeader(response.Data.FinalizedHeader, fork),
                 FinalityBranch = response.Data.FinalityBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>(),
                 SyncAggregate = MapSyncAggregate(response.Data.SyncAggregate),
@@ -41,14 +54,18 @@ namespace Nethereum.Beaconchain.LightClient
             };
         }
 
-        public static LightClientFinalityUpdate ToDomain(LightClientFinalityUpdateResponse response)
+        public static LightClientFinalityUpdate ToDomain(LightClientFinalityUpdateResponse response, ChainSpec chainSpec = null)
         {
             if (response?.Data == null) return null;
+
+            var spec = chainSpec ?? ChainSpec.Mainnet;
+            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.AttestedHeader?.Beacon?.Slot));
 
             return new LightClientFinalityUpdate
             {
-                AttestedHeader = MapHeader(response.Data.AttestedHeader),
-                FinalizedHeader = MapHeader(response.Data.FinalizedHeader),
+                Fork = fork,
+                AttestedHeader = MapHeader(response.Data.AttestedHeader, fork),
+                FinalizedHeader = MapHeader(response.Data.FinalizedHeader, fork),
                 FinalityBranch = response.Data.FinalityBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>(),
                 SyncAggregate = MapSyncAggregate(response.Data.SyncAggregate),
@@ -56,32 +73,37 @@ namespace Nethereum.Beaconchain.LightClient
             };
         }
 
-        public static LightClientOptimisticUpdate ToDomain(LightClientOptimisticUpdateResponse response)
+        public static LightClientOptimisticUpdate ToDomain(LightClientOptimisticUpdateResponse response, ChainSpec chainSpec = null)
         {
             if (response?.Data == null) return null;
 
+            var spec = chainSpec ?? ChainSpec.Mainnet;
+            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.AttestedHeader?.Beacon?.Slot));
+
             return new LightClientOptimisticUpdate
             {
-                AttestedHeader = MapHeader(response.Data.AttestedHeader),
+                Fork = fork,
+                AttestedHeader = MapHeader(response.Data.AttestedHeader, fork),
                 SyncAggregate = MapSyncAggregate(response.Data.SyncAggregate),
                 SignatureSlot = ParseUlong(response.Data.SignatureSlot)
             };
         }
 
-        public static IReadOnlyList<LightClientUpdate> ToDomain(IEnumerable<LightClientUpdateResponse> responses)
+        public static IReadOnlyList<LightClientUpdate> ToDomain(IEnumerable<LightClientUpdateResponse> responses, ChainSpec chainSpec = null)
         {
-            return responses?.Select(ToDomain).Where(u => u != null).ToList()
+            return responses?.Select(r => ToDomain(r, chainSpec)).Where(u => u != null).ToList()
                    ?? new List<LightClientUpdate>();
         }
 
-        private static LightClientHeader MapHeader(LightClientHeaderDto dto)
+        private static LightClientHeader MapHeader(LightClientHeaderDto dto, ConsensusFork fork)
         {
             if (dto == null) return null;
 
             return new LightClientHeader
             {
+                Fork = fork,
                 Beacon = MapBeaconBlockHeader(dto.Beacon),
-                Execution = MapExecutionPayloadHeader(dto.Execution),
+                Execution = MapExecutionPayloadHeader(dto.Execution, fork),
                 ExecutionBranch = dto.ExecutionBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>()
             };
@@ -101,12 +123,13 @@ namespace Nethereum.Beaconchain.LightClient
             };
         }
 
-        private static ExecutionPayloadHeader MapExecutionPayloadHeader(ExecutionPayloadHeaderDto dto)
+        private static ExecutionPayloadHeader MapExecutionPayloadHeader(ExecutionPayloadHeaderDto dto, ConsensusFork fork)
         {
             if (dto == null) return null;
 
             return new ExecutionPayloadHeader
             {
+                Fork = fork,
                 ParentHash = dto.ParentHash?.HexToByteArray() ?? new byte[32],
                 FeeRecipient = dto.FeeRecipient?.HexToByteArray() ?? new byte[20],
                 StateRoot = dto.StateRoot?.HexToByteArray() ?? new byte[32],
