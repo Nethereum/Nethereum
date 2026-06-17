@@ -32,6 +32,13 @@ namespace Nethereum.Signer.Bls.Herumi
                 {
                     BLS.Init();
                     MclBindings.mclBn_setETHserialization(0);
+                    // EIP-2537: subgroup checking is the per-precompile
+                    // policy. ADD skips it, MUL/MSM/PAIRING enforce it.
+                    // Disable the MCL global so mclBnG{1,2}_isValid becomes
+                    // a curve-only check; the strict subgroup-order check
+                    // is applied explicitly in DecodeG{1,2} when requested.
+                    MclBindings.mclBn_verifyOrderG1(0);
+                    MclBindings.mclBn_verifyOrderG2(0);
                     _initialized = true;
                 }
             }
@@ -39,8 +46,8 @@ namespace Nethereum.Signer.Bls.Herumi
 
         public byte[] G1Add(byte[] p1, byte[] p2)
         {
-            MclBindings.MclBnG1 x = DecodeG1(p1);
-            MclBindings.MclBnG1 y = DecodeG1(p2);
+            MclBindings.MclBnG1 x = DecodeG1(p1, requireSubgroup: false);
+            MclBindings.MclBnG1 y = DecodeG1(p2, requireSubgroup: false);
             MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
             MclBindings.mclBnG1_add(ref z, in x, in y);
             return EncodeG1(z);
@@ -79,8 +86,8 @@ namespace Nethereum.Signer.Bls.Herumi
 
         public byte[] G2Add(byte[] p1, byte[] p2)
         {
-            MclBindings.MclBnG2 x = DecodeG2(p1);
-            MclBindings.MclBnG2 y = DecodeG2(p2);
+            MclBindings.MclBnG2 x = DecodeG2(p1, requireSubgroup: false);
+            MclBindings.MclBnG2 y = DecodeG2(p2, requireSubgroup: false);
             MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
             MclBindings.mclBnG2_add(ref z, in x, in y);
             return EncodeG2(z);
@@ -170,7 +177,7 @@ namespace Nethereum.Signer.Bls.Herumi
             return EncodeG2(y);
         }
 
-        private MclBindings.MclBnG1 DecodeG1(byte[] eip2537)
+        private MclBindings.MclBnG1 DecodeG1(byte[] eip2537, bool requireSubgroup = true)
         {
             if (eip2537.Length != 128)
             {
@@ -186,24 +193,29 @@ namespace Nethereum.Signer.Bls.Herumi
             }
             MclBindings.MclBnG1 x2 = default(MclBindings.MclBnG1);
             byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
-            if (MclBindings.mclBnFp_setLittleEndianMod(ref x2.x, array, (ulong)array.Length) != 0)
-            {
-                throw new ArgumentException("Invalid G1 point: failed to set x coordinate");
-            }
             byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
-            if (MclBindings.mclBnFp_setLittleEndianMod(ref x2.y, array2, (ulong)array2.Length) != 0)
+            // EIP-2537 strict Fp decode: every coordinate must be in
+            // [0, p). setLittleEndianMod silently reduces inputs >= p,
+            // accepting points the spec rejects.
+            ulong xOk = MclBindings.mclBnFp_deserialize(ref x2.x, array, (ulong)array.Length);
+            ulong yOk = MclBindings.mclBnFp_deserialize(ref x2.y, array2, (ulong)array2.Length);
+            if (xOk == 0L || yOk == 0L)
             {
-                throw new ArgumentException("Invalid G1 point: failed to set y coordinate");
+                throw new ArgumentException("Invalid G1 point: coordinate not in field");
             }
             MclBindings.mclBnFp_setInt(ref x2.z, 1);
             if (MclBindings.mclBnG1_isValid(in x2) == 0)
             {
-                throw new ArgumentException("Invalid G1 point: not on curve or not in subgroup");
+                throw new ArgumentException("Invalid G1 point: not on curve");
+            }
+            if (requireSubgroup && MclBindings.mclBnG1_isValidOrder(in x2) != 1)
+            {
+                throw new ArgumentException("Invalid G1 point: not in prime-order subgroup");
             }
             return x2;
         }
 
-        private MclBindings.MclBnG2 DecodeG2(byte[] eip2537)
+        private MclBindings.MclBnG2 DecodeG2(byte[] eip2537, bool requireSubgroup = true)
         {
             if (eip2537.Length != 256)
             {
@@ -236,7 +248,11 @@ namespace Nethereum.Signer.Bls.Herumi
             MclBindings.mclBnFp_setInt(ref x2.z.c1, 0);
             if (MclBindings.mclBnG2_isValid(in x2) == 0)
             {
-                throw new ArgumentException("Invalid G2 point: not on curve or not in subgroup");
+                throw new ArgumentException("Invalid G2 point: not on curve");
+            }
+            if (requireSubgroup && MclBindings.mclBnG2_isValidOrder(in x2) != 1)
+            {
+                throw new ArgumentException("Invalid G2 point: not in prime-order subgroup");
             }
             return x2;
         }
@@ -252,8 +268,12 @@ namespace Nethereum.Signer.Bls.Herumi
             {
                 array[i] = eip2537[31 - i];
             }
+            // EIP-2537: scalars are 256-bit integers reduced modulo r.
+            // mclBnFr_deserialize is strict — it rejects values >= r,
+            // which fails legitimate test inputs like max_scalar,
+            // q_times_point and unnormalized_scalar variants.
             MclBindings.MclBnFr x = default(MclBindings.MclBnFr);
-            if (MclBindings.mclBnFr_deserialize(ref x, array, (ulong)array.Length) == 0L)
+            if (MclBindings.mclBnFr_setLittleEndianMod(ref x, array, (ulong)array.Length) != 0)
             {
                 throw new ArgumentException("Invalid scalar");
             }

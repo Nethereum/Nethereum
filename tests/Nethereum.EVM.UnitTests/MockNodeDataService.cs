@@ -20,5 +20,6 @@ namespace Nethereum.EVM.UnitTests
         public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position) => Task.FromResult(Array.Empty<byte>());
         public Task<EvmUInt256> GetTransactionCountAsync(byte[] address) => Task.FromResult(EvmUInt256.Zero);
         public Task<EvmUInt256> GetTransactionCountAsync(string address) => Task.FromResult(EvmUInt256.Zero);
+        public Task<bool> AccountExistsAsync(string address) => Task.FromResult(false);
     }
 }

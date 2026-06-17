@@ -13,6 +13,41 @@ namespace Nethereum.EVM.BlockchainState
         private readonly Stack<IStateSnapshot> _snapshots = new Stack<IStateSnapshot>();
         private int _nextSnapshotId = 0;
         private readonly HashSet<string> _warmAddresses = new HashSet<string>();
+        // Tx-wide self-destructed set, mirrors geth's StateDB.HasSelfDestructed.
+        // Refund accounting in PreCancunSelfDestructRule must check this across
+        // CALL frames — a frame-local list (ProgramResult.DeletedContractAccounts)
+        // misses the case where the same contract is SELFDESTRUCTed via two
+        // independent CALLs in the same tx, causing a double 24000 refund.
+        private readonly HashSet<string> _selfDestructedAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public bool HasSelfDestructed(string address)
+        {
+            if (string.IsNullOrEmpty(address)) return false;
+            return _selfDestructedAddresses.Contains(address);
+        }
+
+        public void MarkSelfDestructed(string address)
+        {
+            if (!string.IsNullOrEmpty(address))
+                _selfDestructedAddresses.Add(address);
+        }
+
+        // Tx-global "touched" set for EIP-161 end-of-tx cleanup. Geth's
+        // state_object.touchChange has an empty Revert() — once an account is
+        // touched via AddBalance/SELFDESTRUCT/etc. the touch survives sub-call
+        // revert and is consulted at end-of-tx by Finalise(deleteEmptyObjects:true).
+        // AccountExecutionState.IsTouched is journaled into snapshots (and
+        // restored on revert) because that flag tracks per-frame mutation;
+        // this set tracks the spec's substate.touched(σ, A_t) which is tx-wide.
+        private readonly HashSet<string> _txGloballyTouched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public void MarkTxGloballyTouched(string address)
+        {
+            if (!string.IsNullOrEmpty(address))
+                _txGloballyTouched.Add(address.ToLower());
+        }
+
+        public IEnumerable<string> TxGloballyTouchedAddresses => _txGloballyTouched;
 
         public ExecutionStateService(IStateReader stateReader)
         {
@@ -26,10 +61,21 @@ namespace Nethereum.EVM.BlockchainState
 
         public IStateReader NodeDataService => StateReader;
 
+        /// <summary>
+        /// EIP-161 touch semantics: at EIP-158+ forks geth's touch flag is
+        /// effectively permanent for end-of-tx cleanup — once an empty account
+        /// is touched, snapshot revert of the sub-call that touched it does not
+        /// untouch it for cleanup purposes. Set true when the active fork's
+        /// TouchedEmptyCleanupRule is Eip161; false at pre-EIP-158 forks where
+        /// keeping the flag permanent would leak phantom-touched accounts into
+        /// the post-state (no cleanup runs to delete them).
+        /// </summary>
+        public bool TouchPersistsOnRevert { get; set; } = false;
+
 
         public int TakeSnapshot()
         {
-            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState, _warmAddresses, TransientStorage);
+            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState, _warmAddresses, _selfDestructedAddresses, TransientStorage);
             _snapshots.Push(snapshot);
 
             return _nextSnapshotId++;
@@ -89,6 +135,12 @@ namespace Nethereum.EVM.BlockchainState
                 _warmAddresses.Add(addr);
             }
 
+            _selfDestructedAddresses.Clear();
+            foreach (var addr in snapshot.SelfDestructedAddresses)
+            {
+                _selfDestructedAddresses.Add(addr);
+            }
+
             var addressesToRemove = new List<string>();
             foreach (var addr in AccountsState.Keys)
             {
@@ -142,6 +194,15 @@ namespace Nethereum.EVM.BlockchainState
             accountState.Nonce = snapshot.Nonce;
             accountState.Code = (byte[])snapshot.Code?.Clone();
             accountState.IsNewContract = snapshot.IsNewContract;
+            // Geth journals touch (state_object.touchChange) and reverts it
+            // with every other state mutation: a reverted sub-call leaves the
+            // target's IsTouched at its pre-snapshot value. The previous
+            // TouchPersistsOnRevert=true branch kept mid-tx touches across
+            // revert, which caused EIP-161 end-of-tx cleanup to delete
+            // pre-existing empty collision targets (CREATE-to-empty failure)
+            // and depth-N precompile/empty CALL targets whose touch came
+            // from a reverted sub-call. Always restore from snapshot.
+            accountState.IsTouched = snapshot.IsTouched;
 
             accountState.WarmStorageKeys.Clear();
             if (snapshot.WarmStorageKeys != null)
@@ -177,6 +238,19 @@ namespace Nethereum.EVM.BlockchainState
                 accountState.Code = StateReader.GetCode(normalizedAddress);
             }
             return accountState.Code;
+        }
+
+        /// <summary>
+        /// Sync mirror of <see cref="GetCodeReadOnlyAsync"/>. Returns the
+        /// in-tx code if the target is already tracked, otherwise reads
+        /// chain state directly with no account materialisation.
+        /// </summary>
+        public byte[] GetCodeReadOnly(string address)
+        {
+            var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
+            if (AccountsState.TryGetValue(normalizedAddress, out var existing) && existing.Code != null)
+                return existing.Code;
+            return StateReader.GetCode(normalizedAddress);
         }
 
         public EvmUInt256 GetNonce(string address)
@@ -248,6 +322,35 @@ namespace Nethereum.EVM.BlockchainState
             return accountState.Code;
         }
 
+        /// <summary>
+        /// Read-only code lookup that does NOT materialise the target account
+        /// in <see cref="AccountsState"/> when the address isn't already
+        /// tracked. Matches go-ethereum's <c>evm.resolveCode(addr)</c> used by
+        /// CALLCODE, DELEGATECALL and STATICCALL — those instructions read
+        /// the target's bytecode without ever calling <c>StateDB.CreateAccount(addr)</c>,
+        /// so the target remains absent from post-state at pre-EIP-158 forks
+        /// (Frontier through Tangerine Whistle) where empty touched accounts
+        /// would otherwise be kept.
+        ///
+        /// <para>
+        /// In-tx newly-created contracts ARE visible because they live in
+        /// <see cref="AccountsState"/> with <c>IsNewContract=true</c>; we
+        /// check that first and only fall through to the chain reader for
+        /// addresses that have not been touched in this transaction.
+        /// </para>
+        /// </summary>
+        public async Task<byte[]> GetCodeReadOnlyAsync(string address)
+        {
+            var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
+
+            if (AccountsState.TryGetValue(normalizedAddress, out var existing) && existing.Code != null)
+                return existing.Code;
+
+            // Read straight from chain — no materialisation. Returns empty
+            // bytes for non-existent addresses (per IStateReader contract).
+            return await StateReader.GetCodeAsync(normalizedAddress);
+        }
+
         public async Task<EvmUInt256> GetNonceAsync(string address)
         {
             var accountState = CreateOrGetAccountExecutionState(address);
@@ -297,18 +400,27 @@ namespace Nethereum.EVM.BlockchainState
         {
             address = address.ToLower();
             var accountState = CreateOrGetAccountExecutionState(address);
+            accountState.IsTouched = true;  // EIP-161 touch on explicit code write
             accountState.Code = code;
         }
 
         public void SetNonce(string address, EvmUInt256 nonce)
         {
             var accountState = CreateOrGetAccountExecutionState(address);
+            accountState.IsTouched = true;
             accountState.Nonce = nonce;
         }
 
         public void PrepareNewContractAccount(string address, ulong initialNonce = 1)
         {
             var accountState = CreateOrGetAccountExecutionState(address);
+            // Geth journals the touch as part of the CreateAccount/SetNonce
+            // pair, so a reverted CREATE undoes it. Nethereum's
+            // TouchPersistsOnRevert=true (EIP-161+) keeps explicit touches
+            // alive across revert, which deletes a pre-existing empty
+            // collision target from post-state on a failed CREATE.
+            // Successful CREATE leaves nonce >= 1 (non-empty), so EIP-161
+            // cleanup never reaches it — no IsTouched flip is needed here.
             accountState.ClearStorageForNewContract();
             accountState.Nonce = initialNonce;
             accountState.Code = null;
@@ -332,7 +444,11 @@ namespace Nethereum.EVM.BlockchainState
                 var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLower();
                 _warmAddresses.Add(normalized);
             }
-            CreateOrGetAccountExecutionState(address);
+            // Pure warm-set membership — do NOT materialise an account
+            // execution-state entry. Doing so leaks the EIP-3651 pre-warmed
+            // coinbase (and any other warm-marked-but-untouched address)
+            // into post-state as an empty account when priorityFee==0.
+            // Geth StateDB.AddAddressToAccessList only touches the access list.
         }
 
         public void MarkPrecompilesAsWarm(Execution.Precompiles.PrecompileRegistry registry)

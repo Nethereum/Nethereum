@@ -220,7 +220,17 @@ namespace Nethereum.EVM
                 throw new Exception($"Stack underflow: DUP{index} requires {index} items, have {stackPointer}");
 #endif
             }
-            var dup = stack[stackPointer - index];
+            // Each stack slot must own its bytes. EvmBitwiseExecution.SignExtend
+            // mutates the popped byte[] in place (item[i] = 0 / 0xFF). If DUPn
+            // shared the source reference, SIGNEXTEND would silently clobber the
+            // duplicate still on the stack. Exposed by randomStatetest303 at
+            // Homestead/Byzantium/Constantinople/ConstantinopleFix:
+            // CALLDATALOAD(0)→DUP1→SIGNEXTEND→...→LOG4(memLength=duplicate)
+            // — SIGNEXTEND rewrote the LOG memLength to the post-sign-extend
+            // value, defeating f1673659's FitsInULong overflow guard.
+            var src = stack[stackPointer - index];
+            var dup = new byte[32];
+            System.Buffer.BlockCopy(src, 0, dup, 0, 32);
             StackPush(dup);
         }
 

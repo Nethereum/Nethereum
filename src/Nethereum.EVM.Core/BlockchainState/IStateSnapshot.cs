@@ -8,6 +8,7 @@ namespace Nethereum.EVM.BlockchainState
         int SnapshotId { get; }
         Dictionary<string, AccountStateSnapshot> AccountSnapshots { get; }
         HashSet<string> WarmAddresses { get; }
+        HashSet<string> SelfDestructedAddresses { get; }
         Dictionary<string, Dictionary<EvmUInt256, byte[]>> TransientStorage { get; }
     }
 
@@ -21,5 +22,11 @@ namespace Nethereum.EVM.BlockchainState
         public byte[] Code { get; set; }
         public HashSet<EvmUInt256> WarmStorageKeys { get; set; }
         public bool IsNewContract { get; set; }
+        /// <summary>
+        /// EIP-161 dirty-bit captured at snapshot time. Restored on
+        /// revert so reverted sub-calls roll back their touches
+        /// (matches geth popping journal.dirties).
+        /// </summary>
+        public bool IsTouched { get; set; }
     }
 }

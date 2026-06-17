@@ -66,6 +66,30 @@ namespace Nethereum.Model
 
         public override TransactionType TransactionType => TransactionType.Blob;
 
+        // Cached canonical hash. EIP-4844 requires keccak256 over the canonical
+        // (type-prefixed signed-tx RLP without sidecar) form, which is expensive
+        // to recompute — mempool propagation calls Hash per-tx per-peer, so we
+        // memoise the first computation. Invalidated whenever the signature is
+        // re-set (see SetSignature override below).
+        private byte[] _cachedCanonicalHash;
+
+        public override byte[] Hash
+        {
+            get
+            {
+                if (_cachedCanonicalHash != null) return _cachedCanonicalHash;
+                var canonical = Transaction4844Encoder.Current.Encode(this);
+                _cachedCanonicalHash = new Nethereum.Util.Sha3Keccack().CalculateHash(canonical);
+                return _cachedCanonicalHash;
+            }
+        }
+
+        public override void SetSignature(ISignature signature)
+        {
+            base.SetSignature(signature);
+            _cachedCanonicalHash = null;
+        }
+
         public override byte[] GetRLPEncoded()
         {
             return OriginalRlpEncoded ?? Transaction4844Encoder.Current.Encode(this);

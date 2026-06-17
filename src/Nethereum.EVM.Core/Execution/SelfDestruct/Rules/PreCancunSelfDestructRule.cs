@@ -26,10 +26,22 @@ namespace Nethereum.EVM.Execution.SelfDestruct.Rules
                 ctx.ExecutionStateService.DebitBalance(ctx.ContractAddress, ctx.ContractBalance);
             }
 
-            ctx.Program.ProgramResult.DeletedContractAccounts.Add(ctx.ContractAddress);
-
-            if (_refund > 0)
-                ctx.Program.AddRefund(_refund);
+            // Geth refunds SELFDESTRUCT once per (tx, contract). Check the
+            // tx-wide self-destructed set on ExecutionStateService — frame-
+            // local ProgramResult.DeletedContractAccounts misses the case
+            // where the same contract is SELFDESTRUCTed via two separate
+            // CALL frames in the same tx (each frame's list starts empty,
+            // so refund would fire twice).
+            // Matches geth core/vm/gas_table.go gasSelfdestruct:
+            //   if !evm.StateDB.HasSelfDestructed(contract.Address()) { AddRefund(...) }
+            bool alreadyDestructed = ctx.ExecutionStateService.HasSelfDestructed(ctx.ContractAddress);
+            if (!alreadyDestructed)
+            {
+                ctx.ExecutionStateService.MarkSelfDestructed(ctx.ContractAddress);
+                ctx.Program.ProgramResult.DeletedContractAccounts.Add(ctx.ContractAddress);
+                if (_refund > 0)
+                    ctx.Program.AddRefund(_refund);
+            }
         }
     }
 }

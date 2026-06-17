@@ -5,7 +5,7 @@
     <AssemblyTitle>Nethereum.EVM.Core</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>11</LangVersion>
     <DefineConstants>EVM_SYNC</DefineConstants>
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>

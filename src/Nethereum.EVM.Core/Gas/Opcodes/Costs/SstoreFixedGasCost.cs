@@ -13,10 +13,12 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
     public sealed class SstoreFixedGasCost : IOpcodeGasCostAsync
     {
         private readonly long _sloadGas;
+        private readonly bool _enforceSentry;
 
-        public SstoreFixedGasCost(long sloadGas)
+        public SstoreFixedGasCost(long sloadGas, bool enforceSentry = false)
         {
             _sloadGas = sloadGas;
+            _enforceSentry = enforceSentry;
         }
 
 #if EVM_SYNC
@@ -25,6 +27,12 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
         public async Task<long> GetGasCostAsync(Program program)
 #endif
         {
+            // EIP-2200 (Istanbul) reentrancy sentry: SSTORE fails OOG when
+            // gas remaining <= CALL_STIPEND (2300). Geth core/vm/gas_table.go
+            // gasSStoreEIP2200. Petersburg and earlier do not have the sentry.
+            if (_enforceSentry && program.GasRemaining <= GasConstants.CALL_STIPEND)
+                return GasConstants.OVERFLOW_GAS_COST;
+
             var key = program.StackPeekAtU256(0);
             var newValue = program.StackPeekAt(1).PadTo32Bytes();
 

@@ -79,43 +79,7 @@ namespace Nethereum.EVM.Execution
             if (ByteUtil.AreEqual(newVal, currentVal))
                 return;
 
-            var clearsSchedule = program.ProgramContext.SstoreClearsSchedule;
-            var setRefund = GasConstants.SSTORE_SET - GasConstants.SSTORE_NOOP;
-            var resetRefund = GasConstants.SSTORE_RESET - GasConstants.SSTORE_NOOP;
-
-            if (ByteUtil.AreEqual(currentVal, origVal))
-            {
-                if (!ByteUtil.IsZero(origVal) && ByteUtil.IsZero(newVal))
-                {
-                    program.AddRefund(clearsSchedule);
-                }
-            }
-            else
-            {
-                if (!ByteUtil.IsZero(origVal))
-                {
-                    if (ByteUtil.IsZero(currentVal))
-                    {
-                        program.AddRefund(-clearsSchedule);
-                    }
-                    else if (ByteUtil.IsZero(newVal))
-                    {
-                        program.AddRefund(clearsSchedule);
-                    }
-                }
-
-                if (ByteUtil.AreEqual(newVal, origVal))
-                {
-                    if (ByteUtil.IsZero(origVal))
-                    {
-                        program.AddRefund(setRefund);
-                    }
-                    else
-                    {
-                        program.AddRefund(resetRefund);
-                    }
-                }
-            }
+            program.ProgramContext.SstoreRefundRule.Apply(program, currentVal, newVal, origVal);
         }
 
         public void MLoad(Program program)

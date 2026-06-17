@@ -11,6 +11,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.ReceiverAddress;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.ReceiverAddress;
             if (tx is Transaction1559 tx1559)
                 return tx1559.ReceiverAddress;
             if (tx is Transaction2930 tx2930)
@@ -26,6 +28,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.Data?.HexToByteArray();
+            if (tx is Transaction4844 tx4844)
+                return tx4844.Data?.HexToByteArray();
             if (tx is Transaction1559 tx1559)
                 return tx1559.Data?.HexToByteArray();
             if (tx is Transaction2930 tx2930)
@@ -41,6 +45,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.Amount ?? EvmUInt256.Zero;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.Amount ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.Amount ?? EvmUInt256.Zero;
             if (tx is Transaction2930 tx2930)
@@ -56,6 +62,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.GasLimit ?? 21000;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.GasLimit ?? 21000;
             if (tx is Transaction1559 tx1559)
                 return tx1559.GasLimit ?? 21000;
             if (tx is Transaction2930 tx2930)
@@ -71,6 +79,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.Nonce ?? EvmUInt256.Zero;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.Nonce ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.Nonce ?? EvmUInt256.Zero;
             if (tx is Transaction2930 tx2930)
@@ -86,6 +96,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.MaxFeePerGas ?? EvmUInt256.Zero;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.MaxFeePerGas ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.MaxFeePerGas ?? EvmUInt256.Zero;
             if (tx is Transaction2930 tx2930)
@@ -101,6 +113,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
             if (tx is Transaction1559 tx1559)
                 return tx1559.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
             return EvmUInt256.Zero;
@@ -110,6 +124,8 @@ namespace Nethereum.Model
         {
             if (tx is Transaction7702 tx7702)
                 return tx7702.ChainId;
+            if (tx is Transaction4844 tx4844)
+                return tx4844.ChainId;
             if (tx is Transaction1559 tx1559)
                 return tx1559.ChainId;
             if (tx is Transaction2930 tx2930)

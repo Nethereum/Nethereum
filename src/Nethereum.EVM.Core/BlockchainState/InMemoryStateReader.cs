@@ -101,6 +101,8 @@ namespace Nethereum.EVM.BlockchainState
             if (account == null) { MissingAccount(address, "Nonce"); return EvmUInt256.Zero; }
             return account.Nonce;
         }
+        public bool AccountExists(string address) => GetAccount(address) != null;
+        public byte[] GetBlockHash(long blockNumber) => null;
 #else
         public Task<EvmUInt256> GetBalanceAsync(byte[] address) => GetBalanceAsync(address.ToHex(true));
         public Task<EvmUInt256> GetBalanceAsync(string address)
@@ -132,6 +134,8 @@ namespace Nethereum.EVM.BlockchainState
             if (account == null) { MissingAccount(address, "Nonce"); return Task.FromResult(EvmUInt256.Zero); }
             return Task.FromResult(account.Nonce);
         }
+        public Task<bool> AccountExistsAsync(string address) => Task.FromResult(GetAccount(address) != null);
+        public Task<byte[]> GetBlockHashAsync(long blockNumber) => Task.FromResult<byte[]>(null);
 #endif
     }
 }

@@ -52,6 +52,29 @@ namespace Nethereum.EVM.Execution
                 ctx.EffectiveGasPrice = block.BaseFee + priority;
             }
 
+            // EIP-4844 blob tx (type 3) — inherits the EIP-1559 fee model plus
+            // the blob-specific MaxFeePerBlobGas + BlobVersionedHashes fields.
+            // Geth core/types/transaction_blob.go: BlobTx uses GasTipCap/GasFeeCap
+            // identically to EIP-1559; the only fee difference is the additional
+            // blob-base-fee paid out-of-band by the type-3 path.
+            if (signedTx is Transaction4844 tx4844)
+            {
+                ctx.IsEip1559 = true;
+                ctx.IsType3Transaction = true;
+                ctx.MaxFeePerGas = tx4844.MaxFeePerGas ?? EvmUInt256.Zero;
+                ctx.MaxPriorityFeePerGas = tx4844.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
+                ctx.MaxFeePerBlobGas = tx4844.MaxFeePerBlobGas ?? EvmUInt256.Zero;
+                if (tx4844.BlobVersionedHashes != null)
+                {
+                    ctx.BlobVersionedHashes = new List<string>(tx4844.BlobVersionedHashes.Count);
+                    foreach (var h in tx4844.BlobVersionedHashes)
+                        ctx.BlobVersionedHashes.Add(h.ToHex(true));
+                }
+                var priority = ctx.MaxPriorityFeePerGas < (ctx.MaxFeePerGas - block.BaseFee)
+                    ? ctx.MaxPriorityFeePerGas : (ctx.MaxFeePerGas - block.BaseFee);
+                ctx.EffectiveGasPrice = block.BaseFee + priority;
+            }
+
             // EIP-7702: carry through the authorisation list for in-guest processing
             // (canonical signature validation must be done by the witness generator;
             // the zkVM executor reads pre-recovered authorities from
@@ -67,6 +90,7 @@ namespace Nethereum.EVM.Execution
             if (signedTx is Transaction1559 t1559al) rawAL = t1559al.AccessList;
             else if (signedTx is Transaction2930 t2930) rawAL = t2930.AccessList;
             else if (signedTx is Transaction7702 t7702) rawAL = t7702.AccessList;
+            else if (signedTx is Transaction4844 t4844al) rawAL = t4844al.AccessList;
 
             if (rawAL != null)
             {

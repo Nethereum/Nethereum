@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Nethereum.EVM.Execution.Precompiles.CryptoBackends;
+using Nethereum.EVM.Execution.Precompiles.GasCalculators;
 using Nethereum.EVM.Execution.Precompiles.Handlers;
+using Nethereum.EVM.Hardforks;
 
 namespace Nethereum.EVM.Execution.Precompiles
 {
@@ -59,7 +61,7 @@ namespace Nethereum.EVM.Execution.Precompiles
             if (ripemd160 == null) throw new ArgumentNullException(nameof(ripemd160));
             if (modExp == null) throw new ArgumentNullException(nameof(modExp));
             if (bn128 == null) throw new ArgumentNullException(nameof(bn128));
-            if (blake2f == null) throw new ArgumentNullException(nameof(blake2f));
+            // blake2f may be null at pre-Istanbul forks — EIP-152 is Istanbul.
 
             yield return new EcRecoverPrecompile(ecRecover);
             yield return new Sha256Precompile(sha256);
@@ -69,7 +71,8 @@ namespace Nethereum.EVM.Execution.Precompiles
             yield return new Bn128AddPrecompile(bn128);
             yield return new Bn128MulPrecompile(bn128);
             yield return new Bn128PairingPrecompile(bn128);
-            yield return new Blake2fPrecompile(blake2f);
+            if (blake2f != null)
+                yield return new Blake2fPrecompile(blake2f);
         }
 
         /// <summary>
@@ -81,6 +84,38 @@ namespace Nethereum.EVM.Execution.Precompiles
         /// on top via <c>.WithKzgBackend(IKzgOperations)</c> from
         /// <c>Nethereum.EVM.Precompiles.Kzg</c>.
         /// </summary>
+        /// <summary>
+        /// Builds a <see cref="PrecompileRegistry"/> directly from a
+        /// declarative <see cref="PrecompileSpec"/> array (carried on
+        /// <see cref="HardforkSpec.Precompiles"/>) by resolving each
+        /// entry to a concrete handler + gas calculator via the
+        /// supplied <see cref="IPrecompileExecutorFactory"/>.
+        ///
+        /// <para>This is the spec-driven equivalent of the legacy
+        /// <see cref="WithGas"/> + <c>MainnetHardforkRegistry</c> hand
+        /// wiring. The spec is the single source of truth — the
+        /// resulting registry can never drift from
+        /// <c>spec.Precompiles</c> because both come from the same
+        /// array.</para>
+        /// </summary>
+        public static PrecompileRegistry FromSpec(PrecompileSpec[] precompiles, IPrecompileExecutorFactory factory)
+        {
+            if (precompiles == null) throw new ArgumentNullException(nameof(precompiles));
+            if (factory == null) throw new ArgumentNullException(nameof(factory));
+
+            var handlers = new List<IPrecompileHandler>(precompiles.Length);
+            var entries = new PrecompileGasCalculatorEntry[precompiles.Length];
+
+            for (int i = 0; i < precompiles.Length; i++)
+            {
+                var p = precompiles[i];
+                handlers.Add(factory.GetHandler(p));
+                entries[i] = new PrecompileGasCalculatorEntry(p.Address, factory.GetGasCalculator(p));
+            }
+
+            return new PrecompileRegistry(new PrecompileGasCalculators(entries), handlers);
+        }
+
         public static PrecompileRegistry WithGas(
             PrecompileGasCalculators gasCalculators,
             IEcRecoverBackend ecRecover,
@@ -88,7 +123,7 @@ namespace Nethereum.EVM.Execution.Precompiles
             IRipemd160Backend ripemd160,
             IModExpBackend modExp,
             IBn128Backend bn128,
-            IBlake2fBackend blake2f,
+            IBlake2fBackend blake2f = null,
             bool addKzgPlaceholder = false,
             bool addBlsPlaceholders = false)
         {

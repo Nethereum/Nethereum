@@ -39,12 +39,25 @@ namespace Nethereum.EVM
         public const ulong ShanghaiTimestamp = 1_681_338_455;
         public const ulong CancunTimestamp   = 1_710_338_135;
         public const ulong PragueTimestamp   = 1_746_612_311;
-        // Osaka mainnet activation — set when the authoritative timestamp is known.
-        // Nullable so an unset value can never silently resolve to Osaka.
-        public static readonly ulong? OsakaTimestamp = null;
+        // Osaka (Fusaka network upgrade) mainnet activation:
+        // block 23,935,694, timestamp 1,764,798,563 (2025-12-03 21:49:23 UTC).
+        // Verified against the Erigon canonical block on this node and the
+        // public ethereum.org/ethereum-forks/ activation table. "Fusaka" is
+        // the network-upgrade name (Fulu CL + Osaka EL); our HardforkName
+        // for the execution-layer fork is Osaka.
+        public static readonly ulong? OsakaTimestamp = 1_764_798_563UL;
+
+        // First Osaka BPO (Blob Parameter Only) fork per EIP-7892. Raises
+        // BLOB_BASE_FEE_UPDATE_FRACTION from 8,346,193 to 11,684,671.
+        // Activation: block 24,179,383, timestamp 1,767,747,671
+        // (2026-01-07 01:01:11 UTC). Located by binary search on the
+        // Erigon canonical node — first block where the Osaka update
+        // fraction stopped matching canonical baseFeePerBlobGas.
+        public static readonly ulong? OsakaBpo1Timestamp = 1_767_747_671UL;
 
         public HardforkName ResolveAt(long blockNumber, ulong timestamp)
         {
+            if (OsakaBpo1Timestamp is ulong bpo1Ts && timestamp >= bpo1Ts) return HardforkName.OsakaBpo1;
             if (OsakaTimestamp is ulong osakaTs && timestamp >= osakaTs) return HardforkName.Osaka;
             if (timestamp >= PragueTimestamp)   return HardforkName.Prague;
             if (timestamp >= CancunTimestamp)   return HardforkName.Cancun;

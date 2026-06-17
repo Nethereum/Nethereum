@@ -52,6 +52,20 @@ namespace Nethereum.EVM
 
         // Per-fork refund constants (set from HardforkConfig by EVMSimulator)
         public long SstoreClearsSchedule { get; set; } = 4800;
+        // EIP-1283/2200/2929 net-gas refund values, per fork:
+        // Pre-Constantinople and Petersburg: 0 (no net-gas refund)
+        // Constantinople: 19800/4800; Istanbul: 19200/4200; Berlin+: 19900/2800.
+        public long SstoreSetRefund { get; set; } = 19900;
+        public long SstoreResetRefund { get; set; } = 2800;
+        public Execution.Storage.ISstoreRefundRule SstoreRefundRule { get; set; }
+            = Execution.Storage.Eip1283SstoreRefundRule.Instance;
+
+        // Per-fork BLOCKHASH resolution rule (Legacy for Frontier→Cancun via
+        // StateReader.GetBlockHash, EIP-2935 for Prague+ via history contract).
+        // Set from HardforkConfig by TransactionExecutor + propagated through
+        // sub-frames by EVMSimulator.SetupCallFrame / SetupCreateFrame.
+        public Execution.Opcodes.Executors.IBlockHashRule BlockHashRule { get; set; }
+            = Execution.Opcodes.Executors.Rules.LegacyBlockHashRule.Instance;
 
         public ExecutionStateService ExecutionStateService { get; protected set; }
         public AccessListTracker AccessListTracker { get; protected set; }

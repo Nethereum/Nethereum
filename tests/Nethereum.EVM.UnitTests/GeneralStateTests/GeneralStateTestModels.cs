@@ -20,6 +20,30 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         [JsonProperty("post")]
         public Dictionary<string, List<PostResult>> Post { get; set; }
+
+        [JsonProperty("config")]
+        public TestConfig Config { get; set; }
+    }
+
+    public class TestConfig
+    {
+        [JsonProperty("blobSchedule")]
+        public Dictionary<string, BlobScheduleEntry> BlobSchedule { get; set; }
+
+        [JsonProperty("chainid")]
+        public string ChainId { get; set; }
+    }
+
+    public class BlobScheduleEntry
+    {
+        [JsonProperty("target")]
+        public string Target { get; set; }
+
+        [JsonProperty("max")]
+        public string Max { get; set; }
+
+        [JsonProperty("baseFeeUpdateFraction")]
+        public string BaseFeeUpdateFraction { get; set; }
     }
 
     public class TestInfo

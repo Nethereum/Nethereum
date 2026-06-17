@@ -201,12 +201,12 @@ namespace Nethereum.EVM.Execution.Opcodes
         // ---------------------------------------------------------------
 
         public static readonly OpcodeHandlerTable Frontier = BuildFrontier().Freeze();
-        public static readonly OpcodeHandlerTable Homestead = Frontier;
+        public static readonly OpcodeHandlerTable Homestead = BuildHomestead().Freeze();
         public static readonly OpcodeHandlerTable TangerineWhistle = BuildTangerineWhistle().Freeze();
         public static readonly OpcodeHandlerTable SpuriousDragon = BuildSpuriousDragon().Freeze();
         public static readonly OpcodeHandlerTable Byzantium = BuildByzantium().Freeze();
         public static readonly OpcodeHandlerTable Constantinople = BuildConstantinople().Freeze();
-        public static readonly OpcodeHandlerTable Petersburg = Constantinople;
+        public static readonly OpcodeHandlerTable Petersburg = BuildPetersburg().Freeze();
         public static readonly OpcodeHandlerTable Istanbul = BuildIstanbul().Freeze();
         public static readonly OpcodeHandlerTable Berlin = BuildBerlin().Freeze();
         public static readonly OpcodeHandlerTable London = BuildLondon().Freeze();
@@ -262,9 +262,22 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
+        private static OpcodeHandlerTable BuildHomestead()
+        {
+            // Homestead introduces DELEGATECALL (EIP-7). Pre-EIP-150 fixed
+            // access cost is 40 (same as the original CALL/CALLCODE base);
+            // EIP-150 bumps it to 700 in BuildTangerineWhistle below.
+            // Everything else inherits from Frontier — no EVM behavioural
+            // changes besides the new opcode and the EIP-2 transaction-level
+            // tweaks which are handled at the transaction layer.
+            var t = BuildFrontier();
+            t.RegisterGas(Instruction.DELEGATECALL, new DelegateCallGasCost(fixedAccessCost: 40));
+            return t;
+        }
+
         private static OpcodeHandlerTable BuildTangerineWhistle()
         {
-            var t = BuildFrontier();
+            var t = BuildHomestead();
             t.RegisterGas(Instruction.EXP, new ExpGasCost(byteCost: 10));
             t.RegisterGas(Instruction.BALANCE, new FixedGasCost(400));
             t.RegisterGas(Instruction.EXTCODESIZE, new FixedGasCost(700));
@@ -274,7 +287,11 @@ namespace Nethereum.EVM.Execution.Opcodes
             t.RegisterGasAsync(Instruction.CALL, new CallGasCost(fixedAccessCost: 700, newAccountRequiresValue: false));
             t.RegisterGas(Instruction.CALLCODE, new CallCodeGasCost(fixedAccessCost: 700));
             t.RegisterGas(Instruction.DELEGATECALL, new DelegateCallGasCost(fixedAccessCost: 700));
-            t.RegisterGasAsync(Instruction.SELFDESTRUCT, new SelfDestructGasCost(hasColdWarmAccess: false));
+            // EIP-150 SELFDESTRUCT: G_NEWACCOUNT charged whenever recipient
+            // doesn't exist (no self-balance check). EIP-161 (Spurious Dragon)
+            // tightens this to "self balance > 0 AND recipient empty" —
+            // handled by the BuildSpuriousDragon override below.
+            t.RegisterGasAsync(Instruction.SELFDESTRUCT, new SelfDestructGasCost(hasColdWarmAccess: false, newAccountRequiresValue: false));
             return t;
         }
 
@@ -283,6 +300,9 @@ namespace Nethereum.EVM.Execution.Opcodes
             var t = BuildTangerineWhistle();
             t.RegisterGas(Instruction.EXP, new ExpGasCost(byteCost: 50));
             t.RegisterGasAsync(Instruction.CALL, new CallGasCost(fixedAccessCost: 700, newAccountRequiresValue: true));
+            // EIP-161 tightens the SELFDESTRUCT new-account charge to require
+            // self balance > 0 — re-register with newAccountRequiresValue:true.
+            t.RegisterGasAsync(Instruction.SELFDESTRUCT, new SelfDestructGasCost(hasColdWarmAccess: false, newAccountRequiresValue: true));
             return t;
         }
 
@@ -310,6 +330,10 @@ namespace Nethereum.EVM.Execution.Opcodes
             t.RegisterGas(Instruction.SAR, FixedGasCost.G3);
             t.RegisterGas(Instruction.CREATE2, new Create2GasCost(hasInitCodeWordGas: false));
             t.RegisterGas(Instruction.EXTCODEHASH, new FixedGasCost(400));
+            // EIP-1283 (Constantinople): SSTORE net gas metering. sloadGas=200
+            // because SLOAD doesn't get bumped to 800 until Istanbul (EIP-1884).
+            // Petersburg reverts this — see BuildPetersburg below.
+            t.RegisterGasAsync(Instruction.SSTORE, new SstoreFixedGasCost(sloadGas: 200));
             // New executor capabilities
             var arith = new ArithmeticBitwiseExecutor(_pe.Arithmetic, _pe.Bitwise, hasShifts: true, hasClz: false);
             RegisterArithmeticBitwise(t, arith);
@@ -322,11 +346,24 @@ namespace Nethereum.EVM.Execution.Opcodes
             return t;
         }
 
+        /// <summary>
+        /// Petersburg (a.k.a. ConstantinopleFix, EIP-1716): Constantinople with
+        /// EIP-1283 reverted. The only behavioural difference is the SSTORE
+        /// cost rule going back to the pre-EIP-1283 flat 20000/5000 model.
+        /// </summary>
+        private static OpcodeHandlerTable BuildPetersburg()
+        {
+            var t = BuildConstantinople();
+            t.RegisterGasAsync(Instruction.SSTORE, new SstoreFrontierGasCost());
+            return t;
+        }
+
         private static OpcodeHandlerTable BuildIstanbul()
         {
             var t = BuildConstantinople();
             t.RegisterGas(Instruction.SLOAD, new FixedGasCost(800));
-            t.RegisterGasAsync(Instruction.SSTORE, new SstoreFixedGasCost(sloadGas: 800));
+            // EIP-2200 sentry: SSTORE OOG when gas <= CALL_STIPEND (2300).
+            t.RegisterGasAsync(Instruction.SSTORE, new SstoreFixedGasCost(sloadGas: 800, enforceSentry: true));
             t.RegisterGas(Instruction.BALANCE, new FixedGasCost(700));
             t.RegisterGas(Instruction.EXTCODEHASH, new FixedGasCost(700));
             t.RegisterGas(Instruction.CHAINID, FixedGasCost.G2);

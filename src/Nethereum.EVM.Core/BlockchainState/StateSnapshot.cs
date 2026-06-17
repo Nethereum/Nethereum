@@ -10,13 +10,15 @@ namespace Nethereum.EVM.BlockchainState
         public int SnapshotId { get; }
         public Dictionary<string, AccountStateSnapshot> AccountSnapshots { get; }
         public HashSet<string> WarmAddresses { get; }
+        public HashSet<string> SelfDestructedAddresses { get; }
         public Dictionary<string, Dictionary<EvmUInt256, byte[]>> TransientStorage { get; }
 
-        public StateSnapshot(int snapshotId, Dictionary<string, AccountExecutionState> accountsState, HashSet<string> warmAddresses, Dictionary<string, Dictionary<EvmUInt256, byte[]>> transientStorage)
+        public StateSnapshot(int snapshotId, Dictionary<string, AccountExecutionState> accountsState, HashSet<string> warmAddresses, HashSet<string> selfDestructedAddresses, Dictionary<string, Dictionary<EvmUInt256, byte[]>> transientStorage)
         {
             SnapshotId = snapshotId;
             AccountSnapshots = new Dictionary<string, AccountStateSnapshot>();
             WarmAddresses = new HashSet<string>(warmAddresses);
+            SelfDestructedAddresses = new HashSet<string>(selfDestructedAddresses, StringComparer.OrdinalIgnoreCase);
             TransientStorage = new Dictionary<string, Dictionary<EvmUInt256, byte[]>>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var kvp in accountsState)
@@ -56,7 +58,8 @@ namespace Nethereum.EVM.BlockchainState
                 Nonce = accountState.Nonce,
                 Code = (byte[])accountState.Code?.Clone(),
                 WarmStorageKeys = new HashSet<EvmUInt256>(accountState.WarmStorageKeys),
-                IsNewContract = accountState.IsNewContract
+                IsNewContract = accountState.IsNewContract,
+                IsTouched = accountState.IsTouched
             };
         }
     }
