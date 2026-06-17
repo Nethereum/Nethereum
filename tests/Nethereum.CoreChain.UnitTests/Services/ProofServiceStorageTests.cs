@@ -211,6 +211,7 @@ namespace Nethereum.CoreChain.UnitTests.Services
             public Task<bool> AccountExistsAsync(string address) => _inner.AccountExistsAsync(address);
             public Task DeleteAccountAsync(string address) => _inner.DeleteAccountAsync(address);
             public Task<Dictionary<string, Account>> GetAllAccountsAsync() => _inner.GetAllAccountsAsync();
+            public System.Collections.Generic.IAsyncEnumerable<KeyValuePair<string, Account>> StreamAccountsAsync() => _inner.StreamAccountsAsync();
             public Task<byte[]> GetStorageAsync(string address, BigInteger slot) => _inner.GetStorageAsync(address, slot);
             public Task SaveStorageAsync(string address, BigInteger slot, byte[] value) => _inner.SaveStorageAsync(address, slot, value);
             public Task ClearStorageAsync(string address) => _inner.ClearStorageAsync(address);
@@ -221,6 +222,7 @@ namespace Nethereum.CoreChain.UnitTests.Services
             public Task RevertSnapshotAsync(IStateSnapshot snapshot) => _inner.RevertSnapshotAsync(snapshot);
             public Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync() => _inner.GetDirtyAccountAddressesAsync();
             public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address) => _inner.GetDirtyStorageSlotsAsync(address);
+            public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync() => _inner.GetStorageClearedAddressesAsync();
             public Task ClearDirtyTrackingAsync() => _inner.ClearDirtyTrackingAsync();
 
             public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)

@@ -21,6 +21,21 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
+                // Delete prior entries for this block (re-execution after
+                // kill-mid-block or auto-rewind may produce a different
+                // touched-set; orphan entries would corrupt future rewinds).
+                if (_blockIndex.TryGetValue(diff.BlockNumber, out var oldEntries))
+                {
+                    foreach (var entry in oldEntries)
+                    {
+                        if (entry.Type == DiffType.Account)
+                            _accountDiffs.Remove((entry.Address, diff.BlockNumber));
+                        else
+                            _storageDiffs.Remove((entry.Address, entry.Slot, diff.BlockNumber));
+                    }
+                    _blockIndex.Remove(diff.BlockNumber);
+                }
+
                 var indexEntries = new List<BlockIndexEntry>();
 
                 foreach (var entry in diff.AccountDiffs)
@@ -82,6 +97,51 @@ namespace Nethereum.CoreChain.Storage.InMemory
             }
 
             return Task.FromResult((false, (byte[])null));
+        }
+
+        public Task<BlockStateDiff> GetBlockDiffAsync(BigInteger blockNumber)
+        {
+            lock (_lock)
+            {
+                if (!_blockIndex.TryGetValue(blockNumber, out var entries))
+                    return Task.FromResult<BlockStateDiff>(null);
+
+                var diff = new BlockStateDiff { BlockNumber = blockNumber };
+                foreach (var entry in entries)
+                {
+                    if (entry.Type == DiffType.Account)
+                    {
+                        _accountDiffs.TryGetValue((entry.Address, blockNumber), out var pre);
+                        diff.AccountDiffs.Add(new AccountDiffEntry { Address = entry.Address, PreValue = pre });
+                    }
+                    else
+                    {
+                        _storageDiffs.TryGetValue((entry.Address, entry.Slot, blockNumber), out var pre);
+                        diff.StorageDiffs.Add(new StorageDiffEntry { Address = entry.Address, Slot = entry.Slot, PreValue = pre });
+                    }
+                }
+                return Task.FromResult(diff);
+            }
+        }
+
+        public Task DeleteBlockDiffAsync(BigInteger blockNumber)
+        {
+            lock (_lock)
+            {
+                if (_blockIndex.TryGetValue(blockNumber, out var entries))
+                {
+                    foreach (var entry in entries)
+                    {
+                        if (entry.Type == DiffType.Account)
+                            _accountDiffs.Remove((entry.Address, blockNumber));
+                        else
+                            _storageDiffs.Remove((entry.Address, entry.Slot, blockNumber));
+                    }
+                    _blockIndex.Remove(blockNumber);
+                    UpdateBounds();
+                }
+            }
+            return Task.CompletedTask;
         }
 
         public Task DeleteDiffsAboveBlockAsync(BigInteger blockNumber)

@@ -42,6 +42,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmIncreaseTime_AddsSecondsToTimeOffset()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var request = new RpcRequestMessage(1, "evm_increaseTime", 3600);
             var response = await dispatcher.DispatchAsync(request);
@@ -55,6 +56,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmIncreaseTime_AffectsNextBlockTimestamp()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var block1 = await node.GetLatestBlockAsync();
             var block1Time = block1.Timestamp;
@@ -75,6 +77,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmIncreaseTime_AccumulatesMultipleCalls()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             await dispatcher.DispatchAsync(new RpcRequestMessage(1, "evm_increaseTime", 1000));
             await dispatcher.DispatchAsync(new RpcRequestMessage(2, "evm_increaseTime", 2000));
@@ -87,6 +90,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmSetNextBlockTimestamp_SetsExactTimestamp()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             long targetTimestamp = 1700000000;
             var request = new RpcRequestMessage(1, "evm_setNextBlockTimestamp", targetTimestamp);
@@ -100,6 +104,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmSetNextBlockTimestamp_AffectsNextBlock()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             long targetTimestamp = 1700000000;
             var request = new RpcRequestMessage(1, "evm_setNextBlockTimestamp", targetTimestamp);
@@ -115,6 +120,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmSetNextBlockTimestamp_ClearedAfterMining()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             long targetTimestamp = 1700000000;
             var request = new RpcRequestMessage(1, "evm_setNextBlockTimestamp", targetTimestamp);
@@ -129,6 +135,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task EvmSetNextBlockTimestamp_OnlyAffectsNextBlock()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             long targetTimestamp = 1700000000;
             await dispatcher.DispatchAsync(new RpcRequestMessage(1, "evm_setNextBlockTimestamp", targetTimestamp));

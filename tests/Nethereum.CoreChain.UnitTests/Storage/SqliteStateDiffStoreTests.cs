@@ -95,8 +95,12 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var addr1 = "0x1111111111111111111111111111111111111111";
             var addr2 = "0x2222222222222222222222222222222222222222";
 
-            await _store.SaveBlockDiffAsync(MakeDiff(5, (addr1, MakeAccount(100))));
-            await _store.SaveBlockDiffAsync(MakeDiff(5, (addr2, MakeAccount(200))));
+            // SaveBlockDiffAsync is atomic-replace per block (re-execution after kill-mid-block
+            // must overwrite any partial prior touched-set), so both addresses for the same
+            // block must be saved in a single diff.
+            await _store.SaveBlockDiffAsync(MakeDiff(5,
+                (addr1, MakeAccount(100)),
+                (addr2, MakeAccount(200))));
 
             var (found1, pre1) = await _store.GetFirstAccountPreValueAfterBlockAsync(addr1, 4);
             var (found2, pre2) = await _store.GetFirstAccountPreValueAfterBlockAsync(addr2, 4);

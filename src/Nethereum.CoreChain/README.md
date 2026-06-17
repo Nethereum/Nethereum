@@ -217,10 +217,6 @@ var cfg  = DefaultMainnetHardforkRegistry.Instance.Get(fork);
 - `PatriciaBlockRootCalculator` — transactions-root / receipts-root /
   withdrawals-root computation over RLP-encoded items.
 - `PatriciaMerkleTreeBuilder` — shared trie-building helper.
-- `StatelessStateRootCalculator` — witness-only variant that avoids
-  touching the full state store; useful inside stateless verifiers.
-- `WitnessProofVerifier` — validates account and storage Merkle
-  proofs against a supplied pre-state root.
 - `BinaryProofService` — generates and verifies binary trie Merkle
   proofs for accounts and storage slots (`IProofService`).
   Returns `BinaryAccountProofResult` / `BinaryStorageProofResult`.

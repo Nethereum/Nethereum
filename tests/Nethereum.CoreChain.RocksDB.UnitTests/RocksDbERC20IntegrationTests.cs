@@ -37,6 +37,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
         public Task DisposeAsync()
         {
+            _node?.Dispose();
             _fixture.Dispose();
             return Task.CompletedTask;
         }
@@ -166,7 +167,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var newFilterStore = new Stores.RocksDbFilterStore(newManager);
             var newTrieNodeStore = new Stores.RocksDbTrieNodeStore(newManager);
 
-            var newNode = new DevChainNode(
+            using var newNode = new DevChainNode(
                 new DevChainConfig { ChainId = ChainId, AutoMine = true },
                 newBlockStore,
                 newTransactionStore,

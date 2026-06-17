@@ -89,6 +89,16 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
                 try
                 {
+                    // Delete prior entries for this block first — re-execution
+                    // after kill-mid-block may produce a different touched-set;
+                    // orphan rows would corrupt future rewinds.
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_accounts WHERE block_number = @block",
+                        ("@block", (long)diff.BlockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_storage WHERE block_number = @block",
+                        ("@block", (long)diff.BlockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_block_index WHERE block_number = @block",
+                        ("@block", (long)diff.BlockNumber));
+
                     foreach (var entry in diff.AccountDiffs)
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
@@ -192,6 +202,82 @@ namespace Nethereum.DevChain.Storage.Sqlite
             }
 
             return Task.FromResult((false, (byte[])null));
+        }
+
+        public Task<BlockStateDiff> GetBlockDiffAsync(BigInteger blockNumber)
+        {
+            lock (_lock)
+            {
+                BlockStateDiff diff = null;
+
+                using (var cmd = _manager.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT address, account_data FROM state_diff_accounts WHERE block_number = @block";
+                    cmd.Parameters.AddWithValue("@block", (long)blockNumber);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        diff ??= new BlockStateDiff { BlockNumber = blockNumber };
+                        var address = reader.GetString(0);
+                        var data = reader.IsDBNull(1) ? null : (byte[])reader["account_data"];
+                        diff.AccountDiffs.Add(new AccountDiffEntry
+                        {
+                            Address = address,
+                            PreValue = data != null ? _accountLayout.DecodeAccount(data) : null
+                        });
+                    }
+                }
+
+                using (var cmd = _manager.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT address, slot, pre_value FROM state_diff_storage WHERE block_number = @block";
+                    cmd.Parameters.AddWithValue("@block", (long)blockNumber);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        diff ??= new BlockStateDiff { BlockNumber = blockNumber };
+                        var address = reader.GetString(0);
+                        var slotRaw = (byte[])reader["slot"];
+                        var preVal = reader.IsDBNull(2) ? null : (byte[])reader["pre_value"];
+                        diff.StorageDiffs.Add(new StorageDiffEntry
+                        {
+                            Address = address,
+                            Slot = new BigInteger(slotRaw, isUnsigned: true, isBigEndian: true),
+                            PreValue = preVal
+                        });
+                    }
+                }
+
+                return Task.FromResult(diff);
+            }
+        }
+
+        public Task DeleteBlockDiffAsync(BigInteger blockNumber)
+        {
+            // Atomicity from a SAVEPOINT, same as DeleteDiffsAboveBlockAsync.
+            lock (_lock)
+            {
+                var sp = NextSavepoint();
+                ExecuteSql($"SAVEPOINT {sp}");
+                try
+                {
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_accounts WHERE block_number = @block",
+                        ("@block", (long)blockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_storage WHERE block_number = @block",
+                        ("@block", (long)blockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_block_index WHERE block_number = @block",
+                        ("@block", (long)blockNumber));
+                    UpdateMetaBounds();
+                    ExecuteSql($"RELEASE SAVEPOINT {sp}");
+                }
+                catch
+                {
+                    ExecuteSql($"ROLLBACK TO SAVEPOINT {sp}");
+                    ExecuteSql($"RELEASE SAVEPOINT {sp}");
+                    throw;
+                }
+            }
+            return Task.CompletedTask;
         }
 
         public Task DeleteDiffsAboveBlockAsync(BigInteger blockNumber)

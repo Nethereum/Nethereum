@@ -12,7 +12,10 @@ using Nethereum.Util;
 
 namespace Nethereum.DevChain.Storage.Sqlite
 {
-    public class SqliteStateStore : IStateStore
+    /// <summary>
+    /// SQLite-backed <see cref="IStateStore"/>. DevChain default backend.
+    /// </summary>
+    public partial class SqliteStateStore : IStateStore
     {
         private readonly SqliteStorageManager _manager;
         private readonly IAccountLayoutStrategy _accountLayout;
@@ -143,6 +146,27 @@ namespace Nethereum.DevChain.Storage.Sqlite
             }
 
             return Task.FromResult(result);
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+#pragma warning restore CS1998
+        {
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
+            using var cmd = _manager.Connection.CreateCommand();
+            cmd.CommandText = hasExtCodeHash
+                ? "SELECT address, account_data, code_hash FROM accounts"
+                : "SELECT address, account_data FROM accounts";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var addr = reader.GetString(0);
+                var data = (byte[])reader[1];
+                var account = _accountLayout.DecodeAccount(data);
+                if (account == null) continue;
+                if (hasExtCodeHash) account.CodeHash = reader[2] as byte[];
+                yield return new System.Collections.Generic.KeyValuePair<string, Account>(addr, account);
+            }
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
@@ -341,6 +365,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.ToList());
             }
         }
+
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+            => Task.FromResult<IReadOnlyCollection<string>>(System.Array.Empty<string>());
 
         public Task ClearDirtyTrackingAsync()
         {

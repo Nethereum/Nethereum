@@ -10,6 +10,11 @@ namespace Nethereum.CoreChain.RocksDB
         public const string CF_BLOCK_NUMBERS = "block_numbers";
         public const string CF_TRANSACTIONS = "transactions";
         public const string CF_TX_BY_BLOCK = "tx_by_block";
+        // Block uncles persisted alongside headers + txs so an --re-execute-from
+        // run can fully reconstruct every block reward without re-fetching
+        // from peers. Value layout: RLP list of uncle BlockHeader encodings,
+        // key = block hash.
+        public const string CF_UNCLES = "uncles";
         public const string CF_RECEIPTS = "receipts";
         public const string CF_LOGS = "logs";
         public const string CF_LOG_BY_BLOCK = "log_by_block";
@@ -42,6 +47,7 @@ namespace Nethereum.CoreChain.RocksDB
             CF_BLOCK_NUMBERS,
             CF_TRANSACTIONS,
             CF_TX_BY_BLOCK,
+            CF_UNCLES,
             CF_RECEIPTS,
             CF_LOGS,
             CF_LOG_BY_BLOCK,
@@ -150,9 +156,66 @@ namespace Nethereum.CoreChain.RocksDB
             return _database.NewIterator(cf, readOptions);
         }
 
+        /// <summary>
+        /// Iterate and delete every key in a column family. Used by the
+        /// SyncNode <c>--reset-state</c> path to wipe state + receipts + logs
+        /// while keeping headers + transactions + uncles, so that a
+        /// subsequent <c>--re-execute-from</c> run can rebuild state on a
+        /// fixed EVM from purely-local chain data.
+        /// </summary>
+        public void WipeColumnFamily(string columnFamily)
+        {
+            var cf = GetColumnFamily(columnFamily);
+            using var batch = new WriteBatch();
+            using var it = _database.NewIterator(cf);
+            it.SeekToFirst();
+            int batchSize = 0;
+            const int flushEvery = 50_000;
+            while (it.Valid())
+            {
+                batch.Delete(it.Key(), cf);
+                batchSize++;
+                if (batchSize >= flushEvery)
+                {
+                    _database.Write(batch);
+                    batch.Clear();
+                    batchSize = 0;
+                }
+                it.Next();
+            }
+            if (batchSize > 0) _database.Write(batch);
+        }
+
         public void Flush()
         {
             _database.Flush(new FlushOptions());
+        }
+
+        /// <summary>
+        /// Hard-linked RocksDB checkpoint of the current database at
+        /// <paramref name="outputPath"/>. Powers time-travel / audit-replay:
+        /// the checkpoint is a fully self-contained RocksDB that can be opened
+        /// independently and rewound to any audit checkpoint without touching
+        /// the live database. Uses RocksDB's native
+        /// <c>Checkpoint::CreateCheckpoint</c> (hard links — near-zero disk
+        /// cost initially, diverges as either DB is written). Flushes the live
+        /// database first to make sure the WAL is captured.
+        /// <paramref name="outputPath"/> must NOT exist.
+        /// <para>
+        /// Distinct from <see cref="RocksDbSharp.Snapshot"/> / the MVCC
+        /// read-isolation snapshot used by <c>RocksDbStateSnapshot</c> — that
+        /// is an in-process read view of the same DB. This method creates a
+        /// separate on-disk DB clone.
+        /// </para>
+        /// </summary>
+        public void CreateDatabaseCheckpoint(string outputPath)
+        {
+            if (string.IsNullOrEmpty(outputPath)) throw new ArgumentException("Output path required", nameof(outputPath));
+            if (System.IO.Directory.Exists(outputPath))
+                throw new ArgumentException($"Output path already exists: {outputPath}", nameof(outputPath));
+            _database.Flush(new FlushOptions());
+            using var cp = _database.Checkpoint();
+            cp.Save(outputPath, 0);
         }
 
         public void Compact()

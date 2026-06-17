@@ -44,6 +44,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
 
         public Task DisposeAsync()
         {
+            Node?.Dispose();
             return Task.CompletedTask;
         }
 

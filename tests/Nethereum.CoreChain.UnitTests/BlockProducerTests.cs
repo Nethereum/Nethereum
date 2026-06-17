@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -40,9 +41,21 @@ namespace Nethereum.CoreChain.UnitTests
             var txVerifier = new TransactionVerificationAndRecoveryImp();
             _transactionProcessor = new TransactionProcessor(_stateStore, _blockStore, config, txVerifier);
 
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var stateRootCalculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = new BlockExecutor(
+                _stateStore,
+                _blockStore,
+                new FixedChainActivations(Nethereum.EVM.HardforkName.Prague),
+                chainConfigFactory: _ => config,
+                hardforkConfigFactory: _ => config.GetHardforkConfig(),
+                stateRootCalculator: stateRootCalculator,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
             _blockProducer = new BlockProducer(
+                engine,
                 _blockStore, _transactionStore, _receiptStore, _logStore, _stateStore,
-                _transactionProcessor);
+                trieNodeStore, stateRootCalculator);
         }
 
         private BlockProductionOptions DefaultOptions() => new BlockProductionOptions
@@ -347,50 +360,81 @@ namespace Nethereum.CoreChain.UnitTests
         [Fact]
         public async Task ProduceBlock_NullTransactionsList_Throws()
         {
-            await Assert.ThrowsAsync<NullReferenceException>(() =>
+            await Assert.ThrowsAsync<ArgumentNullException>(() =>
                 _blockProducer.ProduceBlockAsync(null, DefaultOptions()));
+        }
+
+        private BlockExecutor BuildEngine(IncrementalStateRootCalculator calc, ITrieNodeStore trieNodeStore)
+        {
+            var config = new ChainConfig { ChainId = ChainId, BlockGasLimit = 30_000_000, BaseFee = 0 };
+            return new BlockExecutor(
+                _stateStore,
+                _blockStore,
+                new FixedChainActivations(Nethereum.EVM.HardforkName.Prague),
+                chainConfigFactory: _ => config,
+                hardforkConfigFactory: _ => config.GetHardforkConfig(),
+                stateRootCalculator: calc,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
+        }
+
+        [Fact]
+        public void Constructor_NullEngine_Throws()
+        {
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            Assert.Throws<ArgumentNullException>(() =>
+                new BlockProducer(null, _blockStore, _transactionStore, _receiptStore, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullBlockStore_Throws()
         {
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(null, _transactionStore, _receiptStore, _logStore, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, null, _transactionStore, _receiptStore, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullTransactionStore_Throws()
         {
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, null, _receiptStore, _logStore, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, null, _receiptStore, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullReceiptStore_Throws()
         {
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, null, _logStore, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, _transactionStore, null, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullLogStore_Throws()
         {
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, _receiptStore, null, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, _transactionStore, _receiptStore, null, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullStateStore_Throws()
         {
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, _receiptStore, _logStore, null, _transactionProcessor));
-        }
-
-        [Fact]
-        public void Constructor_NullTransactionProcessor_Throws()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, _receiptStore, _logStore, _stateStore, null));
+                new BlockProducer(engine, _blockStore, _transactionStore, _receiptStore, _logStore, null, trieNodeStore, calculator));
         }
     }
 }

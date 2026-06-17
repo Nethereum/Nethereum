@@ -41,31 +41,46 @@ namespace Nethereum.CoreChain.Storage
             var blockNumber = _currentBlockNumber;
             var journal = _currentJournal;
 
-            _currentBlockNumber = null;
-            _currentJournal = null;
-
-            if (blockNumber.HasValue && journal != null)
+            if (!blockNumber.HasValue || journal == null)
             {
-                var diff = journal.ToBlockStateDiff(blockNumber.Value);
-                if (diff.AccountDiffs.Count > 0 || diff.StorageDiffs.Count > 0)
-                {
-                    await _diffStore.SaveBlockDiffAsync(diff).ConfigureAwait(false);
-                }
+                _currentBlockNumber = null;
+                _currentJournal = null;
+                return;
+            }
 
-                if (_options.EnablePruning && _options.MaxHistoryBlocks > 0)
+            var diff = journal.ToBlockStateDiff(blockNumber.Value);
+            if (diff.AccountDiffs.Count > 0 || diff.StorageDiffs.Count > 0)
+            {
+                // Persist BEFORE nulling the in-memory state. If
+                // SaveBlockDiffAsync throws, _currentJournal stays armed so
+                // a retry (or a hosted-error path) can re-flush. Otherwise
+                // a transient I/O error would silently lose the journal
+                // entry for the block.
+                await _diffStore.SaveBlockDiffAsync(diff).ConfigureAwait(false);
+            }
+
+            // Pruning runs as its own write — it's a side effect of the
+            // retention policy, not part of the current block's atomic
+            // unit. Worst-case interruption leaves a few extra old
+            // entries until the next prune cycle.
+            if (_options.EnablePruning && _options.MaxHistoryBlocks > 0)
+            {
+                _blocksSinceLastPrune++;
+                if (_blocksSinceLastPrune >= _options.PruningIntervalBlocks)
                 {
-                    _blocksSinceLastPrune++;
-                    if (_blocksSinceLastPrune >= _options.PruningIntervalBlocks)
+                    _blocksSinceLastPrune = 0;
+                    var pruneBelow = blockNumber.Value - _options.MaxHistoryBlocks;
+                    if (pruneBelow > 0)
                     {
-                        _blocksSinceLastPrune = 0;
-                        var pruneBelow = blockNumber.Value - _options.MaxHistoryBlocks;
-                        if (pruneBelow > 0)
-                        {
-                            await _diffStore.DeleteDiffsBelowBlockAsync(pruneBelow).ConfigureAwait(false);
-                        }
+                        await _diffStore.DeleteDiffsBelowBlockAsync(pruneBelow).ConfigureAwait(false);
                     }
                 }
             }
+
+            // Only NOW null — diff is durable. Crash before this leaves
+            // _currentJournal armed; retry re-flushes successfully.
+            _currentBlockNumber = null;
+            _currentJournal = null;
         }
 
         public async Task<Account> GetAccountAtBlockAsync(string address, BigInteger blockNumber)
@@ -201,6 +216,11 @@ namespace Nethereum.CoreChain.Storage
             return _inner.GetAllAccountsAsync();
         }
 
+        public System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+        {
+            return _inner.StreamAccountsAsync();
+        }
+
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
         {
             return _inner.GetStorageAsync(address, slot);
@@ -289,6 +309,11 @@ namespace Nethereum.CoreChain.Storage
         public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
         {
             return _inner.GetDirtyStorageSlotsAsync(address);
+        }
+
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+        {
+            return _inner.GetStorageClearedAddressesAsync();
         }
 
         public Task ClearDirtyTrackingAsync()

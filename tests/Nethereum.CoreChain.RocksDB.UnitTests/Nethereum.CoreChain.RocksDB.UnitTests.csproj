@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
   </ItemGroup>
 
   <ItemGroup>

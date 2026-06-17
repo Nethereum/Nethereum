@@ -176,6 +176,12 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             );
         }
 
+        // Null data means the row genuinely isn't there (KeyNotFound at the
+        // RocksDB layer returned null). That's the "not found" answer the
+        // public API surfaces as null. Throwing means the row IS there but
+        // can't be parsed — actual corruption that callers must distinguish
+        // from "not found" so a downstream consumer doesn't silently treat
+        // a corrupted DB row as "tx isn't in this chain".
         private static ISignedTransaction DeserializeStoredTransaction(byte[] data, IBlockEncodingProvider provider)
         {
             if (data == null || data.Length == 0) return null;
@@ -188,9 +194,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var txBytes = elements[0].RLPData;
                 return provider.DecodeTransaction(txBytes);
             }
-            catch
+            catch (Exception ex) when (!(ex is OutOfMemoryException))
             {
-                return null;
+                throw new InvalidOperationException(
+                    $"Corrupted transaction row ({data.Length} bytes): RLP decode failed. " +
+                    $"This indicates on-disk data corruption, not a missing transaction.", ex);
             }
         }
 
@@ -216,9 +224,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
                 return location;
             }
-            catch
+            catch (Exception ex) when (!(ex is OutOfMemoryException))
             {
-                return null;
+                throw new InvalidOperationException(
+                    $"Corrupted transaction location row ({data.Length} bytes): RLP decode failed.", ex);
             }
         }
 

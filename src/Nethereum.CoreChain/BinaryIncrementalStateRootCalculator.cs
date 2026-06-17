@@ -40,34 +40,29 @@ namespace Nethereum.CoreChain
             _trieStorage = trieStorage;
         }
 
-        public static readonly byte[] ROOT_META_KEY =
-            System.Text.Encoding.UTF8.GetBytes("__binary_trie_last_root__");
-
         public BinaryTrie Trie => _trie;
 
-        public async Task<byte[]> ComputeStateRootAsync()
+        public Task<byte[]> ComputeStateRootAsync() => ComputeStateRootAsync(null);
+
+        public async Task<byte[]> ComputeStateRootAsync(byte[] previousStateRoot)
         {
             if (!_initialized)
             {
-                if (!TryWarmStartFromStorage())
+                if (!TryInitialiseFromPreviousRoot(previousStateRoot))
                 {
                     await InitializeFromFullStateAsync();
                     _initialized = true;
                     _cachedRoot = _trie.ComputeRoot();
 
                     if (_trieStorage != null)
-                    {
                         _trie.SaveToStorage(_trieStorage);
-                        _trieStorage.Put(ROOT_META_KEY, _cachedRoot);
-                    }
 
                     await _stateStore.ClearDirtyTrackingAsync();
                     return _cachedRoot;
                 }
 
-                // Warm-started from stored root — fall through to the
-                // incremental path so any pending dirty accounts get applied.
                 _initialized = true;
+                _cachedRoot = previousStateRoot;
             }
 
             var hasDirty = await UpdateFromDirtyAccountsAsync();
@@ -79,29 +74,24 @@ namespace Nethereum.CoreChain
             _cachedRoot = _trie.ComputeRoot();
 
             if (_trieStorage != null)
-            {
                 _trie.SaveToStorage(_trieStorage);
-                _trieStorage.Put(ROOT_META_KEY, _cachedRoot);
-            }
 
             return _cachedRoot;
         }
 
-        private bool TryWarmStartFromStorage()
+        private bool TryInitialiseFromPreviousRoot(byte[] previousStateRoot)
         {
-            if (_trieStorage == null)
+            if (_trieStorage == null
+                || previousStateRoot == null
+                || previousStateRoot.Length == 0
+                || IsAllZero(previousStateRoot))
                 return false;
 
-            var lastRoot = _trieStorage.Get(ROOT_META_KEY);
-            if (lastRoot == null || IsAllZero(lastRoot))
-                return false;
-
-            _trie = BinaryTrie.FromRootHash(lastRoot, new BinaryTrieOptions
+            _trie = BinaryTrie.FromRootHash(previousStateRoot, new BinaryTrieOptions
             {
                 HashProvider = _hashProvider,
                 NodeResolver = ResolveNode
             });
-            _cachedRoot = lastRoot;
             return true;
         }
 
@@ -125,22 +115,11 @@ namespace Nethereum.CoreChain
             return _cachedRoot;
         }
 
-        public void Reset()
-        {
-            _trie = null;
-            _initialized = false;
-            _cachedRoot = null;
-        }
-
         private async Task InitializeFromFullStateAsync()
         {
             _trie = new BinaryTrie(_hashProvider);
 
-            var accounts = await _stateStore.GetAllAccountsAsync();
-            if (accounts.Count == 0)
-                return;
-
-            foreach (var kvp in accounts)
+            await foreach (var kvp in _stateStore.StreamAccountsAsync().ConfigureAwait(false))
             {
                 await PutAccountInTrieAsync(kvp.Key, kvp.Value, useAllStorage: true);
             }

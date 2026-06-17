@@ -11,6 +11,11 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage.InMemory
 {
+    /// <summary>
+    /// In-memory <see cref="IStateStore"/>. Mutations are atomic at the
+    /// language level via <c>ConcurrentDictionary</c>. Tests and DevChain
+    /// default to this backend.
+    /// </summary>
     public class InMemoryStateStore : IStateStore
     {
         private readonly object _snapshotLock = new object();
@@ -19,6 +24,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         private readonly ConcurrentDictionary<string, byte[]> _code = new();
         private readonly ConcurrentDictionary<string, byte> _dirtyAccounts = new();
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _dirtyStorageSlots = new();
+        private readonly ConcurrentDictionary<string, byte> _storageClearedAddresses = new();
         private int _nextSnapshotId = 0;
         private volatile CowStateSnapshot _activeSnapshot;
 
@@ -73,6 +79,13 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
             return Task.FromResult(new Dictionary<string, Account>(_accounts));
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+#pragma warning restore CS1998
+        {
+            foreach (var kv in _accounts) yield return kv;
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
@@ -131,6 +144,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
             }
             _storage.TryRemove(normalizedAddress, out _);
             _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            _storageClearedAddresses.TryAdd(normalizedAddress, 0);
             return Task.CompletedTask;
         }
 
@@ -250,10 +264,16 @@ namespace Nethereum.CoreChain.Storage.InMemory
             return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.Keys.ToList());
         }
 
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+        {
+            return Task.FromResult<IReadOnlyCollection<string>>(_storageClearedAddresses.Keys.ToList());
+        }
+
         public Task ClearDirtyTrackingAsync()
         {
             _dirtyAccounts.Clear();
             _dirtyStorageSlots.Clear();
+            _storageClearedAddresses.Clear();
             return Task.CompletedTask;
         }
 
