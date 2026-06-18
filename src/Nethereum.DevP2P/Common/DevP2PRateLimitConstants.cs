@@ -38,5 +38,24 @@ namespace Nethereum.DevP2P.Common
         /// Source: https://raw.githubusercontent.com/sigp/discv5/master/src/socket/filter/mod.rs
         /// </summary>
         public const int MaxBannedIpsCached = 50;
+
+        /// <summary>
+        /// Burst capacity of the per-peer RLPx Ping bucket. The RLPx base protocol
+        /// (https://github.com/ethereum/devp2p/blob/master/rlpx.md) is silent on
+        /// Ping cadence and flood thresholds; the threshold is derived from
+        /// go-ethereum's reference cadence of 15 s between Pings
+        /// (<c>p2p/peer.go pingInterval = 15 * time.Second</c>). A 4-frame burst
+        /// covers retransmits and clock skew without enabling sustained flood.
+        /// </summary>
+        public const int MaxPingsPerWindow = 4;
+
+        /// <summary>
+        /// Refill window for the per-peer RLPx Ping bucket, in seconds. Equal to
+        /// one third of go-ethereum's reference <c>pingInterval = 15 s</c>
+        /// (<c>p2p/peer.go</c>), giving a 3x safety margin against legitimate
+        /// jitter while still bounding Pong-emission CPU at ~0.8 frames/sec on
+        /// an attacker peer that pegs the bucket empty.
+        /// </summary>
+        public const int PingWindowSeconds = 5;
     }
 }

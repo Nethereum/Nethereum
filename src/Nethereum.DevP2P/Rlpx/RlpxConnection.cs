@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.DevP2P.Common;
 using Nethereum.DevP2P.Crypto;
 using Nethereum.Model.P2P;
 using Nethereum.Signer;
@@ -26,6 +27,35 @@ namespace Nethereum.DevP2P.Rlpx
         private readonly ConcurrentDictionary<ulong, TaskCompletionSource<(int msgId, byte[] payload)>> _pendingRequests = new();
         private long _nextRequestId;
         private Timer _pingTimer;
+
+        /// <summary>
+        /// Refill rate (tokens per second) for the per-peer RLPx Ping/Pong
+        /// bucket. One token per second is well below go-ethereum's reference
+        /// <c>pingInterval = 15 s</c> while still capping an attacker's
+        /// sustained Pong-emission CPU at 1 frame/sec after the burst is drained.
+        /// The integer-rate ceiling here is the closest representable value to
+        /// the policy declared by <see cref="DevP2PRateLimitConstants.MaxPingsPerWindow"/>
+        /// over <see cref="DevP2PRateLimitConstants.PingWindowSeconds"/>
+        /// (4 per 5 s = 0.8/s, rounded up to 1/s by the integer constructor).
+        /// </summary>
+        private const int PingTokensPerSecond = 1;
+
+        /// <summary>
+        /// Per-peer Ping/Pong token bucket. One <see cref="RlpxConnection"/>
+        /// represents exactly one peer, so the underlying generic
+        /// <see cref="TokenBucketRateLimiter{TKey}"/> is sized to a single key
+        /// slot. Burst is <see cref="DevP2PRateLimitConstants.MaxPingsPerWindow"/>
+        /// and the refill rate is <see cref="PingTokensPerSecond"/>. On
+        /// exhaustion the connection is closed with
+        /// <see cref="DisconnectReason.ProtocolBreach"/>.
+        /// </summary>
+        private readonly TokenBucketRateLimiter<int> _pingLimiter =
+            new TokenBucketRateLimiter<int>(
+                rate: PingTokensPerSecond,
+                burst: DevP2PRateLimitConstants.MaxPingsPerWindow,
+                maxCachedKeys: 1);
+
+        private const int PingLimiterKey = 0;
 
         public bool IsConnected { get; private set; }
         public HelloMessage RemoteHello { get; private set; }
@@ -322,6 +352,56 @@ namespace Nethereum.DevP2P.Rlpx
             await SendFrameAsync(msgId, payload, ct);
         }
 
+        /// <summary>
+        /// Outcome of <see cref="HandleControlFrameOrContinueAsync"/>: tells the
+        /// caller how to react to a frame that arrived on the read loop.
+        /// </summary>
+        private enum ControlFrameAction
+        {
+            /// <summary>Frame was a recognised control frame (Ping/Pong) and was handled — caller should loop and read the next frame.</summary>
+            Continue,
+            /// <summary>Frame was a Disconnect — caller must surface a connection-closed error.</summary>
+            PeerDisconnected,
+            /// <summary>Frame is a sub-protocol message — caller should process it.</summary>
+            PassThrough
+        }
+
+        /// <summary>
+        /// Single decision point for Ping/Pong/Disconnect frames. The RLPx base
+        /// protocol (https://github.com/ethereum/devp2p/blob/master/rlpx.md)
+        /// requires answering each Ping (0x02) with a Pong (0x03) and treating a
+        /// Disconnect (0x01) as connection termination. The spec is silent on
+        /// Ping cadence, so this method enforces the per-peer budget defined by
+        /// <see cref="DevP2PRateLimitConstants.MaxPingsPerWindow"/> and
+        /// <see cref="PingTokensPerSecond"/>; on exhaustion the peer is hung up
+        /// with <see cref="DisconnectReason.ProtocolBreach"/>. No inner
+        /// read-deadline is reset on Ping/Pong: liveness is governed by useful
+        /// sub-protocol frames within <see cref="DevP2PConfig.ReadTimeoutMs"/>.
+        /// </summary>
+        private async Task<ControlFrameAction> HandleControlFrameOrContinueAsync(
+            int msgId, CancellationToken ct)
+        {
+            if (msgId == P2PMessageIds.Ping || msgId == P2PMessageIds.Pong)
+            {
+                if (!_pingLimiter.TryAcquire(PingLimiterKey))
+                {
+                    try { await DisconnectAsync(DisconnectReason.ProtocolBreach); }
+                    catch { }
+                    throw new RlpxPingFloodException();
+                }
+
+                if (msgId == P2PMessageIds.Ping)
+                    await SendFrameAsync(P2PMessageIds.Pong, Array.Empty<byte>(), ct);
+
+                return ControlFrameAction.Continue;
+            }
+
+            if (msgId == P2PMessageIds.Disconnect)
+                return ControlFrameAction.PeerDisconnected;
+
+            return ControlFrameAction.PassThrough;
+        }
+
         public async Task<(int msgId, byte[] payload)> ReceiveMessageAsync(CancellationToken ct = default)
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -331,20 +411,9 @@ namespace Nethereum.DevP2P.Rlpx
             {
                 var (msgId, payload) = await ReadFrameAsync(timeoutCts.Token);
 
-                if (msgId == P2PMessageIds.Ping)
-                {
-                    await SendFrameAsync(P2PMessageIds.Pong, Array.Empty<byte>(), ct);
-                    timeoutCts.CancelAfter(_config.ReadTimeoutMs);
-                    continue;
-                }
-
-                if (msgId == P2PMessageIds.Pong)
-                {
-                    timeoutCts.CancelAfter(_config.ReadTimeoutMs);
-                    continue;
-                }
-
-                if (msgId == P2PMessageIds.Disconnect)
+                var action = await HandleControlFrameOrContinueAsync(msgId, ct);
+                if (action == ControlFrameAction.Continue) continue;
+                if (action == ControlFrameAction.PeerDisconnected)
                 {
                     MarkDisconnected();
                     throw new IOException("Peer disconnected");
@@ -367,16 +436,9 @@ namespace Nethereum.DevP2P.Rlpx
             {
                 var (msgId, payload) = await ReadFrameAsync(timeoutCts.Token);
 
-                if (msgId == P2PMessageIds.Ping)
-                {
-                    await SendFrameAsync(P2PMessageIds.Pong, Array.Empty<byte>(), ct);
-                    continue;
-                }
-
-                if (msgId == P2PMessageIds.Pong)
-                    continue;
-
-                if (msgId == P2PMessageIds.Disconnect)
+                var action = await HandleControlFrameOrContinueAsync(msgId, ct);
+                if (action == ControlFrameAction.Continue) continue;
+                if (action == ControlFrameAction.PeerDisconnected)
                 {
                     MarkDisconnected();
                     throw new IOException("Peer disconnected");
@@ -528,6 +590,21 @@ namespace Nethereum.DevP2P.Rlpx
             : base($"Peer rejected RLPx handshake with Disconnect(reason={(byte)reason:x2} {reason})")
         {
             Reason = reason;
+        }
+    }
+
+    /// <summary>
+    /// Thrown by <see cref="RlpxConnection"/> when a peer exceeds the per-peer
+    /// Ping/Pong frame budget enforced inside the read loop. The connection is
+    /// closed with <see cref="Nethereum.Model.P2P.DisconnectReason.ProtocolBreach"/>
+    /// before this exception is surfaced so the peer learns the reason for the
+    /// hang-up over the established session keys.
+    /// </summary>
+    public sealed class RlpxPingFloodException : IOException
+    {
+        public RlpxPingFloodException()
+            : base("Peer exceeded RLPx Ping/Pong rate limit")
+        {
         }
     }
 
