@@ -266,7 +266,7 @@ namespace Nethereum.Consensus.LightClient.Tests
                     SyncAggregate = CreateSyncAggregate(),
                     NextSyncCommittee = CreateSyncCommittee(),
                     FinalityBranch = finalityBranch,
-                    NextSyncCommitteeBranch = CreateBranch(LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork.Electra)),
+                    NextSyncCommitteeBranch = CreateZeroBranch(LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork.Electra)),
                     SignatureSlot = slot + 1
                 };
             }
@@ -589,6 +589,16 @@ namespace Nethereum.Consensus.LightClient.Tests
                         root[j] = (byte)(i + 1);
                     }
                     branch.Add(root);
+                }
+                return branch;
+            }
+
+            internal static List<byte[]> CreateZeroBranch(int length)
+            {
+                var branch = new List<byte[]>(length);
+                for (var i = 0; i < length; i++)
+                {
+                    branch.Add(new byte[SszBasicTypes.RootLength]);
                 }
                 return branch;
             }

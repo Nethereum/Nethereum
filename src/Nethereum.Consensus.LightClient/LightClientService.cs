@@ -310,7 +310,19 @@ namespace Nethereum.Consensus.LightClient
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (update == null) return false;
 
+            if (update.AttestedHeader?.Beacon == null)
+            {
+                return false;
+            }
+
             if (update.FinalizedHeader?.Beacon == null || update.FinalizedHeader.Execution == null)
+            {
+                return false;
+            }
+
+            if (!(update.SignatureSlot > update.AttestedHeader.Beacon.Slot &&
+                  update.AttestedHeader.Beacon.Slot >= update.FinalizedHeader.Beacon.Slot &&
+                  update.AttestedHeader.Beacon.Slot >= state.FinalizedSlot))
             {
                 return false;
             }
@@ -335,6 +347,18 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
+            var isSyncCommitteeUpdate = IsSyncCommitteeUpdate(update);
+            if (isSyncCommitteeUpdate)
+            {
+                if (!VerifyNextSyncCommitteeBranch(
+                        update.AttestedHeader,
+                        update.NextSyncCommittee,
+                        update.NextSyncCommitteeBranch))
+                {
+                    return false;
+                }
+            }
+
             var updatePeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
 
             if (updatePeriod > state.CurrentPeriod && state.NextSyncCommittee != null)
@@ -352,12 +376,92 @@ namespace Nethereum.Consensus.LightClient
                 state.AddBlockHash(update.FinalizedHeader.Execution.BlockNumber, update.FinalizedHeader.Execution.BlockHash);
             }
 
-            if (update.NextSyncCommittee != null)
+            if (isSyncCommitteeUpdate && update.NextSyncCommittee != null)
             {
                 state.NextSyncCommittee = update.NextSyncCommittee;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// <c>is_sync_committee_update(update)</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> line 206: returns true iff the
+        /// <c>next_sync_committee_branch</c> field differs from the default all-zero
+        /// <c>NextSyncCommitteeBranch()</c> vector. A bare <c>NextSyncCommittee != null</c> check
+        /// is insufficient because <c>LightClientUpdate</c> default-constructs a non-null
+        /// all-zero <c>SyncCommittee</c>. Length must match the fork-aware
+        /// <see cref="LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork)"/>.
+        /// </summary>
+        private static bool IsSyncCommitteeUpdate(LightClientUpdate update)
+        {
+            if (update?.NextSyncCommitteeBranch == null || update.NextSyncCommitteeBranch.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var node in update.NextSyncCommitteeBranch)
+            {
+                if (node == null || node.Length != SszBasicTypes.RootLength)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < SszBasicTypes.RootLength; i++)
+                {
+                    if (node[i] != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// <c>is_valid_merkle_branch(leaf=hash_tree_root(next_sync_committee), branch=next_sync_committee_branch,
+        /// depth=floorlog2(NEXT_SYNC_COMMITTEE_GINDEX), index=get_subtree_index(NEXT_SYNC_COMMITTEE_GINDEX),
+        /// root=attested_header.beacon.state_root)</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 421–437. Electra+ uses
+        /// <c>NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA = 87</c> with depth 6 per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/electra/light-client/sync-protocol.md">
+        /// specs/electra/light-client/sync-protocol.md</see> line 56; pre-Electra forks use
+        /// <c>NEXT_SYNC_COMMITTEE_GINDEX = 55</c> with depth 5 per the altair spec line 70.
+        /// </summary>
+        private static bool VerifyNextSyncCommitteeBranch(
+            LightClientHeader attestedHeader,
+            SyncCommittee nextSyncCommittee,
+            IList<byte[]> nextSyncCommitteeBranch)
+        {
+            if (attestedHeader?.Beacon == null || nextSyncCommittee == null || nextSyncCommitteeBranch == null)
+                return false;
+
+            var fork = attestedHeader.Fork;
+            var depth = LightClientForkSpec.NextSyncCommitteeBranchDepth(fork);
+            var index = LightClientForkSpec.NextSyncCommitteeBranchIndex(fork);
+
+            if (nextSyncCommitteeBranch.Count != depth)
+                return false;
+
+            byte[] leaf;
+            try
+            {
+                leaf = nextSyncCommittee.HashTreeRoot();
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+
+            return SszMerkleizer.VerifyProof(
+                leaf,
+                nextSyncCommitteeBranch,
+                depth,
+                index,
+                attestedHeader.Beacon.StateRoot);
         }
 
         private bool VerifySyncAggregate(LightClientUpdate update)
