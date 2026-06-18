@@ -49,11 +49,30 @@ namespace Nethereum.DevP2P.Discv5
         /// </summary>
         public const int MaxSessions = 1024;
 
+        /// <summary>
+        /// Cap on the number of in-flight WHOAREYOU challenges held in memory.
+        /// Pending challenges are the responder-side state machine for unfinished
+        /// handshakes and would otherwise grow unbounded under a flood of
+        /// undecryptable ordinary packets from distinct peers. On overflow the
+        /// oldest challenge (by <see cref="Discv5PendingChallenge.CreatedUtc"/>)
+        /// is evicted.
+        /// </summary>
+        public const int MaxPendingChallenges = 1024;
+
+        /// <summary>
+        /// Cap on the number of in-flight outbound dials held in memory awaiting
+        /// a WHOAREYOU reply. Bounds initiator-side state under repeated cold
+        /// dials before any reply arrives. On overflow the oldest entry
+        /// (by <see cref="PendingOutbound.CreatedUtc"/>) is evicted.
+        /// </summary>
+        public const int MaxPendingOutbound = 1024;
+
         private readonly EthECKey _localKey;
         private readonly byte[] _localNodeId;
         private readonly ConcurrentDictionary<string, Discv5Session> _sessions = new();
         private readonly ConcurrentDictionary<string, Discv5PendingChallenge> _pendingChallenges = new();
         private readonly ConcurrentDictionary<string, PendingOutbound> _pendingOutbound = new();
+        private readonly ConcurrentDictionary<string, PendingOutbound> _pendingOutboundByNonce = new();
         private DateTime _lastHandshakeGcUtc = DateTime.UtcNow;
         private readonly object _gcLock = new object();
 
@@ -62,12 +81,23 @@ namespace Nethereum.DevP2P.Discv5
         /// unauthenticated ordinary packet with a WHOAREYOU and we complete the
         /// handshake. <see cref="ProcessWhoAreYou"/> re-encrypts
         /// <see cref="MessagePlaintext"/> under the freshly derived session key.
+        /// <para>
+        /// <see cref="InitialNonce"/> is the 12-byte nonce of the unauthenticated
+        /// ordinary packet we sent. Per discv5-wire.md §"WHOAREYOU Packet" the
+        /// responder MUST echo that nonce in the WHOAREYOU header so the
+        /// initiator can match the challenge to the original outbound — this is
+        /// the only spec-conformant correlation key.
+        /// </para>
         /// </summary>
         private sealed class PendingOutbound
         {
             public byte[] MessagePlaintext;
             public byte[] PeerStaticPubKey;     // 33-byte compressed
             public byte[] LocalEnrEncoded;      // optional ENR to surface in handshake
+            public byte[] InitialNonce;         // 12 bytes — echoed by WHOAREYOU per discv5-wire.md
+            public string SessionKey;           // back-reference into _pendingOutbound for removal
+            public byte[] RemoteNodeId;
+            public IPEndPoint RemoteAddr;
             public DateTime CreatedUtc = DateTime.UtcNow;
         }
 
@@ -220,17 +250,33 @@ namespace Nethereum.DevP2P.Discv5
             if (peerStaticCompressedPubKey == null || peerStaticCompressedPubKey.Length != 33)
                 throw new ArgumentException("peer static pubkey must be 33 bytes (compressed)", nameof(peerStaticCompressedPubKey));
 
-            _pendingOutbound[SessionKey(remoteNodeId, remoteAddr)] = new PendingOutbound
-            {
-                MessagePlaintext = firstMessagePlaintext,
-                PeerStaticPubKey = peerStaticCompressedPubKey,
-                LocalEnrEncoded = localEnrEncoded ?? Array.Empty<byte>()
-            };
-
             var nonce = new byte[Discv5Packet.NonceLength];
             RandomNumberGenerator.Fill(nonce);
             var maskingIv = new byte[Discv5Packet.MaskingIvLength];
             RandomNumberGenerator.Fill(maskingIv);
+
+            var sessionKey = SessionKey(remoteNodeId, remoteAddr);
+            var pending = new PendingOutbound
+            {
+                MessagePlaintext = firstMessagePlaintext,
+                PeerStaticPubKey = peerStaticCompressedPubKey,
+                LocalEnrEncoded = localEnrEncoded ?? Array.Empty<byte>(),
+                InitialNonce = nonce,
+                SessionKey = sessionKey,
+                RemoteNodeId = remoteNodeId,
+                RemoteAddr = remoteAddr
+            };
+
+            EvictOldestPendingOutboundIfAtCap();
+            // If an earlier dial to the same peer is still pending its nonce
+            // index must be dropped so the spec-required nonce-echo match in
+            // ProcessWhoAreYou cannot collide with a stale entry.
+            if (_pendingOutbound.TryGetValue(sessionKey, out var existing) && existing.InitialNonce != null)
+            {
+                _pendingOutboundByNonce.TryRemove(existing.InitialNonce.ToHex(), out _);
+            }
+            _pendingOutbound[sessionKey] = pending;
+            _pendingOutboundByNonce[nonce.ToHex()] = pending;
 
             // Random throwaway key — peer cannot decrypt, will respond WHOAREYOU.
             var throwawayKey = new byte[16];
@@ -388,6 +434,12 @@ namespace Nethereum.DevP2P.Discv5
         /// build a handshake packet containing the id-signature + ephemeral
         /// pubkey + ENR + the re-encrypted plaintext, store the session, and
         /// return the packet for the listener to send.
+        /// <para>
+        /// Per discv5-wire.md §"WHOAREYOU Packet" the responder MUST echo the
+        /// nonce of the ordinary packet that triggered the challenge. The
+        /// initiator looks up its pending outbound by that echoed nonce — the
+        /// only spec-conformant correlation between WHOAREYOU and a prior dial.
+        /// </para>
         /// </summary>
         private IncomingPacket ProcessWhoAreYou(
             byte[] maskingIv,
@@ -395,26 +447,25 @@ namespace Nethereum.DevP2P.Discv5
             byte[] rawHeaderForAad,
             IPEndPoint fromAddr)
         {
-            // WHOAREYOU authdata carries no src-id, so we look up the pending
-            // outbound by the remote endpoint alone. Most cases have at most one
-            // pending outbound per (nodeId, endpoint); if the address is shared
-            // by multiple pending node ids we pick the first match.
-            string pendingKey = null;
-            PendingOutbound pending = null;
-            byte[] remoteNodeId = null;
-            foreach (var kvp in _pendingOutbound)
-            {
-                if (kvp.Key.EndsWith("|" + fromAddr.ToString(), StringComparison.Ordinal))
-                {
-                    pendingKey = kvp.Key;
-                    pending = kvp.Value;
-                    var pipe = kvp.Key.IndexOf('|');
-                    remoteNodeId = kvp.Key.Substring(0, pipe).HexToByteArray();
-                    break;
-                }
-            }
-            if (pending == null)
+            if (header.Nonce == null || header.Nonce.Length != Discv5Packet.NonceLength)
                 return new IncomingPacket { Kind = IncomingPacketKind.Ignored, Source = fromAddr };
+
+            // Match the WHOAREYOU to a pending outbound by the echoed nonce, per
+            // discv5-wire.md §"WHOAREYOU". Endpoint matching is a defence-in-depth
+            // check below — the spec authenticates the WHOAREYOU by nonce alone.
+            if (!_pendingOutboundByNonce.TryGetValue(header.Nonce.ToHex(), out var pending) || pending == null)
+                return new IncomingPacket { Kind = IncomingPacketKind.Ignored, Source = fromAddr };
+            if (pending.InitialNonce == null
+                || !Nethereum.Util.ByteUtil.ConstantTimeEquals(pending.InitialNonce, header.Nonce))
+                return new IncomingPacket { Kind = IncomingPacketKind.Ignored, Source = fromAddr };
+            // Reject WHOAREYOUs arriving from an endpoint other than the one we
+            // dialled — an off-path attacker who guesses our nonce should still
+            // need to be on the dial's return path.
+            if (pending.RemoteAddr != null && !pending.RemoteAddr.Equals(fromAddr))
+                return new IncomingPacket { Kind = IncomingPacketKind.Ignored, Source = fromAddr };
+
+            var pendingKey = pending.SessionKey;
+            var remoteNodeId = pending.RemoteNodeId;
 
             Discv5HandshakePackets.WhoAreYouAuth who;
             try { who = Discv5HandshakePackets.WhoAreYouAuth.Decode(header.AuthData); }
@@ -436,7 +487,7 @@ namespace Nethereum.DevP2P.Discv5
             try { idSig = Discv5Crypto.SignIdSignature(_localKey, idSigInput); }
             catch (Exception)
             {
-                _pendingOutbound.TryRemove(pendingKey, out _);
+                RemovePendingOutbound(pendingKey);
                 return new IncomingPacket { Kind = IncomingPacketKind.Ignored, Source = fromAddr };
             }
 
@@ -444,7 +495,7 @@ namespace Nethereum.DevP2P.Discv5
             try { sharedSecret = Discv5Crypto.EcdhCompressed(ephem, pending.PeerStaticPubKey); }
             catch (Exception)
             {
-                _pendingOutbound.TryRemove(pendingKey, out _);
+                RemovePendingOutbound(pendingKey);
                 return new IncomingPacket { Kind = IncomingPacketKind.Ignored, Source = fromAddr };
             }
 
@@ -493,7 +544,7 @@ namespace Nethereum.DevP2P.Discv5
             };
             EvictOldestSessionIfAtCap();
             _sessions[SessionKey(remoteNodeId, fromAddr)] = session;
-            _pendingOutbound.TryRemove(pendingKey, out _);
+            RemovePendingOutbound(pendingKey);
 
             OutboundSessionEstablished?.Invoke(this, new SessionEstablishedEventArgs
             {
@@ -555,6 +606,7 @@ namespace Nethereum.DevP2P.Discv5
             var challengeData = Discv5Packet.BuildAad(maskingIv, rawHeader);
             var encoded = Discv5Packet.EncodePacket(maskingIv, header, srcId, Array.Empty<byte>());
 
+            EvictOldestPendingChallengeIfAtCap();
             _pendingChallenges[key] = new Discv5PendingChallenge
             {
                 IdNonce = idNonce,
@@ -571,6 +623,9 @@ namespace Nethereum.DevP2P.Discv5
 
         /// <summary>Current count of in-flight WHOAREYOU challenges. Test/diagnostic surface.</summary>
         public int PendingChallengeCount => _pendingChallenges.Count;
+
+        /// <summary>Current count of in-flight outbound dials awaiting WHOAREYOU. Test/diagnostic surface.</summary>
+        public int PendingOutboundCount => _pendingOutbound.Count;
 
         /// <summary>Current count of established sessions. Test/diagnostic surface.</summary>
         public int SessionCount => _sessions.Count;
@@ -590,6 +645,48 @@ namespace Nethereum.DevP2P.Discv5
             }
             if (oldestKey != null)
                 _sessions.TryRemove(oldestKey, out _);
+        }
+
+        private void EvictOldestPendingOutboundIfAtCap()
+        {
+            if (_pendingOutbound.Count < MaxPendingOutbound) return;
+            string oldestKey = null;
+            DateTime oldestTime = DateTime.MaxValue;
+            foreach (var kvp in _pendingOutbound)
+            {
+                if (kvp.Value.CreatedUtc < oldestTime)
+                {
+                    oldestTime = kvp.Value.CreatedUtc;
+                    oldestKey = kvp.Key;
+                }
+            }
+            if (oldestKey != null) RemovePendingOutbound(oldestKey);
+        }
+
+        private void EvictOldestPendingChallengeIfAtCap()
+        {
+            if (_pendingChallenges.Count < MaxPendingChallenges) return;
+            string oldestKey = null;
+            DateTime oldestTime = DateTime.MaxValue;
+            foreach (var kvp in _pendingChallenges)
+            {
+                if (kvp.Value.CreatedUtc < oldestTime)
+                {
+                    oldestTime = kvp.Value.CreatedUtc;
+                    oldestKey = kvp.Key;
+                }
+            }
+            if (oldestKey != null) _pendingChallenges.TryRemove(oldestKey, out _);
+        }
+
+        private void RemovePendingOutbound(string sessionKey)
+        {
+            if (sessionKey == null) return;
+            if (_pendingOutbound.TryRemove(sessionKey, out var removed)
+                && removed?.InitialNonce != null)
+            {
+                _pendingOutboundByNonce.TryRemove(removed.InitialNonce.ToHex(), out _);
+            }
         }
 
         private void MaybeSweepStaleChallenges()
@@ -624,13 +721,12 @@ namespace Nethereum.DevP2P.Discv5
             }
             // Same retention for _pendingOutbound: any initial packet we
             // sent that never received a WHOAREYOU reply within HandshakeTimeout
-            // is dead. Geth's discover/v5wire/session.go expires unanswered
-            // session attempts on the same cadence.
+            // is dead.
             foreach (var kvp in _pendingOutbound)
             {
                 if (now - kvp.Value.CreatedUtc > HandshakeTimeout)
                 {
-                    _pendingOutbound.TryRemove(kvp.Key, out _);
+                    RemovePendingOutbound(kvp.Key);
                 }
             }
         }

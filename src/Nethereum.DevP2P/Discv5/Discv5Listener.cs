@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.DevP2P.Common;
 using Nethereum.Model.Enr;
 using Nethereum.Signer;
 
@@ -58,6 +59,11 @@ namespace Nethereum.DevP2P.Discv5
         private readonly Discv5RequestTracker _requestTracker;
         private readonly ConcurrentDictionary<string, Func<byte[], IPEndPoint, byte[]>> _talkHandlers
             = new ConcurrentDictionary<string, Func<byte[], IPEndPoint, byte[]>>(StringComparer.Ordinal);
+        private readonly TokenBucketRateLimiter<IPAddress> _inboundFilter;
+        private readonly ConcurrentDictionary<IPAddress, long> _bannedIps
+            = new ConcurrentDictionary<IPAddress, long>();
+        private long _banSequence;
+        private long _droppedInboundCount;
         private UdpClient _udp;
         private CancellationTokenSource _cts;
         private Task _readLoop;
@@ -72,7 +78,24 @@ namespace Nethereum.DevP2P.Discv5
             _sessionManager = new Discv5SessionManager(localKey);
             _routingTable = new Discv5RoutingTable(_sessionManager.LocalNodeId);
             _sessionManager.SessionEstablished += OnSessionEstablished;
+            _inboundFilter = new TokenBucketRateLimiter<IPAddress>(
+                rate: DevP2PRateLimitConstants.InboundPacketsPerSecondPerIp,
+                burst: DevP2PRateLimitConstants.InboundBurstCapacity,
+                maxCachedKeys: DevP2PRateLimitConstants.KnownSourcesCacheSize);
         }
+
+        /// <summary>
+        /// Inbound discovery datagrams dropped by the per-source-IP rate limiter
+        /// or the banned-IP LRU before any crypto work. Test/diagnostic surface.
+        /// </summary>
+        public long DroppedInboundCount => Interlocked.Read(ref _droppedInboundCount);
+
+        /// <summary>
+        /// True when <paramref name="ip"/> is currently in the banned-IP LRU and
+        /// inbound traffic from it is being short-circuited before the rate
+        /// limiter. Test/diagnostic surface.
+        /// </summary>
+        public bool IsBanned(IPAddress ip) => ip != null && _bannedIps.ContainsKey(ip);
 
         /// <summary>Tracks outbound Ping / FindNode requests awaiting Pong / Nodes responses.</summary>
         public Discv5RequestTracker RequestTracker => _requestTracker;
@@ -319,6 +342,25 @@ namespace Nethereum.DevP2P.Discv5
             return b;
         }
 
+        private void AddBannedIp(IPAddress ip)
+        {
+            _bannedIps[ip] = Interlocked.Increment(ref _banSequence);
+            if (_bannedIps.Count <= DevP2PRateLimitConstants.MaxBannedIpsCached) return;
+
+            IPAddress oldest = null;
+            long oldestSeq = long.MaxValue;
+            foreach (var kvp in _bannedIps)
+            {
+                if (kvp.Value < oldestSeq)
+                {
+                    oldestSeq = kvp.Value;
+                    oldest = kvp.Key;
+                }
+            }
+            if (oldest != null && !oldest.Equals(ip))
+                _bannedIps.TryRemove(oldest, out _);
+        }
+
         private async Task ReadLoopAsync(CancellationToken ct)
         {
             while (!ct.IsCancellationRequested)
@@ -347,6 +389,29 @@ namespace Nethereum.DevP2P.Discv5
                     || result.Buffer.Length < Discv5Packet.MinPacketSize
                     || result.Buffer.Length > Discv5Packet.MaxPacketSize)
                 {
+                    continue;
+                }
+
+                // Per-source-IP rate limit and banned-IP LRU run BEFORE any
+                // session-layer work to bound the cost of a flood at well under
+                // one core regardless of how the attacker frames the packet.
+                // The discv5 wire spec does not mandate a numeric rate limit;
+                // the design and constants are sigp/discv5-derived (see
+                // Common/DevP2PRateLimitConstants).
+                var srcIp = result.RemoteEndPoint?.Address;
+                if (srcIp == null)
+                {
+                    continue;
+                }
+                if (_bannedIps.ContainsKey(srcIp))
+                {
+                    Interlocked.Increment(ref _droppedInboundCount);
+                    continue;
+                }
+                if (!_inboundFilter.TryAcquire(srcIp))
+                {
+                    Interlocked.Increment(ref _droppedInboundCount);
+                    AddBannedIp(srcIp);
                     continue;
                 }
 

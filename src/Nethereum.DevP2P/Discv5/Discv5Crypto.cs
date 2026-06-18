@@ -83,19 +83,38 @@ namespace Nethereum.DevP2P.Discv5
         /// ephemeral public key, returning the 33-byte compressed form of the
         /// shared point. discv5-theory.md uses this compressed point — not the
         /// bare 32-byte X-coordinate — as the IKM fed into HKDF.
+        /// <para>
+        /// The remote point is checked for <c>!IsInfinity &amp;&amp; IsValid()</c>
+        /// after decoding. BouncyCastle's <c>DecodePoint</c> already rejects
+        /// most malformed inputs, but the explicit identity/on-curve guard is
+        /// the public-key validation step required by NIST SP 800-56A §5.6.2.3.3
+        /// and prevents a crafted "point at infinity" from producing an all-zero
+        /// shared secret.
+        /// </para>
         /// </summary>
         public static byte[] EcdhCompressed(EthECKey localPrivateKey, byte[] remoteCompressedPubKey)
         {
             if (remoteCompressedPubKey == null || remoteCompressedPubKey.Length != 33)
                 throw new ArgumentException("remote ephemeral pubkey must be 33 bytes (compressed)");
             var remotePoint = ECKey.Secp256k1.Curve.DecodePoint(remoteCompressedPubKey);
+            RequireValidPubKeyPoint(remotePoint);
             // Cast back into Nethereum.Signer ECKey so we can pull the private
             // scalar D out without depending on reflection.
             var privateKeyParams = new Org.BouncyCastle.Crypto.Parameters.ECPrivateKeyParameters(
                 new Org.BouncyCastle.Math.BigInteger(1, localPrivateKey.GetPrivateKeyAsBytes()),
                 ECKey.CURVE);
             var sharedPoint = remotePoint.Multiply(privateKeyParams.D).Normalize();
+            if (sharedPoint.IsInfinity)
+                throw new ArgumentException("ECDH shared point collapsed to identity");
             return sharedPoint.GetEncoded(true);   // 33-byte compressed (parity-byte || X)
+        }
+
+        private static void RequireValidPubKeyPoint(Org.BouncyCastle.Math.EC.ECPoint q)
+        {
+            if (q == null || q.IsInfinity)
+                throw new ArgumentException("remote pubkey is point-at-infinity");
+            if (!q.IsValid())
+                throw new ArgumentException("remote pubkey is not on secp256k1 curve");
         }
 
         /// <summary>
@@ -137,18 +156,24 @@ namespace Nethereum.DevP2P.Discv5
         public static bool VerifyIdSignature(byte[] sigRs, byte[] inputHash, byte[] signerPubKey)
         {
             if (sigRs == null || sigRs.Length != 64) return false;
+            if (signerPubKey == null) return false;
             var r = new BigInteger(1, sigRs, 0, 32);
             var s = new BigInteger(1, sigRs, 32, 32);
 
             byte[] xy;
-            if (signerPubKey.Length == 64) xy = signerPubKey;
-            else if (signerPubKey.Length == 33) xy = DecompressToXy(signerPubKey);
-            else if (signerPubKey.Length == 65 && signerPubKey[0] == 0x04)
+            try
             {
-                xy = new byte[64];
-                Buffer.BlockCopy(signerPubKey, 1, xy, 0, 64);
+                if (signerPubKey.Length == 64) xy = signerPubKey;
+                else if (signerPubKey.Length == 33) xy = DecompressToXy(signerPubKey);
+                else if (signerPubKey.Length == 65 && signerPubKey[0] == 0x04)
+                {
+                    xy = new byte[64];
+                    Buffer.BlockCopy(signerPubKey, 1, xy, 0, 64);
+                }
+                else return false;
             }
-            else return false;
+            catch (ArgumentException) { return false; }
+            catch (InvalidOperationException) { return false; }
 
             try
             {
@@ -156,6 +181,10 @@ namespace Nethereum.DevP2P.Discv5
                 prefixed[0] = 0x04;
                 Buffer.BlockCopy(xy, 0, prefixed, 1, 64);
                 var q = ECKey.Secp256k1.Curve.DecodePoint(prefixed);
+                // Public-key validation per NIST SP 800-56A §5.6.2.3.3 — reject
+                // identity and off-curve points before accepting a signature
+                // recovered against them.
+                if (q == null || q.IsInfinity || !q.IsValid()) return false;
                 var pubParams = new ECPublicKeyParameters("EC", q, ECKey.CURVE);
 
                 var signer = new Org.BouncyCastle.Crypto.Signers.ECDsaSigner();
