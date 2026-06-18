@@ -68,7 +68,10 @@ namespace Nethereum.Consensus.LightClient
 
             if (bootstrap.Header.Execution != null)
             {
-                _state.AddBlockHash(bootstrap.Header.Execution.BlockNumber, bootstrap.Header.Execution.BlockHash);
+                _state.SetBlockHash(
+                    bootstrap.Header.Execution.BlockNumber,
+                    bootstrap.Header.Execution.BlockHash,
+                    BlockHashFinality.Finalized);
             }
 
             await _store.SaveAsync(_state).ConfigureAwait(false);
@@ -114,35 +117,22 @@ namespace Nethereum.Consensus.LightClient
             }
 
             var response = await _apiClient.GetOptimisticUpdateAsync().ConfigureAwait(false);
-            var update = LightClientResponseMapper.ToDomain(response);
+            var optimistic = LightClientResponseMapper.ToDomain(response);
 
-            if (update?.AttestedHeader?.Beacon == null || update.AttestedHeader.Execution == null)
+            if (optimistic?.AttestedHeader?.Beacon == null)
             {
                 return false;
             }
 
-            if (!VerifyOptimisticSyncAggregate(update))
+            var synthesized = SynthesizeUpdate(optimistic);
+            var applied = TryApplyUpdate(_state, synthesized);
+            if (applied)
             {
-                return false;
+                _state.LastUpdated = DateTimeOffset.UtcNow;
+                await _store.SaveAsync(_state).ConfigureAwait(false);
             }
 
-            if (!VerifyExecutionBranch(update.AttestedHeader))
-            {
-                return false;
-            }
-
-            _state.OptimisticHeader = update.AttestedHeader.Beacon;
-            _state.OptimisticExecutionPayload = update.AttestedHeader.Execution;
-            _state.OptimisticSlot = update.AttestedHeader.Beacon.Slot;
-            _state.OptimisticLastUpdated = DateTimeOffset.UtcNow;
-
-            if (update.AttestedHeader.Execution != null)
-            {
-                _state.AddBlockHash(update.AttestedHeader.Execution.BlockNumber, update.AttestedHeader.Execution.BlockHash);
-            }
-
-            await _store.SaveAsync(_state).ConfigureAwait(false);
-            return true;
+            return applied;
         }
 
         public async Task<bool> UpdateFinalityAsync(CancellationToken cancellationToken = default)
@@ -154,46 +144,98 @@ namespace Nethereum.Consensus.LightClient
             }
 
             var response = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
-            var update = LightClientResponseMapper.ToDomain(response);
+            var finality = LightClientResponseMapper.ToDomain(response);
 
-            if (update?.FinalizedHeader?.Beacon == null || update.FinalizedHeader.Execution == null)
+            if (finality?.FinalizedHeader?.Beacon == null)
             {
                 return false;
             }
 
-            if (!VerifyFinalitySyncAggregate(update))
+            var synthesized = SynthesizeUpdate(finality);
+            var applied = TryApplyUpdate(_state, synthesized);
+            if (applied)
             {
-                return false;
+                _state.LastUpdated = DateTimeOffset.UtcNow;
+                await _store.SaveAsync(_state).ConfigureAwait(false);
             }
 
-            if (!VerifyExecutionBranch(update.AttestedHeader))
+            return applied;
+        }
+
+        /// <summary>
+        /// Wraps a <see cref="LightClientFinalityUpdate"/> into a <see cref="LightClientUpdate"/>
+        /// with default <c>next_sync_committee</c> and <c>next_sync_committee_branch</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 549–572
+        /// (<c>process_light_client_finality_update</c>): the finality update is processed
+        /// through the same <c>process_light_client_update</c> path so the supermajority
+        /// gate, period-window guard, and rotation logic all apply uniformly.
+        /// </summary>
+        internal static LightClientUpdate SynthesizeUpdate(LightClientFinalityUpdate finality)
+        {
+            if (finality == null) return null;
+
+            var branchLen = LightClientForkSpec.NextSyncCommitteeBranchLength(finality.Fork);
+            var zeroBranch = new List<byte[]>(branchLen);
+            for (var i = 0; i < branchLen; i++)
             {
-                return false;
+                zeroBranch.Add(new byte[SszBasicTypes.RootLength]);
             }
 
-            if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+            return new LightClientUpdate
             {
-                return false;
+                Fork = finality.Fork,
+                AttestedHeader = finality.AttestedHeader,
+                NextSyncCommittee = new SyncCommittee(),
+                NextSyncCommitteeBranch = zeroBranch,
+                FinalizedHeader = finality.FinalizedHeader,
+                FinalityBranch = finality.FinalityBranch,
+                SyncAggregate = finality.SyncAggregate,
+                SignatureSlot = finality.SignatureSlot
+            };
+        }
+
+        /// <summary>
+        /// Wraps a <see cref="LightClientOptimisticUpdate"/> into a <see cref="LightClientUpdate"/>
+        /// with default <c>next_sync_committee</c>, <c>next_sync_committee_branch</c>,
+        /// <c>finalized_header</c>, and <c>finality_branch</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 573–586
+        /// (<c>process_light_client_optimistic_update</c>): the optimistic update is processed
+        /// through the same <c>process_light_client_update</c> path so the baseline
+        /// participation gate, slot monotonicity, and optimistic-header advance condition
+        /// all apply uniformly.
+        /// </summary>
+        internal static LightClientUpdate SynthesizeUpdate(LightClientOptimisticUpdate optimistic)
+        {
+            if (optimistic == null) return null;
+
+            var nextBranchLen = LightClientForkSpec.NextSyncCommitteeBranchLength(optimistic.Fork);
+            var finalityBranchLen = LightClientForkSpec.FinalityBranchLength(optimistic.Fork);
+
+            var nextZeroBranch = new List<byte[]>(nextBranchLen);
+            for (var i = 0; i < nextBranchLen; i++)
+            {
+                nextZeroBranch.Add(new byte[SszBasicTypes.RootLength]);
             }
 
-            if (!VerifyExecutionBranch(update.FinalizedHeader))
+            var finalityZeroBranch = new List<byte[]>(finalityBranchLen);
+            for (var i = 0; i < finalityBranchLen; i++)
             {
-                return false;
+                finalityZeroBranch.Add(new byte[SszBasicTypes.RootLength]);
             }
 
-            _state.FinalizedHeader = update.FinalizedHeader.Beacon;
-            _state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
-            _state.FinalizedSlot = update.FinalizedHeader.Beacon.Slot;
-            _state.CurrentPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
-            _state.LastUpdated = DateTimeOffset.UtcNow;
-
-            if (update.FinalizedHeader.Execution != null)
+            return new LightClientUpdate
             {
-                _state.AddBlockHash(update.FinalizedHeader.Execution.BlockNumber, update.FinalizedHeader.Execution.BlockHash);
-            }
-
-            await _store.SaveAsync(_state).ConfigureAwait(false);
-            return true;
+                Fork = optimistic.Fork,
+                AttestedHeader = optimistic.AttestedHeader,
+                NextSyncCommittee = new SyncCommittee(),
+                NextSyncCommitteeBranch = nextZeroBranch,
+                FinalizedHeader = new LightClientHeader { Fork = optimistic.Fork },
+                FinalityBranch = finalityZeroBranch,
+                SyncAggregate = optimistic.SyncAggregate,
+                SignatureSlot = optimistic.SignatureSlot
+            };
         }
 
         public LightClientState GetState()
@@ -305,29 +347,42 @@ namespace Nethereum.Consensus.LightClient
                 header.Beacon.StateRoot);
         }
 
+        /// <summary>
+        /// <c>process_light_client_update</c> + <c>validate_light_client_update</c> +
+        /// <c>apply_light_client_update</c> entrypoint per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 381–478, 503–548.
+        /// Validates slot monotonicity (lines 388, 398–402), period-skip window
+        /// (lines 390–395), the attested execution branch, the
+        /// <c>next_sync_committee_branch</c> when present with same-period equality
+        /// guard (lines 428–430), the <c>finality_branch</c> when present, the finalized
+        /// header execution branch, and the sync-aggregate quorum (line 543). Applies
+        /// the finalized header and optimistic header advances per
+        /// <c>apply_light_client_update</c> (lines 460–478) when the supermajority gate
+        /// plus either a finalized-slot advance or
+        /// <c>update_has_finalized_next_sync_committee</c> holds.
+        /// </summary>
         private bool TryApplyUpdate(LightClientState state, LightClientUpdate update)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (update == null) return false;
+            if (update.AttestedHeader?.Beacon == null) return false;
+            if (update.SyncAggregate == null) return false;
 
-            if (update.AttestedHeader?.Beacon == null)
+            var hasFinality = IsFinalityUpdate(update);
+            var hasSyncCommittee = IsSyncCommitteeUpdate(update);
+
+            if (hasFinality)
+            {
+                if (update.FinalizedHeader?.Beacon == null) return false;
+            }
+
+            if (!HasMonotonicSlots(state, update, hasFinality))
             {
                 return false;
             }
 
-            if (update.FinalizedHeader?.Beacon == null || update.FinalizedHeader.Execution == null)
-            {
-                return false;
-            }
-
-            if (!(update.SignatureSlot > update.AttestedHeader.Beacon.Slot &&
-                  update.AttestedHeader.Beacon.Slot >= update.FinalizedHeader.Beacon.Slot &&
-                  update.AttestedHeader.Beacon.Slot >= state.FinalizedSlot))
-            {
-                return false;
-            }
-
-            if (!VerifySyncAggregate(update))
+            if (!HasValidPeriodWindow(state, update))
             {
                 return false;
             }
@@ -337,19 +392,18 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+            if (hasSyncCommittee)
             {
-                return false;
-            }
+                var updateAttestedPeriod = ComputePeriod(update.AttestedHeader.Beacon.Slot);
+                var storePeriod = ComputePeriod(state.FinalizedSlot);
+                if (updateAttestedPeriod == storePeriod && IsNextSyncCommitteeKnown(state))
+                {
+                    if (!SyncCommitteeEquals(update.NextSyncCommittee, state.NextSyncCommittee))
+                    {
+                        return false;
+                    }
+                }
 
-            if (!VerifyExecutionBranch(update.FinalizedHeader))
-            {
-                return false;
-            }
-
-            var isSyncCommitteeUpdate = IsSyncCommitteeUpdate(update);
-            if (isSyncCommitteeUpdate)
-            {
                 if (!VerifyNextSyncCommitteeBranch(
                         update.AttestedHeader,
                         update.NextSyncCommittee,
@@ -359,29 +413,257 @@ namespace Nethereum.Consensus.LightClient
                 }
             }
 
-            var updatePeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
-
-            if (updatePeriod > state.CurrentPeriod && state.NextSyncCommittee != null)
+            if (hasFinality)
             {
-                state.CurrentSyncCommittee = state.NextSyncCommittee;
+                if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+                {
+                    return false;
+                }
+
+                if (!VerifyExecutionBranch(update.FinalizedHeader))
+                {
+                    return false;
+                }
             }
 
-            state.FinalizedHeader = update.FinalizedHeader.Beacon;
-            state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
-            state.FinalizedSlot = update.FinalizedHeader.Beacon.Slot;
-            state.CurrentPeriod = updatePeriod;
-
-            if (update.FinalizedHeader.Execution != null)
+            if (!VerifyFullUpdateSyncAggregate(update))
             {
-                state.AddBlockHash(update.FinalizedHeader.Execution.BlockNumber, update.FinalizedHeader.Execution.BlockHash);
+                return false;
             }
 
-            if (isSyncCommitteeUpdate && update.NextSyncCommittee != null)
+            var hasSupermajority = HasSupermajorityParticipation(update.SyncAggregate);
+            var finalityAdvances = hasFinality
+                                   && update.FinalizedHeader!.Beacon!.Slot > state.FinalizedSlot;
+            var updateHasFinalizedNsc = UpdateHasFinalizedNextSyncCommittee(state, update);
+
+            var willApplyFinality = hasSupermajority && (finalityAdvances || updateHasFinalizedNsc);
+            var willApplyOptimistic = update.AttestedHeader.Beacon.Slot > state.OptimisticSlot;
+
+            if (!willApplyFinality && !willApplyOptimistic)
             {
-                state.NextSyncCommittee = update.NextSyncCommittee;
+                return false;
             }
 
+            ApplyLightClientUpdate(state, update, willApplyFinality, willApplyOptimistic);
             return true;
+        }
+
+        /// <summary>
+        /// <c>validate_light_client_update</c> slot monotonicity per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 388, 398–402:
+        /// <c>signature_slot &gt; attested.slot &gt;= finalized.slot</c>; additionally
+        /// <c>attested.slot &gt; store.finalized.slot</c> OR the update introduces a next
+        /// sync committee in the store's current period (line 401).
+        /// </summary>
+        private bool HasMonotonicSlots(LightClientState state, LightClientUpdate update, bool hasFinality)
+        {
+            if (update.SignatureSlot <= update.AttestedHeader.Beacon.Slot) return false;
+
+            if (hasFinality && update.AttestedHeader.Beacon.Slot < update.FinalizedHeader!.Beacon!.Slot)
+            {
+                return false;
+            }
+
+            var attestedAdvances = update.AttestedHeader.Beacon.Slot > state.FinalizedSlot;
+            var introducesNextCommittee = !IsNextSyncCommitteeKnown(state)
+                                          && IsSyncCommitteeUpdate(update)
+                                          && ComputePeriod(update.AttestedHeader.Beacon.Slot) == ComputePeriod(state.FinalizedSlot);
+
+            if (!attestedAdvances && !introducesNextCommittee && update.AttestedHeader.Beacon.Slot < state.FinalizedSlot)
+            {
+                return false;
+            }
+
+            return attestedAdvances || introducesNextCommittee || update.AttestedHeader.Beacon.Slot >= state.FinalizedSlot;
+        }
+
+        /// <summary>
+        /// <c>apply_light_client_update</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 460–478. Rotation branch A
+        /// (next unknown + same period as store) pins the update's next sync committee.
+        /// Rotation branch B (next known + update finalized period == store period + 1)
+        /// promotes the stored next committee to current and pins a new next. When the
+        /// finalized slot advances, the finalized header and provenance-tracked finalized
+        /// block hash move forward; the optimistic header advances whenever the attested
+        /// slot moves past the optimistic slot.
+        /// </summary>
+        private void ApplyLightClientUpdate(
+            LightClientState state,
+            LightClientUpdate update,
+            bool applyFinality,
+            bool applyOptimistic)
+        {
+            if (applyFinality && IsSyncCommitteeUpdate(update) && update.NextSyncCommittee != null)
+            {
+                var storePeriod = ComputePeriod(state.FinalizedSlot);
+                var updateFinalizedPeriod = ComputePeriod(update.FinalizedHeader!.Beacon!.Slot);
+
+                if (!IsNextSyncCommitteeKnown(state))
+                {
+                    if (updateFinalizedPeriod == storePeriod)
+                    {
+                        state.NextSyncCommittee = update.NextSyncCommittee;
+                    }
+                }
+                else if (updateFinalizedPeriod == storePeriod + 1)
+                {
+                    state.CurrentSyncCommittee = state.NextSyncCommittee;
+                    state.NextSyncCommittee = update.NextSyncCommittee;
+                }
+            }
+
+            if (applyFinality)
+            {
+                state.FinalizedHeader = update.FinalizedHeader!.Beacon;
+                state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
+                state.FinalizedSlot = update.FinalizedHeader.Beacon!.Slot;
+                state.CurrentPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
+
+                if (update.FinalizedHeader.Execution != null)
+                {
+                    state.SetBlockHash(
+                        update.FinalizedHeader.Execution.BlockNumber,
+                        update.FinalizedHeader.Execution.BlockHash,
+                        BlockHashFinality.Finalized);
+                }
+            }
+
+            if (applyOptimistic)
+            {
+                state.OptimisticHeader = update.AttestedHeader.Beacon;
+                state.OptimisticExecutionPayload = update.AttestedHeader.Execution;
+                state.OptimisticSlot = update.AttestedHeader.Beacon.Slot;
+                state.OptimisticLastUpdated = DateTimeOffset.UtcNow;
+
+                if (update.AttestedHeader.Execution != null)
+                {
+                    state.SetBlockHash(
+                        update.AttestedHeader.Execution.BlockNumber,
+                        update.AttestedHeader.Execution.BlockHash,
+                        BlockHashFinality.Optimistic);
+                }
+            }
+
+            if (applyFinality && state.FinalizedSlot > state.OptimisticSlot)
+            {
+                state.OptimisticHeader = state.FinalizedHeader;
+                state.OptimisticExecutionPayload = state.FinalizedExecutionPayload;
+                state.OptimisticSlot = state.FinalizedSlot;
+                state.OptimisticLastUpdated = DateTimeOffset.UtcNow;
+            }
+        }
+
+        /// <summary>
+        /// <c>is_next_sync_committee_known(store)</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 275–277:
+        /// <c>return store.next_sync_committee != SyncCommittee()</c>. The default
+        /// <c>SyncCommittee()</c> container has 512 all-zero pubkeys and an all-zero
+        /// aggregate pubkey; any non-zero byte in the pubkey vector or the aggregate
+        /// declares "next is known". This drives the rotation branch selection in
+        /// <c>apply_light_client_update</c> (lines 460–478).
+        /// </summary>
+        internal static bool IsNextSyncCommitteeKnown(LightClientState state)
+        {
+            var nsc = state?.NextSyncCommittee;
+            if (nsc == null) return false;
+
+            if (nsc.AggregatePubKey != null)
+            {
+                for (var i = 0; i < nsc.AggregatePubKey.Length; i++)
+                {
+                    if (nsc.AggregatePubKey[i] != 0) return true;
+                }
+            }
+
+            if (nsc.PubKeys == null || nsc.PubKeys.Count == 0) return false;
+
+            foreach (var pk in nsc.PubKeys)
+            {
+                if (pk == null) continue;
+                for (var i = 0; i < pk.Length; i++)
+                {
+                    if (pk[i] != 0) return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// <c>update_has_finalized_next_sync_committee</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 534–541. True when the
+        /// store does not yet know its next sync committee, the update carries one with a
+        /// non-default branch, the update is also a finality update, and the finalized
+        /// and attested headers fall in the same sync-committee period. Used as one of
+        /// the two alternative gates to advance the finalized header even when the
+        /// finalized slot does not move forward.
+        /// </summary>
+        internal bool UpdateHasFinalizedNextSyncCommittee(LightClientState state, LightClientUpdate update)
+        {
+            if (IsNextSyncCommitteeKnown(state)) return false;
+            if (!IsSyncCommitteeUpdate(update)) return false;
+            if (!IsFinalityUpdate(update)) return false;
+            if (update?.FinalizedHeader?.Beacon == null) return false;
+            if (update.AttestedHeader?.Beacon == null) return false;
+
+            var finalizedPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
+            var attestedPeriod = ComputePeriod(update.AttestedHeader.Beacon.Slot);
+            return finalizedPeriod == attestedPeriod;
+        }
+
+        /// <summary>
+        /// <c>validate_light_client_update</c> period-skip guard per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 390–395. When the
+        /// store knows its next sync committee, the update signature period must equal
+        /// the store period or the store period plus one; otherwise the periods must be
+        /// identical. Prevents an attacker from skipping over periods with a forged
+        /// committee.
+        /// </summary>
+        private bool HasValidPeriodWindow(LightClientState state, LightClientUpdate update)
+        {
+            var storePeriod = ComputePeriod(state.FinalizedSlot);
+            var updateSignaturePeriod = ComputePeriod(update.SignatureSlot);
+
+            if (IsNextSyncCommitteeKnown(state))
+            {
+                return updateSignaturePeriod == storePeriod ||
+                       updateSignaturePeriod == storePeriod + 1;
+            }
+
+            return updateSignaturePeriod == storePeriod;
+        }
+
+        /// <summary>
+        /// Byte-strict equality of two <see cref="SyncCommittee"/> values via
+        /// <c>HashTreeRoot</c>. Implements the spec assertion
+        /// <c>assert update.next_sync_committee == store.next_sync_committee</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 428–430, which is SSZ
+        /// value equality (not C# reference equality).
+        /// </summary>
+        internal static bool SyncCommitteeEquals(SyncCommittee a, SyncCommittee b)
+        {
+            if (ReferenceEquals(a, b)) return true;
+            if (a == null || b == null) return false;
+
+            byte[] rootA;
+            byte[] rootB;
+            try
+            {
+                rootA = a.HashTreeRoot();
+                rootB = b.HashTreeRoot();
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(rootA, rootB);
         }
 
         /// <summary>
@@ -394,7 +676,7 @@ namespace Nethereum.Consensus.LightClient
         /// all-zero <c>SyncCommittee</c>. Length must match the fork-aware
         /// <see cref="LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork)"/>.
         /// </summary>
-        private static bool IsSyncCommitteeUpdate(LightClientUpdate update)
+        internal static bool IsSyncCommitteeUpdate(LightClientUpdate update)
         {
             if (update?.NextSyncCommitteeBranch == null || update.NextSyncCommitteeBranch.Count == 0)
             {
