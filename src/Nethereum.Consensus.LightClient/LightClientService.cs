@@ -60,7 +60,7 @@ namespace Nethereum.Consensus.LightClient
                 FinalizedHeader = bootstrap.Header.Beacon,
                 FinalizedExecutionPayload = bootstrap.Header.Execution,
                 CurrentSyncCommittee = bootstrap.CurrentSyncCommittee,
-                NextSyncCommittee = bootstrap.CurrentSyncCommittee,
+                NextSyncCommittee = new SyncCommittee(),
                 FinalizedSlot = bootstrap.Header.Beacon.Slot,
                 CurrentPeriod = ComputePeriod(bootstrap.Header.Beacon.Slot),
                 LastUpdated = DateTimeOffset.UtcNow
@@ -206,17 +206,103 @@ namespace Nethereum.Consensus.LightClient
             return _state;
         }
 
-        private static void ValidateBootstrap(LightClientBootstrap bootstrap)
+        /// <summary>
+        /// <c>initialize_light_client_store</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 344–362: asserts the
+        /// <c>LightClientHeader</c> validity, the trusted block root equality, and the
+        /// <c>current_sync_committee_branch</c> merkle proof against the beacon header
+        /// <c>state_root</c>. The branch length and subtree index are fork-aware per the
+        /// Electra reshape (gindex 54 → 86) in
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/electra/light-client/sync-protocol.md">
+        /// specs/electra/light-client/sync-protocol.md</see> line 56. The wire format Nethereum
+        /// emits is the spec <c>Vector[Bytes32, N]</c> with exact-length N (no leading zero
+        /// padding), so <see cref="SszMerkleizer.VerifyProof"/> (strict
+        /// <c>is_valid_merkle_branch</c>) yields the same result as
+        /// <c>is_valid_normalized_merkle_branch</c> for all current fork gindices
+        /// (consensus-spec-tests vectors confirm 241/241).
+        /// </summary>
+        private void ValidateBootstrap(LightClientBootstrap bootstrap)
         {
             if (bootstrap == null) throw new ArgumentNullException(nameof(bootstrap));
             if (bootstrap.Header?.Beacon == null)
             {
-                throw new InvalidOperationException("Bootstrap must include a beacon header.");
+                throw new InvalidOperationException("Bootstrap missing beacon header");
             }
             if (bootstrap.CurrentSyncCommittee == null)
             {
-                throw new InvalidOperationException("Bootstrap missing sync committee.");
+                throw new InvalidOperationException("Bootstrap missing sync committee");
             }
+
+            var fork = bootstrap.Header.Fork;
+            var expectedBranchLength = LightClientForkSpec.CurrentSyncCommitteeBranchDepth(fork);
+            if (bootstrap.CurrentSyncCommitteeBranch == null ||
+                bootstrap.CurrentSyncCommitteeBranch.Count != expectedBranchLength)
+            {
+                throw new InvalidOperationException(
+                    $"Bootstrap current_sync_committee_branch must be exactly {expectedBranchLength} roots for fork {fork}; got {bootstrap.CurrentSyncCommitteeBranch?.Count ?? 0}.");
+            }
+
+            if (!IsValidLightClientHeader(bootstrap.Header))
+            {
+                throw new InvalidOperationException("Bootstrap header failed is_valid_light_client_header");
+            }
+
+            var trustedRoot = _config.WeakSubjectivityRoot;
+            if (trustedRoot == null || trustedRoot.Length != SszBasicTypes.RootLength)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientConfig.WeakSubjectivityRoot must be exactly {SszBasicTypes.RootLength} bytes.");
+            }
+
+            var headerRoot = bootstrap.Header.Beacon.HashTreeRoot();
+            if (!headerRoot.SequenceEqual(trustedRoot))
+            {
+                throw new InvalidOperationException("Bootstrap header does not match weak subjectivity root");
+            }
+
+            if (!VerifyCurrentSyncCommitteeBranch(
+                    bootstrap.Header,
+                    bootstrap.CurrentSyncCommittee,
+                    bootstrap.CurrentSyncCommitteeBranch))
+            {
+                throw new InvalidOperationException("Bootstrap sync committee branch invalid");
+            }
+        }
+
+        private static bool IsValidLightClientHeader(LightClientHeader header) =>
+            VerifyExecutionBranch(header);
+
+        /// <summary>
+        /// <c>is_valid_merkle_branch(leaf=hash_tree_root(current_sync_committee), branch=current_sync_committee_branch,
+        /// depth=floorlog2(CURRENT_SYNC_COMMITTEE_GINDEX), index=get_subtree_index(CURRENT_SYNC_COMMITTEE_GINDEX),
+        /// root=header.beacon.state_root)</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 348–356. Electra+ uses
+        /// <c>CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA = 86</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/electra/light-client/sync-protocol.md">
+        /// specs/electra/light-client/sync-protocol.md</see> line 56.
+        /// </summary>
+        private static bool VerifyCurrentSyncCommitteeBranch(
+            LightClientHeader header,
+            SyncCommittee committee,
+            IList<byte[]> branch)
+        {
+            if (header?.Beacon == null || committee == null || branch == null)
+                return false;
+
+            var fork = header.Fork;
+            var depth = LightClientForkSpec.CurrentSyncCommitteeBranchDepth(fork);
+            var index = LightClientForkSpec.CurrentSyncCommitteeBranchIndex(fork);
+
+            var leaf = committee.HashTreeRoot();
+
+            return SszMerkleizer.VerifyProof(
+                leaf,
+                branch,
+                depth,
+                index,
+                header.Beacon.StateRoot);
         }
 
         private bool TryApplyUpdate(LightClientState state, LightClientUpdate update)

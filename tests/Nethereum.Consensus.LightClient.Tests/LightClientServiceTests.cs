@@ -94,7 +94,7 @@ namespace Nethereum.Consensus.LightClient.Tests
         {
             var bootstrap = TestDataFactory.CreateBootstrap(slot: 11649024, blockNumber: 100);
             var beaconClient = new StubLightClientApi(bootstrap, Array.Empty<LightClientUpdate>());
-            var config = TestDataFactory.CreateConfig();
+            var config = TestDataFactory.CreateConfig(bootstrap);
             var store = new InMemoryLightClientStore();
             var bls = new StubBls();
 
@@ -115,7 +115,7 @@ namespace Nethereum.Consensus.LightClient.Tests
             var bootstrap = TestDataFactory.CreateBootstrap(slot: 11649024, blockNumber: 100);
             var update = TestDataFactory.CreateUpdate(slot: 11649025, blockNumber: 101);
             var beaconClient = new StubLightClientApi(bootstrap, new[] { update });
-            var config = TestDataFactory.CreateConfig();
+            var config = TestDataFactory.CreateConfig(bootstrap);
             var store = new InMemoryLightClientStore();
             var bls = new StubBls { VerificationResult = true };
 
@@ -189,28 +189,65 @@ namespace Nethereum.Consensus.LightClient.Tests
             public (byte[] Signature, byte[] PublicKey) ExtractSignatureAndPublicKey(byte[] signatureWithPubKey) => throw new NotSupportedException();
         }
 
-        private static class TestDataFactory
+        internal static class TestDataFactory
         {
-            public static LightClientConfig CreateConfig()
+            public static LightClientConfig CreateConfig(LightClientBootstrap bootstrap = null)
             {
+                var trustedRoot = bootstrap?.Header?.Beacon != null
+                    ? bootstrap.Header.Beacon.HashTreeRoot()
+                    : Enumerable.Repeat((byte)0xBB, SszBasicTypes.RootLength).ToArray();
+
                 return new LightClientConfig
                 {
                     GenesisValidatorsRoot = Enumerable.Repeat((byte)0xAA, SszBasicTypes.RootLength).ToArray(),
                     SecondsPerSlot = 12,
-                    WeakSubjectivityRoot = Enumerable.Repeat((byte)0xBB, SszBasicTypes.RootLength).ToArray(),
+                    WeakSubjectivityRoot = trustedRoot,
                     WeakSubjectivityPeriod = 256 * 32UL
                 };
             }
 
-            public static LightClientBootstrap CreateBootstrap(ulong slot, ulong blockNumber)
+            public static LightClientBootstrap CreateBootstrap(ulong slot, ulong blockNumber, ConsensusFork fork = ConsensusFork.Electra)
             {
+                var committee = CreateSyncCommittee();
+                var committeeBranch = CreateValidSyncCommitteeBranch(committee.HashTreeRoot(), fork, out var stateRoot);
+                var header = CreateHeader(slot, blockNumber, stateRoot, fork);
+
                 return new LightClientBootstrap
                 {
-                    Fork = ConsensusFork.Electra,
-                    Header = CreateHeader(slot, blockNumber),
-                    CurrentSyncCommittee = CreateSyncCommittee(),
-                    CurrentSyncCommitteeBranch = CreateBranch(LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork.Electra))
+                    Fork = fork,
+                    Header = header,
+                    CurrentSyncCommittee = committee,
+                    CurrentSyncCommitteeBranch = committeeBranch
                 };
+            }
+
+            public static List<byte[]> CreateValidSyncCommitteeBranch(byte[] committeeRoot, ConsensusFork fork, out byte[] stateRoot)
+            {
+                var depth = LightClientForkSpec.CurrentSyncCommitteeBranchDepth(fork);
+                var index = LightClientForkSpec.CurrentSyncCommitteeBranchIndex(fork);
+                var branch = new List<byte[]>(depth);
+
+                for (int i = 0; i < depth; i++)
+                {
+                    var sibling = new byte[SszBasicTypes.RootLength];
+                    for (int j = 0; j < sibling.Length; j++)
+                    {
+                        sibling[j] = (byte)(0x70 + i);
+                    }
+                    branch.Add(sibling);
+                }
+
+                var current = committeeRoot;
+                for (int i = 0; i < depth; i++)
+                {
+                    if ((index & (1 << i)) != 0)
+                        current = HashPair(branch[i], current);
+                    else
+                        current = HashPair(current, branch[i]);
+                }
+
+                stateRoot = current;
+                return branch;
             }
 
             public static LightClientUpdate CreateUpdate(ulong slot, ulong blockNumber)
@@ -345,11 +382,14 @@ namespace Nethereum.Consensus.LightClient.Tests
                 return SszMerkleizer.Merkleize(fieldRoots);
             }
 
-            private static LightClientHeader CreateHeader(ulong slot, ulong blockNumber)
+            private static LightClientHeader CreateHeader(ulong slot, ulong blockNumber) =>
+                CreateHeader(slot, blockNumber, Enumerable.Repeat((byte)0x02, SszBasicTypes.RootLength).ToArray(), ConsensusFork.Electra);
+
+            private static LightClientHeader CreateHeader(ulong slot, ulong blockNumber, byte[] stateRoot, ConsensusFork fork)
             {
                 var execution = new ExecutionPayloadHeader
                 {
-                    Fork = ConsensusFork.Electra,
+                    Fork = fork,
                     ParentHash = Enumerable.Repeat((byte)0x04, SszBasicTypes.RootLength).ToArray(),
                     FeeRecipient = Enumerable.Repeat((byte)0x05, 20).ToArray(),
                     StateRoot = Enumerable.Repeat((byte)0x06, SszBasicTypes.RootLength).ToArray(),
@@ -377,13 +417,13 @@ namespace Nethereum.Consensus.LightClient.Tests
                     Slot = slot,
                     ProposerIndex = 1,
                     ParentRoot = Enumerable.Repeat((byte)0x01, SszBasicTypes.RootLength).ToArray(),
-                    StateRoot = Enumerable.Repeat((byte)0x02, SszBasicTypes.RootLength).ToArray(),
+                    StateRoot = stateRoot,
                     BodyRoot = bodyRoot
                 };
 
                 return new LightClientHeader
                 {
-                    Fork = ConsensusFork.Electra,
+                    Fork = fork,
                     Beacon = beacon,
                     Execution = execution,
                     ExecutionBranch = executionBranch
