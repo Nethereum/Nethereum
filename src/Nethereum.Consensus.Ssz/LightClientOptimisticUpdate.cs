@@ -10,7 +10,7 @@ namespace Nethereum.Consensus.Ssz
             SszBasicTypes.SyncAggregateLength +
             sizeof(ulong);
 
-        public ConsensusFork Fork { get; set; } = ConsensusFork.Electra;
+        public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
 
         public LightClientHeader AttestedHeader { get; set; } = new LightClientHeader();
         public SyncAggregate SyncAggregate { get; set; } = new SyncAggregate();

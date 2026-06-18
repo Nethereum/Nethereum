@@ -9,7 +9,7 @@ namespace Nethereum.Consensus.Ssz
         private const int FeeRecipientLength = 20;
         private const int ExtraDataMaxLength = 32;
 
-        public ConsensusFork Fork { get; set; } = ConsensusFork.Electra;
+        public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
 
         public byte[] ParentHash { get; set; } = new byte[SszBasicTypes.RootLength];
         public byte[] FeeRecipient { get; set; } = new byte[FeeRecipientLength];

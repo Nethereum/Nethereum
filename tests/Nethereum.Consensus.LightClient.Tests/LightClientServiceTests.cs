@@ -197,7 +197,6 @@ namespace Nethereum.Consensus.LightClient.Tests
                 {
                     GenesisValidatorsRoot = Enumerable.Repeat((byte)0xAA, SszBasicTypes.RootLength).ToArray(),
                     CurrentForkVersion = new byte[] { 0x11, 0x22, 0x33, 0x44 },
-                    SlotsPerEpoch = 32,
                     SecondsPerSlot = 12,
                     WeakSubjectivityRoot = Enumerable.Repeat((byte)0xBB, SszBasicTypes.RootLength).ToArray(),
                     WeakSubjectivityPeriod = 256 * 32UL
@@ -208,6 +207,7 @@ namespace Nethereum.Consensus.LightClient.Tests
             {
                 return new LightClientBootstrap
                 {
+                    Fork = ConsensusFork.Electra,
                     Header = CreateHeader(slot, blockNumber),
                     CurrentSyncCommittee = CreateSyncCommittee(),
                     CurrentSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength)
@@ -224,6 +224,7 @@ namespace Nethereum.Consensus.LightClient.Tests
 
                 return new LightClientUpdate
                 {
+                    Fork = ConsensusFork.Electra,
                     AttestedHeader = attestedHeader,
                     FinalizedHeader = finalizedHeader,
                     SyncAggregate = CreateSyncAggregate(),
@@ -346,6 +347,7 @@ namespace Nethereum.Consensus.LightClient.Tests
             {
                 var execution = new ExecutionPayloadHeader
                 {
+                    Fork = ConsensusFork.Electra,
                     ParentHash = Enumerable.Repeat((byte)0x04, SszBasicTypes.RootLength).ToArray(),
                     FeeRecipient = Enumerable.Repeat((byte)0x05, 20).ToArray(),
                     StateRoot = Enumerable.Repeat((byte)0x06, SszBasicTypes.RootLength).ToArray(),
@@ -379,6 +381,7 @@ namespace Nethereum.Consensus.LightClient.Tests
 
                 return new LightClientHeader
                 {
+                    Fork = ConsensusFork.Electra,
                     Beacon = beacon,
                     Execution = execution,
                     ExecutionBranch = executionBranch
@@ -451,6 +454,7 @@ namespace Nethereum.Consensus.LightClient.Tests
             {
                 var execution = new ExecutionPayloadHeader
                 {
+                    Fork = ConsensusFork.Electra,
                     ParentHash = Enumerable.Repeat((byte)0x04, SszBasicTypes.RootLength).ToArray(),
                     FeeRecipient = Enumerable.Repeat((byte)0x05, 20).ToArray(),
                     StateRoot = Enumerable.Repeat((byte)0x06, SszBasicTypes.RootLength).ToArray(),
@@ -484,6 +488,7 @@ namespace Nethereum.Consensus.LightClient.Tests
 
                 return new LightClientHeader
                 {
+                    Fork = ConsensusFork.Electra,
                     Beacon = beacon,
                     Execution = execution,
                     ExecutionBranch = executionBranch

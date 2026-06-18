@@ -475,6 +475,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             return new ExecutionPayloadHeader
             {
+                Fork = ConsensusFork.Electra,
                 ParentHash = Bytes(32, 0x01),
                 FeeRecipient = Bytes(20, 0x02),
                 StateRoot = Bytes(32, 0x03),
@@ -521,6 +522,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             return new LightClientBootstrap
             {
+                Fork = ConsensusFork.Electra,
                 Header = CreateLightClientHeader(0x60),
                 CurrentSyncCommittee = CreateSyncCommittee(),
                 CurrentSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength, 0x50)
@@ -531,6 +533,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             return new LightClientUpdate
             {
+                Fork = ConsensusFork.Electra,
                 AttestedHeader = CreateLightClientHeader(0x70),
                 NextSyncCommittee = CreateSyncCommittee(),
                 NextSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength, 0x70),
@@ -545,6 +548,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             return new LightClientHeader
             {
+                Fork = ConsensusFork.Electra,
                 Beacon = CreateBeaconHeader(),
                 Execution = CreateExecutionHeader(),
                 ExecutionBranch = CreateBranch(SszBasicTypes.ExecutionBranchLength, branchSeed)
@@ -555,6 +559,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             return new LightClientFinalityUpdate
             {
+                Fork = ConsensusFork.Electra,
                 AttestedHeader = CreateLightClientHeader(0xA0),
                 FinalizedHeader = CreateLightClientHeader(0xB0),
                 FinalityBranch = CreateBranch(LightClientForkSpec.FinalityBranchLength(ConsensusFork.Electra),0xA0),
@@ -567,6 +572,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         {
             return new LightClientOptimisticUpdate
             {
+                Fork = ConsensusFork.Electra,
                 AttestedHeader = CreateLightClientHeader(0xC0),
                 SyncAggregate = CreateSyncAggregate(),
                 SignatureSlot = 222333

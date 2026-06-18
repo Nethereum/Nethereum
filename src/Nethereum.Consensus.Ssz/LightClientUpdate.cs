@@ -6,7 +6,7 @@ namespace Nethereum.Consensus.Ssz
 {
     public class LightClientUpdate
     {
-        public ConsensusFork Fork { get; set; } = ConsensusFork.Electra;
+        public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
 
         public LightClientHeader AttestedHeader { get; set; } = new LightClientHeader();
         public SyncCommittee NextSyncCommittee { get; set; } = new SyncCommittee();

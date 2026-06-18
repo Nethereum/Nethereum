@@ -293,7 +293,6 @@ namespace Nethereum.Wallet.Services.VerifiedState
                 {
                     GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
                     CurrentForkVersion = currentForkVersion,
-                    SlotsPerEpoch = 32,
                     SecondsPerSlot = 12,
                     WeakSubjectivityRoot = weakSubjectivityRoot
                 };
@@ -304,7 +303,6 @@ namespace Nethereum.Wallet.Services.VerifiedState
                 {
                     GenesisValidatorsRoot = "0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078".HexToByteArray(),
                     CurrentForkVersion = currentForkVersion,
-                    SlotsPerEpoch = 32,
                     SecondsPerSlot = 12,
                     WeakSubjectivityRoot = weakSubjectivityRoot
                 };
@@ -315,7 +313,6 @@ namespace Nethereum.Wallet.Services.VerifiedState
                 {
                     GenesisValidatorsRoot = "0x9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1".HexToByteArray(),
                     CurrentForkVersion = currentForkVersion,
-                    SlotsPerEpoch = 32,
                     SecondsPerSlot = 12,
                     WeakSubjectivityRoot = weakSubjectivityRoot
                 };
@@ -324,7 +321,6 @@ namespace Nethereum.Wallet.Services.VerifiedState
             return new LightClientConfig
             {
                 CurrentForkVersion = currentForkVersion,
-                SlotsPerEpoch = 32,
                 SecondsPerSlot = 12,
                 WeakSubjectivityRoot = weakSubjectivityRoot
             };

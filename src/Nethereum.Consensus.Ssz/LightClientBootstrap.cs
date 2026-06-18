@@ -11,7 +11,7 @@ namespace Nethereum.Consensus.Ssz
             SszBasicTypes.SyncCommitteeLength +
             LightClientForkSpec.CurrentSyncCommitteeBranchLength * SszBasicTypes.RootLength;
 
-        public ConsensusFork Fork { get; set; } = ConsensusFork.Electra;
+        public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
 
         public LightClientHeader Header { get; set; } = new LightClientHeader();
         public SyncCommittee CurrentSyncCommittee { get; set; } = new SyncCommittee();

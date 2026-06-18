@@ -11,7 +11,7 @@ namespace Nethereum.Consensus.Ssz
     /// </summary>
     public class LightClientHeader
     {
-        public ConsensusFork Fork { get; set; } = ConsensusFork.Electra;
+        public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
 
         public BeaconBlockHeader Beacon { get; set; } = new BeaconBlockHeader();
         public ExecutionPayloadHeader Execution { get; set; } = new ExecutionPayloadHeader();

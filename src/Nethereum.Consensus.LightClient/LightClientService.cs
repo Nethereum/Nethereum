@@ -342,7 +342,7 @@ namespace Nethereum.Consensus.LightClient
 
         private ulong ComputePeriod(ulong slot)
         {
-            var slotsPerPeriod = _config.SlotsPerEpoch * 256;
+            var slotsPerPeriod = _config.ChainSpec.SlotsPerEpoch * 256;
             if (slotsPerPeriod == 0)
             {
                 return 0;

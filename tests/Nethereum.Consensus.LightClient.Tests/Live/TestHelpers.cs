@@ -60,7 +60,6 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             {
                 GenesisValidatorsRoot = TestConstants.MainnetGenesisValidatorsRoot,
                 CurrentForkVersion = TestConstants.MainnetCurrentForkVersion,
-                SlotsPerEpoch = 32,
                 SecondsPerSlot = 12,
                 WeakSubjectivityRoot = weakSubjectivityRoot
             };
