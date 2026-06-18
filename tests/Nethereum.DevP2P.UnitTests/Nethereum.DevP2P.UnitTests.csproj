@@ -15,10 +15,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DevP2P.Eth\Nethereum.DevP2P.Eth.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.LightSync\Nethereum.LightSync.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Model\Nethereum.Model.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
 </Project>
