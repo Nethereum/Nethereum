@@ -235,31 +235,63 @@ namespace Nethereum.DevP2P.Sync
         private void OnPushMessageReceived(object? sender, RlpxConnection.RlpxPushMessageEventArgs e)
         {
             var localId = e.MessageId - _ethOffset;
+            switch (localId)
+            {
+                case EthMessageIds.NewBlock:
+                    DispatchPush(localId, e.Payload, NewBlockMessageEncoder.Decode, NewBlockReceived);
+                    break;
+                case EthMessageIds.NewBlockHashes:
+                    DispatchPush(localId, e.Payload, NewBlockHashesMessageEncoder.Decode, NewBlockHashesReceived);
+                    break;
+                case EthMessageIds.Transactions:
+                    DispatchPush(localId, e.Payload, TransactionsMessageEncoder.Decode, TransactionsReceived);
+                    break;
+                case EthMessageIds.NewPooledTransactionHashes:
+                    DispatchPush(localId, e.Payload, NewPooledTransactionHashesMessageEncoder.Decode, NewPooledTransactionHashesReceived);
+                    break;
+                case EthMessageIds.BlockRangeUpdate:
+                    DispatchPush(localId, e.Payload, BlockRangeUpdateMessageEncoder.Decode, BlockRangeUpdateReceived);
+                    break;
+            }
+        }
+
+        private void DispatchPush<T>(int localId, byte[] payload, Func<byte[], T> decoder, EventHandler<T>? subscribers)
+        {
+            T decoded;
             try
             {
-                switch (localId)
-                {
-                    case EthMessageIds.NewBlock:
-                        NewBlockReceived?.Invoke(this, NewBlockMessageEncoder.Decode(e.Payload));
-                        break;
-                    case EthMessageIds.NewBlockHashes:
-                        NewBlockHashesReceived?.Invoke(this, NewBlockHashesMessageEncoder.Decode(e.Payload));
-                        break;
-                    case EthMessageIds.Transactions:
-                        TransactionsReceived?.Invoke(this, TransactionsMessageEncoder.Decode(e.Payload));
-                        break;
-                    case EthMessageIds.NewPooledTransactionHashes:
-                        NewPooledTransactionHashesReceived?.Invoke(this, NewPooledTransactionHashesMessageEncoder.Decode(e.Payload));
-                        break;
-                    case EthMessageIds.BlockRangeUpdate:
-                        BlockRangeUpdateReceived?.Invoke(this, BlockRangeUpdateMessageEncoder.Decode(e.Payload));
-                        break;
-                }
+                decoded = decoder(payload);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {
-                // Decoder failures on push messages must not crash the connection.
+                _ = SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
+                return;
             }
+
+            if (subscribers == null) return;
+            try
+            {
+                subscribers.Invoke(this, decoded);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+            }
+        }
+
+        private async Task SafeDisconnectAsync(DisconnectReason reason)
+        {
+            var conn = _connection;
+            if (conn == null) return;
+            try { await conn.DisconnectAsync(reason); }
+            catch { }
         }
 
         public async ValueTask DisposeAsync()

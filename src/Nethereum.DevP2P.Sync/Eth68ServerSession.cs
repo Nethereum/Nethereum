@@ -2,16 +2,22 @@ using System;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.DevP2P.Rlpx;
 using Nethereum.Model.P2P;
 
 namespace Nethereum.DevP2P.Sync
 {
     /// <summary>
-    /// Runs the eth/68 server-side message loop on an accepted RlpxConnection:
+    /// Runs the eth/68+eth/69 server-side message loop on an accepted RlpxConnection:
     /// exchanges Status with the remote peer, then dispatches incoming
     /// GetBlockHeaders / GetBlockBodies / GetReceipts to an IEth68RequestHandler
     /// and writes back the typed response. Ping/Pong is handled by RlpxConnection.
+    /// Protocol-version branching (eth/68 vs eth/69) is driven by
+    /// <see cref="RemoteStatus"/>.ProtocolVersion after the Status exchange:
+    /// BlockRangeUpdate (msg-id 0x11) is defined only for eth/69+ per
+    /// https://github.com/ethereum/devp2p/blob/master/caps/eth.md.
     /// </summary>
     public class Eth68ServerSession
     {
@@ -29,6 +35,8 @@ namespace Nethereum.DevP2P.Sync
         private readonly RlpxConnection _connection;
         private readonly IEth68RequestHandler _handler;
         private readonly Eth68StatusMessage _localStatus;
+        private readonly Nethereum.DevP2P.NodeDb.PersistentPeerCache? _peerCache;
+        private readonly ILogger _logger;
 
         public int EthOffset { get; private set; }
         public Eth68StatusMessage? RemoteStatus { get; private set; }
@@ -42,11 +50,15 @@ namespace Nethereum.DevP2P.Sync
         public Eth68ServerSession(
             RlpxConnection connection,
             IEth68RequestHandler handler,
-            Eth68StatusMessage localStatus)
+            Eth68StatusMessage localStatus,
+            Nethereum.DevP2P.NodeDb.PersistentPeerCache? peerCache = null,
+            ILogger<Eth68ServerSession>? logger = null)
         {
             _connection = connection;
             _handler = handler;
             _localStatus = localStatus;
+            _peerCache = peerCache;
+            _logger = logger ?? (ILogger)NullLogger<Eth68ServerSession>.Instance;
         }
 
         /// <summary>
@@ -134,23 +146,107 @@ namespace Nethereum.DevP2P.Sync
                     await HandleGetPooledTransactionsAsync(payload, cancellationToken);
                     break;
                 case EthMessageIds.NewBlock:
-                    try { NewBlockReceived?.Invoke(this, NewBlockMessageEncoder.Decode(payload)); } catch { }
+                    await HandlePushAsync<NewBlockMessage>(
+                        localId, payload,
+                        static p => NewBlockMessageEncoder.Decode(p),
+                        static (_, _) => true,
+                        NewBlockReceived);
                     break;
                 case EthMessageIds.NewBlockHashes:
-                    try { NewBlockHashesReceived?.Invoke(this, NewBlockHashesMessageEncoder.Decode(payload)); } catch { }
+                    await HandlePushAsync<NewBlockHashesMessage>(
+                        localId, payload,
+                        static p => NewBlockHashesMessageEncoder.Decode(p),
+                        static (_, _) => true,
+                        NewBlockHashesReceived);
                     break;
                 case EthMessageIds.Transactions:
-                    try { TransactionsReceived?.Invoke(this, TransactionsMessageEncoder.Decode(payload)); } catch { }
+                    await HandlePushAsync<TransactionsMessage>(
+                        localId, payload,
+                        static p => TransactionsMessageEncoder.Decode(p),
+                        static (m, _) => m.Transactions != null && m.Transactions.Count > 0,
+                        TransactionsReceived);
                     break;
                 case EthMessageIds.NewPooledTransactionHashes:
-                    try { NewPooledTransactionHashesReceived?.Invoke(this, NewPooledTransactionHashesMessageEncoder.Decode(payload)); } catch { }
+                    await HandlePushAsync<NewPooledTransactionHashesMessage>(
+                        localId, payload,
+                        static p => NewPooledTransactionHashesMessageEncoder.Decode(p),
+                        static (m, _) =>
+                            m.Types != null && m.Sizes != null && m.Hashes != null &&
+                            m.Types.Length == m.Sizes.Count &&
+                            m.Sizes.Count == m.Hashes.Count,
+                        NewPooledTransactionHashesReceived);
                     break;
                 case EthMessageIds.BlockRangeUpdate:
-                    try { BlockRangeUpdateReceived?.Invoke(this, BlockRangeUpdateMessageEncoder.Decode(payload)); } catch { }
+                    if (RemoteStatus == null || RemoteStatus.ProtocolVersion < 69)
+                    {
+                        await ProtocolBreachAsync(localId, "BlockRangeUpdate received on eth/68 (only valid on eth/69+)");
+                        return;
+                    }
+                    await HandlePushAsync<BlockRangeUpdateMessage>(
+                        localId, payload,
+                        static p => BlockRangeUpdateMessageEncoder.Decode(p),
+                        static (m, _) => m.EarliestBlock <= m.LatestBlock,
+                        BlockRangeUpdateReceived);
                     break;
                 default:
                     break;
             }
+        }
+
+        private async Task HandlePushAsync<T>(
+            int localId,
+            byte[] payload,
+            Func<byte[], T> decoder,
+            Func<T, Eth68ServerSession, bool> bodyValidator,
+            EventHandler<T>? subscribers)
+        {
+            T decoded;
+            try
+            {
+                decoded = decoder(payload);
+            }
+            catch (Exception ex)
+            {
+                _peerCache?.RecordFailure(_connection.RemoteEndpoint ?? string.Empty);
+                _logger.LogWarning(ex, "eth decode failed for msgId 0x{MsgId:X2} from {Peer}; ProtocolBreach", localId, _connection.RemoteEndpoint);
+                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
+                return;
+            }
+
+            if (!bodyValidator(decoded, this))
+            {
+                _peerCache?.RecordFailure(_connection.RemoteEndpoint ?? string.Empty);
+                _logger.LogWarning("eth body-rule violation for msgId 0x{MsgId:X2} from {Peer}; ProtocolBreach", localId, _connection.RemoteEndpoint);
+                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
+                return;
+            }
+
+            if (subscribers == null) return;
+            try
+            {
+                subscribers.Invoke(this, decoded);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "eth subscriber threw on msgId 0x{MsgId:X2} from {Peer}; session continues", localId, _connection.RemoteEndpoint);
+            }
+        }
+
+        private async Task ProtocolBreachAsync(int localId, string reason)
+        {
+            _peerCache?.RecordFailure(_connection.RemoteEndpoint ?? string.Empty);
+            _logger.LogWarning("eth ProtocolBreach on msgId 0x{MsgId:X2} from {Peer}: {Reason}", localId, _connection.RemoteEndpoint, reason);
+            await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
+        }
+
+        private async Task SafeDisconnectAsync(DisconnectReason reason)
+        {
+            try { await _connection.DisconnectAsync(reason); }
+            catch { }
         }
 
         private async Task HandleGetHeadersAsync(byte[] payload, CancellationToken cancellationToken)

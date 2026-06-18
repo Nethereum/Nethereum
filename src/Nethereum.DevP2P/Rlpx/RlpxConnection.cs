@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Nethereum.DevP2P.Common;
 using Nethereum.DevP2P.Crypto;
@@ -56,6 +57,23 @@ namespace Nethereum.DevP2P.Rlpx
                 maxCachedKeys: 1);
 
         private const int PingLimiterKey = 0;
+
+        /// <summary>
+        /// Capacity for the per-connection push-message back-pressure channel.
+        /// The eth wire spec
+        /// (https://github.com/ethereum/devp2p/blob/master/caps/eth.md) treats
+        /// unsolicited pushes (NewBlock, NewBlockHashes, Transactions,
+        /// NewPooledTransactionHashes, BlockRangeUpdate) as fire-and-forget.
+        /// A subscriber that takes long enough to overflow this queue is
+        /// presumed to be slow, not stuck; the oldest pending push is dropped
+        /// rather than blocking the read loop or growing memory unbounded.
+        /// </summary>
+        private const int PushChannelCapacity = 1024;
+
+        private Channel<RlpxPushMessageEventArgs>? _pushChannel;
+        private Task? _pushPumpTask;
+        private CancellationTokenSource? _pushPumpCts;
+        private readonly object _pushPumpLock = new object();
 
         public bool IsConnected { get; private set; }
         public HelloMessage RemoteHello { get; private set; }
@@ -449,10 +467,60 @@ namespace Nethereum.DevP2P.Rlpx
 
                 // Unsolicited message arrived during the request wait. Surface
                 // it via the push event so callers can subscribe instead of
-                // dropping it on the floor.
-                try { PushMessageReceived?.Invoke(this, new RlpxPushMessageEventArgs(msgId, payload)); }
-                catch { }
+                // dropping it on the floor. Routed through a bounded
+                // back-pressure channel so a slow subscriber cannot block the
+                // read loop or grow memory unbounded.
+                EnqueuePush(new RlpxPushMessageEventArgs(msgId, payload));
             }
+        }
+
+        private void EnqueuePush(RlpxPushMessageEventArgs args)
+        {
+            if (PushMessageReceived == null) return;
+            EnsurePushPumpStarted();
+            var channel = _pushChannel;
+            if (channel == null) return;
+            // DropOldest writer never blocks: TryWrite always succeeds when the
+            // channel is bounded with FullMode=DropOldest, returning false only
+            // if the channel is closed.
+            channel.Writer.TryWrite(args);
+        }
+
+        private void EnsurePushPumpStarted()
+        {
+            if (_pushPumpTask != null) return;
+            lock (_pushPumpLock)
+            {
+                if (_pushPumpTask != null) return;
+                _pushChannel = Channel.CreateBounded<RlpxPushMessageEventArgs>(
+                    new BoundedChannelOptions(PushChannelCapacity)
+                    {
+                        FullMode = BoundedChannelFullMode.DropOldest,
+                        SingleReader = true,
+                        SingleWriter = true
+                    });
+                _pushPumpCts = new CancellationTokenSource();
+                _pushPumpTask = Task.Run(() => PushPumpAsync(_pushChannel!.Reader, _pushPumpCts!.Token));
+            }
+        }
+
+        private async Task PushPumpAsync(ChannelReader<RlpxPushMessageEventArgs> reader, CancellationToken ct)
+        {
+            try
+            {
+                while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
+                {
+                    while (reader.TryRead(out var args))
+                    {
+                        var handler = PushMessageReceived;
+                        if (handler == null) continue;
+                        try { handler.Invoke(this, args); }
+                        catch { /* subscriber bug — wire stays alive */ }
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch { }
         }
 
         public class RlpxPushMessageEventArgs : EventArgs
@@ -569,11 +637,14 @@ namespace Nethereum.DevP2P.Rlpx
             if (_disposed) return;
             _disposed = true;
             MarkDisconnected();
+            try { _pushPumpCts?.Cancel(); } catch { }
+            try { _pushChannel?.Writer.TryComplete(); } catch { }
             _pingTimer?.Dispose();
             _stream?.Dispose();
             _tcp?.Dispose();
             _writeLock.Dispose();
             _readLock.Dispose();
+            try { _pushPumpCts?.Dispose(); } catch { }
         }
     }
 
