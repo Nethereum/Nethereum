@@ -4,6 +4,14 @@ using Nethereum.Ssz;
 
 namespace Nethereum.Consensus.Ssz
 {
+    /// <summary>
+    /// <c>LightClientFinalityUpdate</c> SSZ container per
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+    /// specs/altair/light-client/sync-protocol.md</see>. At Altair/Bellatrix the
+    /// <c>attested_header</c> and <c>finalized_header</c> fields are fixed-size 112-byte
+    /// beacon headers inlined per SSZ rules; at Capella+ they become variable-size and are
+    /// offset-encoded.
+    /// </summary>
     public class LightClientFinalityUpdate
     {
         public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
@@ -14,11 +22,16 @@ namespace Nethereum.Consensus.Ssz
         public SyncAggregate SyncAggregate { get; set; } = new SyncAggregate();
         public ulong SignatureSlot { get; set; }
 
-        private static int ComputeFixedSectionLength(ConsensusFork fork) =>
-            (sizeof(uint) * 2) +
-            SszBasicTypes.BranchByteLength(LightClientForkSpec.FinalityBranchLength(fork)) +
-            SszBasicTypes.SyncAggregateLength +
-            sizeof(ulong);
+        private static int ComputeFixedSectionLength(ConsensusFork fork)
+        {
+            var headerSlotBytes = LightClientForkSpec.HasExecutionPayloadHeader(fork)
+                ? sizeof(uint)
+                : SszBasicTypes.BeaconBlockHeaderLength;
+            return (headerSlotBytes * 2) +
+                   SszBasicTypes.BranchByteLength(LightClientForkSpec.FinalityBranchLength(fork)) +
+                   SszBasicTypes.SyncAggregateLength +
+                   sizeof(ulong);
+        }
 
         public byte[] Encode() => Encode(Fork);
 
@@ -39,17 +52,30 @@ namespace Nethereum.Consensus.Ssz
                     $"FinalityBranch must contain {branchLen} entries for fork {fork}.");
             }
 
-            var fixedLen = ComputeFixedSectionLength(fork);
             using var writer = new SszWriter();
-            writer.WriteUInt32((uint)fixedLen);
-            var finalizedOffset = fixedLen + attestedBytes.Length;
-            writer.WriteUInt32((uint)finalizedOffset);
+            if (LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var fixedLen = ComputeFixedSectionLength(fork);
+                writer.WriteUInt32((uint)fixedLen);
+                var finalizedOffset = fixedLen + attestedBytes.Length;
+                writer.WriteUInt32((uint)finalizedOffset);
+                writer.WriteFixedRootVector(branch, branchLen);
+                writer.WriteBytes(aggregateBytes);
+                writer.WriteUInt64(SignatureSlot);
+
+                var fixedSection = writer.ToArray();
+                return SszContainerEncoding.Combine(fixedSection, attestedBytes, finalizedBytes);
+            }
+
+            SszBasicTypes.ValidateFixedLength(attestedBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(AttestedHeader));
+            SszBasicTypes.ValidateFixedLength(finalizedBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(FinalizedHeader));
+
+            writer.WriteBytes(attestedBytes);
+            writer.WriteBytes(finalizedBytes);
             writer.WriteFixedRootVector(branch, branchLen);
             writer.WriteBytes(aggregateBytes);
             writer.WriteUInt64(SignatureSlot);
-
-            var fixedSection = writer.ToArray();
-            return SszContainerEncoding.Combine(fixedSection, attestedBytes, finalizedBytes);
+            return writer.ToArray();
         }
 
         public static LightClientFinalityUpdate Decode(byte[] data, ConsensusFork fork)
@@ -64,6 +90,26 @@ namespace Nethereum.Consensus.Ssz
             }
 
             var reader = new SszReader(data);
+
+            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var attestedInline = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
+                var finalizedInline = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
+                var finalityBranchAlt = reader.ReadFixedRootVector(LightClientForkSpec.FinalityBranchLength(fork));
+                var aggregateBytesAlt = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
+                var slotAlt = reader.ReadUInt64();
+
+                return new LightClientFinalityUpdate
+                {
+                    Fork = fork,
+                    AttestedHeader = LightClientHeader.Decode(attestedInline, fork),
+                    FinalizedHeader = LightClientHeader.Decode(finalizedInline, fork),
+                    FinalityBranch = finalityBranchAlt,
+                    SyncAggregate = SyncAggregate.Decode(aggregateBytesAlt),
+                    SignatureSlot = slotAlt
+                };
+            }
+
             var attestedOffset = reader.ReadUInt32();
             var finalizedOffset = reader.ReadUInt32();
             var finalityBranch = reader.ReadFixedRootVector(LightClientForkSpec.FinalityBranchLength(fork));

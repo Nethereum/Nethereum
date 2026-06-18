@@ -12,6 +12,9 @@ namespace Nethereum.Consensus.Ssz
     /// specs/electra/light-client/sync-protocol.md</see> line 56. Both
     /// <c>next_sync_committee_branch</c> and <c>finality_branch</c> are fork-aware:
     /// next-committee branch depth 5 Altair–Deneb / 6 Electra+; finality branch depth 6 / 7.
+    /// At Altair/Bellatrix the <c>attested_header</c> and <c>finalized_header</c> fields are
+    /// fixed-size 112-byte beacon headers inlined per SSZ rules; at Capella+ they become
+    /// variable-size and are offset-encoded.
     /// </summary>
     public class LightClientUpdate
     {
@@ -25,14 +28,19 @@ namespace Nethereum.Consensus.Ssz
         public SyncAggregate SyncAggregate { get; set; } = new SyncAggregate();
         public ulong SignatureSlot { get; set; }
 
-        private static int ComputeFixedSectionLength(ConsensusFork fork) =>
-            sizeof(uint) +
-            SszBasicTypes.SyncCommitteeLength +
-            SszBasicTypes.BranchByteLength(LightClientForkSpec.NextSyncCommitteeBranchLength(fork)) +
-            sizeof(uint) +
-            SszBasicTypes.BranchByteLength(LightClientForkSpec.FinalityBranchLength(fork)) +
-            SszBasicTypes.SyncAggregateLength +
-            sizeof(ulong);
+        private static int ComputeFixedSectionLength(ConsensusFork fork)
+        {
+            var headerSlotBytes = LightClientForkSpec.HasExecutionPayloadHeader(fork)
+                ? sizeof(uint)
+                : SszBasicTypes.BeaconBlockHeaderLength;
+            return headerSlotBytes +
+                   SszBasicTypes.SyncCommitteeLength +
+                   SszBasicTypes.BranchByteLength(LightClientForkSpec.NextSyncCommitteeBranchLength(fork)) +
+                   headerSlotBytes +
+                   SszBasicTypes.BranchByteLength(LightClientForkSpec.FinalityBranchLength(fork)) +
+                   SszBasicTypes.SyncAggregateLength +
+                   sizeof(ulong);
+        }
 
         public byte[] Encode() => Encode(Fork);
 
@@ -55,21 +63,36 @@ namespace Nethereum.Consensus.Ssz
             ValidateBranchCount(nextBranch, nextBranchLen, nameof(NextSyncCommitteeBranch));
             ValidateBranchCount(finalityBranch, finalityBranchLen, nameof(FinalityBranch));
 
-            var fixedLen = ComputeFixedSectionLength(fork);
-            var attestedOffset = fixedLen;
-            var finalizedOffset = attestedOffset + attestedBytes.Length;
-
             using var writer = new SszWriter();
-            writer.WriteUInt32((uint)attestedOffset);
+            if (LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var fixedLen = ComputeFixedSectionLength(fork);
+                var attestedOffset = fixedLen;
+                var finalizedOffset = attestedOffset + attestedBytes.Length;
+
+                writer.WriteUInt32((uint)attestedOffset);
+                writer.WriteBytes(nextCommitteeBytes);
+                writer.WriteFixedRootVector(nextBranch, nextBranchLen);
+                writer.WriteUInt32((uint)finalizedOffset);
+                writer.WriteFixedRootVector(finalityBranch, finalityBranchLen);
+                writer.WriteBytes(aggregateBytes);
+                writer.WriteUInt64(SignatureSlot);
+
+                var fixedSection = writer.ToArray();
+                return SszContainerEncoding.Combine(fixedSection, attestedBytes, finalizedBytes);
+            }
+
+            SszBasicTypes.ValidateFixedLength(attestedBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(AttestedHeader));
+            SszBasicTypes.ValidateFixedLength(finalizedBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(FinalizedHeader));
+
+            writer.WriteBytes(attestedBytes);
             writer.WriteBytes(nextCommitteeBytes);
             writer.WriteFixedRootVector(nextBranch, nextBranchLen);
-            writer.WriteUInt32((uint)finalizedOffset);
+            writer.WriteBytes(finalizedBytes);
             writer.WriteFixedRootVector(finalityBranch, finalityBranchLen);
             writer.WriteBytes(aggregateBytes);
             writer.WriteUInt64(SignatureSlot);
-
-            var fixedSection = writer.ToArray();
-            return SszContainerEncoding.Combine(fixedSection, attestedBytes, finalizedBytes);
+            return writer.ToArray();
         }
 
         public static LightClientUpdate Decode(byte[] data, ConsensusFork fork)
@@ -84,23 +107,47 @@ namespace Nethereum.Consensus.Ssz
             }
 
             var reader = new SszReader(data);
-            var attestedOffset = reader.ReadUInt32();
+
+            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var attestedInline = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
+                var nextCommitteeBytesAlt = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
+                var nextBranchAlt = reader.ReadFixedRootVector(LightClientForkSpec.NextSyncCommitteeBranchLength(fork));
+                var finalizedInline = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
+                var finalityBranchAlt = reader.ReadFixedRootVector(LightClientForkSpec.FinalityBranchLength(fork));
+                var aggregateBytesAlt = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
+                var signatureSlotAlt = reader.ReadUInt64();
+
+                return new LightClientUpdate
+                {
+                    Fork = fork,
+                    AttestedHeader = LightClientHeader.Decode(attestedInline, fork),
+                    NextSyncCommittee = SyncCommittee.Decode(nextCommitteeBytesAlt),
+                    NextSyncCommitteeBranch = nextBranchAlt,
+                    FinalizedHeader = LightClientHeader.Decode(finalizedInline, fork),
+                    FinalityBranch = finalityBranchAlt,
+                    SyncAggregate = SyncAggregate.Decode(aggregateBytesAlt),
+                    SignatureSlot = signatureSlotAlt
+                };
+            }
+
+            var attestedOffsetCap = reader.ReadUInt32();
             var nextSyncCommitteeBytes = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
             var nextBranch = reader.ReadFixedRootVector(LightClientForkSpec.NextSyncCommitteeBranchLength(fork));
-            var finalizedOffset = reader.ReadUInt32();
+            var finalizedOffsetCap = reader.ReadUInt32();
             var finalityBranch = reader.ReadFixedRootVector(LightClientForkSpec.FinalityBranchLength(fork));
             var syncAggregateBytes = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
             var signatureSlot = reader.ReadUInt64();
 
-            ValidateOffset(data.Length, attestedOffset, "attested_header", fixedLen);
-            ValidateOffset(data.Length, finalizedOffset, "finalized_header", fixedLen);
-            if (finalizedOffset < attestedOffset)
+            ValidateOffset(data.Length, attestedOffsetCap, "attested_header", fixedLen);
+            ValidateOffset(data.Length, finalizedOffsetCap, "finalized_header", fixedLen);
+            if (finalizedOffsetCap < attestedOffsetCap)
             {
                 throw new InvalidOperationException(
-                    $"LightClientUpdate: finalized_header offset {finalizedOffset} precedes attested_header offset {attestedOffset}.");
+                    $"LightClientUpdate: finalized_header offset {finalizedOffsetCap} precedes attested_header offset {attestedOffsetCap}.");
             }
 
-            var attestedLength = (int)(finalizedOffset - attestedOffset);
+            var attestedLength = (int)(finalizedOffsetCap - attestedOffsetCap);
             var minHeaderSize = MinHeaderSize(fork);
             if (attestedLength < minHeaderSize)
             {
@@ -108,8 +155,8 @@ namespace Nethereum.Consensus.Ssz
                     $"LightClientUpdate: attested_header length {attestedLength} below minimum {minHeaderSize} for fork {fork}.");
             }
 
-            var attestedBytes = data.AsSpan((int)attestedOffset, attestedLength).ToArray();
-            var finalizedBytes = data.AsSpan((int)finalizedOffset).ToArray();
+            var attestedBytes = data.AsSpan((int)attestedOffsetCap, attestedLength).ToArray();
+            var finalizedBytes = data.AsSpan((int)finalizedOffsetCap).ToArray();
 
             LightClientHeader attestedHeader;
             LightClientHeader finalizedHeader;

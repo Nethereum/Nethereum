@@ -11,6 +11,10 @@ namespace Nethereum.Consensus.Ssz
     /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/electra/light-client/sync-protocol.md">
     /// specs/electra/light-client/sync-protocol.md</see> line 56. The
     /// <c>current_sync_committee_branch</c> length is fork-aware: 5 Altair–Deneb, 6 Electra+.
+    /// At Altair/Bellatrix the <c>header</c> field is the fixed-size 112-byte
+    /// <c>BeaconBlockHeader</c> and is inlined into the fixed section per SSZ rules. At Capella+
+    /// the header becomes variable-size (<c>ExecutionPayloadHeader.extra_data</c>) and is
+    /// offset-encoded.
     /// </summary>
     public class LightClientBootstrap
     {
@@ -20,10 +24,15 @@ namespace Nethereum.Consensus.Ssz
         public SyncCommittee CurrentSyncCommittee { get; set; } = new SyncCommittee();
         public IList<byte[]> CurrentSyncCommitteeBranch { get; set; } = new List<byte[]>();
 
-        private static int ComputeFixedSectionLength(ConsensusFork fork) =>
-            sizeof(uint) +
-            SszBasicTypes.SyncCommitteeLength +
-            LightClientForkSpec.CurrentSyncCommitteeBranchLength(fork) * SszBasicTypes.RootLength;
+        private static int ComputeFixedSectionLength(ConsensusFork fork)
+        {
+            var headerBytes = LightClientForkSpec.HasExecutionPayloadHeader(fork)
+                ? sizeof(uint)
+                : SszBasicTypes.BeaconBlockHeaderLength;
+            return headerBytes +
+                   SszBasicTypes.SyncCommitteeLength +
+                   LightClientForkSpec.CurrentSyncCommitteeBranchLength(fork) * SszBasicTypes.RootLength;
+        }
 
         public byte[] Encode() => Encode(Fork);
 
@@ -43,14 +52,22 @@ namespace Nethereum.Consensus.Ssz
                     $"Current sync committee branch must contain {branchLen} roots for fork {fork}.");
             }
 
-            var fixedLen = ComputeFixedSectionLength(fork);
             using var writer = new SszWriter();
-            writer.WriteUInt32((uint)fixedLen);
+            if (LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var fixedLen = ComputeFixedSectionLength(fork);
+                writer.WriteUInt32((uint)fixedLen);
+                writer.WriteBytes(committeeBytes);
+                writer.WriteFixedRootVector(committeeBranch, branchLen);
+                var fixedSection = writer.ToArray();
+                return SszContainerEncoding.Combine(fixedSection, headerBytes);
+            }
+
+            SszBasicTypes.ValidateFixedLength(headerBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(Header));
+            writer.WriteBytes(headerBytes);
             writer.WriteBytes(committeeBytes);
             writer.WriteFixedRootVector(committeeBranch, branchLen);
-
-            var fixedSection = writer.ToArray();
-            return SszContainerEncoding.Combine(fixedSection, headerBytes);
+            return writer.ToArray();
         }
 
         public static LightClientBootstrap Decode(byte[] data, ConsensusFork fork)
@@ -65,9 +82,24 @@ namespace Nethereum.Consensus.Ssz
             }
 
             var reader = new SszReader(data);
+
+            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var headerBytes = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
+                var committeeBytes = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
+                var branch = reader.ReadFixedRootVector(LightClientForkSpec.CurrentSyncCommitteeBranchLength(fork));
+                return new LightClientBootstrap
+                {
+                    Fork = fork,
+                    Header = LightClientHeader.Decode(headerBytes, fork),
+                    CurrentSyncCommittee = SyncCommittee.Decode(committeeBytes),
+                    CurrentSyncCommitteeBranch = branch
+                };
+            }
+
             var headerOffset = reader.ReadUInt32();
-            var committeeBytes = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
-            var branch = reader.ReadFixedRootVector(LightClientForkSpec.CurrentSyncCommitteeBranchLength(fork));
+            var committeeBytesPost = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
+            var branchPost = reader.ReadFixedRootVector(LightClientForkSpec.CurrentSyncCommitteeBranchLength(fork));
 
             if (headerOffset < fixedLen)
             {
@@ -80,12 +112,12 @@ namespace Nethereum.Consensus.Ssz
                     $"LightClientBootstrap: header offset {headerOffset} exceeds buffer length {data.Length} for fork {fork}.");
             }
 
-            var headerBytes = data.AsSpan((int)headerOffset).ToArray();
+            var variableHeaderBytes = data.AsSpan((int)headerOffset).ToArray();
 
             LightClientHeader header;
             try
             {
-                header = LightClientHeader.Decode(headerBytes, fork);
+                header = LightClientHeader.Decode(variableHeaderBytes, fork);
             }
             catch (InvalidOperationException)
             {
@@ -101,8 +133,8 @@ namespace Nethereum.Consensus.Ssz
             {
                 Fork = fork,
                 Header = header,
-                CurrentSyncCommittee = SyncCommittee.Decode(committeeBytes),
-                CurrentSyncCommitteeBranch = branch
+                CurrentSyncCommittee = SyncCommittee.Decode(committeeBytesPost),
+                CurrentSyncCommitteeBranch = branchPost
             };
         }
 

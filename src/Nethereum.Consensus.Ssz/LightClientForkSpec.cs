@@ -186,10 +186,27 @@ namespace Nethereum.Consensus.Ssz
         /// True when the fork's <c>LightClientHeader</c> carries an <c>ExecutionPayloadHeader</c>
         /// per <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/capella/light-client/sync-protocol.md">
         /// specs/capella/light-client/sync-protocol.md</see>. Pre-Capella headers are a bare
-        /// <c>BeaconBlockHeader</c>.
+        /// <c>BeaconBlockHeader</c>. This predicate also controls whether <c>LightClientHeader</c>
+        /// is encoded as a variable-size SSZ container (Capella+, because the embedded
+        /// <c>ExecutionPayloadHeader.extra_data</c> is variable-length) versus a fixed-size
+        /// 112-byte beacon header inlined directly into outer containers (Altair/Bellatrix).
         /// </summary>
         public static bool HasExecutionPayloadHeader(ConsensusFork fork) =>
             fork >= ConsensusFork.Capella;
+
+        /// <summary>
+        /// True when the fork has an <c>ExecutionPayloadHeader</c> SSZ container defined,
+        /// independent of whether the LightClient surface area uses it. The container is
+        /// introduced at Bellatrix per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/bellatrix/beacon-chain.md">
+        /// specs/bellatrix/beacon-chain.md</see> as part of The Merge; at Capella the
+        /// <c>LightClientHeader</c> begins to embed it per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/capella/light-client/sync-protocol.md">
+        /// specs/capella/light-client/sync-protocol.md</see>. Distinct from
+        /// <see cref="HasExecutionPayloadHeader"/>, which gates the LightClientHeader.execution field.
+        /// </summary>
+        public static bool HasExecutionPayloadContainer(ConsensusFork fork) =>
+            fork >= ConsensusFork.Bellatrix;
 
         public static bool HasWithdrawalsRoot(ConsensusFork fork) =>
             fork >= ConsensusFork.Capella;

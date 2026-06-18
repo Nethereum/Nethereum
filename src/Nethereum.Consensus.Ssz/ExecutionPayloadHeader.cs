@@ -59,7 +59,7 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] Encode(ConsensusFork fork)
         {
-            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            if (!LightClientForkSpec.HasExecutionPayloadContainer(fork))
                 throw new InvalidOperationException(
                     $"ExecutionPayloadHeader is not part of fork {fork}; pre-Bellatrix forks have no execution payload.");
 
@@ -104,7 +104,7 @@ namespace Nethereum.Consensus.Ssz
 
         public static ExecutionPayloadHeader Decode(ReadOnlySpan<byte> data, ConsensusFork fork)
         {
-            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            if (!LightClientForkSpec.HasExecutionPayloadContainer(fork))
                 throw new InvalidOperationException(
                     $"ExecutionPayloadHeader is not part of fork {fork}; pre-Bellatrix forks have no execution payload.");
 
@@ -174,7 +174,7 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] HashTreeRoot(ConsensusFork fork)
         {
-            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            if (!LightClientForkSpec.HasExecutionPayloadContainer(fork))
                 throw new InvalidOperationException(
                     $"ExecutionPayloadHeader is not part of fork {fork}; pre-Bellatrix forks have no execution payload.");
 

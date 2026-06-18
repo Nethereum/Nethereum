@@ -6,17 +6,22 @@ namespace Nethereum.Consensus.Ssz
     /// <summary>
     /// <c>LightClientOptimisticUpdate</c> SSZ container per
     /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
-    /// specs/altair/light-client/sync-protocol.md</see>. Fixed section is the AttestedHeader
-    /// offset (4 bytes) + SyncAggregate (160 bytes) + SignatureSlot (8 bytes) — constant
-    /// across Altair–Electra (172 bytes total). The fork parameter is threaded through so the
-    /// AttestedHeader can be decoded with its fork-specific shape.
+    /// specs/altair/light-client/sync-protocol.md</see>. At Altair/Bellatrix the
+    /// <c>attested_header</c> field is a fixed-size 112-byte beacon header inlined directly into
+    /// the fixed section (no offset). At Capella+ the header becomes variable-size and is
+    /// offset-encoded.
     /// </summary>
     public class LightClientOptimisticUpdate
     {
-        private static int ComputeFixedSectionLength(ConsensusFork _) =>
-            sizeof(uint) +
-            SszBasicTypes.SyncAggregateLength +
-            sizeof(ulong);
+        private static int ComputeFixedSectionLength(ConsensusFork fork)
+        {
+            var headerSlotBytes = LightClientForkSpec.HasExecutionPayloadHeader(fork)
+                ? sizeof(uint)
+                : SszBasicTypes.BeaconBlockHeaderLength;
+            return headerSlotBytes +
+                   SszBasicTypes.SyncAggregateLength +
+                   sizeof(ulong);
+        }
 
         public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
 
@@ -34,14 +39,23 @@ namespace Nethereum.Consensus.Ssz
             var aggregateBytes = SyncAggregate.Encode();
             SszBasicTypes.ValidateFixedLength(aggregateBytes, SszBasicTypes.SyncAggregateLength, nameof(SyncAggregate));
 
-            var fixedLen = ComputeFixedSectionLength(fork);
             using var writer = new SszWriter();
-            writer.WriteUInt32((uint)fixedLen);
+            if (LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var fixedLen = ComputeFixedSectionLength(fork);
+                writer.WriteUInt32((uint)fixedLen);
+                writer.WriteBytes(aggregateBytes);
+                writer.WriteUInt64(SignatureSlot);
+
+                var fixedSection = writer.ToArray();
+                return SszContainerEncoding.Combine(fixedSection, headerBytes);
+            }
+
+            SszBasicTypes.ValidateFixedLength(headerBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(AttestedHeader));
+            writer.WriteBytes(headerBytes);
             writer.WriteBytes(aggregateBytes);
             writer.WriteUInt64(SignatureSlot);
-
-            var fixedSection = writer.ToArray();
-            return SszContainerEncoding.Combine(fixedSection, headerBytes);
+            return writer.ToArray();
         }
 
         public static LightClientOptimisticUpdate Decode(byte[] data, ConsensusFork fork)
@@ -55,6 +69,22 @@ namespace Nethereum.Consensus.Ssz
             }
 
             var reader = new SszReader(data);
+
+            if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
+            {
+                var attestedInline = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
+                var aggregateBytesAlt = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
+                var slotAlt = reader.ReadUInt64();
+
+                return new LightClientOptimisticUpdate
+                {
+                    Fork = fork,
+                    AttestedHeader = LightClientHeader.Decode(attestedInline, fork),
+                    SyncAggregate = SyncAggregate.Decode(aggregateBytesAlt),
+                    SignatureSlot = slotAlt
+                };
+            }
+
             var headerOffset = reader.ReadUInt32();
             var aggregateBytes = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
             var slot = reader.ReadUInt64();

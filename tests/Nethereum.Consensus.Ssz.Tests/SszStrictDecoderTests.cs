@@ -42,8 +42,11 @@ namespace Nethereum.Consensus.Ssz.Tests
             Assert.Contains("shorter than fixed section", ex.Message);
         }
 
+        // Capella+ only: at Altair/Bellatrix LightClientUpdate has no header offsets
+        // (LightClientHeader is fixed-size and inlined). Bytes 0..3 are the attested header's
+        // Slot field, not an offset, so the corruption pattern below is meaningless pre-Capella.
         [Theory]
-        [MemberData(nameof(AllForks))]
+        [MemberData(nameof(ExecutionForks))]
         public void Given_AttestedOffsetBelowFixedSection_When_DecodingUpdate_Then_ThrowsInvalidOperation(ConsensusFork fork)
         {
             var update = SampleData.CreateUpdate();
@@ -67,7 +70,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AllForks))]
+        [MemberData(nameof(ExecutionForks))]
         public void Given_AttestedOffsetBeyondBuffer_When_DecodingUpdate_Then_ThrowsInvalidOperation(ConsensusFork fork)
         {
             var update = SampleData.CreateUpdate();
@@ -141,8 +144,11 @@ namespace Nethereum.Consensus.Ssz.Tests
             Assert.Contains("below fixed section", ex.Message);
         }
 
+        // Capella+ only: at Altair/Bellatrix LightClientBootstrap has no header offset
+        // (LightClientHeader is fixed-size and inlined). Bytes 0..3 are the inlined header's
+        // Slot field, not an offset, so the corruption pattern below is meaningless pre-Capella.
         [Theory]
-        [MemberData(nameof(AllForks))]
+        [MemberData(nameof(ExecutionForks))]
         public void Given_HeaderOffsetBelowFixedSection_When_DecodingBootstrap_Then_ThrowsInvalidOperation(ConsensusFork fork)
         {
             var bootstrap = SampleData.CreateBootstrap();
