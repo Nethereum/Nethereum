@@ -79,6 +79,11 @@ namespace Nethereum.MainnetChain.Server.Hosting
                 return factory.Build(bundle, source, policy, options, canonical);
             });
 
+            if (!string.IsNullOrWhiteSpace(config.DataDir))
+            {
+                services.UseRocksDbAndDevP2PProductionComposition(config);
+            }
+
             services.AddHostedService<MainnetChainHostedService>();
 
             services.AddSingleton<RpcHandlerRegistry>(sp =>
