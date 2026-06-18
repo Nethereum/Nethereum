@@ -294,7 +294,6 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             return new LightClientConfig
             {
                 GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
-                CurrentForkVersion = "0x06000000".HexToByteArray(),
                 SecondsPerSlot = 12,
                 WeakSubjectivityRoot = weakSubjectivityRoot
             };

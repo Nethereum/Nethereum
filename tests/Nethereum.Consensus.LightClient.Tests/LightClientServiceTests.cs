@@ -130,8 +130,8 @@ namespace Nethereum.Consensus.LightClient.Tests
             Assert.Equal(update.FinalizedHeader.Execution.BlockNumber, state.FinalizedExecutionPayload?.BlockNumber);
             Assert.NotNull(bls.LastDomain);
             Assert.Single(bls.LastMessages);
-            Assert.Equal(TestDataFactory.ExpectedDomain(config), bls.LastDomain);
-            Assert.Equal(TestDataFactory.ExpectedSigningRoot(update.AttestedHeader.Beacon, TestDataFactory.ExpectedDomain(config)), bls.LastMessages[0]);
+            Assert.Equal(TestDataFactory.ExpectedDomain(config, update.SignatureSlot), bls.LastDomain);
+            Assert.Equal(TestDataFactory.ExpectedSigningRoot(update.AttestedHeader.Beacon, TestDataFactory.ExpectedDomain(config, update.SignatureSlot)), bls.LastMessages[0]);
             Assert.Equal(2, bls.LastPublicKeys.Length);
         }
 
@@ -196,7 +196,6 @@ namespace Nethereum.Consensus.LightClient.Tests
                 return new LightClientConfig
                 {
                     GenesisValidatorsRoot = Enumerable.Repeat((byte)0xAA, SszBasicTypes.RootLength).ToArray(),
-                    CurrentForkVersion = new byte[] { 0x11, 0x22, 0x33, 0x44 },
                     SecondsPerSlot = 12,
                     WeakSubjectivityRoot = Enumerable.Repeat((byte)0xBB, SszBasicTypes.RootLength).ToArray(),
                     WeakSubjectivityPeriod = 256 * 32UL
@@ -323,13 +322,16 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             private static string ToHex(byte[] bytes) => "0x" + BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
 
-            public static byte[] ExpectedDomain(LightClientConfig config)
+            public static byte[] ExpectedDomain(LightClientConfig config, ulong signatureSlot)
             {
+                var forkVersionSlot = signatureSlot == 0UL ? 0UL : signatureSlot - 1UL;
+                var forkVersion = config.ChainSpec.GetForkVersionAtSlot(forkVersionSlot);
+
                 var domain = new byte[32];
                 var type = new byte[] { 0x07, 0x00, 0x00, 0x00 };
                 Buffer.BlockCopy(type, 0, domain, 0, type.Length);
-                var forkDataRoot = ComputeForkDataRoot(config.CurrentForkVersion, config.GenesisValidatorsRoot);
-                Buffer.BlockCopy(forkDataRoot, 0, domain, type.Length, Math.Min(28, forkDataRoot.Length));
+                var forkDataRoot = ComputeForkDataRoot(forkVersion, config.GenesisValidatorsRoot);
+                Buffer.BlockCopy(forkDataRoot, 0, domain, type.Length, 28);
                 return domain;
             }
 

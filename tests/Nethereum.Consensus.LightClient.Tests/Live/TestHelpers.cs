@@ -59,7 +59,6 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             return new LightClientConfig
             {
                 GenesisValidatorsRoot = TestConstants.MainnetGenesisValidatorsRoot,
-                CurrentForkVersion = TestConstants.MainnetCurrentForkVersion,
                 SecondsPerSlot = 12,
                 WeakSubjectivityRoot = weakSubjectivityRoot
             };

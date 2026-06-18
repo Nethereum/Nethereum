@@ -13,7 +13,14 @@ namespace Nethereum.Consensus.LightClient
 {
     public class LightClientService
     {
-        private static readonly byte[] DomainSyncCommitteeType = { 0x07, 0x00, 0x00, 0x00 };
+        /// <summary>
+        /// <c>DOMAIN_SYNC_COMMITTEE = DomainType('0x07000000')</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/beacon-chain.md">
+        /// specs/altair/beacon-chain.md</see>. Four-byte <c>DomainType</c> width per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/phase0/beacon-chain.md">
+        /// specs/phase0/beacon-chain.md</see> line 209.
+        /// </summary>
+        public static readonly byte[] DomainSyncCommittee = { 0x07, 0x00, 0x00, 0x00 };
 
         private readonly ILightClientApi _apiClient;
         private readonly IBls _bls;
@@ -279,7 +286,8 @@ namespace Nethereum.Consensus.LightClient
             return VerifySyncAggregateCore(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
-                update.AttestedHeader.Beacon);
+                update.AttestedHeader.Beacon,
+                update.SignatureSlot);
         }
 
         private bool VerifyOptimisticSyncAggregate(LightClientOptimisticUpdate update)
@@ -294,7 +302,8 @@ namespace Nethereum.Consensus.LightClient
             return VerifySyncAggregateCore(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
-                update.AttestedHeader.Beacon);
+                update.AttestedHeader.Beacon,
+                update.SignatureSlot);
         }
 
         private bool VerifyFinalitySyncAggregate(LightClientFinalityUpdate update)
@@ -309,10 +318,11 @@ namespace Nethereum.Consensus.LightClient
             return VerifySyncAggregateCore(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
-                update.AttestedHeader.Beacon);
+                update.AttestedHeader.Beacon,
+                update.SignatureSlot);
         }
 
-        private bool VerifySyncAggregateCore(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader)
+        private bool VerifySyncAggregateCore(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader, ulong signatureSlot)
         {
             if (bits == null || signature == null || attestedHeader == null)
             {
@@ -330,12 +340,8 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            var domain = ComputeSyncCommitteeDomain();
+            var domain = ComputeSyncCommitteeDomain(signatureSlot);
             var message = ComputeSigningRoot(attestedHeader.HashTreeRoot(), domain);
-            if (message == null || message.Length == 0)
-            {
-                return false;
-            }
 
             return _bls.VerifyAggregate(signature, participants.ToArray(), new[] { message }, domain);
         }
@@ -377,49 +383,82 @@ namespace Nethereum.Consensus.LightClient
             return participants;
         }
 
-        private byte[] ComputeSyncCommitteeDomain()
+        /// <summary>
+        /// Derives the BLS signing domain for a sync-aggregate signed at
+        /// <paramref name="signatureSlot"/> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 451–454:
+        /// <c>fork_version_slot = max(signature_slot, 1) - 1</c>;
+        /// <c>fork_version = compute_fork_version(compute_epoch_at_slot(fork_version_slot))</c>;
+        /// <c>domain = compute_domain(DOMAIN_SYNC_COMMITTEE, fork_version, genesis_validators_root)</c>.
+        /// </summary>
+        private byte[] ComputeSyncCommitteeDomain(ulong signatureSlot)
         {
+            var forkVersionSlot = signatureSlot == 0UL ? 0UL : signatureSlot - 1UL;
+            var forkVersion = _config.ChainSpec.GetForkVersionAtSlot(forkVersionSlot);
+
+            var forkDataRoot = ComputeForkDataRoot(forkVersion, _config.GenesisValidatorsRoot);
+            if (forkDataRoot.Length != SszBasicTypes.RootLength)
+                throw new InvalidOperationException(
+                    $"forkDataRoot must be exactly {SszBasicTypes.RootLength} bytes; got {forkDataRoot.Length}.");
+
             var domain = new byte[32];
-            Buffer.BlockCopy(DomainSyncCommitteeType, 0, domain, 0, DomainSyncCommitteeType.Length);
-            var forkDataRoot = ComputeForkDataRoot(_config.CurrentForkVersion, _config.GenesisValidatorsRoot);
-            Buffer.BlockCopy(forkDataRoot, 0, domain, DomainSyncCommitteeType.Length, Math.Min(28, forkDataRoot.Length));
+            Buffer.BlockCopy(DomainSyncCommittee, 0, domain, 0, 4);
+            Buffer.BlockCopy(forkDataRoot, 0, domain, 4, 28);
             return domain;
         }
 
+        /// <summary>
+        /// <c>compute_fork_data_root</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/phase0/beacon-chain.md">
+        /// specs/phase0/beacon-chain.md</see> line 938: <c>hash_tree_root(ForkData(current_version,
+        /// genesis_validators_root))</c>. Strict 4-byte <c>ForkVersion</c> + 32-byte
+        /// <c>GenesisValidatorsRoot</c> width asserts: malformed input throws instead of
+        /// silently truncating to produce a plausible-but-wrong root.
+        /// </summary>
         private static byte[] ComputeForkDataRoot(byte[] forkVersion, byte[] genesisValidatorsRoot)
         {
-            var version = new byte[4];
-            if (forkVersion != null)
-            {
-                Buffer.BlockCopy(forkVersion, 0, version, 0, Math.Min(4, forkVersion.Length));
-            }
-
-            var genesis = new byte[SszBasicTypes.RootLength];
-            if (genesisValidatorsRoot != null)
-            {
-                Buffer.BlockCopy(genesisValidatorsRoot, 0, genesis, 0, Math.Min(SszBasicTypes.RootLength, genesisValidatorsRoot.Length));
-            }
+            if (forkVersion == null) throw new ArgumentNullException(nameof(forkVersion));
+            if (genesisValidatorsRoot == null) throw new ArgumentNullException(nameof(genesisValidatorsRoot));
+            if (forkVersion.Length != 4)
+                throw new InvalidOperationException(
+                    $"ForkVersion must be exactly 4 bytes; got {forkVersion.Length}.");
+            if (genesisValidatorsRoot.Length != SszBasicTypes.RootLength)
+                throw new InvalidOperationException(
+                    $"GenesisValidatorsRoot must be exactly {SszBasicTypes.RootLength} bytes; got {genesisValidatorsRoot.Length}.");
 
             var fieldRoots = new[]
             {
-                SszBasicTypes.HashTreeRootFixedBytes(version, version.Length),
-                SszBasicTypes.HashTreeRootFixedBytes(genesis, genesis.Length)
+                SszBasicTypes.HashTreeRootFixedBytes(forkVersion, 4),
+                SszBasicTypes.HashTreeRootFixedBytes(genesisValidatorsRoot, SszBasicTypes.RootLength)
             };
 
             return SszMerkleizer.Merkleize(fieldRoots);
         }
 
+        /// <summary>
+        /// <c>compute_signing_root</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/phase0/beacon-chain.md">
+        /// specs/phase0/beacon-chain.md</see> line 973:
+        /// <c>hash_tree_root(SigningData(object_root, domain))</c>. Throws on malformed input
+        /// instead of returning an empty byte array (caller treated empty as "signature invalid",
+        /// masking config bugs).
+        /// </summary>
         private static byte[] ComputeSigningRoot(byte[] objectRoot, byte[] domain)
         {
-            if (objectRoot == null || domain == null || domain.Length != 32)
-            {
-                return Array.Empty<byte>();
-            }
+            if (objectRoot == null) throw new ArgumentNullException(nameof(objectRoot));
+            if (domain == null) throw new ArgumentNullException(nameof(domain));
+            if (objectRoot.Length != SszBasicTypes.RootLength)
+                throw new InvalidOperationException(
+                    $"objectRoot must be exactly {SszBasicTypes.RootLength} bytes; got {objectRoot.Length}.");
+            if (domain.Length != 32)
+                throw new InvalidOperationException(
+                    $"domain must be exactly 32 bytes; got {domain.Length}.");
 
             var fieldRoots = new[]
             {
-                SszBasicTypes.HashTreeRootFixedBytes(objectRoot, objectRoot.Length),
-                SszBasicTypes.HashTreeRootFixedBytes(domain, domain.Length)
+                SszBasicTypes.HashTreeRootFixedBytes(objectRoot, SszBasicTypes.RootLength),
+                SszBasicTypes.HashTreeRootFixedBytes(domain, 32)
             };
 
             return SszMerkleizer.Merkleize(fieldRoots);
