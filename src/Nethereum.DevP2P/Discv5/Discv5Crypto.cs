@@ -135,17 +135,15 @@ namespace Nethereum.DevP2P.Discv5
             var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha256Digest()));
             signer.Init(true, privateKeyParams);
             var signature = signer.GenerateSignature(inputHash);
-            var r = signature[0];
-            var s = signature[1];
 
-            // Low-s canonicalisation: peers reject the upper half of the curve order.
-            var halfOrder = ECKey.CURVE.N.ShiftRight(1);
-            if (s.CompareTo(halfOrder) > 0)
-                s = ECKey.CURVE.N.Subtract(s);
+            // Low-s canonicalisation per EIP-2 / SEC2: peers reject the upper half
+            // of the curve order. Delegate to Nethereum.Signer.ECDSASignature so the
+            // half-order constant has a single source of truth.
+            var canonical = new ECDSASignature(signature).MakeCanonical();
 
             var sigRs = new byte[64];
-            Buffer.BlockCopy(LeftPad(r.ToByteArrayUnsigned(), 32), 0, sigRs, 0, 32);
-            Buffer.BlockCopy(LeftPad(s.ToByteArrayUnsigned(), 32), 0, sigRs, 32, 32);
+            Buffer.BlockCopy(LeftPad(canonical.R.ToByteArrayUnsigned(), 32), 0, sigRs, 0, 32);
+            Buffer.BlockCopy(LeftPad(canonical.S.ToByteArrayUnsigned(), 32), 0, sigRs, 32, 32);
             return sigRs;
         }
 

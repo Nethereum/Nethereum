@@ -89,6 +89,8 @@ namespace Nethereum.DevP2P.Discv4
             var v = new[] { (byte)(sigBytes[64] + 27) };
             var sig = EthECDSASignatureFactory.FromComponents(r, s, v);
 
+            RequireCanonicalSignature(sig);
+
             var senderPubKey = EthECKey.RecoverFromSignature(sig, sigDigest);
             var senderPubNoPrefix = senderPubKey.GetPubKeyNoPrefix();
 
@@ -99,6 +101,21 @@ namespace Nethereum.DevP2P.Discv4
                 Data = data,
                 SenderPubKey = senderPubNoPrefix
             };
+        }
+
+        /// <summary>
+        /// Enforces the EIP-2 canonical ranges <c>0 &lt; r &lt; N</c> and <c>0 &lt; s &lt;= N/2</c>
+        /// on the decoded packet signature before key recovery. Rejects malleated
+        /// twins of the form <c>(r, N - s, v ^ 1)</c> which recover a different public
+        /// key from the same digest and would otherwise yield a phantom node-id for
+        /// the same on-the-wire payload. Mirrors the verifier-side guard applied to
+        /// transaction signatures via <see cref="EthECKey.VerifyAllowingOnlyLowS"/>.
+        /// See <see href="https://eips.ethereum.org/EIPS/eip-2"/>.
+        /// </summary>
+        private static void RequireCanonicalSignature(EthECDSASignature sig)
+        {
+            if (!sig.IsCanonical)
+                throw new InvalidOperationException("Discv4 packet signature is not canonical (EIP-2).");
         }
 
         public class DecodedPacket
