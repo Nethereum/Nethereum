@@ -15,6 +15,16 @@ namespace Nethereum.Consensus.Ssz
     public static class LightClientForkSpec
     {
         /// <summary>
+        /// <c>MIN_SYNC_COMMITTEE_PARTICIPANTS = 1</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/presets/mainnet/altair.yaml">
+        /// presets/mainnet/altair.yaml</see> line 22 and
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> line 82. Constant from Altair
+        /// through Electra — no fork-aware variation.
+        /// </summary>
+        public const int MinSyncCommitteeParticipants = 1;
+
+        /// <summary>
         /// <c>FINALIZED_ROOT_GINDEX = 105</c> Altair–Deneb per
         /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
         /// specs/altair/light-client/sync-protocol.md</see> line 71. <c>floor(log2(105)) = 6</c>.

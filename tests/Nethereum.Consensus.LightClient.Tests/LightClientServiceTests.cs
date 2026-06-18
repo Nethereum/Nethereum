@@ -132,7 +132,7 @@ namespace Nethereum.Consensus.LightClient.Tests
             Assert.Single(bls.LastMessages);
             Assert.Equal(TestDataFactory.ExpectedDomain(config, update.SignatureSlot), bls.LastDomain);
             Assert.Equal(TestDataFactory.ExpectedSigningRoot(update.AttestedHeader.Beacon, TestDataFactory.ExpectedDomain(config, update.SignatureSlot)), bls.LastMessages[0]);
-            Assert.Equal(2, bls.LastPublicKeys.Length);
+            Assert.Equal(342, bls.LastPublicKeys.Length);
         }
 
         private sealed class StubLightClientApi : ILightClientApi
@@ -568,8 +568,14 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             private static SyncAggregate CreateSyncAggregate()
             {
+                // Spec process_light_client_update L543 requires sum * 3 >= 512 * 2 to move
+                // FinalizedHeader; with SYNC_COMMITTEE_SIZE = 512 the smallest passing count is 342.
+                const int participantCount = 342;
                 var bits = new byte[SszBasicTypes.SyncCommitteeSize / 8];
-                bits[0] = 0b00000011;
+                for (var i = 0; i < participantCount; i++)
+                {
+                    bits[i / 8] |= (byte)(1 << (i % 8));
+                }
 
                 return new SyncAggregate
                 {

@@ -464,7 +464,110 @@ namespace Nethereum.Consensus.LightClient
                 attestedHeader.Beacon.StateRoot);
         }
 
+        /// <summary>
+        /// <c>validate_light_client_update</c> participation floor per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> line 383:
+        /// <c>assert sum(sync_aggregate.sync_committee_bits) &gt;= MIN_SYNC_COMMITTEE_PARTICIPANTS</c>.
+        /// The strict <c>Bitvector[SYNC_COMMITTEE_SIZE]</c> length is asserted at entry: a
+        /// wrong-size buffer is a wire-format violation, not a quorum failure, and is reported
+        /// as an exception so callers do not conflate "malformed input" with "sub-quorum".
+        /// </summary>
+        internal static bool HasBaselineParticipation(SyncAggregate aggregate)
+        {
+            if (aggregate?.SyncCommitteeBits == null) return false;
+            EnsureCommitteeBitsLength(aggregate.SyncCommitteeBits);
+            return CountParticipants(aggregate.SyncCommitteeBits) >= LightClientForkSpec.MinSyncCommitteeParticipants;
+        }
+
+        /// <summary>
+        /// <c>process_light_client_update</c> supermajority finality gate per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> line 543:
+        /// <c>sum(sync_committee_bits) * 3 &gt;= len(sync_committee_bits) * 2</c>. With
+        /// <c>SYNC_COMMITTEE_SIZE = 512</c> the smallest passing count is 342
+        /// (<c>342 * 3 = 1026 &gt;= 512 * 2 = 1024</c>). The <c>Bitvector</c> covers exactly
+        /// <c>SYNC_COMMITTEE_SIZE</c> bits with <c>SYNC_COMMITTEE_SIZE % 8 == 0</c> so no
+        /// trailing-zero-bit mask check is needed.
+        /// </summary>
+        internal static bool HasSupermajorityParticipation(SyncAggregate aggregate)
+        {
+            if (aggregate?.SyncCommitteeBits == null) return false;
+            EnsureCommitteeBitsLength(aggregate.SyncCommitteeBits);
+            var bitsLength = aggregate.SyncCommitteeBits.Length * 8;
+            return CountParticipants(aggregate.SyncCommitteeBits) * 3 >= bitsLength * 2;
+        }
+
+        /// <summary>
+        /// <c>is_finality_update(update)</c> per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 210–214:
+        /// <c>return update.finality_branch != FinalityBranch()</c>. Default
+        /// <c>FinalityBranch()</c> is the all-zero vector at the fork-aware length, so a
+        /// non-empty, present branch with any non-zero byte signals the update proposes
+        /// to move <c>FinalizedHeader</c> and therefore must clear the supermajority gate.
+        /// Same non-zero-byte pattern as <see cref="IsSyncCommitteeUpdate"/>.
+        /// </summary>
+        internal static bool IsFinalityUpdate(LightClientUpdate update)
+        {
+            if (update?.FinalityBranch == null || update.FinalityBranch.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var node in update.FinalityBranch)
+            {
+                if (node == null) continue;
+                for (var i = 0; i < node.Length; i++)
+                {
+                    if (node[i] != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static int CountParticipants(byte[] bits)
+        {
+            var sum = 0;
+            for (var i = 0; i < bits.Length; i++)
+            {
+                var b = bits[i];
+                b = (byte)(b - ((b >> 1) & 0x55));
+                b = (byte)((b & 0x33) + ((b >> 2) & 0x33));
+                sum += (byte)((b + (b >> 4)) & 0x0F);
+            }
+
+            return sum;
+        }
+
+        private static void EnsureCommitteeBitsLength(byte[] bits)
+        {
+            var expected = SszBasicTypes.SyncCommitteeSize / 8;
+            if (bits.Length != expected)
+            {
+                throw new InvalidOperationException(
+                    $"SyncAggregate.SyncCommitteeBits must be exactly {expected} bytes ({SszBasicTypes.SyncCommitteeSize} bits); got {bits.Length}.");
+            }
+        }
+
         private bool VerifySyncAggregate(LightClientUpdate update)
+        {
+            return VerifyFullUpdateSyncAggregate(update);
+        }
+
+        /// <summary>
+        /// <c>process_light_client_update</c> sync-aggregate verification per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 503–548. Applies the
+        /// baseline participation floor for any update; additionally requires the
+        /// supermajority quorum (line 543) when the update carries a non-default
+        /// <c>finality_branch</c> per <see cref="IsFinalityUpdate"/>.
+        /// </summary>
+        private bool VerifyFullUpdateSyncAggregate(LightClientUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
                 update?.SyncAggregate == null ||
@@ -473,13 +576,31 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            return VerifySyncAggregateCore(
+            if (!HasBaselineParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            if (IsFinalityUpdate(update) && !HasSupermajorityParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            return VerifyAggregateSignature(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
                 update.AttestedHeader.Beacon,
                 update.SignatureSlot);
         }
 
+        /// <summary>
+        /// <c>process_light_client_optimistic_update</c> sync-aggregate verification per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 580–590. Optimistic
+        /// header updates require only the baseline participation floor; the
+        /// <c>get_safety_threshold</c> gate (line 528) requires <c>LightClientStore</c>
+        /// fields not yet plumbed and is tracked as a follow-up.
+        /// </summary>
         private bool VerifyOptimisticSyncAggregate(LightClientOptimisticUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
@@ -489,13 +610,26 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            return VerifySyncAggregateCore(
+            if (!HasBaselineParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            return VerifyAggregateSignature(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
                 update.AttestedHeader.Beacon,
                 update.SignatureSlot);
         }
 
+        /// <summary>
+        /// <c>process_light_client_finality_update</c> sync-aggregate verification per
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+        /// specs/altair/light-client/sync-protocol.md</see> lines 569–579. Finality
+        /// updates wrap into a <c>LightClientUpdate</c> carrying a non-default
+        /// <c>finality_branch</c> and therefore require both the baseline floor
+        /// (line 383) and the supermajority quorum (line 543).
+        /// </summary>
         private bool VerifyFinalitySyncAggregate(LightClientFinalityUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
@@ -505,21 +639,26 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            return VerifySyncAggregateCore(
+            if (!HasBaselineParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            if (!HasSupermajorityParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            return VerifyAggregateSignature(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
                 update.AttestedHeader.Beacon,
                 update.SignatureSlot);
         }
 
-        private bool VerifySyncAggregateCore(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader, ulong signatureSlot)
+        private bool VerifyAggregateSignature(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader, ulong signatureSlot)
         {
             if (bits == null || signature == null || attestedHeader == null)
-            {
-                return false;
-            }
-
-            if (bits.Length != SszBasicTypes.SyncCommitteeSize / 8)
             {
                 return false;
             }
@@ -556,6 +695,14 @@ namespace Nethereum.Consensus.LightClient
             {
                 return participants;
             }
+
+            if (pubKeys.Count != SszBasicTypes.SyncCommitteeSize)
+            {
+                throw new InvalidOperationException(
+                    $"SyncCommittee.PubKeys must contain exactly {SszBasicTypes.SyncCommitteeSize} keys; got {pubKeys.Count}.");
+            }
+
+            EnsureCommitteeBitsLength(bits);
 
             var memberIndex = 0;
             for (var byteIndex = 0; byteIndex < bits.Length && memberIndex < pubKeys.Count; byteIndex++)
