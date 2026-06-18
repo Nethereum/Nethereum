@@ -205,6 +205,16 @@
       <BuildType Solution="ExportRelease|*" Project="Debug" />
     </Project>
   </Folder>
+  <Folder Name="/src/Chain/MainnetChain/">
+    <Project Path="src/Nethereum.MainnetChain.Server/Nethereum.MainnetChain.Server.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.MainnetChain.Server.IntegrationTests/Nethereum.MainnetChain.Server.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
   <Folder Name="/src/ClassDiagrams/">
     <File Path="src/Nethereum.Signer.AzureKeyVault/AzureKeyVaultExternalSigner.cs" />
     <Project Path="src/Nethereum.ClassDiagrams/Nethereum.ClassDiagrams.csproj" Id="5bbeae99-333e-4b98-8453-c5667fb22184">
