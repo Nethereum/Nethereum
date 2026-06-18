@@ -4,6 +4,15 @@ using Nethereum.Ssz;
 
 namespace Nethereum.Consensus.Ssz
 {
+    /// <summary>
+    /// <c>LightClientUpdate</c> SSZ container per
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+    /// specs/altair/light-client/sync-protocol.md</see> lines 75–83 and
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/electra/light-client/sync-protocol.md">
+    /// specs/electra/light-client/sync-protocol.md</see> line 56. Both
+    /// <c>next_sync_committee_branch</c> and <c>finality_branch</c> are fork-aware:
+    /// next-committee branch depth 5 Altair–Deneb / 6 Electra+; finality branch depth 6 / 7.
+    /// </summary>
     public class LightClientUpdate
     {
         public ConsensusFork Fork { get; set; } = ConsensusFork.Phase0;
@@ -19,7 +28,7 @@ namespace Nethereum.Consensus.Ssz
         private static int ComputeFixedSectionLength(ConsensusFork fork) =>
             sizeof(uint) +
             SszBasicTypes.SyncCommitteeLength +
-            SszBasicTypes.BranchByteLength(LightClientForkSpec.CurrentSyncCommitteeBranchLength) +
+            SszBasicTypes.BranchByteLength(LightClientForkSpec.NextSyncCommitteeBranchLength(fork)) +
             sizeof(uint) +
             SszBasicTypes.BranchByteLength(LightClientForkSpec.FinalityBranchLength(fork)) +
             SszBasicTypes.SyncAggregateLength +
@@ -29,6 +38,8 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] Encode(ConsensusFork fork)
         {
+            AssertForkConsistency(fork);
+
             var attestedBytes = AttestedHeader.Encode(fork);
             var nextCommitteeBytes = NextSyncCommittee.Encode();
             SszBasicTypes.ValidateFixedLength(nextCommitteeBytes, SszBasicTypes.SyncCommitteeLength, nameof(NextSyncCommittee));
@@ -37,10 +48,12 @@ namespace Nethereum.Consensus.Ssz
             var aggregateBytes = SyncAggregate.Encode();
             SszBasicTypes.ValidateFixedLength(aggregateBytes, SszBasicTypes.SyncAggregateLength, nameof(SyncAggregate));
 
+            var nextBranchLen = LightClientForkSpec.NextSyncCommitteeBranchLength(fork);
+            var finalityBranchLen = LightClientForkSpec.FinalityBranchLength(fork);
             var nextBranch = NextSyncCommitteeBranch as IList<byte[]> ?? new List<byte[]>(NextSyncCommitteeBranch);
             var finalityBranch = FinalityBranch as IList<byte[]> ?? new List<byte[]>(FinalityBranch);
-            ValidateBranchCount(nextBranch, LightClientForkSpec.CurrentSyncCommitteeBranchLength, nameof(NextSyncCommitteeBranch));
-            ValidateBranchCount(finalityBranch, LightClientForkSpec.FinalityBranchLength(fork), nameof(FinalityBranch));
+            ValidateBranchCount(nextBranch, nextBranchLen, nameof(NextSyncCommitteeBranch));
+            ValidateBranchCount(finalityBranch, finalityBranchLen, nameof(FinalityBranch));
 
             var fixedLen = ComputeFixedSectionLength(fork);
             var attestedOffset = fixedLen;
@@ -49,9 +62,9 @@ namespace Nethereum.Consensus.Ssz
             using var writer = new SszWriter();
             writer.WriteUInt32((uint)attestedOffset);
             writer.WriteBytes(nextCommitteeBytes);
-            writer.WriteFixedRootVector(nextBranch, LightClientForkSpec.CurrentSyncCommitteeBranchLength);
+            writer.WriteFixedRootVector(nextBranch, nextBranchLen);
             writer.WriteUInt32((uint)finalizedOffset);
-            writer.WriteFixedRootVector(finalityBranch, LightClientForkSpec.FinalityBranchLength(fork));
+            writer.WriteFixedRootVector(finalityBranch, finalityBranchLen);
             writer.WriteBytes(aggregateBytes);
             writer.WriteUInt64(SignatureSlot);
 
@@ -66,7 +79,7 @@ namespace Nethereum.Consensus.Ssz
             var reader = new SszReader(data);
             var attestedOffset = reader.ReadUInt32();
             var nextSyncCommitteeBytes = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
-            var nextBranch = reader.ReadFixedRootVector(LightClientForkSpec.CurrentSyncCommitteeBranchLength);
+            var nextBranch = reader.ReadFixedRootVector(LightClientForkSpec.NextSyncCommitteeBranchLength(fork));
             var finalizedOffset = reader.ReadUInt32();
             var finalityBranch = reader.ReadFixedRootVector(LightClientForkSpec.FinalityBranchLength(fork));
             var syncAggregateBytes = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
@@ -106,6 +119,8 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] HashTreeRoot(ConsensusFork fork)
         {
+            AssertForkConsistency(fork);
+
             var fieldRoots = new List<byte[]>
             {
                 AttestedHeader.HashTreeRoot(fork),
@@ -133,6 +148,20 @@ namespace Nethereum.Consensus.Ssz
             if (offset < fixedLen || offset > totalLength)
             {
                 throw new InvalidOperationException($"{label} offset {offset} exceeds bounds [{fixedLen}, {totalLength}].");
+            }
+        }
+
+        private void AssertForkConsistency(ConsensusFork fork)
+        {
+            if (AttestedHeader != null && AttestedHeader.Fork != fork)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientUpdate.AttestedHeader.Fork={AttestedHeader.Fork} but outer fork is {fork}.");
+            }
+            if (FinalizedHeader != null && FinalizedHeader.Fork != fork)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientUpdate.FinalizedHeader.Fork={FinalizedHeader.Fork} but outer fork is {fork}.");
             }
         }
     }

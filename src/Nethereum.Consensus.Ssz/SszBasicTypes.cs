@@ -17,15 +17,40 @@ namespace Nethereum.Consensus.Ssz
         public const int SyncAggregateLength = (SyncCommitteeSize / 8) + SignatureLength; // 64 + 96 = 160
         public const int SyncCommitteeLength = (SyncCommitteeSize * PubKeyLength) + PubKeyLength; // 512 pubkeys + aggregate
         public const int LogsBloomLength = 256;
-        public const int CurrentSyncCommitteeBranchLength = LightClientForkSpec.CurrentSyncCommitteeBranchLength;
-        public const int ExecutionBranchLength = LightClientForkSpec.ExecutionBranchDepth;
+
+        /// <summary>
+        /// Alias for the now-obsolete flat
+        /// <see cref="LightClientForkSpec.CurrentSyncCommitteeBranchLength"/>. Wrong for
+        /// Electra+ (depth 6). Use
+        /// <see cref="LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork)"/>.
+        /// </summary>
+        [Obsolete("Use LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork).")]
+        public const int CurrentSyncCommitteeBranchLength = 5;
+
+        /// <summary>
+        /// Alias for the now-obsolete flat <see cref="LightClientForkSpec.ExecutionBranchDepth"/>.
+        /// Use <see cref="LightClientForkSpec.ExecutionBranchDepth(ConsensusFork)"/>.
+        /// </summary>
+        [Obsolete("Use LightClientForkSpec.ExecutionBranchDepth(ConsensusFork).")]
+        public const int ExecutionBranchLength = 4;
 
         public const int ExecutionPayloadGIndex = 25;
         public const int FinalizedRootGIndexDeneb = LightClientForkSpec.FinalizedRootGIndexAltairToDeneb;
         public const int FinalizedRootGIndexElectra = LightClientForkSpec.FinalizedRootGIndexElectraPlus;
 
-        public const int ExecutionBranchDepth = LightClientForkSpec.ExecutionBranchDepth;
-        public const int ExecutionBranchIndex = LightClientForkSpec.ExecutionBranchIndex;
+        /// <summary>
+        /// Alias for the now-obsolete flat <see cref="LightClientForkSpec.ExecutionBranchDepth"/>.
+        /// Use <see cref="LightClientForkSpec.ExecutionBranchDepth(ConsensusFork)"/>.
+        /// </summary>
+        [Obsolete("Use LightClientForkSpec.ExecutionBranchDepth(ConsensusFork).")]
+        public const int ExecutionBranchDepth = 4;
+
+        /// <summary>
+        /// Alias for the now-obsolete flat <see cref="LightClientForkSpec.ExecutionBranchIndex"/>.
+        /// Use <see cref="LightClientForkSpec.ExecutionBranchIndex(ConsensusFork)"/>.
+        /// </summary>
+        [Obsolete("Use LightClientForkSpec.ExecutionBranchIndex(ConsensusFork).")]
+        public const int ExecutionBranchIndex = 9;
 
         public static int BranchByteLength(int depth) => depth * RootLength;
 

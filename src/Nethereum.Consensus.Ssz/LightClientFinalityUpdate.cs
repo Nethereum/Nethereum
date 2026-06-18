@@ -24,6 +24,8 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] Encode(ConsensusFork fork)
         {
+            AssertForkConsistency(fork);
+
             var attestedBytes = AttestedHeader.Encode(fork);
             var finalizedBytes = FinalizedHeader.Encode(fork);
             var aggregateBytes = SyncAggregate.Encode();
@@ -85,6 +87,8 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] HashTreeRoot(ConsensusFork fork)
         {
+            AssertForkConsistency(fork);
+
             return SszMerkleizer.Merkleize(new[]
             {
                 AttestedHeader.HashTreeRoot(fork),
@@ -104,6 +108,20 @@ namespace Nethereum.Consensus.Ssz
             if (finalizedOffset < attestedOffset || finalizedOffset > totalLength)
             {
                 throw new InvalidOperationException("Finalized header offset exceeds buffer length.");
+            }
+        }
+
+        private void AssertForkConsistency(ConsensusFork fork)
+        {
+            if (AttestedHeader != null && AttestedHeader.Fork != fork)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientFinalityUpdate.AttestedHeader.Fork={AttestedHeader.Fork} but outer fork is {fork}.");
+            }
+            if (FinalizedHeader != null && FinalizedHeader.Fork != fork)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientFinalityUpdate.FinalizedHeader.Fork={FinalizedHeader.Fork} but outer fork is {fork}.");
             }
         }
     }

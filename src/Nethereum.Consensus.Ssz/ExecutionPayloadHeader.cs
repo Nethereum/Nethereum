@@ -63,6 +63,8 @@ namespace Nethereum.Consensus.Ssz
                 throw new InvalidOperationException(
                     $"ExecutionPayloadHeader is not part of fork {fork}; pre-Bellatrix forks have no execution payload.");
 
+            AssertForkConsistency(fork);
+
             var fixedLen = ComputeFixedSectionLength(fork);
 
             using var fixedWriter = new SszWriter();
@@ -210,6 +212,15 @@ namespace Nethereum.Consensus.Ssz
             Buffer.BlockCopy(fixedSection, 0, result, 0, fixedSection.Length);
             Buffer.BlockCopy(dynamicSection, 0, result, fixedSection.Length, dynamicSection.Length);
             return result;
+        }
+
+        private void AssertForkConsistency(ConsensusFork fork)
+        {
+            if (Fork != ConsensusFork.Phase0 && Fork != fork)
+            {
+                throw new InvalidOperationException(
+                    $"ExecutionPayloadHeader.Fork={Fork} but outer fork is {fork}.");
+            }
         }
     }
 }

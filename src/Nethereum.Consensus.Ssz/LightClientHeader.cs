@@ -5,9 +5,13 @@ using Nethereum.Ssz;
 namespace Nethereum.Consensus.Ssz
 {
     /// <summary>
-    /// LightClientHeader as defined in the consensus spec.
-    /// Altair / Bellatrix wire-shape: a bare <see cref="BeaconBlockHeader"/>.
-    /// Capella+: BeaconBlockHeader + ExecutionPayloadHeader + ExecutionBranch (4 roots).
+    /// <c>LightClientHeader</c> SSZ container per
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+    /// specs/altair/light-client/sync-protocol.md</see> (Altair / Bellatrix: bare
+    /// <c>BeaconBlockHeader</c>) and
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/capella/light-client/sync-protocol.md">
+    /// specs/capella/light-client/sync-protocol.md</see> (Capella+: BeaconBlockHeader +
+    /// ExecutionPayloadHeader + ExecutionBranch, depth 4 at <c>EXECUTION_PAYLOAD_GINDEX = 25</c>).
     /// </summary>
     public class LightClientHeader
     {
@@ -17,38 +21,38 @@ namespace Nethereum.Consensus.Ssz
         public ExecutionPayloadHeader Execution { get; set; } = new ExecutionPayloadHeader();
         public IList<byte[]> ExecutionBranch { get; set; } = new List<byte[]>();
 
-        // Capella+ container has a variable section (the execution payload header).
-        // Pre-Capella: just BeaconBlockHeader.
         private static int ComputeFixedSectionLength(ConsensusFork fork)
         {
             if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
                 return SszBasicTypes.BeaconBlockHeaderLength;
             return SszBasicTypes.BeaconBlockHeaderLength +
                    sizeof(uint) +
-                   SszBasicTypes.BranchByteLength(LightClientForkSpec.ExecutionBranchDepth);
+                   SszBasicTypes.BranchByteLength(LightClientForkSpec.ExecutionBranchDepth(fork));
         }
 
         public byte[] Encode() => Encode(Fork);
 
         public byte[] Encode(ConsensusFork fork)
         {
+            AssertForkConsistency(fork);
+
             var beaconBytes = Beacon.Encode();
             SszBasicTypes.ValidateFixedLength(beaconBytes, SszBasicTypes.BeaconBlockHeaderLength, nameof(Beacon));
 
             if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
             {
-                // Altair/Bellatrix: LightClientHeader is just BeaconBlockHeader.
                 return beaconBytes;
             }
 
             var executionBytes = Execution.Encode(fork);
-            var branch = NormalizeBranch(ExecutionBranch, nameof(ExecutionBranch), LightClientForkSpec.ExecutionBranchDepth);
+            var executionBranchDepth = LightClientForkSpec.ExecutionBranchDepth(fork);
+            var branch = NormalizeBranch(ExecutionBranch, nameof(ExecutionBranch), executionBranchDepth);
             var fixedLen = ComputeFixedSectionLength(fork);
 
             using var writer = new SszWriter();
             writer.WriteBytes(beaconBytes);
             writer.WriteUInt32((uint)fixedLen);
-            writer.WriteFixedRootVector(branch, LightClientForkSpec.ExecutionBranchDepth);
+            writer.WriteFixedRootVector(branch, executionBranchDepth);
 
             var fixedSection = writer.ToArray();
             return SszContainerEncoding.Combine(fixedSection, executionBytes);
@@ -60,7 +64,6 @@ namespace Nethereum.Consensus.Ssz
 
             if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
             {
-                // Altair/Bellatrix: payload IS the BeaconBlockHeader; no offsets, no branch.
                 SszBasicTypes.ValidateFixedLength(data, SszBasicTypes.BeaconBlockHeaderLength, nameof(data));
                 return new LightClientHeader
                 {
@@ -69,20 +72,39 @@ namespace Nethereum.Consensus.Ssz
                 };
             }
 
+            var fixedLen = ComputeFixedSectionLength(fork);
+            if (data.Length < fixedLen)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientHeader buffer length {data.Length} below fixed section {fixedLen} for fork {fork}.");
+            }
+
             var reader = new SszReader(data);
             var beaconBytes = reader.ReadFixedBytes(SszBasicTypes.BeaconBlockHeaderLength);
             var executionOffset = reader.ReadUInt32();
-            var executionBranch = reader.ReadFixedRootVector(LightClientForkSpec.ExecutionBranchDepth);
+            var executionBranch = reader.ReadFixedRootVector(LightClientForkSpec.ExecutionBranchDepth(fork));
 
-            ValidateOffset(data.Length, executionOffset, ComputeFixedSectionLength(fork));
+            ValidateOffset(data.Length, executionOffset, fixedLen);
             var executionSpan = data.AsSpan((int)executionOffset);
+
+            ExecutionPayloadHeader execution;
+            try
+            {
+                execution = ExecutionPayloadHeader.Decode(executionSpan, fork);
+            }
+            catch (InvalidOperationException) { throw; }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to decode ExecutionPayloadHeader for fork {fork}.", ex);
+            }
 
             return new LightClientHeader
             {
                 Fork = fork,
                 Beacon = BeaconBlockHeader.Decode(beaconBytes),
                 ExecutionBranch = executionBranch,
-                Execution = ExecutionPayloadHeader.Decode(executionSpan, fork)
+                Execution = execution
             };
         }
 
@@ -90,9 +112,10 @@ namespace Nethereum.Consensus.Ssz
 
         public byte[] HashTreeRoot(ConsensusFork fork)
         {
+            AssertForkConsistency(fork);
+
             if (!LightClientForkSpec.HasExecutionPayloadHeader(fork))
             {
-                // Altair/Bellatrix: htr is the BeaconBlockHeader's htr.
                 return Beacon.HashTreeRoot();
             }
 
@@ -121,6 +144,17 @@ namespace Nethereum.Consensus.Ssz
             if (offset < fixedLen || offset > totalLength)
             {
                 throw new InvalidOperationException("Execution payload offset exceeds SSZ buffer length.");
+            }
+        }
+
+        private void AssertForkConsistency(ConsensusFork fork)
+        {
+            if (Execution != null &&
+                LightClientForkSpec.HasExecutionPayloadHeader(fork) &&
+                Execution.Fork != fork)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientHeader.Execution.Fork={Execution.Fork} but outer fork is {fork}.");
             }
         }
     }

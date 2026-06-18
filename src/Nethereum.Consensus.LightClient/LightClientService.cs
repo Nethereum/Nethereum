@@ -430,25 +430,27 @@ namespace Nethereum.Consensus.LightClient
             if (header?.Beacon == null)
                 return false;
 
-            // Pre-Bellatrix forks (Altair) have no ExecutionPayloadHeader and
-            // no ExecutionBranch in the spec. The verification is vacuously
-            // satisfied — there is nothing to prove.
-            if (header.Fork < ConsensusFork.Bellatrix)
+            // Pre-Capella headers carry no ExecutionPayloadHeader per
+            // specs/altair/light-client/sync-protocol.md, so the verification is
+            // vacuously satisfied — there is nothing to prove.
+            if (!LightClientForkSpec.HasExecutionPayloadHeader(header.Fork))
                 return true;
 
             if (header.Execution == null || header.ExecutionBranch == null)
                 return false;
 
-            if (header.ExecutionBranch.Count < SszBasicTypes.ExecutionBranchDepth)
+            var depth = LightClientForkSpec.ExecutionBranchDepth(header.Fork);
+            var index = LightClientForkSpec.ExecutionBranchIndex(header.Fork);
+            if (header.ExecutionBranch.Count < depth)
                 return false;
 
-            var executionRoot = header.Execution.HashTreeRoot();
+            var executionRoot = header.Execution.HashTreeRoot(header.Fork);
 
             return SszMerkleizer.VerifyProof(
                 executionRoot,
                 header.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                depth,
+                index,
                 header.Beacon.BodyRoot
             );
         }

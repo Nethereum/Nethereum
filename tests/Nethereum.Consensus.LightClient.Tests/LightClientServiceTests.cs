@@ -26,8 +26,8 @@ namespace Nethereum.Consensus.LightClient.Tests
             var result = SszMerkleizer.VerifyProof(
                 executionRoot,
                 update.AttestedHeader.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra),
+                LightClientForkSpec.ExecutionBranchIndex(ConsensusFork.Electra),
                 update.AttestedHeader.Beacon.BodyRoot);
 
             Assert.True(result, "Execution branch verification failed for AttestedHeader");
@@ -58,8 +58,8 @@ namespace Nethereum.Consensus.LightClient.Tests
             var result = SszMerkleizer.VerifyProof(
                 executionRoot,
                 update.FinalizedHeader.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra),
+                LightClientForkSpec.ExecutionBranchIndex(ConsensusFork.Electra),
                 update.FinalizedHeader.Beacon.BodyRoot);
 
             Assert.True(result, "Execution branch verification failed for FinalizedHeader");
@@ -81,8 +81,8 @@ namespace Nethereum.Consensus.LightClient.Tests
             var result = SszMerkleizer.VerifyProof(
                 roundTrippedExecRoot,
                 roundTrippedUpdate.AttestedHeader.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra),
+                LightClientForkSpec.ExecutionBranchIndex(ConsensusFork.Electra),
                 roundTrippedUpdate.AttestedHeader.Beacon.BodyRoot);
 
             Assert.True(result, "Execution branch verification failed after round-trip");
@@ -210,7 +210,7 @@ namespace Nethereum.Consensus.LightClient.Tests
                     Fork = ConsensusFork.Electra,
                     Header = CreateHeader(slot, blockNumber),
                     CurrentSyncCommittee = CreateSyncCommittee(),
-                    CurrentSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength)
+                    CurrentSyncCommitteeBranch = CreateBranch(LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork.Electra))
                 };
             }
 
@@ -230,7 +230,7 @@ namespace Nethereum.Consensus.LightClient.Tests
                     SyncAggregate = CreateSyncAggregate(),
                     NextSyncCommittee = CreateSyncCommittee(),
                     FinalityBranch = finalityBranch,
-                    NextSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength),
+                    NextSyncCommitteeBranch = CreateBranch(LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork.Electra)),
                     SignatureSlot = slot + 1
                 };
             }
@@ -390,9 +390,9 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             private static List<byte[]> CreateValidExecutionBranch(byte[] executionRoot, out byte[] bodyRoot)
             {
-                var branch = new List<byte[]>(SszBasicTypes.ExecutionBranchDepth);
+                var branch = new List<byte[]>(LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra));
 
-                for (int i = 0; i < SszBasicTypes.ExecutionBranchDepth; i++)
+                for (int i = 0; i < LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra); i++)
                 {
                     var sibling = new byte[SszBasicTypes.RootLength];
                     for (int j = 0; j < sibling.Length; j++)
@@ -403,9 +403,9 @@ namespace Nethereum.Consensus.LightClient.Tests
                 }
 
                 var current = executionRoot;
-                for (int i = 0; i < SszBasicTypes.ExecutionBranchDepth; i++)
+                for (int i = 0; i < LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra); i++)
                 {
-                    if ((SszBasicTypes.ExecutionBranchIndex & (1 << i)) != 0)
+                    if ((LightClientForkSpec.ExecutionBranchIndex(ConsensusFork.Electra) & (1 << i)) != 0)
                     {
                         current = HashPair(branch[i], current);
                     }

@@ -9,9 +9,16 @@ using Nethereum.Hex.HexConvertors.Extensions;
 namespace Nethereum.Beaconchain.LightClient
 {
     /// <summary>
-    /// Maps beacon-node JSON DTOs into our SSZ container types.
-    /// The active <see cref="ConsensusFork"/> is derived from the AttestedHeader slot via
-    /// <see cref="ChainSpec.GetForkAtSlot"/>; pass a custom <see cref="ChainSpec"/> for non-mainnet chains.
+    /// Maps beacon-node JSON DTOs into our SSZ container types. For
+    /// <c>LightClientUpdate</c>, <c>LightClientFinalityUpdate</c>, and
+    /// <c>LightClientOptimisticUpdate</c> the active <see cref="ConsensusFork"/> is derived
+    /// from <c>signature_slot</c> per
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
+    /// specs/altair/light-client/sync-protocol.md</see> lines 451–454
+    /// (<c>fork_version = compute_fork_version(compute_epoch_at_slot(update.signature_slot))</c>).
+    /// For <c>LightClientBootstrap</c> the bootstrap header slot is the anchor since the
+    /// container has no <c>signature_slot</c>. Pass a custom <see cref="ChainSpec"/> for
+    /// non-mainnet chains.
     /// </summary>
     public static class LightClientResponseMapper
     {
@@ -37,7 +44,8 @@ namespace Nethereum.Beaconchain.LightClient
             if (response?.Data == null) return null;
 
             var spec = chainSpec ?? ChainSpec.Mainnet;
-            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.AttestedHeader?.Beacon?.Slot));
+            var signatureSlot = ParseUlong(response.Data.SignatureSlot);
+            var fork = spec.GetForkAtSlot(signatureSlot);
 
             return new LightClientUpdate
             {
@@ -50,7 +58,7 @@ namespace Nethereum.Beaconchain.LightClient
                 FinalityBranch = response.Data.FinalityBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>(),
                 SyncAggregate = MapSyncAggregate(response.Data.SyncAggregate),
-                SignatureSlot = ParseUlong(response.Data.SignatureSlot)
+                SignatureSlot = signatureSlot
             };
         }
 
@@ -59,7 +67,8 @@ namespace Nethereum.Beaconchain.LightClient
             if (response?.Data == null) return null;
 
             var spec = chainSpec ?? ChainSpec.Mainnet;
-            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.AttestedHeader?.Beacon?.Slot));
+            var signatureSlot = ParseUlong(response.Data.SignatureSlot);
+            var fork = spec.GetForkAtSlot(signatureSlot);
 
             return new LightClientFinalityUpdate
             {
@@ -69,7 +78,7 @@ namespace Nethereum.Beaconchain.LightClient
                 FinalityBranch = response.Data.FinalityBranch?
                     .Select(h => h.HexToByteArray()).ToList() ?? new List<byte[]>(),
                 SyncAggregate = MapSyncAggregate(response.Data.SyncAggregate),
-                SignatureSlot = ParseUlong(response.Data.SignatureSlot)
+                SignatureSlot = signatureSlot
             };
         }
 
@@ -78,14 +87,15 @@ namespace Nethereum.Beaconchain.LightClient
             if (response?.Data == null) return null;
 
             var spec = chainSpec ?? ChainSpec.Mainnet;
-            var fork = spec.GetForkAtSlot(ParseUlong(response.Data.AttestedHeader?.Beacon?.Slot));
+            var signatureSlot = ParseUlong(response.Data.SignatureSlot);
+            var fork = spec.GetForkAtSlot(signatureSlot);
 
             return new LightClientOptimisticUpdate
             {
                 Fork = fork,
                 AttestedHeader = MapHeader(response.Data.AttestedHeader, fork),
                 SyncAggregate = MapSyncAggregate(response.Data.SyncAggregate),
-                SignatureSlot = ParseUlong(response.Data.SignatureSlot)
+                SignatureSlot = signatureSlot
             };
         }
 

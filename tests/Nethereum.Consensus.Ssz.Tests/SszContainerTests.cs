@@ -525,7 +525,7 @@ namespace Nethereum.Consensus.Ssz.Tests
                 Fork = ConsensusFork.Electra,
                 Header = CreateLightClientHeader(0x60),
                 CurrentSyncCommittee = CreateSyncCommittee(),
-                CurrentSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength, 0x50)
+                CurrentSyncCommitteeBranch = CreateBranch(LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork.Electra), 0x50)
             };
         }
 
@@ -536,7 +536,7 @@ namespace Nethereum.Consensus.Ssz.Tests
                 Fork = ConsensusFork.Electra,
                 AttestedHeader = CreateLightClientHeader(0x70),
                 NextSyncCommittee = CreateSyncCommittee(),
-                NextSyncCommitteeBranch = CreateBranch(SszBasicTypes.CurrentSyncCommitteeBranchLength, 0x70),
+                NextSyncCommitteeBranch = CreateBranch(LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork.Electra), 0x70),
                 FinalizedHeader = CreateLightClientHeader(0x80),
                 FinalityBranch = CreateBranch(LightClientForkSpec.FinalityBranchLength(ConsensusFork.Electra),0x80),
                 SyncAggregate = CreateSyncAggregate(),
@@ -551,7 +551,7 @@ namespace Nethereum.Consensus.Ssz.Tests
                 Fork = ConsensusFork.Electra,
                 Beacon = CreateBeaconHeader(),
                 Execution = CreateExecutionHeader(),
-                ExecutionBranch = CreateBranch(SszBasicTypes.ExecutionBranchLength, branchSeed)
+                ExecutionBranch = CreateBranch(LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Electra), branchSeed)
             };
         }
 

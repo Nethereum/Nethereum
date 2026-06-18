@@ -31,19 +31,21 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
             Assert.NotNull(update?.FinalizedHeader?.Execution);
             Assert.NotNull(update.FinalizedHeader.ExecutionBranch);
-            Assert.True(update.FinalizedHeader.ExecutionBranch.Count >= SszBasicTypes.ExecutionBranchDepth,
-                $"Expected at least {SszBasicTypes.ExecutionBranchDepth} branch nodes, got {update.FinalizedHeader.ExecutionBranch.Count}");
+            var execDepth = LightClientForkSpec.ExecutionBranchDepth(update.FinalizedHeader.Fork);
+            var execIndex = LightClientForkSpec.ExecutionBranchIndex(update.FinalizedHeader.Fork);
+            Assert.True(update.FinalizedHeader.ExecutionBranch.Count >= execDepth,
+                $"Expected at least {execDepth} branch nodes, got {update.FinalizedHeader.ExecutionBranch.Count}");
 
             var executionRoot = update.FinalizedHeader.Execution.HashTreeRoot();
             _output.WriteLine($"Execution payload hash tree root: {executionRoot.ToHex(true)}");
             _output.WriteLine($"Beacon body root: {update.FinalizedHeader.Beacon.BodyRoot.ToHex(true)}");
-            _output.WriteLine($"Execution branch depth: {SszBasicTypes.ExecutionBranchDepth}, index: {SszBasicTypes.ExecutionBranchIndex}");
+            _output.WriteLine($"Execution branch depth: {execDepth}, index: {execIndex}");
 
             var verified = SszMerkleizer.VerifyProof(
                 executionRoot,
                 update.FinalizedHeader.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                execDepth,
+                execIndex,
                 update.FinalizedHeader.Beacon.BodyRoot);
 
             Assert.True(verified, "Execution branch Merkle proof verification failed for finalized header");
@@ -103,8 +105,10 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
             Assert.NotNull(update?.AttestedHeader?.Execution);
             Assert.NotNull(update.AttestedHeader.ExecutionBranch);
-            Assert.True(update.AttestedHeader.ExecutionBranch.Count >= SszBasicTypes.ExecutionBranchDepth,
-                $"Expected at least {SszBasicTypes.ExecutionBranchDepth} branch nodes, got {update.AttestedHeader.ExecutionBranch.Count}");
+            var execDepth = LightClientForkSpec.ExecutionBranchDepth(update.AttestedHeader.Fork);
+            var execIndex = LightClientForkSpec.ExecutionBranchIndex(update.AttestedHeader.Fork);
+            Assert.True(update.AttestedHeader.ExecutionBranch.Count >= execDepth,
+                $"Expected at least {execDepth} branch nodes, got {update.AttestedHeader.ExecutionBranch.Count}");
 
             var executionRoot = update.AttestedHeader.Execution.HashTreeRoot();
             _output.WriteLine($"Execution payload hash tree root: {executionRoot.ToHex(true)}");
@@ -113,8 +117,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             var verified = SszMerkleizer.VerifyProof(
                 executionRoot,
                 update.AttestedHeader.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                execDepth,
+                execIndex,
                 update.AttestedHeader.Beacon.BodyRoot);
 
             Assert.True(verified, "Execution branch Merkle proof verification failed for optimistic header");
@@ -139,11 +143,12 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             _output.WriteLine($"Tampered block number: {update.FinalizedHeader.Execution.BlockNumber}");
             _output.WriteLine($"Tampered execution root: {tamperedExecutionRoot.ToHex(true)}");
 
+            var finalFork = update.FinalizedHeader.Fork;
             var verified = SszMerkleizer.VerifyProof(
                 tamperedExecutionRoot,
                 update.FinalizedHeader.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                LightClientForkSpec.ExecutionBranchDepth(finalFork),
+                LightClientForkSpec.ExecutionBranchIndex(finalFork),
                 update.FinalizedHeader.Beacon.BodyRoot);
 
             Assert.False(verified, "Tampered execution payload should NOT verify");
