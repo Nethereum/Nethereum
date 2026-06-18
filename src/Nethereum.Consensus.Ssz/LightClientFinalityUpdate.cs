@@ -54,6 +54,15 @@ namespace Nethereum.Consensus.Ssz
 
         public static LightClientFinalityUpdate Decode(byte[] data, ConsensusFork fork)
         {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+
+            var fixedLen = ComputeFixedSectionLength(fork);
+            if (data.Length < fixedLen)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientFinalityUpdate: input length {data.Length} shorter than fixed section {fixedLen} for fork {fork}.");
+            }
+
             var reader = new SszReader(data);
             var attestedOffset = reader.ReadUInt32();
             var finalizedOffset = reader.ReadUInt32();
@@ -61,27 +70,52 @@ namespace Nethereum.Consensus.Ssz
             var aggregateBytes = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
             var slot = reader.ReadUInt64();
 
-            var fixedLen = ComputeFixedSectionLength(fork);
             ValidateOffsets(data.Length, attestedOffset, finalizedOffset, fixedLen);
             var attestedLength = (int)(finalizedOffset - attestedOffset);
-            if (attestedLength <= 0)
+            var minHeaderSize = MinHeaderSize(fork);
+            if (attestedLength < minHeaderSize)
             {
-                throw new InvalidOperationException("Finalized header offset precedes attested header.");
+                throw new InvalidOperationException(
+                    $"LightClientFinalityUpdate: attested_header length {attestedLength} below minimum {minHeaderSize} for fork {fork}.");
             }
 
             var attestedBytes = data.AsSpan((int)attestedOffset, attestedLength).ToArray();
             var finalizedBytes = data.AsSpan((int)finalizedOffset).ToArray();
 
+            LightClientHeader attestedHeader;
+            LightClientHeader finalizedHeader;
+            try
+            {
+                attestedHeader = LightClientHeader.Decode(attestedBytes, fork);
+                finalizedHeader = LightClientHeader.Decode(finalizedBytes, fork);
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientFinalityUpdate: inner header decode failed for fork {fork}: {ex.Message}", ex);
+            }
+
             return new LightClientFinalityUpdate
             {
                 Fork = fork,
-                AttestedHeader = LightClientHeader.Decode(attestedBytes, fork),
-                FinalizedHeader = LightClientHeader.Decode(finalizedBytes, fork),
+                AttestedHeader = attestedHeader,
+                FinalizedHeader = finalizedHeader,
                 FinalityBranch = finalityBranch,
                 SyncAggregate = SyncAggregate.Decode(aggregateBytes),
                 SignatureSlot = slot
             };
         }
+
+        private static int MinHeaderSize(ConsensusFork fork) =>
+            LightClientForkSpec.HasExecutionPayloadHeader(fork)
+                ? SszBasicTypes.BeaconBlockHeaderLength +
+                  sizeof(uint) +
+                  SszBasicTypes.BranchByteLength(LightClientForkSpec.ExecutionBranchDepth(fork))
+                : SszBasicTypes.BeaconBlockHeaderLength;
 
         public byte[] HashTreeRoot() => HashTreeRoot(Fork);
 
@@ -101,13 +135,25 @@ namespace Nethereum.Consensus.Ssz
 
         private static void ValidateOffsets(int totalLength, uint attestedOffset, uint finalizedOffset, int fixedLen)
         {
-            if (attestedOffset < fixedLen || attestedOffset > totalLength)
+            if (attestedOffset < fixedLen)
             {
-                throw new InvalidOperationException("Attested header offset exceeds buffer length.");
+                throw new InvalidOperationException(
+                    $"Attested header offset {attestedOffset} precedes fixed section length {fixedLen}.");
             }
-            if (finalizedOffset < attestedOffset || finalizedOffset > totalLength)
+            if (attestedOffset > totalLength)
             {
-                throw new InvalidOperationException("Finalized header offset exceeds buffer length.");
+                throw new InvalidOperationException(
+                    $"Attested header offset {attestedOffset} exceeds SSZ buffer length {totalLength}.");
+            }
+            if (finalizedOffset < attestedOffset)
+            {
+                throw new InvalidOperationException(
+                    $"Finalized header offset {finalizedOffset} precedes attested header offset {attestedOffset}.");
+            }
+            if (finalizedOffset > totalLength)
+            {
+                throw new InvalidOperationException(
+                    $"Finalized header offset {finalizedOffset} exceeds SSZ buffer length {totalLength}.");
             }
         }
 

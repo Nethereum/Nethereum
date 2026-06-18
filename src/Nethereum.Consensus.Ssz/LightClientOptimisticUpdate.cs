@@ -59,17 +59,38 @@ namespace Nethereum.Consensus.Ssz
             var aggregateBytes = reader.ReadFixedBytes(SszBasicTypes.SyncAggregateLength);
             var slot = reader.ReadUInt64();
 
-            if (headerOffset < fixedLen || headerOffset > data.Length)
+            if (headerOffset < fixedLen)
             {
-                throw new InvalidOperationException("Attested header offset exceeds buffer length.");
+                throw new InvalidOperationException(
+                    $"LightClientOptimisticUpdate: attested header offset {headerOffset} precedes fixed section length {fixedLen}.");
+            }
+            if (headerOffset > data.Length)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientOptimisticUpdate: attested header offset {headerOffset} exceeds buffer length {data.Length}.");
             }
 
             var headerBytes = data.AsSpan((int)headerOffset).ToArray();
 
+            LightClientHeader attestedHeader;
+            try
+            {
+                attestedHeader = LightClientHeader.Decode(headerBytes, fork);
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientOptimisticUpdate: inner header decode failed for fork {fork}: {ex.Message}", ex);
+            }
+
             return new LightClientOptimisticUpdate
             {
                 Fork = fork,
-                AttestedHeader = LightClientHeader.Decode(headerBytes, fork),
+                AttestedHeader = attestedHeader,
                 SyncAggregate = SyncAggregate.Decode(aggregateBytes),
                 SignatureSlot = slot
             };

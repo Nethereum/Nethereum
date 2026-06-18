@@ -441,8 +441,6 @@ namespace Nethereum.Consensus.LightClient
 
             var depth = LightClientForkSpec.ExecutionBranchDepth(header.Fork);
             var index = LightClientForkSpec.ExecutionBranchIndex(header.Fork);
-            if (header.ExecutionBranch.Count < depth)
-                return false;
 
             var executionRoot = header.Execution.HashTreeRoot(header.Fork);
 
@@ -466,9 +464,6 @@ namespace Nethereum.Consensus.LightClient
             var fork = finalizedHeader.Fork;
             var depth = LightClientForkSpec.FinalityBranchDepth(fork);
             var index = LightClientForkSpec.FinalityBranchIndex(fork);
-
-            if (finalityBranch.Count < depth)
-                return false;
 
             var finalizedRoot = finalizedHeader.Beacon.HashTreeRoot();
 

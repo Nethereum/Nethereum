@@ -69,18 +69,38 @@ namespace Nethereum.Consensus.Ssz
             var committeeBytes = reader.ReadFixedBytes(SszBasicTypes.SyncCommitteeLength);
             var branch = reader.ReadFixedRootVector(LightClientForkSpec.CurrentSyncCommitteeBranchLength(fork));
 
-            if (headerOffset < fixedLen || headerOffset > data.Length)
+            if (headerOffset < fixedLen)
             {
                 throw new InvalidOperationException(
-                    $"Header offset {headerOffset} invalid for fork {fork} (expected {fixedLen}, buffer {data.Length}).");
+                    $"LightClientBootstrap: header offset {headerOffset} precedes fixed section length {fixedLen} for fork {fork}.");
+            }
+            if (headerOffset > data.Length)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientBootstrap: header offset {headerOffset} exceeds buffer length {data.Length} for fork {fork}.");
             }
 
             var headerBytes = data.AsSpan((int)headerOffset).ToArray();
 
+            LightClientHeader header;
+            try
+            {
+                header = LightClientHeader.Decode(headerBytes, fork);
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"LightClientBootstrap: inner header decode failed for fork {fork}: {ex.Message}", ex);
+            }
+
             return new LightClientBootstrap
             {
                 Fork = fork,
-                Header = LightClientHeader.Decode(headerBytes, fork),
+                Header = header,
                 CurrentSyncCommittee = SyncCommittee.Decode(committeeBytes),
                 CurrentSyncCommitteeBranch = branch
             };

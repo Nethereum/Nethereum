@@ -141,9 +141,15 @@ namespace Nethereum.Consensus.Ssz
 
         private static void ValidateOffset(int totalLength, uint offset, int fixedLen)
         {
-            if (offset < fixedLen || offset > totalLength)
+            if (offset < fixedLen)
             {
-                throw new InvalidOperationException("Execution payload offset exceeds SSZ buffer length.");
+                throw new InvalidOperationException(
+                    $"Execution payload offset {offset} precedes fixed section length {fixedLen}.");
+            }
+            if (offset > totalLength)
+            {
+                throw new InvalidOperationException(
+                    $"Execution payload offset {offset} exceeds SSZ buffer length {totalLength}.");
             }
         }
 
