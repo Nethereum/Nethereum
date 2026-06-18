@@ -13,7 +13,7 @@ namespace Nethereum.Consensus.Ssz.Tests
     /// Cross-fork consensus-spec-tests vector validation: roundtrip + HashTreeRoot
     /// checks the LightClient SSZ stack against the official
     /// <c>tests/LightClientVectors/ssz/consensus-spec-tests/{fork}/ssz_static/{container}/ssz_random/case_N</c>
-    /// vectors for Altair, Bellatrix, Capella, Deneb, and Electra. The existing Deneb-only
+    /// vectors for Altair, Bellatrix, Capella, Deneb, Electra, and Fulu. The existing Deneb-only
     /// theories in <see cref="SszContainerTests"/> are reused via fork-aware loader overloads.
     /// </summary>
     public class SpecVectorsCrossForkTests
@@ -31,7 +31,8 @@ namespace Nethereum.Consensus.Ssz.Tests
             ConsensusFork.Bellatrix,
             ConsensusFork.Capella,
             ConsensusFork.Deneb,
-            ConsensusFork.Electra
+            ConsensusFork.Electra,
+            ConsensusFork.Fulu
         };
 
         private static readonly ConsensusFork[] ForksWithExecutionPayload = new[]
@@ -39,7 +40,8 @@ namespace Nethereum.Consensus.Ssz.Tests
             ConsensusFork.Bellatrix,
             ConsensusFork.Capella,
             ConsensusFork.Deneb,
-            ConsensusFork.Electra
+            ConsensusFork.Electra,
+            ConsensusFork.Fulu
         };
 
         [Theory]
@@ -153,19 +155,23 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella, "current_sync_committee", 54, 5)]
         [InlineData(ConsensusFork.Deneb, "current_sync_committee", 54, 5)]
         [InlineData(ConsensusFork.Electra, "current_sync_committee", 86, 6)]
+        [InlineData(ConsensusFork.Fulu, "current_sync_committee", 86, 6)]
         [InlineData(ConsensusFork.Altair, "next_sync_committee", 55, 5)]
         [InlineData(ConsensusFork.Bellatrix, "next_sync_committee", 55, 5)]
         [InlineData(ConsensusFork.Capella, "next_sync_committee", 55, 5)]
         [InlineData(ConsensusFork.Deneb, "next_sync_committee", 55, 5)]
         [InlineData(ConsensusFork.Electra, "next_sync_committee", 87, 6)]
+        [InlineData(ConsensusFork.Fulu, "next_sync_committee", 87, 6)]
         [InlineData(ConsensusFork.Altair, "finalized_root", 105, 6)]
         [InlineData(ConsensusFork.Bellatrix, "finalized_root", 105, 6)]
         [InlineData(ConsensusFork.Capella, "finalized_root", 105, 6)]
         [InlineData(ConsensusFork.Deneb, "finalized_root", 105, 6)]
         [InlineData(ConsensusFork.Electra, "finalized_root", 169, 7)]
+        [InlineData(ConsensusFork.Fulu, "finalized_root", 169, 7)]
         [InlineData(ConsensusFork.Capella, "execution_payload", 25, 4)]
         [InlineData(ConsensusFork.Deneb, "execution_payload", 25, 4)]
         [InlineData(ConsensusFork.Electra, "execution_payload", 25, 4)]
+        [InlineData(ConsensusFork.Fulu, "execution_payload", 25, 4)]
         public void ForkSpec_GindexAndDepth_MatchSpec(ConsensusFork fork, string field, int expectedGindex, int expectedDepth)
         {
             int actualGindex;

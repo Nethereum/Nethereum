@@ -23,6 +23,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella, 5)]
         [InlineData(ConsensusFork.Deneb, 5)]
         [InlineData(ConsensusFork.Electra, 6)]
+        [InlineData(ConsensusFork.Fulu, 6)]
         public void LightClientForkSpec_CurrentSyncCommitteeBranchLength_MatchesSpec(
             ConsensusFork fork, int expected)
         {
@@ -36,6 +37,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella, 5)]
         [InlineData(ConsensusFork.Deneb, 5)]
         [InlineData(ConsensusFork.Electra, 6)]
+        [InlineData(ConsensusFork.Fulu, 6)]
         public void LightClientForkSpec_NextSyncCommitteeBranchLength_MatchesSpec(
             ConsensusFork fork, int expected)
         {
@@ -49,6 +51,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella, 6)]
         [InlineData(ConsensusFork.Deneb, 6)]
         [InlineData(ConsensusFork.Electra, 7)]
+        [InlineData(ConsensusFork.Fulu, 7)]
         public void LightClientForkSpec_FinalityBranchLength_MatchesSpec(
             ConsensusFork fork, int expected)
         {
@@ -60,6 +63,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Altair, 54)]
         [InlineData(ConsensusFork.Deneb, 54)]
         [InlineData(ConsensusFork.Electra, 86)]
+        [InlineData(ConsensusFork.Fulu, 86)]
         public void LightClientForkSpec_CurrentSyncCommitteeGIndex_MatchesSpec(
             ConsensusFork fork, int expected)
         {
@@ -70,6 +74,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Altair, 55)]
         [InlineData(ConsensusFork.Deneb, 55)]
         [InlineData(ConsensusFork.Electra, 87)]
+        [InlineData(ConsensusFork.Fulu, 87)]
         public void LightClientForkSpec_NextSyncCommitteeGIndex_MatchesSpec(
             ConsensusFork fork, int expected)
         {
@@ -82,6 +87,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella)]
         [InlineData(ConsensusFork.Deneb)]
         [InlineData(ConsensusFork.Electra)]
+        [InlineData(ConsensusFork.Fulu)]
         public void LightClientForkSpec_CurrentSyncCommitteeBranchIndex_Equals22(ConsensusFork fork)
         {
             Assert.Equal(22, LightClientForkSpec.CurrentSyncCommitteeBranchIndex(fork));
@@ -93,6 +99,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella)]
         [InlineData(ConsensusFork.Deneb)]
         [InlineData(ConsensusFork.Electra)]
+        [InlineData(ConsensusFork.Fulu)]
         public void LightClientForkSpec_NextSyncCommitteeBranchIndex_Equals23(ConsensusFork fork)
         {
             Assert.Equal(23, LightClientForkSpec.NextSyncCommitteeBranchIndex(fork));
@@ -102,7 +109,8 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella, 4)]
         [InlineData(ConsensusFork.Deneb, 4)]
         [InlineData(ConsensusFork.Electra, 4)]
-        public void LightClientForkSpec_ExecutionBranchDepth_CapellaThroughElectra(
+        [InlineData(ConsensusFork.Fulu, 4)]
+        public void LightClientForkSpec_ExecutionBranchDepth_CapellaThroughFulu(
             ConsensusFork fork, int expected)
         {
             Assert.Equal(expected, LightClientForkSpec.ExecutionBranchDepth(fork));
@@ -119,33 +127,34 @@ namespace Nethereum.Consensus.Ssz.Tests
         }
 
         [Fact]
-        public void LightClientForkSpec_ExecutionBranchDepth_Fulu_Throws_NotSupported()
+        public void LightClientForkSpec_ExecutionBranchDepth_Gloas_Throws_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Fulu));
+            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.ExecutionBranchDepth(ConsensusFork.Gloas));
         }
 
         [Fact]
-        public void LightClientForkSpec_CurrentSyncCommitteeBranchLength_Fulu_Throws_NotSupported()
+        public void LightClientForkSpec_CurrentSyncCommitteeBranchLength_Gloas_Throws_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork.Fulu));
+            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.CurrentSyncCommitteeBranchLength(ConsensusFork.Gloas));
         }
 
         [Fact]
-        public void LightClientForkSpec_NextSyncCommitteeBranchLength_Fulu_Throws_NotSupported()
+        public void LightClientForkSpec_NextSyncCommitteeBranchLength_Gloas_Throws_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork.Fulu));
+            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.NextSyncCommitteeBranchLength(ConsensusFork.Gloas));
         }
 
         [Fact]
-        public void LightClientForkSpec_FinalityBranchLength_Fulu_Throws_NotSupported()
+        public void LightClientForkSpec_FinalityBranchLength_Gloas_Throws_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.FinalityBranchLength(ConsensusFork.Fulu));
+            Assert.Throws<NotSupportedException>(() => LightClientForkSpec.FinalityBranchLength(ConsensusFork.Gloas));
         }
 
         [Theory]
         [InlineData(ConsensusFork.Capella, 24804)]
         [InlineData(ConsensusFork.Deneb, 24804)]
         [InlineData(ConsensusFork.Electra, 24836)]
+        [InlineData(ConsensusFork.Fulu, 24836)]
         public void LightClientBootstrap_FixedSectionEncode_LengthMatchesFork(
             ConsensusFork fork, int expectedFixedHead)
         {
@@ -164,6 +173,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella, 5, 6)]
         [InlineData(ConsensusFork.Deneb, 5, 6)]
         [InlineData(ConsensusFork.Electra, 6, 7)]
+        [InlineData(ConsensusFork.Fulu, 6, 7)]
         public void LightClientUpdate_BranchLengths_MatchFork(
             ConsensusFork fork, int expectedNextBranchLen, int expectedFinalityBranchLen)
         {
@@ -180,6 +190,7 @@ namespace Nethereum.Consensus.Ssz.Tests
         [InlineData(ConsensusFork.Capella)]
         [InlineData(ConsensusFork.Deneb)]
         [InlineData(ConsensusFork.Electra)]
+        [InlineData(ConsensusFork.Fulu)]
         public void LightClientHeader_FixedSection_RoundTripsPerFork(ConsensusFork fork)
         {
             var header = BuildHeader(fork);

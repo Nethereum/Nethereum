@@ -11,6 +11,18 @@ namespace Nethereum.Consensus.Ssz
     /// <c>LightClientHeader.execution</c> field exists per
     /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/altair/light-client/sync-protocol.md">
     /// specs/altair/light-client/sync-protocol.md</see>.
+    /// Fulu inherits all LightClient gindex / depth values from Electra: the Fulu spec
+    /// tree at <see href="https://github.com/ethereum/consensus-specs/tree/master/specs/fulu">
+    /// specs/fulu</see> contains no <c>light-client/</c> subdirectory, and Fulu's only
+    /// <c>BeaconState</c> change is appending <c>proposer_lookahead</c> (38th field) per
+    /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/fulu/beacon-chain.md">
+    /// specs/fulu/beacon-chain.md</see> line 188. The container's tree depth stays at 6
+    /// (next power of two ≥ 38 is 64 = 2^6, same as Electra's 37 fields), so the existing
+    /// field gindices — including <c>finalized_checkpoint.root</c>, <c>current_sync_committee</c>,
+    /// and <c>next_sync_committee</c> — are preserved. Cross-validated against Lighthouse
+    /// <c>LightClientHeaderFulu</c> (which carries the same merkle branch lengths as the
+    /// Electra variant) and Lodestar (which reuses Electra <c>ExecutionPayload</c> verbatim
+    /// in <c>packages/types/src/fulu/sszTypes.ts</c>).
     /// </summary>
     public static class LightClientForkSpec
     {
@@ -180,9 +192,9 @@ namespace Nethereum.Consensus.Ssz
             if (!HasExecutionPayloadHeader(fork))
                 throw new InvalidOperationException(
                     $"Execution branch is not part of fork {fork}; pre-Capella has no LightClientHeader.execution field.");
-            if (fork >= ConsensusFork.Fulu)
+            if (fork >= ConsensusFork.Gloas)
                 throw new NotSupportedException(
-                    $"Fulu/Gloas execution-branch shape not yet specified (EIP-7732 reshapes BeaconBlockBody).");
+                    $"Gloas execution-branch shape not yet specified (EIP-7732 reshapes BeaconBlockBody).");
             return 4;
         }
 
@@ -224,11 +236,19 @@ namespace Nethereum.Consensus.Ssz
         public static bool HasBlobGasFields(ConsensusFork fork) =>
             fork >= ConsensusFork.Deneb;
 
+        /// <summary>
+        /// Guards getters that depend on the Electra LightClient shape from being called for
+        /// Gloas. Fulu inherits Electra's LightClient gindices and branch lengths verbatim
+        /// (the Fulu spec defines no <c>light-client/</c> overrides), so Fulu is permitted
+        /// here and flows through the <c>fork &gt;= ConsensusFork.Electra</c> branch. Gloas
+        /// is post-EIP-7732 and reshapes <c>BeaconBlockBody</c>; its LightClient spec is not
+        /// yet stabilised, so we throw rather than silently emit Electra values.
+        /// </summary>
         private static void ThrowIfPostElectraNotImplemented(ConsensusFork fork)
         {
-            if (fork >= ConsensusFork.Fulu)
+            if (fork >= ConsensusFork.Gloas)
                 throw new NotSupportedException(
-                    $"Fork {fork} light-client container shape is not yet implemented; spec follow-up tracks Fulu/Gloas.");
+                    $"Fork {fork} light-client container shape is not yet implemented; spec follow-up tracks Gloas/EIP-7732.");
         }
     }
 }
