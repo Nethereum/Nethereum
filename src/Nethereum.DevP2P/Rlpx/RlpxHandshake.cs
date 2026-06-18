@@ -28,6 +28,27 @@ namespace Nethereum.DevP2P.Rlpx
         private const int MaxPaddingRange = 100;
         private const byte AuthVersion = 4;
 
+        /// <summary>
+        /// Lower bound for the RLPx auth/ack ciphertext body length declared in the
+        /// 2-byte size prefix. Legacy v4 plaintext is 165 bytes and EIP-8 auth packets
+        /// add at least 100 bytes of random padding (RLPx spec, devp2p/rlpx.md),
+        /// so anything below this is structurally malformed and rejected before
+        /// the body allocation in <c>RlpxConnection.AcceptIncomingAsync</c> /
+        /// <c>ConnectAsync</c>.
+        /// </summary>
+        public const int MinHandshakePacketSize = 100;
+
+        /// <summary>
+        /// Upper bound for the RLPx auth/ack ciphertext body length declared in the
+        /// 2-byte size prefix. Maximum handshake packet size. Geth interop invariant
+        /// (<c>p2p/peer.go:baseProtocolMaxMsgSize</c>), not spec-defined. Real EIP-8
+        /// auth packets are ~300-600 bytes; legacy v4 is 307. The 2-byte size prefix
+        /// allows up to 65 535 bytes for forward compatibility (devp2p/rlpx.md), but
+        /// every production implementation caps lower to limit per-connection
+        /// allocations during the unauthenticated handshake.
+        /// </summary>
+        public const int MaxHandshakePacketSize = 2048;
+
         public static (byte[] authPacket, HandshakeState state) CreateAuth(
             EthECKey localKey, byte[] remotePubNoPrefix)
         {
@@ -78,11 +99,25 @@ namespace Nethereum.DevP2P.Rlpx
         public static (byte[] ackPacket, HandshakeState state, RlpxSecrets secrets) HandleAuth(
             EthECKey localKey, byte[] authPacket)
         {
+            if (authPacket == null || authPacket.Length < 2)
+                throw new CryptographicException("RLPx auth packet shorter than 2-byte size prefix");
+
             var size = (authPacket[0] << 8) | authPacket[1];
+            if (size < MinHandshakePacketSize || size > MaxHandshakePacketSize)
+                throw new CryptographicException(
+                    $"RLPx auth size {size} out of range [{MinHandshakePacketSize}, {MaxHandshakePacketSize}]");
+            if (authPacket.Length < 2 + size)
+                throw new CryptographicException(
+                    $"RLPx auth packet length {authPacket.Length} shorter than declared size {2 + size}");
+
             var encryptedBody = authPacket.Slice(2, 2 + size);
             var sizeBytes = authPacket.Slice(0, 2);
 
             var authPlain = EciesEncryption.Decrypt(localKey.GetPrivateKeyAsBytes(), encryptedBody, sizeBytes);
+
+            if (authPlain == null || authPlain.Length < SignatureSize)
+                throw new CryptographicException(
+                    "RLPx auth plaintext too short to contain the RLP envelope");
 
             var rlpLength = RLP.RLP.GetFirstElementLength(authPlain);
             var items = (RLP.RLPCollection)RLP.RLP.Decode(authPlain.Slice(0, rlpLength));
@@ -98,6 +133,9 @@ namespace Nethereum.DevP2P.Rlpx
             var r = sigBytes.Slice(0, NonceSize);
             var s = sigBytes.Slice(NonceSize, NonceSize * 2);
             int recId = sigBytes[SignatureSize - 1];
+            if (recId < 0 || recId > 3)
+                throw new CryptographicException(
+                    $"RLPx auth signature recovery id {recId} outside ECDSA range 0..3");
 
             var ethSig = EthECDSASignatureFactory.FromComponents(r, s);
             var remoteEphPub = EthECKey.RecoverFromSignature(ethSig, recId, signedData);
@@ -143,12 +181,26 @@ namespace Nethereum.DevP2P.Rlpx
 
         public static RlpxSecrets HandleAck(HandshakeState initiatorState, byte[] ackPacket)
         {
+            if (ackPacket == null || ackPacket.Length < 2)
+                throw new CryptographicException("RLPx ack packet shorter than 2-byte size prefix");
+
             var size = (ackPacket[0] << 8) | ackPacket[1];
+            if (size < MinHandshakePacketSize || size > MaxHandshakePacketSize)
+                throw new CryptographicException(
+                    $"RLPx ack size {size} out of range [{MinHandshakePacketSize}, {MaxHandshakePacketSize}]");
+            if (ackPacket.Length < 2 + size)
+                throw new CryptographicException(
+                    $"RLPx ack packet length {ackPacket.Length} shorter than declared size {2 + size}");
+
             var encryptedBody = ackPacket.Slice(2, 2 + size);
             var sizeBytes = ackPacket.Slice(0, 2);
 
             var ackPlain = EciesEncryption.Decrypt(
                 initiatorState.LocalKey.GetPrivateKeyAsBytes(), encryptedBody, sizeBytes);
+
+            if (ackPlain == null || ackPlain.Length < SignatureSize)
+                throw new CryptographicException(
+                    "RLPx ack plaintext too short to contain the RLP envelope");
 
             var rlpLength = RLP.RLP.GetFirstElementLength(ackPlain);
             var items = (RLP.RLPCollection)RLP.RLP.Decode(ackPlain.Slice(0, rlpLength));

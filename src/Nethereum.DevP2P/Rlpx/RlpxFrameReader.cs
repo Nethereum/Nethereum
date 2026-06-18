@@ -129,11 +129,14 @@ namespace Nethereum.DevP2P.Rlpx
             {
                 try
                 {
+                    if (TryReadSnappyDecompressedLength(body, out var claimedDecompressedSize) &&
+                        claimedDecompressedSize > MaxDecompressedFrameSize)
+                    {
+                        throw new CryptographicException(
+                            $"Snappy frame header claims decompressed size {claimedDecompressedSize} > {MaxDecompressedFrameSize}");
+                    }
+
                     body = IronSnappy.Snappy.Decode(body);
-                    // Decompression-bomb defence: a 16 MB Snappy frame can
-                    // expand to gigabytes. Bound the post-decode size so a
-                    // hostile peer can't OOM us between successful MAC and
-                    // application-layer reject.
                     if (body.Length > MaxDecompressedFrameSize)
                         throw new CryptographicException(
                             $"Snappy-decoded frame ({body.Length} bytes) exceeds {MaxDecompressedFrameSize} cap");
@@ -156,6 +159,39 @@ namespace Nethereum.DevP2P.Rlpx
             }
 
             return (msgId, body);
+        }
+
+        /// <summary>
+        /// Parses the leading varint that every Snappy-compressed block begins
+        /// with — the declared uncompressed length. Per the Snappy framing
+        /// format (§3 of
+        /// https://github.com/google/snappy/blob/master/format_description.txt),
+        /// the varint is at most 5 bytes (encoding a uint32 in 7-bit groups,
+        /// little-endian, with the high bit set on every byte except the last).
+        /// Returning <c>false</c> means the body is truncated or malformed and
+        /// the size check is skipped — <c>IronSnappy.Snappy.Decode</c> will
+        /// surface the same problem.
+        /// </summary>
+        public static bool TryReadSnappyDecompressedLength(byte[] body, out long decompressedLength)
+        {
+            decompressedLength = 0;
+            if (body == null || body.Length == 0) return false;
+
+            long value = 0;
+            int shift = 0;
+            int maxBytes = body.Length < 5 ? body.Length : 5;
+            for (int i = 0; i < maxBytes; i++)
+            {
+                byte b = body[i];
+                value |= (long)(b & 0x7F) << shift;
+                if ((b & 0x80) == 0)
+                {
+                    decompressedLength = value;
+                    return true;
+                }
+                shift += 7;
+            }
+            return false;
         }
 
         private byte[] DecryptBlock(byte[] block)

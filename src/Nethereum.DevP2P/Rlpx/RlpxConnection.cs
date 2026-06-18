@@ -121,6 +121,12 @@ namespace Nethereum.DevP2P.Rlpx
             var ackSizeBytes = new byte[2];
             await ReadExactAsync(_stream, ackSizeBytes, handshakeCts.Token);
             var ackSize = (ackSizeBytes[0] << 8) | ackSizeBytes[1];
+            if (ackSize < RlpxHandshake.MinHandshakePacketSize ||
+                ackSize > RlpxHandshake.MaxHandshakePacketSize)
+            {
+                throw new System.Security.Cryptography.CryptographicException(
+                    $"RLPx ack size {ackSize} out of range [{RlpxHandshake.MinHandshakePacketSize}, {RlpxHandshake.MaxHandshakePacketSize}]");
+            }
             var ackBody = new byte[ackSize];
             await ReadExactAsync(_stream, ackBody, handshakeCts.Token);
 
@@ -225,6 +231,12 @@ namespace Nethereum.DevP2P.Rlpx
             var authSizeBytes = new byte[2];
             await ReadExactAsync(_stream, authSizeBytes, handshakeCts.Token);
             var authSize = (authSizeBytes[0] << 8) | authSizeBytes[1];
+            if (authSize < RlpxHandshake.MinHandshakePacketSize ||
+                authSize > RlpxHandshake.MaxHandshakePacketSize)
+            {
+                throw new System.Security.Cryptography.CryptographicException(
+                    $"RLPx auth size {authSize} out of range [{RlpxHandshake.MinHandshakePacketSize}, {RlpxHandshake.MaxHandshakePacketSize}]");
+            }
             var authBody = new byte[authSize];
             await ReadExactAsync(_stream, authBody, handshakeCts.Token);
             var authPacket = authSizeBytes.ConcatArrays(authBody);
