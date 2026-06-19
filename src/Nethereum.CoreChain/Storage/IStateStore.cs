@@ -28,6 +28,16 @@ namespace Nethereum.CoreChain.Storage
         Task SaveStorageAsync(string address, BigInteger slot, byte[] value);
 
         /// <summary>
+        /// Write a storage slot using a precomputed <c>keccak(slot)</c> key
+        /// (32 bytes). Reserved for the persistent state-diff store rewind
+        /// path, which records pre-values keyed by their canonical
+        /// storage-trie path and cannot reconstruct the original
+        /// <see cref="BigInteger"/> slot. Block-execution callers must
+        /// continue to use <see cref="SaveStorageAsync"/>.
+        /// </summary>
+        Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value);
+
+        /// <summary>
         /// Every storage slot for <paramref name="address"/>, keyed by
         /// <c>keccak256(slotBytes32)</c> — the canonical storage-trie path
         /// (Yellow Paper §4.1). Returning the keccak directly lets Patricia

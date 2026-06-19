@@ -120,6 +120,12 @@ namespace Nethereum.CoreChain.Storage.InMemory
             return Task.FromResult(value);
         }
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+            => throw new System.NotSupportedException(
+                "InMemoryStateStore does not support keccak-keyed writes. " +
+                "Persistent state-diff rewind is reserved for the RocksDB backend; " +
+                "in-memory tests use the in-memory journal in HistoricalStateStore instead.");
+
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
             var normalizedAddress = NormalizeAddress(address);

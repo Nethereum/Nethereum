@@ -184,7 +184,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                     new StorageDiffEntry
                     {
                         Address = AddrA,
-                        Slot = BigInteger.Zero,
+                        SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(BigInteger.Zero),
                         PreValue = Array.Empty<byte>()
                     }
                 }

@@ -105,7 +105,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             diff.StorageDiffs.Add(new StorageDiffEntry
             {
                 Address = "0x1111111111111111111111111111111111111111",
-                Slot = 42,
+                SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(42),
                 PreValue = new byte[] { 1, 2, 3 }
             });
             await _store.SaveBlockDiffAsync(diff);

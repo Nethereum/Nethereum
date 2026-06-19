@@ -68,7 +68,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 BlockNumber = blockNumber,
                 StorageDiffs = new List<StorageDiffEntry>
                 {
-                    new StorageDiffEntry { Address = address, Slot = slot, PreValue = preValue }
+                    new StorageDiffEntry { Address = address, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot), PreValue = preValue }
                 }
             };
         }
@@ -261,8 +261,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 },
                 StorageDiffs = new List<StorageDiffEntry>
                 {
-                    new StorageDiffEntry { Address = ADDR1, Slot = 1, PreValue = new byte[] { 0xFF } },
-                    new StorageDiffEntry { Address = ADDR1, Slot = 2, PreValue = null }
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0xFF } },
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(2), PreValue = null }
                 }
             };
 
@@ -311,8 +311,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 BlockNumber = 10,
                 StorageDiffs = new List<StorageDiffEntry>
                 {
-                    new StorageDiffEntry { Address = ADDR1, Slot = 1, PreValue = new byte[] { 0xAA } },
-                    new StorageDiffEntry { Address = ADDR1, Slot = 2, PreValue = new byte[] { 0xBB } }
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0xAA } },
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(2), PreValue = new byte[] { 0xBB } }
                 }
             });
 

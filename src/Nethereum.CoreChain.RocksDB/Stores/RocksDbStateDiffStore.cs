@@ -110,7 +110,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             {
                 var keccakKey = StateKeys.AccountKey(entry.Address);
                 var inlineAddress = OriginalAddressBytes(entry.Address);
-                var slotBytes = SlotToBytes(entry.Slot);
+                // SlotKey is already keccak(slot) — Yellow Paper §4.1 storage path.
+                var slotBytes = entry.SlotKey ?? throw new System.ArgumentException("StorageDiffEntry.SlotKey is required (keccak(slot), 32 bytes)");
+                if (slotBytes.Length != 32)
+                    throw new System.ArgumentException($"StorageDiffEntry.SlotKey must be 32 bytes (keccak(slot)), got {slotBytes.Length}");
                 var dataKey = BuildStorageDataKey(keccakKey, slotBytes, blockBytes);
                 byte[] body = entry.PreValue ?? EMPTY_VALUE;
                 var value = ConcatInline(inlineAddress, body);
@@ -262,7 +265,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     diff.StorageDiffs.Add(new StorageDiffEntry
                     {
                         Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
-                        Slot = new BigInteger(slot, isUnsigned: true, isBigEndian: true),
+                        // Slot bytes are keccak(slot) — Yellow Paper §4.1 storage path.
+                        SlotKey = slot,
                         PreValue = body
                     });
                 }
@@ -464,13 +468,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
         }
 
+        // Yellow Paper §4.1 storage-trie path. Diff entries are keyed by
+        // keccak(slot) to match CF_STATE_STORAGE (R1) and the snap/1 wire
+        // shape. The original BigInteger slot is not recoverable from the
+        // persistent diff store; consumers see the 32-byte hash via
+        // StorageDiffEntry.SlotKey.
         private static byte[] SlotToBytes(BigInteger slot)
         {
-            var bytes = slot.ToByteArray(isUnsigned: true, isBigEndian: true);
-            if (bytes.Length >= 32) return bytes;
-            var padded = new byte[32];
-            Buffer.BlockCopy(bytes, 0, padded, 32 - bytes.Length, bytes.Length);
-            return padded;
+            return StateKeys.StorageSlotKey(slot);
         }
 
         private static byte[] OriginalAddressBytes(string address)

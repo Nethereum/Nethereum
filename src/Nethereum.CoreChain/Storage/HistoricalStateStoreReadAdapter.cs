@@ -95,6 +95,9 @@ namespace Nethereum.CoreChain.Storage
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
             => throw new InvalidOperationException("HistoricalStateStoreReadAdapter is read-only; wrap in ReadOnlyStateStoreWrapper before writing.");
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+            => throw new InvalidOperationException("HistoricalStateStoreReadAdapter is read-only; wrap in ReadOnlyStateStoreWrapper before writing.");
+
         public Task ClearStorageAsync(string address)
             => throw new InvalidOperationException("HistoricalStateStoreReadAdapter is read-only; wrap in ReadOnlyStateStoreWrapper before writing.");
 

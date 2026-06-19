@@ -123,7 +123,10 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
                         var inlineAddress = InlineAddressBytes(entry.Address);
-                        var slotBytes = SlotToBytes(entry.Slot);
+                        // SlotKey is already keccak(slot) — Yellow Paper §4.1 storage path.
+                        var slotBytes = entry.SlotKey ?? throw new ArgumentException("StorageDiffEntry.SlotKey is required (keccak(slot), 32 bytes)");
+                        if (slotBytes.Length != 32)
+                            throw new ArgumentException($"StorageDiffEntry.SlotKey must be 32 bytes, got {slotBytes.Length}");
 
                         using var cmd = _manager.Connection.CreateCommand();
                         cmd.CommandText = "INSERT OR REPLACE INTO state_diff_storage (address, slot, block_number, value, address_inline) VALUES (@addr, @slot, @block, @val, @inline)";
@@ -244,14 +247,15 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     while (reader.Read())
                     {
                         diff ??= new BlockStateDiff { BlockNumber = blockNumber };
-                        var slotRaw = (byte[])reader[0];
+                        var slotKey = (byte[])reader[0];
                         var preVal = reader.IsDBNull(1) ? null : (byte[])reader[1];
                         var inline = reader.IsDBNull(2) ? null : (byte[])reader[2];
                         var address = inline != null ? "0x" + inline.ToHex() : null;
                         diff.StorageDiffs.Add(new StorageDiffEntry
                         {
                             Address = address,
-                            Slot = new BigInteger(slotRaw, isUnsigned: true, isBigEndian: true),
+                            // Slot column stores keccak(slot); see Yellow Paper §4.1.
+                            SlotKey = slotKey,
                             PreValue = preVal
                         });
                     }
@@ -437,9 +441,11 @@ namespace Nethereum.DevChain.Storage.Sqlite
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
         }
 
+        // Yellow Paper §4.1 storage-trie path. The persistent diff store keys
+        // slots by keccak(slot), matching the state CF rekey (R1).
         private static byte[] SlotToBytes(BigInteger slot)
         {
-            return slot.ToByteArray(isUnsigned: true, isBigEndian: true);
+            return Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot);
         }
     }
 }

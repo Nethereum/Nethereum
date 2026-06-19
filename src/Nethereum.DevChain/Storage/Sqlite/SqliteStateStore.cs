@@ -214,6 +214,33 @@ namespace Nethereum.DevChain.Storage.Sqlite
             return Task.FromResult(value);
         }
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+        {
+            if (slotKeccak == null || slotKeccak.Length != 32)
+                throw new System.ArgumentException("slotKeccak must be 32 bytes", nameof(slotKeccak));
+            var normalized = NormalizeAddress(address);
+
+            if (value == null || IsAllZero(value))
+            {
+                using var cmd = _manager.Connection.CreateCommand();
+                cmd.CommandText = "DELETE FROM account_storage WHERE address = @addr AND slot = @slot";
+                cmd.Parameters.AddWithValue("@addr", normalized);
+                cmd.Parameters.AddWithValue("@slot", slotKeccak);
+                cmd.ExecuteNonQuery();
+            }
+            else
+            {
+                using var cmd = _manager.Connection.CreateCommand();
+                cmd.CommandText = "INSERT OR REPLACE INTO account_storage (address, slot, value) VALUES (@addr, @slot, @val)";
+                cmd.Parameters.AddWithValue("@addr", normalized);
+                cmd.Parameters.AddWithValue("@slot", slotKeccak);
+                cmd.Parameters.AddWithValue("@val", value);
+                cmd.ExecuteNonQuery();
+            }
+
+            return Task.CompletedTask;
+        }
+
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
             var normalized = NormalizeAddress(address);

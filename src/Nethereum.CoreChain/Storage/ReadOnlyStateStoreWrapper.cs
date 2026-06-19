@@ -170,6 +170,10 @@ namespace Nethereum.CoreChain.Storage
             return await _inner.GetStorageAsync(address, slot).ConfigureAwait(false);
         }
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+            => throw new System.NotSupportedException(
+                "ReadOnlyStateStoreWrapper does not support keccak-keyed writes.");
+
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
             var key = Normalize(address);

@@ -114,6 +114,9 @@ namespace Nethereum.CoreChain.State
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
             => throw new NotSupportedException("ReadOnlyStateReaderStore is read-only — wrap in ReadOnlyStateStoreWrapper to absorb writes.");
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+            => throw new NotSupportedException("ReadOnlyStateReaderStore is read-only — wrap in ReadOnlyStateStoreWrapper to absorb writes.");
+
         public Task ClearStorageAsync(string address)
             => throw new NotSupportedException("ReadOnlyStateReaderStore is read-only — wrap in ReadOnlyStateStoreWrapper to absorb writes.");
 

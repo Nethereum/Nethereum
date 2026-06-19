@@ -117,11 +117,13 @@ namespace Nethereum.CoreChain.Services
 
                 // 2. Restore storage pre-values. Empty pre-value means the
                 //    slot was zero before this block; write empty (the
-                //    backend treats it as "delete the slot").
+                //    backend treats it as "delete the slot"). SlotKey is
+                //    keccak(slot) — Yellow Paper §4.1; we cannot reconstruct
+                //    the original BigInteger so we replay via the keccak path.
                 foreach (var entry in diff.StorageDiffs)
                 {
                     var pre = entry.PreValue ?? Array.Empty<byte>();
-                    await _stateStore.SaveStorageAsync(entry.Address, entry.Slot, pre).ConfigureAwait(false);
+                    await _stateStore.SaveStorageByKeccakAsync(entry.Address, entry.SlotKey, pre).ConfigureAwait(false);
                 }
 
                 // 3. Flip the canonical-head cursor down to n-1, and clamp

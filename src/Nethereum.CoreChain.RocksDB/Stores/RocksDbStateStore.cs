@@ -208,6 +208,25 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.CompletedTask;
         }
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+        {
+            if (slotKeccak == null || slotKeccak.Length != 32)
+                throw new ArgumentException("slotKeccak must be 32 bytes (keccak(slot))", nameof(slotKeccak));
+
+            var addressBytes = GetAccountKey(address);
+            var key = new byte[addressBytes.Length + 32];
+            Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
+            Buffer.BlockCopy(slotKeccak, 0, key, addressBytes.Length, 32);
+
+            bool isZero = value == null || value.All(b => b == 0);
+            if (isZero) _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
+            else _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, value);
+            // No dirty-storage tracking — this path is reserved for rewind
+            // replay where dirty-tracking would mis-attribute the write to the
+            // current block.
+            return Task.CompletedTask;
+        }
+
         public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             var result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
