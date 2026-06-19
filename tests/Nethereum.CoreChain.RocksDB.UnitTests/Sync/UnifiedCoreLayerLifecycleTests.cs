@@ -109,9 +109,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             var follower = new FollowerService();
             var policy = new FixedPolicy();
 
+            IChainStoreBundle firstBundle = null;
             var firstRun = await follower.RunAsync(
                 source1,
-                bundleFactory: () => RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
+                bundleFactory: () => firstBundle = RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
                 executorFactory: _ => new ScriptedExecutor(),
                 policy: policy,
                 canonical: null,
@@ -121,10 +122,12 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             Assert.Equal(FollowerExitReason.SourceCompleted, firstRun.ExitReason);
             Assert.Equal(15UL, firstRun.LastExecutedBlock);
             Assert.Equal(15UL, firstRun.BlocksExecuted);
+            await firstBundle.DisposeAsync();
 
+            IChainStoreBundle secondBundle = null;
             var secondRun = await follower.RunAsync(
                 source2,
-                bundleFactory: () => RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
+                bundleFactory: () => secondBundle = RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
                 executorFactory: _ => new ScriptedExecutor(),
                 policy: policy,
                 canonical: null,
@@ -134,6 +137,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             Assert.Equal(FollowerExitReason.SourceCompleted, secondRun.ExitReason);
             Assert.Equal(30UL, secondRun.LastExecutedBlock);
             Assert.Equal(15UL, secondRun.BlocksExecuted);
+            await secondBundle.DisposeAsync();
 
             using var finalBundle = RocksDbChainStoreBundle.Open(_dataDir);
             Assert.Equal(30UL, finalBundle.Metadata.GetLastBlock());
@@ -153,9 +157,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             var follower = new FollowerService();
             var policy = new FixedPolicy { Verdict = ValidationAction.RewindAndRetry };
 
+            IChainStoreBundle divergedBundle = null;
             var diverged = await follower.RunAsync(
                 new LocalReplayBlockSource(bundles),
-                bundleFactory: () => RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
+                bundleFactory: () => divergedBundle = RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
                 executorFactory: _ => executorWithBug,
                 policy: policy,
                 canonical: null,
@@ -167,6 +172,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             Assert.Equal(20UL, diverged.SnapshotRestoreTarget!.Value.BlockNumber);
             Assert.Equal(24UL, diverged.LastExecutedBlock);
             Assert.Equal(1UL, diverged.RootMismatches);
+            await divergedBundle.DisposeAsync();
 
             var snapshotDir = Path.Combine(_dataDir, ".cp", "000000000020");
             Assert.True(Directory.Exists(snapshotDir));
@@ -177,9 +183,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
                 Assert.Equal(20UL, afterRestore.Metadata.GetLastBlock());
             }
 
+            IChainStoreBundle resumedBundle = null;
             var resumed = await follower.RunAsync(
                 new LocalReplayBlockSource(bundles),
-                bundleFactory: () => RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
+                bundleFactory: () => resumedBundle = RocksDbChainStoreBundle.Open(_dataDir, HistoricalStateOptions.FullArchive),
                 executorFactory: _ => executorFixed,
                 policy: policy,
                 canonical: null,
@@ -189,6 +196,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             Assert.Equal(FollowerExitReason.SourceCompleted, resumed.ExitReason);
             Assert.Equal(30UL, resumed.LastExecutedBlock);
             Assert.Equal(10UL, resumed.BlocksExecuted);
+            await resumedBundle.DisposeAsync();
 
             using var finalBundle = RocksDbChainStoreBundle.Open(_dataDir);
             Assert.Equal(30UL, finalBundle.Metadata.GetLastBlock());
