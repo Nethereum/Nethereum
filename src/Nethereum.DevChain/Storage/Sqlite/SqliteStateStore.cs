@@ -33,7 +33,17 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private static string NormalizeAddress(string address)
         {
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static string OriginalAddress(string address)
+        {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+        }
+
+        private static byte[] InlineAddressBytes(string address)
+        {
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
         }
 
         public Task<Account> GetAccountAsync(string address)
@@ -67,24 +77,26 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var normalized = NormalizeAddress(address);
             var data = _accountLayout.EncodeAccount(account);
+            var inline = InlineAddressBytes(address);
 
             using var cmd = _manager.Connection.CreateCommand();
             if (_accountLayout.HasExternalCodeHash)
             {
-                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, code_hash) VALUES (@addr, @data, @ch)";
+                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, code_hash, address_inline) VALUES (@addr, @data, @ch, @inline)";
                 cmd.Parameters.AddWithValue("@ch", (object)account.CodeHash ?? System.DBNull.Value);
             }
             else
             {
-                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data) VALUES (@addr, @data)";
+                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, address_inline) VALUES (@addr, @data, @inline)";
             }
             cmd.Parameters.AddWithValue("@addr", normalized);
             cmd.Parameters.AddWithValue("@data", data);
+            cmd.Parameters.AddWithValue("@inline", inline);
             cmd.ExecuteNonQuery();
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
+                _dirtyAccounts.Add(OriginalAddress(address));
             }
 
             return Task.CompletedTask;
@@ -117,7 +129,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
+                _dirtyAccounts.Add(OriginalAddress(address));
             }
 
             return Task.CompletedTask;
@@ -130,18 +142,27 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             using var cmd = _manager.Connection.CreateCommand();
             cmd.CommandText = hasExtCodeHash
-                ? "SELECT address, account_data, code_hash FROM accounts"
-                : "SELECT address, account_data FROM accounts";
+                ? "SELECT account_data, code_hash, address_inline FROM accounts"
+                : "SELECT account_data, address_inline FROM accounts";
 
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                var addr = reader.GetString(0);
-                var data = (byte[])reader[1];
+                var data = (byte[])reader[0];
                 var account = _accountLayout.DecodeAccount(data);
-                if (account != null && hasExtCodeHash)
-                    account.CodeHash = reader[2] as byte[];
-                if (account != null)
+                if (account == null) continue;
+                byte[] inline;
+                if (hasExtCodeHash)
+                {
+                    account.CodeHash = reader[1] as byte[];
+                    inline = reader[2] as byte[];
+                }
+                else
+                {
+                    inline = reader[1] as byte[];
+                }
+                var addr = inline != null ? "0x" + inline.ToHex() : null;
+                if (addr != null)
                     result[addr] = account;
             }
 
@@ -155,16 +176,26 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
             using var cmd = _manager.Connection.CreateCommand();
             cmd.CommandText = hasExtCodeHash
-                ? "SELECT address, account_data, code_hash FROM accounts"
-                : "SELECT address, account_data FROM accounts";
+                ? "SELECT account_data, code_hash, address_inline FROM accounts"
+                : "SELECT account_data, address_inline FROM accounts";
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                var addr = reader.GetString(0);
-                var data = (byte[])reader[1];
+                var data = (byte[])reader[0];
                 var account = _accountLayout.DecodeAccount(data);
                 if (account == null) continue;
-                if (hasExtCodeHash) account.CodeHash = reader[2] as byte[];
+                byte[] inline;
+                if (hasExtCodeHash)
+                {
+                    account.CodeHash = reader[1] as byte[];
+                    inline = reader[2] as byte[];
+                }
+                else
+                {
+                    inline = reader[1] as byte[];
+                }
+                if (inline == null) continue;
+                var addr = "0x" + inline.ToHex();
                 yield return new System.Collections.Generic.KeyValuePair<string, Account>(addr, account);
             }
         }
@@ -208,11 +239,12 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
-                if (!_dirtyStorageSlots.TryGetValue(normalized, out var dirtySlots))
+                var originalAddr = OriginalAddress(address);
+                _dirtyAccounts.Add(originalAddr);
+                if (!_dirtyStorageSlots.TryGetValue(originalAddr, out var dirtySlots))
                 {
                     dirtySlots = new HashSet<BigInteger>();
-                    _dirtyStorageSlots[normalized] = dirtySlots;
+                    _dirtyStorageSlots[originalAddr] = dirtySlots;
                 }
                 dirtySlots.Add(slot);
             }
@@ -252,7 +284,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
+                _dirtyAccounts.Add(OriginalAddress(address));
             }
 
             return Task.CompletedTask;
@@ -359,8 +391,8 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             lock (_lock)
             {
-                var normalized = NormalizeAddress(address);
-                if (!_dirtyStorageSlots.TryGetValue(normalized, out var dirtySlots))
+                var key = OriginalAddress(address);
+                if (!_dirtyStorageSlots.TryGetValue(key, out var dirtySlots))
                     return Task.FromResult<IReadOnlyCollection<BigInteger>>(Array.Empty<BigInteger>());
                 return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.ToList());
             }

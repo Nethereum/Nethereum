@@ -41,15 +41,17 @@ namespace Nethereum.CoreChain.Storage.InMemory
                 foreach (var entry in diff.AccountDiffs)
                 {
                     var normalizedAddress = NormalizeAddress(entry.Address);
+                    var originalAddress = OriginalAddress(entry.Address);
                     _accountDiffs[(normalizedAddress, diff.BlockNumber)] = entry.PreValue;
-                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Account, Address = normalizedAddress });
+                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Account, Address = normalizedAddress, OriginalAddress = originalAddress });
                 }
 
                 foreach (var entry in diff.StorageDiffs)
                 {
                     var normalizedAddress = NormalizeAddress(entry.Address);
+                    var originalAddress = OriginalAddress(entry.Address);
                     _storageDiffs[(normalizedAddress, entry.Slot, diff.BlockNumber)] = entry.PreValue;
-                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Storage, Address = normalizedAddress, Slot = entry.Slot });
+                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Storage, Address = normalizedAddress, OriginalAddress = originalAddress, Slot = entry.Slot });
                 }
 
                 _blockIndex[diff.BlockNumber] = indexEntries;
@@ -112,12 +114,12 @@ namespace Nethereum.CoreChain.Storage.InMemory
                     if (entry.Type == DiffType.Account)
                     {
                         _accountDiffs.TryGetValue((entry.Address, blockNumber), out var pre);
-                        diff.AccountDiffs.Add(new AccountDiffEntry { Address = entry.Address, PreValue = pre });
+                        diff.AccountDiffs.Add(new AccountDiffEntry { Address = entry.OriginalAddress, PreValue = pre });
                     }
                     else
                     {
                         _storageDiffs.TryGetValue((entry.Address, entry.Slot, blockNumber), out var pre);
-                        diff.StorageDiffs.Add(new StorageDiffEntry { Address = entry.Address, Slot = entry.Slot, PreValue = pre });
+                        diff.StorageDiffs.Add(new StorageDiffEntry { Address = entry.OriginalAddress, Slot = entry.Slot, PreValue = pre });
                     }
                 }
                 return Task.FromResult(diff);
@@ -228,6 +230,11 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         private static string NormalizeAddress(string address)
         {
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static string OriginalAddress(string address)
+        {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
 
@@ -241,6 +248,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             public DiffType Type { get; set; }
             public string Address { get; set; }
+            public string OriginalAddress { get; set; }
             public BigInteger Slot { get; set; }
         }
     }

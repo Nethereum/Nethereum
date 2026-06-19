@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 using RocksDbSharp;
@@ -14,6 +15,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private const byte TYPE_ACCOUNT = 0x01;
         private const byte TYPE_STORAGE = 0x02;
+        // Yellow Paper §4.1: address keys are keccak256(address) = 32 bytes.
+        private const int AddressKeyLength = 32;
+        private const int InlineAddressLength = 20;
+        private const int AccountDataKeyLength = AddressKeyLength + 8;
+        private const int AccountIndexKeyLength = 8 + 1 + AddressKeyLength;
+        private const int StorageDataKeyLength = AddressKeyLength + 32 + 8;
+        private const int StorageIndexKeyLength = 8 + 1 + AddressKeyLength + 32;
         private static readonly byte[] SENTINEL_NOT_EXIST = new byte[] { 0x00 };
         private static readonly byte[] EMPTY_VALUE = Array.Empty<byte>();
         private static readonly byte[] META_KEY_OLDEST = System.Text.Encoding.UTF8.GetBytes("oldest_block");
@@ -66,18 +74,18 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     if (!samePrefix) break;
 
                     var type = indexKey[8];
-                    if (type == TYPE_ACCOUNT && indexKey.Length == 29)
+                    if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
                     {
-                        var addr = new byte[20];
-                        Buffer.BlockCopy(indexKey, 9, addr, 0, 20);
+                        var addr = new byte[AddressKeyLength];
+                        Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
                         batch.Delete(BuildAccountDataKey(addr, blockBytes), cfAccounts);
                     }
-                    else if (type == TYPE_STORAGE && indexKey.Length == 61)
+                    else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
                     {
-                        var addr = new byte[20];
-                        Buffer.BlockCopy(indexKey, 9, addr, 0, 20);
+                        var addr = new byte[AddressKeyLength];
+                        Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
                         var slot = new byte[32];
-                        Buffer.BlockCopy(indexKey, 29, slot, 0, 32);
+                        Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
                         batch.Delete(BuildStorageDataKey(addr, slot, blockBytes), cfStorage);
                     }
                     batch.Delete((byte[])indexKey.Clone(), cfIndex);
@@ -87,24 +95,28 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             foreach (var entry in diff.AccountDiffs)
             {
-                var addressBytes = NormalizeAddressToBytes(entry.Address);
-                var dataKey = BuildAccountDataKey(addressBytes, blockBytes);
-                var value = entry.PreValue != null ? _accountLayout.EncodeAccount(entry.PreValue) : SENTINEL_NOT_EXIST;
+                var keccakKey = StateKeys.AccountKey(entry.Address);
+                var inlineAddress = OriginalAddressBytes(entry.Address);
+                var dataKey = BuildAccountDataKey(keccakKey, blockBytes);
+                byte[] body = entry.PreValue != null ? _accountLayout.EncodeAccount(entry.PreValue) : SENTINEL_NOT_EXIST;
+                var value = ConcatInline(inlineAddress, body);
                 batch.Put(dataKey, value, cfAccounts);
 
-                var indexKey = BuildAccountIndexKey(blockBytes, addressBytes);
+                var indexKey = BuildAccountIndexKey(blockBytes, keccakKey);
                 batch.Put(indexKey, EMPTY_VALUE, cfIndex);
             }
 
             foreach (var entry in diff.StorageDiffs)
             {
-                var addressBytes = NormalizeAddressToBytes(entry.Address);
+                var keccakKey = StateKeys.AccountKey(entry.Address);
+                var inlineAddress = OriginalAddressBytes(entry.Address);
                 var slotBytes = SlotToBytes(entry.Slot);
-                var dataKey = BuildStorageDataKey(addressBytes, slotBytes, blockBytes);
-                var value = entry.PreValue ?? EMPTY_VALUE;
+                var dataKey = BuildStorageDataKey(keccakKey, slotBytes, blockBytes);
+                byte[] body = entry.PreValue ?? EMPTY_VALUE;
+                var value = ConcatInline(inlineAddress, body);
                 batch.Put(dataKey, value, cfStorage);
 
-                var indexKey = BuildStorageIndexKey(blockBytes, addressBytes, slotBytes);
+                var indexKey = BuildStorageIndexKey(blockBytes, keccakKey, slotBytes);
                 batch.Put(indexKey, EMPTY_VALUE, cfIndex);
             }
 
@@ -115,7 +127,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task<(bool Found, Account PreValue)> GetFirstAccountPreValueAfterBlockAsync(string address, BigInteger blockNumber)
         {
-            var addressBytes = NormalizeAddressToBytes(address);
+            var addressBytes = StateKeys.AccountKey(address);
             var searchFromBlock = blockNumber + 1;
             var seekKey = BuildAccountDataKey(addressBytes, BlockNumberToBytes(searchFromBlock));
 
@@ -125,13 +137,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (key.Length == 28 && KeyStartsWithAddress(key, addressBytes))
+                if (key.Length == AccountDataKeyLength && KeyStartsWithAddress(key, addressBytes))
                 {
                     var value = iterator.Value();
-                    if (value.Length == 1 && value[0] == 0x00)
+                    var body = StripInlineAddress(value);
+                    if (body.Length == 1 && body[0] == 0x00)
                         return Task.FromResult((true, (Account)null));
 
-                    var account = _accountLayout.DecodeAccount(value);
+                    var account = _accountLayout.DecodeAccount(body);
                     return Task.FromResult((true, account));
                 }
             }
@@ -141,7 +154,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task<(bool Found, byte[] PreValue)> GetFirstStoragePreValueAfterBlockAsync(string address, BigInteger slot, BigInteger blockNumber)
         {
-            var addressBytes = NormalizeAddressToBytes(address);
+            var addressBytes = StateKeys.AccountKey(address);
             var slotBytes = SlotToBytes(slot);
             var searchFromBlock = blockNumber + 1;
             var seekKey = BuildStorageDataKey(addressBytes, slotBytes, BlockNumberToBytes(searchFromBlock));
@@ -152,13 +165,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (key.Length == 60 && KeyStartsWithAddressAndSlot(key, addressBytes, slotBytes))
+                if (key.Length == StorageDataKeyLength && KeyStartsWithAddressAndSlot(key, addressBytes, slotBytes))
                 {
                     var value = iterator.Value();
-                    if (value.Length == 0)
+                    var body = StripInlineAddress(value);
+                    if (body.Length == 0)
                         return Task.FromResult((true, (byte[])null));
 
-                    return Task.FromResult((true, value));
+                    return Task.FromResult((true, body));
                 }
             }
 
@@ -197,40 +211,59 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
                 found = true;
                 var type = indexKey[8];
-                if (type == TYPE_ACCOUNT && indexKey.Length == 29)
+                if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
                 {
-                    var addr = new byte[20];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, 20);
+                    var addr = new byte[AddressKeyLength];
+                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
                     var dataKey = BuildAccountDataKey(addr, blockBytes);
                     var raw = _manager.Get(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS, dataKey);
                     Account pre;
-                    if (raw == null || (raw.Length == 1 && raw[0] == SENTINEL_NOT_EXIST[0]))
+                    byte[] inlineAddress;
+                    if (raw == null)
                     {
                         pre = null;
+                        inlineAddress = null;
                     }
                     else
                     {
-                        pre = _accountLayout.DecodeAccount(raw);
+                        inlineAddress = ReadInlineAddress(raw);
+                        var body = StripInlineAddress(raw);
+                        if (body.Length == 1 && body[0] == SENTINEL_NOT_EXIST[0])
+                            pre = null;
+                        else
+                            pre = _accountLayout.DecodeAccount(body);
                     }
                     diff.AccountDiffs.Add(new AccountDiffEntry
                     {
-                        Address = "0x" + Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.ToHex(addr),
+                        Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
                         PreValue = pre
                     });
                 }
-                else if (type == TYPE_STORAGE && indexKey.Length == 61)
+                else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
                 {
-                    var addr = new byte[20];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, 20);
+                    var addr = new byte[AddressKeyLength];
+                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
                     var slot = new byte[32];
-                    Buffer.BlockCopy(indexKey, 29, slot, 0, 32);
+                    Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
                     var dataKey = BuildStorageDataKey(addr, slot, blockBytes);
                     var raw = _manager.Get(RocksDbManager.CF_STATE_HISTORY_STORAGE, dataKey);
+                    byte[] inlineAddress;
+                    byte[] body;
+                    if (raw == null)
+                    {
+                        inlineAddress = null;
+                        body = EMPTY_VALUE;
+                    }
+                    else
+                    {
+                        inlineAddress = ReadInlineAddress(raw);
+                        body = StripInlineAddress(raw);
+                    }
                     diff.StorageDiffs.Add(new StorageDiffEntry
                     {
-                        Address = "0x" + Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.ToHex(addr),
+                        Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
                         Slot = new BigInteger(slot, isUnsigned: true, isBigEndian: true),
-                        PreValue = raw ?? EMPTY_VALUE
+                        PreValue = body
                     });
                 }
                 it.Next();
@@ -265,18 +298,18 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 if (!samePrefix) break;
 
                 var type = indexKey[8];
-                if (type == TYPE_ACCOUNT && indexKey.Length == 29)
+                if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
                 {
-                    var addr = new byte[20];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, 20);
+                    var addr = new byte[AddressKeyLength];
+                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
                     batch.Delete(BuildAccountDataKey(addr, blockBytes), cfAccounts);
                 }
-                else if (type == TYPE_STORAGE && indexKey.Length == 61)
+                else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
                 {
-                    var addr = new byte[20];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, 20);
+                    var addr = new byte[AddressKeyLength];
+                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
                     var slot = new byte[32];
-                    Buffer.BlockCopy(indexKey, 29, slot, 0, 32);
+                    Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
                     batch.Delete(BuildStorageDataKey(addr, slot, blockBytes), cfStorage);
                 }
                 batch.Delete((byte[])indexKey.Clone(), cfIndex);
@@ -327,64 +360,90 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         #region Key Building
 
-        private static byte[] BuildAccountDataKey(byte[] address20, byte[] blockNum8)
+        private static byte[] BuildAccountDataKey(byte[] addressKey, byte[] blockNum8)
         {
-            var key = new byte[28];
-            Buffer.BlockCopy(address20, 0, key, 0, 20);
-            Buffer.BlockCopy(blockNum8, 0, key, 20, 8);
+            var key = new byte[AccountDataKeyLength];
+            Buffer.BlockCopy(addressKey, 0, key, 0, AddressKeyLength);
+            Buffer.BlockCopy(blockNum8, 0, key, AddressKeyLength, 8);
             return key;
         }
 
-        private static byte[] BuildStorageDataKey(byte[] address20, byte[] slot32, byte[] blockNum8)
+        private static byte[] BuildStorageDataKey(byte[] addressKey, byte[] slot32, byte[] blockNum8)
         {
-            var key = new byte[60];
-            Buffer.BlockCopy(address20, 0, key, 0, 20);
-            Buffer.BlockCopy(slot32, 0, key, 20, 32);
-            Buffer.BlockCopy(blockNum8, 0, key, 52, 8);
+            var key = new byte[StorageDataKeyLength];
+            Buffer.BlockCopy(addressKey, 0, key, 0, AddressKeyLength);
+            Buffer.BlockCopy(slot32, 0, key, AddressKeyLength, 32);
+            Buffer.BlockCopy(blockNum8, 0, key, AddressKeyLength + 32, 8);
             return key;
         }
 
-        private static byte[] BuildAccountIndexKey(byte[] blockNum8, byte[] address20)
+        private static byte[] BuildAccountIndexKey(byte[] blockNum8, byte[] addressKey)
         {
-            var key = new byte[29];
+            var key = new byte[AccountIndexKeyLength];
             Buffer.BlockCopy(blockNum8, 0, key, 0, 8);
             key[8] = TYPE_ACCOUNT;
-            Buffer.BlockCopy(address20, 0, key, 9, 20);
+            Buffer.BlockCopy(addressKey, 0, key, 9, AddressKeyLength);
             return key;
         }
 
-        private static byte[] BuildStorageIndexKey(byte[] blockNum8, byte[] address20, byte[] slot32)
+        private static byte[] BuildStorageIndexKey(byte[] blockNum8, byte[] addressKey, byte[] slot32)
         {
-            var key = new byte[61];
+            var key = new byte[StorageIndexKeyLength];
             Buffer.BlockCopy(blockNum8, 0, key, 0, 8);
             key[8] = TYPE_STORAGE;
-            Buffer.BlockCopy(address20, 0, key, 9, 20);
-            Buffer.BlockCopy(slot32, 0, key, 29, 32);
+            Buffer.BlockCopy(addressKey, 0, key, 9, AddressKeyLength);
+            Buffer.BlockCopy(slot32, 0, key, 9 + AddressKeyLength, 32);
             return key;
         }
 
-        private static bool KeyStartsWithAddress(byte[] key, byte[] address20)
+        private static bool KeyStartsWithAddress(byte[] key, byte[] addressKey)
         {
-            if (key.Length < 20) return false;
-            for (int i = 0; i < 20; i++)
+            if (key.Length < AddressKeyLength) return false;
+            for (int i = 0; i < AddressKeyLength; i++)
             {
-                if (key[i] != address20[i]) return false;
+                if (key[i] != addressKey[i]) return false;
             }
             return true;
         }
 
-        private static bool KeyStartsWithAddressAndSlot(byte[] key, byte[] address20, byte[] slot32)
+        private static bool KeyStartsWithAddressAndSlot(byte[] key, byte[] addressKey, byte[] slot32)
         {
-            if (key.Length < 52) return false;
-            for (int i = 0; i < 20; i++)
+            if (key.Length < AddressKeyLength + 32) return false;
+            for (int i = 0; i < AddressKeyLength; i++)
             {
-                if (key[i] != address20[i]) return false;
+                if (key[i] != addressKey[i]) return false;
             }
             for (int i = 0; i < 32; i++)
             {
-                if (key[20 + i] != slot32[i]) return false;
+                if (key[AddressKeyLength + i] != slot32[i]) return false;
             }
             return true;
+        }
+
+        private static byte[] ConcatInline(byte[] inlineAddress, byte[] body)
+        {
+            var value = new byte[InlineAddressLength + body.Length];
+            Buffer.BlockCopy(inlineAddress, 0, value, 0, InlineAddressLength);
+            if (body.Length > 0)
+                Buffer.BlockCopy(body, 0, value, InlineAddressLength, body.Length);
+            return value;
+        }
+
+        private static byte[] ReadInlineAddress(byte[] value)
+        {
+            if (value == null || value.Length < InlineAddressLength) return null;
+            var addr = new byte[InlineAddressLength];
+            Buffer.BlockCopy(value, 0, addr, 0, InlineAddressLength);
+            return addr;
+        }
+
+        private static byte[] StripInlineAddress(byte[] value)
+        {
+            if (value == null) return EMPTY_VALUE;
+            if (value.Length <= InlineAddressLength) return EMPTY_VALUE;
+            var body = new byte[value.Length - InlineAddressLength];
+            Buffer.BlockCopy(value, InlineAddressLength, body, 0, body.Length);
+            return body;
         }
 
         #endregion
@@ -414,17 +473,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return padded;
         }
 
-        private static byte[] NormalizeAddressToBytes(string address)
+        private static byte[] OriginalAddressBytes(string address)
         {
-            var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
-            if (normalized.StartsWith("0x"))
-                normalized = normalized.Substring(2);
-            var bytes = new byte[20];
-            for (int i = 0; i < 20; i++)
-            {
-                bytes[i] = Convert.ToByte(normalized.Substring(i * 2, 2), 16);
-            }
-            return bytes;
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
         }
 
         #endregion
@@ -460,19 +511,19 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     Buffer.BlockCopy(indexKey, 0, blockBytes, 0, 8);
                     var type = indexKey[8];
 
-                    if (type == TYPE_ACCOUNT && indexKey.Length == 29)
+                    if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
                     {
-                        var address = new byte[20];
-                        Buffer.BlockCopy(indexKey, 9, address, 0, 20);
+                        var address = new byte[AddressKeyLength];
+                        Buffer.BlockCopy(indexKey, 9, address, 0, AddressKeyLength);
                         var dataKey = BuildAccountDataKey(address, blockBytes);
                         keysToDelete.Add((dataKey, cfAccounts));
                     }
-                    else if (type == TYPE_STORAGE && indexKey.Length == 61)
+                    else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
                     {
-                        var address = new byte[20];
-                        Buffer.BlockCopy(indexKey, 9, address, 0, 20);
+                        var address = new byte[AddressKeyLength];
+                        Buffer.BlockCopy(indexKey, 9, address, 0, AddressKeyLength);
                         var slot = new byte[32];
-                        Buffer.BlockCopy(indexKey, 29, slot, 0, 32);
+                        Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
                         var dataKey = BuildStorageDataKey(address, slot, blockBytes);
                         keysToDelete.Add((dataKey, cfStorage));
                     }

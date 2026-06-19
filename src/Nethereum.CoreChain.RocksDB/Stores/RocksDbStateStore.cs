@@ -65,7 +65,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var key = GetAccountKey(address);
             var data = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, key);
-            var account = _accountLayout.DecodeAccount(data);
+            var account = DecodeAccountValue(data);
 
             if (account != null && _accountLayout.HasExternalCodeHash)
             {
@@ -79,7 +79,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public Task SaveAccountAsync(string address, Account account)
         {
             var key = GetAccountKey(address);
-            var data = _accountLayout.EncodeAccount(account);
+            var data = EncodeAccountValue(address, account);
             _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, key, data);
             if (_accountLayout.HasExternalCodeHash && account.CodeHash != null)
                 _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(key), account.CodeHash);
@@ -132,16 +132,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             {
                 var key = iterator.Key();
 
-                if (hasExtCodeHash && key.Length != 20)
+                // Account leaves are keccak(addr) (32 bytes); code-hash
+                // sub-leaves are keccak(addr) || 0x01 (33 bytes).
+                if (key.Length != 32)
                 {
                     iterator.Next();
                     continue;
                 }
 
                 var data = iterator.Value();
-                var address = "0x" + key.ToHex();
-                var account = _accountLayout.DecodeAccount(data);
-                if (account != null)
+                var account = DecodeAccountValue(data, out var inlineAddress);
+                if (account != null && inlineAddress != null)
                 {
                     if (hasExtCodeHash)
                     {
@@ -149,7 +150,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                         account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, chKey);
                     }
 
-                    result[address.ToLowerInvariant()] = account;
+                    var address = "0x" + inlineAddress.ToHex();
+                    result[address] = account;
                 }
 
                 iterator.Next();
@@ -168,22 +170,22 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (hasExtCodeHash && key.Length != 20)
+                if (key.Length != 32)
                 {
                     iterator.Next();
                     continue;
                 }
                 var data = iterator.Value();
-                var account = _accountLayout.DecodeAccount(data);
-                if (account != null)
+                var account = DecodeAccountValue(data, out var inlineAddress);
+                if (account != null && inlineAddress != null)
                 {
                     if (hasExtCodeHash)
                     {
                         var chKey = GetCodeHashKey(key);
                         account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, chKey);
                     }
-                    yield return new System.Collections.Generic.KeyValuePair<string, Account>(
-                        ("0x" + key.ToHex()).ToLowerInvariant(), account);
+                    var address = "0x" + inlineAddress.ToHex();
+                    yield return new System.Collections.Generic.KeyValuePair<string, Account>(address, account);
                 }
                 iterator.Next();
             }
@@ -318,7 +320,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 foreach (var kvp in rocksSnapshot.PendingAccounts)
                 {
                     var key = kvp.Key.HexToByteArray();
-                    var data = _accountLayout.EncodeAccount(kvp.Value);
+                    rocksSnapshot.OriginalAddresses.TryGetValue(kvp.Key, out var originalAddr);
+                    var data = EncodeAccountValue(originalAddr, kvp.Value);
                     batch.Put(key, data, accountsCf);
                 }
 
@@ -419,15 +422,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.CompletedTask;
         }
 
-        private static byte[] GetAccountKey(string address)
-        {
-            var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
-            return normalized.HexToByteArray();
-        }
+        // Yellow Paper §4.1: world-state trie maps keccak256(address) → account RLP.
+        // Account keys are derived via StateKeys so the cache key equals the trie key.
+        private static byte[] GetAccountKey(string address) => StateKeys.AccountKey(address);
 
         // EIP-7864: code hash is stored in a separate trie leaf (sub-index 1) from
         // basic data (sub-index 0). The state store mirrors this by appending 0x01
-        // to the 20-byte address key, keeping both in CF_STATE_ACCOUNTS.
+        // to the 32-byte account key, keeping both in CF_STATE_ACCOUNTS.
         private static byte[] GetCodeHashKey(byte[] accountKey)
         {
             var chKey = new byte[accountKey.Length + 1];
@@ -442,6 +443,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return GetStorageKeyFromBytes(addressBytes, slot);
         }
 
+        // Composite key: keccak(addr) (32 bytes) || rawSlot (32 bytes) = 64 bytes.
+        // Slot stays raw so BigInteger recovery in GetAllStorageAsync remains exact.
         private static byte[] GetStorageKeyFromBytes(byte[] addressBytes, BigInteger slot)
         {
             var slotBytes = slot.ToByteArray(isUnsigned: true, isBigEndian: true).PadBytes(32);
@@ -450,6 +453,36 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
             Buffer.BlockCopy(slotBytes, 0, key, addressBytes.Length, slotBytes.Length);
             return key;
+        }
+
+        // Account value layout: address[20] ‖ accountLayout.Encode(account).
+        // The inline address is what GetAllAccountsAsync / StreamAccountsAsync
+        // yield to callers, since the key is now keccak(addr) and no longer
+        // reversible to the original address.
+        private byte[] EncodeAccountValue(string address, Account account)
+        {
+            var encoded = _accountLayout.EncodeAccount(account);
+            var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
+            var value = new byte[20 + encoded.Length];
+            Buffer.BlockCopy(addressBytes, 0, value, 0, 20);
+            Buffer.BlockCopy(encoded, 0, value, 20, encoded.Length);
+            return value;
+        }
+
+        private Account DecodeAccountValue(byte[] data)
+        {
+            return DecodeAccountValue(data, out _);
+        }
+
+        private Account DecodeAccountValue(byte[] data, out byte[] inlineAddress)
+        {
+            inlineAddress = null;
+            if (data == null || data.Length < 20) return null;
+            inlineAddress = new byte[20];
+            Buffer.BlockCopy(data, 0, inlineAddress, 0, 20);
+            var encoded = new byte[data.Length - 20];
+            Buffer.BlockCopy(data, 20, encoded, 0, encoded.Length);
+            return _accountLayout.DecodeAccount(encoded);
         }
 
         private void TrackAccountModification(string address)

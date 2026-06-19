@@ -200,7 +200,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
             using var node = new DevChainNode();
             await node.StartAsync();
 
-            var nonce = await node.GetNonceAsync("0xnonexistent000000000000000000000000000");
+            var nonce = await node.GetNonceAsync("0x1111111111111111111111111111111111111111");
 
             Assert.Equal(0, nonce);
         }
@@ -211,7 +211,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
             using var node = new DevChainNode();
             await node.StartAsync();
 
-            var balance = await node.GetBalanceAsync("0xnonexistent000000000000000000000000000");
+            var balance = await node.GetBalanceAsync("0x2222222222222222222222222222222222222222");
 
             Assert.Equal(0, balance);
         }

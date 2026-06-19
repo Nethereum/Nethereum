@@ -178,7 +178,8 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 CREATE TABLE IF NOT EXISTS accounts (
                     address TEXT PRIMARY KEY,
                     account_data BLOB NOT NULL,
-                    code_hash BLOB
+                    code_hash BLOB,
+                    address_inline BLOB
                 );
 
                 CREATE TABLE IF NOT EXISTS account_storage (

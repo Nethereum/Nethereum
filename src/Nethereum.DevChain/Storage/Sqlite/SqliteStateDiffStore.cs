@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 
@@ -40,6 +41,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                         address TEXT NOT NULL,
                         block_number INTEGER NOT NULL,
                         account_data BLOB,
+                        address_inline BLOB,
                         PRIMARY KEY (address, block_number)
                     );
                     CREATE INDEX IF NOT EXISTS idx_sda_block ON state_diff_accounts(block_number);
@@ -49,6 +51,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                         slot BLOB NOT NULL,
                         block_number INTEGER NOT NULL,
                         value BLOB,
+                        address_inline BLOB,
                         PRIMARY KEY (address, slot, block_number)
                     );
                     CREATE INDEX IF NOT EXISTS idx_sds_block ON state_diff_storage(block_number);
@@ -102,29 +105,33 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     foreach (var entry in diff.AccountDiffs)
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
+                        var inlineAddress = InlineAddressBytes(entry.Address);
                         byte[] accountData = entry.PreValue != null
                             ? _accountLayout.EncodeAccount(entry.PreValue)
                             : null;
 
                         using var cmd = _manager.Connection.CreateCommand();
-                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_accounts (address, block_number, account_data) VALUES (@addr, @block, @data)";
+                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_accounts (address, block_number, account_data, address_inline) VALUES (@addr, @block, @data, @inline)";
                         cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                         cmd.Parameters.AddWithValue("@block", (long)diff.BlockNumber);
                         cmd.Parameters.AddWithValue("@data", (object)accountData ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@inline", inlineAddress);
                         cmd.ExecuteNonQuery();
                     }
 
                     foreach (var entry in diff.StorageDiffs)
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
+                        var inlineAddress = InlineAddressBytes(entry.Address);
                         var slotBytes = SlotToBytes(entry.Slot);
 
                         using var cmd = _manager.Connection.CreateCommand();
-                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_storage (address, slot, block_number, value) VALUES (@addr, @slot, @block, @val)";
+                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_storage (address, slot, block_number, value, address_inline) VALUES (@addr, @slot, @block, @val, @inline)";
                         cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                         cmd.Parameters.AddWithValue("@slot", slotBytes);
                         cmd.Parameters.AddWithValue("@block", (long)diff.BlockNumber);
                         cmd.Parameters.AddWithValue("@val", (object)entry.PreValue ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@inline", inlineAddress);
                         cmd.ExecuteNonQuery();
                     }
 
@@ -212,14 +219,15 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
                 using (var cmd = _manager.Connection.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT address, account_data FROM state_diff_accounts WHERE block_number = @block";
+                    cmd.CommandText = "SELECT account_data, address_inline FROM state_diff_accounts WHERE block_number = @block";
                     cmd.Parameters.AddWithValue("@block", (long)blockNumber);
                     using var reader = cmd.ExecuteReader();
                     while (reader.Read())
                     {
                         diff ??= new BlockStateDiff { BlockNumber = blockNumber };
-                        var address = reader.GetString(0);
-                        var data = reader.IsDBNull(1) ? null : (byte[])reader["account_data"];
+                        var data = reader.IsDBNull(0) ? null : (byte[])reader[0];
+                        var inline = reader.IsDBNull(1) ? null : (byte[])reader[1];
+                        var address = inline != null ? "0x" + inline.ToHex() : null;
                         diff.AccountDiffs.Add(new AccountDiffEntry
                         {
                             Address = address,
@@ -230,15 +238,16 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
                 using (var cmd = _manager.Connection.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT address, slot, pre_value FROM state_diff_storage WHERE block_number = @block";
+                    cmd.CommandText = "SELECT slot, value, address_inline FROM state_diff_storage WHERE block_number = @block";
                     cmd.Parameters.AddWithValue("@block", (long)blockNumber);
                     using var reader = cmd.ExecuteReader();
                     while (reader.Read())
                     {
                         diff ??= new BlockStateDiff { BlockNumber = blockNumber };
-                        var address = reader.GetString(0);
-                        var slotRaw = (byte[])reader["slot"];
-                        var preVal = reader.IsDBNull(2) ? null : (byte[])reader["pre_value"];
+                        var slotRaw = (byte[])reader[0];
+                        var preVal = reader.IsDBNull(1) ? null : (byte[])reader[1];
+                        var inline = reader.IsDBNull(2) ? null : (byte[])reader[2];
+                        var address = inline != null ? "0x" + inline.ToHex() : null;
                         diff.StorageDiffs.Add(new StorageDiffEntry
                         {
                             Address = address,
@@ -420,7 +429,12 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private static string NormalizeAddress(string address)
         {
-            return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static byte[] InlineAddressBytes(string address)
+        {
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
         }
 
         private static byte[] SlotToBytes(BigInteger slot)

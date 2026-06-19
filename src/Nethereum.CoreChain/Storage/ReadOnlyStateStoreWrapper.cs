@@ -41,9 +41,15 @@ namespace Nethereum.CoreChain.Storage
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _deletedSlots = new();
         private readonly ConcurrentDictionary<string, byte> _clearedStorage = new();
         private readonly ConcurrentDictionary<string, byte[]> _code = new();
+        // keccak(addr) hex → original normalized 20-byte address hex.
+        // Lets GetAllAccountsAsync / StreamAccountsAsync surface the original
+        // address even though primary maps are keyed by keccak.
+        private readonly ConcurrentDictionary<string, string> _addressByAccountHash = new();
 
         // Dirty tracking — tx loop and rewards/withdrawals mutate accounts;
         // the calculator reads dirty sets via the IStateStore contract.
+        // Keyed by the original 20-byte address so callers can pass them
+        // straight back to GetAccountAsync without a double-keccak hop.
         private readonly ConcurrentDictionary<string, byte> _dirtyAccounts = new();
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _dirtyStorageSlots = new();
         private readonly ConcurrentDictionary<string, byte> _storageClearedAddresses = new();
@@ -56,6 +62,9 @@ namespace Nethereum.CoreChain.Storage
         }
 
         private static string Normalize(string address)
+            => StateKeys.AccountKeyHex(address);
+
+        private static string OriginalAddress(string address)
             => AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
 
         public async Task<Account> GetAccountAsync(string address)
@@ -69,9 +78,11 @@ namespace Nethereum.CoreChain.Storage
         public Task SaveAccountAsync(string address, Account account)
         {
             var key = Normalize(address);
+            var original = OriginalAddress(address);
             _accounts[key] = account;
+            _addressByAccountHash[key] = original;
             _deletedAccounts.TryRemove(key, out _);
-            _dirtyAccounts.TryAdd(key, 0);
+            _dirtyAccounts.TryAdd(original, 0);
             return Task.CompletedTask;
         }
 
@@ -86,21 +97,34 @@ namespace Nethereum.CoreChain.Storage
         public Task DeleteAccountAsync(string address)
         {
             var key = Normalize(address);
+            var original = OriginalAddress(address);
             _accounts.TryRemove(key, out _);
+            _addressByAccountHash.TryRemove(key, out _);
             _deletedAccounts.TryAdd(key, 0);
             _storage.TryRemove(key, out _);
             _deletedSlots.TryRemove(key, out _);
             _clearedStorage.TryAdd(key, 0);
-            _dirtyAccounts.TryAdd(key, 0);
-            _storageClearedAddresses.TryAdd(key, 0);
+            _dirtyAccounts.TryAdd(original, 0);
+            _storageClearedAddresses.TryAdd(original, 0);
             return Task.CompletedTask;
         }
 
         public async Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
+            // Inner already returns original-address keys; layer overlay
+            // entries by the original address so the result is uniform.
             var merged = await _inner.GetAllAccountsAsync().ConfigureAwait(false);
-            foreach (var kv in _accounts) merged[kv.Key] = kv.Value;
-            foreach (var d in _deletedAccounts.Keys) merged.Remove(d);
+            foreach (var kv in _accounts)
+            {
+                var addr = _addressByAccountHash.TryGetValue(kv.Key, out var original) ? original : kv.Key;
+                merged[addr] = kv.Value;
+            }
+            // _deletedAccounts is keccak-hex; map back to original to mask the inner.
+            foreach (var deletedKeccak in _deletedAccounts.Keys)
+            {
+                if (_addressByAccountHash.TryGetValue(deletedKeccak, out var original))
+                    merged.Remove(original);
+            }
             return merged;
         }
 
@@ -109,14 +133,15 @@ namespace Nethereum.CoreChain.Storage
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var kv in _accounts)
             {
-                seen.Add(kv.Key);
-                yield return kv;
+                var addr = _addressByAccountHash.TryGetValue(kv.Key, out var original) ? original : kv.Key;
+                seen.Add(addr);
+                yield return new KeyValuePair<string, Account>(addr, kv.Value);
             }
             await foreach (var kv in _inner.StreamAccountsAsync().ConfigureAwait(false))
             {
-                var key = Normalize(kv.Key);
-                if (seen.Contains(key)) continue;
-                if (_deletedAccounts.ContainsKey(key)) continue;
+                var keccakKey = Normalize(kv.Key);
+                if (seen.Contains(kv.Key)) continue;
+                if (_deletedAccounts.ContainsKey(keccakKey)) continue;
                 yield return kv;
             }
         }
@@ -148,6 +173,7 @@ namespace Nethereum.CoreChain.Storage
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
             var key = Normalize(address);
+            var original = OriginalAddress(address);
             var slots = _storage.GetOrAdd(key, _ => new ConcurrentDictionary<BigInteger, byte[]>());
             if (value == null || IsAllZero(value))
             {
@@ -161,8 +187,8 @@ namespace Nethereum.CoreChain.Storage
                 if (_deletedSlots.TryGetValue(key, out var deleted))
                     deleted.TryRemove(slot, out _);
             }
-            _dirtyAccounts.TryAdd(key, 0);
-            var dirty = _dirtyStorageSlots.GetOrAdd(key, _ => new ConcurrentDictionary<BigInteger, byte>());
+            _dirtyAccounts.TryAdd(original, 0);
+            var dirty = _dirtyStorageSlots.GetOrAdd(original, _ => new ConcurrentDictionary<BigInteger, byte>());
             dirty.TryAdd(slot, 0);
             return Task.CompletedTask;
         }
@@ -189,11 +215,12 @@ namespace Nethereum.CoreChain.Storage
         public Task ClearStorageAsync(string address)
         {
             var key = Normalize(address);
+            var original = OriginalAddress(address);
             _storage.TryRemove(key, out _);
             _deletedSlots.TryRemove(key, out _);
             _clearedStorage.TryAdd(key, 0);
-            _dirtyAccounts.TryAdd(key, 0);
-            _storageClearedAddresses.TryAdd(key, 0);
+            _dirtyAccounts.TryAdd(original, 0);
+            _storageClearedAddresses.TryAdd(original, 0);
             return Task.CompletedTask;
         }
 
@@ -225,7 +252,8 @@ namespace Nethereum.CoreChain.Storage
                 new Dictionary<string, byte[]>(_code),
                 new HashSet<string>(_dirtyAccounts.Keys),
                 CloneDirtySlots(_dirtyStorageSlots),
-                new HashSet<string>(_storageClearedAddresses.Keys));
+                new HashSet<string>(_storageClearedAddresses.Keys),
+                new Dictionary<string, string>(_addressByAccountHash));
             return Task.FromResult<IStateSnapshot>(snap);
         }
 
@@ -246,7 +274,7 @@ namespace Nethereum.CoreChain.Storage
 
         public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
         {
-            var key = Normalize(address);
+            var key = OriginalAddress(address);
             if (_dirtyStorageSlots.TryGetValue(key, out var slots))
                 return Task.FromResult<IReadOnlyCollection<BigInteger>>(slots.Keys.ToList());
             return Task.FromResult<IReadOnlyCollection<BigInteger>>(Array.Empty<BigInteger>());
@@ -305,6 +333,7 @@ namespace Nethereum.CoreChain.Storage
             private readonly HashSet<string> _dirtyAccounts;
             private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots;
             private readonly HashSet<string> _storageClearedAddresses;
+            private readonly Dictionary<string, string> _addressByAccountHash;
 
             public int SnapshotId { get; }
 
@@ -319,7 +348,8 @@ namespace Nethereum.CoreChain.Storage
                 Dictionary<string, byte[]> code,
                 HashSet<string> dirtyAccounts,
                 Dictionary<string, HashSet<BigInteger>> dirtyStorageSlots,
-                HashSet<string> storageClearedAddresses)
+                HashSet<string> storageClearedAddresses,
+                Dictionary<string, string> addressByAccountHash)
             {
                 SnapshotId = id;
                 _owner = owner;
@@ -332,6 +362,7 @@ namespace Nethereum.CoreChain.Storage
                 _dirtyAccounts = dirtyAccounts;
                 _dirtyStorageSlots = dirtyStorageSlots;
                 _storageClearedAddresses = storageClearedAddresses;
+                _addressByAccountHash = addressByAccountHash;
             }
 
             public void Restore()
@@ -368,6 +399,8 @@ namespace Nethereum.CoreChain.Storage
                 }
                 _owner._storageClearedAddresses.Clear();
                 foreach (var k in _storageClearedAddresses) _owner._storageClearedAddresses.TryAdd(k, 0);
+                _owner._addressByAccountHash.Clear();
+                foreach (var kv in _addressByAccountHash) _owner._addressByAccountHash[kv.Key] = kv.Value;
             }
 
             public void SetAccount(string address, Account account) { }
