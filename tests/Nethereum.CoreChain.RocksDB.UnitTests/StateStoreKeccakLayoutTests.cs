@@ -122,21 +122,20 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         // ---------- 5. STORAGE KEY SHAPE ----------
 
         [Fact]
-        public async Task SaveStorage_OnDiskKey_IsKeccakAddrConcatRawSlot()
+        public async Task SaveStorage_OnDiskKey_IsKeccakAddrConcatKeccakSlot()
         {
             BigInteger slot = 42;
             var value = MakeBytes(0xEE, 32);
             await _fixture.StateStore.SaveStorageAsync(Address, slot, value);
 
+            // Yellow Paper §4.1: storage path = keccak(addr) ‖ keccak(slot).
+            // Aligns with geth/erigon/reth and snap/1 wire shape.
             var addrHash = _keccak.ComputeHash(AddressBytes);
-            var rawSlot = slot.ToByteArray(isUnsigned: true, isBigEndian: true);
-            // pad to 32 bytes big-endian like RocksDbStateStore.GetStorageKeyFromBytes
-            var padded = new byte[32];
-            Buffer.BlockCopy(rawSlot, 0, padded, 32 - rawSlot.Length, rawSlot.Length);
+            var slotHash = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot);
 
             var expectedKey = new byte[64];
             Buffer.BlockCopy(addrHash, 0, expectedKey, 0, 32);
-            Buffer.BlockCopy(padded, 0, expectedKey, 32, 32);
+            Buffer.BlockCopy(slotHash, 0, expectedKey, 32, 32);
 
             var raw = _fixture.Manager.Get(RocksDbManager.CF_STATE_STORAGE, expectedKey);
             Assert.NotNull(raw);
@@ -159,7 +158,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         // ---------- 7. STORAGE BIGINTEGER RECOVERY ----------
 
         [Fact]
-        public async Task GetAllStorage_RecoversBigIntegerSlot_FromRawSlotBytesInKey()
+        public async Task GetAllStorage_YieldsKeccakSlotKeys()
         {
             // Three distinct slot values across the BigInteger range
             BigInteger small = 7;
@@ -173,12 +172,13 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var all = await _fixture.StateStore.GetAllStorageAsync(Address);
 
             Assert.Equal(3, all.Count);
-            Assert.True(all.ContainsKey(small), "small slot not recovered");
-            Assert.True(all.ContainsKey(mid), "mid slot not recovered");
-            Assert.True(all.ContainsKey(large), "large slot not recovered");
-            Assert.Equal(MakeBytes(0x11, 32), all[small]);
-            Assert.Equal(MakeBytes(0x22, 32), all[mid]);
-            Assert.Equal(MakeBytes(0x33, 32), all[large]);
+            // Keys are keccak(paddedSlot) — Yellow Paper §4.1 storage-trie path.
+            Assert.True(all.ContainsKey(Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(small)), "small slot keccak missing");
+            Assert.True(all.ContainsKey(Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(mid)), "mid slot keccak missing");
+            Assert.True(all.ContainsKey(Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(large)), "large slot keccak missing");
+            Assert.Equal(MakeBytes(0x11, 32), all[Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(small)]);
+            Assert.Equal(MakeBytes(0x22, 32), all[Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(mid)]);
+            Assert.Equal(MakeBytes(0x33, 32), all[Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(large)]);
         }
 
         // ---------- 8. STORAGE PREFIX ISOLATION ----------
@@ -195,8 +195,9 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             Assert.Single(mine);
             Assert.Single(theirs);
-            Assert.Equal(MakeBytes(0xA1, 32), mine[1]);
-            Assert.Equal(MakeBytes(0xB1, 32), theirs[1]);
+            var slotOneHash = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(BigInteger.One);
+            Assert.Equal(MakeBytes(0xA1, 32), mine[slotOneHash]);
+            Assert.Equal(MakeBytes(0xB1, 32), theirs[slotOneHash]);
         }
 
         // ---------- 9. ADDRESS-CASE INSENSITIVITY ----------

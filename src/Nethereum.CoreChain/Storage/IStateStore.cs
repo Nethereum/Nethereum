@@ -26,7 +26,18 @@ namespace Nethereum.CoreChain.Storage
 
         Task<byte[]> GetStorageAsync(string address, BigInteger slot);
         Task SaveStorageAsync(string address, BigInteger slot, byte[] value);
-        Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address);
+
+        /// <summary>
+        /// Every storage slot for <paramref name="address"/>, keyed by
+        /// <c>keccak256(slotBytes32)</c> — the canonical storage-trie path
+        /// (Yellow Paper §4.1). Returning the keccak directly lets Patricia
+        /// trie / proof / state-root callers consume the value without
+        /// re-hashing on every iteration. Binary-trie chains (which derive
+        /// keys from raw slot bytes) consume a different backend entirely
+        /// — see <c>RocksDbBinaryTrieStorage</c>.
+        /// Keys use byte-content equality via <see cref="Nethereum.Util.ByteArrayComparer.Current"/>.
+        /// </summary>
+        Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address);
         Task ClearStorageAsync(string address);
 
         Task<byte[]> GetCodeAsync(byte[] codeHash);

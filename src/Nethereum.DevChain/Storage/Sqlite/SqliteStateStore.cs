@@ -252,10 +252,10 @@ namespace Nethereum.DevChain.Storage.Sqlite
             return Task.CompletedTask;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             var normalized = NormalizeAddress(address);
-            var result = new Dictionary<BigInteger, byte[]>();
+            var result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
 
             using var cmd = _manager.Connection.CreateCommand();
             cmd.CommandText = "SELECT slot, value FROM account_storage WHERE address = @addr";
@@ -264,10 +264,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                var slotBytesRaw = (byte[])reader[0];
+                var slotHash = (byte[])reader[0];
                 var value = (byte[])reader[1];
-                var slot = new BigInteger(slotBytesRaw, isUnsigned: true, isBigEndian: true);
-                result[slot] = value;
+                result[slotHash] = value;
             }
 
             return Task.FromResult(result);
@@ -418,9 +417,11 @@ namespace Nethereum.DevChain.Storage.Sqlite
             cmd.ExecuteNonQuery();
         }
 
+        // Yellow Paper §4.1 storage-trie path: keys are keccak(padded slot bytes).
+        // Aligns with geth/erigon/reth and matches the snap/1 wire shape natively.
         private static byte[] SlotToBytes(BigInteger slot)
         {
-            return slot.ToByteArray(isUnsigned: true, isBigEndian: true);
+            return Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot);
         }
 
         private static bool IsAllZero(byte[] value)

@@ -92,7 +92,7 @@ namespace Nethereum.DevP2P.SyncNode
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
             => _inner.SaveStorageAsync(address, slot, value);
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
             => _inner.GetAllStorageAsync(address);
 
         public Task ClearStorageAsync(string address) => _inner.ClearStorageAsync(address);

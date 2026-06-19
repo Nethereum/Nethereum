@@ -105,8 +105,9 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             await _store.RevertSnapshotAsync(snapshot);
             var afterRevert = await _store.GetAllStorageAsync("0x1234");
             Assert.Equal(2, afterRevert.Count);
-            Assert.Equal(new byte[] { 0x01 }, afterRevert[BigInteger.One]);
-            Assert.Equal(new byte[] { 0x02 }, afterRevert[new BigInteger(2)]);
+            // Keys are keccak(slot) post slot-rekey (Yellow Paper §4.1).
+            Assert.Equal(new byte[] { 0x01 }, afterRevert[Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(BigInteger.One)]);
+            Assert.Equal(new byte[] { 0x02 }, afterRevert[Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(new BigInteger(2))]);
         }
 
         [Fact]

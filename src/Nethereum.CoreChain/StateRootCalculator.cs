@@ -60,13 +60,10 @@ namespace Nethereum.CoreChain
                     var storageTrie = new PatriciaTrie(_hashProvider);
                     foreach (var storageKvp in filteredStorage)
                     {
-                        var slot = storageKvp.Key;
-                        var value = storageKvp.Value;
-
-                        var hashedSlot = GetHashedSlotKey(slot);
-                        var trimmedValue = TrimLeadingZeros(value);
+                        // Key is already keccak(slot) — storage CF is keccak-keyed.
+                        var trimmedValue = TrimLeadingZeros(storageKvp.Value);
                         var encodedValue = RLP.RLP.EncodeElement(trimmedValue);
-                        storageTrie.Put(hashedSlot, encodedValue, trieNodeStore);
+                        storageTrie.Put(storageKvp.Key, encodedValue, trieNodeStore);
                     }
 
                     if (trieNodeStore != null)

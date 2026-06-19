@@ -290,10 +290,10 @@ namespace Nethereum.CoreChain
 
                 foreach (var kvp in filteredStorage)
                 {
-                    var hashedSlot = GetHashedSlotKey(kvp.Key);
+                    // Key is already keccak(slot) — the storage CF is keccak-keyed.
                     var trimmedValue = TrimLeadingZeros(kvp.Value);
                     var encodedValue = RLP.RLP.EncodeElement(trimmedValue);
-                    storageTrie.Put(hashedSlot, encodedValue, _trieNodeStore);
+                    storageTrie.Put(kvp.Key, encodedValue, _trieNodeStore);
                 }
 
                 _modifiedStorageTries.TryAdd(address, 0);

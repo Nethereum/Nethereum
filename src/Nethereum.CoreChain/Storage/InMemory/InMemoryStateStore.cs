@@ -148,13 +148,16 @@ namespace Nethereum.CoreChain.Storage.InMemory
             return Task.CompletedTask;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var result = new Dictionary<byte[], byte[]>(ByteArrayComparer.Current);
             if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
-                return Task.FromResult(new Dictionary<BigInteger, byte[]>());
+                return Task.FromResult(result);
 
-            return Task.FromResult(new Dictionary<BigInteger, byte[]>(accountStorage));
+            foreach (var kv in accountStorage)
+                result[StateKeys.StorageSlotKey(kv.Key)] = kv.Value;
+            return Task.FromResult(result);
         }
 
         public Task ClearStorageAsync(string address)

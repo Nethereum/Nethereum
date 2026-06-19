@@ -130,7 +130,7 @@ namespace Nethereum.CoreChain.State
         public IAsyncEnumerable<KeyValuePair<string, Account>> StreamAccountsAsync()
             => throw new NotSupportedException("Cannot enumerate full state via IStateReader.");
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
             => throw new NotSupportedException("Cannot enumerate full storage via IStateReader.");
 
         // === Snapshots — engine's ReadOnly wrapper owns its own snapshot

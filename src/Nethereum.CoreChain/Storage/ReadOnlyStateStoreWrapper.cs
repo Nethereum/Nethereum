@@ -193,13 +193,13 @@ namespace Nethereum.CoreChain.Storage
             return Task.CompletedTask;
         }
 
-        public async Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public async Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             var key = Normalize(address);
-            Dictionary<BigInteger, byte[]> result;
+            Dictionary<byte[], byte[]> result;
             if (_clearedStorage.ContainsKey(key))
             {
-                result = new Dictionary<BigInteger, byte[]>();
+                result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
             }
             else
             {
@@ -207,7 +207,8 @@ namespace Nethereum.CoreChain.Storage
             }
             if (_storage.TryGetValue(key, out var slots))
             {
-                foreach (var kv in slots) result[kv.Key] = kv.Value;
+                foreach (var kv in slots)
+                    result[StateKeys.StorageSlotKey(kv.Key)] = kv.Value;
             }
             return result;
         }

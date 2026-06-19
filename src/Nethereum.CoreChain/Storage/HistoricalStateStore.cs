@@ -247,32 +247,20 @@ namespace Nethereum.CoreChain.Storage
             await _inner.SaveStorageAsync(address, slot, value).ConfigureAwait(false);
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             return _inner.GetAllStorageAsync(address);
         }
 
         public async Task ClearStorageAsync(string address)
         {
-            var journal = _currentJournal;
-            if (journal != null)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                var allStorage = await _inner.GetAllStorageAsync(address).ConfigureAwait(false);
-                foreach (var kvp in allStorage)
-                {
-                    var storageKey = GetStorageKey(normalizedAddress, kvp.Key);
-                    if (!journal.StoragePreValues.ContainsKey(storageKey))
-                    {
-                        journal.StoragePreValues[storageKey] = new StorageJournalEntry
-                        {
-                            Slot = kvp.Key,
-                            PreValue = (byte[])kvp.Value?.Clone()
-                        };
-                    }
-                }
-            }
-
+            // Per-slot journaling on ClearStorage is deferred to R2 — the storage CF
+            // now uses keccak(slot) keys (Yellow Paper §4.1, geth/erigon/reth-aligned)
+            // and the in-memory journal still keys by BigInteger slot. Capturing
+            // pre-values here would require either back-computing BigInteger from
+            // keccak (one-way) or extending the journal entry to carry the keccak
+            // key. R2 changes the persistent state-diff layer to be keccak-aware;
+            // this in-memory journal will be retired or reshaped at that point.
             await _inner.ClearStorageAsync(address).ConfigureAwait(false);
         }
 

@@ -69,8 +69,8 @@ namespace Nethereum.CoreChain.Storage
             yield break;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
-            => Task.FromResult(new Dictionary<BigInteger, byte[]>());
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
+            => Task.FromResult(new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current));
 
         public Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync()
             => Task.FromResult<IReadOnlyCollection<string>>(Array.Empty<string>());

@@ -226,16 +226,18 @@ namespace Nethereum.CoreChain
             return (int)((codeSize + stemSize - 1) / stemSize);
         }
 
-        private async Task PutAllStorageAsync(string address, byte[] addressBytes)
+        private Task PutAllStorageAsync(string address, byte[] addressBytes)
         {
-            var storage = await _stateStore.GetAllStorageAsync(address);
-            if (storage == null || storage.Count == 0)
-                return;
-
-            foreach (var entry in storage)
-            {
-                PutStorageSlot(addressBytes, entry.Key, entry.Value);
-            }
+            // R6 follow-up: Binary trie key derivation (EIP-7864) needs raw 20-byte
+            // address + raw BigInteger slot. With the storage CF now keccak(slot)-keyed
+            // (R1, aligned with geth/erigon/reth and snap/1 wire), the BigInteger is
+            // not recoverable here. Binary chains must move off RocksDbStateStore onto
+            // RocksDbBinaryTrieStorage (which keeps the raw shape Binary needs). Until
+            // R6 lands, full-state walks for Binary calculators are NO-OP on the
+            // Patricia store. The dirty-slot path below is unaffected — it consumes
+            // GetDirtyStorageSlotsAsync which is in-memory BigInteger and still works
+            // for live block execution.
+            return Task.CompletedTask;
         }
 
         private async Task PutDirtyStorageAsync(string address, byte[] addressBytes)

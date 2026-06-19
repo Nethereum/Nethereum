@@ -208,9 +208,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.CompletedTask;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
-            var result = new Dictionary<BigInteger, byte[]>();
+            var result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
             var prefix = GetAccountKey(address);
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
@@ -222,11 +222,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
-                var slotBytes = new byte[key.Length - prefix.Length];
-                Buffer.BlockCopy(key, prefix.Length, slotBytes, 0, slotBytes.Length);
-                var slot = new BigInteger(slotBytes, isUnsigned: true, isBigEndian: true);
+                var slotHash = new byte[key.Length - prefix.Length];
+                Buffer.BlockCopy(key, prefix.Length, slotHash, 0, slotHash.Length);
 
-                result[slot] = iterator.Value();
+                result[slotHash] = iterator.Value();
                 iterator.Next();
             }
 
@@ -443,15 +442,19 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return GetStorageKeyFromBytes(addressBytes, slot);
         }
 
-        // Composite key: keccak(addr) (32 bytes) || rawSlot (32 bytes) = 64 bytes.
-        // Slot stays raw so BigInteger recovery in GetAllStorageAsync remains exact.
+        // Composite key: keccak(addr) (32 bytes) || keccak(slot) (32 bytes) = 64 bytes.
+        // Yellow Paper §4.1 storage-trie path. Aligns with geth/erigon/reth and
+        // matches the snap/1 wire shape natively (no on-read conversion). Recovery
+        // of the original slot from the on-disk key is intentionally one-way; the
+        // dirty-storage tracking cache holds BigInteger slots for callers that need
+        // them.
         private static byte[] GetStorageKeyFromBytes(byte[] addressBytes, BigInteger slot)
         {
-            var slotBytes = slot.ToByteArray(isUnsigned: true, isBigEndian: true).PadBytes(32);
+            var slotHash = StateKeys.StorageSlotKey(slot);
 
-            var key = new byte[addressBytes.Length + slotBytes.Length];
+            var key = new byte[addressBytes.Length + slotHash.Length];
             Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
-            Buffer.BlockCopy(slotBytes, 0, key, addressBytes.Length, slotBytes.Length);
+            Buffer.BlockCopy(slotHash, 0, key, addressBytes.Length, slotHash.Length);
             return key;
         }
 
