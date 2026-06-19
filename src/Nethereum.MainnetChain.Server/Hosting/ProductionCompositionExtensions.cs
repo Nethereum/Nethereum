@@ -213,16 +213,12 @@ namespace Nethereum.MainnetChain.Server.Hosting
                     MaxInboundPeers = 25,
                     MaxInboundPerIP = 9,
                     HandshakeTimeoutMs = 10000,
-                    ServeSnap = true,
+                    ServeSnap = false,
                     MirrorRemoteStatus = true,
                     ClientId = "Nethereum/mainnet-server",
                 };
-                var snapHandler = new PatriciaSnapRequestHandler(
-                    _bundle!.TrieNodes,
-                    new StateStoreBytecodeStore(_bundle!.State));
                 _peerListener = new PeerListener(
                     _listenerKey, _bundle!, listenerOptions, statusTemplate,
-                    snapHandler: snapHandler,
                     logger: _loggerFactory.CreateLogger<PeerListener>());
                 await _peerListener.StartAsync(ct).ConfigureAwait(false);
                 _logger.LogInformation(
