@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
   </ItemGroup>
 
   <!-- Strong naming disabled for this project because RocksDB dependency is not strong-named -->
