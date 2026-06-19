@@ -16,7 +16,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
     /// language level via <c>ConcurrentDictionary</c>. Tests and DevChain
     /// default to this backend.
     /// </summary>
-    public class InMemoryStateStore : IStateStore
+    public class InMemoryStateStore : IStateStore, IRawStorageEnumerator
     {
         private readonly object _snapshotLock = new object();
         private readonly ConcurrentDictionary<string, Account> _accounts = new();
@@ -164,6 +164,19 @@ namespace Nethereum.CoreChain.Storage.InMemory
             foreach (var kv in accountStorage)
                 result[StateKeys.StorageSlotKey(kv.Key)] = kv.Value;
             return Task.FromResult(result);
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<KeyValuePair<BigInteger, byte[]>>
+            StreamRawStorageAsync(string address)
+#pragma warning restore CS1998
+        {
+            var normalizedAddress = NormalizeAddress(address);
+            if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
+                yield break;
+
+            foreach (var kv in accountStorage)
+                yield return kv;
         }
 
         public Task ClearStorageAsync(string address)

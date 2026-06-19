@@ -226,18 +226,41 @@ namespace Nethereum.CoreChain
             return (int)((codeSize + stemSize - 1) / stemSize);
         }
 
-        private Task PutAllStorageAsync(string address, byte[] addressBytes)
+        private async Task PutAllStorageAsync(string address, byte[] addressBytes)
         {
-            // R6 follow-up: Binary trie key derivation (EIP-7864) needs raw 20-byte
-            // address + raw BigInteger slot. With the storage CF now keccak(slot)-keyed
-            // (R1, aligned with geth/erigon/reth and snap/1 wire), the BigInteger is
-            // not recoverable here. Binary chains must move off RocksDbStateStore onto
-            // RocksDbBinaryTrieStorage (which keeps the raw shape Binary needs). Until
-            // R6 lands, full-state walks for Binary calculators are NO-OP on the
-            // Patricia store. The dirty-slot path below is unaffected — it consumes
-            // GetDirtyStorageSlotsAsync which is in-memory BigInteger and still works
-            // for live block execution.
-            return Task.CompletedTask;
+            // EIP-7864 key derivation needs the raw 32-byte slot. Patricia-shape
+            // stores (RocksDbStateStore, SqliteStateStore) hash slots per Yellow
+            // Paper §4.1 / EIP-2364 and cannot reconstruct it, so they do not
+            // implement IRawStorageEnumerator. Backends that DO keep raw slots
+            // (InMemoryStateStore today; a future raw-slot RocksDB backend for
+            // production Binary chains) implement the interface and feed the
+            // full-state walk here.
+            if (_stateStore is IRawStorageEnumerator raw)
+            {
+                await foreach (var kv in raw.StreamRawStorageAsync(address).ConfigureAwait(false))
+                {
+                    PutStorageSlot(addressBytes, kv.Key, kv.Value);
+                }
+                return;
+            }
+
+            // Patricia-shape backend: silently skip when the account has no
+            // storage (account-only round-trip works), but fail loudly when
+            // storage is present and would otherwise be dropped from the trie.
+            var hashedStorage = await _stateStore.GetAllStorageAsync(address).ConfigureAwait(false);
+            if (hashedStorage != null && hashedStorage.Count > 0)
+            {
+                throw new NotSupportedException(
+                    "BinaryIncrementalStateRootCalculator full-state walk encountered " +
+                    "storage on an IStateStore that does not implement IRawStorageEnumerator. " +
+                    "EIP-7864 key derivation needs the raw 32-byte storage slot, but the " +
+                    "Patricia-shape stores (RocksDbStateStore, SqliteStateStore) keccak-hash " +
+                    "slots per Yellow Paper §4.1 / EIP-2364 and cannot reconstruct the raw " +
+                    "slot for address " + address + ". Run Binary chains on " +
+                    "InMemoryStateStore, or wire a raw-slot persistent backend. Chains that " +
+                    "warm-start from a previous root via IBinaryTrieStorage do not need a " +
+                    "full walk after genesis.");
+            }
         }
 
         private async Task PutDirtyStorageAsync(string address, byte[] addressBytes)
