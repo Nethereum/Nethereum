@@ -88,6 +88,28 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
             if (bundle.Metadata.GetLastFetchedBody() < (ulong)pivot.BlockNumber)
                 bundle.Metadata.SetLastFetchedBody((ulong)pivot.BlockNumber);
 
+            // Materialise the snap-bootstrapped state as a recoverable
+            // checkpoint at the pivot so the rewind machinery can roll back
+            // to here if a later block diverges. Without this, a freshly
+            // snap-bootstrapped node has no checkpoint to fall back to and
+            // every divergence forces a full re-snap from a peer.
+            try
+            {
+                await bundle.SaveCheckpointAsync(
+                    (ulong)pivot.BlockNumber, pivot.StateRoot, pivotHash, ct).ConfigureAwait(false);
+                logger.LogInformation(
+                    "Snap-bootstrap: pivot checkpoint persisted at block {Block}.",
+                    pivot.BlockNumber);
+            }
+            catch (Exception ex)
+            {
+                // Checkpoint creation is best-effort; sync continues without
+                // it (matches FollowerService.SaveCheckpointAsync resilience).
+                logger.LogWarning(ex,
+                    "Snap-bootstrap: checkpoint save failed at pivot {Block}; sync continues without it.",
+                    pivot.BlockNumber);
+            }
+
             return new Result
             {
                 Ran = true,
