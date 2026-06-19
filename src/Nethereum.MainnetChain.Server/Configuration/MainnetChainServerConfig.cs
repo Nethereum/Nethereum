@@ -22,6 +22,22 @@ namespace Nethereum.MainnetChain.Server.Configuration
         public int Discv5Port { get; set; }
         public bool ContinueOnMismatch { get; set; }
 
+        /// <summary>
+        /// When true and the data dir has no committed state, run a snap/1
+        /// bootstrap against the trusted peer before starting the follower.
+        /// Default false until the wiring is exercised against a live Erigon
+        /// over multiple runs — opt in explicitly to avoid surprising existing
+        /// deployments.
+        /// </summary>
+        public bool SnapBootstrap { get; set; } = false;
+
+        /// <summary>
+        /// Distance behind the peer's latest header to choose the snap pivot
+        /// block. A small trailing distance protects against reorgs at the tip
+        /// (geth's default is 128).
+        /// </summary>
+        public ulong SnapPivotDistance { get; set; } = 128;
+
         public LightClientConfigSection? LightClient { get; set; }
     }
 
