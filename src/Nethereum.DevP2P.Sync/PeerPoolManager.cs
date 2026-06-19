@@ -381,12 +381,15 @@ namespace Nethereum.DevP2P.Sync
 
         private bool TryClaimDialSlot(string enode)
         {
-            if (_banned.TryGetValue(enode, out var bannedAt)
+            var isTrusted = _trustedDialKeys.Contains(enode);
+            if (!isTrusted
+                && _banned.TryGetValue(enode, out var bannedAt)
                 && (DateTimeOffset.UtcNow - bannedAt) < BannedRetention)
                 return false;
             if (_activeByEnode.ContainsKey(enode)) return false;
             if (_inFlightDials.ContainsKey(enode)) return false;
-            if (_recentDials.TryGetValue(enode, out var when)
+            if (!isTrusted
+                && _recentDials.TryGetValue(enode, out var when)
                 && (DateTimeOffset.UtcNow - when) < _options.EffectivePerHostReDialGate)
                 return false;
             return _inFlightDials.TryAdd(enode, 0);
@@ -439,13 +442,22 @@ namespace Nethereum.DevP2P.Sync
         private void OnPeerDisconnected(object? sender, IEthPeer peer)
         {
             if (!_activeByPoolId.TryRemove(peer.Id, out _)) return;
-            if (!string.IsNullOrEmpty(peer.Enode))
+            var enode = peer.Enode;
+            if (!string.IsNullOrEmpty(enode))
             {
-                _activeByEnode.TryRemove(peer.Enode, out _);
-                _dialScheduler?.OnPeerDisconnected(peer.Enode, PeerDirection.Outbound);
+                _activeByEnode.TryRemove(enode, out _);
+                _dialScheduler?.OnPeerDisconnected(enode, PeerDirection.Outbound);
             }
-            _logger.LogInformation("peer removed: {Host}", MainnetPeerSession.ParseHost(peer.Enode));
+            _logger.LogInformation("peer removed: {Host}", MainnetPeerSession.ParseHost(enode));
             PeerRemoved?.Invoke(this, peer);
+
+            if (!string.IsNullOrEmpty(enode) && _trustedDialKeys.Contains(enode))
+            {
+                _recentDials.TryRemove(enode, out _);
+                if (_candidates.Writer.TryWrite(enode))
+                    _logger.LogInformation("trusted peer disconnect: re-enqueued for redial {Host}",
+                        MainnetPeerSession.ParseHost(enode));
+            }
         }
     }
 }

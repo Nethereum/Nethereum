@@ -104,6 +104,10 @@ namespace Nethereum.MainnetChain.Server.Hosting
 
             var resumeBlock = _bundle.Metadata.GetLastBlock();
 
+            var trustedKeys = !string.IsNullOrWhiteSpace(_config.TrustedPeer)
+                ? new[] { _config.TrustedPeer! }
+                : Array.Empty<string>();
+
             _pool = new PeerPoolManager(
                 new MainnetPeerHandshakeWorker(),
                 new PeerPoolOptions(
@@ -112,7 +116,8 @@ namespace Nethereum.MainnetChain.Server.Hosting
                     MinPeerLatestBlock: resumeBlock + 1),
                 bootnodes: dialPool,
                 logger: _loggerFactory.CreateLogger<PeerPoolManager>(),
-                peerCache: _peerCache);
+                peerCache: _peerCache,
+                trustedDialKeys: trustedKeys);
 
             _scheduler = new FetchRequestScheduler(
                 _pool,
