@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Sync;
+using Nethereum.MainnetChain.Server.Bootstrap;
 using Nethereum.MainnetChain.Server.Configuration;
 
 namespace Nethereum.MainnetChain.Server.Hosting
@@ -45,6 +46,17 @@ namespace Nethereum.MainnetChain.Server.Hosting
 
             try
             {
+                // Optional cold-start snap bootstrap. No-op when SnapBootstrap=false
+                // or the bundle already has committed state. Runs synchronously before
+                // the follower so post-pivot block execution sees the trie + bytecode
+                // already populated and the metadata cursor at the pivot block.
+                var snapResult = await SnapBootstrapInvoker.RunIfConfiguredAsync(
+                    _node.Bundle, _config, _logger, stoppingToken).ConfigureAwait(false);
+                if (!snapResult.Ran && !string.IsNullOrEmpty(snapResult.SkipReason))
+                {
+                    _logger.LogInformation("Snap-bootstrap: not run — {Reason}.", snapResult.SkipReason);
+                }
+
                 _lastResult = await _node.RunAsync(stoppingToken, _logger).ConfigureAwait(false);
                 _logger.LogInformation(
                     "MainnetChain follower exited: reason={Reason}, last_block={Last}, executed={Executed}, root_mismatches={Mismatches}",
