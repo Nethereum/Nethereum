@@ -134,6 +134,61 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
+        public async Task FetchBodies_WithExcludePeer_RoutesToOtherPeer()
+        {
+            // The block-52567 production failure mode: peer A returns bodies whose
+            // tx_root doesn't match the canonical header. DevP2PBlockSource detects
+            // it (one level up) and blames peer A. The new excludePeers overload
+            // must steer the scheduler off A onto peer B before retrying.
+            var enodes = Enumerable.Range(1, 2).Select(MakeEnode).ToArray();
+            var pool = new FakePeerPool(enodes);
+            var worker = new ControlledBodiesWorker();
+            foreach (var enode in enodes) worker.SetSuccess(enode);
+
+            var scheduler = new FetchRequestScheduler(
+                pool, worker,
+                new FetchRequestSchedulerOptions(
+                    MaxParallelBodyFetches: 1,
+                    BodyFetchChunkSize: 16));
+
+            var hashes = Enumerable.Range(0, 8).Select(MakeHash).ToList();
+            var excludeFirst = new[] { pool.ActivePeers.First().Id };
+
+            var result = await scheduler.FetchBodiesAsync(hashes, excludeFirst, CancellationToken.None);
+
+            Assert.Equal(8, result.Bodies.Count);
+            // Excluded peer untouched, the OTHER peer served.
+            Assert.Equal(0, worker.BodyCallCount(enodes[0]));
+            Assert.Equal(1, worker.BodyCallCount(enodes[1]));
+            Assert.Single(result.ServingPeerIds);
+            Assert.Equal(pool.ActivePeers.Skip(1).First().Id, result.ServingPeerIds.First());
+        }
+
+        [Fact]
+        public async Task FetchBodies_NoExclude_ReturnsServingPeerIdsForCallerVisibility()
+        {
+            // The overload's whole point is letting the caller learn who served so
+            // it can blame them on a downstream validation failure.
+            var enodes = new[] { MakeEnode(1) };
+            var pool = new FakePeerPool(enodes);
+            var worker = new ControlledBodiesWorker();
+            worker.SetSuccess(enodes[0]);
+
+            var scheduler = new FetchRequestScheduler(
+                pool, worker,
+                new FetchRequestSchedulerOptions(
+                    MaxParallelBodyFetches: 1,
+                    BodyFetchChunkSize: 16));
+
+            var hashes = Enumerable.Range(0, 4).Select(MakeHash).ToList();
+            var result = await scheduler.FetchBodiesAsync(hashes, excludePeers: null, CancellationToken.None);
+
+            Assert.Equal(4, result.Bodies.Count);
+            Assert.Single(result.ServingPeerIds);
+            Assert.Equal(pool.ActivePeers.First().Id, result.ServingPeerIds.First());
+        }
+
+        [Fact]
         public async Task FetchBodies_Empty_ReturnsEmpty()
         {
             var enodes = new[] { MakeEnode(1) };

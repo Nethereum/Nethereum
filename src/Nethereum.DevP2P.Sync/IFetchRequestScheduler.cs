@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +34,20 @@ namespace Nethereum.DevP2P.Sync
         /// </summary>
         Task<List<BlockBody>> FetchBodiesAsync(
             IReadOnlyList<byte[]> blockHashes,
+            CancellationToken ct);
+
+        /// <summary>
+        /// Same as <see cref="FetchBodiesAsync(IReadOnlyList{byte[]}, CancellationToken)"/>
+        /// but the caller can pin a set of peer IDs to skip (a peer that just returned
+        /// bodies failing header-tx_root validation, etc.) AND learns the IDs of the
+        /// peers that did serve the response. Together these let the caller perform
+        /// peer rotation across retry attempts after content-level validation failures
+        /// — transport-level errors are already rotated inside the scheduler, but
+        /// content failures are only detectable upstream.
+        /// </summary>
+        Task<BodyFetchResult> FetchBodiesAsync(
+            IReadOnlyList<byte[]> blockHashes,
+            IReadOnlyCollection<Guid>? excludePeers,
             CancellationToken ct);
     }
 

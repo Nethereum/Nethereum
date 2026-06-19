@@ -46,7 +46,11 @@ namespace Nethereum.DevP2P.Sync
         /// burning the expensive outer recovery path. A deterministically bad
         /// peer will fail both attempts and propagate normally.
         /// </summary>
-        private const int MaxBodyFetchRetries = 1;
+        // 3 attempts total: tolerate one same-peer mismatch (transient incomplete body /
+        // packet drop / brief storage latency), discard the peer after the second
+        // consecutive failure, then rotate to a different peer on attempt #3.
+        private const int MaxBodyFetchRetries = 2;
+        private const int SamePeerRetryTolerance = 1;
 
         private DivergenceSignal? _lastChainBreak;
         private readonly string _sourceName;
@@ -145,29 +149,50 @@ namespace Nethereum.DevP2P.Sync
                     foreach (var h in subHeaders)
                         hashes.Add(HashHeader(h));
 
-                    // Retry-then-rotate: a body whose RLP-keccak doesn't match
-                    // the header's TxRoot/UnclesHash is rare but can be a
-                    // transient hiccup (packet drop, peer mid-reorg, brief
-                    // storage latency). Try once more before falling back to
-                    // the outer StreamAsync restart which re-claims peer +
-                    // re-fetches headers — much more expensive. The scheduler
-                    // may pick the same peer or rotate naturally based on
-                    // recent-failure score.
+                    // Retry-then-rotate with same-peer tolerance: a first body-mismatch
+                    // from a given peer can be a transient incomplete body / packet
+                    // drop / brief storage latency — re-asking the same peer once is
+                    // cheaper than rotating + re-claiming. After two consecutive
+                    // failures from the same peer we discard them (add to the
+                    // exclusion set so the scheduler picks a different peer on the
+                    // next attempt).
                     IList<BlockBody> bodies = null;
                     bool bodyMismatch = false;
                     int paired = 0;
                     int yielded = 0;
+                    var blamedPeers = new HashSet<Guid>();
+                    var peerFailureCounts = new Dictionary<Guid, int>();
                     for (int attempt = 0; attempt <= MaxBodyFetchRetries; attempt++)
                     {
-                        bodies = await _scheduler.FetchBodiesAsync(hashes, ct).ConfigureAwait(false);
+                        var fetchResult = await _scheduler.FetchBodiesAsync(hashes, blamedPeers, ct).ConfigureAwait(false);
+                        bodies = fetchResult?.Bodies;
                         if (bodies is null) yield break;
                         paired = Math.Min(subHeaders.Count, bodies.Count);
                         bodyMismatch = ValidateBatch(subHeaders, bodies, paired);
                         if (!bodyMismatch) break;
+
+                        // Bodies failed validation. Count this against every peer that
+                        // served a chunk; once a peer's count exceeds the tolerance,
+                        // it joins the exclusion set so the next attempt rotates off
+                        // it. On the parallel-chunk path we can't tell which chunk's
+                        // peer was bad, so we count against all serving peers; healthy
+                        // peers in the mix will get blamed too but the cost is low
+                        // (we re-claim them after the exclusion set is cleared).
+                        int newlyBlamed = 0;
+                        foreach (var pid in fetchResult!.ServingPeerIds)
+                        {
+                            peerFailureCounts.TryGetValue(pid, out var prior);
+                            var count = prior + 1;
+                            peerFailureCounts[pid] = count;
+                            if (count > SamePeerRetryTolerance && blamedPeers.Add(pid))
+                                newlyBlamed++;
+                        }
+
                         if (attempt < MaxBodyFetchRetries)
                         {
                             _logger.LogInformation(
-                                "body batch invalid — retrying (attempt {Attempt}/{Max}) for {Count} blocks starting {Start}",
+                                "body batch invalid — {Blamed} peer(s) discarded; retrying (attempt {Attempt}/{Max}) for {Count} blocks starting {Start}",
+                                newlyBlamed,
                                 attempt + 2, MaxBodyFetchRetries + 1, take, (ulong)subHeaders[0].BlockNumber);
                         }
                     }

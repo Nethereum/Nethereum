@@ -46,20 +46,32 @@ namespace Nethereum.DevP2P.Sync
             _pool.PeerRemoved += OnPeerRemoved;
         }
 
-        public Task<List<BlockHeader>> FetchHeadersAsync(
+        public async Task<List<BlockHeader>> FetchHeadersAsync(
             ulong startBlock, ulong limit, CancellationToken ct)
         {
-            return ExecuteWithRetryAsync(
+            var (result, _) = await ExecuteWithRetryAsync(
                 $"headers {startBlock}+{limit}",
                 (peer, attemptCt) => _worker.GetHeadersAsync(peer, startBlock, limit, attemptCt),
-                ct);
+                initialExcluded: null,
+                ct).ConfigureAwait(false);
+            return result;
         }
 
         public async Task<List<BlockBody>> FetchBodiesAsync(
             IReadOnlyList<byte[]> blockHashes, CancellationToken ct)
         {
+            var result = await FetchBodiesAsync(blockHashes, excludePeers: null, ct).ConfigureAwait(false);
+            return result.Bodies;
+        }
+
+        public async Task<BodyFetchResult> FetchBodiesAsync(
+            IReadOnlyList<byte[]> blockHashes,
+            IReadOnlyCollection<Guid>? excludePeers,
+            CancellationToken ct)
+        {
             if (blockHashes is null) throw new ArgumentNullException(nameof(blockHashes));
-            if (blockHashes.Count == 0) return new List<BlockBody>();
+            if (blockHashes.Count == 0)
+                return new BodyFetchResult(new List<BlockBody>(), Array.Empty<Guid>());
 
             var chunkSize = _options.EffectiveBodyFetchChunkSize;
             var maxParallel = _options.EffectiveMaxParallelBodyFetches;
@@ -67,10 +79,12 @@ namespace Nethereum.DevP2P.Sync
             // Single-chunk fast path: no fan-out work to do.
             if (blockHashes.Count <= chunkSize || maxParallel <= 1)
             {
-                return await ExecuteWithRetryAsync(
+                var (single, singlePeer) = await ExecuteWithRetryAsync(
                     $"bodies x{blockHashes.Count}",
                     (peer, attemptCt) => _worker.GetBodiesAsync(peer, blockHashes, attemptCt),
+                    excludePeers,
                     ct).ConfigureAwait(false);
+                return new BodyFetchResult(single, new[] { singlePeer });
             }
 
             // Cap parallelism by available peer count so we don't queue
@@ -78,10 +92,12 @@ namespace Nethereum.DevP2P.Sync
             var activePeerCount = _pool.ActivePeers.Count;
             if (activePeerCount <= 1)
             {
-                return await ExecuteWithRetryAsync(
+                var (single, singlePeer) = await ExecuteWithRetryAsync(
                     $"bodies x{blockHashes.Count}",
                     (peer, attemptCt) => _worker.GetBodiesAsync(peer, blockHashes, attemptCt),
+                    excludePeers,
                     ct).ConfigureAwait(false);
+                return new BodyFetchResult(single, new[] { singlePeer });
             }
 
             var effectiveParallel = Math.Min(maxParallel, activePeerCount);
@@ -91,22 +107,27 @@ namespace Nethereum.DevP2P.Sync
             // per-chunk timeout-then-reassign semantics. Tasks run concurrently
             // and are merged back in chunk order so callers see the same flat
             // list they would have got from a single-peer request.
-            var chunkTasks = new Task<List<BlockBody>>[chunks.Count];
+            var chunkTasks = new Task<(List<BlockBody> Bodies, Guid PeerId)>[chunks.Count];
             for (int i = 0; i < chunks.Count; i++)
             {
                 var chunk = chunks[i];
                 chunkTasks[i] = ExecuteWithRetryAsync(
                     $"bodies x{chunk.Count}",
                     (peer, attemptCt) => _worker.GetBodiesAsync(peer, chunk, attemptCt),
+                    excludePeers,
                     ct);
             }
 
             var results = await Task.WhenAll(chunkTasks).ConfigureAwait(false);
 
             var merged = new List<BlockBody>(blockHashes.Count);
+            var servingPeerIds = new HashSet<Guid>();
             foreach (var part in results)
-                if (part is not null) merged.AddRange(part);
-            return merged;
+            {
+                if (part.Bodies is not null) merged.AddRange(part.Bodies);
+                servingPeerIds.Add(part.PeerId);
+            }
+            return new BodyFetchResult(merged, servingPeerIds);
         }
 
         private static List<IReadOnlyList<byte[]>> SplitIntoChunks(
@@ -130,14 +151,17 @@ namespace Nethereum.DevP2P.Sync
             return chunks;
         }
 
-        private async Task<T> ExecuteWithRetryAsync<T>(
+        private async Task<(T Result, Guid PeerId)> ExecuteWithRetryAsync<T>(
             string label,
             Func<IEthPeer, CancellationToken, Task<T>> sendOnce,
+            IReadOnlyCollection<Guid>? initialExcluded,
             CancellationToken ct)
         {
             var attempts = 0;
             Exception? lastError = null;
-            var triedPeers = new HashSet<Guid>();
+            var triedPeers = initialExcluded is null
+                ? new HashSet<Guid>()
+                : new HashSet<Guid>(initialExcluded);
 
             while (attempts < _options.MaxRetriesPerRequest)
             {
@@ -170,7 +194,7 @@ namespace Nethereum.DevP2P.Sync
                     using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     attemptCts.CancelAfter(_options.EffectivePerRequestTimeout);
                     var result = await sendOnce(peer, attemptCts.Token).ConfigureAwait(false);
-                    return result;
+                    return (result, peer.Id);
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
