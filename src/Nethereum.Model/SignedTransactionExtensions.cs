@@ -140,5 +140,36 @@ namespace Nethereum.Model
             var to = tx.GetReceiverAddress();
             return string.IsNullOrEmpty(to) || to == "0x" || to == "0x0000000000000000000000000000000000000000";
         }
+
+        /// <summary>
+        /// Effective gas price the sender actually paid for this tx, in wei
+        /// per gas — what RPC reports as <c>receipt.effectiveGasPrice</c>.
+        ///
+        /// <list type="bullet">
+        ///   <item>Legacy / EIP-2930 → <c>gasPrice</c> (baseFee ignored).</item>
+        ///   <item>EIP-1559 / EIP-4844 / EIP-7702 →
+        ///   <c>baseFee + min(maxPriorityFeePerGas, maxFeePerGas - baseFee)</c>
+        ///   per EIP-1559 §"Fee market change". Geth ref:
+        ///   <c>core/types/transaction.go Transaction.effectiveGasTip</c>.</item>
+        /// </list>
+        ///
+        /// <para>Caller must pass the block's <c>baseFee</c>; use
+        /// <see cref="EvmUInt256.Zero"/> for pre-London blocks (legacy + 2930
+        /// will ignore it anyway). Assumes the tx is valid for the block —
+        /// no clamp on the underflow case (geth doesn't either; tx validation
+        /// rejects <c>maxFeePerGas &lt; baseFee</c> upstream).</para>
+        /// </summary>
+        public static EvmUInt256 GetEffectiveGasPrice(this ISignedTransaction tx, EvmUInt256 baseFee)
+        {
+            if (tx is Transaction7702 || tx is Transaction4844 || tx is Transaction1559)
+            {
+                var maxFee = tx.GetMaxFeePerGas();
+                var maxPriority = tx.GetMaxPriorityFeePerGas();
+                var diff = maxFee - baseFee;
+                var priority = maxPriority < diff ? maxPriority : diff;
+                return baseFee + priority;
+            }
+            return tx.GetMaxFeePerGas();
+        }
     }
 }
