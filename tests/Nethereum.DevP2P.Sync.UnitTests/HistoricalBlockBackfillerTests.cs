@@ -168,6 +168,60 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Null(info1559.ContractAddress);
         }
 
+        // Regression for #357 — eth_getLogs across backfilled blocks must
+        // return the same data as the execute path. Pre-fix, only the
+        // receipt's embedded Logs[] survived; ILogStore was untouched, so
+        // any topic/address cross-block filter came back empty.
+        [Fact]
+        public async Task Backfill_PopulatesLogStore_ForReceiptLogsAndBlockBloom()
+        {
+            using var bundle = InMemoryChainStoreBundle.Open();
+
+            var legacyTx = new LegacyTransaction(
+                nonce: new byte[] { 0x01 },
+                gasPrice: new byte[] { 0x14 },
+                gasLimit: new byte[] { 0x52, 0x08 },
+                receiveAddress: "1111111111111111111111111111111111111111".HexToByteArray(),
+                value: new byte[] { 0x00 },
+                data: new byte[0]);
+
+            var contractAddress = "0x000000000000000000000000000000000000beef";
+            var topic0 = new byte[32];
+            topic0[31] = 0x42;
+
+            var log = new Log
+            {
+                Address = contractAddress,
+                Topics = new List<byte[]> { topic0 },
+                Data = new byte[] { 0x01, 0x02, 0x03 }
+            };
+            var receipt = Receipt.CreateStatusReceipt(true, 21000, new byte[256], new List<Log> { log });
+
+            var scheduler = new CannedScheduler(blockCount: 1, baseFee: new EvmUInt256(7UL));
+            scheduler.BlockTransactions[0] = new List<ISignedTransaction> { legacyTx };
+            scheduler.BlockReceipts[0] = new List<Receipt> { receipt };
+            scheduler.RebuildChain();
+
+            var backfiller = new HistoricalBlockBackfiller(
+                scheduler, bundle, rootsProvider: Nethereum.CoreChain.PatriciaBlockRootsProvider.Instance, logger: null, batchSize: 1);
+            var result = await backfiller.BackfillAsync(0, 0, CancellationToken.None);
+            Assert.True(result.Ran);
+
+            var keccak = new Sha3Keccack();
+            var txHash = keccak.CalculateHash(legacyTx.GetRLPEncoded());
+
+            // ILogStore.GetLogsByTxHashAsync must return the log so
+            // eth_getLogs / eth_getFilterLogs can resolve it cross-block.
+            var byTxHash = await bundle.Logs.GetLogsByTxHashAsync(txHash);
+            Assert.Single(byTxHash);
+            Assert.Equal(contractAddress, byTxHash[0].Address, ignoreCase: true);
+
+            // GetLogsByBlockNumberAsync proves the per-block secondary index
+            // landed too — needed for eth_getLogs with explicit fromBlock/toBlock.
+            var byBlock = await bundle.Logs.GetLogsByBlockNumberAsync(BigInteger.Zero);
+            Assert.Single(byBlock);
+        }
+
         [Fact]
         public async Task Backfill_StopsOnCancellation_DuringEscalationDelay()
         {

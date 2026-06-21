@@ -366,8 +366,28 @@ namespace Nethereum.DevP2P.Sync
                                 contractAddress,
                                 effectiveGasPrice).ConfigureAwait(false);
                             receiptsWritten++;
+
+                            // Index logs so eth_getLogs across backfilled ranges
+                            // returns the same data as a fully-executed node.
+                            // Mirrors BlockProducer / BlockImporter pattern: the
+                            // per-tx logs go into ILogStore, the combined block
+                            // bloom goes in once per block (below the loop).
+                            if (_bundle.Logs != null && rcpt.Logs != null && rcpt.Logs.Count > 0)
+                            {
+                                await _bundle.Logs.SaveLogsAsync(
+                                    rcpt.Logs, txHash, hash, blockNumber, j).ConfigureAwait(false);
+                            }
                         }
                     }
+                }
+
+                // Per-block bloom for eth_getLogs pre-filtering — the wire
+                // bytes already carry the canonical combined bloom in
+                // header.LogsBloom, so re-use it rather than re-aggregate.
+                if (_bundle.Logs != null && header.LogsBloom != null && header.LogsBloom.Length == 256)
+                {
+                    await _bundle.Logs.SaveBlockBloomAsync(
+                        header.BlockNumber.ToBigInteger(), header.LogsBloom).ConfigureAwait(false);
                 }
 
                 blocksWritten++;
