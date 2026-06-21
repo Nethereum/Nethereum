@@ -9,8 +9,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Storage;
 using Nethereum.DevP2P.Sync.Metrics;
+using Nethereum.EVM;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.Model.Codecs;
 using Nethereum.Model.P2P;
 using Nethereum.Signer;
 using Nethereum.Util;
@@ -82,6 +84,7 @@ namespace Nethereum.DevP2P.Sync
         private readonly IFetchRequestScheduler _scheduler;
         private readonly IChainStoreBundle _bundle;
         private readonly IBlockRootsProvider _rootsProvider;
+        private readonly IChainActivations _activations;
         private readonly Sha3Keccack _keccak = new();
         private readonly ILogger _logger;
         private readonly SnapSyncMetrics _metrics;
@@ -93,7 +96,8 @@ namespace Nethereum.DevP2P.Sync
             IBlockRootsProvider rootsProvider = null,
             ILogger logger = null,
             SnapSyncMetrics metrics = null,
-            ulong batchSize = DefaultBatchSize)
+            ulong batchSize = DefaultBatchSize,
+            IChainActivations activations = null)
         {
             _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
             _bundle = bundle ?? throw new ArgumentNullException(nameof(bundle));
@@ -102,6 +106,11 @@ namespace Nethereum.DevP2P.Sync
             _metrics = metrics;
             if (batchSize == 0) throw new ArgumentOutOfRangeException(nameof(batchSize));
             _batchSize = batchSize;
+            // Optional fork resolver — when provided, each peer-supplied tx is
+            // checked against TransactionTypeFork.IsAcceptedAt for its block's
+            // fork so a malicious peer can't poison pre-Berlin blocks with
+            // typed envelopes. When null, backward-compatible (no validation).
+            _activations = activations;
         }
 
         public async Task<BackfillResult> BackfillAsync(
@@ -291,6 +300,15 @@ namespace Nethereum.DevP2P.Sync
                 return BatchOutcome.Fail("root_mismatch");
             }
 
+            if (_activations != null && !ValidateTransactionTypes(headers, bodies, paired, out var rejectedAtBlock, out var rejectedType))
+            {
+                _logger.LogWarning(
+                    "Phase 1 backfill: peer returned disallowed tx type {Type} at block {Block} " +
+                    "(not active at this fork) — rejecting batch {Start}+{Take}",
+                    rejectedType, rejectedAtBlock, cursor, paired);
+                return BatchOutcome.Fail("tx_type_not_active_at_fork");
+            }
+
             ulong blocksWritten = 0;
             ulong txsWritten = 0;
             ulong receiptsWritten = 0;
@@ -454,6 +472,43 @@ namespace Nethereum.DevP2P.Sync
                     ? EmptyTrieRoot
                     : _rootsProvider.CalculateReceiptsRoot(blockReceipts);
                 if (!ByteUtil.AreEqual(computedRoot, header.ReceiptHash)) return false;
+            }
+            return true;
+        }
+
+        // Strict per-fork tx-type acceptance gate. Mirrors geth's
+        // core/state_processor.go ApplyTransaction rejecting txs whose type
+        // exceeds the chain config's active set for that block — guards the
+        // archive store against peers that lie about block contents to slip
+        // pre-EIP-2718 chains into accepting typed envelopes.
+        private bool ValidateTransactionTypes(
+            IList<BlockHeader> headers,
+            IList<BlockBody> bodies,
+            int paired,
+            out long rejectedAtBlock,
+            out string rejectedType)
+        {
+            rejectedAtBlock = 0;
+            rejectedType = null;
+
+            for (int i = 0; i < paired; i++)
+            {
+                var header = headers[i];
+                var body = bodies[i];
+                if (body?.Transactions == null || body.Transactions.Count == 0) continue;
+
+                var blockNumber = (long)header.BlockNumber.ToBigInteger();
+                var fork = _activations.ResolveAt(blockNumber, (ulong)header.Timestamp);
+
+                foreach (var tx in body.Transactions)
+                {
+                    if (!TransactionTypeFork.IsAcceptedAt(tx, fork))
+                    {
+                        rejectedAtBlock = blockNumber;
+                        rejectedType = tx.GetType().Name;
+                        return false;
+                    }
+                }
             }
             return true;
         }
