@@ -9,6 +9,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -124,6 +125,10 @@ namespace Nethereum.EVM.Hardforks
             BaseFee = BaseFeePolicy.MinerKeepsAll,             // EIP-1559 not yet (London)
             EmptyAccount = EmptyAccountPolicy.Eip161Clear,     // EIP-161 (Spurious Dragon)
             CodePrefix = CodePrefixPolicy.Permissive,          // EIP-3541 not yet (London)
+            ReceiptCodec = LegacyReceiptCodec.Instance,        // EIP-658 status active but typed envelope (EIP-2718) not yet — Berlin
+            HeaderCodec = LegacyBlockHeaderCodec.Instance,     // 15 fields (no baseFee until London)
+            TransactionDecoder = LegacyOnlyTransactionDecoder.Instance,    // pre-EIP-2718
+            ReceiptConstruction = StatusReceiptConstructionRule.Instance,  // EIP-658: 1-byte status (Byzantium activation)
         };
     }
 }

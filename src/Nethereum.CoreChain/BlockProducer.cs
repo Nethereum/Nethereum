@@ -267,7 +267,7 @@ namespace Nethereum.CoreChain
                         i,
                         execR.GasUsed,
                         execR.ContractAddress,
-                        options.BaseFee);
+                        execR.EffectiveGasPrice);
                 }
 
                 if (execR.Logs != null && execR.Logs.Count > 0)

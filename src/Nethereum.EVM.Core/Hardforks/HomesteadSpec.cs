@@ -9,6 +9,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -134,6 +135,10 @@ namespace Nethereum.EVM.Hardforks
 
             // Pre-EIP-3541: 0xEF code prefix is allowed in deployed code.
             CodePrefix = CodePrefixPolicy.Permissive,
+            ReceiptCodec = LegacyReceiptCodec.Instance,        // pre-EIP-658
+            HeaderCodec = LegacyBlockHeaderCodec.Instance,     // 15 fields
+            TransactionDecoder = LegacyOnlyTransactionDecoder.Instance,    // pre-EIP-2718
+            ReceiptConstruction = PostStateReceiptConstructionRule.Instance, // pre-EIP-658: 32-byte intermediate state root
         };
     }
 }

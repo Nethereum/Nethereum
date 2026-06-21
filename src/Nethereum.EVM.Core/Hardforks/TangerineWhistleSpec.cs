@@ -9,6 +9,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -104,6 +105,10 @@ namespace Nethereum.EVM.Hardforks
             BaseFee = BaseFeePolicy.MinerKeepsAll,             // EIP-1559 not yet (London)
             EmptyAccount = EmptyAccountPolicy.Persist,         // EIP-161 not yet (Spurious Dragon)
             CodePrefix = CodePrefixPolicy.Permissive,          // EIP-3541 not yet (London)
+            ReceiptCodec = LegacyReceiptCodec.Instance,        // pre-EIP-658
+            HeaderCodec = LegacyBlockHeaderCodec.Instance,     // 15 fields
+            TransactionDecoder = LegacyOnlyTransactionDecoder.Instance,    // pre-EIP-2718
+            ReceiptConstruction = PostStateReceiptConstructionRule.Instance, // pre-EIP-658: 32-byte intermediate state root
         };
     }
 }

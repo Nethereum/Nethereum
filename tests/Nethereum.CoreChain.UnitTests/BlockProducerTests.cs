@@ -216,6 +216,29 @@ namespace Nethereum.CoreChain.UnitTests
             Assert.NotNull(receipt);
         }
 
+        // Regression: BlockProducer used to persist options.BaseFee as the
+        // receipt's effectiveGasPrice, which silently dropped the priority-fee
+        // component for EIP-1559/4844/7702 and reported the wrong value even
+        // for legacy txs when gasPrice != baseFee. Persisted value must equal
+        // TransactionExecutionResult.EffectiveGasPrice — for a legacy tx that
+        // is the tx's gasPrice, regardless of baseFee.
+        [Fact]
+        public async Task ProduceBlock_LegacyTx_ReceiptEffectiveGasPriceIsTxGasPrice_NotBaseFee()
+        {
+            await FundSender(BigInteger.Parse("10000000000000000000"));
+
+            var tx = CreateSignedTransaction(RecipientAddress, 100, 0, gasPrice: 5, gasLimit: 21_000);
+            var options = DefaultOptions();
+            options.BaseFee = 2;
+
+            await _blockProducer.ProduceBlockAsync(
+                new List<ISignedTransaction> { tx }, options);
+
+            var info = await _receiptStore.GetInfoByTxHashAsync(tx.Hash);
+            Assert.NotNull(info);
+            Assert.Equal(new BigInteger(5), info.EffectiveGasPrice);
+        }
+
         [Fact]
         public async Task ProduceBlock_MultipleTransactions_OrdersByNonce()
         {

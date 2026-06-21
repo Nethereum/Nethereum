@@ -11,6 +11,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -156,6 +157,10 @@ namespace Nethereum.EVM.Hardforks
             // EIP-3541 (London) — reject deployed code starting with 0xEF
             // (reserves the prefix for future EOF format).
             CodePrefix = CodePrefixPolicy.Eip3541RejectEf,
+            ReceiptCodec = Eip2718ReceiptCodec.Instance,            // typed receipts incl. 0x03 (blob)
+            HeaderCodec = CancunBlockHeaderCodec.Instance,          // 20 fields (+blobGasUsed, excessBlobGas, parentBeaconBlockRoot)
+            TransactionDecoder = Eip4844TransactionDecoder.Instance,       // adds 0x03 blob tx
+            ReceiptConstruction = StatusReceiptConstructionRule.Instance,  // EIP-658: 1-byte status
         };
     }
 }

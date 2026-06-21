@@ -9,6 +9,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -114,6 +115,10 @@ namespace Nethereum.EVM.Hardforks
             BaseFee = BaseFeePolicy.Eip1559Burnt,                       // EIP-1559 (London) — base fee burnt, priority fee to proposer
             EmptyAccount = EmptyAccountPolicy.Eip161Clear,              // EIP-161 (Spurious Dragon)
             CodePrefix = CodePrefixPolicy.Eip3541RejectEf,              // EIP-3541 (London) — reject deployed code starting with 0xEF
+            ReceiptCodec = Eip2718ReceiptCodec.Instance,                // typed receipts
+            HeaderCodec = LondonBlockHeaderCodec.Instance,              // 16 fields (Merge doesn't add a header field)
+            TransactionDecoder = Eip1559TransactionDecoder.Instance,       // Merge doesn't add a tx type
+            ReceiptConstruction = StatusReceiptConstructionRule.Instance,  // EIP-658: 1-byte status
         };
     }
 }

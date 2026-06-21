@@ -11,6 +11,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -177,6 +178,10 @@ namespace Nethereum.EVM.Hardforks
             // bytecode; EIP-7702 writes the delegation designator via the
             // auth-list setup path, not via CREATE/CREATE2.
             CodePrefix = CodePrefixPolicy.Eip3541RejectEf,
+            ReceiptCodec = Eip2718ReceiptCodec.Instance,            // typed receipts (Osaka inherits Prague's tx-type set)
+            HeaderCodec = PragueBlockHeaderCodec.Instance,          // 21 fields (Osaka inherits Prague header shape)
+            TransactionDecoder = Eip7702TransactionDecoder.Instance,       // Osaka inherits Prague tx-type set
+            ReceiptConstruction = StatusReceiptConstructionRule.Instance,  // EIP-658: 1-byte status
         };
     }
 }

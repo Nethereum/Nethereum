@@ -9,6 +9,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -118,6 +119,10 @@ namespace Nethereum.EVM.Hardforks
             BaseFee = BaseFeePolicy.MinerKeepsAll,                  // EIP-1559 not yet (London) — miner keeps full fee
             EmptyAccount = EmptyAccountPolicy.Eip161Clear,          // EIP-161 (Spurious Dragon)
             CodePrefix = CodePrefixPolicy.Permissive,               // EIP-3541 not yet (London) — 0xEF code allowed
+            ReceiptCodec = Eip2718ReceiptCodec.Instance,            // EIP-2718 active — typed receipt envelope for AccessList tx (0x01)
+            HeaderCodec = LegacyBlockHeaderCodec.Instance,          // 15 fields (baseFee not added until London)
+            TransactionDecoder = Eip2930TransactionDecoder.Instance,       // EIP-2718 + 0x01 access list
+            ReceiptConstruction = StatusReceiptConstructionRule.Instance,  // EIP-658: 1-byte status
         };
     }
 }

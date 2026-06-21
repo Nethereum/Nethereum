@@ -70,7 +70,8 @@ namespace Nethereum.EVM.Execution
                 var modelLogs = EvmLogConverter.ToModelLogs(txLogs);
                 var txBloom = LogBloomCalculator.CalculateBloom(modelLogs);
                 LogBloomCalculator.CombineBloom(combinedBloom, txBloom);
-                var receipt = Receipt.CreateStatusReceipt(result.Success, cumulativeGasUsed, txBloom, modelLogs);
+                var receipt = config.ReceiptConstruction.Construct(
+                    result.Success, cumulativeGasUsed, txBloom, modelLogs, intermediatePostStateRoot: null);
                 receipts.Add(receipt);
 
                 // Typed receipt encoding: type_byte || RLP for EIP-2718 typed txs
@@ -409,7 +410,8 @@ namespace Nethereum.EVM.Execution
                 var modelLogs = EvmLogConverter.ToModelLogs(txLogs);
                 var txBloom = LogBloomCalculator.CalculateBloom(modelLogs);
                 LogBloomCalculator.CombineBloom(combinedBloom, txBloom);
-                var receipt = Receipt.CreateStatusReceipt(result.Success, cumulativeGasUsed, txBloom, modelLogs);
+                var receipt = config.ReceiptConstruction.Construct(
+                    result.Success, cumulativeGasUsed, txBloom, modelLogs, intermediatePostStateRoot: null);
                 receipts.Add(receipt);
 
                 // Typed receipt encoding: type_byte || RLP for EIP-2718 typed txs

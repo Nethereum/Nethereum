@@ -44,6 +44,10 @@ namespace Nethereum.EVM.Hardforks
                 TransactionSetupRules = spec.TransactionSetup,
                 TouchedEmptyCleanupRule = spec.TouchedEmptyCleanup,
                 SstoreRefundRule = spec.SstoreRefund,
+                ReceiptCodec = spec.ReceiptCodec,
+                HeaderCodec = spec.HeaderCodec,
+                TransactionDecoder = spec.TransactionDecoder,
+                ReceiptConstruction = spec.ReceiptConstruction,
 
                 // Policy singletons → existing bool flags.
                 // HardforkConfig still uses bool for now; once all callers

@@ -9,6 +9,7 @@ using Nethereum.EVM.Execution.TransactionValidation;
 using Nethereum.EVM.Execution.TxFinalisation;
 using Nethereum.EVM.Gas;
 using Nethereum.EVM.Hardforks.Policies;
+using Nethereum.Model.Codecs;
 
 namespace Nethereum.EVM.Hardforks
 {
@@ -441,5 +442,40 @@ namespace Nethereum.EVM.Hardforks
         /// <see cref="CodePrefixPolicy"/> for fork history.
         /// </summary>
         public required CodePrefixPolicy CodePrefix { get; init; }
+
+        /// <summary>
+        /// Per-fork receipt codec used by the receipts-trie, storage layer,
+        /// and peer-serving paths. Pre-EIP-2718 forks register
+        /// <see cref="LegacyReceiptCodec.Instance"/> (rejects typed
+        /// envelope on decode). Berlin onward register
+        /// <see cref="Eip2718ReceiptCodec.Instance"/> (dispatches on
+        /// <see cref="Receipt.TransactionType"/>).
+        /// </summary>
+        public required IReceiptCodec ReceiptCodec { get; init; }
+
+        /// <summary>
+        /// Per-fork block-header codec used for block-hash computation,
+        /// peer-serving, and storage. Each codec encodes its exact field
+        /// count (Legacy=15, London=16, Shanghai=17, Cancun=20, Prague=21)
+        /// and rejects decode when the wire field count doesn't match.
+        /// </summary>
+        public required IBlockHeaderCodec HeaderCodec { get; init; }
+
+        /// <summary>
+        /// Per-fork transaction decoder. Gates which EIP-2718 envelope
+        /// bytes are accepted at this fork: Berlin adds 0x01, London 0x02,
+        /// Cancun 0x03, Prague 0x04. Used by body decoders and pooled-tx
+        /// handlers to reject txs of types not yet active.
+        /// </summary>
+        public required ITransactionDecoder TransactionDecoder { get; init; }
+
+        /// <summary>
+        /// Per-fork receipt construction rule (EIP-658 gate). Pre-Byzantium
+        /// forks register <see cref="PostStateReceiptConstructionRule.Instance"/>
+        /// (32-byte intermediate post-state root in the receipt). Byzantium
+        /// onward register <see cref="StatusReceiptConstructionRule.Instance"/>
+        /// (1-byte status). Honors geth <c>core/state_processor.go:155-159</c>.
+        /// </summary>
+        public required IReceiptConstructionRule ReceiptConstruction { get; init; }
     }
 }

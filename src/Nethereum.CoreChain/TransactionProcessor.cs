@@ -223,11 +223,12 @@ namespace Nethereum.CoreChain
                     }
 
                     var bloom = CalculateLogsBloom(result.Logs);
-                    result.Receipt = Receipt.CreateStatusReceipt(
+                    result.Receipt = _hardforkConfig.ReceiptConstruction.Construct(
                         evmResult.Success,
                         result.CumulativeGasUsed,
                         bloom,
-                        result.Logs);
+                        result.Logs,
+                        intermediatePostStateRoot: null);
                     result.Receipt.TransactionType = GetTransactionType(signedTx);
                 }
                 catch (Exception ex)
@@ -237,7 +238,8 @@ namespace Nethereum.CoreChain
                     result.RevertReason = ex.Message;
                     result.GasUsed = txData.GasLimit;
                     result.CumulativeGasUsed = cumulativeGasUsed + txData.GasLimit;
-                    result.Receipt = Receipt.CreateStatusReceipt(false, result.CumulativeGasUsed, new byte[256], new List<Log>());
+                    result.Receipt = _hardforkConfig.ReceiptConstruction.Construct(
+                        false, result.CumulativeGasUsed, new byte[256], new List<Log>(), intermediatePostStateRoot: null);
                     result.Receipt.TransactionType = GetTransactionType(signedTx);
                 }
             }

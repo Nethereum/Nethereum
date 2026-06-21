@@ -79,6 +79,53 @@ namespace Nethereum.EVM
             = Execution.TxFinalisation.NoOpTouchedEmptyCleanupRule.Instance;
 
         /// <summary>
+        /// Per-fork receipt codec — canonical RLP form used by the receipts-
+        /// trie, storage layer, and peer-serving paths. Defaults to
+        /// <see cref="Model.Codecs.Eip2718ReceiptCodec.Instance"/> which
+        /// encodes typed-envelope receipts when <see cref="Receipt.TransactionType"/>
+        /// is non-zero (Berlin onward) and bare RLP lists otherwise. This
+        /// is the strictly more permissive choice — accepts both legacy
+        /// and typed wire shapes on decode. Pre-EIP-2718 fork consumers
+        /// should set <see cref="Model.Codecs.LegacyReceiptCodec.Instance"/>
+        /// explicitly to reject typed envelopes. Production paths build via
+        /// <see cref="HardforkConfigFromSpec.Build"/>, which sets the
+        /// fork-correct codec from the spec file.
+        /// </summary>
+        public Model.Codecs.IReceiptCodec ReceiptCodec { get; set; }
+            = Model.Codecs.Eip2718ReceiptCodec.Instance;
+
+        /// <summary>
+        /// Per-fork block-header codec. Default <see cref="Model.Codecs.PragueBlockHeaderCodec.Instance"/>
+        /// matches the current mainnet head. Production paths set the
+        /// fork-correct codec via <see cref="HardforkConfigFromSpec.Build"/>.
+        /// Imperative callers building for older forks must pass an
+        /// explicit header codec or override after construction.
+        /// </summary>
+        public Model.Codecs.IBlockHeaderCodec HeaderCodec { get; set; }
+            = Model.Codecs.PragueBlockHeaderCodec.Instance;
+
+        /// <summary>
+        /// Per-fork transaction decoder. Default
+        /// <see cref="Model.Codecs.Eip7702TransactionDecoder.Instance"/>
+        /// matches current mainnet head (Osaka inherits Prague's tx-type
+        /// set including 0x04 EIP-7702). Pre-Prague consumers should
+        /// override with the fork-correct decoder via
+        /// <see cref="HardforkConfigFromSpec.Build"/>.
+        /// </summary>
+        public Model.Codecs.ITransactionDecoder TransactionDecoder { get; set; }
+            = Model.Codecs.Eip7702TransactionDecoder.Instance;
+
+        /// <summary>
+        /// Per-fork receipt construction rule (EIP-658 gate). Default
+        /// <see cref="Execution.TxFinalisation.StatusReceiptConstructionRule.Instance"/>
+        /// matches current mainnet head (status-form, Byzantium+). Pre-Byzantium
+        /// consumers must override via <see cref="HardforkConfigFromSpec.Build"/>
+        /// or by passing the rule explicitly.
+        /// </summary>
+        public Execution.TxFinalisation.IReceiptConstructionRule ReceiptConstruction { get; set; }
+            = Execution.TxFinalisation.StatusReceiptConstructionRule.Instance;
+
+        /// <summary>
         /// Per-fork SSTORE refund accounting strategy. Legacy (Frontier-Byzantium
         /// and Petersburg) uses a single "non-zero to zero adds clearsSchedule"
         /// rule. EIP-1283/2200/2929 forks (Constantinople, Istanbul, Berlin+)
@@ -128,7 +175,11 @@ namespace Nethereum.EVM
             bool cleanEmptyAccounts = true,
             bool baseFeeApplies = false,
             bool enforceSstoreSentry = false,
-            bool warmCoinbase = false)
+            bool warmCoinbase = false,
+            Model.Codecs.IReceiptCodec receiptCodec = null,
+            Model.Codecs.IBlockHeaderCodec headerCodec = null,
+            Model.Codecs.ITransactionDecoder transactionDecoder = null,
+            Execution.TxFinalisation.IReceiptConstructionRule receiptConstruction = null)
         {
             return new HardforkConfig
             {
@@ -158,6 +209,35 @@ namespace Nethereum.EVM
                 CallFrameInitRules = callFrame ?? CallFrameInitRules.Empty,
                 TransactionValidationRules = validation ?? TransactionValidationRules.Empty,
                 TransactionSetupRules = setup ?? TransactionSetupRules.Empty,
+                // Default to legacy codec when no codec is passed AND the
+                // sentinel choice "cleanEmptyAccounts == false" indicates a
+                // pre-EIP-158 fork shape — those will also be pre-EIP-2718.
+                // Imperative callers building post-Berlin configs must pass
+                // an explicit codec. Production code uses HardforkConfigFromSpec.
+                ReceiptCodec = receiptCodec ?? (cleanEmptyAccounts
+                    ? (Model.Codecs.IReceiptCodec)Model.Codecs.Eip2718ReceiptCodec.Instance
+                    : Model.Codecs.LegacyReceiptCodec.Instance),
+                // Header codec: default to Legacy (15 fields, no baseFee) when
+                // caller is building a pre-EIP-158 config sentinel; otherwise
+                // Prague (current head). Production paths use
+                // HardforkConfigFromSpec.Build which sets fork-correct codec.
+                HeaderCodec = headerCodec ?? (cleanEmptyAccounts
+                    ? (Model.Codecs.IBlockHeaderCodec)Model.Codecs.PragueBlockHeaderCodec.Instance
+                    : Model.Codecs.LegacyBlockHeaderCodec.Instance),
+                // Transaction decoder: default Prague (current head) if
+                // post-EIP-158 sentinel, else legacy-only. Production paths
+                // use HardforkConfigFromSpec.Build for fork-correct gating.
+                TransactionDecoder = transactionDecoder ?? (cleanEmptyAccounts
+                    ? (Model.Codecs.ITransactionDecoder)Model.Codecs.Eip7702TransactionDecoder.Instance
+                    : Model.Codecs.LegacyOnlyTransactionDecoder.Instance),
+                // Receipt construction: default status-form (Byzantium+) when
+                // cleanEmptyAccounts (EIP-158 sentinel) is true; PostState
+                // when caller signals a pre-EIP-158 config (which also
+                // happens to be pre-EIP-658). Production paths use
+                // HardforkConfigFromSpec.Build for fork-correct gating.
+                ReceiptConstruction = receiptConstruction ?? (cleanEmptyAccounts
+                    ? (Execution.TxFinalisation.IReceiptConstructionRule)Execution.TxFinalisation.StatusReceiptConstructionRule.Instance
+                    : Execution.TxFinalisation.PostStateReceiptConstructionRule.Instance),
             };
         }
 
