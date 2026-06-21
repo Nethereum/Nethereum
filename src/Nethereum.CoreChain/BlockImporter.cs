@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Model;
+using Nethereum.Model.Codecs;
 using Nethereum.RLP;
 using Nethereum.Util;
 
@@ -128,7 +129,15 @@ namespace Nethereum.CoreChain
                 // BLOCKHASH opcode can resolve it via IStateReader. Without
                 // this, BLOCKHASH(N-1) reads zero and contracts that branch
                 // on the parent hash compute the wrong result.
-                var blockHash = _keccak.CalculateHash(BlockHeaderEncoder.Current.Encode(header));
+                //
+                // Use the fork-correct codec (resolved by the engine during
+                // execution) so a post-Cancun header that's missing one of its
+                // required fields (blobGasUsed, parentBeaconBlockRoot, etc.)
+                // fails loudly here rather than silently producing a wrong
+                // block hash. Identical bytes to BlockHeaderEncoder.Current for
+                // well-formed headers — verified by HeaderCodecParityTests.
+                var headerCodec = BlockHeaderCodecs.ForFork(result.Fork);
+                var blockHash = _keccak.CalculateHash(headerCodec.Encode(header));
                 await _blockStore.SaveAsync(header, blockHash).ConfigureAwait(false);
 
                 // 6b. Persist uncles so re-execution from local stores can
