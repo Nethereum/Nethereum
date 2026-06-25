@@ -29,6 +29,16 @@ namespace Nethereum.Merkle.Patricia
 
         }
 
+        public PatriciaTrie(Node root, IHashProvider hashProvider)
+        {
+            HashProvider = hashProvider;
+            Root = root ?? new EmptyNode(hashProvider);
+        }
+
+        public PatriciaTrie(Node root) : this(root, new Sha3KeccackHashProvider())
+        {
+        }
+
         public static PatriciaTrie LoadFromStorage(byte[] rootHash, ITrieStorage storage)
         {
             return LoadFromStorage(rootHash, storage, new Sha3KeccackHashProvider());
