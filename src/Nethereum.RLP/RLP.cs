@@ -498,6 +498,35 @@ namespace Nethereum.RLP
             return 1 + lengthOfLength + length;
         }
 
+        /// <summary>
+        /// Reads the leading integer of an RLP list payload (e.g. the request id that
+        /// prefixes every eth/snap request-response message, which is encoded as
+        /// <c>[requestId, …]</c>) without decoding the rest of the list — the payload can be
+        /// many megabytes. Returns false when the payload is not an RLP list or its first
+        /// element is not an integer of at most eight bytes.
+        /// </summary>
+        public static bool TryReadLeadingListUInt64(byte[] payload, out ulong value)
+        {
+            value = 0;
+            if (payload == null || payload.Length < 1) return false;
+            byte listPrefix = payload[0];
+            if (listPrefix < OFFSET_SHORT_LIST) return false; // not a list
+            int headerLength = listPrefix <= OFFSET_LONG_LIST
+                ? 1
+                : 1 + (listPrefix - OFFSET_LONG_LIST);
+            if (headerLength >= payload.Length) return false;
+
+            var first = DecodeFirstElement(payload, headerLength);
+            var data = first?.RLPData;
+            if (data == null || data.Length == 0 || data.Length > 8) return false;
+
+            ulong result = 0;
+            for (var i = 0; i < data.Length; i++)
+                result = (result << 8) | data[i];
+            value = result;
+            return true;
+        }
+
         private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)
         {
             var pow = (byte) (lengthOfLength - 1);

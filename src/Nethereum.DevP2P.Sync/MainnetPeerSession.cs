@@ -87,18 +87,15 @@ namespace Nethereum.DevP2P.Sync
         private static readonly BigInteger TerminalTotalDifficulty =
             BigInteger.Parse("58750000000000000000000");
 
-        // While waiting for a request reply, peers may push unsolicited NewBlock /
-        // NewBlockHashes / Transactions. We need to drain them so we can find our
-        // reply, but a hostile peer could push 16 MB frames indefinitely. Cap both
-        // the message count and the cumulative bytes so a single starved request
-        // can't gigabytes of memory.
-        private const int MaxResponseDrainAttempts = 64;
-        private const long MaxResponseDrainBytes = 32 * 1024 * 1024; // 32 MiB
+        // Hard per-request response ceiling passed to RlpxConnection.SendRequestAsync, which
+        // demultiplexes replies by request id over a single read loop. The FetchRequestScheduler
+        // also wraps each call with its own (shorter) token; this is a backstop so a request can
+        // never hang forever if the caller's token never fires.
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(60);
 
         private readonly RlpxConnection _conn;
         private readonly int _ethVersion;
         private readonly int _ethOffset;
-        private ulong _nextRequestId;
 
         public string PeerEnode { get; }
         public string PeerHost { get; }
@@ -123,7 +120,6 @@ namespace Nethereum.DevP2P.Sync
             _conn = conn;
             _ethVersion = ethVersion;
             _ethOffset = ethOffset;
-            _nextRequestId = 1;
             PeerLatestBlock = peerLatestBlock;
             PeerForkHash = peerForkHash;
             _conn.Disconnected += (_, _) => Disconnected?.Invoke(this, this);
@@ -363,7 +359,7 @@ namespace Nethereum.DevP2P.Sync
         public async Task<List<BlockHeader>> GetHeadersAsync(
             ulong startBlock, ulong limit, ulong skip, bool reverse, CancellationToken ct)
         {
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetBlockHeadersMessage
             {
                 RequestId = reqId,
@@ -387,7 +383,7 @@ namespace Nethereum.DevP2P.Sync
             if (startHash == null || startHash.Length != 32)
                 throw new ArgumentException("startHash must be a 32-byte block hash", nameof(startHash));
 
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetBlockHeadersMessage
             {
                 RequestId = reqId,
@@ -402,50 +398,24 @@ namespace Nethereum.DevP2P.Sync
         private async Task<List<BlockHeader>> SendAndAwaitHeadersAsync(
             ulong reqId, GetBlockHeadersMessage req, CancellationToken ct)
         {
-            await _conn.SendMessageAsync(_ethOffset + EthMessageIds.GetBlockHeaders,
-                GetBlockHeadersMessageEncoder.Encode(req), ct);
-
-            long drainedBytes = 0;
-            for (int i = 0; i < MaxResponseDrainAttempts; i++)
-            {
-                var (msgId, payload) = await _conn.ReceiveMessageAsync(ct);
-                drainedBytes += payload?.Length ?? 0;
-                if (drainedBytes > MaxResponseDrainBytes)
-                    throw new InvalidOperationException(
-                        $"Peer pushed {drainedBytes} bytes of unrelated messages while waiting for BlockHeaders reply {reqId} (cap {MaxResponseDrainBytes}); aborting request");
-                if (msgId != _ethOffset + EthMessageIds.BlockHeaders) continue;
-                var resp = BlockHeadersMessageEncoder.Decode(payload);
-                if (resp.RequestId != reqId) continue;
-                return resp.Headers ?? new List<BlockHeader>();
-            }
-            throw new InvalidOperationException(
-                $"Peer did not send BlockHeaders for request {reqId} within {MaxResponseDrainAttempts} message attempts");
+            var payload = await _conn.SendRequestAsync(
+                _ethOffset + EthMessageIds.GetBlockHeaders,
+                GetBlockHeadersMessageEncoder.Encode(req),
+                _ethOffset + EthMessageIds.BlockHeaders, reqId, RequestTimeout, ct);
+            return BlockHeadersMessageEncoder.Decode(payload).Headers ?? new List<BlockHeader>();
         }
 
         /// <summary>Fetch the bodies for a batch of block hashes.</summary>
         public async Task<List<BlockBody>> GetBodiesAsync(List<byte[]> blockHashes, CancellationToken ct)
         {
             if (blockHashes.Count == 0) return new List<BlockBody>();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetBlockBodiesMessage { RequestId = reqId, BlockHashes = blockHashes.ToArray() };
-            await _conn.SendMessageAsync(_ethOffset + EthMessageIds.GetBlockBodies,
-                GetBlockBodiesMessageEncoder.Encode(req), ct);
-
-            long drainedBytes = 0;
-            for (int i = 0; i < MaxResponseDrainAttempts; i++)
-            {
-                var (msgId, payload) = await _conn.ReceiveMessageAsync(ct);
-                drainedBytes += payload?.Length ?? 0;
-                if (drainedBytes > MaxResponseDrainBytes)
-                    throw new InvalidOperationException(
-                        $"Peer pushed {drainedBytes} bytes of unrelated messages while waiting for BlockBodies reply {reqId} (cap {MaxResponseDrainBytes}); aborting request");
-                if (msgId != _ethOffset + EthMessageIds.BlockBodies) continue;
-                var resp = BlockBodiesMessageEncoder.Decode(payload);
-                if (resp.RequestId != reqId) continue;
-                return resp.Bodies ?? new List<BlockBody>();
-            }
-            throw new InvalidOperationException(
-                $"Peer did not send BlockBodies for request {reqId} within {MaxResponseDrainAttempts} message attempts");
+            var payload = await _conn.SendRequestAsync(
+                _ethOffset + EthMessageIds.GetBlockBodies,
+                GetBlockBodiesMessageEncoder.Encode(req),
+                _ethOffset + EthMessageIds.BlockBodies, reqId, RequestTimeout, ct);
+            return BlockBodiesMessageEncoder.Decode(payload).Bodies ?? new List<BlockBody>();
         }
 
         /// <summary>
@@ -457,28 +427,16 @@ namespace Nethereum.DevP2P.Sync
         public async Task<List<List<Receipt>>> GetReceiptsAsync(List<byte[]> blockHashes, CancellationToken ct)
         {
             if (blockHashes.Count == 0) return new List<List<Receipt>>();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetReceiptsMessage { RequestId = reqId, BlockHashes = blockHashes.ToArray() };
-            await _conn.SendMessageAsync(_ethOffset + EthMessageIds.GetReceipts,
-                GetReceiptsMessageEncoder.Encode(req), ct);
-
-            long drainedBytes = 0;
-            for (int i = 0; i < MaxResponseDrainAttempts; i++)
-            {
-                var (msgId, payload) = await _conn.ReceiveMessageAsync(ct);
-                drainedBytes += payload?.Length ?? 0;
-                if (drainedBytes > MaxResponseDrainBytes)
-                    throw new InvalidOperationException(
-                        $"Peer pushed {drainedBytes} bytes of unrelated messages while waiting for Receipts reply {reqId} (cap {MaxResponseDrainBytes}); aborting request");
-                if (msgId != _ethOffset + EthMessageIds.Receipts) continue;
-                var resp = _ethVersion >= 69
-                    ? ReceiptsMessageEth69Encoder.Decode(payload)
-                    : ReceiptsMessageEncoder.Decode(payload);
-                if (resp.RequestId != reqId) continue;
-                return resp.ReceiptsByBlock ?? new List<List<Receipt>>();
-            }
-            throw new InvalidOperationException(
-                $"Peer did not send Receipts for request {reqId} within {MaxResponseDrainAttempts} message attempts");
+            var payload = await _conn.SendRequestAsync(
+                _ethOffset + EthMessageIds.GetReceipts,
+                GetReceiptsMessageEncoder.Encode(req),
+                _ethOffset + EthMessageIds.Receipts, reqId, RequestTimeout, ct);
+            var resp = _ethVersion >= 69
+                ? ReceiptsMessageEth69Encoder.Decode(payload)
+                : ReceiptsMessageEncoder.Decode(payload);
+            return resp.ReceiptsByBlock ?? new List<List<Receipt>>();
         }
 
         /// <summary>
@@ -489,26 +447,13 @@ namespace Nethereum.DevP2P.Sync
         public async Task<List<ISignedTransaction>> GetPooledTransactionsAsync(List<byte[]> txHashes, CancellationToken ct)
         {
             if (txHashes.Count == 0) return new List<ISignedTransaction>();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetPooledTransactionsMessage { RequestId = reqId, Hashes = new List<byte[]>(txHashes) };
-            await _conn.SendMessageAsync(_ethOffset + EthMessageIds.GetPooledTransactions,
-                GetPooledTransactionsMessageEncoder.Encode(req), ct);
-
-            long drainedBytes = 0;
-            for (int i = 0; i < MaxResponseDrainAttempts; i++)
-            {
-                var (msgId, payload) = await _conn.ReceiveMessageAsync(ct);
-                drainedBytes += payload?.Length ?? 0;
-                if (drainedBytes > MaxResponseDrainBytes)
-                    throw new InvalidOperationException(
-                        $"Peer pushed {drainedBytes} bytes of unrelated messages while waiting for PooledTransactions reply {reqId} (cap {MaxResponseDrainBytes}); aborting request");
-                if (msgId != _ethOffset + EthMessageIds.PooledTransactions) continue;
-                var resp = PooledTransactionsMessageEncoder.Decode(payload);
-                if (resp.RequestId != reqId) continue;
-                return resp.Transactions ?? new List<ISignedTransaction>();
-            }
-            throw new InvalidOperationException(
-                $"Peer did not send PooledTransactions for request {reqId} within {MaxResponseDrainAttempts} message attempts");
+            var payload = await _conn.SendRequestAsync(
+                _ethOffset + EthMessageIds.GetPooledTransactions,
+                GetPooledTransactionsMessageEncoder.Encode(req),
+                _ethOffset + EthMessageIds.PooledTransactions, reqId, RequestTimeout, ct);
+            return PooledTransactionsMessageEncoder.Decode(payload).Transactions ?? new List<ISignedTransaction>();
         }
 
         /// <summary>
@@ -545,7 +490,7 @@ namespace Nethereum.DevP2P.Sync
             byte[] stateRoot, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
         {
             var snapOffset = GetSnapOffsetOrThrow();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetAccountRangeMessage
             {
                 RequestId = reqId,
@@ -554,13 +499,13 @@ namespace Nethereum.DevP2P.Sync
                 LimitHash = limitHash,
                 ResponseBytes = responseBytes
             };
-            var payload = GetAccountRangeMessageEncoder.Encode(req);
+            var reqPayload = GetAccountRangeMessageEncoder.Encode(req);
 
             var ethCap = _conn.SharedCapabilities.Find(c => c.Name == "eth");
             var snapCap = _conn.SharedCapabilities.Find(c => c.Name == "snap");
-            var headLen = System.Math.Min(64, payload.Length);
+            var headLen = System.Math.Min(64, reqPayload.Length);
             var head = new byte[headLen];
-            System.Array.Copy(payload, 0, head, 0, headLen);
+            System.Array.Copy(reqPayload, 0, head, 0, headLen);
             var peerTag = $"{Id.ToString().Substring(0, 8)} @ {PeerHost}";
             System.Console.Error.WriteLine(
                 $"[snap-diag] SEND GetAccountRange peer={peerTag} " +
@@ -568,29 +513,15 @@ namespace Nethereum.DevP2P.Sync
                 $"ethVer={ethCap?.Version} ethOffset=0x{ethCap?.Offset ?? 0:x2} ethLen={ethCap?.Length ?? 0} " +
                 $"snapVer={snapCap?.Version} snapOffset=0x{snapOffset:x2} " +
                 $"msgId=0x{snapOffset + SnapMessageIds.GetAccountRange:x2} reqId={reqId} " +
-                $"payloadLen={payload.Length} payloadHead={head.ToHex()}");
+                $"payloadLen={reqPayload.Length} payloadHead={head.ToHex()}");
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                await _conn.SendMessageAsync(snapOffset + SnapMessageIds.GetAccountRange,
-                    payload, ct);
-                System.Console.Error.WriteLine(
-                    $"[snap-diag] SEND-OK peer={peerTag} reqId={reqId} elapsedMs={sw.ElapsedMilliseconds}");
-            }
-            catch (System.Exception ex)
-            {
-                System.Console.Error.WriteLine(
-                    $"[snap-diag] SEND-FAIL peer={peerTag} reqId={reqId} elapsedMs={sw.ElapsedMilliseconds} " +
-                    $"err={ex.GetType().Name}: {ex.Message}");
-                throw;
-            }
-
-            try
-            {
-                var resp = await AwaitSnapResponseAsync<AccountRangeMessage>(
-                    reqId, snapOffset + SnapMessageIds.AccountRange,
-                    AccountRangeMessageEncoder.Decode, m => m.RequestId, ct);
+                var respPayload = await _conn.SendRequestAsync(
+                    snapOffset + SnapMessageIds.GetAccountRange, reqPayload,
+                    snapOffset + SnapMessageIds.AccountRange, reqId, RequestTimeout, ct);
+                var resp = AccountRangeMessageEncoder.Decode(respPayload);
                 System.Console.Error.WriteLine(
                     $"[snap-diag] RECV-OK peer={peerTag} reqId={reqId} elapsedMs={sw.ElapsedMilliseconds} " +
                     $"accounts={resp.Accounts.Count} proofs={resp.Proof?.Count ?? 0}");
@@ -603,7 +534,6 @@ namespace Nethereum.DevP2P.Sync
                     $"err={ex.GetType().Name}: {ex.Message}");
                 throw;
             }
-
         }
 
         /// <summary>
@@ -616,7 +546,7 @@ namespace Nethereum.DevP2P.Sync
             byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
         {
             var snapOffset = GetSnapOffsetOrThrow();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetStorageRangesMessage
             {
                 RequestId = reqId,
@@ -626,11 +556,11 @@ namespace Nethereum.DevP2P.Sync
                 LimitHash = limitHash,
                 ResponseBytes = responseBytes
             };
-            await _conn.SendMessageAsync(snapOffset + SnapMessageIds.GetStorageRanges,
-                GetStorageRangesMessageEncoder.Encode(req), ct);
-            return await AwaitSnapResponseAsync<StorageRangesMessage>(
-                reqId, snapOffset + SnapMessageIds.StorageRanges,
-                StorageRangesMessageEncoder.Decode, m => m.RequestId, ct);
+            var payload = await _conn.SendRequestAsync(
+                snapOffset + SnapMessageIds.GetStorageRanges,
+                GetStorageRangesMessageEncoder.Encode(req),
+                snapOffset + SnapMessageIds.StorageRanges, reqId, RequestTimeout, ct);
+            return StorageRangesMessageEncoder.Decode(payload);
         }
 
         /// <summary>
@@ -641,18 +571,18 @@ namespace Nethereum.DevP2P.Sync
             List<byte[]> codeHashes, ulong responseBytes, CancellationToken ct)
         {
             var snapOffset = GetSnapOffsetOrThrow();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetByteCodesMessage
             {
                 RequestId = reqId,
                 Hashes = codeHashes,
                 ResponseBytes = responseBytes
             };
-            await _conn.SendMessageAsync(snapOffset + SnapMessageIds.GetByteCodes,
-                GetByteCodesMessageEncoder.Encode(req), ct);
-            return await AwaitSnapResponseAsync<ByteCodesMessage>(
-                reqId, snapOffset + SnapMessageIds.ByteCodes,
-                ByteCodesMessageEncoder.Decode, m => m.RequestId, ct);
+            var payload = await _conn.SendRequestAsync(
+                snapOffset + SnapMessageIds.GetByteCodes,
+                GetByteCodesMessageEncoder.Encode(req),
+                snapOffset + SnapMessageIds.ByteCodes, reqId, RequestTimeout, ct);
+            return ByteCodesMessageEncoder.Decode(payload);
         }
 
         /// <summary>
@@ -663,7 +593,7 @@ namespace Nethereum.DevP2P.Sync
             byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, CancellationToken ct)
         {
             var snapOffset = GetSnapOffsetOrThrow();
-            var reqId = ++_nextRequestId;
+            var reqId = _conn.NextRequestId();
             var req = new GetTrieNodesMessage
             {
                 RequestId = reqId,
@@ -671,32 +601,11 @@ namespace Nethereum.DevP2P.Sync
                 Paths = paths,
                 ResponseBytes = responseBytes
             };
-            await _conn.SendMessageAsync(snapOffset + SnapMessageIds.GetTrieNodes,
-                GetTrieNodesMessageEncoder.Encode(req), ct);
-            return await AwaitSnapResponseAsync<TrieNodesMessage>(
-                reqId, snapOffset + SnapMessageIds.TrieNodes,
-                TrieNodesMessageEncoder.Decode, m => m.RequestId, ct);
-        }
-
-        private async Task<TResponse> AwaitSnapResponseAsync<TResponse>(
-            ulong reqId, int expectedMsgId,
-            Func<byte[], TResponse> decode, Func<TResponse, ulong> requestIdOf, CancellationToken ct)
-        {
-            long drainedBytes = 0;
-            for (int i = 0; i < MaxResponseDrainAttempts; i++)
-            {
-                var (msgId, payload) = await _conn.ReceiveMessageAsync(ct);
-                drainedBytes += payload?.Length ?? 0;
-                if (drainedBytes > MaxResponseDrainBytes)
-                    throw new InvalidOperationException(
-                        $"Peer pushed {drainedBytes} bytes of unrelated messages while waiting for snap reply {reqId} (cap {MaxResponseDrainBytes}); aborting request");
-                if (msgId != expectedMsgId) continue;
-                var resp = decode(payload);
-                if (requestIdOf(resp) != reqId) continue;
-                return resp;
-            }
-            throw new InvalidOperationException(
-                $"Peer did not send snap response (msgId=0x{expectedMsgId:x2}) for request {reqId} within {MaxResponseDrainAttempts} message attempts");
+            var payload = await _conn.SendRequestAsync(
+                snapOffset + SnapMessageIds.GetTrieNodes,
+                GetTrieNodesMessageEncoder.Encode(req),
+                snapOffset + SnapMessageIds.TrieNodes, reqId, RequestTimeout, ct);
+            return TrieNodesMessageEncoder.Decode(payload);
         }
 
         public async ValueTask DisposeAsync()

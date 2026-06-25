@@ -25,9 +25,25 @@ namespace Nethereum.DevP2P.Rlpx
         private RlpxFrameReader _reader;
         private readonly SemaphoreSlim _writeLock = new(1, 1);
         private readonly SemaphoreSlim _readLock = new(1, 1);
-        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<(int msgId, byte[] payload)>> _pendingRequests = new();
+        // Client request/response demultiplexer. When SendRequestAsync is used the
+        // connection runs a single background read loop (DispatcherLoopAsync) that delivers
+        // each reply to the waiting request by request id, and routes unsolicited gossip to
+        // the push channel. Mutually exclusive on a connection with the pull-based
+        // ReceiveMessageAsync that server sessions use.
+        private readonly ConcurrentDictionary<ulong, PendingRequest> _pendingRequests = new();
+        private Task _dispatcherTask;
+        private CancellationTokenSource _dispatcherCts;
+        private readonly object _dispatcherLock = new object();
         private long _nextRequestId;
         private Timer _pingTimer;
+
+        private sealed class PendingRequest
+        {
+            public readonly int ExpectedMsgId;
+            public readonly TaskCompletionSource<byte[]> Tcs =
+                new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+            public PendingRequest(int expectedMsgId) => ExpectedMsgId = expectedMsgId;
+        }
 
         /// <summary>
         /// Capacity for the per-connection push-message back-pressure channel.
@@ -385,6 +401,9 @@ namespace Nethereum.DevP2P.Rlpx
 
         public async Task<(int msgId, byte[] payload)> ReceiveMessageAsync(CancellationToken ct = default)
         {
+            if (_dispatcherTask != null)
+                throw new InvalidOperationException(
+                    "Connection is in dispatched mode (SendRequestAsync); pull-based ReceiveMessageAsync is disabled on it.");
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(_config.ReadTimeoutMs);
 
@@ -408,6 +427,9 @@ namespace Nethereum.DevP2P.Rlpx
             int requestMsgId, byte[] requestPayload,
             int expectedResponseMsgId, CancellationToken ct = default)
         {
+            if (_dispatcherTask != null)
+                throw new InvalidOperationException(
+                    "Connection is in dispatched mode (SendRequestAsync); legacy RequestAsync is disabled on it.");
             await SendFrameAsync(requestMsgId, requestPayload, ct);
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -447,6 +469,109 @@ namespace Nethereum.DevP2P.Rlpx
             // channel is bounded with FullMode=DropOldest, returning false only
             // if the channel is closed.
             channel.Writer.TryWrite(args);
+        }
+
+        /// <summary>
+        /// Send a request and await the reply matched by <paramref name="requestId"/> through
+        /// the single background dispatcher loop. Unsolicited frames arriving meanwhile are
+        /// routed to <see cref="PushMessageReceived"/>. Calling this puts the connection in
+        /// dispatched mode — mutually exclusive with the pull-based <see cref="ReceiveMessageAsync"/>
+        /// and <see cref="RequestAsync"/> on the same connection.
+        /// </summary>
+        public async Task<byte[]> SendRequestAsync(
+            int sendMsgId, byte[] payload, int expectedResponseMsgId, ulong requestId,
+            TimeSpan timeout, CancellationToken ct = default)
+        {
+            EnsureDispatcherStarted();
+            var pending = new PendingRequest(expectedResponseMsgId);
+            if (!_pendingRequests.TryAdd(requestId, pending))
+                throw new InvalidOperationException($"Duplicate in-flight request id {requestId}");
+            try
+            {
+                await SendFrameAsync(sendMsgId, payload, ct).ConfigureAwait(false);
+
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(timeout);
+                using (timeoutCts.Token.Register(() =>
+                {
+                    if (ct.IsCancellationRequested) pending.Tcs.TrySetCanceled(ct);
+                    else pending.Tcs.TrySetException(new TimeoutException(
+                        $"No response (msgId=0x{expectedResponseMsgId:x2}) for request {requestId} within {timeout.TotalSeconds:0}s"));
+                }))
+                {
+                    return await pending.Tcs.Task.ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _pendingRequests.TryRemove(requestId, out _);
+            }
+        }
+
+        private void EnsureDispatcherStarted()
+        {
+            if (_dispatcherTask != null) return;
+            lock (_dispatcherLock)
+            {
+                if (_dispatcherTask != null) return;
+                _dispatcherCts = new CancellationTokenSource();
+                _dispatcherTask = Task.Run(() => DispatcherLoopAsync(_dispatcherCts.Token));
+            }
+        }
+
+        /// <summary>
+        /// The connection's single reader in dispatched mode. Ping/Pong/Disconnect are
+        /// handled inline; a sub-protocol reply is delivered to the waiting request by
+        /// request id; anything else is unsolicited gossip routed to the push channel.
+        /// </summary>
+        private async Task DispatcherLoopAsync(CancellationToken ct)
+        {
+            Exception fault;
+            try
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    int msgId; byte[] payload;
+                    using (var readCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                    {
+                        readCts.CancelAfter(_config.ReadTimeoutMs);
+                        (msgId, payload) = await ReadFrameAsync(readCts.Token).ConfigureAwait(false);
+                    }
+
+                    var action = await HandleControlFrameOrContinueAsync(msgId, ct).ConfigureAwait(false);
+                    if (action == ControlFrameAction.Continue) continue;
+                    if (action == ControlFrameAction.PeerDisconnected)
+                    {
+                        MarkDisconnected();
+                        throw new IOException("Peer disconnected");
+                    }
+
+                    if (Nethereum.RLP.RLP.TryReadLeadingListUInt64(payload, out var reqId)
+                        && _pendingRequests.TryGetValue(reqId, out var pending)
+                        && pending.ExpectedMsgId == msgId)
+                    {
+                        _pendingRequests.TryRemove(reqId, out _);
+                        pending.Tcs.TrySetResult(payload);
+                    }
+                    else
+                    {
+                        EnqueuePush(new RlpxPushMessageEventArgs(msgId, payload));
+                    }
+                }
+                fault = new IOException("connection read loop ended");
+            }
+            catch (Exception ex)
+            {
+                fault = ex;
+            }
+            FaultAllPending(fault);
+        }
+
+        private void FaultAllPending(Exception ex)
+        {
+            foreach (var reqId in _pendingRequests.Keys)
+                if (_pendingRequests.TryRemove(reqId, out var pending))
+                    pending.Tcs.TrySetException(ex);
         }
 
         private void EnsurePushPumpStarted()
@@ -600,6 +725,8 @@ namespace Nethereum.DevP2P.Rlpx
             if (_disposed) return;
             _disposed = true;
             MarkDisconnected();
+            try { _dispatcherCts?.Cancel(); } catch { }
+            FaultAllPending(new ObjectDisposedException(nameof(RlpxConnection)));
             try { _pushPumpCts?.Cancel(); } catch { }
             try { _pushChannel?.Writer.TryComplete(); } catch { }
             _pingTimer?.Dispose();
@@ -608,6 +735,7 @@ namespace Nethereum.DevP2P.Rlpx
             _writeLock.Dispose();
             _readLock.Dispose();
             try { _pushPumpCts?.Dispose(); } catch { }
+            try { _dispatcherCts?.Dispose(); } catch { }
         }
     }
 
