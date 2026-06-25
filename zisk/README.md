@@ -511,6 +511,67 @@ dotnet test tests/Nethereum.EVM.Core.Tests --filter "ZiskEmu_stPreCompiledContra
 - `ZISK_IMAGE=<name>` — use a different bflat Docker image
 - `LIBZISKOS_DIR=<host-path>` — directory containing `libziskos.bflat.manifest` (typically `zisk/.libziskos/` after running `build-libziskos.sh`)
 
+## Common pitfalls when upgrading
+
+### `LIBZISKOS_DIR` must point at a libziskos that exports every `ZiskCrypto.cs` symbol
+
+`libziskos.a` is our own build (via `build-libziskos.sh`), but its contents come from Zisk upstream Rust. When `ZiskCrypto.cs` adds a `[DllImport("__Internal")]` for a new precompile symbol (e.g. `zkvm_secp256r1_verify`, `zkvm_bls12_*`), the symbol must exist in the `libziskos.a` we link against.
+
+The bflat Docker image bundles a bootstrapping libziskos used only if `LIBZISKOS_DIR` is unset. That bundle is whatever was current when the image was built — it goes stale as soon as we wire new symbols. Symptoms when stale:
+
+```
+lld: error: undefined symbol: zkvm_bls12_g2_add
+lld: error: undefined symbol: zkvm_secp256r1_verify
+lld: error: undefined symbol: poseidon2_c
+```
+
+Always pass `LIBZISKOS_DIR="$(pwd)/zisk/.libziskos"` and rebuild it (`bash zisk/scripts/build-libziskos.sh <ref>`) when you wire new precompile bindings or bump the Zisk source ref.
+
+### ELF build output ≠ test runner read path
+
+| Path | Used by |
+|------|---------|
+| `zisk/output/nethereum_evm_elf` | Where `build.sh` writes |
+| `scripts/zisk-output/nethereum_evm_elf` | Where `ZiskStateTestRunner.FindElfPath()` reads |
+
+After every `build.sh`, copy: `cp zisk/output/nethereum_evm_elf scripts/zisk-output/nethereum_evm_elf` — otherwise emulator tests run yesterday's bytecode against today's expectations.
+
+### bflat source set is hand-curated — changes outside it don't affect the ELF
+
+`build.sh` lists exactly which `.cs` files get compiled into the guest ELF. Anything outside this list is invisible to the proof pipeline. The non-obvious exclusions:
+
+- `Nethereum.CoreChain/BlockExecutor.cs`, `TransactionProcessor.cs`, `BlockContext.cs`, `IncrementalStateRootCalculator.cs` — **NOT** in scope (only 4 specific state-root calculators are pulled)
+- `Nethereum.EVM.Precompiles.Kzg/KzgAwareMainnetHardforkRegistry.cs` — NOT in scope (intentional: pulls BCL IO + embedded trusted-setup loading)
+- Of `Nethereum.Model/`, only the ~40 files explicitly listed (not `P2P/`, not `Network/`)
+
+If your change feels like it should be exercised by ZiskEmu tests but isn't, check whether the file is in the `SRC=` list of `build.sh`.
+
+### `ziskup --nokey` pulls v0.16.1, not the latest tag
+
+Upstream's "latest" GitHub Release pointer is stale relative to tagged commits. To get a specific version, download directly:
+
+```bash
+curl -sL -o zisk-v0.18.0.tar.gz \
+  https://github.com/0xPolygonHermez/zisk/releases/download/v0.18.0/cargo_zisk_linux_amd64.tar.gz
+```
+
+### v0.18.0+ splits binaries into CPU and GPU variants
+
+v0.18.0 ships `cargo-zisk-cpu` and `cargo-zisk-gpu` instead of a unified `cargo-zisk`. Same for `zisk-worker`. On headless servers without a GPU, symlink the CPU variants:
+
+```bash
+cd ~/.zisk/bin
+ln -sf cargo-zisk-cpu cargo-zisk
+ln -sf zisk-worker-cpu zisk-worker
+```
+
+### `build-libziskos.sh` Patch 1 silently skips for Zisk v0.18.0+
+
+v0.18.0 ships `ziskos/entrypoint/Cargo.toml` with a pre-existing `[lib]\ncrate-type = ["rlib"]`. The script's guard `if ! grep -q "^\[lib\]"` matches this and skips the staticlib add, so cargo only emits `.rlib` and the build fails later with `ERROR: libziskos.a not found`. Until the patch is updated to merge into an existing `crate-type` line, either:
+
+- Pin to a pre-v0.18.0 ref: `bash zisk/scripts/build-libziskos.sh pre-develop-0.17.1`
+- Or edit `ziskos/entrypoint/Cargo.toml` in your clone to add `"staticlib"` before re-running
+
 ## Directory layout
 
 ```
