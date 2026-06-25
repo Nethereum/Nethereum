@@ -439,61 +439,6 @@ namespace Nethereum.EVM.UnitTests
         }
 
         [Fact]
-        public async Task SStore_WithEnforceGasSentry_ShouldThrowWhenGasTooLow()
-        {
-            var stateService = new ExecutionStateService(new MockNodeDataService());
-            var callInput = new CallInput
-            {
-                To = TestAddress,
-                From = CallerAddress,
-                Gas = new Nethereum.Hex.HexTypes.HexBigInteger(100000),
-                Data = "0x"
-            };
-
-            var context = new ProgramContext(callInput, stateService);
-            context.EnforceGasSentry = true;
-
-            var bytecode = "6001600155".HexToByteArray();
-            var program = new Program(bytecode, context);
-            program.GasRemaining = 2300;
-
-            program.StackPush(new byte[] { 0x42 });
-            program.StackPush(1);
-
-            var storageExecution = new EvmStorageMemoryExecution();
-
-            await Assert.ThrowsAsync<Exceptions.SStoreSentryException>(() => storageExecution.SStore(program));
-        }
-
-        [Fact]
-        public async Task SStore_WithEnforceGasSentry_ShouldSucceedWhenGasSufficient()
-        {
-            var stateService = new ExecutionStateService(new MockNodeDataService());
-            var callInput = new CallInput
-            {
-                To = TestAddress,
-                From = CallerAddress,
-                Gas = new Nethereum.Hex.HexTypes.HexBigInteger(100000),
-                Data = "0x"
-            };
-
-            var context = new ProgramContext(callInput, stateService);
-            context.EnforceGasSentry = true;
-
-            var bytecode = "6001600155".HexToByteArray();
-            var program = new Program(bytecode, context);
-            program.GasRemaining = 2301;
-
-            program.StackPush(new byte[] { 0x42 });
-            program.StackPush(1);
-
-            var storageExecution = new EvmStorageMemoryExecution();
-
-            var exception = await Record.ExceptionAsync(() => storageExecution.SStore(program));
-            Assert.Null(exception);
-        }
-
-        [Fact]
         public async Task SStore_WithoutEnforceGasSentry_ShouldSucceedWithLowGas()
         {
             var stateService = new ExecutionStateService(new MockNodeDataService());

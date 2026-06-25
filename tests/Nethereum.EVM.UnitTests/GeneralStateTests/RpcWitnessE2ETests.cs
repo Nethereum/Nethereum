@@ -207,7 +207,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             // CumulativeGasUsed and StateRoot must be identical.
             blockData.ComputePostStateRoot = true;
             var registry = Nethereum.EVM.Precompiles.DefaultMainnetHardforkRegistry.Instance;
-            var blockExecutorResult = await BlockExecutor.ExecuteAsync(
+            var blockExecutorResult = await Nethereum.EVM.Execution.BlockExecutor.ExecuteAsync(
                 blockData,
                 RlpBlockEncodingProvider.Instance,
                 registry,

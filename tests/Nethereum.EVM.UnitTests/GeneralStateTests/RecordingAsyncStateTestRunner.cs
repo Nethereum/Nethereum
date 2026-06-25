@@ -35,6 +35,29 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         private readonly string _testVectorsPath;
         private static readonly HardforkRegistry MainnetRegistry = DefaultMainnetHardforkRegistry.Instance;
 
+        private static HardforkConfig SelectConfig(HardforkName fork)
+        {
+            switch (fork)
+            {
+                case HardforkName.Frontier: return DefaultHardforkConfigs.Frontier;
+                case HardforkName.Homestead: return DefaultHardforkConfigs.Homestead;
+                case HardforkName.TangerineWhistle: return DefaultHardforkConfigs.TangerineWhistle;
+                case HardforkName.SpuriousDragon: return DefaultHardforkConfigs.SpuriousDragon;
+                case HardforkName.Byzantium: return DefaultHardforkConfigs.Byzantium;
+                case HardforkName.Constantinople: return DefaultHardforkConfigs.Constantinople;
+                case HardforkName.Petersburg: return DefaultHardforkConfigs.Petersburg;
+                case HardforkName.Istanbul: return DefaultHardforkConfigs.Istanbul;
+                case HardforkName.Berlin: return DefaultHardforkConfigs.Berlin;
+                case HardforkName.London: return DefaultHardforkConfigs.London;
+                case HardforkName.Paris: return DefaultHardforkConfigs.Paris;
+                case HardforkName.Shanghai: return DefaultHardforkConfigs.Shanghai;
+                case HardforkName.Cancun: return DefaultHardforkConfigs.Cancun;
+                case HardforkName.Prague: return DefaultHardforkConfigs.Prague;
+                case HardforkName.Osaka: return DefaultHardforkConfigs.Osaka;
+                default: return DefaultHardforkConfigs.Default;
+            }
+        }
+
         public RecordingAsyncStateTestRunner(ITestOutputHelper output)
         {
             _output = output;
@@ -176,7 +199,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         acctState.SetPreStateStorage(slot.Key, slot.Value.ToBigEndian());
                 }
             }
-            var executor = new TransactionExecutor(config: DefaultHardforkConfigs.Prague);
+            var executor = new TransactionExecutor(config: SelectConfig(fork));
             var ctx = TransactionContextFactory.FromBlockWitnessTransaction(
                 blockData.Transactions[0], blockData, executionState);
             var execResult = await executor.ExecuteAsync(ctx);
@@ -193,7 +216,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             // Primary assertion path: run BlockExecutor.ExecuteAsync on the full witness
             // and compare to the reference hash. This is the async parity check.
-            var blockResult = await BlockExecutor.ExecuteAsync(
+            var blockResult = await Nethereum.EVM.Execution.BlockExecutor.ExecuteAsync(
                 blockData,
                 RlpBlockEncodingProvider.Instance,
                 MainnetRegistry,
