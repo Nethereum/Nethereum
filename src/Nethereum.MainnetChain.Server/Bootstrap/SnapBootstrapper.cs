@@ -289,10 +289,15 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
             // backfill's target end-block tracks whatever livePivot is at
             // the moment snap finishes, which automatically extends the
             // range when the pivot rotates partway through.
+            // Dedicated cancellation for the Phase-1 backfiller, linked to ct. An aborted attempt (e.g.
+            // a stale-pivot cancel that restarts the bootstrap) cancels + drains THIS backfiller without
+            // tearing down the shared bootstrap token, so a retry never starts a second overlapping one.
+            using var backfillCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             Task<ParallelBlockBackfiller.BackfillResult>? backfillTask = null;
             if (runBackfill && scheduler != null && pool != null)
             {
                 var worker = new MainnetPeerRequestWorker();
+                var bfCt = backfillCts.Token;
                 backfillTask = Task.Run(async () =>
                 {
                     var backfiller = new ParallelBlockBackfiller(
@@ -318,7 +323,7 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
                                 return (h, h != null);
                             };
 
-                        var fill = backfiller.BackfillAsync(0, target, headersFromStore: true, ct);
+                        var fill = backfiller.BackfillAsync(0, target, headersFromStore: true, bfCt);
 
                         var skeleton = Task.Run(async () =>
                         {
@@ -343,7 +348,7 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
                             // [Tail..Head] range (resumable + drives eth_syncing); the walker lays the headers.
                             bundle.Metadata.SaveHeaderSyncState(
                                 HeaderSubchains.OpenTip(bundle.Metadata.GetHeaderSyncState(), target));
-                            var sweep = await walker.WalkAsync(sweepFrom, sweepFromHash, 0, lookupLocal, ct).ConfigureAwait(false);
+                            var sweep = await walker.WalkAsync(sweepFrom, sweepFromHash, 0, lookupLocal, bfCt).ConfigureAwait(false);
                             bundle.Metadata.SaveHeaderSyncState(
                                 HeaderSubchains.RecordDescent(bundle.Metadata.GetHeaderSyncState(), target, sweep.SkeletonBottomBlock));
 
@@ -353,38 +358,38 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
                             // MetExistingStore at the old top.
                             if (pivotRefresher != null)
                             {
-                                var fresh = await pivotRefresher(ct).ConfigureAwait(false);
+                                var fresh = await pivotRefresher(bfCt).ConfigureAwait(false);
                                 if (fresh.HasValue && (ulong)fresh.Value.Header.BlockNumber > target)
                                 {
                                     var newTip = (ulong)fresh.Value.Header.BlockNumber;
                                     bundle.Metadata.SaveHeaderSyncState(
                                         HeaderSubchains.OpenTip(bundle.Metadata.GetHeaderSyncState(), newTip));
                                     var catchup = await walker.WalkAsync(
-                                        newTip, fresh.Value.Hash, target, lookupLocal, ct).ConfigureAwait(false);
+                                        newTip, fresh.Value.Hash, target, lookupLocal, bfCt).ConfigureAwait(false);
                                     // Linking the new segment onto the old top merges them into one [Tail..newTip].
                                     bundle.Metadata.SaveHeaderSyncState(
                                         HeaderSubchains.RecordDescent(bundle.Metadata.GetHeaderSyncState(), newTip, catchup.SkeletonBottomBlock));
                                 }
                             }
-                        }, ct);
+                        }, bfCt);
 
                         await Task.WhenAll(skeleton, fill).ConfigureAwait(false);
                         return await fill.ConfigureAwait(false);
                     }
 
                     ParallelBlockBackfiller.BackfillResult last = null!;
-                    while (!ct.IsCancellationRequested)
+                    while (!bfCt.IsCancellationRequested)
                     {
                         var target = (ulong)Volatile.Read(ref pivotState).Header.BlockNumber;
                         var resume = bundle.Metadata.GetLastFetchedHeader();
                         if (resume >= target) break;
-                        last = await backfiller.BackfillAsync(0, target, ct).ConfigureAwait(false);
+                        last = await backfiller.BackfillAsync(0, target, bfCt).ConfigureAwait(false);
                         // Loop: if pivotState rotated during the run, pick
                         // up the new range; otherwise the next iteration's
                         // (resume >= target) check exits.
                     }
                     return last ?? new ParallelBlockBackfiller.BackfillResult { Ran = false };
-                }, ct);
+                }, bfCt);
             }
 
             SnapSyncClient.SyncResult syncResult = null!;
@@ -533,6 +538,18 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
                     AccountCount = sink.AccountCount,
                     FinalTargetRoot = healResult.FinalTargetRoot,
                 };
+            }
+            catch (Exception)
+            {
+                // Abnormal exit — a stale-pivot cancel (staleCts, not ct) or any Phase-2 failure the
+                // invoker will retry — skips the normal drain below. Cancel + await THIS attempt's Phase-1
+                // backfiller so the retry's fresh backfiller cannot run overlapping it (the two-jobs leak).
+                backfillCts.Cancel();
+                if (backfillTask != null)
+                {
+                    try { await backfillTask.ConfigureAwait(false); } catch { }
+                }
+                throw;
             }
 
             logger.LogInformation(
