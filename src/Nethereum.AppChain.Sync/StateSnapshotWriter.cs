@@ -76,9 +76,10 @@ namespace Nethereum.AppChain.Sync
 
                 foreach (var slot in storage)
                 {
-                    WriteBytes(writer, slot.Key.ToByteArray());
+                    // Key is keccak(slot) — 32-byte canonical storage-trie path.
+                    WriteBytes(writer, slot.Key);
                     WriteBytes(writer, slot.Value);
-                    hashStream.Write(slot.Key.ToByteArray());
+                    hashStream.Write(slot.Key);
                     hashStream.Write(slot.Value);
                     storageSlotCount++;
                 }

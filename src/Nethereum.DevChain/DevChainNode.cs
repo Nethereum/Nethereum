@@ -102,7 +102,8 @@ namespace Nethereum.DevChain
                 CreateNodeDataService(stateStore, blockStore, config),
                 trieNodeStore,
                 blobStore,
-                (config ?? DevChainConfig.Default).GetHardforkConfig())
+                uncleStore: null,
+                hardforkConfig: (config ?? DevChainConfig.Default).GetHardforkConfig())
         {
             _config = config ?? DevChainConfig.Default;
 
