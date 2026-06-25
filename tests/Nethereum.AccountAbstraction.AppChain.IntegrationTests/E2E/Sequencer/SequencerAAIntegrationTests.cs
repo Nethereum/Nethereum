@@ -454,7 +454,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var latestBlock = await _fixture.Sequencer.GetLatestBlockAsync();
 
             Assert.NotNull(latestBlock);
-            Assert.Equal(blockNumber, latestBlock.BlockNumber);
+            Assert.Equal(blockNumber, (BigInteger)latestBlock.BlockNumber);
             Assert.NotNull(latestBlock.StateRoot);
             Assert.NotNull(latestBlock.TransactionsHash);
             Assert.Equal(SequencerAAFixture.CHAIN_ID, _fixture.AppChain.Config.ChainId);

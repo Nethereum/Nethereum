@@ -3,6 +3,8 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Sync;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.AppChain.Sync;
@@ -109,7 +111,7 @@ namespace Nethereum.AppChain.IntegrationTests
         private (MultiPeerSyncService sync, PeerManager peerManager) CreateSyncService(
             InProcessSequencerRpcClient mockRpcClient,
             InMemoryFinalityTracker finalityTracker,
-            IBlockReExecutor? blockReExecutor = null)
+            IBlockExecutor? blockReExecutor = null)
         {
             var peerManager = new PeerManager(clientFactory: url => mockRpcClient);
             peerManager.AddPeer("http://localhost:8545");
@@ -197,19 +199,19 @@ namespace Nethereum.AppChain.IntegrationTests
                 Coinbase = _sequencerAddress
             };
 
-            var txVerifier = new TransactionVerificationAndRecoveryImp();
-
-            var transactionProcessor = new TransactionProcessor(
-                _replicaChain!.State,
-                _replicaChain.Blocks,
-                chainConfig,
-                txVerifier,
-                chainConfig.GetHardforkConfig());
-
-            var blockReExecutor = new BlockReExecutor(
-                transactionProcessor,
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var stateRootCalc = new IncrementalStateRootCalculator(_replicaChain!.State, trieNodeStore);
+            var pinnedFork = Nethereum.EVM.HardforkNames.Parse(chainConfig.Hardfork ?? "prague");
+            var engine = new BlockExecutor(
                 _replicaChain.State,
-                chainConfig);
+                _replicaChain.Blocks,
+                new FixedChainActivations(pinnedFork),
+                chainConfigFactory: _ => chainConfig,
+                hardforkConfigFactory: _ => chainConfig.GetHardforkConfig(),
+                stateRootCalculator: stateRootCalc,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
+            IBlockExecutor blockReExecutor = new BlockImporter(engine, _replicaChain.Blocks, _replicaChain.State);
 
             var (liveSync, peerManager) = CreateSyncService(mockRpcClient, finalityTracker, blockReExecutor);
             peerManager.Peers.First().BlockNumber = 5;
@@ -330,18 +332,19 @@ namespace Nethereum.AppChain.IntegrationTests
                 Coinbase = _sequencerAddress
             };
 
-            var txVerifier = new TransactionVerificationAndRecoveryImp();
-            var transactionProcessor = new TransactionProcessor(
-                _replicaChain!.State,
-                _replicaChain.Blocks,
-                chainConfig,
-                txVerifier,
-                chainConfig.GetHardforkConfig());
-
-            var blockReExecutor = new BlockReExecutor(
-                transactionProcessor,
+            var trieNodeStore = new InMemoryTrieNodeStore();
+            var stateRootCalc = new IncrementalStateRootCalculator(_replicaChain!.State, trieNodeStore);
+            var pinnedFork = Nethereum.EVM.HardforkNames.Parse(chainConfig.Hardfork ?? "prague");
+            var engine = new BlockExecutor(
                 _replicaChain.State,
-                chainConfig);
+                _replicaChain.Blocks,
+                new FixedChainActivations(pinnedFork),
+                chainConfigFactory: _ => chainConfig,
+                hardforkConfigFactory: _ => chainConfig.GetHardforkConfig(),
+                stateRootCalculator: stateRootCalc,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
+            IBlockExecutor blockReExecutor = new BlockImporter(engine, _replicaChain.Blocks, _replicaChain.State);
 
             var (liveSync, peerManager) = CreateSyncService(mockRpcClient, finalityTracker, blockReExecutor);
 

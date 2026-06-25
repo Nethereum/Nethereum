@@ -75,7 +75,7 @@ namespace Nethereum.AppChain.Sequencer.UnitTests
             await sequencer.StopAsync();
 
             Assert.NotNull(block);
-            Assert.Equal(BigInteger.Zero, block.BlockNumber);
+            Assert.Equal(BigInteger.Zero, (BigInteger)block.BlockNumber);
         }
 
         [Fact]

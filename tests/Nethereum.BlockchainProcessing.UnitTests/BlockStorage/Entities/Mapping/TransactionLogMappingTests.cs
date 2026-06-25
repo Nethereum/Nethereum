@@ -37,9 +37,13 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockStorage.Entities.Mapping
 
             public string IndexVal3 { get; set; }
 
-            public string LogIndex { get; set; }
+            public long LogIndex { get; set; }
 
             public string TransactionHash { get; set; }
+
+            public long BlockNumber { get; set; }
+
+            public string BlockHash { get; set; }
         }
 
 
@@ -65,7 +69,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockStorage.Entities.Mapping
             var logFromRepo = new TransactionLogView
             {
                 TransactionHash = sourceTransferEventLog.Log.TransactionHash,
-                LogIndex = sourceTransferEventLog.Log.LogIndex.Value.ToString(),
+                LogIndex = (long)sourceTransferEventLog.Log.LogIndex.Value,
                 Address = sourceTransferEventLog.Log.Address,
                 Data = sourceTransferEventLog.Log.Data,
                 EventHash = (string)sourceTransferEventLog.Log.Topics[0],

@@ -163,7 +163,7 @@ namespace Nethereum.AppChain.Sync.UnitTests
             // Verify state is present (use normalized address without 0x prefix)
             var account = await replicaStateStore.GetAccountAsync("0000000000000000000000000000000000000001");
             Assert.NotNull(account);
-            Assert.Equal(BigInteger.Parse("1000000000000000000"), account.Balance);
+            Assert.Equal(BigInteger.Parse("1000000000000000000"), (BigInteger)account.Balance);
         }
 
         private async Task PopulateSequencerWithBlocks(IBlockStore blockStore, ITransactionStore txStore, IReceiptStore receiptStore, int count)
