@@ -14,49 +14,69 @@ namespace Nethereum.Consensus.Ssz.Tests
 {
     internal static class ConsensusSpecValueProvider
     {
-        private const string BaseRelativePath = "tests/LightClientVectors/ssz/consensus-spec-tests/deneb/ssz_static";
+        private const string BaseRelativePath = "tests/LightClientVectors/ssz/consensus-spec-tests";
+        private const string SszStaticSegment = "ssz_static";
         private const string CaseFolder = "ssz_random";
 
         public static BeaconBlockHeader LoadBeaconBlockHeader(string caseName) =>
-            BuildDeserializer().Deserialize<BeaconBlockHeaderYaml>(ReadYaml("BeaconBlockHeader", caseName))
+            LoadBeaconBlockHeader(ConsensusFork.Deneb, caseName);
+        public static BeaconBlockHeader LoadBeaconBlockHeader(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<BeaconBlockHeaderYaml>(ReadYaml(fork, "BeaconBlockHeader", caseName))
                 .ToModel();
 
         public static ExecutionPayloadHeader LoadExecutionPayloadHeader(string caseName) =>
-            BuildDeserializer().Deserialize<ExecutionPayloadHeaderYaml>(ReadYaml("ExecutionPayloadHeader", caseName))
-                .ToModel();
+            LoadExecutionPayloadHeader(ConsensusFork.Deneb, caseName);
+        public static ExecutionPayloadHeader LoadExecutionPayloadHeader(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<ExecutionPayloadHeaderYaml>(ReadYaml(fork, "ExecutionPayloadHeader", caseName))
+                .ToModel(fork);
 
         public static SyncCommittee LoadSyncCommittee(string caseName) =>
-            BuildDeserializer().Deserialize<SyncCommitteeYaml>(ReadYaml("SyncCommittee", caseName))
+            LoadSyncCommittee(ConsensusFork.Deneb, caseName);
+        public static SyncCommittee LoadSyncCommittee(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<SyncCommitteeYaml>(ReadYaml(fork, "SyncCommittee", caseName))
                 .ToModel();
 
         public static SyncAggregate LoadSyncAggregate(string caseName) =>
-            BuildDeserializer().Deserialize<SyncAggregateYaml>(ReadYaml("SyncAggregate", caseName))
+            LoadSyncAggregate(ConsensusFork.Deneb, caseName);
+        public static SyncAggregate LoadSyncAggregate(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<SyncAggregateYaml>(ReadYaml(fork, "SyncAggregate", caseName))
                 .ToModel();
 
         public static LightClientHeader LoadLightClientHeader(string caseName) =>
-            BuildDeserializer().Deserialize<LightClientHeaderYaml>(ReadYaml("LightClientHeader", caseName))
-                .ToModel();
+            LoadLightClientHeader(ConsensusFork.Deneb, caseName);
+        public static LightClientHeader LoadLightClientHeader(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<LightClientHeaderYaml>(ReadYaml(fork, "LightClientHeader", caseName))
+                .ToModel(fork);
 
         public static LightClientBootstrap LoadLightClientBootstrap(string caseName) =>
-            BuildDeserializer().Deserialize<LightClientBootstrapYaml>(ReadYaml("LightClientBootstrap", caseName))
-                .ToModel();
+            LoadLightClientBootstrap(ConsensusFork.Deneb, caseName);
+        public static LightClientBootstrap LoadLightClientBootstrap(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<LightClientBootstrapYaml>(ReadYaml(fork, "LightClientBootstrap", caseName))
+                .ToModel(fork);
 
         public static LightClientUpdate LoadLightClientUpdate(string caseName) =>
-            BuildDeserializer().Deserialize<LightClientUpdateYaml>(ReadYaml("LightClientUpdate", caseName))
-                .ToModel();
+            LoadLightClientUpdate(ConsensusFork.Deneb, caseName);
+        public static LightClientUpdate LoadLightClientUpdate(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<LightClientUpdateYaml>(ReadYaml(fork, "LightClientUpdate", caseName))
+                .ToModel(fork);
 
         public static LightClientFinalityUpdate LoadLightClientFinalityUpdate(string caseName) =>
-            BuildDeserializer().Deserialize<LightClientFinalityUpdateYaml>(ReadYaml("LightClientFinalityUpdate", caseName))
-                .ToModel();
+            LoadLightClientFinalityUpdate(ConsensusFork.Deneb, caseName);
+        public static LightClientFinalityUpdate LoadLightClientFinalityUpdate(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<LightClientFinalityUpdateYaml>(ReadYaml(fork, "LightClientFinalityUpdate", caseName))
+                .ToModel(fork);
 
         public static LightClientOptimisticUpdate LoadLightClientOptimisticUpdate(string caseName) =>
-            BuildDeserializer().Deserialize<LightClientOptimisticUpdateYaml>(ReadYaml("LightClientOptimisticUpdate", caseName))
-                .ToModel();
+            LoadLightClientOptimisticUpdate(ConsensusFork.Deneb, caseName);
+        public static LightClientOptimisticUpdate LoadLightClientOptimisticUpdate(ConsensusFork fork, string caseName) =>
+            BuildDeserializer().Deserialize<LightClientOptimisticUpdateYaml>(ReadYaml(fork, "LightClientOptimisticUpdate", caseName))
+                .ToModel(fork);
 
-        private static string ReadYaml(string container, string caseName)
+        private static string ReadYaml(ConsensusFork fork, string container, string caseName)
         {
             var root = RepositoryPath.Root ?? throw new InvalidOperationException("Repository root not found.");
-            var basePath = Combine(root, BaseRelativePath);
+            var forkSegment = fork.ToString().ToLowerInvariant();
+            var basePath = Combine(root, BaseRelativePath, forkSegment, SszStaticSegment);
             var casePath = Path.Combine(basePath, container, caseName, "value.yaml");
             return File.ReadAllText(casePath);
         }
@@ -70,13 +90,16 @@ namespace Nethereum.Consensus.Ssz.Tests
                 .Build();
         }
 
-        private static string Combine(string root, string relative)
+        private static string Combine(string root, params string[] segments)
         {
-            var segments = relative.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
             var current = root;
-            foreach (var segment in segments)
+            foreach (var raw in segments)
             {
-                current = Path.Combine(current, segment);
+                var parts = raw.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
+                {
+                    current = Path.Combine(current, part);
+                }
             }
 
             return current;
@@ -162,10 +185,12 @@ namespace Nethereum.Consensus.Ssz.Tests
             public ulong BlobGasUsed { get; set; }
             public ulong ExcessBlobGas { get; set; }
 
-            public ExecutionPayloadHeader ToModel()
+            public ExecutionPayloadHeader ToModel() => ToModel(ConsensusFork.Deneb);
+            public ExecutionPayloadHeader ToModel(ConsensusFork fork)
             {
                 return new ExecutionPayloadHeader
                 {
+                    Fork = fork,
                     ParentHash = ParentHash,
                     FeeRecipient = FeeRecipient,
                     StateRoot = StateRoot,
@@ -223,12 +248,14 @@ namespace Nethereum.Consensus.Ssz.Tests
             public ExecutionPayloadHeaderYaml Execution { get; set; } = new ExecutionPayloadHeaderYaml();
             public List<byte[]> ExecutionBranch { get; set; } = new List<byte[]>();
 
-            public LightClientHeader ToModel()
+            public LightClientHeader ToModel() => ToModel(ConsensusFork.Deneb);
+            public LightClientHeader ToModel(ConsensusFork fork)
             {
                 return new LightClientHeader
                 {
+                    Fork = fork,
                     Beacon = Beacon.ToModel(),
-                    Execution = Execution.ToModel(),
+                    Execution = Execution.ToModel(fork),
                     ExecutionBranch = ExecutionBranch
                 };
             }
@@ -240,11 +267,13 @@ namespace Nethereum.Consensus.Ssz.Tests
             public SyncCommitteeYaml CurrentSyncCommittee { get; set; } = new SyncCommitteeYaml();
             public List<byte[]> CurrentSyncCommitteeBranch { get; set; } = new List<byte[]>();
 
-            public LightClientBootstrap ToModel()
+            public LightClientBootstrap ToModel() => ToModel(ConsensusFork.Deneb);
+            public LightClientBootstrap ToModel(ConsensusFork fork)
             {
                 return new LightClientBootstrap
                 {
-                    Header = Header.ToModel(),
+                    Fork = fork,
+                    Header = Header.ToModel(fork),
                     CurrentSyncCommittee = CurrentSyncCommittee.ToModel(),
                     CurrentSyncCommitteeBranch = CurrentSyncCommitteeBranch
                 };
@@ -261,14 +290,16 @@ namespace Nethereum.Consensus.Ssz.Tests
             public SyncAggregateYaml SyncAggregate { get; set; } = new SyncAggregateYaml();
             public ulong SignatureSlot { get; set; }
 
-            public LightClientUpdate ToModel()
+            public LightClientUpdate ToModel() => ToModel(ConsensusFork.Deneb);
+            public LightClientUpdate ToModel(ConsensusFork fork)
             {
                 return new LightClientUpdate
                 {
-                    AttestedHeader = AttestedHeader.ToModel(),
+                    Fork = fork,
+                    AttestedHeader = AttestedHeader.ToModel(fork),
                     NextSyncCommittee = NextSyncCommittee.ToModel(),
                     NextSyncCommitteeBranch = NextSyncCommitteeBranch,
-                    FinalizedHeader = FinalizedHeader.ToModel(),
+                    FinalizedHeader = FinalizedHeader.ToModel(fork),
                     FinalityBranch = FinalityBranch,
                     SyncAggregate = SyncAggregate.ToModel(),
                     SignatureSlot = SignatureSlot
@@ -284,12 +315,14 @@ namespace Nethereum.Consensus.Ssz.Tests
             public SyncAggregateYaml SyncAggregate { get; set; } = new SyncAggregateYaml();
             public ulong SignatureSlot { get; set; }
 
-            public LightClientFinalityUpdate ToModel()
+            public LightClientFinalityUpdate ToModel() => ToModel(ConsensusFork.Deneb);
+            public LightClientFinalityUpdate ToModel(ConsensusFork fork)
             {
                 return new LightClientFinalityUpdate
                 {
-                    AttestedHeader = AttestedHeader.ToModel(),
-                    FinalizedHeader = FinalizedHeader.ToModel(),
+                    Fork = fork,
+                    AttestedHeader = AttestedHeader.ToModel(fork),
+                    FinalizedHeader = FinalizedHeader.ToModel(fork),
                     FinalityBranch = FinalityBranch,
                     SyncAggregate = SyncAggregate.ToModel(),
                     SignatureSlot = SignatureSlot
@@ -303,11 +336,13 @@ namespace Nethereum.Consensus.Ssz.Tests
             public SyncAggregateYaml SyncAggregate { get; set; } = new SyncAggregateYaml();
             public ulong SignatureSlot { get; set; }
 
-            public LightClientOptimisticUpdate ToModel()
+            public LightClientOptimisticUpdate ToModel() => ToModel(ConsensusFork.Deneb);
+            public LightClientOptimisticUpdate ToModel(ConsensusFork fork)
             {
                 return new LightClientOptimisticUpdate
                 {
-                    AttestedHeader = AttestedHeader.ToModel(),
+                    Fork = fork,
+                    AttestedHeader = AttestedHeader.ToModel(fork),
                     SyncAggregate = SyncAggregate.ToModel(),
                     SignatureSlot = SignatureSlot
                 };

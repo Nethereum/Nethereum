@@ -161,5 +161,122 @@ namespace Nethereum.Model.UnitTests
             var encoded = ReceiptEncoder.Current.Encode(receipt);
             Assert.True(encoded[0] >= 0xc0);
         }
+
+        // Encoder fidelity contract: encode → decode → encode produces
+        // byte-identical RLP. The receipts-trie hashes encoder output, so
+        // any drift here silently corrupts the trie root. These tests catch
+        // canonicality regressions in ReceiptEncoder + LogEncoder + the
+        // EvmUInt256 RLP encoding before they reach mainnet replay.
+
+        [Fact]
+        public void Encoder_LegacyReceipt_RoundTripsByteForByte()
+        {
+            var receipt = Receipt.CreateStatusReceipt(
+                success: true,
+                cumulativeGasUsed: 21000,
+                bloom: new byte[256],
+                logs: new List<Log>()
+            );
+
+            var encoded = ReceiptEncoder.Current.Encode(receipt);
+            var decoded = ReceiptEncoder.Current.Decode(encoded);
+            var reEncoded = ReceiptEncoder.Current.Encode(decoded);
+
+            Assert.Equal(encoded, reEncoded);
+        }
+
+        [Fact]
+        public void Encoder_TypedReceipt_RoundTripsByteForByte()
+        {
+            var receipt = Receipt.CreateStatusReceipt(
+                success: true,
+                cumulativeGasUsed: 50000,
+                bloom: new byte[256],
+                logs: new List<Log>()
+            );
+
+            var encoded = ReceiptEncoder.Current.EncodeTyped(receipt, 0x02);
+            var decoded = ReceiptEncoder.Current.Decode(encoded);
+            var reEncoded = ReceiptEncoder.Current.EncodeTyped(decoded, decoded.TransactionType);
+
+            Assert.Equal(encoded, reEncoded);
+            Assert.Equal((byte)0x02, decoded.TransactionType);
+        }
+
+        // Frontier-era receipts (pre-Byzantium / pre-EIP-658) carry a 32-byte
+        // intermediate post-state root in PostStateOrStatus, NOT a 1-byte
+        // status. Round-trip must preserve the full 32 bytes; if the encoder
+        // somehow coerces or strips it, the receipts-trie root diverges.
+        [Fact]
+        public void Encoder_FrontierPostStateReceipt_RoundTripsByteForByte()
+        {
+            var postStateRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray();
+            var receipt = Receipt.CreatePostStateReceipt(
+                postStateRoot: postStateRoot,
+                cumulativeGasUsed: 21000,
+                bloom: new byte[256],
+                logs: new List<Log>()
+            );
+
+            var encoded = ReceiptEncoder.Current.Encode(receipt);
+            var decoded = ReceiptEncoder.Current.Decode(encoded);
+            var reEncoded = ReceiptEncoder.Current.Encode(decoded);
+
+            Assert.Equal(encoded, reEncoded);
+            Assert.Equal(postStateRoot, decoded.PostStateOrStatus);
+            Assert.False(decoded.IsStatusReceipt);
+        }
+
+        [Fact]
+        public void Encoder_FrontierPostStateReceipt_WithLogs_RoundTripsByteForByte()
+        {
+            var postStateRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray();
+            var topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef".HexToByteArray();
+            var log = new Log
+            {
+                Address = "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                Data = "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000".HexToByteArray(),
+                Topics = new List<byte[]> { topic }
+            };
+
+            var receipt = Receipt.CreatePostStateReceipt(
+                postStateRoot: postStateRoot,
+                cumulativeGasUsed: 65000,
+                bloom: new byte[256],
+                logs: new List<Log> { log }
+            );
+
+            var encoded = ReceiptEncoder.Current.Encode(receipt);
+            var decoded = ReceiptEncoder.Current.Decode(encoded);
+            var reEncoded = ReceiptEncoder.Current.Encode(decoded);
+
+            Assert.Equal(encoded, reEncoded);
+            Assert.Equal(postStateRoot, decoded.PostStateOrStatus);
+        }
+
+        [Fact]
+        public void Encoder_ReceiptWithLogs_RoundTripsByteForByte()
+        {
+            var topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef".HexToByteArray();
+            var log = new Log
+            {
+                Address = "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                Data = "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000".HexToByteArray(),
+                Topics = new List<byte[]> { topic }
+            };
+
+            var receipt = Receipt.CreateStatusReceipt(
+                success: true,
+                cumulativeGasUsed: 65000,
+                bloom: new byte[256],
+                logs: new List<Log> { log }
+            );
+
+            var encoded = ReceiptEncoder.Current.Encode(receipt);
+            var decoded = ReceiptEncoder.Current.Decode(encoded);
+            var reEncoded = ReceiptEncoder.Current.Encode(decoded);
+
+            Assert.Equal(encoded, reEncoded);
+        }
     }
 }
