@@ -9,7 +9,7 @@
 	<PackageId>Nethereum.EVM</PackageId>
 	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
-	<LangVersion>9.0</LangVersion>
+	<LangVersion>11</LangVersion>
 </PropertyGroup>
 
   <ItemGroup>

@@ -40,9 +40,10 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 BlockHash = location?.BlockHash?.ToHex(true),
                 BlockNumber = location != null ? new HexBigInteger(location.BlockNumber) : null,
                 From = GetSenderAddress(signedTx),
-                R = signedTx.Signature?.R?.ToHex(true),
-                S = signedTx.Signature?.S?.ToHex(true),
-                V = signedTx.Signature?.V?.ToHex(true)
+                // QUANTITY-formatted (leading zeros stripped) to match JSON-RPC spec output.
+                R = SignedTransactionExtensions.ToQuantityHex(signedTx.Signature?.R),
+                S = SignedTransactionExtensions.ToQuantityHex(signedTx.Signature?.S),
+                V = SignedTransactionExtensions.ToQuantityHex(signedTx.Signature?.V)
             };
 
             switch (signedTx)

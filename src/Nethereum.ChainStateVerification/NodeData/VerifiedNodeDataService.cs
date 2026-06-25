@@ -60,5 +60,15 @@ namespace Nethereum.ChainStateVerification.NodeData
             var nonce = await _verifiedState.GetNonceAsync(address).ConfigureAwait(false);
             return EvmUInt256BigIntegerExtensions.FromBigInteger(nonce);
         }
+
+        public async Task<bool> AccountExistsAsync(string address)
+        {
+            var balance = await _verifiedState.GetBalanceAsync(address).ConfigureAwait(false);
+            if (balance > 0) return true;
+            var nonce = await _verifiedState.GetNonceAsync(address).ConfigureAwait(false);
+            if (nonce > 0) return true;
+            var code = await _verifiedState.GetCodeAsync(address).ConfigureAwait(false);
+            return code != null && code.Length > 0;
+        }
     }
 }

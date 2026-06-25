@@ -11,7 +11,12 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage.InMemory
 {
-    public class InMemoryStateStore : IStateStore
+    /// <summary>
+    /// In-memory <see cref="IStateStore"/>. Mutations are atomic at the
+    /// language level via <c>ConcurrentDictionary</c>. Tests and DevChain
+    /// default to this backend.
+    /// </summary>
+    public class InMemoryStateStore : IStateStore, IRawStorageEnumerator
     {
         private readonly object _snapshotLock = new object();
         private readonly ConcurrentDictionary<string, Account> _accounts = new();
@@ -19,10 +24,20 @@ namespace Nethereum.CoreChain.Storage.InMemory
         private readonly ConcurrentDictionary<string, byte[]> _code = new();
         private readonly ConcurrentDictionary<string, byte> _dirtyAccounts = new();
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _dirtyStorageSlots = new();
+        private readonly ConcurrentDictionary<string, byte> _storageClearedAddresses = new();
+        // keccak(addr) hex → original 20-byte normalized address hex. Lets
+        // GetAllAccountsAsync / StreamAccountsAsync yield the original address
+        // even though the primary maps are keyed by keccak.
+        private readonly ConcurrentDictionary<string, string> _addressByAccountHash = new();
         private int _nextSnapshotId = 0;
         private volatile CowStateSnapshot _activeSnapshot;
 
         private static string NormalizeAddress(string address)
+        {
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static string OriginalAddress(string address)
         {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
@@ -37,6 +52,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public Task SaveAccountAsync(string address, Account account)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var originalAddress = OriginalAddress(address);
             var snapshot = _activeSnapshot;
             if (snapshot != null)
             {
@@ -44,7 +60,8 @@ namespace Nethereum.CoreChain.Storage.InMemory
                 snapshot.SaveAccountUndoIfNeeded(normalizedAddress, CloneAccount(existing));
             }
             _accounts[normalizedAddress] = account;
-            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            _addressByAccountHash[normalizedAddress] = originalAddress;
+            _dirtyAccounts.TryAdd(originalAddress, 0);
             return Task.CompletedTask;
         }
 
@@ -66,13 +83,31 @@ namespace Nethereum.CoreChain.Storage.InMemory
             }
             _accounts.TryRemove(normalizedAddress, out _);
             _storage.TryRemove(normalizedAddress, out _);
-            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            _addressByAccountHash.TryRemove(normalizedAddress, out _);
+            _dirtyAccounts.TryAdd(OriginalAddress(address), 0);
             return Task.CompletedTask;
         }
 
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
-            return Task.FromResult(new Dictionary<string, Account>(_accounts));
+            var result = new Dictionary<string, Account>();
+            foreach (var kv in _accounts)
+            {
+                var addr = _addressByAccountHash.TryGetValue(kv.Key, out var original) ? original : kv.Key;
+                result[addr] = kv.Value;
+            }
+            return Task.FromResult(result);
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+#pragma warning restore CS1998
+        {
+            foreach (var kv in _accounts)
+            {
+                var addr = _addressByAccountHash.TryGetValue(kv.Key, out var original) ? original : kv.Key;
+                yield return new System.Collections.Generic.KeyValuePair<string, Account>(addr, kv.Value);
+            }
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
@@ -85,9 +120,16 @@ namespace Nethereum.CoreChain.Storage.InMemory
             return Task.FromResult(value);
         }
 
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+            => throw new System.NotSupportedException(
+                "InMemoryStateStore does not support keccak-keyed writes. " +
+                "Persistent state-diff rewind is reserved for the RocksDB backend; " +
+                "in-memory tests use the in-memory journal in HistoricalStateStore instead.");
+
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var originalAddress = OriginalAddress(address);
             var snapshot = _activeSnapshot;
             if (snapshot != null)
             {
@@ -104,33 +146,51 @@ namespace Nethereum.CoreChain.Storage.InMemory
             else
                 accountStorage[slot] = value;
 
-            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            _dirtyAccounts.TryAdd(originalAddress, 0);
 
-            var dirtySlots = _dirtyStorageSlots.GetOrAdd(normalizedAddress, _ => new ConcurrentDictionary<BigInteger, byte>());
+            var dirtySlots = _dirtyStorageSlots.GetOrAdd(originalAddress, _ => new ConcurrentDictionary<BigInteger, byte>());
             dirtySlots.TryAdd(slot, 0);
 
             return Task.CompletedTask;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
+        {
+            var normalizedAddress = NormalizeAddress(address);
+            var result = new Dictionary<byte[], byte[]>(ByteArrayComparer.Current);
+            if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
+                return Task.FromResult(result);
+
+            foreach (var kv in accountStorage)
+                result[StateKeys.StorageSlotKey(kv.Key)] = kv.Value;
+            return Task.FromResult(result);
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<KeyValuePair<BigInteger, byte[]>>
+            StreamRawStorageAsync(string address)
+#pragma warning restore CS1998
         {
             var normalizedAddress = NormalizeAddress(address);
             if (!_storage.TryGetValue(normalizedAddress, out var accountStorage))
-                return Task.FromResult(new Dictionary<BigInteger, byte[]>());
+                yield break;
 
-            return Task.FromResult(new Dictionary<BigInteger, byte[]>(accountStorage));
+            foreach (var kv in accountStorage)
+                yield return kv;
         }
 
         public Task ClearStorageAsync(string address)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var originalAddress = OriginalAddress(address);
             var snapshot = _activeSnapshot;
             if (snapshot != null)
             {
                 SaveStorageClearUndo(snapshot, normalizedAddress);
             }
             _storage.TryRemove(normalizedAddress, out _);
-            _dirtyAccounts.TryAdd(normalizedAddress, 0);
+            _dirtyAccounts.TryAdd(originalAddress, 0);
+            _storageClearedAddresses.TryAdd(originalAddress, 0);
             return Task.CompletedTask;
         }
 
@@ -244,16 +304,22 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
         {
-            var normalizedAddress = NormalizeAddress(address);
-            if (!_dirtyStorageSlots.TryGetValue(normalizedAddress, out var dirtySlots))
+            var key = OriginalAddress(address);
+            if (!_dirtyStorageSlots.TryGetValue(key, out var dirtySlots))
                 return Task.FromResult<IReadOnlyCollection<BigInteger>>(Array.Empty<BigInteger>());
             return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.Keys.ToList());
+        }
+
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+        {
+            return Task.FromResult<IReadOnlyCollection<string>>(_storageClearedAddresses.Keys.ToList());
         }
 
         public Task ClearDirtyTrackingAsync()
         {
             _dirtyAccounts.Clear();
             _dirtyStorageSlots.Clear();
+            _storageClearedAddresses.Clear();
             return Task.CompletedTask;
         }
 
@@ -262,6 +328,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
             _accounts.Clear();
             _storage.Clear();
             _code.Clear();
+            _addressByAccountHash.Clear();
             _dirtyAccounts.Clear();
             _dirtyStorageSlots.Clear();
         }

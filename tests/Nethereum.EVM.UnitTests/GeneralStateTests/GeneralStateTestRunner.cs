@@ -2,6 +2,7 @@ using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
 using Nethereum.EVM.Gas;
+using Nethereum.EVM.Gas.Intrinsic;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
@@ -29,14 +30,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         private HardforkConfig _cachedConfig;
 
 
-        private const int G_TRANSACTION = 21000;
-        private const int G_TXDATAZERO = 4;
-        private const int G_TXDATANONZERO = 16;
-        private const int G_TXCREATE = 32000;
+        // Intrinsic gas, calldata floor (EIP-7623), and access-list pricing
+        // all live in _cachedConfig.IntrinsicGasRules — same source TransactionExecutor uses.
         private const int G_CODEDEPOSIT = 200;
-
-        private const int G_FLOOR_PER_TOKEN = 10;
-        private const int G_TOKENS_PER_NONZERO = 4;
 
         // EIP-4844 Blob transaction constants
         private const int GAS_PER_BLOB = 131072; // 2^17
@@ -70,6 +66,16 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var config = Nethereum.EVM.Precompiles.DefaultMainnetHardforkRegistry.Instance.Get(_targetFork);
 
+            // EIP-4844 KZG point evaluation (0x0a) is Cancun onwards. Layer
+            // the real CKZG-backed handler in place of the PlaceholderPrecompile
+            // the default factory installs. Without this, every EEST
+            // cancun/eip4844_blobs/test_point_evaluation_precompile fixture
+            // fails on a state-root mismatch.
+            if (_targetFork >= HardforkName.Cancun)
+            {
+                config = config.WithKzgBackend();
+            }
+
             // EIP-2537 BLS12-381 is Prague onwards. Do not layer at Cancun.
             if (_targetFork >= HardforkName.Prague)
             {
@@ -77,6 +83,60 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
 
             _cachedConfig = config;
+        }
+
+        /// <summary>
+        /// Resolves the per-fixture <see cref="HardforkConfig"/>. When the
+        /// fixture carries a <c>config.blobSchedule</c> entry for the
+        /// active fork with an explicit <c>baseFeeUpdateFraction</c>, the
+        /// production blob rule is swapped for a fixture-specific instance
+        /// carrying that fraction. Production callers (BlockExecutor /
+        /// mainnet replay) never reach this path. When the fixture has no
+        /// override, the cached config is returned unchanged. The
+        /// fork-specific blob rule class is preserved (Cancun keeps
+        /// <see cref="Eip4844BlobGasRule"/>, Prague <see cref="Eip7691BlobGasRule"/>,
+        /// Osaka <see cref="Eip7892BlobGasRule"/>) so the per-fork
+        /// behaviour beyond the update fraction is intact.
+        /// </summary>
+        private HardforkConfig ResolveConfigForFixture(GeneralStateTest test)
+        {
+            EnsureCachedConfig();
+
+            var fraction = TryReadFixtureBlobFraction(test);
+            if (fraction == null) return _cachedConfig;
+
+            IBlobGasRule fixtureBlobRule;
+            if (_targetFork >= HardforkName.Osaka)
+                fixtureBlobRule = new Eip7892BlobGasRule(fraction.Value);
+            else if (_targetFork >= HardforkName.Prague)
+                fixtureBlobRule = new Eip7691BlobGasRule(fraction.Value);
+            else if (_targetFork >= HardforkName.Cancun)
+                fixtureBlobRule = new Eip4844BlobGasRule(fraction.Value);
+            else
+                return _cachedConfig;
+
+            var clone = _cachedConfig.Clone();
+            clone.IntrinsicGasRules = _cachedConfig.IntrinsicGasRules.WithBlob(fixtureBlobRule);
+            return clone;
+        }
+
+        private int? TryReadFixtureBlobFraction(GeneralStateTest test)
+        {
+            var schedule = test?.Config?.BlobSchedule;
+            if (schedule == null || schedule.Count == 0) return null;
+
+            string key;
+            if (_targetFork >= HardforkName.Osaka) key = "Osaka";
+            else if (_targetFork >= HardforkName.Prague) key = "Prague";
+            else if (_targetFork >= HardforkName.Cancun) key = "Cancun";
+            else return null;
+
+            if (!schedule.TryGetValue(key, out var entry) || entry == null) return null;
+            if (string.IsNullOrEmpty(entry.BaseFeeUpdateFraction)) return null;
+
+            var big = entry.BaseFeeUpdateFraction.HexToBigInteger(false);
+            if (big <= 0 || big > int.MaxValue) return null;
+            return (int)big;
         }
 
         public async Task<TestResult> RunTestAsync(string testFilePath, int? specificDataIndex = null)
@@ -450,16 +510,20 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     throw new InvalidOperationException("TransactionException.GAS_ALLOWANCE_EXCEEDED");
                 }
 
-                var intrinsicGas = CalculateIntrinsicGas(dataBytes, isContractCreation, accessList);
-
-                // EIP-7623 (Prague): gas_limit must be >= max(intrinsic_gas, floor)
-                BigInteger minGasRequired = intrinsicGas;
-                if (_targetFork >= HardforkName.Prague)
+                var accessListEntries = accessList?.Select(a => new AccessListEntry
                 {
-                    var floorGas = CalculateFloorGasLimit(dataBytes, isContractCreation);
-                    if (floorGas > minGasRequired)
-                        minGasRequired = floorGas;
-                }
+                    Address = a.Address,
+                    StorageKeys = a.StorageKeys
+                }).ToList();
+
+                BigInteger intrinsicGas = _cachedConfig.IntrinsicGasRules.CalculateIntrinsicGas(dataBytes, isContractCreation, accessListEntries);
+
+                // EIP-7623 (Prague): gas_limit must be >= max(intrinsic_gas, floor).
+                // The spec rule returns 0 pre-Prague so the comparison is safe at all forks.
+                BigInteger minGasRequired = intrinsicGas;
+                BigInteger floorGas = _cachedConfig.IntrinsicGasRules.CalculateFloorGasLimit(dataBytes, isContractCreation);
+                if (floorGas > minGasRequired)
+                    minGasRequired = floorGas;
 
                 if (gasLimit < minGasRequired)
                 {
@@ -491,6 +555,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 // EIP-4844: Calculate blob gas cost for type-3 transactions
                 BigInteger blobGasCost = BigInteger.Zero;
                 BigInteger blobBaseFee = BigInteger.One; // MIN_BLOB_BASE_FEE = 1
+                BigInteger maxBlobReservation = BigInteger.Zero;
                 if (isType3Transaction && _targetFork >= HardforkName.Cancun)
                 {
                     if (!string.IsNullOrEmpty(env.CurrentExcessBlobGas))
@@ -501,9 +566,25 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     var blobCount = blobVersionedHashes?.Count ?? 0;
                     var blobGasUsed = blobCount * GAS_PER_BLOB;
                     blobGasCost = blobGasUsed * blobBaseFee;
+
+                    // EIP-4844: reject if user's max promise can't meet
+                    // the current blob_base_fee. Mirrors the check in
+                    // TransactionExecutor.ValidateTransaction; the
+                    // state-test runner has its own pre-check loop so
+                    // the rule has to live in both places. Caught by
+                    // cancun/eip4844_blobs/test_blob_txs.py::
+                    // test_invalid_tx_max_fee_per_blob_gas_state.
+                    var maxFeePerBlobGas = tx.MaxFeePerBlobGas.HexToBigInteger(false);
+                    if (maxFeePerBlobGas < blobBaseFee)
+                    {
+                        throw new InvalidOperationException("TransactionException.INSUFFICIENT_MAX_FEE_PER_BLOB_GAS");
+                    }
+                    // EIP-4844 sender balance reservation uses MaxFeePerBlobGas
+                    // (the user's promised maximum), not the actual blob_base_fee.
+                    maxBlobReservation = blobGasUsed * maxFeePerBlobGas;
                 }
 
-                var maxCost = gasLimit * gasPrice + value + blobGasCost;
+                var maxCost = gasLimit * gasPrice + value + maxBlobReservation;
 
                 if (senderBalance < EvmUInt256BigIntegerExtensions.FromBigInteger(maxCost))
                 {
@@ -656,7 +737,12 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         programContext.BlobHashes = blobVersionedHashes.Select(h => h.HexToByteArray()).ToArray();
                     }
 
-                    programContext.EnforceGasSentry = true;
+                    // EIP-2200 sentry only fires at Istanbul+ where the spec
+                    // installs SstoreSentryPolicy.Eip2200Active. Hardcoding
+                    // true broke every pre-Istanbul SSTORE diagnostic trace
+                    // (Constantinople SSTORE/Sentry false-positives) — route
+                    // through the spec the same way TransactionExecutor does.
+                    programContext.EnforceGasSentry = _cachedConfig.EnforceSstoreSentry;
 
                     var program = new Program(code, programContext);
                     var evmSimulator = new EVMSimulator(_cachedConfig);
@@ -838,35 +924,52 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 if (gasUsed > gasLimit)
                     gasUsed = gasLimit;
 
-                // EIP-7623 (Prague): Apply calldata floor to final gas calculation
-                // Per Geth implementation: floorDataGas = 21000 + tokens * 10
-                // If gasUsed < floorDataGas, use floorDataGas
-                // Note: Floor applies regardless of execution success/failure
-                if (_targetFork >= HardforkName.Prague)
+                // EIP-7623 (Prague): apply the calldata floor to final gas
+                // accounting. The spec rule returns 0 pre-Prague so the
+                // comparison is a no-op at earlier forks. Finalisation pattern
+                // passes isContractCreation:false to get the raw TxBase + floor
+                // (no G_TXCREATE adder) — matches Geth.
+                BigInteger floorDataGas = _cachedConfig.IntrinsicGasRules.CalculateFloorGasLimit(dataBytes, isContractCreation: false);
+                if (gasUsed < floorDataGas)
                 {
-                    var tokens = CalculateTokensInCalldata(dataBytes);
-                    BigInteger floorDataGas = G_TRANSACTION + (G_FLOOR_PER_TOKEN * tokens);
-
-                    if (gasUsed < floorDataGas)
-                    {
-                        gasUsed = floorDataGas;
-                        if (gasUsed > gasLimit)
-                            gasUsed = gasLimit;
-                    }
+                    gasUsed = floorDataGas;
+                    if (gasUsed > gasLimit)
+                        gasUsed = gasLimit;
                 }
 
                 var gasRefundAmount = (gasLimit - gasUsed) * effectiveGasPrice;
                 senderAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(gasRefundAmount));
 
                 var coinbase = env.CurrentCoinbase;
-                var coinbaseAccount = executionState.CreateOrGetAccountExecutionState(coinbase);
                 var minerReward = gasUsed * (effectiveGasPrice - baseFee);
                 if (minerReward < 0) minerReward = 0;
-                coinbaseAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(minerReward));
+                // Always materialise the coinbase, then either credit it or
+                // flag it as touched. The per-fork TouchedEmptyCleanupRule
+                // below removes the entry at EIP-161+ when it is empty
+                // (closes the Prague/Cancun phantom-coinbase leak on
+                // priorityFee==0). Pre-EIP-161 forks have NoOp cleanup so
+                // the touched empty coinbase persists — required by
+                // EEST frontier/touch/test_zero_gas_price_and_touching.
+                var coinbaseAccount = executionState.CreateOrGetAccountExecutionState(coinbase);
+                if (minerReward > 0)
+                    coinbaseAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(minerReward));
+                else
+                    coinbaseAccount.IsTouched = true;
 
                 EnsureCachedConfig();
+                // Legacy runner uses EVMSimulator directly (does NOT go through
+                // TransactionExecutor.FinalizeTransaction). Apply the per-fork
+                // EIP-161 STATE_CLEARING rule here so touched-empty precompile
+                // CALL/STATICCALL targets are swept from post-state, matching
+                // geth's StateDB.Finalise(deleteEmptyObjects:true). NoOp at
+                // pre-Spurious-Dragon forks.
+                _cachedConfig.TouchedEmptyCleanupRule.Apply(executionState);
                 var accountStates = ExtractPostState(executionState);
-                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates, _cachedConfig.CleanEmptyAccounts);
+                // Phantom filter in ExtractPostState already strips materialisation
+                // artifacts. EIP-161 touched-empty cleanup is handled above.
+                // Everything remaining is canonical state — pass skipEmptyAccounts: false
+                // so preexisting untouched empties are kept (geth canonical includes them).
+                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates, skipEmptyAccounts: false);
                 var expectedStateRoot = expected.Hash.HexToByteArray();
 
                 result.ExpectedStateRoot = expected.Hash;
@@ -889,6 +992,21 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     {
                         result.AccountDiffs = CompareStates(test.Pre, accountStates);
                         result.AccountDiffs.Insert(0, "(No expected post-state in test file, comparing with pre-state)");
+                    }
+                    // Diagnostic: also dump our actual computed accounts as a serialised summary so
+                    // post-mortem analysis can diff our state against geth t8n / fixture expectations
+                    // without re-running the test. AccountDiffs gets populated above but is sometimes
+                    // null/empty (e.g. when account deserialisation drops the post-state map); this
+                    // line gives an unconditional ground-truth read.
+                    if (result.AccountDiffs == null) result.AccountDiffs = new List<string>();
+                    result.AccountDiffs.Add($"--- OUR COMPUTED ACCOUNTS ({accountStates.Count}) ---");
+                    foreach (var kv in accountStates)
+                    {
+                        var a = kv.Value;
+                        result.AccountDiffs.Add($"  {kv.Key}: bal={a.Balance} nonce={a.Nonce} codeLen={(a.Code?.Length ?? 0)} storage[{a.Storage?.Count ?? 0}]");
+                        if (a.Storage != null)
+                            foreach (var sk in a.Storage)
+                                result.AccountDiffs.Add($"    slot[{sk.Key}] = {sk.Value}");
                     }
                 }
             }
@@ -921,6 +1039,43 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         /// This is the refactored version that uses the extracted TransactionExecutor infrastructure.
         /// The original RunSingleTestAsync method is preserved as a reference implementation.
         /// </summary>
+        /// <summary>
+        /// Runs a single sub-test of a fixture and returns the executor's
+        /// final <see cref="ExecutionStateService"/> for cross-impl
+        /// post-state comparison (see <see cref="PostStateSignatureClassifier"/>).
+        /// Returns a tuple of (final state, coinbase address, sender address)
+        /// or (null, null, null) if the sub-test couldn't be executed.
+        /// </summary>
+        public async Task<(ExecutionStateService State, string Coinbase, string Sender)> RunAndCaptureExecutionStateAsync(
+            string testFilePath, int dataIndex, int gasIndex = 0, int valueIndex = 0)
+        {
+            var json = File.ReadAllText(testFilePath);
+            var tests = JsonConvert.DeserializeObject<Dictionary<string, GeneralStateTest>>(json);
+            foreach (var testEntry in tests)
+            {
+                var test = testEntry.Value;
+                if (!test.Post.ContainsKey(_targetHardfork)) continue;
+                foreach (var postResult in test.Post[_targetHardfork])
+                {
+                    // Filter all three indexes — picking the wrong PostResult
+                    // (e.g. only matching dataIndex with multiple gas/value
+                    // rows) executes a different sub-test than the caller
+                    // expected, producing spurious classifier diffs.
+                    if (postResult.Indexes.Data != dataIndex) continue;
+                    if (postResult.Indexes.Gas != gasIndex) continue;
+                    if (postResult.Indexes.Value != valueIndex) continue;
+                    var ctx = BuildExecutionContext(test, postResult, captureTraces: false);
+                    if (ctx == null) return (null, null, null);
+                    EnsureCachedConfig();
+                    var executor = new TransactionExecutor(_cachedConfig);
+                    try { await executor.ExecuteAsync(ctx); }
+                    catch { return (null, null, null); }
+                    return (ctx.ExecutionState, ctx.Coinbase, ctx.Sender);
+                }
+            }
+            return (null, null, null);
+        }
+
         private async Task<SingleTestResult> RunSingleTestWithExecutorAsync(string testName, GeneralStateTest test, PostResult expected, bool captureTraces = false)
         {
             var result = new SingleTestResult
@@ -941,8 +1096,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     return result;
                 }
 
-                EnsureCachedConfig();
-                var executor = new TransactionExecutor(_cachedConfig);
+                var fixtureConfig = ResolveConfigForFixture(test);
+                var executor = new TransactionExecutor(fixtureConfig);
 
                 var execResult = await executor.ExecuteAsync(ctx);
 
@@ -981,7 +1136,12 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
 
                 var accountStates = ExtractPostState(ctx.ExecutionState);
-                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates, _cachedConfig.CleanEmptyAccounts);
+                // Phantom filter in ExtractPostState already strips materialisation
+                // artifacts. EIP-161 touched-empty cleanup is handled by the
+                // executor's TouchedEmptyCleanupRule. Everything remaining is
+                // canonical state — pass skipEmptyAccounts: false so preexisting
+                // untouched empties are kept (geth canonical includes them).
+                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates, skipEmptyAccounts: false);
                 var expectedStateRoot = expected.Hash.HexToByteArray();
 
                 result.ExpectedStateRoot = expected.Hash;
@@ -1005,6 +1165,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         result.AccountDiffs = CompareStates(test.Pre, accountStates);
                         result.AccountDiffs.Insert(0, "(No expected post-state in test file, comparing with pre-state)");
                     }
+                    result.FullPostState = DumpFullPostState(accountStates);
                 }
             }
             catch (TransactionValidationException ex)
@@ -1185,6 +1346,10 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var account = preAccount.Value;
 
                 var accountState = executionState.CreateOrGetAccountExecutionState(address);
+                // Mark as preexisting so the phantom filter in ExtractPostState
+                // keeps empty pre-state accounts (which geth canonical includes
+                // at pre-EIP-161 forks and at EIP-161+ when not touched).
+                accountState.WasInPreState = true;
 
                 accountState.Code = string.IsNullOrEmpty(account.Code) || account.Code == "0x"
                     ? new byte[0]
@@ -1221,6 +1386,42 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return key.GetPublicAddress();
         }
 
+        /// <summary>
+        /// Renders the computed post-state dictionary as one human-readable
+        /// line per account, sorted by address. Storage slots are sorted by
+        /// key. Use when the runner's <c>AccountDiffs</c> is missing accounts
+        /// because they weren't in test.Pre (miner, internally-touched targets).
+        /// </summary>
+        private static Dictionary<string, string> DumpFullPostState(Dictionary<string, AccountState> accountStates)
+        {
+            var result = new Dictionary<string, string>();
+            foreach (var addr in accountStates.Keys.OrderBy(k => k))
+            {
+                var a = accountStates[addr];
+                var balanceHex = "0x" + a.Balance.ToString("X").TrimStart('0');
+                if (balanceHex == "0x") balanceHex = "0x0";
+                var nonceHex = "0x" + a.Nonce.ToString("X").TrimStart('0');
+                if (nonceHex == "0x") nonceHex = "0x0";
+                var codeLen = a.Code?.Length ?? 0;
+                var sb = new System.Text.StringBuilder();
+                sb.Append("balance=").Append(balanceHex).Append(" nonce=").Append(nonceHex).Append(" codeLen=").Append(codeLen);
+                if (a.Storage != null && a.Storage.Count > 0)
+                {
+                    sb.Append(" storage={");
+                    bool first = true;
+                    foreach (var kvp in a.Storage.OrderBy(k => k.Key))
+                    {
+                        if (!first) sb.Append(",");
+                        sb.Append("0x").Append(kvp.Key.ToString("X")).Append("=0x").Append(BitConverter.ToString(kvp.Value).Replace("-", "").TrimStart('0'));
+                        first = false;
+                    }
+                    sb.Append("}");
+                }
+                result[addr] = sb.ToString();
+            }
+            return result;
+        }
+
         private Dictionary<string, AccountState> ExtractPostState(ExecutionStateService executionState, bool skipPhantomAccounts = true)
         {
             var result = new Dictionary<string, AccountState>();
@@ -1230,15 +1431,20 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var address = kvp.Key;
                 var accountExecState = kvp.Value;
 
-                // Skip phantom accounts: entries created by warm marking that were never
-                // actually loaded from chain state or modified during execution.
+                // Skip phantom accounts: entries materialised by warm-marking,
+                // GetCode/GetTotalBalance/GetNonce reads, or precompile
+                // CALL setup that were never in pre-state and never mutated.
+                // The distinguishing signal is WasInPreState=false combined
+                // with !IsTouched. Geth's getStateObject is non-creating for
+                // reads, so geth's post-state never contains these entries.
                 if (skipPhantomAccounts &&
-                    accountExecState.Balance.InitialChainBalance == null &&
-                    accountExecState.Nonce == null &&
+                    !accountExecState.WasInPreState &&
+                    !accountExecState.IsTouched &&
                     !accountExecState.IsNewContract &&
-                    (accountExecState.Code == null) &&
                     accountExecState.Storage.Count == 0 &&
-                    accountExecState.Balance.GetTotalBalance().IsZero)
+                    accountExecState.Balance.GetTotalBalance().IsZero &&
+                    (accountExecState.Code == null || accountExecState.Code.Length == 0) &&
+                    (!accountExecState.Nonce.HasValue || accountExecState.Nonce.Value.IsZero))
                 {
                     continue;
                 }
@@ -1373,74 +1579,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return output / denominator;
         }
 
-        private static BigInteger CalculateIntrinsicGas(byte[] data, bool isContractCreation, List<AccessListItem> accessList = null)
-        {
-            BigInteger gas = G_TRANSACTION;
-
-            if (isContractCreation)
-            {
-                gas += G_TXCREATE;
-
-                if (data != null && data.Length > 0)
-                {
-                    int initcodeWords = (data.Length + 31) / 32;
-                    gas += initcodeWords * 2;
-                }
-            }
-
-            // Standard data gas (4 per zero, 16 per non-zero)
-            if (data != null && data.Length > 0)
-            {
-                foreach (var b in data)
-                {
-                    if (b == 0)
-                        gas += G_TXDATAZERO;
-                    else
-                        gas += G_TXDATANONZERO;
-                }
-            }
-
-            if (accessList != null)
-            {
-                foreach (var entry in accessList)
-                {
-                    gas += 2400;
-                    if (entry.StorageKeys != null)
-                    {
-                        gas += entry.StorageKeys.Count * 1900;
-                    }
-                }
-            }
-
-            return gas;
-        }
-
-        // EIP-7623: Calculate tokens in calldata (zeros + 4*non_zeros)
-        private static BigInteger CalculateTokensInCalldata(byte[] data)
-        {
-            if (data == null || data.Length == 0)
-                return 0;
-
-            int zeroBytes = 0;
-            int nonZeroBytes = 0;
-            foreach (var b in data)
-            {
-                if (b == 0) zeroBytes++;
-                else nonZeroBytes++;
-            }
-            return zeroBytes + (nonZeroBytes * G_TOKENS_PER_NONZERO);
-        }
-
-        // EIP-7623: Calculate floor gas limit (21000 + 10*tokens + creation_base)
-        private static BigInteger CalculateFloorGasLimit(byte[] data, bool isContractCreation)
-        {
-            var tokens = CalculateTokensInCalldata(data);
-            BigInteger floor = G_TRANSACTION + (G_FLOOR_PER_TOKEN * tokens);
-            if (isContractCreation)
-                floor += G_TXCREATE;
-            return floor;
-        }
-
         private static byte[] TrimLeadingZeros(byte[] bytes)
         {
             if (bytes == null || bytes.Length == 0)
@@ -1484,5 +1622,14 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public string ActualStateRoot { get; set; }
         public List<string> AccountDiffs { get; set; }
         public List<ProgramTrace> Traces { get; set; }
+        /// <summary>
+        /// Full computed post-state for every account in the execution-state
+        /// service after the test ran. Populated only on a state-root
+        /// mismatch. The runner's existing <see cref="AccountDiffs"/> only
+        /// surfaces accounts present in test.Pre (so miner / newly-touched
+        /// addresses are invisible); this gives the complete picture for
+        /// triage. Format: addr → "balance=0x… nonce=0x… code=0x… storage={k=v,…}".
+        /// </summary>
+        public Dictionary<string, string> FullPostState { get; set; }
     }
 }

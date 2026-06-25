@@ -9,10 +9,14 @@ namespace Nethereum.Consensus.Ssz.Tests
 {
     internal static class ConsensusSpecTestCaseProvider
     {
-        private const string BaseRelativePath = "tests/LightClientVectors/ssz/consensus-spec-tests/deneb/ssz_static";
+        private const string BaseRelativePath = "tests/LightClientVectors/ssz/consensus-spec-tests";
+        private const string SszStaticSegment = "ssz_static";
         private const string CaseFolder = "ssz_random";
 
-        public static IEnumerable<ConsensusSpecTestCase> Load(string containerName)
+        public static IEnumerable<ConsensusSpecTestCase> Load(string containerName) =>
+            Load(ConsensusFork.Deneb, containerName);
+
+        public static IEnumerable<ConsensusSpecTestCase> Load(ConsensusFork fork, string containerName)
         {
             var root = RepositoryPath.Root;
             if (string.IsNullOrEmpty(root))
@@ -20,7 +24,8 @@ namespace Nethereum.Consensus.Ssz.Tests
                 yield break;
             }
 
-            var basePath = Combine(root, BaseRelativePath);
+            var forkSegment = fork.ToString().ToLowerInvariant();
+            var basePath = Combine(root, BaseRelativePath, forkSegment, SszStaticSegment);
             var containerPath = Path.Combine(basePath, containerName, CaseFolder);
             if (!Directory.Exists(containerPath))
             {
@@ -100,13 +105,16 @@ namespace Nethereum.Consensus.Ssz.Tests
             return buffer;
         }
 
-        private static string Combine(string root, string relative)
+        private static string Combine(string root, params string[] segments)
         {
-            var segments = relative.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
             var current = root;
-            foreach (var segment in segments)
+            foreach (var raw in segments)
             {
-                current = Path.Combine(current, segment);
+                var parts = raw.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var part in parts)
+                {
+                    current = Path.Combine(current, part);
+                }
             }
 
             return current;

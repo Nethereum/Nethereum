@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Generic Ethereum-protocol RLPx peer-serving composition. Bundles RlpxListener + Eth68/69 server + snap/1 server into a hosted PeerListener. Used by SyncNode, AppChain validators, mainnet relays — anything that needs to ACCEPT incoming peers and serve eth/snap protocol over the wire. The wire primitives live in Nethereum.DevP2P; this project is the production-policy + DI-friendly composition layer.</Description>
+    <Authors>Juan Blanco</Authors>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[8.0.0,)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
+    <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
+  </ItemGroup>
+
+</Project>

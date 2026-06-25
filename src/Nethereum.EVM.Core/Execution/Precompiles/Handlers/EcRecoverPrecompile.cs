@@ -72,6 +72,8 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
             }
 
             var v = data[63];
+            if (v != 27 && v != 28) return new byte[0];
+
             var r = data.Slice(64, 96);
             var s = data.Slice(96, 128);
 

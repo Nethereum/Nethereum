@@ -24,7 +24,24 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var from = tx != null ? GetSenderAddress(tx) : null;
             var to = GetReceiverAddress(tx);
 
-            var receipt = receiptInfo.ToTransactionReceipt(from, to);
+            // LogIndex must be the block-wide cumulative count. For single-receipt
+            // lookups we sum logs across earlier txs in the same block by index.
+            var startingLogIndex = 0;
+            if (tx != null && receiptInfo.TransactionIndex > 0)
+            {
+                var blockTxs = await context.Node.Transactions.GetByBlockHashAsync(receiptInfo.BlockHash);
+                if (blockTxs != null)
+                {
+                    for (int i = 0; i < (int)receiptInfo.TransactionIndex && i < blockTxs.Count; i++)
+                    {
+                        var earlier = await context.Node.Receipts.GetInfoByTxHashAsync(blockTxs[i].Hash);
+                        startingLogIndex += earlier?.Receipt?.Logs?.Count ?? 0;
+                    }
+                }
+            }
+
+            var txType = tx?.TransactionType ?? Nethereum.Model.TransactionType.LegacyTransaction;
+            var receipt = receiptInfo.ToTransactionReceipt(from, to, txType, startingLogIndex);
             return Success(request.Id, receipt);
         }
     }

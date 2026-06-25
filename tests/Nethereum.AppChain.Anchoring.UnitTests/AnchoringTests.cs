@@ -124,7 +124,7 @@ namespace Nethereum.AppChain.Anchoring.UnitTests
             Assert.Empty(anchor.TransactionsRoot);
             Assert.Empty(anchor.ReceiptsRoot);
             Assert.Equal(AnchorStatus.Pending, anchor.Status);
-            Assert.Null(anchor.ErrorMessage);
+            Assert.Equal(string.Empty, anchor.ErrorMessage);
         }
 
         [Fact]

@@ -1,21 +1,9 @@
 using System;
-using System.Numerics;
-using Nethereum.Util;
 using System.Collections.Generic;
 using Nethereum.Hex.HexConvertors.Extensions;
-using System.Diagnostics;
-using Nethereum.RLP;
 using Nethereum.Util;
 #if !EVM_SYNC
-using Nethereum.Hex.HexTypes;
-using Nethereum.Signer;
-#endif
-using System.Collections;
-#if !EVM_SYNC
 using System.Threading.Tasks;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.RPC.Eth.Transactions;
-using Nethereum.RPC.Eth.Blocks;
 #endif
 
 namespace Nethereum.EVM.Execution
@@ -23,58 +11,6 @@ namespace Nethereum.EVM.Execution
 
     public class EvmBlockchainCurrentContractContextExecution
     {
-        // EIP-2935 final values (active at Prague).
-        public const string HISTORY_STORAGE_ADDRESS = "0x0000F90827F1C53a10cb7A02335B175320002935";
-        public const int HISTORY_SERVE_WINDOW = 8191;
-        public const int BLOCKHASH_SERVE_WINDOW = 256;
-
-#if EVM_SYNC
-        public void BlockHash(Program program)
-#else
-        public async Task BlockHashAsync(Program program)
-#endif
-        {
-            var blockNumberU256 = program.StackPopU256();
-            if (!blockNumberU256.FitsInULong)
-            {
-                program.StackPush(new byte[32]);
-                program.Step();
-                return;
-            }
-            var blockNumber = blockNumberU256.ToLongSafe();
-            var currentBlock = program.ProgramContext.BlockNumber;
-
-            if (blockNumber >= currentBlock || blockNumber < 0)
-            {
-                program.StackPush(new byte[32]);
-                program.Step();
-                return;
-            }
-
-            var blocksAgo = currentBlock - blockNumber;
-
-            // EIP-2935 (Prague+): BLOCKHASH reads storage slot (blockNumber % 8191) of
-            // the history contract. The 256-block window is the client-visible promise;
-            // storage outside that range is zero by construction. Gas stays 20 and the
-            // history contract is not warmed under EIP-2929.
-            if (blocksAgo <= BLOCKHASH_SERVE_WINDOW)
-            {
-                var slot = new EvmUInt256(blockNumber % HISTORY_SERVE_WINDOW);
-#if EVM_SYNC
-                var blockHash = program.ProgramContext.ExecutionStateService.GetFromStorage(HISTORY_STORAGE_ADDRESS, slot);
-#else
-                var blockHash = await program.ProgramContext.ExecutionStateService.GetFromStorageAsync(HISTORY_STORAGE_ADDRESS, slot);
-#endif
-                program.StackPush(blockHash ?? new byte[32]);
-            }
-            else
-            {
-                program.StackPush(new byte[32]);
-            }
-
-            program.Step();
-        }
-
 #if EVM_SYNC
         public void Balance(Program program)
         {

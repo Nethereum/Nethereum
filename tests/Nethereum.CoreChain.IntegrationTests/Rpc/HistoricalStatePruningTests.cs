@@ -67,7 +67,11 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             _dispatcher = new RpcDispatcher(registry, context);
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public Task DisposeAsync()
+        {
+            _node?.Dispose();
+            return Task.CompletedTask;
+        }
 
         private ISignedTransaction CreateTransfer(BigInteger value, BigInteger? nonce = null)
         {

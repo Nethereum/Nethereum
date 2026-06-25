@@ -1,3 +1,4 @@
+using Nethereum.Explorer.Anchoring;
 using Nethereum.Explorer.Services;
 using Nethereum.BlockchainStorage.Token.Postgres;
 using Nethereum.BlockchainStore.Postgres;
@@ -49,6 +50,12 @@ if (!string.IsNullOrEmpty(mainchainUrl))
 }
 
 builder.Services.AddExplorerServices(builder.Configuration);
+builder.Services.AddAnchorExplorerServices(connectionString);
+
+builder.Services.AddHttpClient("anchoring", client =>
+{
+    client.BaseAddress = new Uri("https+http://anchoring");
+});
 
 var app = builder.Build();
 
@@ -61,11 +68,14 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRateLimiter();
 app.UseAntiforgery();
+app.UseStaticFiles();
 app.MapStaticAssets();
-app.MapRazorComponents<Nethereum.Explorer.Components.App>()
+app.MapRazorComponents<Nethereum.AppChain.MainChain.Explorer.Components.App>()
     .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(
-        typeof(Nethereum.Blazor.EIP6963WalletInterop.EIP6963WalletBlazorInterop).Assembly);
+        typeof(Nethereum.Explorer.Components.App).Assembly,
+        typeof(Nethereum.Blazor.EIP6963WalletInterop.EIP6963WalletBlazorInterop).Assembly,
+        typeof(Nethereum.Explorer.Anchoring.Services.IAnchorExplorerService).Assembly);
 
 app.MapTokenApiEndpoints();
 app.MapContractApiEndpoints();

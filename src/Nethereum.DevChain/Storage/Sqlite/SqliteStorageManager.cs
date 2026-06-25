@@ -7,9 +7,87 @@ namespace Nethereum.DevChain.Storage.Sqlite
 {
     public class SqliteStorageManager : IDisposable
     {
+        private const string AutoTempDirRoot = "nethereum-devchain";
+
+        private static readonly ConcurrentDictionary<string, byte> s_activeAutoTempDirs = new();
+
+        static SqliteStorageManager()
+        {
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => WipeRegisteredAutoTempDirs();
+        }
+
+        /// <summary>
+        /// Best-effort cleanup of <c>%TEMP%/nethereum-devchain</c> subdirectories
+        /// left behind by a previous process whose <see cref="Dispose"/> never ran
+        /// (SIGKILL / OOM / debugger exit). Only deletes subdirectories whose
+        /// creation time predates the current process start — sibling processes
+        /// running in parallel keep their live SQLite WAL files. Safe to call at
+        /// the top of <c>Main</c> or in an xunit collection fixture. No-op if the
+        /// root directory is absent.
+        /// </summary>
+        public static void PurgeAllAutoTempDirs()
+        {
+            var root = Path.Combine(Path.GetTempPath(), AutoTempDirRoot);
+            if (!Directory.Exists(root)) return;
+
+            DateTime cutoff;
+            try
+            {
+                cutoff = System.Diagnostics.Process.GetCurrentProcess().StartTime;
+            }
+            catch
+            {
+                cutoff = DateTime.Now;
+            }
+
+            string[] subdirs;
+            try
+            {
+                subdirs = Directory.GetDirectories(root);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(
+                    $"SqliteStorageManager: failed to enumerate auto-temp root '{root}': {ex.Message}");
+                return;
+            }
+
+            foreach (var subdir in subdirs)
+            {
+                try
+                {
+                    var created = Directory.GetCreationTime(subdir);
+                    if (created >= cutoff) continue;
+                    Directory.Delete(subdir, recursive: true);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(
+                        $"SqliteStorageManager: failed to delete stale auto-temp dir '{subdir}': {ex.Message}");
+                }
+            }
+        }
+
+        private static void WipeRegisteredAutoTempDirs()
+        {
+            try { SqliteConnection.ClearAllPools(); }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(
+                    $"SqliteStorageManager: ClearAllPools failed during ProcessExit wipe: {ex.Message}");
+            }
+
+            foreach (var dir in s_activeAutoTempDirs.Keys)
+            {
+                TryDeleteOwnedTempDir(dir);
+            }
+            s_activeAutoTempDirs.Clear();
+        }
+
         private readonly string _dbPath;
         private readonly string _connectionString;
         private readonly bool _deleteOnDispose;
+        private readonly string _ownedTempDir;
         private readonly ConcurrentDictionary<int, SqliteConnection> _connections = new();
         private bool _disposed;
 
@@ -19,9 +97,10 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             if (string.IsNullOrEmpty(dbPath))
             {
-                var dir = Path.Combine(Path.GetTempPath(), "nethereum-devchain", Guid.NewGuid().ToString("N"));
-                Directory.CreateDirectory(dir);
-                dbPath = Path.Combine(dir, "chain.db");
+                _ownedTempDir = Path.Combine(Path.GetTempPath(), AutoTempDirRoot, Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(_ownedTempDir);
+                s_activeAutoTempDirs[_ownedTempDir] = 0;
+                dbPath = Path.Combine(_ownedTempDir, "chain.db");
             }
             else
             {
@@ -99,7 +178,8 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 CREATE TABLE IF NOT EXISTS accounts (
                     address TEXT PRIMARY KEY,
                     account_data BLOB NOT NULL,
-                    code_hash BLOB
+                    code_hash BLOB,
+                    address_inline BLOB
                 );
 
                 CREATE TABLE IF NOT EXISTS account_storage (
@@ -177,28 +257,54 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 }
                 _connections.Clear();
 
-                if (_deleteOnDispose && File.Exists(_dbPath))
+                if (_deleteOnDispose)
                 {
-                    try
-                    {
-                        SqliteConnection.ClearAllPools();
-                        File.Delete(_dbPath);
-                        var walPath = _dbPath + "-wal";
-                        var shmPath = _dbPath + "-shm";
-                        if (File.Exists(walPath)) File.Delete(walPath);
-                        if (File.Exists(shmPath)) File.Delete(shmPath);
+                    SqliteConnection.ClearAllPools();
 
-                        var dir = Path.GetDirectoryName(_dbPath);
-                        if (dir != null && Directory.Exists(dir) && Directory.GetFiles(dir).Length == 0)
-                            Directory.Delete(dir);
-                    }
-                    catch
+                    if (_ownedTempDir != null)
                     {
+                        TryDeleteOwnedTempDir(_ownedTempDir);
+                        s_activeAutoTempDirs.TryRemove(_ownedTempDir, out _);
+                    }
+                    else
+                    {
+                        TryDeleteFile(_dbPath);
+                        TryDeleteFile(_dbPath + "-wal");
+                        TryDeleteFile(_dbPath + "-shm");
+                        TryDeleteFile(_dbPath + "-journal");
                     }
                 }
             }
 
             _disposed = true;
+        }
+
+        private static void TryDeleteOwnedTempDir(string dir)
+        {
+            try
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(
+                    $"SqliteStorageManager: failed to delete owned temp dir '{dir}': {ex.Message}");
+            }
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(
+                    $"SqliteStorageManager: failed to delete '{path}': {ex.Message}");
+            }
         }
     }
 }

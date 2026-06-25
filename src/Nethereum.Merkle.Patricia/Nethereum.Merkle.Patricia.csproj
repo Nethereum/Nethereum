@@ -8,6 +8,7 @@
 		<AssemblyName>Nethereum.Merkle.Patricia</AssemblyName>
 		<PackageId>Nethereum.Merkle.Patricia</PackageId>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<LangVersion>9.0</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="README.md" Pack="true" PackagePath="" />

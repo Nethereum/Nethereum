@@ -1,3 +1,4 @@
+using Nethereum.CoreChain;
 using System;
 using System.Diagnostics;
 using System.Numerics;
@@ -5,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Sync;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
@@ -20,7 +22,7 @@ namespace Nethereum.AppChain.Sync
         private readonly ILogStore _logStore;
         private readonly IFinalityTracker _finalityTracker;
         private readonly IPeerManager _peerManager;
-        private readonly IBlockReExecutor? _blockReExecutor;
+        private readonly IBlockExecutor? _blockReExecutor;
         private readonly ILogger<MultiPeerSyncService>? _logger;
 
         private LiveSyncState _state = LiveSyncState.Idle;
@@ -49,7 +51,7 @@ namespace Nethereum.AppChain.Sync
             ILogStore logStore,
             IFinalityTracker finalityTracker,
             IPeerManager peerManager,
-            IBlockReExecutor? blockReExecutor = null,
+            IBlockExecutor? blockReExecutor = null,
             ILogger<MultiPeerSyncService>? logger = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -352,18 +354,20 @@ namespace Nethereum.AppChain.Sync
             // Note: We also validate genesis blocks (0 transactions) to ensure state root matches
             if (_blockReExecutor != null)
             {
-                var reExecResult = await _blockReExecutor.ReExecuteBlockAsync(
+                var reExecResult = await _blockReExecutor.ProcessBlockAsync(
                     blockData.Header,
                     blockData.Transactions,
+                    uncles: new System.Collections.Generic.List<BlockHeader>(),
+                    withdrawals: null,
                     cancellationToken);
 
-                if (!reExecResult.Success)
+                if (reExecResult.Exception != null)
                 {
                     _logger?.LogError(
                         "Block {BlockNumber} re-execution failed: {Error}",
                         blockData.Header.BlockNumber, reExecResult.ErrorMessage);
 
-                    if (!reExecResult.StateRootMatches && _config.RejectOnStateRootMismatch)
+                    if (!reExecResult.RootMatches && _config.RejectOnStateRootMismatch)
                     {
                         OnStateRootMismatch(blockData.Header, reExecResult);
                         throw new InvalidBlockException(
@@ -437,7 +441,7 @@ namespace Nethereum.AppChain.Sync
             await _finalityTracker.MarkAsSoftAsync(blockData.Header.BlockNumber);
         }
 
-        private void OnStateRootMismatch(BlockHeader header, BlockReExecutionResult result)
+        private void OnStateRootMismatch(BlockHeader header, BlockImporterResult result)
         {
             StateRootMismatch?.Invoke(this, new StateRootMismatchEventArgs
             {

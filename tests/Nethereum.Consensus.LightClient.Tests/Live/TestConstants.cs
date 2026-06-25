@@ -6,6 +6,14 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
         public const string ExecutionRpcUrl = "https://mainnet.infura.io/v3/2IgHC042dCtS6DwcOWefagLEcIe";
 
         public const string VitalikAddress = "0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B";
+
+        /// <summary>
+        /// Burn address (no known private key). Always has empty code and cannot be
+        /// EIP-7702 delegated, so it's safe to use as a "guaranteed EOA" test target
+        /// for code/codeHash assertions after Pectra.
+        /// </summary>
+        public const string BurnAddress = "0x000000000000000000000000000000000000dEaD";
+
         public const string UsdcContract = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
         public const string WethContract = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
         public const string BoredApeContract = "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D";

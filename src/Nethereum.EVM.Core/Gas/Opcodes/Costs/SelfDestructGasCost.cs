@@ -9,10 +9,19 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
     public sealed class SelfDestructGasCost : IOpcodeGasCostAsync
     {
         private readonly bool _hasColdWarmAccess;
+        private readonly bool _newAccountRequiresValue;
 
-        public SelfDestructGasCost(bool hasColdWarmAccess = true)
+        /// <param name="hasColdWarmAccess">Berlin+ EIP-2929 cold-account access cost.</param>
+        /// <param name="newAccountRequiresValue">
+        /// EIP-161 (Spurious Dragon+): G_NEWACCOUNT only charged when self has
+        /// balance to transfer AND recipient is empty. At Tangerine Whistle
+        /// (EIP-150) the rule is simpler: charge G_NEWACCOUNT whenever the
+        /// recipient doesn't exist, regardless of self balance.
+        /// </param>
+        public SelfDestructGasCost(bool hasColdWarmAccess = true, bool newAccountRequiresValue = true)
         {
             _hasColdWarmAccess = hasColdWarmAccess;
+            _newAccountRequiresValue = newAccountRequiresValue;
         }
 
 #if EVM_SYNC
@@ -45,18 +54,51 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             var recipientCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(recipientAddress);
             var recipientNonce = await program.ProgramContext.ExecutionStateService.GetNonceAsync(recipientAddress);
 #endif
-            var accountExists = recipientBalance > 0
-                || (recipientCode != null && recipientCode.Length > 0)
-                || recipientNonce > 0;
+            // Two different "exists" semantics depending on fork.
+            // EIP-150 (Tangerine Whistle) uses an account-exists check:
+            //   "exists" means "loaded from trie" — i.e. an account record is
+            //   present at all, regardless of whether balance/code/nonce are
+            //   zero. A pre-existing empty entry counts as existing.
+            // EIP-161 (Spurious Dragon+) flips to `Empty()`: balance == 0 AND
+            //   code.empty AND nonce == 0 — pre-existing empties are treated
+            //   as non-existent and charge G_NEWACCOUNT.
+            // WasInPreState / IsNewContract are set only by the runner's
+            // pre-state load and CREATE materialisation respectively; the
+            // on-demand Get*Async materialisation paths above leave both
+            // false, so the flags faithfully report "did this entry exist
+            // before the SELFDESTRUCT opcode read it?".
+            bool existsInTrie = program.ProgramContext.ExecutionStateService.AccountsState.TryGetValue(
+                recipientAddress.ToLower(), out var recipientState)
+                && (recipientState.WasInPreState || recipientState.IsNewContract);
 
-            if (!accountExists)
+            bool emptyByEip161 = recipientBalance == 0
+                && (recipientCode == null || recipientCode.Length == 0)
+                && recipientNonce == 0;
+
+            if (_newAccountRequiresValue)
             {
+                // EIP-161 (Spurious Dragon+): charge G_NEWACCOUNT only when
+                // recipient is empty AND self has balance to transfer.
+                if (emptyByEip161)
+                {
 #if EVM_SYNC
-                var selfBalance = program.ProgramContext.ExecutionStateService.GetTotalBalance(program.ProgramContext.AddressContract);
+                    var selfBalance = program.ProgramContext.ExecutionStateService.GetTotalBalance(program.ProgramContext.AddressContract);
 #else
-                var selfBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(program.ProgramContext.AddressContract);
+                    var selfBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(program.ProgramContext.AddressContract);
 #endif
-                if (selfBalance > 0)
+                    if (selfBalance > 0)
+                    {
+                        gas += GasConstants.CALL_NEW_ACCOUNT;
+                    }
+                }
+            }
+            else
+            {
+                // EIP-150 (Tangerine Whistle): charge whenever recipient is
+                // not in the trie at all, regardless of self balance. Matches
+                // the account-exists branch — "exists" means a state object is
+                // present at all, not that it is non-empty.
+                if (!existsInTrie)
                 {
                     gas += GasConstants.CALL_NEW_ACCOUNT;
                 }

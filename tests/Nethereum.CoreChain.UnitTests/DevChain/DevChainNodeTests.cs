@@ -11,7 +11,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task StartAsync_CreatesGenesisBlock()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var blockNumber = await node.GetBlockNumberAsync();
@@ -25,7 +25,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task StartAsync_WithPrefundedAccounts_SetsBalance()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             var addresses = new[] { "0x1234567890123456789012345678901234567890" };
 
             await node.StartAsync(addresses);
@@ -37,7 +37,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task StartAsync_WithCustomBalance_SetsCorrectBalance()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             var addresses = new[] { "0x1234567890123456789012345678901234567890" };
             var customBalance = BigInteger.Parse("1000000000000000000");
 
@@ -50,7 +50,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task SetBalance_UpdatesAccountBalance()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -65,7 +65,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task SetNonce_UpdatesAccountNonce()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -80,7 +80,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task SetCode_StoresAndRetrievesCode()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -95,7 +95,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task SetStorageAt_StoresAndRetrievesStorage()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -111,7 +111,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task MineBlock_IncreasesBlockNumber()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var initialBlockNumber = await node.GetBlockNumberAsync();
@@ -124,7 +124,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task MineBlock_ReturnsBlockHash()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var blockHash = await node.MineBlockAsync();
@@ -136,7 +136,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task GetBlockByHash_ReturnsCorrectBlock()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var blockHash = await node.MineBlockAsync();
@@ -149,7 +149,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task TakeSnapshot_AllowsRevert()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -167,7 +167,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task SendTransaction_ThrowsWhenNotInitialized()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 node.SendTransactionAsync(null));
@@ -176,7 +176,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task GetPendingBlockContext_ReturnsNextBlockInfo()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
             var context = node.GetPendingBlockContext();
@@ -188,7 +188,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         public async Task Config_ExposesConfiguration()
         {
             var config = new DevChainConfig { ChainId = 12345 };
-            var node = new DevChainNode(config);
+            using var node = new DevChainNode(config);
             await node.StartAsync();
 
             Assert.Equal(12345, node.DevConfig.ChainId);
@@ -197,10 +197,10 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task GetNonce_ReturnsZeroForNonExistentAccount()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
-            var nonce = await node.GetNonceAsync("0xnonexistent000000000000000000000000000");
+            var nonce = await node.GetNonceAsync("0x1111111111111111111111111111111111111111");
 
             Assert.Equal(0, nonce);
         }
@@ -208,10 +208,10 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         [Fact]
         public async Task GetBalance_ReturnsZeroForNonExistentAccount()
         {
-            var node = new DevChainNode();
+            using var node = new DevChainNode();
             await node.StartAsync();
 
-            var balance = await node.GetBalanceAsync("0xnonexistent000000000000000000000000000");
+            var balance = await node.GetBalanceAsync("0x2222222222222222222222222222222222222222");
 
             Assert.Equal(0, balance);
         }

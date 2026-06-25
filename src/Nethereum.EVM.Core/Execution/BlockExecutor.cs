@@ -34,6 +34,17 @@ namespace Nethereum.EVM.Execution
                 ExecuteBeaconRootSystemCall(block, stateReader, accounts, executor);
             }
 
+            // EIP-2935: History storage system call (Prague+). Writes parent
+            // hash to the deployed history contract so BLOCKHASH inside this
+            // block resolves via a normal SLOAD. The contract code performs
+            // the modulo-write internally; we just pass the parent hash as
+            // calldata and let the EVM run it.
+            if (block.Features?.Fork >= HardforkName.Prague
+                && block.ParentHash != null && block.ParentHash.Length >= 32)
+            {
+                ExecuteHistoryStorageSystemCall(block, stateReader, accounts, executor);
+            }
+
             long cumulativeGasUsed = 0;
             var txResults = new List<TransactionExecutionResult>();
             var receipts = new List<Receipt>();
@@ -59,7 +70,8 @@ namespace Nethereum.EVM.Execution
                 var modelLogs = EvmLogConverter.ToModelLogs(txLogs);
                 var txBloom = LogBloomCalculator.CalculateBloom(modelLogs);
                 LogBloomCalculator.CombineBloom(combinedBloom, txBloom);
-                var receipt = Receipt.CreateStatusReceipt(result.Success, cumulativeGasUsed, txBloom, modelLogs);
+                var receipt = config.ReceiptConstruction.Construct(
+                    result.Success, cumulativeGasUsed, txBloom, modelLogs, intermediatePostStateRoot: null);
                 receipts.Add(receipt);
 
                 // Typed receipt encoding: type_byte || RLP for EIP-2718 typed txs
@@ -250,6 +262,58 @@ namespace Nethereum.EVM.Execution
             stateReader.CommitChanges(executionState);
         }
 
+        private static void ExecuteHistoryStorageSystemCall(
+            BlockWitnessData block,
+            InMemoryStateReader stateReader,
+            Dictionary<string, AccountState> accounts,
+            TransactionExecutor executor)
+        {
+            const string HISTORY_STORAGE_CONTRACT = "0x0000F90827F1C53a10cb7A02335B175320002935";
+            const string SYSTEM_CALLER = "0xfffffffffffffffffffffffffffffffffffffffe";
+            const long SYSTEM_CALL_GAS = 30000000;
+
+            var executionState = new ExecutionStateService(stateReader);
+            WitnessStateBuilder.LoadAllAccountsAndStorage(executionState, block.Accounts);
+
+            executionState.MarkAddressAsWarm(HISTORY_STORAGE_CONTRACT);
+
+            var contractCode = executionState.GetCode(HISTORY_STORAGE_CONTRACT);
+            if (contractCode == null || contractCode.Length == 0)
+            {
+                stateReader.CommitChanges(executionState);
+                return;
+            }
+
+            var callContext = new EvmCallContext
+            {
+                From = SYSTEM_CALLER,
+                To = HISTORY_STORAGE_CONTRACT,
+                Data = block.ParentHash,
+                Gas = SYSTEM_CALL_GAS,
+                Value = EvmUInt256.Zero,
+                GasPrice = EvmUInt256.Zero,
+                ChainId = block.ChainId
+            };
+
+            var programContext = new ProgramContext(
+                callContext,
+                executionState,
+                null,
+                blockNumber: block.BlockNumber,
+                timestamp: block.Timestamp,
+                coinbase: block.Coinbase,
+                baseFee: block.BaseFee
+            );
+            programContext.Difficulty = block.Difficulty != null ? EvmUInt256.FromBigEndian(block.Difficulty) : EvmUInt256.Zero;
+            programContext.GasLimit = block.BlockGasLimit;
+
+            var program = new Program(contractCode, programContext);
+            var evmSimulator = executor.GetSimulator();
+            evmSimulator.ExecuteWithCallStack(program, traceEnabled: false);
+
+            stateReader.CommitChanges(executionState);
+        }
+
 #endif
 
         private static HardforkConfig ResolveConfig(BlockWitnessData block, HardforkRegistry registry)
@@ -310,6 +374,17 @@ namespace Nethereum.EVM.Execution
                 await ExecuteBeaconRootSystemCallAsync(block, stateReader, accounts, executor);
             }
 
+            // EIP-2935: History storage system call (Prague+). Writes parent
+            // hash to the deployed history contract so BLOCKHASH inside this
+            // block resolves via a normal SLOAD. The contract code performs
+            // the modulo-write internally; we just pass the parent hash as
+            // calldata and let the EVM run it.
+            if (block.Features?.Fork >= HardforkName.Prague
+                && block.ParentHash != null && block.ParentHash.Length >= 32)
+            {
+                await ExecuteHistoryStorageSystemCallAsync(block, stateReader, accounts, executor);
+            }
+
             long cumulativeGasUsed = 0;
             var txResults = new List<TransactionExecutionResult>();
             var receipts = new List<Receipt>();
@@ -335,7 +410,8 @@ namespace Nethereum.EVM.Execution
                 var modelLogs = EvmLogConverter.ToModelLogs(txLogs);
                 var txBloom = LogBloomCalculator.CalculateBloom(modelLogs);
                 LogBloomCalculator.CombineBloom(combinedBloom, txBloom);
-                var receipt = Receipt.CreateStatusReceipt(result.Success, cumulativeGasUsed, txBloom, modelLogs);
+                var receipt = config.ReceiptConstruction.Construct(
+                    result.Success, cumulativeGasUsed, txBloom, modelLogs, intermediatePostStateRoot: null);
                 receipts.Add(receipt);
 
                 // Typed receipt encoding: type_byte || RLP for EIP-2718 typed txs
@@ -523,6 +599,58 @@ namespace Nethereum.EVM.Execution
             await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
             // Finalize — commit storage changes regardless of success
+            stateReader.CommitChanges(executionState);
+        }
+
+        private static async Task ExecuteHistoryStorageSystemCallAsync(
+            BlockWitnessData block,
+            InMemoryStateReader stateReader,
+            Dictionary<string, AccountState> accounts,
+            TransactionExecutor executor)
+        {
+            const string HISTORY_STORAGE_CONTRACT = "0x0000F90827F1C53a10cb7A02335B175320002935";
+            const string SYSTEM_CALLER = "0xfffffffffffffffffffffffffffffffffffffffe";
+            const long SYSTEM_CALL_GAS = 30000000;
+
+            var executionState = new ExecutionStateService(stateReader);
+            await WitnessStateBuilder.LoadAllAccountsAndStorageAsync(executionState, block.Accounts);
+
+            executionState.MarkAddressAsWarm(HISTORY_STORAGE_CONTRACT);
+
+            var contractCode = await executionState.GetCodeAsync(HISTORY_STORAGE_CONTRACT);
+            if (contractCode == null || contractCode.Length == 0)
+            {
+                stateReader.CommitChanges(executionState);
+                return;
+            }
+
+            var callContext = new EvmCallContext
+            {
+                From = SYSTEM_CALLER,
+                To = HISTORY_STORAGE_CONTRACT,
+                Data = block.ParentHash,
+                Gas = SYSTEM_CALL_GAS,
+                Value = EvmUInt256.Zero,
+                GasPrice = EvmUInt256.Zero,
+                ChainId = block.ChainId
+            };
+
+            var programContext = new ProgramContext(
+                callContext,
+                executionState,
+                null,
+                blockNumber: block.BlockNumber,
+                timestamp: block.Timestamp,
+                coinbase: block.Coinbase,
+                baseFee: block.BaseFee
+            );
+            programContext.Difficulty = block.Difficulty != null ? EvmUInt256.FromBigEndian(block.Difficulty) : EvmUInt256.Zero;
+            programContext.GasLimit = block.BlockGasLimit;
+
+            var program = new Program(contractCode, programContext);
+            var evmSimulator = executor.GetSimulator();
+            await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
+
             stateReader.CommitChanges(executionState);
         }
 #endif

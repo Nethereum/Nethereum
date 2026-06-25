@@ -52,7 +52,13 @@ namespace Nethereum.EVM
             var memoryIndex = memoryLengthBig > 0 ? memoryIndexBig.ToInt() : 0;
             var memoryLength = memoryLengthBig.ToInt();
 
-            if (memoryLength > GasConstants.MAX_INITCODE_SIZE)
+            // EIP-3860 initcode size limit (Shanghai+). HardforkConfig.MaxInitcodeSize
+            // is 0 at every pre-Shanghai fork — gate the check so pre-Shanghai
+            // CREATEs with init-code length > 49152 (e.g. stQuadraticComplexityTest
+            // Create1000Byzantium [0,1,0] with length=0xc350=49664) actually enter
+            // the inner frame instead of fail-closing here and draining parent gas.
+            // Same conditional pattern is already used at TransactionExecutor.cs:67.
+            if (Config.MaxInitcodeSize > 0 && memoryLength > Config.MaxInitcodeSize)
             {
                 program.GasRemaining = 0;
                 program.ProgramResult.LastCallReturnData = null;
@@ -184,8 +190,16 @@ namespace Nethereum.EVM
             programContext.Depth = parentFrame.Depth + 1;
             programContext.EnforceGasSentry = program.ProgramContext.EnforceGasSentry;
             programContext.SstoreClearsSchedule = program.ProgramContext.SstoreClearsSchedule;
+            programContext.SstoreSetRefund = program.ProgramContext.SstoreSetRefund;
+            programContext.SstoreResetRefund = program.ProgramContext.SstoreResetRefund;
+            programContext.SstoreRefundRule = program.ProgramContext.SstoreRefundRule;
             programContext.TransientStorage = program.ProgramContext.TransientStorage;
             programContext.SetAccessListTracker(program.ProgramContext.AccessListTracker);
+            // EIP-4844: propagate blob context across CREATE/CREATE2 frames
+            // (symmetric with SetupCallFrame). BLOBHASH / BLOBBASEFEE must
+            // read the same blob list inside any nested frame.
+            programContext.BlobHashes = program.ProgramContext.BlobHashes;
+            programContext.BlobBaseFee = program.ProgramContext.BlobBaseFee;
 
             var callProgram = new Program(byteCode, programContext);
 

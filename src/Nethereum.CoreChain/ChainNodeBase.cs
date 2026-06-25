@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Witness;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
@@ -19,6 +23,7 @@ namespace Nethereum.CoreChain
     {
         protected readonly IBlockStore _blockStore;
         protected readonly ITransactionStore _transactionStore;
+        protected readonly IUncleStore _uncleStore;
         protected readonly IReceiptStore _receiptStore;
         protected readonly ILogStore _logStore;
         protected readonly IStateStore _stateStore;
@@ -29,6 +34,7 @@ namespace Nethereum.CoreChain
         protected readonly TransactionProcessor _transactionProcessor;
         protected readonly ITransactionVerificationAndRecovery _txVerifier;
         protected readonly TransactionExecutor _executor;
+        protected readonly ILogger _logger;
 
         protected ChainNodeBase(
             IBlockStore blockStore,
@@ -42,8 +48,11 @@ namespace Nethereum.CoreChain
             IStateReader nodeDataService = null,
             ITrieNodeStore trieNodeStore = null,
             IBlobStore blobStore = null,
-            HardforkConfig hardforkConfig = null)
+            IUncleStore uncleStore = null,
+            HardforkConfig hardforkConfig = null,
+            ILogger logger = null)
         {
+            _logger = logger ?? NullLogger.Instance;
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _transactionStore = transactionStore ?? throw new ArgumentNullException(nameof(transactionStore));
             _receiptStore = receiptStore ?? throw new ArgumentNullException(nameof(receiptStore));
@@ -55,12 +64,14 @@ namespace Nethereum.CoreChain
             _nodeDataService = nodeDataService ?? new StateStoreNodeDataService(_stateStore, _blockStore);
             _trieNodeStore = trieNodeStore;
             _blobStore = blobStore;
+            _uncleStore = uncleStore;
             _executor = new TransactionExecutor(hardforkConfig ?? throw new ArgumentNullException(nameof(hardforkConfig)));
         }
 
         public abstract ChainConfig Config { get; }
         public IBlockStore Blocks => _blockStore;
         public ITransactionStore Transactions => _transactionStore;
+        public IUncleStore Uncles => _uncleStore;
         public IReceiptStore Receipts => _receiptStore;
         public ILogStore Logs => _logStore;
         public IStateStore State => _stateStore;
@@ -756,6 +767,86 @@ namespace Nethereum.CoreChain
 
             return TraceConverter.ConvertToPrestateResult(
                 result.StateService, _nodeDataService);
+        }
+
+        public virtual async Task<byte[]> CaptureBlockWitnessAsync(long blockNumber)
+        {
+            var block = await _blockStore.GetByNumberAsync(blockNumber);
+            if (block == null)
+                throw new InvalidOperationException($"Block {blockNumber} not found");
+
+            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
+
+            // Read-only state surface for witness capture. When the live
+            // state store exposes IHistoricalStateProvider, reads resolve
+            // at parent block (matches the witness contract: the witness
+            // is the minimal pre-state that re-execution must consume).
+            // Wrapping in ReadOnlyStateStoreWrapper absorbs every write
+            // (sys-call writes, snapshot rollbacks, persistence) in memory;
+            // nothing reaches the underlying live store. Wrapping the trie
+            // node store in ReadOnlyTrieNodeStoreWrapper makes the
+            // calculator path inert if a future helper accidentally
+            // touches it under ReadOnly (engine skips the post-state
+            // compute, but the wrapper is the belt-and-braces guard).
+            IStateStore stateForCapture;
+            if (_stateStore is IHistoricalStateProvider histProvider)
+            {
+                var parentBlock = blockNumber > 0 ? blockNumber - 1 : 0;
+                stateForCapture = new ReadOnlyStateStoreWrapper(
+                    new HistoricalStateStoreReadAdapter(histProvider, _stateStore, parentBlock));
+            }
+            else
+            {
+                stateForCapture = new ReadOnlyStateStoreWrapper(_stateStore);
+            }
+
+            var trieNodeStoreForCapture = _trieNodeStore != null
+                ? (ITrieNodeStore)new ReadOnlyTrieNodeStoreWrapper(_trieNodeStore)
+                : new InMemoryTrieNodeStore();
+
+            // Single-fork resolution mirrors the legacy CaptureBlockWitnessAsync
+            // behaviour (stamped ChainConfig.Hardfork on the witness's
+            // BlockFeatureConfig). Mainnet replay subclasses can override
+            // this method to inject MainnetChainActivations.Instance.
+            var hardforkName = HardforkNames.Parse(Config.Hardfork ?? "prague");
+            var activations = new FixedChainActivations(hardforkName);
+            var hardforkConfig = Config.GetHardforkConfig();
+
+            var calculator = new IncrementalStateRootCalculator(stateForCapture, trieNodeStoreForCapture);
+            var engine = new BlockExecutor(
+                stateForCapture,
+                _blockStore,
+                activations,
+                chainConfigFactory: _ => Config,
+                hardforkConfigFactory: _ => hardforkConfig,
+                stateRootCalculator: calculator,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStoreForCapture);
+
+            var blockTxs = await _transactionStore.GetByBlockHashAsync(blockHash);
+            var txEntries = new List<TxEntry>(blockTxs?.Count ?? 0);
+            if (blockTxs != null)
+            {
+                foreach (var tx in blockTxs)
+                {
+                    var sender = _txVerifier.GetSenderAddress(tx);
+                    txEntries.Add(new TxEntry(tx, sender));
+                }
+            }
+
+            var result = await engine.ExecuteAsync(
+                block,
+                txEntries,
+                uncles: null,
+                withdrawals: null,
+                new BlockExecutionOptions
+                {
+                    ReadOnly = true,
+                    CaptureWitness = true,
+                    ParentBeaconBlockRoot = block.ParentBeaconBlockRoot
+                });
+
+            return result.WitnessBytes ?? Array.Empty<byte>();
         }
 
         public virtual async Task<OpcodeTraceResult> TraceCallAsync(

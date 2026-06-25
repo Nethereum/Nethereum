@@ -8,6 +8,7 @@ using Nethereum.Contracts;
 using Nethereum.Documentation;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
@@ -51,8 +52,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);
@@ -94,8 +95,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);
@@ -137,8 +138,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);
@@ -179,8 +180,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);
@@ -221,8 +222,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);
@@ -266,8 +267,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);
@@ -308,8 +309,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
 
                 var programContext = new ProgramContext(callInput, executionStateService);
                 var program = new Program(code, programContext);
-                var evmSimulator = new EVMSimulator();
-                await evmSimulator.ExecuteAsync(program);
+                var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+                await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
 
                 Assert.NotNull(program.ProgramResult);
                 Assert.NotNull(program.ProgramResult.Result);

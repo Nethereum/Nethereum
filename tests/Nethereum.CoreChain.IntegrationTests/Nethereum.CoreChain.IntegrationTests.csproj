@@ -29,6 +29,8 @@
     <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.BlockchainProcessing\Nethereum.BlockchainProcessing.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.BlockProver.Server\Nethereum.BlockProver.Server.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
   </ItemGroup>

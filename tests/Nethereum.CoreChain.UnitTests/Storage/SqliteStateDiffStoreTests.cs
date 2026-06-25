@@ -95,8 +95,12 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var addr1 = "0x1111111111111111111111111111111111111111";
             var addr2 = "0x2222222222222222222222222222222222222222";
 
-            await _store.SaveBlockDiffAsync(MakeDiff(5, (addr1, MakeAccount(100))));
-            await _store.SaveBlockDiffAsync(MakeDiff(5, (addr2, MakeAccount(200))));
+            // SaveBlockDiffAsync is atomic-replace per block (re-execution after kill-mid-block
+            // must overwrite any partial prior touched-set), so both addresses for the same
+            // block must be saved in a single diff.
+            await _store.SaveBlockDiffAsync(MakeDiff(5,
+                (addr1, MakeAccount(100)),
+                (addr2, MakeAccount(200))));
 
             var (found1, pre1) = await _store.GetFirstAccountPreValueAfterBlockAsync(addr1, 4);
             var (found2, pre2) = await _store.GetFirstAccountPreValueAfterBlockAsync(addr2, 4);
@@ -114,7 +118,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             diff.StorageDiffs.Add(new StorageDiffEntry
             {
                 Address = "0x1111111111111111111111111111111111111111",
-                Slot = 42,
+                SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(42),
                 PreValue = new byte[] { 1, 2, 3 }
             });
             await _store.SaveBlockDiffAsync(diff);
@@ -131,8 +135,8 @@ namespace Nethereum.CoreChain.UnitTests.Storage
         {
             var addr = "0x1111111111111111111111111111111111111111";
             var diff = new BlockStateDiff { BlockNumber = 5 };
-            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, Slot = 1, PreValue = new byte[] { 0x0A } });
-            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, Slot = 2, PreValue = new byte[] { 0x0B } });
+            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0x0A } });
+            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(2), PreValue = new byte[] { 0x0B } });
             await _store.SaveBlockDiffAsync(diff);
 
             var (found1, val1) = await _store.GetFirstStoragePreValueAfterBlockAsync(addr, 1, 4);
@@ -222,7 +226,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             diff.StorageDiffs.Add(new StorageDiffEntry
             {
                 Address = "0x1111111111111111111111111111111111111111",
-                Slot = 42,
+                SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(42),
                 PreValue = null
             });
             await _store.SaveBlockDiffAsync(diff);
@@ -239,7 +243,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
         {
             var addr = "0x1111111111111111111111111111111111111111";
             var diff = new BlockStateDiff { BlockNumber = 10 };
-            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, Slot = 1, PreValue = new byte[] { 0xFF } });
+            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0xFF } });
             await _store.SaveBlockDiffAsync(diff);
 
             await _store.DeleteDiffsAboveBlockAsync(5);
@@ -253,7 +257,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
         {
             var addr = "0x1111111111111111111111111111111111111111";
             var diff = new BlockStateDiff { BlockNumber = 3 };
-            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, Slot = 1, PreValue = new byte[] { 0xFF } });
+            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0xFF } });
             await _store.SaveBlockDiffAsync(diff);
 
             await _store.DeleteDiffsBelowBlockAsync(5);
@@ -315,7 +319,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var addr = "0x1111111111111111111111111111111111111111";
             var largeSlot = BigInteger.Pow(2, 200);
             var diff = new BlockStateDiff { BlockNumber = 5 };
-            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, Slot = largeSlot, PreValue = new byte[] { 0xAB } });
+            diff.StorageDiffs.Add(new StorageDiffEntry { Address = addr, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(largeSlot), PreValue = new byte[] { 0xAB } });
             await _store.SaveBlockDiffAsync(diff);
 
             var (found, preValue) = await _store.GetFirstStoragePreValueAfterBlockAsync(addr, largeSlot, 4);

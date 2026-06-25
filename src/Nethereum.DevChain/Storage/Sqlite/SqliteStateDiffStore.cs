@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 
@@ -40,6 +41,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                         address TEXT NOT NULL,
                         block_number INTEGER NOT NULL,
                         account_data BLOB,
+                        address_inline BLOB,
                         PRIMARY KEY (address, block_number)
                     );
                     CREATE INDEX IF NOT EXISTS idx_sda_block ON state_diff_accounts(block_number);
@@ -49,6 +51,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                         slot BLOB NOT NULL,
                         block_number INTEGER NOT NULL,
                         value BLOB,
+                        address_inline BLOB,
                         PRIMARY KEY (address, slot, block_number)
                     );
                     CREATE INDEX IF NOT EXISTS idx_sds_block ON state_diff_storage(block_number);
@@ -89,32 +92,49 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
                 try
                 {
+                    // Delete prior entries for this block first — re-execution
+                    // after kill-mid-block may produce a different touched-set;
+                    // orphan rows would corrupt future rewinds.
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_accounts WHERE block_number = @block",
+                        ("@block", (long)diff.BlockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_storage WHERE block_number = @block",
+                        ("@block", (long)diff.BlockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_block_index WHERE block_number = @block",
+                        ("@block", (long)diff.BlockNumber));
+
                     foreach (var entry in diff.AccountDiffs)
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
+                        var inlineAddress = InlineAddressBytes(entry.Address);
                         byte[] accountData = entry.PreValue != null
                             ? _accountLayout.EncodeAccount(entry.PreValue)
                             : null;
 
                         using var cmd = _manager.Connection.CreateCommand();
-                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_accounts (address, block_number, account_data) VALUES (@addr, @block, @data)";
+                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_accounts (address, block_number, account_data, address_inline) VALUES (@addr, @block, @data, @inline)";
                         cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                         cmd.Parameters.AddWithValue("@block", (long)diff.BlockNumber);
                         cmd.Parameters.AddWithValue("@data", (object)accountData ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@inline", inlineAddress);
                         cmd.ExecuteNonQuery();
                     }
 
                     foreach (var entry in diff.StorageDiffs)
                     {
                         var normalizedAddress = NormalizeAddress(entry.Address);
-                        var slotBytes = SlotToBytes(entry.Slot);
+                        var inlineAddress = InlineAddressBytes(entry.Address);
+                        // SlotKey is already keccak(slot) — Yellow Paper §4.1 storage path.
+                        var slotBytes = entry.SlotKey ?? throw new ArgumentException("StorageDiffEntry.SlotKey is required (keccak(slot), 32 bytes)");
+                        if (slotBytes.Length != 32)
+                            throw new ArgumentException($"StorageDiffEntry.SlotKey must be 32 bytes, got {slotBytes.Length}");
 
                         using var cmd = _manager.Connection.CreateCommand();
-                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_storage (address, slot, block_number, value) VALUES (@addr, @slot, @block, @val)";
+                        cmd.CommandText = "INSERT OR REPLACE INTO state_diff_storage (address, slot, block_number, value, address_inline) VALUES (@addr, @slot, @block, @val, @inline)";
                         cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                         cmd.Parameters.AddWithValue("@slot", slotBytes);
                         cmd.Parameters.AddWithValue("@block", (long)diff.BlockNumber);
                         cmd.Parameters.AddWithValue("@val", (object)entry.PreValue ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@inline", inlineAddress);
                         cmd.ExecuteNonQuery();
                     }
 
@@ -192,6 +212,85 @@ namespace Nethereum.DevChain.Storage.Sqlite
             }
 
             return Task.FromResult((false, (byte[])null));
+        }
+
+        public Task<BlockStateDiff> GetBlockDiffAsync(BigInteger blockNumber)
+        {
+            lock (_lock)
+            {
+                BlockStateDiff diff = null;
+
+                using (var cmd = _manager.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT account_data, address_inline FROM state_diff_accounts WHERE block_number = @block";
+                    cmd.Parameters.AddWithValue("@block", (long)blockNumber);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        diff ??= new BlockStateDiff { BlockNumber = blockNumber };
+                        var data = reader.IsDBNull(0) ? null : (byte[])reader[0];
+                        var inline = reader.IsDBNull(1) ? null : (byte[])reader[1];
+                        var address = inline != null ? "0x" + inline.ToHex() : null;
+                        diff.AccountDiffs.Add(new AccountDiffEntry
+                        {
+                            Address = address,
+                            PreValue = data != null ? _accountLayout.DecodeAccount(data) : null
+                        });
+                    }
+                }
+
+                using (var cmd = _manager.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT slot, value, address_inline FROM state_diff_storage WHERE block_number = @block";
+                    cmd.Parameters.AddWithValue("@block", (long)blockNumber);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        diff ??= new BlockStateDiff { BlockNumber = blockNumber };
+                        var slotKey = (byte[])reader[0];
+                        var preVal = reader.IsDBNull(1) ? null : (byte[])reader[1];
+                        var inline = reader.IsDBNull(2) ? null : (byte[])reader[2];
+                        var address = inline != null ? "0x" + inline.ToHex() : null;
+                        diff.StorageDiffs.Add(new StorageDiffEntry
+                        {
+                            Address = address,
+                            // Slot column stores keccak(slot); see Yellow Paper §4.1.
+                            SlotKey = slotKey,
+                            PreValue = preVal
+                        });
+                    }
+                }
+
+                return Task.FromResult(diff);
+            }
+        }
+
+        public Task DeleteBlockDiffAsync(BigInteger blockNumber)
+        {
+            // Atomicity from a SAVEPOINT, same as DeleteDiffsAboveBlockAsync.
+            lock (_lock)
+            {
+                var sp = NextSavepoint();
+                ExecuteSql($"SAVEPOINT {sp}");
+                try
+                {
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_accounts WHERE block_number = @block",
+                        ("@block", (long)blockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_storage WHERE block_number = @block",
+                        ("@block", (long)blockNumber));
+                    ExecuteNonQuerySimple("DELETE FROM state_diff_block_index WHERE block_number = @block",
+                        ("@block", (long)blockNumber));
+                    UpdateMetaBounds();
+                    ExecuteSql($"RELEASE SAVEPOINT {sp}");
+                }
+                catch
+                {
+                    ExecuteSql($"ROLLBACK TO SAVEPOINT {sp}");
+                    ExecuteSql($"RELEASE SAVEPOINT {sp}");
+                    throw;
+                }
+            }
+            return Task.CompletedTask;
         }
 
         public Task DeleteDiffsAboveBlockAsync(BigInteger blockNumber)
@@ -334,12 +433,19 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private static string NormalizeAddress(string address)
         {
-            return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+            return StateKeys.AccountKeyHex(address);
         }
 
+        private static byte[] InlineAddressBytes(string address)
+        {
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
+        }
+
+        // Yellow Paper §4.1 storage-trie path. The persistent diff store keys
+        // slots by keccak(slot), matching the state CF rekey (R1).
         private static byte[] SlotToBytes(BigInteger slot)
         {
-            return slot.ToByteArray(isUnsigned: true, isBigEndian: true);
+            return Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot);
         }
     }
 }

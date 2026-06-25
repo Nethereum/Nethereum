@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 
@@ -11,7 +12,9 @@ namespace Nethereum.CoreChain.Storage.InMemory
     public class InMemoryStateDiffStore : IStateDiffStore
     {
         private readonly SortedDictionary<(string Address, BigInteger BlockNumber), Account> _accountDiffs = new();
-        private readonly SortedDictionary<(string Address, BigInteger Slot, BigInteger BlockNumber), byte[]> _storageDiffs = new();
+        // Slot is the hex of keccak(slot) (R2) — see Yellow Paper §4.1. We key by hex
+        // string because byte[] has no built-in value equality for tuple membership.
+        private readonly SortedDictionary<(string Address, string SlotHex, BigInteger BlockNumber), byte[]> _storageDiffs = new();
         private readonly SortedDictionary<BigInteger, List<BlockIndexEntry>> _blockIndex = new();
         private BigInteger? _oldestBlock;
         private BigInteger? _newestBlock;
@@ -21,20 +24,42 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
+                // Delete prior entries for this block (re-execution after
+                // kill-mid-block or auto-rewind may produce a different
+                // touched-set; orphan entries would corrupt future rewinds).
+                if (_blockIndex.TryGetValue(diff.BlockNumber, out var oldEntries))
+                {
+                    foreach (var entry in oldEntries)
+                    {
+                        if (entry.Type == DiffType.Account)
+                            _accountDiffs.Remove((entry.Address, diff.BlockNumber));
+                        else
+                            _storageDiffs.Remove((entry.Address, entry.SlotHex, diff.BlockNumber));
+                    }
+                    _blockIndex.Remove(diff.BlockNumber);
+                }
+
                 var indexEntries = new List<BlockIndexEntry>();
 
                 foreach (var entry in diff.AccountDiffs)
                 {
                     var normalizedAddress = NormalizeAddress(entry.Address);
+                    var originalAddress = OriginalAddress(entry.Address);
                     _accountDiffs[(normalizedAddress, diff.BlockNumber)] = entry.PreValue;
-                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Account, Address = normalizedAddress });
+                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Account, Address = normalizedAddress, OriginalAddress = originalAddress });
                 }
 
                 foreach (var entry in diff.StorageDiffs)
                 {
                     var normalizedAddress = NormalizeAddress(entry.Address);
-                    _storageDiffs[(normalizedAddress, entry.Slot, diff.BlockNumber)] = entry.PreValue;
-                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Storage, Address = normalizedAddress, Slot = entry.Slot });
+                    var originalAddress = OriginalAddress(entry.Address);
+                    // Yellow Paper §4.1: SlotKey is keccak(slot).
+                    var slotKey = entry.SlotKey ?? throw new System.ArgumentException("StorageDiffEntry.SlotKey is required (keccak(slot), 32 bytes)");
+                    if (slotKey.Length != 32)
+                        throw new System.ArgumentException($"StorageDiffEntry.SlotKey must be 32 bytes (keccak(slot)), got {slotKey.Length}");
+                    var slotHex = slotKey.ToHex();
+                    _storageDiffs[(normalizedAddress, slotHex, diff.BlockNumber)] = entry.PreValue;
+                    indexEntries.Add(new BlockIndexEntry { Type = DiffType.Storage, Address = normalizedAddress, OriginalAddress = originalAddress, SlotHex = slotHex });
                 }
 
                 _blockIndex[diff.BlockNumber] = indexEntries;
@@ -69,19 +94,65 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public Task<(bool Found, byte[] PreValue)> GetFirstStoragePreValueAfterBlockAsync(string address, BigInteger slot, BigInteger blockNumber)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var slotHex = StateKeys.StorageSlotKey(slot).ToHex();
             var searchFrom = blockNumber + 1;
 
             lock (_lock)
             {
                 foreach (var kvp in _storageDiffs)
                 {
-                    if (kvp.Key.Address != normalizedAddress || kvp.Key.Slot != slot) continue;
+                    if (kvp.Key.Address != normalizedAddress || kvp.Key.SlotHex != slotHex) continue;
                     if (kvp.Key.BlockNumber < searchFrom) continue;
                     return Task.FromResult((true, kvp.Value));
                 }
             }
 
             return Task.FromResult((false, (byte[])null));
+        }
+
+        public Task<BlockStateDiff> GetBlockDiffAsync(BigInteger blockNumber)
+        {
+            lock (_lock)
+            {
+                if (!_blockIndex.TryGetValue(blockNumber, out var entries))
+                    return Task.FromResult<BlockStateDiff>(null);
+
+                var diff = new BlockStateDiff { BlockNumber = blockNumber };
+                foreach (var entry in entries)
+                {
+                    if (entry.Type == DiffType.Account)
+                    {
+                        _accountDiffs.TryGetValue((entry.Address, blockNumber), out var pre);
+                        diff.AccountDiffs.Add(new AccountDiffEntry { Address = entry.OriginalAddress, PreValue = pre });
+                    }
+                    else
+                    {
+                        _storageDiffs.TryGetValue((entry.Address, entry.SlotHex, blockNumber), out var pre);
+                        diff.StorageDiffs.Add(new StorageDiffEntry { Address = entry.OriginalAddress, SlotKey = entry.SlotHex.HexToByteArray(), PreValue = pre });
+                    }
+                }
+                return Task.FromResult(diff);
+            }
+        }
+
+        public Task DeleteBlockDiffAsync(BigInteger blockNumber)
+        {
+            lock (_lock)
+            {
+                if (_blockIndex.TryGetValue(blockNumber, out var entries))
+                {
+                    foreach (var entry in entries)
+                    {
+                        if (entry.Type == DiffType.Account)
+                            _accountDiffs.Remove((entry.Address, blockNumber));
+                        else
+                            _storageDiffs.Remove((entry.Address, entry.SlotHex, blockNumber));
+                    }
+                    _blockIndex.Remove(blockNumber);
+                    UpdateBounds();
+                }
+            }
+            return Task.CompletedTask;
         }
 
         public Task DeleteDiffsAboveBlockAsync(BigInteger blockNumber)
@@ -98,7 +169,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
                             if (entry.Type == DiffType.Account)
                                 _accountDiffs.Remove((entry.Address, block));
                             else
-                                _storageDiffs.Remove((entry.Address, entry.Slot, block));
+                                _storageDiffs.Remove((entry.Address, entry.SlotHex, block));
                         }
                     }
                     _blockIndex.Remove(block);
@@ -124,7 +195,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
                             if (entry.Type == DiffType.Account)
                                 _accountDiffs.Remove((entry.Address, block));
                             else
-                                _storageDiffs.Remove((entry.Address, entry.Slot, block));
+                                _storageDiffs.Remove((entry.Address, entry.SlotHex, block));
                         }
                     }
                     _blockIndex.Remove(block);
@@ -168,6 +239,11 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         private static string NormalizeAddress(string address)
         {
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static string OriginalAddress(string address)
+        {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
 
@@ -181,7 +257,9 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             public DiffType Type { get; set; }
             public string Address { get; set; }
-            public BigInteger Slot { get; set; }
+            public string OriginalAddress { get; set; }
+            // SlotHex = hex of keccak(slot) bytes. See Yellow Paper §4.1.
+            public string SlotHex { get; set; }
         }
     }
 }

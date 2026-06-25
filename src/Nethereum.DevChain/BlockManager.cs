@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -55,21 +56,39 @@ namespace Nethereum.DevChain
             _stateStore = stateStore;
             _txVerifier = txVerifier;
             _config = config;
-            _trieNodeStore = trieNodeStore;
+            _trieNodeStore = trieNodeStore ?? new InMemoryTrieNodeStore();
 
             StateRootCalculator = config.StateTree == StateTreeType.Binary
                 ? config.CreateBinaryIncrementalStateRootCalculator(stateStore)
-                : new IncrementalStateRootCalculator(stateStore, trieNodeStore);
+                : new IncrementalStateRootCalculator(stateStore, _trieNodeStore);
             var stateRootCalc = StateRootCalculator;
 
+            // DevChain pins a single hardfork via DevChainConfig.Hardfork
+            // (no scheduled activations). NoRewardPolicy — DevChain has
+            // no PoW miner rewards. Block-rewards moved to the beacon
+            // chain post-Merge anyway and DevChain is post-Merge by
+            // default.
+            var pinnedFork = Nethereum.EVM.HardforkNames.Parse(config.Hardfork ?? "prague");
+            var activations = new FixedChainActivations(pinnedFork);
+            var hardforkConfig = config.GetHardforkConfig();
+            var engine = new BlockExecutor(
+                stateStore,
+                blockStore,
+                activations,
+                chainConfigFactory: _ => config,
+                hardforkConfigFactory: _ => hardforkConfig,
+                stateRootCalculator: stateRootCalc,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: _trieNodeStore);
+
             _blockProducer = new BlockProducer(
+                engine,
                 blockStore,
                 transactionStore,
                 receiptStore,
                 logStore,
                 stateStore,
-                transactionProcessor,
-                trieNodeStore,
+                _trieNodeStore,
                 stateRootCalc);
         }
 
@@ -182,6 +201,8 @@ namespace Nethereum.DevChain
             }
         }
 
+        public bool CaptureWitness { get; set; }
+
         public IIncrementalStateRootCalculator StateRootCalculator { get; }
 
         public async Task<byte[]> MineBlockAsync() => await MineBlockAsync(null);
@@ -227,7 +248,8 @@ namespace Nethereum.DevChain
                 PrevRandao = prevRandao,
                 ExtraData = Array.Empty<byte>(),
                 ChainId = blockContext.ChainId,
-                ParentBeaconBlockRoot = parentBeaconBlockRoot
+                ParentBeaconBlockRoot = parentBeaconBlockRoot,
+                CaptureWitness = CaptureWitness
             };
 
             var result = await _blockProducer.ProduceBlockAsync(transactions, options);

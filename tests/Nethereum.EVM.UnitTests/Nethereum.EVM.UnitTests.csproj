@@ -17,7 +17,7 @@
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
-    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.8.0" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>

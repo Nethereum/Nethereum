@@ -31,7 +31,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                 AutoMine = true
             };
 
-            var node = new DevChainNode(config);
+            using var node = new DevChainNode(config);
             var operatorAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
             await node.StartAsync(new[] { operatorAddress }, BigInteger.Parse("100000000000000000000000"));
 
@@ -67,7 +67,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                 AutoMine = true
             };
 
-            var node = new DevChainNode(config);
+            using var node = new DevChainNode(config);
             var operatorAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
             await node.StartAsync(new[] { operatorAddress }, BigInteger.Parse("100000000000000000000000"));
 

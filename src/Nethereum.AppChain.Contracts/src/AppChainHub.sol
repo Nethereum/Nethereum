@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
+
+import {IAuthority} from "./IAuthority.sol";
 
 interface IProofVerifier {
     function verify(bytes32 root, bytes calldata proof) external view returns (bool);
@@ -25,7 +27,7 @@ contract AppChainHub {
         bytes32 txRoot;
         bytes32 receiptRoot;
         uint256 timestamp;
-        bytes extraData; // future: ZK proofs, blob commitments, etc.
+        bytes extraData;
     }
 
     struct Message {
@@ -47,78 +49,41 @@ contract AppChainHub {
     // ═══════════════════════════════════════════
 
     address public hubOwner;
-
     uint256 public registrationFee;
     uint256 public messageFee;
-    uint256 public hubFeeBps; // basis points (e.g. 1000 = 10%)
-
+    uint256 public hubFeeBps;
     uint256 public hubBalance;
     mapping(uint64 => uint256) public ownerBalances;
 
     mapping(uint64 => AppChainInfo) public appChains;
-    mapping(uint64 => mapping(uint64 => Anchor)) public anchors; // chainId => blockNumber => anchor
-    mapping(uint64 => mapping(uint64 => Message)) public messages; // chainId => messageId => message
-    mapping(uint64 => mapping(address => bool)) public authorizedSenders; // chainId => sender => authorized
-    mapping(uint64 => address) public verifiers; // chainId => IProofVerifier (address(0) = default root matching)
-    mapping(uint64 => MessageRootCheckpoint) public messageRootCheckpoints; // chainId => (lastProcessedMessageId, merkleRoot)
+    mapping(uint64 => mapping(uint64 => Anchor)) public anchors;
+    mapping(uint64 => mapping(uint64 => Message)) public messages;
+    mapping(uint64 => mapping(address => bool)) public authorizedSenders;
+    mapping(uint64 => address) public verifiers;
+    mapping(uint64 => IAuthority) public authorities;
+    mapping(uint64 => MessageRootCheckpoint) public messageRootCheckpoints;
 
-    uint256 public constant MAX_MESSAGE_SIZE = 10240; // 10 KB
+    uint256 public constant MAX_MESSAGE_SIZE = 10240;
     uint64 public constant MAX_CHAIN_ID = type(uint64).max;
+
+    uint256 private _reentrancyStatus;
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
 
     // ═══════════════════════════════════════════
     //  EVENTS
     // ═══════════════════════════════════════════
 
-    event AppChainRegistered(
-        uint64 indexed chainId,
-        address indexed owner,
-        address sequencer
-    );
-
-    event AppChainMetadataUpdated(
-        uint64 indexed chainId,
-        string name,
-        string description,
-        string url
-    );
-
-    event SequencerChanged(
-        uint64 indexed chainId,
-        address indexed oldSequencer,
-        address indexed newSequencer
-    );
-
-    event AuthorizedSenderChanged(
-        uint64 indexed chainId,
-        address indexed sender,
-        bool authorized
-    );
-
-    event Anchored(
-        uint64 indexed chainId,
-        uint64 indexed blockNumber,
-        bytes32 stateRoot,
-        bytes32 txRoot,
-        bytes32 receiptRoot,
-        uint64 processedUpToMessageId
-    );
-
-    event MessageSent(
-        uint64 indexed targetChainId,
-        uint64 indexed messageId,
-        uint64 sourceChainId,
-        address sender,
-        address target,
-        bytes data
-    );
-
-    event MessagesAcknowledged(
-        uint64 indexed chainId,
-        uint64 indexed processedUpToMessageId,
-        bytes32 messagesRoot
-    );
-
+    event AppChainRegistered(uint64 indexed chainId, address indexed owner, address sequencer);
+    event AppChainMetadataUpdated(uint64 indexed chainId, string name, string description, string url);
+    event SequencerChanged(uint64 indexed chainId, address indexed oldSequencer, address indexed newSequencer);
+    event AuthorizedSenderChanged(uint64 indexed chainId, address indexed sender, bool authorized);
+    event AppChainOwnershipTransferred(uint64 indexed chainId, address indexed oldOwner, address indexed newOwner);
+    event Anchored(uint64 indexed chainId, uint64 indexed blockNumber, bytes32 stateRoot, bytes32 txRoot, bytes32 receiptRoot, uint64 processedUpToMessageId);
+    event MessageSent(uint64 indexed targetChainId, uint64 indexed messageId, uint64 sourceChainId, address sender, address target, bytes data);
+    event MessagesAcknowledged(uint64 indexed chainId, uint64 indexed processedUpToMessageId, bytes32 messagesRoot);
     event VerifierChanged(uint64 indexed chainId, address indexed oldVerifier, address indexed newVerifier);
+    event AuthorityChanged(uint64 indexed chainId, address indexed oldAuthority, address indexed newAuthority);
     event RegistrationFeeChanged(uint256 oldFee, uint256 newFee);
     event MessageFeeChanged(uint256 oldFee, uint256 newFee);
     event HubFeeBpsChanged(uint256 oldBps, uint256 newBps);
@@ -139,8 +104,20 @@ contract AppChainHub {
     }
 
     modifier onlySequencer(uint64 chainId) {
-        require(appChains[chainId].sequencer == msg.sender, "Only sequencer");
+        IAuthority auth = authorities[chainId];
+        if (address(auth) != address(0)) {
+            require(auth.canSubmitAnchor(chainId, msg.sender), "Not authorized by authority");
+        } else {
+            require(appChains[chainId].sequencer == msg.sender, "Only sequencer");
+        }
         _;
+    }
+
+    modifier nonReentrant() {
+        require(_reentrancyStatus != _ENTERED, "ReentrancyGuard: reentrant call");
+        _reentrancyStatus = _ENTERED;
+        _;
+        _reentrancyStatus = _NOT_ENTERED;
     }
 
     // ═══════════════════════════════════════════
@@ -153,6 +130,7 @@ contract AppChainHub {
         registrationFee = _registrationFee;
         messageFee = _messageFee;
         hubFeeBps = _hubFeeBps;
+        _reentrancyStatus = _NOT_ENTERED;
     }
 
     // ═══════════════════════════════════════════
@@ -163,7 +141,7 @@ contract AppChainHub {
         uint64 chainId,
         address sequencer,
         bytes calldata sequencerSignature
-    ) external payable {
+    ) external payable nonReentrant {
         require(msg.value >= registrationFee, "Insufficient fee");
         require(!appChains[chainId].registered, "Already registered");
         require(sequencer != address(0), "Invalid sequencer");
@@ -181,9 +159,14 @@ contract AppChainHub {
             registered: true
         });
 
-        hubBalance += msg.value;
+        hubBalance += registrationFee;
 
         emit AppChainRegistered(chainId, msg.sender, sequencer);
+
+        if (msg.value > registrationFee) {
+            (bool ok,) = payable(msg.sender).call{value: msg.value - registrationFee}("");
+            require(ok, "Refund failed");
+        }
     }
 
     function updateMetadata(
@@ -205,18 +188,6 @@ contract AppChainHub {
         emit SequencerChanged(chainId, oldSequencer, newSequencer);
     }
 
-    function transferAppChainOwnership(
-        uint64 chainId,
-        address newOwner
-    ) external onlyAppChainOwner(chainId) {
-        require(newOwner != address(0), "Invalid owner");
-        appChains[chainId].owner = newOwner;
-    }
-
-    // ═══════════════════════════════════════════
-    //  AUTHORIZED SENDERS
-    // ═══════════════════════════════════════════
-
     function setAuthorizedSender(
         uint64 chainId,
         address sender,
@@ -226,10 +197,6 @@ contract AppChainHub {
         emit AuthorizedSenderChanged(chainId, sender, authorized);
     }
 
-    // ═══════════════════════════════════════════
-    //  PROOF VERIFICATION
-    // ═══════════════════════════════════════════
-
     function setVerifier(
         uint64 chainId,
         address verifier
@@ -237,6 +204,25 @@ contract AppChainHub {
         address oldVerifier = verifiers[chainId];
         verifiers[chainId] = verifier;
         emit VerifierChanged(chainId, oldVerifier, verifier);
+    }
+
+    function setAuthority(
+        uint64 chainId,
+        IAuthority authority
+    ) external onlyAppChainOwner(chainId) {
+        address oldAuth = address(authorities[chainId]);
+        authorities[chainId] = authority;
+        emit AuthorityChanged(chainId, oldAuth, address(authority));
+    }
+
+    function transferAppChainOwnership(
+        uint64 chainId,
+        address newOwner
+    ) external onlyAppChainOwner(chainId) {
+        require(newOwner != address(0), "Invalid owner");
+        address oldOwner = appChains[chainId].owner;
+        appChains[chainId].owner = newOwner;
+        emit AppChainOwnershipTransferred(chainId, oldOwner, newOwner);
     }
 
     // ═══════════════════════════════════════════
@@ -248,7 +234,7 @@ contract AppChainHub {
         uint64 targetChainId,
         address target,
         bytes calldata data
-    ) external payable {
+    ) external payable nonReentrant {
         require(appChains[targetChainId].registered, "Target AppChain not registered");
         require(authorizedSenders[targetChainId][msg.sender], "Not authorized");
         require(msg.value >= messageFee, "Insufficient fee");
@@ -260,12 +246,8 @@ contract AppChainHub {
         ownerBalances[targetChainId] += fee - hubCut;
         hubBalance += hubCut;
 
-        // Refund excess
-        if (msg.value > fee) {
-            payable(msg.sender).transfer(msg.value - fee);
-        }
-
         uint64 messageId = appChains[targetChainId].nextMessageId;
+        appChains[targetChainId].nextMessageId = messageId + 1;
 
         messages[targetChainId][messageId] = Message({
             sourceChainId: sourceChainId,
@@ -276,9 +258,12 @@ contract AppChainHub {
             timestamp: block.timestamp
         });
 
-        appChains[targetChainId].nextMessageId = messageId + 1;
-
         emit MessageSent(targetChainId, messageId, sourceChainId, msg.sender, target, data);
+
+        if (msg.value > fee) {
+            (bool ok,) = payable(msg.sender).call{value: msg.value - fee}("");
+            require(ok, "Refund failed");
+        }
     }
 
     function getMessage(
@@ -287,27 +272,39 @@ contract AppChainHub {
     ) external view returns (
         uint64 sourceChainId,
         address sender,
+        uint64 targetChainId,
         address target,
         bytes memory data,
         uint256 timestamp
     ) {
         Message storage m = messages[chainId][messageId];
-        return (m.sourceChainId, m.sender, m.target, m.data, m.timestamp);
+        return (m.sourceChainId, m.sender, m.targetChainId, m.target, m.data, m.timestamp);
     }
 
     function getMessageRange(
         uint64 chainId,
         uint64 fromId,
         uint64 toId
-    ) external view returns (Message[] memory) {
+    ) external view returns (
+        uint64[] memory sourceChainIds,
+        address[] memory senders,
+        address[] memory targets,
+        bytes[] memory datas
+    ) {
         require(toId >= fromId, "Invalid range");
-        require(toId - fromId <= 100, "Range too large");
+        uint64 count = toId - fromId + 1;
+        sourceChainIds = new uint64[](count);
+        senders = new address[](count);
+        targets = new address[](count);
+        datas = new bytes[](count);
 
-        Message[] memory result = new Message[](toId - fromId);
-        for (uint64 i = fromId; i < toId; i++) {
-            result[i - fromId] = messages[chainId][i];
+        for (uint64 i = 0; i < count; i++) {
+            Message storage m = messages[chainId][fromId + i];
+            sourceChainIds[i] = m.sourceChainId;
+            senders[i] = m.sender;
+            targets[i] = m.target;
+            datas[i] = m.data;
         }
-        return result;
     }
 
     // ═══════════════════════════════════════════
@@ -324,15 +321,16 @@ contract AppChainHub {
         bytes calldata extraData
     ) external onlySequencer(chainId) {
         AppChainInfo storage info = appChains[chainId];
-        require(blockNumber > info.latestBlock, "Block must be newer");
-        require(
-            processedUpToMessageId >= info.lastProcessedMessageId,
-            "Cannot un-process messages"
-        );
-        require(
-            processedUpToMessageId < info.nextMessageId,
-            "Cannot process future messages"
-        );
+        require(blockNumber > info.latestBlock, "Block already anchored");
+        require(stateRoot != bytes32(0), "Invalid state root");
+
+        if (processedUpToMessageId > 0) {
+            require(processedUpToMessageId < info.nextMessageId, "processedUpToMessageId exceeds sent messages");
+            require(processedUpToMessageId >= info.lastProcessedMessageId, "Cannot decrease processedUpToMessageId");
+            info.lastProcessedMessageId = processedUpToMessageId;
+        }
+
+        info.latestBlock = blockNumber;
 
         anchors[chainId][blockNumber] = Anchor({
             stateRoot: stateRoot,
@@ -341,9 +339,6 @@ contract AppChainHub {
             timestamp: block.timestamp,
             extraData: extraData
         });
-
-        info.latestBlock = blockNumber;
-        info.lastProcessedMessageId = processedUpToMessageId;
 
         emit Anchored(chainId, blockNumber, stateRoot, txRoot, receiptRoot, processedUpToMessageId);
     }
@@ -370,10 +365,10 @@ contract AppChainHub {
         bytes32 receiptRoot
     ) external view returns (bool) {
         Anchor storage a = anchors[chainId][blockNumber];
-        if (a.timestamp == 0) return false;
-        return a.stateRoot == stateRoot &&
-               a.txRoot == txRoot &&
-               a.receiptRoot == receiptRoot;
+        return a.timestamp > 0 &&
+            a.stateRoot == stateRoot &&
+            a.txRoot == txRoot &&
+            a.receiptRoot == receiptRoot;
     }
 
     function verifyAnchorProof(
@@ -382,15 +377,10 @@ contract AppChainHub {
         bytes calldata proof
     ) external view returns (bool) {
         Anchor storage a = anchors[chainId][blockNumber];
-        if (a.timestamp == 0) return false;
-
-        address verifier = verifiers[chainId];
-        if (verifier == address(0)) {
-            // Default: no proof verifier set, root matching only
-            return true;
-        }
-
-        return IProofVerifier(verifier).verify(a.stateRoot, proof);
+        require(a.timestamp > 0, "Anchor not found");
+        address v = verifiers[chainId];
+        if (v == address(0)) return true;
+        return IProofVerifier(v).verify(a.stateRoot, proof);
     }
 
     // ═══════════════════════════════════════════
@@ -403,40 +393,29 @@ contract AppChainHub {
         bytes32 messagesRoot
     ) external onlySequencer(chainId) {
         AppChainInfo storage info = appChains[chainId];
-        require(info.registered, "Not registered");
-        require(
-            processedUpToMessageId >= info.lastProcessedMessageId,
-            "Cannot un-process messages"
-        );
-        require(
-            processedUpToMessageId < info.nextMessageId,
-            "Cannot process future messages"
-        );
+        require(processedUpToMessageId < info.nextMessageId, "processedUpToMessageId exceeds sent messages");
+        require(processedUpToMessageId > info.lastProcessedMessageId, "No new messages processed");
+        require(messagesRoot != bytes32(0), "Invalid messages root");
 
         info.lastProcessedMessageId = processedUpToMessageId;
-        messageRootCheckpoints[chainId] = MessageRootCheckpoint({
-            processedUpToMessageId: processedUpToMessageId,
-            merkleRoot: messagesRoot
-        });
+        messageRootCheckpoints[chainId] = MessageRootCheckpoint(processedUpToMessageId, messagesRoot);
 
         emit MessagesAcknowledged(chainId, processedUpToMessageId, messagesRoot);
     }
 
-    function getMessageRootCheckpoint(
-        uint64 chainId
-    ) external view returns (uint64 processedUpToMessageId, bytes32 merkleRoot) {
+    function getMessageRootCheckpoint(uint64 chainId) external view returns (uint64, bytes32) {
         MessageRootCheckpoint storage cp = messageRootCheckpoints[chainId];
         return (cp.processedUpToMessageId, cp.merkleRoot);
     }
 
     function verifyMessageInclusion(
         uint64 chainId,
-        bytes32[] calldata proof,
         uint64 sourceChainId,
         uint64 messageId,
         bytes32 txHash,
         bool success,
-        bytes32 dataHash
+        bytes32 dataHash,
+        bytes32[] calldata proof
     ) external view returns (bool) {
         bytes32 root = messageRootCheckpoints[chainId].merkleRoot;
         require(root != bytes32(0), "No messages acknowledged yet");
@@ -449,47 +428,57 @@ contract AppChainHub {
     }
 
     // ═══════════════════════════════════════════
-    //  FEES
+    //  FEES (pull-payment pattern)
     // ═══════════════════════════════════════════
 
-    function withdrawFees(uint64 chainId) external onlyAppChainOwner(chainId) {
+    function withdrawFees(uint64 chainId) external onlyAppChainOwner(chainId) nonReentrant {
         uint256 amount = ownerBalances[chainId];
         require(amount > 0, "No fees to withdraw");
         ownerBalances[chainId] = 0;
-        payable(msg.sender).transfer(amount);
+        (bool ok,) = payable(msg.sender).call{value: amount}("");
+        require(ok, "Withdrawal failed");
     }
 
-    function withdrawHubFees() external onlyHubOwner {
+    function withdrawHubFees() external onlyHubOwner nonReentrant {
         uint256 amount = hubBalance;
         require(amount > 0, "No fees to withdraw");
         hubBalance = 0;
-        payable(msg.sender).transfer(amount);
+        (bool ok,) = payable(msg.sender).call{value: amount}("");
+        require(ok, "Withdrawal failed");
     }
 
     // ═══════════════════════════════════════════
     //  HUB ADMIN
     // ═══════════════════════════════════════════
 
+    uint256 public constant MAX_FEE = 100 ether;
+
     function setRegistrationFee(uint256 newFee) external onlyHubOwner {
-        emit RegistrationFeeChanged(registrationFee, newFee);
+        require(newFee <= MAX_FEE, "Fee exceeds maximum");
+        uint256 oldFee = registrationFee;
         registrationFee = newFee;
+        emit RegistrationFeeChanged(oldFee, newFee);
     }
 
     function setMessageFee(uint256 newFee) external onlyHubOwner {
-        emit MessageFeeChanged(messageFee, newFee);
+        require(newFee <= MAX_FEE, "Fee exceeds maximum");
+        uint256 oldFee = messageFee;
         messageFee = newFee;
+        emit MessageFeeChanged(oldFee, newFee);
     }
 
     function setHubFeeBps(uint256 newBps) external onlyHubOwner {
         require(newBps <= 10000, "Hub fee cannot exceed 100%");
-        emit HubFeeBpsChanged(hubFeeBps, newBps);
+        uint256 oldBps = hubFeeBps;
         hubFeeBps = newBps;
+        emit HubFeeBpsChanged(oldBps, newBps);
     }
 
     function transferHubOwnership(address newOwner) external onlyHubOwner {
         require(newOwner != address(0), "Invalid owner");
-        emit HubOwnerChanged(hubOwner, newOwner);
+        address oldOwner = hubOwner;
         hubOwner = newOwner;
+        emit HubOwnerChanged(oldOwner, newOwner);
     }
 
     // ═══════════════════════════════════════════
@@ -505,19 +494,12 @@ contract AppChainHub {
         bool registered
     ) {
         AppChainInfo storage info = appChains[chainId];
-        return (
-            info.owner,
-            info.sequencer,
-            info.latestBlock,
-            info.lastProcessedMessageId,
-            info.nextMessageId,
-            info.registered
-        );
+        return (info.owner, info.sequencer, info.latestBlock, info.lastProcessedMessageId, info.nextMessageId, info.registered);
     }
 
     function pendingMessageCount(uint64 chainId) external view returns (uint64) {
         AppChainInfo storage info = appChains[chainId];
-        if (!info.registered) return 0;
+        if (!info.registered || info.nextMessageId <= 1) return 0;
         return info.nextMessageId - info.lastProcessedMessageId - 1;
     }
 
@@ -550,7 +532,7 @@ contract AppChainHub {
     }
 
     // ═══════════════════════════════════════════
-    //  INTERNAL: SIGNATURE RECOVERY
+    //  INTERNAL: SIGNATURE RECOVERY (EIP-2 compliant)
     // ═══════════════════════════════════════════
 
     function _toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
@@ -569,6 +551,7 @@ contract AppChainHub {
         }
         if (v < 27) v += 27;
         require(v == 27 || v == 28, "Invalid signature v");
+        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0, "Invalid signature s");
         address recovered = ecrecover(hash, v, r, s);
         require(recovered != address(0), "Invalid signature");
         return recovered;

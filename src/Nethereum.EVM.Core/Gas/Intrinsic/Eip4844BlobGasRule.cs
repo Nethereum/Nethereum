@@ -13,16 +13,28 @@ namespace Nethereum.EVM.Gas.Intrinsic
     {
         private const int GAS_PER_BLOB = 131072;                 // 2^17
         private const int MIN_BASE_FEE_PER_BLOB_GAS = 1;
-        private const int BLOB_BASE_FEE_UPDATE_FRACTION = 3338477;
+        public const int DEFAULT_BASE_FEE_UPDATE_FRACTION = 3338477;
 
         public static readonly Eip4844BlobGasRule Instance = new Eip4844BlobGasRule();
+
+        private readonly EvmUInt256 _updateFraction;
+
+        public Eip4844BlobGasRule()
+            : this(DEFAULT_BASE_FEE_UPDATE_FRACTION)
+        {
+        }
+
+        public Eip4844BlobGasRule(int baseFeeUpdateFraction)
+        {
+            _updateFraction = new EvmUInt256(baseFeeUpdateFraction);
+        }
 
         public EvmUInt256 CalculateBlobBaseFee(EvmUInt256 excessBlobGas)
         {
             return FakeExponential(
                 new EvmUInt256(MIN_BASE_FEE_PER_BLOB_GAS),
                 excessBlobGas,
-                new EvmUInt256(BLOB_BASE_FEE_UPDATE_FRACTION));
+                _updateFraction);
         }
 
         public EvmUInt256 CalculateBlobGasCost(int blobCount, EvmUInt256 blobBaseFee)

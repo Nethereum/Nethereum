@@ -307,3 +307,23 @@ nul
 # Zisk build artifacts (ELF binaries, raw outputs, generated witnesses)
 zisk/output/
 zisk/.libziskos/
+
+# SyncNode runtime artefacts
+tools/Nethereum.DevP2P.SyncNode/peer-cache.json
+geth-tools/
+docs/
+
+# Local scratch / generated artefacts (regenerable)
+tmp/
+.claude/worktrees/
+scripts/zisk-output/
+
+# External test-fixture suites — obtain per external/README.md (large; not committed)
+external/*
+!external/README.md
+
+# IDE / publish output
+.vscode/
+.playwright-mcp/
+publish_linux/
+publish_linux.tgz

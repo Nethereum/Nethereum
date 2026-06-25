@@ -38,6 +38,16 @@ public class ExplorerLocalizer
         Register("es", ExplorerStrings_es.All);
     }
 
-    private void Register(string lang, Dictionary<string, string> strings)
-        => _translations[lang] = strings;
+    public void Register(string lang, Dictionary<string, string> strings)
+    {
+        if (_translations.TryGetValue(lang, out var existing))
+        {
+            foreach (var kvp in strings)
+                existing[kvp.Key] = kvp.Value;
+        }
+        else
+        {
+            _translations[lang] = new Dictionary<string, string>(strings);
+        }
+    }
 }

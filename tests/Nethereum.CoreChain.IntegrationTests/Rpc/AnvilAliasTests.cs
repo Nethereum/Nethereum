@@ -47,6 +47,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilSetBalance_MapsToHardhatSetBalance()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var newBalanceValue = new HexBigInteger(BigInteger.Parse("1000000000000000000"));
             var request = new RpcRequestMessage(1, "anvil_setBalance", _testAddress, newBalanceValue.HexValue);
@@ -62,6 +63,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilSetCode_MapsToHardhatSetCode()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var code = "0x600160005260206000f3";
             var request = new RpcRequestMessage(1, "anvil_setCode", _testAddress, code);
@@ -77,6 +79,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilSetNonce_MapsToHardhatSetNonce()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var newNonce = "0x10"; // 16
             var request = new RpcRequestMessage(1, "anvil_setNonce", _testAddress, newNonce);
@@ -92,6 +95,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilSetStorageAt_MapsToHardhatSetStorageAt()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var slot = "0x0";
             var value = "0x0000000000000000000000000000000000000000000000000000000000000042";
@@ -108,6 +112,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilMine_MapsToEvmMine()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var blockNumberBefore = await node.GetBlockNumberAsync();
 
@@ -124,6 +129,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilSnapshot_MapsToEvmSnapshot()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var request = new RpcRequestMessage(1, "anvil_snapshot");
             var response = await dispatcher.DispatchAsync(request);
@@ -136,6 +142,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         public async Task AnvilRevert_MapsToEvmRevert()
         {
             var (node, dispatcher) = await CreateNodeAndDispatcher();
+            using var nodeScope = node;
 
             var snapshotRequest = new RpcRequestMessage(1, "anvil_snapshot");
             var snapshotResponse = await dispatcher.DispatchAsync(snapshotRequest);

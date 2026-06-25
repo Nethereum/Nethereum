@@ -23,6 +23,7 @@ dotnet add package Nethereum.CoreChain
 
 - Nethereum.Model
 - Nethereum.Merkle.Patricia
+- Nethereum.Merkle.Binary
 - Nethereum.EVM
 - Nethereum.Hex
 - Nethereum.RPC
@@ -79,12 +80,13 @@ public class TransactionLocation
 ```csharp
 public interface IReceiptStore
 {
+    Task<Receipt> GetByTxHashAsync(byte[] txHash);
+    Task<ReceiptInfo> GetInfoByTxHashAsync(byte[] txHash);
+    Task<List<Receipt>> GetByBlockHashAsync(byte[] blockHash);
+    Task<List<Receipt>> GetByBlockNumberAsync(BigInteger blockNumber);
     Task SaveAsync(Receipt receipt, byte[] txHash, byte[] blockHash,
                    BigInteger blockNumber, int txIndex, BigInteger gasUsed,
                    string contractAddress, BigInteger effectiveGasPrice);
-    Task<ReceiptInfo> GetByTxHashAsync(byte[] txHash);
-    Task<List<ReceiptInfo>> GetByBlockHashAsync(byte[] blockHash);
-    Task<List<ReceiptInfo>> GetByBlockNumberAsync(BigInteger blockNumber);
     Task DeleteByBlockNumberAsync(BigInteger blockNumber);
 }
 ```
@@ -94,22 +96,33 @@ public interface IReceiptStore
 ```csharp
 public interface IStateStore
 {
-    // Account state
-    Task<AccountState> GetAccountAsync(string address);
-    Task SaveAccountAsync(string address, AccountState state);
-    Task<List<string>> GetAllAccountsAsync();
+    // Accounts (Nethereum.Model.Account)
+    Task<Account> GetAccountAsync(string address);
+    Task SaveAccountAsync(string address, Account account);
+    Task<bool> AccountExistsAsync(string address);
+    Task DeleteAccountAsync(string address);
+    Task<Dictionary<string, Account>> GetAllAccountsAsync();
+    IAsyncEnumerable<KeyValuePair<string, Account>> StreamAccountsAsync();
 
     // Storage slots
-    Task<byte[]> GetStorageAsync(string address, byte[] key);
-    Task SaveStorageAsync(string address, byte[] key, byte[] value);
+    Task<byte[]> GetStorageAsync(string address, BigInteger slot);
+    Task SaveStorageAsync(string address, BigInteger slot, byte[] value);
+    Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address); // keyed by keccak(slot)
+    Task ClearStorageAsync(string address);
 
     // Code
-    Task<byte[]> GetCodeByHashAsync(byte[] codeHash);
+    Task<byte[]> GetCodeAsync(byte[] codeHash);
     Task SaveCodeAsync(byte[] codeHash, byte[] code);
 
-    // Snapshots
-    Task<int> TakeSnapshotAsync();
-    Task RevertToSnapshotAsync(int snapshotId);
+    // Revertible execution snapshots
+    Task<IStateSnapshot> CreateSnapshotAsync();
+    Task CommitSnapshotAsync(IStateSnapshot snapshot);
+    Task RevertSnapshotAsync(IStateSnapshot snapshot);
+
+    // Dirty tracking (drives incremental state-root calculation)
+    Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync();
+    Task ClearDirtyTrackingAsync();
+    // ... plus SaveStorageByKeccakAsync, GetStorageClearedAddressesAsync, GetDirtyStorageSlotsAsync
 }
 ```
 
@@ -153,10 +166,12 @@ The `BlockProducer` creates blocks from pending transactions with full EVM execu
 using Nethereum.CoreChain;
 
 var producer = new BlockProducer(
-    blockStore, transactionStore, receiptStore,
-    logStore, stateStore, trieNodeStore, chainConfig);
+    blockExecutor,                          // BlockExecutor engine (full block transition)
+    blockStore, transactionStore, receiptStore, logStore,
+    stateStore, trieNodeStore,
+    stateRootCalculator);                   // IIncrementalStateRootCalculator
 
-var result = await producer.ProduceBlockAsync(pendingTransactions);
+var result = await producer.ProduceBlockAsync(pendingTransactions, options); // BlockProductionOptions
 
 // Result contains:
 // - Block header with state root, receipts root, transactions root
@@ -217,13 +232,9 @@ var cfg  = DefaultMainnetHardforkRegistry.Instance.Get(fork);
 - `PatriciaBlockRootCalculator` — transactions-root / receipts-root /
   withdrawals-root computation over RLP-encoded items.
 - `PatriciaMerkleTreeBuilder` — shared trie-building helper.
-- `StatelessStateRootCalculator` — witness-only variant that avoids
-  touching the full state store; useful inside stateless verifiers.
-- `WitnessProofVerifier` — validates account and storage Merkle
-  proofs against a supplied pre-state root.
 - `BinaryProofService` — generates and verifies binary trie Merkle
-  proofs for accounts and storage slots (`IProofService`).
-  Returns `BinaryAccountProofResult` / `BinaryStorageProofResult`.
+  proofs for accounts and storage slots, returning
+  `BinaryAccountProofResult` / `BinaryStorageProofResult`.
 
 ## RPC Framework
 
@@ -368,19 +379,28 @@ CoreChain defines the `IChainNode` interface for chain implementations:
 ```csharp
 public interface IChainNode
 {
-    IBlockStore BlockStore { get; }
-    ITransactionStore TransactionStore { get; }
-    IReceiptStore ReceiptStore { get; }
-    IStateStore StateStore { get; }
-    ILogStore LogStore { get; }
-    IFilterStore FilterStore { get; }
-    ITrieNodeStore TrieNodeStore { get; }
-    DevChainConfig Config { get; }
+    ChainConfig Config { get; }
+    IBlockStore Blocks { get; }
+    ITransactionStore Transactions { get; }
+    IUncleStore Uncles { get; }
+    IReceiptStore Receipts { get; }
+    ILogStore Logs { get; }
+    IStateStore State { get; }
+    IFilterStore Filters { get; }
+    ITrieNodeStore TrieNodes { get; }
+    IBlobStore BlobStore { get; }
+    IProofService ProofService { get; }
 
-    Task<CallResult> CallAsync(CallInput callInput, string blockParameter = "latest");
-    Task<BigInteger> EstimateGasAsync(CallInput callInput);
-    Task<byte[]> SendRawTransactionAsync(byte[] signedTransaction);
-    // ... block, transaction, and state accessors
+    Task<BigInteger> GetBlockNumberAsync();
+    Task<BlockHeader> GetBlockByNumberAsync(BigInteger number);
+    Task<ISignedTransaction> GetTransactionByHashAsync(byte[] txHash);
+    Task<Receipt> GetTransactionReceiptAsync(byte[] txHash);
+    Task<BigInteger> GetBalanceAsync(string address);
+    Task<byte[]> GetCodeAsync(string address);
+    Task<CallResult> CallAsync(string to, byte[] data, string from = null,
+                               BigInteger? value = null, BigInteger? gasLimit = null);
+    Task<TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx);
+    // ... plus block-number-scoped overloads, access-list, tracing and witness capture
 }
 ```
 
@@ -393,10 +413,10 @@ using Nethereum.CoreChain.Services;
 
 var proofService = new ProofService(stateStore, trieNodeStore);
 
-var proof = await proofService.GetProofAsync(
+AccountProof proof = await proofService.GenerateAccountProofAsync(
     address: "0x1234...",
-    storageKeys: new[] { "0x0", "0x1" },
-    blockNumber: 12345
+    storageKeys: new List<BigInteger> { 0, 1 },
+    stateRoot: stateRoot   // 32-byte state root to prove against
 );
 ```
 
@@ -408,11 +428,13 @@ Fork state from a remote chain for local testing:
 using Nethereum.CoreChain.State;
 
 var forkingService = new ForkingNodeDataService(
-    rpcClient: web3.Client,
-    blockNumber: 18000000
+    stateStore,
+    blockStore,
+    web3.Eth,                                            // IEthApiService — remote fork source
+    new BlockParameter(new HexBigInteger(18_000_000))    // fork height
 );
 
-// Reads fetch from fork source, writes go to local state
+// Reads fetch from the fork source and cache locally; writes go to local state.
 ```
 
 ## Related Packages

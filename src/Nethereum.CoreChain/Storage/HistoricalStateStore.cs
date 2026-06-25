@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Storage.InMemory;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 
@@ -41,31 +42,46 @@ namespace Nethereum.CoreChain.Storage
             var blockNumber = _currentBlockNumber;
             var journal = _currentJournal;
 
-            _currentBlockNumber = null;
-            _currentJournal = null;
-
-            if (blockNumber.HasValue && journal != null)
+            if (!blockNumber.HasValue || journal == null)
             {
-                var diff = journal.ToBlockStateDiff(blockNumber.Value);
-                if (diff.AccountDiffs.Count > 0 || diff.StorageDiffs.Count > 0)
-                {
-                    await _diffStore.SaveBlockDiffAsync(diff).ConfigureAwait(false);
-                }
+                _currentBlockNumber = null;
+                _currentJournal = null;
+                return;
+            }
 
-                if (_options.EnablePruning && _options.MaxHistoryBlocks > 0)
+            var diff = journal.ToBlockStateDiff(blockNumber.Value);
+            if (diff.AccountDiffs.Count > 0 || diff.StorageDiffs.Count > 0)
+            {
+                // Persist BEFORE nulling the in-memory state. If
+                // SaveBlockDiffAsync throws, _currentJournal stays armed so
+                // a retry (or a hosted-error path) can re-flush. Otherwise
+                // a transient I/O error would silently lose the journal
+                // entry for the block.
+                await _diffStore.SaveBlockDiffAsync(diff).ConfigureAwait(false);
+            }
+
+            // Pruning runs as its own write — it's a side effect of the
+            // retention policy, not part of the current block's atomic
+            // unit. Worst-case interruption leaves a few extra old
+            // entries until the next prune cycle.
+            if (_options.EnablePruning && _options.MaxHistoryBlocks > 0)
+            {
+                _blocksSinceLastPrune++;
+                if (_blocksSinceLastPrune >= _options.PruningIntervalBlocks)
                 {
-                    _blocksSinceLastPrune++;
-                    if (_blocksSinceLastPrune >= _options.PruningIntervalBlocks)
+                    _blocksSinceLastPrune = 0;
+                    var pruneBelow = blockNumber.Value - _options.MaxHistoryBlocks;
+                    if (pruneBelow > 0)
                     {
-                        _blocksSinceLastPrune = 0;
-                        var pruneBelow = blockNumber.Value - _options.MaxHistoryBlocks;
-                        if (pruneBelow > 0)
-                        {
-                            await _diffStore.DeleteDiffsBelowBlockAsync(pruneBelow).ConfigureAwait(false);
-                        }
+                        await _diffStore.DeleteDiffsBelowBlockAsync(pruneBelow).ConfigureAwait(false);
                     }
                 }
             }
+
+            // Only NOW null — diff is durable. Crash before this leaves
+            // _currentJournal armed; retry re-flushes successfully.
+            _currentBlockNumber = null;
+            _currentJournal = null;
         }
 
         public async Task<Account> GetAccountAtBlockAsync(string address, BigInteger blockNumber)
@@ -109,7 +125,7 @@ namespace Nethereum.CoreChain.Storage
             var journalBlock = _currentBlockNumber;
             if (journal != null && journalBlock.HasValue && journalBlock.Value > blockNumber)
             {
-                var storageKey = GetStorageKey(normalizedAddress, slot);
+                var storageKey = GetStorageKey(normalizedAddress, StateKeys.StorageSlotKey(slot));
                 if (journal.StoragePreValues.TryGetValue(storageKey, out var journalPreValue))
                 {
                     var (persistedFound, persistedPreValue) = await _diffStore
@@ -201,10 +217,18 @@ namespace Nethereum.CoreChain.Storage
             return _inner.GetAllAccountsAsync();
         }
 
+        public System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+        {
+            return _inner.StreamAccountsAsync();
+        }
+
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
         {
             return _inner.GetStorageAsync(address, slot);
         }
+
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+            => _inner.SaveStorageByKeccakAsync(address, slotKeccak, value);
 
         public async Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
@@ -212,13 +236,14 @@ namespace Nethereum.CoreChain.Storage
             if (journal != null)
             {
                 var normalizedAddress = NormalizeAddress(address);
-                var storageKey = GetStorageKey(normalizedAddress, slot);
+                var slotKey = StateKeys.StorageSlotKey(slot);
+                var storageKey = GetStorageKey(normalizedAddress, slotKey);
                 if (!journal.StoragePreValues.ContainsKey(storageKey))
                 {
                     var preValue = await _inner.GetStorageAsync(address, slot).ConfigureAwait(false);
                     journal.StoragePreValues[storageKey] = new StorageJournalEntry
                     {
-                        Slot = slot,
+                        SlotKey = slotKey,
                         PreValue = (byte[])preValue?.Clone()
                     };
                 }
@@ -227,7 +252,7 @@ namespace Nethereum.CoreChain.Storage
             await _inner.SaveStorageAsync(address, slot, value).ConfigureAwait(false);
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             return _inner.GetAllStorageAsync(address);
         }
@@ -238,6 +263,9 @@ namespace Nethereum.CoreChain.Storage
             if (journal != null)
             {
                 var normalizedAddress = NormalizeAddress(address);
+                // Iterate the keccak-keyed storage; each entry already carries
+                // the canonical storage-trie path (Yellow Paper §4.1) the journal
+                // needs.
                 var allStorage = await _inner.GetAllStorageAsync(address).ConfigureAwait(false);
                 foreach (var kvp in allStorage)
                 {
@@ -246,7 +274,7 @@ namespace Nethereum.CoreChain.Storage
                     {
                         journal.StoragePreValues[storageKey] = new StorageJournalEntry
                         {
-                            Slot = kvp.Key,
+                            SlotKey = kvp.Key,
                             PreValue = (byte[])kvp.Value?.Clone()
                         };
                     }
@@ -291,6 +319,11 @@ namespace Nethereum.CoreChain.Storage
             return _inner.GetDirtyStorageSlotsAsync(address);
         }
 
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+        {
+            return _inner.GetStorageClearedAddressesAsync();
+        }
+
         public Task ClearDirtyTrackingAsync()
         {
             return _inner.ClearDirtyTrackingAsync();
@@ -303,9 +336,13 @@ namespace Nethereum.CoreChain.Storage
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
 
-        private static string GetStorageKey(string normalizedAddress, BigInteger slot)
+        // Journal storage key = normalized address + ':' + hex(keccak(slot)).
+        // Encoded as a string so it composes into ConcurrentDictionary's tuple
+        // member equality; the storage CF rekey (R1/R2) keeps slots as
+        // keccak(slot) bytes throughout, so this is the canonical journal shape.
+        private static string GetStorageKey(string normalizedAddress, byte[] slotKey)
         {
-            return $"{normalizedAddress}:{slot}";
+            return $"{normalizedAddress}:{slotKey.ToHex()}";
         }
 
         private static Account CloneAccount(Account account)
@@ -346,7 +383,7 @@ namespace Nethereum.CoreChain.Storage
                 diff.StorageDiffs.Add(new StorageDiffEntry
                 {
                     Address = parts[0],
-                    Slot = kvp.Value.Slot,
+                    SlotKey = kvp.Value.SlotKey,
                     PreValue = kvp.Value.PreValue
                 });
             }
@@ -357,7 +394,8 @@ namespace Nethereum.CoreChain.Storage
 
     internal class StorageJournalEntry
     {
-        public BigInteger Slot { get; set; }
+        // Yellow Paper §4.1 storage-trie path: keccak(slot).
+        public byte[] SlotKey { get; set; }
         public byte[] PreValue { get; set; }
     }
 }

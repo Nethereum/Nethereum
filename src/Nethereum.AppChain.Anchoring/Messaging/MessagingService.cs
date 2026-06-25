@@ -57,7 +57,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                 try
                 {
                     _lastProcessedIds.TryGetValue(source.ChainId, out var lastProcessed);
-                    var messages = await _store.GetPendingAsync(source.ChainId, lastProcessed, _config.MaxMessagesPerPoll);
+                    var messages = await _store.GetPendingAsync(source.ChainId, lastProcessed, _config.MaxMessagesPerPoll).ConfigureAwait(false);
 
                     foreach (var message in messages)
                     {
@@ -66,7 +66,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
 
                         if (OnMessageReceived != null)
                         {
-                            await OnMessageReceived(message);
+                            await OnMessageReceived(message).ConfigureAwait(false);
                         }
 
                         if (message.MessageId > lastProcessed)

@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\..\src\Nethereum.BlockchainStore.Postgres\Nethereum.BlockchainStore.Postgres.csproj" />
     <ProjectReference Include="..\..\..\src\Nethereum.BlockchainStorage.Token.Postgres\Nethereum.BlockchainStorage.Token.Postgres.csproj" />
     <ProjectReference Include="..\..\..\src\Nethereum.Mud.Repositories.Postgres\Nethereum.Mud.Repositories.Postgres.csproj" />
+    <ProjectReference Include="..\..\..\src\Nethereum.Explorer.Anchoring\Nethereum.Explorer.Anchoring.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseProjectReferences)' != 'true'">

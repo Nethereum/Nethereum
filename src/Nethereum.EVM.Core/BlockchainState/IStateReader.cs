@@ -16,6 +16,8 @@ namespace Nethereum.EVM.BlockchainState
         byte[] GetStorageAt(string address, EvmUInt256 position);
         EvmUInt256 GetTransactionCount(byte[] address);
         EvmUInt256 GetTransactionCount(string address);
+        bool AccountExists(string address);
+        byte[] GetBlockHash(long blockNumber);
 #else
         Task<EvmUInt256> GetBalanceAsync(byte[] address);
         Task<EvmUInt256> GetBalanceAsync(string address);
@@ -25,6 +27,8 @@ namespace Nethereum.EVM.BlockchainState
         Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position);
         Task<EvmUInt256> GetTransactionCountAsync(byte[] address);
         Task<EvmUInt256> GetTransactionCountAsync(string address);
+        Task<bool> AccountExistsAsync(string address);
+        Task<byte[]> GetBlockHashAsync(long blockNumber);
 #endif
     }
 }

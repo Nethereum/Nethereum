@@ -1,0 +1,149 @@
+@page "/anchoring/{ChainId:long}"
+@inject IAnchorExplorerService AnchorService
+@inject ExplorerLocalizer L
+@inject AnchoringLocalizer AL
+
+<PageTitle>@L.GetString(AnchoringKeys.Detail.Title, ChainId) - @L[ExplorerKeys.Nav.ExplorerTitle]</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[AnchoringKeys.Dashboard.Title], Href = "/anchoring" },
+    new() { Label = L.GetString(AnchoringKeys.Detail.Title, ChainId) }
+})" />
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-link-45deg me-2"></i>@L.GetString(AnchoringKeys.Detail.Title, ChainId)</h4>
+    <a href="/anchoring" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>@L[AnchoringKeys.Detail.AllChains]
+    </a>
+</div>
+
+@if (_summary != null)
+{
+    <div class="row g-3 mb-4">
+        <StatsCard Title="@L[AnchoringKeys.Stats.LatestBlock]" Value="@_summary.LatestAnchoredBlock.ToString("N0")" IconClass="bi bi-box-seam" />
+        <StatsCard Title="@L[AnchoringKeys.Stats.TotalAnchors]" Value="@_summary.TotalAnchors.ToString("N0")" IconClass="bi bi-link-45deg" />
+        <StatsCard Title="@L[AnchoringKeys.Stats.ProvenBlocks]" Value="@_summary.TotalProvenBlocks.ToString("N0")" IconClass="bi bi-shield-check" />
+        <StatsCard Title="@L[AnchoringKeys.Stats.ProofSystem]" Value="@(((AnchoringOnChainProofSystem)_summary.CurrentProofSystem).ToString())" IconClass="bi bi-gear" />
+    </div>
+}
+
+@if (_anchors == null)
+{
+    <div class="card"><div class="card-body p-0">
+        <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+    </div></div>
+}
+else if (_anchors.Count == 0)
+{
+    <div class="card"><div class="card-body">
+        <EmptyState IconClass="bi bi-link-45deg" Title="@L[AnchoringKeys.Dashboard.NoChains]" Subtitle="@L[AnchoringKeys.Dashboard.NoChainsSub]" />
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul me-2"></i>@L[AnchoringKeys.Detail.AnchorHistory]</span>
+            <span class="text-muted small">@_totalCount.ToString("N0") @L[AnchoringKeys.Detail.Anchors]</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>@L[AnchoringKeys.Table.Blocks]</th>
+                            <th>@L[AnchoringKeys.Table.EndBlockHash]</th>
+                            <th>@L[AnchoringKeys.Table.StateRoot]</th>
+                            <th>@L[AnchoringKeys.Table.Proof]</th>
+                            <th>@L[AnchoringKeys.Table.MainchainTx]</th>
+                            <th>@L[AnchoringKeys.Table.Operator]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in _anchors)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="fw-bold text-color-primary">@a.StartBlock.ToString("N0")</span>
+                                    <span class="text-color-secondary mx-1">→</span>
+                                    <span class="fw-bold text-color-primary">@a.EndBlock.ToString("N0")</span>
+                                </td>
+                                <td>
+                                    @if (a.EndBlockHash != null)
+                                    {
+                                        <HexDisplay Value="@a.EndBlockHash.ToHex(true)" MaxLength="18" />
+                                    }
+                                </td>
+                                <td>
+                                    @if (a.PostStateRoot != null)
+                                    {
+                                        <HexDisplay Value="@a.PostStateRoot.ToHex(true)" MaxLength="18" />
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">@((AnchoringOnChainProofSystem)a.ProofSystem)</span>
+                                    @if (a.ProofBytesLength > 0)
+                                    {
+                                        <span class="text-color-secondary text-xs ms-1">@a.ProofBytesLength.ToString("N0")B</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(a.TransactionHash))
+                                    {
+                                        <HexDisplay Value="@a.TransactionHash" MaxLength="18" />
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(a.OperatorAddress))
+                                    {
+                                        <HexDisplay Value="@a.OperatorAddress" MaxLength="14" ShowCopy="false" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (_totalPages > 1)
+        {
+            <div class="card-footer">
+                <Pagination CurrentPage="@_currentPage" TotalPages="@_totalPages" HasMore="@(_currentPage < _totalPages)" OnPageChanged="LoadPageAsync" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public long ChainId { get; set; }
+
+    private ChainAnchoringSummary? _summary;
+    private IReadOnlyList<AnchorRecord>? _anchors;
+    private int _currentPage = 1;
+    private int _totalCount;
+    private int _totalPages;
+    private const int PageSize = 25;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _summary = await AnchorService.GetChainSummaryAsync(ChainId);
+            _totalCount = await AnchorService.GetAnchorCountAsync(ChainId);
+            _totalPages = (int)Math.Ceiling((double)_totalCount / PageSize);
+            _anchors = await AnchorService.GetAnchorsAsync(ChainId, 1, PageSize);
+        }
+        catch
+        {
+            _anchors = [];
+        }
+    }
+
+    private async Task LoadPageAsync(int page)
+    {
+        _currentPage = page;
+        _anchors = await AnchorService.GetAnchorsAsync(ChainId, page, PageSize);
+        StateHasChanged();
+    }
+}

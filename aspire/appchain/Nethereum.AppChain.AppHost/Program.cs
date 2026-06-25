@@ -39,10 +39,18 @@ var mainchainIndexer = builder.AddProject<Projects.Nethereum_AppChain_MainChain_
     .WaitFor(mainchain)
     .WaitFor(mainchainDb);
 
+var anchoringIndexer = builder.AddProject<Projects.Nethereum_AppChain_AnchoringIndexer>("anchoring-indexer")
+    .WithReference(mainchain)
+    .WithReference(mainchainDb)
+    .WaitFor(mainchainIndexer)
+    .WaitFor(mainchainDb);
+
 var mainchainExplorer = builder.AddProject<Projects.Nethereum_AppChain_MainChain_Explorer>("mainchain-explorer")
     .WithReference(mainchain)
     .WithReference(mainchainDb)
-    .WaitFor(mainchainIndexer);
+    .WithReference(anchoring)
+    .WaitFor(mainchainIndexer)
+    .WaitFor(anchoringIndexer);
 
 var appchainIndexer = builder.AddProject<Projects.Nethereum_AppChain_Indexer>("appchain-indexer")
     .WithReference(appchain)
@@ -53,6 +61,9 @@ var appchainIndexer = builder.AddProject<Projects.Nethereum_AppChain_Indexer>("a
 var appchainExplorer = builder.AddProject<Projects.Nethereum_AppChain_Explorer>("appchain-explorer")
     .WithReference(appchain)
     .WithReference(appchainDb)
-    .WaitFor(appchainIndexer);
+    .WithReference(mainchainDb)
+    .WithReference(anchoring)
+    .WaitFor(appchainIndexer)
+    .WaitFor(anchoringIndexer);
 
 builder.Build().Run();

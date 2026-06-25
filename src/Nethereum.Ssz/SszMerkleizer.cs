@@ -312,11 +312,18 @@ namespace Nethereum.Ssz
             return sha.ComputeHash(ByteUtil.Merge(left, right));
         }
 
+        /// <summary>
+        /// Verifies a Merkle proof per the <c>is_valid_merkle_branch</c> helper in
+        /// <see href="https://raw.githubusercontent.com/ethereum/consensus-specs/master/specs/phase0/beacon-chain.md">
+        /// specs/phase0/beacon-chain.md</see>. The spec parameterises the branch length by
+        /// <paramref name="depth"/> and the SSZ <c>Vector[Bytes32, depth]</c> type enforces an
+        /// exact length, so a branch whose count differs from <paramref name="depth"/> is rejected.
+        /// </summary>
         public static bool VerifyProof(byte[] leaf, IList<byte[]> branch, int depth, int index, byte[] root)
         {
             if (leaf == null || leaf.Length != ChunkSize) return false;
             if (root == null || root.Length != ChunkSize) return false;
-            if (branch == null || branch.Count < depth) return false;
+            if (branch == null || branch.Count != depth) return false;
 
             var current = new byte[ChunkSize];
             Buffer.BlockCopy(leaf, 0, current, 0, ChunkSize);

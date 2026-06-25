@@ -219,8 +219,9 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             Assert.True(trieStore.NodeCount > 0);
 
-            calc.Reset();
-            var root2 = await calc.ComputeFullStateRootAsync();
+            var calc2 = new BinaryIncrementalStateRootCalculator(
+                stateStore, hashProvider, trieStore);
+            var root2 = await calc2.ComputeFullStateRootAsync();
             Assert.Equal(root.ToHex(), root2.ToHex());
         }
 

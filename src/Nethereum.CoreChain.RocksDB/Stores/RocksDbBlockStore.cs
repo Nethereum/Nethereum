@@ -74,11 +74,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var numberKey = GetBlockNumberKey(header.BlockNumber);
             batch.Put(numberKey, blockHash, blockNumbersCf);
 
-            batch.Put(Encoding.UTF8.GetBytes(LATEST_BLOCK_KEY), blockHash, metadataCf);
-
+            // Both LATEST_BLOCK_KEY and HEIGHT_KEY describe the chain tip; updating
+            // them only on height advance keeps them in sync. Without the guard,
+            // re-saving an older block (fork-choice retention, sibling tracking)
+            // would overwrite latest_block_hash with the older hash while HEIGHT_KEY
+            // stayed pointing at the real tip — split-brain chain-tip metadata.
             var currentHeight = GetHeightInternal();
             if (header.BlockNumber.ToBigInteger() > currentHeight)
             {
+                batch.Put(Encoding.UTF8.GetBytes(LATEST_BLOCK_KEY), blockHash, metadataCf);
                 var heightBytes = RocksDbSerializer.BigIntegerToBytes(header.BlockNumber.ToBigInteger());
                 batch.Put(Encoding.UTF8.GetBytes(HEIGHT_KEY), heightBytes, metadataCf);
             }

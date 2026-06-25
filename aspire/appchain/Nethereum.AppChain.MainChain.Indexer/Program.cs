@@ -29,7 +29,8 @@ var tokenDbOptions = new DbContextOptionsBuilder<TokenPostgresDbContext>();
 tokenDbOptions.UseNpgsql(connectionString).UseLowerCaseNamingConvention();
 using (var tokenContext = new TokenPostgresDbContext(tokenDbOptions.Options))
 {
-    await tokenContext.Database.MigrateAsync();
+    try { await tokenContext.Database.MigrateAsync(); }
+    catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07") { }
 }
 
 builder.Services.AddPostgresBlockchainProcessor(builder.Configuration, connectionString);

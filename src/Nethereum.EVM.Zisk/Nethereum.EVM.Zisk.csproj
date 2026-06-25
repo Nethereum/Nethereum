@@ -54,7 +54,6 @@
     <Compile Include="..\Nethereum.Util\HashProviders\IHashProvider.cs" Link="Util\IHashProvider.cs" />
     <Compile Include="..\Nethereum.Util\HashProviders\Sha3KeccackHashProvider.cs" Link="Util\Sha3KeccackHashProvider.cs" />
     <Compile Include="..\Nethereum.Util\HashProviders\Sha256HashProvider.cs" Link="Util\Sha256HashProvider.cs" />
-    <Compile Include="..\Nethereum.Util\HashProviders\PoseidonPairHashProvider.cs" Link="Util\PoseidonPairHashProvider.cs" />
     <Compile Include="..\Nethereum.Util\HashProviders\PoseidonHashProvider.cs" Link="Util\PoseidonHashProvider.cs" />
     <Compile Include="..\Nethereum.Util\Poseidon\IPoseidonFieldOps.cs" Link="Util\Poseidon\IPoseidonFieldOps.cs" />
     <Compile Include="..\Nethereum.Util\Poseidon\PoseidonCore.cs" Link="Util\Poseidon\PoseidonCore.cs" />
@@ -134,6 +133,9 @@
     <Compile Include="..\Nethereum.Model\Transaction2930Encoder.cs" Link="Model\Transaction2930Encoder.cs" />
     <Compile Include="..\Nethereum.Model\Transaction7702.cs" Link="Model\Transaction7702.cs" />
     <Compile Include="..\Nethereum.Model\Transaction7702Encoder.cs" Link="Model\Transaction7702Encoder.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction4844.cs" Link="Model\Transaction4844.cs" />
+    <Compile Include="..\Nethereum.Model\Transaction4844Encoder.cs" Link="Model\Transaction4844Encoder.cs" />
+    <Compile Include="..\Nethereum.Model\IBlobKzgProvider.cs" Link="Model\IBlobKzgProvider.cs" />
     <Compile Include="..\Nethereum.Model\RLPSignedDataHashBuilder.cs" Link="Model\RLPSignedDataHashBuilder.cs" />
     <Compile Include="..\Nethereum.Model\RLPSignedDataDecoder.cs" Link="Model\RLPSignedDataDecoder.cs" />
     <Compile Include="..\Nethereum.Model\SignedData.cs" Link="Model\SignedData.cs" />

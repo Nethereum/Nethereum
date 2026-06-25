@@ -50,7 +50,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                 tasks.Add(RunProcessorWithRetryAsync(source, stoppingToken));
             }
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
             _logger?.LogInformation("Hub log processing worker stopped");
         }
 
@@ -79,12 +79,12 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                     _logger?.LogInformation("Starting log processor for source chain {ChainId} (rpc={RpcUrl}, hub={Hub})",
                         source.ChainId, source.RpcUrl, source.HubContractAddress);
 
-                    await processor.ExecuteAsync(ct);
+                    await processor.ExecuteAsync(ct).ConfigureAwait(false);
                 },
                 cancellationToken,
                 (ex, attempt, delay) =>
                     _logger?.LogError(ex, "Log processor for source chain {ChainId} failed (attempt {Attempt}), retrying in {Delay}s",
-                        source.ChainId, attempt, delay));
+                        source.ChainId, attempt, delay)).ConfigureAwait(false);
         }
     }
 }

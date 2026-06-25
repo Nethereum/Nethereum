@@ -2,13 +2,19 @@ using System.Linq;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.CoreChain.Rpc
 {
     public static class ReceiptExtensions
     {
-        public static TransactionReceipt ToTransactionReceipt(this ReceiptInfo info, string from, string to)
+        public static TransactionReceipt ToTransactionReceipt(
+            this ReceiptInfo info,
+            string from,
+            string to,
+            TransactionType txType = TransactionType.LegacyTransaction,
+            int startingLogIndex = 0)
         {
             return new TransactionReceipt
             {
@@ -22,7 +28,8 @@ namespace Nethereum.CoreChain.Rpc
                 GasUsed = new HexBigInteger(info.GasUsed),
                 EffectiveGasPrice = new HexBigInteger(info.EffectiveGasPrice),
                 ContractAddress = info.ContractAddress,
-                Status = new HexBigInteger(info.Receipt.HasSucceeded == true ? 1 : 0),
+                Status = new HexBigInteger(ResolveStatus(info.Receipt)),
+                Type = new HexBigInteger(RpcTypeByte(txType)),
                 LogsBloom = info.Receipt.Bloom?.ToHex(true),
                 Logs = info.Receipt.Logs?.Select((log, index) => new FilterLog
                 {
@@ -33,10 +40,28 @@ namespace Nethereum.CoreChain.Rpc
                     TransactionHash = info.TxHash?.ToHex(true),
                     TransactionIndex = new HexBigInteger(info.TransactionIndex),
                     BlockHash = info.BlockHash?.ToHex(true),
-                    LogIndex = new HexBigInteger(index),
+                    LogIndex = new HexBigInteger(startingLogIndex + index),
                     Removed = false
                 }).ToArray()
             };
         }
+
+        // Execution clients synthesise status=1 for pre-Byzantium successful txs even though
+        // the canonical receipt carries a post-state root rather than a status byte.
+        // Heuristic mirrors theirs: a non-empty post-state-root signals successful execution.
+        private static int ResolveStatus(Receipt receipt)
+        {
+            if (receipt.HasSucceeded is bool succeeded)
+                return succeeded ? 1 : 0;
+            return receipt.PostStateOrStatus != null && receipt.PostStateOrStatus.Length > 1 ? 1 : 0;
+        }
+
+        // RPC type byte: legacy (and pre-EIP-2718) → 0; typed txs → their EIP byte.
+        private static int RpcTypeByte(TransactionType txType) => txType switch
+        {
+            TransactionType.LegacyTransaction => 0,
+            TransactionType.LegacyChainTransaction => 0,
+            _ => (int)txType
+        };
     }
 }

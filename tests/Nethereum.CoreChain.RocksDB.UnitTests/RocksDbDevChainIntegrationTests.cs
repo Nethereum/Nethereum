@@ -39,7 +39,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task StartAsync_CreatesGenesisBlock()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var blockNumber = await node.GetBlockNumberAsync();
@@ -53,7 +53,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task StartAsync_WithPrefundedAccounts_SetsBalance()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             var addresses = new[] { "0x1234567890123456789012345678901234567890" };
 
             await node.StartAsync(addresses);
@@ -65,7 +65,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task StartAsync_WithCustomBalance_SetsCorrectBalance()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             var addresses = new[] { "0x1234567890123456789012345678901234567890" };
             var customBalance = BigInteger.Parse("1000000000000000000");
 
@@ -78,7 +78,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task SetBalance_UpdatesAccountBalance()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -93,7 +93,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task SetNonce_UpdatesAccountNonce()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -108,7 +108,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task SetCode_StoresAndRetrievesCode()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -123,7 +123,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task SetStorageAt_StoresAndRetrievesStorage()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -139,7 +139,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task MineBlock_IncreasesBlockNumber()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var initialBlockNumber = await node.GetBlockNumberAsync();
@@ -152,7 +152,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task MineBlock_ReturnsBlockHash()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var blockHash = await node.MineBlockAsync();
@@ -164,7 +164,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task GetBlockByHash_ReturnsCorrectBlock()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var blockHash = await node.MineBlockAsync();
@@ -177,7 +177,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task TakeSnapshot_AllowsRevert()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var address = "0x1234567890123456789012345678901234567890";
@@ -195,7 +195,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task GetPendingBlockContext_ReturnsNextBlockInfo()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var context = node.GetPendingBlockContext();
@@ -207,7 +207,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         public async Task Config_ExposesConfiguration()
         {
             var config = new DevChainConfig { ChainId = 12345 };
-            var node = CreateNode(config);
+            using var node = CreateNode(config);
             await node.StartAsync();
 
             Assert.Equal(12345, node.DevConfig.ChainId);
@@ -216,7 +216,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task GetNonce_ReturnsZeroForNonExistentAccount()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var nonce = await node.GetNonceAsync("0x0000000000000000000000000000000000000001");
@@ -227,7 +227,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task GetBalance_ReturnsZeroForNonExistentAccount()
         {
-            var node = CreateNode();
+            using var node = CreateNode();
             await node.StartAsync();
 
             var balance = await node.GetBalanceAsync("0x0000000000000000000000000000000000000001");
@@ -242,10 +242,12 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var balance = BigInteger.Parse("5000000000000000000");
             var dbPath = _fixture.DatabasePath;
 
-            var node = CreateNode();
-            await node.StartAsync();
-            await node.SetBalanceAsync(address, balance);
-            await node.MineBlockAsync();
+            using (var node = CreateNode())
+            {
+                await node.StartAsync();
+                await node.SetBalanceAsync(address, balance);
+                await node.MineBlockAsync();
+            }
 
             _fixture.Manager.Dispose();
 

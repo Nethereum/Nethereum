@@ -205,6 +205,16 @@
       <BuildType Solution="ExportRelease|*" Project="Debug" />
     </Project>
   </Folder>
+  <Folder Name="/src/Chain/MainnetChain/">
+    <Project Path="src/Nethereum.MainnetChain.Server/Nethereum.MainnetChain.Server.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.MainnetChain.Server.IntegrationTests/Nethereum.MainnetChain.Server.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
   <Folder Name="/src/ClassDiagrams/">
     <File Path="src/Nethereum.Signer.AzureKeyVault/AzureKeyVaultExternalSigner.cs" />
     <Project Path="src/Nethereum.ClassDiagrams/Nethereum.ClassDiagrams.csproj" Id="5bbeae99-333e-4b98-8453-c5667fb22184">
@@ -240,6 +250,36 @@
       <BuildType Solution="ExportRelease|*" Project="Release" />
     </Project>
     <Project Path="tests/Nethereum.TokenServices.IntegrationTests/Nethereum.TokenServices.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/DevP2P/">
+    <Project Path="src/Nethereum.DevP2P/Nethereum.DevP2P.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.DevP2P.Eth/Nethereum.DevP2P.Eth.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="src/Nethereum.LightSync/Nethereum.LightSync.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.DevP2P.UnitTests/Nethereum.DevP2P.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.DevP2P.IntegrationTests/Nethereum.DevP2P.IntegrationTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="src/Nethereum.DevP2P.Sync/Nethereum.DevP2P.Sync.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.DevP2P.Sync.UnitTests/Nethereum.DevP2P.Sync.UnitTests.csproj">
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Debug" />
     </Project>
@@ -877,11 +917,6 @@
     <Project Path="src/demos/Nethereum.Wallet.Blazor.Demo/Nethereum.Wallet.Blazor.Demo.csproj">
       <BuildType Solution="ExportDebug|*" Project="Release" />
       <BuildType Solution="ExportRelease|*" Project="Release" />
-    </Project>
-    <Project Path="src/demos/Nethereum.Wallet.MauiBlazor.Demo/Nethereum.Wallet.MauiBlazor.Demo.csproj">
-      <BuildType Solution="ExportDebug|*" Project="Release" />
-      <BuildType Solution="ExportRelease|*" Project="Release" />
-      <Deploy Solution="Debug|Any CPU" />
     </Project>
     <Project Path="src/NetDapps/NetDapps.csproj">
       <BuildType Solution="ExportDebug|*" Project="Release" />

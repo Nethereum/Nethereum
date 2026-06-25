@@ -28,6 +28,9 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             }
 
             var result = new List<object>();
+            // LogIndex is block-wide cumulative per the JSON-RPC spec, not per-receipt.
+            // Track running count so each receipt's logs continue numbering from the previous one.
+            var cumulativeLogIndex = 0;
             foreach (var tx in transactions)
             {
                 var receiptInfo = await context.Node.Receipts.GetInfoByTxHashAsync(tx.Hash);
@@ -35,7 +38,8 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 {
                     var from = GetSenderAddress(tx);
                     var to = GetReceiverAddress(tx);
-                    result.Add(receiptInfo.ToTransactionReceipt(from, to));
+                    result.Add(receiptInfo.ToTransactionReceipt(from, to, tx.TransactionType, cumulativeLogIndex));
+                    cumulativeLogIndex += receiptInfo.Receipt.Logs?.Count ?? 0;
                 }
             }
 

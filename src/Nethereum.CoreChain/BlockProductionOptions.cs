@@ -1,4 +1,5 @@
 using System.Numerics;
+using Nethereum.EVM;
 
 namespace Nethereum.CoreChain
 {
@@ -14,5 +15,7 @@ namespace Nethereum.CoreChain
         public BigInteger ChainId { get; set; }
         public byte[] ParentBeaconBlockRoot { get; set; }
         public byte[] Nonce { get; set; }
+        public bool CaptureWitness { get; set; }
+        public HardforkName HardforkName { get; set; } = HardforkName.Prague;
     }
 }

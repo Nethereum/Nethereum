@@ -50,5 +50,13 @@ namespace Nethereum.CoreChain
 
             return _rootCalculator.CalculateReceiptsRoot(receipts, _trieNodeStore);
         }
+
+        public byte[] CalculateWithdrawalsRoot(IList<Withdrawal> withdrawals)
+        {
+            if (withdrawals == null || withdrawals.Count == 0)
+                return DefaultValues.EMPTY_TRIE_HASH;
+
+            return _rootCalculator.CalculateWithdrawalsRoot(withdrawals, _trieNodeStore);
+        }
     }
 }

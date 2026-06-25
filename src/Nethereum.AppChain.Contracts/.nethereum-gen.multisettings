@@ -5,8 +5,8 @@
         ],
         "generatorConfigs": [
             {
-                "baseNamespace": "Nethereum.AppChain.Anchoring.Contracts.AppChainAnchor",
-                "basePath": "../Nethereum.AppChain.Anchoring/Contracts/AppChainAnchor",
+                "baseNamespace": "Nethereum.AppChain.Anchoring",
+                "basePath": "../Nethereum.AppChain.Anchoring/AppChainAnchor",
                 "codeGenLang": 0,
                 "generatorType": "ContractDefinition"
             }
@@ -33,6 +33,58 @@
             {
                 "baseNamespace": "Nethereum.AppChain.Anchoring.Hub.Contracts.AppChainHub",
                 "basePath": "../Nethereum.AppChain.Anchoring/Hub/Contracts/AppChainHub",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/MockProofVerifier.sol/MockProofVerifier.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring",
+                "basePath": "../Nethereum.AppChain.Anchoring/MockProofVerifier",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/AppChainProofManager.sol/AppChainProofManager.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring",
+                "basePath": "../Nethereum.AppChain.Anchoring/AppChainProofManager",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/SimpleAuthority.sol/SimpleAuthority.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring",
+                "basePath": "../Nethereum.AppChain.Anchoring/SimpleAuthority",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/ZiskVerifierAdapter.sol/ZiskVerifierAdapter.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring",
+                "basePath": "../Nethereum.AppChain.Anchoring/ZiskVerifierAdapter",
                 "codeGenLang": 0,
                 "generatorType": "ContractDefinition"
             }

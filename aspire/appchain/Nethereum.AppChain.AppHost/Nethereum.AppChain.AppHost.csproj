@@ -26,6 +26,7 @@
     <ProjectReference Include="..\Nethereum.AppChain.Explorer\Nethereum.AppChain.Explorer.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.AnchorService\Nethereum.AppChain.AnchorService.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.LoadGenerator\Nethereum.AppChain.LoadGenerator.csproj" />
+    <ProjectReference Include="..\Nethereum.AppChain.AnchoringIndexer\Nethereum.AppChain.AnchoringIndexer.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,95 @@
+@page "/anchoring"
+@inject IAnchorExplorerService AnchorService
+@inject ExplorerLocalizer L
+@inject AnchoringLocalizer AL
+
+<PageTitle>@L[AnchoringKeys.Dashboard.Title] - @L[ExplorerKeys.Nav.ExplorerTitle]</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-link-45deg me-2"></i>@L[AnchoringKeys.Dashboard.Title]</h4>
+    <div class="d-flex align-items-center gap-2">
+        <span class="explorer-subtitle">@(_summaries?.Count.ToString("N0") ?? "...") @L[AnchoringKeys.Dashboard.Chains]</span>
+    </div>
+</div>
+
+@if (!AnchorService.IsConfigured)
+{
+    <div class="card"><div class="card-body">
+        <EmptyState IconClass="bi bi-info-circle" Title="@L[AnchoringKeys.Dashboard.NotConfigured]" />
+    </div></div>
+    return;
+}
+
+@if (_summaries == null)
+{
+    <div class="card"><div class="card-body p-0">
+        <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+    </div></div>
+}
+else if (_summaries.Count == 0)
+{
+    <div class="card"><div class="card-body">
+        <EmptyState IconClass="bi bi-link-45deg" Title="@L[AnchoringKeys.Dashboard.NoChains]" Subtitle="@L[AnchoringKeys.Dashboard.NoChainsSub]" />
+    </div></div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        @foreach (var s in _summaries)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="stat-icon"><i class="bi bi-link-45deg"></i></div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="card-subtitle mb-1 text-muted">@L[AnchoringKeys.Dashboard.Chain]</h6>
+                                <h5 class="card-title mb-0">@s.ChainId</h5>
+                            </div>
+                            @{ var healthy = s.ConsecutiveFailures == 0; }
+                            <span class="badge @(healthy ? "badge-success" : "badge-danger")">
+                                <i class="bi @(healthy ? "bi-check-circle" : "bi-exclamation-triangle") me-1"></i>@(healthy ? "Healthy" : "Failing")
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">@L[AnchoringKeys.Stats.LatestBlock]</span>
+                            <span class="small fw-bold">@s.LatestAnchoredBlock.ToString("N0")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">@L[AnchoringKeys.Stats.TotalAnchors]</span>
+                            <span class="small">@s.TotalAnchors.ToString("N0")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">@L[AnchoringKeys.Stats.ProvenBlocks]</span>
+                            <span class="small">@s.TotalProvenBlocks.ToString("N0")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">@L[AnchoringKeys.Stats.ProofSystem]</span>
+                            <span class="small"><span class="badge badge-info">@((AnchoringOnChainProofSystem)s.CurrentProofSystem)</span></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">@L[AnchoringKeys.Stats.AvgInterval]</span>
+                            <span class="small">@(s.AverageAnchorIntervalSeconds > 0 ? $"{s.AverageAnchorIntervalSeconds:F0}s" : "—")</span>
+                        </div>
+                        <a href="/anchoring/@s.ChainId" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="bi bi-arrow-right me-1"></i>@L[AnchoringKeys.Dashboard.ViewDetails]
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<ChainAnchoringSummary>? _summaries;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _summaries = await AnchorService.GetAllChainSummariesAsync(); }
+        catch { _summaries = []; }
+    }
+}

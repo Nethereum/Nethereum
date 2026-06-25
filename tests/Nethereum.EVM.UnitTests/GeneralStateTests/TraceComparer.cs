@@ -132,15 +132,33 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var outputBuilder = new StringBuilder();
             var errorBuilder = new StringBuilder();
 
+            // Geth's `--json statetest` streams its per-opcode JSON trace to STDERR
+            // (parsed at line 164-165 below). For deeply-recursive tests like
+            // stQuadraticComplexityTest/Call1MB1024Calldepth that trace can run to
+            // gigabytes and overflow StringBuilder.AppendLine on a worker thread,
+            // which is an unhandled exception and crashes the entire test host.
+            // Cap each builder and stop appending once the cap is hit — we'll
+            // surface the partial trace and let the caller treat the divergence
+            // diagnostically rather than as a hard failure.
+            const int MaxBuilderBytes = 100 * 1024 * 1024;
+            bool outputTruncated = false;
+            bool errorTruncated = false;
+
             process.OutputDataReceived += (s, e) =>
             {
-                if (e.Data != null)
-                    outputBuilder.AppendLine(e.Data);
+                if (e.Data == null) return;
+                if (outputBuilder.Length >= MaxBuilderBytes) { outputTruncated = true; return; }
+                try { outputBuilder.AppendLine(e.Data); }
+                catch (ArgumentOutOfRangeException) { outputTruncated = true; }
+                catch (OutOfMemoryException) { outputTruncated = true; }
             };
             process.ErrorDataReceived += (s, e) =>
             {
-                if (e.Data != null)
-                    errorBuilder.AppendLine(e.Data);
+                if (e.Data == null) return;
+                if (errorBuilder.Length >= MaxBuilderBytes) { errorTruncated = true; return; }
+                try { errorBuilder.AppendLine(e.Data); }
+                catch (ArgumentOutOfRangeException) { errorTruncated = true; }
+                catch (OutOfMemoryException) { errorTruncated = true; }
             };
 
             try
@@ -160,6 +178,10 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 result.ExitCode = process.ExitCode;
                 result.RawOutput = outputBuilder.ToString();
                 result.RawError = errorBuilder.ToString();
+                if (outputTruncated || errorTruncated)
+                {
+                    result.Error = $"Geth trace output truncated at {MaxBuilderBytes / (1024 * 1024)} MB (trace too large to capture in-memory)";
+                }
 
                 var stderrLines = result.RawError.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 result.Steps = ParseGethTraceLines(stderrLines);

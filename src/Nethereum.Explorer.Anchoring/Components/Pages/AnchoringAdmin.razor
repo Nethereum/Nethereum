@@ -1,0 +1,343 @@
+@page "/anchoring/admin"
+@inject ExplorerLocalizer L
+@inject AnchoringLocalizer AL
+@inject IHttpClientFactory HttpClientFactory
+@rendermode InteractiveServer
+
+<PageTitle>@L[AnchoringKeys.Admin.Title] - @L[ExplorerKeys.Nav.ExplorerTitle]</PageTitle>
+
+<Breadcrumb Items="@(new List<Breadcrumb.BreadcrumbItem>
+{
+    new() { Label = L[AnchoringKeys.Dashboard.Title], Href = "/anchoring" },
+    new() { Label = L[AnchoringKeys.Admin.Title] }
+})" />
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-gear me-2"></i>@L[AnchoringKeys.Admin.Title]</h4>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" @onclick="RefreshStatusAsync" disabled="@_loading">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+        <a href="/anchoring" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>@L[AnchoringKeys.Detail.AllChains]
+        </a>
+    </div>
+</div>
+
+@if (_status == null)
+{
+    <div class="card"><div class="card-body p-0">
+        <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+    </div></div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <StatsCard Title="@L[AnchoringKeys.Admin.Status]"
+                   Value="@_status.Status"
+                   IconClass="@(_status.Status == "running" ? "bi bi-play-circle" : "bi bi-pause-circle")" />
+        <StatsCard Title="@L[AnchoringKeys.Stats.LatestBlock]"
+                   Value="@_status.LastAnchoredBlock"
+                   IconClass="bi bi-box-seam" />
+        <StatsCard Title="@L[AnchoringKeys.Admin.Strategy]"
+                   Value="@_status.Strategy"
+                   IconClass="bi bi-diagram-3" />
+        <StatsCard Title="@L[AnchoringKeys.Admin.AnchorContract]"
+                   Value="@TruncateAddress(_status.AnchorContract)"
+                   IconClass="bi bi-file-earmark-code" />
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-sliders me-2"></i>@L[AnchoringKeys.Admin.CurrentConfig]</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label detail-label">@L[AnchoringKeys.Admin.DataAvailability]</label>
+                        <select class="form-select" @bind="_selectedDA">
+                            <option value="None">None</option>
+                            <option value="Calldata">Calldata</option>
+                            <option value="BlobReference">BlobReference</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label detail-label">@L[AnchoringKeys.Admin.ProofMode]</label>
+                        <select class="form-select" @bind="_selectedProof">
+                            <option value="None">None</option>
+                            <option value="StarkHash">StarkHash</option>
+                            <option value="SnarkOnChain">SnarkOnChain</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label detail-label">@L[AnchoringKeys.Admin.Cadence] <span class="text-color-secondary">(@L[AnchoringKeys.Admin.Blocks])</span></label>
+                        <input type="number" class="form-control" @bind="_selectedCadence" min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label detail-label">@L[AnchoringKeys.Admin.Interval] <span class="text-color-secondary">(@L[AnchoringKeys.Admin.Milliseconds])</span></label>
+                        <input type="number" class="form-control" @bind="_selectedInterval" min="1000" step="1000" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" @onclick="ApplyStrategyAsync" disabled="@_applying">
+                            @if (_applying)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            <i class="bi bi-check-lg me-1"></i>@L[AnchoringKeys.Admin.ApplyStrategy]
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_configResult))
+                    {
+                        <div class="alert @(_configError ? "alert-danger" : "alert-success") mt-3 mb-0 py-2">
+                            <small>@_configResult</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-lightning me-2"></i>@L[AnchoringKeys.Admin.ForceAnchor]</div>
+                <div class="card-body">
+                    <p class="text-color-secondary small mb-3">Triggers an immediate anchor submission at the current appchain head block, bypassing the cadence timer.</p>
+                    <button class="btn btn-warning" @onclick="ForceAnchorAsync" disabled="@_forcing">
+                        @if (_forcing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        <i class="bi bi-lightning me-1"></i>@L[AnchoringKeys.Admin.ForceAnchor]
+                    </button>
+
+                    @if (!string.IsNullOrEmpty(_forceResult))
+                    {
+                        <div class="alert @(_forceError ? "alert-danger" : "alert-success") mt-3 mb-0 py-2">
+                            <small>@_forceResult</small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><i class="bi bi-list-check me-2"></i>@L[AnchoringKeys.Admin.AvailableStrategies]</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>@L[AnchoringKeys.Admin.DataAvailability]</th>
+                                    <th>@L[AnchoringKeys.Admin.ProofMode]</th>
+                                    <th>@L[AnchoringKeys.Admin.Strategy]</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (_strategies != null)
+                                {
+                                    @foreach (var s in _strategies)
+                                    {
+                                        var isActive = s.Da == _status.DataAvailability && s.Proof == _status.ProofMode;
+                                        <tr class="@(isActive ? "table-active" : "")">
+                                            <td><span class="badge badge-info">@s.Da</span></td>
+                                            <td><span class="badge badge-info">@s.Proof</span></td>
+                                            <td class="small">@s.Name</td>
+                                            <td>
+                                                @if (isActive)
+                                                {
+                                                    <span class="badge badge-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-outline-primary btn-sm py-0 px-2"
+                                                            @onclick="() => SelectStrategy(s.Da, s.Proof)">
+                                                        <i class="bi bi-arrow-right"></i>
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private AnchorStatusResponse? _status;
+    private List<StrategyInfo>? _strategies;
+
+    private string _selectedDA = "None";
+    private string _selectedProof = "None";
+    private int _selectedCadence = 10;
+    private int _selectedInterval = 30000;
+
+    private bool _loading;
+    private bool _applying;
+    private bool _forcing;
+    private string? _configResult;
+    private bool _configError;
+    private string? _forceResult;
+    private bool _forceError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshStatusAsync();
+        await LoadStrategiesAsync();
+    }
+
+    private async Task RefreshStatusAsync()
+    {
+        _loading = true;
+        try
+        {
+            using var http = CreateClient();
+            _status = await http.GetFromJsonAsync<AnchorStatusResponse>("/api/anchor/status");
+            if (_status != null)
+            {
+                _selectedDA = _status.DataAvailability ?? "None";
+                _selectedProof = _status.ProofMode ?? "None";
+                _selectedCadence = _status.Cadence;
+                _selectedInterval = _status.IntervalMs;
+            }
+        }
+        catch (Exception ex)
+        {
+            _status = new AnchorStatusResponse { Status = $"Error: {ex.Message}" };
+        }
+        _loading = false;
+    }
+
+    private async Task LoadStrategiesAsync()
+    {
+        try
+        {
+            using var http = CreateClient();
+            _strategies = await http.GetFromJsonAsync<List<StrategyInfo>>("/api/anchor/strategies");
+        }
+        catch { _strategies = []; }
+    }
+
+    private async Task ApplyStrategyAsync()
+    {
+        _applying = true;
+        _configResult = null;
+        try
+        {
+            using var http = CreateClient();
+            var payload = new
+            {
+                dataAvailability = _selectedDA,
+                proofMode = _selectedProof,
+                cadence = _selectedCadence,
+                intervalMs = _selectedInterval
+            };
+            var response = await http.PostAsJsonAsync("/api/anchor/config", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ConfigResponse>();
+                _configResult = $"Strategy switched to {result?.Strategy} (DA={result?.DataAvailability}, Proof={result?.ProofMode})";
+                _configError = false;
+                await RefreshStatusAsync();
+            }
+            else
+            {
+                _configResult = $"Failed: {response.StatusCode}";
+                _configError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _configResult = $"Error: {ex.Message}";
+            _configError = true;
+        }
+        _applying = false;
+    }
+
+    private async Task ForceAnchorAsync()
+    {
+        _forcing = true;
+        _forceResult = null;
+        try
+        {
+            using var http = CreateClient();
+            var response = await http.PostAsync("/api/anchor/force", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ForceResponse>();
+                _forceResult = $"Anchored — last block: {result?.LastAnchoredBlock}";
+                _forceError = false;
+                await RefreshStatusAsync();
+            }
+            else
+            {
+                _forceResult = $"Failed: {response.StatusCode}";
+                _forceError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _forceResult = $"Error: {ex.Message}";
+            _forceError = true;
+        }
+        _forcing = false;
+    }
+
+    private void SelectStrategy(string da, string proof)
+    {
+        _selectedDA = da;
+        _selectedProof = proof;
+    }
+
+    private HttpClient CreateClient()
+    {
+        var client = HttpClientFactory.CreateClient("anchoring");
+        return client;
+    }
+
+    private static string TruncateAddress(string? addr)
+    {
+        if (string.IsNullOrEmpty(addr) || addr.Length < 12) return addr ?? "—";
+        return $"{addr[..8]}...{addr[^6..]}";
+    }
+
+    private record AnchorStatusResponse
+    {
+        public string Status { get; set; } = "";
+        public string? LastAnchoredBlock { get; set; }
+        public string? Strategy { get; set; }
+        public string? DataAvailability { get; set; }
+        public string? ProofMode { get; set; }
+        public int Cadence { get; set; }
+        public int IntervalMs { get; set; }
+        public bool Enabled { get; set; }
+        public string? AnchorContract { get; set; }
+    }
+
+    private record StrategyInfo
+    {
+        public string Da { get; set; } = "";
+        public string Proof { get; set; } = "";
+        public string Name { get; set; } = "";
+    }
+
+    private record ConfigResponse
+    {
+        public string? Status { get; set; }
+        public string? Strategy { get; set; }
+        public string? DataAvailability { get; set; }
+        public string? ProofMode { get; set; }
+        public int Cadence { get; set; }
+        public int IntervalMs { get; set; }
+    }
+
+    private record ForceResponse
+    {
+        public string? Status { get; set; }
+        public string? LastAnchoredBlock { get; set; }
+    }
+}

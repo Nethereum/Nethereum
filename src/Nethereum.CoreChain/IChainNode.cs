@@ -14,6 +14,7 @@ namespace Nethereum.CoreChain
         ChainConfig Config { get; }
         IBlockStore Blocks { get; }
         ITransactionStore Transactions { get; }
+        IUncleStore Uncles { get; }
         IReceiptStore Receipts { get; }
         ILogStore Logs { get; }
         IStateStore State { get; }
@@ -57,6 +58,7 @@ namespace Nethereum.CoreChain
         Task<OpcodeTraceResult> TraceTransactionAsync(string txHash, OpcodeTraceConfig config = null);
         Task<CallTraceResult> TraceTransactionCallTracerAsync(string txHash);
         Task<PrestateTraceResult> TraceTransactionPrestateAsync(string txHash);
+        Task<byte[]> CaptureBlockWitnessAsync(long blockNumber);
         Task<OpcodeTraceResult> TraceCallAsync(CallInput callInput, OpcodeTraceConfig config = null, Dictionary<string, StateOverride> stateOverrides = null);
         Task<OpcodeTraceResult> TraceCallAsync(CallInput callInput, BigInteger blockNumber, OpcodeTraceConfig config = null, Dictionary<string, StateOverride> stateOverrides = null);
         Task<CallTraceResult> TraceCallCallTracerAsync(CallInput callInput, Dictionary<string, StateOverride> stateOverrides = null);

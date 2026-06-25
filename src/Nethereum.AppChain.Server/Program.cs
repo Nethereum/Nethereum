@@ -506,7 +506,7 @@ namespace Nethereum.AppChain.Server
 
             // Setup HTTP sync if sync peers are configured
             var finalityTracker = new InMemoryFinalityTracker();
-            IBlockReExecutor? blockReExecutor = null;
+            Nethereum.CoreChain.Sync.IBlockExecutor? blockReExecutor = null;
             if (config.SyncPeers.Length > 0)
             {
                 logger.LogInformation("Initializing HTTP sync with {Count} peers (state sync: {StateSync})",
@@ -522,7 +522,12 @@ namespace Nethereum.AppChain.Server
                     peerManager.AddPeer(peerUrl);
                 }
 
-                // Create BlockReExecutor for state sync if enabled
+                // Create BlockImporter for state sync if enabled. The
+                // canonical state transition lives in BlockExecutor; the
+                // importer is the follower-side wrapper that brackets the
+                // journal and persists header + tx / receipt / log
+                // bodies. NoRewardPolicy: AppChain pays the sequencer via
+                // tx fees, not execution-layer block rewards.
                 if (config.EnableStateSync)
                 {
                     var chainConfig = new CoreChain.ChainConfig
@@ -532,20 +537,29 @@ namespace Nethereum.AppChain.Server
                         Coinbase = config.SequencerAddress ?? ""
                     };
 
-                    var txVerifier = new TransactionVerificationAndRecoveryImp();
-                    var transactionProcessor = new CoreChain.TransactionProcessor(
+                    var pinnedFork = Nethereum.EVM.HardforkNames.Parse(chainConfig.Hardfork ?? "prague");
+                    var activations = new Nethereum.CoreChain.Forks.FixedChainActivations(pinnedFork);
+                    var hardforkConfig = chainConfig.GetHardforkConfig();
+                    var engine = new CoreChain.BlockExecutor(
                         stateStore,
                         blockStore,
-                        chainConfig,
-                        txVerifier,
-                        chainConfig.GetHardforkConfig());
+                        activations,
+                        chainConfigFactory: _ => chainConfig,
+                        hardforkConfigFactory: _ => hardforkConfig,
+                        stateRootCalculator: sharedStateRootCalculator,
+                        rewardPolicy: CoreChain.NoRewardPolicy.Instance,
+                        trieNodeStore: trieNodeStore,
+                        logger: loggerFactory.CreateLogger<CoreChain.BlockExecutor>());
 
-                    blockReExecutor = new BlockReExecutor(
-                        transactionProcessor,
+                    blockReExecutor = new CoreChain.BlockImporter(
+                        engine,
+                        blockStore,
                         stateStore,
-                        chainConfig,
-                        loggerFactory.CreateLogger<BlockReExecutor>(),
-                        sharedStateRootCalculator);
+                        transactionStore,
+                        receiptStore,
+                        logStore,
+                        uncleStore: null,
+                        logger: loggerFactory.CreateLogger<CoreChain.BlockImporter>());
 
                     logger.LogInformation("State sync enabled - transactions will be re-executed to build local state");
                 }

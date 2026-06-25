@@ -38,15 +38,21 @@ namespace Nethereum.EVM.Execution
 
             if (widthBig < new EvmUInt256(32))
             {
+                var result = new byte[32];
+                System.Buffer.BlockCopy(item, 0, result, 0, 32);
                 var width = (int)(ulong)widthBig;
-                var signedNegative = (item[31 - width] & 0x80) == 0x80;
+                var signedNegative = (result[31 - width] & 0x80) == 0x80;
                 for (var i = 0; i < 31 - width; i++)
                     if (signedNegative)
-                        item[i] = 0xFF;
+                        result[i] = 0xFF;
                     else
-                        item[i] = 0;
+                        result[i] = 0;
+                program.StackPush(result);
             }
-            program.StackPush(item);
+            else
+            {
+                program.StackPush(item);
+            }
             program.Step();
         }
 

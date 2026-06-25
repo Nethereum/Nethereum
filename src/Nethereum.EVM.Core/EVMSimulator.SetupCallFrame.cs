@@ -102,12 +102,41 @@ namespace Nethereum.EVM
             {
                 byteCode = null;
             }
-            else
+            else if (callType == CallFrameType.Call)
             {
+                // CALL materialises the target account in state (the canonical
+                // CALL path explicitly creates the account for the value-transfer
+                // / non-precompile case). Use the
+                // cached path which goes through
+                // CreateOrGetAccountExecutionState as a deliberate side-effect.
 #if EVM_SYNC
                 byteCode = program.ProgramContext.ExecutionStateService.GetCode(codeAddressAsChecksum);
 #else
                 byteCode = await program.ProgramContext.ExecutionStateService.GetCodeAsync(codeAddressAsChecksum);
+#endif
+                // Mark this entry as CALL-frame-materialised so the
+                // Frontier–Tangerine G_NEWACCOUNT check distinguishes
+                // structural creation from incidental BALANCE/EXTCODE*
+                // read materialisation. See
+                // <see cref="AccountExecutionState.WasMaterialisedByCallFrame"/>.
+                var matAcct = program.ProgramContext.ExecutionStateService
+                    .CreateOrGetAccountExecutionState(codeAddressAsChecksum);
+                matAcct.WasMaterialisedByCallFrame = true;
+            }
+            else
+            {
+                // CALLCODE / DELEGATECALL / STATICCALL do NOT touch the target
+                // address (they only resolve the target's code; no account
+                // creation). GetCodeReadOnly keeps visibility of
+                // in-tx newly-created contracts (they live in AccountsState
+                // already), but for a non-existent target it falls through
+                // to the chain reader without materialising an
+                // AccountsState entry — preventing an extra empty account
+                // from leaking into pre-EIP-158 post-state.
+#if EVM_SYNC
+                byteCode = program.ProgramContext.ExecutionStateService.GetCodeReadOnly(codeAddressAsChecksum);
+#else
+                byteCode = await program.ProgramContext.ExecutionStateService.GetCodeReadOnlyAsync(codeAddressAsChecksum);
 #endif
             }
 
@@ -132,6 +161,35 @@ namespace Nethereum.EVM
             }
 
             var maxAllowedGasFromRules = Config.GasForwarding.CalculateMaxGasToForward(program.GasRemaining);
+
+            // Pre-EIP-150 (Frontier/Homestead) forward-everything OOG check.
+            // The forward-everything gas charge runs inside the frame's gas accounting;
+            // when the total exceeds remaining (or when the requested gas
+            // doesn't fit in uint64) the call OOGs the entire current frame
+            // and returns ErrOutOfGas/ErrGasUintOverflow. Gas accounting
+            // pre-empts both the max-depth check (in evm.Call ErrDepth) and
+            // the insufficient-balance check (also in evm.Call). At EIP-150+
+            // Config.GasForwarding caps gasToAllocate to remaining-remaining/64
+            // so this branch can't fire — behaviour unchanged at every fork
+            // from Tangerine Whistle onward.
+            // Exposed by CallRecursiveBomb2 at Frontier/Homestead (the leaf
+            // frame at depth 1025 has GAS=14999 < 15000, so GAS-15000 underflows
+            // to 2^256-1 — the leaf OOGs via uint64-overflow; we used to
+            // hit the depth check first and continue with the leaf's SSTORE
+            // committed). Also covers stCallCreateCallCodeTest high-value+OOG
+            // (3 fixtures at Frontier) and the stZeroKnowledge bn256 cluster
+            // (~134 sub-tests at Frontier+Homestead).
+            // No snapshot has been taken yet, so no revert is needed.
+            var preForwardGas = Config.GasForwarding.CalculateGasForCall(program.GasRemaining, gas);
+            if (preForwardGas < 0) preForwardGas = 0;
+            if (preForwardGas > program.GasRemaining)
+            {
+                program.TotalGasUsed += program.GasRemaining;
+                program.GasRemaining = 0;
+                program.ProgramResult.IsRevert = true;
+                program.Stop();
+                return new SubCallSetup { ShouldCreateSubCall = false };
+            }
 
             if (parentFrame.Depth + 1 > GasConstants.MAX_CALL_DEPTH)
             {
@@ -228,10 +286,35 @@ namespace Nethereum.EVM
                     if (isKnownPrecompile)
                     {
 #if EVM_SYNC
-                        program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorage(codeAddressAsChecksum);
+                        var precompileAccount = program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorage(codeAddressAsChecksum);
 #else
-                        await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(codeAddressAsChecksum);
+                        var precompileAccount = await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(codeAddressAsChecksum);
 #endif
+                        // The canonical rules touch the target on CALL and
+                        // STATICCALL only: CALL adds balance to the target even
+                        // when value == 0, and STATICCALL does an explicit
+                        // AddBalance(addr, 0) "just for the sake of triggering a
+                        // touch." CallCode and DelegateCall do not touch the
+                        // target. At EIP-161+ this drives whether the (always
+                        // empty) precompile is swept from post-state.
+                        //
+                        // RIPEMD-160 (0x...003) special case: the touch marks
+                        // ripemd dirty OUTSIDE the journaled
+                        // touchChange — the dirty mark survives snapshot revert
+                        // while the touchChange itself can be rolled back. As a
+                        // result, when a sub-call that touched RIPEMD reverts, the
+                        // other 7 precompile touches get journal-rolled back but
+                        // RIPEMD stays "dirty" and is deleted by EIP-161 end-of-tx
+                        // cleanup. RevertPrecompiledTouch.json d0/d3 canonical
+                        // hashes encode exactly this asymmetry.
+                        if (callType == CallFrameType.Call || callType == CallFrameType.StaticCall)
+                        {
+                            precompileAccount.IsTouched = true;
+                            if (precompileAddress == RipemdPrecompileAddress)
+                            {
+                                program.ProgramContext.ExecutionStateService.MarkTxGloballyTouched(codeAddressAsChecksum);
+                            }
+                        }
                         long precompileGasCost = registry.GetGasCost(precompileAddress, dataInput);
 
                         if (gasToForwardForTrace < precompileGasCost)
@@ -324,14 +407,45 @@ namespace Nethereum.EVM
             programContext.IsStatic = isStatic || program.ProgramContext.IsStatic;
             programContext.EnforceGasSentry = program.ProgramContext.EnforceGasSentry;
             programContext.SstoreClearsSchedule = program.ProgramContext.SstoreClearsSchedule;
+            programContext.SstoreSetRefund = program.ProgramContext.SstoreSetRefund;
+            programContext.SstoreResetRefund = program.ProgramContext.SstoreResetRefund;
+            programContext.SstoreRefundRule = program.ProgramContext.SstoreRefundRule;
             programContext.TransientStorage = program.ProgramContext.TransientStorage;
             programContext.SetAccessListTracker(program.ProgramContext.AccessListTracker);
+            // EIP-4844: BLOBHASH / BLOBBASEFEE read from the inner frame's
+            // ProgramContext, so blob context must propagate across every
+            // CALL/CALLCODE/DELEGATECALL/STATICCALL boundary. Missing this
+            // makes BLOBHASH return zero inside any inner frame even on a
+            // blob tx (first sighting: mainnet block 20,000,000 tx[21]
+            // DELEGATECALL into the implementation at depth 2).
+            programContext.BlobHashes = program.ProgramContext.BlobHashes;
+            programContext.BlobBaseFee = program.ProgramContext.BlobBaseFee;
 
             var callProgram = new Program(byteCode, programContext);
 
-            var maxAllowedGas = maxAllowedGasFromRules;
-            var gasToAllocate = gas > maxAllowedGas ? maxAllowedGas : gas;
+            // Pre-EIP-150 (Frontier/Homestead): forward exactly what the
+            // user requested even if it exceeds remaining gas (the pre-EIP-150
+            // rule returns the requested gas unmodified). If it does exceed,
+            // the CALL itself OOGs and the
+            // entire remaining gas is consumed.
+            // EIP-150+: cap at remaining - remaining/64.
+            var gasToAllocate = Config.GasForwarding.CalculateGasForCall(program.GasRemaining, gas);
             if (gasToAllocate < 0) gasToAllocate = 0;
+
+            if (gasToAllocate > program.GasRemaining)
+            {
+                // OOG at the CALL site itself (pre-EIP-150 path with a
+                // user-requested gas larger than what's available). Geth:
+                // contract.UseGas(gas) fails, the entire frame consumes
+                // remaining gas and returns ErrOutOfGas to its caller.
+                program.TotalGasUsed += program.GasRemaining;
+                program.GasRemaining = 0;
+                program.ProgramResult.IsRevert = true;
+                program.Stop();
+                program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
+                program.StackPush(0);
+                return new SubCallSetup { ShouldCreateSubCall = false };
+            }
 
             if (shouldTransferValue && value > 0)
             {
@@ -371,6 +485,15 @@ namespace Nethereum.EVM
 
             return new SubCallSetup { ShouldCreateSubCall = true, NewFrame = newFrame, GasForwarded = gasToAllocate };
         }
+
+        // Geth's state_object.touch hard-codes the RIPEMD-160 precompile address
+        // (0x...003) as a permanently-dirty account. The journal entry for
+        // touching RIPEMD is journaled like any other touch, but a separate
+        // non-journaled journal.dirty(ripemd) call ensures the dirty mark
+        // survives even when the surrounding sub-call reverts. This avoids the
+        // 2016-era consensus discrepancy where some clients would and others
+        // wouldn't sweep RIPEMD on a touched-then-reverted path.
+        private const int RipemdPrecompileAddress = 3;
 
         /// <summary>
         /// Parses the numeric value of a 20-byte address when it fits in an

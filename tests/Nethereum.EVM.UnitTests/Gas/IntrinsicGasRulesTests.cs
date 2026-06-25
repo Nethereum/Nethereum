@@ -199,22 +199,25 @@ namespace Nethereum.EVM.UnitTests.Gas
         [Fact]
         public void Prague_adds_floor_but_reuses_cancun_slots_by_reference()
         {
-            // Prague = Cancun.WithFloor(...) so every other slot is the
-            // same reference — no cloning waste.
             Assert.Same(IntrinsicGasRuleSets.Cancun.InitCode,   IntrinsicGasRuleSets.Prague.InitCode);
             Assert.Same(IntrinsicGasRuleSets.Cancun.AccessList, IntrinsicGasRuleSets.Prague.AccessList);
-            Assert.Same(IntrinsicGasRuleSets.Cancun.Blob,       IntrinsicGasRuleSets.Prague.Blob);
+
+            Assert.Same(Eip4844BlobGasRule.Instance,  IntrinsicGasRuleSets.Cancun.Blob);
+            Assert.Same(Eip7691BlobGasRule.Instance,  IntrinsicGasRuleSets.Prague.Blob);
 
             Assert.NotNull(IntrinsicGasRuleSets.Prague.Floor);
             Assert.Null(IntrinsicGasRuleSets.Cancun.Floor);
         }
 
         [Fact]
-        public void Osaka_is_same_reference_as_prague_no_intrinsic_changes()
+        public void Osaka_reuses_prague_non_blob_slots_by_reference()
         {
-            // No intrinsic tx gas changes in Osaka — the static field is
-            // literally the Prague reference.
-            Assert.Same(IntrinsicGasRuleSets.Prague, IntrinsicGasRuleSets.Osaka);
+            Assert.Same(IntrinsicGasRuleSets.Prague.InitCode,   IntrinsicGasRuleSets.Osaka.InitCode);
+            Assert.Same(IntrinsicGasRuleSets.Prague.AccessList, IntrinsicGasRuleSets.Osaka.AccessList);
+            Assert.Same(IntrinsicGasRuleSets.Prague.Floor,      IntrinsicGasRuleSets.Osaka.Floor);
+
+            Assert.Same(Eip7691BlobGasRule.Instance, IntrinsicGasRuleSets.Prague.Blob);
+            Assert.Same(Eip7892BlobGasRule.Instance, IntrinsicGasRuleSets.Osaka.Blob);
         }
 
         // -----------------------------------------------------------

@@ -45,8 +45,8 @@ namespace Nethereum.AppChain.Anchoring.Rpc
             if (resultStore == null)
                 return Error(request.Id, -32603, "Message result store not available");
 
-            var totalCount = await resultStore.GetCountAsync(sourceChainId);
-            var pageResults = await resultStore.GetBySourceChainAsync(sourceChainId, fromIndex, count);
+            var totalCount = await resultStore.GetCountAsync(sourceChainId).ConfigureAwait(false);
+            var pageResults = await resultStore.GetBySourceChainAsync(sourceChainId, fromIndex, count).ConfigureAwait(false);
 
             var items = new List<Dictionary<string, object>>();
             foreach (var r in pageResults)
