@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.DevP2P.IntegrationTests</Description>
+    <Authors>Juan Blanco</Authors>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Eth\Nethereum.DevP2P.Eth.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.LightSync\Nethereum.LightSync.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Geth\Nethereum.Geth.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AppChain.Sync\Nethereum.AppChain.Sync.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Model\Nethereum.Model.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
