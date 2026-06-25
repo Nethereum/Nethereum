@@ -473,6 +473,31 @@ namespace Nethereum.RLP
             return array.Length == 1 && array[0] == 0;
         }
 
+        public static int GetFirstElementLength(byte[] data, int offset = 0)
+        {
+            byte prefix = data[offset];
+
+            if (prefix < OFFSET_SHORT_ITEM)
+                return 1;
+
+            if (prefix <= OFFSET_LONG_ITEM)
+                return 1 + (prefix - OFFSET_SHORT_ITEM);
+
+            if (prefix < OFFSET_SHORT_LIST)
+            {
+                int lenOfLen = prefix - OFFSET_LONG_ITEM;
+                int len = CalculateLength(lenOfLen, data, offset);
+                return 1 + lenOfLen + len;
+            }
+
+            if (prefix <= OFFSET_LONG_LIST)
+                return 1 + (prefix - OFFSET_SHORT_LIST);
+
+            int lengthOfLength = prefix - OFFSET_LONG_LIST;
+            int length = CalculateLength(lengthOfLength, data, offset);
+            return 1 + lengthOfLength + length;
+        }
+
         private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)
         {
             var pow = (byte) (lengthOfLength - 1);

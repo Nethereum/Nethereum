@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Consensus;
+using Nethereum.CoreChain.Forks;
+using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Sync;
 using Nethereum.Model;
 
 namespace Nethereum.AppChain.Sequencer
@@ -29,18 +32,39 @@ namespace Nethereum.AppChain.Sequencer
             _appChain = appChain;
             _config = appChain.Config;
             _strategy = strategy;
+            var trieNodeStore = appChain.TrieNodes ?? new InMemoryTrieNodeStore();
+            var resolvedCalculator = stateRootCalculator
+                ?? new IncrementalStateRootCalculator(appChain.State, trieNodeStore);
+
+            // AppChain pins a single hardfork (ChainConfig.Hardfork). No
+            // PoW miner rewards — the sequencer is the canonical producer
+            // and is paid via tx fees + base-fee burn semantics.
+            var pinnedFork = Nethereum.EVM.HardforkNames.Parse(_config.Hardfork ?? "prague");
+            var activations = new FixedChainActivations(pinnedFork);
+            var hardforkConfig = _config.GetHardforkConfig();
+            var engine = new BlockExecutor(
+                appChain.State,
+                appChain.Blocks,
+                activations,
+                chainConfigFactory: _ => _config,
+                hardforkConfigFactory: _ => hardforkConfig,
+                stateRootCalculator: resolvedCalculator,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
+
             _coreBlockProducer = new CoreChain.BlockProducer(
+                engine,
                 appChain.Blocks,
                 appChain.Transactions,
                 appChain.Receipts,
                 appChain.Logs,
                 appChain.State,
-                transactionProcessor,
-                appChain.TrieNodes,
-                stateRootCalculator,
-                blockHashProvider,
-                blockEncodingProvider,
-                blockRootsProvider);
+                trieNodeStore,
+                resolvedCalculator,
+                orderingPolicy: MempoolNonceOrderingPolicy.Instance,
+                blockHashProvider: blockHashProvider,
+                blockEncodingProvider: blockEncodingProvider,
+                blockRootsProvider: blockRootsProvider);
         }
 
         public async Task<BlockProductionResult> ProduceBlockAsync(IReadOnlyList<ISignedTransaction> transactions)
