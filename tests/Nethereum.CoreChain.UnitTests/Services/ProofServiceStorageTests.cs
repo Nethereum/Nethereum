@@ -160,15 +160,9 @@ namespace Nethereum.CoreChain.UnitTests.Services
             await stateStore.SaveStorageAsync(AccountAddress, BigInteger.One, BigInteger.Parse("200").ToByteArray(isUnsigned: true, isBigEndian: true));
             await stateStore.SaveStorageAsync(AccountAddress, new BigInteger(2), BigInteger.Parse("300").ToByteArray(isUnsigned: true, isBigEndian: true));
 
+            // Keys are already keccak(slot) — Yellow Paper §4.1 storage-trie path.
             var storageSlots = await stateStore.GetAllStorageAsync(AccountAddress);
-            var storageDict = new Dictionary<byte[], byte[]>();
-            foreach (var kvp in storageSlots)
-            {
-                var slotBytes = kvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                var hashedSlot = _sha3.CalculateHash(slotBytes);
-                storageDict[hashedSlot] = kvp.Value;
-            }
-            var storageRoot = _rootCalculator.CalculateStorageRoot(storageDict, trieNodeStore);
+            var storageRoot = _rootCalculator.CalculateStorageRoot(storageSlots, trieNodeStore);
 
             var account = new Account
             {
@@ -211,8 +205,10 @@ namespace Nethereum.CoreChain.UnitTests.Services
             public Task<bool> AccountExistsAsync(string address) => _inner.AccountExistsAsync(address);
             public Task DeleteAccountAsync(string address) => _inner.DeleteAccountAsync(address);
             public Task<Dictionary<string, Account>> GetAllAccountsAsync() => _inner.GetAllAccountsAsync();
+            public System.Collections.Generic.IAsyncEnumerable<KeyValuePair<string, Account>> StreamAccountsAsync() => _inner.StreamAccountsAsync();
             public Task<byte[]> GetStorageAsync(string address, BigInteger slot) => _inner.GetStorageAsync(address, slot);
             public Task SaveStorageAsync(string address, BigInteger slot, byte[] value) => _inner.SaveStorageAsync(address, slot, value);
+            public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value) => _inner.SaveStorageByKeccakAsync(address, slotKeccak, value);
             public Task ClearStorageAsync(string address) => _inner.ClearStorageAsync(address);
             public Task<byte[]> GetCodeAsync(byte[] codeHash) => _inner.GetCodeAsync(codeHash);
             public Task SaveCodeAsync(byte[] codeHash, byte[] code) => _inner.SaveCodeAsync(codeHash, code);
@@ -221,9 +217,10 @@ namespace Nethereum.CoreChain.UnitTests.Services
             public Task RevertSnapshotAsync(IStateSnapshot snapshot) => _inner.RevertSnapshotAsync(snapshot);
             public Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync() => _inner.GetDirtyAccountAddressesAsync();
             public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address) => _inner.GetDirtyStorageSlotsAsync(address);
+            public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync() => _inner.GetStorageClearedAddressesAsync();
             public Task ClearDirtyTrackingAsync() => _inner.ClearDirtyTrackingAsync();
 
-            public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+            public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
             {
                 GetAllStorageCallCount++;
                 return _inner.GetAllStorageAsync(address);

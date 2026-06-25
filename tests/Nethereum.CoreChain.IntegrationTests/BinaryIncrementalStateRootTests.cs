@@ -103,18 +103,18 @@ namespace Nethereum.CoreChain.IntegrationTests
         }
 
         [Fact]
-        public async Task Reset_AllowsReinitialisation()
+        public async Task FreshCalculator_OverSameState_ProducesSameRoot()
         {
             var stateStore = new InMemoryStateStore();
             var address = "0x1000000000000000000000000000000000000000";
 
             await SaveAccountToStore(stateStore, address, new EvmUInt256(1000), 0, new byte[0], null);
 
-            var calc = new BinaryIncrementalStateRootCalculator(stateStore);
-            var root1 = await calc.ComputeStateRootAsync();
+            var calc1 = new BinaryIncrementalStateRootCalculator(stateStore);
+            var root1 = await calc1.ComputeStateRootAsync();
 
-            calc.Reset();
-            var root2 = await calc.ComputeStateRootAsync();
+            var calc2 = new BinaryIncrementalStateRootCalculator(stateStore);
+            var root2 = await calc2.ComputeStateRootAsync();
 
             Assert.Equal(root1, root2);
         }

@@ -68,7 +68,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 BlockNumber = blockNumber,
                 StorageDiffs = new List<StorageDiffEntry>
                 {
-                    new StorageDiffEntry { Address = address, Slot = slot, PreValue = preValue }
+                    new StorageDiffEntry { Address = address, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot), PreValue = preValue }
                 }
             };
         }
@@ -261,8 +261,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 },
                 StorageDiffs = new List<StorageDiffEntry>
                 {
-                    new StorageDiffEntry { Address = ADDR1, Slot = 1, PreValue = new byte[] { 0xFF } },
-                    new StorageDiffEntry { Address = ADDR1, Slot = 2, PreValue = null }
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0xFF } },
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(2), PreValue = null }
                 }
             };
 
@@ -284,8 +284,15 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task MultipleAddresses_IsolatedCorrectly()
         {
-            await _store.SaveBlockDiffAsync(MakeAccountDiff(10, ADDR1, MakeAccount(100)));
-            await _store.SaveBlockDiffAsync(MakeAccountDiff(10, ADDR2, MakeAccount(200)));
+            await _store.SaveBlockDiffAsync(new BlockStateDiff
+            {
+                BlockNumber = 10,
+                AccountDiffs = new List<AccountDiffEntry>
+                {
+                    new AccountDiffEntry { Address = ADDR1, PreValue = MakeAccount(100) },
+                    new AccountDiffEntry { Address = ADDR2, PreValue = MakeAccount(200) }
+                }
+            });
 
             var (found1, pre1) = await _store.GetFirstAccountPreValueAfterBlockAsync(ADDR1, 9);
             Assert.True(found1);
@@ -299,8 +306,15 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public async Task StorageDiffs_DifferentSlots_IsolatedCorrectly()
         {
-            await _store.SaveBlockDiffAsync(MakeStorageDiff(10, ADDR1, 1, new byte[] { 0xAA }));
-            await _store.SaveBlockDiffAsync(MakeStorageDiff(10, ADDR1, 2, new byte[] { 0xBB }));
+            await _store.SaveBlockDiffAsync(new BlockStateDiff
+            {
+                BlockNumber = 10,
+                StorageDiffs = new List<StorageDiffEntry>
+                {
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(1), PreValue = new byte[] { 0xAA } },
+                    new StorageDiffEntry { Address = ADDR1, SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(2), PreValue = new byte[] { 0xBB } }
+                }
+            });
 
             var (found1, pre1) = await _store.GetFirstStoragePreValueAfterBlockAsync(ADDR1, 1, 9);
             Assert.True(found1);
@@ -309,6 +323,29 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var (found2, pre2) = await _store.GetFirstStoragePreValueAfterBlockAsync(ADDR1, 2, 9);
             Assert.True(found2);
             Assert.Equal(new byte[] { 0xBB }, pre2);
+        }
+
+        [Fact]
+        public async Task SaveBlockDiffAsync_ResavingSameBlock_ReplacesPriorEntries()
+        {
+            await _store.SaveBlockDiffAsync(new BlockStateDiff
+            {
+                BlockNumber = 10,
+                AccountDiffs = new List<AccountDiffEntry>
+                {
+                    new AccountDiffEntry { Address = ADDR1, PreValue = MakeAccount(100) },
+                    new AccountDiffEntry { Address = ADDR2, PreValue = MakeAccount(200) }
+                }
+            });
+
+            await _store.SaveBlockDiffAsync(MakeAccountDiff(10, ADDR1, MakeAccount(999)));
+
+            var (found1, pre1) = await _store.GetFirstAccountPreValueAfterBlockAsync(ADDR1, 9);
+            Assert.True(found1);
+            Assert.Equal(999, pre1.Balance);
+
+            var (found2, _) = await _store.GetFirstAccountPreValueAfterBlockAsync(ADDR2, 9);
+            Assert.False(found2);
         }
 
         [Fact]
