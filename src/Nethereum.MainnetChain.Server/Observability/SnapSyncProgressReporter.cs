@@ -241,15 +241,19 @@ namespace Nethereum.MainnetChain.Server.Observability
                         var seg = headerState.Subchains[i];
                         segs.Append(seg.Tail).Append("..").Append(seg.Head);
                     }
+                    // bodies+receipts are filled together by the Phase-1 backfiller — the body cursor is
+                    // their shared frontier. receipt_backfill is the SEPARATE post-pivot gap-fill cursor
+                    // (GetReceiptBackfillCursor), which stays 0 during the initial snap; labelling it apart
+                    // avoids implying receipts lag at 0 while they actually ride with the bodies.
                     _logger.LogInformation(
-                        "snap.phase1 tip={Tip} headers=[{Segments}] bodies={Bodies} receipts={Receipts} executed={LastBlock}",
+                        "snap.phase1 tip={Tip} headers=[{Segments}] bodies+receipts={Bodies} receipt_backfill={Receipts} executed={LastBlock}",
                         headerTip, segs.ToString(), lastBody, lastReceipts, lastBlock);
                 }
                 else
                 {
                     _logger.LogInformation(
-                        "snap.phase1.chain headers={Headers} bodies={Bodies} receipts={Receipts} last_block={LastBlock}",
-                        lastHeader, lastBody, lastReceipts, lastBlock);
+                        "snap.phase1.chain bodies+receipts={Bodies} headers={Headers} receipt_backfill={Receipts} last_block={LastBlock}",
+                        lastBody, lastHeader, lastReceipts, lastBlock);
                 }
             }
 
