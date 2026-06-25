@@ -23,6 +23,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         private readonly Dictionary<ulong, ChainCheckpoint> _checkpoints = new();
         private ulong _latestCheckpoint;
         private SnapSyncState _snapSyncState;
+        private HeaderSyncState _headerSyncState;
 
         public ulong GetLastBlock() { lock (_lock) return _lastBlock; }
         public byte[] GetLastBlockHash() { lock (_lock) return _lastBlockHash; }
@@ -200,6 +201,16 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public void ClearSnapSyncState()
         {
             lock (_lock) _snapSyncState = null;
+        }
+
+        public HeaderSyncState GetHeaderSyncState()
+        {
+            lock (_lock) return _headerSyncState ?? HeaderSyncState.Empty;
+        }
+
+        public void SaveHeaderSyncState(HeaderSyncState state)
+        {
+            lock (_lock) _headerSyncState = state;
         }
     }
 }

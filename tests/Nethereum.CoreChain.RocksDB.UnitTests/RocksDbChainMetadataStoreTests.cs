@@ -312,6 +312,58 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
+        public void Given_FreshStore_When_GetHeaderSyncState_Then_ReturnsEmptyNeverNull()
+        {
+            var state = _store.GetHeaderSyncState();
+            Assert.NotNull(state);
+            Assert.Empty(state.Subchains);
+        }
+
+        [Fact]
+        public void Given_HeaderSyncStateSaved_When_Read_Then_SubchainsRoundTrip()
+        {
+            var saved = new HeaderSyncState
+            {
+                SchemaVersion = HeaderSyncStateRlpEncoder.CurrentSchemaVersion,
+                Subchains = new[]
+                {
+                    new HeaderSubchain { Head = 25_000_000, Tail = 24_990_000, Next = 24_989_999 },
+                    new HeaderSubchain { Head = 24_000_000, Tail = 0, Next = 0 },
+                },
+            };
+
+            _store.SaveHeaderSyncState(saved);
+            var read = _store.GetHeaderSyncState();
+
+            Assert.Equal(2, read.Subchains.Count);
+            Assert.Equal(25_000_000UL, read.Subchains[0].Head);
+            Assert.Equal(24_990_000UL, read.Subchains[0].Tail);
+            Assert.Equal(24_989_999UL, read.Subchains[0].Next);
+            Assert.Equal(24_000_000UL, read.Subchains[1].Head);
+            Assert.Equal(0UL, read.Subchains[1].Tail);
+        }
+
+        [Fact]
+        public void Given_HeaderSyncStateOverwritten_When_Read_Then_ReturnsLatest()
+        {
+            _store.SaveHeaderSyncState(new HeaderSyncState
+            {
+                SchemaVersion = HeaderSyncStateRlpEncoder.CurrentSchemaVersion,
+                Subchains = new[] { new HeaderSubchain { Head = 100, Tail = 50, Next = 49 } },
+            });
+            _store.SaveHeaderSyncState(new HeaderSyncState
+            {
+                SchemaVersion = HeaderSyncStateRlpEncoder.CurrentSchemaVersion,
+                Subchains = new[] { new HeaderSubchain { Head = 200, Tail = 0, Next = 0 } },
+            });
+
+            var read = _store.GetHeaderSyncState();
+            Assert.Single(read.Subchains);
+            Assert.Equal(200UL, read.Subchains[0].Head);
+            Assert.Equal(0UL, read.Subchains[0].Tail);
+        }
+
+        [Fact]
         public void Given_CursorsAheadOfRewindTarget_When_RewindToCheckpoint_Then_CursorsClampDown()
         {
             // Headers fetched to 10_000, bodies to 8_000, last-block at 7_000,

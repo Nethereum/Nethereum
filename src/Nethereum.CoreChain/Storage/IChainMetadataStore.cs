@@ -192,6 +192,19 @@ namespace Nethereum.CoreChain.Storage
         SnapSyncState GetSnapSyncState();
         void SaveSnapSyncState(SnapSyncState state);
         void ClearSnapSyncState();
+
+        /// <summary>
+        /// The backward header skeleton's segment progress. Returns
+        /// <see cref="HeaderSyncState.Empty"/> (never null) when nothing has been recorded yet.
+        /// Supersedes the single <see cref="GetLastFetchedHeader"/> cursor for the trusted-tip
+        /// backward walk: it records the disjoint <c>[Tail..Head]</c> segments so a restart or a
+        /// tip advance resumes the open segments instead of re-walking from the tip.
+        /// </summary>
+        HeaderSyncState GetHeaderSyncState();
+
+        /// <summary>Persist the header-skeleton segment progress. Write this in the same batch as the
+        /// header rows it accounts for so headers are never on disk without the segment that covers them.</summary>
+        void SaveHeaderSyncState(HeaderSyncState state);
     }
 
     /// <summary>

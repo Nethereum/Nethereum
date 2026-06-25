@@ -37,11 +37,19 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var currentBlock = bodyCursor > executed ? bodyCursor : executed;
             var counters = state.Counters ?? SnapSyncCounters.Zero;
 
+            // highestBlock = the live trusted tip the header skeleton is anchored to (the top
+            // subchain Head), which tracks the advancing chain across tip catch-ups; fall back to the
+            // snap pivot before any header segment has been recorded.
+            var trustedTip = HeaderSubchains.TrustedTip(metadata.GetHeaderSyncState());
+            var highestBlock = trustedTip > 0
+                ? (System.Numerics.BigInteger)trustedTip
+                : (System.Numerics.BigInteger)state.PivotBlockNumber;
+
             var output = new EthSyncingSnapOutput
             {
                 StartingBlock       = new HexBigInteger(0),
                 CurrentBlock        = new HexBigInteger(currentBlock),
-                HighestBlock        = new HexBigInteger(state.PivotBlockNumber),
+                HighestBlock        = new HexBigInteger(highestBlock),
                 SyncedAccounts      = new HexBigInteger(counters.AccountsSynced),
                 SyncedAccountBytes  = new HexBigInteger(counters.AccountBytes),
                 SyncedBytecodes     = new HexBigInteger(counters.BytecodesSynced),

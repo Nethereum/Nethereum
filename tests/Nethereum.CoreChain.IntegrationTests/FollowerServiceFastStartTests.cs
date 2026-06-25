@@ -140,6 +140,8 @@ namespace Nethereum.CoreChain.IntegrationTests
 
             public void SaveSnapSyncState(SnapSyncState state) => _inner.SaveSnapSyncState(state);
             public void ClearSnapSyncState() => _inner.ClearSnapSyncState();
+            public HeaderSyncState GetHeaderSyncState() => _inner.GetHeaderSyncState();
+            public void SaveHeaderSyncState(HeaderSyncState state) => _inner.SaveHeaderSyncState(state);
 
             public ulong GetLastBlock() => _inner.GetLastBlock();
             public byte[] GetLastBlockHash() => _inner.GetLastBlockHash();

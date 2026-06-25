@@ -571,6 +571,19 @@ namespace Nethereum.CoreChain.Sync
             byte[] lastSeenTipHash = null;
             int consecutiveSourceFailures = 0;
 
+            // Seed the header subchain from the committed frontier when nothing is recorded yet (snap
+            // completed before this feature existed, or a vanilla resume). The walker + executor resume
+            // off lastCommittedBlock and the local-store probe — this only makes the recorded [Tail..Head]
+            // reflect the already-stored chain so eth_syncing / progress are accurate from the first tick.
+            if (lastCommittedBlock > 0 && bundle.Metadata.GetHeaderSyncState().Subchains.Count == 0)
+            {
+                bundle.Metadata.SaveHeaderSyncState(new HeaderSyncState
+                {
+                    SchemaVersion = HeaderSyncStateRlpEncoder.CurrentSchemaVersion,
+                    Subchains = new[] { new HeaderSubchain { Head = lastCommittedBlock, Tail = 0, Next = 0 } },
+                });
+            }
+
             try
             {
                 while (true)
@@ -778,6 +791,18 @@ namespace Nethereum.CoreChain.Sync
 
                         case WalkerExitReason.Cancelled:
                             throw new OperationCanceledException(ct);
+                    }
+
+                    // The skeleton now spans up to the trusted tip — record the segment so eth_syncing /
+                    // progress advance with it (the new [prevTop+1..tip] run merges onto the existing
+                    // [0..prevTop]). Pure record: the resume above is governed by lastCommittedBlock and
+                    // the walker's local-store probe, not this.
+                    {
+                        var hss = bundle.Metadata.GetHeaderSyncState();
+                        var prevTop = HeaderSubchains.TrustedTip(hss);
+                        hss = HeaderSubchains.OpenTip(hss, tip.BlockNumber);
+                        hss = HeaderSubchains.RecordDescent(hss, tip.BlockNumber, prevTop > 0 ? prevTop + 1 : 0);
+                        bundle.Metadata.SaveHeaderSyncState(hss);
                     }
 
                     ulong from = cursor + 1;

@@ -15,11 +15,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly RocksDbManager _rocks;
         private readonly ISnapSyncStateEncoder _snapSyncEncoder;
+        private readonly IHeaderSyncStateEncoder _headerSyncEncoder;
 
-        public RocksDbChainMetadataStore(RocksDbManager rocks, ISnapSyncStateEncoder snapSyncEncoder = null)
+        public RocksDbChainMetadataStore(RocksDbManager rocks, ISnapSyncStateEncoder snapSyncEncoder = null,
+            IHeaderSyncStateEncoder headerSyncEncoder = null)
         {
             _rocks = rocks ?? throw new ArgumentNullException(nameof(rocks));
             _snapSyncEncoder = snapSyncEncoder ?? SnapSyncStateRlpEncoder.Instance;
+            _headerSyncEncoder = headerSyncEncoder ?? HeaderSyncStateRlpEncoder.Instance;
         }
 
         public ulong GetLastBlock()
@@ -312,6 +315,28 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             _rocks.Delete(RocksDbManager.CF_METADATA, MetaKeys.SnapSyncState);
         }
 
+        public HeaderSyncState GetHeaderSyncState()
+        {
+            var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.HeaderSyncState);
+            if (raw == null || raw.Length == 0) return HeaderSyncState.Empty;
+            // Corrupt / unknown-schema row → Empty so the walker re-derives its
+            // segments rather than crashing on a bad metadata read.
+            try { return _headerSyncEncoder.Decode(raw) ?? HeaderSyncState.Empty; }
+            catch { return HeaderSyncState.Empty; }
+        }
+
+        public void SaveHeaderSyncState(HeaderSyncState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            var blob = _headerSyncEncoder.Encode(state);
+            var cf = _rocks.GetColumnFamily(RocksDbManager.CF_METADATA);
+            using var batch = _rocks.CreateWriteBatch();
+            batch.Put(MetaKeys.HeaderSyncState, blob, cf);
+            _rocks.Write(batch);
+            // No Flush — WAL durability is enough; the header walk re-derives any
+            // tail lost to an un-fsynced crash window on restart.
+        }
+
         private static bool HasCheckpointPrefix(byte[] key)
             => key != null && key.Length == 3 + 16 && key[0] == (byte)'c' && key[1] == (byte)'p' && key[2] == (byte)'_';
 
@@ -362,6 +387,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             // this index key, regardless of hex case conventions.
             public static readonly byte[] CheckpointLatest = System.Text.Encoding.ASCII.GetBytes("meta_last_cp");
             public static readonly byte[] SnapSyncState = System.Text.Encoding.ASCII.GetBytes("snap_sync_state");
+            public static readonly byte[] HeaderSyncState = System.Text.Encoding.ASCII.GetBytes("header_sync_state");
             public static readonly byte[] ReceiptBackfillCursor = System.Text.Encoding.ASCII.GetBytes("receipt_backfill_cursor");
         }
     }

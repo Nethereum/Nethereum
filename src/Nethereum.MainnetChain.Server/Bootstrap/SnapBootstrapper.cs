@@ -339,7 +339,13 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
                                 var ch = await bundle.Blocks.GetHashByNumberAsync(new BigInteger(cursor)).ConfigureAwait(false);
                                 if (ch != null) { sweepFrom = cursor; sweepFromHash = ch; }
                             }
-                            await walker.WalkAsync(sweepFrom, sweepFromHash, 0, lookupLocal, ct).ConfigureAwait(false);
+                            // Record the segment headed at the pivot so progress is identifiable as a
+                            // [Tail..Head] range (resumable + drives eth_syncing); the walker lays the headers.
+                            bundle.Metadata.SaveHeaderSyncState(
+                                HeaderSubchains.OpenTip(bundle.Metadata.GetHeaderSyncState(), target));
+                            var sweep = await walker.WalkAsync(sweepFrom, sweepFromHash, 0, lookupLocal, ct).ConfigureAwait(false);
+                            bundle.Metadata.SaveHeaderSyncState(
+                                HeaderSubchains.RecordDescent(bundle.Metadata.GetHeaderSyncState(), target, sweep.SkeletonBottomBlock));
 
                             // Phase 1b — new-tip -> old-tip catchup. The chain advanced
                             // during the (long) sweep; lay the header gap above the
@@ -350,9 +356,14 @@ namespace Nethereum.MainnetChain.Server.Bootstrap
                                 var fresh = await pivotRefresher(ct).ConfigureAwait(false);
                                 if (fresh.HasValue && (ulong)fresh.Value.Header.BlockNumber > target)
                                 {
-                                    await walker.WalkAsync(
-                                        (ulong)fresh.Value.Header.BlockNumber, fresh.Value.Hash,
-                                        target, lookupLocal, ct).ConfigureAwait(false);
+                                    var newTip = (ulong)fresh.Value.Header.BlockNumber;
+                                    bundle.Metadata.SaveHeaderSyncState(
+                                        HeaderSubchains.OpenTip(bundle.Metadata.GetHeaderSyncState(), newTip));
+                                    var catchup = await walker.WalkAsync(
+                                        newTip, fresh.Value.Hash, target, lookupLocal, ct).ConfigureAwait(false);
+                                    // Linking the new segment onto the old top merges them into one [Tail..newTip].
+                                    bundle.Metadata.SaveHeaderSyncState(
+                                        HeaderSubchains.RecordDescent(bundle.Metadata.GetHeaderSyncState(), newTip, catchup.SkeletonBottomBlock));
                                 }
                             }
                         }, ct);

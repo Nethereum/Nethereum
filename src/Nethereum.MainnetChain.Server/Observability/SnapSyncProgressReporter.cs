@@ -57,6 +57,37 @@ namespace Nethereum.MainnetChain.Server.Observability
             return ulong.TryParse(raw, out var v) ? v : fallback;
         }
 
+        /// <summary>
+        /// Exact fraction (percent) of the 256-bit account-hash keyspace the range cursors have swept.
+        /// The tasks partition the space into contiguous chunks; each contributes the portion from its
+        /// chunk start up to its <see cref="SnapSyncAccountTask.Next"/> cursor. Because every key slot is
+        /// walked this is precise, not an estimate against a guessed account total.
+        /// </summary>
+        private static double HashSpaceProgressPercent(IReadOnlyList<SnapSyncAccountTask> tasks)
+        {
+            if (tasks == null || tasks.Count == 0) return 0.0;
+
+            var sorted = new List<SnapSyncAccountTask>(tasks);
+            sorted.Sort((a, b) => ToBig(a.Last).CompareTo(ToBig(b.Last)));
+
+            System.Numerics.BigInteger done = 0;
+            System.Numerics.BigInteger chunkStart = 0;
+            foreach (var t in sorted)
+            {
+                var next = ToBig(t.Next);
+                if (next > chunkStart) done += next - chunkStart;
+                chunkStart = ToBig(t.Last) + 1; // next chunk begins just above this one's end
+            }
+
+            var total = System.Numerics.BigInteger.One << 256;
+            return (double)done / (double)total * 100.0;
+        }
+
+        private static System.Numerics.BigInteger ToBig(byte[] hash)
+            => hash == null || hash.Length == 0
+                ? System.Numerics.BigInteger.Zero
+                : new System.Numerics.BigInteger(hash, isUnsigned: true, isBigEndian: true);
+
         private double _accountsEmaPerSec;
         private double _slotsEmaPerSec;
         private double _nodesEmaPerSec;
@@ -189,15 +220,37 @@ namespace Nethereum.MainnetChain.Server.Observability
             var lastBody = _bundle.Metadata.GetLastFetchedBody();
             var lastReceipts = _bundle.Metadata.GetReceiptBackfillCursor();
 
-            // Chain-download (Phase 1). Independent of snap-state —
-            // even a vanilla resume into an existing archive walks the same
-            // cursors. Suppress until at least one cursor has moved past
-            // genesis to avoid noise on a brand-new node before any fetch.
-            if (lastHeader > 0 || lastBody > 0 || lastReceipts > 0)
+            HeaderSyncState headerState;
+            try { headerState = _bundle.Metadata.GetHeaderSyncState(); }
+            catch { headerState = HeaderSyncState.Empty; }
+            var headerTip = HeaderSubchains.TrustedTip(headerState);
+
+            // Chain-download (Phase 1). Independent of snap-state — even a vanilla
+            // resume into an existing archive walks the same cursors. Suppress until
+            // something has moved past genesis to avoid noise on a brand-new node.
+            if (lastHeader > 0 || lastBody > 0 || lastReceipts > 0 || headerTip > 0)
             {
-                _logger.LogInformation(
-                    "snap.phase1.chain headers={Headers} bodies={Bodies} receipts={Receipts} last_block={LastBlock}",
-                    lastHeader, lastBody, lastReceipts, lastBlock);
+                if (headerState.Subchains.Count > 0)
+                {
+                    // Header progress as identifiable [Tail..Head] segments so a tip catch-up shows the
+                    // open gap alongside the linked [0..oldTip] run; bodies/receipts track toward the tip.
+                    var segs = new System.Text.StringBuilder();
+                    for (int i = 0; i < headerState.Subchains.Count; i++)
+                    {
+                        if (i > 0) segs.Append(',');
+                        var seg = headerState.Subchains[i];
+                        segs.Append(seg.Tail).Append("..").Append(seg.Head);
+                    }
+                    _logger.LogInformation(
+                        "snap.phase1 tip={Tip} headers=[{Segments}] bodies={Bodies} receipts={Receipts} executed={LastBlock}",
+                        headerTip, segs.ToString(), lastBody, lastReceipts, lastBlock);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "snap.phase1.chain headers={Headers} bodies={Bodies} receipts={Receipts} last_block={LastBlock}",
+                        lastHeader, lastBody, lastReceipts, lastBlock);
+                }
             }
 
             if (state == null) return;
@@ -226,12 +279,17 @@ namespace Nethereum.MainnetChain.Server.Observability
                     var etaSec = _accountsEmaPerSec > 0 && AccountTarget > counters.AccountsSynced
                         ? (long)((AccountTarget - counters.AccountsSynced) / _accountsEmaPerSec)
                         : -1L;
+                    // Precise progress: the fraction of the 256-bit account-hash keyspace the 16-way
+                    // range cursors have actually swept. We walk every key slot, so this is exact — not
+                    // an estimate against a guessed account total. Accounts are keccak-uniform, so it also
+                    // tracks the fraction of accounts synced.
+                    var keyspacePct = HashSpaceProgressPercent(state.Tasks);
 
                     _logger.LogInformation(
-                        "snap.phase2.state accounts={Accounts} account_bytes={AccountBytes} " +
+                        "snap.phase2.state accounts={Accounts} keyspace={Pct:F3}% account_bytes={AccountBytes} " +
                         "slots={Slots} slot_bytes={SlotBytes} codes={Codes} code_bytes={CodeBytes} " +
                         "pivot={Pivot} accts_rate={AcctRate:F0}/s slot_rate={SlotRate:F0}/s eta_sec={EtaSec}",
-                        counters.AccountsSynced, counters.AccountBytes,
+                        counters.AccountsSynced, keyspacePct, counters.AccountBytes,
                         counters.StorageSlotsSynced, counters.StorageBytes,
                         counters.BytecodesSynced, counters.BytecodeBytes,
                         state.PivotBlockNumber,
