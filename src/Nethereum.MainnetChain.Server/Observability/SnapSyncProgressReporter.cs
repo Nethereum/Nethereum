@@ -101,19 +101,22 @@ namespace Nethereum.MainnetChain.Server.Observability
         private readonly ILogger<SnapSyncProgressReporter> _logger;
         private readonly IPeerPool? _peerPool;
         private readonly ICanonicalStateRootSource? _canonical;
+        private readonly IFetchRequestScheduler? _scheduler;
 
         public SnapSyncProgressReporter(
             IChainStoreBundle bundle,
             SnapSyncMetrics metrics,
             ILogger<SnapSyncProgressReporter>? logger = null,
             IPeerPool? peerPool = null,
-            ICanonicalStateRootSource? canonical = null)
+            ICanonicalStateRootSource? canonical = null,
+            IFetchRequestScheduler? scheduler = null)
         {
             _bundle = bundle ?? throw new ArgumentNullException(nameof(bundle));
             _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
             _logger = logger ?? NullLogger<SnapSyncProgressReporter>.Instance;
             _peerPool = peerPool;
             _canonical = canonical;
+            _scheduler = scheduler;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -156,21 +159,31 @@ namespace Nethereum.MainnetChain.Server.Observability
             var snapshot = _peerPool.ActivePeers;
             long total = snapshot.Count;
             long snapCapable = 0;
+            long snapServing = 0;
             ulong latest = 0;
             foreach (var p in snapshot)
             {
                 if (p is MainnetPeerSession mp)
                 {
-                    if (mp.SupportsSnap) snapCapable++;
+                    if (mp.SupportsSnap)
+                    {
+                        snapCapable++;
+                        // serving = advertises snap/1 AND not currently state-quarantined. Without a
+                        // scheduler we cannot tell, so count it as serving (no skew on the metric).
+                        if (_scheduler == null || _scheduler.IsSnapStateServing(mp)) snapServing++;
+                    }
                     if (mp.PeerLatestBlock > latest) latest = mp.PeerLatestBlock;
                 }
             }
+            long snapQuarantined = snapCapable - snapServing;
 
             _metrics.SetPeerCounts(total, snapCapable);
 
+            // serving vs quarantined makes the Phase-2 throttle visible: a near-empty serving count
+            // means almost no peer can serve the current pivot root (pivot too recent for their snapshots).
             _logger.LogInformation(
-                "snap.peers.summary total={Total} snap_capable={SnapCapable} latest={Latest}",
-                total, snapCapable, latest);
+                "snap.peers.summary total={Total} snap_capable={SnapCapable} serving={Serving} quarantined={Quarantined} latest={Latest}",
+                total, snapCapable, snapServing, snapQuarantined, latest);
         }
 
         private void EmitCanonicalStaleness()

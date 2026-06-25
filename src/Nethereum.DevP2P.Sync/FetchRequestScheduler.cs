@@ -388,6 +388,9 @@ namespace Nethereum.DevP2P.Sync
         private bool SnapStateServingFilter(IEthPeer p) =>
             p is MainnetPeerSession ms && ms.SupportsSnap && !IsSnapStateQuarantined(ms.Id);
 
+        /// <inheritdoc />
+        public bool IsSnapStateServing(IEthPeer peer) => SnapStateServingFilter(peer);
+
         public async Task<AccountRangeMessage> FetchAccountRangeAsync(
             byte[] stateRoot, byte[] startingHash, byte[] limitHash,
             ulong responseBytes, CancellationToken ct)

@@ -107,6 +107,14 @@ namespace Nethereum.DevP2P.Sync
         Task<TrieNodesMessage> FetchTrieNodesAsync(
             byte[] stateRoot, List<List<byte[]>> paths,
             ulong responseBytes, CancellationToken ct);
+
+        /// <summary>
+        /// True when <paramref name="peer"/> is currently eligible to serve snap STATE requests —
+        /// it advertises snap/1 and is not in the temporary state-serving quarantine applied to peers
+        /// that answered a state request with no data. Used for observability (serving vs quarantined
+        /// counts). Default returns true so non-snap schedulers don't skew the metric.
+        /// </summary>
+        bool IsSnapStateServing(IEthPeer peer) => true;
     }
 
     /// <summary>
