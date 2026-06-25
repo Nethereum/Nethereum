@@ -24,7 +24,6 @@ namespace Nethereum.EVM
     public partial class TransactionExecutor
     {
         private const int MAX_INITCODE_SIZE = 49152;
-        private const int MAX_CODE_SIZE = 24576;
 
         private readonly EVMSimulator _evmSimulator;
         public EVMSimulator GetSimulator() => _evmSimulator;
@@ -68,10 +67,25 @@ namespace Nethereum.EVM
             if (_config.MaxInitcodeSize > 0 && ctx.IsContractCreation && ctx.Data != null && ctx.Data.Length > _config.MaxInitcodeSize)
                 throw new TransactionValidationException("INITCODE_SIZE_EXCEEDED");
 
-            if (ctx.BlockGasLimit > 0 && ctx.GasLimit > ctx.BlockGasLimit)
+            if (!ctx.IsCallMode && ctx.BlockGasLimit > 0 && ctx.GasLimit > ctx.BlockGasLimit)
                 throw new TransactionValidationException("GAS_ALLOWANCE_EXCEEDED");
 
             ctx.IntrinsicGas = _config.IntrinsicGasRules.CalculateIntrinsicGas(ctx.Data, ctx.IsContractCreation, ctx.AccessList);
+
+            // EIP-4844: reject the tx if the user's MaxFeePerBlobGas can't
+            // cover the block's current blob_base_fee. Spec text:
+            // "the transaction is invalid if max_fee_per_blob_gas <
+            // get_blob_base_fee(block.excess_blob_gas)". This MUST run
+            // before custom rules so a malformed type-3 tx never reaches
+            // the rest of the validation chain.
+            // Caught by EEST cancun/eip4844_blobs/test_blob_txs.py::
+            // test_invalid_tx_max_fee_per_blob_gas_state (2 cases × 3 forks).
+            if (ctx.IsType3Transaction && _config.IntrinsicGasRules.Blob != null)
+            {
+                var blobBaseFee = _config.IntrinsicGasRules.Blob.CalculateBlobBaseFee(ctx.ExcessBlobGas);
+                if (ctx.MaxFeePerBlobGas < blobBaseFee)
+                    throw new TransactionValidationException("INSUFFICIENT_MAX_FEE_PER_BLOB_GAS");
+            }
 
             _config.TransactionValidationRules?.Validate(ctx, _config);
 
@@ -132,7 +146,12 @@ namespace Nethereum.EVM
 
             var codeDepositGas = (long)deployedCode.Length * GasConstants.CREATE_DATA_GAS;
 
-            if (deployedCode.Length > MAX_CODE_SIZE)
+            // EIP-170 (Spurious Dragon+): cap deployed code at MaxCodeSize.
+            // Gated on EIP-158 (Spurious Dragon onward).
+            // HardforkConfig.MaxCodeSize is 0 for Frontier/Homestead/TangerineWhistle
+            // (no limit) and 24576 from Spurious Dragon onward. Matches the
+            // existing pattern in EVMSimulator's CREATE/CREATE2 opcode path.
+            if (_config.MaxCodeSize > 0 && deployedCode.Length > _config.MaxCodeSize)
             {
                 result.Success = false;
                 ctx.ExecutionState.RevertToSnapshot(ctx.TransactionSnapshotId);
@@ -225,10 +244,36 @@ namespace Nethereum.EVM
             var gasRefundAmount = (ctx.GasLimit - new EvmUInt256(result.GasUsed)) * ctx.EffectiveGasPrice;
             ctx.SenderAccount.Balance.CreditExecutionBalance(gasRefundAmount);
 
+            // EIP-1559 (London+): coinbase receives only the priority tip; the
+            // baseFee portion is burnt. Pre-London the full effectiveGasPrice
+            // goes to the miner, with baseFee irrelevant to fee accounting
+            // (the env field still may be populated by EEST fixtures generated
+            // for shared multi-fork test data — must NOT subtract it pre-London
+            // or the coinbase balance diverges from canonical).
+            var perGasReward = _config.BaseFeeApplies
+                ? (ctx.EffectiveGasPrice > ctx.BaseFee ? ctx.EffectiveGasPrice - ctx.BaseFee : EvmUInt256.Zero)
+                : ctx.EffectiveGasPrice;
+            var minerReward = new EvmUInt256(result.GasUsed) * perGasReward;
+            // Always materialise the coinbase, then either credit it or
+            // flag it as touched. This mirrors the canonical client
+            // behaviour: paying the miner reward is a touch even with a
+            // zero credit, so the coinbase enters the post-state. The
+            // per-fork TouchedEmptyCleanupRule below removes the entry
+            // again at EIP-161+ when it is empty (no balance, no nonce,
+            // no code) — closing the Prague/Cancun "phantom empty
+            // coinbase on priorityFee==0" leak. Pre-EIP-161 forks have
+            // NoOp cleanup, so the touched empty coinbase persists —
+            // required by EEST frontier/touch/test_zero_gas_price_and_touching.
             var coinbaseAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.Coinbase);
-            var tipPerGas = ctx.EffectiveGasPrice > ctx.BaseFee ? ctx.EffectiveGasPrice - ctx.BaseFee : EvmUInt256.Zero;
-            var minerReward = new EvmUInt256(result.GasUsed) * tipPerGas;
-            coinbaseAccount.Balance.CreditExecutionBalance(minerReward);
+            if (!minerReward.IsZero)
+                coinbaseAccount.Balance.CreditExecutionBalance(minerReward);
+            else
+                coinbaseAccount.IsTouched = true;
+
+            // EIP-161 STATE_CLEARING — per-fork strategy. NoOp pre-EIP-161,
+            // Eip161 at Spurious Dragon+. The executor stays fork-blind;
+            // the choice is registered on HardforkConfig.
+            _config.TouchedEmptyCleanupRule.Apply(ctx.ExecutionState);
         }
     }
 

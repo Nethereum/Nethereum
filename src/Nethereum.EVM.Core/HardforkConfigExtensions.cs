@@ -12,25 +12,9 @@ namespace Nethereum.EVM
             if (config == null) throw new ArgumentNullException(nameof(config));
             if (registry == null) throw new ArgumentNullException(nameof(registry));
 
-            return new HardforkConfig
-            {
-                MaxBlobsPerBlock = config.MaxBlobsPerBlock,
-                Precompiles = registry,
-                IntrinsicGasRules = config.IntrinsicGasRules,
-                OpcodeHandlers = config.OpcodeHandlers,
-                CallFrameInitRules = config.CallFrameInitRules,
-                TransactionValidationRules = config.TransactionValidationRules,
-                TransactionSetupRules = config.TransactionSetupRules,
-                CodeDepositRule = config.CodeDepositRule,
-                GasForwarding = config.GasForwarding,
-                MaxCodeSize = config.MaxCodeSize,
-                MaxInitcodeSize = config.MaxInitcodeSize,
-                RejectEfPrefix = config.RejectEfPrefix,
-                ContractInitialNonce = config.ContractInitialNonce,
-                RefundQuotient = config.RefundQuotient,
-                SstoreClearsSchedule = config.SstoreClearsSchedule,
-                CleanEmptyAccounts = config.CleanEmptyAccounts
-            };
+            var clone = config.Clone();
+            clone.Precompiles = registry;
+            return clone;
         }
     }
 }

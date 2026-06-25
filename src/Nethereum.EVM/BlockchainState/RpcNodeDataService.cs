@@ -106,5 +106,14 @@ namespace Nethereum.EVM.BlockchainState
             return EvmUInt256BigIntegerExtensions.FromBigInteger(count.Value);
         }
 
+        public async Task<bool> AccountExistsAsync(string address)
+        {
+            var checksum = address.ConvertToEthereumChecksumAddress();
+            if ((await EthApiService.GetBalance.SendRequestAsync(checksum, CurrentBlock)).Value > 0) return true;
+            if ((await EthApiService.Transactions.GetTransactionCount.SendRequestAsync(checksum, CurrentBlock)).Value > 0) return true;
+            var code = await EthApiService.GetCode.SendRequestAsync(checksum, CurrentBlock);
+            return !string.IsNullOrEmpty(code) && code != "0x" && code != "0x0";
+        }
+
     }
 }

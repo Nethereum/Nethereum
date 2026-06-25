@@ -69,7 +69,10 @@ namespace Nethereum.EVM
             ctx.ExecutionState.MarkAddressAsWarm(ctx.Sender);
             ctx.ExecutionState.MarkPrecompilesAsWarm(_config.Precompiles);
 
-            if (!string.IsNullOrEmpty(ctx.Coinbase))
+            // EIP-3651 (Shanghai+): coinbase pre-warmed. Pre-Shanghai forks
+            // (Berlin/London/Paris) leave the coinbase COLD — first access
+            // costs 2600 (cold) not 100 (warm).
+            if (_config.WarmCoinbase && !string.IsNullOrEmpty(ctx.Coinbase))
                 ctx.ExecutionState.MarkAddressAsWarm(ctx.Coinbase);
 
             ctx.SenderAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.Sender);
@@ -137,7 +140,24 @@ namespace Nethereum.EVM
                     result.Error = "Insufficient balance: gas cost overflows 256 bits";
                     return;
                 }
-                var maxCost = gasCost + ctx.Value + ctx.BlobGasCost;
+
+                // EIP-4844 sender balance reservation uses MaxFeePerBlobGas
+                // (the user's promised maximum), NOT the block's actual
+                // BlobBaseFee. The actual blob fee paid in DebitExecutionBalance
+                // below still uses BlobGasCost = blobGas × BlobBaseFee — only
+                // the reservation check here must be against the max promise
+                // so a tx whose actual blob fee fits but max-promise doesn't
+                // is correctly rejected. Caught by EEST
+                // cancun/eip4844_blobs/test_blob_txs.py::test_insufficient_balance_blob_tx
+                // (60 cases × 3 forks pre-fix).
+                EvmUInt256 maxBlobReservation = EvmUInt256.Zero;
+                if (ctx.IsType3Transaction && _config.IntrinsicGasRules.Blob != null)
+                {
+                    var blobCount = ctx.BlobVersionedHashes?.Count ?? 0;
+                    maxBlobReservation = _config.IntrinsicGasRules.Blob
+                        .CalculateBlobGasCost(blobCount, ctx.MaxFeePerBlobGas);
+                }
+                var maxCost = gasCost + ctx.Value + maxBlobReservation;
                 var addOverflow = maxCost < gasCost;
                 if (addOverflow || senderBalance < maxCost)
                 {
@@ -149,7 +169,7 @@ namespace Nethereum.EVM
 
             ctx.SenderNonceBeforeIncrement = (ctx.SenderAccount.Nonce ?? 0UL);
 
-            // Per geth: increment sender nonce BEFORE auth list processing
+            // Increment the sender nonce BEFORE auth-list processing
             // This is critical for self-sponsored txs where sender = authority
             if (!ctx.IsCallMode)
             {
@@ -170,7 +190,7 @@ namespace Nethereum.EVM
                     return;
             }
 
-            // Gas deduction (after auth list, matching geth's order)
+            // Gas deduction (after auth list, in canonical order)
             if (!ctx.IsCallMode)
             {
                 var gasDeduction = ctx.GasLimit * ctx.EffectiveGasPrice;
@@ -285,6 +305,12 @@ namespace Nethereum.EVM
             {
                 ExecuteSimpleTransfer(ctx, result);
             }
+            else if (ctx.IsContractCreation && result.Success)
+            {
+                // CREATE-tx with empty init data + zero value: no code, no
+                // transfer — but the contract account is still persisted.
+                _config.ContractCreationMaterialiseRule.Apply(ctx, result);
+            }
         }
 
 #if EVM_SYNC
@@ -329,8 +355,17 @@ namespace Nethereum.EVM
                 programContext.BlobHashes = blobHashes;
             }
 
-            programContext.EnforceGasSentry = true;
+            programContext.EnforceGasSentry = _config.EnforceSstoreSentry;
+            programContext.BlockHashRule = _config.BlockHashRule;
             programContext.SstoreClearsSchedule = _config.SstoreClearsSchedule;
+            programContext.SstoreSetRefund = _config.SstoreSetRefund;
+            programContext.SstoreResetRefund = _config.SstoreResetRefund;
+            programContext.SstoreRefundRule = _config.SstoreRefundRule;
+            // EIP-158+ forks (cleanEmptyAccounts=true) get a permanent
+            // touch on revert so end-of-tx cleanup sees the touched-empty set
+            // correctly. Pre-EIP-158 forks revert touches normally; no cleanup
+            // runs so phantom touches must not leak into post-state.
+            ctx.ExecutionState.TouchPersistsOnRevert = _config.CleanEmptyAccounts;
 
             var program = new Program(ctx.Code, programContext);
 
@@ -386,10 +421,29 @@ namespace Nethereum.EVM
                         ctx.ExecutionState.CommitSnapshot(ctx.TransactionSnapshotId);
                     }
 
-                    CleanupSelfDestructedContracts(ctx, program);
+                    // HandleSuccessfulContractCreation can flip result.Success
+                    // to false on code-deposit OOG (EIP-170 code-size cap, or
+                    // GasConstants.CREATE_DATA_GAS exceeding remaining gas) and
+                    // reverts the outer tx snapshot. CleanupSelfDestructedContracts
+                    // and the CreatedAccounts/DeletedAccounts capture must NOT
+                    // run on that path — they'd delete addresses that the
+                    // snapshot revert just restored (e.g. a pre-state contract
+                    // SELFDESTRUCT'd inside the failed CREATE's init-code).
+                    // CreateOOGFromEOARefunds.json [13,0,0] at London/Paris/
+                    // Shanghai exercises this exactly: init-code CALLs into
+                    // pre-state 0xc0ded which SELFDESTRUCTs; outer CREATE then
+                    // OOGs on the 5000*200 code-deposit cost; without the
+                    // re-check, the pre-state 0xc0ded is wiped from
+                    // AccountsState even though the snapshot revert restored it.
+                    // Cancun masks the bug via EIP-6780 (PreCancunSelfDestructRule
+                    // only journals SELFDESTRUCT for IsNewContract=true).
+                    if (result.Success)
+                    {
+                        CleanupSelfDestructedContracts(ctx, program);
 
-                    result.CreatedAccounts = new List<string>(program.ProgramResult.CreatedContractAccounts);
-                    result.DeletedAccounts = new List<string>(program.ProgramResult.DeletedContractAccounts);
+                        result.CreatedAccounts = new List<string>(program.ProgramResult.CreatedContractAccounts);
+                        result.DeletedAccounts = new List<string>(program.ProgramResult.DeletedContractAccounts);
+                    }
                 }
                 else
                 {
@@ -457,9 +511,18 @@ namespace Nethereum.EVM
                     }
                 }
             }
-            else if (!ctx.Value.IsZero)
+            else
             {
-                ctx.SenderAccount.Balance.DebitExecutionBalance(ctx.Value);
+                // Mirror the canonical CALL's unconditional transfer:
+                // a value-zero call still touches the recipient via AddBalance(0),
+                // which at EIP-158+ feeds touched-empty cleanup. Skipping the
+                // touch leaves empty pre-state recipients in our post-state
+                // where the cleanup deletes them. For pre-EIP-158 the touch
+                // is a no-op because the cleanup rule is NoOp.
+                if (!ctx.Value.IsZero)
+                {
+                    ctx.SenderAccount.Balance.DebitExecutionBalance(ctx.Value);
+                }
                 var receiverAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.To);
                 receiverAccount.Balance.CreditExecutionBalance(ctx.Value);
                 ctx.ExecutionState.CommitSnapshot(ctx.TransactionSnapshotId);

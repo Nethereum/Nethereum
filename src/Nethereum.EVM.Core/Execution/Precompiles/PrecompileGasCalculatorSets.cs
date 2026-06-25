@@ -97,9 +97,9 @@ namespace Nethereum.EVM.Execution.Precompiles
         /// </summary>
         public static readonly PrecompileGasCalculators Prague = Cancun.With(
             Entry(0x0b, new FixedCostPrecompileGasCalculator(GasConstants.BLS12_G1ADD_GAS)),
-            Entry(0x0c, new Bls12MsmGasCalculator(GasConstants.BLS12_G1MSM_BASE_GAS, pairSize: 160)),
+            Entry(0x0c, new Bls12MsmGasCalculator(GasConstants.BLS12_G1MSM_BASE_GAS, pairSize: 160, MsmDiscountTable.G1Discount)),
             Entry(0x0d, new FixedCostPrecompileGasCalculator(GasConstants.BLS12_G2ADD_GAS)),
-            Entry(0x0e, new Bls12MsmGasCalculator(GasConstants.BLS12_G2MSM_BASE_GAS, pairSize: 288)),
+            Entry(0x0e, new Bls12MsmGasCalculator(GasConstants.BLS12_G2MSM_BASE_GAS, pairSize: 288, MsmDiscountTable.G2Discount)),
             Entry(0x0f, new Bls12PairingGasCalculator(
                 GasConstants.BLS12_PAIRING_BASE_GAS,
                 GasConstants.BLS12_PAIRING_PER_PAIR_GAS)),

@@ -63,22 +63,30 @@ namespace Nethereum.EVM.Gas
             floor: null);
 
         /// <summary>
-        /// Prague bundle: Cancun with the EIP-7623 calldata floor
-        /// installed. Built as <c>Cancun.WithFloor(...)</c> so every
-        /// unchanged slot (init code, access list, blob) is preserved
+        /// Prague bundle: Cancun with the EIP-7623 calldata floor and the
+        /// EIP-7691 blob throughput / fee-update-fraction bump. Built as
+        /// <c>Cancun.WithBlob(Eip7691BlobGasRule.Instance).WithFloor(...)</c>
+        /// so every unchanged slot (init code, access list) is preserved
         /// by reference.
         /// </summary>
         public static readonly IntrinsicGasRules Prague =
-            Cancun.WithFloor(Eip7623CalldataFloorRule.Instance);
+            Cancun.WithBlob(Eip7691BlobGasRule.Instance).WithFloor(Eip7623CalldataFloorRule.Instance);
 
         /// <summary>
-        /// Osaka bundle: no intrinsic tx gas changes relative to
-        /// Prague, so it is the same reference. Kept as a named
-        /// property for symmetry with <see cref="Cancun"/> and
-        /// <see cref="Prague"/>, and so downstream fork additions
-        /// only have to call <c>.WithXxx(...)</c> on Osaka rather
-        /// than reach through Prague.
+        /// Osaka bundle: Prague intrinsic tx gas rules with the
+        /// EIP-7892 blob-base-fee update fraction (8,346,193) replacing
+        /// Prague's 5,007,716. Same target/max blob count as Prague
+        /// (6 / 9) — only the rescheduling fraction changes.
         /// </summary>
-        public static readonly IntrinsicGasRules Osaka = Prague;
+        public static readonly IntrinsicGasRules Osaka =
+            Prague.WithBlob(Eip7892BlobGasRule.Instance);
+
+        /// <summary>
+        /// First BPO (Blob Parameter Only) fork after Osaka activation,
+        /// per EIP-7892. Identical to Osaka except for the blob-base-fee
+        /// update fraction: 11,684,671 instead of 8,346,193.
+        /// </summary>
+        public static readonly IntrinsicGasRules OsakaBpo1 =
+            Osaka.WithBlob(Eip7892Bpo1BlobGasRule.Instance);
     }
 }

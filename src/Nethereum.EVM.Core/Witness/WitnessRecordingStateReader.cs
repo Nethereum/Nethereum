@@ -90,6 +90,8 @@ namespace Nethereum.EVM.Witness
             GetOrCreate(address).Nonce = (long)(ulong)val;
             return val;
         }
+        public bool AccountExists(string address) => _inner.AccountExists(address);
+        public byte[] GetBlockHash(long blockNumber) => _inner.GetBlockHash(blockNumber);
 #else
         public async Task<EvmUInt256> GetBalanceAsync(byte[] address) => await GetBalanceAsync(address.ConvertToEthereumChecksumAddress());
         public async Task<EvmUInt256> GetBalanceAsync(string address)
@@ -123,6 +125,8 @@ namespace Nethereum.EVM.Witness
             GetOrCreate(address).Nonce = (long)(ulong)val;
             return val;
         }
+        public Task<bool> AccountExistsAsync(string address) => _inner.AccountExistsAsync(address);
+        public Task<byte[]> GetBlockHashAsync(long blockNumber) => _inner.GetBlockHashAsync(blockNumber);
 #endif
 
         private class WitnessAccountBuilder

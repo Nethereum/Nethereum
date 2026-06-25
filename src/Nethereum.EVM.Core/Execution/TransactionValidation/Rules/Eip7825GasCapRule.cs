@@ -10,6 +10,10 @@ namespace Nethereum.EVM.Execution.TransactionValidation.Rules
 
         public void Validate(TransactionExecutionContext ctx, HardforkConfig config)
         {
+            // EIP-7825 caps user-submitted transactions; protocol-level
+            // system calls (EIP-4788/2935/7002/7251/6110) bypass it.
+            if (ctx.Mode == ExecutionMode.SystemCall) return;
+
             if (ctx.GasLimit > MAX_TX_GAS)
                 throw new TransactionValidationException("GAS_LIMIT_EXCEEDS_MAXIMUM");
         }

@@ -39,13 +39,20 @@ namespace Nethereum.EVM.Execution.Precompiles.GasCalculators
                 long expStartOffsetLong = (long)offset +
                     (baseLen.FitsInInt ? (long)baseLen.ToInt() : (long)int.MaxValue);
 
-                if (expStartOffsetLong < data.Length)
+                // Zero-pad missing trailing bytes per EIP-198 — the input is
+                // right-padded to the declared size. Without
+                // padding, a short exponent like 0x30 with ExpLen=2 reads as 0x30
+                // (48) instead of the spec-correct 0x3000 (12288), which shifts
+                // expBitLen and changes the precompile gas cost. Always iterate
+                // headLen times; treat reads past data.Length as zero.
+                int expStartOffset = expStartOffsetLong < data.Length
+                    ? (int)expStartOffsetLong
+                    : data.Length;
+                for (int i = 0; i < headLen; i++)
                 {
-                    int expStartOffset = (int)expStartOffsetLong;
-                    for (int i = 0; i < headLen && (expStartOffset + i) < data.Length; i++)
-                    {
-                        expHead = (expHead << 8) | new EvmUInt256(data[expStartOffset + i]);
-                    }
+                    int idx = expStartOffset + i;
+                    byte b = idx < data.Length ? data[idx] : (byte)0;
+                    expHead = (expHead << 8) | new EvmUInt256(b);
                 }
             }
 
