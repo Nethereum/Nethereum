@@ -14,6 +14,7 @@ namespace Nethereum.CoreChain
         ChainConfig Config { get; }
         IBlockStore Blocks { get; }
         ITransactionStore Transactions { get; }
+        IUncleStore Uncles { get; }
         IReceiptStore Receipts { get; }
         ILogStore Logs { get; }
         IStateStore State { get; }

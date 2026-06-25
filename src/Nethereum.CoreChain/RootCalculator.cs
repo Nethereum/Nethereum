@@ -73,6 +73,28 @@ namespace Nethereum.CoreChain
             return trie.Root.GetHash();
         }
 
+        public byte[] CalculateWithdrawalsRoot(IList<Withdrawal> withdrawals, ITrieNodeStore nodeStore = null)
+        {
+            if (withdrawals == null || withdrawals.Count == 0)
+                return DefaultValues.EMPTY_TRIE_HASH;
+
+            var trie = new PatriciaTrie(_hashProvider);
+            var storage = nodeStore ?? new InMemoryTrieNodeStore();
+
+            for (int i = 0; i < withdrawals.Count; i++)
+            {
+                var key = GetIndexKey(i);
+                trie.Put(key, WithdrawalEncoder.Current.Encode(withdrawals[i]), storage);
+            }
+
+            if (nodeStore != null)
+            {
+                trie.SaveNodesToStorage(nodeStore);
+            }
+
+            return trie.Root.GetHash();
+        }
+
         public byte[] CalculateReceiptsRootFromEncoded(IList<byte[]> encodedReceipts, ITrieNodeStore nodeStore = null)
         {
             if (encodedReceipts == null || encodedReceipts.Count == 0)

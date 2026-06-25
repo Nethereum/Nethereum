@@ -37,35 +37,49 @@ namespace Nethereum.CoreChain
             _hashProvider = hashProvider ?? new Sha3KeccackHashProvider();
         }
 
-        public async Task<byte[]> ComputeStateRootAsync()
+        public Task<byte[]> ComputeStateRootAsync() => ComputeStateRootAsync(null);
+
+        public async Task<byte[]> ComputeStateRootAsync(byte[] previousStateRoot)
         {
             if (!_initialized)
             {
-                await InitializeFromFullStateAsync();
-                _initialized = true;
-
-                if (_stateTrie.Root is EmptyNode)
+                var warmStarted = InitialiseTrie(previousStateRoot);
+                if (!warmStarted)
                 {
-                    _cachedStateRoot = DefaultValues.EMPTY_TRIE_HASH;
-                }
-                else
-                {
-                    _cachedStateRoot = _stateTrie.Root.GetHash();
+                    // No prior root in hand — rebuild from flat state. Used by
+                    // genesis init and AppChain / DevChain test paths.
+                    await InitializeFromFullStateAsync();
+                    _initialized = true;
 
-                    if (_trieNodeStore != null)
+                    if (_stateTrie.Root is EmptyNode)
                     {
-                        foreach (var address in _modifiedStorageTries.Keys)
-                        {
-                            if (_storageTries.TryGetValue(address, out var trie))
-                                trie.SaveNodesToStorage(_trieNodeStore);
-                        }
-                        _stateTrie.SaveNodesToStorage(_trieNodeStore);
+                        _cachedStateRoot = DefaultValues.EMPTY_TRIE_HASH;
                     }
+                    else
+                    {
+                        _cachedStateRoot = _stateTrie.Root.GetHash();
+
+                        if (_trieNodeStore != null)
+                        {
+                            foreach (var address in _modifiedStorageTries.Keys)
+                            {
+                                if (_storageTries.TryGetValue(address, out var trie))
+                                    trie.SaveNodesToStorage(_trieNodeStore);
+                            }
+                            _stateTrie.SaveNodesToStorage(_trieNodeStore);
+                        }
+                    }
+
+                    _modifiedStorageTries.Clear();
+                    await _stateStore.ClearDirtyTrackingAsync();
+                    return _cachedStateRoot;
                 }
 
-                _modifiedStorageTries.Clear();
-                await _stateStore.ClearDirtyTrackingAsync();
-                return _cachedStateRoot;
+                // Warm-started from previousStateRoot — trie loads its nodes
+                // lazily through _trieNodeStore. Fall through to apply this
+                // block's dirty accounts on top.
+                _initialized = true;
+                _cachedStateRoot = previousStateRoot;
             }
 
             var hasDirtyAccounts = await UpdateFromDirtyAccountsAsync();
@@ -106,16 +120,16 @@ namespace Nethereum.CoreChain
             _storageTries.Clear();
             _initialized = false;
 
-            var accounts = await _stateStore.GetAllAccountsAsync();
-            if (accounts.Count == 0)
+            bool anyAccount = false;
+            await foreach (var kvp in _stateStore.StreamAccountsAsync().ConfigureAwait(false))
+            {
+                anyAccount = true;
+                await PutAccountInTrieAsync(kvp.Key, kvp.Value, useAllStorage: true);
+            }
+            if (!anyAccount)
             {
                 _cachedStateRoot = DefaultValues.EMPTY_TRIE_HASH;
                 return _cachedStateRoot;
-            }
-
-            foreach (var kvp in accounts)
-            {
-                await PutAccountInTrieAsync(kvp.Key, kvp.Value, useAllStorage: true);
             }
 
             _initialized = true;
@@ -143,13 +157,18 @@ namespace Nethereum.CoreChain
             return _cachedStateRoot;
         }
 
-        public void Reset()
+        private bool InitialiseTrie(byte[] previousStateRoot)
         {
-            _stateTrie = null;
+            if (previousStateRoot == null
+                || previousStateRoot.Length == 0
+                || ByteUtil.AreEqual(previousStateRoot, DefaultValues.EMPTY_TRIE_HASH))
+            {
+                return false;
+            }
+
+            _stateTrie = new PatriciaTrie(previousStateRoot, _hashProvider);
             _storageTries.Clear();
-            _modifiedStorageTries.Clear();
-            _initialized = false;
-            _cachedStateRoot = null;
+            return true;
         }
 
         private async Task InitializeFromFullStateAsync()
@@ -157,11 +176,11 @@ namespace Nethereum.CoreChain
             _stateTrie = new PatriciaTrie(_hashProvider);
             _storageTries.Clear();
 
-            var accounts = await _stateStore.GetAllAccountsAsync();
-            if (accounts.Count == 0)
-                return;
-
-            foreach (var kvp in accounts)
+            // Stream — never materialise the full account set. Mainnet state at
+            // ~20M accounts × ~120 bytes/account would be ~2.4 GB in a single
+            // Dictionary, and that's before the storage tries each touched
+            // contract pulls in. First call after restart triggered the OOM.
+            await foreach (var kvp in _stateStore.StreamAccountsAsync().ConfigureAwait(false))
             {
                 await PutAccountInTrieAsync(kvp.Key, kvp.Value, useAllStorage: true);
             }
@@ -172,6 +191,18 @@ namespace Nethereum.CoreChain
             var dirtyAddresses = await _stateStore.GetDirtyAccountAddressesAsync();
             if (dirtyAddresses.Count == 0)
                 return false;
+
+            // Drop cached storage tries for any address whose storage was fully
+            // wiped via ClearStorageAsync since the last commit. Without this,
+            // a SELFDESTRUCT followed by same-block re-materialisation
+            // (pre-EIP-158 empty-account carve-out) keeps the stale storage trie
+            // and the re-materialised empty leaf inherits a non-empty storageRoot.
+            // First mainnet hit: block 116,525 — `0x4d95fbaf…` Killer pattern.
+            var clearedAddresses = await _stateStore.GetStorageClearedAddressesAsync();
+            foreach (var cleared in clearedAddresses)
+            {
+                _storageTries.TryRemove(cleared, out _);
+            }
 
             foreach (var address in dirtyAddresses)
             {
@@ -195,11 +226,22 @@ namespace Nethereum.CoreChain
         {
             var hashedKey = GetHashedAddressKey(address);
 
+            // Initialise StateRoot from the persisted account's storage root.
+            // PutAccountStorageIncrementalAsync's no-dirty-slot + cache-miss
+            // path (lines 305-314) otherwise falls through to EMPTY_TRIE_HASH,
+            // which is correct ONLY for EOAs and freshly-created empty
+            // contracts — but WRONG for any pre-existing contract whose
+            // storage cache wasn't populated (e.g. after auto-rewind + fresh
+            // calculator init, or post-snapshot resume). Block 1,149,150 was
+            // the first observed live-mainnet symptom: SLOAD-only contract
+            // call where the account is dirtied for balance unchanged but
+            // the persisted storage root gets clobbered to EMPTY_TRIE_HASH.
             var accountForTrie = new Account
             {
                 Nonce = account.Nonce,
                 Balance = account.Balance,
-                CodeHash = account.CodeHash ?? DefaultValues.EMPTY_DATA_HASH
+                CodeHash = account.CodeHash ?? DefaultValues.EMPTY_DATA_HASH,
+                StateRoot = account.StateRoot ?? DefaultValues.EMPTY_TRIE_HASH
             };
 
             if (useAllStorage)
@@ -214,7 +256,19 @@ namespace Nethereum.CoreChain
             var encodedAccount = AccountEncoder.Current.Encode(accountForTrie);
             _stateTrie.Put(hashedKey, encodedAccount, _trieNodeStore);
 
-            if (accountForTrie.StateRoot != null)
+            // Only persist the recomputed StateRoot if it actually differs from
+            // the stored account's value. SaveAccountAsync issues an INSERT OR
+            // REPLACE against the accounts table, and InitializeFromFullStateAsync
+            // calls this while iterating a live StreamAccountsAsync cursor over
+            // the same table — writing back unnecessarily keeps the SQLite WAL
+            // open without ever checkpointing, growing at ~140 MB/s and OOM'ing
+            // a DevChain run inside a single block. For EOAs and freshly-funded
+            // accounts both sides resolve to EMPTY_TRIE_HASH, so no save is
+            // needed; the persist matters only for contracts whose storage trie
+            // root genuinely changed (see commits #186/#187 for the SLOAD-only
+            // slot poisoning regression that required this branch).
+            if (accountForTrie.StateRoot != null &&
+                (account.StateRoot == null || !accountForTrie.StateRoot.SequenceEqual(account.StateRoot)))
             {
                 account.StateRoot = accountForTrie.StateRoot;
                 await _stateStore.SaveAccountAsync(address, account);
@@ -236,10 +290,10 @@ namespace Nethereum.CoreChain
 
                 foreach (var kvp in filteredStorage)
                 {
-                    var hashedSlot = GetHashedSlotKey(kvp.Key);
+                    // Key is already keccak(slot) — the storage CF is keccak-keyed.
                     var trimmedValue = TrimLeadingZeros(kvp.Value);
                     var encodedValue = RLP.RLP.EncodeElement(trimmedValue);
-                    storageTrie.Put(hashedSlot, encodedValue, _trieNodeStore);
+                    storageTrie.Put(kvp.Key, encodedValue, _trieNodeStore);
                 }
 
                 _modifiedStorageTries.TryAdd(address, 0);
@@ -292,14 +346,20 @@ namespace Nethereum.CoreChain
             }
             else
             {
+                // No dirty storage slots for this address. The storage trie
+                // is unchanged. Prefer the in-memory cache (in case of an
+                // earlier intra-tx mutation that didn't dirty the slot but
+                // did populate the cache). Cache miss = preserve the
+                // accountForTrie.StateRoot we initialised from the persisted
+                // account at PutAccountInTrieAsync entry — do NOT clobber it
+                // with EMPTY_TRIE_HASH, which would wipe contract storage
+                // roots for any pre-existing contract on the first access
+                // after a fresh calculator init (e.g. post auto-rewind).
                 if (_storageTries.TryGetValue(address, out var existingTrie) && !(existingTrie.Root is EmptyNode))
                 {
                     accountForTrie.StateRoot = existingTrie.Root.GetHash();
                 }
-                else
-                {
-                    accountForTrie.StateRoot = DefaultValues.EMPTY_TRIE_HASH;
-                }
+                // else: preserve the persisted StateRoot from the initialiser.
             }
         }
 

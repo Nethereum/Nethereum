@@ -56,12 +56,23 @@ namespace Nethereum.CoreChain.Rpc
 
             if (tx.Signature != null)
             {
-                rpcTx.V = tx.Signature.V?.ToHex(true) ?? "0x0";
-                rpcTx.R = tx.Signature.R?.ToHex(true);
-                rpcTx.S = tx.Signature.S?.ToHex(true);
+                // JSON-RPC spec treats v/r/s as QUANTITY: leading zeros stripped.
+                // The signer stores R/S left-padded to 32 bytes, so a raw ToHex preserves
+                // padding that JSON-RPC clients strip — converting through HexBigInteger
+                // normalises both sides.
+                rpcTx.V = ToQuantityHex(tx.Signature.V) ?? "0x0";
+                rpcTx.R = ToQuantityHex(tx.Signature.R);
+                rpcTx.S = ToQuantityHex(tx.Signature.S);
             }
 
             return rpcTx;
+        }
+
+        internal static string ToQuantityHex(byte[] bytes)
+        {
+            if (bytes == null) return null;
+            return new HexBigInteger(new BigInteger(
+                Nethereum.Util.ByteUtil.BigEndianToBigIntegerLittleEndianUnsigned(bytes))).HexValue;
         }
 
         public static string GetSenderAddress(this ISignedTransaction tx)

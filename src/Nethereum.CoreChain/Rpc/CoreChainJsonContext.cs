@@ -50,6 +50,7 @@ namespace Nethereum.CoreChain.Rpc
     [JsonSerializable(typeof(AccessListItem))]
     [JsonSerializable(typeof(AccessListGasUsed))]
     [JsonSerializable(typeof(FeeHistoryResult))]
+    [JsonSerializable(typeof(EthSyncingSnapOutput))]
     [JsonSerializable(typeof(AccountProof))]
     [JsonSerializable(typeof(StorageProof))]
     [JsonSerializable(typeof(OpcodeTraceResult))]

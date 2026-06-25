@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Tracing;
@@ -20,6 +23,7 @@ namespace Nethereum.CoreChain
     {
         protected readonly IBlockStore _blockStore;
         protected readonly ITransactionStore _transactionStore;
+        protected readonly IUncleStore _uncleStore;
         protected readonly IReceiptStore _receiptStore;
         protected readonly ILogStore _logStore;
         protected readonly IStateStore _stateStore;
@@ -30,6 +34,7 @@ namespace Nethereum.CoreChain
         protected readonly TransactionProcessor _transactionProcessor;
         protected readonly ITransactionVerificationAndRecovery _txVerifier;
         protected readonly TransactionExecutor _executor;
+        protected readonly ILogger _logger;
 
         protected ChainNodeBase(
             IBlockStore blockStore,
@@ -43,8 +48,11 @@ namespace Nethereum.CoreChain
             IStateReader nodeDataService = null,
             ITrieNodeStore trieNodeStore = null,
             IBlobStore blobStore = null,
-            HardforkConfig hardforkConfig = null)
+            IUncleStore uncleStore = null,
+            HardforkConfig hardforkConfig = null,
+            ILogger logger = null)
         {
+            _logger = logger ?? NullLogger.Instance;
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _transactionStore = transactionStore ?? throw new ArgumentNullException(nameof(transactionStore));
             _receiptStore = receiptStore ?? throw new ArgumentNullException(nameof(receiptStore));
@@ -56,12 +64,14 @@ namespace Nethereum.CoreChain
             _nodeDataService = nodeDataService ?? new StateStoreNodeDataService(_stateStore, _blockStore);
             _trieNodeStore = trieNodeStore;
             _blobStore = blobStore;
+            _uncleStore = uncleStore;
             _executor = new TransactionExecutor(hardforkConfig ?? throw new ArgumentNullException(nameof(hardforkConfig)));
         }
 
         public abstract ChainConfig Config { get; }
         public IBlockStore Blocks => _blockStore;
         public ITransactionStore Transactions => _transactionStore;
+        public IUncleStore Uncles => _uncleStore;
         public IReceiptStore Receipts => _receiptStore;
         public ILogStore Logs => _logStore;
         public IStateStore State => _stateStore;
@@ -767,119 +777,76 @@ namespace Nethereum.CoreChain
 
             var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
 
-            IStateReader baseReader;
+            // Read-only state surface for witness capture. When the live
+            // state store exposes IHistoricalStateProvider, reads resolve
+            // at parent block (matches the witness contract: the witness
+            // is the minimal pre-state that re-execution must consume).
+            // Wrapping in ReadOnlyStateStoreWrapper absorbs every write
+            // (sys-call writes, snapshot rollbacks, persistence) in memory;
+            // nothing reaches the underlying live store. Wrapping the trie
+            // node store in ReadOnlyTrieNodeStoreWrapper makes the
+            // calculator path inert if a future helper accidentally
+            // touches it under ReadOnly (engine skips the post-state
+            // compute, but the wrapper is the belt-and-braces guard).
+            IStateStore stateForCapture;
             if (_stateStore is IHistoricalStateProvider histProvider)
             {
                 var parentBlock = blockNumber > 0 ? blockNumber - 1 : 0;
-                baseReader = new HistoricalNodeDataService(histProvider, _stateStore, _blockStore, parentBlock);
+                stateForCapture = new ReadOnlyStateStoreWrapper(
+                    new HistoricalStateStoreReadAdapter(histProvider, _stateStore, parentBlock));
             }
             else
             {
-                baseReader = _nodeDataService;
+                stateForCapture = new ReadOnlyStateStoreWrapper(_stateStore);
             }
 
-            var recorder = new WitnessRecordingStateReader(baseReader);
-            var executionStateService = new ExecutionStateService(recorder);
+            var trieNodeStoreForCapture = _trieNodeStore != null
+                ? (ITrieNodeStore)new ReadOnlyTrieNodeStoreWrapper(_trieNodeStore)
+                : new InMemoryTrieNodeStore();
 
-            var blockContext = new BlockContext
-            {
-                BlockNumber = block.BlockNumber,
-                Timestamp = block.Timestamp,
-                Coinbase = block.Coinbase ?? Config.Coinbase,
-                Difficulty = block.Difficulty,
-                GasLimit = block.GasLimit,
-                BaseFee = block.BaseFee ?? 0,
-                ChainId = Config.ChainId
-            };
+            // Single-fork resolution mirrors the legacy CaptureBlockWitnessAsync
+            // behaviour (stamped ChainConfig.Hardfork on the witness's
+            // BlockFeatureConfig). Mainnet replay subclasses can override
+            // this method to inject MainnetChainActivations.Instance.
+            var hardforkName = HardforkNames.Parse(Config.Hardfork ?? "prague");
+            var activations = new FixedChainActivations(hardforkName);
+            var hardforkConfig = Config.GetHardforkConfig();
+
+            var calculator = new IncrementalStateRootCalculator(stateForCapture, trieNodeStoreForCapture);
+            var engine = new BlockExecutor(
+                stateForCapture,
+                _blockStore,
+                activations,
+                chainConfigFactory: _ => Config,
+                hardforkConfigFactory: _ => hardforkConfig,
+                stateRootCalculator: calculator,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStoreForCapture);
 
             var blockTxs = await _transactionStore.GetByBlockHashAsync(blockHash);
-            var witnessTxs = new List<BlockWitnessTransaction>();
-
+            var txEntries = new List<TxEntry>(blockTxs?.Count ?? 0);
             if (blockTxs != null)
             {
-                for (int i = 0; i < blockTxs.Count; i++)
+                foreach (var tx in blockTxs)
                 {
-                    var tx = blockTxs[i];
-                    var senderAddress = _txVerifier.GetSenderAddress(tx);
-                    if (string.IsNullOrEmpty(senderAddress)) continue;
-
-                    if (!executionStateService.ContainsInitialChainBalanceForAddress(senderAddress))
-                    {
-                        var balance = await recorder.GetBalanceAsync(senderAddress);
-                        executionStateService.SetInitialChainBalance(senderAddress, balance);
-                    }
-
-                    var txData = TransactionProcessor.GetTransactionData(tx);
-                    var isCreate = string.IsNullOrEmpty(txData.To) || txData.To == "0x";
-
-                    var ctx = new TransactionExecutionContext
-                    {
-                        Mode = ExecutionMode.Transaction,
-                        Sender = senderAddress,
-                        To = isCreate ? null : txData.To,
-                        Data = txData.Data,
-                        Value = txData.Value,
-                        GasLimit = txData.GasLimit,
-                        GasPrice = txData.GasPrice,
-                        MaxFeePerGas = txData.MaxFeePerGas ?? txData.GasPrice,
-                        MaxPriorityFeePerGas = txData.MaxPriorityFeePerGas ?? System.Numerics.BigInteger.Zero,
-                        Nonce = txData.Nonce,
-                        IsEip1559 = txData.MaxFeePerGas.HasValue,
-                        IsContractCreation = isCreate,
-                        BlockNumber = (long)blockContext.BlockNumber,
-                        Timestamp = blockContext.Timestamp,
-                        Coinbase = blockContext.Coinbase,
-                        BaseFee = blockContext.BaseFee,
-                        Difficulty = blockContext.Difficulty,
-                        BlockGasLimit = blockContext.GasLimit,
-                        ChainId = blockContext.ChainId,
-                        ExecutionState = executionStateService,
-                        TraceEnabled = false,
-                        AccessList = txData.AccessList,
-                        AuthorisationList = txData.AuthorisationList
-                    };
-
-                    await _executor.ExecuteAsync(ctx);
-
-                    witnessTxs.Add(new BlockWitnessTransaction
-                    {
-                        From = senderAddress,
-                        RlpEncoded = tx.GetRLPEncoded()
-                    });
+                    var sender = _txVerifier.GetSenderAddress(tx);
+                    txEntries.Add(new TxEntry(tx, sender));
                 }
             }
 
-            var hardforkName = HardforkNames.Parse(Config.Hardfork ?? "prague");
-
-            var parentHash = blockNumber > 0
-                ? await _blockStore.GetHashByNumberAsync(blockNumber - 1) ?? new byte[32]
-                : new byte[32];
-
-            var witnessData = new BlockWitnessData
-            {
-                BlockNumber = blockNumber,
-                Timestamp = block.Timestamp,
-                BaseFee = (long)(block.BaseFee ?? 0),
-                BlockGasLimit = block.GasLimit,
-                ChainId = (long)Config.ChainId,
-                Coinbase = block.Coinbase ?? Config.Coinbase,
-                Difficulty = block.MixHash ?? new byte[32],
-                PreStateRoot = null,
-                ParentHash = parentHash,
-                ExtraData = block.ExtraData ?? Array.Empty<byte>(),
-                MixHash = block.MixHash ?? new byte[32],
-                Nonce = block.Nonce ?? new byte[8],
-                ComputePostStateRoot = true,
-                Features = new BlockFeatureConfig
+            var result = await engine.ExecuteAsync(
+                block,
+                txEntries,
+                uncles: null,
+                withdrawals: null,
+                new BlockExecutionOptions
                 {
-                    Fork = hardforkName,
-                    MaxBlobsPerBlock = hardforkName >= HardforkName.Prague ? 9 : 6
-                },
-                Transactions = witnessTxs,
-                Accounts = recorder.GetWitnessAccounts()
-            };
+                    ReadOnly = true,
+                    CaptureWitness = true,
+                    ParentBeaconBlockRoot = block.ParentBeaconBlockRoot
+                });
 
-            return BinaryBlockWitness.Serialize(witnessData);
+            return result.WitnessBytes ?? Array.Empty<byte>();
         }
 
         public virtual async Task<OpcodeTraceResult> TraceCallAsync(

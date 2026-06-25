@@ -62,14 +62,8 @@ namespace Nethereum.CoreChain.Services
                 var accountStorage = await _stateStore.GetAllStorageAsync(address);
                 if (accountStorage.Count > 0)
                 {
-                    var storageDict = new Dictionary<byte[], byte[]>();
-                    foreach (var storageKvp in accountStorage)
-                    {
-                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                        var hashedSlot = sha3.CalculateHash(slotBytes);
-                        storageDict[hashedSlot] = storageKvp.Value;
-                    }
-                    storageHash = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
+                    // Keys are already keccak(slot) — storage CF is keccak-keyed.
+                    storageHash = _rootCalculator.CalculateStorageRoot(accountStorage, _trieNodeStore);
                 }
             }
 
@@ -116,14 +110,8 @@ namespace Nethereum.CoreChain.Services
 
                 if (storage.Count > 0)
                 {
-                    var storageDict = new Dictionary<byte[], byte[]>();
-                    foreach (var storageKvp in storage)
-                    {
-                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                        var hashedSlot = sha3.CalculateHash(slotBytes);
-                        storageDict[hashedSlot] = storageKvp.Value;
-                    }
-                    acc.StateRoot = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
+                    // Keys are already keccak(slot) — storage CF is keccak-keyed.
+                    acc.StateRoot = _rootCalculator.CalculateStorageRoot(storage, _trieNodeStore);
                 }
                 else
                 {
@@ -199,11 +187,9 @@ namespace Nethereum.CoreChain.Services
             foreach (var kvp in storage)
             {
                 if (kvp.Value == null) continue;
-
-                var slotBytes = kvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                var hashedSlot = sha3.CalculateHash(slotBytes);
+                // Key is already keccak(slot).
                 var encodedValue = RLP.RLP.EncodeElement(kvp.Value);
-                rebuildTrie.Put(hashedSlot, encodedValue, storageNodeStore);
+                rebuildTrie.Put(kvp.Key, encodedValue, storageNodeStore);
             }
 
             foreach (var key in storageKeys)
@@ -214,7 +200,7 @@ namespace Nethereum.CoreChain.Services
                 var proof = rebuildTrie.GenerateProof(hashedSlot);
                 var proofHex = proof?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
 
-                storage.TryGetValue(key, out var value);
+                storage.TryGetValue(hashedSlot, out var value);
                 var valueBigInt = value != null ? value.ToBigIntegerFromRLPDecoded() : BigInteger.Zero;
 
                 proofs.Add(new StorageProof

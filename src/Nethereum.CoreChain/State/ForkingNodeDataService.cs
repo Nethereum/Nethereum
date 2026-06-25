@@ -200,6 +200,30 @@ namespace Nethereum.CoreChain.State
             return GetTransactionCountAsync(address.ToHex());
         }
 
+        public async Task<bool> AccountExistsAsync(string address)
+        {
+            // Hits local store first — accounts already pulled into the fork
+            // appear via _stateStore. Falls through to the remote RPC only
+            // when local says "no". Same caching semantics as the field
+            // getters: a confirmed-absent address is memoised in
+            // _fetchedAccounts so we don't roundtrip on every gas estimate.
+            if (await _stateStore.AccountExistsAsync(address)) return true;
+            var normalizedAddress = NormalizeAddress(address);
+            if (HasFetchedAccount(normalizedAddress)) return false;
+            await _asyncLock.WaitAsync();
+            try
+            {
+                if (await _stateStore.AccountExistsAsync(address)) return true;
+                if (HasFetchedAccount(normalizedAddress)) return false;
+                await FetchAndCacheAccountAsync(address, normalizedAddress);
+                return await _stateStore.AccountExistsAsync(address);
+            }
+            finally
+            {
+                _asyncLock.Release();
+            }
+        }
+
         public async Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             if (_blockStore != null)

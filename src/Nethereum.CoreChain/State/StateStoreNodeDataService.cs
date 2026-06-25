@@ -88,5 +88,10 @@ namespace Nethereum.CoreChain.State
             var account = await _stateStore.GetAccountAsync(address);
             return account?.Nonce ?? EvmUInt256.Zero;
         }
+
+        public Task<bool> AccountExistsAsync(string address)
+        {
+            return _stateStore.AccountExistsAsync(address);
+        }
     }
 }

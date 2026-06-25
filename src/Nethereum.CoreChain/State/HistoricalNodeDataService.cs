@@ -84,6 +84,11 @@ namespace Nethereum.CoreChain.State
             return account?.Nonce ?? EvmUInt256.Zero;
         }
 
+        public async Task<bool> AccountExistsAsync(string address)
+        {
+            return await _historyProvider.GetAccountAtBlockAsync(address, _blockNumber) != null;
+        }
+
         private static bool IsEmptyCodeHash(byte[] codeHash)
         {
             if (codeHash == null || codeHash.Length != DefaultValues.EMPTY_DATA_HASH.Length)
