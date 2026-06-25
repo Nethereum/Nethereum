@@ -14,6 +14,49 @@ namespace Nethereum.Util
         public static readonly byte[] ZERO_BYTE_ARRAY = {0};
 
         /// <summary>
+        /// Reverse a big-endian unsigned byte array into the little-endian unsigned
+        /// form expected by <see cref="System.Numerics.BigInteger"/>'s constructor,
+        /// appending a trailing zero byte so the high bit is never interpreted as
+        /// the two's-complement sign bit. Use this when round-tripping Ethereum
+        /// big-endian numeric encodings (transaction R/S/V, balances, gas values)
+        /// through <c>BigInteger</c>.
+        /// </summary>
+        public static byte[] BigEndianToBigIntegerLittleEndianUnsigned(byte[] bigEndianBytes)
+        {
+            if (bigEndianBytes == null) return null;
+            var result = new byte[bigEndianBytes.Length + 1];
+            for (int i = 0; i < bigEndianBytes.Length; i++)
+                result[i] = bigEndianBytes[bigEndianBytes.Length - 1 - i];
+            return result;
+        }
+
+        /// <summary>
+        /// Number of leading zero bits in <paramref name="bytes"/> when viewed as
+        /// a big-endian bit string. Returns 8 × <c>bytes.Length</c> for an
+        /// all-zero array. Used by the Kademlia distance / log-distance metrics
+        /// in both discv4 and discv5 routing tables.
+        /// </summary>
+        public static int LeadingZeroBits(byte[] bytes)
+        {
+            if (bytes == null) return 0;
+            int count = 0;
+            foreach (var b in bytes)
+            {
+                if (b == 0)
+                {
+                    count += 8;
+                    continue;
+                }
+                for (int bit = 7; bit >= 0; bit--)
+                {
+                    if ((b & (1 << bit)) == 0) count++;
+                    else return count;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
         ///     Creates a copy of bytes and appends b to the end of it
         /// </summary>
         public static byte[] AppendByte(byte[] bytes, byte b)
@@ -207,6 +250,17 @@ namespace Nethereum.Util
             }
 
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ConstantTimeEquals(byte[] a, byte[] b)
+        {
+            if (a == null || b == null) return a == b;
+            if (a.Length != b.Length) return false;
+            int diff = 0;
+            for (int i = 0; i < a.Length; i++)
+                diff |= a[i] ^ b[i];
+            return diff == 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

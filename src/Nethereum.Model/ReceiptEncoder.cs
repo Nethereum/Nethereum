@@ -38,9 +38,12 @@ namespace Nethereum.Model
 
             if (rawdata[0] <= 0x7f)
             {
+                var transactionType = rawdata[0];
                 var innerData = new byte[rawdata.Length - 1];
                 System.Array.Copy(rawdata, 1, innerData, 0, innerData.Length);
-                return DecodeRlp(innerData);
+                var receipt = DecodeRlp(innerData);
+                receipt.TransactionType = transactionType;
+                return receipt;
             }
 
             return DecodeRlp(rawdata);
