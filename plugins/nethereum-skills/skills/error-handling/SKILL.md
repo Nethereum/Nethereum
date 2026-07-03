@@ -1,10 +1,18 @@
 ---
 name: error-handling
-description: Handle smart contract reverts and decode custom error types using Nethereum (.NET). Use this skill whenever the user asks about contract errors, revert reasons, custom Solidity errors, SmartContractCustomErrorRevertException, error decoding, failed transaction reasons, or any revert handling in C#/.NET.
+description: "Handle smart contract reverts and decode custom error types using Nethereum (.NET). Use this skill whenever the user asks about contract errors, revert reasons, custom Solidity errors, SmartContractCustomErrorRevertException, error decoding, failed transaction reasons, or any revert handling in C#/.NET."
 user-invocable: true
 ---
 
 # Smart Contract Error Handling
+
+## Which Approach to Use
+
+- **Known error types at compile time** --> Catch `SmartContractCustomErrorRevertException` and call `IsCustomErrorFor<T>()` / `DecodeError<T>()`
+- **Code-generated contract service** --> Use `contractService.FindCustomErrorException(ex)` for auto-decoding from registered types
+- **Multiple error types, no contract service** --> Use `SmartContractCustomErrorTypedFactory.CreateTypedException()` with an array of error types
+- **Already-mined failed transaction** --> Use `web3.Eth.GetContractTransactionErrorReason.SendRequestAsync(hash)` to retrieve the revert reason
+- **Raw hex error data** --> Construct `SmartContractCustomErrorRevertException(hexData)` and decode manually
 
 NuGet: `Nethereum.Web3`
 

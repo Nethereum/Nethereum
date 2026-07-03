@@ -1,6 +1,6 @@
 ---
 name: zk-proof-verification
-description: Help users verify Groth16 zero-knowledge proofs from Circom/snarkjs circuits using Nethereum.ZkProofsVerifier (.NET). Use this skill whenever the user mentions ZK proofs, Groth16, snarkjs, Circom, zero-knowledge verification, BN128 pairing, proof.json, verification_key.json, or public.json in a C#/.NET context.
+description: "Verify Groth16 zero-knowledge proofs from Circom/snarkjs circuits using Nethereum.ZkProofsVerifier (.NET): parse proof.json, validate BN128 pairing checks, detect tampered inputs, and integrate ZK verification into .NET applications. Use this skill whenever the user mentions ZK proofs, Groth16, snarkjs, Circom, zero-knowledge verification, BN128 pairing, proof.json, verification_key.json, or public.json in a C#/.NET context."
 user-invocable: true
 ---
 
@@ -23,9 +23,7 @@ dotnet add package Nethereum.ZkProofsVerifier
 
 ## Core Concept
 
-Groth16 is the most widely used ZK proof system in Ethereum. `Nethereum.ZkProofsVerifier` verifies proofs natively in .NET by checking a BN128 elliptic curve pairing equation. It directly consumes the three JSON files that snarkjs produces after proving a Circom circuit.
-
-The recommended entry point is `CircomGroth16Adapter.Verify()` — a single static method that parses all three JSON files and returns a result. This hides all cryptographic internals (curve points, field extensions, BouncyCastle types) behind a clean API.
+`Nethereum.ZkProofsVerifier` verifies Groth16 proofs natively in .NET by checking a BN128 elliptic curve pairing equation against the three JSON files snarkjs produces. The recommended entry point is `CircomGroth16Adapter.Verify()` — a single static method that parses all three files and returns a result.
 
 ## One-Liner Verification (Recommended)
 

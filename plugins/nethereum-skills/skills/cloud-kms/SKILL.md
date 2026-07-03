@@ -1,6 +1,6 @@
 ---
 name: cloud-kms
-description: Sign Ethereum transactions with AWS KMS or Azure Key Vault HSMs using Nethereum. Use this skill whenever the user asks about AWS KMS Ethereum signing, Azure Key Vault signing, cloud HSM, managed key signing, serverless wallet, key management service, or cloud-based transaction signing in C#/.NET.
+description: "Sign Ethereum transactions, derive public addresses, and manage secp256k1 keys using AWS KMS or Azure Key Vault HSMs with Nethereum. Use this skill whenever the user asks about AWS KMS Ethereum signing, Azure Key Vault signing, cloud HSM, managed key signing, serverless wallet, key management service, or cloud-based transaction signing in C#/.NET."
 user-invocable: true
 ---
 
@@ -16,9 +16,18 @@ NuGet: `Nethereum.Signer.AWSKeyManagement`
 dotnet add package Nethereum.Signer.AWSKeyManagement
 ```
 
-### Create Key
+### Create and Validate Key
 ```bash
 aws kms create-key --key-spec ECC_SECG_P256K1 --key-usage SIGN_VERIFY
+```
+
+Validate the key is usable before signing:
+```csharp
+var signer = new AWSKeyManagementExternalSigner(keyId: "your-kms-key-id");
+var externalAccount = new ExternalAccount(signer, chainId: 1);
+await externalAccount.InitialiseAsync();
+// If InitialiseAsync succeeds, the key exists and the Ethereum address is derived
+Console.WriteLine($"Derived address: {externalAccount.Address}");
 ```
 
 ### Sign Transactions
@@ -97,6 +106,26 @@ var signer = new AzureKeyVaultExternalSigner(
 // Service principal
 var signer = new AzureKeyVaultExternalSigner(
     keyIdentifier, new ClientSecretCredential(tenantId, clientId, clientSecret));
+```
+
+## Error Handling
+
+```csharp
+try
+{
+    var receipt = await web3.Eth.GetEtherTransferService()
+        .TransferEtherAndWaitForReceiptAsync(toAddress, 0.1m);
+}
+catch (Amazon.KeyManagementService.AmazonKeyManagementServiceException ex)
+{
+    // Key not found, access denied, or KMS service unavailable
+    Console.WriteLine($"KMS error: {ex.Message}");
+}
+catch (Azure.RequestFailedException ex)
+{
+    // Key Vault access denied, key not found, or vault unavailable
+    Console.WriteLine($"Key Vault error: {ex.Message}");
+}
 ```
 
 For full documentation, see: https://docs.nethereum.com/docs/signing-and-key-management/guide-cloud-kms
