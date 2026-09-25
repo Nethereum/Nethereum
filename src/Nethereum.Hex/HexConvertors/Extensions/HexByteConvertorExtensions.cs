@@ -77,9 +77,9 @@ namespace Nethereum.Hex.HexConvertors.Extensions
 
         public static string[] EnsureHexPrefix(this string[] values)
         {
-            if (values != null)
-                foreach (var value in values)
-                    value.EnsureHexPrefix();
+            if (values == null) return null;
+            for (var i = 0; i < values.Length; i++)
+                values[i] = values[i].EnsureHexPrefix();
             return values;
         }
 
