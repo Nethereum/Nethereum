@@ -42,6 +42,9 @@ namespace Nethereum.ABI.UnitTests
 
             Assert.Equal("0xdeadbeef", withoutPrefix.EnsureHexPrefix());
             Assert.Equal("0xdeadbeef", withPrefix.EnsureHexPrefix());
+
+            var values = new[] { "deadbeef", "0xabc" };
+            Assert.Equal(new[] { "0xdeadbeef", "0xabc" }, values.EnsureHexPrefix());
         }
 
         [Fact]
