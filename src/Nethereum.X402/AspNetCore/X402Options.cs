@@ -15,7 +15,7 @@ public class X402Options
 
     /// <summary>
     /// Base URL for the facilitator service.
-    /// Example: "https://facilitator.x402.org"
+    /// Example: "https://x402.org/facilitator"
     /// </summary>
     public string? FacilitatorUrl { get; set; }
 

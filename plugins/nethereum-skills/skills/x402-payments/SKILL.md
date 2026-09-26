@@ -75,7 +75,7 @@ using Nethereum.X402.AspNetCore;
 using Nethereum.X402.Server;
 using Nethereum.X402.Models;
 
-builder.Services.AddX402Services("https://facilitator.x402.org");
+builder.Services.AddX402Services("https://x402.org/facilitator");
 
 app.UseX402(options =>
 {

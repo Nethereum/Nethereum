@@ -108,7 +108,7 @@ using Nethereum.X402.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Register x402 services with a facilitator
-builder.Services.AddX402Services("https://facilitator.x402.org");
+builder.Services.AddX402Services("https://x402.org/facilitator");
 
 var app = builder.Build();
 
@@ -340,7 +340,7 @@ A facilitator is a service that verifies and settles payments on behalf of API s
 ```csharp
 using Nethereum.X402.Facilitator;
 
-var facilitatorClient = new HttpFacilitatorClient(httpClient, "https://facilitator.x402.org");
+var facilitatorClient = new HttpFacilitatorClient(httpClient, "https://x402.org/facilitator");
 
 var verification = await facilitatorClient.VerifyAsync(paymentPayload, requirements);
 var settlement = await facilitatorClient.SettleAsync(paymentPayload, requirements);
