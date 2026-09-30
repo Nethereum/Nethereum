@@ -1,6 +1,7 @@
 using Nethereum.ABI.ABIRepository;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
+using Nethereum.EVM.Compatibility;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using System;
@@ -41,17 +42,19 @@ namespace Nethereum.EVM.Decoding
                 return Decode(executionResult.ProgramResult, executionResult.Traces, initialCall, chainId);
             }
 
-            // Fallback for when ProgramResult is not available (e.g., precompile-only calls)
-            var programResult = new ProgramResult
+            return Decode(BuildProgramResultWhenNoFrameRan(executionResult), executionResult.Traces, initialCall, chainId);
+        }
+
+        private static ProgramResult BuildProgramResultWhenNoFrameRan(TransactionExecutionResult executionResult)
+        {
+            return new ProgramResult
             {
                 Result = executionResult.ReturnData,
                 IsRevert = !executionResult.Success,
                 Logs = executionResult.Logs ?? new List<RPC.Eth.DTOs.FilterLog>(),
-                InnerCalls = executionResult.InnerCalls ?? new List<RPC.Eth.DTOs.CallInput>(),
-                CreatedContractAccounts = executionResult.CreatedAccounts ?? new List<string>(),
-                DeletedContractAccounts = executionResult.DeletedAccounts ?? new List<string>()
+                InnerCalls = executionResult.InnerCalls ?? new List<Types.EvmCallContext>(),
+                CreatedContractAccounts = executionResult.CreatedAccounts ?? new List<string>()
             };
-            return Decode(programResult, executionResult.Traces, initialCall, chainId);
         }
 
         public DecodedProgramResult Decode(
@@ -69,19 +72,34 @@ namespace Nethereum.EVM.Decoding
             };
 
             result.RootCall = DecodeCall(initialCall, chainId, 0);
+            AddDecodedInnerCalls(result, programResult, chainId);
+            AddDecodedLogs(result, programResult, chainId);
+            AssignRevertReasonOrReturnValue(result, programResult, initialCall, chainId);
 
+            return result;
+        }
+
+        private void AddDecodedInnerCalls(DecodedProgramResult result, ProgramResult programResult, BigInteger chainId)
+        {
             foreach (var innerCall in programResult.InnerCalls)
             {
-                var decodedInnerCall = DecodeCall(innerCall, chainId, 1);
+                var decodedInnerCall = DecodeCall(innerCall.ToCallInput(), chainId, 1);
                 result.RootCall.InnerCalls.Add(decodedInnerCall);
             }
+        }
 
+        private void AddDecodedLogs(DecodedProgramResult result, ProgramResult programResult, BigInteger chainId)
+        {
             foreach (var log in programResult.Logs)
             {
                 var decodedLog = DecodeLog(log, chainId);
                 result.DecodedLogs.Add(decodedLog);
             }
+        }
 
+        private void AssignRevertReasonOrReturnValue(
+            DecodedProgramResult result, ProgramResult programResult, CallInput initialCall, BigInteger chainId)
+        {
             if (programResult.IsRevert)
             {
                 result.RevertReason = DecodeRevert(programResult.Result, chainId, initialCall.To);
@@ -92,8 +110,6 @@ namespace Nethereum.EVM.Decoding
                     result.RootCall.Function,
                     programResult.Result.ToHex(true));
             }
-
-            return result;
         }
 
         public DecodedCall DecodeCall(CallInput call, BigInteger chainId, int depth)
@@ -117,32 +133,7 @@ namespace Nethereum.EVM.Decoding
 
             try
             {
-                var functionABI = _abiStorage?.FindFunctionABIFromInputData(chainId, call.To, call.Data);
-
-                if (functionABI != null)
-                {
-                    decodedCall.Function = functionABI;
-                    decodedCall.IsDecoded = true;
-
-                    var abiInfo = _abiStorage.GetABIInfo(chainId, call.To);
-                    if (abiInfo != null)
-                    {
-                        decodedCall.ContractName = abiInfo.ContractName;
-                    }
-
-                    try
-                    {
-                        decodedCall.InputParameters = _functionDecoder.DecodeInput(functionABI, call.Data) ?? new List<ParameterOutput>();
-                    }
-                    catch
-                    {
-                        decodedCall.InputParameters = new List<ParameterOutput>();
-                    }
-                }
-                else
-                {
-                    decodedCall.IsDecoded = false;
-                }
+                DescribeCallAgainstKnownFunction(decodedCall, call, chainId);
             }
             catch
             {
@@ -150,6 +141,22 @@ namespace Nethereum.EVM.Decoding
             }
 
             return decodedCall;
+        }
+
+        private void DescribeCallAgainstKnownFunction(DecodedCall decodedCall, CallInput call, BigInteger chainId)
+        {
+            var functionABI = _abiStorage?.FindFunctionABIFromInputData(chainId, call.To, call.Data);
+
+            if (functionABI == null)
+            {
+                decodedCall.IsDecoded = false;
+                return;
+            }
+
+            decodedCall.Function = functionABI;
+            decodedCall.IsDecoded = true;
+            decodedCall.ContractName = FindContractName(chainId, call.To);
+            decodedCall.InputParameters = DecodedOrEmpty(() => _functionDecoder.DecodeInput(functionABI, call.Data));
         }
 
         public DecodedLog DecodeLog(FilterLog log, BigInteger chainId)
@@ -169,36 +176,7 @@ namespace Nethereum.EVM.Decoding
 
             try
             {
-                var eventSignature = log.Topics[0].ToString();
-                var eventABI = _abiStorage?.FindEventABI(chainId, log.Address, eventSignature);
-
-                if (eventABI != null)
-                {
-                    decodedLog.Event = eventABI;
-                    decodedLog.IsDecoded = true;
-
-                    var abiInfo = _abiStorage.GetABIInfo(chainId, log.Address);
-                    if (abiInfo != null)
-                    {
-                        decodedLog.ContractName = abiInfo.ContractName;
-                    }
-
-                    try
-                    {
-                        decodedLog.Parameters = _eventDecoder.DecodeDefaultTopics(
-                            eventABI,
-                            log.Topics,
-                            log.Data) ?? new List<ParameterOutput>();
-                    }
-                    catch
-                    {
-                        decodedLog.Parameters = new List<ParameterOutput>();
-                    }
-                }
-                else
-                {
-                    decodedLog.IsDecoded = false;
-                }
+                DescribeLogAgainstKnownEvent(decodedLog, log, chainId);
             }
             catch
             {
@@ -206,6 +184,24 @@ namespace Nethereum.EVM.Decoding
             }
 
             return decodedLog;
+        }
+
+        private void DescribeLogAgainstKnownEvent(DecodedLog decodedLog, FilterLog log, BigInteger chainId)
+        {
+            var eventSignature = log.Topics[0].ToString();
+            var eventABI = _abiStorage?.FindEventABI(chainId, log.Address, eventSignature);
+
+            if (eventABI == null)
+            {
+                decodedLog.IsDecoded = false;
+                return;
+            }
+
+            decodedLog.Event = eventABI;
+            decodedLog.IsDecoded = true;
+            decodedLog.ContractName = FindContractName(chainId, log.Address);
+            decodedLog.Parameters = DecodedOrEmpty(
+                () => _eventDecoder.DecodeDefaultTopics(eventABI, log.Topics, log.Data));
         }
 
         public DecodedError DecodeRevert(byte[] revertData, BigInteger chainId, string contractAddress)
@@ -223,38 +219,35 @@ namespace Nethereum.EVM.Decoding
                 return DecodedError.FromStandardError(errorMessage, revertHex);
             }
 
+            return DecodeCustomError(revertHex, chainId, contractAddress)
+                ?? DecodedError.FromUnknownError(revertHex);
+        }
+
+        private DecodedError DecodeCustomError(string revertHex, BigInteger chainId, string contractAddress)
+        {
             try
             {
                 var errorSignature = revertHex.Substring(0, 10);
                 var errorABI = _abiStorage?.FindErrorABI(chainId, contractAddress, errorSignature);
 
-                if (errorABI != null)
+                if (errorABI == null)
                 {
-                    var decoded = new DecodedError
-                    {
-                        Error = errorABI,
-                        IsDecoded = true,
-                        IsStandardError = false,
-                        RawData = revertHex
-                    };
-
-                    try
-                    {
-                        decoded.Parameters = _functionDecoder.DecodeError(errorABI, revertHex) ?? new List<ParameterOutput>();
-                    }
-                    catch
-                    {
-                        decoded.Parameters = new List<ParameterOutput>();
-                    }
-
-                    return decoded;
+                    return null;
                 }
+
+                return new DecodedError
+                {
+                    Error = errorABI,
+                    IsDecoded = true,
+                    IsStandardError = false,
+                    RawData = revertHex,
+                    Parameters = DecodedOrEmpty(() => _functionDecoder.DecodeError(errorABI, revertHex))
+                };
             }
             catch
             {
+                return null;
             }
-
-            return DecodedError.FromUnknownError(revertHex);
         }
 
         public List<ParameterOutput> DecodeReturnValue(FunctionABI functionABI, string output)
@@ -281,13 +274,25 @@ namespace Nethereum.EVM.Decoding
             }
         }
 
-        private CallType DetermineCallType(CallInput call)
+        private string FindContractName(BigInteger chainId, string address)
         {
-            if (string.IsNullOrEmpty(call.To))
-            {
-                return CallType.Create;
-            }
-            return CallType.Call;
+            var abiInfo = _abiStorage.GetABIInfo(chainId, address);
+            return abiInfo?.ContractName;
         }
+
+        private static List<ParameterOutput> DecodedOrEmpty(Func<List<ParameterOutput>> decode)
+        {
+            try
+            {
+                return decode() ?? new List<ParameterOutput>();
+            }
+            catch
+            {
+                return new List<ParameterOutput>();
+            }
+        }
+
+        private static CallType DetermineCallType(CallInput call) =>
+            string.IsNullOrEmpty(call.To) ? CallType.Create : CallType.Call;
     }
 }

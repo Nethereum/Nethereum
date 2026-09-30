@@ -1,10 +1,11 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using Nethereum.Model;
 
 namespace Nethereum.EVM.Precompiles.Kzg
 {
-    public class CkzgOperations : IKzgOperations, IDisposable
+    public class CkzgOperations : IKzgOperations, IBlobKzgProvider, IDisposable
     {
         private static readonly object InitLock = new object();
         private static bool _initialized;
@@ -105,6 +106,43 @@ namespace Nethereum.EVM.Precompiles.Kzg
             {
                 throw new ArgumentException($"KZG proof verification failed: {ex.Message}", ex);
             }
+        }
+
+        public byte[] BlobToKzgCommitment(byte[] blob)
+        {
+            EnsureInitialized();
+            if (blob == null || blob.Length != 131072)
+                throw new ArgumentException("Blob must be 131072 bytes");
+
+            var commitment = new byte[48];
+            Ckzg.Ckzg.BlobToKzgCommitment(commitment, blob, _trustedSetup);
+            return commitment;
+        }
+
+        public byte[] ComputeBlobKzgProof(byte[] blob, byte[] commitment)
+        {
+            EnsureInitialized();
+            if (blob == null || blob.Length != 131072)
+                throw new ArgumentException("Blob must be 131072 bytes");
+            if (commitment == null || commitment.Length != 48)
+                throw new ArgumentException("Commitment must be 48 bytes");
+
+            var proof = new byte[48];
+            Ckzg.Ckzg.ComputeBlobKzgProof(proof, blob, commitment, _trustedSetup);
+            return proof;
+        }
+
+        public bool VerifyBlobKzgProof(byte[] blob, byte[] commitment, byte[] proof)
+        {
+            EnsureInitialized();
+            if (blob == null || blob.Length != 131072)
+                throw new ArgumentException("Blob must be 131072 bytes");
+            if (commitment == null || commitment.Length != 48)
+                throw new ArgumentException("Commitment must be 48 bytes");
+            if (proof == null || proof.Length != 48)
+                throw new ArgumentException("Proof must be 48 bytes");
+
+            return Ckzg.Ckzg.VerifyBlobKzgProof(blob, commitment, proof, _trustedSetup);
         }
 
         public byte[] ComputeVersionedHash(byte[] commitment)

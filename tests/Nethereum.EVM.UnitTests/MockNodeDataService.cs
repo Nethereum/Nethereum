@@ -1,23 +1,31 @@
-﻿using Nethereum.EVM.BlockchainState;
-using System;
-using System.Linq;
-using System.Numerics;
+using Nethereum.EVM.BlockchainState;
+using Nethereum.Util;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Nethereum.EVM.UnitTests
 {
-    public class MockNodeDataService : INodeDataService
+    public class MockNodeDataService : IStateReader
     {
-        private static readonly byte[] GenericHash = Enumerable.Repeat((byte)0x42, 32).ToArray(); // example fixed 32-byte hash
+        private readonly InMemoryStateReader _reader;
 
-        public Task<BigInteger> GetBalanceAsync(byte[] address) => Task.FromResult(BigInteger.Zero);
-        public Task<BigInteger> GetBalanceAsync(string address) => Task.FromResult(BigInteger.Zero);
-        public Task<byte[]> GetCodeAsync(byte[] address) => Task.FromResult(Array.Empty<byte>());
-        public Task<byte[]> GetCodeAsync(string address) => Task.FromResult(Array.Empty<byte>());
-        public Task<byte[]> GetBlockHashAsync(BigInteger blockNumber) => Task.FromResult(GenericHash);
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position) => Task.FromResult(Array.Empty<byte>());
-        public Task<byte[]> GetStorageAtAsync(string address, BigInteger position) => Task.FromResult(Array.Empty<byte>());
-        public Task<BigInteger> GetTransactionCount(byte[] address) => Task.FromResult(BigInteger.Zero);
-        public Task<BigInteger> GetTransactionCount(string address) => Task.FromResult(BigInteger.Zero);
+        public MockNodeDataService(InMemoryStateReader reader = null)
+        {
+            _reader = reader ?? new InMemoryStateReader(new Dictionary<string, AccountState>());
+        }
+
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address) => _reader.GetBalanceAsync(address);
+        public Task<EvmUInt256> GetBalanceAsync(string address) => _reader.GetBalanceAsync(address);
+        public Task<byte[]> GetCodeAsync(byte[] address) => _reader.GetCodeAsync(address);
+        public Task<byte[]> GetCodeAsync(string address) => _reader.GetCodeAsync(address);
+
+        public Task<byte[]> GetBlockHashAsync(long blockNumber) =>
+            Task.FromResult(Sha3Keccack.Current.CalculateHashAsBytes(blockNumber.ToString()));
+
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position) => _reader.GetStorageAtAsync(address, position);
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position) => _reader.GetStorageAtAsync(address, position);
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address) => _reader.GetTransactionCountAsync(address);
+        public Task<EvmUInt256> GetTransactionCountAsync(string address) => _reader.GetTransactionCountAsync(address);
+        public Task<bool> AccountExistsAsync(string address) => _reader.AccountExistsAsync(address);
     }
 }

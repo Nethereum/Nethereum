@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Core\Nethereum.EVM.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Binary\Nethereum.Merkle.Binary.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles\Nethereum.EVM.Precompiles.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
+  </ItemGroup>
+
+  <!-- KZG (EIP-4844) and BLS12-381 (EIP-2537) backends for the sync engine.
+       Nethereum.EVM.Precompiles.Kzg and .Bls build against Nethereum.EVM, whose
+       types share their names and namespace with Nethereum.EVM.Core's, so a
+       project reference would make every EVM type ambiguous here. The sync
+       flavour therefore links their sources, as Nethereum.EVM.Zisk does. The
+       registry they compose is the one HostBlockchainTestRunner.FixtureRegistry
+       composes: without it the fixtures run the throwing placeholders. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\IKzgOperations.cs" Link="Precompiles\Kzg\IKzgOperations.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\CkzgOperations.cs" Link="Precompiles\Kzg\CkzgOperations.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Handlers\KzgPointEvaluationPrecompile.cs" Link="Precompiles\Kzg\KzgPointEvaluationPrecompile.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\PrecompileRegistryKzgExtensions.cs" Link="Precompiles\Kzg\PrecompileRegistryKzgExtensions.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\KzgAwareMainnetHardforkRegistry.cs" Link="Precompiles\Kzg\KzgAwareMainnetHardforkRegistry.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Bls\Handlers\*.cs" Link="Precompiles\Bls\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Bls\PrecompileRegistryBlsExtensions.cs" Link="Precompiles\Bls\PrecompileRegistryBlsExtensions.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles.Bls\Bls12381AwareMainnetHardforkRegistry.cs" Link="Precompiles\Bls\Bls12381AwareMainnetHardforkRegistry.cs" />
+  </ItemGroup>
+
+  <!-- CkzgOperations.InitializeFromEmbeddedSetup reads the trusted setup by the
+       resource name the Kzg assembly gives it, so the linked source needs that
+       exact logical name here. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\trusted_setup.txt" LogicalName="Nethereum.EVM.Precompiles.Kzg.trusted_setup.txt" />
+  </ItemGroup>
+
+  <!-- Herumi ships libbls_eth as a native asset under runtimes/<rid>/native. A
+       project reference does not flow it into the test output, so it is copied
+       explicitly — without it the BLS12-381 backend cannot load. -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\*.dll">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\BlockchainTestLoader.cs" Link="BlockchainTests\BlockchainTestLoader.cs" />
+    <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\BlockAccessListDiff.cs" Link="BlockchainTests\BlockAccessListDiff.cs" />
+    <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\ExpectedRejectionMatcher.cs" Link="BlockchainTests\ExpectedRejectionMatcher.cs" />
+    <Compile Include="..\..\src\Nethereum.CoreChain\BlockValidityChecks.cs" Link="BlockValidityChecks.cs" />
+    <Compile Include="..\..\src\Nethereum.CoreChain\PatriciaStateRootCalculator.cs" Link="PatriciaStateRootCalculator.cs" />
+    <Compile Include="..\..\src\Nethereum.CoreChain\PatriciaMerkleTreeBuilder.cs" Link="PatriciaMerkleTreeBuilder.cs" />
+    <Compile Include="..\..\src\Nethereum.CoreChain\PatriciaBlockRootCalculator.cs" Link="PatriciaBlockRootCalculator.cs" />
+    <Compile Include="..\..\src\Nethereum.CoreChain\BinaryStateRootCalculator.cs" Link="BinaryStateRootCalculator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Ckzg.Bindings" Version="1.0.2.828" />
+  </ItemGroup>
+</Project>

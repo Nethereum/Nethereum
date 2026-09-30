@@ -1,0 +1,96 @@
+{
+  "blockNumber": 68481,
+  "scenario": "on-demand-empty-block-miner-reward-divergence",
+  "header": {
+    "parentHash": "0xef239cae724bdac3083f09d4b6746f6830abae484e18d39dbbae06931e1568a1",
+    "unclesHash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+    "coinbase": "3a652ae439ffb94328afa58e11f544afb5b85f7a",
+    "stateRoot": "0x2c5a568bfc9d3e32133bc6b7f1c614dfd675e0b89a0602077e230fef365f619d",
+    "transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+    "receiptsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "difficulty": "0x1d36421397b",
+    "number": "0x10bc1",
+    "gasLimit": "0x2fead7",
+    "gasUsed": "0x0",
+    "timestamp": "0x55c9d1db",
+    "extraData": "0x476574682f76312e302e302f77696e646f77732f676f312e342e32",
+    "mixHash": "0xccab41168e1b23d08dd12eb8ed90f8690d94040832c139aff7f0db9f0b8ac58e",
+    "nonce": "0x9caaca6cf66d2831",
+    "baseFee": null,
+    "withdrawalsRoot": null,
+    "parentBeaconBlockRoot": null
+  },
+  "transactionsRlp": [],
+  "uncles": [],
+  "preState": {
+    "0x0000000000000000000000000000000000000001": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000002": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000003": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000004": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000005": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000006": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000007": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000008": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x0000000000000000000000000000000000000009": {
+      "balance": "0x0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    },
+    "0x3a652ae439ffb94328afa58e11f544afb5b85f7a": {
+      "balance": "0x5eb38f17ce01ddd0",
+      "nonce": "0x0",
+      "code": "0x",
+      "storage": {}
+    }
+  },
+  "postAssertions": {
+    "0x3a652ae439ffb94328afa58e11f544afb5b85f7a": {
+      "balance": "0xa417209a12f5ddd0",
+      "nonce": "0x0",
+      "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+    }
+  },
+  "captureError": null
+}

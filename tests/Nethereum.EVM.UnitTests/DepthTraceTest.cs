@@ -1,6 +1,7 @@
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using System.Threading.Tasks;
@@ -20,18 +21,13 @@ namespace Nethereum.EVM.UnitTests
         {
             var executionState = new ExecutionStateService(new MockNodeDataService());
 
-            // Contract at 0x104 - inner contract that just returns success
             var innerContractAddress = "0x0000000000000000000000000000000000000104";
-            // Simple inner contract: PUSH1 0x01, PUSH1 0x00, MSTORE, PUSH1 0x20, PUSH1 0x00, RETURN
             var innerContractCode = "0x600160005260206000f3".HexToByteArray();
             var innerAccount = executionState.CreateOrGetAccountExecutionState(innerContractAddress);
             innerAccount.Code = innerContractCode;
             innerAccount.Balance.SetInitialChainBalance(1000000000);
 
-            // Outer contract at 0xcccc - will CALL to 0x104
             var outerContractAddress = "0xcccccccccccccccccccccccccccccccccccccccc";
-            // CALL expects stack (top to bottom): gas, addr, value, inOffset, inSize, outOffset, outSize
-            // Push in reverse order so gas ends up on top: outSize=0x20, outOffset=0, inSize=0, inOffset=0, value=0, addr=0x104, gas=0x100000
             var outerContractCode = "0x60206000600060006000630000010463001000f0f100".HexToByteArray();
             var outerAccount = executionState.CreateOrGetAccountExecutionState(outerContractAddress);
             outerAccount.Code = outerContractCode;
@@ -51,7 +47,7 @@ namespace Nethereum.EVM.UnitTests
             var programContext = new ProgramContext(transaction, executionState, null,
                 blockNumber: 1, timestamp: 1000, coinbase: "0x0000000000000000000000000000000000000000", baseFee: 10);
             var program = new Program(outerContractCode, programContext);
-            var simulator = new EVMSimulator();
+            var simulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
 
             _output.WriteLine($"Starting gas: {program.GasRemaining}");
             program = await simulator.ExecuteWithCallStackAsync(program, traceEnabled: true);

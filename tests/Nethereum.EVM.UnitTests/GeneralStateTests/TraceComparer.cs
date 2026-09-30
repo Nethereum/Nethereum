@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,34 +15,105 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
     public class GethEvmRunner
     {
+        private const string PinnedEvmDirectory = "evm-v1.17.4";
+        private const string PinnedEvmVersion = "1.17.4";
+
         private readonly string _evmExePath;
         private readonly int _timeoutMs;
 
+        public string UnavailableReason { get; }
+
+        public bool IsAvailable => UnavailableReason == null;
+
         public GethEvmRunner(string projectRoot = null, int timeoutMs = 60000)
         {
-            _evmExePath = FindEvmExe(projectRoot);
             _timeoutMs = timeoutMs;
+            _evmExePath = FindEvmExe(projectRoot, out var unavailable);
+            UnavailableReason = unavailable;
         }
 
-        private static string FindEvmExe(string projectRoot)
+        private static string FindEvmExe(string projectRoot, out string unavailableReason)
         {
+            unavailableReason = null;
+
+            projectRoot ??= FindProjectRoot(Directory.GetCurrentDirectory());
             if (projectRoot == null)
             {
-                projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+                unavailableReason = "Could not find project root (Nethereum.slnx / Nethereum.sln)";
+                return null;
             }
 
-            if (projectRoot == null)
-                throw new FileNotFoundException("Could not find project root (Nethereum.sln)");
+            var exeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "evm.exe" : "evm";
+            var pinned = Path.Combine(projectRoot, "geth-tools", PinnedEvmDirectory, exeName);
+            if (!File.Exists(pinned))
+            {
+                unavailableReason =
+                    $"Pinned geth reference not found at '{pinned}'. This diagnostic is unavailable. " +
+                    $"Build it from a go-ethereum checkout at tag v{PinnedEvmVersion}: " +
+                    $"go build -o \"{pinned}\" ./cmd/evm";
+                return null;
+            }
 
-            var gethToolsDir = Path.Combine(projectRoot, "geth-tools");
-            if (!Directory.Exists(gethToolsDir))
-                throw new DirectoryNotFoundException($"geth-tools directory not found at: {gethToolsDir}");
+            var reported = ReadVersion(pinned);
+            if (reported == null || reported.IndexOf(PinnedEvmVersion, StringComparison.Ordinal) < 0)
+            {
+                unavailableReason =
+                    $"Pinned geth reference at '{pinned}' reports '{reported ?? "no version"}', expected " +
+                    $"{PinnedEvmVersion}. Its command line differs between versions, so a mismatched build " +
+                    $"traces nothing while appearing to run.";
+                return null;
+            }
 
-            var evmExePaths = Directory.GetFiles(gethToolsDir, "evm.exe", SearchOption.AllDirectories);
-            if (evmExePaths.Length == 0)
-                throw new FileNotFoundException($"evm.exe not found in: {gethToolsDir}");
+            return pinned;
+        }
 
-            return evmExePaths[0];
+        private static string ExtractReportedError(string rawOutput)
+        {
+            if (string.IsNullOrWhiteSpace(rawOutput)) return null;
+            try
+            {
+                foreach (var token in JToken.Parse(rawOutput.Trim()).Children())
+                {
+                    var error = token["error"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(error)) return error;
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
+
+        private static string FirstLine(string text)
+            => string.IsNullOrWhiteSpace(text)
+                ? null
+                : text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+
+        private static string ReadVersion(string exePath)
+        {
+            try
+            {
+                using (var p = Process.Start(new ProcessStartInfo(exePath, "--version")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }))
+                {
+                    var stdout = p.StandardOutput.ReadToEndAsync();
+                    if (!p.WaitForExit(15000))
+                    {
+                        try { p.Kill(); } catch { }
+                        return null;
+                    }
+                    return stdout.Wait(5000) ? stdout.Result?.Trim() : null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static string FindProjectRoot(string startDir)
@@ -49,7 +121,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var dir = new DirectoryInfo(startDir);
             while (dir != null)
             {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
                     return dir.FullName;
                 dir = dir.Parent;
             }
@@ -95,18 +168,64 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return dataIndex;
         }
 
-        public async Task<GethEvmResult> RunStateTestAsync(string testFilePath, int dataIndex = 0, int gasIndex = 0, int valueIndex = 0, string fork = "Prague")
+        public async Task<GethEvmResult> RunStateTestAsync(string testFilePath, int dataIndex = 0, int gasIndex = 0, int valueIndex = 0, string fork = "Prague", string testName = null)
         {
-            if (!File.Exists(_evmExePath))
-                throw new FileNotFoundException($"evm.exe not found at: {_evmExePath}");
+            string isolated = null;
+            try
+            {
+                isolated = IsolateNamedTest(testFilePath, testName);
+                if (isolated != null) testFilePath = isolated;
+                return await RunStateTestCoreAsync(testFilePath, dataIndex, gasIndex, valueIndex, fork);
+            }
+            finally
+            {
+                if (isolated != null)
+                {
+                    try { File.Delete(isolated); } catch { }
+                }
+            }
+        }
+
+        private static string IsolateNamedTest(string testFilePath, string testName)
+        {
+            if (string.IsNullOrEmpty(testName)) return null;
+            try
+            {
+                var root = JObject.Parse(File.ReadAllText(testFilePath));
+                if (root.Properties().Count() <= 1) return null;
+
+                var match = root.Properties().FirstOrDefault(p => p.Name == testName);
+                if (match == null) return null;
+
+                var temp = Path.Combine(Path.GetTempPath(),
+                    $"nethereum-statetest-{Guid.NewGuid():N}.json");
+                File.WriteAllText(temp, new JObject(new JProperty(match.Name, match.Value)).ToString());
+                return temp;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private async Task<GethEvmResult> RunStateTestCoreAsync(string testFilePath, int dataIndex, int gasIndex, int valueIndex, string fork)
+        {
+            if (!IsAvailable)
+                return new GethEvmResult
+                {
+                    TestFile = testFilePath,
+                    Success = false,
+                    Error = UnavailableReason,
+                    Steps = new List<GethTraceStep>()
+                };
 
             if (!File.Exists(testFilePath))
                 throw new FileNotFoundException($"Test file not found: {testFilePath}");
 
-            // Calculate the flat index by finding the matching entry in the post array
             var flatIndex = FindFlatIndex(testFilePath, fork, dataIndex, gasIndex, valueIndex);
 
-            var args = $"--json --nomemory=false --noreturndata=false statetest --statetest.fork {fork} --statetest.index {flatIndex} \"{testFilePath}\"";
+            var args = $"statetest --trace --trace.format json --trace.nomemory=false --trace.noreturndata=false " +
+                       $"--statetest.fork {fork} --statetest.index {flatIndex} \"{testFilePath}\"";
 
             var result = new GethEvmResult
             {
@@ -131,15 +250,25 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var outputBuilder = new StringBuilder();
             var errorBuilder = new StringBuilder();
 
+            const int MaxBuilderBytes = 100 * 1024 * 1024;
+            bool outputTruncated = false;
+            bool errorTruncated = false;
+
             process.OutputDataReceived += (s, e) =>
             {
-                if (e.Data != null)
-                    outputBuilder.AppendLine(e.Data);
+                if (e.Data == null) return;
+                if (outputBuilder.Length >= MaxBuilderBytes) { outputTruncated = true; return; }
+                try { outputBuilder.AppendLine(e.Data); }
+                catch (ArgumentOutOfRangeException) { outputTruncated = true; }
+                catch (OutOfMemoryException) { outputTruncated = true; }
             };
             process.ErrorDataReceived += (s, e) =>
             {
-                if (e.Data != null)
-                    errorBuilder.AppendLine(e.Data);
+                if (e.Data == null) return;
+                if (errorBuilder.Length >= MaxBuilderBytes) { errorTruncated = true; return; }
+                try { errorBuilder.AppendLine(e.Data); }
+                catch (ArgumentOutOfRangeException) { errorTruncated = true; }
+                catch (OutOfMemoryException) { errorTruncated = true; }
             };
 
             try
@@ -159,10 +288,19 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 result.ExitCode = process.ExitCode;
                 result.RawOutput = outputBuilder.ToString();
                 result.RawError = errorBuilder.ToString();
+                if (outputTruncated || errorTruncated)
+                {
+                    result.Error = $"Geth trace output truncated at {MaxBuilderBytes / (1024 * 1024)} MB (trace too large to capture in-memory)";
+                }
 
                 var stderrLines = result.RawError.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 result.Steps = ParseGethTraceLines(stderrLines);
-                result.Success = true;
+
+                result.Success = result.Steps.Count > 0;
+                if (!result.Success && result.Error == null)
+                    result.Error = ExtractReportedError(result.RawOutput)
+                                   ?? $"no trace steps (exit {process.ExitCode}): "
+                                      + (FirstLine(result.RawError) ?? FirstLine(result.RawOutput) ?? "no output");
             }
             catch (Exception ex)
             {
@@ -358,7 +496,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 };
             }
 
-            // Depth comparison: Nethereum now starts at depth 1 (same as Geth)
             if (geth.Depth != neth.Depth)
             {
                 return new StepMismatch
@@ -697,7 +834,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     Op = trace.Instruction?.Instruction?.ToString() ?? "UNKNOWN",
                     Gas = (long)trace.GasRemaining,
                     GasCost = (long)trace.GasCost,
-                    Depth = trace.Depth + 1, // Geth starts at depth 1, Nethereum at 0
+                    Depth = trace.Depth + 1,
                     Stack = trace.Stack?.ToList() ?? new List<string>(),
                     Memory = trace.Memory ?? "",
                     Storage = trace.Storage ?? new Dictionary<string, string>(),

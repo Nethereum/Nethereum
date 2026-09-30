@@ -14,17 +14,13 @@ namespace Nethereum.EVM.UnitTests
 
     public class ProgramsUtilsTests
     {
-        /// <summary>
-        /// {"contracts":{"simpleOwner.sol:SimpleOwner":{"bin-runtime":"6080604052348015600f57600080fd5b506004361060285760003560e01c8063893d20e814602d575b600080fd5b60336047565b604051603e919060ad565b60405180910390f35b60008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006099826070565b9050919050565b60a7816090565b82525050565b600060208201905060c0600083018460a0565b9291505056fea2646970667358221220571729c39bd05edb51c651a38d2adafe1822fa3b0e4ae39601f2901a6d95fd3064736f6c63430008090033",
-        /// "srcmap-runtime":"66:216:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;192:87;;;:::i;:::-;;;;;;;:::i;:::-;;;;;;;;;232:13;265:6;;;;;;;;;;;258:13;;192:87;:::o;7:126:1:-;44:7;84:42;77:5;73:54;62:65;;7:126;;;:::o;139:96::-;176:7;205:24;223:5;205:24;:::i;:::-;194:35;;139:96;;;:::o;241:118::-;328:24;346:5;328:24;:::i;:::-;323:3;316:37;241:118;;:::o;365:222::-;458:4;496:2;485:9;481:18;473:26;;509:71;577:1;566:9;562:17;553:6;509:71;:::i;:::-;365:222;;;;:::o"}},"sourceList":["simpleOwner.sol"],"version":"0.8.9+commit.e5eed63a.Windows.msvc"
-        /// </summary>
         [Fact]
         public void ShouldConvertSourceMappingsMatchJumpDestinationAndSelectCode()
         {
             var compressedSourceMap = "66:216:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;192:87;;;:::i;:::-;;;;;;;:::i;:::-;;;;;;;;;232:13;265:6;;;;;;;;;;;258:13;;192:87;:::o;7:126:1:-;44:7;84:42;77:5;73:54;62:65;;7:126;;;:::o;139:96::-;176:7;205:24;223:5;205:24;:::i;:::-;194:35;;139:96;;;:::o;241:118::-;328:24;346:5;328:24;:::i;:::-;323:3;316:37;241:118;;:::o;365:222::-;458:4;496:2;485:9;481:18;473:26;;509:71;577:1;566:9;562:17;553:6;509:71;:::i;:::-;365:222;;;;:::o";
             var convertedSourceMaps = new SourceMapUtil().UnCompressSourceMap(compressedSourceMap);
             var byteCode = "6080604052348015600f57600080fd5b506004361060285760003560e01c8063893d20e814602d575b600080fd5b60336047565b604051603e919060ad565b60405180910390f35b60008060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006099826070565b9050919050565b60a7816090565b82525050565b600060208201905060c0600083018460a0565b9291505056fea2646970667358221220571729c39bd05edb51c651a38d2adafe1822fa3b0e4ae39601f2901a6d95fd3064736f6c63430008090033";
-            var instructions = ProgramInstructionsUtils.GetProgramInstructions(byteCode);//81
+            var instructions = ProgramInstructionsUtils.GetProgramInstructions(byteCode);
             var instructionJump = instructions[31];
             var convertedJumpSelection = convertedSourceMaps[31];
             Assert.True(instructionJump.Instruction == Instruction.JUMPDEST);
@@ -69,7 +65,7 @@ contract SimpleOwner {
             Assert.Equal(output1_1, simplified);
         }
 
-        [Fact] //
+        [Fact]
         public void Should()
         {
             var byteCode = "3d602d80600a3d3981f3363d3d373d3d3d363d73d68d97363aedf990c2e9b96b7db51b4dc6f30f6b5af43d82803e903d91602b57fd5bf3";
@@ -85,11 +81,6 @@ contract SimpleOwner {
         [Fact]
         public void ShouldFindFunctionHashes()
         {
-            /*
-     "70a08231": "balanceOf(address)",
-    "18160ddd": "totalSupply()",
-    "a9059cbb": "transfer(address,uint256)"
-             **/
 
             var byteCode = ByteCodeDisassemblyOuput.Bytecode;
             var programInstructions = ProgramInstructionsUtils.GetProgramInstructions(byteCode);

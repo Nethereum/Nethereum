@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System.Numerics;
 
 namespace Nethereum.EVM.StateChanges
 {
+    [NethereumDocExample(DocSection.EvmSimulator, "state-changes", "What kind of asset a balance change moved")]
     public enum BalanceChangeType
     {
         Native,
@@ -10,6 +12,7 @@ namespace Nethereum.EVM.StateChanges
         ERC1155
     }
 
+    [NethereumDocExample(DocSection.EvmSimulator, "state-changes", "Whether a transfer event matched the balance the execution actually observed")]
     public enum BalanceValidationStatus
     {
         NotValidated,

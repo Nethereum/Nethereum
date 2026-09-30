@@ -20,12 +20,14 @@ namespace Nethereum.EVM.StateChanges
 {
     public class StateChangesExtractor : IStateChangesExtractor
     {
+        private const int DefaultErc20Decimals = 18;
+
         private static readonly EventABI ERC20TransferEvent = ABITypedRegistry.GetEvent<Nethereum.Contracts.Standards.ERC20.ContractDefinition.TransferEventDTO>();
         private static readonly EventABI ERC721TransferEvent = ABITypedRegistry.GetEvent<Nethereum.Contracts.Standards.ERC721.ContractDefinition.TransferEventDTO>();
         private static readonly EventABI ERC1155TransferSingleEvent = ABITypedRegistry.GetEvent<TransferSingleEventDTO>();
         private static readonly EventABI ERC1155TransferBatchEvent = ABITypedRegistry.GetEvent<TransferBatchEventDTO>();
 
-        public const string TRANSFER_EVENT_SIGNATURE = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+        public const string TRANSFER_EVENT_SIGNATURE = Nethereum.Model.Erc20TransferEventTopic.Prefixed;
         public const string TRANSFER_SINGLE_EVENT_SIGNATURE = "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62";
         public const string TRANSFER_BATCH_EVENT_SIGNATURE = "0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb";
 
@@ -80,44 +82,58 @@ namespace Nethereum.EVM.StateChanges
 
             if (tokenResolverAsync != null && result.BalanceChanges != null)
             {
-                var erc20Changes = result.BalanceChanges
-                    .Where(c => c.Type == BalanceChangeType.ERC20 && !string.IsNullOrEmpty(c.TokenAddress))
-                    .ToList();
-
-                var tokenAddresses = erc20Changes
-                    .Select(c => c.TokenAddress)
-                    .Distinct()
-                    .ToList();
-
-                var tokenInfo = new Dictionary<string, TokenInfo>();
-                foreach (var addr in tokenAddresses)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    try
-                    {
-                        var info = await tokenResolverAsync(addr).ConfigureAwait(false);
-                        if (info != null)
-                        {
-                            tokenInfo[addr.ToLowerInvariant()] = info;
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                foreach (var change in erc20Changes)
-                {
-                    var key = change.TokenAddress?.ToLowerInvariant();
-                    if (key != null && tokenInfo.TryGetValue(key, out var info))
-                    {
-                        change.TokenSymbol = info.Symbol;
-                        change.TokenDecimals = info.Decimals;
-                    }
-                }
+                var erc20Changes = result.BalanceChanges.Where(IsResolvableErc20Change).ToList();
+                var resolvedTokens = await ResolveTokensByAddressAsync(erc20Changes, tokenResolverAsync, cancellationToken);
+                ApplyResolvedTokensToChanges(erc20Changes, resolvedTokens);
             }
 
             return result;
+        }
+
+        private static bool IsResolvableErc20Change(BalanceChange change) =>
+            change.Type == BalanceChangeType.ERC20 && !string.IsNullOrEmpty(change.TokenAddress);
+
+        private static async Task<Dictionary<string, TokenInfo>> ResolveTokensByAddressAsync(
+            List<BalanceChange> erc20Changes,
+            Func<string, Task<TokenInfo>> tokenResolverAsync,
+            CancellationToken cancellationToken)
+        {
+            var tokenAddresses = erc20Changes
+                .Select(c => c.TokenAddress)
+                .Distinct()
+                .ToList();
+
+            var tokenInfo = new Dictionary<string, TokenInfo>();
+            foreach (var addr in tokenAddresses)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    var info = await tokenResolverAsync(addr).ConfigureAwait(false);
+                    if (info != null)
+                    {
+                        tokenInfo[addr.ToLowerInvariant()] = info;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return tokenInfo;
+        }
+
+        private static void ApplyResolvedTokensToChanges(List<BalanceChange> erc20Changes, Dictionary<string, TokenInfo> resolvedTokens)
+        {
+            foreach (var change in erc20Changes)
+            {
+                var key = change.TokenAddress?.ToLowerInvariant();
+                if (key != null && resolvedTokens.TryGetValue(key, out var info))
+                {
+                    change.TokenSymbol = info.Symbol;
+                    change.TokenDecimals = info.Decimals;
+                }
+            }
         }
 
         private void ExtractTokenTransfersFromLogs(StateChangesResult result, string currentUserAddress, Func<string, TokenInfo> tokenResolver)
@@ -130,22 +146,9 @@ namespace Nethereum.EVM.StateChanges
                 if (transferType == TransferEventType.None) continue;
 
                 var tokenAddress = log.ContractAddress;
-                string tokenSymbol = null;
-                int tokenDecimals = transferType == TransferEventType.ERC20 ? 18 : 0;
-
-                if (tokenResolver != null && !string.IsNullOrEmpty(tokenAddress))
-                {
-                    try
-                    {
-                        var info = tokenResolver(tokenAddress);
-                        if (info != null)
-                        {
-                            tokenSymbol = info.Symbol;
-                            tokenDecimals = info.Decimals;
-                        }
-                    }
-                    catch { }
-                }
+                var resolvedToken = TryResolveToken(tokenAddress, tokenResolver);
+                var tokenSymbol = resolvedToken?.Symbol;
+                var tokenDecimals = resolvedToken?.Decimals ?? DefaultDecimalsFor(transferType);
 
                 if (transferType == TransferEventType.ERC1155Single)
                 {
@@ -157,37 +160,64 @@ namespace Nethereum.EVM.StateChanges
                 }
                 else
                 {
-                    var transferParams = ExtractTransferParameters(log, transferType);
-                    if (string.IsNullOrEmpty(transferParams.From) || string.IsNullOrEmpty(transferParams.To)) continue;
-
-                    var balanceType = transferType == TransferEventType.ERC721 ? BalanceChangeType.ERC721 : BalanceChangeType.ERC20;
-
-                    result.BalanceChanges.Add(new BalanceChange
-                    {
-                        Address = transferParams.From?.ToLowerInvariant(),
-                        AddressLabel = log.ContractName,
-                        Type = balanceType,
-                        TokenAddress = tokenAddress,
-                        TokenSymbol = tokenSymbol,
-                        TokenDecimals = tokenDecimals,
-                        TokenId = transferParams.TokenId,
-                        Change = balanceType == BalanceChangeType.ERC721 ? -1 : -transferParams.Amount,
-                        IsCurrentUser = transferParams.From.IsTheSameAddress(currentUserAddress)
-                    });
-
-                    result.BalanceChanges.Add(new BalanceChange
-                    {
-                        Address = transferParams.To?.ToLowerInvariant(),
-                        Type = balanceType,
-                        TokenAddress = tokenAddress,
-                        TokenSymbol = tokenSymbol,
-                        TokenDecimals = tokenDecimals,
-                        TokenId = transferParams.TokenId,
-                        Change = balanceType == BalanceChangeType.ERC721 ? 1 : transferParams.Amount,
-                        IsCurrentUser = transferParams.To.IsTheSameAddress(currentUserAddress)
-                    });
+                    AddTransferBalanceChangePair(log, result.BalanceChanges, currentUserAddress, transferType,
+                        tokenAddress, tokenSymbol, tokenDecimals);
                 }
             }
+        }
+
+        private static TokenInfo TryResolveToken(string tokenAddress, Func<string, TokenInfo> tokenResolver)
+        {
+            if (tokenResolver == null || string.IsNullOrEmpty(tokenAddress))
+                return null;
+
+            try
+            {
+                return tokenResolver(tokenAddress);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static int DefaultDecimalsFor(TransferEventType transferType) =>
+            transferType == TransferEventType.ERC20 ? DefaultErc20Decimals : 0;
+
+        private void AddTransferBalanceChangePair(
+            DecodedLog log, List<BalanceChange> changes, string currentUserAddress, TransferEventType transferType,
+            string tokenAddress, string tokenSymbol, int tokenDecimals)
+        {
+            var transferParams = ExtractTransferParameters(log, transferType);
+            if (string.IsNullOrEmpty(transferParams.From) || string.IsNullOrEmpty(transferParams.To)) return;
+
+            var balanceType = transferType == TransferEventType.ERC721 ? BalanceChangeType.ERC721 : BalanceChangeType.ERC20;
+            var amountMoved = balanceType == BalanceChangeType.ERC721 ? BigInteger.One : transferParams.Amount;
+
+            changes.Add(new BalanceChange
+            {
+                Address = transferParams.From?.ToLowerInvariant(),
+                AddressLabel = log.ContractName,
+                Type = balanceType,
+                TokenAddress = tokenAddress,
+                TokenSymbol = tokenSymbol,
+                TokenDecimals = tokenDecimals,
+                TokenId = transferParams.TokenId,
+                Change = -amountMoved,
+                IsCurrentUser = transferParams.From.IsTheSameAddress(currentUserAddress)
+            });
+
+            changes.Add(new BalanceChange
+            {
+                Address = transferParams.To?.ToLowerInvariant(),
+                Type = balanceType,
+                TokenAddress = tokenAddress,
+                TokenSymbol = tokenSymbol,
+                TokenDecimals = tokenDecimals,
+                TokenId = transferParams.TokenId,
+                Change = amountMoved,
+                IsCurrentUser = transferParams.To.IsTheSameAddress(currentUserAddress)
+            });
         }
 
         private void ExtractERC1155SingleTransfer(DecodedLog log, List<BalanceChange> changes, string currentUserAddress, string tokenAddress, string tokenSymbol)
@@ -325,29 +355,17 @@ namespace Nethereum.EVM.StateChanges
                 var address = change.Address?.ToLowerInvariant();
                 if (string.IsNullOrEmpty(address)) continue;
 
-                if (stateService.AccountsState.TryGetValue(address, out var accountState))
+                if (!stateService.AccountsState.TryGetValue(Nethereum.Util.EvmAddress.FromHex(address), out var accountState)) continue;
+
+                var balance = accountState.Balance;
+                if (balance == null) continue;
+
+                change.BalanceBefore = balance.InitialChainBalance?.ToBigInteger();
+                change.BalanceAfter = balance.GetTotalBalance().ToBigInteger();
+
+                if (change.BalanceAfter.HasValue && change.BalanceBefore.HasValue)
                 {
-                    var balance = accountState.Balance;
-                    if (balance != null)
-                    {
-                        change.BalanceBefore = balance.InitialChainBalance;
-                        change.BalanceAfter = balance.GetTotalBalance();
-
-                        if (change.BalanceAfter.HasValue && change.BalanceBefore.HasValue)
-                        {
-                            var actualChange = change.BalanceAfter.Value - change.BalanceBefore.Value;
-                            change.ActualChange = actualChange;
-
-                            if (actualChange == change.Change)
-                            {
-                                change.ValidationStatus = BalanceValidationStatus.Verified;
-                            }
-                            else
-                            {
-                                change.ValidationStatus = BalanceValidationStatus.Mismatch;
-                            }
-                        }
-                    }
+                    RecordActualChangeAndVerdict(change);
                 }
             }
         }
@@ -372,61 +390,15 @@ namespace Nethereum.EVM.StateChanges
                     switch (change.Type)
                     {
                         case BalanceChangeType.ERC20:
-                            if (getErc20Balance != null && change.BalanceBefore.HasValue && change.BalanceAfter.HasValue)
-                            {
-                                var actualChange = change.BalanceAfter.Value - change.BalanceBefore.Value;
-                                change.ActualChange = actualChange;
-
-                                if (actualChange == change.Change)
-                                {
-                                    change.ValidationStatus = BalanceValidationStatus.Verified;
-                                }
-                                else if (BigInteger.Abs(actualChange) < BigInteger.Abs(change.Change))
-                                {
-                                    change.ValidationStatus = BalanceValidationStatus.FeeOnTransfer;
-                                }
-                                else if (BigInteger.Abs(actualChange) > BigInteger.Abs(change.Change))
-                                {
-                                    change.ValidationStatus = BalanceValidationStatus.Rebasing;
-                                }
-                                else
-                                {
-                                    change.ValidationStatus = BalanceValidationStatus.Mismatch;
-                                }
-                            }
+                            ValidateErc20Change(change, getErc20Balance);
                             break;
 
                         case BalanceChangeType.ERC721:
-                            if (getErc721Owner != null && change.TokenId.HasValue)
-                            {
-                                var actualOwner = getErc721Owner(change.TokenAddress, change.TokenId.Value);
-                                change.ActualOwner = actualOwner;
-
-                                if (change.Change > 0)
-                                {
-                                    change.ValidationStatus = actualOwner?.Equals(change.Address, StringComparison.OrdinalIgnoreCase) == true
-                                        ? BalanceValidationStatus.Verified
-                                        : BalanceValidationStatus.OwnerMismatch;
-                                }
-                                else
-                                {
-                                    change.ValidationStatus = actualOwner?.Equals(change.Address, StringComparison.OrdinalIgnoreCase) != true
-                                        ? BalanceValidationStatus.Verified
-                                        : BalanceValidationStatus.OwnerMismatch;
-                                }
-                            }
+                            ValidateErc721Ownership(change, getErc721Owner);
                             break;
 
                         case BalanceChangeType.ERC1155:
-                            if (getErc1155Balance != null && change.TokenId.HasValue && change.BalanceBefore.HasValue && change.BalanceAfter.HasValue)
-                            {
-                                var actualChange = change.BalanceAfter.Value - change.BalanceBefore.Value;
-                                change.ActualChange = actualChange;
-
-                                change.ValidationStatus = actualChange == change.Change
-                                    ? BalanceValidationStatus.Verified
-                                    : BalanceValidationStatus.Mismatch;
-                            }
+                            ValidateErc1155Change(change, getErc1155Balance);
                             break;
                     }
                 }
@@ -434,6 +406,61 @@ namespace Nethereum.EVM.StateChanges
                 {
                 }
             }
+        }
+
+        private static void ValidateErc20Change(BalanceChange change, Func<string, string, BigInteger> getErc20Balance)
+        {
+            if (getErc20Balance == null || !change.BalanceBefore.HasValue || !change.BalanceAfter.HasValue)
+                return;
+
+            var actualChange = change.BalanceAfter.Value - change.BalanceBefore.Value;
+            change.ActualChange = actualChange;
+            change.ValidationStatus = ClassifyErc20BalanceOutcome(actualChange, change.Change);
+        }
+
+        private static BalanceValidationStatus ClassifyErc20BalanceOutcome(BigInteger actualChange, BigInteger expectedChange)
+        {
+            if (actualChange == expectedChange)
+                return BalanceValidationStatus.Verified;
+            if (BigInteger.Abs(actualChange) < BigInteger.Abs(expectedChange))
+                return BalanceValidationStatus.FeeOnTransfer;
+            if (BigInteger.Abs(actualChange) > BigInteger.Abs(expectedChange))
+                return BalanceValidationStatus.Rebasing;
+            return BalanceValidationStatus.Mismatch;
+        }
+
+        private static void ValidateErc721Ownership(BalanceChange change, Func<string, BigInteger, string> getErc721Owner)
+        {
+            if (getErc721Owner == null || !change.TokenId.HasValue)
+                return;
+
+            var actualOwner = getErc721Owner(change.TokenAddress, change.TokenId.Value);
+            change.ActualOwner = actualOwner;
+
+            var ownsToken = actualOwner?.Equals(change.Address, StringComparison.OrdinalIgnoreCase) == true;
+            var shouldOwnToken = change.Change > 0;
+
+            change.ValidationStatus = ownsToken == shouldOwnToken
+                ? BalanceValidationStatus.Verified
+                : BalanceValidationStatus.OwnerMismatch;
+        }
+
+        private static void ValidateErc1155Change(BalanceChange change, Func<string, string, BigInteger, BigInteger> getErc1155Balance)
+        {
+            if (getErc1155Balance == null || !change.TokenId.HasValue || !change.BalanceBefore.HasValue || !change.BalanceAfter.HasValue)
+                return;
+
+            RecordActualChangeAndVerdict(change);
+        }
+
+        private static void RecordActualChangeAndVerdict(BalanceChange change)
+        {
+            var actualChange = change.BalanceAfter.Value - change.BalanceBefore.Value;
+            change.ActualChange = actualChange;
+
+            change.ValidationStatus = actualChange == change.Change
+                ? BalanceValidationStatus.Verified
+                : BalanceValidationStatus.Mismatch;
         }
 
         private List<BalanceChange> ConsolidateBalanceChanges(List<BalanceChange> changes, string currentUserAddress)
@@ -447,7 +474,7 @@ namespace Nethereum.EVM.StateChanges
                     Address = c.Address?.ToLowerInvariant(),
                     c.Type,
                     TokenAddress = c.TokenAddress?.ToLowerInvariant(),
-                    TokenId = (c.Type == BalanceChangeType.ERC721 || c.Type == BalanceChangeType.ERC1155) ? c.TokenId : null
+                    TokenId = IsTokenIdPartOfIdentity(c.Type) ? c.TokenId : null
                 })
                 .Distinct()
                 .ToList();
@@ -459,38 +486,15 @@ namespace Nethereum.EVM.StateChanges
                         c.Address?.ToLowerInvariant() == key.Address &&
                         c.Type == key.Type &&
                         c.TokenAddress?.ToLowerInvariant() == key.TokenAddress &&
-                        ((c.Type != BalanceChangeType.ERC721 && c.Type != BalanceChangeType.ERC1155) || c.TokenId == key.TokenId))
+                        (!IsTokenIdPartOfIdentity(c.Type) || c.TokenId == key.TokenId))
                     .ToList();
 
                 if (groupItems.Count == 0) continue;
 
-                var first = groupItems[0];
-                BigInteger totalChange = BigInteger.Zero;
-                foreach (var item in groupItems)
-                {
-                    totalChange += item.Change;
-                }
-
+                var totalChange = SumChanges(groupItems);
                 if (totalChange == 0) continue;
 
-                grouped.Add(new BalanceChange
-                {
-                    Address = first.Address,
-                    AddressLabel = groupItems.Select(c => c.AddressLabel).FirstOrDefault(l => !string.IsNullOrEmpty(l)),
-                    Type = first.Type,
-                    TokenAddress = first.TokenAddress,
-                    TokenSymbol = groupItems.Select(c => c.TokenSymbol).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
-                    TokenDecimals = groupItems.Max(c => c.TokenDecimals),
-                    TokenId = first.TokenId,
-                    Change = totalChange,
-                    BalanceBefore = groupItems.Select(c => c.BalanceBefore).FirstOrDefault(b => b.HasValue),
-                    BalanceAfter = groupItems.Select(c => c.BalanceAfter).FirstOrDefault(b => b.HasValue),
-                    ActualChange = groupItems.Select(c => c.ActualChange).FirstOrDefault(a => a.HasValue),
-                    ActualOwner = groupItems.Select(c => c.ActualOwner).FirstOrDefault(o => !string.IsNullOrEmpty(o)),
-                    ValidationStatus = groupItems.Select(c => c.ValidationStatus)
-                        .FirstOrDefault(s => s != BalanceValidationStatus.NotValidated),
-                    IsCurrentUser = first.Address.IsTheSameAddress(currentUserAddress)
-                });
+                grouped.Add(MergeGroupedChanges(groupItems, totalChange, currentUserAddress));
             }
 
             return grouped
@@ -500,12 +504,52 @@ namespace Nethereum.EVM.StateChanges
                 .ToList();
         }
 
+        private static bool IsTokenIdPartOfIdentity(BalanceChangeType type) =>
+            type == BalanceChangeType.ERC721 || type == BalanceChangeType.ERC1155;
+
+        private static BigInteger SumChanges(List<BalanceChange> groupItems)
+        {
+            BigInteger totalChange = BigInteger.Zero;
+            foreach (var item in groupItems)
+            {
+                totalChange += item.Change;
+            }
+            return totalChange;
+        }
+
+        private static BalanceChange MergeGroupedChanges(List<BalanceChange> groupItems, BigInteger totalChange, string currentUserAddress)
+        {
+            var first = groupItems[0];
+
+            return new BalanceChange
+            {
+                Address = first.Address,
+                AddressLabel = groupItems.Select(c => c.AddressLabel).FirstOrDefault(l => !string.IsNullOrEmpty(l)),
+                Type = first.Type,
+                TokenAddress = first.TokenAddress,
+                TokenSymbol = groupItems.Select(c => c.TokenSymbol).FirstOrDefault(s => !string.IsNullOrEmpty(s)),
+                TokenDecimals = groupItems.Max(c => c.TokenDecimals),
+                TokenId = first.TokenId,
+                Change = totalChange,
+                BalanceBefore = groupItems.Select(c => c.BalanceBefore).FirstOrDefault(b => b.HasValue),
+                BalanceAfter = groupItems.Select(c => c.BalanceAfter).FirstOrDefault(b => b.HasValue),
+                ActualChange = groupItems.Select(c => c.ActualChange).FirstOrDefault(a => a.HasValue),
+                ActualOwner = groupItems.Select(c => c.ActualOwner).FirstOrDefault(o => !string.IsNullOrEmpty(o)),
+                ValidationStatus = groupItems.Select(c => c.ValidationStatus)
+                    .FirstOrDefault(s => s != BalanceValidationStatus.NotValidated),
+                IsCurrentUser = first.Address.IsTheSameAddress(currentUserAddress)
+            };
+        }
+
         private TransferEventType GetTransferEventType(DecodedLog log)
         {
             if (log == null) return TransferEventType.None;
 
             var filterLog = log.OriginalLog;
             if (filterLog == null) return TransferEventType.None;
+
+            if (filterLog.Address.IsTheSameAddress(AddressUtil.SYSTEM_ADDRESS))
+                return TransferEventType.None;
 
             if (ERC1155TransferSingleEvent.IsLogForEvent(filterLog))
                 return TransferEventType.ERC1155Single;

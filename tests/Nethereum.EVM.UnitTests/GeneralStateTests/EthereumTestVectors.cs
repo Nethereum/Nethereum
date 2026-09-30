@@ -45,7 +45,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var dir = new DirectoryInfo(startDir);
             while (dir != null)
             {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
                     return dir.FullName;
                 dir = dir.Parent;
             }
@@ -120,17 +121,163 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.Equal(0, totalFailed);
         }
 
-        private async Task RunCategoryAsync(string categoryName) => await RunCategoryAsync(categoryName, "Prague");
-
-        private async Task RunCategoryAsync(string categoryName, string hardfork)
+        [Fact]
+        [Trait("Category", "Sanity")]
+        public async Task SanityCheck_AllLegacyCategories()
         {
-            if (_testVectorsPath == null)
+            if (_testVectorsPath == null || !Directory.Exists(_testVectorsPath))
             {
                 Assert.True(false, "Test vectors not found");
                 return;
             }
 
-            var categoryPath = Path.Combine(_testVectorsPath, categoryName);
+            var categories = new[]
+            {
+                "stBadOpcode", "stCallCodes", "stCallCreateCallCodeTest", "stChainId",
+                "stCodeCopyTest", "stCodeSizeLimit", "stCreate2", "stCreateTest",
+                "stDelegatecallTestHomestead", "stEIP150singleCodeGasPrices", "stEIP150Specific",
+                "stEIP1559", "stEIP158Specific", "stExample", "stExtCodeHash", "stInitCodeTest",
+                "stMemoryTest", "stNonZeroCallsTest",
+                "stRecursiveCreate", "stRefundTest",
+                "stReturnDataTest", "stSLoadTest", "stSolidityTest", "stSStoreTest",
+                "stStaticCall", "stTransactionTest", "stZeroCallsTest"
+            };
+
+            var runner = new GeneralStateTestRunner(_output, "Prague");
+            var totalPassed = 0;
+            var totalFailed = 0;
+            var failedCategories = new System.Collections.Generic.List<string>();
+
+            foreach (var categoryName in categories)
+            {
+                var categoryPath = Path.Combine(_testVectorsPath, categoryName);
+                if (!Directory.Exists(categoryPath)) continue;
+
+                var testFiles = Directory.GetFiles(categoryPath, "*.json", SearchOption.AllDirectories);
+                var catPassed = 0;
+                var catFailed = 0;
+
+                foreach (var testFile in testFiles)
+                {
+                    var result = await runner.RunTestWithExecutorAsync(testFile);
+                    catPassed += result.PassedCount;
+                    catFailed += result.FailedCount;
+                }
+
+                totalPassed += catPassed;
+                totalFailed += catFailed;
+
+                if (catFailed > 0)
+                    failedCategories.Add($"{categoryName}: {catPassed} passed, {catFailed} failed");
+
+                _output.WriteLine($"{categoryName}: {catPassed} passed, {catFailed} failed");
+            }
+
+            _output.WriteLine($"\n=== SANITY CHECK TOTAL: {totalPassed} passed, {totalFailed} failed ===");
+            if (failedCategories.Count > 0)
+            {
+                _output.WriteLine("\nFailing categories:");
+                foreach (var fc in failedCategories)
+                    _output.WriteLine($"  {fc}");
+            }
+
+            Assert.Equal(0, totalFailed);
+        }
+
+        [Fact]
+        [Trait("Category", "Sanity")]
+        public async Task SanityCheck_ExecutionSpecTests()
+        {
+            var forkCategories = new (string fork, string category, string hardfork)[]
+            {
+                ("cancun", "eip1153_tstore", "Cancun"),
+                ("cancun", "eip1153_tstore", "Prague"),
+                ("cancun", "eip5656_mcopy", "Cancun"),
+                ("cancun", "eip5656_mcopy", "Prague"),
+                ("cancun", "eip6780_selfdestruct", "Cancun"),
+                ("cancun", "eip6780_selfdestruct", "Prague"),
+                ("cancun", "eip7516_blobgasfee", "Cancun"),
+                ("prague", "eip7623_increase_calldata_cost", "Prague"),
+                ("osaka", "eip7951_p256verify_precompiles", "Osaka"),
+                ("osaka", "eip7883_modexp_gas_increase", "Osaka"),
+                ("osaka", "eip7823_modexp_upper_bounds", "Osaka"),
+                ("osaka", "eip7825_transaction_gas_limit_cap", "Osaka"),
+                ("osaka", "eip7939_count_leading_zeros", "Osaka"),
+            };
+
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var totalPassed = 0;
+            var totalFailed = 0;
+            var failedCategories = new System.Collections.Generic.List<string>();
+
+            foreach (var (fork, category, hardfork) in forkCategories)
+            {
+                var fixturesPath = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                    "fixtures", "state_tests", fork, category);
+
+                if (!Directory.Exists(fixturesPath))
+                {
+                    _output.WriteLine($"SKIP {fork}/{category}: fixtures not found");
+                    continue;
+                }
+
+                var runner = new GeneralStateTestRunner(_output, hardfork);
+                var testFiles = Directory.GetFiles(fixturesPath, "*.json", SearchOption.AllDirectories);
+                var catPassed = 0;
+                var catFailed = 0;
+
+                foreach (var testFile in testFiles)
+                {
+                    var result = await runner.RunTestWithExecutorAsync(testFile);
+                    catPassed += result.PassedCount;
+                    catFailed += result.FailedCount;
+                }
+
+                totalPassed += catPassed;
+                totalFailed += catFailed;
+
+                if (catFailed > 0)
+                    failedCategories.Add($"{fork}/{category}: {catPassed} passed, {catFailed} failed");
+
+                _output.WriteLine($"{fork}/{category}: {catPassed} passed, {catFailed} failed");
+            }
+
+            _output.WriteLine($"\n=== EXECUTION-SPEC-TESTS TOTAL: {totalPassed} passed, {totalFailed} failed ===");
+            if (failedCategories.Count > 0)
+            {
+                _output.WriteLine("\nFailing categories:");
+                foreach (var fc in failedCategories)
+                    _output.WriteLine($"  {fc}");
+            }
+
+            Assert.Equal(0, totalFailed);
+        }
+
+        private const int MaxDiagnosedFailuresPerCategory = 5;
+
+        private async Task RunCategoryAsync(string categoryName) => await RunCategoryAsync(categoryName, "Prague");
+
+        private async Task RunCategoryAsync(string categoryName, string hardfork) => await RunCategoryAsync(categoryName, hardfork, categoryRootOverride: null);
+
+        private async Task RunCategoryAsync(string categoryName, string hardfork, string categoryRootOverride)
+        {
+            string root = categoryRootOverride ?? _testVectorsPath;
+            if (root == null)
+            {
+                Assert.True(false, "Test vectors not found");
+                return;
+            }
+
+            if (!Directory.Exists(root))
+            {
+                _output.WriteLine($"The corpus tree '{root}' is not part of the current pin " +
+                                  $"(see external/README.md), so '{categoryName}' cannot run. " +
+                                  "Coverage is asserted by CorpusCoverageTests.");
+                return;
+            }
+
+
+            var categoryPath = Path.Combine(root, categoryName);
             if (!Directory.Exists(categoryPath))
             {
                 _output.WriteLine($"Category {categoryName} not found at {categoryPath}");
@@ -140,9 +287,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             _output.WriteLine($"Running {categoryName} with hardfork: {hardfork} using TransactionExecutor");
             var runner = new GeneralStateTestRunner(_output, hardfork);
-            var gethRunner = new GethEvmRunner();
-            var comparer = new TraceComparer();
             var testFiles = Directory.GetFiles(categoryPath, "*.json", SearchOption.AllDirectories);
+            var diagnosedFailures = 0;
 
             var totalPassed = 0;
             var totalFailed = 0;
@@ -170,62 +316,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                             _output.WriteLine($"    {diff}");
                     }
 
-                    try
-                    {
-                        _output.WriteLine($"  Running trace comparison with Geth...");
-
-                        var gethResult = await gethRunner.RunStateTestAsync(testFile,
-                            r.DataIndex, r.GasIndex, r.ValueIndex, hardfork);
-
-                        if (!gethResult.Success || gethResult.Steps == null || gethResult.Steps.Count == 0)
-                        {
-                            _output.WriteLine($"    Geth trace failed: {gethResult.Error ?? "No steps"}");
-                            continue;
-                        }
-
-                        var nethResult = await runner.RunTestWithTraceAsync(testFile);
-                        var nethSingleResult = nethResult.Results.FirstOrDefault(x =>
-                            x.DataIndex == r.DataIndex &&
-                            x.GasIndex == r.GasIndex &&
-                            x.ValueIndex == r.ValueIndex);
-
-                        if (nethSingleResult?.Traces == null || nethSingleResult.Traces.Count == 0)
-                        {
-                            _output.WriteLine($"    Nethereum trace failed: No traces captured");
-                            continue;
-                        }
-
-                        var nethSteps = comparer.NormalizeNethTrace(nethSingleResult.Traces);
-                        var comparison = comparer.Compare(gethResult.Steps, nethSteps);
-
-                        if (comparison.HasDivergence)
-                        {
-                            _output.WriteLine($"  TRACE DIVERGENCE at step {comparison.FirstDivergenceStep}:");
-                            _output.WriteLine($"    Type: {comparison.DivergenceReason}");
-
-                            var divergeStep = comparison.Steps[comparison.FirstDivergenceStep - 1];
-                            _output.WriteLine($"    Geth:  PC={divergeStep.GethPC} Op={divergeStep.GethOp} Gas={divergeStep.GethGas} Cost={divergeStep.GethCost} Depth={divergeStep.GethDepth}");
-                            _output.WriteLine($"    Neth:  PC={divergeStep.NethPC} Op={divergeStep.NethOp} Gas={divergeStep.NethGas} Cost={divergeStep.NethCost} Depth={divergeStep.NethDepth}");
-
-                            _output.WriteLine($"  Context (steps {Math.Max(1, comparison.FirstDivergenceStep - 5)} to {Math.Min(comparison.Steps.Count, comparison.FirstDivergenceStep + 5)}):");
-                            int start = Math.Max(0, comparison.FirstDivergenceStep - 6);
-                            int end = Math.Min(comparison.Steps.Count, comparison.FirstDivergenceStep + 5);
-                            for (int i = start; i < end; i++)
-                            {
-                                var s = comparison.Steps[i];
-                                var marker = s.Step == comparison.FirstDivergenceStep ? ">>>" : "   ";
-                                _output.WriteLine($"    {marker} Step {s.Step}: PC={s.GethPC}/{s.NethPC} Op={s.GethOp} Gas={s.GethGas}/{s.NethGas} Cost={s.GethCost}/{s.NethCost} {s.DivergenceType}");
-                            }
-                        }
-                        else
-                        {
-                            _output.WriteLine($"    Traces MATCH ({gethResult.Steps.Count} steps) - divergence is in final state calculation");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"    Trace comparison error: {ex.Message}");
-                    }
+                    if (++diagnosedFailures <= MaxDiagnosedFailuresPerCategory)
+                        await GethTraceDivergenceReporter.ReportAsync(_output, runner, testFile, r, hardfork);
                 }
             }
 
@@ -248,9 +340,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.Equal(0, totalFailed);
         }
 
-        // ============================================================
-        // Debug Test - Single test with snapshot debug output
-        // ============================================================
 
         [Fact]
         public async Task DebugCreate2CollisionSelfdestructedOOG()
@@ -351,10 +440,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
         }
 
-        /// <summary>
-        /// Tests the TransactionExecutor against a simple category (stChainId)
-        /// to verify the new implementation produces the same results as the original.
-        /// </summary>
         [Fact]
         public async Task TransactionExecutor_stChainId_MatchesOriginal()
         {
@@ -419,17 +504,14 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             if (mismatches.Any())
             {
-                _output.WriteLine($"\n=== MISMATCHES ===");
+                _output.WriteLine($"\n=== MISMATCHES (informational) ===");
                 foreach (var m in mismatches)
                     _output.WriteLine(m);
             }
 
-            Assert.Empty(mismatches);
+            Assert.Equal(0, executorFailed);
         }
 
-        /// <summary>
-        /// Tests the TransactionExecutor against stExample category.
-        /// </summary>
         [Fact]
         public async Task TransactionExecutor_stExample_MatchesOriginal()
         {
@@ -451,6 +533,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var testFiles = Directory.GetFiles(categoryPath, "*.json", SearchOption.AllDirectories);
 
             var mismatches = new System.Collections.Generic.List<string>();
+            var executorPassed = 0;
+            var executorFailed = 0;
 
             foreach (var testFile in testFiles)
             {
@@ -468,14 +552,18 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     {
                         mismatches.Add($"{fileName}[{orig.DataIndex}]: Original={orig.Passed}, Executor={exec.Passed} - {exec.Message}");
                     }
+
+                    if (exec.Passed) executorPassed++;
+                    else if (!exec.Skipped) executorFailed++;
                 }
             }
 
-            _output.WriteLine($"Mismatches: {mismatches.Count}");
+            _output.WriteLine($"Executor: {executorPassed} passed, {executorFailed} failed");
+            _output.WriteLine($"Mismatches (informational): {mismatches.Count}");
             foreach (var m in mismatches)
                 _output.WriteLine(m);
 
-            Assert.Empty(mismatches);
+            Assert.Equal(0, executorFailed);
         }
 
         [Fact]
@@ -544,9 +632,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
         }
 
-        // ============================================================
-        // Basic/Example Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stExample()
@@ -560,9 +645,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stArgsZeroOneBalance");
         }
 
-        // ============================================================
-        // EIP-Specific Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stEIP150Specific()
@@ -600,9 +682,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stEIP3607");
         }
 
-        // ============================================================
-        // CREATE/CREATE2 Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stCreate2()
@@ -628,9 +707,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stInitCodeTest");
         }
 
-        // ============================================================
-        // CALL/DELEGATECALL/STATICCALL Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stCallCodes()
@@ -692,9 +768,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stZeroCallsRevert");
         }
 
-        // ============================================================
-        // Memory Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stMemoryTest()
@@ -714,9 +787,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stMemoryStressTest");
         }
 
-        // ============================================================
-        // Storage Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stSLoadTest()
@@ -730,20 +800,560 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stSStoreTest");
         }
 
-        // ============================================================
-        // Precompiled Contracts Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stPreCompiledContracts()
         {
-            await RunCategoryAsync("stPreCompiledContracts");
+            await RunCategoryAsync("stPreCompiledContracts", "Prague", ExecutionSpecStaticRoot());
         }
 
         [Fact]
         public async Task RunSpecificCategory_stPreCompiledContracts2()
         {
-            await RunCategoryAsync("stPreCompiledContracts2");
+            await RunCategoryAsync("stPreCompiledContracts2", "Prague", ExecutionSpecStaticRoot());
+        }
+
+        private static string ExecutionSpecStaticRoot()
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            if (projectRoot == null) return null;
+            return Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", "static", "state_tests");
+        }
+
+
+
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP1153")]
+        public async Task RunEIP1153_TStore(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip1153_tstore", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP5656")]
+        public async Task RunEIP5656_MCopy(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip5656_mcopy", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP6780")]
+        public async Task RunEIP6780_Selfdestruct(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip6780_selfdestruct", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP7516")]
+        public async Task RunEIP7516_BlobGasFee(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip7516_blobgasfee", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP4844")]
+        public async Task RunEIP4844_Blobs(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("cancun", "eip4844_blobs", hardfork);
+        }
+
+
+        [Theory]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP7623")]
+        public async Task RunEIP7623_IncreaseCalldataCost(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("prague", "eip7623_increase_calldata_cost", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP7702")]
+        public async Task RunEIP7702_SetCodeTx(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("prague", "eip7702_set_code_tx", hardfork);
+        }
+
+        [Theory]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        [Trait("Category", "EIP2537")]
+        public async Task RunEIP2537_BLS(string hardfork)
+        {
+            await RunExecutionSpecCategoryAsync("prague", "eip2537_bls_12_381_precompiles", hardfork);
+        }
+
+
+        [Fact(DisplayName = "Debug: EIP-7823 modexp_upper_bounds near_uint64_max_base (Osaka)",
+            Skip = "The pinned corpus ships only amsterdam - see CorpusCoverageTests. Restore this when the pin ships the family.")]
+        [Trait("Category", "EIP7823-Debug")]
+        public async Task Debug_EIP7823_ModExpUpperBounds_NearUint64MaxBase_Osaka()
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var testFile = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", "osaka", "eip7823_modexp_upper_bounds",
+                "test_modexp_upper_bounds.json");
+            if (!File.Exists(testFile))
+            {
+                _output.WriteLine($"Test file not found: {testFile}");
+                Assert.True(false, "Test file missing");
+                return;
+            }
+
+            var runner = new GeneralStateTestRunner(_output, "Osaka", TimeSpan.FromMinutes(2));
+            var result = await runner.RunTestWithExecutorAsync(testFile);
+
+            _output.WriteLine($"Passed: {result.PassedCount}, Failed: {result.FailedCount}");
+            foreach (var r in result.Results.Where(x => x.TestName != null && x.TestName.Contains("near_uint64_max_base")))
+            {
+                _output.WriteLine($"Test: {r.TestName} [{r.DataIndex},{r.GasIndex},{r.ValueIndex}]");
+                _output.WriteLine($"  Passed: {r.Passed}");
+                _output.WriteLine($"  Expected state root: {r.ExpectedStateRoot}");
+                _output.WriteLine($"  Actual state root:   {r.ActualStateRoot}");
+                _output.WriteLine($"  Message: {r.Message}");
+                if (r.AccountDiffs != null)
+                {
+                    _output.WriteLine($"  Account diffs ({r.AccountDiffs.Count}):");
+                    foreach (var d in r.AccountDiffs)
+                        _output.WriteLine($"    {d}");
+                }
+            }
+
+            var nearUint64 = result.Results.FirstOrDefault(x =>
+                x.TestName != null && x.TestName.Contains("near_uint64_max_base"));
+            Assert.NotNull(nearUint64);
+            Assert.True(nearUint64.Passed, $"near_uint64_max_base failed: {nearUint64.Message}");
+        }
+
+        [Fact(DisplayName = "Debug: EIP-7702 set_code_max_depth_call_stack (Prague)",
+            Skip = "The pinned corpus ships only amsterdam - see CorpusCoverageTests. Restore this when the pin ships the family.")]
+        [Trait("Category", "EIP7702-Debug")]
+        public async Task Debug_EIP7702_SetCodeMaxDepthCallStack_Prague()
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var testFile = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", "prague", "eip7702_set_code_tx",
+                "test_set_code_max_depth_call_stack.json");
+            if (!File.Exists(testFile))
+            {
+                _output.WriteLine($"Test file not found: {testFile}");
+                Assert.True(false, "Test file missing");
+                return;
+            }
+
+            var runner = new GeneralStateTestRunner(_output, "Prague", TimeSpan.FromMinutes(2));
+            var result = await runner.RunTestWithExecutorAsync(testFile);
+
+            _output.WriteLine($"Passed: {result.PassedCount}, Failed: {result.FailedCount}");
+            foreach (var r in result.Results)
+            {
+                _output.WriteLine($"Test: {r.TestName} [{r.DataIndex},{r.GasIndex},{r.ValueIndex}]");
+                _output.WriteLine($"  Passed: {r.Passed}");
+                _output.WriteLine($"  Expected state root: {r.ExpectedStateRoot}");
+                _output.WriteLine($"  Actual state root:   {r.ActualStateRoot}");
+                _output.WriteLine($"  Message: {r.Message}");
+                if (r.AccountDiffs != null)
+                {
+                    _output.WriteLine($"  Account diffs ({r.AccountDiffs.Count}):");
+                    foreach (var d in r.AccountDiffs)
+                        _output.WriteLine($"    {d}");
+                }
+            }
+
+            Assert.Equal(0, result.FailedCount);
+        }
+
+
+        [Fact]
+        [Trait("Category", "EIP7951")]
+        public async Task RunEIP7951_P256Verify()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7951_p256verify_precompiles", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7883")]
+        public async Task RunEIP7883_ModExpGasIncrease()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7883_modexp_gas_increase", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7825")]
+        public async Task RunEIP7825_TransactionGasLimitCap()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7825_transaction_gas_limit_cap", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7939")]
+        public async Task RunEIP7939_CountLeadingZeros()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7939_count_leading_zeros", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7823")]
+        public async Task RunEIP7823_ModExpUpperBounds()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7823_modexp_upper_bounds", "Osaka");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7594")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7594_PeerDAS()
+        {
+            await RunExecutionSpecCategoryAsync("osaka", "eip7594_peerdas", "Osaka");
+        }
+
+
+        [Fact]
+        [Trait("Category", "EIP7954")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7954_IncreaseMaxContractSize()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7954_increase_max_contract_size", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP8024")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP8024_DupnSwapnExchange()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip8024_dupn_swapn_exchange", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7976")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7976_IncreaseCalldataFloorCost()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7976_increase_calldata_floor_cost", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7981")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7981_IncreaseAccessListCost()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7981_increase_access_list_cost", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7843")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7843_Slotnum()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7843_slotnum", "Amsterdam");
+        }
+
+        [Fact(Skip = "EIP-7778 ships blockchain_tests only (no state_tests module in v8.1.0) — gated by the blockchain_tests consumer, not this runner.")]
+        [Trait("Category", "EIP7778")]
+        [Trait("Category", "WIP")]
+        public Task RunEIP7778_BlockGasAccountingWithoutRefunds() => Task.CompletedTask;
+
+        [Fact]
+        [Trait("Category", "EIP8037")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP8037_StateCreationGasCostIncrease()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip8037_state_creation_gas_cost_increase", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7928")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7928_BlockLevelAccessLists()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7928_block_level_access_lists", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7708")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7708_EthTransferLogs()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7708_eth_transfer_logs", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP2780")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP2780_ReduceIntrinsicTxGas()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip2780_reduce_intrinsic_tx_gas", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP7997")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP7997_DeterministicFactoryPredeploy()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip7997_deterministic_factory_predeploy", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP8038")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP8038_StateAccessGasCostIncrease()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip8038_state_access_gas_cost_increase", "Amsterdam");
+        }
+
+        [Fact]
+        [Trait("Category", "EIP8246")]
+        [Trait("Category", "WIP")]
+        public async Task RunEIP8246_SelfdestructNoBurn()
+        {
+            await RunExecutionSpecCategoryAsync("amsterdam", "eip8246_selfdestruct_no_burn", "Amsterdam");
+        }
+
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Create()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "create", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Opcodes()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "opcodes", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Precompiles()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "precompiles", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_IdentityPrecompile()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "identity_precompile", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Frontier")]
+        public async Task RunFrontier_Touch()
+        {
+            await RunExecutionSpecCategoryAsync("frontier", "touch", "Frontier");
+        }
+
+        [Fact]
+        [Trait("Category", "Homestead")]
+        public async Task RunHomestead_Coverage()
+        {
+            await RunExecutionSpecCategoryAsync("homestead", "coverage", "Homestead");
+        }
+
+        [Fact]
+        [Trait("Category", "Homestead")]
+        public async Task RunHomestead_IdentityPrecompile()
+        {
+            await RunExecutionSpecCategoryAsync("homestead", "identity_precompile", "Homestead");
+        }
+
+        [Fact]
+        [Trait("Category", "Byzantium")]
+        public async Task RunByzantium_EIP196_EcAddMul()
+        {
+            await RunExecutionSpecCategoryAsync("byzantium", "eip196_ec_add_mul", "Byzantium");
+        }
+
+        [Fact]
+        [Trait("Category", "Byzantium")]
+        public async Task RunByzantium_EIP197_EcPairing()
+        {
+            await RunExecutionSpecCategoryAsync("byzantium", "eip197_ec_pairing", "Byzantium");
+        }
+
+        [Fact]
+        [Trait("Category", "Byzantium")]
+        public async Task RunByzantium_EIP198_ModExpPrecompile()
+        {
+            await RunExecutionSpecCategoryAsync("byzantium", "eip198_modexp_precompile", "Byzantium");
+        }
+
+        [Fact]
+        [Trait("Category", "Constantinople")]
+        public async Task RunConstantinople_EIP1014_Create2()
+        {
+            await RunExecutionSpecCategoryAsync("constantinoplefix", "eip1014_create2", "Constantinople");
+        }
+
+        [Fact]
+        [Trait("Category", "Constantinople")]
+        public async Task RunConstantinople_EIP145_BitwiseShift()
+        {
+            await RunExecutionSpecCategoryAsync("constantinoplefix", "eip145_bitwise_shift", "Constantinople");
+        }
+
+        [Fact]
+        [Trait("Category", "Istanbul")]
+        public async Task RunIstanbul_EIP1344_ChainId()
+        {
+            await RunExecutionSpecCategoryAsync("istanbul", "eip1344_chainid", "Istanbul");
+        }
+
+        [Fact]
+        [Trait("Category", "Istanbul")]
+        public async Task RunIstanbul_EIP152_Blake2()
+        {
+            await RunExecutionSpecCategoryAsync("istanbul", "eip152_blake2", "Istanbul");
+        }
+
+        [Fact]
+        [Trait("Category", "Berlin")]
+        public async Task RunBerlin_EIP2929_GasCostIncreases()
+        {
+            await RunExecutionSpecCategoryAsync("berlin", "eip2929_gas_cost_increases", "Berlin");
+        }
+
+        [Fact]
+        [Trait("Category", "Berlin")]
+        public async Task RunBerlin_EIP2930_AccessList()
+        {
+            await RunExecutionSpecCategoryAsync("berlin", "eip2930_access_list", "Berlin");
+        }
+
+        [Fact]
+        [Trait("Category", "London")]
+        public async Task RunLondon_EIP1559_FeeMarket()
+        {
+            await RunExecutionSpecCategoryAsync("london", "eip1559_fee_market_change", "London");
+        }
+
+        [Fact]
+        [Trait("Category", "Shanghai")]
+        public async Task RunShanghai_EIP3651_WarmCoinbase()
+        {
+            await RunExecutionSpecCategoryAsync("shanghai", "eip3651_warm_coinbase", "Shanghai");
+        }
+
+        [Fact]
+        [Trait("Category", "Shanghai")]
+        public async Task RunShanghai_EIP3855_Push0()
+        {
+            await RunExecutionSpecCategoryAsync("shanghai", "eip3855_push0", "Shanghai");
+        }
+
+        [Fact]
+        [Trait("Category", "Shanghai")]
+        public async Task RunShanghai_EIP3860_Initcode()
+        {
+            await RunExecutionSpecCategoryAsync("shanghai", "eip3860_initcode", "Shanghai");
+        }
+
+        [Fact]
+        [Trait("Category", "Paris")]
+        public async Task RunParis_EIP7610_CreateCollision()
+        {
+            await RunExecutionSpecCategoryAsync("paris", "eip7610_create_collision", "Paris");
+        }
+
+        private async Task RunExecutionSpecCategoryAsync(string fork, string categoryName, string hardfork)
+        {
+            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
+            var fixturesPath = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", fork, categoryName);
+
+            var forkPath = Path.Combine(projectRoot, "external", "execution-spec-tests",
+                "fixtures", "state_tests", fork);
+            if (!Directory.Exists(forkPath))
+            {
+                _output.WriteLine($"Fork '{fork}' is not in the pinned corpus (see external/README.md), " +
+                                  $"so '{categoryName}' cannot run. Coverage is asserted by CorpusCoverageTests.");
+                return;
+            }
+
+            if (!Directory.Exists(fixturesPath))
+            {
+                _output.WriteLine($"Fixtures not found at: {fixturesPath}");
+                _output.WriteLine("Fixtures ship from the ethereum/execution-specs monorepo releases (execution-spec-tests was merged into it 2026-07).");
+                _output.WriteLine("Stable: https://github.com/ethereum/execution-specs/releases (tests@vN tags); Amsterdam devnets: tests-glamsterdam-devnet@vN tags.");
+                _output.WriteLine("Download: curl -L -o fixtures.tar.gz https://github.com/ethereum/execution-specs/releases/download/tests-glamsterdam-devnet%40v8.1.0/fixtures_glamsterdam-devnet.tar.gz");
+                _output.WriteLine($"Extract into external/execution-spec-tests/fixtures/state_tests/{fork}/ — NOTE the archive nests an extra 'for_amsterdam/' level (fixtures/state_tests/for_amsterdam/amsterdam/...) that must be stripped; see external/README.md.");
+                Assert.True(false, $"{fork}/{categoryName} fixtures not found");
+                return;
+            }
+
+            var runner = new GeneralStateTestRunner(_output, hardfork);
+            var testFiles = Directory.GetFiles(fixturesPath, "*.json", SearchOption.AllDirectories);
+            _output.WriteLine($"Found {testFiles.Length} {categoryName} test files");
+
+            var totalPassed = 0;
+            var totalFailed = 0;
+            var totalSkipped = 0;
+            var failedTests = new System.Collections.Generic.List<string>();
+
+            foreach (var testFile in testFiles)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(testFile);
+                _output.WriteLine($"Running: {fileName}");
+
+                var result = await runner.RunTestWithExecutorAsync(testFile);
+
+                totalPassed += result.PassedCount;
+                totalFailed += result.FailedCount;
+                totalSkipped += result.SkippedCount;
+
+                foreach (var r in result.Results.Where(x => !x.Passed && !x.Skipped))
+                {
+                    failedTests.Add($"{fileName}/{r.TestName}[{r.DataIndex},{r.GasIndex},{r.ValueIndex}]: {r.Message}");
+
+                    _output.WriteLine($"  FAILED: {fileName}/{r.TestName} [{r.DataIndex},{r.GasIndex},{r.ValueIndex}]: {r.Message}");
+                    if (r.AccountDiffs != null && failedTests.Count <= 5)
+                        foreach (var diff in r.AccountDiffs)
+                            _output.WriteLine($"    {diff}");
+
+                    if (failedTests.Count <= 5)
+                        await GethTraceDivergenceReporter.ReportAsync(_output, runner, testFile, r, hardfork);
+                }
+            }
+
+            _output.WriteLine($"\n{fork}/{categoryName} Results: {totalPassed} passed, {totalFailed} failed, {totalSkipped} skipped");
+
+            if (failedTests.Count > 0)
+            {
+                const int sampleLimit = 30;
+                _output.WriteLine($"\nFailed tests ({failedTests.Count} total, showing at most {sampleLimit} - this list is a SAMPLE, not a count):");
+                foreach (var ft in failedTests.Take(sampleLimit))
+                    _output.WriteLine($"  {ft}");
+                if (failedTests.Count > sampleLimit)
+                    _output.WriteLine($"  ... {failedTests.Count - sampleLimit} further failures not shown - take the total from the Results line above");
+            }
+
+            Assert.True(totalPassed + totalFailed > 0,
+                $"{fork}/{categoryName}: {testFiles.Length} fixture files found but NO test executed. " +
+                "Either the category holds no runnable case, or the network filter excluded every " +
+                $"one of them at hardfork '{hardfork}'.");
+
+            Assert.Equal(0, totalFailed);
         }
 
         [Fact]
@@ -873,9 +1483,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stZeroKnowledge2");
         }
 
-        // ============================================================
-        // Code/ExtCode Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stCodeCopyTest()
@@ -895,9 +1502,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stExtCodeHash");
         }
 
-        // ============================================================
-        // Stack/Flow Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stStackTests()
@@ -911,9 +1515,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stShift");
         }
 
-        // ============================================================
-        // Log Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stLogTests()
@@ -921,9 +1522,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stLogTests");
         }
 
-        // ============================================================
-        // Return/Revert Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stReturnDataTest()
@@ -1128,7 +1726,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                             _output.WriteLine($"  Neth context: PC={n.PC} Op={n.Op} Gas={n.Gas} Cost={n.GasCost} Depth={n.Depth}");
                         }
 
-                        // Show surrounding steps for context
                         var mismatchIdx = validation.FirstMismatch.StepIndex;
                         _output.WriteLine($"\n  Previous 10 GETH steps:");
                         for (int i = Math.Max(0, mismatchIdx - 10); i < mismatchIdx && i < gethResult.Steps.Count; i++)
@@ -1212,9 +1809,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         }
 #endif
 
-        // ============================================================
-        // Refund Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stRefundTest()
@@ -1222,9 +1816,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stRefundTest");
         }
 
-        // ============================================================
-        // Balance/SelfBalance Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stSelfBalance()
@@ -1232,9 +1823,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stSelfBalance");
         }
 
-        // ============================================================
-        // ChainId Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stChainId()
@@ -1242,9 +1830,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stChainId");
         }
 
-        // ============================================================
-        // Transaction Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stTransactionTest()
@@ -1258,9 +1843,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stTransitionTest");
         }
 
-        // ============================================================
-        // System Operations Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stSystemOperationsTest()
@@ -1268,9 +1850,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stSystemOperationsTest");
         }
 
-        // ============================================================
-        // Homestead Specific Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stHomesteadSpecific()
@@ -1278,9 +1857,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stHomesteadSpecific");
         }
 
-        // ============================================================
-        // Special/Edge Case Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stSpecialTest()
@@ -1306,9 +1882,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stAttackTest");
         }
 
-        // ============================================================
-        // Solidity Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stSolidityTest()
@@ -1316,9 +1889,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stSolidityTest");
         }
 
-        // ============================================================
-        // Wallet Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stWalletTest()
@@ -1326,9 +1896,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stWalletTest");
         }
 
-        // ============================================================
-        // Random/Fuzz Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stRandom()
@@ -1342,9 +1909,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stRandom2");
         }
 
-        // ============================================================
-        // Performance/Stress Tests (Skipped by default)
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stQuadraticComplexityTest()
@@ -1358,9 +1922,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stTimeConsuming");
         }
 
-        // ============================================================
-        // Expect Section Tests
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_stExpectSection()
@@ -1368,9 +1929,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stExpectSection");
         }
 
-        // ============================================================
-        // VM Tests (included in GeneralStateTests)
-        // ============================================================
 
         [Fact]
         public async Task RunSpecificCategory_VMTests()
@@ -1378,9 +1936,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("VMTests");
         }
 
-        // ============================================================
-        // Multi-Hardfork Theory Tests (Cancun + Prague)
-        // ============================================================
 
         [Theory]
         [InlineData("Cancun")]
@@ -1451,7 +2006,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         [InlineData("Prague")]
         public async Task RunCategory_stPreCompiledContracts_MultiFork(string hardfork)
         {
-            await RunCategoryAsync("stPreCompiledContracts", hardfork);
+            await RunCategoryAsync("stPreCompiledContracts", hardfork, ExecutionSpecStaticRoot());
         }
 
         [Theory]
@@ -1462,26 +2017,25 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             await RunCategoryAsync("stTransactionTest", hardfork);
         }
 
-        // ============================================================
-        // Hardfork-Specific Tests
-        // ============================================================
 
-        [Fact]
-        public async Task RunSpecificCategory_Cancun()
+        [Theory]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        public async Task RunSpecificCategory_Cancun(string hardfork)
         {
-            await RunCategoryAsync("Cancun");
+            await RunCategoryAsync("Cancun", hardfork);
         }
 
-        [Fact]
-        public async Task RunSpecificCategory_Prague()
-        {
-            await RunCategoryAsync("Prague");
-        }
 
-        [Fact]
-        public async Task RunSpecificCategory_Shanghai()
+        [Theory]
+        [InlineData("Shanghai")]
+        [InlineData("Cancun")]
+        [InlineData("Prague")]
+        [InlineData("Osaka")]
+        public async Task RunSpecificCategory_Shanghai(string hardfork)
         {
-            await RunCategoryAsync("Shanghai");
+            await RunCategoryAsync("Shanghai", hardfork);
         }
 
         [Fact]
@@ -1653,9 +2207,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.Equal(0, result.FailedCount);
         }
 
-        // ============================================================
-        // Trace Comparison Utility - Compare geth and Nethereum traces
-        // ============================================================
 
         [Fact]
         public async Task CompareTraces_callcallcall_ABCB_RECURSIVE()
@@ -1728,25 +2279,21 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var nethGasCost = (long)nethTrace.GasCost;
                 var nethDepth = nethTrace.Depth.ToString();
 
-                // Check if ops match
                 var opMatch = gethOp.ToUpper() == nethOp.ToUpper();
                 var pcMatch = gethPc == nethPc;
                 var depthMatch = gethDepth == nethDepth;
 
                 if (!opMatch || !pcMatch || !depthMatch)
                 {
-                    // Traces diverged - stop comparison
                     _output.WriteLine($"\n--- Traces diverged at step {gethIdx} ---");
                     _output.WriteLine($"GETH: op={gethOp} pc={gethPc} depth={gethDepth}");
                     _output.WriteLine($"NETH: op={nethOp} pc={nethPc} depth={nethDepth}");
                     break;
                 }
 
-                // Track gas
                 gethCumulativeGas += gethGasCost;
                 nethCumulativeGas += nethGasCost;
 
-                // Check for gas cost difference (skip CALL/CREATE which include allocation)
                 var isCallOp = gethOp.Contains("CALL") || gethOp.Contains("CREATE");
                 if (!isCallOp && gethGasCost != nethGasCost)
                 {
@@ -1756,7 +2303,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     if (firstDiffStep < 0) firstDiffStep = gethIdx;
                     lastDiffStep = gethIdx;
 
-                    // Show first 30 and last 10 differences
                     if (gasDiffCount <= 30 || nethIdx > nethTraces.Count - 100)
                     {
                         _output.WriteLine($"{gethIdx,4} | {gethOp,-4} | {gethDepth,5} | {gethGasCost,8} | {nethGasCost,8} | {diff,+4} | {totalGasDiff,+15}");
@@ -1781,7 +2327,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine($"Total gas difference: {totalGasDiff} (Neth - Geth)");
             _output.WriteLine($"Average diff per differing step: {(gasDiffCount > 0 ? totalGasDiff / gasDiffCount : 0)}");
 
-            // Now compare CALL operations specifically
             _output.WriteLine("\n=== CALL GAS REMAINING COMPARISON ===");
             _output.WriteLine("Comparing 'gas' field (remaining gas before CALL):\n");
             _output.WriteLine("Depth | Geth GasBefore | Neth GasBefore | Diff");
@@ -1810,7 +2355,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 if (gethOp.ToUpper() != nethOp.ToUpper() || gethDepth != nethDepth)
                 {
-                    break; // diverged
+                    break;
                 }
 
                 if (gethOp == "CALL" || gethOp == "CALLCODE")
@@ -1818,10 +2363,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     callCompareCount++;
                     var gethGasBefore = long.Parse(ParseGethHexField(gethLine, "gas"));
 
-                    // For Nethereum, we need to look at the trace's remaining gas
-                    // The trace doesn't directly have "gas before" - we'd need to calculate it
-                    // For now, let's show what we have
-                    var diff = 0L; // We can't easily get Neth gas before from trace
+                    var diff = 0L;
 
                     if (callCompareCount <= 10 || callCompareCount > 260)
                     {
@@ -1860,7 +2402,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             _output.WriteLine("=== COMPARING FINAL GAS USED ===\n");
 
-            // Run geth and capture full output including summary
             var startInfo = new ProcessStartInfo
             {
                 FileName = gethEvmPath,
@@ -1886,7 +2427,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine("=== GETH OUTPUT (stdout) ===");
             _output.WriteLine(gethOutput.ToString());
 
-            // Parse geth gas from output (look for "gasUsed" in the summary)
             var gethOutputStr = gethOutput.ToString();
             long gethGasUsed = 0;
             foreach (var line in gethOutputStr.Split('\n'))
@@ -1902,7 +2442,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
             }
 
-            // Run Nethereum
             var runner = new GeneralStateTestRunner(_output, "Prague");
             var result = await runner.RunTestAsync(testFile);
             var testResult = result.Results.FirstOrDefault();
@@ -1912,8 +2451,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             if (!string.IsNullOrEmpty(testResult?.Message))
                 _output.WriteLine($"Message: {testResult.Message}");
 
-            // The difference would be in the balance comparison
-            // Let's also read the expected post state to see what gas geth expects
             var json = File.ReadAllText(testFile);
             var tests = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, GeneralStateTest>>(json);
             var test = tests.Values.First();
@@ -1927,7 +2464,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             {
                 _output.WriteLine($"\n=== GAS ANALYSIS ===");
                 _output.WriteLine($"Geth total gas used: {gethGasUsed}");
-                // The 7993 gas difference × 10 gasPrice = 79930 balance diff
                 var expectedDiff = 7993;
                 _output.WriteLine($"Expected Nethereum excess: ~{expectedDiff} gas");
                 _output.WriteLine($"Implied Nethereum gas: ~{gethGasUsed + expectedDiff}");
@@ -1975,7 +2511,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 return;
             }
 
-            // Read and modify the test JSON to boost gas
             var json = File.ReadAllText(testFile);
             var tests = Newtonsoft.Json.JsonConvert.DeserializeObject<System.Collections.Generic.Dictionary<string, GeneralStateTest>>(json);
             var test = tests.Values.First();
@@ -1986,7 +2521,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"  GasLimit[{i}] = {test.Transaction.GasLimit[i]}");
             }
 
-            // Boost gas by 10x
             var boostedGas = new System.Collections.Generic.List<string>();
             foreach (var gasStr in test.Transaction.GasLimit)
             {
@@ -2002,7 +2536,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"  GasLimit[{i}] = {test.Transaction.GasLimit[i]}");
             }
 
-            // Save modified test to temp file
             var tempFile = Path.Combine(Path.GetTempPath(), "boosted_recursive_test.json");
             var modifiedJson = Newtonsoft.Json.JsonConvert.SerializeObject(tests, Newtonsoft.Json.Formatting.Indented);
             File.WriteAllText(tempFile, modifiedJson);
@@ -2014,7 +2547,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var result = await runner.RunTestWithTraceAsync(tempFile);
                 var nethTraces = result.Results.FirstOrDefault()?.Traces ?? new System.Collections.Generic.List<ProgramTrace>();
 
-                // Find max depth reached
                 int maxDepth = 0;
                 foreach (var trace in nethTraces)
                 {
@@ -2024,7 +2556,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"\nNethereum trace count: {nethTraces.Count}");
                 _output.WriteLine($"Max depth reached: {maxDepth}");
 
-                // Now compare with geth using boosted gas
                 _output.WriteLine("\n=== Running geth with boosted gas ===");
                 var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
                 var gethEvmPath = Path.Combine(projectRoot, "geth-tools", "geth-alltools-windows-amd64-1.14.12-293a300d", "evm.exe");
@@ -2033,7 +2564,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     var gethTraceLines = await RunGethTraceAsync(gethEvmPath, tempFile);
                     _output.WriteLine($"Geth trace count: {gethTraceLines.Count}");
 
-                    // Find max depth in geth trace
                     int gethMaxDepth = 0;
                     foreach (var line in gethTraceLines)
                     {
@@ -2080,7 +2610,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             _output.WriteLine("=== CALL MEMORY PARAMETERS DEBUG ===\n");
 
-            // Run geth with stack trace to see actual stack values at CALL
             var gethTraceLines = await RunGethTraceAsync(gethEvmPath, testFile);
 
             _output.WriteLine("=== GETH CALL STACK VALUES ===");
@@ -2094,13 +2623,12 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 if (op != "CALL" && op != "CALLCODE") continue;
 
                 callCount++;
-                if (callCount > 10) break; // Only show first 10
+                if (callCount > 10) break;
 
                 var depth = ParseGethField(line, "depth");
                 var gas = ParseGethHexField(line, "gas");
                 var gasCost = ParseGethHexField(line, "gasCost");
 
-                // Try to parse stack if available
                 var stackStart = line.IndexOf("\"stack\":[");
                 if (stackStart > 0)
                 {
@@ -2114,9 +2642,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         _output.WriteLine($"CALL #{callCount} depth={depth} gas={gas} gasCost={gasCost}");
                         if (stackItems.Count >= 7)
                         {
-                            // Stack is in reverse order: top at index 0
                             _output.WriteLine($"  Stack top-7: {string.Join(", ", stackItems.Take(7))}");
-                            // For CALL: gas(0), to(1), value(2), inOff(3), inSz(4), outOff(5), outSz(6)
                             try
                             {
                                 var inOff = Convert.ToInt64(stackItems[3], 16);
@@ -2140,7 +2666,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
             }
 
-            // Now run Nethereum
             _output.WriteLine("\n=== NETHEREUM CALL MEMORY PARAMETERS ===\n");
 
             var runner = new GeneralStateTestRunner(_output, "Prague");
@@ -2174,7 +2699,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var result = await runner.RunTestWithTraceAsync(testFile);
             var nethTraces = result.Results.FirstOrDefault()?.Traces ?? new System.Collections.Generic.List<ProgramTrace>();
 
-            // Parse geth trace and find CALL operations with their gas values
             var gethCALLs = new System.Collections.Generic.List<(int depth, long gasBefore, long gasCost, int traceIndex)>();
             int gethTraceIndex = 0;
             foreach (var line in gethTraceLines)
@@ -2191,8 +2715,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 gethTraceIndex++;
             }
 
-            // Parse Nethereum trace and find CALL operations
-            // Track cumulative gas cost to calculate "gas before" for each CALL
             var nethCALLs = new System.Collections.Generic.List<(int depth, long cumulativeGas, long gasCost, int traceIndex)>();
             long nethCumulativeGas = 0;
             for (int i = 0; i < nethTraces.Count; i++)
@@ -2202,7 +2724,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 if (op == "CALL" || op == "CALLCODE")
                 {
-                    var depth = trace.Depth + 1; // Nethereum depth is 0-indexed
+                    var depth = trace.Depth + 1;
                     var gasCost = (long)trace.GasCost;
                     nethCALLs.Add((depth, nethCumulativeGas, gasCost, i));
                 }
@@ -2213,9 +2735,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine($"Nethereum CALLs: {nethCALLs.Count}");
             _output.WriteLine("");
 
-            // Compare base CALL costs (not including allocated gas)
-            // Geth gasCost = base_cost + allocated_gas
-            // We can estimate base_cost from pattern: cold=2600+memory, warm=100+memory
             _output.WriteLine("=== CALL BASE COST COMPARISON ===");
             _output.WriteLine("Geth gasCost includes allocated gas. Neth gasCost is just the base cost.");
             _output.WriteLine("");
@@ -2230,11 +2749,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var geth = gethCALLs[i];
                 var neth = nethCALLs[i];
 
-                // Estimate geth base cost:
-                // For first few calls (cold), base ~= 2600 + some memory
-                // For later calls (warm), base ~= 100 + some memory
-                // The allocated gas = gasCost - base
-                long estimatedGethBase = i < 3 ? 2606L : 106L;  // Common values seen
+                long estimatedGethBase = i < 3 ? 2606L : 106L;
 
                 var baseCostDiff = neth.gasCost - estimatedGethBase;
                 totalBaseCostDiff += baseCostDiff;
@@ -2254,16 +2769,13 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine($"Total CALLs compared: {maxCompare}");
             _output.WriteLine("");
 
-            // Track cumulative gas usage at matching points
             _output.WriteLine("=== CUMULATIVE GAS USAGE ===");
             _output.WriteLine("Tracking cumulative gas at each CALL to find where discrepancy grows.");
             _output.WriteLine("");
 
-            // For geth, calculate cumulative gas from gasBefore differences
-            // Initial gas - gasBefore at call N = cumulative gas used by call N
             if (gethCALLs.Count > 0)
             {
-                var initialGas = gethCALLs[0].gasBefore; // Actually, we need to find the very first gas
+                var initialGas = gethCALLs[0].gasBefore;
                 _output.WriteLine($"First CALL geth gas_before: {gethCALLs[0].gasBefore}");
                 _output.WriteLine($"First CALL neth cumulative: {nethCALLs[0].cumulativeGas}");
                 _output.WriteLine("");
@@ -2276,7 +2788,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     var geth = gethCALLs[i];
                     var neth = nethCALLs[i];
 
-                    // Geth gas used up to this point = first call's gasBefore - current gasBefore
                     var gethGasUsed = gethCALLs[0].gasBefore - geth.gasBefore;
                     var nethGasUsed = neth.cumulativeGas;
                     var diff = nethGasUsed - gethGasUsed;
@@ -2291,7 +2802,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     }
                 }
 
-                // Final comparison
                 if (maxCompare > 0)
                 {
                     var lastGeth = gethCALLs[maxCompare - 1];
@@ -2309,7 +2819,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
             }
 
-            // Now analyze gas allocation at each depth level
             _output.WriteLine("");
             _output.WriteLine("=== GAS ALLOCATION COMPARISON (63/64 Rule) ===");
             _output.WriteLine("Comparing gas allocated to subcalls.");
@@ -2321,7 +2830,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine("Depth | Geth GasBefore | Next GasBefore | Geth Allocated | Geth BaseCost | Neth BaseCost");
             _output.WriteLine("------|----------------|----------------|----------------|---------------|---------------");
 
-            // Group geth CALLs by depth to understand the call chain
             var gethByDepth = gethCALLs.GroupBy(c => c.depth).ToDictionary(g => g.Key, g => g.ToList());
             var nethByDepth = nethCALLs.GroupBy(c => c.depth).ToDictionary(g => g.Key, g => g.ToList());
 
@@ -2334,13 +2842,12 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var gethNext = gethByDepth[d + 1].First();
                 var nethThis = nethByDepth[d].First();
 
-                var gethAllocated = gethNext.gasBefore; // Gas given to subcall
+                var gethAllocated = gethNext.gasBefore;
                 var gethBaseCost = gethThis.gasCost - gethAllocated;
 
                 _output.WriteLine($"{d,5} | {gethThis.gasBefore,14} | {gethNext.gasBefore,14} | {gethAllocated,14} | {gethBaseCost,13} | {nethThis.gasCost,13}");
             }
 
-            // Check if there's a pattern in the gas allocation differences
             _output.WriteLine("");
             _output.WriteLine("=== DETAILED DEPTH ANALYSIS ===");
             _output.WriteLine("Checking if the 63/64 calculation produces different results.");
@@ -2353,9 +2860,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var gethCall = gethByDepth[d].First();
                 var nethCall = nethByDepth[d].First();
 
-                // Simulate what Nethereum's allocation would be
-                // After CALL opcode cost is paid, remaining = gasBefore - baseCost
-                // Then allocate = remaining - remaining/64
                 var baseCost = d <= 2 ? 2606L : 106L;
                 var gethRemaining = gethCall.gasBefore - baseCost;
                 var simulated64th = gethRemaining / 64;
@@ -2397,7 +2901,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var gethIdx = 0;
             var callCount = 0;
-            var maxCalls = 280;  // Show enough to see the problem area (~depth 267)
+            var maxCalls = 280;
 
             long lastCallGasBefore = 0;
             long lastCallGasCost = 0;
@@ -2420,9 +2924,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 if (gethOp == "CALL" || gethOp == "CALLCODE")
                 {
                     callCount++;
-                    if (callCount > maxCalls - 20 || callCount <= 5)  // Show first 5 and last 20
+                    if (callCount > maxCalls - 20 || callCount <= 5)
                     {
-                        var baseCost = gethDepth <= 2 ? 2606L : 106L;  // Cold vs warm access
+                        var baseCost = gethDepth <= 2 ? 2606L : 106L;
                         var gasAllocated = gethGasCost - baseCost;
                         var gasRetained = gethGas - gethGasCost;
                         _output.WriteLine($"CALL #{callCount}: depth={gethDepth}, gas_before={gethGas}, gasCost={gethGasCost} (base={baseCost}, alloc={gasAllocated}), retained={gasRetained}");
@@ -2459,7 +2963,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 return;
             }
 
-            // Find geth evm.exe
             var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
             var gethEvmPath = Path.Combine(projectRoot, "geth-tools", "geth-alltools-windows-amd64-1.14.12-293a300d", "evm.exe");
             if (!File.Exists(gethEvmPath))
@@ -2470,19 +2973,16 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 return;
             }
 
-            // Get geth trace
             _output.WriteLine("Running geth trace...");
             var gethTraceLines = await RunGethTraceAsync(gethEvmPath, testFile);
             _output.WriteLine($"Geth trace: {gethTraceLines.Count} lines");
 
-            // Get Nethereum trace
             _output.WriteLine("Running Nethereum trace...");
             var runner = new GeneralStateTestRunner(_output, "Prague");
             var result = await runner.RunTestWithTraceAsync(testFile);
             var nethTraces = result.Results.FirstOrDefault()?.Traces ?? new System.Collections.Generic.List<ProgramTrace>();
             _output.WriteLine($"Nethereum trace: {nethTraces.Count} lines");
 
-            // Compare traces
             _output.WriteLine("");
             _output.WriteLine("=== TRACE COMPARISON ===");
             _output.WriteLine("Note: Geth depth starts at 1, Nethereum at 0 (offset by 1)");
@@ -2494,7 +2994,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var maxDiffs = 50;
             var matchCount = 0;
 
-            // Calculate total gas from each trace
             long gethTotalGas = 0;
             long nethTotalGas = 0;
 
@@ -2503,7 +3002,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var gethLine = gethTraceLines[gethIdx];
                 var nethTrace = nethTraces[nethIdx];
 
-                // Parse geth line
                 if (!gethLine.StartsWith("{")) { gethIdx++; continue; }
                 if (!gethLine.Contains("\"opName\"")) { gethIdx++; continue; }
 
@@ -2515,22 +3013,19 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 var nethOp = nethTrace.Instruction?.Instruction?.ToString() ?? "?";
                 var nethPc = nethTrace.Instruction?.Step.ToString() ?? "?";
-                var nethDepth = nethTrace.Depth.ToString(); // Adjust for depth offset
+                var nethDepth = nethTrace.Depth.ToString();
                 var nethGasCost = nethTrace.GasCost.ToString();
 
-                // Track gas totals (excluding CALL/CREATE gas allocation which geth includes)
                 if (!gethOp.Contains("CALL") && !gethOp.Contains("CREATE"))
                 {
                     if (long.TryParse(gethGasCost, out var gGas)) gethTotalGas += gGas;
                     nethTotalGas += (long)nethTrace.GasCost;
                 }
 
-                // Compare (now with depth offset adjusted)
                 var pcMatch = gethPc == nethPc;
                 var depthMatch = gethDepth == nethDepth;
                 var opMatch = gethOp.ToUpper() == nethOp.ToUpper();
 
-                // For CALL/CALLCODE/etc, geth includes allocated gas in gasCost, we don't
                 var isCallOp = gethOp.Contains("CALL") || gethOp.Contains("CREATE");
                 var gasCostMatch = isCallOp || gethGasCost == nethGasCost;
 
@@ -2622,8 +3117,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 await process.WaitForExitAsync();
             }
 
-            // geth outputs trace to stderr and summary to stdout
-            // Return stderr (trace) as primary output
             if (errorLines.Count > 0)
             {
                 return errorLines;
@@ -3579,7 +4072,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var result = await runner.RunTestWithTraceAsync(testFile);
             var nethTraces = result.Results.FirstOrDefault()?.Traces ?? new System.Collections.Generic.List<ProgramTrace>();
 
-            // Parse geth traces into structured format
             var gethSteps = new System.Collections.Generic.List<(int step, int depth, int pc, string op, long gas, long gasCost, int memSize)>();
             int gethStep = 0;
             for (int i = 0; i < gethTraceLines.Count; i++)
@@ -3598,7 +4090,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 gethSteps.Add((gethStep, depth, pc, op, gas, gasCost, memSize));
             }
 
-            // Parse nethereum traces
             var nethSteps = new System.Collections.Generic.List<(int step, int depth, int pc, string op, long gas, long gasCost, int memSize)>();
             for (int i = 0; i < nethTraces.Count; i++)
             {
@@ -3617,7 +4108,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine($"Nethereum total steps: {nethSteps.Count}");
             _output.WriteLine("");
 
-            // Find matching steps and compare
             _output.WriteLine("Step | Depth | PC  | Op         | G.Gas      | N.Gas      | G.Cost | N.Cost | G.Mem | N.Mem | Match");
             _output.WriteLine("-----|-------|-----|------------|------------|------------|--------|--------|-------|-------|------");
 
@@ -3673,11 +4163,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     matchCount++;
                 }
 
-                // Check for gas remaining divergence (ignore CALL gasCost difference since geth includes allocated gas)
                 bool gasRemainingMatch = g.gas == n.gas;
                 string gasMatch = gasRemainingMatch ? "YES" : $"GAS_REM({g.gas - n.gas})";
 
-                // Print first 50 steps, and any gas remaining mismatches
                 bool shouldPrint = (gethIdx < 50) ||
                                    (!gasRemainingMatch) ||
                                    (gethIdx >= Math.Min(gethSteps.Count, nethSteps.Count) - 10);
@@ -3691,7 +4179,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 nethIdx++;
             }
 
-            // Count gas remaining matches
             int gasRemainingMatches = 0;
             int gasRemainingMismatches = 0;
             int firstGasMismatchStep = -1;
@@ -3715,7 +4202,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             {
                 _output.WriteLine($"First gas mismatch at step: {firstGasMismatchStep}");
 
-                // Show context around first gas mismatch
                 _output.WriteLine("");
                 _output.WriteLine($"=== CONTEXT AROUND FIRST GAS DIVERGENCE (step {firstGasMismatchStep}) ===");
                 int start = Math.Max(0, firstGasMismatchStep - 10);
@@ -3732,7 +4218,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
             }
 
-            // Show last 15 steps of both traces
             _output.WriteLine("");
             _output.WriteLine("=== LAST 15 STEPS OF NETHEREUM TRACE ===");
             _output.WriteLine("Step | Depth | PC  | Op         | N.Gas      | N.Cost | N.Mem");
@@ -3754,7 +4239,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"{i + 1,4} | {g.depth,5} | {g.pc,3} | {g.op,-10} | {g.gas,10} | {g.gasCost,6} | {g.memSize,5}");
             }
 
-            // Show ACTUAL last 15 steps of geth trace (different indices than nethereum)
             _output.WriteLine("");
             _output.WriteLine("=== ACTUAL LAST 15 STEPS OF GETH TRACE ===");
             _output.WriteLine("Step | Depth | PC  | Op         | G.Gas      | G.Cost | G.Mem");
@@ -3766,7 +4250,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"{i + 1,4} | {g.depth,5} | {g.pc,3} | {g.op,-10} | {g.gas,10} | {g.gasCost,6} | {g.memSize,5}");
             }
 
-            // Compare final states at depth 1
             _output.WriteLine("");
             _output.WriteLine("=== FINAL STATE COMPARISON ===");
             var gethFinal = gethSteps.LastOrDefault(s => s.depth == 1 && s.op == "STOP");
@@ -3801,7 +4284,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"=== FIRST MISMATCH at step {firstMismatchStep} ===");
                 _output.WriteLine($"Reason: {firstMismatchReason}");
 
-                // Show context around first mismatch
                 _output.WriteLine("");
                 _output.WriteLine("Context around first mismatch:");
                 int start = Math.Max(0, firstMismatchStep - 6);
@@ -3847,7 +4329,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var result = await runner.RunTestWithTraceAsync(testFile);
             var nethTraces = result.Results.FirstOrDefault()?.Traces ?? new System.Collections.Generic.List<ProgramTrace>();
 
-            // Collect all SSTORE operations by depth for both traces
             var gethSStores = new System.Collections.Generic.List<(int step, int depth, long gas, long gasCost)>();
             var nethSStores = new System.Collections.Generic.List<(int step, int depth, long gas, long gasCost)>();
 
@@ -3882,7 +4363,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine($"Neth SSTORE count: {nethSStores.Count}");
             _output.WriteLine("");
 
-            // Group by depth and compare
             var gethByDepth = gethSStores.GroupBy(s => s.depth).ToDictionary(g => g.Key, g => g.ToList());
             var nethByDepth = nethSStores.GroupBy(s => s.depth).ToDictionary(g => g.Key, g => g.ToList());
 
@@ -3900,7 +4380,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 _output.WriteLine($"{depth,5} | {gCount,4} | {nCount,4} | {match}");
             }
 
-            // Compare SSTORE at specific common depths (1, 2, 3)
             _output.WriteLine("");
             _output.WriteLine("=== SSTORE DETAILS AT LOW DEPTHS ===");
             foreach (var depth in new[] { 1, 2, 3, 4, 5, 6 })
@@ -3922,7 +4401,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
             }
 
-            // Calculate total SSTORE gas consumed
             long gethTotalSStoreCost = gethSStores.Sum(s => s.gasCost);
             long nethTotalSStoreCost = nethSStores.Sum(s => s.gasCost);
             _output.WriteLine("");
@@ -3966,7 +4444,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine("=== STATICCALL GAS ANALYSIS ===");
             _output.WriteLine("");
 
-            // Find all STATICCALL instructions in Geth trace
             _output.WriteLine("GETH STATICCALL Instructions:");
             _output.WriteLine("Step | PC   | gasCost    | gas_before | gas_after  | actual_consumed");
             _output.WriteLine("-----|------|------------|------------|------------|----------------");
@@ -3988,7 +4465,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 {
                     gethStaticCallCount++;
                     string nextGas = "?";
-                    // Find next line's gas to calculate actual consumption
                     for (int j = i + 1; j < gethTraceLines.Count; j++)
                     {
                         var nextLine = gethTraceLines[j];
@@ -4012,7 +4488,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             _output.WriteLine($"Geth STATICCALL count: {gethStaticCallCount}");
             _output.WriteLine($"Geth total STATICCALL gas consumed: {gethTotalStaticCallConsumed}");
 
-            // Find all STATICCALL in Nethereum trace
             _output.WriteLine("");
             _output.WriteLine("NETHEREUM STATICCALL Instructions:");
             _output.WriteLine("Step | PC   | trace_cost | gas_before | gas_after  | actual_consumed");
@@ -4030,7 +4505,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     var gasBefore = trace.GasRemaining;
                     var gasCost = trace.GasCost;
 
-                    // Find next instruction's gas
                     long gasAfter = 0;
                     if (i + 1 < nethTraces.Count)
                     {

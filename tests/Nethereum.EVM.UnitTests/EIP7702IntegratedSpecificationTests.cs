@@ -9,6 +9,7 @@ using Nethereum.EVM.Gas;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Signer;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests
@@ -40,7 +41,6 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "AuthorizationProcessing")]
         public async Task Given_Type4Transaction_When_AuthorizationProcessed_Then_DelegationCodeSetOnEOA()
         {
-            // GIVEN: An EOA with a signed authorization delegating to a contract address
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
@@ -69,7 +69,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -80,10 +79,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authority account should have delegation code (0xef0100 + delegate address)
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.NotNull(authorityAccountState.Code);
             Assert.Equal(23, authorityAccountState.Code.Length);
@@ -101,18 +98,15 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "AuthorizationRemoval")]
         public async Task Given_AuthorizationWithZeroAddress_When_Processed_Then_DelegationCodeCleared()
         {
-            // GIVEN: An EOA with existing delegation code
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
-            // First, set existing delegation code
             var existingDelegationCode = CreateDelegationCode(DELEGATE_ADDRESS);
             await _nodeDataService.SetCodeAsync(authorityAddress, existingDelegationCode);
             await _nodeDataService.SetBalanceAsync(SENDER_ADDRESS, BigInteger.Parse("10000000000000000000"));
             await _nodeDataService.SetBalanceAsync(authorityAddress, BigInteger.Parse("1000000000000000000"));
             await _nodeDataService.SetNonceAsync(authorityAddress, 1);
 
-            // Create authorization with zero address (removal)
             var auth = new Authorisation7702
             {
                 ChainId = 1,
@@ -135,7 +129,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -146,10 +139,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authority account should have empty code (delegation removed)
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.NotNull(authorityAccountState.Code);
             Assert.Empty(authorityAccountState.Code);
@@ -160,7 +151,6 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "NonceValidation")]
         public async Task Given_AuthorizationWithWrongNonce_When_Processed_Then_AuthorizationSkipped()
         {
-            // GIVEN: An EOA with nonce 0, but authorization specifies nonce 5
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
@@ -168,7 +158,7 @@ namespace Nethereum.EVM.UnitTests
             {
                 ChainId = 1,
                 Address = DELEGATE_ADDRESS,
-                Nonce = 5 // Wrong nonce - authority has nonce 0
+                Nonce = 5
             };
             var signer = new Authorisation7702Signer();
             var signedAuth = signer.SignAuthorisation(authorityKey, auth);
@@ -190,7 +180,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -201,10 +190,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authority account should NOT have delegation code (nonce mismatch)
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.True(authorityAccountState.Code == null || authorityAccountState.Code.Length == 0);
         }
@@ -214,13 +201,12 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "ChainIdValidation")]
         public async Task Given_AuthorizationWithWrongChainId_When_Processed_Then_AuthorizationSkipped()
         {
-            // GIVEN: Transaction on chain 1, but authorization specifies chain 5
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
             var auth = new Authorisation7702
             {
-                ChainId = 5, // Wrong chain - transaction is on chain 1
+                ChainId = 5,
                 Address = DELEGATE_ADDRESS,
                 Nonce = 0
             };
@@ -243,20 +229,17 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
                 BaseFee = 1000000000,
-                ChainId = 1, // Transaction is on chain 1
+                ChainId = 1,
                 ExecutionState = executionState,
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authority account should NOT have delegation code (chain mismatch)
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.True(authorityAccountState.Code == null || authorityAccountState.Code.Length == 0);
         }
@@ -266,13 +249,12 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "ChainIdValidation")]
         public async Task Given_AuthorizationWithZeroChainId_When_ProcessedOnAnyChain_Then_AuthorizationApplied()
         {
-            // GIVEN: Authorization with chain_id = 0 (universal) on chain 137 (Polygon)
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
             var auth = new Authorisation7702
             {
-                ChainId = 0, // Universal - valid on any chain
+                ChainId = 0,
                 Address = DELEGATE_ADDRESS,
                 Nonce = 0
             };
@@ -295,21 +277,18 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
                 BaseFee = 1000000000,
-                ChainId = 137, // Polygon - but auth has chain_id = 0
+                ChainId = 137,
                 Coinbase = COINBASE_ADDRESS,
                 ExecutionState = executionState,
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authority account should have delegation code (universal auth)
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.NotNull(authorityAccountState.Code);
             Assert.Equal(23, authorityAccountState.Code.Length);
@@ -325,16 +304,12 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "DelegationExecution")]
         public async Task Given_DelegatedEOA_When_Called_Then_DelegateCodeExecuted()
         {
-            // GIVEN: An EOA with delegation code pointing to a contract that returns a specific value
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
-            // Deploy delegate contract that returns 0x42 (66 decimal)
-            // PUSH1 0x42 PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
             var delegateCode = "604260005260206000F3".HexToByteArray();
             await _nodeDataService.SetCodeAsync(DELEGATE_ADDRESS, delegateCode);
 
-            // Create signed authorization
             var auth = new Authorisation7702
             {
                 ChainId = 1,
@@ -353,7 +328,7 @@ namespace Nethereum.EVM.UnitTests
             var ctx = new TransactionExecutionContext
             {
                 Sender = SENDER_ADDRESS,
-                To = authorityAddress, // Calling the EOA that will be delegated
+                To = authorityAddress,
                 Data = Array.Empty<byte>(),
                 GasLimit = 100000,
                 Value = 0,
@@ -361,7 +336,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -372,10 +346,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Execution should succeed and return value from delegate
             Assert.True(result.Success, $"Transaction failed: {result.Error}");
             Assert.NotNull(result.ReturnData);
 
@@ -391,11 +363,9 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "DelegationExecution")]
         public async Task Given_DelegatedEOA_When_DelegateAccessesMSGSENDER_Then_OriginalCallerReturned()
         {
-            // GIVEN: An EOA delegating to contract that returns CALLER (msg.sender)
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
-            // Contract that returns CALLER: CALLER PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
             var delegateCode = "3360005260206000F3".HexToByteArray();
             await _nodeDataService.SetCodeAsync(DELEGATE_ADDRESS, delegateCode);
 
@@ -425,7 +395,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -436,10 +405,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Return data should contain the original sender address
             Assert.True(result.Success, $"Transaction failed: {result.Error}");
             Assert.NotNull(result.ReturnData);
             Assert.True(result.ReturnData.Length >= 20);
@@ -457,7 +424,6 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "GasCosts")]
         public async Task Given_Type4Transaction_When_HasAuthorizationList_Then_IntrinsicGasIncludesAuthCost()
         {
-            // GIVEN: A Type 4 transaction with 2 authorizations
             var authorityKey1 = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityKey2 = new EthECKey(SENDER_PRIVATE_KEY);
 
@@ -489,7 +455,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth1, signedAuth2 },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -500,13 +465,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Gas used should include authorization costs
-            // Base intrinsic: 21000
-            // Authorization cost: 2 * 12500 = 25000
-            // Minimum expected: 46000
             Assert.True(result.GasUsed >= 46000,
                 $"Expected gas >= 46000 (21000 + 2*12500), got {result.GasUsed}");
         }
@@ -520,7 +480,6 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "NonceIncrement")]
         public async Task Given_SuccessfulAuthorization_When_Processed_Then_AuthorityNonceIncremented()
         {
-            // GIVEN: An EOA with nonce 5
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
@@ -551,7 +510,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -562,12 +520,10 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authority nonce should be incremented to 6
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
-            Assert.Equal(6ul, authorityAccountState.Nonce);
+            Assert.Equal((ulong?)6, authorityAccountState.Nonce);
         }
 
         #endregion
@@ -579,12 +535,10 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "ExistingCodeCheck")]
         public async Task Given_EOAWithExistingCode_When_AuthorizationAttempted_Then_AuthorizationSkipped()
         {
-            // GIVEN: An account that already has non-delegation code
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
-            // Set existing (non-delegation) code
-            var existingCode = "60006000F3".HexToByteArray(); // Simple contract, not delegation
+            var existingCode = "60006000F3".HexToByteArray();
             await _nodeDataService.SetCodeAsync(authorityAddress, existingCode);
 
             var auth = new Authorisation7702
@@ -612,7 +566,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -623,13 +576,11 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Authorization should be skipped - existing code unchanged
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.Equal(existingCode.Length, authorityAccountState.Code.Length);
-            Assert.NotEqual(0xef, authorityAccountState.Code[0]); // Not delegation code
+            Assert.NotEqual(0xef, authorityAccountState.Code[0]);
         }
 
         [Fact]
@@ -637,7 +588,6 @@ namespace Nethereum.EVM.UnitTests
         [Trait("Spec", "DelegationUpdate")]
         public async Task Given_EOAWithExistingDelegation_When_NewAuthorizationProcessed_Then_DelegationUpdated()
         {
-            // GIVEN: An EOA with existing delegation code pointing to address A
             var authorityKey = new EthECKey(AUTHORITY_PRIVATE_KEY);
             var authorityAddress = authorityKey.GetPublicAddress();
 
@@ -646,11 +596,10 @@ namespace Nethereum.EVM.UnitTests
             await _nodeDataService.SetCodeAsync(authorityAddress, existingDelegationCode);
             await _nodeDataService.SetNonceAsync(authorityAddress, 1);
 
-            // Create new authorization pointing to a different address
             var auth = new Authorisation7702
             {
                 ChainId = 1,
-                Address = DELEGATE_ADDRESS, // New delegate
+                Address = DELEGATE_ADDRESS,
                 Nonce = 1
             };
             var signer = new Authorisation7702Signer();
@@ -672,7 +621,6 @@ namespace Nethereum.EVM.UnitTests
                 MaxFeePerGas = 1000000000,
                 MaxPriorityFeePerGas = 100000000,
                 Nonce = 0,
-                IsType4Transaction = true,
                 AuthorisationList = new List<Authorisation7702Signed> { signedAuth },
                 BlockNumber = 1,
                 Timestamp = 1704067200,
@@ -683,10 +631,8 @@ namespace Nethereum.EVM.UnitTests
                 TraceEnabled = true
             };
 
-            // WHEN: Transaction is executed
             var result = await _executor.ExecuteAsync(ctx);
 
-            // THEN: Delegation should be updated to new address
             var authorityAccountState = executionState.CreateOrGetAccountExecutionState(authorityAddress);
             Assert.NotNull(authorityAccountState.Code);
             Assert.Equal(23, authorityAccountState.Code.Length);
@@ -721,7 +667,7 @@ namespace Nethereum.EVM.UnitTests
         #endregion
     }
 
-    public class EIP7702TestNodeDataService : INodeDataService
+    public class EIP7702TestNodeDataService : IStateReader
     {
         private readonly Dictionary<string, byte[]> _code = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, BigInteger> _balances = new(StringComparer.OrdinalIgnoreCase);
@@ -739,22 +685,23 @@ namespace Nethereum.EVM.UnitTests
             return GetCodeAsync("0x" + address.ToHex());
         }
 
-        public Task<BigInteger> GetBalanceAsync(string address)
+        public Task<EvmUInt256> GetBalanceAsync(string address)
         {
             _balances.TryGetValue(address, out var balance);
-            return Task.FromResult(balance);
+            return Task.FromResult(EvmUInt256BigIntegerExtensions.FromBigInteger(balance));
         }
 
-        public Task<BigInteger> GetBalanceAsync(byte[] address)
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address)
         {
             return GetBalanceAsync("0x" + address.ToHex());
         }
 
-        public Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
         {
+            var positionBig = position.ToBigInteger();
             if (_storage.TryGetValue(address, out var slots))
             {
-                if (slots.TryGetValue(position, out var value))
+                if (slots.TryGetValue(positionBig, out var value))
                 {
                     return Task.FromResult(value);
                 }
@@ -762,20 +709,20 @@ namespace Nethereum.EVM.UnitTests
             return Task.FromResult(new byte[32]);
         }
 
-        public Task<byte[]> GetStorageAtAsync(byte[] address, BigInteger position)
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
         {
             return GetStorageAtAsync("0x" + address.ToHex(), position);
         }
 
-        public Task<BigInteger> GetTransactionCount(string address)
+        public Task<EvmUInt256> GetTransactionCountAsync(string address)
         {
             _nonces.TryGetValue(address, out var nonce);
-            return Task.FromResult(nonce);
+            return Task.FromResult(EvmUInt256BigIntegerExtensions.FromBigInteger(nonce));
         }
 
-        public Task<BigInteger> GetTransactionCount(byte[] address)
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
         {
-            return GetTransactionCount("0x" + address.ToHex());
+            return GetTransactionCountAsync("0x" + address.ToHex());
         }
 
         public Task SetCodeAsync(string address, byte[] code)
@@ -807,7 +754,7 @@ namespace Nethereum.EVM.UnitTests
             return Task.CompletedTask;
         }
 
-        public Task<byte[]> GetBlockHashAsync(BigInteger blockNumber)
+        public Task<byte[]> GetBlockHashAsync(long blockNumber)
         {
             return Task.FromResult(new byte[32]);
         }

@@ -1,4 +1,5 @@
 ﻿using Nethereum.ABI;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -164,8 +165,8 @@ namespace Nethereum.EVM.UnitTests
         public async Task ShouldCheck_SGT()
         { 
             await AssertSteps("6001600213", "0000000000000000000000000000000000000000000000000000000000000001", 3);
-            await AssertSteps("7F000000000000000000000000000000000000000000000000000000000000001E" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "13", "0000000000000000000000000000000000000000000000000000000000000000", 3); // -170 -    30
-            await AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "13", "0000000000000000000000000000000000000000000000000000000000000001", 3); // // -169 -  -170
+            await AssertSteps("7F000000000000000000000000000000000000000000000000000000000000001E" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "13", "0000000000000000000000000000000000000000000000000000000000000000", 3);
+            await AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "13", "0000000000000000000000000000000000000000000000000000000000000001", 3);
 
         }
 
@@ -179,52 +180,50 @@ namespace Nethereum.EVM.UnitTests
 
         [Fact]
         public async Task ShouldSLT_1()
-        { // SLT OP
+        {
             await AssertSteps("6001600212", "0000000000000000000000000000000000000000000000000000000000000000", 3);
         }
 
         [Fact]
         public async Task ShouldSLT_2()
-        { // SLT OP
-            await AssertSteps("7F000000000000000000000000000000000000000000000000000000000000001E" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "12", "0000000000000000000000000000000000000000000000000000000000000001", 3); // -170 -    30
+        {
+            await AssertSteps("7F000000000000000000000000000000000000000000000000000000000000001E" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "12", "0000000000000000000000000000000000000000000000000000000000000001", 3);
         }
 
         [Fact]
         public async Task ShouldSLT_3()
-        { // SLT OP
-            await AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "12", "0000000000000000000000000000000000000000000000000000000000000000", 3); // // -169 -  -170
+        {
+            await AssertSteps("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF56" + "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF57" + "12", "0000000000000000000000000000000000000000000000000000000000000000", 3);
         }
 
         [Fact]
         public async Task Should_NOT_1()
-        { // NOT OP
+        {
             await AssertSteps("600119", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE", 2);
         }
 
         [Fact]
         public async Task Should_NOT_2()
         {
-            // NOT OP
             await AssertSteps("61A00319", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5FFC", 2);
         }
 
         [Fact]
         public async Task Should_NOT_3()
         {
-            // NOT OP
             await AssertSteps("600019", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 2);
         }
 
         [Fact]
         public async Task ShouldPOP_1()
-        { // POP OP
+        {
             await AssertSteps("61000060016200000250", "0000000000000000000000000000000000000000000000000000000000000001", 4);
           
         }
 
         [Fact]
         public async Task ShouldPOP_2()
-        { // POP OP
+        {
             await AssertSteps("6100006001620000025050", "0000000000000000000000000000000000000000000000000000000000000000", 5);
         }
 
@@ -245,8 +244,6 @@ namespace Nethereum.EVM.UnitTests
             await AssertSteps($"{Instruction.PUSH32.ToHex()}000000000000000000000000000000000000000000000000000000000012d687{Instruction.PUSH32.ToHex()}000000000000000000000000000000000000000000000000000000000012d687{Instruction.ADD.ToHex()}", encoded, 3);
         }
 
-        //000000000000000000000000000000000000000000000000000000000012d687
-        //1234567
 
 
         [Fact]
@@ -315,25 +312,16 @@ namespace Nethereum.EVM.UnitTests
             await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000002", 4);
             await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH1.ToHex()}ff{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
 
-            //overflow
-            //await AssertSteps($"{Instruction.PUSH1.ToHex()}01{Instruction.PUSH2.ToHex()}0100{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000000", 4);
 
-           //// await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 4);
 
-           // await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}ff{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
 
-           // //overflow
-           // await AssertSteps($"{Instruction.PUSH32.ToHex()}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH2.ToHex()}0100{Instruction.SHL.ToHex()}", "8000000000000000000000000000000000000000000000000000000000000000", 4);
 
-           // //overflow
-           // await AssertSteps($"{Instruction.PUSH32.ToHex()}0000000000000000000000000000000000000000000000000000000000000000{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "0000000000000000000000000000000000000000000000000000000000000000", 4);
 
-           // await AssertSteps($"{Instruction.PUSH32.ToHex()}7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff{Instruction.PUSH1.ToHex()}01{Instruction.SHL.ToHex()}", "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 4);
         }
 
         private async Task AssertSteps(string hexBytes, string expected, int numberOfSteps = 1)
         {
-            var vm = new EVMSimulator();
+            var vm = new EVMSimulator(DefaultHardforkConfigs.Cancun);
             var program = new Program(hexBytes.HexToByteArray());
             await vm.ExecuteWithCallStackAsync(program, traceEnabled: false);
 

@@ -62,10 +62,8 @@ namespace Nethereum.EVM.Debugging
 
                 if (trace.Instruction != null)
                 {
-                    var sourceLocation = session.GetCurrentSourceLocation();
-                    var sourcePart = sourceLocation != null
-                        ? $" | {sourceLocation.FilePath}:{sourceLocation.LineNumber}"
-                        : "";
+                    var sourceLine = SourceLineKey(session.GetCurrentSourceLocation());
+                    var sourcePart = sourceLine != null ? " | " + sourceLine : "";
 
                     sb.AppendLine($"[{i + 1:D4}] {trace.Instruction.ToDisassemblyLine()}{sourcePart}");
                 }
@@ -94,33 +92,43 @@ namespace Nethereum.EVM.Debugging
                 var trace = session.CurrentTrace;
                 var sourceLocation = session.GetCurrentSourceLocation();
 
-                if (sourceLocation != null)
-                {
-                    var currentSourceLine = $"{sourceLocation.FilePath}:{sourceLocation.LineNumber}";
-                    if (currentSourceLine != lastSourceLine)
-                    {
-                        if (lastSourceLine != null)
-                            sb.AppendLine();
-
-                        sb.AppendLine($"// {currentSourceLine}");
-                        if (!string.IsNullOrWhiteSpace(sourceLocation.SourceCode))
-                        {
-                            sb.AppendLine($"// {sourceLocation.SourceCode.Trim()}");
-                        }
-                        lastSourceLine = currentSourceLine;
-                    }
-                }
-
-                if (trace.Instruction != null)
-                {
-                    var prefix = new string(' ', trace.Depth * 2);
-                    sb.AppendLine($"  {prefix}{trace.Instruction.ToDisassemblyLine()}");
-                }
+                lastSourceLine = AppendSourceLineHeaderWhenLineChanges(sb, sourceLocation, lastSourceLine);
+                AppendDepthIndentedInstruction(sb, trace);
             }
 
             session.GoToStep(originalStep);
 
             return sb.ToString();
+        }
+
+        private static string AppendSourceLineHeaderWhenLineChanges(StringBuilder sb, SourceLocation sourceLocation, string lastSourceLine)
+        {
+            if (sourceLocation == null)
+                return lastSourceLine;
+
+            var currentSourceLine = SourceLineKey(sourceLocation);
+            if (currentSourceLine == lastSourceLine)
+                return lastSourceLine;
+
+            if (lastSourceLine != null)
+                sb.AppendLine();
+
+            sb.AppendLine($"// {currentSourceLine}");
+            if (!string.IsNullOrWhiteSpace(sourceLocation.SourceCode))
+            {
+                sb.AppendLine($"// {sourceLocation.SourceCode.Trim()}");
+            }
+
+            return currentSourceLine;
+        }
+
+        private static void AppendDepthIndentedInstruction(StringBuilder sb, ProgramTrace trace)
+        {
+            if (trace.Instruction == null)
+                return;
+
+            var prefix = new string(' ', trace.Depth * 2);
+            sb.AppendLine($"  {prefix}{trace.Instruction.ToDisassemblyLine()}");
         }
 
         public static List<SourceLocation> GetUniqueSourceLocations(this EVMDebuggerSession session)
@@ -198,18 +206,12 @@ namespace Nethereum.EVM.Debugging
         {
             if (!session.CanStepForward) return;
 
-            var currentSource = session.GetCurrentSourceLocation();
-            var currentKey = currentSource != null
-                ? $"{currentSource.FilePath}:{currentSource.LineNumber}"
-                : null;
+            var currentKey = SourceLineKey(session.GetCurrentSourceLocation());
 
             while (session.CanStepForward)
             {
                 session.StepForward();
-                var newSource = session.GetCurrentSourceLocation();
-                var newKey = newSource != null
-                    ? $"{newSource.FilePath}:{newSource.LineNumber}"
-                    : null;
+                var newKey = SourceLineKey(session.GetCurrentSourceLocation());
 
                 if (newKey != null && newKey != currentKey)
                     break;
@@ -220,22 +222,19 @@ namespace Nethereum.EVM.Debugging
         {
             if (!session.CanStepBack) return;
 
-            var currentSource = session.GetCurrentSourceLocation();
-            var currentKey = currentSource != null
-                ? $"{currentSource.FilePath}:{currentSource.LineNumber}"
-                : null;
+            var currentKey = SourceLineKey(session.GetCurrentSourceLocation());
 
             while (session.CanStepBack)
             {
                 session.StepBack();
-                var newSource = session.GetCurrentSourceLocation();
-                var newKey = newSource != null
-                    ? $"{newSource.FilePath}:{newSource.LineNumber}"
-                    : null;
+                var newKey = SourceLineKey(session.GetCurrentSourceLocation());
 
                 if (newKey != null && newKey != currentKey)
                     break;
             }
         }
+
+        private static string SourceLineKey(SourceLocation location) =>
+            location != null ? $"{location.FilePath}:{location.LineNumber}" : null;
     }
 }

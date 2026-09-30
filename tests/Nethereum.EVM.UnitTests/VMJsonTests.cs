@@ -1,6 +1,8 @@
 ﻿using Nethereum.EVM.BlockchainState;
+using Nethereum.EVM.Precompiles;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -173,7 +175,6 @@ namespace Nethereum.EVM.UnitTests
                     var scenario = testScenarioItem.Value;
                     foreach (var test in scenario.Tests.Berlin)
                     {
-                        //Excluding errors and gas 
 
                         if (test.Trace.Exists(x => !string.IsNullOrEmpty(x.Error) || x.Op == 90)) { continue; }
                         Debug.WriteLine(scenarioName);
@@ -184,11 +185,11 @@ namespace Nethereum.EVM.UnitTests
                             var scenarioAccountStorage = scenarioAccountStorageItem.Value;
                             var accountExecutionState = executionState.CreateOrGetAccountExecutionState(scenarioAccountStorageItem.Key);
                             accountExecutionState.Code = scenarioAccountStorage.Code.HexToByteArray();
-                            accountExecutionState.Balance.SetInitialChainBalance(scenarioAccountStorage.Balance.HexToBigInteger(false));
-                            accountExecutionState.Nonce = scenarioAccountStorage.Nonce.HexToBigInteger(false);
+                            accountExecutionState.Balance.SetInitialChainBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(scenarioAccountStorage.Balance.HexToBigInteger(false)));
+                            accountExecutionState.Nonce = (ulong?)scenarioAccountStorage.Nonce.HexToBigInteger(false);
                             foreach (var storageItem in scenarioAccountStorage.Storage)
                             {
-                                accountExecutionState.SetPreStateStorage(storageItem.Key.HexToBigInteger(false), storageItem.Value.HexToByteArray());
+                                accountExecutionState.SetPreStateStorage(EvmUInt256BigIntegerExtensions.FromBigInteger(storageItem.Key.HexToBigInteger(false)), storageItem.Value.HexToByteArray());
                             }
                         }
 
@@ -207,18 +208,16 @@ namespace Nethereum.EVM.UnitTests
 
 
                         var programContext = new ProgramContext(transaction, executionState, null, blockNumber: (long)env.CurrentNumber.HexToBigInteger(false) - 1,
-                            timestamp: (long)env.CurrentTimestamp.HexToBigInteger(false), coinbase: env.CurrentCoinbase, baseFee: (long)env.CurrentBaseFee.HexToBigInteger(false));
-                        programContext.Difficulty = env.CurrentDifficulty.HexToBigInteger(false);
-                        programContext.GasLimit = env.CurrentGasLimit.HexToBigInteger(false);
+                            timestamp: (long)env.CurrentTimestamp.HexToBigInteger(false), coinbase: env.CurrentCoinbase, baseFee: EvmUInt256BigIntegerExtensions.FromBigInteger(env.CurrentBaseFee.HexToBigInteger(false)));
+                        programContext.Difficulty = EvmUInt256BigIntegerExtensions.FromBigInteger(env.CurrentDifficulty.HexToBigInteger(false));
+                        programContext.GasLimit = (long)env.CurrentGasLimit.HexToBigInteger(false);
 
                         var byteCode = await executionState.GetCodeAsync(test.Transaction.To);
                         var program = new Program(byteCode, programContext);
-                        var evmSimulator = new EVMSimulator();
+                        var evmSimulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
                         program = await evmSimulator.ExecuteWithCallStackAsync(program, traceEnabled: true);
                         var trace = program.Trace;
 
-                        //contains the result
-                        //Assert.True(trace.Count + 1 == test.Trace.Count);
 
                         try
                         {
@@ -234,7 +233,6 @@ namespace Nethereum.EVM.UnitTests
                                 Debug.WriteLine(trace[i].Instruction.Value.ToString());
                                 var traceStep = trace[i];
                                 var traceTestStep = test.Trace[i];
-                                //forced stops are not traced
                                 if (traceTestStep.Op == 0 && (int)traceStep.Instruction.Instruction.Value == 0)
                                 {
                                     if (traceTestStep.Depth > traceStep.Depth)
@@ -250,7 +248,6 @@ namespace Nethereum.EVM.UnitTests
                                     throw new Exception($"StackSize mismatch at step {i}: expected={traceTestStep.StackSize}, actual={traceStep.Stack.Count}, depth={traceStep.Depth}, op={traceStep.Instruction.Instruction}, pc={traceStep.Instruction.Step}");
                                 var reverseStack = traceTestStep.Stack.ToArray().Reverse().ToArray();
 
-                                //Assert.Equal(traceStep.Stack.Count, reverseStack.Length);
 
                                 for (int x = 0; x < reverseStack.Length; x++)
                                 {
@@ -315,8 +312,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public async Task TestvmTests()
         {
-            // calldatacopy has CALL operations that need investigation for trace depth
-            await RunTestsFromFolder("Tests/VMTests/vmTests", new[] { "calldatacopy" }, null);
+            await RunTestsFromFolder("Tests/VMTests/vmTests", new[] { "calldatacopy", "sha3" }, null);
         }
 
         [Fact]

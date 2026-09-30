@@ -1,8 +1,11 @@
+using Nethereum.CoreChain.IntegrationTests.BlockchainTests;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
 using Nethereum.EVM.Gas;
+using Nethereum.EVM.Gas.Intrinsic;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Newtonsoft.Json;
@@ -23,19 +26,15 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
     {
         private readonly ITestOutputHelper _output;
         private readonly string _targetHardfork;
+        private readonly HardforkName _targetFork;
         private readonly TimeSpan _testTimeout;
+        private HardforkConfig _cachedConfig;
 
-        private const int G_TRANSACTION = 21000;
-        private const int G_TXDATAZERO = 4;
-        private const int G_TXDATANONZERO = 16;
-        private const int G_TXCREATE = 32000;
+
+
+
         private const int G_CODEDEPOSIT = 200;
 
-        private const int G_FLOOR_PER_TOKEN = 10;
-        private const int G_TOKENS_PER_NONZERO = 4;
-
-        // EIP-4844 Blob transaction constants
-        private const int GAS_PER_BLOB = 131072; // 2^17
         private const int MAX_BLOBS_PER_BLOCK_CANCUN = 6;
         private const int MAX_BLOBS_PER_BLOCK_PRAGUE = 9;
         private const byte VERSIONED_HASH_VERSION_KZG = 0x01;
@@ -44,7 +43,69 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         {
             _output = output;
             _targetHardfork = targetHardfork;
+            _targetFork = HardforkNames.Parse(targetHardfork);
             _testTimeout = testTimeout ?? TimeSpan.FromSeconds(30);
+        }
+
+        private void EnsureCachedConfig()
+        {
+            if (_cachedConfig != null) return;
+
+            var config = Nethereum.EVM.Precompiles.DefaultMainnetHardforkRegistry.Instance.Get(_targetFork);
+
+            if (_targetFork >= HardforkName.Cancun)
+            {
+                config = config.WithKzgBackend();
+            }
+
+            if (_targetFork >= HardforkName.Prague)
+            {
+                config = config.WithBlsBackend(new Nethereum.Signer.Bls.Herumi.Bls12381Operations());
+            }
+
+            _cachedConfig = config;
+        }
+
+        private HardforkConfig ResolveConfigForFixture(GeneralStateTest test)
+        {
+            EnsureCachedConfig();
+
+            var fraction = TryReadFixtureBlobFraction(test);
+            if (fraction == null) return _cachedConfig;
+
+            IBlobGasRule fixtureBlobRule;
+            if (_targetFork >= HardforkName.Osaka)
+                fixtureBlobRule = new Eip7892BlobGasRule(fraction.Value);
+            else if (_targetFork >= HardforkName.Prague)
+                fixtureBlobRule = new Eip7691BlobGasRule(fraction.Value);
+            else if (_targetFork >= HardforkName.Cancun)
+                fixtureBlobRule = new Eip4844BlobGasRule(fraction.Value);
+            else
+                return _cachedConfig;
+
+            var clone = _cachedConfig.Clone();
+            clone.IntrinsicGasRules = _cachedConfig.IntrinsicGasRules.WithBlob(fixtureBlobRule);
+            return clone;
+        }
+
+        private int? TryReadFixtureBlobFraction(GeneralStateTest test)
+        {
+            var schedule = test?.Config?.BlobSchedule;
+            if (schedule == null || schedule.Count == 0) return null;
+
+            string key;
+            if (_targetFork >= HardforkName.Amsterdam) key = "Amsterdam";
+            else if (_targetFork >= HardforkName.Osaka) key = "Osaka";
+            else if (_targetFork >= HardforkName.Prague) key = "Prague";
+            else if (_targetFork >= HardforkName.Cancun) key = "Cancun";
+            else return null;
+
+            if (!schedule.TryGetValue(key, out var entry) || entry == null) return null;
+            if (string.IsNullOrEmpty(entry.BaseFeeUpdateFraction)) return null;
+
+            var big = entry.BaseFeeUpdateFraction.HexToBigInteger(false);
+            if (big <= 0 || big > int.MaxValue) return null;
+            return (int)big;
         }
 
         public async Task<TestResult> RunTestAsync(string testFilePath, int? specificDataIndex = null)
@@ -57,10 +118,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return await RunTestInternalAsync(testFilePath, captureTraces: true, specificDataIndex: specificDataIndex);
         }
 
-        /// <summary>
-        /// Runs tests using the new TransactionExecutor infrastructure.
-        /// This allows comparison with the original implementation.
-        /// </summary>
         public async Task<TestResult> RunTestWithExecutorAsync(string testFilePath, int? specificDataIndex = null, bool captureTraces = false)
         {
             return await RunTestInternalWithExecutorAsync(testFilePath, captureTraces: captureTraces, specificDataIndex: specificDataIndex);
@@ -291,6 +348,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             };
             Program programForTraces = null;
 
+            EnsureCachedConfig();
+
             try
             {
                 var env = test.Env;
@@ -305,9 +364,15 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var valueStr = tx.Value != null && valueIndex < tx.Value.Count ? tx.Value[valueIndex] : "0x0";
 
                 var dataBytes = string.IsNullOrEmpty(data) || data == "0x" ? new byte[0] : data.HexToByteArray();
-                var gasLimit = gasLimitStr.HexToBigInteger(false);
-                var value = valueStr.HexToBigInteger(false);
+                var gasLimit = StateTestScalar.Parse(LegacyTransactionField.GasLimit, gasLimitStr);
+                var value = StateTestScalar.Parse(LegacyTransactionField.Value, valueStr);
                 var baseFee = string.IsNullOrEmpty(env.CurrentBaseFee) ? BigInteger.Zero : env.CurrentBaseFee.HexToBigInteger(false);
+
+                const long MAX_TX_GAS_LIMIT = 16_777_216;
+                if (_targetFork >= HardforkName.Osaka && gasLimit > MAX_TX_GAS_LIMIT)
+                {
+                    throw new TransactionValidationException(TransactionError.GasLimitExceedsMaximum, "TransactionException.GAS_LIMIT_EXCEEDS_MAXIMUM");
+                }
 
                 BigInteger gasPrice;
                 BigInteger effectiveGasPrice;
@@ -320,16 +385,14 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     maxFeePerGas = tx.MaxFeePerGas.HexToBigInteger(false);
                     maxPriorityFeePerGas = string.IsNullOrEmpty(tx.MaxPriorityFeePerGas) ? BigInteger.Zero : tx.MaxPriorityFeePerGas.HexToBigInteger(false);
 
-                    // EIP-1559: maxFeePerGas must be >= baseFee
                     if (maxFeePerGas < baseFee)
                     {
-                        throw new InvalidOperationException("TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS");
+                        throw new TransactionValidationException(TransactionError.InsufficientMaxFeePerGas, "TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS");
                     }
 
-                    // EIP-1559: maxPriorityFeePerGas must be <= maxFeePerGas
                     if (maxPriorityFeePerGas > maxFeePerGas)
                     {
-                        throw new InvalidOperationException("TransactionException.PRIORITY_GREATER_THAN_MAX_FEE_PER_GAS");
+                        throw new TransactionValidationException(TransactionError.PriorityGreaterThanMaxFee, "TransactionException.PRIORITY_GREATER_THAN_MAX_FEE_PER_GAS");
                     }
 
                     gasPrice = maxFeePerGas;
@@ -341,10 +404,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     gasPrice = string.IsNullOrEmpty(tx.GasPrice) ? BigInteger.Zero : tx.GasPrice.HexToBigInteger(false);
                     effectiveGasPrice = gasPrice;
 
-                    // EIP-1559: For legacy transactions, gasPrice must be >= baseFee
                     if (baseFee > 0 && gasPrice < baseFee)
                     {
-                        throw new InvalidOperationException("TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS");
+                        throw new TransactionValidationException(TransactionError.InsufficientMaxFeePerGas, "TransactionException.INSUFFICIENT_MAX_FEE_PER_GAS");
                     }
                 }
 
@@ -352,46 +414,39 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var toAddress = string.IsNullOrEmpty(tx.To) ? null : tx.To;
                 var isContractCreation = toAddress == null;
 
-                // EIP-3860 (Shanghai): Limit initcode size to 49152 bytes
                 const int MAX_INITCODE_SIZE = 49152;
-                if (isContractCreation && IsShanghaiOrLater(_targetHardfork) && dataBytes != null && dataBytes.Length > MAX_INITCODE_SIZE)
+                if (isContractCreation && _targetFork >= HardforkName.Shanghai && dataBytes != null && dataBytes.Length > MAX_INITCODE_SIZE)
                 {
-                    throw new InvalidOperationException("TransactionException.INITCODE_SIZE_EXCEEDED");
+                    throw new TransactionValidationException(TransactionError.InitcodeSizeExceeded, "TransactionException.INITCODE_SIZE_EXCEEDED");
                 }
 
-                // EIP-4844 (Cancun): Type-3 blob transaction validation
-                // Type-3 is identified by presence of maxFeePerBlobGas
                 var blobVersionedHashes = tx.BlobVersionedHashes;
                 var isType3Transaction = !string.IsNullOrEmpty(tx.MaxFeePerBlobGas);
 
-                if (isType3Transaction && IsCancunOrLater(_targetHardfork))
+                if (isType3Transaction && _targetFork >= HardforkName.Cancun)
                 {
-                    // Type-3 transactions cannot be contract creation
                     if (isContractCreation)
                     {
-                        throw new InvalidOperationException("TransactionException.TYPE_3_TX_CONTRACT_CREATION");
+                        throw new TransactionValidationException(TransactionError.Type3TxContractCreation, "TransactionException.TYPE_3_TX_CONTRACT_CREATION");
                     }
 
-                    // Type-3 transactions must have at least one blob
                     if (blobVersionedHashes == null || blobVersionedHashes.Count == 0)
                     {
-                        throw new InvalidOperationException("TransactionException.TYPE_3_TX_ZERO_BLOBS");
+                        throw new TransactionValidationException(TransactionError.Type3TxZeroBlobs, "TransactionException.TYPE_3_TX_ZERO_BLOBS");
                     }
 
-                    // Check blob count limit
-                    int maxBlobs = IsPragueOrLater(_targetHardfork) ? MAX_BLOBS_PER_BLOCK_PRAGUE : MAX_BLOBS_PER_BLOCK_CANCUN;
+                    int maxBlobs = _targetFork >= HardforkName.Prague ? MAX_BLOBS_PER_BLOCK_PRAGUE : MAX_BLOBS_PER_BLOCK_CANCUN;
                     if (blobVersionedHashes.Count > maxBlobs)
                     {
-                        throw new InvalidOperationException("TransactionException.TYPE_3_TX_BLOB_COUNT_EXCEEDED");
+                        throw new TransactionValidationException(TransactionError.Type3TxBlobCountExceeded, "TransactionException.TYPE_3_TX_BLOB_COUNT_EXCEEDED");
                     }
 
-                    // All blob versioned hashes must have correct version prefix
                     foreach (var hash in blobVersionedHashes)
                     {
                         var hashBytes = hash.HexToByteArray();
                         if (hashBytes.Length < 1 || hashBytes[0] != VERSIONED_HASH_VERSION_KZG)
                         {
-                            throw new InvalidOperationException("TransactionException.TYPE_3_TX_INVALID_BLOB_VERSIONED_HASH");
+                            throw new TransactionValidationException(TransactionError.Type3TxInvalidBlobVersionedHash, "TransactionException.TYPE_3_TX_INVALID_BLOB_VERSIONED_HASH");
                         }
                     }
                 }
@@ -402,36 +457,51 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 var executionState = SetupPreState(test);
 
-                // Check transaction gas limit against block gas limit
                 var blockGasLimit = string.IsNullOrEmpty(env.CurrentGasLimit) ? BigInteger.Zero : env.CurrentGasLimit.HexToBigInteger(false);
                 if (blockGasLimit > 0 && gasLimit > blockGasLimit)
                 {
-                    throw new InvalidOperationException("TransactionException.GAS_ALLOWANCE_EXCEEDED");
+                    throw new TransactionValidationException(TransactionError.GasAllowanceExceeded, "TransactionException.GAS_ALLOWANCE_EXCEEDED");
                 }
 
-                var intrinsicGas = CalculateIntrinsicGas(dataBytes, isContractCreation, accessList, _targetHardfork);
-
-                // EIP-7623 (Prague): gas_limit must be >= max(intrinsic_gas, floor)
-                BigInteger minGasRequired = intrinsicGas;
-                if (IsPragueOrLater(_targetHardfork))
+                var accessListEntries = accessList?.Select(a => new AccessListEntry
                 {
-                    var floorGas = CalculateFloorGasLimit(dataBytes, isContractCreation);
-                    if (floorGas > minGasRequired)
-                        minGasRequired = floorGas;
-                }
+                    Address = a.Address,
+                    StorageKeys = a.StorageKeys
+                }).ToList();
+
+                var isSelfTransfer = !isContractCreation && sender.IsTheSameAddress(toAddress);
+                var hasValue = value > 0;
+
+                BigInteger intrinsicGas = _cachedConfig.IntrinsicGasRules.CalculateIntrinsicGas(dataBytes, isContractCreation, accessListEntries, isSelfTransfer, hasValue);
+
+                BigInteger minGasRequired = intrinsicGas;
+                BigInteger floorGas = _cachedConfig.IntrinsicGasRules.CalculateFloorGasLimit(dataBytes, isContractCreation, isSelfTransfer, hasValue, accessListEntries);
+                if (floorGas > minGasRequired)
+                    minGasRequired = floorGas;
 
                 if (gasLimit < minGasRequired)
                 {
-                    result.Skipped = true;
-                    result.SkipReason = $"Intrinsic gas too low: {gasLimit} < {minGasRequired}";
+                    if (!string.IsNullOrEmpty(expected.ExpectException))
+                    {
+                        result.Passed = ExpectedRejectionMatcher.Satisfies(
+                            expected.ExpectException,
+                            TransactionError.IntrinsicGasTooLow,
+                            out var rejectionDetail);
+                        result.Message = result.Passed
+                            ? $"Expected exception {expected.ExpectException} - got {rejectionDetail}"
+                            : $"Expected exception {expected.ExpectException} but got {rejectionDetail}";
+                        return result;
+                    }
+
+                    result.Passed = false;
+                    result.Message = $"Intrinsic gas too low: {gasLimit} < {minGasRequired}";
                     return result;
                 }
 
-                var hardforkConfig = HardforkConfig.FromName(_targetHardfork);
+                EnsureCachedConfig();
                 executionState.MarkAddressAsWarm(sender);
-                executionState.MarkPrecompilesAsWarm(hardforkConfig.PrecompileProvider);
+                executionState.MarkPrecompilesAsWarm(_cachedConfig.Precompiles);
 
-                // EIP-3651 (Shanghai): Coinbase is warm at transaction start
                 if (!string.IsNullOrEmpty(env.CurrentCoinbase))
                 {
                     executionState.MarkAddressAsWarm(env.CurrentCoinbase);
@@ -439,58 +509,61 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 var senderAccount = executionState.CreateOrGetAccountExecutionState(sender);
 
-                // EIP-3607: Reject transactions from senders with deployed code
                 if (senderAccount.Code != null && senderAccount.Code.Length > 0)
                 {
-                    throw new InvalidOperationException("TransactionException.SENDER_NOT_EOA");
+                    throw new TransactionValidationException(TransactionError.SenderNotEOA, "TransactionException.SENDER_NOT_EOA");
                 }
 
                 var senderBalance = senderAccount.Balance.GetTotalBalance();
 
-                // EIP-4844: Calculate blob gas cost for type-3 transactions
                 BigInteger blobGasCost = BigInteger.Zero;
-                BigInteger blobBaseFee = BigInteger.One; // MIN_BLOB_BASE_FEE = 1
-                if (isType3Transaction && IsCancunOrLater(_targetHardfork))
+                BigInteger blobBaseFee = BigInteger.One;
+                BigInteger maxBlobReservation = BigInteger.Zero;
+                if (isType3Transaction && _targetFork >= HardforkName.Cancun)
                 {
                     if (!string.IsNullOrEmpty(env.CurrentExcessBlobGas))
                     {
                         var excessBlobGas = env.CurrentExcessBlobGas.HexToBigInteger(false);
-                        blobBaseFee = CalculateBlobBaseFee(excessBlobGas);
+                        blobBaseFee = (BigInteger)_cachedConfig.IntrinsicGasRules.Blob.CalculateBlobBaseFee(
+                            EvmUInt256BigIntegerExtensions.FromBigInteger(excessBlobGas));
                     }
                     var blobCount = blobVersionedHashes?.Count ?? 0;
-                    var blobGasUsed = blobCount * GAS_PER_BLOB;
+                    BigInteger blobGasUsed = BlobGasCalculator.CalculateTotalBlobGas(blobCount);
                     blobGasCost = blobGasUsed * blobBaseFee;
+
+                    var maxFeePerBlobGas = tx.MaxFeePerBlobGas.HexToBigInteger(false);
+                    if (maxFeePerBlobGas < blobBaseFee)
+                    {
+                        throw new TransactionValidationException(TransactionError.InsufficientMaxFeePerBlobGas, "TransactionException.INSUFFICIENT_MAX_FEE_PER_BLOB_GAS");
+                    }
+                    maxBlobReservation = blobGasUsed * maxFeePerBlobGas;
                 }
 
-                var maxCost = gasLimit * gasPrice + value + blobGasCost;
+                var maxCost = gasLimit * gasPrice + value + maxBlobReservation;
 
-                if (senderBalance < maxCost)
+                if (senderBalance < EvmUInt256BigIntegerExtensions.FromBigInteger(maxCost))
                 {
                     result.Skipped = true;
                     result.SkipReason = $"Insufficient balance: {senderBalance} < {maxCost}";
                     return result;
                 }
 
-                var senderNonceBeforeIncrement = senderAccount.Nonce ?? BigInteger.Zero;
+                var senderNonceBeforeIncrement = senderAccount.Nonce ?? 0L;
 
-                // EIP-2681: Reject transactions if nonce would overflow (nonce >= 2^64 - 1)
-                if (senderNonceBeforeIncrement >= BigInteger.Parse("18446744073709551615"))
+                if (senderNonceBeforeIncrement.ToBigInteger() >= BigInteger.Parse("18446744073709551615"))
                 {
-                    throw new InvalidOperationException("TransactionException.NONCE_IS_MAX");
+                    throw new TransactionValidationException(TransactionError.NonceIsMax, "TransactionException.NONCE_IS_MAX");
                 }
 
                 senderAccount.Nonce = senderNonceBeforeIncrement + 1;
 
-                senderAccount.Balance.UpdateExecutionBalance(-(gasLimit * effectiveGasPrice));
+                senderAccount.Balance.DebitExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(gasLimit * effectiveGasPrice));
 
-                // EIP-4844: Deduct blob gas cost (separate from regular gas)
                 if (blobGasCost > 0)
                 {
-                    senderAccount.Balance.UpdateExecutionBalance(-blobGasCost);
+                    senderAccount.Balance.DebitExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(blobGasCost));
                 }
 
-                // Take transaction snapshot AFTER sender nonce increment and gas payment
-                // but BEFORE any state modifications that should be reverted on failure
                 var transactionSnapshotId = executionState.TakeSnapshot();
 
                 byte[] code;
@@ -499,19 +572,15 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 bool hasCollision = false;
                 if (isContractCreation)
                 {
-                    contractAddress = ContractUtils.CalculateContractAddress(sender, senderNonceBeforeIncrement);
+                    contractAddress = ContractUtils.CalculateContractAddress(sender, senderNonceBeforeIncrement.ToLong());
                     executionState.MarkAddressAsWarm(contractAddress);
                     var contractAccount = executionState.CreateOrGetAccountExecutionState(contractAddress);
 
-                    // EIP-684 + EIP-7610: Check for address collision
-                    // Collision occurs if target has: code OR nonce > 0 OR non-empty storage
                     var targetHasCode = contractAccount.Code != null && contractAccount.Code.Length > 0;
                     var targetHasNonce = contractAccount.Nonce.HasValue && contractAccount.Nonce.Value > 0;
                     var targetHasStorage = contractAccount.Storage != null && contractAccount.Storage.Count > 0;
                     hasCollision = targetHasCode || targetHasNonce || targetHasStorage;
 
-                    // EIP-161: New contracts start with nonce = 1 BEFORE initcode runs
-                    // Also clear any pre-existing storage (valid per EIP-684 as long as no code/nonce)
                     if (!hasCollision)
                     {
                         executionState.PrepareNewContractAccount(contractAddress);
@@ -537,7 +606,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                             foreach (var storageKey in entry.StorageKeys)
                             {
                                 var slot = storageKey.HexToBigInteger(false);
-                                warmAccount.MarkStorageKeyAsWarm(slot);
+                                warmAccount.MarkStorageKeyAsWarm(EvmUInt256BigIntegerExtensions.FromBigInteger(slot));
                             }
                         }
                     }
@@ -554,7 +623,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 string revertReason = null;
                 BigInteger gasRefund = BigInteger.Zero;
 
-                // EIP-684: When CREATE collision occurs, all gas is consumed
                 if (hasCollision)
                 {
                     gasUsed = gasLimit;
@@ -596,34 +664,32 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     );
 
                     if (!string.IsNullOrEmpty(env.CurrentRandom))
-                        programContext.Difficulty = env.CurrentRandom.HexToBigInteger(false);
+                        programContext.Difficulty = EvmUInt256BigIntegerExtensions.FromBigInteger(env.CurrentRandom.HexToBigInteger(false));
                     else if (!string.IsNullOrEmpty(env.CurrentDifficulty))
-                        programContext.Difficulty = env.CurrentDifficulty.HexToBigInteger(false);
+                        programContext.Difficulty = EvmUInt256BigIntegerExtensions.FromBigInteger(env.CurrentDifficulty.HexToBigInteger(false));
 
                     if (!string.IsNullOrEmpty(env.CurrentGasLimit))
-                        programContext.GasLimit = env.CurrentGasLimit.HexToBigInteger(false);
+                        programContext.GasLimit = (long)env.CurrentGasLimit.HexToBigInteger(false);
 
                     if (!string.IsNullOrEmpty(env.CurrentExcessBlobGas))
                     {
-                        var excessBlobGas = env.CurrentExcessBlobGas.HexToBigInteger(false);
-                        programContext.BlobBaseFee = CalculateBlobBaseFee(excessBlobGas);
+                        var excessBlobGas = (ulong)env.CurrentExcessBlobGas.HexToBigInteger(false);
+                        programContext.BlobBaseFee = _cachedConfig.IntrinsicGasRules.Blob.CalculateBlobBaseFee(excessBlobGas);
                     }
 
-                    // EIP-4844: Set blob versioned hashes for BLOBHASH opcode
                     if (isType3Transaction && blobVersionedHashes != null && blobVersionedHashes.Count > 0)
                     {
                         programContext.BlobHashes = blobVersionedHashes.Select(h => h.HexToByteArray()).ToArray();
                     }
 
-                    programContext.EnforceGasSentry = true;
+                    programContext.EnforceSstoreGasStipend = _cachedConfig.EnforceSstoreGasStipend;
 
                     var program = new Program(code, programContext);
-                    var evmSimulator = new EVMSimulator();
+                    var evmSimulator = new EVMSimulator(_cachedConfig);
 
-                    // Deduct value from sender (recipient credit happens in EVMSimulator via InitialiaseContractBalanceFromCallInputValue)
                     if (value > 0)
                     {
-                        senderAccount.Balance.UpdateExecutionBalance(-value);
+                        senderAccount.Balance.DebitExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                     }
 
                     try
@@ -639,10 +705,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         executionSuccess = !program.ProgramResult.IsRevert;
 
 
-                        // EIP-3529: Refunds are only applied when transaction succeeds
                         if (executionSuccess)
                         {
-                            var maxRefund = gasUsed / GasConstants.REFUND_QUOTIENT;
+                            var maxRefund = gasUsed / _cachedConfig.RefundQuotient;
                             gasRefund = BigInteger.Min(program.RefundCounter, maxRefund);
 
                             var effectiveGasUsed = gasUsed - gasRefund;
@@ -660,7 +725,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                             {
                                 var deployedCode = program.ProgramResult.Result ?? new byte[0];
 
-                                // EIP-3541: Reject code starting with 0xEF
                                 if (deployedCode.Length > 0 && deployedCode[0] == 0xEF)
                                 {
                                     executionSuccess = false;
@@ -682,8 +746,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                                         gasUsed += codeDepositGas;
                                         var newContractAccount = executionState.CreateOrGetAccountExecutionState(contractAddress);
                                         newContractAccount.Code = deployedCode;
-                                        // Don't reset nonce - it was set to 1 before initcode ran and may have
-                                        // been incremented if initcode did CREATE/CREATE2
                                         executionState.CommitSnapshot(transactionSnapshotId);
                                     }
                                 }
@@ -693,9 +755,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                                 executionState.CommitSnapshot(transactionSnapshotId);
                             }
 
-                            // EIP-6780 (Cancun): Delete accounts that were both created AND self-destructed in the same transaction
                             var createdSet = new HashSet<string>(program.ProgramResult.CreatedContractAccounts, StringComparer.OrdinalIgnoreCase);
-                            // For contract creation transactions, the newly created contract is also eligible for EIP-6780 deletion
                             if (isContractCreation)
                             {
                                 createdSet.Add(contractAddress);
@@ -721,8 +781,11 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     {
                         if (!string.IsNullOrEmpty(expected.ExpectException))
                         {
-                            result.Passed = true;
-                            result.Message = $"Expected exception {expected.ExpectException} - got {ex.GetType().Name}";
+                            result.Passed = ExpectedRejectionMatcher.Satisfies(expected.ExpectException, ex, out var detail);
+                            result.Message = result.Passed
+                                ? $"Expected exception {expected.ExpectException} - got {detail}"
+                                : $"Expected exception {expected.ExpectException} but got {detail}";
+                            if (!result.Passed) result.StackTrace = ex.StackTrace;
                             return result;
                         }
                         result.Passed = false;
@@ -754,9 +817,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                                 executionSuccess = true;
                                 if (value > 0)
                                 {
-                                    senderAccount.Balance.UpdateExecutionBalance(-value);
+                                    senderAccount.Balance.DebitExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                                     var receiverAccount = executionState.CreateOrGetAccountExecutionState(toAddress);
-                                    receiverAccount.Balance.UpdateExecutionBalance(value);
+                                    receiverAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                                 }
                                 executionState.CommitSnapshot(transactionSnapshotId);
                             }
@@ -770,19 +833,19 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     }
                     else if (value > 0)
                     {
-                        senderAccount.Balance.UpdateExecutionBalance(-value);
+                        senderAccount.Balance.DebitExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                         var receiverAccount = executionState.CreateOrGetAccountExecutionState(toAddress);
-                        receiverAccount.Balance.UpdateExecutionBalance(value);
+                        receiverAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                         executionState.CommitSnapshot(transactionSnapshotId);
                     }
                 }
                 else if (executionSuccess && value > 0)
                 {
-                    senderAccount.Balance.UpdateExecutionBalance(-value);
+                    senderAccount.Balance.DebitExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                     if (isContractCreation)
                     {
                         var newContractAccount = executionState.CreateOrGetAccountExecutionState(contractAddress);
-                        newContractAccount.Balance.UpdateExecutionBalance(value);
+                        newContractAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(value));
                     }
                     executionState.CommitSnapshot(transactionSnapshotId);
                 }
@@ -797,34 +860,31 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 if (gasUsed > gasLimit)
                     gasUsed = gasLimit;
 
-                // EIP-7623 (Prague): Apply calldata floor to final gas calculation
-                // Per Geth implementation: floorDataGas = 21000 + tokens * 10
-                // If gasUsed < floorDataGas, use floorDataGas
-                // Note: Floor applies regardless of execution success/failure
-                if (IsPragueOrLater(_targetHardfork))
+                bool floorIsContractCreation = _cachedConfig.IntrinsicGasRules.StateGasActive && isContractCreation;
+                BigInteger floorDataGas = _cachedConfig.IntrinsicGasRules.CalculateFloorGasLimit(dataBytes, floorIsContractCreation, isSelfTransfer, hasValue, accessListEntries);
+                if (gasUsed < floorDataGas)
                 {
-                    var tokens = CalculateTokensInCalldata(dataBytes);
-                    BigInteger floorDataGas = G_TRANSACTION + (G_FLOOR_PER_TOKEN * tokens);
-
-                    if (gasUsed < floorDataGas)
-                    {
-                        gasUsed = floorDataGas;
-                        if (gasUsed > gasLimit)
-                            gasUsed = gasLimit;
-                    }
+                    gasUsed = floorDataGas;
+                    if (gasUsed > gasLimit)
+                        gasUsed = gasLimit;
                 }
 
                 var gasRefundAmount = (gasLimit - gasUsed) * effectiveGasPrice;
-                senderAccount.Balance.UpdateExecutionBalance(gasRefundAmount);
+                senderAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(gasRefundAmount));
 
                 var coinbase = env.CurrentCoinbase;
-                var coinbaseAccount = executionState.CreateOrGetAccountExecutionState(coinbase);
                 var minerReward = gasUsed * (effectiveGasPrice - baseFee);
                 if (minerReward < 0) minerReward = 0;
-                coinbaseAccount.Balance.UpdateExecutionBalance(minerReward);
+                var coinbaseAccount = executionState.CreateOrGetAccountExecutionState(coinbase);
+                if (minerReward > 0)
+                    coinbaseAccount.Balance.CreditExecutionBalance(EvmUInt256BigIntegerExtensions.FromBigInteger(minerReward));
+                else
+                    coinbaseAccount.IsTouched = true;
 
+                EnsureCachedConfig();
+                _cachedConfig.TouchedEmptyCleanupRule.Apply(executionState);
                 var accountStates = ExtractPostState(executionState);
-                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates);
+                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates, skipEmptyAccounts: false);
                 var expectedStateRoot = expected.Hash.HexToByteArray();
 
                 result.ExpectedStateRoot = expected.Hash;
@@ -848,15 +908,27 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         result.AccountDiffs = CompareStates(test.Pre, accountStates);
                         result.AccountDiffs.Insert(0, "(No expected post-state in test file, comparing with pre-state)");
                     }
+                    if (result.AccountDiffs == null) result.AccountDiffs = new List<string>();
+                    result.AccountDiffs.Add($"--- OUR COMPUTED ACCOUNTS ({accountStates.Count}) ---");
+                    foreach (var kv in accountStates)
+                    {
+                        var a = kv.Value;
+                        result.AccountDiffs.Add($"  {kv.Key}: bal={a.Balance} nonce={a.Nonce} codeLen={(a.Code?.Length ?? 0)} storage[{a.Storage?.Count ?? 0}]");
+                        if (a.Storage != null)
+                            foreach (var sk in a.Storage)
+                                result.AccountDiffs.Add($"    slot[{sk.Key}] = {sk.Value}");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                // Check if this exception was expected (for pre-execution validation like EIP-3607, EIP-1559)
                 if (!string.IsNullOrEmpty(expected.ExpectException))
                 {
-                    result.Passed = true;
-                    result.Message = $"Expected exception {expected.ExpectException} - got {ex.GetType().Name}: {ex.Message}";
+                    result.Passed = ExpectedRejectionMatcher.Satisfies(expected.ExpectException, ex, out var detail);
+                    result.Message = result.Passed
+                        ? $"Expected exception {expected.ExpectException} - got {detail}"
+                        : $"Expected exception {expected.ExpectException} but got {detail}";
+                    if (!result.Passed) result.StackTrace = ex.StackTrace;
                 }
                 else
                 {
@@ -874,11 +946,32 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return result;
         }
 
-        /// <summary>
-        /// Runs a single test using the new TransactionExecutor.
-        /// This is the refactored version that uses the extracted TransactionExecutor infrastructure.
-        /// The original RunSingleTestAsync method is preserved as a reference implementation.
-        /// </summary>
+        public async Task<(ExecutionStateService State, string Coinbase, string Sender)> RunAndCaptureExecutionStateAsync(
+            string testFilePath, int dataIndex, int gasIndex = 0, int valueIndex = 0)
+        {
+            var json = File.ReadAllText(testFilePath);
+            var tests = JsonConvert.DeserializeObject<Dictionary<string, GeneralStateTest>>(json);
+            foreach (var testEntry in tests)
+            {
+                var test = testEntry.Value;
+                if (!test.Post.ContainsKey(_targetHardfork)) continue;
+                foreach (var postResult in test.Post[_targetHardfork])
+                {
+                    if (postResult.Indexes.Data != dataIndex) continue;
+                    if (postResult.Indexes.Gas != gasIndex) continue;
+                    if (postResult.Indexes.Value != valueIndex) continue;
+                    var ctx = BuildExecutionContext(test, postResult, captureTraces: false);
+                    if (ctx == null) return (null, null, null);
+                    EnsureCachedConfig();
+                    var executor = new TransactionExecutor(_cachedConfig);
+                    try { await executor.ExecuteAsync(ctx); }
+                    catch { return (null, null, null); }
+                    return (ctx.ExecutionState, ctx.Coinbase, ctx.Sender);
+                }
+            }
+            return (null, null, null);
+        }
+
         private async Task<SingleTestResult> RunSingleTestWithExecutorAsync(string testName, GeneralStateTest test, PostResult expected, bool captureTraces = false)
         {
             var result = new SingleTestResult
@@ -899,8 +992,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     return result;
                 }
 
-                var config = HardforkConfig.FromName(_targetHardfork);
-                var executor = new TransactionExecutor(config);
+                var fixtureConfig = ResolveConfigForFixture(test);
+                var executor = new TransactionExecutor(fixtureConfig);
 
                 var execResult = await executor.ExecuteAsync(ctx);
 
@@ -908,13 +1001,14 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 {
                     if (!string.IsNullOrEmpty(expected.ExpectException))
                     {
-                        result.Passed = true;
-                        result.Message = $"Expected exception {expected.ExpectException} - got validation error: {execResult.Error}";
+                        result.Passed = ExpectedRejectionMatcher.Satisfies(expected.ExpectException, execResult.ErrorCode, out var detail);
+                        result.Message = result.Passed
+                            ? $"Expected exception {expected.ExpectException} - got validation error: {detail}"
+                            : $"Expected exception {expected.ExpectException} but got validation error: {detail}";
                         return result;
                     }
 
-                    if (execResult.Error?.Contains("Intrinsic gas too low") == true ||
-                        execResult.Error?.Contains("Insufficient balance") == true)
+                    if (execResult.Error?.Contains("Insufficient balance") == true)
                     {
                         result.Skipped = true;
                         result.SkipReason = execResult.Error;
@@ -939,7 +1033,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
 
                 var accountStates = ExtractPostState(ctx.ExecutionState);
-                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates);
+                var computedStateRoot = StateRootCalculator.CalculateStateRoot(accountStates, skipEmptyAccounts: false);
                 var expectedStateRoot = expected.Hash.HexToByteArray();
 
                 result.ExpectedStateRoot = expected.Hash;
@@ -963,14 +1057,17 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                         result.AccountDiffs = CompareStates(test.Pre, accountStates);
                         result.AccountDiffs.Insert(0, "(No expected post-state in test file, comparing with pre-state)");
                     }
+                    result.FullPostState = DumpFullPostState(accountStates);
                 }
             }
             catch (TransactionValidationException ex)
             {
                 if (!string.IsNullOrEmpty(expected.ExpectException))
                 {
-                    result.Passed = true;
-                    result.Message = $"Expected exception {expected.ExpectException} - got {ex.GetType().Name}: {ex.Message}";
+                    result.Passed = ExpectedRejectionMatcher.Satisfies(expected.ExpectException, ex, out var detail);
+                    result.Message = result.Passed
+                        ? $"Expected exception {expected.ExpectException} - got {detail}"
+                        : $"Expected exception {expected.ExpectException} but got {detail}";
                 }
                 else
                 {
@@ -982,8 +1079,11 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             {
                 if (!string.IsNullOrEmpty(expected.ExpectException))
                 {
-                    result.Passed = true;
-                    result.Message = $"Expected exception {expected.ExpectException} - got {ex.GetType().Name}: {ex.Message}";
+                    result.Passed = ExpectedRejectionMatcher.Satisfies(expected.ExpectException, ex, out var detail);
+                    result.Message = result.Passed
+                        ? $"Expected exception {expected.ExpectException} - got {detail}"
+                        : $"Expected exception {expected.ExpectException} but got {detail}";
+                    if (!result.Passed) result.StackTrace = ex.StackTrace;
                 }
                 else
                 {
@@ -996,11 +1096,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return result;
         }
 
-        /// <summary>
-        /// Builds a TransactionExecutionContext from test data.
-        /// This extracts the transaction and environment parameters from the test format
-        /// into the context structure expected by TransactionExecutor.
-        /// </summary>
         private TransactionExecutionContext BuildExecutionContext(GeneralStateTest test, PostResult expected, bool captureTraces)
         {
             var env = test.Env;
@@ -1015,8 +1110,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var valueStr = tx.Value != null && valueIndex < tx.Value.Count ? tx.Value[valueIndex] : "0x0";
 
             var dataBytes = string.IsNullOrEmpty(data) || data == "0x" ? new byte[0] : data.HexToByteArray();
-            var gasLimit = gasLimitStr.HexToBigInteger(false);
-            var value = valueStr.HexToBigInteger(false);
+            var gasLimit = StateTestScalar.Parse(LegacyTransactionField.GasLimit, gasLimitStr);
+            var value = StateTestScalar.Parse(LegacyTransactionField.Value, valueStr);
             var baseFee = string.IsNullOrEmpty(env.CurrentBaseFee) ? BigInteger.Zero : env.CurrentBaseFee.HexToBigInteger(false);
 
             BigInteger gasPrice;
@@ -1059,54 +1154,84 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             var executionState = SetupPreState(test);
 
             var blockNumber = string.IsNullOrEmpty(env.CurrentNumber)
-                ? 1
+                ? 1L
                 : (long)env.CurrentNumber.HexToBigInteger(false);
 
             var timestamp = string.IsNullOrEmpty(env.CurrentTimestamp)
-                ? 0
+                ? 0L
                 : (long)env.CurrentTimestamp.HexToBigInteger(false);
 
             var blockGasLimit = string.IsNullOrEmpty(env.CurrentGasLimit)
-                ? BigInteger.Zero
-                : env.CurrentGasLimit.HexToBigInteger(false);
+                ? 0L
+                : (long)env.CurrentGasLimit.HexToBigInteger(false);
 
-            BigInteger difficulty = BigInteger.Zero;
+            EvmUInt256 difficulty = EvmUInt256.Zero;
             if (!string.IsNullOrEmpty(env.CurrentRandom))
-                difficulty = env.CurrentRandom.HexToBigInteger(false);
+                difficulty = EvmUInt256BigIntegerExtensions.FromBigInteger(env.CurrentRandom.HexToBigInteger(false));
             else if (!string.IsNullOrEmpty(env.CurrentDifficulty))
-                difficulty = env.CurrentDifficulty.HexToBigInteger(false);
+                difficulty = EvmUInt256BigIntegerExtensions.FromBigInteger(env.CurrentDifficulty.HexToBigInteger(false));
 
-            BigInteger excessBlobGas = BigInteger.Zero;
+            ulong excessBlobGas = 0;
             if (!string.IsNullOrEmpty(env.CurrentExcessBlobGas))
-                excessBlobGas = env.CurrentExcessBlobGas.HexToBigInteger(false);
+                excessBlobGas = (ulong)env.CurrentExcessBlobGas.HexToBigInteger(false);
 
-            var nonce = string.IsNullOrEmpty(tx.Nonce) ? BigInteger.Zero : tx.Nonce.HexToBigInteger(false);
+            EvmUInt256 slotNumber = EvmUInt256.Zero;
+            if (!string.IsNullOrEmpty(env.SlotNumber))
+                slotNumber = EvmUInt256BigIntegerExtensions.FromBigInteger(env.SlotNumber.HexToBigInteger(false));
+
+            var nonce = string.IsNullOrEmpty(tx.Nonce) ? 0UL : (ulong)tx.Nonce.HexToBigInteger(false);
+
+            EvmUInt256? declaredChainId = string.IsNullOrEmpty(tx.ChainId)
+                ? (EvmUInt256?)null
+                : EvmUInt256BigIntegerExtensions.FromBigInteger(tx.ChainId.HexToBigInteger(false));
+
+            List<Authorisation7702Signed> authList = null;
+            if (tx.AuthorizationList != null && tx.AuthorizationList.Count == 0)
+            {
+                authList = new List<Authorisation7702Signed>();
+            }
+            else if (tx.AuthorizationList != null && tx.AuthorizationList.Count > 0)
+            {
+                authList = tx.AuthorizationList.Select(a => new Authorisation7702Signed(
+                    EvmUInt256BigIntegerExtensions.FromBigInteger(a.ChainId.HexToBigInteger(false)),
+                    a.Address,
+                    EvmUInt256BigIntegerExtensions.FromBigInteger(a.Nonce.HexToBigInteger(false)),
+                    a.R.HexToByteArray(),
+                    a.S.HexToByteArray(),
+                    a.V.HexToByteArray()
+                )).ToList();
+            }
 
             return new TransactionExecutionContext
             {
                 Sender = sender,
                 To = toAddress,
                 Data = dataBytes,
-                GasLimit = gasLimit,
-                Value = value,
-                GasPrice = gasPrice,
-                MaxFeePerGas = maxFeePerGas,
-                MaxPriorityFeePerGas = maxPriorityFeePerGas,
+                GasLimit = (long)gasLimit,
+                Value = EvmUInt256BigIntegerExtensions.FromBigInteger(value),
+                GasPrice = EvmUInt256BigIntegerExtensions.FromBigInteger(gasPrice),
+                MaxFeePerGas = EvmUInt256BigIntegerExtensions.FromBigInteger(maxFeePerGas),
+                MaxPriorityFeePerGas = EvmUInt256BigIntegerExtensions.FromBigInteger(maxPriorityFeePerGas),
                 Nonce = nonce,
                 IsEip1559 = isEip1559,
                 IsContractCreation = isContractCreation,
                 IsType3Transaction = isType3Transaction,
                 BlobVersionedHashes = blobVersionedHashes,
-                MaxFeePerBlobGas = isType3Transaction ? tx.MaxFeePerBlobGas.HexToBigInteger(false) : BigInteger.Zero,
+                MaxFeePerBlobGas = isType3Transaction ? EvmUInt256BigIntegerExtensions.FromBigInteger(tx.MaxFeePerBlobGas.HexToBigInteger(false)) : EvmUInt256.Zero,
                 AccessList = accessListEntries,
+                AuthorisationList = authList,
 
                 BlockNumber = blockNumber,
                 Timestamp = timestamp,
                 Coinbase = env.CurrentCoinbase,
-                BaseFee = baseFee,
+                BaseFee = EvmUInt256BigIntegerExtensions.FromBigInteger(baseFee),
                 Difficulty = difficulty,
                 BlockGasLimit = blockGasLimit,
                 ExcessBlobGas = excessBlobGas,
+                SlotNumber = slotNumber,
+
+                ChainId = EvmUInt256.One,
+                DeclaredChainId = declaredChainId,
 
                 ExecutionState = executionState,
                 TraceEnabled = captureTraces
@@ -1115,7 +1240,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private ExecutionStateService SetupPreState(GeneralStateTest test)
         {
-            var executionState = new ExecutionStateService(new MockNodeDataService());
+            var executionState = new ExecutionStateService(new MockNodeDataService(BuildPreStateReader(test)));
 
             foreach (var preAccount in test.Pre)
             {
@@ -1123,23 +1248,24 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 var account = preAccount.Value;
 
                 var accountState = executionState.CreateOrGetAccountExecutionState(address);
+                accountState.WasInPreState = true;
 
                 accountState.Code = string.IsNullOrEmpty(account.Code) || account.Code == "0x"
                     ? new byte[0]
                     : account.Code.HexToByteArray();
 
                 accountState.Balance.SetInitialChainBalance(
-                    string.IsNullOrEmpty(account.Balance) ? BigInteger.Zero : account.Balance.HexToBigInteger(false));
+                    EvmUInt256BigIntegerExtensions.FromBigInteger(string.IsNullOrEmpty(account.Balance) ? BigInteger.Zero : account.Balance.HexToBigInteger(false)));
 
                 accountState.Nonce = string.IsNullOrEmpty(account.Nonce)
-                    ? BigInteger.Zero
-                    : account.Nonce.HexToBigInteger(false);
+                    ? (ulong?)0
+                    : (ulong)account.Nonce.HexToBigInteger(false);
 
                 if (account.Storage != null)
                 {
                     foreach (var storage in account.Storage)
                     {
-                        var key = storage.Key.HexToBigInteger(false);
+                        var key = EvmUInt256BigIntegerExtensions.FromBigInteger(storage.Key.HexToBigInteger(false));
                         var value = storage.Value.HexToByteArray();
                         accountState.SetPreStateStorage(key, value);
                     }
@@ -1148,6 +1274,44 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
 
             return executionState;
+        }
+
+        private static InMemoryStateReader BuildPreStateReader(GeneralStateTest test)
+        {
+            var witnessAccounts = new List<Nethereum.EVM.Witness.WitnessAccount>();
+
+            foreach (var preAccount in test.Pre)
+            {
+                var address = preAccount.Key;
+                var account = preAccount.Value;
+
+                var witnessAccount = new Nethereum.EVM.Witness.WitnessAccount
+                {
+                    Address = address,
+                    Balance = EvmUInt256BigIntegerExtensions.FromBigInteger(
+                        string.IsNullOrEmpty(account.Balance) ? BigInteger.Zero : account.Balance.HexToBigInteger(false)),
+                    Nonce = string.IsNullOrEmpty(account.Nonce) ? 0UL : (ulong)account.Nonce.HexToBigInteger(false),
+                    Code = string.IsNullOrEmpty(account.Code) || account.Code == "0x" ? new byte[0] : account.Code.HexToByteArray(),
+                    Storage = new List<Nethereum.EVM.Witness.WitnessStorageSlot>()
+                };
+
+                if (account.Storage != null)
+                {
+                    foreach (var storage in account.Storage)
+                    {
+                        witnessAccount.Storage.Add(new Nethereum.EVM.Witness.WitnessStorageSlot
+                        {
+                            Key = EvmUInt256BigIntegerExtensions.FromBigInteger(storage.Key.HexToBigInteger(false)),
+                            Value = EvmUInt256.FromBigEndian(storage.Value.HexToByteArray().PadTo32Bytes())
+                        });
+                    }
+                }
+
+                witnessAccounts.Add(witnessAccount);
+            }
+
+            return new InMemoryStateReader(
+                Nethereum.EVM.Witness.WitnessStateBuilder.BuildAccountState(witnessAccounts));
         }
 
         private string GetSenderFromSecretKey(string secretKey)
@@ -1159,19 +1323,63 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return key.GetPublicAddress();
         }
 
-        private Dictionary<string, AccountState> ExtractPostState(ExecutionStateService executionState)
+        private static Dictionary<string, string> DumpFullPostState(Dictionary<string, AccountState> accountStates)
+        {
+            var result = new Dictionary<string, string>();
+            foreach (var addr in accountStates.Keys.OrderBy(k => k))
+            {
+                var a = accountStates[addr];
+                var balanceHex = "0x" + a.Balance.ToString("X").TrimStart('0');
+                if (balanceHex == "0x") balanceHex = "0x0";
+                var nonceHex = "0x" + a.Nonce.ToString("X").TrimStart('0');
+                if (nonceHex == "0x") nonceHex = "0x0";
+                var codeLen = a.Code?.Length ?? 0;
+                var sb = new System.Text.StringBuilder();
+                sb.Append("balance=").Append(balanceHex).Append(" nonce=").Append(nonceHex).Append(" codeLen=").Append(codeLen);
+                if (a.Storage != null && a.Storage.Count > 0)
+                {
+                    sb.Append(" storage={");
+                    bool first = true;
+                    foreach (var kvp in a.Storage.OrderBy(k => k.Key))
+                    {
+                        if (!first) sb.Append(",");
+                        sb.Append("0x").Append(kvp.Key.ToString("X")).Append("=0x").Append(BitConverter.ToString(kvp.Value).Replace("-", "").TrimStart('0'));
+                        first = false;
+                    }
+                    sb.Append("}");
+                }
+                result[addr] = sb.ToString();
+            }
+            return result;
+        }
+
+        private Dictionary<string, AccountState> ExtractPostState(ExecutionStateService executionState, bool skipPhantomAccounts = true)
         {
             var result = new Dictionary<string, AccountState>();
 
             foreach (var kvp in executionState.AccountsState)
             {
-                var address = kvp.Key;
+                var address = kvp.Key.ToHexLower();
                 var accountExecState = kvp.Value;
+
+                if (accountExecState.IsRemoved) continue;
+
+                if (skipPhantomAccounts &&
+                    !accountExecState.WasInPreState &&
+                    !accountExecState.IsTouched &&
+                    !accountExecState.IsNewContract &&
+                    accountExecState.Storage.Count == 0 &&
+                    accountExecState.Balance.GetTotalBalance().IsZero &&
+                    (accountExecState.Code == null || accountExecState.Code.Length == 0) &&
+                    (!accountExecState.Nonce.HasValue || accountExecState.Nonce.Value.IsZero))
+                {
+                    continue;
+                }
 
                 var accountState = new AccountState
                 {
-                    Nonce = accountExecState.Nonce ?? BigInteger.Zero,
-                    Balance = accountExecState.Balance.GetTotalBalance(),
+                    Nonce = (accountExecState.Nonce ?? (EvmUInt256)0L).ToBigInteger(),
+                    Balance = accountExecState.Balance.GetTotalBalance().ToBigInteger(),
                     Code = accountExecState.Code ?? new byte[0],
                     Storage = new Dictionary<BigInteger, byte[]>()
                 };
@@ -1179,7 +1387,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 foreach (var storageKvp in accountExecState.Storage)
                 {
                     if (storageKvp.Value != null)
-                        accountState.Storage[storageKvp.Key] = storageKvp.Value;
+                        accountState.Storage[storageKvp.Key.ToBigInteger()] = storageKvp.Value;
                 }
 
                 result[address] = accountState;
@@ -1277,124 +1485,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return diffs;
         }
 
-        private static BigInteger CalculateBlobBaseFee(BigInteger excessBlobGas)
-        {
-            const int MIN_BASE_FEE_PER_BLOB_GAS = 1;
-            const int BLOB_BASE_FEE_UPDATE_FRACTION = 3338477;
-            return FakeExponential(MIN_BASE_FEE_PER_BLOB_GAS, excessBlobGas, BLOB_BASE_FEE_UPDATE_FRACTION);
-        }
-
-        private static BigInteger FakeExponential(BigInteger factor, BigInteger numerator, BigInteger denominator)
-        {
-            int i = 1;
-            BigInteger output = 0;
-            BigInteger numeratorAccum = factor * denominator;
-            while (numeratorAccum > 0)
-            {
-                output += numeratorAccum;
-                numeratorAccum = (numeratorAccum * numerator) / (denominator * i);
-                i++;
-            }
-            return output / denominator;
-        }
-
-        private static BigInteger CalculateIntrinsicGas(byte[] data, bool isContractCreation, List<AccessListItem> accessList = null, string targetHardfork = null)
-        {
-            BigInteger gas = G_TRANSACTION;
-
-            if (isContractCreation)
-            {
-                gas += G_TXCREATE;
-
-                if (data != null && data.Length > 0)
-                {
-                    int initcodeWords = (data.Length + 31) / 32;
-                    gas += initcodeWords * 2;
-                }
-            }
-
-            // Standard data gas (4 per zero, 16 per non-zero)
-            if (data != null && data.Length > 0)
-            {
-                foreach (var b in data)
-                {
-                    if (b == 0)
-                        gas += G_TXDATAZERO;
-                    else
-                        gas += G_TXDATANONZERO;
-                }
-            }
-
-            if (accessList != null)
-            {
-                foreach (var entry in accessList)
-                {
-                    gas += 2400;
-                    if (entry.StorageKeys != null)
-                    {
-                        gas += entry.StorageKeys.Count * 1900;
-                    }
-                }
-            }
-
-            return gas;
-        }
-
-        // EIP-7623: Calculate tokens in calldata (zeros + 4*non_zeros)
-        private static BigInteger CalculateTokensInCalldata(byte[] data)
-        {
-            if (data == null || data.Length == 0)
-                return 0;
-
-            int zeroBytes = 0;
-            int nonZeroBytes = 0;
-            foreach (var b in data)
-            {
-                if (b == 0) zeroBytes++;
-                else nonZeroBytes++;
-            }
-            return zeroBytes + (nonZeroBytes * G_TOKENS_PER_NONZERO);
-        }
-
-        // EIP-7623: Calculate floor gas limit (21000 + 10*tokens + creation_base)
-        private static BigInteger CalculateFloorGasLimit(byte[] data, bool isContractCreation)
-        {
-            var tokens = CalculateTokensInCalldata(data);
-            BigInteger floor = G_TRANSACTION + (G_FLOOR_PER_TOKEN * tokens);
-            if (isContractCreation)
-                floor += G_TXCREATE;
-            return floor;
-        }
-
-        private static bool IsShanghaiOrLater(string hardfork)
-        {
-            if (string.IsNullOrEmpty(hardfork))
-                return false;
-
-            var lowerFork = hardfork.ToLowerInvariant();
-            return lowerFork == "shanghai" || lowerFork == "cancun" || lowerFork == "prague" ||
-                   lowerFork == "osaka" || lowerFork == "amsterdam";
-        }
-
-        private static bool IsCancunOrLater(string hardfork)
-        {
-            if (string.IsNullOrEmpty(hardfork))
-                return false;
-
-            var lowerFork = hardfork.ToLowerInvariant();
-            return lowerFork == "cancun" || lowerFork == "prague" ||
-                   lowerFork == "osaka" || lowerFork == "amsterdam";
-        }
-
-        private static bool IsPragueOrLater(string hardfork)
-        {
-            if (string.IsNullOrEmpty(hardfork))
-                return false;
-
-            var lowerFork = hardfork.ToLowerInvariant();
-            return lowerFork == "prague" || lowerFork == "osaka" || lowerFork == "amsterdam";
-        }
-
         private static byte[] TrimLeadingZeros(byte[] bytes)
         {
             if (bytes == null || bytes.Length == 0)
@@ -1438,5 +1528,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public string ActualStateRoot { get; set; }
         public List<string> AccountDiffs { get; set; }
         public List<ProgramTrace> Traces { get; set; }
+        public Dictionary<string, string> FullPostState { get; set; }
     }
 }

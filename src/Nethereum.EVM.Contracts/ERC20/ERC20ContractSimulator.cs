@@ -24,12 +24,25 @@ namespace Nethereum.EVM.Contracts.ERC20
         public string ContractAddress { get; }
         private byte[] Code { get; set; }
 
-        public ERC20ContractSimulator(IWeb3 web3, BigInteger chainId, string contractAddress, byte[] code = null)
+        private readonly Nethereum.EVM.ChainForkResolver _forkResolver;
+
+        public ERC20ContractSimulator(IWeb3 web3, BigInteger chainId, string contractAddress, byte[] code = null,
+            Nethereum.EVM.ChainForkResolver forkResolver = null)
         {
             Web3 = web3;
             ChainId = chainId;
             ContractAddress = contractAddress;
             Code = code;
+            _forkResolver = forkResolver ?? Nethereum.EVM.Precompiles.DefaultChainForkResolver.Default;
+        }
+
+        private async Task<Nethereum.EVM.HardforkConfig> ResolveRulesAsync(HexBigInteger at = null)
+        {
+            at = at ?? await Web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            var block = await Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(at);
+
+            return _forkResolver.ResolveConfigAt(
+                (long)ChainId, (long)at.Value, (ulong)block.Timestamp.Value);
         }
 
         public class TransferSimulationResult 
@@ -107,7 +120,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             var code = await GetCodeAsync();
             var program = new Program(code, programContext);
 
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(await ResolveRulesAsync());
 
             await evmSimulator.ExecuteWithCallStackAsync(program);
             return program.ProgramResult;
@@ -125,7 +138,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             var programContext = new ProgramContext(callInput, executionStateService);
             var code = await GetCodeAsync();
             var program = new Program(code, programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(await ResolveRulesAsync());
             await evmSimulator.ExecuteWithCallStackAsync(program);
             var resultEncoded = program.ProgramResult.Result;
             var result = new BalanceOfOutputDTO().DecodeOutput(resultEncoded.ToHex());
@@ -157,7 +170,7 @@ namespace Nethereum.EVM.Contracts.ERC20
             //program with the code
             var code = await GetCodeAsync();
             var program = new Program(code, programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(await ResolveRulesAsync(blockNumber));
 
             //execute the program
             await evmSimulator.ExecuteWithCallStackAsync(program);
@@ -179,7 +192,7 @@ namespace Nethereum.EVM.Contracts.ERC20
                     for (ulong i = 0; i < numberOfSlotsToTry; i++)
                     {
                         var storageKey = StorageUtil.CalculateMappingAddressStorageKeyAsBigInteger(addressWithAmount, i);
-                        if (storageKey == BigInteger.Parse(storageItem.Key))
+                        if (storageKey == storageItem.Key.HexToBigInteger(false))
                         {
                             //found it
                             return i;

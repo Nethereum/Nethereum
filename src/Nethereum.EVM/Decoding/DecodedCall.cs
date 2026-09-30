@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.RPC.Eth.DTOs;
@@ -6,6 +7,7 @@ using System.Numerics;
 
 namespace Nethereum.EVM.Decoding
 {
+    [NethereumDocExample(DocSection.EvmSimulator, "decode-result", "How one decoded frame was entered")]
     public enum CallType
     {
         Call,

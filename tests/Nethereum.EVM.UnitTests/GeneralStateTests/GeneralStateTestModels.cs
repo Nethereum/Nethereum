@@ -20,6 +20,30 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         [JsonProperty("post")]
         public Dictionary<string, List<PostResult>> Post { get; set; }
+
+        [JsonProperty("config")]
+        public TestConfig Config { get; set; }
+    }
+
+    public class TestConfig
+    {
+        [JsonProperty("blobSchedule")]
+        public Dictionary<string, BlobScheduleEntry> BlobSchedule { get; set; }
+
+        [JsonProperty("chainid")]
+        public string ChainId { get; set; }
+    }
+
+    public class BlobScheduleEntry
+    {
+        [JsonProperty("target")]
+        public string Target { get; set; }
+
+        [JsonProperty("max")]
+        public string Max { get; set; }
+
+        [JsonProperty("baseFeeUpdateFraction")]
+        public string BaseFeeUpdateFraction { get; set; }
     }
 
     public class TestInfo
@@ -62,6 +86,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         [JsonProperty("currentExcessBlobGas")]
         public string CurrentExcessBlobGas { get; set; }
+
+        [JsonProperty("slotNumber")]
+        public string SlotNumber { get; set; }
 
         [JsonProperty("parentBlobGasUsed")]
         public string ParentBlobGasUsed { get; set; }
@@ -120,6 +147,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         [JsonProperty("nonce")]
         public string Nonce { get; set; }
 
+        [JsonProperty("chainId")]
+        public string ChainId { get; set; }
+
         [JsonProperty("secretKey")]
         public string SecretKey { get; set; }
 
@@ -140,6 +170,30 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         [JsonProperty("blobVersionedHashes")]
         public List<string> BlobVersionedHashes { get; set; }
+
+        [JsonProperty("authorizationList")]
+        public List<AuthorizationListItem> AuthorizationList { get; set; }
+    }
+
+    public class AuthorizationListItem
+    {
+        [JsonProperty("chainId")]
+        public string ChainId { get; set; }
+
+        [JsonProperty("address")]
+        public string Address { get; set; }
+
+        [JsonProperty("nonce")]
+        public string Nonce { get; set; }
+
+        [JsonProperty("v")]
+        public string V { get; set; }
+
+        [JsonProperty("r")]
+        public string R { get; set; }
+
+        [JsonProperty("s")]
+        public string S { get; set; }
     }
 
     public class AccessListItem
@@ -202,6 +256,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         Paris,
         Shanghai,
         Cancun,
-        Prague
+        Prague,
+        Osaka
     }
 }

@@ -1,0 +1,223 @@
+using Nethereum.CoreChain;
+using Nethereum.EVM;
+using Nethereum.EVM.Execution.Precompiles;
+using Nethereum.EVM.Precompiles.Kzg.Handlers;
+using Nethereum.EVM.Witness;
+using Nethereum.EVM.Zisk.Backends;
+using Nethereum.Merkle.Binary.Hashing;
+using Nethereum.Model;
+using Nethereum.Util.HashProviders;
+using Nethereum.Zisk.Core;
+
+namespace Nethereum.EVM.Zisk
+{
+    public class ZiskBinaryWitness
+    {
+        public static int Main()
+        {
+            ZiskIO.WriteLine("BIN:reading");
+            var inputBytes = ZiskInput.Read();
+            if (inputBytes.Length == 0)
+            {
+                ZiskIO.WriteLine("BIN:no input");
+                ZiskIO.SetOutput(0, 1);
+                return 1;
+            }
+
+            ZiskIO.Write("BIN:len="); ZiskIO.WriteLong(inputBytes.Length); ZiskIO.Write('\n');
+
+            byte version = inputBytes[0];
+            if (version != BinaryBlockWitness.VERSION)
+            {
+                ZiskIO.WriteLine("BIN:bad version");
+                ZiskIO.SetOutput(0, 3);
+                return 1;
+            }
+
+            var block = BinaryBlockWitness.Deserialize(inputBytes.ToArray());
+
+            ZiskIO.Write("BIN:block txs="); ZiskIO.WriteLong(block.Transactions.Count);
+            ZiskIO.Write(" accounts="); ZiskIO.WriteLong(block.Accounts.Count); ZiskIO.Write('\n');
+
+            var encoding = RlpBlockEncodingProvider.Instance;
+            var registry = BuildMinimalRegistry(block.Features);
+            if (registry == null)
+                return 1;
+
+            bool needsStateRoot = block.ComputePostStateRoot || block.ProduceBlockCommitments;
+            IStateRootCalculator stateRootCalc = null;
+
+            if (needsStateRoot)
+            {
+                LayerKzgAndBlsBackends(registry, block.Features.Fork);
+                stateRootCalc = ResolveStateRootCalculator(block.Features, encoding);
+            }
+
+            ZiskIO.WriteLine("BIN:exec");
+
+            var result = Nethereum.EVM.Execution.BlockExecutor.Execute(
+                block,
+                encoding,
+                registry,
+                needsStateRoot ? stateRootCalc : null,
+                needsStateRoot ? new PatriciaBlockRootCalculator() : null);
+
+            int txFailed = 0;
+            foreach (var tx in result.TxResults)
+                if (!tx.Success) txFailed++;
+
+            ZiskIO.Write("BIN:executed ok="); ZiskIO.WriteLong(result.TxResults.Count - txFailed);
+            ZiskIO.Write(" fail="); ZiskIO.WriteLong(txFailed); ZiskIO.Write('\n');
+
+            ZiskIO.SetOutput(0, txFailed == 0 ? 0u : 1u);
+            WriteGas(result.CumulativeGasUsed);
+            WriteBytes32ToSlots(3, result.BlockHash ?? new byte[32]);
+            WriteBytes32ToSlots(11, result.StateRoot ?? new byte[32]);
+            WriteBytes32ToSlots(19, result.TransactionsRoot ?? new byte[32]);
+            WriteBytes32ToSlots(27, result.ReceiptsRoot ?? new byte[32]);
+            ZiskIO.SetOutput(35, (uint)result.TxResults.Count);
+            WriteBytes32ToSlots(36, block.PreStateRoot ?? new byte[32]);
+            ZiskIO.SetOutput(44, (uint)(block.BlockNumber & 0xFFFFFFFF));
+            ZiskIO.SetOutput(45, (uint)(block.BlockNumber >> 32));
+            ZiskIO.SetOutput(46, (uint)(block.ChainId & 0xFFFFFFFF));
+            ZiskIO.SetOutput(47, (uint)(block.ChainId >> 32));
+            WriteBytes32ToSlots(48, block.ParentHash ?? new byte[32]);
+
+            ZiskIO.Write("BIN:block_hash=");
+            WriteHex(result.BlockHash ?? new byte[32]); ZiskIO.Write('\n');
+            ZiskIO.Write("BIN:state_root=");
+            WriteHex(result.StateRoot ?? new byte[32]); ZiskIO.Write('\n');
+            ZiskIO.Write("BIN:OK gas="); ZiskIO.WriteLong(result.CumulativeGasUsed); ZiskIO.Write('\n');
+
+            return 0;
+        }
+
+        static void WriteGas(long gas)
+        {
+            ZiskIO.SetOutput(1, (uint)(gas & 0xFFFFFFFF));
+            ZiskIO.SetOutput(2, (uint)((gas >> 32) & 0xFFFFFFFF));
+        }
+
+        static void WriteBytes32ToSlots(int startSlot, byte[] data)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                uint word = (uint)(data[i * 4] << 24 | data[i * 4 + 1] << 16 |
+                                   data[i * 4 + 2] << 8 | data[i * 4 + 3]);
+                ZiskIO.SetOutput(startSlot + i, word);
+            }
+        }
+
+        static void WriteHex(byte[] data)
+        {
+            ZiskIO.Write("0x");
+            for (int i = 0; i < data.Length; i++)
+            {
+                var b = data[i];
+                ZiskIO.Write((char)HexNibble(b >> 4));
+                ZiskIO.Write((char)HexNibble(b & 0xF));
+            }
+        }
+
+        static int HexNibble(int n) => n < 10 ? '0' + n : 'a' + n - 10;
+
+        static void LayerKzgAndBlsBackends(HardforkRegistry registry, HardforkName fork)
+        {
+            const int PointEvaluation = 0x0A;   // EIP-4844, Cancun onward
+            const int Bls12381G1Add = 0x0B;     // EIP-2537, Prague onward
+
+            var cfg = registry.Get(fork);
+
+            if (cfg.Precompiles.CanHandle(PointEvaluation))
+                cfg = cfg.WithPrecompiles(cfg.Precompiles.WithHandlers(
+                    new KzgPointEvaluationPrecompile(ZiskKzgOperations.Instance)));
+            if (cfg.Precompiles.CanHandle(Bls12381G1Add))
+                cfg = cfg.WithBlsBackend(ZiskBls12381Operations.Instance);
+
+            registry.Register(fork, cfg);
+        }
+
+        static IStateRootCalculator ResolveStateRootCalculator(
+            BlockFeatureConfig features, IBlockEncodingProvider encoding)
+        {
+            if (features != null && features.StateTree == WitnessStateTreeType.Binary)
+            {
+                IHashProvider hashProvider;
+                if (features.HashFunction == WitnessHashFunction.Blake3)
+                    hashProvider = new Blake3HashProvider();
+                else if (features.HashFunction == WitnessHashFunction.Poseidon)
+                    hashProvider = new Nethereum.Zisk.Core.ZiskPoseidonHashProvider();
+                else if (features.HashFunction == WitnessHashFunction.Sha256)
+                    hashProvider = new Nethereum.Zisk.Core.ZiskSha256HashProvider();
+                else if (features.HashFunction == WitnessHashFunction.Keccak)
+                    hashProvider = new Nethereum.Zisk.Core.ZiskKeccakHashProvider();
+                else
+                {
+                    ZiskIO.Write("BIN:unknown hash "); ZiskIO.WriteLong((int)features.HashFunction); ZiskIO.Write('\n');
+                    ZiskIO.SetOutput(0, 4);
+                    return new PatriciaStateRootCalculator(encoding);
+                }
+                return new BinaryStateRootCalculator(hashProvider);
+            }
+            return new PatriciaStateRootCalculator(encoding);
+        }
+
+        static HardforkRegistry BuildMinimalRegistry(BlockFeatureConfig features)
+        {
+            var backends = ZiskPrecompileBackends.Instance;
+            var fork = features?.Fork ?? HardforkName.Unspecified;
+
+            var r = new HardforkRegistry();
+            var precompiles = PrecompileRegistries.PragueBase(
+                backends.EcRecover, backends.Sha256, backends.Ripemd160,
+                backends.ModExp, backends.Bn128, backends.Blake2f);
+
+            HardforkConfig baseCfg;
+            switch (fork)
+            {
+                case HardforkName.Prague:
+                    baseCfg = HardforkConfig.Prague;
+                    break;
+                case HardforkName.Osaka:
+                    baseCfg = HardforkConfig.Osaka;
+                    break;
+                // EIP-7892 blob-parameter-only forks. Present so they are not
+                // approximated by Osaka's config, which is what the fork name
+                // would otherwise resolve to. Their distinguishing blob-gas
+                // parameters now have an input: the witness carries ExcessBlobGas
+                // and TransactionContextFactory feeds it to the blob base-fee
+                // calculation. What remains unproven is the RESULT — no gate
+                // executes a BPO block and compares its root against a reference.
+                case HardforkName.OsakaBpo1:
+                    baseCfg = HardforkConfig.OsakaBpo1;
+                    break;
+                case HardforkName.OsakaBpo2:
+                    baseCfg = HardforkConfig.OsakaBpo2;
+                    break;
+                // Amsterdam is still deliberately absent, but for one reason now
+                // rather than two: the format carries the EIP-7843 slot number,
+                // so SLOTNUM no longer has to invent one. It does NOT carry the
+                // EIP-7928 block access list hash — BlockWitnessData has no such
+                // field, and what the proof should CLAIM about that list is an
+                // open question, not a serialisation gap: a carried hash asserts
+                // the list without proving it, a computed one needs collection
+                // this guest does not do. Until that is decided, a header built
+                // here would be a field short. Rules without the inputs they need
+                // produce a confident wrong answer, which on a proving path is
+                // worse than refusing.
+                default:
+                    ZiskIO.Write("BIN:unsupported fork "); ZiskIO.WriteLong((int)fork); ZiskIO.Write('\n');
+                    ZiskIO.SetOutput(0, 5);
+                    return null;
+            }
+
+            if (fork != HardforkName.Prague && backends.P256Verify != null)
+                precompiles = PrecompileRegistries.OsakaBase(
+                    backends.EcRecover, backends.Sha256, backends.Ripemd160,
+                    backends.ModExp, backends.Bn128, backends.Blake2f, backends.P256Verify);
+
+            r.Register(fork, baseCfg.WithPrecompiles(precompiles));
+            return r;
+        }
+    }
+}
