@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts.EIP3009.EIP3009;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
 using Nethereum.Util;
@@ -28,7 +29,7 @@ public class PaymentAuthorizationValidator
         string tokenName,
         string tokenVersion,
         int chainId,
-        string rpcUrl,
+        IClient client,
         CancellationToken cancellationToken = default)
     {
         var signature = EthECDSASignatureFactory.ExtractECDSASignature(signatureHex);
@@ -47,7 +48,16 @@ public class PaymentAuthorizationValidator
             return ValidationResult.Invalid(X402ErrorCodes.InvalidSignature);
         }
 
-        var web3 = new Nethereum.Web3.Web3(rpcUrl);
+        return await ValidateFundsNonceTimeAsync(authorization, tokenAddress, client, cancellationToken);
+    }
+
+    public async Task<ValidationResult> ValidateFundsNonceTimeAsync(
+        Authorization authorization,
+        string tokenAddress,
+        IClient client,
+        CancellationToken cancellationToken = default)
+    {
+        var web3 = new Nethereum.Web3.Web3(client);
         var erc20Service = web3.Eth.ERC20.GetContractService(tokenAddress);
 
         var balance = await erc20Service.BalanceOfQueryAsync(authorization.From);

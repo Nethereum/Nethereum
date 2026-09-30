@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
 using Nethereum.Web3.Accounts;
 using Nethereum.X402.Blockchain;
@@ -62,20 +64,12 @@ public static class ServiceCollectionExtensionsServer
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <param name="facilitatorPrivateKey">Private key for submitting transactions (hex format with or without 0x prefix)</param>
-    /// <param name="rpcEndpoints">Dictionary mapping network names to RPC endpoints (e.g., "base-sepolia" -> "https://...")</param>
-    /// <param name="tokenAddresses">Dictionary mapping network names to token contract addresses</param>
-    /// <param name="chainIds">Dictionary mapping network names to chain IDs</param>
-    /// <param name="tokenNames">Dictionary mapping network names to token names (e.g., "USD Coin")</param>
-    /// <param name="tokenVersions">Dictionary mapping network names to token versions (e.g., "2")</param>
+    /// <param name="rpcEndpointsByChainId">Dictionary mapping chain IDs to RPC endpoints (e.g., 84532 -> "https://...")</param>
     /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddX402TransferProcessor(
         this IServiceCollection services,
         string facilitatorPrivateKey,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, string> rpcEndpointsByChainId)
     {
         ArgumentNullException.ThrowIfNull(services, nameof(services));
 
@@ -84,22 +78,14 @@ public static class ServiceCollectionExtensionsServer
             throw new ArgumentException("Facilitator private key is required", nameof(facilitatorPrivateKey));
         }
 
-        ArgumentNullException.ThrowIfNull(rpcEndpoints, nameof(rpcEndpoints));
-        ArgumentNullException.ThrowIfNull(tokenAddresses, nameof(tokenAddresses));
-        ArgumentNullException.ThrowIfNull(chainIds, nameof(chainIds));
-        ArgumentNullException.ThrowIfNull(tokenNames, nameof(tokenNames));
-        ArgumentNullException.ThrowIfNull(tokenVersions, nameof(tokenVersions));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
         // Register as IX402PaymentProcessor
         services.AddSingleton<IX402PaymentProcessor>(sp =>
         {
             return new X402TransferWithAuthorisation3009Service(
                 facilitatorPrivateKey,
-                rpcEndpoints,
-                tokenAddresses,
-                chainIds,
-                tokenNames,
-                tokenVersions);
+                ClientsFromUrls(rpcEndpointsByChainId));
         });
 
         return services;
@@ -108,29 +94,17 @@ public static class ServiceCollectionExtensionsServer
     public static IServiceCollection AddX402TransferProcessor(
         this IServiceCollection services,
         IAccount facilitatorAccount,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, string> rpcEndpointsByChainId)
     {
         ArgumentNullException.ThrowIfNull(services, nameof(services));
         ArgumentNullException.ThrowIfNull(facilitatorAccount, nameof(facilitatorAccount));
-        ArgumentNullException.ThrowIfNull(rpcEndpoints, nameof(rpcEndpoints));
-        ArgumentNullException.ThrowIfNull(tokenAddresses, nameof(tokenAddresses));
-        ArgumentNullException.ThrowIfNull(chainIds, nameof(chainIds));
-        ArgumentNullException.ThrowIfNull(tokenNames, nameof(tokenNames));
-        ArgumentNullException.ThrowIfNull(tokenVersions, nameof(tokenVersions));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
         services.AddSingleton<IX402PaymentProcessor>(sp =>
         {
             return new X402TransferWithAuthorisation3009Service(
                 facilitatorAccount,
-                rpcEndpoints,
-                tokenAddresses,
-                chainIds,
-                tokenNames,
-                tokenVersions);
+                ClientsFromUrls(rpcEndpointsByChainId));
         });
 
         return services;
@@ -139,30 +113,70 @@ public static class ServiceCollectionExtensionsServer
     public static IServiceCollection AddX402TransferProcessor(
         this IServiceCollection services,
         Func<IServiceProvider, IAccount> accountFactory,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, string> rpcEndpointsByChainId)
     {
         ArgumentNullException.ThrowIfNull(services, nameof(services));
         ArgumentNullException.ThrowIfNull(accountFactory, nameof(accountFactory));
-        ArgumentNullException.ThrowIfNull(rpcEndpoints, nameof(rpcEndpoints));
-        ArgumentNullException.ThrowIfNull(tokenAddresses, nameof(tokenAddresses));
-        ArgumentNullException.ThrowIfNull(chainIds, nameof(chainIds));
-        ArgumentNullException.ThrowIfNull(tokenNames, nameof(tokenNames));
-        ArgumentNullException.ThrowIfNull(tokenVersions, nameof(tokenVersions));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
         services.AddSingleton<IX402PaymentProcessor>(sp =>
         {
             var account = accountFactory(sp);
             return new X402TransferWithAuthorisation3009Service(
                 account,
-                rpcEndpoints,
-                tokenAddresses,
-                chainIds,
-                tokenNames,
-                tokenVersions);
+                ClientsFromUrls(rpcEndpointsByChainId));
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddX402ExactProcessor(
+        this IServiceCollection services,
+        string facilitatorPrivateKey,
+        Dictionary<int, string> rpcEndpointsByChainId)
+    {
+        ArgumentNullException.ThrowIfNull(services, nameof(services));
+        if (string.IsNullOrWhiteSpace(facilitatorPrivateKey))
+            throw new ArgumentException("Facilitator private key is required", nameof(facilitatorPrivateKey));
+        return services.AddX402ExactProcessor(new Account(facilitatorPrivateKey), rpcEndpointsByChainId);
+    }
+
+    public static IServiceCollection AddX402ExactProcessor(
+        this IServiceCollection services,
+        Func<IServiceProvider, IAccount> accountFactory,
+        Dictionary<int, string> rpcEndpointsByChainId)
+    {
+        ArgumentNullException.ThrowIfNull(services, nameof(services));
+        ArgumentNullException.ThrowIfNull(accountFactory, nameof(accountFactory));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
+
+        services.AddSingleton<IX402PaymentProcessor>(sp =>
+        {
+            var account = accountFactory(sp);
+            var clients = ClientsFromUrls(rpcEndpointsByChainId);
+            return new X402ExactSchemeProcessor(
+                new X402TransferWithAuthorisation3009Service(account, clients),
+                new X402ExactPermit2Service(account, clients));
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddX402ExactProcessor(
+        this IServiceCollection services,
+        IAccount facilitatorAccount,
+        Dictionary<int, string> rpcEndpointsByChainId)
+    {
+        ArgumentNullException.ThrowIfNull(services, nameof(services));
+        ArgumentNullException.ThrowIfNull(facilitatorAccount, nameof(facilitatorAccount));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
+
+        services.AddSingleton<IX402PaymentProcessor>(sp =>
+        {
+            var clients = ClientsFromUrls(rpcEndpointsByChainId);
+            return new X402ExactSchemeProcessor(
+                new X402TransferWithAuthorisation3009Service(facilitatorAccount, clients),
+                new X402ExactPermit2Service(facilitatorAccount, clients));
         });
 
         return services;
@@ -175,20 +189,12 @@ public static class ServiceCollectionExtensionsServer
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <param name="receiverPrivateKey">Private key for submitting transactions (hex format with or without 0x prefix)</param>
-    /// <param name="rpcEndpoints">Dictionary mapping network names to RPC endpoints (e.g., "base-sepolia" -> "https://...")</param>
-    /// <param name="tokenAddresses">Dictionary mapping network names to token contract addresses</param>
-    /// <param name="chainIds">Dictionary mapping network names to chain IDs</param>
-    /// <param name="tokenNames">Dictionary mapping network names to token names (e.g., "USD Coin")</param>
-    /// <param name="tokenVersions">Dictionary mapping network names to token versions (e.g., "2")</param>
+    /// <param name="rpcEndpointsByChainId">Dictionary mapping chain IDs to RPC endpoints (e.g., 84532 -> "https://...")</param>
     /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddX402ReceiveProcessor(
         this IServiceCollection services,
         string receiverPrivateKey,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, string> rpcEndpointsByChainId)
     {
         ArgumentNullException.ThrowIfNull(services, nameof(services));
 
@@ -197,22 +203,14 @@ public static class ServiceCollectionExtensionsServer
             throw new ArgumentException("Receiver private key is required", nameof(receiverPrivateKey));
         }
 
-        ArgumentNullException.ThrowIfNull(rpcEndpoints, nameof(rpcEndpoints));
-        ArgumentNullException.ThrowIfNull(tokenAddresses, nameof(tokenAddresses));
-        ArgumentNullException.ThrowIfNull(chainIds, nameof(chainIds));
-        ArgumentNullException.ThrowIfNull(tokenNames, nameof(tokenNames));
-        ArgumentNullException.ThrowIfNull(tokenVersions, nameof(tokenVersions));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
         // Register as IX402PaymentProcessor
         services.AddSingleton<IX402PaymentProcessor>(sp =>
         {
             return new X402ReceiveWithAuthorisation3009Service(
                 receiverPrivateKey,
-                rpcEndpoints,
-                tokenAddresses,
-                chainIds,
-                tokenNames,
-                tokenVersions);
+                ClientsFromUrls(rpcEndpointsByChainId));
         });
 
         return services;
@@ -221,29 +219,17 @@ public static class ServiceCollectionExtensionsServer
     public static IServiceCollection AddX402ReceiveProcessor(
         this IServiceCollection services,
         IAccount receiverAccount,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, string> rpcEndpointsByChainId)
     {
         ArgumentNullException.ThrowIfNull(services, nameof(services));
         ArgumentNullException.ThrowIfNull(receiverAccount, nameof(receiverAccount));
-        ArgumentNullException.ThrowIfNull(rpcEndpoints, nameof(rpcEndpoints));
-        ArgumentNullException.ThrowIfNull(tokenAddresses, nameof(tokenAddresses));
-        ArgumentNullException.ThrowIfNull(chainIds, nameof(chainIds));
-        ArgumentNullException.ThrowIfNull(tokenNames, nameof(tokenNames));
-        ArgumentNullException.ThrowIfNull(tokenVersions, nameof(tokenVersions));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
         services.AddSingleton<IX402PaymentProcessor>(sp =>
         {
             return new X402ReceiveWithAuthorisation3009Service(
                 receiverAccount,
-                rpcEndpoints,
-                tokenAddresses,
-                chainIds,
-                tokenNames,
-                tokenVersions);
+                ClientsFromUrls(rpcEndpointsByChainId));
         });
 
         return services;
@@ -252,32 +238,28 @@ public static class ServiceCollectionExtensionsServer
     public static IServiceCollection AddX402ReceiveProcessor(
         this IServiceCollection services,
         Func<IServiceProvider, IAccount> accountFactory,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, string> rpcEndpointsByChainId)
     {
         ArgumentNullException.ThrowIfNull(services, nameof(services));
         ArgumentNullException.ThrowIfNull(accountFactory, nameof(accountFactory));
-        ArgumentNullException.ThrowIfNull(rpcEndpoints, nameof(rpcEndpoints));
-        ArgumentNullException.ThrowIfNull(tokenAddresses, nameof(tokenAddresses));
-        ArgumentNullException.ThrowIfNull(chainIds, nameof(chainIds));
-        ArgumentNullException.ThrowIfNull(tokenNames, nameof(tokenNames));
-        ArgumentNullException.ThrowIfNull(tokenVersions, nameof(tokenVersions));
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
         services.AddSingleton<IX402PaymentProcessor>(sp =>
         {
             var account = accountFactory(sp);
             return new X402ReceiveWithAuthorisation3009Service(
                 account,
-                rpcEndpoints,
-                tokenAddresses,
-                chainIds,
-                tokenNames,
-                tokenVersions);
+                ClientsFromUrls(rpcEndpointsByChainId));
         });
 
         return services;
+    }
+
+    private static Dictionary<int, IClient> ClientsFromUrls(Dictionary<int, string> rpcEndpointsByChainId)
+    {
+        ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
+        return rpcEndpointsByChainId.ToDictionary(
+            pair => pair.Key,
+            pair => (IClient)new RpcClient(new Uri(pair.Value)));
     }
 }

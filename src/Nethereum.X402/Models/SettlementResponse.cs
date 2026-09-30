@@ -23,4 +23,12 @@ public class SettlementResponse
 
     [JsonPropertyName("payer")]
     public string Payer { get; set; } = null!;
+
+    [JsonPropertyName("amount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Amount { get; set; }
+
+    [JsonPropertyName("extensions")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Extensions { get; set; }
 }

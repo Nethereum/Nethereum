@@ -8,10 +8,6 @@ using System.Numerics;
 
 namespace Nethereum.X402.IntegrationTests.Helpers;
 
-/// <summary>
-/// Helper class for deploying and interacting with USDC EIP-3009 contract on Anvil.
-/// This creates a mock USDC contract with minting capability for E2E testing.
-/// </summary>
 public class USDCDeploymentHelper
 {
     private readonly Nethereum.Web3.Web3 _web3;
@@ -36,13 +32,8 @@ public class USDCDeploymentHelper
         _deployerAccount = deployerAccount;
     }
 
-    /// <summary>
-    /// Deploy USDC mock contract to Anvil using standard Nethereum deployment pattern.
-    /// Returns the deployed contract address.
-    /// </summary>
     public async Task<string> DeployAsync(string tokenName = "USD Coin", string tokenSymbol = "USDC", byte decimals = 6, string version = "2")
     {
-        // Create deployment message with constructor parameters
         var deploymentMessage = new MockUSDCDeployment
         {
             TokenName = tokenName,
@@ -50,10 +41,9 @@ public class USDCDeploymentHelper
             Decimals = decimals,
             Version = version,
             FromAddress = _deployerAccount.Address,
-            Gas = 5000000 // 5M gas limit for deployment
+            Gas = 5000000
         };
 
-        // Use deployment handler to deploy and wait for receipt
         var deploymentHandler = _web3.Eth.GetContractDeploymentHandler<MockUSDCDeployment>();
         var receipt = await deploymentHandler.SendRequestAndWaitForReceiptAsync(deploymentMessage);
 
@@ -68,10 +58,6 @@ public class USDCDeploymentHelper
         return _contractAddress;
     }
 
-    /// <summary>
-    /// Mint USDC tokens to a specific address.
-    /// Only works if contract has mint() function.
-    /// </summary>
     public async Task<TransactionReceipt> MintAsync(string toAddress, BigInteger amount)
     {
         EnsureContractDeployed();
@@ -79,15 +65,14 @@ public class USDCDeploymentHelper
         var mintFunction = _contract!.GetFunction("mint");
         var transactionHash = await mintFunction.SendTransactionAsync(
             _deployerAccount.Address,
-            new HexBigInteger(3000000), // gas
-            null, // gas price (let it auto-calculate)
-            null, // value
+            new HexBigInteger(3000000),
+            null,
+            null,
             toAddress,
             amount);
 
         var receipt = await _web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash);
 
-        // Wait for receipt
         while (receipt == null)
         {
             await Task.Delay(500);
@@ -97,9 +82,6 @@ public class USDCDeploymentHelper
         return receipt;
     }
 
-    /// <summary>
-    /// Get USDC balance of an address.
-    /// </summary>
     public async Task<BigInteger> GetBalanceAsync(string address)
     {
         EnsureContractDeployed();
@@ -110,9 +92,6 @@ public class USDCDeploymentHelper
         return balance;
     }
 
-    /// <summary>
-    /// Get contract name.
-    /// </summary>
     public async Task<string> GetNameAsync()
     {
         EnsureContractDeployed();
@@ -121,9 +100,6 @@ public class USDCDeploymentHelper
         return await nameFunction.CallAsync<string>();
     }
 
-    /// <summary>
-    /// Get contract symbol.
-    /// </summary>
     public async Task<string> GetSymbolAsync()
     {
         EnsureContractDeployed();
@@ -132,9 +108,6 @@ public class USDCDeploymentHelper
         return await symbolFunction.CallAsync<string>();
     }
 
-    /// <summary>
-    /// Get contract decimals.
-    /// </summary>
     public async Task<byte> GetDecimalsAsync()
     {
         EnsureContractDeployed();
@@ -143,9 +116,6 @@ public class USDCDeploymentHelper
         return await decimalsFunction.CallAsync<byte>();
     }
 
-    /// <summary>
-    /// Get contract version (for EIP-712).
-    /// </summary>
     public async Task<string> GetVersionAsync()
     {
         EnsureContractDeployed();
@@ -154,9 +124,6 @@ public class USDCDeploymentHelper
         return await versionFunction.CallAsync<string>();
     }
 
-    /// <summary>
-    /// Get DOMAIN_SEPARATOR for EIP-712 signing.
-    /// </summary>
     public async Task<byte[]> GetDomainSeparatorAsync()
     {
         EnsureContractDeployed();
@@ -174,9 +141,6 @@ public class USDCDeploymentHelper
         }
     }
 
-    /// <summary>
-    /// Get contract ABI for external use
-    /// </summary>
     public string GetContractABI()
     {
         return CONTRACT_ABI;

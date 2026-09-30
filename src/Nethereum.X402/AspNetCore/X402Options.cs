@@ -19,6 +19,12 @@ public class X402Options
     /// </summary>
     public string? FacilitatorUrl { get; set; }
 
+    public long MaxBufferedResponseBytes { get; set; } = 1024 * 1024;
+
+    public bool EnablePaymentReplayProtection { get; set; } = true;
+
+    public TimeSpan PaymentReplayRetention { get; set; } = TimeSpan.FromHours(1);
+
     /// <summary>
     /// Validates the options configuration.
     /// </summary>
@@ -62,9 +68,9 @@ public class X402Options
             throw new InvalidOperationException($"Route '{routePath}': Network is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(requirements.MaxAmountRequired))
+        if (string.IsNullOrWhiteSpace(requirements.Amount))
         {
-            throw new InvalidOperationException($"Route '{routePath}': MaxAmountRequired is required.");
+            throw new InvalidOperationException($"Route '{routePath}': Amount is required.");
         }
 
         if (string.IsNullOrWhiteSpace(requirements.PayTo))

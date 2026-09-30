@@ -1,8 +1,14 @@
+using Nethereum.ABI.EIP712.Permit2;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.Signer;
+using Nethereum.X402.Blockchain;
 using Nethereum.X402.Models;
+using Nethereum.X402.Permit2;
 using Nethereum.X402.Signers;
 using System.Net;
+using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -20,32 +26,21 @@ public class X402HttpClient
     private readonly TransferWithAuthorisationBuilder _builder;
     private readonly TransferWithAuthorisationSigner _signer;
     private readonly string _privateKey;
-    private readonly string _tokenName;
-    private readonly string _tokenVersion;
-    private readonly int _chainId;
-    private readonly string _tokenAddress;
     private readonly X402HttpClientOptions? _options;
 
     public string Address { get; }
 
     /// <summary>
-    /// Creates a new X402HttpClient for manual payment flow.
-    /// User must explicitly provide PaymentRequirements when making requests.
+    /// Creates a new X402HttpClient for manual payment flow. The caller provides the
+    /// PaymentRequirements per request; the signing domain (token, chain, name/version) is derived
+    /// from that requirement.
     /// </summary>
     public X402HttpClient(
         HttpClient httpClient,
-        string privateKey,
-        string tokenName,
-        string tokenVersion,
-        int chainId,
-        string tokenAddress)
+        string privateKey)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _privateKey = privateKey ?? throw new ArgumentNullException(nameof(privateKey));
-        _tokenName = tokenName ?? throw new ArgumentNullException(nameof(tokenName));
-        _tokenVersion = tokenVersion ?? throw new ArgumentNullException(nameof(tokenVersion));
-        _chainId = chainId;
-        _tokenAddress = tokenAddress ?? throw new ArgumentNullException(nameof(tokenAddress));
         _options = null;
 
         _builder = new TransferWithAuthorisationBuilder();
@@ -72,11 +67,6 @@ public class X402HttpClient
         options.Validate();
         _options = options;
 
-        _tokenName = options.TokenName;
-        _tokenVersion = options.TokenVersion;
-        _chainId = options.ChainId;
-        _tokenAddress = options.TokenAddress;
-
         _builder = new TransferWithAuthorisationBuilder();
         _signer = new TransferWithAuthorisationSigner();
 
@@ -97,44 +87,17 @@ public class X402HttpClient
         ArgumentNullException.ThrowIfNull(uri, nameof(uri));
         ArgumentNullException.ThrowIfNull(requirements, nameof(requirements));
 
-        // Build authorization using builder
-        var authorization = _builder.BuildFromPaymentRequirements(requirements, Address);
-
-        // Sign using consolidated signer
-        var signature = await _signer.SignWithPrivateKeyAsync(
-            authorization,
-            _tokenName,
-            _tokenVersion,
-            _chainId,
-            _tokenAddress,
-            _privateKey
-        );
-
-        // Encode signature to hex using Nethereum extension
-        var signatureHex = signature.CreateStringSignature();
-
-        // Create payment payload
-        var paymentPayload = new PaymentPayload
-        {
-            X402Version = 1,
-            Scheme = requirements.Scheme,
-            Network = requirements.Network,
-            Payload = new ExactSchemePayload
-            {
-                Signature = signatureHex,
-                Authorization = authorization
-            }
-        };
+        var paymentPayload = await CreateSignedPaymentAsync(requirements);
 
         // Encode and send request
         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-        request.Headers.Add("X-PAYMENT", EncodePaymentHeader(paymentPayload));
+        request.Headers.Add(X402Headers.PaymentSignature, EncodePaymentHeader(paymentPayload));
 
         return await _httpClient.SendAsync(request, cancellationToken);
     }
 
     /// <summary>
-    /// Encodes a payment payload to base64 for X-PAYMENT header.
+    /// Encodes a payment payload to base64 for PAYMENT-SIGNATURE header.
     /// Spec Reference: Section 5.2 - Payment Payload Format
     /// </summary>
     private static string EncodePaymentHeader(PaymentPayload payload)
@@ -238,11 +201,18 @@ public class X402HttpClient
             return response;
         }
 
-        // Step 3: Parse payment requirements
-        var paymentRequiredJson = await response.Content.ReadAsStringAsync(cancellationToken);
-        var paymentRequired = JsonSerializer.Deserialize<PaymentRequirementsResponse>(
-            paymentRequiredJson,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        string? paymentRequiredJson = null;
+        if (response.Headers.TryGetValues(X402Headers.PaymentRequired, out var headerValues))
+        {
+            try { paymentRequiredJson = Encoding.UTF8.GetString(Convert.FromBase64String(headerValues.First())); }
+            catch (FormatException) { paymentRequiredJson = null; }
+        }
+        if (paymentRequiredJson == null)
+        {
+            paymentRequiredJson = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        var paymentRequired = JsonSerializer.Deserialize<PaymentRequired>(paymentRequiredJson, jsonOptions);
 
         if (paymentRequired?.Accepts == null || !paymentRequired.Accepts.Any())
         {
@@ -255,56 +225,106 @@ public class X402HttpClient
             _options.PreferredNetwork,
             _options.PreferredScheme);
 
-        // Step 5: Validate payment amount
-        if (decimal.TryParse(selectedRequirements.MaxAmountRequired, out var atomicUnits))
         {
-            var amountUsdc = atomicUnits / 1_000_000m; // Convert from atomic units (6 decimals for USDC)
-            if (amountUsdc > _options.MaxPaymentAmount)
+            var maxAtomic = BigInteger.Parse(_options.MaxAmount);
+            if (!BigInteger.TryParse(selectedRequirements.Amount, out var atomicUnits) || atomicUnits > maxAtomic)
             {
-                throw new X402PaymentExceedsMaximumException(amountUsdc, _options.MaxPaymentAmount);
+                throw new X402PaymentExceedsMaximumException(selectedRequirements.Amount ?? "", _options.MaxAmount);
             }
         }
 
+        _options.Policy?.Assert(selectedRequirements);
+
         // Step 6: Prevent infinite retry - check if request already has payment
-        if (request.Headers.Contains("X-PAYMENT"))
+        if (request.Headers.Contains(X402Headers.PaymentSignature))
         {
             throw new InvalidOperationException(
-                "Request already contains X-PAYMENT header but server returned 402. " +
+                "Request already contains PAYMENT-SIGNATURE header but server returned 402. " +
                 "This may indicate payment was rejected or already used.");
         }
 
-        // Step 7: Create payment using existing manual flow logic
-        var authorization = _builder.BuildFromPaymentRequirements(selectedRequirements, Address);
+        var paymentPayload = await CreateSignedPaymentAsync(selectedRequirements);
 
+        var paidRequest = await CloneRequestAsync(request);
+        paidRequest.Headers.Add(X402Headers.PaymentSignature, EncodePaymentHeader(paymentPayload));
+
+        return await _httpClient.SendAsync(paidRequest, cancellationToken);
+    }
+
+    /// <summary>
+    /// Builds and signs a payment for the given requirement. The EIP-712 signing domain is taken
+    /// from the requirement: the chain ID from its CAIP-2 network, the verifying contract from its
+    /// asset, and the domain name/version from its exact-scheme extra.
+    /// </summary>
+    private async Task<PaymentPayload> CreateSignedPaymentAsync(PaymentRequirements requirements)
+    {
+        var extra = ExactSchemeExtra.FromRequirements(requirements);
+
+        if (extra?.AssetTransferMethod == X402AssetTransferMethods.Permit2)
+        {
+            return CreatePermit2Payment(requirements);
+        }
+
+        // default: EIP-3009 transferWithAuthorization (requires the token domain name/version).
+        if (extra == null)
+            throw new InvalidOperationException(
+                "Payment requirement is missing the exact-scheme extra (token name/version).");
+        var chainId = Caip2.ParseEip155ChainId(requirements.Network);
+
+        var authorization = _builder.BuildFromPaymentRequirements(requirements, Address);
         var signature = await _signer.SignWithPrivateKeyAsync(
             authorization,
-            _tokenName,
-            _tokenVersion,
-            _chainId,
-            _tokenAddress,
+            extra.Name,
+            extra.Version,
+            chainId,
+            requirements.Asset,
             _privateKey
         );
 
-        var signatureHex = signature.CreateStringSignature();
-
-        var paymentPayload = new PaymentPayload
+        return new PaymentPayload
         {
-            X402Version = 1,
-            Scheme = selectedRequirements.Scheme,
-            Network = selectedRequirements.Network,
+            X402Version = 2,
+            Accepted = requirements,
             Payload = new ExactSchemePayload
             {
-                Signature = signatureHex,
+                Signature = signature.CreateStringSignature(),
                 Authorization = authorization
             }
         };
+    }
 
-        // Step 8: Clone original request and add payment header
-        var paidRequest = await CloneRequestAsync(request);
-        paidRequest.Headers.Add("X-PAYMENT", EncodePaymentHeader(paymentPayload));
+    private PaymentPayload CreatePermit2Payment(PaymentRequirements requirements)
+    {
+        var chainId = Caip2.ParseEip155ChainId(requirements.Network);
+        var key = new EthECKey(_privateKey.EnsureHexPrefix().Substring(2));
 
-        // Step 9: Retry with payment
-        return await _httpClient.SendAsync(paidRequest, cancellationToken);
+        var nonceBytes = new byte[32];
+        RandomNumberGenerator.Fill(nonceBytes);
+        var nonce = new BigInteger(nonceBytes, isUnsigned: true, isBigEndian: true);
+
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var timeout = requirements.MaxTimeoutSeconds > 0 ? requirements.MaxTimeoutSeconds : 3600;
+        var deadline = new BigInteger(now + timeout);
+        var validAfter = new BigInteger(now - 600);
+
+        var authorization = new Permit2Authorization
+        {
+            From = Address,
+            Permitted = new Permit2TokenPermissions { Token = requirements.Asset, Amount = requirements.Amount },
+            Spender = X402Permit2Addresses.ExactPermit2Proxy,
+            Nonce = nonce.ToString(),
+            Deadline = deadline.ToString(),
+            Witness = new Permit2WitnessData { To = requirements.PayTo, ValidAfter = validAfter.ToString() }
+        };
+        var signature = new Permit2WitnessSigner().Sign(
+            authorization.ToWitnessMessage(), chainId, X402Permit2Addresses.Permit2, key);
+
+        return new PaymentPayload
+        {
+            X402Version = X402Protocol.Version,
+            Accepted = requirements,
+            Payload = new Permit2SchemePayload { Signature = signature, Permit2Authorization = authorization }
+        };
     }
 
     private void EnsureAutomaticMode()
@@ -334,10 +354,9 @@ public class X402HttpClient
             }
         }
 
-        // Clone request headers (except X-PAYMENT which we'll add fresh)
         foreach (var header in request.Headers)
         {
-            if (header.Key != "X-PAYMENT")
+            if (header.Key != X402Headers.PaymentSignature)
             {
                 clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }

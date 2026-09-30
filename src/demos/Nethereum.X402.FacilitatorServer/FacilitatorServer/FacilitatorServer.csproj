@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Nethereum.X402\Nethereum.X402.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.X402\Nethereum.X402.csproj" />
   </ItemGroup>
 
 </Project>

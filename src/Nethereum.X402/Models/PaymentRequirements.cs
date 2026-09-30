@@ -14,28 +14,14 @@ public class PaymentRequirements
     [JsonPropertyName("network")]
     public string Network { get; set; } = null!;
 
-    [JsonPropertyName("maxAmountRequired")]
-    public string MaxAmountRequired { get; set; } = null!;
+    [JsonPropertyName("amount")]
+    public string Amount { get; set; } = null!;
 
     [JsonPropertyName("asset")]
     public string Asset { get; set; } = null!;
 
     [JsonPropertyName("payTo")]
     public string PayTo { get; set; } = null!;
-
-    [JsonPropertyName("resource")]
-    public string Resource { get; set; } = null!;
-
-    [JsonPropertyName("description")]
-    public string Description { get; set; } = null!;
-
-    [JsonPropertyName("mimeType")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? MimeType { get; set; }
-
-    [JsonPropertyName("outputSchema")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public object? OutputSchema { get; set; }
 
     [JsonPropertyName("maxTimeoutSeconds")]
     public int MaxTimeoutSeconds { get; set; }

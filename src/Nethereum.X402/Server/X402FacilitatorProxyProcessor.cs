@@ -52,7 +52,7 @@ public class X402FacilitatorProxyProcessor
     /// Returns null if no matching route is found.
     /// Spec Reference: Section 8 - Server Implementation
     /// </summary>
-    public PaymentRequirements? FindMatchingRoute(string path, string? method = null)
+    public RoutePaymentConfig? FindMatchingRoute(string path, string? method = null)
     {
         ArgumentNullException.ThrowIfNull(path, nameof(path));
 
@@ -67,14 +67,14 @@ public class X402FacilitatorProxyProcessor
                 !string.Equals(config.Method, method, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            return config.Requirements;
+            return config;
         }
 
         return null;
     }
 
     /// <summary>
-    /// Decodes a base64-encoded X-PAYMENT header into a PaymentPayload.
+    /// Decodes a base64-encoded PAYMENT-SIGNATURE header into a PaymentPayload.
     /// Spec Reference: Section 5.2 - PaymentPayload Schema
     /// </summary>
     public static PaymentPayload DecodePaymentHeader(string header)
@@ -93,11 +93,11 @@ public class X402FacilitatorProxyProcessor
         }
         catch (FormatException ex)
         {
-            throw new ArgumentException("Invalid base64 encoding in X-PAYMENT header", nameof(header), ex);
+            throw new ArgumentException("Invalid base64 encoding in PAYMENT-SIGNATURE header", nameof(header), ex);
         }
         catch (JsonException ex)
         {
-            throw new ArgumentException("Malformed JSON in X-PAYMENT header", nameof(header), ex);
+            throw new ArgumentException("Malformed JSON in PAYMENT-SIGNATURE header", nameof(header), ex);
         }
     }
 
@@ -132,7 +132,7 @@ public class X402FacilitatorProxyProcessor
     }
 
     /// <summary>
-    /// Encodes a settlement response for the X-PAYMENT-RESPONSE header.
+    /// Encodes a settlement response for the PAYMENT-RESPONSE header.
     /// Spec Reference: Section 5.3 - SettlementResponse Schema
     /// </summary>
     public static string EncodeSettlementResponse(SettlementResponse response)

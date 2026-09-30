@@ -4,10 +4,6 @@ using System.Numerics;
 
 namespace Nethereum.X402.IntegrationTests.Helpers;
 
-/// <summary>
-/// Deployment message for MockUSDC contract.
-/// Constructor parameters: (string name, string symbol, uint8 decimals, string version)
-/// </summary>
 [Function("MockUSDC", "constructor")]
 public class MockUSDCDeployment : ContractDeploymentMessage
 {

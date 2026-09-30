@@ -6,12 +6,12 @@ namespace Nethereum.X402.Client;
 
 /// <summary>
 /// Extension methods for HttpResponseMessage to parse x402 payment responses.
-/// Spec Reference: Section 5.3 - X-PAYMENT-RESPONSE Header
+/// Spec Reference: Section 5.3 - PAYMENT-RESPONSE Header
 /// </summary>
 public static class HttpResponseMessageExtensions
 {
     /// <summary>
-    /// Gets the settlement response from the X-PAYMENT-RESPONSE header if present.
+    /// Gets the settlement response from the PAYMENT-RESPONSE header if present.
     /// Returns null if no payment response header exists.
     /// Spec Reference: Section 5.3 - Settlement Response Format
     /// </summary>
@@ -21,7 +21,7 @@ public static class HttpResponseMessageExtensions
     {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
 
-        if (!response.Headers.TryGetValues("X-PAYMENT-RESPONSE", out var values))
+        if (!response.Headers.TryGetValues(X402Headers.PaymentResponse, out var values))
         {
             return null;
         }
@@ -47,14 +47,14 @@ public static class HttpResponseMessageExtensions
     }
 
     /// <summary>
-    /// Checks if the response contains an X-PAYMENT-RESPONSE header.
+    /// Checks if the response contains an PAYMENT-RESPONSE header.
     /// </summary>
     /// <param name="response">The HTTP response message</param>
-    /// <returns>True if X-PAYMENT-RESPONSE header is present</returns>
+    /// <returns>True if PAYMENT-RESPONSE header is present</returns>
     public static bool HasPaymentResponse(this HttpResponseMessage response)
     {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
-        return response.Headers.Contains("X-PAYMENT-RESPONSE");
+        return response.Headers.Contains(X402Headers.PaymentResponse);
     }
 
     /// <summary>

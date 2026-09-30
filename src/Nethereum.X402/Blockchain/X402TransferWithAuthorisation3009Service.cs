@@ -1,244 +1,100 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Contracts.EIP3009.EIP3009;
 using Nethereum.Contracts.EIP3009.EIP3009.ContractDefinition;
+using Microsoft.Extensions.Logging;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
-using Nethereum.Web3;
+using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Nethereum.X402.Models;
-using Nethereum.X402.Processors;
 
 namespace Nethereum.X402.Blockchain;
 
-public class X402TransferWithAuthorisation3009Service : IX402PaymentProcessor
+public class X402TransferWithAuthorisation3009Service : ExactScheme3009ServiceBase
 {
-    private readonly IAccount _facilitatorAccount;
-    private readonly Dictionary<string, string> _rpcEndpoints;
-    private readonly Dictionary<string, string> _tokenAddresses;
-    private readonly Dictionary<string, int> _chainIds;
-    private readonly Dictionary<string, string> _tokenNames;
-    private readonly Dictionary<string, string> _tokenVersions;
-    private readonly PaymentAuthorizationValidator _validator;
-
     public X402TransferWithAuthorisation3009Service(
         string facilitatorPrivateKey,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
-        : this(new Account(facilitatorPrivateKey), rpcEndpoints, tokenAddresses, chainIds, tokenNames, tokenVersions)
+        Dictionary<int, IClient> clientsByChainId,
+        ILogger logger = null)
+        : base(new Account(facilitatorPrivateKey), clientsByChainId, logger)
     {
     }
 
     public X402TransferWithAuthorisation3009Service(
         IAccount facilitatorAccount,
-        Dictionary<string, string> rpcEndpoints,
-        Dictionary<string, string> tokenAddresses,
-        Dictionary<string, int> chainIds,
-        Dictionary<string, string> tokenNames,
-        Dictionary<string, string> tokenVersions)
+        Dictionary<int, IClient> clientsByChainId,
+        ILogger logger = null)
+        : base(facilitatorAccount, clientsByChainId, logger)
     {
-        _facilitatorAccount = facilitatorAccount ?? throw new ArgumentNullException(nameof(facilitatorAccount));
-        _rpcEndpoints = rpcEndpoints ?? throw new ArgumentNullException(nameof(rpcEndpoints));
-        _tokenAddresses = tokenAddresses ?? throw new ArgumentNullException(nameof(tokenAddresses));
-        _chainIds = chainIds ?? throw new ArgumentNullException(nameof(chainIds));
-        _tokenNames = tokenNames ?? throw new ArgumentNullException(nameof(tokenNames));
-        _tokenVersions = tokenVersions ?? throw new ArgumentNullException(nameof(tokenVersions));
-        _validator = new PaymentAuthorizationValidator();
     }
 
-    public async Task<VerificationResponse> VerifyPaymentAsync(
-        PaymentPayload paymentPayload,
-        PaymentRequirements requirements,
-        CancellationToken cancellationToken = default)
-    {
-        try
+    protected override bool IsRecipientValid(Authorization authorization, PaymentRequirements requirements)
+        => authorization.To.IsTheSameAddress(requirements.PayTo);
+
+    protected override string RecoverSigner(Authorization authorization, ResolvedRequirement resolved, EthECDSASignature signature)
+        => Signer.RecoverAddress(
+            authorization, resolved.TokenName, resolved.TokenVersion, resolved.ChainId, resolved.TokenAddress, signature);
+
+    protected override byte[] ComputeSignedDigest(Authorization authorization, ResolvedRequirement resolved)
+        => Signer.ComputeTransferDigest(
+            authorization, resolved.TokenName, resolved.TokenVersion, resolved.ChainId, resolved.TokenAddress);
+
+    protected override Task<TransactionReceipt> SubmitSettlementAsync(
+        Eip3009Service eip3009Service, Authorization authorization, EthECDSASignature signature, CancellationTokenSource cancellationTokenSource)
+        => eip3009Service.TransferWithAuthorizationRequestAndWaitForReceiptAsync(
+            BuildFunction(authorization, signature), cancellationTokenSource);
+
+    protected override Task SimulateSettlementAsync(
+        Eip3009Service eip3009Service, Authorization authorization, EthECDSASignature signature)
+        => eip3009Service.ContractHandler.EstimateGasAsync(BuildFunction(authorization, signature));
+
+    private static TransferWithAuthorization1Function BuildFunction(Authorization authorization, EthECDSASignature signature) =>
+        new()
         {
-            if (paymentPayload.Scheme != "exact")
-            {
-                return new VerificationResponse
-                {
-                    IsValid = false,
-                    InvalidReason = X402ErrorCodes.UnsupportedScheme,
-                    Payer = null
-                };
-            }
+            AuthorisationFrom = authorization.From,
+            AuthorisationTo = authorization.To,
+            Value = BigInteger.Parse(authorization.Value),
+            ValidAfter = BigInteger.Parse(authorization.ValidAfter),
+            ValidBefore = BigInteger.Parse(authorization.ValidBefore),
+            AuthorisationNonce = authorization.Nonce.HexToByteArray(),
+            V = signature.V[0],
+            R = signature.R,
+            S = signature.S
+        };
 
-            var exactPayload = GetExactSchemePayload(paymentPayload);
-            if (exactPayload == null)
-            {
-                return new VerificationResponse
-                {
-                    IsValid = false,
-                    InvalidReason = X402ErrorCodes.InvalidPayload,
-                    Payer = null
-                };
-            }
-
-            var authorization = exactPayload.Authorization;
-            var signatureHex = exactPayload.Signature;
-
-            if (!ValidateNetworkConfiguration(requirements.Network, out var configError))
-            {
-                return new VerificationResponse
-                {
-                    IsValid = false,
-                    InvalidReason = configError,
-                    Payer = authorization.From
-                };
-            }
-
-            var validationResult = await _validator.ValidateAsync(
-                authorization,
-                signatureHex,
-                _tokenAddresses[requirements.Network],
-                _tokenNames[requirements.Network],
-                _tokenVersions[requirements.Network],
-                _chainIds[requirements.Network],
-                _rpcEndpoints[requirements.Network],
-                cancellationToken
-            );
-
-            return new VerificationResponse
-            {
-                IsValid = validationResult.IsValid,
-                InvalidReason = validationResult.InvalidReason,
-                Payer = authorization.From
-            };
-        }
-        catch (Exception ex)
-        {
-            return new VerificationResponse
-            {
-                IsValid = false,
-                InvalidReason = X402ErrorCodes.UnexpectedVerifyError,
-                Payer = null
-            };
-        }
-    }
-
-    public async Task<SettlementResponse> SettlePaymentAsync(
-        PaymentPayload paymentPayload,
-        PaymentRequirements requirements,
-        CancellationToken cancellationToken = default)
-    {
-        var verificationResult = await VerifyPaymentAsync(paymentPayload, requirements, cancellationToken);
-
-        if (!verificationResult.IsValid)
-        {
-            return new SettlementResponse
-            {
-                Success = false,
-                ErrorReason = verificationResult.InvalidReason,
-                Transaction = null,
-                Network = requirements.Network,
-                Payer = verificationResult.Payer
-            };
-        }
-
-        try
-        {
-            var exactPayload = GetExactSchemePayload(paymentPayload);
-            var authorization = exactPayload.Authorization;
-            var signatureHex = exactPayload.Signature;
-
-            var rpcUrl = _rpcEndpoints[requirements.Network];
-            var tokenAddress = _tokenAddresses[requirements.Network];
-
-            var web3 = new Nethereum.Web3.Web3(_facilitatorAccount, rpcUrl);
-            var eip3009Service = new Eip3009Service(web3, tokenAddress);
-
-            var signature = EthECDSASignatureFactory.ExtractECDSASignature(signatureHex);
-
-            var transferFunction = new TransferWithAuthorization1Function
-            {
-                AuthorisationFrom = authorization.From,
-                AuthorisationTo = authorization.To,
-                Value = BigInteger.Parse(authorization.Value),
-                ValidAfter = BigInteger.Parse(authorization.ValidAfter),
-                ValidBefore = BigInteger.Parse(authorization.ValidBefore),
-                AuthorisationNonce = authorization.Nonce.HexToByteArray(),
-                V = signature.V[0],
-                R = signature.R,
-                S = signature.S
-            };
-
-            var cancellationTokenSource = cancellationToken != default
-                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                : null;
-
-            var receipt = await eip3009Service.TransferWithAuthorizationRequestAndWaitForReceiptAsync(
-                transferFunction,
-                cancellationTokenSource
-            );
-
-            if (receipt.Status.Value == 1)
-            {
-                return new SettlementResponse
-                {
-                    Success = true,
-                    ErrorReason = null,
-                    Transaction = receipt.TransactionHash,
-                    Network = requirements.Network,
-                    Payer = authorization.From
-                };
-            }
-            else
-            {
-                return new SettlementResponse
-                {
-                    Success = false,
-                    ErrorReason = X402ErrorCodes.InvalidTransactionState,
-                    Transaction = receipt.TransactionHash,
-                    Network = requirements.Network,
-                    Payer = authorization.From
-                };
-            }
-        }
-        catch (Exception ex)
-        {
-            return new SettlementResponse
-            {
-                Success = false,
-                ErrorReason = X402ErrorCodes.UnexpectedSettleError,
-                Transaction = null,
-                Network = requirements.Network,
-                Payer = verificationResult.Payer
-            };
-        }
-    }
-
+    /// <summary>
+    /// Submits an EIP-3009 cancelAuthorization for the given authorizer/nonce, so a signed but
+    /// unsettled authorization can be voided.
+    /// </summary>
     public async Task<CancelAuthorizationResponse> CancelAuthorizationAsync(
         string authorizerAddress,
         byte[] nonce,
         string network,
+        string tokenAddress,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            if (!ValidateNetworkConfiguration(network, out var configError))
+            if (!Caip2.TryParseEip155ChainId(network, out var chainId) ||
+                !ClientsByChainId.TryGetValue(chainId, out var client))
             {
                 return new CancelAuthorizationResponse
                 {
                     Success = false,
-                    ErrorReason = configError,
+                    ErrorReason = X402ErrorCodes.InvalidNetwork,
                     Transaction = null,
                     Network = network
                 };
             }
 
-            var rpcUrl = _rpcEndpoints[network];
-            var tokenAddress = _tokenAddresses[network];
-
-            var web3 = new Nethereum.Web3.Web3(_facilitatorAccount, rpcUrl);
+            var web3 = new Nethereum.Web3.Web3(Account, client);
             var eip3009Service = new Eip3009Service(web3, tokenAddress);
 
             var cancelFunction = new CancelAuthorization1Function
@@ -262,94 +118,22 @@ public class X402TransferWithAuthorisation3009Service : IX402PaymentProcessor
             return new CancelAuthorizationResponse
             {
                 Success = receipt.Status.Value == 1,
-                ErrorReason = receipt.Status.Value == 1 ? null : "Transaction reverted",
+                ErrorReason = receipt.Status.Value == 1 ? null : X402ErrorCodes.InvalidTransactionState,
                 Transaction = receipt.TransactionHash,
                 Network = network
             };
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "x402 eip3009 cancelAuthorization failed for {Authorizer}", authorizerAddress);
             return new CancelAuthorizationResponse
             {
                 Success = false,
-                ErrorReason = $"Cancellation error: {ex.Message}",
+                ErrorReason = X402ErrorCodes.CancellationError,
                 Transaction = null,
                 Network = network
             };
         }
-    }
-
-    public Task<SupportedPaymentKindsResponse> GetSupportedAsync(
-        CancellationToken cancellationToken = default)
-    {
-        var supportedKinds = new List<PaymentKind>();
-
-        foreach (var network in _rpcEndpoints.Keys)
-        {
-            supportedKinds.Add(new PaymentKind
-            {
-                X402Version = 1,
-                Scheme = "exact",
-                Network = network,
-                Extra = null
-            });
-        }
-
-        return Task.FromResult(new SupportedPaymentKindsResponse
-        {
-            Kinds = supportedKinds
-        });
-    }
-
-    private bool ValidateNetworkConfiguration(string network, out string error)
-    {
-        if (!_chainIds.ContainsKey(network))
-        {
-            error = X402ErrorCodes.InvalidNetwork;
-            return false;
-        }
-
-        if (!_tokenAddresses.ContainsKey(network))
-        {
-            error = X402ErrorCodes.InvalidNetwork;
-            return false;
-        }
-
-        if (!_tokenNames.ContainsKey(network))
-        {
-            error = X402ErrorCodes.InvalidNetwork;
-            return false;
-        }
-
-        if (!_tokenVersions.ContainsKey(network))
-        {
-            error = X402ErrorCodes.InvalidNetwork;
-            return false;
-        }
-
-        if (!_rpcEndpoints.ContainsKey(network))
-        {
-            error = X402ErrorCodes.InvalidNetwork;
-            return false;
-        }
-
-        error = null;
-        return true;
-    }
-
-    private ExactSchemePayload GetExactSchemePayload(PaymentPayload paymentPayload)
-    {
-        if (paymentPayload.Payload is ExactSchemePayload exactPayload)
-        {
-            return exactPayload;
-        }
-
-        if (paymentPayload.Payload is JsonElement jsonElement)
-        {
-            return JsonSerializer.Deserialize<ExactSchemePayload>(jsonElement.GetRawText());
-        }
-
-        return null;
     }
 }
 

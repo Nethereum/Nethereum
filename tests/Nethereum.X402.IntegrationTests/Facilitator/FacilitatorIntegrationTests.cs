@@ -15,25 +15,11 @@ using System.Text.Json;
 
 namespace Nethereum.X402.IntegrationTests.Facilitator;
 
-/// <summary>
-/// Integration tests for Facilitator Server
-///
-/// Traceability:
-/// - Spec: Section 7, Facilitator API
-/// - Use Cases: UC-F1 through UC-F4 (End-to-End)
-/// - Requirements: Full integration testing of facilitator endpoints
-/// - Implementation: src/Nethereum.X402/Facilitator/FacilitatorController.cs
-/// </summary>
 public class FacilitatorIntegrationTests
 {
-    /// <summary>
-    /// Spec: Section 7.3 - GET /facilitator/supported endpoint (E2E)
-    /// Use Case: UC-F4 Scenario 1 (E2E)
-    /// </summary>
     [Fact]
     public async Task Given_Facilitator_When_CallingSupportedEndpoint_Then_ReturnsSupportedKinds()
     {
-        // Arrange
         var mockProcessor = new Mock<IX402PaymentProcessor>();
         mockProcessor
             .Setup(p => p.GetSupportedAsync(It.IsAny<CancellationToken>()))
@@ -49,10 +35,8 @@ public class FacilitatorIntegrationTests
         using var server = CreateTestServer(mockProcessor.Object);
         var client = server.CreateClient();
 
-        // Act
         var response = await client.GetAsync("/facilitator/supported");
 
-        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var responseBody = await response.Content.ReadAsStringAsync();
         var supportedResponse = JsonSerializer.Deserialize<SupportedPaymentKindsResponse>(
@@ -66,14 +50,9 @@ public class FacilitatorIntegrationTests
         Assert.Equal("base-sepolia", supportedResponse.Kinds[0].Network);
     }
 
-    /// <summary>
-    /// Spec: Section 7.1 - Request validation (E2E)
-    /// Use Case: UC-F2 Scenario 3 (E2E)
-    /// </summary>
     [Fact]
     public async Task Given_InvalidRequest_When_CallingVerifyEndpoint_Then_Returns400()
     {
-        // Arrange
         var mockProcessor = new Mock<IX402PaymentProcessor>();
         using var server = CreateTestServer(mockProcessor.Object);
         var client = server.CreateClient();
@@ -83,21 +62,14 @@ public class FacilitatorIntegrationTests
             Encoding.UTF8,
             "application/json");
 
-        // Act
         var response = await client.PostAsync("/facilitator/verify", content);
 
-        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    /// <summary>
-    /// Spec: Section 7.2 - Request validation (E2E)
-    /// Use Case: UC-F3 Scenario 3 (E2E)
-    /// </summary>
     [Fact]
     public async Task Given_InvalidRequest_When_CallingSettleEndpoint_Then_Returns400()
     {
-        // Arrange
         var mockProcessor = new Mock<IX402PaymentProcessor>();
         using var server = CreateTestServer(mockProcessor.Object);
         var client = server.CreateClient();
@@ -107,50 +79,39 @@ public class FacilitatorIntegrationTests
             Encoding.UTF8,
             "application/json");
 
-        // Act
         var response = await client.PostAsync("/facilitator/settle", content);
 
-        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    /// <summary>
-    /// Spec: Section 7 - Integration with actual processor (E2E)
-    /// Use Case: UC-F1 Scenario 3 (E2E)
-    /// </summary>
+    [Fact]
+    public void Given_AnAccountFactory_When_TheExactProcessorIsRegistered_Then_ItResolvesTheDispatcher()
+    {
+        var services = new ServiceCollection();
+        var factoryCalls = 0;
+
+        services.AddX402ExactProcessor(
+            _ => { factoryCalls++; return new Account("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"); },
+            new Dictionary<int, string> { { 84532, "http://localhost:8545" } });
+
+        using var provider = services.BuildServiceProvider();
+        var processor = provider.GetRequiredService<IX402PaymentProcessor>();
+
+        Assert.IsType<X402ExactSchemeProcessor>(processor);
+        Assert.Equal(1, factoryCalls);
+    }
+
     [Fact]
     public async Task Given_RealProcessorConfiguration_When_StartingServer_Then_ServerStarts()
     {
-        // Arrange - Use a test private key (Hardhat account #0)
         var testPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
         var testAccount = new Account(testPrivateKey);
 
-        var rpcEndpoints = new Dictionary<string, string>
+        var rpcEndpointsByChainId = new Dictionary<int, string>
         {
-            { "test-network", "http://localhost:8545" }
+            { 31337, "http://localhost:8545" }
         };
 
-        var tokenAddresses = new Dictionary<string, string>
-        {
-            { "test-network", "0x5FbDB2315678afecb367f032d93F642f64180aa3" }
-        };
-
-        var chainIds = new Dictionary<string, int>
-        {
-            { "test-network", 31337 }
-        };
-
-        var tokenNames = new Dictionary<string, string>
-        {
-            { "test-network", "USD Coin" }
-        };
-
-        var tokenVersions = new Dictionary<string, string>
-        {
-            { "test-network", "2" }
-        };
-
-        // Act - Create server with real processor
         using var server = new TestServer(new WebHostBuilder()
             .ConfigureServices(services =>
             {
@@ -159,11 +120,7 @@ public class FacilitatorIntegrationTests
 
                 services.AddX402TransferProcessor(
                     testAccount,
-                    rpcEndpoints,
-                    tokenAddresses,
-                    chainIds,
-                    tokenNames,
-                    tokenVersions);
+                    rpcEndpointsByChainId);
             })
             .Configure(app =>
             {
@@ -176,7 +133,6 @@ public class FacilitatorIntegrationTests
 
         var client = server.CreateClient();
 
-        // Assert - Server can handle requests
         var response = await client.GetAsync("/facilitator/supported");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -191,7 +147,7 @@ public class FacilitatorIntegrationTests
                     .AddJsonOptions(options =>
                     {
                         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-                        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Use PascalCase
+                        options.JsonSerializerOptions.PropertyNamingPolicy = null;
                     })
                     .AddX402FacilitatorControllers();
             })
@@ -209,7 +165,15 @@ public class FacilitatorIntegrationTests
     {
         return new PaymentPayload
         {
-            Scheme = "exact",
+            Accepted = new PaymentRequirements
+            {
+                Scheme = "exact",
+                Network = "eip155:84532",
+                Amount = "10000",
+                Asset = "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                PayTo = "0x209693Bc6afc0C5328bA36FaF03C514EF312287C",
+                MaxTimeoutSeconds = 60
+            },
             Payload = new ExactSchemePayload
             {
                 Signature = "0xsignature",
@@ -232,10 +196,7 @@ public class FacilitatorIntegrationTests
         {
             Scheme = "exact",
             Network = "base-sepolia",
-            MaxAmountRequired = "10000",
-            Resource = "/api/data",
-            Description = "Test resource",
-            MimeType = "application/json",
+            Amount = "10000",
             PayTo = "0x209693Bc6afc0C5328bA36FaF03C514EF312287C",
             MaxTimeoutSeconds = 300,
             Asset = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"

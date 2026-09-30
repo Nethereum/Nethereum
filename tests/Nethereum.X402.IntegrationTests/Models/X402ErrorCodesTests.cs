@@ -8,14 +8,14 @@ public class X402ErrorCodesTests
     public void Given_X402ErrorCodes_When_AccessingInsufficientFunds_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.InsufficientFunds;
-        Assert.Equal("insufficient_funds", errorCode);
+        Assert.Equal("invalid_exact_evm_insufficient_balance", errorCode);
     }
 
     [Fact]
     public void Given_X402ErrorCodes_When_AccessingInvalidSignature_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.InvalidSignature;
-        Assert.Equal("invalid_exact_evm_payload_signature", errorCode);
+        Assert.Equal("invalid_exact_evm_signature", errorCode);
     }
 
     [Fact]
@@ -36,14 +36,14 @@ public class X402ErrorCodesTests
     public void Given_X402ErrorCodes_When_AccessingInvalidValue_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.InvalidValue;
-        Assert.Equal("invalid_exact_evm_payload_authorization_value", errorCode);
+        Assert.Equal("invalid_exact_evm_authorization_value", errorCode);
     }
 
     [Fact]
     public void Given_X402ErrorCodes_When_AccessingRecipientMismatch_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.RecipientMismatch;
-        Assert.Equal("invalid_exact_evm_payload_recipient_mismatch", errorCode);
+        Assert.Equal("invalid_exact_evm_recipient_mismatch", errorCode);
     }
 
     [Fact]
@@ -64,21 +64,21 @@ public class X402ErrorCodesTests
     public void Given_X402ErrorCodes_When_AccessingInvalidScheme_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.InvalidScheme;
-        Assert.Equal("invalid_scheme", errorCode);
+        Assert.Equal("invalid_exact_evm_scheme", errorCode);
     }
 
     [Fact]
     public void Given_X402ErrorCodes_When_AccessingUnsupportedScheme_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.UnsupportedScheme;
-        Assert.Equal("unsupported_scheme", errorCode);
+        Assert.Equal("unsupported_payload_type", errorCode);
     }
 
     [Fact]
     public void Given_X402ErrorCodes_When_AccessingNonceAlreadyUsed_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.NonceAlreadyUsed;
-        Assert.Equal("invalid_exact_evm_payload_authorization_nonce_used", errorCode);
+        Assert.Equal("invalid_exact_evm_nonce_already_used", errorCode);
     }
 
     [Fact]

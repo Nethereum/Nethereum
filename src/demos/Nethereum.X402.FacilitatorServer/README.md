@@ -5,10 +5,15 @@ This example demonstrates how to build a complete x402 facilitator server using 
 ## Overview
 
 The facilitator server implements the x402 protocol endpoints for payment verification and settlement. It uses:
-- **TransferWithAuthorization** pattern from EIP-3009
+- **Both "exact"-scheme asset-transfer methods** — EIP-3009 `transferWithAuthorization` and **Permit2**
+  (`permitWitnessTransferFrom` via the x402ExactPermit2Proxy) — registered together with
+  `AddX402ExactProcessor`, which routes each payment by its payload shape
 - **IAccount** interface for flexible account management
 - Reusable validation logic from the library
 - ASP.NET Core controllers with dependency injection
+
+`Program.cs` registers the processor with `builder.Services.AddX402ExactProcessor(account, rpcEndpointsByChainId)`.
+Use `AddX402TransferProcessor` instead if you only want the EIP-3009 method.
 
 ## Architecture
 
@@ -36,14 +41,21 @@ Verifies a payment authorization without executing it.
 ```json
 {
   "paymentPayload": {
-    "scheme": "exact-evm",
+    "x402Version": 2,
+    "accepted": { "scheme": "exact", "network": "eip155:84532" },
     "payload": {
-      "authorization": { /* EIP-3009 authorization */ }
+      "signature": "0x...",
+      "authorization": { "from": "0x...", "to": "0x...", "value": "1000000", "validAfter": "...", "validBefore": "...", "nonce": "0x..." }
     }
   },
   "paymentRequirements": {
-    "network": "sepolia",
-    "value": 1000000
+    "scheme": "exact",
+    "network": "eip155:84532",
+    "amount": "1000000",
+    "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "payTo": "0xYourReceiverAddress",
+    "maxTimeoutSeconds": 60,
+    "extra": { "name": "USDC", "version": "2" }
   }
 }
 ```
@@ -51,8 +63,9 @@ Verifies a payment authorization without executing it.
 **Response:**
 ```json
 {
-  "success": true,
-  "transactionHash": null
+  "isValid": true,
+  "invalidReason": null,
+  "payer": "0x..."
 }
 ```
 
@@ -65,21 +78,21 @@ Executes a verified payment authorization.
 ```json
 {
   "success": true,
-  "transactionHash": "0x..."
+  "transaction": "0x...",
+  "network": "eip155:84532",
+  "payer": "0x...",
+  "amount": "1000000"
 }
 ```
 
 ### 3. GET /facilitator/supported
-Returns supported payment schemes and networks.
+Returns supported payment kinds (one per configured chain id).
 
 **Response:**
 ```json
 {
-  "paymentKinds": [
-    {
-      "scheme": "exact-evm",
-      "networks": ["sepolia", "base-sepolia"]
-    }
+  "kinds": [
+    { "x402Version": 2, "scheme": "exact", "network": "eip155:84532" }
   ]
 }
 ```
@@ -97,22 +110,23 @@ Edit `appsettings.json` to configure your facilitator:
     "RpcEndpoints": {
       "Sepolia": "https://rpc.sepolia.org",
       "BaseSepolia": "https://sepolia.base.org"
-    },
-    "TokenAddresses": {
-      "Sepolia": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-      "BaseSepolia": "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
     }
   }
 }
 ```
 
+`Program.cs` maps those RPC endpoints into a `Dictionary<int, string>` keyed by chain id
+(`11155111` → Sepolia, `84532` → Base Sepolia) and passes it to `AddX402ExactProcessor`.
+
 ### Configuration Keys
 
-- **FacilitatorPrivateKey**: Private key for signing and sending transactions
-- **RpcEndpoints**: RPC URLs for each supported network
-- **TokenAddresses**: EIP-3009 compatible token contract addresses
-- **TokenNames**: Token names for EIP-712 domain (default: "USD Coin")
-- **TokenVersions**: Token versions for EIP-712 domain (default: "2")
+- **FacilitatorPrivateKey**: Private key for signing and sending settlement transactions
+- **RpcEndpoints**: RPC URL per supported network
+
+That is the entire per-chain configuration. In v2 the token address, chain id and EIP-712 domain
+(name/version) all come from each request's `PaymentRequirements` (`asset`, the CAIP-2 `network`, and
+`extra.name`/`extra.version`), so the facilitator does not configure token addresses, names or
+versions.
 
 ## Running the Server
 
@@ -159,75 +173,56 @@ curl -X POST http://localhost:5000/facilitator/verify \
 
 ## Account Management Options
 
-The example shows three ways to configure the facilitator account:
+Each `AddX402…Processor` overload takes the facilitator account (as a private-key string, an
+`IAccount`, or an `IServiceProvider` factory) plus a `Dictionary<int, string>` of RPC endpoints
+keyed by chain id. There are no token/name/version parameters — those come from each request's
+`PaymentRequirements`.
+
+```csharp
+var rpcEndpointsByChainId = new Dictionary<int, string>
+{
+    { 11155111, "https://rpc.sepolia.org" },  // Sepolia
+    { 84532,    "https://sepolia.base.org" }  // Base Sepolia
+};
+```
 
 ### Option 1: Private Key String (Simple)
 ```csharp
-builder.Services.AddX402TransferProcessor(
-    facilitatorPrivateKey,  // String converted to IAccount internally
-    rpcEndpoints,
-    tokenAddresses,
-    chainIds,
-    tokenNames,
-    tokenVersions);
+builder.Services.AddX402ExactProcessor(
+    facilitatorPrivateKey,     // string, converted to an Account internally
+    rpcEndpointsByChainId);
 ```
 
 ### Option 2: IAccount Instance (Recommended)
 ```csharp
 var facilitatorAccount = new Account(facilitatorPrivateKey);
-builder.Services.AddX402TransferProcessor(
-    facilitatorAccount,  // IAccount instance
-    rpcEndpoints,
-    tokenAddresses,
-    chainIds,
-    tokenNames,
-    tokenVersions);
+builder.Services.AddX402ExactProcessor(
+    facilitatorAccount,        // IAccount — also supports external signers/KMS
+    rpcEndpointsByChainId);
 ```
 
 ### Option 3: Factory Function (Advanced)
 ```csharp
-builder.Services.AddX402TransferProcessor(
-    sp => {
-        // Resolve account from other services
+builder.Services.AddX402ExactProcessor(
+    sp =>
+    {
         var keyManager = sp.GetRequiredService<IKeyManager>();
-        return keyManager.GetFacilitatorAccount();
+        return keyManager.GetFacilitatorAccount();  // returns an IAccount
     },
-    rpcEndpoints,
-    tokenAddresses,
-    chainIds,
-    tokenNames,
-    tokenVersions);
+    rpcEndpointsByChainId);
 ```
+
+`AddX402TransferProcessor` (EIP-3009 only) and `AddX402ReceiveProcessor` expose the same three
+overloads.
 
 ## Using Different Account Types
 
-The `IAccount` interface supports various account implementations:
+The facilitator account is any Nethereum `IAccount`, so an external signer (hardware wallet, KMS)
+is supported by supplying an `IAccount` that wraps it — e.g. an `ExternalAccount` backed by an
+`IEthExternalSigner`. A simple in-process account is just:
 
-### Regular Account
 ```csharp
 var account = new Account(privateKey);
-```
-
-### Managed Account (Web3 Provider)
-```csharp
-var managedAccount = new ManagedAccount("0xYourAddress", "password");
-```
-
-### External Signer (Custom Implementation)
-```csharp
-public class HardwareWalletAccount : IAccount
-{
-    public string Address { get; }
-
-    public Task<string> SignAsync(byte[] message)
-    {
-        // Delegate to hardware wallet
-    }
-
-    public Task<string> TransactionManager { get; }
-}
-
-var hwAccount = new HardwareWalletAccount(ledgerDevice);
 ```
 
 ## Validation and Error Handling
@@ -241,27 +236,28 @@ The facilitator automatically performs these validations:
 5. **Network Validation** - Confirms correct chain ID
 6. **Recipient Matching** - Validates payment recipient
 
-Error responses follow x402 specification:
+A failed verify carries the reason in `invalidReason`; a failed settle in `errorReason`:
 ```json
 {
   "success": false,
-  "error": "insufficient_funds",
-  "transactionHash": null
+  "errorReason": "invalid_exact_evm_insufficient_balance",
+  "transaction": null
 }
 ```
 
 ### Error Codes
 
-- `insufficient_funds` - Not enough token balance
-- `invalid_exact_evm_payload_signature` - Invalid signature
+- `invalid_exact_evm_insufficient_balance` - Not enough token balance
+- `invalid_exact_evm_signature` - Invalid signature
 - `invalid_exact_evm_payload_authorization_valid_after` - Not yet valid
 - `invalid_exact_evm_payload_authorization_valid_before` - Expired
-- `invalid_exact_evm_payload_authorization_value` - Wrong value
-- `invalid_exact_evm_payload_authorization_nonce_used` - Nonce already used
+- `invalid_exact_evm_authorization_value` - Wrong value
+- `invalid_exact_evm_nonce_already_used` - Nonce already used (also a rejected replay)
+- `invalid_exact_evm_transaction_simulation_failed` - Settlement dry-run reverted
 - `invalid_network` - Unsupported or wrong network
 - `invalid_payload` - Malformed request
 
-See `X402ErrorCodes.cs` for complete list.
+See `X402ErrorCodes.cs` for the complete list.
 
 ## Customization
 
@@ -273,24 +269,20 @@ To use the "receive" pattern instead of "transfer":
 var receiverAccount = new Account(receiverPrivateKey);
 builder.Services.AddX402ReceiveProcessor(
     receiverAccount,
-    rpcEndpoints,
-    tokenAddresses,
-    chainIds,
-    tokenNames,
-    tokenVersions);
+    rpcEndpointsByChainId);
 ```
 
 ### Supporting Additional Networks
 
-Add more networks to the configuration dictionaries:
+Add more chain ids to the RPC dictionary:
 
 ```csharp
-var rpcEndpoints = new Dictionary<string, string>
+var rpcEndpointsByChainId = new Dictionary<int, string>
 {
-    { "sepolia", "https://rpc.sepolia.org" },
-    { "base-sepolia", "https://sepolia.base.org" },
-    { "mainnet", "https://mainnet.infura.io/v3/YOUR_KEY" },
-    { "base", "https://mainnet.base.org" }
+    { 11155111, "https://rpc.sepolia.org" },              // Sepolia
+    { 84532,    "https://sepolia.base.org" },             // Base Sepolia
+    { 1,        "https://mainnet.infura.io/v3/YOUR_KEY" },// Ethereum mainnet
+    { 8453,     "https://mainnet.base.org" }              // Base
 };
 ```
 
@@ -338,7 +330,9 @@ var privateKey = Environment.GetEnvironmentVariable("X402_PRIVATE_KEY")
 ### Scaling
 
 - The processor is stateless and can be scaled horizontally
-- Consider Redis for distributed nonce tracking
+- If you also run the `X402Middleware` on scaled resource servers, register a distributed
+  `IPaymentReplayStore` (e.g. Redis-backed) so replay reservations are shared across replicas — the
+  default store is in-process
 - Use read replicas for RPC endpoints
 
 ## Testing

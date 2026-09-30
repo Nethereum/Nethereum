@@ -25,6 +25,8 @@ public class RoutePaymentConfig
     /// </summary>
     public PaymentRequirements Requirements { get; set; } = null!;
 
+    public ResourceInfo? Resource { get; set; }
+
     public RoutePaymentConfig()
     {
     }
@@ -37,5 +39,12 @@ public class RoutePaymentConfig
         PathPattern = pathPattern;
         Requirements = requirements;
         Method = method;
+    }
+
+    public RoutePaymentConfig(string pathPattern, PaymentRequirements requirements, ResourceInfo resource, string? method = null)
+        : this(pathPattern, requirements, method)
+    {
+        ArgumentNullException.ThrowIfNull(resource, nameof(resource));
+        Resource = resource;
     }
 }

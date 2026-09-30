@@ -7,25 +7,13 @@ Console.WriteLine("x402 Payment Client - Manual vs Automatic Flow Demo");
 Console.WriteLine("=".PadRight(70, '='));
 Console.WriteLine();
 
-// IMPORTANT: Replace this with your own private key!
-// This is a test key - DO NOT use in production or with real funds
 const string PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-const string TOKEN_NAME = "USD Coin";
-const string TOKEN_VERSION = "2";
-const int CHAIN_ID = 31337; // Local Anvil
-const string TOKEN_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const string NETWORK = "localhost";
+const string NETWORK = "eip155:84532";
 
 Console.WriteLine("Configuration:");
-Console.WriteLine($"  Network: {NETWORK}");
-Console.WriteLine($"  Chain ID: {CHAIN_ID}");
-Console.WriteLine($"  Token: {TOKEN_NAME} v{TOKEN_VERSION}");
-Console.WriteLine($"  Token Address: {TOKEN_ADDRESS}");
+Console.WriteLine($"  Preferred Network: {NETWORK}");
 Console.WriteLine();
 
-// ============================================================================
-// DEMO 1: AUTOMATIC PAYMENT FLOW (Recommended - Like TypeScript Client)
-// ============================================================================
 
 Console.WriteLine("=".PadRight(70, '='));
 Console.WriteLine("DEMO 1: AUTOMATIC PAYMENT FLOW");
@@ -35,7 +23,7 @@ Console.WriteLine("The client automatically handles 402 responses:");
 Console.WriteLine("  1. Makes initial request");
 Console.WriteLine("  2. Receives 402 Payment Required");
 Console.WriteLine("  3. Automatically creates and signs payment");
-Console.WriteLine("  4. Retries request with X-PAYMENT header");
+Console.WriteLine("  4. Retries request with PAYMENT-SIGNATURE header");
 Console.WriteLine();
 
 try
@@ -45,11 +33,7 @@ try
     {
         PreferredNetwork = NETWORK,
         PreferredScheme = "exact",
-        MaxPaymentAmount = 1.0m, // Max 1 USDC
-        TokenName = TOKEN_NAME,
-        TokenVersion = TOKEN_VERSION,
-        ChainId = CHAIN_ID,
-        TokenAddress = TOKEN_ADDRESS
+        MaxAmount = "1000000"
     };
 
     var autoClient = new X402HttpClient(httpClient, PRIVATE_KEY, options);
@@ -63,7 +47,6 @@ try
     var content = await response.Content.ReadAsStringAsync();
     Console.WriteLine($"Content: {content}");
 
-    // Use extension method to get settlement details
     if (response.HasPaymentResponse())
     {
         var settlement = response.GetSettlementResponse();
@@ -87,9 +70,6 @@ catch (Exception ex)
 Console.WriteLine();
 Console.WriteLine();
 
-// ============================================================================
-// DEMO 2: MANUAL PAYMENT FLOW (Advanced - Full Control)
-// ============================================================================
 
 Console.WriteLine("=".PadRight(70, '='));
 Console.WriteLine("DEMO 2: MANUAL PAYMENT FLOW");
@@ -105,28 +85,20 @@ Console.WriteLine();
 try
 {
     var httpClient = new HttpClient();
-    var manualClient = new X402HttpClient(
-        httpClient,
-        PRIVATE_KEY,
-        TOKEN_NAME,
-        TOKEN_VERSION,
-        CHAIN_ID,
-        TOKEN_ADDRESS);
+    var manualClient = new X402HttpClient(httpClient, PRIVATE_KEY);
 
     Console.WriteLine($"Client Address: {manualClient.Address}");
     Console.WriteLine();
 
-    // Step 1: Try without payment
     Console.WriteLine("[Manual Step 1] Requesting without payment...");
     var initialResponse = await httpClient.GetAsync("http://localhost:5000/premium");
 
     Console.WriteLine($"Status: {initialResponse.StatusCode}");
 
-    // Step 2: Parse 402 response
     if (initialResponse.StatusCode == System.Net.HttpStatusCode.PaymentRequired)
     {
         var paymentResponseJson = await initialResponse.Content.ReadAsStringAsync();
-        var paymentResponse = JsonSerializer.Deserialize<PaymentRequirementsResponse>(
+        var paymentResponse = JsonSerializer.Deserialize<PaymentRequired>(
             paymentResponseJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -136,18 +108,16 @@ try
 
         if (paymentResponse?.Accepts != null && paymentResponse.Accepts.Count > 0)
         {
-            // Step 3: Select payment requirements (use first option)
             var requirements = paymentResponse.Accepts[0];
 
             Console.WriteLine();
             Console.WriteLine("[Manual Step 3] Selected payment option:");
             Console.WriteLine($"  Network: {requirements.Network}");
             Console.WriteLine($"  Scheme: {requirements.Scheme}");
-            Console.WriteLine($"  Amount: {requirements.MaxAmountRequired} atomic units");
+            Console.WriteLine($"  Amount: {requirements.Amount} atomic units");
             Console.WriteLine($"  Pay To: {requirements.PayTo}");
             Console.WriteLine($"  Asset: {requirements.Asset}");
 
-            // Step 4: Make paid request
             Console.WriteLine();
             Console.WriteLine("[Manual Step 4] Sending payment...");
             var paidResponse = await manualClient.GetAsync(
@@ -158,10 +128,9 @@ try
             var paidContent = await paidResponse.Content.ReadAsStringAsync();
             Console.WriteLine($"Content: {paidContent}");
 
-            // Manual parsing of settlement (or use extension methods)
-            if (paidResponse.Headers.Contains("X-PAYMENT-RESPONSE"))
+            if (paidResponse.Headers.Contains("PAYMENT-RESPONSE"))
             {
-                var settlementHeader = paidResponse.Headers.GetValues("X-PAYMENT-RESPONSE").First();
+                var settlementHeader = paidResponse.Headers.GetValues("PAYMENT-RESPONSE").First();
                 var settlementJson = System.Text.Encoding.UTF8.GetString(
                     Convert.FromBase64String(settlementHeader));
                 var settlement = JsonSerializer.Deserialize<SettlementResponse>(
@@ -193,6 +162,6 @@ Console.WriteLine("Done!");
 Console.WriteLine("=".PadRight(70, '='));
 Console.WriteLine();
 Console.WriteLine("NOTE: Make sure the server is running:");
-Console.WriteLine("  cd dotnet/examples/SimpleServer");
+Console.WriteLine("  cd src/demos/Nethereum.X402.SimpleServer");
 Console.WriteLine("  dotnet run");
 Console.WriteLine();

@@ -40,7 +40,7 @@ public class TransferWithAuthorisationBuilderTests
         var requirements = new PaymentRequirements
         {
             PayTo = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            MaxAmountRequired = "1000000"
+            Amount = "1000000"
         };
         var fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
@@ -57,13 +57,13 @@ public class TransferWithAuthorisationBuilderTests
         var requirements = new PaymentRequirements
         {
             PayTo = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            MaxAmountRequired = "1000000"
+            Amount = "1000000"
         };
         var fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
         var authorization = builder.BuildFromPaymentRequirements(requirements, fromAddress);
 
-        Assert.Equal(requirements.MaxAmountRequired, authorization.Value);
+        Assert.Equal(requirements.Amount, authorization.Value);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class TransferWithAuthorisationBuilderTests
         var requirements = new PaymentRequirements
         {
             PayTo = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            MaxAmountRequired = "1000000"
+            Amount = "1000000"
         };
         var fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
@@ -91,7 +91,7 @@ public class TransferWithAuthorisationBuilderTests
         var requirements = new PaymentRequirements
         {
             PayTo = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            MaxAmountRequired = "1000000"
+            Amount = "1000000"
         };
         var fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
@@ -109,7 +109,7 @@ public class TransferWithAuthorisationBuilderTests
         var requirements = new PaymentRequirements
         {
             PayTo = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            MaxAmountRequired = "1000000"
+            Amount = "1000000"
         };
         var fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
@@ -127,7 +127,7 @@ public class TransferWithAuthorisationBuilderTests
         var requirements = new PaymentRequirements
         {
             PayTo = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            MaxAmountRequired = "1000000"
+            Amount = "1000000"
         };
         var fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
         var customValidAfter = new BigInteger(1000);
