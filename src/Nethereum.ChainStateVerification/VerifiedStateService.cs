@@ -167,11 +167,7 @@ namespace Nethereum.ChainStateVerification
 
         public async Task<byte[]> GetStorageAtAsync(string address, BigInteger position)
         {
-            var slotHex = position.ToHex(true).EnsureHexPrefix();
-            if (slotHex.Length % 2 != 0)
-            {
-                slotHex = "0x0" + slotHex.Substring(2);
-            }
+            var slotHex = position.ToByteArray(isUnsigned: true, isBigEndian: true).PadTo32Bytes().ToHex(true);
             return await GetStorageAtAsync(address, slotHex).ConfigureAwait(false);
         }
 
