@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Nethereum MainnetChain - read-only mainnet follower + serving library: composes FollowerChainNode (CoreChain) + DevP2P sync orchestration + optional beacon LightClient consensus gate + eth_/net_/web3_ JSON-RPC. Hostable from a CLI, Aspire, or tests via AddMainnetChainServer / MapMainnetChainEndpoints.</Description>
     <AssemblyTitle>Nethereum.MainnetChain</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <Version>$(NethereumVersionPreview)</Version>
     <!-- net8.0 added (alongside the server's $(ServerFrameworks)=net10.0) so the RocksDB unit-test project
          (net8.0) can reference MainnetChainNodeFactory directly and share its follower executor-stack
          composition instead of hand-rolling a parallel copy. Every project this library depends on already

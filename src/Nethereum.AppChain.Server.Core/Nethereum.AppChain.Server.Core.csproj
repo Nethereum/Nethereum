@@ -12,6 +12,7 @@
     <Description>Nethereum AppChain Server core — the reusable composition (storage, chain, sequencer, sync, DevP2P serve) consumed by the AppChain.Server CLI and Aspire hosts.</Description>
     <AssemblyTitle>Nethereum.AppChain.Server.Core</AssemblyTitle>
     <Version>$(NethereumVersionPreview)</Version>
+    <IsPackable>true</IsPackable>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 

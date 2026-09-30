@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum DevP2P - RLPx transport and Ethereum peer-to-peer networking</Description>
     <AssemblyTitle>Nethereum.DevP2P</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <Version>$(NethereumVersionPreview)</Version>
     <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.DevP2P</AssemblyName>
     <PackageId>Nethereum.DevP2P</PackageId>

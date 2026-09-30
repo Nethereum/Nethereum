@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
   <PropertyGroup>
+    <Version>$(NethereumVersionPreview)</Version>
     <Description>DevP2P-backed sync over eth/68-71 and snap: peer pool, header and body fetch, snap bootstrap, mempool relay and block push.</Description>
     <Authors>Juan Blanco</Authors>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>

@@ -17,7 +17,7 @@
 
     <Description>Nethereum MainnetChain Server - thin CLI host for the Nethereum.MainnetChain library (read-only mainnet follower + JSON-RPC serving). All composition lives in Nethereum.MainnetChain so it can also be hosted from Aspire or tests.</Description>
     <AssemblyTitle>Nethereum.MainnetChain.Server</AssemblyTitle>
-    <Version>$(NethereumVersion)</Version>
+    <Version>$(NethereumVersionPreview)</Version>
     <AssemblyName>Nethereum.MainnetChain.Server</AssemblyName>
     <PackageId>Nethereum.MainnetChain.Server</PackageId>
     <PackageReadmeFile>README.md</PackageReadmeFile>
