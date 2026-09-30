@@ -163,6 +163,8 @@ publish/
 
 # NuGet Packages
 *.nupkg
+# Native package build output (e.g. Nethereum.Signer.Bls.Herumi emits a local .snupkg on build)
+nativeartifacts/
 # The packages folder can be ignored because of Package Restore
 **/packages/*
 # except build/, which is used as an MSBuild target.
@@ -303,3 +305,47 @@ contracts/cache/
 
 # Windows nul file artifacts
 nul
+
+# Zisk build artifacts (ELF binaries, raw outputs, generated witnesses)
+zisk/output/
+zisk/.libziskos/
+
+# SyncNode runtime artefacts
+tools/Nethereum.DevP2P.SyncNode/peer-cache.json
+geth-tools/
+# docs/ is a SEPARATE repo (Forgejo Nethereum/dev-docs) — nothing under docs/ is tracked in the main repo
+docs/
+
+# Local scratch / generated artefacts (regenerable)
+tmp/
+.claude/worktrees/
+scripts/zisk-output/
+
+# External test-fixture suites — obtain per external/README.md (large; not committed)
+external/*
+!external/README.md
+
+# IDE / publish output
+.vscode/
+.playwright-mcp/
+publish_linux/
+publish_linux.tgz
+
+# geth test binary is fetched by testchain/clique/get-geth.ps1, never committed
+testchain/clique/geth.exe
+testchain/clique/geth-*.bak.exe
+
+# machine-specific test settings (node urls) - see appsettings.test.json for keys
+appsettings.test.local.json
+
+# CodeQuality analyser output database - local to whoever ran it, on any clone
+.codequality/
+
+# Local test run logs
+.testresults/
+
+# RocksDB / node runtime working directories (never commit)
+scratch-bn/
+scratch-metrics/
+**/scratch-bn/
+**/scratch-metrics/

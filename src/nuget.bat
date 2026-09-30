@@ -361,7 +361,7 @@ cd Nethereum.AppChain.Sequencer
 CALL :restorepack
 cd..
 
-cd Nethereum.AppChain.Sync
+cd Nethereum.AppChain.Server.Core
 CALL :restorepack
 cd..
 
@@ -474,6 +474,81 @@ CALL :restorepack
 cd..
 
 cd Nethereum.PrivacyPools.Circuits
+CALL :restorepack
+cd..
+
+rem New in 7.0 (guest-ELF Nethereum.EVM.Zisk and the un-packaged prover exes
+rem Nethereum.Zisk.Prover.Server / Nethereum.BlockProver.Server are intentionally
+rem excluded - see release-notes/7.0/BACKLOG.md item 19b)
+cd Nethereum.EVM.Core
+CALL :restorepack
+cd..
+
+cd Nethereum.EVM.Precompiles
+CALL :restorepack
+cd..
+
+cd Nethereum.DevP2P
+CALL :restorepack
+cd..
+
+cd Nethereum.DevP2P.Sync
+CALL :restorepack
+cd..
+
+cd Nethereum.ChainNode.Hosting
+CALL :restorepack
+cd..
+
+cd Nethereum.MainnetChain
+CALL :restorepack
+cd..
+
+cd Nethereum.MainnetChain.Server
+CALL :restorepack
+cd..
+
+cd Nethereum.CoreChain.Freezer
+CALL :restorepack
+cd..
+
+cd Nethereum.Freezer
+CALL :restorepack
+cd..
+
+cd Nethereum.Zisk.Core
+CALL :restorepack
+cd..
+
+cd Nethereum.WebAuthn
+CALL :restorepack
+cd..
+
+cd Nethereum.WebAuthn.Blazor
+CALL :restorepack
+cd..
+
+cd Nethereum.WebAuthn.Windows
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.WebAuthn
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.Bundler.InProcess
+CALL :restorepack
+cd..
+
+cd Nethereum.Explorer.Anchoring
+CALL :restorepack
+cd..
+
+cd Nethereum.DID
+CALL :restorepack
+cd..
+
+cd Nethereum.DID.EthrDID
 CALL :restorepack
 cd..
 

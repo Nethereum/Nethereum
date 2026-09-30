@@ -1,1 +1,7 @@
 
+[submodule "src/Nethereum.AppChain.Contracts/lib/forge-std"]
+	path = src/Nethereum.AppChain.Contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "src/Nethereum.AppChain.Contracts/lib/openzeppelin-contracts"]
+	path = src/Nethereum.AppChain.Contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

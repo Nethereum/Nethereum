@@ -198,16 +198,20 @@ Nethereum.AppChain extends CoreChain to provide an application-specific chain la
 
 ## 6. Account Abstraction (ERC-4337 / ERC-7579)
 
-Full ERC-4337 account abstraction stack: UserOperation creation and validation, a complete bundler with mempool and gas estimation, an RPC server, and ERC-7579 modular smart account contracts (validators, executors, hooks, session keys, paymasters).
+Full ERC-4337 account abstraction stack: UserOperation creation and validation, a **complete, runnable bundler** (embedded for testing or hosted as a standalone JSON-RPC server — not just a client), ERC-7579 modular smart account contracts (validators, executors, hooks, session keys, paymasters), a passkey/WebAuthn (P-256) signer axis, and EIP-7702 upgrade-in-place.
 
 | Package | Description |
 |---|---|
-| [Nethereum.AccountAbstraction](src/Nethereum.AccountAbstraction/) | UserOperation creation, encoding, gas estimation, and validation |
-| [Nethereum.AccountAbstraction.Bundler](src/Nethereum.AccountAbstraction.Bundler/) | Full ERC-4337 bundler: mempool management, reputation tracking, BLS aggregation, bundle building and submission |
+| [Nethereum.AccountAbstraction](src/Nethereum.AccountAbstraction/) | UserOperation creation, encoding, gas estimation, and validation; the `IAAClient` on-ramp, ERC-7579 modular accounts, and EIP-7702 support |
+| [Nethereum.AccountAbstraction.Bundler](src/Nethereum.AccountAbstraction.Bundler/) | Full ERC-4337 bundler engine: mempool management, reputation tracking, BLS aggregation, bundle building and submission |
+| [Nethereum.AccountAbstraction.Bundler.RpcServer](src/Nethereum.AccountAbstraction.Bundler.RpcServer/) | Standalone JSON-RPC bundler server: `eth_sendUserOperation`, `eth_estimateUserOperationGas`, `eth_getUserOperationByHash`, `eth_getUserOperationReceipt`, `eth_supportedEntryPoints` |
+| [Nethereum.AccountAbstraction.Bundler.InProcess](src/Nethereum.AccountAbstraction.Bundler.InProcess/) | Embedded host that runs the bundler and an in-process DevChain together for zero-setup testing |
 | Nethereum.AccountAbstraction.Bundler.RocksDB | RocksDB-backed persistent UserOperation mempool and reputation storage |
-| [Nethereum.AccountAbstraction.Bundler.RpcServer](src/Nethereum.AccountAbstraction.Bundler.RpcServer/) | JSON-RPC server: `eth_sendUserOperation`, `eth_estimateUserOperationGas`, `eth_getUserOperationByHash`, `eth_getUserOperationReceipt`, `eth_supportedEntryPoints` |
-| [Nethereum.AccountAbstraction.SimpleAccount](src/Nethereum.AccountAbstraction.SimpleAccount/) | SimpleAccount smart account and factory interaction |
-| [Nethereum.AccountAbstraction.AppChain](src/Nethereum.AccountAbstraction.AppChain/) | Account abstraction integration for AppChain (gasless UX, session keys on app chains) |
+| [Nethereum.AccountAbstraction.SimpleAccount](src/Nethereum.AccountAbstraction.SimpleAccount/) | SimpleAccount smart account and factory interaction (ERC-4337 reference/compliance path; modular accounts are the standard) |
+| [Nethereum.AccountAbstraction.WebAuthn](src/Nethereum.AccountAbstraction.WebAuthn/) | WebAuthn/passkey (P-256) ERC-7579 validator module and on-ramp extensions for smart accounts |
+| [Nethereum.WebAuthn](src/Nethereum.WebAuthn/) | WebAuthn/passkey primitives: authenticator and credential-factory abstractions, P-256 signing service, and platform response parsers |
+| [Nethereum.WebAuthn.Blazor](src/Nethereum.WebAuthn.Blazor/) | Blazor WebAuthn authenticator over the browser `navigator.credentials` API |
+| [Nethereum.WebAuthn.Windows](src/Nethereum.WebAuthn.Windows/) | Windows Hello WebAuthn authenticator via the native `webauthn.dll` |
 
 ---
 

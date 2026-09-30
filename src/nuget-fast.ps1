@@ -102,7 +102,7 @@ $projects = @(
     "Nethereum.AccountAbstraction.Bundler.RpcServer"
     "Nethereum.AppChain"
     "Nethereum.AppChain.Sequencer"
-    "Nethereum.AppChain.Sync"
+    "Nethereum.AppChain.Server.Core"
     "Nethereum.BlockchainStorage.Processors"
     "Nethereum.BlockchainStorage.Processors.Postgres"
     "Nethereum.BlockchainStorage.Processors.Sqlite"
@@ -131,6 +131,27 @@ $projects = @(
     "Nethereum.ZkProofs.Snarkjs.Blazor"
     "Nethereum.PrivacyPools"
     "Nethereum.PrivacyPools.Circuits"
+    # New in 7.0 (guest-ELF Nethereum.EVM.Zisk and the un-packaged prover exes
+    # Nethereum.Zisk.Prover.Server / Nethereum.BlockProver.Server are intentionally
+    # excluded — see release-notes/7.0/BACKLOG.md item 19b)
+    "Nethereum.EVM.Core"
+    "Nethereum.EVM.Precompiles"
+    "Nethereum.DevP2P"
+    "Nethereum.DevP2P.Sync"
+    "Nethereum.ChainNode.Hosting"
+    "Nethereum.MainnetChain"
+    "Nethereum.MainnetChain.Server"
+    "Nethereum.CoreChain.Freezer"
+    "Nethereum.Freezer"
+    "Nethereum.Zisk.Core"
+    "Nethereum.WebAuthn"
+    "Nethereum.WebAuthn.Blazor"
+    "Nethereum.WebAuthn.Windows"
+    "Nethereum.AccountAbstraction.WebAuthn"
+    "Nethereum.AccountAbstraction.Bundler.InProcess"
+    "Nethereum.Explorer.Anchoring"
+    "Nethereum.DID"
+    "Nethereum.DID.EthrDID"
 )
 
 # Resolve csproj paths
