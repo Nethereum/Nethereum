@@ -1,4 +1,4 @@
-﻿using Nethereum.RPC.AccountSigning;
+using Nethereum.RPC.AccountSigning;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.ChainValidation;
 using Nethereum.RPC.Eth.DTOs;
@@ -12,6 +12,8 @@ namespace Nethereum.RPC
     public interface IEthApiService: IRpcClientWrapper
     {
         IEthChainId ChainId { get; }
+
+        IEthConfig Config { get; }
         IEthAccounts Accounts { get; }
         IEthApiBlockService Blocks { get; }
         IEthCoinBase CoinBase { get; }
@@ -34,6 +36,8 @@ namespace Nethereum.RPC
         IHostWalletService HostWallet { get; }
         IEthGetProof GetProof { get; }
         IEthCreateAccessList CreateAccessList { get; }
+        IEthSimulateV1 SimulateV1 { get; }
+        IEthCapabilities Capabilities { get; }
         IEthChainProofValidationService ChainProofValidation { get; }
 
 #if !DOTNET35

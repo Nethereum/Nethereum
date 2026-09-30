@@ -41,16 +41,15 @@ dotnet add package Nethereum.JsonRpc.Client
 **External:**
 - **Microsoft.Extensions.Logging.Abstractions** (v6.0.0+) - Logging support (conditional dependency for modern frameworks)
 
-**JSON Serialization (Peer Dependencies):**
-- Supports **Newtonsoft.Json** (if available in consuming application)
-- Supports **System.Text.Json** (.NET 6.0+, if available in consuming application)
-- These are not included by this package - your application chooses the JSON library
+**JSON Serialization:**
+- **Newtonsoft.Json** (`[11.0.2,14)`) - real dependency, used for request/response message handling and `RpcError.Data`
+- **System.Text.Json** support is provided by the separate `Nethereum.JsonRpc.SystemTextJsonRpcClient` package, not by this one
 
 ## Quick Start
 
 ```csharp
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
 // Use concrete implementation (RpcClient)
 var client = new RpcClient(new Uri("http://localhost:8545"));
@@ -85,13 +84,16 @@ public interface IClient : IBaseClient
 
 ### IBaseClient
 
-Base interface with common properties:
+Base interface with common properties (`IBaseClient.cs:6-15`). Note `ConnectionTimeout` is **not** part of this interface - it lives on the static `ClientBase.ConnectionTimeout` property instead:
 
 ```csharp
 public interface IBaseClient
 {
     RequestInterceptor OverridingRequestInterceptor { get; set; }
-    TimeSpan ConnectionTimeout { get; set; }
+    T DecodeResult<T>(RpcResponseMessage rpcResponseMessage);
+
+    Task SendRequestAsync(RpcRequest request, string route = null);
+    Task SendRequestAsync(string method, string route = null, params object[] paramList);
 }
 ```
 
@@ -142,6 +144,8 @@ Console.WriteLine($"Balance: {balance}");
 
 ### Example 3: Batch Requests
 
+`RpcRequestResponseBatchItem<TRequestHandler, TResponse>` is constructed from a request handler and an `RpcRequest` (`RpcRequestResponseBatchItem.cs:7-13`), and its decoded result is read from `.Response` - there is no `GetResponse<T>()` method:
+
 ```csharp
 using Nethereum.JsonRpc.Client;
 
@@ -150,30 +154,36 @@ var client = new RpcClient(new Uri("http://localhost:8545"));
 // Create batch request
 var batch = new RpcRequestResponseBatch();
 
-// Add multiple requests
-var blockNumberRequest = new RpcRequestMessage(1, "eth_blockNumber");
-var chainIdRequest = new RpcRequestMessage(2, "eth_chainId");
-var gasPriceRequest = new RpcRequestMessage(3, "eth_gasPrice");
+// Build one handler per method, then wrap each in a batch item
+var blockNumberHandler = new RpcRequestResponseHandlerNoParam<string>(client, "eth_blockNumber");
+var chainIdHandler = new RpcRequestResponseHandlerNoParam<string>(client, "eth_chainId");
+var gasPriceHandler = new RpcRequestResponseHandlerNoParam<string>(client, "eth_gasPrice");
 
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(blockNumberRequest));
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(chainIdRequest));
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(gasPriceRequest));
+var blockNumberItem = new RpcRequestResponseBatchItem<RpcRequestResponseHandlerNoParam<string>, string>(
+    blockNumberHandler, blockNumberHandler.BuildRequest(1));
+var chainIdItem = new RpcRequestResponseBatchItem<RpcRequestResponseHandlerNoParam<string>, string>(
+    chainIdHandler, chainIdHandler.BuildRequest(2));
+var gasPriceItem = new RpcRequestResponseBatchItem<RpcRequestResponseHandlerNoParam<string>, string>(
+    gasPriceHandler, gasPriceHandler.BuildRequest(3));
+
+batch.BatchItems.Add(blockNumberItem);
+batch.BatchItems.Add(chainIdItem);
+batch.BatchItems.Add(gasPriceItem);
 
 // Send batch
-var batchResult = await client.SendBatchRequestAsync(batch);
+await client.SendBatchRequestAsync(batch);
 
-// Process results
-foreach (var item in batchResult.BatchItems)
+// Process results - each typed item exposes .Response directly
+foreach (var item in new IRpcRequestResponseBatchItem[] { blockNumberItem, chainIdItem, gasPriceItem })
 {
     if (item.HasError)
-    {
         Console.WriteLine($"Request {item.RpcRequestMessage.Id} failed: {item.RpcError.Message}");
-    }
     else
-    {
-        Console.WriteLine($"Request {item.RpcRequestMessage.Id}: {item.GetResponse<string>()}");
-    }
+        Console.WriteLine($"Request {item.RpcRequestMessage.Id}: {item.RawResponse}");
 }
+
+// Or read the strongly-typed result directly from a known item:
+Console.WriteLine($"Block number: {blockNumberItem.Response}");
 ```
 
 ### Example 4: Request Interception for Logging
@@ -282,16 +292,18 @@ Console.WriteLine($"Authenticated request successful: {blockNumber}");
 
 ### Example 7: Custom Connection Timeout
 
+`ConnectionTimeout` is `static` on `ClientBase` (`ClientBase.cs:10`) - it applies process-wide to every client instance, and its default is 20 seconds, not 120:
+
 ```csharp
 using Nethereum.JsonRpc.Client;
 
 var client = new RpcClient(new Uri("http://localhost:8545"));
 
-// Default timeout is 120 seconds
-Console.WriteLine($"Default timeout: {client.ConnectionTimeout.TotalSeconds}s");
+// Default timeout is 20 seconds, shared by every ClientBase-derived client in the process
+Console.WriteLine($"Default timeout: {ClientBase.ConnectionTimeout.TotalSeconds}s");
 
-// Set custom timeout
-client.ConnectionTimeout = TimeSpan.FromSeconds(10);
+// Set custom timeout - this changes it for ALL clients, not just this instance
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(10);
 
 try
 {
@@ -337,15 +349,13 @@ var client = new RpcClient(new Uri("http://localhost:8545"));
 var batch = new RpcRequestResponseBatch();
 
 // Add valid and invalid requests
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(
-    new RpcRequestMessage(1, "eth_blockNumber")
-));
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(
-    new RpcRequestMessage(2, "invalid_method") // This will fail
-));
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(
-    new RpcRequestMessage(3, "eth_chainId")
-));
+var blockNumberHandler = new RpcRequestResponseHandlerNoParam<string>(client, "eth_blockNumber");
+var invalidHandler = new RpcRequestResponseHandlerNoParam<string>(client, "invalid_method"); // This will fail
+var chainIdHandler = new RpcRequestResponseHandlerNoParam<string>(client, "eth_chainId");
+
+batch.BatchItems.Add(blockNumberHandler.CreateBatchItem(1));
+batch.BatchItems.Add(invalidHandler.CreateBatchItem(2));
+batch.BatchItems.Add(chainIdHandler.CreateBatchItem(3));
 
 // Accept partial success
 batch.AcceptPartiallySuccessful = true;
@@ -366,7 +376,7 @@ foreach (var item in result.BatchItems)
     else
     {
         successCount++;
-        Console.WriteLine($"Request {item.RpcRequestMessage.Id} succeeded: {item.GetResponse<string>()}");
+        Console.WriteLine($"Request {item.RpcRequestMessage.Id} succeeded: {item.RawResponse}");
     }
 }
 
@@ -377,15 +387,15 @@ Console.WriteLine($"Success: {successCount}, Errors: {errorCount}");
 
 ### ClientBase
 
-Abstract base class for client implementations:
+Abstract base class for client implementations (`ClientBase.cs:8-100`). `ConnectionTimeout` is `static` - one value shared by every client instance in the process, defaulting to 20 seconds. `SendAsync(RpcRequestMessage, string)` is `public abstract` (implemented by each transport); only the batch overload is `protected abstract`:
 
 ```csharp
 public abstract class ClientBase : IClient
 {
+    public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
     public RequestInterceptor OverridingRequestInterceptor { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; }
 
-    protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null);
+    public abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null);
     protected abstract Task<RpcResponseMessage[]> SendAsync(RpcRequestMessage[] requests);
 
     protected void HandleRpcError(RpcResponseMessage response, string reqMsg);
@@ -407,14 +417,18 @@ public class RpcRequest
 
 ### RpcError
 
-Represents a JSON-RPC error:
+Represents a JSON-RPC error. Properties are set only through the constructor (`RpcError.cs`):
 
 ```csharp
 public class RpcError
 {
-    public int Code { get; set; }
-    public string Message { get; set; }
-    public object Data { get; set; }
+    public RpcError(int code, string message, object data = null);
+
+    public int Code { get; private set; }
+    public string Message { get; private set; }
+    public object Data { get; private set; }
+
+    public string GetDataAsString();
 }
 ```
 
@@ -429,7 +443,7 @@ This package provides abstractions only. Use concrete implementations:
 | **Nethereum.JsonRpc.RpcClient** | HTTP/HTTPS | Standard node communication |
 | **Nethereum.JsonRpc.WebSocketClient** | WebSocket | Real-time subscriptions |
 | **Nethereum.JsonRpc.IpcClient** | IPC | Local node communication |
-| **Nethereum.JsonRpc.SystemTextJsonRpcClient** | HTTP (System.Text.Json) | .NET 6+ with System.Text.Json |
+| **Nethereum.JsonRpc.SystemTextJsonRpcClient** | HTTP (System.Text.Json) | .NET 9 (net9.0 only) with System.Text.Json |
 
 ### Error Types
 
@@ -460,6 +474,36 @@ Use `RequestInterceptor` for:
 - `IClient` implementations should be thread-safe after initialization
 - Connection pooling is managed by concrete implementations (e.g., RpcClient)
 - Request interceptors must be thread-safe if used concurrently
+
+### The Streaming Namespace and Custom Client Extension Points
+
+`Nethereum.JsonRpc.Client.Streaming` provides the abstractions that streaming transports (e.g. `Nethereum.JsonRpc.WebSocketClient`) build on:
+
+- **`IStreamingClient`** - `IsStarted`, `AddSubscription`/`RemoveSubscription`, `SendRequestAsync(RpcRequest, IRpcStreamingResponseHandler, string)`, `StartAsync`/`StopAsync`
+- **`IRpcStreamingResponseHandler`** - handles an incoming streamed response for a given request/subscription id
+- **`IRpcStreamingSubscriptionHandler`**, **`IUnsubscribeSubscriptionRpcRequestBuilder`** - subscription lifecycle contracts
+- **`SubscriptionState`**, **`StreamingEventArgs`** - subscription bookkeeping types
+
+To build a **custom RPC client**, derive from `ClientBase` and implement `SendAsync(RpcRequestMessage, string)` and `SendAsync(RpcRequestMessage[])`. For custom typed RPC calls against any `IClient`, use the extension points this package already provides instead of writing a new handler from scratch:
+
+```csharp
+// For a method that takes parameters
+public class MyCustomMethod : RpcRequestResponseHandler<string>
+{
+    public MyCustomMethod(IClient client) : base(client, "my_customMethod") { }
+
+    public Task<string> SendRequestAsync(object id, params object[] paramList)
+        => base.SendRequestAsync(id, paramList);
+}
+
+// For a method that takes no parameters
+public class MyCustomNoParamMethod : RpcRequestResponseHandlerNoParam<string>
+{
+    public MyCustomNoParamMethod(IClient client) : base(client, "my_noParamMethod") { }
+}
+```
+
+Both `RpcRequestResponseHandler<TResponse>` and `RpcRequestResponseHandlerNoParam<TResponse>` implement `IRpcRequestHandler<TResponse>`, decode responses via `Client.DecodeResult<TResponse>`, and (for the no-param case) expose `CreateBatchItem(object id)` to participate in batch requests.
 
 ## Related Packages
 

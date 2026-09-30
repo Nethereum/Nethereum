@@ -81,7 +81,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 (long)block.Timestamp.Value);
 
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             program = await evmSimulator.ExecuteWithCallStackAsync(program, 0, 0, true);
 

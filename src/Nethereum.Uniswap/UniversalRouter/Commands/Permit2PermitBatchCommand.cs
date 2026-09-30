@@ -1,5 +1,5 @@
 ﻿using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.Uniswap.Core.Permit2.ContractDefinition;
+using Nethereum.ABI.EIP712.Permit2;
 
 
 namespace Nethereum.Uniswap.UniversalRouter.Commands

@@ -2,6 +2,7 @@ using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
 using Xunit;
+using Nethereum.Merkle.Patricia.Nodes;
 
 namespace Nethereum.Contracts.IntegrationTests.Patricia
 {

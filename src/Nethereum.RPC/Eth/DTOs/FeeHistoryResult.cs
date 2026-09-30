@@ -48,5 +48,21 @@ namespace Nethereum.RPC.Eth.DTOs
         [JsonPropertyName("reward")]
 #endif
         public HexBigInteger[][] Reward { get; set; }
+
+        /// <summary>
+        /// An array of base fees per blob gas for the returned block range. Includes the next block
+        /// after the newest of the returned range. Zero for blocks before EIP-4844.
+        /// </summary>
+        [JsonProperty(PropertyName = "baseFeePerBlobGas")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("baseFeePerBlobGas")]
+#endif
+        public HexBigInteger[] BaseFeePerBlobGas { get; set; }
+
+        [JsonProperty(PropertyName = "blobGasUsedRatio")]
+#if NET6_0_OR_GREATER
+        [JsonPropertyName("blobGasUsedRatio")]
+#endif
+        public decimal[] BlobGasUsedRatio { get; set; }
     }
 }

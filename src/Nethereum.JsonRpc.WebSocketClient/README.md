@@ -12,7 +12,7 @@ Nethereum.JsonRpc.WebSocketClient provides **WebSocket transport implementations
 - **Event streaming** with automatic message routing
 - Request/response and streaming modes
 - Custom request headers support
-- Connection management and automatic reconnection
+- Lazy reconnect on next request (WebSocketClient); StreamingWebSocketClient exposes an Error event for your own reconnect logic
 - Thread-safe subscription handling
 - Production-tested reliability
 
@@ -33,7 +33,7 @@ dotnet add package Nethereum.JsonRpc.WebSocketClient
 
 **Requirements:**
 - Ethereum node with WebSocket support (Geth, Erigon, Infura, Alchemy)
-- .NET Standard 2.0+ or .NET Core 2.1+
+- Target frameworks actually built by this package (`IpcWebSocketsFrameworks`): `net461`, `netstandard2.0`, `net6.0`, `net8.0`, `net9.0`, `net10.0`
 
 ## Dependencies
 
@@ -43,13 +43,16 @@ dotnet add package Nethereum.JsonRpc.WebSocketClient
 **External:**
 - **System.Net.WebSockets.Client** (v4.3.2) - WebSocket protocol implementation
 
+**Not a dependency of this package, but required for the Observable subscription examples below:**
+- **Nethereum.RPC.Reactive** - provides `EthNewBlockHeadersObservableSubscription`, `EthLogsObservableSubscription`, `EthNewPendingTransactionObservableSubscription` (`Nethereum.RPC.Reactive.Eth.Subscriptions`) and depends on `System.Reactive`
+
 ## Quick Start
 
 ### Basic WebSocket Client (Request/Response)
 
 ```csharp
 using Nethereum.JsonRpc.WebSocketClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
 // Connect to WebSocket endpoint
 var client = new WebSocketClient("ws://localhost:8546");
@@ -75,7 +78,7 @@ using Nethereum.RPC.Reactive.Eth.Subscriptions;
 var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/YOUR_PROJECT_ID");
 
 // Create subscription for new blocks
-var subscription = new EthNewBlockHeadersSubscription(client);
+var subscription = new EthNewBlockHeadersObservableSubscription(client);
 
 // Handle new block events
 subscription.GetSubscriptionDataResponsesAsObservable().Subscribe(block =>
@@ -147,7 +150,7 @@ using System.Reactive.Linq;
 var client = new StreamingWebSocketClient("ws://localhost:8546");
 
 // Create new block headers subscription
-var subscription = new EthNewBlockHeadersSubscription(client);
+var subscription = new EthNewBlockHeadersObservableSubscription(client);
 
 // Subscribe to new blocks
 subscription.GetSubscriptionDataResponsesAsObservable()
@@ -160,7 +163,8 @@ subscription.GetSubscriptionDataResponsesAsObservable()
         Console.WriteLine($"  Timestamp: {DateTimeOffset.FromUnixTimeSeconds((long)block.Timestamp.Value)}");
         Console.WriteLine($"  Difficulty: {block.Difficulty.Value}");
         Console.WriteLine($"  Gas Used: {block.GasUsed.Value:N0}");
-        Console.WriteLine($"  Transactions: {block.TransactionCount()}");
+        // Note: newHeads only delivers headers - Block has no Transactions/TransactionCount()
+        // (that extension only exists on BlockWithTransactions / BlockWithTransactionHashes)
         Console.WriteLine();
     },
     error => Console.WriteLine($"Error: {error.Message}"));
@@ -185,8 +189,10 @@ using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Web3;
 
 var client = new StreamingWebSocketClient("wss://mainnet.infura.io/ws/v3/YOUR_PROJECT_ID");
+await client.StartAsync();
 
 // Create logs subscription for USDC Transfer events
 var transferEventSignature = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
@@ -198,7 +204,7 @@ var filterLogs = new NewFilterInput
     Topics = new[] { transferEventSignature }
 };
 
-var subscription = new EthLogsSubscription(client);
+var subscription = new EthLogsObservableSubscription(client);
 await subscription.SubscribeAsync(filterLogs);
 
 // Handle Transfer events
@@ -211,12 +217,10 @@ subscription.GetSubscriptionDataResponsesAsObservable().Subscribe(log =>
     Console.WriteLine($"USDC Transfer:");
     Console.WriteLine($"  From: {from}");
     Console.WriteLine($"  To: {to}");
-    Console.WriteLine($"  Amount: {amount / 1000000m:N2} USDC");  // USDC has 6 decimals
+    Console.WriteLine($"  Amount: {Web3.Convert.FromWei(amount, 6):N2} USDC");  // USDC has 6 decimals
     Console.WriteLine($"  Tx: {log.TransactionHash}");
     Console.WriteLine();
 });
-
-await client.StartAsync();
 
 Console.WriteLine("Monitoring USDC transfers. Press Enter to stop.");
 Console.ReadLine();
@@ -229,14 +233,17 @@ client.Dispose();
 ### Example 4: Pending Transaction Monitoring (Mempool)
 
 ```csharp
+using Nethereum.JsonRpc.WebSocketClient;
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
+using Nethereum.Util;
 using Nethereum.Web3;
+using System.Reactive.Linq;
 
 var client = new StreamingWebSocketClient("ws://localhost:8546");
 
 // Create pending transactions subscription
-var subscription = new EthNewPendingTransactionSubscription(client);
+var subscription = new EthNewPendingTransactionObservableSubscription(client);
 
 // Handle new pending transactions
 subscription.GetSubscriptionDataResponsesAsObservable()
@@ -248,7 +255,7 @@ subscription.GetSubscriptionDataResponsesAsObservable()
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {txHashes.Count} new pending transactions");
 
             // Fetch details for first transaction
-            var web3 = new Web3(client);
+            var web3 = new Web3(new WebSocketClient("ws://localhost:8546"));
             var txDetails = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(txHashes[0]);
 
             if (txDetails != null)
@@ -257,7 +264,7 @@ subscription.GetSubscriptionDataResponsesAsObservable()
                 Console.WriteLine($"  From: {txDetails.From}");
                 Console.WriteLine($"  To: {txDetails.To}");
                 Console.WriteLine($"  Value: {Web3.Convert.FromWei(txDetails.Value)} ETH");
-                Console.WriteLine($"  Gas Price: {Web3.Convert.FromWei(txDetails.GasPrice, Web3.Convert.UnitConversion.Gwei)} Gwei");
+                Console.WriteLine($"  Gas Price: {Web3.Convert.FromWei(txDetails.GasPrice, UnitConversion.EthUnit.Gwei)} Gwei");
             }
         }
     });
@@ -275,16 +282,18 @@ client.Dispose();
 
 ### Example 5: Multiple Subscriptions
 
+**Note:** There is no typed/Observable sync-status subscription - `EthSyncingSubscription` (`Nethereum.RPC.Eth.Subscriptions`) decodes `eth_subscribe("syncing")` data as a raw `Newtonsoft.Json.Linq.JObject` and exposes it via a plain C# `SubscriptionDataResponse` event, not `IObservable`. This example therefore only covers the two Observable subscriptions.
+
 ```csharp
 using Nethereum.JsonRpc.WebSocketStreamingClient;
 using Nethereum.RPC.Reactive.Eth.Subscriptions;
+using System.Reactive.Linq;
 
 var client = new StreamingWebSocketClient("ws://localhost:8546");
 
 // Create multiple subscriptions
-var blockSubscription = new EthNewBlockHeadersSubscription(client);
-var pendingTxSubscription = new EthNewPendingTransactionSubscription(client);
-var syncSubscription = new EthSyncingSubscription(client);
+var blockSubscription = new EthNewBlockHeadersObservableSubscription(client);
+var pendingTxSubscription = new EthNewPendingTransactionObservableSubscription(client);
 
 // Handle new blocks
 blockSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(block =>
@@ -300,24 +309,10 @@ pendingTxSubscription.GetSubscriptionDataResponsesAsObservable()
         Console.WriteLine($"[MEMPOOL] {txHashes.Count} pending transactions in last 5s");
     });
 
-// Handle sync status
-syncSubscription.GetSubscriptionDataResponsesAsObservable().Subscribe(syncStatus =>
-{
-    if (syncStatus.IsSyncing)
-    {
-        Console.WriteLine($"[SYNC] Current: {syncStatus.CurrentBlock}, Highest: {syncStatus.HighestBlock}");
-    }
-    else
-    {
-        Console.WriteLine($"[SYNC] Node is synced");
-    }
-});
-
 // Start client and all subscriptions
 await client.StartAsync();
 await blockSubscription.SubscribeAsync();
 await pendingTxSubscription.SubscribeAsync();
-await syncSubscription.SubscribeAsync();
 
 Console.WriteLine("Monitoring multiple streams. Press Enter to stop.");
 Console.ReadLine();
@@ -325,7 +320,6 @@ Console.ReadLine();
 // Cleanup all subscriptions
 await blockSubscription.UnsubscribeAsync();
 await pendingTxSubscription.UnsubscribeAsync();
-await syncSubscription.UnsubscribeAsync();
 await client.StopAsync();
 client.Dispose();
 ```
@@ -334,7 +328,7 @@ client.Dispose();
 
 ```csharp
 using Nethereum.JsonRpc.WebSocketClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
 var client = new WebSocketClient("wss://api.example.com/ws");
 
@@ -436,29 +430,27 @@ using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using System.Reactive.Linq;
 
 var client = new StreamingWebSocketClient("ws://localhost:8546");
-var subscription = new EthNewBlockHeadersSubscription(client);
+var subscription = new EthNewBlockHeadersObservableSubscription(client);
 
 // Advanced reactive processing
 subscription.GetSubscriptionDataResponsesAsObservable()
     .Window(TimeSpan.FromMinutes(1))  // 1-minute windows
     .SelectMany(window => window
+        // newHeads only delivers headers, so Block has no Transactions/TransactionCount() to aggregate here
         .Aggregate(new
         {
             Count = 0,
-            TotalGasUsed = BigInteger.Zero,
-            TotalTransactions = 0
+            TotalGasUsed = BigInteger.Zero
         }, (acc, block) => new
         {
             Count = acc.Count + 1,
-            TotalGasUsed = acc.TotalGasUsed + block.GasUsed.Value,
-            TotalTransactions = acc.TotalTransactions + (int)block.TransactionCount()
+            TotalGasUsed = acc.TotalGasUsed + block.GasUsed.Value
         }))
     .Subscribe(stats =>
     {
         Console.WriteLine($"=== 1-Minute Stats ===");
         Console.WriteLine($"Blocks: {stats.Count}");
         Console.WriteLine($"Avg Gas/Block: {stats.TotalGasUsed / stats.Count:N0}");
-        Console.WriteLine($"Total Transactions: {stats.TotalTransactions}");
         Console.WriteLine();
     });
 
@@ -511,10 +503,12 @@ public class WebSocketClient : ClientBase, IDisposable, IClientRequestHeaderSupp
         ILogger log = null)
 
     public Dictionary<string, string> RequestHeaders { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; }
+    public JsonSerializerSettings JsonSerializerSettings { get; set; }
+    public static TimeSpan ConnectionTimeout { get; set; } // inherited from ClientBase - shared process-wide, default 20s
 
     public Task StopAsync()
     public Task StopAsync(WebSocketCloseStatus webSocketCloseStatus, string status, CancellationToken timeOutToken)
+    public void Dispose()
 }
 ```
 
@@ -528,7 +522,8 @@ public class StreamingWebSocketClient : IStreamingClient, IDisposable, IClientRe
         ILogger log = null)
 
     public Dictionary<string, string> RequestHeaders { get; set; }
-    public static TimeSpan ConnectionTimeout { get; set; }
+    public JsonSerializerSettings JsonSerializerSettings { get; set; }
+    public static TimeSpan ConnectionTimeout { get; set; } // default 20s
     public WebSocketState WebSocketState { get; }
     public bool IsStarted { get; }
 
@@ -538,17 +533,21 @@ public class StreamingWebSocketClient : IStreamingClient, IDisposable, IClientRe
     public Task StopAsync()
     public bool AddSubscription(string subscriptionId, IRpcStreamingResponseHandler handler)
     public bool RemoveSubscription(string subscriptionId)
+    public void Dispose()
 }
 ```
 
 ### Available Subscriptions
 
+All three live in `Nethereum.RPC.Reactive.Eth.Subscriptions` (package `Nethereum.RPC.Reactive`, not declared as a dependency of this package - see Dependencies above):
+
 | Subscription | Description |
 |--------------|-------------|
-| **EthNewBlockHeadersSubscription** | New block headers |
-| **EthNewPendingTransactionSubscription** | Pending transactions (mempool) |
-| **EthLogsSubscription** | Contract event logs |
-| **EthSyncingSubscription** | Node sync status |
+| **EthNewBlockHeadersObservableSubscription** | New block headers (`RpcStreamingSubscriptionObservableHandler<Block>`) |
+| **EthNewPendingTransactionObservableSubscription** | Pending transactions (mempool) (`RpcStreamingSubscriptionObservableHandler<string>`, emits tx hashes) |
+| **EthLogsObservableSubscription** | Contract event logs (`RpcStreamingSubscriptionObservableHandler<FilterLog>`) |
+
+There is no Observable wrapper for `eth_subscribe("syncing")`. `EthSyncingSubscription` (`Nethereum.RPC.Eth.Subscriptions`) is event-based and decodes to a raw `JObject`, not a typed DTO.
 
 ## Important Notes
 

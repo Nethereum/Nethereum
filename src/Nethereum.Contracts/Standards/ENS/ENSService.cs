@@ -29,7 +29,7 @@ namespace Nethereum.Contracts.Standards.ENS
         public const string ENS_ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
         public static int MaxLookupRedirects { get; set; } = 10; //at least 4
 
-        public ENSService(IEthApiContractService ethApiContractService, string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS, IEnsCCIPService ccipService = null)
+        public ENSService(IEthApiContractService ethApiContractService, string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS, IEnsCCIPService ccipService = null, string universalResolverAddress = CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS)
         {
             if (ethApiContractService == null) throw new ArgumentNullException(nameof(ethApiContractService));
             _ethApiContractService = ethApiContractService;
@@ -40,16 +40,27 @@ namespace Nethereum.Contracts.Standards.ENS
             CCIPService = ccipService;
             _ensUtil = new EnsUtil();
             ENSRegistryService = new ENSRegistryService(ethApiContractService, EnsRegistryAddress);
+#if !DOTNET35
+            if (universalResolverAddress != null)
+            {
+                UniversalResolverService = new ENSUniversalResolverService(ethApiContractService, universalResolverAddress, ccipService);
+            }
+#endif
         }
 
         public string EnsRegistryAddress { get; }
         public IEnsCCIPService CCIPService { get; }
         public ENSRegistryService ENSRegistryService { get; private set; }
+#if !DOTNET35
+        public ENSUniversalResolverService UniversalResolverService { get; }
+#endif
         
         private readonly EnsUtil _ensUtil;
 #if !DOTNET35
         public async Task<string> ResolveAddressAsync(string fullName)
         {
+            if (UniversalResolverService != null)
+                return await UniversalResolverService.ResolveAddressAsync(fullName).ConfigureAwait(false);
             var fullNameNode = _ensUtil.GetNameHash(fullName);
             var addrFunction = new AddrFunction();
             addrFunction.Node = fullNameNode.HexToByteArray();
@@ -87,6 +98,8 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public async Task<ABIOutputDTO> ResolveABIAsync(string fullName, AbiTypeContentType abiTypeContentType)
         {
+            if (UniversalResolverService != null)
+                return await UniversalResolverService.ResolveABIAsync(fullName, abiTypeContentType).ConfigureAwait(false);
             var fullNameNode = _ensUtil.GetNameHash(fullName);
             var aBIFunction = new ABIFunction();
             aBIFunction.Node = fullNameNode.HexToByteArray();
@@ -96,6 +109,8 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public async Task<string> ResolveTextAsync(string fullName, TextDataKey textDataKey)
         {
+            if (UniversalResolverService != null)
+                return await UniversalResolverService.ResolveTextAsync(fullName, textDataKey).ConfigureAwait(false);
             var fullNameNode = _ensUtil.GetNameHash(fullName);
             var textFunction = new TextFunction();
             textFunction.Node = fullNameNode.HexToByteArray();
@@ -107,6 +122,8 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public async Task<byte[]> GetContentHashAsync(string fullName)
         {
+            if (UniversalResolverService != null)
+                return await UniversalResolverService.GetContentHashAsync(fullName).ConfigureAwait(false);
             var fullNameNode = _ensUtil.GetNameHash(fullName);
             var contentHash = new ContenthashFunction();
             contentHash.Node = fullNameNode.HexToByteArray();
@@ -116,6 +133,8 @@ namespace Nethereum.Contracts.Standards.ENS
 
         public async Task<string> ReverseResolveAsync(string address)
         {
+            if (UniversalResolverService != null)
+                return await UniversalResolverService.ReverseResolveAsync(address).ConfigureAwait(false);
             var addressReverse = address.RemoveHexPrefix().ToLower() + REVERSE_NAME_SUFFIX;
             var fullNameNode = _ensUtil.GetNameHash(addressReverse).HexToByteArray();
             var nameFunction = new NameFunction();

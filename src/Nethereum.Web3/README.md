@@ -183,6 +183,7 @@ var totalSupply = await tokenService.TotalSupplyQueryAsync();
 From: [Nethereum Playground Example 1014](https://playground.nethereum.com/csharp/id/1014)
 
 ```csharp
+using Nethereum.Util;
 using Nethereum.Web3;
 
 // Convert Ether to Wei
@@ -231,12 +232,13 @@ Console.WriteLine($"Gas used: {receipt.GasUsed}");
 **Alternative: Deploy with ABI and Bytecode**
 ```csharp
 // For contracts without code generation
+// (IDeployContract.SendRequestAndWaitForReceiptAsync takes contractByteCode/values, not bytecode/constructorParams)
 var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
     abi: contractAbi,
-    bytecode: contractBytecode,
+    contractByteCode: contractBytecode,
     from: account.Address,
     gas: new HexBigInteger(900000),
-    constructorParams: new object[] { "TokenName", "SYMBOL", 18 }
+    values: new object[] { "TokenName", "SYMBOL", 18 }
 );
 
 Console.WriteLine($"Contract Address: {receipt.ContractAddress}");
@@ -377,17 +379,20 @@ var filterBySender = transferEvent.CreateFilterInput(
 );
 
 // Filter by recipient (second indexed parameter)
+// filterTopic1 is a required parameter that precedes filterTopic2 - pass null to match any sender
 var filterByRecipient = transferEvent.CreateFilterInput(
+    filterTopic1: null,
+    filterTopic2: new object[] { recipientAddress },
     fromBlock: BlockParameter.CreateEarliest(),
-    toBlock: BlockParameter.CreateLatest(),
-    filterTopic2: new object[] { recipientAddress }
+    toBlock: BlockParameter.CreateLatest()
 );
 
 // Multiple recipients (OR condition)
 var filterMultiple = transferEvent.CreateFilterInput(
+    filterTopic1: null,
+    filterTopic2: new object[] { recipient1, recipient2 },
     fromBlock: BlockParameter.CreateEarliest(),
-    toBlock: BlockParameter.CreateLatest(),
-    filterTopic2: new object[] { recipient1, recipient2 }
+    toBlock: BlockParameter.CreateLatest()
 );
 
 var events = await transferEvent.GetAllChangesAsync(filterBySender);
@@ -506,6 +511,79 @@ public class InsufficientBalanceError
     public BigInteger Required { get; set; }
 }
 ```
+
+### 11. Additional Built-in Services
+
+Beyond the ERC token standards, `web3.Eth` exposes a handful of other ready-made services.
+
+**EthTransfers** - EIP-7708 ETH transfer log lookups (distinct from `GetEtherTransferService()`, which *sends* ETH; requires a chain that emits EIP-7708 transfer logs):
+```csharp
+var web3 = new Web3("https://eth.drpc.org");
+
+// Transfers received by an address, in a block range
+var received = await web3.Eth.EthTransfers.GetTransfersToReceiverAsync(
+    "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    new BlockParameter(18000000),
+    BlockParameter.CreateLatest());
+```
+*Source: `src/Nethereum.Contracts/Services/EthApiContractService.cs:138`, `src/Nethereum.Contracts/Standards/EthTransfers/EthTransferService.cs:68-73`*
+
+**Permit2Service** - Uniswap Permit2 approvals (gasless ERC20 approvals via signature):
+```csharp
+var account = new Account("0xPRIVATE_KEY");
+var web3 = new Web3(account, "http://localhost:8545");
+
+var permit2 = web3.Eth.GetPermit2Service(); // defaults to the canonical Permit2 address on every EVM chain
+var receipt = await permit2.ApproveRequestAndWaitForReceiptAsync(
+    token: usdcAddress, spender: spenderAddress, amount: 1000000, expiration: 0);
+```
+*Source: `src/Nethereum.Contracts/Services/EthApiContractService.cs:269`*
+
+**ENSUniversalResolverService** - ENSIP-23 Universal Resolver, an alternative to `GetEnsService()` that follows CCIP-Read (EIP-3668) offchain resolvers automatically:
+```csharp
+var web3 = new Web3("https://eth.drpc.org");
+var universalResolver = web3.Eth.GetEnsUniversalResolverService();
+var address = await universalResolver.ResolveAddressAsync("nick.eth");
+```
+*Source: `src/Nethereum.Contracts/Services/EthApiContractService.cs:259`*
+
+**web3.Shh** - Whisper (`shh_*`) messaging RPC methods, available directly on `Web3` (not under `web3.Eth`):
+```csharp
+var web3 = new Web3("http://localhost:8545");
+var version = await web3.Shh.Version.SendRequestAsync();
+```
+*Source: `src/Nethereum.Web3/Web3.cs:83,152`*
+
+**EIP-7702 authorisation lifecycle** - `EIP7022AuthorisationService` lets an EOA delegate its own code to a contract (self-authorisation; for sponsored authorisation of *another* key see `web3.GetEIP7022SponsorAuthorisation()` below):
+```csharp
+using Nethereum.RPC.TransactionManagers;
+
+var account = new Account("0xPRIVATE_KEY");
+var web3 = new Web3(account, "http://localhost:8545");
+
+var authorisationService = new EIP7022AuthorisationService(web3.TransactionManager, web3.Eth);
+
+// 1. Authorise: delegate this EOA's code to a deployed contract
+var authTxHash = await authorisationService.AuthoriseRequestAsync(delegateContractAddress);
+
+// 2. Inspect delegation state
+var isDelegated = await authorisationService.IsDelegatedAccountAsync(account.Address);
+var delegatedTo = await authorisationService.GetDelegatedAccountAddressAsync(account.Address);
+
+// 3. Remove: clear the delegation
+var removeTxHash = await authorisationService.RemoveAuthorisationRequestAsync();
+```
+*Source: `src/Nethereum.RPC/TransactionManagers/EIP7022AuthorisationService.cs:20,44-97`*
+
+**IpfsHttpService** - a minimal IPFS HTTP API client (not attached to `Web3`; for a complete implementation see [net-ipfs-http-client](https://github.com/richardschneider/net-ipfs-http-client)):
+```csharp
+using Nethereum.Web3;
+
+var ipfs = new IpfsHttpService("https://ipfs.infura.io:5001");
+var fileInfo = await ipfs.AddAsync(fileBytes, "metadata.json");
+Console.WriteLine($"IPFS hash: {fileInfo.Hash}");
+```
+*Source: `src/Nethereum.Web3/IpfsHttpService.cs:25,31,52`*
 
 ## Advanced Topics
 
@@ -709,6 +787,8 @@ while (true)
 - `web3.Net` (INetApiService) - Network information
 - `web3.Personal` (IPersonalApiService) - Personal RPC methods
 - `web3.Debug` (IDebugApiService) - Debug RPC methods
+- `web3.Shh` (IShhApiService) - Whisper (`shh_*`) RPC methods
+- `web3.TxPool` (ITxPoolApiService) - Pending transaction pool inspection
 - `web3.FeeSuggestion` (FeeSuggestionService) - Fee estimation
 - `Web3.Convert` (UnitConversion) - Static utility for unit conversions (Wei/Gwei/Ether)
 
@@ -736,7 +816,10 @@ while (true)
 - `web3.Eth.EIP3009` - EIP-3009 transfer with authorization (USDC)
 - `web3.Eth.GetEnsService()` - ENS resolver service
 - `web3.Eth.GetEnsEthTlsService()` - ENS .eth TLD service
-- `web3.Eth.GetEtherTransferService()` - Simple Ether transfer service
+- `web3.Eth.GetEnsUniversalResolverService()` - ENSIP-23 Universal Resolver (follows CCIP-Read/EIP-3668 offchain resolvers)
+- `web3.Eth.GetEtherTransferService()` - Simple Ether transfer service (sends ETH)
+- `web3.Eth.EthTransfers` - EIP-7708 ETH transfer log lookups
+- `web3.Eth.GetPermit2Service()` - Uniswap Permit2 service
 - `web3.Eth.ProofOfHumanity` - Proof of Humanity registry service
 - `web3.Eth.Create2DeterministicDeploymentProxyService` - CREATE2 deployment service
 
@@ -757,7 +840,9 @@ while (true)
 
 ### Advanced Services
 
-- `web3.GetEIP7022SponsorAuthorisation()` - EIP-7022 sponsor authorization service
+- `web3.GetEIP7022SponsorAuthorisation()` - EIP-7702 sponsored authorisation service (sponsor pays gas to delegate someone else's key)
+- `new EIP7022AuthorisationService(web3.TransactionManager, web3.Eth)` - EIP-7702 self-authorisation service (an account delegates its own code); not exposed as a `web3` property, construct it directly
+- `new IpfsHttpService(url)` - minimal IPFS HTTP API client; not attached to `Web3`, construct it directly
 
 ## Related Packages
 

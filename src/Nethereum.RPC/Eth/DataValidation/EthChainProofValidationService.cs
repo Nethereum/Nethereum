@@ -8,6 +8,7 @@ using System.Linq;
 using Nethereum.Hex.HexTypes;
 using System.Numerics;
 using Nethereum.RPC.Eth.Mappers;
+using Nethereum.Merkle.Patricia.ProofVerification;
 
 namespace Nethereum.RPC.Eth.ChainValidation
 {
@@ -62,7 +63,7 @@ namespace Nethereum.RPC.Eth.ChainValidation
             var accountProof = await EthApiService.GetProof.SendRequestAsync(accountAddress, storageKeys, blockParameter);
             var account = accountProof.ToAccount();
 
-            var valid = AccountProofVerification.VerifyAccountProofs(accountAddress, stateRoot, accountProof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var valid = ProofVerification.Current.Account.Verify(stateRoot, accountProof.AccountProofs.Select(x => x.HexToByteArray()), accountAddress, account);
             if (valid) return accountProof;
             throw new InvalidChainDataException();
         }
@@ -80,7 +81,7 @@ namespace Nethereum.RPC.Eth.ChainValidation
 
         public bool ValidateValueFromStorageProof(StorageProof storageProof, byte[] stateRoot)
         {
-            return StorageProofVerification.ValidateValueFromStorageProof(storageProof.Key.HexValue.HexToByteArray(), storageProof.Value.HexValue.HexToByteArray(), storageProof.Proof.Select(x => x.HexToByteArray()), stateRoot);
+            return ProofVerification.Current.Storage.Verify(stateRoot, storageProof.Proof.Select(x => x.HexToByteArray()).ToList(), storageProof.Key.HexValue.HexToByteArray(), storageProof.Value.HexValue.HexToByteArray());
         }
 
         public async Task<Transaction[]> GetAndValidateTransactions(BlockParameter blockNumber, string transactionsRoot = null, BigInteger? chainId = null)
@@ -98,7 +99,7 @@ namespace Nethereum.RPC.Eth.ChainValidation
             }
 
             var transactions = block.Transactions.ToSignedTransactions(chainId);
-            bool valid = TransactionProofVerification.ValidateTransactions(transactionsRoot, transactions);
+            bool valid = ProofVerification.Current.Transaction.Verify(transactionsRoot, transactions);
             if (valid)
             {
                 return block.Transactions;

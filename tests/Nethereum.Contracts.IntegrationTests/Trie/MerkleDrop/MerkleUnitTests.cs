@@ -3,12 +3,36 @@ using Nethereum.Merkle;
 using Nethereum.Util.ByteArrayConvertors;
 using Nethereum.Util.HashProviders;
 using System.Linq;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Trie.MerkleDrop
 {
     public class MerkleUnitTests
     {
+        [NethereumDocExample(DocSection.SmartContracts, "merkle-tree", "Build an airdrop tree over MerkleDropItem and prove one recipient", Order = 4)]
+        [Fact]
+        public void MerkleDropTree_ProvesARecipientAgainstItsRoot()
+        {
+            var items = new System.Collections.Generic.List<MerkleDropItem>
+            {
+                new MerkleDropItem { Address = "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5", Amount = System.Numerics.BigInteger.Parse("1000000000000000000") },
+                new MerkleDropItem { Address = "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7", Amount = System.Numerics.BigInteger.Parse("2500000000000000000") },
+                new MerkleDropItem { Address = "0xfa6179E49EE57a06391F218965b35B632F930472", Amount = System.Numerics.BigInteger.Parse("750000000000000000") }
+            };
+
+            var tree = new MerkleDropMerkleTree();
+            tree.BuildTree(items);
+
+            var root = tree.Root.Hash.ToHex(true);
+            var proof = tree.GetProof(items[0]);
+
+            Assert.StartsWith("0x", root);
+            Assert.NotEmpty(proof);
+            Assert.True(tree.VerifyProof(proof, items[0]));
+        }
+
+        [NethereumDocExample(DocSection.SmartContracts, "merkle-tree", "Build a Merkle tree, take its root, prove and verify a leaf", Order = 1)]
         [Fact]
         public void SimpleMerkleTest()
         {

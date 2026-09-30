@@ -4,7 +4,7 @@ Production-ready HTTP/HTTPS JSON-RPC client for Ethereum node communication.
 
 ## Overview
 
-Nethereum.JsonRpc.RpcClient provides the **standard HTTP/HTTPS transport implementation** for communicating with Ethereum nodes via JSON-RPC. This is the most commonly used RPC client in Nethereum, offering robust connection management, automatic retries, authentication support, and production-tested reliability.
+Nethereum.JsonRpc.RpcClient provides the **standard HTTP/HTTPS transport implementation** for communicating with Ethereum nodes via JSON-RPC. This is the most commonly used RPC client in Nethereum, offering connection pooling, HttpClient rotation on older frameworks, authentication support and configurable timeouts.
 
 **Key Features:**
 - HTTP/HTTPS transport with HttpClient
@@ -48,7 +48,7 @@ dotnet add package Nethereum.Web3
 
 ```csharp
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
 // Connect to local node
 var client = new RpcClient(new Uri("http://localhost:8545"));
@@ -122,17 +122,19 @@ Console.WriteLine($"Accounts: {string.Join(", ", accounts)}");
 
 ### Example 3: Custom Connection Timeout
 
+`ConnectionTimeout` is `static` on `ClientBase` (`ClientBase.cs:10`) - it is shared by every client in the process and defaults to 20 seconds, not 120:
+
 ```csharp
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 
 var client = new RpcClient(new Uri("http://localhost:8545"));
 
-// Default timeout is 120 seconds (2 minutes)
-Console.WriteLine($"Default timeout: {client.ConnectionTimeout.TotalSeconds}s");
+// Default timeout is 20 seconds, shared process-wide by every ClientBase-derived client
+Console.WriteLine($"Default timeout: {ClientBase.ConnectionTimeout.TotalSeconds}s");
 
-// Set custom timeout for slow networks
-client.ConnectionTimeout = TimeSpan.FromSeconds(30);
+// Set custom timeout for slow networks - this affects ALL clients, not just this instance
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(30);
 
 try
 {
@@ -150,6 +152,7 @@ catch (RpcClientTimeoutException ex)
 
 ```csharp
 using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth.Blocks;
 using System.Net.Http;
 
 // Create custom HttpClient with specific settings
@@ -210,7 +213,8 @@ Console.WriteLine($"Chain ID (via proxy): {chainId.Value}");
 
 ```csharp
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 using System.Threading.Tasks;
 
 var client = new RpcClient(new Uri("http://localhost:8545"));
@@ -246,13 +250,15 @@ Console.WriteLine("All requests completed successfully");
 
 ### Example 7: Error Handling and Retry Logic
 
+**Note:** Polly is **not** a dependency of `Nethereum.JsonRpc.RpcClient` - add `Polly` to your own project if you want to use this pattern.
+
 ```csharp
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 using Polly;
 
 var client = new RpcClient(new Uri("http://localhost:8545"));
-client.ConnectionTimeout = TimeSpan.FromSeconds(10);
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(10); // static, shared process-wide (default 20s)
 
 // Define retry policy with Polly
 var retryPolicy = Policy
@@ -295,7 +301,7 @@ catch (RpcClientUnknownException ex)
 
 ```csharp
 using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
 public class LoadBalancedRpcClient
 {
@@ -347,7 +353,7 @@ var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_PROJECT_ID");
 
 // Option 2: Create custom RpcClient first
 var client = new RpcClient(new Uri("http://localhost:8545"));
-client.ConnectionTimeout = TimeSpan.FromSeconds(60);
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(60); // static - applies process-wide
 
 var web3WithCustomClient = new Web3(client);
 
@@ -383,8 +389,28 @@ public RpcClient(Uri baseUrl,
 
 ```csharp
 public static int MaximumConnectionsPerServer { get; set; } = 20;
-public TimeSpan ConnectionTimeout { get; set; } // Default: 120 seconds
+public static TimeSpan ConnectionTimeout { get; set; } // Default: 20 seconds, shared by every ClientBase-derived client
 public RequestInterceptor OverridingRequestInterceptor { get; set; }
+```
+
+### SimpleRpcClient
+
+A minimal alternative to `RpcClient` for callers that already own an `HttpClient` and don't need connection rotation, pooling tuning, or authentication header inference (`SimpleRpcClient.cs`):
+
+```csharp
+public class SimpleRpcClient : ClientBase
+{
+    public SimpleRpcClient(Uri baseUrl, HttpClient httpClient,
+        JsonSerializerSettings jsonSerializerSettings = null)
+}
+```
+
+```csharp
+using Nethereum.JsonRpc.Client;
+using System.Net.Http;
+
+var httpClient = new HttpClient();
+var client = new SimpleRpcClient(new Uri("http://localhost:8545"), httpClient);
 ```
 
 ### Key Methods (Inherited from ClientBase)
@@ -421,12 +447,6 @@ Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = nul
 
 ### Performance
 
-| Operation | Latency | Notes |
-|-----------|---------|-------|
-| **Local node** | 1-10ms | Localhost Geth/Erigon |
-| **Cloud provider** | 50-200ms | Infura, Alchemy, QuickNode |
-| **Slow network** | 200-500ms | High latency regions |
-
 **Optimization Tips:**
 - Enable HTTP/2 with `EnableMultipleHttp2Connections`
 - Use batch requests for multiple calls
@@ -435,12 +455,15 @@ Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = nul
 
 ### Error Handling
 
+`RpcClient.SendAsync` catches every exception raised while sending/receiving (`RpcClient.cs:142-189`). `HttpRequestException` (DNS failures, connection refused, etc.) is therefore never seen by the caller directly - it is always wrapped as the `InnerException` of an `RpcClientUnknownException`:
+
 | Exception | Cause | Retry? |
 |-----------|-------|--------|
-| **RpcClientTimeoutException** | Request exceeded ConnectionTimeout | Yes (with backoff) |
-| **RpcClientUnknownException** | Network/HTTP errors | Yes (transient) |
-| **RpcResponseException** | JSON-RPC error from node | Depends on error code |
-| **HttpRequestException** | DNS, connection failures | Yes (with backoff) |
+| **RpcClientTimeoutException** | Request exceeded `ConnectionTimeout` (`TaskCanceledException` caught first) | Yes (with backoff) |
+| **RpcClientUnknownException** | Any other failure, including `HttpRequestException` (available via `.InnerException`) | Yes (transient) |
+| **RpcResponseException** | JSON-RPC error from node (single request) | Depends on error code |
+| **RpcResponseBatchException** | One or more batch items failed and `AcceptPartiallySuccessful` was `false` | Depends on error code |
+| **RpcResponseFormatException** | Response could not be decoded into the requested type | No |
 
 ### Authentication
 
@@ -476,7 +499,7 @@ Logs include:
 - Request JSON payloads
 - Response JSON payloads
 - Exception details
-- Performance metrics
+- Timeout and error details
 
 ## Related Packages
 

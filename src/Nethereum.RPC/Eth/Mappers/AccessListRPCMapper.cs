@@ -1,10 +1,8 @@
 ﻿using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
-using System;
+using Nethereum.Util;
 using System.Collections.Generic;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 
 namespace Nethereum.RPC.Eth.Mappers
 {
@@ -28,6 +26,23 @@ namespace Nethereum.RPC.Eth.Mappers
             }
 
             return accessListsReturn;
+        }
+
+        public static List<AccessList> ToRPCAccessList(this List<AccessListItem> accessList)
+        {
+            var result = new List<AccessList>();
+            if (accessList == null) return result;
+
+            foreach (var item in accessList)
+            {
+                result.Add(new AccessList
+                {
+                    Address = item.Address.ConvertToValid20ByteAddressLowerCase(),
+                    StorageKeys = item.StorageKeys?.ConvertAll(key => key.ToHex(true)) ?? new List<string>()
+                });
+            }
+
+            return result;
         }
     }
 }

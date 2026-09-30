@@ -101,9 +101,10 @@ namespace Nethereum.RPC.Eth.DTOs
         ///   QUANTITY - Max Fee Per Gas provided by the sender in Wei.
         /// </summary>
 
-      [JsonProperty(PropertyName = "maxFeePerGas")]
+      [JsonProperty(PropertyName = "maxFeePerGas", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("maxFeePerGas")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger MaxFeePerGas { get; set; }
 
@@ -111,9 +112,10 @@ namespace Nethereum.RPC.Eth.DTOs
         ///   QUANTITY - Max Priority Fee Per Gas provided by the sender in Wei.
         /// </summary>
 
-      [JsonProperty(PropertyName = "maxPriorityFeePerGas")]
+      [JsonProperty(PropertyName = "maxPriorityFeePerGas", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("maxPriorityFeePerGas")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger MaxPriorityFeePerGas { get; set; }
 
@@ -182,9 +184,10 @@ namespace Nethereum.RPC.Eth.DTOs
         ///   Access list
         /// </summary>
 
-      [JsonProperty(PropertyName = "accessList")]
+      [JsonProperty(PropertyName = "accessList", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("accessList")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
       public List<AccessList> AccessList { get; set; }
 
@@ -192,22 +195,46 @@ namespace Nethereum.RPC.Eth.DTOs
     ///   Authorisation list
     /// </summary>
 
-      [JsonProperty(PropertyName = "authorizationList")]
+      [JsonProperty(PropertyName = "authorizationList", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("authorizationList")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
       public List<Authorisation> AuthorisationList { get; set; }
 
-      [JsonProperty(PropertyName = "maxFeePerBlobGas")]
+      [JsonProperty(PropertyName = "maxFeePerBlobGas", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("maxFeePerBlobGas")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
       public HexBigInteger MaxFeePerBlobGas { get; set; }
 
-      [JsonProperty(PropertyName = "blobVersionedHashes")]
+      [JsonProperty(PropertyName = "blobVersionedHashes", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("blobVersionedHashes")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
       public string[] BlobVersionedHashes { get; set; }
+
+      [JsonProperty(PropertyName = "chainId", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("chainId")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+      public HexBigInteger ChainId { get; set; }
+
+      [JsonProperty(PropertyName = "yParity", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("yParity")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+      public HexBigInteger YParity { get; set; }
+
+      [JsonProperty(PropertyName = "blockTimestamp", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blockTimestamp")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+      public HexBigInteger BlockTimestamp { get; set; }
     }
 }

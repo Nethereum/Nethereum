@@ -2,6 +2,7 @@
 using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using System.Collections.Generic;
 
 namespace Nethereum.RPC.Eth.Mappers
@@ -46,12 +47,12 @@ namespace Nethereum.RPC.Eth.Mappers
         public static Authorisation ToRPCAuthorisation(this Authorisation7702Signed sourceAuthorisation)
         {
             var authorisationListItem = new Authorisation();
-            authorisationListItem.Address = sourceAuthorisation.Address;
+            authorisationListItem.Address = sourceAuthorisation.Address.ConvertToValid20ByteAddressLowerCase();
             authorisationListItem.ChainId = new HexBigInteger(sourceAuthorisation.ChainId);
             authorisationListItem.Nonce = new HexBigInteger(sourceAuthorisation.Nonce);
-            authorisationListItem.R = sourceAuthorisation.R.ToHex();
-            authorisationListItem.S = sourceAuthorisation.S.ToHex();
-            authorisationListItem.YParity = sourceAuthorisation.V.ToHex();
+            authorisationListItem.R = sourceAuthorisation.R.ToRpcSignatureQuantity();
+            authorisationListItem.S = sourceAuthorisation.S.ToRpcSignatureQuantity();
+            authorisationListItem.YParity = sourceAuthorisation.V.ToRpcSignatureQuantity();
             return authorisationListItem;
         }
     }

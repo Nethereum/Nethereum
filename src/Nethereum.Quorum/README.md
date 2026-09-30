@@ -12,11 +12,8 @@ We should be able to answer there any simple queries, general comments or reques
 
 ## Quick installation
 
-Here is a list of all the nuget packages. Nethereum.Portable combines all the Nethereum packages including Quorum and Nethereum.Quorum is the single Quorum library.
-
 | Package       | Nuget         | 
 | ------------- |:-------------:|
-| Nethereum.Portable    | [![NuGet version](https://badge.fury.io/nu/nethereum.portable.svg)](https://badge.fury.io/nu/nethereum.portable)| 
 | Nethereum.Quorum| [![NuGet version](https://badge.fury.io/nu/nethereum.quorum.svg)](https://badge.fury.io/nu/nethereum.quorum)|
 
 ## Usage
@@ -35,12 +32,18 @@ web3Node1.SetPrivateRequestParameters(privateFor);
 afterwards all the transactions will use the PrivateFor parameter.
 
 ```csharp
+using Nethereum.RPC.TransactionReceipts;
+
 var contract = web3Node1.Eth.GetContract(abi, address);
 var functionSet = contract.GetFunction("set");
-var txnHash = await transactionService.SendRequestAsync(() => functionSet.SendTransactionAsync(account, 4));
+var account = await web3Node1.Eth.CoinBase.SendRequestAsync();
+
+// TransactionReceiptPollingService only exposes SendRequestAndWaitForReceiptAsync (there is no SendRequestAsync)
+var transactionService = new TransactionReceiptPollingService(web3Node1.TransactionManager);
+var receipt = await transactionService.SendRequestAndWaitForReceiptAsync(() => functionSet.SendTransactionAsync(account, 4));
 ```
 
-For a full example of usage using the [7nodes sample of Quorum](https://github.com/jpmorganchase/quorum-examples/tree/master/examples/7nodes) check the [Unit Test](https://github.com/Nethereum/Nethereum/blob/master/src/Nethereum.Quorum.Tests/QuorumPrivateContractTests.cs)
+For a full example of usage using the [7nodes sample of Quorum](https://github.com/jpmorganchase/quorum-examples/tree/master/examples/7nodes) check the [Unit Test](https://github.com/Nethereum/Nethereum/blob/master/tests/Nethereum.Quorum.Tests/QuorumPrivateContractTests.cs)
 
 ### Quorum RPC 
 
@@ -110,4 +113,87 @@ Here are some examples from the Unit tests using the [7nodes sample of Quorum](h
       var nodeInfo = await web3.Quorum.NodeInfo.SendRequestAsync();
       Assert.Equal("active", nodeInfo.BlockMakeStratregy.Status);
   } 
+```
+
+### Permission, Privacy, Raft, IBFT, ContractExtensions, DebugQuorum
+
+`Web3Quorum` also exposes `Permission`, `Privacy`, `Raft`, `IBFT`, `ContractExtensions` and `DebugQuorum`
+(`src/Nethereum.Quorum/Web3Quorum.cs:67-74`), alongside `Quorum`.
+
+**Permission** (node/account/org permissioning, `src/Nethereum.Quorum/RPC/Services/IPermissionService.cs`):
+
+```csharp
+var allowed = await web3.Permission.ConnectionAllowed.SendRequestAsync(
+    "enode://pubkey@ip:port", "10.0.0.1", 21000);
+```
+
+Also: `AcctList`, `AddAccountToOrg`, `AddNewRole`, `AddNode`, `AddOrg`, `AddSubOrg`, `ApproveAdminRole`,
+`ApproveBlackListedAccountRecovery`, `ApproveBlackListedNodeRecovery`, `ApproveOrg`, `ApproveOrgStatus`,
+`AssignAdminRole`, `ChangeAccountRole`, `GetOrgDetails`, `NodeList`, `OrgList`, `RecoverBlackListedAccount`,
+`RecoverBlackListedNode`, `RemoveRole`, `RoleList`, `TransactionAllowed`, `UpdateAccountStatus`,
+`UpdateNodeStatus`, `UpdateOrgStatus`.
+
+**Privacy** (Quorum's headline private-transaction feature, `src/Nethereum.Quorum/RPC/Services/IPrivacyService.cs`):
+
+```csharp
+var privateReceipt = await web3.Privacy.GetPrivateTransactionReceipt.SendRequestAsync(privacyMarkerTransactionHash);
+```
+
+Also: `DistributePrivateTransaction`, `FillTransaction`, `GetContractPrivacyMetadata`,
+`GetPrivacyPrecompileAddress`, `GetPrivateTransactionByHash`, `GetPsi`, `GetQuorumPayload`,
+`SendRawPrivateTransaction`, `SendTransaction`.
+
+**Raft** (`src/Nethereum.Quorum/RPC/Services/IRaftService.cs`):
+
+```csharp
+var role = await web3.Raft.Role.SendRequestAsync(); // "minter" / "verifier" / "learner"
+```
+
+Also: `AddLearner`, `AddPeer`, `AddCluster`, `Leader`, `PromoteToPeer`, `RemovePeer`.
+
+**IBFT** (Istanbul BFT consensus, `src/Nethereum.Quorum/RPC/Services/IIBFTService.cs`):
+
+```csharp
+var validators = await web3.IBFT.GetValidators.SendRequestAsync(BlockParameter.CreateLatest());
+```
+
+Also: `Candidates`, `Discard`, `GetSignersFromBlock`, `GetSignersFromBlockByHash`, `GetSnapshot`,
+`GetSnapshotAtHash`, `GetValidatorsAtHash`, `IsValidator`, `NodeAddress`, `Propose`, `Status`.
+
+**ContractExtensions** (extend a private contract to a new participant, `src/Nethereum.Quorum/RPC/Services/IContractExtensionsService.cs`):
+
+```csharp
+var status = await web3.ContractExtensions.GetExtensionStatus.SendRequestAsync(managementContractAddress);
+```
+
+Also: `ActiveExtensionContracts`, `ApproveExtension`, `CancelExtension`, `ExtendContract`.
+
+**DebugQuorum** (`src/Nethereum.Quorum/RPC/Services/IDebugQuorumService.cs`):
+
+```csharp
+var state = await web3.DebugQuorum.DebugDumpAddress.SendRequestAsync(address, BlockParameter.CreateLatest());
+```
+
+Also: `DebugPrivateStateRoot`.
+
+### QuorumAccount, QuorumTransactionManager, UnlockedAccount
+
+`QuorumAccount` (`src/Nethereum.Quorum/QuorumAccount.cs`) is an `Account` whose default transaction manager is
+`QuorumTransactionManager` (`src/Nethereum.Quorum/QuorumTransactionManager.cs`), which understands
+`PrivateFor`/`PrivateFrom` and applies Quorum's `v` value shift for private transactions.
+`UnlockedAccount` (`src/Nethereum.Quorum/UnlockedAccount.cs`) represents an account already unlocked on the
+node itself (no local private key). `Web3Quorum` accepts either:
+
+```csharp
+using System;
+using Nethereum.JsonRpc.Client;
+using Nethereum.Quorum;
+
+// Client-side signing with a private key; PrivateUrl targets the node's private transaction manager (Tessera/Constellation)
+var account = new QuorumAccount("PRIVATE_KEY");
+var web3 = new Web3Quorum(account, privateUrl: "http://localhost:9081", url: "http://localhost:22000");
+
+// Node-side signing (account already unlocked on the Quorum node)
+var unlockedAccount = new UnlockedAccount("0xNodeUnlockedAddress");
+var web3Unlocked = new Web3Quorum(new RpcClient(new Uri("http://localhost:22000")), unlockedAccount);
 ```

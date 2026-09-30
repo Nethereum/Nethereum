@@ -97,10 +97,10 @@ Transaction tracing, storage inspection, and metrics.
 
 ```csharp
 var txHash = "0x...";
-var trace = await web3.DebugBesu.TraceTransaction.SendRequestAsync(txHash);
+var trace = await web3.DebugBesu.DebugTraceTransaction.SendRequestAsync(txHash);
 ```
 
-**From:** `src/Nethereum.Besu/IDebugApiService.cs`
+**From:** `src/Nethereum.Besu/IDebugApiService.cs:8`
 
 ### Get Storage Range
 
@@ -115,7 +115,7 @@ var address = "0xContractAddress";
 var startKey = "0x0000000000000000000000000000000000000000000000000000000000000000";
 var limit = 100;
 
-var storageRange = await web3.DebugBesu.StorageRangeAt.SendRequestAsync(
+var storageRange = await web3.DebugBesu.DebugStorageRangeAt.SendRequestAsync(
     blockHash,
     txIndex,
     address,
@@ -123,15 +123,15 @@ var storageRange = await web3.DebugBesu.StorageRangeAt.SendRequestAsync(
     limit);
 ```
 
-**From:** `src/Nethereum.Besu/RPC/BesuDebug/DebugStorageRangeAt.cs`
+**From:** `src/Nethereum.Besu/IDebugApiService.cs:7`, `src/Nethereum.Besu/RPC/BesuDebug/DebugStorageRangeAt.cs`
 
 ### Get Metrics
 
 ```csharp
-var metrics = await web3.DebugBesu.Metrics.SendRequestAsync();
+var metrics = await web3.DebugBesu.DebugMetrics.SendRequestAsync();
 ```
 
-**From:** `src/Nethereum.Besu/RPC/BesuDebug/DebugMetrics.cs`
+**From:** `src/Nethereum.Besu/IDebugApiService.cs:9`, `src/Nethereum.Besu/RPC/BesuDebug/DebugMetrics.cs`
 
 ## Miner API
 
@@ -156,8 +156,10 @@ Clique Proof-of-Authority consensus control.
 ### Get Signers
 
 ```csharp
-// Get current signers
-var signers = await web3.Clique.GetSigners.SendRequestAsync();
+using Nethereum.RPC.Eth.DTOs;
+
+// Get current signers (block parameter is required, e.g. the latest block)
+var signers = await web3.Clique.GetSigners.SendRequestAsync(BlockParameter.CreateLatest());
 
 // Get signers at specific block hash
 var signersAtHash = await web3.Clique.GetSignersAtHash.SendRequestAsync("0xBlockHash");
@@ -210,7 +212,7 @@ var validators = await web3.Ibft.GetValidatorsByBlockNumber.SendRequestAsync(
 var validatorsByHash = await web3.Ibft.GetValidatorsByBlockHash.SendRequestAsync("0xBlockHash");
 ```
 
-**From:** `src/Nethereum.Besu/IbftApiService.cs:12-10`
+**From:** `src/Nethereum.Besu/IbftApiService.cs:10,12`
 
 ### Propose Validator Vote
 
@@ -259,7 +261,7 @@ var nodesToRemove = new[] { "enode://pubkey1@ip1:port1" };
 var nodesRemoved = await web3.Permissioning.RemoveNodesFromWhitelist.SendRequestAsync(nodesToRemove);
 ```
 
-**From:** `src/Nethereum.Besu/IPermissioningApiService.cs:11-12`
+**From:** `src/Nethereum.Besu/IPermissioningApiService.cs:8,10,12`
 
 ### Account Whitelisting
 
@@ -276,7 +278,7 @@ var accountsToRemove = new[] { "0xAddress1" };
 var accountsRemoved = await web3.Permissioning.RemoveAccountsFromWhitelist.SendRequestAsync(accountsToRemove);
 ```
 
-**From:** `src/Nethereum.Besu/IPermissioningApiService.cs:7-9`
+**From:** `src/Nethereum.Besu/IPermissioningApiService.cs:7,9,11`
 
 ### Reload Permissions
 
@@ -318,18 +320,18 @@ Transaction pool statistics and inspection.
 ### Get Pool Statistics
 
 ```csharp
-var stats = await web3.TxPool.PantheonStatistics.SendRequestAsync();
+var stats = await web3.TxPool.BesuStatistics.SendRequestAsync();
 ```
 
-**From:** `src/Nethereum.Besu/ITxPoolApiService.cs`
+**From:** `src/Nethereum.Besu/ITxPoolApiService.cs:7`
 
 ### Get Pool Transactions
 
 ```csharp
-var transactions = await web3.TxPool.PantheonTransactions.SendRequestAsync();
+var transactions = await web3.TxPool.BesuTransactions.SendRequestAsync();
 ```
 
-**From:** `src/Nethereum.Besu/ITxPoolApiService.cs`
+**From:** `src/Nethereum.Besu/ITxPoolApiService.cs:8`
 
 ## API Reference
 
@@ -350,9 +352,9 @@ var transactions = await web3.TxPool.PantheonTransactions.SendRequestAsync();
 
 | Method | RPC Method | Description |
 |--------|-----------|-------------|
-| TraceTransaction | debug_traceTransaction | Trace transaction execution |
-| StorageRangeAt | debug_storageRangeAt | Get contract storage range |
-| Metrics | debug_metrics | Get node metrics |
+| DebugTraceTransaction | debug_traceTransaction | Trace transaction execution |
+| DebugStorageRangeAt | debug_storageRangeAt | Get contract storage range |
+| DebugMetrics | debug_metrics | Get node metrics |
 
 ### Miner API Service
 
@@ -416,8 +418,8 @@ var transactions = await web3.TxPool.PantheonTransactions.SendRequestAsync();
 
 | Method | RPC Method | Description |
 |--------|-----------|-------------|
-| PantheonStatistics | txpool_besuStatistics | Get transaction pool statistics |
-| PantheonTransactions | txpool_besuTransactions | Get transaction pool transactions |
+| BesuStatistics | txpool_besuStatistics | Get transaction pool statistics |
+| BesuTransactions | txpool_besuTransactions | Get transaction pool transactions |
 
 ## Related Packages
 

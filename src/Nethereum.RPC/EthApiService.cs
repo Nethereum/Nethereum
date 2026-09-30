@@ -1,4 +1,4 @@
-﻿using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Services;
@@ -26,6 +26,7 @@ namespace Nethereum.RPC
             Client = client;
             
             ChainId = new EthChainId(client);
+            Config = new EthConfig(client);
             Accounts = new EthAccounts(client);
             CoinBase = new EthCoinBase(client);
             GasPrice = new EthGasPrice(client);
@@ -48,6 +49,8 @@ namespace Nethereum.RPC
             HostWallet = new HostWalletService(client);
             GetProof = new EthGetProof(client);
             CreateAccessList = new EthCreateAccessList(client);
+            SimulateV1 = new EthSimulateV1(client);
+            Capabilities = new EthCapabilities(client);
             ChainProofValidation =   new EthChainProofValidationService(client, this);
 
             DefaultBlock = BlockParameter.CreateLatest();
@@ -70,6 +73,8 @@ namespace Nethereum.RPC
         /// Returns the currently configured chain id, a value used in replay-protected transaction signing as introduced by [EIP-155](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md).
         /// </summary>
         public IEthChainId ChainId { get; private set; }
+
+        public IEthConfig Config { get; private set; }
 
         public IEthAccounts Accounts { get; private set; }
 
@@ -129,6 +134,10 @@ namespace Nethereum.RPC
 
         public IEthCreateAccessList CreateAccessList { get; private set; }
 
+        public IEthSimulateV1 SimulateV1 { get; private set; }
+
+        public IEthCapabilities Capabilities { get; private set; }
+
         public IEthChainProofValidationService ChainProofValidation { get; private set; }
 
         public IAccountAbstractionBundlerService AccountAbstractionBundler { get; private set; }    
@@ -160,6 +169,7 @@ namespace Nethereum.RPC
             GetStorageAt.DefaultBlock = DefaultBlock;
             GetProof.DefaultBlock = DefaultBlock;
             CreateAccessList.DefaultBlock = DefaultBlock;
+            SimulateV1.DefaultBlock = DefaultBlock;
             Transactions.SetDefaultBlock(_defaultBlock);
         }
 

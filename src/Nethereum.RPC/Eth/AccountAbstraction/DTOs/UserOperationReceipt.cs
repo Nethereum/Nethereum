@@ -65,7 +65,7 @@ namespace Nethereum.RPC.AccountAbstraction.DTOs
         #if NET6_0_OR_GREATER
         [System.Text.Json.Serialization.JsonPropertyName("logs")]
         #endif
-        public List<string> Logs { get; set; }
+        public List<FilterLog> Logs { get; set; }
 
         [JsonProperty(PropertyName = "receipt")]
         #if NET6_0_OR_GREATER

@@ -56,7 +56,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var executionStateService = new ExecutionStateService(nodeDataService);
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             program = await evmSimulator.ExecuteWithCallStackAsync(program);
             var totalBalanceReceiver = programContext.ExecutionStateService.CreateOrGetAccountExecutionState(payableReceiverContractAddress).Balance.ExecutionBalance;
             var totalBalanceSender = programContext.ExecutionStateService.CreateOrGetAccountExecutionState(payableTestSenderContractAddress).Balance.ExecutionBalance;
@@ -103,7 +103,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             var executionStateService = new ExecutionStateService(nodeDataService);
             var programContext = new ProgramContext(callInput, executionStateService);
             var program = new Program(code.HexToByteArray(), programContext);
-            var evmSimulator = new EVMSimulator();
+            var evmSimulator = new EVMSimulator(Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             program = await evmSimulator.ExecuteWithCallStackAsync(program);
            
 

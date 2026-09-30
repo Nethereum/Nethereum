@@ -8,6 +8,11 @@ namespace Nethereum.RPC.Chain
 {
     public static class ChainDefaultFeaturesServicesRepository
     {
+        public static ChainFeature GetDefaultChainFeature(BigInteger chainId)
+        {
+            return GetDefaultChainFeatures().Find(c => c.ChainId == chainId);
+        }
+
         public static ChainFeature GetDefaultChainFeature(Signer.Chain chain)
         {
             return GetDefaultChainFeatures().Find(c => c.ChainId == (BigInteger)(int)chain);

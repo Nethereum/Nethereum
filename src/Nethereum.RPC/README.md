@@ -109,16 +109,22 @@ var ethBlockNumber = new EthBlockNumber(client);
 var blockNumber = await ethBlockNumber.SendRequestAsync();
 Console.WriteLine($"Current block: {blockNumber.Value}");
 
-// Get block by number
-var ethGetBlockByNumber = new EthGetBlockByNumber(client);
-var block = await ethGetBlockByNumber.SendRequestAsync(
-    new BlockParameter(blockNumber),
-    returnFullTransactionObjects: false
+// Get block by number, with full transaction objects
+var ethGetBlockWithTransactionsByNumber = new EthGetBlockWithTransactionsByNumber(client);
+var block = await ethGetBlockWithTransactionsByNumber.SendRequestAsync(
+    new BlockParameter(blockNumber)
 );
 
 Console.WriteLine($"Block hash: {block.BlockHash}");
 Console.WriteLine($"Block timestamp: {block.Timestamp.Value}");
-Console.WriteLine($"Transaction count: {block.TransactionHashes.Length}");
+Console.WriteLine($"Transaction count: {block.Transactions.Length}");
+
+// Or, to fetch only the transaction hashes instead of full objects:
+var ethGetBlockWithTransactionsHashesByNumber = new EthGetBlockWithTransactionsHashesByNumber(client);
+var blockHashesOnly = await ethGetBlockWithTransactionsHashesByNumber.SendRequestAsync(
+    new BlockParameter(blockNumber)
+);
+Console.WriteLine($"Transaction hash count: {blockHashesOnly.TransactionHashes.Length}");
 ```
 
 **Output:**
@@ -281,7 +287,9 @@ Console.WriteLine($"Params: {string.Join(", ", request.RawParameters)}");
 
 // You can now send this request through any client
 // Or batch multiple requests together
-var ethBlockNumber = new EthBlockNumber();
+// (EthBlockNumber only exposes an (IClient) constructor, so pass null when building
+// a request without sending it)
+var ethBlockNumber = new EthBlockNumber(null);
 var request2 = ethBlockNumber.BuildRequest();
 
 // Both requests can be sent in a batch
@@ -361,10 +369,9 @@ var maxPriorityFee = await ethMaxPriorityFeePerGas.SendRequestAsync();
 Console.WriteLine($"Max priority fee: {maxPriorityFee.Value} wei");
 
 // Get base fee from latest block
-var ethGetBlockByNumber = new EthGetBlockByNumber(client);
-var block = await ethGetBlockByNumber.SendRequestAsync(
-    BlockParameter.CreateLatest(),
-    false
+var ethGetBlockWithTransactionsHashesByNumber = new EthGetBlockWithTransactionsHashesByNumber(client);
+var block = await ethGetBlockWithTransactionsHashesByNumber.SendRequestAsync(
+    BlockParameter.CreateLatest()
 );
 var baseFee = block.BaseFeePerGas;
 Console.WriteLine($"Base fee: {baseFee.Value} wei");
@@ -457,6 +464,7 @@ var balance = await ethGetBalance.SendRequestAsync(address, latest);
 The package supports all Ethereum transaction types:
 
 ```csharp
+using System.Collections.Generic;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexTypes;
 
@@ -476,12 +484,12 @@ var eip2930Tx = new TransactionInput
     From = "0x...",
     To = "0x...",
     Type = new HexBigInteger(1),
-    AccessList = new AccessListItem[]
+    AccessList = new List<AccessList>
     {
-        new AccessListItem
+        new AccessList
         {
             Address = "0x...",
-            StorageKeys = new[] { "0x..." }
+            StorageKeys = new List<string> { "0x..." }
         }
     }
 };
@@ -501,14 +509,14 @@ var eip1559Tx = new TransactionInput
 
 The package includes comprehensive DTOs for all RPC requests and responses:
 
-- `BlockWithTransactions` / `Block` - Block information
+- `BlockWithTransactions` / `BlockWithTransactionHashes` / `Block` - Block information
 - `Transaction` - Transaction details
 - `TransactionReceipt` - Transaction receipt with logs
-- `FilterInput` - Event filter configuration
-- `Log` - Event log entry
+- `NewFilterInput` - Event filter configuration (used by `EthNewFilter`)
+- `FilterLog` - Event log entry
 - `CallInput` / `TransactionInput` - Transaction/call input
-- `SyncStatus` - Node sync status
-- `AccessListItem` - EIP-2930 access list
+- `SyncingOutput` - Node sync status
+- `AccessList` - EIP-2930 access list entry used by `TransactionInput.AccessList` (a `List<AccessList>`); note `Nethereum.Model.AccessListItem` is a *different* type, used for raw transaction encoding/signing, not for RPC calls
 
 All DTOs are in the `Nethereum.RPC.Eth.DTOs` namespace.
 
@@ -583,14 +591,47 @@ var currentNonce = await nonceService.GetNextNonceAsync();
 For dynamic gas fee estimation:
 
 ```csharp
-using Nethereum.RPC.Fee1559Suggestions;
+using Nethereum.RPC;
 
-var feeSuggestionService = new Fee1559SuggestionService(client);
-var suggestion = await feeSuggestionService.SuggestFeeAsync();
+var feeSuggestionService = new FeeSuggestionService(client);
+var suggestion = await feeSuggestionService.GetSimpleFeeSuggestionStrategy().SuggestFeeAsync();
 
 Console.WriteLine($"Suggested base fee: {suggestion.BaseFee}");
 Console.WriteLine($"Suggested max priority fee: {suggestion.MaxPriorityFeePerGas}");
 Console.WriteLine($"Suggested max fee: {suggestion.MaxFeePerGas}");
+```
+
+### Flagship Services
+
+These services sit on top of an `ITransactionManager` (an account-holding, signing-capable client) and provide the highest-level, task-oriented APIs in the package.
+
+*Source: `TransactionManagers/EtherTransferService.cs`, `TransactionManagers/EIP7022AuthorisationService.cs`, `TxPool/TxPoolApiService.cs`, `DebugNode/DebugApiService.cs`*
+
+```csharp
+using Nethereum.Web3.Accounts;
+using Nethereum.RPC;
+using Nethereum.RPC.TransactionManagers;
+using Nethereum.RPC.TxPool;
+using Nethereum.RPC.DebugNode;
+
+var transactionManager = new AccountSignerTransactionManager(client, "0xPRIVATE_KEY...");
+
+// EtherTransferService - simple ETH transfers with automatic gas estimation
+var etherTransferService = new EtherTransferService(transactionManager);
+var txHash = await etherTransferService.TransferEtherAsync("0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 0.1m);
+
+// EIP7022AuthorisationService - EIP-7702 EOA-to-contract delegation
+var authorisationService = new EIP7022AuthorisationService(transactionManager, new EthApiService(client));
+var authTxHash = await authorisationService.AuthoriseRequestAsync("0xDelegateContractAddress...");
+var isDelegated = await authorisationService.IsDelegatedAccountAsync("0x12890D2cce102216644c59daE5baed380d84830c");
+
+// TxPoolApiService - inspect the node's pending transaction pool (txpool_*)
+var txPoolApi = new TxPoolApiService(client);
+var status = await txPoolApi.Status.SendRequestAsync();
+
+// DebugApiService - debug_* methods (traceTransaction, traceCall, storageRangeAt, ...)
+var debugApi = new DebugApiService(client);
+var trace = await debugApi.TraceTransaction.SendRequestAsync(txHash, new Nethereum.RPC.DebugNode.Dtos.Tracing.TracingOptions());
 ```
 
 ## Fee Estimation (EIP-1559)

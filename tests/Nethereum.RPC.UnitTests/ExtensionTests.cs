@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum;
@@ -225,7 +225,7 @@ namespace Nethereum.RPC.UnitTests
         [Fact]
         public void TransactionReceipt_HasLogs_When_Receipt_Logs_Is_Not_Empty_Returns_True()
         {
-            var logs = new FilterLog[] { };
+            var logs = new[] { new FilterLog { Address = "0x1234567890123456789012345678901234567890" } };
             Assert.True(new TransactionReceipt { Logs = logs }.HasLogs());
         }
 

@@ -92,12 +92,43 @@ namespace Nethereum.RPC.TransactionManagers
 
         private async Task<BigInteger> EstimateGasIfNullAsync(BigInteger? gas, string toAddress, decimal etherAmount)
         {
-            if (gas == null)
+            if (gas != null) return gas.Value;
+
+            try
             {
-                var estimatedGas = await EstimateGasAsync(toAddress, etherAmount).ConfigureAwait(false);
-                return estimatedGas;
+                return await EstimateGasAsync(toAddress, etherAmount).ConfigureAwait(false);
             }
-            return gas.Value;
+            catch (Exception)
+            {
+                return _transactionManager.DefaultGas;
+            }
+        }
+
+        public async Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(
+            string address, string toAddress, decimal gasPriceGwei, BigInteger? gas = null)
+        {
+            var gasPrice = UnitConversion.Convert.ToWei(gasPriceGwei, UnitConversion.EthUnit.Gwei);
+            return await BalanceMinusTransferCostAsync(address, toAddress, gasPrice, gas).ConfigureAwait(false);
+        }
+
+        public async Task<decimal> CalculateTotalAmountToTransferWholeBalanceInEtherAsync(
+            string address, string toAddress, BigInteger maxFeePerGas, BigInteger? gas = null)
+        {
+            return await BalanceMinusTransferCostAsync(address, toAddress, maxFeePerGas, gas).ConfigureAwait(false);
+        }
+
+        private async Task<decimal> BalanceMinusTransferCostAsync(
+            string address, string toAddress, BigInteger gasPrice, BigInteger? gas)
+        {
+            var currentBalance = await new EthGetBalance(_transactionManager.Client)
+                .SendRequestAsync(address).ConfigureAwait(false);
+
+            var amountToTransfer = UnitConversion.Convert.FromWei(currentBalance.Value);
+            var gasAmount = await EstimateGasIfNullAsync(gas, toAddress, amountToTransfer).ConfigureAwait(false);
+
+            var totalAmount = currentBalance.Value - (gasAmount * gasPrice);
+            if (totalAmount <= 0) throw new Exception("Insufficient balance to make a transfer");
+            return UnitConversion.Convert.FromWei(totalAmount);
         }
 
         public async Task<BigInteger> EstimateGasAsync(string toAddress, decimal etherAmount)

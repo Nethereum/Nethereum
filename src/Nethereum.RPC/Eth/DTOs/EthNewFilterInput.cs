@@ -44,11 +44,6 @@ namespace Nethereum.RPC.Eth.DTOs
 #endif
         public string[] Address { get; set; }
 
-        /// <summary>
-        ///     topics: Array of DATA, - (optional) Array of 32 Bytes DATA topics. Topics are order-dependent. Each topic can also
-        ///     be an array of DATA with "or" options.
-        /// </summary>
-        /// <see cref="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI#events" />
         [JsonProperty(PropertyName = "topics")]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("topics")]

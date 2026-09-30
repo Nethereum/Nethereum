@@ -9,6 +9,7 @@ using Nethereum.Contracts.Standards.EIP3009;
 using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
+using Nethereum.Contracts.Standards.EthTransfers;
 using Nethereum.Contracts.Standards.ERC2535Diamond;
 using Nethereum.Contracts.Standards.ERC721;
 using Nethereum.RPC;
@@ -49,6 +50,12 @@ namespace Nethereum.Contracts.Services
         /// https://ethereum.org/en/developers/docs/standards/tokens/erc-20/
         /// </summary>
         ERC20Service ERC20 { get; }
+
+        /// <summary>
+        /// EIP-7708 ETH transfer logs - the same Transfer event, emitted from the
+        /// protocol's system address instead of a token contract.
+        /// </summary>
+        EthTransferService EthTransfers { get; }
 
         /// <summary>
         /// ERC20 Standard Token Service to interact with smart contracts compliant with the standard interface
@@ -109,6 +116,10 @@ namespace Nethereum.Contracts.Services
         ERC1271Service SignatureValidationContractERC1271 { get; }
 
         ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS, IEnsCCIPService ensCCIPService = null);
+
+        ENSUniversalResolverService GetEnsUniversalResolverService(string universalResolverAddress = CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS);
+
+        Standards.Permit2.Permit2Service GetPermit2Service(string permit2Address = CommonAddresses.PERMIT2_ADDRESS);
 
         /// <summary>
         /// Service to interact with the Proof of Humanity registry smart contract

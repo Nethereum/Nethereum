@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>Nethereum.Contracts.IntegrationTests </Description>
@@ -12,6 +12,7 @@
 	  <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Merkle.Patricia\Nethereum.Merkle.Patricia.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Merkle\Nethereum.Merkle.csproj" />
+	  <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.RPC.Extensions\Nethereum.RPC.Extensions.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Uniswap\Nethereum.Uniswap.csproj" />
 	  <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />

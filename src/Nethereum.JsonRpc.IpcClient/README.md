@@ -4,15 +4,14 @@ High-performance IPC (Inter-Process Communication) JSON-RPC client for local Eth
 
 ## Overview
 
-Nethereum.JsonRpc.IpcClient provides **IPC transport implementations** for communicating with local Ethereum nodes via **Named Pipes (Windows)** and **Unix Domain Sockets (Linux/macOS)**. IPC offers **significantly lower latency** than HTTP for local node communication, making it ideal for high-performance applications running on the same machine as the Ethereum node.
+Nethereum.JsonRpc.IpcClient provides **IPC transport implementations** for communicating with local Ethereum nodes via **Named Pipes (Windows)** and **Unix Domain Sockets (Linux/macOS)**. IPC bypasses the HTTP stack, which typically lowers latency for a node on the same machine.
 
 **Key Features:**
 - **Named Pipes** support (Windows)
 - **Unix Domain Sockets** support (Linux, macOS)
-- **Ultra-low latency** (~1ms vs ~5ms HTTP)
-- Automatic connection management and retry
-- Thread-safe request handling
-- Production-tested reliability
+- **Typically lower latency** than HTTP for a co-located node
+- Reconnects lazily on the next request after a connection error
+- Requests are serialised with an internal lock (one connection per client)
 - Compatible with Geth, Erigon, Besu IPC endpoints
 
 **Use Cases:**
@@ -47,17 +46,17 @@ dotnet add package Nethereum.JsonRpc.IpcClient
 
 ```csharp
 using Nethereum.JsonRpc.IpcClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
 // Connect to Geth IPC endpoint (Windows)
 var client = new IpcClient(@"\\.\pipe\geth.ipc");
 
-// Query blockchain with ultra-low latency
+// Query blockchain over IPC
 var ethBlockNumber = new EthBlockNumber(client);
 var blockNumber = await ethBlockNumber.SendRequestAsync();
 
 Console.WriteLine($"Current block: {blockNumber.Value}");
-// Typical latency: ~1ms (vs ~5ms for HTTP localhost)
+// Typically lower latency than HTTP for a co-located node
 ```
 
 ### Linux/macOS (Unix Domain Sockets)
@@ -81,8 +80,9 @@ Console.WriteLine($"Chain ID: {chainId.Value}");
 ### Example 1: Connecting to Geth IPC Endpoints
 
 ```csharp
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.IpcClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 using System.Runtime.InteropServices;
 
 // Platform-specific IPC path detection
@@ -117,17 +117,20 @@ Console.WriteLine($"Block: {blockNumber.Value}");
 
 ### Example 2: Custom Connection Timeout
 
+`ConnectionTimeout` is `static` on `ClientBase` (`ClientBase.cs:10`) - it applies to every client in the process and defaults to 20 seconds, not 120:
+
 ```csharp
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.IpcClient;
 using Nethereum.RPC.Eth;
 
 var client = new IpcClient(@"\\.\pipe\geth.ipc");
 
-// Default timeout is 120 seconds
-Console.WriteLine($"Default timeout: {client.ConnectionTimeout.TotalSeconds}s");
+// Default timeout is 20 seconds, shared process-wide
+Console.WriteLine($"Default timeout: {ClientBase.ConnectionTimeout.TotalSeconds}s");
 
-// Set custom timeout
-client.ConnectionTimeout = TimeSpan.FromSeconds(10);
+// Set custom timeout - affects ALL clients, not just this instance
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(10);
 
 try
 {
@@ -152,7 +155,7 @@ using Nethereum.RPC.Eth;
 var loggerFactory = LoggerFactory.Create(builder =>
 {
     builder.AddConsole();
-    builder.SetMinimumLevel(LogLevel.Debug);
+    builder.SetMinimumLevel(LogLevel.Trace);
 });
 
 var logger = loggerFactory.CreateLogger<IpcClient>();
@@ -167,14 +170,15 @@ var client = new UnixIpcClient(
 // All requests are logged
 var ethGasPrice = new EthGasPrice(client);
 var gasPrice = await ethGasPrice.SendRequestAsync();
-// Console output: Sending request: {"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}
-// Console output: Received response: {"jsonrpc":"2.0","result":"0x...","id":1}
+// Console output: RPC Request: {"jsonrpc":"2.0","method":"eth_gasPrice",...}
+// Console output: RPC Response: 0x...
 ```
 
 ### Example 4: Using with Nethereum.Web3
 
 ```csharp
 using Nethereum.Web3;
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.IpcClient;
 using System.Runtime.InteropServices;
 
@@ -186,7 +190,7 @@ IClient ipcClient = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 // Use with Web3
 var web3 = new Web3(ipcClient);
 
-// Ultra-fast local queries
+// Local queries
 var balance = await web3.Eth.GetBalance.SendRequestAsync(
     "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
 );
@@ -200,12 +204,14 @@ Console.WriteLine($"Block: {blockNumber.Value}");
 ### Example 5: High-Frequency Request Pattern (MEV Bot)
 
 ```csharp
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.IpcClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 using System.Diagnostics;
+using System.Numerics;
 
 var client = new UnixIpcClient("/home/user/.ethereum/geth.ipc");
-client.ConnectionTimeout = TimeSpan.FromSeconds(5);
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(5); // static - applies process-wide
 
 // High-frequency block monitoring with minimal latency
 var ethBlockNumber = new EthBlockNumber(client);
@@ -227,18 +233,22 @@ while (true)
 
     await Task.Delay(100); // Poll every 100ms
 }
-// Typical latency: 1-2ms (IPC) vs 5-10ms (HTTP localhost)
+// Typically lower latency than HTTP for a co-located node
 ```
 
 ### Example 6: Connection Error Handling and Retry
 
+**Note:** Polly is **not** a dependency of `Nethereum.JsonRpc.IpcClient` - add `Polly` to your own project to use this pattern. `IpcPath` is `protected` on `IpcClientBase` (`IpcClientBase.cs:15`), so it is not readable from outside the client - track the path yourself if you need to log it.
+
 ```csharp
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.IpcClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 using Polly;
 
-var client = new IpcClient(@"\\.\pipe\geth.ipc");
-client.ConnectionTimeout = TimeSpan.FromSeconds(10);
+var ipcPath = @"\\.\pipe\geth.ipc";
+var client = new IpcClient(ipcPath);
+ClientBase.ConnectionTimeout = TimeSpan.FromSeconds(10); // static - applies process-wide
 
 // Define retry policy for IPC connection failures
 var retryPolicy = Policy
@@ -272,15 +282,17 @@ catch (RpcClientTimeoutException ex)
 catch (RpcClientUnknownException ex)
 {
     Console.WriteLine($"IPC connection error: {ex.Message}");
-    Console.WriteLine($"IPC path: {client.IpcPath}");
+    Console.WriteLine($"IPC path: {ipcPath}");
 }
 ```
 
 ### Example 7: Erigon IPC Connection
 
 ```csharp
+using Nethereum.JsonRpc.Client;
 using Nethereum.JsonRpc.IpcClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
+using System.Runtime.InteropServices;
 
 // Erigon default IPC paths
 var client = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -325,9 +337,9 @@ Console.WriteLine($"Chain ID: {chainId.Value}");
 
 ```csharp
 using Nethereum.JsonRpc.IpcClient;
-using Nethereum.RPC.Eth;
+using Nethereum.RPC.Eth.Blocks;
 
-// IpcClient implements IDisposable - always dispose properly
+// IpcClient implements IDisposable (inherited from IpcClientBase) - always dispose properly
 using (var client = new UnixIpcClient("/home/user/.ethereum/geth.ipc"))
 {
     var ethBlockNumber = new EthBlockNumber(client);
@@ -360,8 +372,10 @@ finally
 
 ### IpcClient (Windows - Named Pipes)
 
+`IDisposable` is implemented by the base class, not declared again on `IpcClient` itself:
+
 ```csharp
-public class IpcClient : IpcClientBase, IDisposable
+public class IpcClient : IpcClientBase
 {
     public IpcClient(string ipcPath,
         JsonSerializerSettings jsonSerializerSettings = null,
@@ -377,7 +391,7 @@ public class IpcClient : IpcClientBase, IDisposable
 ### UnixIpcClient (Linux/macOS - Unix Domain Sockets)
 
 ```csharp
-public class UnixIpcClient : IpcClientBase, IDisposable
+public class UnixIpcClient : IpcClientBase
 {
     public UnixIpcClient(string ipcPath,
         JsonSerializerSettings jsonSerializerSettings = null,
@@ -390,15 +404,33 @@ public class UnixIpcClient : IpcClientBase, IDisposable
 - `jsonSerializerSettings`: Optional custom JSON settings
 - `log`: Optional logger instance
 
-### Properties
+### SimpleIpcClient
+
+A lighter-weight alternative that opens a new `NamedPipeClientStream` per request instead of holding a persistent connection open (`SimpleIpcClient.cs:16-20`):
 
 ```csharp
-public TimeSpan ConnectionTimeout { get; set; } // Default: 120 seconds
-public string IpcPath { get; }
-public int ForceCompleteReadTotalMiliseconds { get; set; } // Default: 2000
+public class SimpleIpcClient : ClientBase
+{
+    public SimpleIpcClient(string ipcPath,
+        JsonSerializerSettings jsonSerializerSettings = null,
+        ILogger log = null)
+
+    public JsonSerializerSettings JsonSerializerSettings { get; set; }
+}
 ```
 
-### Key Methods (Inherited from ClientBase)
+### Properties
+
+`ConnectionTimeout` is defined on `ClientBase` and is `static` (shared process-wide, `ClientBase.cs:10`). `IpcPath` is `protected readonly` on `IpcClientBase` (`IpcClientBase.cs:15`) - it is **not** accessible from outside the client. `ForceCompleteReadTotalMiliseconds` is also `static` (`IpcClientBase.cs:16`):
+
+```csharp
+public static TimeSpan ConnectionTimeout { get; set; } // Default: 20 seconds, shared by every ClientBase-derived client
+protected readonly string IpcPath;
+public static int ForceCompleteReadTotalMiliseconds { get; set; } // Default: 2000
+public JsonSerializerSettings JsonSerializerSettings { get; set; } // IpcClientBase.cs:26
+```
+
+### Key Methods (Inherited from ClientBase / IpcClientBase)
 
 ```csharp
 public override Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
@@ -432,38 +464,24 @@ public void Dispose()
 
 ### Performance Comparison
 
-| Transport | Latency (localhost) | Use Case |
-|-----------|---------------------|----------|
-| **IPC** | 0.5-2ms | Local node, high-frequency |
-| HTTP | 3-10ms | Local node, standard |
-| HTTPS (remote) | 50-200ms | Cloud providers |
+| Transport | Use Case |
+|-----------|----------|
+| **IPC** | Local node, high-frequency |
+| HTTP | Local or remote node, standard |
+| HTTPS (remote) | Cloud providers |
 
-**IPC is ~5x faster than HTTP for local communication.**
+**IPC typically has lower latency than HTTP for a co-located node.**
 
 ### Thread Safety
 
-- **NOT thread-safe** - uses internal locking for single connection
+- Requests are serialised with an internal lock over a single connection
 - For concurrent requests, create multiple client instances
 - Each instance maintains its own IPC connection
 - Safe to use from single thread or with external synchronization
 
-### Batch Requests
+### Batch Requests Are NOT Supported
 
-IPC clients support batch requests via inherited `SendBatchRequestAsync`:
-
-```csharp
-var batch = new RpcRequestResponseBatch();
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(
-    new RpcRequestMessage(1, "eth_blockNumber")
-));
-batch.BatchItems.Add(new RpcRequestResponseBatchItem<string>(
-    new RpcRequestMessage(2, "eth_chainId")
-));
-
-var result = await client.SendBatchRequestAsync(batch);
-```
-
-However, **IPC is already very fast** - batching provides less benefit than with HTTP.
+`IpcClientBase.SendBatchRequestAsync` overrides the base implementation and throws `NotImplementedException` (`IpcClientBase.cs:96-99`); the batch-only `SendAsync(RpcRequestMessage[])` overload does the same. Do not call `SendBatchRequestAsync` on `IpcClient`/`UnixIpcClient`/`SimpleIpcClient` - send individual requests instead. This is not a significant loss: **IPC has low overhead**, so batching provides less benefit than it does over HTTP.
 
 ### Error Handling
 
@@ -484,14 +502,14 @@ However, **IPC is already very fast** - batching provides less benefit than with
 
 **Use IPC when:**
 - Running on same machine as node
-- Ultra-low latency required (<2ms)
+- Lowest latency to a co-located node required
 - High-frequency requests (MEV, indexing)
 - Production node operator
 
 **Use HTTP when:**
 - Connecting to remote node
 - Simple request/response pattern
-- Standard latency acceptable (5-10ms)
+- Standard latency acceptable
 
 **Use WebSocket when:**
 - Need real-time subscriptions (`eth_subscribe`)

@@ -9,6 +9,9 @@ namespace Nethereum.RPC.Eth.AccountAbstraction
     /// Represents the eth_getUserOperationByHash RPC method.
     /// Returns a UserOperation object based on the provided userOpHash.
     /// </summary>
+    // Known nonconforming: ERC-7769 returns a wrapper object, not a bare UserOperation, so this
+    // deserializes to empty values. EntryPoint v0.6 is unsupported by this library (see
+    // EntryPointAddresses.ValidateSupportedUserOpHashVersion); kept only for reference.
     public class EthGetUserOperationByHashV06 : RpcRequestResponseHandler<UserOperationV06>, IEthGetUserOperationByHashV06
     {
         public EthGetUserOperationByHashV06(IClient client)

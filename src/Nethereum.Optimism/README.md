@@ -208,8 +208,8 @@ var l1MessengerAddress = await addressManager.GetAddressQueryAsync(StandardAddre
 **Standard Keys:**
 ```csharp
 // From StandardAddressManagerKeys class
-public const string L1CrossDomainMessenger = "L1CrossDomainMessenger";
-public const string L1StandardBridge = "L1StandardBridge";
+public const string L1CrossDomainMessenger = "OVM_L1CrossDomainMessenger";
+public const string L1StandardBridge = "Proxy__OVM_L1StandardBridge";
 ```
 
 **From:** `src/Nethereum.Optimism/StandardAddressManagerKeys.cs`
@@ -235,8 +235,6 @@ Withdraw tokens from L2 back to L1.
 **Methods:**
 - `WithdrawRequestAsync(l2Token, amount, l1Gas, data)` - Withdraw ERC20 to L1
 - `WithdrawToRequestAsync(l2Token, to, amount, l1Gas, data)` - Withdraw ERC20 to specific L1 address
-- `WithdrawETHRequestAsync(amount, l1Gas, data)` - Withdraw ETH to L1
-- `WithdrawETHToRequestAsync(to, amount, l1Gas, data)` - Withdraw ETH to specific L1 address
 
 **From:** `src/Nethereum.Optimism/L2StandardBridge/L2StandardBridgeService.cs`
 
@@ -246,7 +244,7 @@ Send arbitrary messages from L1 to L2.
 
 **Methods:**
 - `SendMessageRequestAsync(target, message, gasLimit)` - Send message to L2 contract
-- `RelayMessageRequestAsync(target, sender, message, messageNonce)` - Relay message received from L2
+- `RelayMessageRequestAsync(target, sender, message, messageNonce, proof)` - Relay message received from L2 (requires Merkle proof)
 
 **From:** `src/Nethereum.Optimism/L1CrossDomainMessenger/L1CrossDomainMessengerService.cs`
 
@@ -256,7 +254,7 @@ Send arbitrary messages from L2 to L1.
 
 **Methods:**
 - `SendMessageRequestAsync(target, message, gasLimit)` - Send message to L1 contract
-- `RelayMessageRequestAsync(target, sender, message, messageNonce, proof)` - Relay message from L1 (requires Merkle proof)
+- `RelayMessageRequestAsync(target, sender, message, messageNonce)` - Relay message received from L1
 
 **From:** `src/Nethereum.Optimism/L2CrossDomainMessenger/L2CrossDomainMessengerService.cs`
 
@@ -267,7 +265,7 @@ Interact with L2 ERC20 tokens (standard ERC20 methods plus L2-specific methods).
 **L2-Specific Methods:**
 - `L1TokenQueryAsync()` - Get paired L1 token address
 - `L2BridgeQueryAsync()` - Get L2 bridge address
-- `BurnRequestAsync(amount)` - Burn tokens (called by bridge during withdrawal)
+- `BurnRequestAsync(from, amount)` - Burn tokens (called by bridge during withdrawal)
 - `MintRequestAsync(to, amount)` - Mint tokens (called by bridge during deposit)
 
 **From:** `src/Nethereum.Optimism/L2StandardERC20/L2StandardERC20Service.cs`

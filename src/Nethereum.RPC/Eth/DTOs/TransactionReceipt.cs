@@ -104,9 +104,10 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         /// QUANTITY / BOOLEAN - Transaction success (1) or failure (0)
         /// </summary>
-        [JsonProperty("status")]
+        [JsonProperty("status", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("status")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger Status { get; set; }
 
@@ -141,27 +142,31 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         /// DATA, 32 Bytes - The post-transaction state root. Deprecated.
         /// </summary>
-        [JsonProperty("root")]
+        [JsonProperty("root", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("root")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string Root { get; set; }
 
-        [JsonProperty("revertReason")]
+        [JsonProperty("revertReason", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("revertReason")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string RevertReason { get; set; }
 
-        [JsonProperty("blobGasUsed")]
+        [JsonProperty("blobGasUsed", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("blobGasUsed")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger BlobGasUsed { get; set; }
 
-        [JsonProperty("blobGasPrice")]
+        [JsonProperty("blobGasPrice", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("blobGasPrice")]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger BlobGasPrice { get; set; }
 

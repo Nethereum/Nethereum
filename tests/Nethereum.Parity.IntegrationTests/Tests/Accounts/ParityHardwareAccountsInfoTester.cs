@@ -31,7 +31,7 @@ namespace Nethereum.Parity.IntegrationTests.Tests.Accounts
             catch (RpcResponseException exception)
             {
                 Assert.Equal(-32023, exception.RpcError.Code);
-                Assert.Equal("Custom(\"No hardware wallet accounts were found\")", exception.RpcError.Data.Value<string>());
+                Assert.Equal("Custom(\"No hardware wallet accounts were found\")", exception.RpcError.GetDataAsString());
             }
         }
     }

@@ -23,7 +23,7 @@ namespace Nethereum.RPC.ModelFactories
             blockHeader.Timestamp = (long)rpcBlock.Timestamp.Value;
             blockHeader.TransactionsHash = rpcBlock.TransactionsRoot.HexToByteArray();
             blockHeader.UnclesHash = rpcBlock.Sha3Uncles.HexToByteArray();
-            blockHeader.BaseFee = rpcBlock.BaseFeePerGas.Value;
+            blockHeader.BaseFee = rpcBlock.BaseFeePerGas?.Value;
 
             if (mixHashAndNonceInSealFields && rpcBlock.SealFields != null && rpcBlock.SealFields.Length >= 2)
             {

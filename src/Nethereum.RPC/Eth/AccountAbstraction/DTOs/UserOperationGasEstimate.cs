@@ -34,5 +34,17 @@ namespace Nethereum.RPC.AccountAbstraction.DTOs
 [System.Text.Json.Serialization.JsonPropertyName("maxPriorityFeePerGas")]
 #endif
         public HexBigInteger MaxPriorityFeePerGas { get; set; }
+
+        [JsonProperty(PropertyName = "paymasterVerificationGasLimit")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("paymasterVerificationGasLimit")]
+#endif
+        public HexBigInteger PaymasterVerificationGasLimit { get; set; }
+
+        [JsonProperty(PropertyName = "paymasterPostOpGasLimit")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("paymasterPostOpGasLimit")]
+#endif
+        public HexBigInteger PaymasterPostOpGasLimit { get; set; }
     }
 }

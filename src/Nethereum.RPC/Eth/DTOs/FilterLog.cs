@@ -17,9 +17,10 @@ namespace Nethereum.RPC.Eth.DTOs
         /// <summary>
         ///     TAG - pending when the log is pending. mined if log is already mined..
         /// </summary>
-       [JsonProperty(PropertyName = "type")]
+       [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("type")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string Type { get; set; }
 
@@ -68,6 +69,13 @@ namespace Nethereum.RPC.Eth.DTOs
 [System.Text.Json.Serialization.JsonPropertyName("blockNumber")]
 #endif
         public HexBigInteger BlockNumber { get; set; }
+
+        [JsonProperty(PropertyName = "blockTimestamp", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blockTimestamp")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+        public HexBigInteger BlockTimestamp { get; set; }
 
         /// <summary>
         ///     DATA, 20 Bytes - address from which this log originated.

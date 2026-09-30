@@ -1,4 +1,5 @@
 ﻿using Nethereum.Hex.HexTypes;
+using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
@@ -95,5 +96,14 @@ namespace Nethereum.RPC.AccountAbstraction.DTOs
 [System.Text.Json.Serialization.JsonPropertyName("paymasterData")]
 #endif
         public string PaymasterData { get; set; }
+
+        // EIP-7702 authorisation tuple ridden alongside the userOp on the RPC wire (v0.9 EntryPoint).
+        // A side-channel: it is not part of the packed userOp form, so it lives only on this DTO.
+        // Optional and omitted when unset (NullValueHandling.Ignore) to stay wire-identical for ops without it.
+        [JsonProperty(PropertyName = "eip7702Auth")]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("eip7702Auth")]
+#endif
+        public Authorisation Eip7702Auth { get; set; }
     }
 }

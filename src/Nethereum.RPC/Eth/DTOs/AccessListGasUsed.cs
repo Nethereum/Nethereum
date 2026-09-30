@@ -15,9 +15,10 @@ namespace Nethereum.RPC.Eth.DTOs
 #endif
         public List<AccessList> AccessList { get; set; }
 
-        [JsonProperty(PropertyName = "error")]
+        [JsonProperty(PropertyName = "error", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("error")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string Error { get; set; }
 

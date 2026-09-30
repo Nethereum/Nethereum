@@ -27,21 +27,25 @@ namespace Nethereum.RPC.Eth.DTOs
         public string BlockHash { get; set; }
 
         /// <summary>
-        ///  block author.
+        ///  block author. Parity-only; not part of the standard eth_getBlockBy* shape — omitted
+        ///  from output when unset.
         /// </summary>
-        [JsonProperty(PropertyName = "author")]
+        [JsonProperty(PropertyName = "author", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("author")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string Author { get; set; }
 
 
         /// <summary>
-        ///  Seal fields. 
+        ///  Seal fields. Parity-only; not part of the standard eth_getBlockBy* shape — omitted from
+        ///  output when unset.
         /// </summary>
-      [JsonProperty(PropertyName = "sealFields")]
+      [JsonProperty(PropertyName = "sealFields", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("sealFields")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string[] SealFields { get; set; }
 
@@ -129,11 +133,14 @@ namespace Nethereum.RPC.Eth.DTOs
         public HexBigInteger Difficulty { get; set; } 
 
         /// <summary>
-        ///     QUANTITY - integer of the total difficulty of the chain until this block.
+        ///     QUANTITY - integer of the total difficulty of the chain until this block. Omitted
+        ///     post-merge (geth no longer reports a cumulative PoW difficulty once a chain has
+        ///     transitioned) — never fabricate a value here.
         /// </summary>
-      [JsonProperty(PropertyName = "totalDifficulty")]
+      [JsonProperty(PropertyName = "totalDifficulty", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("totalDifficulty")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger TotalDifficulty { get; set; }
 
@@ -201,55 +208,78 @@ namespace Nethereum.RPC.Eth.DTOs
         public string[] Uncles { get; set; }
 
         /// <summary>
-        ///     QUANTITY - the base fee per gas.
+        ///     QUANTITY - the base fee per gas. Present from London onward; omitted for pre-London
+        ///     blocks (geth does not emit the key when the header has no base fee).
         /// </summary>
-        [JsonProperty(PropertyName = "baseFeePerGas")]
+        [JsonProperty(PropertyName = "baseFeePerGas", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("baseFeePerGas")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger BaseFeePerGas { get; set; }
 
         /// <summary>
         ///     DATA, 32 Bytes - the root of the withdrawals trie of the block.
         /// </summary>
-        [JsonProperty(PropertyName = "withdrawalsRoot")]
+        [JsonProperty(PropertyName = "withdrawalsRoot", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("withdrawalsRoot")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger WithdrawalsRoot { get; set; }
 
         /// <summary>
-        ///     Array - Array of withdrawals objects
+        ///     Array - Array of withdrawals objects. Present (possibly empty) from Shanghai onward;
+        ///     omitted for pre-Shanghai blocks.
         /// </summary>
-        [JsonProperty(PropertyName = "withdrawals")]
+        [JsonProperty(PropertyName = "withdrawals", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("withdrawals")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public Withdrawal[] Withdrawals { get; set; }
 
-        [JsonProperty(PropertyName = "blobGasUsed")]
+        [JsonProperty(PropertyName = "blobGasUsed", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("blobGasUsed")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger BlobGasUsed { get; set; }
 
-        [JsonProperty(PropertyName = "excessBlobGas")]
+        [JsonProperty(PropertyName = "excessBlobGas", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("excessBlobGas")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public HexBigInteger ExcessBlobGas { get; set; }
 
-        [JsonProperty(PropertyName = "parentBeaconBlockRoot")]
+        [JsonProperty(PropertyName = "parentBeaconBlockRoot", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("parentBeaconBlockRoot")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string ParentBeaconBlockRoot { get; set; }
 
-        [JsonProperty(PropertyName = "requestsHash")]
+        [JsonProperty(PropertyName = "requestsHash", NullValueHandling = NullValueHandling.Ignore)]
 #if NET6_0_OR_GREATER
 [System.Text.Json.Serialization.JsonPropertyName("requestsHash")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string RequestsHash { get; set; }
+
+        [JsonProperty(PropertyName = "blockAccessListHash", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("blockAccessListHash")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+        public string BlockAccessListHash { get; set; }
+
+        [JsonProperty(PropertyName = "slotNumber", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("slotNumber")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+        public HexBigInteger SlotNumber { get; set; }
 
     }
 }

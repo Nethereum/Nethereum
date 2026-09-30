@@ -135,6 +135,17 @@ namespace Nethereum.RPC.Eth.DTOs
             set { _data = value; }
         }
 
+        [JsonProperty(PropertyName = "input", NullValueHandling = NullValueHandling.Ignore)]
+#if NET6_0_OR_GREATER
+[System.Text.Json.Serialization.JsonPropertyName("input")]
+[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+#endif
+        public string Input
+        {
+            get { return null; }
+            set { if (value != null) _data = value; }
+        }
+
         /// <summary>
         ///   QUANTITY - Max Fee Per Gas provided by the sender in Wei.
         /// </summary>

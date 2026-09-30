@@ -5,6 +5,7 @@ namespace Nethereum.RPC.Eth.Services
     public interface IEthApiBlockService
     {
         IEthBlockNumber GetBlockNumber { get; }
+        IEthGetBlockAccessList GetBlockAccessList { get; }
         IEthGetBlockTransactionCountByHash GetBlockTransactionCountByHash { get; }
         IEthGetBlockTransactionCountByNumber GetBlockTransactionCountByNumber { get; }
         IEthGetBlockWithTransactionsByHash GetBlockWithTransactionsByHash { get; }

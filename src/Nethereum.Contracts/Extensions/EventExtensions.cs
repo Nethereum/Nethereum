@@ -39,6 +39,62 @@ namespace Nethereum.Contracts
             return filterLogVO.Log.IsLogForEvent<TEventDTO>();
         }
 
+        private static bool IsEmittedBy(this FilterLog log, string contractAddress)
+        {
+            return contractAddress.IsEmptyOrEqualsAddress(log?.Address);
+        }
+
+        private static bool IsEmittedByAnyOf(this FilterLog log, string[] contractAddresses)
+        {
+            if (contractAddresses == null || contractAddresses.Length == 0) return true;
+            foreach (var contractAddress in contractAddresses)
+                if (log.IsEmittedBy(contractAddress)) return true;
+            return false;
+        }
+
+        public static bool IsLogForEventEmittedBy<TEventDTO>(this FilterLog log, string contractAddress)
+        {
+            return log.IsEmittedBy(contractAddress) && log.IsLogForEvent<TEventDTO>();
+        }
+
+        public static bool IsLogForEventEmittedByAny<TEventDTO>(this FilterLog log, string[] contractAddresses)
+        {
+            return log.IsEmittedByAnyOf(contractAddresses) && log.IsLogForEvent<TEventDTO>();
+        }
+
+        public static bool IsLogForEventEmittedBy(this EventABI eventABI, FilterLog log, string contractAddress)
+        {
+            return log.IsEmittedBy(contractAddress) && eventABI.IsLogForEvent(log);
+        }
+
+        public static EventLog<TEventDTO> DecodeEventEmittedBy<TEventDTO>(this FilterLog log, string contractAddress)
+            where TEventDTO : new()
+        {
+            return log.IsEmittedBy(contractAddress) ? log.DecodeEvent<TEventDTO>() : null;
+        }
+
+        public static List<EventLog<TEventDTO>> DecodeAllEventsEmittedBy<TEventDTO>(this FilterLog[] logs,
+            string contractAddress) where TEventDTO : new()
+        {
+            return DecodeAllEventsEmittedByAny<TEventDTO>(logs, new[] { contractAddress });
+        }
+
+        public static List<EventLog<TEventDTO>> DecodeAllEventsEmittedByAny<TEventDTO>(this FilterLog[] logs,
+            string[] contractAddresses) where TEventDTO : new()
+        {
+            var result = new List<EventLog<TEventDTO>>();
+            if (logs == null) return result;
+
+            var eventABI = ABITypedRegistry.GetEvent<TEventDTO>();
+            foreach (var log in logs)
+            {
+                if (!log.IsEmittedByAnyOf(contractAddresses)) continue;
+                var eventDecoded = DecodeEvent<TEventDTO>(eventABI, log);
+                if (eventDecoded != null) result.Add(eventDecoded);
+            }
+            return result;
+        }
+
         public static bool IsFilterInputForEvent<TEventDTO>(string contractAddress,
             NewFilterInput filterInput)
         {

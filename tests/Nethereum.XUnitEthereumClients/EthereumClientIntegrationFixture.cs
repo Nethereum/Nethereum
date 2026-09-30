@@ -107,6 +107,51 @@ namespace Nethereum.XUnitEthereumClients
             }
         }
 
+        private void WaitForNodeReadyOrThrow()
+        {
+            using (var httpClient = new System.Net.Http.HttpClient())
+            {
+                var deadline = DateTime.UtcNow.AddSeconds(30);
+                var lastError = "no response";
+                while (DateTime.UtcNow < deadline)
+                {
+                    try
+                    {
+                        var request = new System.Net.Http.StringContent(
+                            "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                            System.Text.Encoding.UTF8, "application/json");
+                        var json = httpClient.PostAsync(HttpUrl, request).Result
+                            .Content.ReadAsStringAsync().Result;
+                        var result = System.Text.RegularExpressions.Regex.Match(
+                            json, "\"result\"\\s*:\\s*\"0x([0-9a-fA-F]+)\"");
+                        if (result.Success)
+                        {
+                            var reportedChainId = System.Numerics.BigInteger.Parse(
+                                "0" + result.Groups[1].Value, System.Globalization.NumberStyles.HexNumber);
+                            if (reportedChainId != ChainId)
+                                throw new InvalidOperationException(
+                                    $"The node at {HttpUrl} reports chainId {reportedChainId} but this fixture expects {ChainId}. " +
+                                    "Another node is already running on the port; stop it before running the integration tests.");
+                            return;
+                        }
+                        lastError = json;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex.GetBaseException().Message;
+                    }
+                    Thread.Sleep(500);
+                }
+                throw new InvalidOperationException(
+                    $"The test node did not become available at {HttpUrl} within 30 seconds. Last error: {lastError}. " +
+                    "If geth.exe is missing or outdated, run testchain/clique/get-geth.ps1 to install the pinned version.");
+            }
+        }
+
         private Web3.Web3 _web3;
         public Web3.Web3 GetWeb3()
         {
@@ -147,7 +192,9 @@ namespace Nethereum.XUnitEthereumClients
 
         public static IConfiguration InitConfiguration()
         {
-            var config = new ConfigurationBuilder().AddJsonFile("appsettings.test.json", true)
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.test.json", true)
+                .AddJsonFile("appsettings.test.local.json", true)
                 .Build();
             return config;
         }
@@ -174,6 +221,10 @@ namespace Nethereum.XUnitEthereumClients
             public string InfuraId { get; set; }
 
             public string HttpUrl { get; set; }
+
+            public string AnvilForkUrl { get; set; }
+
+            public string StrictBundlerPath { get; set; }
         }
 
         public EthereumClientIntegrationFixture()
@@ -249,21 +300,8 @@ namespace Nethereum.XUnitEthereumClients
 
                 DeleteData();
 
-                var psiSetup = new ProcessStartInfo(_exePath,
-                    @" --dev --datadir=devChain init genesis_clique.json ")
-                {
-                    CreateNoWindow = false,
-                    WindowStyle = ProcessWindowStyle.Normal,
-                    UseShellExecute = true,
-                    WorkingDirectory = Path.GetDirectoryName(_exePath)
-
-                };
-
-                Process.Start(psiSetup);
-                Thread.Sleep(3000);
-
                 var psi = new ProcessStartInfo(_exePath,
-                    @" --dev --nodiscover --http --datadir=devChain --dev.period 1 --http.corsdomain ""*"" --mine  --ws --http.api ""eth,web3,personal,net,miner,admin,debug"" --http.addr ""0.0.0.0""  --unlock 0x12890d2cce102216644c59daE5baed380d84830c --miner.etherbase 0x12890d2cce102216644c59daE5baed380d84830c --password ""pass.txt"" --verbosity 0 console")
+                    @" --dev --nodiscover --http --datadir=devChain --keystore devChain/keystore --dev.period 1 --http.corsdomain ""*"" --ws --http.api ""eth,web3,net,admin,debug"" --http.addr ""0.0.0.0"" --password ""pass.txt"" --verbosity 0 console")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,
@@ -272,6 +310,7 @@ namespace Nethereum.XUnitEthereumClients
 
                 };
                 _process = Process.Start(psi);
+                WaitForNodeReadyOrThrow();
             }
             else if (EthereumClient == EthereumClient.OpenEthereum)
             {

@@ -8,8 +8,9 @@
 - **Contract Deployment** - Deploy contracts with constructor parameters
 - **Function Calls** - Call and send contract functions
 - **Event Handling** - Query and decode contract events
-- **ERC Standards** - Built-in support for ERC20, ERC721, ERC1155, ERC1271, ERC1820, ERC165, ERC2535, ERC6492
-- **EIP Standards** - EIP-3009 (transfer with authorization), EIP-6093 (custom errors)
+- **ERC Standards** - Built-in support for ERC20, ERC721, ERC1155, ERC1271, ERC165, ERC2535, ERC6492
+- **EIP Standards** - EIP-3009 (transfer with authorization)
+- **Permit2** - Uniswap Permit2 (canonical, via `web3.Eth.GetPermit2Service()`)
 - **ENS Support** - Ethereum Name Service resolution
 - **Multicall** - Batch multiple contract calls
 - **Query Handlers** - Simplified contract queries
@@ -113,7 +114,7 @@ var balance = await balanceFunction.CallAsync<BigInteger>("0x742d35Cc...");
 [Function("balanceOf", "uint256")]
 public class BalanceOfFunction : FunctionMessage
 {
-    [Parameter("address", "owner", 1)]
+    [Parameter("address", "account", 1)]
     public string Owner { get; set; }
 }
 
@@ -237,15 +238,14 @@ For quick scripts or when you don't want to define deployment classes:
 var abi = @"[{'inputs':[{'name':'totalSupply','type':'uint256'}],'stateMutability':'nonpayable','type':'constructor'}...]";
 var bytecode = "0x608060405234801561001057600080fd5b50...";
 
-// Deploy with constructor parameters as params
+// Deploy with constructor parameters as an object[] (named args avoid ambiguity between the
+// many DeployContract overloads that share the same leading abi/contractByteCode/from/gas parameters)
 var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
-    abi,
-    bytecode,
-    account.Address,
-    new Nethereum.Hex.HexTypes.HexBigInteger(3000000), // gas
-    null, // gas price
-    null, // value
-    100000 // constructor parameter: totalSupply
+    abi: abi,
+    contractByteCode: bytecode,
+    from: account.Address,
+    gas: new Nethereum.Hex.HexTypes.HexBigInteger(3000000),
+    values: new object[] { 100000 } // constructor parameter: totalSupply
 );
 
 var contractAddress = receipt.ContractAddress;
@@ -256,7 +256,6 @@ var contractAddress = receipt.ContractAddress;
 - No compile-time checking of constructor parameters
 - Easy to pass wrong parameter type or order
 - Less maintainable for complex constructors
-```
 
 ## Contract Definition Patterns
 
@@ -301,7 +300,7 @@ var balance = await balanceOfFunction.CallAsync<BigInteger>(new BalanceOfFunctio
 Nethereum provides powerful extension methods to simplify common operations with FunctionMessages:
 
 ```csharp
-using Nethereum.Contracts.Extensions;
+using Nethereum.Contracts;
 
 // 1. Create CallInput for eth_call (read-only)
 var balanceOfFunction = new BalanceOfFunction { Owner = senderAddress };
@@ -309,7 +308,7 @@ var callInput = balanceOfFunction.CreateCallInput(contractAddress);
 // Use for EVM simulation, Nethereum.EVM, etc.
 
 // 2. Create TransactionInput for transactions
-var transferFunction = new TransferFunction { To = receiver, TokenAmount = 1000 };
+var transferFunction = new TransferFunction { To = receiver, Value = 1000 };
 var transactionInput = transferFunction.CreateTransactionInput(contractAddress);
 // Complete TransactionInput ready to sign
 
@@ -321,7 +320,7 @@ Console.WriteLine($"Encoded data: {callData.ToHex()}");
 // 4. Decode transaction input to FunctionMessage
 var txn = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0x...");
 var decodedTransfer = new TransferFunction().DecodeTransaction(txn);
-Console.WriteLine($"Decoded to: {decodedTransfer.To}, amount: {decodedTransfer.TokenAmount}");
+Console.WriteLine($"Decoded to: {decodedTransfer.To}, amount: {decodedTransfer.Value}");
 
 // 5. Check if transaction matches function signature
 if (txn.IsTransactionForFunctionMessage<TransferFunction>())
@@ -354,15 +353,20 @@ dotnet tool install -g Nethereum.Generator.Console
 Nethereum.Generator.Console generate from-abi \
     -abi MyContract.abi.json \
     -o Generated \
-    -n MyApp.Contracts
+    -ns MyApp.Contracts
 ```
 
 **Generate from Project (Truffle/Hardhat):**
+
+`from-project` searches a project folder for ABI files and takes only a project path and an
+assembly name — output path and namespace come from an optional `Nethereum.Generator.json`
+config file in that folder, not from CLI flags
+(`generators/Nethereum.Generator.Console/Commands/GenerateFromProjectCommand.cs`):
+
 ```bash
 Nethereum.Generator.Console generate from-project \
     -p ./contracts \
-    -o ./src/Generated \
-    -n MyApp.Contracts
+    -a MyApp.Contracts
 ```
 
 #### What Gets Generated
@@ -418,7 +422,7 @@ public class StandardTokenDeployment : ContractDeploymentMessage
 [Function("balanceOf", "uint256")]
 public class BalanceOfFunction : FunctionMessage
 {
-    [Parameter("address", "owner", 1)]
+    [Parameter("address", "account", 1)]
     public string Owner { get; set; }
 }
 
@@ -477,7 +481,7 @@ var transferReceipt = await tokenService.TransferRequestAndWaitForReceiptAsync(
 
 // Access events through service
 var transferEvent = tokenService.GetTransferEvent();
-var filter = transferEvent.CreateFilterInput(fromAddress: address);
+var filter = transferEvent.CreateFilterInput(address); // matches the first indexed parameter (from)
 var logs = await transferEvent.GetAllChangesAsync(filter);
 ```
 
@@ -527,8 +531,8 @@ public class TransferFunction : FunctionMessage
     [Parameter("address", "to", 1)]
     public string To { get; set; }
 
-    [Parameter("uint256", "amount", 2)]
-    public BigInteger Amount { get; set; }
+    [Parameter("uint256", "value", 2)]
+    public BigInteger Value { get; set; }
 }
 
 // Get ERC20 contract
@@ -542,7 +546,7 @@ var receipt = await transferHandler.SendRequestAndWaitForReceiptAsync(
     new TransferFunction
     {
         To = "0xRECIPIENT",
-        Amount = 1000000000000000000, // 1 token (18 decimals)
+        Value = 1000000000000000000, // 1 token (18 decimals)
         Gas = 100000
     }
 );
@@ -566,7 +570,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 [Function("balanceOf", "uint256")]
 public class BalanceOfFunction : FunctionMessage
 {
-    [Parameter("address", "owner", 1)]
+    [Parameter("address", "account", 1)]
     public string Owner { get; set; }
 }
 
@@ -641,7 +645,7 @@ var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 var transferFunction = new TransferFunction
 {
     To = "0xRECIPIENT",
-    Amount = 1000,
+    Value = 1000,
 
     // Customize gas limit
     Gas = 100000,
@@ -666,7 +670,7 @@ var receipt = await transferHandler.SendRequestAndWaitForReceiptAsync(
 **Estimating Gas:**
 
 ```csharp
-var transferFunction = new TransferFunction { To = receiver, Amount = 1000 };
+var transferFunction = new TransferFunction { To = receiver, Value = 1000 };
 var transferHandler = web3.Eth.GetContractTransactionHandler<TransferFunction>();
 
 // Estimate gas for this specific transaction
@@ -705,7 +709,7 @@ var web3 = new Web3(account);  // No RPC endpoint needed for signing
 var transferFunction = new TransferFunction
 {
     To = "0xRECIPIENT",
-    Amount = 1000,
+    Value = 1000,
 
     // MUST set all values for offline signing
     Nonce = 2,
@@ -767,9 +771,9 @@ var contract = web3.Eth.GetContract("[...abi...]", tokenAddress);
 // Get transfer event
 var transferEvent = contract.GetEvent<TransferEventDTO>();
 
-// Create filter for specific address
+// Create filter for specific address (first indexed parameter of the Transfer event = from)
 var filterInput = transferEvent.CreateFilterInput(
-    fromAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
     fromBlock: new Nethereum.RPC.Eth.DTOs.BlockParameter(18000000),
     toBlock: new Nethereum.RPC.Eth.DTOs.BlockParameter(18000100)
 );
@@ -804,8 +808,9 @@ var transferFunction = contract.GetFunction("transfer");
 
 var receipt = await transferFunction.SendTransactionAndWaitForReceiptAsync(
     account.Address,
-    new Nethereum.Hex.HexTypes.HexBigInteger(100000),
-    null,
+    new Nethereum.Hex.HexTypes.HexBigInteger(100000), // gas
+    null, // value
+    null, // cancellation token source
     "0xRECIPIENT",
     1000000
 );
@@ -850,10 +855,10 @@ var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 var tokenAddress = "0x...";
 var transferEvent = web3.Eth.GetEvent<TransferEventDTO>(tokenAddress);
 
-// 1. Filter by specific sender AND receiver
+// 1. Filter by specific sender AND receiver (first and second indexed parameters)
 var filterBoth = transferEvent.CreateFilterInput(
-    fromAddress: "0xSENDER",
-    toAddress: "0xRECEIVER"
+    "0xSENDER",
+    "0xRECEIVER"
 );
 var resultsBoth = await transferEvent.GetAllChangesAsync(filterBoth);
 
@@ -930,10 +935,11 @@ foreach (var transfer in allTransfers)
 ### Example 4: Handling Custom Errors
 
 ```csharp
+using System.Numerics;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Nethereum.Contracts;
-using Nethereum.Contracts.Exceptions;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 
 // Custom error DTO
 [Error("InsufficientBalance")]
@@ -957,10 +963,11 @@ try
 
     var receipt = await transferFunction.SendTransactionAndWaitForReceiptAsync(
         account.Address,
-        new Nethereum.Hex.HexTypes.HexBigInteger(100000),
-        null,
+        new Nethereum.Hex.HexTypes.HexBigInteger(100000), // gas
+        null, // value
+        null, // cancellation token source
         "0xRECIPIENT",
-        1000000000000000000000 // More than balance
+        BigInteger.Parse("1000000000000000000000") // More than balance
     );
 }
 catch (SmartContractCustomErrorRevertException ex)
@@ -989,16 +996,14 @@ var web3 = new Web3(account, "http://localhost:8545");
 var abi = @"[...]";
 var bytecode = "0x...";
 
-// Deploy
+// Deploy (named args select the abi/contractByteCode/from/gas/values overload unambiguously)
 Console.WriteLine("Deploying contract...");
 var receipt = await web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
-    abi,
-    bytecode,
-    account.Address,
-    new Nethereum.Hex.HexTypes.HexBigInteger(3000000),
-    null,
-    null,
-    1000000 // constructor param
+    abi: abi,
+    contractByteCode: bytecode,
+    from: account.Address,
+    gas: new Nethereum.Hex.HexTypes.HexBigInteger(3000000),
+    values: new object[] { 1000000 } // constructor param
 );
 
 if (receipt.Status.Value != 1)
@@ -1028,7 +1033,8 @@ using Nethereum.Contracts.Standards.ENS;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
-// Get ENS service
+// Get ENS service. Resolution defaults to the ENSIP-23 Universal Resolver, with
+// automatic EIP-3668 CCIP-Read for offchain and wildcard (ENSIP-10) names.
 var ensService = web3.Eth.GetEnsService();
 
 // Resolve ENS name to address
@@ -1040,8 +1046,62 @@ var ensName = await ensService.ReverseResolveAsync(address);
 Console.WriteLine($"{address} reverse resolves to: {ensName}");
 
 // Resolve text records
-var url = await ensService.ResolveTextAsync("vitalik.eth", ENSTextRecordKey.Url);
-var avatar = await ensService.ResolveTextAsync("vitalik.eth", ENSTextRecordKey.Avatar);
+var url = await ensService.ResolveTextAsync("vitalik.eth", TextDataKey.url);
+var avatar = await ensService.ResolveTextAsync("vitalik.eth", TextDataKey.avatar);
+```
+
+#### Universal Resolver (ENSIP-23) - batched resolution
+
+The Universal Resolver resolves a name and its records in a single onchain
+round-trip, transparently following EIP-3668 CCIP-Read reverts for offchain and
+wildcard (ENSIP-10) names. Access it directly for batched profiles:
+
+```csharp
+using Nethereum.Web3;
+using Nethereum.Contracts.Standards.ENS;
+
+var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+var universalResolver = web3.Eth.GetEnsUniversalResolverService();
+
+// Address + content hash + selected text records for one name, single round-trip
+var record = await universalResolver.ResolveRecordAsync("nick.eth", TextDataKey.url, TextDataKey.avatar);
+Console.WriteLine($"{record.Name} -> {record.Address}");
+Console.WriteLine($"url: {record.Texts["url"]}");
+
+// Multiple text records for one name
+var texts = await universalResolver.ResolveTextsAsync("nick.eth", "url", "avatar");
+
+// Multiple names in one batch (each independently CCIP-capable)
+var records = await universalResolver.ResolveRecordsAsync(
+    new[] { "nick.eth", "nethereum.eth" }, TextDataKey.url);
+```
+
+#### CCIP-Read: offchain names (EIP-3668)
+
+Offchain names resolve transparently — the Universal Resolver raises an
+`OffchainLookup` revert that the CCIP layer fetches from the gateway and completes:
+
+```csharp
+var universalResolverService = web3.Eth.GetEnsUniversalResolverService();
+// Offchain (CCIP-Read) name: the Universal Resolver raises OffchainLookup, routed through the CCIP layer.
+var theAddress = await universalResolverService.ResolveAddressAsync("1.offchainexample.eth");
+// theAddress -> 0x41563129cDbbD0c5D3e1c86cf9563926b243834d
+```
+
+#### ENSIP-21 local batch gateway (BGOLP)
+
+When a record for an offchain name batches several sub-lookups, the Universal
+Resolver bundles them into an ENSIP-21 batch gateway request (`x-batch-gateway:true`),
+which the client performs locally rather than calling an external batch service:
+
+```csharp
+var universalResolverService = web3.Eth.GetEnsUniversalResolverService();
+
+// Resolving a record batches addr + contenthash + text through the resolver multicall. For an
+// offchain (CCIP-Read) name the Universal Resolver bundles the sub-lookups into an ENSIP-21 batch
+// gateway request (x-batch-gateway:true), which the client performs locally (BGOLP).
+var record = await universalResolverService.ResolveRecordAsync("1.offchainexample.eth", TextDataKey.url);
+// record.Address -> 0x41563129cDbbD0c5D3e1c86cf9563926b243834d
 ```
 
 ### Example 7: Multicall - Batch Contract Calls
@@ -1050,7 +1110,9 @@ From: [Nethereum Playground Example 1066](https://playground.nethereum.com/cshar
 
 ```csharp
 using Nethereum.Web3;
+using Nethereum.Contracts;
 using Nethereum.Contracts.QueryHandlers.MultiCall;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
@@ -1067,14 +1129,14 @@ var holder = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
 // Get multicall handler
 var multiQueryHandler = web3.Eth.GetMultiQueryHandler();
 
-// Create calls for each token
+// Create calls for each token. The second type argument must be an IFunctionOutputDTO
+// (a plain BigInteger is not a valid TFunctionOutput), so use the real output DTO.
 var calls = new List<IMulticallInputOutput>();
 foreach (var tokenAddress in tokens)
 {
-    var erc20 = web3.Eth.ERC20.GetContractService(tokenAddress);
     var balanceQuery = new BalanceOfFunction { Owner = holder };
 
-    calls.Add(new MulticallInputOutput<BalanceOfFunction, BigInteger>(
+    calls.Add(new MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>(
         balanceQuery,
         tokenAddress
     ));
@@ -1085,7 +1147,7 @@ var results = await multiQueryHandler.MultiCallAsync(calls.ToArray());
 
 for (int i = 0; i < tokens.Length; i++)
 {
-    var balance = ((MulticallInputOutput<BalanceOfFunction, BigInteger>)results[i]).Output;
+    var balance = ((MulticallInputOutput<BalanceOfFunction, BalanceOfOutputDTO>)results[i]).Output.Balance;
     Console.WriteLine($"Token {tokens[i]}: {Web3.Convert.FromWei(balance, 18)}");
 }
 ```
@@ -1139,7 +1201,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 [Function("balanceOf", "uint256")]
 public class BalanceOfFunction : FunctionMessage
 {
-    [Parameter("address", "owner", 1)]
+    [Parameter("address", "account", 1)]
     public string Owner { get; set; }
 }
 
@@ -1240,7 +1302,8 @@ var approved = await erc721.GetApprovedQueryAsync(tokenId);
 // Transfer operations
 var transferReceipt = await erc721.TransferFromRequestAndWaitForReceiptAsync(from, to, tokenId);
 var approveReceipt = await erc721.ApproveRequestAndWaitForReceiptAsync(to, tokenId);
-var setApprovalForAllReceipt = await erc721.SetApprovalForAllRequestAndWaitForReceiptAsync(operator, approved);
+// The real parameter is named `@operator` (a reserved C# keyword); pass the operator address by position
+var setApprovalForAllReceipt = await erc721.SetApprovalForAllRequestAndWaitForReceiptAsync(operatorAddress, isApproved);
 ```
 
 ### ERC1155 Multi-Token Standard
@@ -1251,10 +1314,10 @@ var erc1155 = web3.Eth.ERC1155.GetContractService(contractAddress);
 // Query single balance
 var balance = await erc1155.BalanceOfQueryAsync(owner, tokenId);
 
-// Query multiple balances
+// Query multiple balances (accounts/ids are List<T>, not arrays)
 var balances = await erc1155.BalanceOfBatchQueryAsync(
-    new[] { owner1, owner2 },
-    new[] { tokenId1, tokenId2 }
+    new List<string> { owner1, owner2 },
+    new List<BigInteger> { tokenId1, tokenId2 }
 );
 
 // Transfer single token
@@ -1266,35 +1329,84 @@ var transferReceipt = await erc1155.SafeTransferFromRequestAndWaitForReceiptAsyn
     data
 );
 
-// Transfer multiple tokens
+// Transfer multiple tokens (ids/amounts are List<BigInteger>, not arrays)
 var batchTransferReceipt = await erc1155.SafeBatchTransferFromRequestAndWaitForReceiptAsync(
     from,
     to,
-    new[] { tokenId1, tokenId2 },
-    new[] { amount1, amount2 },
+    new List<BigInteger> { tokenId1, tokenId2 },
+    new List<BigInteger> { amount1, amount2 },
     data
 );
 ```
 
 ### EIP-3009: Transfer With Authorization (USDC)
 
+`EIP3009Service`/`EIP3009ContractService` only expose the already-signed call
+(`TransferWithAuthorizationRequestAndWaitForReceiptAsync`) — there is no `CreateTransferWithAuthorizationAsync`
+helper. The authorization itself is an EIP-712 typed message signed off-chain; sign it through
+`account.AccountSigningService.SignTypedDataV4.SendRequestAsync(jsonMessage)`
+(`IAccountSigningService`, `src/Nethereum.RPC/AccountSigning/IAccountSigningService.cs`):
+
 ```csharp
+using System.Numerics;
 using Nethereum.Contracts.Standards.EIP3009;
+using Nethereum.ABI.EIP712;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Signer;
 
 var eip3009Service = web3.Eth.EIP3009.GetContractService(usdcAddress);
 
-// Create authorization for gasless transfer
-var authorization = await eip3009Service.CreateTransferWithAuthorizationAsync(
-    from: fromAddress,
-    to: toAddress,
-    value: amount,
-    validAfter: 0,
-    validBefore: uint.MaxValue,
-    nonce: nonceBytes
-);
+// The EIP-3009 TransferWithAuthorization struct, signed as EIP-712 typed data
+[Struct("TransferWithAuthorization")]
+public class TransferWithAuthorization
+{
+    [Parameter("address", "from", 1)]
+    public string From { get; set; }
+
+    [Parameter("address", "to", 2)]
+    public string To { get; set; }
+
+    [Parameter("uint256", "value", 3)]
+    public BigInteger Value { get; set; }
+
+    [Parameter("uint256", "validAfter", 4)]
+    public BigInteger ValidAfter { get; set; }
+
+    [Parameter("uint256", "validBefore", 5)]
+    public BigInteger ValidBefore { get; set; }
+
+    [Parameter("bytes32", "nonce", 6)]
+    public byte[] Nonce { get; set; }
+}
+
+// Domain must match the token contract's own EIP-712 domain (name/version/chainId/verifyingContract)
+var typedData = new TypedData<Domain>
+{
+    Domain = new Domain
+    {
+        Name = "USD Coin",
+        Version = "2",
+        ChainId = 1,
+        VerifyingContract = usdcAddress
+    },
+    Types = MemberDescriptionFactory.GetTypesMemberDescription(typeof(Domain), typeof(TransferWithAuthorization)),
+    PrimaryType = nameof(TransferWithAuthorization)
+};
+
+var authorization = new TransferWithAuthorization
+{
+    From = fromAddress,
+    To = toAddress,
+    Value = amount,
+    ValidAfter = 0,
+    ValidBefore = uint.MaxValue,
+    Nonce = nonceBytes
+};
 
 // Sign the authorization
-var signature = await account.SignTypedDataV4Async(authorization);
+var jsonMessage = typedData.ToJson(authorization);
+var signatureHex = await account.AccountSigningService.SignTypedDataV4.SendRequestAsync(jsonMessage);
+var signature = EthECDSASignatureFactory.ExtractECDSASignature(signatureHex);
 
 // Execute the transfer (can be done by anyone, not just the sender)
 var receipt = await eip3009Service.TransferWithAuthorizationRequestAndWaitForReceiptAsync(
@@ -1304,10 +1416,108 @@ var receipt = await eip3009Service.TransferWithAuthorizationRequestAndWaitForRec
     validAfter: authorization.ValidAfter,
     validBefore: authorization.ValidBefore,
     nonce: authorization.Nonce,
-    v: signature.V,
+    v: signature.V[0],
     r: signature.R,
     s: signature.S
 );
+```
+
+### Permit2 (Uniswap)
+
+[Permit2](https://github.com/Uniswap/permit2) is a canonical token-approval contract deployed at the
+same address (`0x000000000022D473030F116dDEE9F6B43aC78BA3`, `CommonAddresses.PERMIT2_ADDRESS`) on every
+EVM chain. It is consumed like the other standards, via `web3.Eth.GetPermit2Service()` (defaulting to the
+canonical address; pass an address to target a different deployment):
+
+```csharp
+using Nethereum.Contracts.Standards.Permit2;
+
+var permit2 = web3.Eth.GetPermit2Service();
+
+// SignatureTransfer: a facilitator moves the owner's tokens with a one-time signature.
+// `permit` is the on-chain tuple (no spender — Permit2 uses msg.sender); the owner's signature
+// is produced with Nethereum.Signer.EIP712 (see the Permit2 signing section of that package).
+var receipt = await permit2.PermitTransferFromRequestAndWaitForReceiptAsync(
+    permit,                                                    // PermitTransferFrom { permitted, nonce, deadline }
+    new SignatureTransferDetails { To = recipient, RequestedAmount = amount },
+    owner,                                                     // the address that signed
+    signature);
+
+// AllowanceTransfer: register/inspect allowances and unordered nonces.
+var allowance = await permit2.AllowanceQueryAsync(owner, token, spender);
+await permit2.InvalidateUnorderedNoncesRequestAndWaitForReceiptAsync(wordPos, mask);
+```
+
+The service covers both Permit2 flows — AllowanceTransfer (`approve`/`permit`/`transferFrom`) and
+SignatureTransfer (`permitTransferFrom`/`permitWitnessTransferFrom`) — plus nonce management and events.
+
+**Layering:** the contract function-argument tuples (`PermitTransferFrom`, `PermitBatchTransferFrom`,
+`SignatureTransferDetails`, `TokenSpenderPair`, `AllowanceTransferDetails`) live here in
+`Nethereum.Contracts.Standards.Permit2`. The EIP-712 signing types and the signer live in
+`Nethereum.ABI` and `Nethereum.Signer.EIP712` respectively (see those packages). Note that the
+SignatureTransfer permit tuple deliberately omits `spender` — Permit2 hashes the caller (`msg.sender`)
+as the spender — while the *signed* message includes it.
+
+### MultiSend (Batched Calls)
+
+`MultiSendFunction` ABI-encodes several calls into the single `bytes` payload expected by a deployed
+MultiSend contract (e.g. Gnosis Safe's `MultiSend`/`MultiSendCallOnly`); each call is wrapped as an
+`IMultiSendInput` via `MultiSendFunctionInput<TFunctionMessage>`
+(`src/Nethereum.Contracts/TransactionHandlers/MultiSend/MultiSend.cs`):
+
+```csharp
+using Nethereum.Contracts.TransactionHandlers.MultiSend;
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+
+// Wrap each call: (function message, target contract, ETH value to forward - defaults to 0)
+var transferInput = new MultiSendFunctionInput<TransferFunction>(
+    new TransferFunction { To = recipient, Value = 1000 },
+    tokenAddress);
+
+var approveInput = new MultiSendFunctionInput<ApproveFunction>(
+    new ApproveFunction { Spender = spender, Value = 500 },
+    tokenAddress);
+
+// MultiSendFunction ABI-encodes the batch (each entry as ContractOperationType.Call)
+var multiSendFunction = new MultiSendFunction(transferInput, approveInput);
+
+// Send against a deployed MultiSend contract address
+var multiSendHandler = web3.Eth.GetContractTransactionHandler<MultiSendFunction>();
+var receipt = await multiSendHandler.SendRequestAndWaitForReceiptAsync(multiSendAddress, multiSendFunction);
+```
+
+`ContractOperationType` (`Call = 0`, `DelegateCall = 1`) selects between `call` and `delegatecall` per
+entry; `MultiSendFunctionInput<T>` always encodes `Call`.
+
+### CREATE2 Deterministic Deployment
+
+`Create2DeterministicDeploymentProxyService` (`web3.Eth.Create2DeterministicDeploymentProxyService`,
+`src/Nethereum.Contracts/Create2Deployment/Create2DeterministicDeploymentProxyService.cs`) deploys
+through the [deterministic-deployment-proxy](https://github.com/Arachnid/deterministic-deployment-proxy),
+predicting the contract's address before it is deployed:
+
+```csharp
+using Nethereum.Contracts.Create2Deployment;
+
+var create2Service = web3.Eth.Create2DeterministicDeploymentProxyService;
+
+// Deploy the proxy for the current chain (EIP-155) if it is not there yet
+var proxyDeployment = await create2Service.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
+if (!await create2Service.HasProxyBeenDeployedAsync(proxyDeployment.Address))
+{
+    await create2Service.DeployProxyAndGetContractAddressAsync(proxyDeployment);
+}
+
+// Predict the deployment address before deploying
+var salt = "0x0000000000000000000000000000000000000000000000000000000000000001";
+var deploymentMessage = new StandardTokenDeployment { TotalSupply = 100000 };
+var predictedAddress = create2Service.CalculateCreate2Address(deploymentMessage, proxyDeployment.Address, salt);
+
+// Deploy at the predicted address (idempotent - AlreadyDeployed is true if it exists already)
+var result = await create2Service.DeployContractRequestAndWaitForReceiptAsync(
+    deploymentMessage, proxyDeployment.Address, salt);
+
+Console.WriteLine($"Contract at: {result.Address}");
 ```
 
 ## Best Practices
@@ -1323,7 +1533,7 @@ var receipt = await eip3009Service.TransferWithAuthorizationRequestAndWaitForRec
 
 2. **Use Code Generation for Production**: Automate DTO creation
    ```bash
-   Nethereum.Generator.Console generate from-abi -abi MyContract.abi.json
+   Nethereum.Generator.Console generate from-abi -abi MyContract.abi.json -o Generated -ns MyApp.Contracts
    ```
 
 3. **Estimate Gas Before Sending**:
@@ -1378,8 +1588,9 @@ var receipt = await eip3009Service.TransferWithAuthorizationRequestAndWaitForRec
 ## Error Handling
 
 ```csharp
-using Nethereum.Contracts.Exceptions;
-using Nethereum.JsonRpc.Client;
+using Nethereum.Contracts;                 // SmartContractCustomErrorRevertException
+using Nethereum.ABI.FunctionEncoding;      // SmartContractRevertException
+using Nethereum.JsonRpc.Client;            // RpcResponseException
 
 try
 {
@@ -1436,7 +1647,7 @@ catch (RpcResponseException ex)
 
 - **IContractQueryHandler<TFunction>** - Simplified query operations
 - **IContractTransactionHandler<TFunction>** - Simplified transaction operations
-- **IContractDeploymentHandler<TDeployment>** - Simplified deployment operations
+- **IContractDeploymentTransactionHandler<TContractDeploymentMessage>** - Simplified deployment operations
 
 ### Standard Services
 
@@ -1448,8 +1659,11 @@ catch (RpcResponseException ex)
 - **ERC2535DiamondService** - Diamond proxy standard
 - **ERC6492Service** - Pre-deployed contract signature validation
 - **EIP3009Service** - Transfer with authorization (USDC/stablecoins)
-- **ENSService** - Ethereum Name Service resolution
+- **ENSService** - Ethereum Name Service resolution (defaults to the ENSIP-23 Universal Resolver)
+- **ENSUniversalResolverService** - ENSIP-23 Universal Resolver with EIP-3668 CCIP-Read and batched records
 - **ProofOfHumanityService** - Proof of Humanity registry
+- **MultiSendFunction** / **MultiSendFunctionInput\<T\>** - Batch calls through a deployed MultiSend contract
+- **Create2DeterministicDeploymentProxyService** - Deterministic (CREATE2) contract deployment
 
 ## Playground Examples
 

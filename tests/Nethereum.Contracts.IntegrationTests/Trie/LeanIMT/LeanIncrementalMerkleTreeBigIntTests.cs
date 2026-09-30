@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Contracts.IntegrationTests.Trie.LeanIMT
@@ -56,6 +57,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.LeanIMT
             Assert.Equal(0, tree.Size);
         }
 
+        [NethereumDocExample(DocSection.SmartContracts, "incremental-merkle-tree", "Insert leaves into a lean incremental Merkle tree and read root, size and depth", Order = 1)]
         [Fact]
         public void InsertLeaves_ShouldProduceExpectedRootAndDepth()
         {
@@ -81,6 +83,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.LeanIMT
             Assert.Equal(ExpectedRootAfterUpdate, tree.Root[0]);
         }
 
+        [NethereumDocExample(DocSection.SmartContracts, "incremental-merkle-tree", "Export a tree to JSON and import it back", Order = 3)]
         [Fact]
         public void ExportImport_RoundTripPreservesTree()
         {
@@ -98,6 +101,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.LeanIMT
             Assert.Equal(tree.Root[0], imported.Root[0]);
         }
 
+        [NethereumDocExample(DocSection.SmartContracts, "incremental-merkle-tree", "Generate and verify a MerkleProof for every leaf", Order = 2)]
         [Fact]
         public void GenerateAndVerifyProof_ForEachLeaf_ShouldBeValid()
         {

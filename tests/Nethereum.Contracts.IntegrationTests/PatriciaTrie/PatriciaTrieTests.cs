@@ -1,8 +1,12 @@
-﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Util.ByteArrayConvertors;
 using Nethereum.Util.HashProviders;
 using Xunit;
+using Nethereum.Merkle.Patricia.Nodes;
+using Nethereum.Merkle.Patricia.Nodes.Rlp;
+using Nethereum.Merkle.Patricia.Proofs;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.Contracts.IntegrationTests.Patricia
 {
@@ -25,10 +29,10 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
         {
             var trie = new PatriciaTrie();
             trie.Put(new byte[] { 1, 2, 3, 4 }, new StringByteArrayConvertor().ConvertToByteArray("monkey"));
-            var rlp = trie.Root.GetRLPEncodedData().ToHex();
+            var rlp = trie.Root.GetEncodedData().ToHex();
             trie.Put(new byte[] { 1, 2 }, new StringByteArrayConvertor().ConvertToByteArray("giraffe"));
             trie.Put(new byte[] { 1, 2 }, new StringByteArrayConvertor().ConvertToByteArray("elephant"));
-            rlp = trie.Root.GetRLPEncodedData().ToHex();
+            rlp = trie.Root.GetEncodedData().ToHex();
             var hash = trie.Root.GetHash();
             Assert.True(hash.ToHex().IsTheSameHex("f249e880b1b8af8e788411e0cf26313cdfedb4388250f64ef10bea45ef76f9d1"));
         }
@@ -42,15 +46,18 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             trie.Put(new byte[] { 1, 2, 3, 4, 5 }, new StringByteArrayConvertor().ConvertToByteArray("giraffe"));
             
             
-            var storage = trie.GenerateProof(new byte[] { 1, 2, 3 });
-            var node = new NodeDecoder().DecodeNode(trie.Root.GetHash(), false, storage);
+            var proofNodes = ProofGenerator.GenerateProof(trie, new byte[] { 1, 2, 3 });
+            var storage = new InMemoryContentNodeStore();
+            var hashProvider = new Sha3KeccackHashProvider();
+            foreach (var proofNode in proofNodes) storage.Put(hashProvider.ComputeHash(proofNode), proofNode);
+            var node = new NodeDecoder().Decode(new HashNode { Hash = trie.Root.GetHash() }, storage, false);
             Assert.True(node.GetHash().ToHex().IsTheSameHex(trie.Root.GetHash().ToHex()));
-            node = new NodeDecoder().DecodeNode(trie.Root.GetHash(), true, storage);
+            node = new NodeDecoder().Decode(new HashNode { Hash = trie.Root.GetHash() }, storage, true);
             Assert.True(node.GetHash().ToHex().IsTheSameHex(trie.Root.GetHash().ToHex()));
 
 
-            var trie2 = new PatriciaTrie(trie.Root.GetHash(), new Sha3KeccackHashProvider());
-            var value = trie2.Get(new byte[] { 1, 2, 3, }, storage);
+            var trie2 = new PatriciaTrie(trie.Root.GetHash(), storage, new Sha3KeccackHashProvider());
+            var value = trie2.Get(new byte[] { 1, 2, 3, });
             Assert.True(value.ToHex().IsTheSameHex(new StringByteArrayConvertor().ConvertToByteArray("monkey").ToHex()));
             Assert.True(trie2.Root.GetHash().ToHex().IsTheSameHex(trie.Root.GetHash().ToHex()));
         }
@@ -255,7 +262,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
         {
             var emptyNode = new EmptyNode();
             
-            var encodedData = emptyNode.GetRLPEncodedData();
+            var encodedData = emptyNode.GetEncodedData();
             var hash = emptyNode.GetHash();
             Assert.True("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".IsTheSameHex(hash.ToHex()));
             Assert.True("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".IsTheSameHex(new Sha3KeccackHashProvider().ComputeHash(encodedData).ToHex()));
@@ -281,7 +288,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             var hexNibbles = node.Nibbles.ToHex();
             var hexNibblesPrefixed = node.GetPrefixedNibbles().ToHex();
             var hexNibblesPrefixedAsBytes = node.GetPrefixedNibbles().ConvertFromNibbles().ToHex();
-            var rlp = node.GetRLPEncodedData().ToHex();
+            var rlp = node.GetEncodedData().ToHex();
             var hash = node.GetHash();
             Assert.True("cc8420050006866d6f6e6b6579".IsTheSameHex(rlp));
             Assert.True(hash.ToHex().IsTheSameHex("1685b970d7cebe8d3e0d77ca46f96ee82e4a5b088ded0976550ac223d4ca1491"));
@@ -295,11 +302,11 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             var node = new LeafNode();
             node.Nibbles = new byte[] { 5, 0, 6};
             node.Value = new StringByteArrayConvertor().ConvertToByteArray("monkey");
-            var nodeHex = node.GetRLPEncodedData().ToHex();
+            var nodeHex = node.GetEncodedData().ToHex();
             var branchNode = new BranchNode();
             branchNode.SetChild(0, node);
             branchNode.Value = new StringByteArrayConvertor().ConvertToByteArray("giraffe");
-            var encoded = branchNode.GetRLPEncodedData().ToHex();
+            var encoded = branchNode.GetEncodedData().ToHex();
             Assert.True("e2ca823506866d6f6e6b65798080808080808080808080808080808767697261666665".IsTheSameHex(encoded));
             var hash = branchNode.GetHash().ToHex();
             Assert.True(hash.IsTheSameHex("1c06f0682013bded0b69c0fa4e10d356d232b0906478f90e8bf3929ee11fb39c"));
@@ -313,7 +320,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             var node = new LeafNode();
             node.Nibbles = new byte[] { 5, 0, 6 };
             node.Value = new StringByteArrayConvertor().ConvertToByteArray("monkey");
-            var nodeHex = node.GetRLPEncodedData().ToHex();
+            var nodeHex = node.GetEncodedData().ToHex();
             var branchNode = new BranchNode();
             branchNode.SetChild(0, node);
             branchNode.Value = new StringByteArrayConvertor().ConvertToByteArray("giraffe");
@@ -322,7 +329,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             extended.InnerNode = branchNode;
             extended.Nibbles = new byte[] { 0, 1, 0, 2, 0, 3, 0, 4 };
 
-            var encoded = extended.GetRLPEncodedData().ToHex();
+            var encoded = extended.GetEncodedData().ToHex();
             
             Assert.True("e7850001020304a01c06f0682013bded0b69c0fa4e10d356d232b0906478f90e8bf3929ee11fb39c".IsTheSameHex(encoded));
             var hash = extended.GetHash().ToHex();

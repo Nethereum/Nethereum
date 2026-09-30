@@ -39,7 +39,7 @@ namespace Nethereum.Accounts.ViewOnly
 
         public INonceService NonceService { get; set; }
 
-        public IAccountSigningService AccountSigningService { get; private set; }
+        public IAccountSigningService AccountSigningService { get; protected set; }
 
         protected virtual void InitialiseDefaultTransactionManager()
         {

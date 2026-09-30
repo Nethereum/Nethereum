@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Documentation;
 using Xunit;
 using Nethereum.Merkle;
 using System.Numerics;
@@ -27,6 +28,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.MerkleDrop
             Assert.True(expected.IsTheSameHex(hexRoot));
         }
 
+        [NethereumDocExample(DocSection.SmartContracts, "merkle-tree", "Build an OpenZeppelin-compatible tree over an ABI struct for a whitelist", Order = 2)]
         [Fact]
         public void SingleParamMultipleItems()
         {
@@ -47,6 +49,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.MerkleDrop
             Assert.True(expected.IsTheSameHex(hexRoot));
         }
 
+        [NethereumDocExample(DocSection.SmartContracts, "merkle-tree", "OpenZeppelin tree over a multi-parameter ABI struct", Order = 3)]
         [Fact]
         public void MultiParam_MultipleItems()
         {

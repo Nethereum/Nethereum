@@ -10,8 +10,13 @@ using ADRaffy.ENSNormalize;
 using Multiformats.Codec;
 using Multiformats.Hash;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
+using Nethereum.Contracts.Constants;
 using Nethereum.Contracts.Services;
 using Nethereum.Contracts.Standards.ENS;
+using Nethereum.Contracts.Standards.ENS.Multicallable.ContractDefinition;
+using Nethereum.Contracts.Standards.ENS.PublicResolver.ContractDefinition;
+using Nethereum.Contracts.Standards.ENS.UniversalResolver;
 
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
@@ -258,6 +263,201 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(theAddress));
         }
 
+
+        [Fact]
+        public async void ShouldResolveAddressViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolver = new UniversalResolverService(web3.Eth, CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS);
+            var ensUtil = new EnsUtil();
+
+            var name = "nick.eth";
+            var dnsEncodedName = ensUtil.DnsEncode(name).HexToByteArray();
+            var addrCallData = new AddrFunction { Node = ensUtil.GetNameHash(name).HexToByteArray() }.GetCallData();
+
+            var result = await universalResolver.ResolveQueryAsync(dnsEncodedName, addrCallData).ConfigureAwait(false);
+            var resolvedAddress = new AddrOutputDTO().DecodeOutput(result.ReturnValue1.ToHex()).ReturnValue1;
+
+            var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
+            Assert.True(expectedAddress.IsTheSameAddress(resolvedAddress));
+        }
+
+        [Fact]
+        public async void ShouldResolveIntegrationTestNameViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolver = new UniversalResolverService(web3.Eth, CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS);
+            var ensUtil = new EnsUtil();
+
+            var name = "ur.integration-tests.eth";
+            var dnsEncodedName = ensUtil.DnsEncode(name).HexToByteArray();
+            var addrCallData = new AddrFunction { Node = ensUtil.GetNameHash(name).HexToByteArray() }.GetCallData();
+
+            var result = await universalResolver.ResolveQueryAsync(dnsEncodedName, addrCallData).ConfigureAwait(false);
+            var resolvedAddress = new AddrOutputDTO().DecodeOutput(result.ReturnValue1.ToHex()).ReturnValue1;
+
+            var expectedAddress = "0x2222222222222222222222222222222222222222";
+            Assert.True(expectedAddress.IsTheSameAddress(resolvedAddress));
+        }
+
+        [Fact]
+        public async void ShouldResolveMulticallViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolver = new UniversalResolverService(web3.Eth, CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS);
+            var ensUtil = new EnsUtil();
+
+            var name = "nick.eth";
+            var node = ensUtil.GetNameHash(name).HexToByteArray();
+            var dnsEncodedName = ensUtil.DnsEncode(name).HexToByteArray();
+
+            var addrCall = new MulticallInputOutput<AddrFunction, AddrOutputDTO>(
+                new AddrFunction { Node = node }, CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS);
+            var textCall = new MulticallInputOutput<TextFunction, TextOutputDTO>(
+                new TextFunction { Node = node, Key = "url" }, CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS);
+
+            var multicallData = new MulticallFunction
+            {
+                Data = new List<byte[]> { addrCall.GetCallData(), textCall.GetCallData() }
+            }.GetCallData();
+
+            var result = await universalResolver.ResolveQueryAsync(dnsEncodedName, multicallData).ConfigureAwait(false);
+            var innerResults = new MulticallOutputDTO().DecodeOutput(result.ReturnValue1.ToHex()).ReturnValue1;
+
+            Assert.Equal(2, innerResults.Count);
+            addrCall.Decode(innerResults[0]);
+            textCall.Decode(innerResults[1]);
+
+            var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
+            Assert.True(expectedAddress.IsTheSameAddress(addrCall.Output.ReturnValue1));
+
+            var singleText = await universalResolver
+                .ResolveQueryAsync(dnsEncodedName, new TextFunction { Node = node, Key = "url" }.GetCallData())
+                .ConfigureAwait(false);
+            var singleTextValue = new TextOutputDTO().DecodeOutput(singleText.ReturnValue1.ToHex()).ReturnValue1;
+            Assert.Equal(singleTextValue, textCall.Output.ReturnValue1);
+        }
+
+        [Fact]
+        public async void ShouldResolveAddressViaUniversalResolverServiceSeamless()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var address = await web3.Eth.GetEnsUniversalResolverService().ResolveAddressAsync("nick.eth").ConfigureAwait(false);
+            var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
+            Assert.True(expectedAddress.IsTheSameAddress(address));
+        }
+
+        [Fact]
+        public async void ShouldResolveRecordViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolverService = web3.Eth.GetEnsUniversalResolverService();
+
+            var record = await universalResolverService
+                .ResolveRecordAsync("nick.eth", TextDataKey.url, TextDataKey.avatar).ConfigureAwait(false);
+
+            Assert.Equal("nick.eth", record.Name);
+            var expectedAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
+            Assert.True(expectedAddress.IsTheSameAddress(record.Address));
+
+            var avatar = await universalResolverService.ResolveTextAsync("nick.eth", TextDataKey.avatar).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(avatar))
+                Assert.Equal(avatar, record.Texts["avatar"]);
+        }
+
+        [Fact]
+        public async void ShouldResolveMultipleRecordsViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolverService = web3.Eth.GetEnsUniversalResolverService();
+
+            var records = await universalResolverService
+                .ResolveRecordsAsync(new[] { "nick.eth", "nethereum.eth", "1.offchainexample.eth" }, TextDataKey.url).ConfigureAwait(false);
+
+            Assert.Equal(3, records.Count);
+            Assert.Equal("nick.eth", records[0].Name);
+            Assert.Equal("nethereum.eth", records[1].Name);
+            Assert.Equal("1.offchainexample.eth", records[2].Name);
+            var expectedNickAddress = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
+            Assert.True(expectedNickAddress.IsTheSameAddress(records[0].Address));
+            var expectedOffchainAddress = "0x41563129cDbbD0c5D3e1c86cf9563926b243834d";
+            Assert.True(expectedOffchainAddress.IsTheSameAddress(records[2].Address));
+        }
+
+        [Fact]
+        public async void ShouldResolveTextsViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolverService = web3.Eth.GetEnsUniversalResolverService();
+
+            var texts = await universalResolverService.ResolveTextsAsync("nick.eth", "url", "avatar").ConfigureAwait(false);
+
+            Assert.True(texts.ContainsKey("url"));
+            Assert.True(texts.ContainsKey("avatar"));
+
+            var url = await universalResolverService.ResolveTextAsync("nick.eth", "url").ConfigureAwait(false);
+            var avatar = await universalResolverService.ResolveTextAsync("nick.eth", "avatar").ConfigureAwait(false);
+            Assert.Equal(url, texts["url"]);
+            Assert.Equal(avatar, texts["avatar"]);
+        }
+
+        [Fact]
+        public async void ShouldResolveAddressOfflineViaUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var universalResolverService = web3.Eth.GetEnsUniversalResolverService();
+            var theAddress = await universalResolverService.ResolveAddressAsync("1.offchainexample.eth").ConfigureAwait(false);
+            var expected = "0x41563129cDbbD0c5D3e1c86cf9563926b243834d";
+            Assert.True(expected.IsTheSameAddress(theAddress));
+        }
+
+        [Fact]
+        public async void ShouldDefaultEnsServiceToUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var ensService = web3.Eth.GetEnsService();
+
+            Assert.NotNull(ensService.UniversalResolverService);
+
+            var legacyEnsService = new ENSService(web3.Eth, universalResolverAddress: null);
+            Assert.Null(legacyEnsService.UniversalResolverService);
+
+            var address = await ensService.ResolveAddressAsync("nick.eth").ConfigureAwait(false);
+            var expected = "0xb8c2C29ee19D8307cb7255e1Cd9CbDE883A267d5";
+            Assert.True(expected.IsTheSameAddress(address));
+        }
+
+        [Fact]
+        public async void ShouldResolveOffchainRecordViaLocalBatchGatewayUsingUniversalResolver()
+        {
+            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Mainnet);
+            var recordingCcip = new RecordingBatchGatewayCcipService();
+            var universalResolverService = new ENSUniversalResolverService(
+                web3.Eth, CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS, recordingCcip);
+
+            var record = await universalResolverService
+                .ResolveRecordAsync("1.offchainexample.eth", TextDataKey.url).ConfigureAwait(false);
+
+            var expectedOffchainAddress = "0x41563129cDbbD0c5D3e1c86cf9563926b243834d";
+            Assert.True(expectedOffchainAddress.IsTheSameAddress(record.Address));
+            Assert.True(recordingCcip.LocalBatchGatewayUsed,
+                "Expected the ENSIP-21 local batch gateway (x-batch-gateway) to be used for the offchain record resolution");
+        }
+
+        public class RecordingBatchGatewayCcipService : EnsCCIPService
+        {
+            public bool LocalBatchGatewayUsed { get; private set; }
+
+            protected override Task<string> FetchGatewayDataAsync(
+                Nethereum.Contracts.Standards.ENS.OffchainResolver.ContractDefinition.OffchainLookupError offchainLookup)
+            {
+                if (offchainLookup.Urls != null && offchainLookup.Urls.Contains(LocalBatchGatewayUrl))
+                {
+                    LocalBatchGatewayUsed = true;
+                }
+                return base.FetchGatewayDataAsync(offchainLookup);
+            }
+        }
 
         [Fact]
         public async void ShouldReverseResolveAddressMatoken()

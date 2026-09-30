@@ -2,7 +2,7 @@
 
 **Nethereum.RPC.Reactive** provides Reactive Extensions (Rx.NET) support for Ethereum RPC operations. It enables reactive programming patterns for monitoring blockchain events, streaming blocks and transactions, and building real-time Ethereum applications using observables.
 
-> **Note**: This package builds on **Nethereum.JsonRpc.WebSocketStreamingClient**, which provides the core IObservable infrastructure for WebSocket subscriptions. For detailed documentation on Observable handlers and subscription internals, see the Nethereum.JsonRpc.WebSocketStreamingClient package.
+> **Note**: This package's own project reference is only `Nethereum.RPC` (its `IObservable` subscription/polling wrapper types are self-contained). To actually connect a WebSocket subscription you also need a streaming transport: the `StreamingWebSocketClient` class (namespace `Nethereum.JsonRpc.WebSocketStreamingClient`) ships in the **Nethereum.JsonRpc.WebSocketClient** package — add that package alongside this one.
 
 ## Features
 
@@ -29,6 +29,10 @@ dotnet add package Nethereum.RPC.Reactive
 
 - `Nethereum.RPC` - Core RPC functionality
 - `System.Reactive` (4.1.3+) - Reactive Extensions
+
+For WebSocket subscriptions you additionally need a streaming transport package (not referenced by this package itself):
+
+- `Nethereum.JsonRpc.WebSocketClient` - provides `StreamingWebSocketClient` (namespace `Nethereum.JsonRpc.WebSocketStreamingClient`), the `IStreamingClient` used by all `*ObservableSubscription` types below
 
 ## Quick Start
 
@@ -207,6 +211,7 @@ web3.Eth.GetBlocksWithTransactionHashes(
 ```csharp
 using Nethereum.Web3;
 using Nethereum.RPC.Reactive.Polling;
+using System.Reactive;
 using System.Reactive.Linq;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
@@ -225,6 +230,80 @@ web3.Eth.GetBlocksWithTransactionHashes(poller: customPoller)
 
 **From:** `src/Nethereum.RPC.Reactive/Polling/PollingExtensions.cs:15`
 
+### Transaction-Stream Extensions
+
+Beyond block streaming, `IEthApiService` also gets extension methods for polling-based transaction streams:
+
+```csharp
+using Nethereum.Web3;
+using Nethereum.RPC.Reactive.Polling;
+using System.Reactive.Linq;
+
+var web3 = new Web3("https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+
+// Stream every transaction, from each polled block, flattened into one sequence
+web3.Eth.GetTransactions()
+    .Subscribe(tx => Console.WriteLine($"Tx: {tx.TransactionHash}"));
+
+// Same, but starting from a specific block
+web3.Eth.GetTransactions(start: new BlockParameter(18000000))
+    .Subscribe(tx => Console.WriteLine($"Tx: {tx.TransactionHash}"));
+
+// Stream pending (mempool) transactions by polling eth_newPendingTransactionFilter
+web3.Eth.GetPendingTransactions()
+    .Subscribe(tx => Console.WriteLine($"Pending tx: {tx.TransactionHash}"));
+```
+
+*Source: `src/Nethereum.RPC.Reactive/Polling/TransactionStreamExtensions.cs:10-35`, `PendingTransactionStreamExtensions.cs:10-16`*
+
+### Observable Request/Response Handlers
+
+`RpcStreamingResponseObservableHandler<TResponse>` (and its `...NoParamsObservableHandler<TResponse, TRpcRequest>` / `...ParamsObservableHandler<TResponse, TRpcRequest>` siblings in `Nethereum.RPC.Reactive.RpcStreaming`) wrap a single RPC call over an `IStreamingClient`, exposing the eventual result as `IObservable<TResponse>` rather than a `Task<TResponse>`. `EthBlockNumberObservableHandler` and `EthGetBalanceObservableHandler` (namespace `Nethereum.RPC.Reactive.Eth`) are concrete examples built on this base:
+
+```csharp
+using Nethereum.JsonRpc.WebSocketStreamingClient;
+using Nethereum.RPC.Reactive.Eth;
+using Nethereum.RPC.Eth.DTOs;
+
+var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
+await client.StartAsync();
+
+var blockNumberHandler = new EthBlockNumberObservableHandler(client);
+blockNumberHandler.GetResponseAsObservable()
+    .Subscribe(blockNumber => Console.WriteLine($"Block number: {blockNumber.Value}"));
+await blockNumberHandler.SendRequestAsync();
+
+var balanceHandler = new EthGetBalanceObservableHandler(client);
+balanceHandler.GetResponseAsObservable()
+    .Subscribe(balance => Console.WriteLine($"Balance: {balance.Value}"));
+await balanceHandler.SendRequestAsync("0x742d35Cc6634C0532925a3b844Bc454e4438f44e", BlockParameter.CreateLatest());
+```
+
+*Source: `src/Nethereum.RPC.Reactive/RpcStreaming/RpcStreamingResponseObservableHandler.cs:10-34`, `Eth/EthBlockNumberObservableHandler.cs:8-14`, `Eth/EthGetBalanceObservableHandler.cs:11-24`*
+
+### SubscriptionEventHandlerExtensions
+
+The `EthNewBlockHeadersObservableSubscription` / `EthLogsObservableSubscription` / `EthNewPendingTransactionObservableSubscription` classes used throughout this README are `Nethereum.RPC.Reactive`-specific, `Subject`-based wrappers whose own `GetSubscriptionDataResponsesAsObservable()` / `GetSubscribeResponseAsObservable()` methods need no extension method.
+
+If instead you're holding one of the plain, event-based subscription handlers from the core **Nethereum.RPC** package (`Nethereum.RPC.Eth.Subscriptions.EthNewBlockHeadersSubscription`, `EthLogsSubscription`, `EthNewPendingTransactionSubscription`, `EthSyncingSubscription` — all `RpcStreamingSubscriptionEventResponseHandler<TSubscriptionDataResponse>`), `SubscriptionEventHandlerExtensions` (namespace `Nethereum.RPC.Reactive.Extensions`) adapts their raw C# events (`SubscriptionDataResponse`, `SubscribeResponse`, `UnsubscribeResponse`) into observables, so you don't need the Reactive-package subscription subclass at all:
+
+```csharp
+using Nethereum.JsonRpc.WebSocketStreamingClient;
+using Nethereum.RPC.Eth.Subscriptions;
+using Nethereum.RPC.Reactive.Extensions;
+
+var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
+var rawSubscription = new EthNewBlockHeadersSubscription(client);
+
+rawSubscription.GetDataObservable().Subscribe(block => Console.WriteLine($"Block: {block.Number.Value}"));
+rawSubscription.GetSubscribeObservable().Subscribe(id => Console.WriteLine($"Subscribed: {id}"));
+
+await client.StartAsync();
+await rawSubscription.SubscribeAsync();
+```
+
+*Source: `src/Nethereum.RPC.Reactive/Extensions/SubscriptionEventHandlerExtensions.cs:10-89`, `src/Nethereum.RPC/Eth/Subscriptions/EthNewBlockHeadersSubscription.cs:11`*
+
 ## Examples
 
 ### Example 1: Real-time Block Monitor with Error Handling
@@ -238,9 +317,11 @@ public class BlockMonitor
 {
     private StreamingWebSocketClient client;
     private EthNewBlockHeadersObservableSubscription subscription;
+    private string webSocketUrl;
 
     public async Task StartAsync(string wsUrl)
     {
+        webSocketUrl = wsUrl;
         client = new StreamingWebSocketClient(wsUrl);
         client.Error += Client_Error;
 
@@ -254,7 +335,8 @@ public class BlockMonitor
                     Console.WriteLine($"Block {block.Number.Value}");
                     Console.WriteLine($"   Hash: {block.BlockHash}");
                     Console.WriteLine($"   Time: {DateTimeOffset.FromUnixTimeSeconds((long)block.Timestamp.Value)}");
-                    Console.WriteLine($"   Transactions: {block.TransactionHashes?.Length ?? 0}");
+                    // newHeads delivers headers only — Block carries no transaction hashes
+                    Console.WriteLine($"   Gas used: {block.GasUsed.Value}");
                 },
                 onError: error =>
                 {
@@ -306,9 +388,11 @@ await monitor.StartAsync("ws://127.0.0.1:8546");
 
 ### Example 2: Custom Account Balance Monitoring (Parity PubSub)
 
+> **Note:** `ParityPubSubObservableSubscription<TResponse>` is **not** part of Nethereum.RPC.Reactive — it lives in the separate **Nethereum.Parity.Reactive** package (namespace `Nethereum.Parity.Reactive`). Install that package too if you need Parity's generic `parity_subscribe` PubSub mechanism.
+
 ```csharp
 using Nethereum.JsonRpc.WebSocketStreamingClient;
-using Nethereum.RPC.Reactive.RpcStreaming;
+using Nethereum.Parity.Reactive;
 using Nethereum.RPC.Eth;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexTypes;
@@ -414,8 +498,11 @@ using Nethereum.RPC.Reactive.Eth.Subscriptions;
 using Nethereum.Web3;
 using System.Reactive.Linq;
 
+// StreamingWebSocketClient implements IStreamingClient, not IClient, so it cannot be
+// passed to `new Web3(...)` directly. Use it for the subscription, and a separate
+// IClient (e.g. an HTTP RpcClient, or a plain WebSocketClient) for regular Web3 calls.
 var client = new StreamingWebSocketClient("ws://127.0.0.1:8546");
-var web3 = new Web3(client);
+var web3 = new Web3("http://127.0.0.1:8545");
 
 var subscription = new EthNewPendingTransactionObservableSubscription(client);
 
@@ -784,7 +871,7 @@ Blocks are skipped in the stream
 
 ## Related Packages
 
-- **Nethereum.JsonRpc.WebSocketStreamingClient** - Core IObservable infrastructure for WebSocket subscriptions (foundation for this package)
+- **Nethereum.JsonRpc.WebSocketStreamingClient** - Separate package with an equivalent set of observable subscription types in namespace `Nethereum.JsonRpc.WebSocketStreamingClient` (not a dependency of this package)
 - **Nethereum.RPC** - Core RPC functionality
 - **Nethereum.JsonRpc.WebSocketClient** - WebSocket client for subscriptions
 - **Nethereum.Web3** - High-level Web3 API

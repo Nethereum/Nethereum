@@ -9,14 +9,16 @@ namespace Nethereum.Contracts
     {
         public static void HandleContractRevertException(RpcResponseException rpcException)
         {
-            var encodedErrorData = rpcException.RpcError.GetDataAsString();
+            HandleContractRevertException(rpcException.RpcError.GetDataAsString());
+        }
+
+        public static void HandleContractRevertException(string encodedErrorData)
+        {
             if (!encodedErrorData.IsHex()) return;
 
             new FunctionCallDecoder().ThrowIfErrorOnOutput(encodedErrorData);
 
             throw new SmartContractCustomErrorRevertException(encodedErrorData);
         }
-
-       
     }
 }

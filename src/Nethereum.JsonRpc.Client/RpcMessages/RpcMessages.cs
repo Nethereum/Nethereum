@@ -496,11 +496,16 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
         public RpcError() { }
 
         /// <summary>
-        /// Rpc error code
+        /// Rpc error code. Per JSON-RPC 2.0 this is an integer, but some nodes/bundlers
+        /// return a string (e.g. "INVALID_ARGUMENT"). The tolerant converters accept either a
+        /// number or a string: a numeric string is parsed to its value, a non-numeric string
+        /// leaves the code at 0 so the error message is still surfaced instead of throwing.
         /// </summary>
         [JsonProperty("code")]
+        [Newtonsoft.Json.JsonConverter(typeof(TolerantInt32JsonConverter))]
 #if NET6_0_OR_GREATER
         [JsonPropertyName("code")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(TolerantInt32SystemTextJsonConverter))]
 #endif
         public int Code { get; set; }
 
@@ -522,6 +527,55 @@ namespace Nethereum.JsonRpc.Client.RpcMessages
 #endif
         public object Data { get; set; }
     }
+
+    public class TolerantInt32JsonConverter : Newtonsoft.Json.JsonConverter
+    {
+        public override bool CanConvert(Type objectType) => objectType == typeof(int) || objectType == typeof(int?);
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonToken.Integer:
+                case JsonToken.Float:
+                    return Convert.ToInt32(reader.Value, System.Globalization.CultureInfo.InvariantCulture);
+                case JsonToken.String:
+                    return int.TryParse((string)reader.Value, System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0;
+                default:
+                    return 0;
+            }
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            writer.WriteValue((int)value);
+        }
+    }
+
+#if NET6_0_OR_GREATER
+    public class TolerantInt32SystemTextJsonConverter : System.Text.Json.Serialization.JsonConverter<int>
+    {
+        public override int Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            switch (reader.TokenType)
+            {
+                case System.Text.Json.JsonTokenType.Number:
+                    return reader.GetInt32();
+                case System.Text.Json.JsonTokenType.String:
+                    return int.TryParse(reader.GetString(), System.Globalization.NumberStyles.Integer,
+                        System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0;
+                default:
+                    return 0;
+            }
+        }
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, int value, System.Text.Json.JsonSerializerOptions options)
+        {
+            writer.WriteNumberValue(value);
+        }
+    }
+#endif
 
 }
 

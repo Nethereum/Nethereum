@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
+using Nethereum.RPC.DebugNode.Tracers;
 using Nethereum.Geth.RPC.Debug.Tracers;
 using Nethereum.Hex.HexTypes;
 

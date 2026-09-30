@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.RPC.Sample Console Application</Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>Nethereum.RPC.Sample</AssemblyName>
     <PackageId>Nethereum.RPC.Sample</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>

@@ -9,8 +9,10 @@ using Nethereum.Contracts.Standards.EIP3009;
 using Nethereum.Contracts.Standards.ERC1155;
 using Nethereum.Contracts.Standards.ERC1271;
 using Nethereum.Contracts.Standards.ERC20;
+using Nethereum.Contracts.Standards.EthTransfers;
 using Nethereum.Contracts.Standards.ERC721;
 using Nethereum.Contracts.Standards.ERC2535Diamond;
+using Nethereum.Contracts.Standards.Permit2;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.Transactions;
@@ -30,6 +32,7 @@ namespace Nethereum.Contracts.Services
             GetContractTransactionErrorReason = new EthGetContractTransactionErrorReason(Transactions);
             ERC721 = new ERC721Service(this);
             ERC20 = new ERC20Service(this);
+            EthTransfers = new EthTransferService(this);
             ERC1155 = new ERC1155Service(this);
             ERC1271 = new ERC1271Service(this);
             ERC2535Diamond = new ERC2535DiamondService(this);
@@ -124,6 +127,15 @@ namespace Nethereum.Contracts.Services
         /// https://ethereum.org/en/developers/docs/standards/tokens/erc-20/
         /// </summary>
         public ERC20Service ERC20 { get; private set; }
+
+        /// <summary>
+        /// EIP-7708 (Amsterdam) ETH transfer logs. Moving ETH emits the same
+        /// Transfer(address,address,uint256) event an ERC-20 token does - it just comes
+        /// from the protocol's system address rather than a token contract - so ETH
+        /// movement is queryable through the ordinary event machinery.
+        /// https://eips.ethereum.org/EIPS/eip-7708
+        /// </summary>
+        public EthTransferService EthTransfers { get; private set; }
 
         /// <summary>
         /// ERC20 Standard Token Service to interact with smart contracts compliant with the standard interface
@@ -242,6 +254,16 @@ namespace Nethereum.Contracts.Services
         public ENSService GetEnsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS, IEnsCCIPService ensCCIPService = null)
         {
             return new ENSService(this, ensRegistryAddress, ensCCIPService);
+        }
+
+        public ENSUniversalResolverService GetEnsUniversalResolverService(string universalResolverAddress = CommonAddresses.UNIVERSAL_RESOLVER_ADDRESS)
+        {
+            return new ENSUniversalResolverService(this, universalResolverAddress);
+        }
+
+        public Permit2Service GetPermit2Service(string permit2Address = CommonAddresses.PERMIT2_ADDRESS)
+        {
+            return new Permit2Service(this, permit2Address);
         }
 
         public EthTLSService GetEnsEthTlsService(string ensRegistryAddress = CommonAddresses.ENS_REGISTRY_ADDRESS)

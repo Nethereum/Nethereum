@@ -10,9 +10,10 @@ namespace Nethereum.RPC.Eth.AccountAbstraction
 
     /// <summary>
     /// Represents the eth_getUserOperationByHash RPC method.
-    /// Returns a UserOperation object based on the provided userOpHash.
+    /// Returns the UserOperation together with its inclusion context (entryPoint, blockNumber,
+    /// blockHash, transactionHash) per ERC-7769, or null if the hash is unknown.
     /// </summary>
-    public class EthGetUserOperationByHash : RpcRequestResponseHandler<UserOperation>, IEthGetUserOperationByHash
+    public class EthGetUserOperationByHash : RpcRequestResponseHandler<UserOperationByHashResult>, IEthGetUserOperationByHash
     {
         public EthGetUserOperationByHash(IClient client)
             : base(client, ApiMethods.eth_getUserOperationByHash.ToString())
@@ -20,14 +21,14 @@ namespace Nethereum.RPC.Eth.AccountAbstraction
         }
 
         /// <summary>
-        /// Sends a request to retrieve a UserOperation by its hash.
+        /// Sends a request to retrieve a UserOperation and its inclusion context by hash.
         /// </summary>
         /// <param name="userOpHash">The user operation hash as a hex string.</param>
         /// <param name="id">Optional request id.</param>
         /// <returns>
-        /// A task returning the UserOperation (in v0.7 format) or null if not found.
+        /// A task returning the wrapped UserOperation or null if not found.
         /// </returns>
-        public Task<UserOperation> SendRequestAsync(string userOpHash, object id = null)
+        public Task<UserOperationByHashResult> SendRequestAsync(string userOpHash, object id = null)
         {
             if (string.IsNullOrEmpty(userOpHash))
                 throw new ArgumentNullException(nameof(userOpHash));

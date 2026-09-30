@@ -8,6 +8,7 @@ namespace Nethereum.RPC.Eth.Services
         public EthApiBlockService(IClient client) : base(client)
         {
             GetBlockNumber = new EthBlockNumber(client);
+            GetBlockAccessList = new EthGetBlockAccessList(client);
             GetBlockTransactionCountByHash = new EthGetBlockTransactionCountByHash(client);
             GetBlockTransactionCountByNumber = new EthGetBlockTransactionCountByNumber(client);
             GetBlockWithTransactionsByHash = new EthGetBlockWithTransactionsByHash(client);
@@ -18,6 +19,7 @@ namespace Nethereum.RPC.Eth.Services
         }
 
         public IEthBlockNumber GetBlockNumber { get; private set; }
+        public IEthGetBlockAccessList GetBlockAccessList { get; private set; }
         public IEthGetBlockTransactionCountByHash GetBlockTransactionCountByHash { get; private set; }
         public IEthGetBlockTransactionCountByNumber GetBlockTransactionCountByNumber { get; private set; }
         public IEthGetBlockWithTransactionsByHash GetBlockWithTransactionsByHash { get; private set; }

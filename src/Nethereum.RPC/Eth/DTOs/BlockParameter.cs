@@ -68,6 +68,16 @@ namespace Nethereum.RPC.Eth.DTOs
             return new BlockParameter(BlockParameterType.pending);
         }
 
+        public static BlockParameter CreateFinalized()
+        {
+            return new BlockParameter(BlockParameterType.finalized);
+        }
+
+        public static BlockParameter CreateSafe()
+        {
+            return new BlockParameter(BlockParameterType.safe);
+        }
+
 
         public void SetValue(BlockParameterType parameterType)
         {

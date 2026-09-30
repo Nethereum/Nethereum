@@ -1,4 +1,4 @@
-﻿namespace Nethereum.RPC
+namespace Nethereum.RPC
 {
     public enum UnsupportedApiMethods {
         eth_signTransaction,
@@ -15,6 +15,19 @@
         engine_newPayloadV1,
         engine_newPayloadV2,
         engine_newPayloadV3,
+        engine_newPayloadV4,
+        engine_newPayloadV5,
+        engine_forkchoiceUpdatedV4,
+        engine_getPayloadV4,
+        engine_getPayloadV5,
+        engine_getPayloadV6,
+        engine_getPayloadBodiesByHashV2,
+        engine_getPayloadBodiesByRangeV2,
+        engine_getBlobsV1,
+        engine_getBlobsV2,
+        engine_getBlobsV3,
+        engine_getBlobsV4,
+        testing_buildBlockV1,
     }
     public enum ApiMethods
     {
@@ -29,6 +42,7 @@
         eth_hashrate,
         eth_gasPrice,
         eth_feeHistory,
+        eth_blobBaseFee,
         eth_accounts,
         eth_blockNumber,
         eth_getBalance,
@@ -100,16 +114,27 @@
         personal_lockAccount,
         personal_sendTransaction,
         eth_getProof,
+        eth_getBlockAccessList,
+        eth_config,
+        eth_capabilities,
+        eth_getStorageValues,
+        eth_simulateV1,
         eth_createAccessList,
         eth_maxPriorityFeePerGas,
+        txpool_content,
+        txpool_contentFrom,
+        txpool_status,
         debug_getRawTransaction,
         debug_getBadBlocks,
         debug_getRawBlock,
         debug_getRawHeader,
         debug_getRawReceipts,
+        debug_getRawBlockAccessList,
         debug_storageRangeAt,
         debug_traceTransaction,
         debug_traceCall,
+        debug_traceBlockByNumber,
+        debug_traceBlockByHash,
 
         //wallet
         eth_requestAccounts,

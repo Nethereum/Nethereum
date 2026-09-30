@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Nethereum.Merkle.Sparse;
 using Nethereum.Util.HashProviders;
 using Nethereum.Util.ByteArrayConvertors;
+using Nethereum.Documentation;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,6 +22,7 @@ namespace Nethereum.Contracts.IntegrationTests.Trie.Sparse
             _hashProvider = new Sha3KeccackHashProvider();
         }
 
+        [NethereumDocExample(DocSection.SmartContracts, "sparse-merkle-tree", "Set a leaf by key in a sparse Merkle tree and read the cached root", Order = 1)]
         [Fact]
         public async Task NewImplementation_SimpleTest_ShouldWork()
         {

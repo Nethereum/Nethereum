@@ -97,6 +97,21 @@ var stopped = await web3.Admin.StopRPC.SendRequestAsync();
 
 **From:** `src/Nethereum.Geth/IAdminApiService.cs:17-19`
 
+### Start/Stop HTTP Server
+
+The properties are `StartHttp`/`StopHttp` (mixed-case), even though the underlying RPC methods are
+`admin_startHTTP`/`admin_stopHTTP`:
+
+```csharp
+// Start HTTP server
+var httpStarted = await web3.Admin.StartHttp.SendRequestAsync("localhost", 8545, "*", "web3,eth,net");
+
+// Stop HTTP server
+var httpStopped = await web3.Admin.StopHttp.SendRequestAsync();
+```
+
+**From:** `src/Nethereum.Geth/IAdminApiService.cs:11-12`
+
 ### Export/Import Chain
 
 ```csharp
@@ -116,7 +131,7 @@ Transaction and block tracing, profiling, memory statistics.
 ### Trace Transaction
 
 ```csharp
-using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
 using Newtonsoft.Json.Linq;
 
 var txHash = "0x...";
@@ -133,6 +148,9 @@ Geth supports built-in tracers for structured transaction analysis.
 **Call Tracer:**
 
 ```csharp
+// CallTracerInfo/OpcodeTracerInfo/PrestateTracerInfo live in Nethereum.RPC.DebugNode.Tracers;
+// FourByteTracerInfo/CustomTracerInfo/Unigram/Bigram/Trigram/OpcountTracerInfo live in Nethereum.Geth.RPC.Debug.Tracers
+using Nethereum.RPC.DebugNode.Tracers;
 using Nethereum.Geth.RPC.Debug.Tracers;
 
 var trace = await web3.GethDebug.TraceTransaction.SendRequestAsync<CallTracerResponse>(
@@ -141,7 +159,7 @@ var trace = await web3.GethDebug.TraceTransaction.SendRequestAsync<CallTracerRes
     {
         Timeout = "1m",
         Reexec = 128,
-        TracerInfo = new CallTracerInfo(onlyTopCalls: false, withLogs: true)
+        TracerInfo = new CallTracerInfo(onlyTopCall: false, withLog: true)
     });
 ```
 
@@ -220,11 +238,12 @@ var diffTrace = await web3.GethDebug.TraceTransaction.SendRequestAsync<PrestateT
 ### Trace Block
 
 ```csharp
-var blockNumber = new Nethereum.Hex.HexTypes.HexBigInteger(12345);
-var blockTrace = await web3.GethDebug.TraceBlockByNumber.SendRequestAsync(blockNumber, tracingOptions);
+// TraceBlockByNumber takes a ulong block number and a TracingCallOptions (not the base TracingOptions)
+ulong blockNumber = 12345;
+var blockTrace = await web3.GethDebug.TraceBlockByNumber.SendRequestAsync(blockNumber, new TracingCallOptions());
 ```
 
-**From:** `src/Nethereum.Geth/IDebugApiService.cs:25`
+**From:** `src/Nethereum.Geth/IDebugApiService.cs:26`
 
 ### Custom JavaScript Tracer
 
@@ -254,16 +273,17 @@ var trace = await web3.GethDebug.TraceTransaction.SendRequestAsync<JToken>(
 var memStats = await web3.GethDebug.MemStats.SendRequestAsync();
 ```
 
-**From:** `src/Nethereum.Geth/IDebugApiService.cs:14`
+**From:** `src/Nethereum.Geth/IDebugApiService.cs:15`
 
 ### Get Block RLP
 
 ```csharp
-var blockNumber = new Nethereum.Hex.HexTypes.HexBigInteger(100);
+// GetBlockRlp takes a ulong block number, not a HexBigInteger
+ulong blockNumber = 100;
 var rlp = await web3.GethDebug.GetBlockRlp.SendRequestAsync(blockNumber);
 ```
 
-**From:** `src/Nethereum.Geth/IDebugApiService.cs:12`
+**From:** `src/Nethereum.Geth/IDebugApiService.cs:13`
 
 ### CPU Profiling
 
@@ -275,7 +295,7 @@ await web3.GethDebug.StartCPUProfile.SendRequestAsync("/path/to/profile.prof");
 await web3.GethDebug.StopCPUProfile.SendRequestAsync();
 ```
 
-**From:** `src/Nethereum.Geth/IDebugApiService.cs:19-21`
+**From:** `src/Nethereum.Geth/IDebugApiService.cs:20,22`
 
 ## Miner API
 
@@ -365,8 +385,9 @@ var stateChanges = new Dictionary<string, StateChange>
     }
 };
 
+// GethEth.Call.SendRequestAsync takes a TransactionInput (CallInput's subclass), not a bare CallInput
 var result = await web3.GethEth.Call.SendRequestAsync(
-    new CallInput
+    new TransactionInput
     {
         To = "0xContractAddress",
         Data = "0x893d20e8" // Function selector
@@ -386,7 +407,7 @@ var stackErrorChecker = web3.GethDebug.StackErrorChecker;
 // Use with trace results to detect stack errors
 ```
 
-**From:** `src/Nethereum.Geth/IDebugApiService.cs:17`
+**From:** `src/Nethereum.Geth/IDebugApiService.cs:18`
 
 ## Admin API Service
 
@@ -403,8 +424,8 @@ var stackErrorChecker = web3.GethDebug.StackErrorChecker;
 | Datadir | admin_datadir | Get data directory path |
 | StartRPC | admin_startRPC | Start RPC server |
 | StopRPC | admin_stopRPC | Stop RPC server |
-| StartHTTP | admin_startHTTP | Start HTTP server |
-| StopHTTP | admin_stopHTTP | Stop HTTP server |
+| StartHttp | admin_startHTTP | Start HTTP server |
+| StopHttp | admin_stopHTTP | Stop HTTP server |
 | StartWS | admin_startWS | Start WebSocket server |
 | StopWS | admin_stopWS | Stop WebSocket server |
 | ExportChain | admin_exportChain | Export blockchain to file |
@@ -412,7 +433,7 @@ var stackErrorChecker = web3.GethDebug.StackErrorChecker;
 
 ## Debug API Service
 
-**Interface:** `IDebugApiService` (`src/Nethereum.Geth/IDebugApiService.cs:5`)
+**Interface:** `IDebugApiService` (`src/Nethereum.Geth/IDebugApiService.cs:6`)
 
 | Method | RPC Method | Description |
 |--------|-----------|-------------|

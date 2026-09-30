@@ -9,6 +9,7 @@ using Nethereum.Contracts.Services;
 using Nethereum.RPC;
 using Nethereum.RPC.Accounts;
 using Nethereum.RPC.DebugNode;
+using Nethereum.RPC.TxPool;
 using Nethereum.RPC.TransactionManagers;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.Model;
@@ -84,6 +85,7 @@ namespace Nethereum.Web3
         public IPersonalApiService Personal { get; private set; }
         public IBlockchainProcessingService Processing { get; private set; }
         public IDebugApiService Debug { get; private set; }
+        public ITxPoolApiService TxPool { get; private set; }
 
         public FeeSuggestionService FeeSuggestion { get; private set; }
 #if !LITE
@@ -152,6 +154,7 @@ namespace Nethereum.Web3
             Personal = new PersonalApiService(Client);
             FeeSuggestion = new FeeSuggestionService(Client);
             Debug = new DebugApiService(Client);
+            TxPool = new TxPoolApiService(Client);
 
 
         }

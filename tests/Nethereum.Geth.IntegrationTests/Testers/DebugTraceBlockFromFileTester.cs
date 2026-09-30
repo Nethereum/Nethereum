@@ -1,7 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Nethereum.Geth.RPC.Debug;
-using Nethereum.Geth.RPC.Debug.DTOs;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
+using Nethereum.RPC.DebugNode.Tracers;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Tests.Testers;
 using Newtonsoft.Json.Linq;

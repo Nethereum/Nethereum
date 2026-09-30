@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -203,6 +203,11 @@ namespace Nethereum.Contracts
         public bool IsLogForEvent(FilterLog log)
         {
             return EventABI.IsLogForEvent(log);
+        }
+
+        public bool IsLogForEventEmittedByThisContract(FilterLog log)
+        {
+            return EventABI.IsLogForEventEmittedBy(log, ContractAddress);
         }
 
         public FilterLog[] GetLogsForEvent(JArray logs)
