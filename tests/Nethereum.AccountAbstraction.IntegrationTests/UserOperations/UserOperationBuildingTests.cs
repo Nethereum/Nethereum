@@ -217,7 +217,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.UserOperations
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
                     VerificationGasLimit = 200_000,
-                    Nonce = nonce1
+                    Nonce = nonce1,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 

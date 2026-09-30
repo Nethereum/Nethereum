@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.SocialRecoveryView"
+             x:DataType="core:SocialRecoveryViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="Social Recovery - guardian quorum" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                The "lost owner key" story: an N-of-M guardian quorum can rotate your account's
+                ECDSAValidator owner WITHOUT your original owner key ever signing. Set up a guardian
+                quorum, then simulate losing your key - a quorum of guardians recovers the account to a
+                brand new owner key, and the active account switches over to it. A quorum of FEWER than
+                the required guardians is rejected on-chain, not merely client-side.
+            </TextBlock>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" Margin="0,4,0,0">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Module (SocialRecovery)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SocialRecoveryAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Guardian quorum (default)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="1" Grid.Column="1" FontSize="12" Margin="0,0,0,4">
+                    <Run Text="{Binding Threshold}" /><Run Text=" of " /><Run Text="{Binding GuardianCount}" /><Run Text=" guardians" />
+                </TextBlock>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Installed?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="Yes" IsVisible="{Binding IsGuardiansInstalled}" FontSize="12" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="No" IsVisible="{Binding !IsGuardiansInstalled}" FontSize="12" />
+            </Grid>
+
+            <!-- Not installed yet: only the setup action is available. -->
+            <StackPanel Spacing="10" IsVisible="{Binding !IsGuardiansInstalled}">
+                <Button Content="Set up guardians" Command="{Binding SetupGuardiansCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left"
+                        Padding="20,8" />
+            </StackPanel>
+
+            <!-- Installed: recover, switch to the new owner, and prove it; the under-threshold
+                 attempt below is always available once guardians exist. -->
+            <StackPanel Spacing="10" IsVisible="{Binding IsGuardiansInstalled}">
+                <TextBlock Text="Guardian addresses" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                <ItemsControl ItemsSource="{Binding GuardianAddresses}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel Spacing="10" IsVisible="{Binding NewOwnerAddress, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+                    <Button Content="Lose key &amp; recover with guardian quorum" Command="{Binding RecoverCommand}"
+                            IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left" Padding="20,8" />
+                </StackPanel>
+
+                <StackPanel Spacing="10" IsVisible="{Binding NewOwnerAddress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="New owner (from recovery)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding NewOwnerAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="On-chain owner (GetOwner)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RotatedOwnerAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" />
+                    </Grid>
+
+                    <Button Content="Switch active account to new owner &amp; prove it" Command="{Binding SwitchToRecoveredOwnerCommand}"
+                            IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left" Padding="20,8"
+                            IsVisible="{Binding !IsRecoveredAccountActive}" />
+
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto" IsVisible="{Binding IsRecoveredAccountActive}">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Counter (signed by the new owner key)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ProvedCount}" FontSize="12" />
+                    </Grid>
+                </StackPanel>
+
+                <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,4" />
+
+                <Button Content="Try under-threshold recovery (should be rejected)" Command="{Binding TryUnderThresholdRecoveryCommand}"
+                        IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" Padding="20,8" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Working..." FontSize="12" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                  IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

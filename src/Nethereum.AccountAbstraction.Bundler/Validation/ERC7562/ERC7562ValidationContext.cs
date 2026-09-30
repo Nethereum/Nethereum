@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.EVM;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 {
     public class StorageSlotAccess
@@ -23,7 +24,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         public int ProgramCounter { get; set; }
     }
 
-    public class CallInfo
+    public class TracedCall
     {
         public string From { get; set; } = "";
         public string To { get; set; } = "";
@@ -33,6 +34,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         public EntityType CalledBy { get; set; }
     }
 
+    [NethereumDocExample(DocSection.AccountAbstraction, "bundler", "ERC7562Violation - one rule violation: its rule id, entity, opcode and slot")]
     public class ERC7562Violation
     {
         public string Rule { get; set; } = "";
@@ -82,20 +84,23 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
     public class ERC7562ValidationContext
     {
-        public EntityInfo? Sender { get; set; }
-        public EntityInfo? Factory { get; set; }
-        public EntityInfo? Paymaster { get; set; }
-        public EntityInfo? Aggregator { get; set; }
+        public Erc4337Entity? Sender { get; set; }
+        public Erc4337Entity? Factory { get; set; }
+        public Erc4337Entity? Paymaster { get; set; }
+        public Erc4337Entity? Aggregator { get; set; }
 
         public string EntryPointAddress { get; set; } = "";
         public EntityType CurrentEntity { get; set; }
         public int CallDepth { get; set; }
         public string CurrentAddress { get; set; } = "";
+
         public bool IsDeploymentPhase { get; set; }
+
+        public bool HasDeployingFactory { get; set; }
 
         public List<StorageSlotAccess> StorageAccesses { get; } = new();
         public List<OpcodeExecution> OpcodeExecutions { get; } = new();
-        public List<CallInfo> Calls { get; } = new();
+        public List<TracedCall> Calls { get; } = new();
         public HashSet<string> AccessedAddresses { get; } = new();
 
         public int Create2Count { get; set; }
@@ -103,10 +108,27 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         public string DeployedSenderAddress { get; set; } = "";
 
         public Dictionary<string, HashSet<BigInteger>> AssociatedSlots { get; } = new();
-        public Dictionary<BigInteger, string> KeccakPreimages { get; } = new();
         public List<ERC7562Violation> Violations { get; } = new();
 
-        public bool StrictMode { get; set; } = true;
+        private readonly List<int> _permittedEntryPointCallDepths = new();
+
+        public void EnterPermittedEntryPointCall(int calleeDepth)
+        {
+            _permittedEntryPointCallDepths.Add(calleeDepth);
+        }
+
+        public bool IsInsidePermittedEntryPointCall(int currentDepth)
+        {
+            while (_permittedEntryPointCallDepths.Count > 0 &&
+                   currentDepth < _permittedEntryPointCallDepths[^1])
+            {
+                _permittedEntryPointCallDepths.RemoveAt(_permittedEntryPointCallDepths.Count - 1);
+            }
+
+            return _permittedEntryPointCallDepths.Count > 0 &&
+                   currentDepth >= _permittedEntryPointCallDepths[^1];
+        }
+
         public bool AllowRip7212Precompile { get; set; } = false;
 
         public void AddViolation(string rule, string message, string? address = null, Instruction? opcode = null, BigInteger? slot = null)
@@ -124,7 +146,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         public bool HasViolations => Violations.Count > 0;
 
-        public EntityInfo? GetEntityInfo(EntityType type)
+        public Erc4337Entity? GetEntity(EntityType type)
         {
             return type switch
             {
@@ -136,7 +158,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             };
         }
 
-        public EntityInfo? GetCurrentEntityInfo() => GetEntityInfo(CurrentEntity);
+        public Erc4337Entity? GetCurrentEntity() => GetEntity(CurrentEntity);
 
         public static bool AddressEquals(string? a, string? b)
         {
@@ -182,6 +204,24 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return AssociatedSlots.TryGetValue(normalized, out var slots) && slots.Contains(slot);
         }
 
+        public Dictionary<string, HashSet<BigInteger>> EntityOwnAssociatedSlots { get; } = new();
+
+        public void TrackEntityOwnAssociatedSlot(string contractAddress, BigInteger slot)
+        {
+            var normalized = contractAddress.ToLowerInvariant();
+            if (!EntityOwnAssociatedSlots.ContainsKey(normalized))
+            {
+                EntityOwnAssociatedSlots[normalized] = new HashSet<BigInteger>();
+            }
+            EntityOwnAssociatedSlots[normalized].Add(slot);
+        }
+
+        public bool IsEntityOwnAssociatedSlot(string contractAddress, BigInteger slot)
+        {
+            var normalized = contractAddress.ToLowerInvariant();
+            return EntityOwnAssociatedSlots.TryGetValue(normalized, out var slots) && slots.Contains(slot);
+        }
+
         public void UpdateCurrentEntity(string address)
         {
             var entityType = GetEntityTypeForAddress(address);
@@ -194,10 +234,10 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         public static ERC7562ValidationContext Create(
             string entryPoint,
-            EntityInfo sender,
-            EntityInfo? factory = null,
-            EntityInfo? paymaster = null,
-            EntityInfo? aggregator = null)
+            Erc4337Entity sender,
+            Erc4337Entity? factory = null,
+            Erc4337Entity? paymaster = null,
+            Erc4337Entity? aggregator = null)
         {
             return new ERC7562ValidationContext
             {
@@ -207,7 +247,8 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 Paymaster = paymaster,
                 Aggregator = aggregator,
                 CurrentEntity = factory != null ? EntityType.Factory : EntityType.Sender,
-                IsDeploymentPhase = factory != null
+                IsDeploymentPhase = factory != null,
+                HasDeployingFactory = factory != null
             };
         }
     }

@@ -5,8 +5,10 @@ using Nethereum.AccountAbstraction.AppChain.Contracts.Policy.AccountRegistry;
 using Nethereum.AccountAbstraction.AppChain.Contracts.Policy.AccountRegistry.ContractDefinition;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory.ContractDefinition;
+using Nethereum.AccountAbstraction.Deployment;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
+using Nethereum.Util;
 using Nethereum.Web3;
 
 namespace Nethereum.AccountAbstraction.AppChain.Deployment
@@ -24,7 +26,7 @@ namespace Nethereum.AccountAbstraction.AppChain.Deployment
         {
             var deployment = new AppChainDeployment();
 
-            deployment.EntryPointAddress = await DeployEntryPointAsync();
+            deployment.EntryPointAddress = await ResolveEntryPointAsync(config.EntryPointAddress);
 
             deployment.AccountFactoryAddress = config.AccountFactoryAddress
                 ?? await DeployAccountFactoryAsync(deployment.EntryPointAddress);
@@ -49,9 +51,49 @@ namespace Nethereum.AccountAbstraction.AppChain.Deployment
                 await GrantAdminRoleAsync(deployment.AccountRegistryAddress, admin);
             }
 
-            deployment.Modules = config.DefaultModules.ModuleAddresses ?? new ModuleAddresses();
+            deployment.Modules = await ResolveModulesAsync(config.DefaultModules);
 
             return deployment;
+        }
+
+        private Task<AAModuleAddresses> ResolveModulesAsync(DefaultModulesConfig modules)
+        {
+            if (modules.ModuleAddresses != null)
+            {
+                ValidateSuppliedModules(modules);
+                return Task.FromResult(modules.ModuleAddresses);
+            }
+
+            var options = new AAModuleDeploymentOptions
+            {
+                EcdsaValidator = modules.InstallOwnerValidator,
+                SmartSession = modules.InstallSessionKeys,
+                SocialRecovery = modules.InstallSocialRecovery,
+                OwnableExecutor = false
+            };
+            return new AAModuleDeployer(_web3).DeployAsync(options);
+        }
+
+        private static void ValidateSuppliedModules(DefaultModulesConfig modules)
+        {
+            var supplied = modules.ModuleAddresses!;
+
+            if (modules.InstallOwnerValidator && string.IsNullOrEmpty(supplied.EcdsaValidator))
+                throw new InvalidOperationException(
+                    "DefaultModules.ModuleAddresses was supplied but InstallOwnerValidator is set and EcdsaValidator is missing.");
+
+            if (modules.InstallSessionKeys && (
+                    string.IsNullOrEmpty(supplied.SmartSession) ||
+                    string.IsNullOrEmpty(supplied.SudoPolicy) ||
+                    string.IsNullOrEmpty(supplied.UniActionPolicy) ||
+                    string.IsNullOrEmpty(supplied.EcdsaSessionValidator)))
+                throw new InvalidOperationException(
+                    "DefaultModules.ModuleAddresses was supplied but InstallSessionKeys is set and the SmartSession stack " +
+                    "(SmartSession, SudoPolicy, UniActionPolicy, EcdsaSessionValidator) is incomplete.");
+
+            if (modules.InstallSocialRecovery && string.IsNullOrEmpty(supplied.SocialRecovery))
+                throw new InvalidOperationException(
+                    "DefaultModules.ModuleAddresses was supplied but InstallSocialRecovery is set and SocialRecovery is missing.");
         }
 
         public AppChainDeployment GetDeployment(
@@ -68,6 +110,35 @@ namespace Nethereum.AccountAbstraction.AppChain.Deployment
                 SponsoredPaymasterAddress = sponsoredPaymasterAddress
             };
         }
+
+        private async Task<string> ResolveEntryPointAsync(string configuredEntryPointAddress)
+        {
+            if (!string.IsNullOrEmpty(configuredEntryPointAddress) &&
+                !AddressUtil.Current.IsNullEmptyOrZeroAddress(configuredEntryPointAddress) &&
+                await IsDeployedAsync(configuredEntryPointAddress))
+            {
+                await ValidateIsEntryPointAsync(configuredEntryPointAddress);
+                return configuredEntryPointAddress;
+            }
+
+            return await DeployEntryPointAsync();
+        }
+
+        private async Task ValidateIsEntryPointAsync(string address)
+        {
+            try
+            {
+                var entryPoint = new EntryPointService(_web3, address);
+                await entryPoint.GetNonceQueryAsync(AddressUtil.ZERO_ADDRESS, 0);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Configured EntryPoint address {address} has code but does not respond as an ERC-4337 " +
+                    $"EntryPoint (getNonce failed): {ex.Message}", ex);
+            }
+        }
+
 
         private async Task<string> DeployEntryPointAsync()
         {

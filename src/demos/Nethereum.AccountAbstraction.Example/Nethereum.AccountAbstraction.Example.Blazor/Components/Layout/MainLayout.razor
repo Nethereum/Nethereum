@@ -1,0 +1,39 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AccountBannerViewModel Banner
+
+<div class="app-shell">
+    <header class="app-header">
+        <div class="app-header-title">
+            <span class="app-header-logo">AA</span>
+            <div>
+                <h1>Nethereum Account Abstraction Example</h1>
+                <p class="app-header-subtitle">Self-hosted in-process DevChain + bundler - click through the tabs below</p>
+            </div>
+        </div>
+        <div class="app-header-account">
+            <span class="account-pill @(Banner.HasAccount ? "" : "account-pill-empty")">
+                @Banner.DisplayText
+            </span>
+        </div>
+    </header>
+
+    <main class="app-body">
+        @Body
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Banner.PropertyChanged += OnBannerChanged;
+    }
+
+    private void OnBannerChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Banner.PropertyChanged -= OnBannerChanged;
+    }
+}

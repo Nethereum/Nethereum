@@ -1,0 +1,98 @@
+@inherits ObservingComponentBase
+@inject PasskeyAccountViewModel Vm
+
+<section class="tab-card">
+    <h2>Passkey - a WebAuthn-owned smart account</h2>
+    <p class="tab-help">
+        Creates a smart account owned by a P-256 passkey through the same generic on-ramp as every
+        other signer (<code>IAAClient.CreateAccountAsync</code>), then drives
+        <code>TestCounter.count()</code> through it with a passkey-signed UserOperation. Registering
+        the passkey prompts your browser for a real platform authenticator.
+    </p>
+
+    <div class="btn-row">
+        <label>
+            <input type="radio" name="passkey-payment-mode" checked="@(Vm.SelectedPaymentMode == AccountPaymentMode.SelfFunded)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.SelectedPaymentMode = AccountPaymentMode.SelfFunded" />
+            Self-funded
+        </label>
+        <label>
+            <input type="radio" name="passkey-payment-mode" checked="@(Vm.SelectedPaymentMode == AccountPaymentMode.PaymasterSponsored)"
+                   disabled="@(Vm.IsBusy || !Vm.HasPaymaster)" @onchange="() => Vm.SelectedPaymentMode = AccountPaymentMode.PaymasterSponsored" />
+            Paymaster-sponsored
+        </label>
+    </div>
+    @if (!Vm.HasPaymaster)
+    {
+        <p class="tab-help">No paymaster is configured for this infrastructure (use-existing mode); the new account will be self-funded.</p>
+    }
+
+    <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.CreateAccountCommand.ExecuteAsync(null)">
+        @(Vm.IsBusy ? "Creating..." : "Create Passkey Account")
+    </button>
+
+    @if (Vm.SmartAccountAddress is not null)
+    {
+        <dl class="fact-list">
+            <dt>Credential id</dt>
+            <dd><code>@Vm.CredentialId</code></dd>
+            <dt>Smart account address</dt>
+            <dd><code>@Vm.SmartAccountAddress</code></dd>
+            <dt>Deployed?</dt>
+            <dd>@(Vm.IsDeployed ? "Yes" : "No - deploys on its first operation")</dd>
+        </dl>
+
+        @if (!Vm.ActiveAccountIsPaymasterSponsored)
+        {
+            <p class="tab-help">
+                This passkey owns smart account <code>@Vm.SmartAccountAddress</code> - fund it here and
+                send below; you don't need the Setup tab.
+            </p>
+        }
+        else
+        {
+            <p class="tab-help">
+                This passkey owns smart account <code>@Vm.SmartAccountAddress</code> and it is
+                paymaster-sponsored - the paymaster covers gas below, so funding isn't needed (same
+                mechanism as the Gasless tab).
+            </p>
+        }
+        <button class="btn btn-secondary" disabled="@Vm.IsBusy" @onclick="() => Vm.FundAccountCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Funding..." : "Fund account")
+        </button>
+
+        <hr />
+
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.SendCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Send Count (passkey-signed)")
+        </button>
+
+        <dl class="fact-list">
+            <dt>Counter value</dt>
+            <dd>@Vm.Count</dd>
+        </dl>
+
+        @if (Vm.LastReceipt is not null)
+        {
+            <dl class="fact-list">
+                <dt>UserOp hash</dt>
+                <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+                <dt>Success?</dt>
+                <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+            </dl>
+        }
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

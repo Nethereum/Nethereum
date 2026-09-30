@@ -1,4 +1,5 @@
-﻿using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
+using Nethereum.Contracts;
+using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.IntegrationTests.TestExecAccountFactory.ContractDefinition;
 using Nethereum.AccountAbstraction.IntegrationTests.TestExecAccountFactory;
@@ -33,7 +34,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             var simpleAccountFactoryService =
                 await SimpleAccountFactoryService.DeployContractAndGetServiceAsync(web3, simpleAccountFactoryDeployment);
             var txnAccountCreationReceipt = await simpleAccountFactoryService.CreateAccountRequestAndWaitForReceiptAsync(ownerAddress, 0);
-            //0 salt
             return await simpleAccountFactoryService.CreateAccountQueryAsync(ownerAddress, 0);
         }
 
@@ -44,12 +44,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             var ownerAddress = EthereumClientIntegrationFixture.AccountAddress;
 
             var entryPointService = await EntryPointService.DeployContractAndGetServiceAsync(web3, new EntryPointDeployment());
-            var ex = await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+            var ex = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(async () =>
             {
                 var accountAddress = await CreateSimpleAccountAsync(ownerAddress, entryPointService.ContractHandler.ContractAddress);
             });
 
-            Assert.Equal("Smart contract error: only callable from SenderCreator", ex.Message);
+            Assert.True(ex.IsCustomErrorFor<Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDefinition.NotSenderCreatorError>());
         }
 
         [Fact]

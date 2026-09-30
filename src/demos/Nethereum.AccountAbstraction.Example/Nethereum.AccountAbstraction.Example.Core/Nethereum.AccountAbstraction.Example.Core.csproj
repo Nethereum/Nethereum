@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AccountAbstraction.Example.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Contracts\Nethereum.AccountAbstraction.Example.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction.WebAuthn\Nethereum.AccountAbstraction.WebAuthn.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,168 @@
+@inherits ObservingComponentBase
+@inject InfrastructureSetupViewModel Vm
+
+<section class="tab-card">
+    <h2>Setup infra - deploy the AA stack</h2>
+    <p class="tab-help">
+        Nethereum ships a full ERC-4337 bundler (<code>Nethereum.AccountAbstraction.Bundler</code>), not
+        just a client. <strong>Embedded</strong> runs that bundler in-process against an in-process
+        DevChain for zero-setup testing. <strong>External</strong> points the SAME client + bundler API
+        at your own node + bundler - test-local vs real infra is just a different endpoint plus a
+        funder key. <strong>Use existing</strong> points that same client at ANY provider's
+        already-deployed standard ERC-7579 modules - client-side interop testing - and deploys only this
+        demo's own target contracts. Nothing runs until you click Deploy; every other tab is disabled
+        until this finishes.
+    </p>
+
+    <div class="btn-row">
+        <label>
+            <input type="radio" name="infra-mode" checked="@(Vm.Mode == InfrastructureMode.Embedded)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.Mode = InfrastructureMode.Embedded" />
+            Embedded
+        </label>
+        <label>
+            <input type="radio" name="infra-mode" checked="@(Vm.Mode == InfrastructureMode.External)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.Mode = InfrastructureMode.External" />
+            External
+        </label>
+        <label>
+            <input type="radio" name="infra-mode" checked="@(Vm.Mode == InfrastructureMode.UseExisting)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.Mode = InfrastructureMode.UseExisting" />
+            Use existing
+        </label>
+    </div>
+
+    @if (Vm.Mode == InfrastructureMode.Embedded)
+    {
+        <p class="tab-help">
+            Brings up an in-process ERC-4337 bundler + DevChain, then deploys the full ERC-7579 stack -
+            EntryPoint, factory, validators, modules, demo contracts, and a funded sponsoring paymaster.
+        </p>
+    }
+    else if (Vm.Mode == InfrastructureMode.External)
+    {
+        <p class="tab-help">
+            Deploys the same stack against a node + bundler you already run. The EntryPoint your
+            bundler already supports is reused if it's on-chain, otherwise a fallback is deployed
+            through the funder account. The funder pays for every deployment and every faucet transfer.
+        </p>
+
+        <label class="field-label" for="node-rpc-url">Node RPC URL</label>
+        <input id="node-rpc-url" class="field-input" placeholder="http://localhost:8545"
+               disabled="@Vm.IsBusy" @bind="Vm.NodeRpcUrl" />
+
+        <label class="field-label" for="bundler-url">Bundler URL</label>
+        <input id="bundler-url" class="field-input" placeholder="http://localhost:4337"
+               disabled="@Vm.IsBusy" @bind="Vm.BundlerUrl" />
+
+        <label class="field-label" for="funder-key">Funder private key</label>
+        <input id="funder-key" class="field-input" type="password"
+               disabled="@Vm.IsBusy" @bind="Vm.FunderPrivateKey" />
+    }
+    else
+    {
+        <p class="tab-help">
+            Connects the SAME client + bundler API to a PROVIDER's already-deployed standard ERC-7579
+            modules below - client-side interop testing - and deploys only this demo's own target
+            contracts (TestCounter, BookingRegistry) through the funder account. There is no paymaster in
+            this mode, so Gasless is unavailable.
+        </p>
+
+        <label class="field-label" for="existing-node-rpc-url">Node RPC URL</label>
+        <input id="existing-node-rpc-url" class="field-input" placeholder="http://localhost:8545"
+               disabled="@Vm.IsBusy" @bind="Vm.NodeRpcUrl" />
+
+        <label class="field-label" for="existing-bundler-url">Bundler URL</label>
+        <input id="existing-bundler-url" class="field-input" placeholder="http://localhost:4337"
+               disabled="@Vm.IsBusy" @bind="Vm.BundlerUrl" />
+
+        <label class="field-label" for="existing-funder-key">Funder private key</label>
+        <input id="existing-funder-key" class="field-input" type="password"
+               disabled="@Vm.IsBusy" @bind="Vm.FunderPrivateKey" />
+
+        <p class="tab-help">Provider's already-deployed standard module addresses</p>
+
+        <label class="field-label" for="existing-entrypoint">EntryPoint</label>
+        <input id="existing-entrypoint" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingEntryPointAddress" />
+
+        <label class="field-label" for="existing-factory">NethereumAccountFactory</label>
+        <input id="existing-factory" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingFactoryAddress" />
+
+        <label class="field-label" for="existing-ecdsa-validator">ECDSAValidator</label>
+        <input id="existing-ecdsa-validator" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingEcdsaValidatorAddress" />
+
+        <label class="field-label" for="existing-webauthn-validator">WebAuthnValidator</label>
+        <input id="existing-webauthn-validator" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingWebAuthnValidatorAddress" />
+
+        <label class="field-label" for="existing-ownable-executor">OwnableExecutor</label>
+        <input id="existing-ownable-executor" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingOwnableExecutorAddress" />
+
+        <label class="field-label" for="existing-social-recovery">SocialRecovery</label>
+        <input id="existing-social-recovery" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingSocialRecoveryAddress" />
+
+        <label class="field-label" for="existing-smart-session">SmartSession</label>
+        <input id="existing-smart-session" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingSmartSessionAddress" />
+
+        <label class="field-label" for="existing-sudo-policy">SudoPolicy</label>
+        <input id="existing-sudo-policy" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingSudoPolicyAddress" />
+
+        <label class="field-label" for="existing-uni-action-policy">UniActionPolicy</label>
+        <input id="existing-uni-action-policy" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingUniActionPolicyAddress" />
+
+        <label class="field-label" for="existing-session-validator">ECDSASessionValidator</label>
+        <input id="existing-session-validator" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingEcdsaSessionValidatorAddress" />
+
+        <label class="field-label" for="existing-account-impl">NethereumAccount implementation</label>
+        <input id="existing-account-impl" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.ExistingAccountImplementationAddress" />
+    }
+
+    <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.DeployCommand.ExecuteAsync(null)">
+        @(Vm.IsBusy ? "Deploying..." : Vm.IsReady ? "Redeploy" : "Deploy")
+    </button>
+
+    @if (Vm.Log.Count > 0)
+    {
+        <pre class="tab-log">@string.Join("\n", Vm.Log)</pre>
+    }
+
+    @if (Vm.IsReady)
+    {
+        <dl class="fact-list">
+            <dt>EntryPoint</dt>
+            <dd><code>@Vm.EntryPointAddress</code></dd>
+            <dt>NethereumAccountFactory</dt>
+            <dd><code>@Vm.FactoryAddress</code></dd>
+            <dt>ECDSAValidator</dt>
+            <dd><code>@Vm.EcdsaValidatorAddress</code></dd>
+            <dt>WebAuthnValidator</dt>
+            <dd><code>@Vm.WebAuthnValidatorAddress</code></dd>
+            <dt>OwnableExecutor</dt>
+            <dd><code>@Vm.OwnableExecutorAddress</code></dd>
+            <dt>SocialRecovery</dt>
+            <dd><code>@Vm.SocialRecoveryAddress</code></dd>
+            <dt>SmartSession</dt>
+            <dd><code>@Vm.SmartSessionAddress</code></dd>
+            <dt>VerifyingPaymaster</dt>
+            <dd><code>@Vm.PaymasterAddress</code></dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Vm.Log.CollectionChanged += (_, _) => InvokeAsync(StateHasChanged);
+    }
+}

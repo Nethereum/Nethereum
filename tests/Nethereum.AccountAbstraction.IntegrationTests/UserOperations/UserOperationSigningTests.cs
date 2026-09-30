@@ -219,7 +219,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.UserOperations
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
-                    VerificationGasLimit = 200_000
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -260,7 +261,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.UserOperations
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
-                    VerificationGasLimit = 200_000
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000
                 },
                 wrongKey);
 
@@ -301,7 +303,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.UserOperations
                         CallData = executeFunction.GetCallData(),
                         CallGasLimit = 100_000,
                         VerificationGasLimit = 200_000,
-                        Nonce = nonce
+                        Nonce = nonce,
+                        PreVerificationGas = 100_000
                     },
                     accountKey);
 

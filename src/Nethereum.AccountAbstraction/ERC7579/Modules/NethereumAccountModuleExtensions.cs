@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount;
+using Nethereum.AccountAbstraction.ERC7579.Modules.SocialRecovery;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.AccountAbstraction.ERC7579.Modules

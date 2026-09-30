@@ -1,4 +1,5 @@
-﻿using Nethereum.Util;
+﻿using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using System.Numerics;
 
 
@@ -18,7 +19,7 @@ namespace Nethereum.AccountAbstraction
         public static readonly string DEFAULT_PAYMASTER = AddressUtil.ZERO_ADDRESS;
         public static readonly byte[] DEFAULT_PAYMASTER_DATA = Array.Empty<byte>();
         public static readonly byte[] DEFAULT_SIGNATURE = Array.Empty<byte>();
-        public static readonly BigInteger DEFAULT_PAYMASTER_VERIFICATION_GAS_LIMIT = 300000; // default verification gas. will add create2 cost (3200+200*length) if initCode exists
+        public static readonly BigInteger DEFAULT_PAYMASTER_VERIFICATION_GAS_LIMIT = 300000;
         public static readonly BigInteger DEFAULT_PAYMASTER_POST_OP_GAS_LIMIT = 0;
 
         public string Sender { get; set; }
@@ -35,6 +36,8 @@ namespace Nethereum.AccountAbstraction
         public byte[] Signature { get; set; }
         public BigInteger? PaymasterVerificationGasLimit { get; set; }
         public BigInteger? PaymasterPostOpGasLimit { get; set; }
+
+        public Authorisation Eip7702Auth { get; set; }
 
 
         public virtual void SetNullValuesToDefaultValues()

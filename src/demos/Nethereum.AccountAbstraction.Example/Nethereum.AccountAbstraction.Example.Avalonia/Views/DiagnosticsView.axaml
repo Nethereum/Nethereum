@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.DiagnosticsView"
+             x:DataType="core:DiagnosticsViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="720" HorizontalAlignment="Left">
+            <TextBlock Text="Diagnostics - what happened to a UserOperation" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                A developer/observability view of the session's active account: run the SAME count() call
+                three ways - a normal success, a guaranteed revert (countFail()), and the same call starved
+                of gas - and inspect the real receipt, gas, bundler lookup and packed-wire data behind each
+                outcome. Run the diagnosed op first - it deploys the account the revert/out-of-gas flavors need.
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Note: the reverting and out-of-gas runs are deliberately forced past the bundler's pre-flight
+                gas estimate so they reach mining and produce a receipt to inspect. A real bundler rejects both
+                during eth_estimateUserOperationGas with an error, so these two would never normally return a
+                receipt - only the successful run reflects the normal flow.
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Run diagnosed op (success)" Command="{Binding RunDiagnosedOpCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" Padding="16,8" />
+                <Button Content="Run reverting op" Command="{Binding RunRevertingOpCommand}"
+                        IsEnabled="{Binding !IsBusy}" Padding="16,8" />
+                <Button Content="Run out-of-gas op" Command="{Binding RunOutOfGasOpCommand}"
+                        IsEnabled="{Binding !IsBusy}" Padding="16,8" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Running..." FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Spacing="10" IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding Flavor}" FontWeight="SemiBold" FontSize="14" />
+
+                <TextBlock Text="Outcome" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Failure kind" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.FailureKind}" FontSize="12" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="UserOp success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Likely out of gas?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastReceipt.IsLikelyOutOfGas}" FontSize="12" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Revert reason" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastReceipt.RevertReason}" FontSize="12" TextWrapping="Wrap" />
+                </Grid>
+                <TextBlock Text="{Binding LastReceipt.FailureDiagnostic}" Foreground="#e0b04a" FontSize="12"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding LastReceipt.FailureDiagnostic, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,4" />
+
+                <TextBlock Text="Receipt" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Sender" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.Sender}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Transaction hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastReceipt.TransactionHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Block number" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastReceipt.BlockNumber}" FontSize="12" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Status" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding LastReceipt.Status}" FontSize="12" Margin="0,0,0,2" />
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Transaction-scoped logs" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding LogCount}" FontSize="12" />
+                </Grid>
+
+                <StackPanel Spacing="6" IsVisible="{Binding GasPanel, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,4" />
+                    <TextBlock Text="Gas - requested vs. actually charged" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Requested callGasLimit" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding GasPanel.RequestedCallGasLimit}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Requested verificationGasLimit" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GasPanel.RequestedVerificationGasLimit}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Requested preVerificationGas" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GasPanel.RequestedPreVerificationGas}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Actual gas used (EntryPoint)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding GasPanel.ActualGasUsed}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Actual gas cost (wei)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding GasPanel.ActualGasCost}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Transaction gas used" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding GasPanel.TransactionGasUsed}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Effective gas price" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding GasPanel.EffectiveGasPrice}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="AAGasConfig buffers (call/verification)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                        <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding GasPanel.CallGasBuffer}" FontSize="12" />
+                            <TextBlock Text="/" FontSize="12" />
+                            <TextBlock Text="{Binding GasPanel.VerificationGasBuffer}" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Spacing="6" IsVisible="{Binding BundlerLookup, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,4" />
+                    <TextBlock Text="Bundler lookup - eth_getUserOperationByHash" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Nonce" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BundlerLookup.Nonce}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Call data" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BundlerLookup.CallDataHex}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Signature" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding BundlerLookup.SignatureHex}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Paymaster" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding BundlerLookup.Paymaster}" FontSize="12" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="EntryPoint" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding BundlerLookup.EntryPoint}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Pending / mined?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding BundlerLookup.IsPending}" FontSize="12" />
+                            <TextBlock Text="- block" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                            <TextBlock Text="{Binding BundlerLookup.BlockNumber}" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Spacing="6" IsVisible="{Binding PackedView, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,4" />
+                    <TextBlock Text="Packed UserOperation - what was actually signed" FontWeight="SemiBold" />
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="12">
+                        A faithful reconstruction, not the exact bytes AAContractHandler signed (it signs and
+                        sends its packed op internally and exposes no API to hand those back): the bundler's
+                        unpacked fields re-packed via UserOperationBuilder.PackAccountGasLimits, then unpacked
+                        again via PackedUserOperationGasExtensions to prove the round trip.
+                    </TextBlock>
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="accountGasLimits (bytes32)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PackedView.AccountGasLimitsHex}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="gasFees (bytes32)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PackedView.GasFeesHex}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,2" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Unpacked verification/call gas" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,2" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding PackedView.UnpackedVerificationGasLimit}" FontSize="12" />
+                            <TextBlock Text="/" FontSize="12" />
+                            <TextBlock Text="{Binding PackedView.UnpackedCallGasLimit}" FontSize="12" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Total gas (GetTotalGas)" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding PackedView.TotalGas}" FontSize="12" />
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

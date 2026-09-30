@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AccountAbstraction.Example.Blazor</RootNamespace>
+    <UserSecretsId>aa-example-blazor</UserSecretsId>
+  </PropertyGroup>
+
+  <!-- Blazor Server head for the AA example (Stage 2): thin components bound to the head-agnostic
+       view models in .Core. Self-bootstraps an in-process DevChain + bundler + the AA contract stack
+       at startup (see Example.Hosting's HostBootstrap) so `dotnet run` needs no external node or
+       bundler. Plain Blazor only - no MudBlazor/wallet-UI packages - so it reads as a minimal
+       template for an app that wants AA without the full wallet UI. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Core\Nethereum.AccountAbstraction.Example.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Contracts\Nethereum.AccountAbstraction.Example.Contracts.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Hosting\Nethereum.AccountAbstraction.Example.Hosting.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.WebAuthn.Blazor\Nethereum.WebAuthn.Blazor.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -104,6 +104,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                 _fixture.EntryPointService.ContractAddress);
 
             Assert.NotNull(response2.Error);
+            Assert.Equal(-32602, response2.Error!.Code);
         }
 
         [Fact]
@@ -123,6 +124,26 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                 invalidEntryPoint);
 
             Assert.NotNull(response.Error);
+            Assert.Equal(-32602, response.Error!.Code);
+        }
+
+        [Fact]
+        public async Task SendUserOperation_SenderNotDeployedWithoutInitCode_ReturnsSimulateValidationCode()
+        {
+            var accountKey = Nethereum.Signer.EthECKey.GenerateKey();
+            var undeployedSender = accountKey.GetPublicAddress();
+
+            var userOp = await _fixture.CreateSignedUserOperationAsync(undeployedSender, accountKey);
+            var userOpObject = CreateUserOpObject(userOp);
+
+            var response = await _fixture.SendRpcRequestAsync(
+                "eth_sendUserOperation",
+                userOpObject,
+                _fixture.EntryPointService.ContractAddress);
+
+            Assert.NotNull(response.Error);
+            Assert.Equal(-32500, response.Error!.Code);
+            Assert.Contains("AA20", response.Error.Message);
         }
 
         [Fact]
@@ -140,7 +161,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 100_000,
                 VerificationGasLimit = 200_000,
-                PreVerificationGas = 50_000,
+                PreVerificationGas = 100_000,
                 MaxFeePerGas = 1_000_000_000,
                 MaxPriorityFeePerGas = 1_000_000_000
             };
@@ -168,7 +189,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 100_000,
                 VerificationGasLimit = 200_000,
-                PreVerificationGas = 50_000,
+                PreVerificationGas = 100_000,
                 MaxFeePerGas = 1_000_000_000,
                 MaxPriorityFeePerGas = 1_000_000_000
             };

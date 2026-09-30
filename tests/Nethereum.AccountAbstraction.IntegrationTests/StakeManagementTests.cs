@@ -1,4 +1,5 @@
-﻿using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
+using Nethereum.Contracts;
+using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount;
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDefinition;
@@ -64,10 +65,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
         {
             _entryPoint = await DeployEntryPointAsync();
 
-            var ex = await Assert.ThrowsAsync<SmartContractRevertException>(() =>
+            var ex = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(() =>
                 _entryPoint.AddStakeRequestAndWaitForReceiptAsync(2));
 
-            Assert.Contains("no stake specified", ex.Message);
+            Assert.True(ex.IsCustomErrorFor<InvalidStakeError>());
         }
 
         [Fact]
@@ -77,10 +78,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             var txn = new AddStakeFunction() { UnstakeDelaySec = 0, AmountToSend = Web3.Web3.Convert.ToWei(1) };
 
-            var ex = await Assert.ThrowsAsync<SmartContractRevertException>(() =>
+            var ex = await Assert.ThrowsAsync<SmartContractCustomErrorRevertException>(() =>
                 _entryPoint.AddStakeRequestAndWaitForReceiptAsync(txn));
 
-            Assert.Contains("must specify unstake delay", ex.Message);
+            Assert.True(ex.IsCustomErrorFor<InvalidUnstakeDelayError>());
         }
 
         [Fact]
@@ -88,7 +89,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
         {
             _entryPoint = await DeployEntryPointAsync();
 
-            // Initial stake 2 ETH
             await _entryPoint.AddStakeRequestAndWaitForReceiptAsync(new AddStakeFunction
             {
                 UnstakeDelaySec = 2,
@@ -101,7 +101,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             Assert.Equal(Web3.Web3.Convert.ToWei(2), depositInfo.Stake);
             Assert.Equal((uint)0, depositInfo.WithdrawTime);
 
-            // Add another 1 ETH
             await _entryPoint.AddStakeRequestAndWaitForReceiptAsync(new AddStakeFunction
             {
                 UnstakeDelaySec = 2,
@@ -149,7 +148,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
         {
             _entryPoint = await DeployEntryPointAsync();
 
-            // Stake 2 ETH
             await _entryPoint.AddStakeRequestAndWaitForReceiptAsync(new AddStakeFunction
             {
                 UnstakeDelaySec = 1,
@@ -163,11 +161,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             Assert.False(unlockInfo.Staked);
 
-            await Task.Delay(2000); // Wait for unlock delay
+            await Task.Delay(2000);
             var fundTx = await _web3.Eth.GetEtherTransferService()
-               .TransferEtherAndWaitForReceiptAsync(_addr, 0.01m); // Dummy transaction to ensure the unlock is processed
+               .TransferEtherAndWaitForReceiptAsync(_addr, 0.01m);
 
-            // Attempt withdrawal
             var recipient = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
             var receipt = await _entryPoint.WithdrawStakeRequestAndWaitForReceiptAsync(recipient);
 

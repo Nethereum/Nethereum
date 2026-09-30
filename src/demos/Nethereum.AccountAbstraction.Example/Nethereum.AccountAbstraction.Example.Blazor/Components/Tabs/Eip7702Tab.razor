@@ -1,0 +1,65 @@
+@inherits ObservingComponentBase
+@inject Eip7702AccountViewModel Vm
+
+<section class="tab-card">
+    <h2>EIP-7702 - upgrade an EOA in place</h2>
+    <p class="tab-help">
+        This is a plain EOA - a normal wallet, generated fresh below. Upgrade it in place to a smart
+        account with EIP-7702: same address, now with AA powers. Unlike every other tab (which creates
+        a brand new counterfactual CREATE2 account), this one delegates the EOA's OWN code to a
+        deployed smart-account implementation and drives it through Account Abstraction without ever
+        changing its address.
+    </p>
+
+    <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.GenerateEoaCommand.ExecuteAsync(null)">
+        @(Vm.IsBusy ? "Generating..." : "Generate EOA")
+    </button>
+
+    @if (Vm.EoaAddress is not null)
+    {
+        <dl class="fact-list">
+            <dt>EOA address</dt>
+            <dd><code>@Vm.EoaAddress</code></dd>
+            <dt>Upgraded?</dt>
+            <dd>@(Vm.IsUpgraded ? "Yes - now a smart account, same address" : "No - still a plain EOA")</dd>
+        </dl>
+
+        <button class="btn btn-secondary" disabled="@Vm.IsBusy" @onclick="() => Vm.FundEoaCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Funding..." : "Fund EOA")
+        </button>
+
+        <hr />
+
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.UpgradeAndSendCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Upgrading..." : "Upgrade via EIP-7702 & Send")
+        </button>
+
+        <dl class="fact-list">
+            <dt>Counter value</dt>
+            <dd>@Vm.Count</dd>
+        </dl>
+
+        @if (Vm.LastReceipt is not null)
+        {
+            <dl class="fact-list">
+                <dt>UserOp hash</dt>
+                <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+                <dt>Success?</dt>
+                <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+            </dl>
+        }
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

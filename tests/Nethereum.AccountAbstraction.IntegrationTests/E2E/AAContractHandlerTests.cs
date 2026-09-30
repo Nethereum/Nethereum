@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.AccountAbstraction.Bundler.InProcess;
 using Nethereum.AccountAbstraction.IntegrationTests.E2E.Fixtures;
 using Nethereum.AccountAbstraction.IntegrationTests.TestCounter;
 using Nethereum.AccountAbstraction.IntegrationTests.TestCounter.ContractDefinition;
@@ -49,8 +50,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Switch contract service to AA with EthECKey", Order = 1)]
         public async Task Given_ContractService_When_SwitchedToAA_Then_CanExecuteTransaction()
         {
-            // GIVEN: A smart account configured with factory (deployed on first use)
-            // Per ERC-4337: UserOperations are submitted via bundler, executed via EntryPoint
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3001);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -59,7 +58,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var initialCount = await testCounter.CountersQueryAsync(accountAddress);
             Assert.Equal(BigInteger.Zero, initialCount);
 
-            // WHEN: Switch the contract service to use AA
             var bundlerService = CreateBundlerAdapter();
 
             testCounter.ChangeContractHandlerToAA(
@@ -71,7 +69,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var receipt = await testCounter.CountRequestAndWaitForReceiptAsync();
 
-            // THEN: The transaction should succeed via UserOperation
             Assert.NotNull(receipt);
             Assert.IsType<AATransactionReceipt>(receipt);
 
@@ -86,28 +83,25 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
         [Fact]
         [Trait("Rule", "ERC4337-ContractHandler")]
-        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Switch contract service to AA with private key string", Order = 2)]
+        [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Switch contract service to AA from a private key string (wrapped in EthECKey)", Order = 2)]
         public async Task Given_ContractService_When_SwitchedToAAWithPrivateKey_Then_CanExecuteTransaction()
         {
-            // GIVEN: A smart account configured with factory using private key string
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3002);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
                 _fixture.Web3, new TestCounterDeployment());
 
-            // WHEN: Switch using private key string (not EthECKey)
             var bundlerService = CreateBundlerAdapter();
 
             testCounter.ChangeContractHandlerToAA(
                 accountAddress,
-                accountKey.GetPrivateKey(),
+                new EthECKey(accountKey.GetPrivateKey()),
                 bundlerService,
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
             var receipt = await testCounter.CountRequestAndWaitForReceiptAsync();
 
-            // THEN: Should work the same as EthECKey
             Assert.NotNull(receipt);
             Assert.IsType<AATransactionReceipt>(receipt);
 
@@ -123,7 +117,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Auto-deploy undeployed account with FactoryConfig", Order = 3)]
         public async Task Given_UndeployedAccount_When_CallWithFactory_Then_AutoDeploys()
         {
-            // GIVEN: An account address that doesn't exist yet
             // Per ERC-4337 AA20: "sender not deployed and no initCode" - we provide initCode via factory
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3003);
 
@@ -133,7 +126,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
                 _fixture.Web3, new TestCounterDeployment());
 
-            // WHEN: Switch to AA with factory config for auto-deployment
             var bundlerService = CreateBundlerAdapter();
 
             testCounter.ChangeContractHandlerToAA(
@@ -145,7 +137,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var receipt = await testCounter.CountRequestAndWaitForReceiptAsync();
 
-            // THEN: Account should be deployed and call should succeed
             Assert.NotNull(receipt);
             var aaReceipt = (AATransactionReceipt)receipt;
             Assert.True(aaReceipt.UserOpSuccess, $"UserOp should succeed. Revert: {aaReceipt.RevertReason}");
@@ -163,8 +154,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "InitCode is empty after account is deployed", Order = 4)]
         public async Task Given_DeployedAccount_When_CheckInitCode_Then_InitCodeIsEmpty()
         {
-            // GIVEN: A deployed smart account (first call deploys via initCode)
-            // Per ERC-4337: InitCode should only be included when account needs deployment
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3004);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -179,18 +168,15 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // First call deploys the account
             var receipt1 = await testCounter.CountRequestAndWaitForReceiptAsync();
             Assert.True(((AATransactionReceipt)receipt1).UserOpSuccess);
 
             var code = await _fixture.GetCodeAsync(accountAddress);
             Assert.True(code != null && code.Length > 0, "Account should be deployed after first call");
 
-            // WHEN: Create UserOperation for a second call (just inspect, don't execute)
             var countFunction = new CountFunction();
             var packedOp = await handler.CreateUserOperationAsync(countFunction);
 
-            // THEN: InitCode should be empty since account is already deployed
             Assert.True(packedOp.InitCode == null || packedOp.InitCode.Length == 0,
                 "InitCode should be empty for already-deployed account");
         }
@@ -200,8 +186,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Nonce management in AA handler", Order = 5)]
         public async Task Given_AAHandler_When_Transaction_Then_NonceIsUsed()
         {
-            // GIVEN: A smart account configured with factory
-            // Per ERC-4337: Each UserOperation uses a nonce managed by EntryPoint
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3005, 10m);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -216,14 +200,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // WHEN: Create a UserOperation and verify it has a nonce
             var countFunction = new CountFunction();
             var packedOp = await handler.CreateUserOperationAsync(countFunction);
 
-            // THEN: UserOperation should have nonce=0 (first operation)
             Assert.Equal(BigInteger.Zero, packedOp.Nonce);
 
-            // Execute the transaction
             var receipt = await testCounter.CountRequestAndWaitForReceiptAsync();
             Assert.True(((AATransactionReceipt)receipt).UserOpSuccess);
 
@@ -236,8 +217,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Gas estimation via AA handler", Order = 6)]
         public async Task Given_AAHandler_When_EstimateGas_Then_ReturnsTotal()
         {
-            // GIVEN: A smart account configured with factory
-            // Per ERC-4337: Gas estimation returns verificationGasLimit + callGasLimit + preVerificationGas
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3006);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -252,10 +231,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // WHEN: Estimate gas for count() function
             var gas = await testCounter.ContractHandler.EstimateGasAsync<CountFunction>();
 
-            // THEN: Should return total gas (verification + call + preverification)
             Assert.NotNull(gas);
             Assert.True(gas.Value > 0, "Gas estimate should be positive");
             Assert.True(gas.Value > 21000, "UserOp gas should be higher than basic transaction");
@@ -266,8 +243,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Send request without waiting returns UserOp hash", Order = 7)]
         public async Task Given_AAHandler_When_SendRequestOnly_Then_ReturnsUserOpHash()
         {
-            // GIVEN: A smart account configured with factory
-            // Per ERC-4337: eth_sendUserOperation returns userOpHash before mining
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3007);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -282,13 +257,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // WHEN: Send request without waiting
             var userOpHash = await testCounter.CountRequestAsync();
 
-            // THEN: Should return a valid user operation hash
             Assert.NotNull(userOpHash);
             Assert.StartsWith("0x", userOpHash);
-            Assert.Equal(66, userOpHash.Length); // 0x + 64 hex chars
+            Assert.Equal(66, userOpHash.Length);
 
             var count = await testCounter.CountersQueryAsync(accountAddress);
             Assert.Equal(BigInteger.One, count);
@@ -299,8 +272,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "batching-and-paymasters", "Batch execute multiple calls in one UserOp", Order = 1)]
         public async Task Given_AAHandler_When_BatchExecute_Then_AllCallsSucceed()
         {
-            // GIVEN: A smart account configured with factory
-            // Per ERC-4337: Accounts can batch multiple calls in one UserOperation
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3008, 10m);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -315,7 +286,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _fixture.EntryPointService.ContractAddress,
                 factory: factoryConfig);
 
-            // WHEN: Execute batch of 3 count() calls using simplified API
             var countCallData = new CountFunction().GetCallData();
 
             var receipt = await handler.BatchExecuteAsync(
@@ -323,7 +293,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 countCallData,
                 countCallData);
 
-            // THEN: All calls should execute in one UserOperation
             Assert.NotNull(receipt);
             Assert.True(receipt.UserOpSuccess, $"Batch UserOp should succeed. Revert: {receipt.RevertReason}");
 
@@ -336,8 +305,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Query calls use eth_call not UserOp", Order = 8)]
         public async Task Given_AAHandler_When_QueryCall_Then_DoesNotUseUserOp()
         {
-            // GIVEN: A smart account with a transaction already executed
-            // Query calls (view/pure functions) should use eth_call, not UserOperations
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3009);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -354,10 +321,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             await testCounter.CountRequestAndWaitForReceiptAsync();
 
-            // WHEN: Query the counter (read-only call)
             var count = await testCounter.CountersQueryAsync(accountAddress);
 
-            // THEN: Should return the value without using UserOp (direct eth_call)
             Assert.Equal(BigInteger.One, count);
         }
 
@@ -366,7 +331,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [NethereumDocExample(DocSection.AccountAbstraction, "smart-contracts-with-aa", "Fluent configuration with WithGasConfig", Order = 9)]
         public async Task Given_AAHandler_When_FluentConfiguration_Then_ChainsCorrectly()
         {
-            // GIVEN: A smart account configured with factory
             var (accountAddress, accountKey, factoryConfig) = await CreateAccountWithFactoryAsync(3010);
 
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(
@@ -374,7 +338,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var bundlerService = CreateBundlerAdapter();
 
-            // WHEN: Use fluent configuration
             var handler = testCounter.ChangeContractHandlerToAA(
                 accountAddress,
                 accountKey,
@@ -387,7 +350,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                     ReceiptTimeoutMs = 30000
                 });
 
-            // THEN: Handler should be properly configured
             Assert.NotNull(handler);
             Assert.Equal(accountAddress.ToLower(), handler.AccountAddress.ToLower());
             Assert.Equal(_fixture.EntryPointService.ContractAddress.ToLower(), handler.EntryPointAddress.ToLower());

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.ABI.FunctionEncoding;
+using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.Contracts.Paymaster.VerifyingPaymaster;
 using Nethereum.AccountAbstraction.Contracts.Paymaster.VerifyingPaymaster.ContractDefinition;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
@@ -305,11 +306,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(async () =>
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             });
 
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
             Assert.Contains("AA25", ex.Message);
         }
 
@@ -371,11 +373,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(async () =>
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             });
 
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
             Assert.Contains("AA20", ex.Message);
         }
 
@@ -465,8 +468,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             var paymasterDeployment = new TestPaymasterDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.OperatorAccount.Address
+                EntryPoint = _fixture.EntryPointService.ContractAddress
             };
 
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(

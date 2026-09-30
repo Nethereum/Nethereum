@@ -24,10 +24,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.Fixtures
     [CollectionDefinition(DevChainBundlerFixture.COLLECTION_NAME)]
     public class DevChainBundlerCollection : ICollectionFixture<DevChainBundlerFixture> { }
 
-    /// <summary>
-    /// Test fixture that provides a DevChain node with 4337 infrastructure (EntryPoint, AccountFactory, Bundler).
-    /// Uses in-memory storage by default. Can be extended for RocksDB testing.
-    /// </summary>
     public class DevChainBundlerFixture : IAsyncLifetime
     {
         public const string COLLECTION_NAME = "DevChainBundler";

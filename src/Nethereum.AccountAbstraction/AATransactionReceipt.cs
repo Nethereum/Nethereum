@@ -1,8 +1,20 @@
 using System.Numerics;
 using Nethereum.RPC.Eth.DTOs;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "UserOperationFailureKind - succeeded, reverted with a reason, or failed without one")]
+    public enum UserOperationFailureKind
+    {
+        Succeeded,
+
+        RevertedWithReason,
+
+        FailedWithoutReason
+    }
+
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "AATransactionReceipt - the UserOperation receipt on top of the bundle transaction receipt")]
     public class AATransactionReceipt : TransactionReceipt
     {
         public string UserOpHash { get; set; }
@@ -12,6 +24,42 @@ namespace Nethereum.AccountAbstraction
         public BigInteger ActualGasUsed { get; set; }
         public string Paymaster { get; set; }
         public string Sender { get; set; }
+
+
+        public UserOperationFailureKind FailureKind
+        {
+            get
+            {
+                if (UserOpSuccess) return UserOperationFailureKind.Succeeded;
+                return HasRevertReason
+                    ? UserOperationFailureKind.RevertedWithReason
+                    : UserOperationFailureKind.FailedWithoutReason;
+            }
+        }
+
+        public bool IsLikelyOutOfGas => FailureKind == UserOperationFailureKind.FailedWithoutReason;
+
+        public string FailureDiagnostic
+        {
+            get
+            {
+                switch (FailureKind)
+                {
+                    case UserOperationFailureKind.RevertedWithReason:
+                        return "The account call reverted: " + RevertReason;
+                    case UserOperationFailureKind.FailedWithoutReason:
+                        return "The user operation failed with no revert reason - this is the shape of an " +
+                               "out-of-gas failure in the account call; consider raising callGasLimit " +
+                               "(a bare revert() with no message is indistinguishable from the receipt alone).";
+                    default:
+                        return null;
+                }
+            }
+        }
+
+        private bool HasRevertReason =>
+            !string.IsNullOrWhiteSpace(RevertReason) &&
+            RevertReason.Trim() != "execution reverted";
 
         public AATransactionReceipt() { }
 

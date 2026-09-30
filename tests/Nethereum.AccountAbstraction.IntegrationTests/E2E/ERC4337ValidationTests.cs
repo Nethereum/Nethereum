@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.Bundler.Execution;
 using Nethereum.AccountAbstraction.Contracts.Interfaces.IAccountExecute.ContractDefinition;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
@@ -28,6 +29,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
     {
         private readonly DevChainBundlerFixture _fixture;
 
+        private const string DUMMY_SIGNATURE =
+            "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c";
+
         public ERC4337ValidationTests(DevChainBundlerFixture fixture)
         {
             _fixture = fixture;
@@ -39,12 +43,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA10")]
         public async Task Given_AccountAlreadyDeployed_When_InitCodeProvided_Then_RevertsWithAA10()
         {
-            // GIVEN: An account that is already deployed on-chain
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 11001;
 
-            // First, deploy the account
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
@@ -77,16 +79,14 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             };
             await bundlerEntryPoint.HandleOpsRequestAndWaitForReceiptAsync(deployFunction);
 
-            // Verify account is deployed
             var code = await _fixture.GetCodeAsync(accountAddress);
             Assert.True(code.Length > 0, "Precondition: Account must be deployed");
 
-            // WHEN: Submitting a UserOp with initCode for the already-deployed account
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
-                Nonce = 1,  // Next nonce after deployment
-                InitCode = deployInitCode,  // Should NOT be provided for deployed account
+                Nonce = 1,
+                InitCode = deployInitCode,
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
                 VerificationGasLimit = 500000,
@@ -97,14 +97,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Bundler rejects with AA10 (sender already constructed)
             // Per ERC-4337: "If initCode is not empty, verify the sender doesn't already have code deployed"
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(async () =>
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             });
 
-            // AA10 is "sender already constructed"
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
             Assert.True(
                 ex.Message.Contains("AA10") || ex.Message.Contains("AA11") || ex.Message.Contains("already"),
                 $"Expected AA10/AA11 error but got: {ex.Message}");
@@ -118,7 +117,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA13")]
         public async Task Given_InitCodeOOG_When_VerificationGasInsufficient_Then_RevertsWithAA13()
         {
-            // GIVEN: A UserOp with insufficient verificationGasLimit for initCode execution
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 13001;
@@ -135,7 +133,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 InitCode = initCode,
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
-                VerificationGasLimit = 100,  // Way too low for contract deployment
+                VerificationGasLimit = 100,
                 PreVerificationGas = 50000,
                 MaxFeePerGas = 2000000000,
                 MaxPriorityFeePerGas = 1000000000
@@ -143,19 +141,15 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // WHEN: Submitting the UserOp
-            // Note: In unsafe mode, bundler may accept the op but execution will fail
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
                 var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-                // THEN: Either submission fails with AA13 or execution fails
                 Assert.False(result?.Success ?? true, "Operation with insufficient verification gas should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
-                // Expected if bundler validates gas limits
                 Assert.True(
                     ex.Message.Contains("AA13") ||
                     ex.Message.Contains("initCode") ||
@@ -169,16 +163,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA13")]
         public async Task Given_FactoryNotDeployed_When_InitCodeExecuted_Then_RevertsWithAA13()
         {
-            // GIVEN: InitCode pointing to a non-existent factory address
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 13002;
 
-            // Non-existent factory address
             var nonExistentFactory = "0x0000000000000000000000000000000000dead01".HexToByteArray();
 
-            // Build initCode with non-existent factory
-            // Format: factory address (20 bytes) + factory calldata
             var createAccountCallDataHex = _fixture.AccountFactoryService.ContractHandler
                 .GetFunction<Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDefinition.CreateAccountFunction>()
                 .GetData(new Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDefinition.CreateAccountFunction
@@ -192,7 +182,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Array.Copy(nonExistentFactory, 0, initCode, 0, 20);
             Array.Copy(createAccountCallData, 0, initCode, 20, createAccountCallData.Length);
 
-            // Use a deterministic address for sender
             var accountAddress = "0x1111111111111111111111111111111111111111";
             await _fixture.FundAccountAsync(accountAddress, 3m);
 
@@ -211,13 +200,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // WHEN: Submitting with non-existent factory
-            // THEN: Should fail with AA13 (initCode failed - no code at factory)
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(async () =>
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             });
 
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
             Assert.True(
                 ex.Message.Contains("AA13") ||
                 ex.Message.Contains("initCode") ||
@@ -233,14 +221,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA21")]
         public async Task Given_InsufficientAccountBalance_When_NoPaymaster_Then_RevertsWithAA21()
         {
-            // GIVEN: An account with balance too low to pay for gas
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 21001;
 
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
 
-            // Fund with only a tiny amount - not enough to cover required prefund
             await _fixture.FundAccountAsync(accountAddress, 0.00001m);
 
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
@@ -260,19 +246,15 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // WHEN: Submitting with insufficient funds
-            // Note: In unsafe mode, bundler may accept the op but execution will fail
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
                 var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-                // THEN: Either submission fails with AA21 or execution fails
                 Assert.False(result?.Success ?? true, "Operation with insufficient funds should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
-                // Expected if bundler validates prefund
                 Assert.True(
                     ex.Message.Contains("AA21") ||
                     ex.Message.Contains("prefund") ||
@@ -290,7 +272,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA24")]
         public async Task Given_EmptySignature_When_Validated_Then_RevertsWithAA24()
         {
-            // GIVEN: A deployed account with an empty signature
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 24001;
@@ -298,7 +279,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy the account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -324,7 +304,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting a UserOp with empty/zeroed signature
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
@@ -337,11 +316,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 MaxPriorityFeePerGas = 1000000000
             };
 
-            // Pack but don't sign properly - use empty signature
             var packedOp = UserOperationBuilder.PackUserOperation(userOp);
-            packedOp.Signature = new byte[65]; // Empty 65-byte signature
+            packedOp.Signature = new byte[65];
 
-            // THEN: Should fail with AA24 (signature error)
             await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
@@ -356,7 +333,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA25")]
         public async Task Given_NonceReused_When_Submitted_Then_RevertsWithAA25()
         {
-            // GIVEN: An account that has already used nonce 1
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 25001;
@@ -364,7 +340,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 10m);
 
-            // Deploy account (nonce 0)
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -390,7 +365,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // Execute nonce 1
             var firstOp = new UserOperation
             {
                 Sender = accountAddress,
@@ -411,15 +385,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // Verify nonce is now 2
             var currentNonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
             Assert.Equal((BigInteger)2, currentNonce);
 
-            // WHEN: Trying to reuse nonce 1
             var reusedNonceOp = new UserOperation
             {
                 Sender = accountAddress,
-                Nonce = 1,  // Already used!
+                Nonce = 1,
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
                 VerificationGasLimit = 200000,
@@ -430,12 +402,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedReusedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(reusedNonceOp, accountKey);
 
-            // THEN: Should fail with AA25 (invalid nonce)
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(async () =>
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedReusedOp, _fixture.EntryPointService.ContractAddress);
             });
 
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
             Assert.Contains("AA25", ex.Message);
         }
 
@@ -448,7 +420,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "DuplicateRejection")]
         public async Task Given_OperationInMempool_When_DuplicateSubmitted_Then_Rejected()
         {
-            // GIVEN: An operation already in the mempool
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 70001;
@@ -473,16 +444,14 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // First submission succeeds
             await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
 
-            // WHEN: Submitting the exact same operation again
-            // THEN: Should be rejected as duplicate
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(async () =>
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             });
 
+            Assert.Equal(BundlerErrorCodes.InvalidFields, ex.Code);
             Assert.True(
                 ex.Message.ToLower().Contains("duplicate") ||
                 ex.Message.ToLower().Contains("already") ||
@@ -499,7 +468,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "2DNonce")]
         public async Task Given_DifferentNonceKeys_When_Submitted_Then_ExecuteIndependently()
         {
-            // GIVEN: A deployed account
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 80001;
@@ -507,12 +475,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 10m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
                 Sender = accountAddress,
-                Nonce = 0,  // Key 0, sequence 0
+                Nonce = 0,
                 InitCode = initCode,
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
@@ -533,23 +500,18 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // Use two different nonce keys
             BigInteger nonceKey1 = 1;
             BigInteger nonceKey2 = 2;
 
-            // GetNonceQueryAsync returns the FULL nonce (key << 64 | sequence)
-            // For a fresh key, sequence should be 0, so full nonce = key << 64
             var nonce1 = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, nonceKey1);
             var nonce2 = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, nonceKey2);
 
-            // Extract sequence from full nonce (lower 64 bits)
             var sequence1 = nonce1 & ((BigInteger.One << 64) - 1);
             var sequence2 = nonce2 & ((BigInteger.One << 64) - 1);
 
             Assert.Equal(BigInteger.Zero, sequence1);
             Assert.Equal(BigInteger.Zero, sequence2);
 
-            // Use the full nonces returned by EntryPoint (already includes key)
             var fullNonce1 = nonce1;
             var fullNonce2 = nonce2;
 
@@ -580,7 +542,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var packedOp1 = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp1, accountKey);
             var packedOp2 = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp2, accountKey);
 
-            // WHEN: Executing both operations in same bundle
             var handleOpsFunction = new HandleOpsFunction
             {
                 Ops = new List<PackedUserOperation> { packedOp1, packedOp2 },
@@ -590,13 +551,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var receipt = await bundlerEntryPoint.HandleOpsRequestAndWaitForReceiptAsync(handleOpsFunction);
 
-            // THEN: Both succeed, and both nonce keys are incremented
             Assert.Equal((BigInteger)1, receipt.Status.Value);
 
             var newNonce1 = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, nonceKey1);
             var newNonce2 = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, nonceKey2);
 
-            // Extract sequences from full nonces
             var newSequence1 = newNonce1 & ((BigInteger.One << 64) - 1);
             var newSequence2 = newNonce2 & ((BigInteger.One << 64) - 1);
 
@@ -613,7 +572,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "ExecutionRevert")]
         public async Task Given_CallDataReverts_When_Executed_Then_EmitsRevertEventButBundleSucceeds()
         {
-            // GIVEN: A deployed account with callData that will revert
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 50001;
@@ -621,7 +579,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -647,13 +604,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // CallData that calls execute with value > account balance (will fail)
-            // SimpleAccount.execute(address dest, uint256 value, bytes calldata data)
-            // Build the calldata using the function message
             var executeFunction = new ExecuteFunction
             {
-                Dest = "0x0000000000000000000000000000000000000000",  // Zero address
-                Value = BigInteger.Parse("1000000000000000000000"),  // 1000 ETH - more than we have
+                Dest = "0x0000000000000000000000000000000000000000",
+                Value = BigInteger.Parse("1000000000000000000000"),
                 Data = Array.Empty<byte>()
             };
             var functionBuilder = new Nethereum.Contracts.FunctionBuilder<ExecuteFunction>(accountAddress);
@@ -673,21 +627,15 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // WHEN: Executing the operation via bundler
             await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-            // THEN: Bundle transaction succeeds (status=1), and either:
-            // - UserOp emits UserOperationRevertReason event, OR
-            // - UserOp has success=false in UserOpResults
             Assert.NotNull(result?.Receipt);
             Assert.Equal((BigInteger)1, result.Receipt.Status.Value);
 
-            // Check for UserOperationRevertReason event OR check UserOpResults
             var revertEvents = result.Receipt.DecodeAllEvents<UserOperationRevertReasonEventDTO>();
             var hasRevertEvent = revertEvents.Count > 0;
 
-            // Also check UserOpResults if available
             var hasFailedUserOp = result.UserOpResults?.Any(r => !r.Success) ?? false;
 
             Assert.True(hasRevertEvent || hasFailedUserOp,
@@ -702,7 +650,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA41")]
         public async Task Given_InsufficientVerificationGas_When_AccountValidates_Then_RevertsWithAA41()
         {
-            // GIVEN: A deployed account with a UserOp that has too little verificationGasLimit
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 41001;
@@ -710,7 +657,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -736,14 +682,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting a UserOp with verification gas too low for signature validation
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
                 Nonce = 1,
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
-                VerificationGasLimit = 1000,  // Too low for ECDSA recovery
+                VerificationGasLimit = 1000,
                 PreVerificationGas = 50000,
                 MaxFeePerGas = 2000000000,
                 MaxPriorityFeePerGas = 1000000000
@@ -751,15 +696,24 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA41 or verification gas error
             try
             {
-                await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
-                var result = await _fixture.BundlerService.ExecuteBundleAsync();
+                var userOpHash = await _fixture.BundlerService.SendUserOperationAsync(
+                    packedOp, _fixture.EntryPointService.ContractAddress);
+                await _fixture.BundlerService.ExecuteBundleAsync();
 
-                Assert.False(result?.Success ?? true, "Operation with insufficient verification gas should fail");
+                var status = await _fixture.BundlerService.GetUserOperationStatusAsync(userOpHash);
+                Assert.Equal(UserOpState.Failed, status.State);
+                Assert.True(
+                    status.Error != null &&
+                    (status.Error.Contains("AA41") ||
+                     status.Error.Contains("AA26") ||
+                     status.Error.Contains("verification") ||
+                     status.Error.Contains("gas") ||
+                     status.Error.Contains("reverted")),
+                    $"Expected a verification gas failure but got: {status.Error}");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
                 Assert.True(
                     ex.Message.Contains("AA41") ||
@@ -777,16 +731,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA51")]
         public async Task Given_PaymasterNoDeposit_When_SponsoringOp_Then_RevertsWithAA51()
         {
-            // GIVEN: A paymaster with zero deposit (not enough to cover gas)
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.OperatorAccount.Address
+                EntryPoint = _fixture.EntryPointService.ContractAddress
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
 
-            // Don't deposit anything - paymaster has zero balance
 
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
@@ -795,7 +746,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -821,7 +771,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting a UserOp using the unfunded paymaster
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
@@ -840,7 +789,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA51 (paymaster deposit too low)
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
@@ -848,8 +796,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
                 Assert.False(result?.Success ?? true, "Operation with unfunded paymaster should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
+                Assert.Equal(BundlerErrorCodes.PaymasterDepositTooLow, ex.Code);
                 Assert.True(
                     ex.Message.Contains("AA51") ||
                     ex.Message.Contains("paymaster") ||
@@ -863,21 +812,18 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA51")]
         public async Task Given_PaymasterMinimalDeposit_When_SponsoringExpensiveOp_Then_RevertsWithAA51()
         {
-            // GIVEN: A paymaster with only 1 wei deposit (not enough for expensive operation)
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.OperatorAccount.Address
+                EntryPoint = _fixture.EntryPointService.ContractAddress
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
 
-            // Deposit tiny amount (1 wei)
             await _fixture.EntryPointService.DepositToRequestAndWaitForReceiptAsync(
                 new DepositToFunction
                 {
                     Account = paymasterService.ContractHandler.ContractAddress,
-                    AmountToSend = 1  // 1 wei - not enough for any operation
+                    AmountToSend = 1
                 });
 
             var accountKey = EthECKey.GenerateKey();
@@ -887,7 +833,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -913,15 +858,14 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting an expensive UserOp using the minimally funded paymaster
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
                 Nonce = 1,
                 CallData = Array.Empty<byte>(),
-                CallGasLimit = 100000,  // Higher gas
-                VerificationGasLimit = 300000,  // Higher gas
-                PreVerificationGas = 100000,  // Higher gas
+                CallGasLimit = 100000,
+                VerificationGasLimit = 300000,
+                PreVerificationGas = 100000,
                 MaxFeePerGas = 2000000000,
                 MaxPriorityFeePerGas = 1000000000,
                 Paymaster = paymasterService.ContractHandler.ContractAddress,
@@ -932,7 +876,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA51 (paymaster deposit too low)
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
@@ -940,8 +883,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
                 Assert.False(result?.Success ?? true, "Operation with minimally funded paymaster should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
+                Assert.Equal(BundlerErrorCodes.PaymasterDepositTooLow, ex.Code);
                 Assert.True(
                     ex.Message.Contains("AA51") ||
                     ex.Message.Contains("paymaster") ||
@@ -960,16 +904,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "PaymasterSponsorship")]
         public async Task Given_FundedPaymaster_When_SponsoringOp_Then_Succeeds()
         {
-            // GIVEN: A paymaster with sufficient deposit and stake
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.OperatorAccount.Address
+                EntryPoint = _fixture.EntryPointService.ContractAddress
             };
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
 
-            // Add stake and deposit
             await paymasterService.AddStakeRequestAndWaitForReceiptAsync(
                 new TestPaymasterAcceptAll.ContractDefinition.AddStakeFunction
                 {
@@ -989,9 +930,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             ulong salt = 52001;
 
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
-            // Note: Account doesn't need funding when paymaster sponsors!
 
-            // Deploy account using paymaster
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
 
             var userOp = new UserOperation
@@ -1013,15 +952,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // WHEN: Submitting the paymaster-sponsored operation
             await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-            // THEN: Operation succeeds
             Assert.NotNull(result);
             Assert.True(result.Success, $"Paymaster-sponsored operation should succeed: {result.Error}");
 
-            // Verify account was created
             var code = await _fixture.GetCodeAsync(accountAddress);
             Assert.True(code.Length > 0, "Account should be deployed");
         }
@@ -1034,7 +970,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA42")]
         public async Task Given_VeryLowCallGas_When_Executing_Then_RevertsWithAA42OrFails()
         {
-            // GIVEN: A deployed account with a UserOp that has very low callGasLimit
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 42001;
@@ -1042,7 +977,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1068,7 +1002,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // Create a call that requires gas (transfer ETH)
             var recipient = "0x" + new string('9', 40);
             var executeFunction = new ExecuteFunction
             {
@@ -1079,13 +1012,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var functionBuilder = new Nethereum.Contracts.FunctionBuilder<ExecuteFunction>(accountAddress);
             var executeCallData = functionBuilder.GetDataAsBytes(executeFunction);
 
-            // WHEN: Submitting a UserOp with callGasLimit too low for execution
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
                 Nonce = 1,
                 CallData = executeCallData,
-                CallGasLimit = 100,  // Way too low for any meaningful execution
+                CallGasLimit = 100,
                 VerificationGasLimit = 200000,
                 PreVerificationGas = 50000,
                 MaxFeePerGas = 2000000000,
@@ -1094,16 +1026,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA42 or execution failure
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
                 var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-                // If it gets past validation, execution should fail
                 if (result != null)
                 {
-                    // Check for revert event or failed result
                     var revertEvents = result.Receipt.DecodeAllEvents<UserOperationRevertReasonEventDTO>();
                     var hasRevertEvent = revertEvents.Count > 0;
                     var hasFailedUserOp = result.UserOpResults?.Any(r => !r.Success) ?? false;
@@ -1112,7 +1041,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                         "Execution should fail due to insufficient call gas");
                 }
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
                 Assert.True(
                     ex.Message.Contains("AA42") ||
@@ -1131,7 +1060,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA52")]
         public async Task Given_VerifyingPaymasterWithInvalidSignature_When_Validating_Then_RevertsWithAA52()
         {
-            // GIVEN: A VerifyingPaymaster that requires valid signatures
             var signerKey = EthECKey.GenerateKey();
             var signerAddress = signerKey.GetPublicAddress();
 
@@ -1145,7 +1073,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var paymasterService = await VerifyingPaymasterService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
 
-            // Fund the paymaster via EntryPoint deposit
             await _fixture.EntryPointService.DepositToRequestAndWaitForReceiptAsync(
                 new DepositToFunction
                 {
@@ -1160,7 +1087,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 1m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1186,9 +1112,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting a UserOp with paymaster but INVALID signature
-            // The VerifyingPaymaster expects: validUntil (6 bytes) + validAfter (6 bytes) + signature (65 bytes)
-            var invalidPaymasterData = new byte[77];  // 6 + 6 + 65 = 77 bytes, all zeros = invalid signature
+            var invalidPaymasterData = new byte[77];
 
             var userOp = new UserOperation
             {
@@ -1203,24 +1127,21 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Paymaster = paymasterService.ContractHandler.ContractAddress,
                 PaymasterVerificationGasLimit = 100000,
                 PaymasterPostOpGasLimit = 50000,
-                PaymasterData = invalidPaymasterData  // Invalid signature!
+                PaymasterData = invalidPaymasterData
             };
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA52 or AA34 (paymaster signature validation failed)
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
                 var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-                // If bundler is in unsafe mode, execution should fail
                 Assert.False(result?.Success ?? true,
                     "Operation with invalid paymaster signature should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
-                // Valid rejection for paymaster signature failure
                 Assert.True(
                     ex.Message.Contains("AA52") ||
                     ex.Message.Contains("AA34") ||
@@ -1240,7 +1161,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "BatchExecution")]
         public async Task Given_MultipleValidOps_When_ProcessedInSameBatch_Then_AllSucceed()
         {
-            // GIVEN: Two different accounts with valid operations
             var accountKey1 = EthECKey.GenerateKey();
             var ownerAddress1 = accountKey1.GetPublicAddress();
             ulong salt1 = 80101;
@@ -1249,15 +1169,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var ownerAddress2 = accountKey2.GetPublicAddress();
             ulong salt2 = 80102;
 
-            // Setup first account
             var accountAddress1 = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress1, salt1);
             await _fixture.FundAccountAsync(accountAddress1, 5m);
 
-            // Setup second account
             var accountAddress2 = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress2, salt2);
             await _fixture.FundAccountAsync(accountAddress2, 5m);
 
-            // Create deploy operations for both accounts
             var initCode1 = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress1, salt1);
             var initCode2 = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress2, salt2);
 
@@ -1290,7 +1207,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var packedOp1 = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(deployOp1, accountKey1);
             var packedOp2 = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(deployOp2, accountKey2);
 
-            // WHEN: Executing both operations in a single handleOps call
             var bundlerWeb3 = _fixture.Node.CreateWeb3(_fixture.BundlerAccount);
             var bundlerEntryPoint = new Nethereum.AccountAbstraction.EntryPoint.EntryPointService(
                 bundlerWeb3, _fixture.EntryPointService.ContractAddress);
@@ -1304,7 +1220,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var receipt = await bundlerEntryPoint.HandleOpsRequestAndWaitForReceiptAsync(handleOpsFunction);
 
-            // THEN: Both accounts should be deployed
             Assert.Equal((BigInteger)1, receipt.Status.Value);
 
             var code1 = await _fixture.GetCodeAsync(accountAddress1);
@@ -1313,7 +1228,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.True(code1.Length > 0, "Account 1 should be deployed");
             Assert.True(code2.Length > 0, "Account 2 should be deployed");
 
-            // Verify nonces are incremented
             var nonce1 = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress1, 0);
             var nonce2 = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress2, 0);
 
@@ -1329,7 +1243,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA32")]
         public async Task Given_PaymasterWithExpiredSignature_When_Validating_Then_RevertsWithAA32()
         {
-            // GIVEN: A VerifyingPaymaster with validUntil timestamp in the past
             var signerKey = EthECKey.GenerateKey();
             var signerAddress = signerKey.GetPublicAddress();
 
@@ -1343,7 +1256,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var paymasterService = await VerifyingPaymasterService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
 
-            // Fund the paymaster
             await _fixture.EntryPointService.DepositToRequestAndWaitForReceiptAsync(
                 new DepositToFunction
                 {
@@ -1358,7 +1270,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 1m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1384,20 +1295,14 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Creating paymaster data with expired validUntil (timestamp in the past)
-            // PaymasterData format: validUntil (6 bytes) + validAfter (6 bytes) + signature (65 bytes)
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var expiredTimestamp = now - 3600;  // 1 hour in the past
+            var expiredTimestamp = now - 3600;
             var validAfter = (ulong)0;
 
-            // Build paymaster data with expired timestamp
-            var paymasterData = new byte[77];  // 6 + 6 + 65
-            // validUntil (6 bytes, big-endian)
+            var paymasterData = new byte[77];
             var validUntilBytes = BitConverter.GetBytes(expiredTimestamp);
             if (BitConverter.IsLittleEndian) Array.Reverse(validUntilBytes);
-            Array.Copy(validUntilBytes, 2, paymasterData, 0, 6);  // Take last 6 bytes
-            // validAfter (6 bytes) - leave as zeros
-            // signature (65 bytes) - leave as zeros (invalid but we're testing timestamp)
+            Array.Copy(validUntilBytes, 2, paymasterData, 0, 6);
 
             var userOp = new UserOperation
             {
@@ -1417,7 +1322,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA32 (paymaster expired) or timestamp validation error
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
@@ -1426,7 +1330,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Assert.False(result?.Success ?? true,
                     "Operation with expired paymaster timestamp should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
                 Assert.True(
                     ex.Message.Contains("AA32") ||
@@ -1446,7 +1350,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("ErrorCode", "AA33")]
         public async Task Given_PaymasterWithFutureValidAfter_When_Validating_Then_RevertsWithAA33()
         {
-            // GIVEN: A VerifyingPaymaster with validAfter timestamp in the future
             var signerKey = EthECKey.GenerateKey();
             var signerAddress = signerKey.GetPublicAddress();
 
@@ -1460,7 +1363,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var paymasterService = await VerifyingPaymasterService.DeployContractAndGetServiceAsync(
                 (Web3.Web3)_fixture.Web3, paymasterDeployment);
 
-            // Fund the paymaster
             await _fixture.EntryPointService.DepositToRequestAndWaitForReceiptAsync(
                 new DepositToFunction
                 {
@@ -1475,7 +1377,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 1m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1501,23 +1402,17 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Creating paymaster data with validAfter in the future
-            // PaymasterData format: validUntil (6 bytes) + validAfter (6 bytes) + signature (65 bytes)
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var validUntil = now + 7200;  // 2 hours from now
-            var futureValidAfter = now + 3600;  // 1 hour from now (not yet valid!)
+            var validUntil = now + 7200;
+            var futureValidAfter = now + 3600;
 
-            // Build paymaster data with future validAfter
-            var paymasterData = new byte[77];  // 6 + 6 + 65
-            // validUntil (6 bytes, big-endian)
+            var paymasterData = new byte[77];
             var validUntilBytes = BitConverter.GetBytes(validUntil);
             if (BitConverter.IsLittleEndian) Array.Reverse(validUntilBytes);
             Array.Copy(validUntilBytes, 2, paymasterData, 0, 6);
-            // validAfter (6 bytes, big-endian)
             var validAfterBytes = BitConverter.GetBytes(futureValidAfter);
             if (BitConverter.IsLittleEndian) Array.Reverse(validAfterBytes);
             Array.Copy(validAfterBytes, 2, paymasterData, 6, 6);
-            // signature (65 bytes) - leave as zeros
 
             var userOp = new UserOperation
             {
@@ -1537,7 +1432,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            // THEN: Should fail with AA33 (paymaster not yet valid) or timestamp validation error
             try
             {
                 await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
@@ -1546,7 +1440,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Assert.False(result?.Success ?? true,
                     "Operation with future validAfter should fail");
             }
-            catch (InvalidOperationException ex)
+            catch (BundlerRpcException ex)
             {
                 Assert.True(
                     ex.Message.Contains("AA33") ||
@@ -1567,7 +1461,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "EstimateGas")]
         public async Task Given_ValidUserOp_When_EstimatingGas_Then_ReturnsReasonableValues()
         {
-            // GIVEN: A deployed account
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 90001;
@@ -1575,7 +1468,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account first
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1601,26 +1493,24 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Estimating gas for a simple operation
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
                 Nonce = 1,
                 CallData = Array.Empty<byte>(),
                 MaxFeePerGas = 2000000000,
-                MaxPriorityFeePerGas = 1000000000
+                MaxPriorityFeePerGas = 1000000000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
                 userOp, _fixture.EntryPointService.ContractAddress);
 
-            // THEN: Gas estimates should be reasonable
             Assert.NotNull(estimate);
             Assert.True(estimate.VerificationGasLimit.Value > 0, "VerificationGasLimit should be > 0");
             Assert.True(estimate.CallGasLimit.Value > 0, "CallGasLimit should be > 0");
             Assert.True(estimate.PreVerificationGas.Value > 0, "PreVerificationGas should be > 0");
 
-            // Verify the operation can be executed with estimated gas
             userOp.VerificationGasLimit = (long)estimate.VerificationGasLimit.Value;
             userOp.CallGasLimit = (long)estimate.CallGasLimit.Value;
             userOp.PreVerificationGas = (long)estimate.PreVerificationGas.Value;
@@ -1641,7 +1531,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "ZeroCallData")]
         public async Task Given_ZeroCallData_When_Executed_Then_Succeeds()
         {
-            // GIVEN: A deployed account with empty callData (no-op)
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 95001;
@@ -1649,7 +1538,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 5m);
 
-            // Deploy account
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1675,12 +1563,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting an operation with zero callData
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
                 Nonce = 1,
-                CallData = Array.Empty<byte>(),  // Empty = no-op
+                CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
                 VerificationGasLimit = 200000,
                 PreVerificationGas = 50000,
@@ -1693,11 +1580,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-            // THEN: Operation should succeed (no-op is valid)
             Assert.NotNull(result);
             Assert.True(result.Success, $"Zero callData operation should succeed: {result.Error}");
 
-            // Verify nonce incremented
             var finalNonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
             Assert.Equal((BigInteger)2, finalNonce);
         }
@@ -1707,7 +1592,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Trait("Feature", "MaxGasValues")]
         public async Task Given_HighGasLimits_When_Executed_Then_Succeeds()
         {
-            // GIVEN: A deployed account with high but valid gas limits
             var accountKey = EthECKey.GenerateKey();
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 95002;
@@ -1715,7 +1599,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             await _fixture.FundAccountAsync(accountAddress, 10m);
 
-            // Deploy account
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             var deployOp = new UserOperation
             {
@@ -1741,16 +1624,15 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 Gas = 5000000
             });
 
-            // WHEN: Submitting with high gas limits (but still valid)
             var userOp = new UserOperation
             {
                 Sender = accountAddress,
                 Nonce = 1,
                 CallData = Array.Empty<byte>(),
-                CallGasLimit = 1000000,  // 1M gas
-                VerificationGasLimit = 1000000,  // 1M gas
+                CallGasLimit = 1000000,
+                VerificationGasLimit = 1000000,
                 PreVerificationGas = 100000,
-                MaxFeePerGas = 5000000000,  // 5 Gwei
+                MaxFeePerGas = 5000000000,
                 MaxPriorityFeePerGas = 2000000000
             };
 
@@ -1759,7 +1641,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
             var result = await _fixture.BundlerService.ExecuteBundleAsync();
 
-            // THEN: Operation should succeed with high gas limits
             Assert.NotNull(result);
             Assert.True(result.Success, $"High gas limit operation should succeed: {result.Error}");
         }

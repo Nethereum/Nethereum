@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+        xmlns:views="clr-namespace:Nethereum.AccountAbstraction.Example.Avalonia.Views"
+        x:Class="Nethereum.AccountAbstraction.Example.Avalonia.MainWindow"
+        x:DataType="core:SessionState"
+        Title="Nethereum Account Abstraction Example"
+        Width="960" Height="760"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SystemAltHighColor}" Padding="18,14">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="Nethereum Account Abstraction Example" FontSize="16" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <!-- Head-agnostic active-account indicator: DataContext is a resolved
+                     AccountBannerViewModel (set in code-behind), not the Window's own SessionState -
+                     see AccountBannerViewModel for why (it also carries the account's balance). -->
+                <StackPanel x:Name="AccountBanner" x:DataType="core:AccountBannerViewModel"
+                            Orientation="Horizontal" Spacing="12">
+                    <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="999" Padding="10,4"
+                            IsVisible="{Binding HasAccount}">
+                        <TextBlock Text="{Binding DisplayText}" FontSize="12" Foreground="White" />
+                    </Border>
+                    <TextBlock Text="{Binding DisplayText}" FontSize="12"
+                               Foreground="{DynamicResource SystemBaseMediumColor}" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasAccount}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <TabControl Padding="4">
+            <TabItem Header="0. Setup infra">
+                <views:InfrastructureView x:Name="InfraTab" />
+            </TabItem>
+            <TabItem Header="1. Setup" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:SetupView x:Name="SetupTab" />
+            </TabItem>
+            <TabItem Header="2. Send" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:SendView x:Name="SendTab" />
+            </TabItem>
+            <TabItem Header="3. Batch" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:BatchView x:Name="BatchTab" />
+            </TabItem>
+            <TabItem Header="4. Gasless" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:GaslessView x:Name="GaslessTab" />
+            </TabItem>
+            <TabItem Header="5. Custom Contract" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:CustomView x:Name="CustomTab" />
+            </TabItem>
+            <TabItem Header="6. Passkey" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:PasskeyView x:Name="PasskeyTab" />
+            </TabItem>
+            <TabItem Header="7. EIP-7702" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:Eip7702View x:Name="Eip7702Tab" />
+            </TabItem>
+            <TabItem Header="8. Modules" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:ModulesView x:Name="ModulesTab" />
+            </TabItem>
+            <TabItem Header="9. Policies" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:PoliciesView x:Name="PoliciesTab" />
+            </TabItem>
+            <TabItem Header="10. Workflows" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:WorkflowsView x:Name="WorkflowsTab" />
+            </TabItem>
+            <TabItem Header="11. Social Recovery" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:SocialRecoveryView x:Name="SocialRecoveryTab" />
+            </TabItem>
+            <TabItem Header="12. Diagnostics" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup infra (tab 0) first">
+                <views:DiagnosticsView x:Name="DiagnosticsTab" />
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

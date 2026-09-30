@@ -12,7 +12,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Nethereum.ABI;
 using Nethereum.Signer;
+using Nethereum.AccountAbstraction.Signing;
 using Nethereum.AccountAbstraction.Structs;
+using Nethereum.AccountAbstraction.GasEstimation;
+using Nethereum.Accounts.AccountMessageSigning;
+using Nethereum.RPC.AccountSigning;
 
 namespace Nethereum.AccountAbstraction.EntryPoint
 {
@@ -40,17 +44,20 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 
 
             public async Task<UserOperation> InitialiseUserOperationAsync(
-                UserOperation userOperation)
+                UserOperation userOperation, string eip7702Delegate = null)
             {
 
                 if (userOperation.InitCode != null && userOperation.InitCode.Length > 0)
                 {
-                    if (AccountAbstractionEIP7702Utils.IsEip7702UserOp(userOperation))
+                    if (AAEIP7702Utils.IsEip7702UserOp(userOperation))
                     {
-                        var delegateAddress = await EthApi.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
-                        if (string.IsNullOrEmpty(delegateAddress))
+                        if (string.IsNullOrEmpty(eip7702Delegate))
                         {
-                            throw new Exception("Must provide eip7702delegate for EIP-7702 UserOperation initialisation");
+                            var delegateAddress = await EthApi.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
+                            if (string.IsNullOrEmpty(delegateAddress))
+                            {
+                                throw new Exception("Must provide eip7702delegate for EIP-7702 UserOperation initialisation");
+                            }
                         }
 
                         if (userOperation.Nonce == null)
@@ -150,8 +157,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
                     userOperation.SetNullValuesToDefaultValues();
                     userOperation.PreVerificationGas = UserOperation.DEFAULT_PRE_VERIFICATION_GAS;
                     var packedFilledOp = UserOperationBuilder.PackUserOperation(userOperation);
-                    //what about the signature size?
-                    userOperation.PreVerificationGas = userOperation.PreVerificationGas + CalculateCallDataCost(new ABIEncode().GetABIParamsEncoded(packedFilledOp));
+                    userOperation.PreVerificationGas = userOperation.PreVerificationGas + UserOperationGasEstimator.CalculateCalldataCost(new ABIEncode().GetABIParamsEncoded(packedFilledOp));
                 }
 
                 userOperation.SetNullValuesToDefaultValues();
@@ -163,39 +169,46 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 
             public async Task<PackedUserOperation> SignAndInitialiseUserOperationAsync(
                 UserOperation userOperation,
-                EthECKey signer,
+                IAccountSigningService signingService,
+                IErc7579ValidatorModule? validator,
                 string eip7702Delegate = null)
             {
+                EntryPointAddresses.ValidateSupportedUserOpHashVersion(ContractAddress);
                 var chainId = await EthApi.ChainId.SendRequestAsync();
-                userOperation = await InitialiseUserOperationAsync(userOperation);
-                
-                if (AccountAbstractionEIP7702Utils.IsEip7702UserOp(userOperation))
+                userOperation = await InitialiseUserOperationAsync(userOperation, eip7702Delegate);
+
+                var wireInitCode = userOperation.InitCode;
+
+                if (AAEIP7702Utils.IsEip7702UserOp(userOperation))
                 {
                     if (string.IsNullOrEmpty(eip7702Delegate))
                     {
                         var delegateAddress = await EthApi.GetEIP7022AuthorisationService().GetDelegatedAccountAddressAsync(userOperation.Sender);
-                        userOperation.InitCode = AccountAbstractionEIP7702Utils.UpdateInitCodeForHashing(userOperation.InitCode, delegateAddress);
+                        userOperation.InitCode = AAEIP7702Utils.UpdateInitCodeForHashing(userOperation.InitCode, delegateAddress);
                     }
                     else
                     {
-                        userOperation.InitCode = AccountAbstractionEIP7702Utils.UpdateInitCodeForHashing(userOperation.InitCode, eip7702Delegate.HexToByteArray());
+                        userOperation.InitCode = AAEIP7702Utils.UpdateInitCodeForHashing(userOperation.InitCode, eip7702Delegate.HexToByteArray());
                     }
                 }
-                
-                
-                  var packedUserOperation = UserOperationBuilder.PackAndSignEIP712UserOperation(userOperation, ContractAddress, chainId, signer);
-                  return packedUserOperation;
+
+                var (packedUserOperation, _) = UserOperationBuilder.PackAndHashEIP712UserOperationForSigning(userOperation, ContractAddress, chainId);
+                var typedDataJson = UserOperationBuilder.BuildUserOperationTypedDataJson(packedUserOperation, ContractAddress, chainId);
+                var signatureHex = await signingService.SignTypedDataV4.SendRequestAsync(typedDataJson);
+                var signature = signatureHex.HexToByteArray();
+                packedUserOperation.Signature = validator != null ? validator.ApplySignaturePrefix(signature) : signature;
+                packedUserOperation.InitCode = wireInitCode;
+                return packedUserOperation;
             }
 
-            private static BigInteger CalculateCallDataCost(byte[] data)
+            public Task<PackedUserOperation> SignAndInitialiseUserOperationAsync(
+                UserOperation userOperation,
+                EthECKey signer,
+                string eip7702Delegate = null)
             {
-                BigInteger cost = 0;
-                foreach (var b in data)
-                {
-                    cost += b == 0 ? 4 : 16;
-                }
-                return cost;
+                return SignAndInitialiseUserOperationAsync(userOperation, new AccountSigningOfflineService(signer), validator: null, eip7702Delegate);
             }
+
         }
     }
 

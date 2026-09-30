@@ -4,10 +4,6 @@ using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.Bundler.Mempool
 {
-    /// <summary>
-    /// In-memory implementation of the UserOperation mempool.
-    /// Suitable for development, testing, and single-instance bundlers.
-    /// </summary>
     public class InMemoryUserOpMempool : IUserOpMempool
     {
         private readonly ConcurrentDictionary<string, MempoolEntry> _entries = new();
@@ -23,39 +19,76 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             _entryTtl = entryTtl ?? TimeSpan.FromMinutes(30);
         }
 
-        public Task<bool> AddAsync(MempoolEntry entry)
+        public Task<MempoolAddOutcome> AddAsync(MempoolEntry entry)
         {
             if (entry == null) throw new ArgumentNullException(nameof(entry));
             if (string.IsNullOrEmpty(entry.UserOpHash)) throw new ArgumentException("UserOpHash required");
 
             lock (_lock)
             {
-                if (_entries.Count >= _maxSize)
-                {
-                    return Task.FromResult(false);
-                }
-
                 if (_entries.ContainsKey(entry.UserOpHash))
                 {
-                    return Task.FromResult(false);
-                }
-
-                entry.SubmittedAt = DateTimeOffset.UtcNow;
-                entry.State = MempoolEntryState.Pending;
-
-                if (!_entries.TryAdd(entry.UserOpHash, entry))
-                {
-                    return Task.FromResult(false);
+                    return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
                 }
 
                 var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
-                _bySender.AddOrUpdate(
-                    sender,
-                    _ => new HashSet<string> { entry.UserOpHash },
-                    (_, set) => { set.Add(entry.UserOpHash); return set; });
+                var sameNonceEntry = FindBySenderAndNonce(sender, entry.UserOperation.Nonce, entry.EntryPoint);
 
-                return Task.FromResult(true);
+                if (sameNonceEntry != null)
+                {
+                    if (sameNonceEntry.State != MempoolEntryState.Pending)
+                    {
+                        return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
+                    }
+
+                    if (!MempoolReplacementRules.IsValidFeeBump(sameNonceEntry.UserOperation, entry.UserOperation))
+                    {
+                        return Task.FromResult(MempoolAddOutcome.RejectedUnderpriced);
+                    }
+
+                    RemoveInternal(sameNonceEntry.UserOpHash);
+                    InsertInternal(entry, sender);
+                    return Task.FromResult(MempoolAddOutcome.Replaced);
+                }
+
+                if (_entries.Count >= _maxSize)
+                {
+                    return Task.FromResult(MempoolAddOutcome.RejectedFull);
+                }
+
+                InsertInternal(entry, sender);
+                return Task.FromResult(MempoolAddOutcome.Added);
             }
+        }
+
+        private void InsertInternal(MempoolEntry entry, string sender)
+        {
+            entry.SubmittedAt = DateTimeOffset.UtcNow;
+            entry.State = MempoolEntryState.Pending;
+            _entries[entry.UserOpHash] = entry;
+
+            _bySender.AddOrUpdate(
+                sender,
+                _ => new HashSet<string> { entry.UserOpHash },
+                (_, set) => { set.Add(entry.UserOpHash); return set; });
+        }
+
+        private MempoolEntry? FindBySenderAndNonce(string sender, BigInteger nonce, string entryPoint)
+        {
+            if (!_bySender.TryGetValue(sender, out var hashes)) return null;
+
+            foreach (var hash in hashes)
+            {
+                if (_entries.TryGetValue(hash, out var existing) &&
+                    existing.UserOperation.Nonce == nonce &&
+                    existing.EntryPoint.Equals(entryPoint, StringComparison.OrdinalIgnoreCase) &&
+                    (existing.State == MempoolEntryState.Pending || existing.State == MempoolEntryState.Submitted))
+                {
+                    return existing;
+                }
+            }
+
+            return null;
         }
 
         public Task<MempoolEntry?> GetAsync(string userOpHash)
@@ -67,70 +100,73 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
         public Task<MempoolEntry[]> GetPendingAsync(int maxCount, BigInteger? maxGas = null)
         {
             var currentTimestamp = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var eligible = _entries.Values
+                .Where(e => e.State == MempoolEntryState.Pending)
+                .Where(e => Validation.ValidationValidityWindow.IsValidAtTime(e.ValidAfter, e.ValidUntil, currentTimestamp))
+                .ToArray();
+
+            return Task.FromResult(MempoolPendingChains.SelectBundleCandidates(eligible, maxCount, maxGas));
+        }
+
+        public Task<MempoolEntry[]> GetAllPendingAsync()
+        {
+            var currentTimestamp = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var pending = _entries.Values
                 .Where(e => e.State == MempoolEntryState.Pending)
-                .Where(e => Validation.ValidationDataHelper.IsValidAtTime(e.ValidAfter, e.ValidUntil, currentTimestamp))
-                .OrderByDescending(e => e.Priority)
-                .ThenBy(e => e.SubmittedAt);
+                .Where(e => Validation.ValidationValidityWindow.IsValidAtTime(e.ValidAfter, e.ValidUntil, currentTimestamp))
+                .OrderBy(e => e.SubmittedAt)
+                .ToArray();
 
-            var result = new List<MempoolEntry>();
-            BigInteger totalGas = 0;
-
-            foreach (var entry in pending)
-            {
-                if (result.Count >= maxCount) break;
-
-                if (maxGas.HasValue)
-                {
-                    var opGas = GetOperationGas(entry);
-                    if (totalGas + opGas > maxGas.Value) continue;
-                    totalGas += opGas;
-                }
-
-                result.Add(entry);
-            }
-
-            return Task.FromResult(result.ToArray());
+            return Task.FromResult(pending);
         }
 
         public Task<MempoolEntry[]> GetBySenderAsync(string sender)
         {
             var normalizedSender = sender?.ToLowerInvariant() ?? "";
-            if (!_bySender.TryGetValue(normalizedSender, out var hashes))
+
+            lock (_lock)
             {
-                return Task.FromResult(Array.Empty<MempoolEntry>());
+                if (!_bySender.TryGetValue(normalizedSender, out var hashes))
+                {
+                    return Task.FromResult(Array.Empty<MempoolEntry>());
+                }
+
+                var entries = hashes
+                    .Select(h => _entries.TryGetValue(h, out var e) ? e : null)
+                    .Where(e => e != null)
+                    .Cast<MempoolEntry>()
+                    .ToArray();
+
+                return Task.FromResult(entries);
             }
-
-            var entries = hashes
-                .Select(h => _entries.TryGetValue(h, out var e) ? e : null)
-                .Where(e => e != null)
-                .Cast<MempoolEntry>()
-                .ToArray();
-
-            return Task.FromResult(entries);
         }
 
         public Task<bool> RemoveAsync(string userOpHash)
         {
             lock (_lock)
             {
-                if (!_entries.TryRemove(userOpHash, out var entry))
-                {
-                    return Task.FromResult(false);
-                }
-
-                var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
-                if (_bySender.TryGetValue(sender, out var senderHashes))
-                {
-                    senderHashes.Remove(userOpHash);
-                    if (senderHashes.Count == 0)
-                    {
-                        _bySender.TryRemove(sender, out _);
-                    }
-                }
-
-                return Task.FromResult(true);
+                return Task.FromResult(RemoveInternal(userOpHash));
             }
+        }
+
+        private bool RemoveInternal(string userOpHash)
+        {
+            if (!_entries.TryRemove(userOpHash, out var entry))
+            {
+                return false;
+            }
+
+            var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
+            if (_bySender.TryGetValue(sender, out var senderHashes))
+            {
+                senderHashes.Remove(userOpHash);
+                if (senderHashes.Count == 0)
+                {
+                    _bySender.TryRemove(sender, out _);
+                }
+            }
+
+            return true;
         }
 
         public Task MarkSubmittedAsync(string[] userOpHashes, string transactionHash)
@@ -152,7 +188,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             return Task.CompletedTask;
         }
 
-        public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber)
+        public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber, string? blockHash = null)
         {
             foreach (var hash in userOpHashes)
             {
@@ -161,8 +197,12 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
                     entry.State = MempoolEntryState.Included;
                     entry.TransactionHash = transactionHash;
                     entry.BlockNumber = blockNumber;
+                    entry.BlockHash = blockHash;
+                    entry.Error = null;
                 }
             }
+
+            _byTransaction.TryRemove(transactionHash, out _);
 
             return Task.CompletedTask;
         }
@@ -175,6 +215,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
                 {
                     entry.State = MempoolEntryState.Failed;
                     entry.Error = error;
+
+                    if (!string.IsNullOrEmpty(entry.TransactionHash))
+                    {
+                        _byTransaction.TryRemove(entry.TransactionHash, out _);
+                    }
                 }
             }
 
@@ -267,21 +312,5 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             return toRemove.Count;
         }
 
-        private static BigInteger GetOperationGas(MempoolEntry entry)
-        {
-            var userOp = entry.UserOperation;
-            var accountGasLimits = userOp.AccountGasLimits ?? Array.Empty<byte>();
-
-            BigInteger verificationGas = 0;
-            BigInteger callGas = 0;
-
-            if (accountGasLimits.Length >= 32)
-            {
-                verificationGas = new BigInteger(accountGasLimits.Take(16).Reverse().ToArray(), isUnsigned: true);
-                callGas = new BigInteger(accountGasLimits.Skip(16).Take(16).Reverse().ToArray(), isUnsigned: true);
-            }
-
-            return verificationGas + callGas + userOp.PreVerificationGas;
-        }
     }
 }

@@ -46,14 +46,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
                 await TestExecAccountFactoryService.DeployContractAndGetServiceAsync(web3, simpleAccountFactoryDeployment);
 
             var txnAccountCreationReceipt = await simpleAccountFactoryService.CreateAccountRequestAndWaitForReceiptAsync(ownerAddress, 0);
-            //0 salt
             var account = await simpleAccountFactoryService.CreateAccountQueryAsync(ownerAddress, 0);
 
-            //await web3.Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(account, 1);
             
             var simpleAccountService = new TestExecAccountService(web3, account);
             
-            //deposit to entry point to pay for gas
             var receiptDeposit = await simpleAccountService.AddDepositRequestAndWaitForReceiptAsync(
                 new AddDepositFunction() { AmountToSend = Web3.Web3.Convert.ToWei(1) });
 
@@ -65,7 +62,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             var signedPackedUserOperation = await entryPointService.SignAndInitialiseUserOperationAsync(new UserOperation()
             {
                 Sender = account,
-                CallGasLimit = 1000000, //estimation fails with this calldata
+                CallGasLimit = 1000000,
                 CallData = callData,
                 VerificationGasLimit = 2000000,
             }, new Signer.EthECKey(EthereumClientIntegrationFixture.AccountPrivateKey));

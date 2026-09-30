@@ -20,9 +20,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
     <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\Nethereum.Geth\Nethereum.Geth.csproj" />
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[6.0.0,)" />
     <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
   </ItemGroup>
 

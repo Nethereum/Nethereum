@@ -1,0 +1,165 @@
+@inherits ObservingComponentBase
+@inject OffboardViewModel Vm
+
+<section class="tab-card">
+    <h2>4. Offboard</h2>
+    <p class="tab-help">
+        A guided, two-phase severance walk for a single enrolled user, in order, showing WHICH actor acts
+        at each step. <strong>Set up</strong> (the account OWNER) installs a tier-1 capped session and a
+        2-of-3 GUARDIAN quorum, then proves the session is live with a baseline pay. <strong>Rotate
+        owner</strong> (the GUARDIAN quorum) moves ownership to a fresh key - the old owner is proven dead
+        (AA24) on the account it used to control. <strong>Revoke session</strong> (the NEW owner) removes
+        the tier-1 session - the session key that just paid is proven dead (InvalidPermissionId).
+        <strong>Uninstall module</strong> (the NEW owner) removes the SmartSession module entirely.
+        <strong>Sweep</strong> (the NEW owner) moves the account's remaining balance to a fresh treasury
+        address. <strong>Ban</strong> (the ORG ADMIN) marks the account inactive on the registry. Each
+        step is only available once the step before it has completed.
+    </p>
+
+    <dl class="fact-list">
+        <dt>Managing user</dt>
+        <dd>@(Vm.ActiveUserId ?? "- none selected -")</dd>
+    </dl>
+    @if (Vm.ActiveUserId is null)
+    {
+        <p class="tab-help">Create or select a user on <strong>1. Create / select user</strong> first.</p>
+    }
+
+    @if (!Vm.IsSetUp)
+    {
+        <label class="field-label" for="offboard-cap-input">Tier-1 session cap (wei)</label>
+        <input id="offboard-cap-input" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="CapText" />
+
+        <label class="field-label" for="offboard-baseline-amount">Baseline pay amount (wei) - proves the session is live</label>
+        <input id="offboard-baseline-amount" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="WithinCapAmountText" />
+
+        <div class="btn-row">
+            <button class="btn btn-primary" disabled="@(Vm.IsBusy || Vm.ActiveUserId is null)" @onclick="() => Vm.SetUpAccountCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Setting up..." : "Set up (OWNER: install session + guardians, baseline pay)")
+            </button>
+        </div>
+    }
+    else
+    {
+        <dl class="fact-list">
+            <dt>Session key</dt>
+            <dd><code>@Vm.SessionKeyAddress</code></dd>
+            <dt>Permission id</dt>
+            <dd><code>@Vm.PermissionIdHex</code></dd>
+            <dt>Guardians (@Vm.GuardianAddresses.Count)</dt>
+            <dd>
+                <ul>
+                    @foreach (var address in Vm.GuardianAddresses)
+                    {
+                        <li><code>@address</code></li>
+                    }
+                </ul>
+            </dd>
+        </dl>
+
+        <hr />
+
+        @if (!Vm.IsRotated)
+        {
+            <div class="btn-row">
+                <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.RotateOwnerCommand.ExecuteAsync(null)">
+                    @(Vm.IsBusy ? "Rotating..." : "Rotate owner (GUARDIAN quorum: rotate ownership, old owner should die)")
+                </button>
+            </div>
+        }
+        else
+        {
+            <dl class="fact-list">
+                <dt>New owner</dt>
+                <dd><code>@Vm.NewOwnerAddress</code></dd>
+                <dt>Old owner rejected?</dt>
+                <dd>@(Vm.OldOwnerRejected == true ? "Yes" : Vm.OldOwnerRejected == false ? "No (unexpected)" : "-")</dd>
+            </dl>
+
+            @if (!Vm.IsSessionRevoked)
+            {
+                <div class="btn-row">
+                    <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.RevokeSessionCommand.ExecuteAsync(null)">
+                        @(Vm.IsBusy ? "Revoking..." : "Revoke session (NEW owner: remove tier-1 session, session should die)")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <dl class="fact-list">
+                    <dt>Revoked session rejected?</dt>
+                    <dd>@(Vm.RevokedSessionRejected == true ? "Yes" : Vm.RevokedSessionRejected == false ? "No (unexpected)" : "-")</dd>
+                </dl>
+
+                @if (!Vm.IsModuleUninstalled)
+                {
+                    <div class="btn-row">
+                        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.UninstallModuleCommand.ExecuteAsync(null)">
+                            @(Vm.IsBusy ? "Uninstalling..." : "Uninstall module (NEW owner: remove SmartSession module)")
+                        </button>
+                    </div>
+                }
+                else if (!Vm.IsSwept)
+                {
+                    <div class="btn-row">
+                        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.SweepCommand.ExecuteAsync(null)">
+                            @(Vm.IsBusy ? "Sweeping..." : "Sweep (NEW owner: move remaining balance to fresh treasury)")
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <dl class="fact-list">
+                        <dt>Treasury address</dt>
+                        <dd><code>@Vm.TreasuryAddress</code></dd>
+                        <dt>Swept amount</dt>
+                        <dd>@Vm.SweptAmount wei</dd>
+                    </dl>
+
+                    @if (!Vm.IsBanned)
+                    {
+                        <div class="btn-row">
+                            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.BanCommand.ExecuteAsync(null)">
+                                @(Vm.IsBusy ? "Banning..." : "Ban (ORG ADMIN: mark account inactive on the registry)")
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="status-message">Offboard complete - '@Vm.ActiveUserId' is banned and inactive on the registry.</p>
+                    }
+                }
+            }
+        }
+
+        <dl class="fact-list">
+            <dt>PayableTarget balance</dt>
+            <dd>@Vm.TargetBalance wei</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    private string CapText
+    {
+        get => Vm.Cap.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.Cap = parsed; }
+    }
+
+    private string WithinCapAmountText
+    {
+        get => Vm.WithinCapAmount.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.WithinCapAmount = parsed; }
+    }
+}

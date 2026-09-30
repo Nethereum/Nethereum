@@ -1,0 +1,8 @@
+<Project>
+  <!-- Same MAX_PATH workaround as the sibling .Blazor head's Directory.Build.props (see that file's
+       comment for the full rationale). -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\obj\aa-appchain-enterprise-example\Avalonia\'))</BaseIntermediateOutputPath>
+    <BaseOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\bin\aa-appchain-enterprise-example\Avalonia\'))</BaseOutputPath>
+  </PropertyGroup>
+</Project>

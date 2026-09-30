@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core;assembly=Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core"
+        xmlns:views="clr-namespace:Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Avalonia.Views"
+        x:Class="Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Avalonia.MainWindow"
+        x:DataType="core:SessionState"
+        Title="Nethereum AppChain Enterprise Example"
+        Width="960" Height="760"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SystemAltHighColor}" Padding="18,14">
+            <TextBlock Text="Nethereum AppChain Enterprise Example" FontSize="16" FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+        </Border>
+
+        <TabControl Padding="4">
+            <TabItem Header="0. Setup">
+                <views:SetupView x:Name="SetupTab" />
+            </TabItem>
+            <TabItem Header="1. Create / select user" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup (tab 0) first">
+                <views:AdminEnrollView x:Name="AdminTab" />
+            </TabItem>
+            <TabItem Header="2. User" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup (tab 0) first">
+                <views:OperatorRoleView x:Name="OperatorTab" />
+            </TabItem>
+            <TabItem Header="3. Tiered approval" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup (tab 0) first">
+                <views:TieredApprovalView x:Name="TieredApprovalTab" />
+            </TabItem>
+            <TabItem Header="4. Offboard" IsEnabled="{Binding IsReady}"
+                     ToolTip.Tip="Deploy infrastructure in Setup (tab 0) first">
+                <views:OffboardView x:Name="OffboardTab" />
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -6,13 +6,13 @@ namespace Nethereum.AccountAbstraction.Bundler.Aggregation
 {
     public static class BlsAggregatorFactory
     {
-        public static IAggregatorManager CreateAggregatorManager(
+        public static IAggregatorRegistry CreateAggregatorRegistry(
             IBls bls,
             IWeb3 web3,
             BundlerConfig config,
             BigInteger chainId)
         {
-            var manager = new AggregatorManager();
+            var registry = new AggregatorRegistry();
 
             if (config.EnableBlsAggregation && config.BlsAggregatorAddresses.Length > 0)
             {
@@ -27,12 +27,12 @@ namespace Nethereum.AccountAbstraction.Bundler.Aggregation
                             aggregatorAddress,
                             chainId);
 
-                        manager.RegisterAggregator(aggregatorAddress, aggregator);
+                        registry.RegisterAggregator(aggregatorAddress, aggregator);
                     }
                 }
             }
 
-            return manager;
+            return registry;
         }
 
         public static BlsAggregator CreateBlsAggregator(

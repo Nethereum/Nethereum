@@ -159,7 +159,6 @@ namespace Nethereum.AccountAbstraction.Governance
                 }
                 catch
                 {
-                    // Skip invalid signatures
                 }
             }
 

@@ -386,5 +386,37 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             Assert.True(estimatedGas > 21_000);
             Assert.True(estimatedGas < 30_000_000);
         }
+
+        [Fact]
+        public async Task WaitForBundleReceipt_TransactionNeverMines_TimesOutBounded()
+        {
+            var config = new BundlerConfig
+            {
+                SupportedEntryPoints = new[] { _fixture.EntryPointService.ContractAddress },
+                BeneficiaryAddress = _fixture.BeneficiaryAddress,
+                BundleReceiptTimeoutSeconds = 3
+            };
+
+            var executor = new BundleExecutor(_fixture.Web3, config);
+            var bundle = new Bundle
+            {
+                Entries = Array.Empty<MempoolEntry>(),
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Beneficiary = _fixture.BeneficiaryAddress
+            };
+
+            var unknownTxHash = "0x" + new string('9', 64);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            var result = await executor.WaitForBundleReceiptAsync(bundle, unknownTxHash);
+
+            stopwatch.Stop();
+
+            Assert.False(result.Success);
+            Assert.True(result.ReceiptTimedOut, "the wait must report a timeout, not hang");
+            Assert.Equal(unknownTxHash, result.TransactionHash);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30),
+                $"receipt wait must be bounded (took {stopwatch.Elapsed})");
+        }
     }
 }

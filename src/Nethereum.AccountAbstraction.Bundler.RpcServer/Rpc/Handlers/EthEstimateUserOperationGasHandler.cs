@@ -31,8 +31,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
                 var rpcUserOp = JsonSerializer.Deserialize<RpcUserOperation>(userOpJson.GetRawText(), JsonOptions)
                     ?? throw new JsonException("Failed to deserialize UserOperation");
 
+                if (string.IsNullOrEmpty(rpcUserOp.Sender))
+                    throw RpcException.InvalidParams("sender is required");
+
                 var domainUserOp = rpcUserOp.ToDomainUserOperation();
-                domainUserOp.SetNullValuesToDefaultValues();
 
                 var estimate = await _bundler.EstimateUserOperationGasAsync(domainUserOp, entryPoint);
 
@@ -42,28 +44,36 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
                     verificationGasLimit = ToHex(estimate.VerificationGasLimit.Value),
                     preVerificationGas = ToHex(estimate.PreVerificationGas.Value),
                     maxFeePerGas = ToHex(estimate.MaxFeePerGas?.Value ?? 0),
-                    maxPriorityFeePerGas = ToHex(estimate.MaxPriorityFeePerGas?.Value ?? 0)
+                    maxPriorityFeePerGas = ToHex(estimate.MaxPriorityFeePerGas?.Value ?? 0),
+                    paymasterVerificationGasLimit = estimate.PaymasterVerificationGasLimit != null
+                        ? ToHex(estimate.PaymasterVerificationGasLimit.Value) : null,
+                    paymasterPostOpGasLimit = estimate.PaymasterPostOpGasLimit != null
+                        ? ToHex(estimate.PaymasterPostOpGasLimit.Value) : null
                 });
             }
             catch (RpcException)
             {
                 throw;
             }
+            catch (BundlerRpcException ex)
+            {
+                return Error(request.Id, ex.Code, ex.Message, ex.ErrorData);
+            }
             catch (JsonException ex)
             {
-                return Error(request.Id, -32602, $"Invalid UserOperation format: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InvalidFields, $"Invalid UserOperation format: {ex.Message}");
             }
             catch (ArgumentException ex)
             {
-                return Error(request.Id, -32602, ex.Message);
+                return Error(request.Id, BundlerErrorCodes.InvalidFields, ex.Message);
             }
             catch (InvalidOperationException ex)
             {
-                return Error(request.Id, -32500, ex.Message);
+                return Error(request.Id, BundlerErrorCodes.SimulateValidation, ex.Message);
             }
             catch (Exception ex)
             {
-                return Error(request.Id, -32603, $"Internal error: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
             }
         }
 

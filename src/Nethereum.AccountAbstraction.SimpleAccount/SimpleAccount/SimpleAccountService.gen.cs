@@ -414,7 +414,10 @@ namespace Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount
                 typeof(ExecuteErrorError),
                 typeof(FailedCallError),
                 typeof(InvalidInitializationError),
+                typeof(NotFromEntryPointError),
                 typeof(NotInitializingError),
+                typeof(NotOwnerError),
+                typeof(NotOwnerOrEntryPointError),
                 typeof(UUPSUnauthorizedCallContextError),
                 typeof(UUPSUnsupportedProxiableUUIDError)
             };

@@ -1,0 +1,69 @@
+@inherits ObservingComponentBase
+@inject ModulesViewModel Vm
+
+<section class="tab-card">
+    <h2>Modules - ERC-7579 install/uninstall</h2>
+    <p class="tab-help">
+        ERC-7579 modules: install or uninstall capabilities on your account, live. This demo adds the
+        deployed <code>WebAuthnValidator</code> as a SECOND validator on your active account (created on
+        the Setup tab, still owned by its original ECDSA key), proves the account can then be authorised
+        by that passkey, then removes it again - your account gains, and loses, a signer.
+    </p>
+
+    <dl class="fact-list">
+        <dt>Module (WebAuthnValidator)</dt>
+        <dd><code>@Vm.ModuleAddress</code></dd>
+        <dt>Installed?</dt>
+        <dd>@(Vm.IsPasskeyValidatorInstalled ? "Yes - a second validator on your account" : "No")</dd>
+    </dl>
+
+    @if (!Vm.IsPasskeyValidatorInstalled)
+    {
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.InstallPasskeyValidatorCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Installing..." : "Install passkey as second validator")
+        </button>
+    }
+    else
+    {
+        @if (Vm.CredentialId is not null)
+        {
+            <dl class="fact-list">
+                <dt>Passkey credential id</dt>
+                <dd><code>@Vm.CredentialId</code></dd>
+            </dl>
+        }
+
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.ProvePasskeyCanSignCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Prove passkey can sign (Count via passkey)")
+        </button>
+
+        <hr />
+
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.UninstallPasskeyValidatorCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Uninstalling..." : "Uninstall passkey validator")
+        </button>
+    }
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

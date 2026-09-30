@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Same MAX_PATH workaround as the Hosting project - this project's name/folder is the longest
+         of the three (adds ".Core.Tests"), so it is the one most likely to tip default obj/bin paths
+         over Windows' 260-char limit when LongPathsEnabled is off. See Hosting's csproj comment. -->
+    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\obj\aa-appchain-enterprise-example\Core.Tests\'))</BaseIntermediateOutputPath>
+    <BaseOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\bin\aa-appchain-enterprise-example\Core.Tests\'))</BaseOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Hosting\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

@@ -8,6 +8,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 {
     public class RocksDbUserOpMempool : IUserOpMempool
     {
+        public const int SenderIndexSchemaVersion = 2;
+        public const string SenderIndexSchemaVersionMetadataKey = "sender_index_schema_version";
+        private static readonly byte[] SenderIndexSchemaVersionKeyBytes =
+            Encoding.UTF8.GetBytes(SenderIndexSchemaVersionMetadataKey);
+
         private readonly BundlerRocksDbManager _manager;
         private readonly BundlerRocksDbOptions _options;
         private readonly object _lock = new();
@@ -16,9 +21,77 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _options = options ?? new BundlerRocksDbOptions();
+
+            EnsureSenderIndexSchema();
         }
 
-        public Task<bool> AddAsync(MempoolEntry entry)
+        private void EnsureSenderIndexSchema()
+        {
+            lock (_lock)
+            {
+                var stored = _manager.Get(BundlerRocksDbManager.CF_METADATA, SenderIndexSchemaVersionKeyBytes);
+                if (stored != null && stored.Length == sizeof(int) &&
+                    BitConverter.ToInt32(stored, 0) == SenderIndexSchemaVersion)
+                {
+                    return;
+                }
+
+                RebuildSenderIndex();
+            }
+        }
+
+        private void RebuildSenderIndex()
+        {
+            var senderIndexCf = _manager.GetColumnFamily(BundlerRocksDbManager.CF_SENDER_INDEX);
+            var batch = _manager.CreateWriteBatch();
+            try
+            {
+                using (var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_SENDER_INDEX))
+                {
+                    iterator.SeekToFirst();
+                    while (iterator.Valid())
+                    {
+                        batch.Delete(iterator.Key(), senderIndexCf);
+                        iterator.Next();
+                    }
+                }
+
+                foreach (var cf in new[] {
+                    BundlerRocksDbManager.CF_USEROP_INCLUDED,
+                    BundlerRocksDbManager.CF_USEROP_FAILED,
+                    BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                    BundlerRocksDbManager.CF_USEROP_PENDING })
+                {
+                    using var iterator = _manager.CreateIterator(cf);
+                    iterator.SeekToFirst();
+                    while (iterator.Valid())
+                    {
+                        var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
+                        if (entry?.UserOperation != null)
+                        {
+                            var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
+                            var senderKey = MempoolEntrySerializer.CreateSenderKey(
+                                sender, entry.EntryPoint, entry.UserOperation.Nonce);
+                            batch.Put(senderKey, iterator.Key(), senderIndexCf);
+                        }
+                        iterator.Next();
+                    }
+                }
+
+                batch.Put(
+                    SenderIndexSchemaVersionKeyBytes,
+                    BitConverter.GetBytes(SenderIndexSchemaVersion),
+                    _manager.GetColumnFamily(BundlerRocksDbManager.CF_METADATA));
+
+                _manager.Write(batch);
+            }
+            finally
+            {
+                batch.Dispose();
+            }
+        }
+
+        public Task<MempoolAddOutcome> AddAsync(MempoolEntry entry)
         {
             if (entry == null) throw new ArgumentNullException(nameof(entry));
             if (string.IsNullOrEmpty(entry.UserOpHash)) throw new ArgumentException("UserOpHash required");
@@ -29,35 +102,66 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 
                 if (ExistsInAnyState(key))
                 {
-                    return Task.FromResult(false);
+                    return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
                 }
 
-                var countResult = CountPendingInternal();
-                if (countResult >= _options.MaxMempoolSize)
+                var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
+                var senderKey = MempoolEntrySerializer.CreateSenderKey(
+                    sender, entry.EntryPoint, entry.UserOperation.Nonce);
+
+                var occupyingHashKey = _manager.Get(BundlerRocksDbManager.CF_SENDER_INDEX, senderKey);
+                var occupyingEntry = occupyingHashKey != null ? GetEntryByKey(occupyingHashKey) : null;
+
+                if (occupyingEntry != null &&
+                    (occupyingEntry.State == MempoolEntryState.Pending ||
+                     occupyingEntry.State == MempoolEntryState.Submitted))
                 {
-                    return Task.FromResult(false);
+                    if (occupyingEntry.State == MempoolEntryState.Submitted)
+                    {
+                        return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
+                    }
+
+                    if (!MempoolReplacementRules.IsValidFeeBump(occupyingEntry.UserOperation, entry.UserOperation))
+                    {
+                        return Task.FromResult(MempoolAddOutcome.RejectedUnderpriced);
+                    }
+
+                    InsertInternal(entry, key, senderKey, replacedHashKey: occupyingHashKey);
+                    return Task.FromResult(MempoolAddOutcome.Replaced);
                 }
 
-                entry.SubmittedAt = DateTimeOffset.UtcNow;
-                entry.State = MempoolEntryState.Pending;
-
-                var batch = _manager.CreateWriteBatch();
-                try
+                if (CountPendingInternal() >= _options.MaxMempoolSize)
                 {
-                    var data = MempoolEntrySerializer.Serialize(entry);
-                    batch.Put(key, data, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
-
-                    var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
-                    var senderKey = MempoolEntrySerializer.CreateSenderKey(sender, entry.UserOperation.Nonce);
-                    batch.Put(senderKey, key, _manager.GetColumnFamily(BundlerRocksDbManager.CF_SENDER_INDEX));
-
-                    _manager.Write(batch);
-                    return Task.FromResult(true);
+                    return Task.FromResult(MempoolAddOutcome.RejectedFull);
                 }
-                finally
+
+                InsertInternal(entry, key, senderKey, replacedHashKey: null);
+                return Task.FromResult(MempoolAddOutcome.Added);
+            }
+        }
+
+        private void InsertInternal(MempoolEntry entry, byte[] key, byte[] senderKey, byte[]? replacedHashKey)
+        {
+            entry.SubmittedAt = DateTimeOffset.UtcNow;
+            entry.State = MempoolEntryState.Pending;
+
+            var batch = _manager.CreateWriteBatch();
+            try
+            {
+                if (replacedHashKey != null)
                 {
-                    batch.Dispose();
+                    batch.Delete(replacedHashKey, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
                 }
+
+                var data = MempoolEntrySerializer.Serialize(entry);
+                batch.Put(key, data, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
+                batch.Put(senderKey, key, _manager.GetColumnFamily(BundlerRocksDbManager.CF_SENDER_INDEX));
+
+                _manager.Write(batch);
+            }
+            finally
+            {
+                batch.Dispose();
             }
         }
 
@@ -82,14 +186,43 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 
         public Task<MempoolEntry[]> GetPendingAsync(int maxCount, BigInteger? maxGas = null)
         {
-            var result = new List<MempoolEntry>();
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            BigInteger totalGas = 0;
 
             using var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_USEROP_PENDING);
             iterator.SeekToFirst();
 
+            var eligible = new List<MempoolEntry>();
+            while (iterator.Valid())
+            {
+                var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
+                if (entry != null)
+                {
+                    if (entry.ValidAfter.HasValue && entry.ValidAfter.Value > now)
+                    {
+                        iterator.Next();
+                        continue;
+                    }
+                    if (entry.ValidUntil.HasValue && entry.ValidUntil.Value <= now)
+                    {
+                        iterator.Next();
+                        continue;
+                    }
+                    eligible.Add(entry);
+                }
+                iterator.Next();
+            }
+
+            return Task.FromResult(MempoolPendingChains.SelectBundleCandidates(eligible, maxCount, maxGas));
+        }
+
+        public Task<MempoolEntry[]> GetAllPendingAsync()
+        {
+            var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var pendingEntries = new List<MempoolEntry>();
+
+            using var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_USEROP_PENDING);
+            iterator.SeekToFirst();
+
             while (iterator.Valid())
             {
                 var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
@@ -110,25 +243,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                 iterator.Next();
             }
 
-            var orderedEntries = pendingEntries
-                .OrderByDescending(e => e.Priority)
-                .ThenBy(e => e.SubmittedAt);
-
-            foreach (var entry in orderedEntries)
-            {
-                if (result.Count >= maxCount) break;
-
-                if (maxGas.HasValue)
-                {
-                    var opGas = GetOperationGas(entry);
-                    if (totalGas + opGas > maxGas.Value) continue;
-                    totalGas += opGas;
-                }
-
-                result.Add(entry);
-            }
-
-            return Task.FromResult(result.ToArray());
+            var ordered = pendingEntries.OrderBy(e => e.SubmittedAt).ToArray();
+            return Task.FromResult(ordered);
         }
 
         public Task<MempoolEntry[]> GetBySenderAsync(string sender)
@@ -162,42 +278,53 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         {
             lock (_lock)
             {
-                var key = MempoolEntrySerializer.StringToKey(userOpHash);
+                return Task.FromResult(RemoveInternal(userOpHash));
+            }
+        }
 
-                foreach (var cf in new[] {
-                    BundlerRocksDbManager.CF_USEROP_PENDING,
-                    BundlerRocksDbManager.CF_USEROP_SUBMITTED,
-                    BundlerRocksDbManager.CF_USEROP_INCLUDED,
-                    BundlerRocksDbManager.CF_USEROP_FAILED })
+        private bool RemoveInternal(string userOpHash)
+        {
+            var key = MempoolEntrySerializer.StringToKey(userOpHash);
+
+            foreach (var cf in new[] {
+                BundlerRocksDbManager.CF_USEROP_PENDING,
+                BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                BundlerRocksDbManager.CF_USEROP_INCLUDED,
+                BundlerRocksDbManager.CF_USEROP_FAILED })
+            {
+                var data = _manager.Get(cf, key);
+                if (data != null)
                 {
-                    var data = _manager.Get(cf, key);
-                    if (data != null)
+                    var entry = MempoolEntrySerializer.Deserialize(data);
+                    var batch = _manager.CreateWriteBatch();
+                    try
                     {
-                        var entry = MempoolEntrySerializer.Deserialize(data);
-                        var batch = _manager.CreateWriteBatch();
-                        try
-                        {
-                            batch.Delete(key, _manager.GetColumnFamily(cf));
+                        batch.Delete(key, _manager.GetColumnFamily(cf));
 
-                            if (entry != null)
+                        if (entry != null)
+                        {
+                            var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
+                            var senderKey = MempoolEntrySerializer.CreateSenderKey(
+                                sender, entry.EntryPoint, entry.UserOperation.Nonce);
+
+                            var indexValue = _manager.Get(BundlerRocksDbManager.CF_SENDER_INDEX, senderKey);
+                            if (indexValue != null && indexValue.AsSpan().SequenceEqual(key))
                             {
-                                var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
-                                var senderKey = MempoolEntrySerializer.CreateSenderKey(sender, entry.UserOperation.Nonce);
                                 batch.Delete(senderKey, _manager.GetColumnFamily(BundlerRocksDbManager.CF_SENDER_INDEX));
                             }
+                        }
 
-                            _manager.Write(batch);
-                            return Task.FromResult(true);
-                        }
-                        finally
-                        {
-                            batch.Dispose();
-                        }
+                        _manager.Write(batch);
+                        return true;
+                    }
+                    finally
+                    {
+                        batch.Dispose();
                     }
                 }
-
-                return Task.FromResult(false);
             }
+
+            return false;
         }
 
         public Task MarkSubmittedAsync(string[] userOpHashes, string transactionHash)
@@ -241,30 +368,43 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
             return Task.CompletedTask;
         }
 
-        public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber)
+        public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber, string? blockHash = null)
         {
             lock (_lock)
             {
                 var batch = _manager.CreateWriteBatch();
                 try
                 {
+                    batch.Delete(
+                        MempoolEntrySerializer.StringToKey(transactionHash),
+                        _manager.GetColumnFamily(BundlerRocksDbManager.CF_TX_MAPPING));
+
                     foreach (var hash in userOpHashes)
                     {
                         var key = MempoolEntrySerializer.StringToKey(hash);
-                        var data = _manager.Get(BundlerRocksDbManager.CF_USEROP_SUBMITTED, key);
-                        if (data != null)
+
+                        foreach (var sourceCf in new[] {
+                            BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                            BundlerRocksDbManager.CF_USEROP_PENDING,
+                            BundlerRocksDbManager.CF_USEROP_FAILED })
                         {
+                            var data = _manager.Get(sourceCf, key);
+                            if (data == null) continue;
+
                             var entry = MempoolEntrySerializer.Deserialize(data);
                             if (entry != null)
                             {
                                 entry.State = MempoolEntryState.Included;
                                 entry.TransactionHash = transactionHash;
                                 entry.BlockNumber = blockNumber;
+                                entry.BlockHash = blockHash;
+                                entry.Error = null;
 
                                 var newData = MempoolEntrySerializer.Serialize(entry);
-                                batch.Delete(key, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_SUBMITTED));
+                                batch.Delete(key, _manager.GetColumnFamily(sourceCf));
                                 batch.Put(key, newData, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_INCLUDED));
                             }
+                            break;
                         }
                     }
 
@@ -299,6 +439,13 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                                 var entry = MempoolEntrySerializer.Deserialize(data);
                                 if (entry != null)
                                 {
+                                    if (!string.IsNullOrEmpty(entry.TransactionHash))
+                                    {
+                                        batch.Delete(
+                                            MempoolEntrySerializer.StringToKey(entry.TransactionHash),
+                                            _manager.GetColumnFamily(BundlerRocksDbManager.CF_TX_MAPPING));
+                                    }
+
                                     entry.State = MempoolEntryState.Failed;
                                     entry.Error = error;
 
@@ -478,16 +625,16 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
             CheckColumnFamily(BundlerRocksDbManager.CF_USEROP_INCLUDED, _options.IncludedEntryRetention);
             CheckColumnFamily(BundlerRocksDbManager.CF_USEROP_FAILED, _options.IncludedEntryRetention);
 
+            var removedCount = 0;
             lock (_lock)
             {
-                foreach (var (cf, hash) in toRemove)
+                foreach (var (_, hash) in toRemove)
                 {
-                    var key = MempoolEntrySerializer.StringToKey(hash);
-                    _manager.Delete(cf, key);
+                    if (RemoveInternal(hash)) removedCount++;
                 }
             }
 
-            return Task.FromResult(toRemove.Count);
+            return Task.FromResult(removedCount);
         }
 
         private bool ExistsInAnyState(byte[] key)
@@ -550,21 +697,5 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
             }
         }
 
-        private static BigInteger GetOperationGas(MempoolEntry entry)
-        {
-            var userOp = entry.UserOperation;
-            var accountGasLimits = userOp.AccountGasLimits ?? Array.Empty<byte>();
-
-            BigInteger verificationGas = 0;
-            BigInteger callGas = 0;
-
-            if (accountGasLimits.Length >= 32)
-            {
-                verificationGas = new BigInteger(accountGasLimits.Take(16).Reverse().ToArray(), isUnsigned: true);
-                callGas = new BigInteger(accountGasLimits.Skip(16).Take(16).Reverse().ToArray(), isUnsigned: true);
-            }
-
-            return verificationGas + callGas + userOp.PreVerificationGas;
-        }
     }
 }

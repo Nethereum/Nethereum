@@ -1,0 +1,111 @@
+@page "/"
+@implements IDisposable
+@inject SessionState Session
+
+<PageTitle>Nethereum Account Abstraction Example</PageTitle>
+
+<div class="tab-strip" role="tablist">
+    @foreach (var tab in _tabs)
+    {
+        var locked = tab.Id != "infra" && !Session.IsReady;
+        <button type="button"
+                class="tab-strip-button @(tab.Id == _activeTabId ? "active" : "")"
+                role="tab"
+                aria-selected="@(tab.Id == _activeTabId)"
+                disabled="@locked"
+                title="@(locked ? "Deploy infrastructure in Setup infra (tab 0) first" : null)"
+                @onclick="() => _activeTabId = tab.Id">
+            @tab.Label
+        </button>
+    }
+</div>
+
+@if (!Session.IsReady && _activeTabId != "infra")
+{
+    <p class="tab-help">Deploy infrastructure in <strong>0. Setup infra</strong> first - every other tab needs it.</p>
+}
+
+@*
+    All thirteen tab components are mounted for the lifetime of the page and only hidden with CSS
+    (never conditionally removed): the view models behind them (SetupViewModel etc.) are
+    registered transient, so unmounting a tab component would drop its view model - and with it
+    whatever the user just did on that tab - the moment they switched away.
+*@
+<div class="tab-panel" style="display:@(_activeTabId == "infra" ? "block" : "none")">
+    <InfrastructureTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "setup" ? "block" : "none")">
+    <SetupTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "send" ? "block" : "none")">
+    <SendTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "batch" ? "block" : "none")">
+    <BatchTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "gasless" ? "block" : "none")">
+    <GaslessTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "custom" ? "block" : "none")">
+    <CustomTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "passkey" ? "block" : "none")">
+    <PasskeyTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "eip7702" ? "block" : "none")">
+    <Eip7702Tab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "modules" ? "block" : "none")">
+    <ModulesTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "policies" ? "block" : "none")">
+    <PoliciesTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "workflows" ? "block" : "none")">
+    <WorkflowsTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "social-recovery" ? "block" : "none")">
+    <SocialRecoveryTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "diagnostics" ? "block" : "none")">
+    <DiagnosticsTab />
+</div>
+
+@code {
+    private record TabInfo(string Id, string Label);
+
+    private readonly TabInfo[] _tabs =
+    {
+        new("infra", "0. Setup infra"),
+        new("setup", "1. Setup"),
+        new("send", "2. Send"),
+        new("batch", "3. Batch"),
+        new("gasless", "4. Gasless"),
+        new("custom", "5. Custom Contract"),
+        new("passkey", "6. Passkey"),
+        new("eip7702", "7. EIP-7702"),
+        new("modules", "8. Modules"),
+        new("policies", "9. Policies"),
+        new("workflows", "10. Workflows"),
+        new("social-recovery", "11. Social Recovery"),
+        new("diagnostics", "12. Diagnostics")
+    };
+
+    private string _activeTabId = "infra";
+
+    protected override void OnInitialized()
+    {
+        Session.PropertyChanged += OnSessionChanged;
+    }
+
+    private void OnSessionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SessionState.IsReady))
+            InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Session.PropertyChanged -= OnSessionChanged;
+    }
+}

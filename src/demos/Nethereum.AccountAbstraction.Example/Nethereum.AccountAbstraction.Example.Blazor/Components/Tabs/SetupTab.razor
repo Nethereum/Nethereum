@@ -1,0 +1,87 @@
+@inherits ObservingComponentBase
+@inject SetupViewModel Vm
+
+<section class="tab-card">
+    <h2>Setup - create a smart account</h2>
+    <p class="tab-help">
+        Generates a fresh owner key and derives the account's counterfactual (CREATE2) address
+        through <code>IAAClient.CreateAccountAsync</code>. No transaction is sent
+        yet - the account deploys itself the first time a call goes through it.
+    </p>
+
+    <div class="btn-row">
+        <label>
+            <input type="radio" name="setup-payment-mode" checked="@(Vm.SelectedPaymentMode == AccountPaymentMode.SelfFunded)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.SelectedPaymentMode = AccountPaymentMode.SelfFunded" />
+            Self-funded
+        </label>
+        <label>
+            <input type="radio" name="setup-payment-mode" checked="@(Vm.SelectedPaymentMode == AccountPaymentMode.PaymasterSponsored)"
+                   disabled="@(Vm.IsBusy || !Vm.HasPaymaster)" @onchange="() => Vm.SelectedPaymentMode = AccountPaymentMode.PaymasterSponsored" />
+            Paymaster-sponsored
+        </label>
+    </div>
+    @if (!Vm.HasPaymaster)
+    {
+        <p class="tab-help">No paymaster is configured for this infrastructure (use-existing mode); the new account will be self-funded.</p>
+    }
+
+    <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.CreateAccountCommand.ExecuteAsync(null)">
+        @(Vm.IsBusy ? "Creating..." : "Create Account")
+    </button>
+
+    @if (Vm.SmartAccountAddress is not null)
+    {
+        <dl class="fact-list">
+            <dt>Owner address</dt>
+            <dd><code>@Vm.OwnerAddress</code></dd>
+            <dt>Smart account address</dt>
+            <dd><code>@Vm.SmartAccountAddress</code></dd>
+            <dt>Deployed?</dt>
+            <dd>@(Vm.IsDeployed ? "Yes" : "No - deploys on its first operation")</dd>
+        </dl>
+
+        <hr />
+    }
+
+    @* Gated on the session's active account (Vm.HasActiveAccount), not this tab's own
+       SmartAccountAddress: whichever tab created the active account (Setup or Passkey), it can be
+       funded here without minting an unrelated new one by clicking "Create Account" again. *@
+    @if (Vm.HasActiveAccount)
+    {
+        @if (!Vm.ActiveAccountIsPaymasterSponsored)
+        {
+            <p class="tab-help">
+                The active account (<code>@Vm.ActiveAccountAddress</code>) starts at zero balance. Fund
+                it before trying the <strong>Send</strong>, <strong>Batch</strong> or
+                <strong>Custom Contract</strong> tabs (they pay their own gas) - or skip funding and go
+                straight to <strong>Gasless</strong>, which works even at zero balance because a
+                paymaster sponsors it.
+            </p>
+        }
+        else
+        {
+            <p class="tab-help">
+                This account is paymaster-sponsored - the paymaster covers gas for
+                <strong>Send</strong>, <strong>Batch</strong> and <strong>Custom Contract</strong> too,
+                so funding isn't needed (same mechanism as the <strong>Gasless</strong> tab).
+            </p>
+        }
+        <button class="btn btn-secondary" disabled="@Vm.IsBusy" @onclick="() => Vm.FundAccountCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Funding..." : "Fund account")
+        </button>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

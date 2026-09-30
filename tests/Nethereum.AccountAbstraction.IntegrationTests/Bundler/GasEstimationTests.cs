@@ -5,6 +5,7 @@ using Nethereum.AccountAbstraction.Contracts.Paymaster.VerifyingPaymaster.Contra
 using Nethereum.AccountAbstraction.GasEstimation;
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount.ContractDefinition;
 using Nethereum.AccountAbstraction.Structs;
+using Call = Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount.ContractDefinition.Call;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
@@ -18,6 +19,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
     public class GasEstimationTests
     {
         private readonly BundlerTestFixture _fixture;
+
+        private const string DUMMY_SIGNATURE =
+            "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c";
 
         public GasEstimationTests(BundlerTestFixture fixture)
         {
@@ -42,7 +46,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -82,7 +87,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 InitCode = initCode,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var userOpExisting = new UserOperation
@@ -90,7 +96,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = existingAccountAddress,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimateWithInit = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -144,8 +151,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 
             var fakeEntryPoint = "0x0000000000000000000000000000000000000001";
 
-            await Assert.ThrowsAsync<ArgumentException>(() =>
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(() =>
                 _fixture.BundlerService.EstimateUserOperationGasAsync(userOp, fakeEntryPoint));
+
+            Assert.Equal(BundlerErrorCodes.InvalidFields, ex.Code);
         }
 
         [Fact]
@@ -166,7 +175,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate1 = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -200,7 +210,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -213,7 +224,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 
             userOp.VerificationGasLimit = (long)estimate.VerificationGasLimit.Value;
             userOp.PreVerificationGas = (long)estimate.PreVerificationGas.Value;
-            userOp.CallGasLimit = 100_000;
+            userOp.CallGasLimit = (long)estimate.CallGasLimit.Value;
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
@@ -230,7 +241,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
-        public async Task EstimateUserOperationGas_WithPaymaster_IncludesPaymasterGas()
+        public async Task EstimateUserOperationGas_WithPaymaster_SurfacesValidationFailureCleanly()
         {
             var paymasterDeployment = new VerifyingPaymasterDeployment
             {
@@ -262,28 +273,15 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 MaxFeePerGas = 1_000_000_000,
                 MaxPriorityFeePerGas = 1_000_000_000,
                 Paymaster = paymasterService.ContractAddress,
-                PaymasterData = new byte[65]
+                PaymasterData = new byte[65],
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
-            var userOpWithoutPaymaster = new UserOperation
-            {
-                Sender = accountAddress,
-                CallData = executeFunction.GetCallData(),
-                MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
-            };
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(() =>
+                _fixture.BundlerService.EstimateUserOperationGasAsync(
+                    userOpWithPaymaster, _fixture.EntryPointService.ContractAddress));
 
-            var estimateWithPaymaster = await _fixture.BundlerService.EstimateUserOperationGasAsync(
-                userOpWithPaymaster,
-                _fixture.EntryPointService.ContractAddress);
-
-            var estimateWithoutPaymaster = await _fixture.BundlerService.EstimateUserOperationGasAsync(
-                userOpWithoutPaymaster,
-                _fixture.EntryPointService.ContractAddress);
-
-            Assert.True(estimateWithPaymaster.PreVerificationGas.Value > estimateWithoutPaymaster.PreVerificationGas.Value,
-                $"PreVerificationGas with paymaster ({estimateWithPaymaster.PreVerificationGas.Value}) " +
-                $"should be > without ({estimateWithoutPaymaster.PreVerificationGas.Value})");
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
         }
 
         [Fact]
@@ -317,7 +315,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = singleExecute.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var userOpBatch = new UserOperation
@@ -325,7 +324,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = batchExecute.GetCallData(),
                 MaxFeePerGas = 1_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimateSingle = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -362,7 +362,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 2_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -404,7 +405,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 
             var executeFunction = new ExecuteFunction
             {
-                Target = accountAddress,
+                Target = "0x" + new string('5', 40),
                 Value = 0,
                 Data = largeData
             };
@@ -414,7 +415,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = executeFunction.GetCallData(),
                 MaxFeePerGas = 2_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -424,7 +426,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var expectedCalldataCost = UserOperationGasEstimator.CalculateCalldataCost(executeFunction.GetCallData());
 
             Assert.True(estimate.PreVerificationGas.Value >=
-                GasEstimationConstants.PRE_VERIFICATION_OVERHEAD_GAS + (long)expectedCalldataCost / 2,
+                GasEstimationConstants.BASE_TRANSACTION_GAS + (long)expectedCalldataCost / 2,
                 $"PreVerificationGas ({estimate.PreVerificationGas.Value}) should account for large calldata");
 
             userOp.VerificationGasLimit = (long)estimate.VerificationGasLimit.Value;
@@ -461,7 +463,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 Sender = accountAddress,
                 CallData = batchExecute.GetCallData(),
                 MaxFeePerGas = 2_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -488,6 +491,263 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 
             Assert.True(result.GasUsed <= totalEstimatedGas * 2,
                 $"Batch gas used ({result.GasUsed}) should be reasonable relative to estimate ({totalEstimatedGas})");
+        }
+
+        [Fact]
+        public async Task EstimateUserOperationGas_CounterfactualSender_EstimatesRealExecutionAndExecutes()
+        {
+            var ownerKey = EthECKey.GenerateKey();
+            var ownerAddress = ownerKey.GetPublicAddress();
+            var salt = (ulong)Random.Shared.NextInt64();
+
+            var accountAddress = await _fixture.GetAccountAddressAsync(ownerAddress, salt);
+            await _fixture.FundAccountAsync(accountAddress, 1m);
+
+            var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
+
+            var recipient = "0x" + new string('7', 40);
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient,
+                Value = Web3.Web3.Convert.ToWei(0.01m),
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = new UserOperation
+            {
+                Sender = accountAddress,
+                Nonce = 0,
+                InitCode = initCode,
+                CallData = executeFunction.GetCallData(),
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
+                userOp, _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(estimate.CallGasLimit.Value >= 30_000,
+                $"callGasLimit ({estimate.CallGasLimit.Value}) should be a real execution budget, not a calldata-only estimate");
+            Assert.True(estimate.VerificationGasLimit.Value >= 100_000,
+                $"verificationGasLimit ({estimate.VerificationGasLimit.Value}) should cover counterfactual deployment");
+
+            var finalOp = new UserOperation
+            {
+                Sender = accountAddress,
+                Nonce = 0,
+                InitCode = initCode,
+                CallData = executeFunction.GetCallData(),
+                CallGasLimit = estimate.CallGasLimit.Value,
+                VerificationGasLimit = estimate.VerificationGasLimit.Value,
+                PreVerificationGas = estimate.PreVerificationGas.Value,
+                MaxFeePerGas = estimate.MaxFeePerGas.Value,
+                MaxPriorityFeePerGas = estimate.MaxPriorityFeePerGas.Value
+            };
+
+            var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(finalOp, ownerKey);
+
+            using var bundler = _fixture.CreateNewBundlerService();
+            var userOpHash = await bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
+
+            var bundleResult = await bundler.ExecuteBundleAsync();
+            Assert.NotNull(bundleResult);
+            Assert.True(bundleResult.Success, $"Bundle should succeed using the estimate alone, error: {bundleResult.Error}");
+
+            var receipt = await bundler.GetUserOperationReceiptAsync(userOpHash);
+            Assert.NotNull(receipt);
+            Assert.True(receipt!.Success, "counterfactual deployment + execution should succeed using the estimate alone");
+        }
+
+        [Fact]
+        public async Task EstimateUserOperationGas_DeployedSender_CallGasLimitBelowCounterfactualVerification()
+        {
+            var salt1 = (ulong)Random.Shared.NextInt64();
+            var (deployedAddress, _) = await _fixture.CreateFundedAccountAsync(salt1);
+
+            var deployedExecute = new ExecuteFunction
+            {
+                Target = deployedAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var deployedOp = new UserOperation
+            {
+                Sender = deployedAddress,
+                CallData = deployedExecute.GetCallData(),
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var deployedEstimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
+                deployedOp, _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(deployedEstimate.CallGasLimit.Value >= 21_000,
+                $"callGasLimit ({deployedEstimate.CallGasLimit.Value}) should be at least the intrinsic floor");
+
+            var ownerKey2 = EthECKey.GenerateKey();
+            var ownerAddress2 = ownerKey2.GetPublicAddress();
+            var salt2 = (ulong)Random.Shared.NextInt64();
+            var counterfactualAddress = await _fixture.GetAccountAddressAsync(ownerAddress2, salt2);
+            await _fixture.FundAccountAsync(counterfactualAddress, 1m);
+            var initCode2 = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress2, salt2);
+
+            var counterfactualExecute = new ExecuteFunction
+            {
+                Target = counterfactualAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var counterfactualOp = new UserOperation
+            {
+                Sender = counterfactualAddress,
+                Nonce = 0,
+                InitCode = initCode2,
+                CallData = counterfactualExecute.GetCallData(),
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var counterfactualEstimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
+                counterfactualOp, _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(
+                deployedEstimate.CallGasLimit.Value < counterfactualEstimate.VerificationGasLimit.Value,
+                $"deployed sender's callGasLimit ({deployedEstimate.CallGasLimit.Value}) should be well below the " +
+                $"counterfactual sender's deployment-inclusive verificationGasLimit ({counterfactualEstimate.VerificationGasLimit.Value})");
+        }
+
+        [Fact]
+        public async Task EstimateUserOperationGas_WithWrongSignerSignature_DoesNotThrow()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = accountAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = new UserOperation
+            {
+                Sender = accountAddress,
+                CallData = executeFunction.GetCallData(),
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
+                userOp, _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(estimate.CallGasLimit.Value >= 21_000);
+            Assert.True(estimate.VerificationGasLimit.Value > 0);
+        }
+
+        [Fact]
+        public async Task EstimateUserOperationGas_WithRevertingCallData_ThrowsUserOperationReverted()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var revertingExecute = new ExecuteFunction
+            {
+                Target = _fixture.EntryPointService.ContractAddress,
+                Value = 0,
+                Data = new byte[] { 0xde, 0xad, 0xbe, 0xef }
+            };
+
+            var userOp = new UserOperation
+            {
+                Sender = accountAddress,
+                CallData = revertingExecute.GetCallData(),
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(() =>
+                _fixture.BundlerService.EstimateUserOperationGasAsync(userOp, _fixture.EntryPointService.ContractAddress));
+
+            Assert.Equal(BundlerErrorCodes.UserOperationReverted, ex.Code);
+        }
+
+        [Fact]
+        public async Task EstimateUserOperationGas_NonIdempotentOp_SendsNearlyEntireBalance_DoesNotFalseRevert()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt, 1m);
+
+            var recipient = "0x" + new string('9', 40);
+            var transferAmount = Web3.Web3.Convert.ToWei(0.9m);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = recipient,
+                Value = transferAmount,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = new UserOperation
+            {
+                Sender = accountAddress,
+                CallData = executeFunction.GetCallData(),
+                MaxFeePerGas = 1_000_000_000,
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
+                userOp, _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(estimate.CallGasLimit.Value >= 21_000,
+                $"callGasLimit ({estimate.CallGasLimit.Value}) should be a valid execution budget for an op that succeeds");
+
+            userOp.VerificationGasLimit = (long)estimate.VerificationGasLimit.Value;
+            userOp.PreVerificationGas = (long)estimate.PreVerificationGas.Value;
+            userOp.CallGasLimit = (long)estimate.CallGasLimit.Value;
+
+            var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
+
+            using var bundler = _fixture.CreateNewBundlerService();
+            var userOpHash = await bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
+
+            var bundleResult = await bundler.ExecuteBundleAsync();
+            Assert.NotNull(bundleResult);
+            Assert.True(bundleResult.Success, $"Bundle should succeed using the estimate alone, error: {bundleResult.Error}");
+
+            var receipt = await bundler.GetUserOperationReceiptAsync(userOpHash);
+            Assert.NotNull(receipt);
+            Assert.True(receipt!.Success, "sending nearly the entire balance should succeed using the estimate alone");
+        }
+
+        [Fact]
+        public async Task EstimateUserOperationGas_UnfundedCounterfactualSender_ThrowsSimulateValidationAA21()
+        {
+            var ownerKey = EthECKey.GenerateKey();
+            var ownerAddress = ownerKey.GetPublicAddress();
+            var salt = (ulong)Random.Shared.NextInt64();
+
+            var accountAddress = await _fixture.GetAccountAddressAsync(ownerAddress, salt);
+            var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = accountAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = new UserOperation
+            {
+                Sender = accountAddress,
+                Nonce = 0,
+                InitCode = initCode,
+                CallData = executeFunction.GetCallData(),
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
+            };
+
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(() =>
+                _fixture.BundlerService.EstimateUserOperationGasAsync(userOp, _fixture.EntryPointService.ContractAddress));
+
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
+            Assert.Contains("AA21", ex.Message);
         }
     }
 }

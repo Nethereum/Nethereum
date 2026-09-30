@@ -1,0 +1,80 @@
+@inherits ObservingComponentBase
+@inject EnterpriseAdminViewModel Vm
+
+<section class="tab-card">
+    <h2>1. Create / select user</h2>
+    <p class="tab-help">
+        The org's directory <strong>ADMIN</strong> creates a userId onto the AppChain account registry:
+        this looks the user up (standing in for an existing AD/SSO directory), generates them a fresh
+        owner key, and deploys/activates their counterfactual account through the org-signed registry.
+        The admin never signs an operation on the user's behalf - only the account owner (the User tab)
+        can do that. The user just created becomes the <strong>ACTIVE USER</strong> every other tab
+        (User, Tiered approval, Offboard) operates on - click a different row in the directory below to
+        switch it.
+    </p>
+
+    <label class="field-label" for="user-id">userId</label>
+    <input id="user-id" class="field-input" disabled="@Vm.IsBusy" @bind="Vm.UserId" />
+
+    <div class="btn-row">
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.EnrollCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Creating..." : "Create user")
+        </button>
+    </div>
+
+    @if (Vm.ResolvedAddress is not null)
+    {
+        <dl class="fact-list">
+            <dt>Resolved address</dt>
+            <dd><code>@Vm.ResolvedAddress</code></dd>
+            <dt>Active?</dt>
+            <dd>@(Vm.IsActive == true ? "Yes" : Vm.IsActive == false ? "No" : "-")</dd>
+        </dl>
+    }
+
+    <dl class="fact-list">
+        <dt>Active user</dt>
+        <dd>@(Vm.ActiveUserId ?? "- none selected -")</dd>
+    </dl>
+
+    @if (Vm.Directory.Count > 0)
+    {
+        <dl class="fact-list">
+            <dt>Directory (@Vm.Directory.Count enrolled) - click a row to make it the active user</dt>
+            <dd>
+                <div class="directory-list">
+                    @foreach (var user in Vm.Directory)
+                    {
+                        <button type="button"
+                                class="directory-row @(user.IsSelected ? "active" : "")"
+                                disabled="@Vm.IsBusy"
+                                @onclick="() => Vm.SelectUserCommand.ExecuteAsync(user.UserId)">
+                            @(user.IsSelected ? "* " : "")<code>@user.UserId</code> - owner <code>@user.OwnerAddress</code> -
+                            account <code>@user.AccountAddress</code> -
+                            @(user.IsActive ? "Active" : "Not active")
+                        </button>
+                    }
+                </div>
+            </dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Vm.Directory.CollectionChanged += (_, _) => InvokeAsync(StateHasChanged);
+    }
+}

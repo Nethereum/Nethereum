@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.AccountAbstraction.AppChain.Contracts.Policy.AccountRegistry;
 using Nethereum.AccountAbstraction.AppChain.Contracts.Policy.AccountRegistry.ContractDefinition;
@@ -12,15 +13,16 @@ using Nethereum.AccountAbstraction.Contracts.Modules.Native.ECDSAValidator;
 using Nethereum.AccountAbstraction.Contracts.Modules.Native.ECDSAValidator.ContractDefinition;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
-using Nethereum.AccountAbstraction.ERC7579;
+using Nethereum.AccountAbstraction.Signing;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.AppChain;
 
-using NethereumAccountExecuteFunction = Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount.ContractDefinition.ExecuteFunction;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.AppChain.Sequencer;
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.Contracts;
-using Nethereum.CoreChain.Storage.InMemory;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3;
@@ -28,7 +30,6 @@ using Nethereum.Web3.Accounts;
 using Xunit;
 
 using AppChainCore = Nethereum.AppChain.AppChain;
-using AppChainSequencer = Nethereum.AppChain.Sequencer.Sequencer;
 
 namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 {
@@ -37,11 +38,13 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
         private const int CHAIN_ID = 420421;
 
         private AppChainCore _appChain = null!;
-        private AppChainSequencer _sequencer = null!;
+        private ISequencer _sequencer = null!;
         private AppChainNode _node = null!;
         private IWeb3 _web3 = null!;
         private BundlerService _bundlerService = null!;
         private AppChainRpcClient _rpcClient = null!;
+        private AppChainComposedNode? _composed;
+        private bool _signRecoverableBeforeCompose;
 
         private EntryPointService _entryPointService = null!;
         private NethereumAccountFactoryService _accountFactoryService = null!;
@@ -55,99 +58,70 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 
         private byte[] EncodeInitData(string ownerAddress)
         {
-            return ByteUtil.Merge(
-                _ecdsaValidatorService.ContractAddress.HexToByteArray(),
-                ownerAddress.HexToByteArray());
+            return Nethereum.AccountAbstraction.ERC7579.Modules.AccountInitDataBuilder.BuildEcdsa(
+                _ecdsaValidatorService.ContractAddress, ownerAddress);
         }
 
         private byte[] CreateERC7579ExecuteCallData(string target, BigInteger value, byte[] data)
         {
-            var mode = ERC7579ModeLib.EncodeSingleDefault();
-            var executionCalldata = ERC7579ExecutionLib.EncodeSingle(target, value, data);
-            var executeFunction = new NethereumAccountExecuteFunction
-            {
-                Mode = mode,
-                ExecutionCalldata = executionCalldata
-            };
-            return executeFunction.GetCallData();
+            return new Nethereum.AccountAbstraction.Execution.Erc7579ExecuteEncoder().EncodeExecute(target, value, data);
         }
 
-        private byte[] PrefixSignatureWithValidator(byte[] signature)
-        {
-            return ByteUtil.Merge(
-                _ecdsaValidatorService.ContractAddress.HexToByteArray(),
-                signature);
-        }
+        private string _operatorPrivateKey = null!;
 
-        public async Task InitializeAsync()
+        public Task InitializeAsync()
         {
-            var operatorPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-            _operatorAccount = new Account(operatorPrivateKey, CHAIN_ID);
+            _operatorPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+            _operatorAccount = new Account(_operatorPrivateKey, CHAIN_ID);
             _bundlerAccount = new Account("0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a", CHAIN_ID);
             _userAccount = new Account("0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6", CHAIN_ID);
             _unauthorizedBundlerAccount = new Account("0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a", CHAIN_ID);
-
-            var blockStore = new InMemoryBlockStore();
-            var transactionStore = new InMemoryTransactionStore(blockStore);
-            var receiptStore = new InMemoryReceiptStore();
-            var logStore = new InMemoryLogStore();
-            var stateStore = new InMemoryStateStore();
-
-            var appChainConfig = AppChainConfig.CreateWithName("PolicyAATest", CHAIN_ID);
-            appChainConfig.SequencerAddress = _operatorAccount.Address;
-            appChainConfig.BaseFee = 1_000_000_000;
-            appChainConfig.BlockGasLimit = 30_000_000;
-
-            _appChain = new AppChainCore(
-                appChainConfig,
-                blockStore,
-                transactionStore,
-                receiptStore,
-                logStore,
-                stateStore);
-
-            var prefundedAddresses = new[]
-            {
-                _operatorAccount.Address,
-                _bundlerAccount.Address,
-                _userAccount.Address,
-                _unauthorizedBundlerAccount.Address
-            };
-
-            var genesisOptions = new GenesisOptions
-            {
-                PrefundedAddresses = prefundedAddresses,
-                PrefundBalance = Web3.Web3.Convert.ToWei(1000),
-                DeployCreate2Factory = true
-            };
-            await _appChain.InitializeAsync(genesisOptions);
+            return Task.CompletedTask;
         }
 
         public async Task DisposeAsync()
         {
             _bundlerService?.Dispose();
-            if (_sequencer != null)
+            if (_composed != null)
             {
-                await _sequencer.StopAsync();
+                await _composed.DisposeAsync();
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
             }
         }
 
         private async Task SetupWithPolicyAsync(PolicyConfig policyConfig)
         {
-            var sequencerConfig = new SequencerConfig
+            var config = new AppChainServerConfig
             {
-                SequencerAddress = _operatorAccount.Address,
-                SequencerPrivateKey = _operatorAccount.PrivateKey,
-                BlockTimeMs = 0,
-                MaxTransactionsPerBlock = 1000,
-                BlockProductionMode = BlockProductionMode.OnDemand,
-                Policy = policyConfig
+                ChainId = CHAIN_ID,
+                ChainName = "PolicyAATest",
+                BaseFee = 1_000_000_000
             };
+            config.Genesis.Owner.PrivateKey = _operatorPrivateKey;
+            config.Consensus.Sequencer.PrivateKey = _operatorPrivateKey;
+            config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
+            config.Consensus.BlockTimeMs = 0;
+            config.Consensus.Policy = policyConfig;
+            config.Node.Storage.InMemory = true;
+            config.Node.Network.Serve = false;
+            config.Node.Sync.Mode = SyncMode.None;
+            config.Mud.DeployWorld = false;
 
-            _sequencer = new AppChainSequencer(_appChain, sequencerConfig);
-            await _sequencer.StartAsync();
+            _signRecoverableBeforeCompose = EthECKey.SignRecoverable;
+            _composed = await AppChainComposition.ComposeAsync(config, NullLoggerFactory.Instance, CancellationToken.None);
+            _appChain = _composed.AppChain;
+            _sequencer = _composed.Sequencer!;
+            _node = _composed.Node;
 
-            _node = new AppChainNode(_appChain, _sequencer);
+            var prefundBalance = Web3.Web3.Convert.ToWei(1000);
+            foreach (var address in new[] { _bundlerAccount.Address, _userAccount.Address, _unauthorizedBundlerAccount.Address })
+            {
+                await _appChain.State.SaveAccountAsync(address, new Nethereum.Model.Account
+                {
+                    Balance = prefundBalance,
+                    Nonce = 0
+                });
+            }
 
             _rpcClient = new AppChainRpcClient(_node, CHAIN_ID);
             _web3 = new Web3.Web3(_operatorAccount, _rpcClient);
@@ -321,6 +295,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var nonce = await _entryPointService.GetNonceQueryAsync(smartAccountAddress, BigInteger.Zero);
 
             var userOp = CreateUserOp(smartAccountAddress, nonce, callData);
+            // The 100KB calldata pushes the EIP-7623 preVerificationGas floor to ~3.5M; fund above it
+            userOp.PreVerificationGas = 4_000_000;
 
             var packedUserOp = SignUserOperation(userOp, _userAccount);
 
@@ -400,7 +376,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 _entryPointService.ContractAddress,
                 CHAIN_ID,
                 signerKey);
-            packedUserOp.Signature = PrefixSignatureWithValidator(packedUserOp.Signature);
+            packedUserOp.Signature = EcdsaValidatorModule.ApplySignaturePrefix(_ecdsaValidatorService.ContractAddress, packedUserOp.Signature);
             return packedUserOp;
         }
     }

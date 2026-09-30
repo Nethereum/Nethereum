@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Hosting</RootNamespace>
+    <!-- This project's own name/folder is deliberately long (mirrors the reference demo's naming, with
+         the AppChain/Enterprise segments added) - on a Windows machine without LongPathsEnabled, the
+         default obj/bin path (repeating the full project name twice under a matching-name parent
+         folder) lands right at/over MAX_PATH (260 chars), and MSBuild's own output-copy step fails with
+         MSB3030 ("could not copy... because it was not found") even though compilation itself succeeds.
+         Redirecting to a short, repo-relative path avoids that without shortening the project name. -->
+    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\obj\aa-appchain-enterprise-example\Hosting\'))</BaseIntermediateOutputPath>
+    <BaseOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\bin\aa-appchain-enterprise-example\Hosting\'))</BaseOutputPath>
+  </PropertyGroup>
+
+  <!-- The enterprise demo's shared self-bootstrap: brings up an in-process DevChain + bundler
+       (ERC-4337 validation ON), deploys the AppChain AA stack (EntryPoint/AccountRegistry/factory/
+       SponsoredPaymaster/modules) via AADeployer, and the additive P1-D enterprise rule stack
+       (RuleRegistry/ValueCapRule/ValueCapCombinator/PayableTarget) alongside it, so every UI head
+       shares the identical startup and DI wiring instead of each copy-pasting it. No UI framework
+       dependency here. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction.AppChain\Nethereum.AccountAbstraction.AppChain.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction.Bundler.InProcess\Nethereum.AccountAbstraction.Bundler.InProcess.csproj" />
+  </ItemGroup>
+
+</Project>

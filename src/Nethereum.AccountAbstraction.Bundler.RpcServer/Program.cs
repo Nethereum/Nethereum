@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.JsonRpc.Client.RpcMessages;
@@ -50,6 +51,24 @@ if (!string.IsNullOrEmpty(chainIdStr) && BigInteger.TryParse(chainIdStr, out var
     config.ChainId = chainId;
 }
 
+var maxVerificationGasStr = builder.Configuration["maxVerificationGas"];
+if (!string.IsNullOrEmpty(maxVerificationGasStr) && int.TryParse(maxVerificationGasStr, out var maxVerificationGas))
+{
+    config.MaxVerificationGas = maxVerificationGas;
+}
+
+var minStakeStr = builder.Configuration["minStake"];
+if (!string.IsNullOrEmpty(minStakeStr) && BigInteger.TryParse(minStakeStr, out var minStake))
+{
+    config.MinStake = minStake;
+}
+
+var minUnstakeDelayStr = builder.Configuration["minUnstakeDelay"];
+if (!string.IsNullOrEmpty(minUnstakeDelayStr) && uint.TryParse(minUnstakeDelayStr, out var minUnstakeDelay))
+{
+    config.MinUnstakeDelaySec = minUnstakeDelay;
+}
+
 var host = builder.Configuration["host"];
 if (!string.IsNullOrEmpty(host))
 {
@@ -71,6 +90,8 @@ if (!string.IsNullOrEmpty(privateKey))
 config.Verbose = builder.Configuration.GetValue<bool>("verbose", false);
 config.EnableDebugMethods = builder.Configuration.GetValue<bool>("debug", false);
 config.UnsafeMode = builder.Configuration.GetValue<bool>("unsafe", false);
+config.EnableERC7562Validation = builder.Configuration.GetValue<bool>("enableErc7562", false);
+config.RequireSigner = builder.Configuration.GetValue<bool>("requireSigner", config.RequireSigner);
 
 if (string.IsNullOrEmpty(config.BeneficiaryAddress))
 {
@@ -83,6 +104,17 @@ if (string.IsNullOrEmpty(config.BeneficiaryAddress))
 if (config.SupportedEntryPoints.Length == 0)
 {
     Console.Error.WriteLine("Error: at least one entryPoint address is required");
+    return 1;
+}
+
+try
+{
+    var startupWeb3 = new Nethereum.Web3.Web3(config.RpcUrl);
+    await BundlerRpcServerStartup.ValidateAndResolveChainIdAsync(config, startupWeb3);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine("Error: " + ex.Message);
     return 1;
 }
 
@@ -103,6 +135,8 @@ logger.LogInformation("RPC URL: {RpcUrl}", config.RpcUrl);
 logger.LogInformation("Chain ID: {ChainId}", config.ChainId);
 logger.LogInformation("Beneficiary: {Beneficiary}", config.BeneficiaryAddress);
 logger.LogInformation("Entry Points: {EntryPoints}", string.Join(", ", config.SupportedEntryPoints));
+logger.LogInformation("Max Verification Gas: {MaxVerificationGas}", config.MaxVerificationGas);
+logger.LogInformation("Min Stake: {MinStake}, Min Unstake Delay: {MinUnstakeDelaySec}s", config.MinStake, config.MinUnstakeDelaySec);
 logger.LogInformation("Listening on: http://{Host}:{Port}", config.Host, config.Port);
 
 if (config.EnableDebugMethods)
@@ -114,6 +148,9 @@ if (config.UnsafeMode)
 {
     logger.LogWarning("Unsafe mode is ENABLED - validation is relaxed");
 }
+
+logger.LogInformation("ERC-7562 opcode/storage validation: {State}",
+    config.EnableERC7562Validation ? "ENABLED" : "disabled");
 
 var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
@@ -133,17 +170,19 @@ app.MapPost("/", async (HttpContext httpContext) =>
 
         if (json.TrimStart().StartsWith('['))
         {
-            var requests = JsonSerializer.Deserialize<RpcRequestMessage[]>(json, jsonOptions);
+            var requests = JsonSerializer.Deserialize<JsonRpcRequest[]>(json, jsonOptions);
             if (requests != null)
             {
-                var responses = await dispatcher.DispatchBatchAsync(requests);
+                var responses = await dispatcher.DispatchBatchAsync(
+                    requests.Select(r => r.ToRpcRequestMessage()).ToArray());
+                var wireResponses = responses.Select(r => r.ToJsonRpcResponse()).ToArray();
                 httpContext.Response.ContentType = "application/json";
-                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(responses, jsonOptions));
+                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(wireResponses, jsonOptions));
                 return;
             }
         }
 
-        var request = JsonSerializer.Deserialize<RpcRequestMessage>(json, jsonOptions);
+        var request = JsonSerializer.Deserialize<JsonRpcRequest>(json, jsonOptions);
         if (request == null)
         {
             httpContext.Response.StatusCode = 400;
@@ -151,29 +190,35 @@ app.MapPost("/", async (HttpContext httpContext) =>
             return;
         }
 
-        var response = await dispatcher.DispatchAsync(request);
+        var response = await dispatcher.DispatchAsync(request.ToRpcRequestMessage());
         httpContext.Response.ContentType = "application/json";
-        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(response, jsonOptions));
+        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(response.ToJsonRpcResponse(), jsonOptions));
     }
     catch (JsonException ex)
     {
         logger.LogError(ex, "JSON parsing error");
         httpContext.Response.StatusCode = 400;
-        await httpContext.Response.WriteAsJsonAsync(new RpcResponseMessage(null, new RpcError
+        await httpContext.Response.WriteAsJsonAsync(new JsonRpcResponse
         {
-            Code = -32700,
-            Message = "Parse error: " + ex.Message
-        }));
+            Error = new JsonRpcError
+            {
+                Code = BundlerErrorCodes.ParseError,
+                Message = "Parse error: " + ex.Message
+            }
+        });
     }
     catch (Exception ex)
     {
         logger.LogError(ex, "Unexpected error");
         httpContext.Response.StatusCode = 500;
-        await httpContext.Response.WriteAsJsonAsync(new RpcResponseMessage(null, new RpcError
+        await httpContext.Response.WriteAsJsonAsync(new JsonRpcResponse
         {
-            Code = -32603,
-            Message = "Internal error: " + ex.Message
-        }));
+            Error = new JsonRpcError
+            {
+                Code = BundlerErrorCodes.InternalError,
+                Message = "Internal error: " + ex.Message
+            }
+        });
     }
 });
 

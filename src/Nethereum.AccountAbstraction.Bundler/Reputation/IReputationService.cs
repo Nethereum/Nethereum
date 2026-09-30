@@ -8,6 +8,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Reputation
         Task RecordIncludedAsync(string address);
         Task RecordFailedAsync(string address);
         Task RecordDroppedAsync(string address);
+
+        Task RecordSeenAsync(string address, int delta = 1);
+
+        Task ApplyStakedAccountabilityPenaltyAsync(string address);
+
         Task<bool> IsThrottledAsync(string address);
         Task<bool> IsBannedAsync(string address);
         Task SetBannedAsync(string address, TimeSpan duration);
@@ -19,13 +24,17 @@ namespace Nethereum.AccountAbstraction.Bundler.Reputation
 
     public class ReputationConfig
     {
-        public int ThrottleThreshold { get; set; } = 10;
-        public int BanThreshold { get; set; } = 50;
-        public double ThrottleFailRate { get; set; } = 0.3;
         public TimeSpan DefaultThrottleDuration { get; set; } = TimeSpan.FromHours(1);
         public TimeSpan DefaultBanDuration { get; set; } = TimeSpan.FromHours(24);
-        public double DecayFactor { get; set; } = 0.9;
-        public TimeSpan DecayInterval { get; set; } = TimeSpan.FromHours(1);
+
+        public int DecayNumerator { get; set; } = 23;
+        public int DecayDenominator { get; set; } = 24;
+
+        public int MinInclusionDenominator { get; set; } = 10;
+        public int ThrottlingSlack { get; set; } = 10;
+        public int BanSlack { get; set; } = 50;
+
+        public int StakedAccountabilityPenalty { get; set; } = 10000;
     }
 
     public class InMemoryReputationService : IReputationService
@@ -44,7 +53,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Reputation
             lock (_lock)
             {
                 var key = address?.ToLowerInvariant() ?? "";
-                return Task.FromResult(_entries.TryGetValue(key, out var entry) ? entry : null);
+                return Task.FromResult(_entries.TryGetValue(key, out var entry) ? Copy(entry) : null);
             }
         }
 
@@ -52,7 +61,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Reputation
         {
             lock (_lock)
             {
-                return Task.FromResult(_entries.Values.ToArray());
+                return Task.FromResult(_entries.Values.Select(Copy).ToArray());
             }
         }
 
@@ -70,84 +79,110 @@ namespace Nethereum.AccountAbstraction.Bundler.Reputation
             return Task.CompletedTask;
         }
 
-        public async Task RecordIncludedAsync(string address)
+        public Task RecordIncludedAsync(string address)
         {
-            var entry = await GetOrCreateAsync(address);
-            entry.OpsIncluded++;
-            await UpdateStatusAsync(entry);
-            await UpdateAsync(entry);
+            MutateEntry(address, entry => entry.OpsIncluded++);
+            return Task.CompletedTask;
         }
 
-        public async Task RecordFailedAsync(string address)
+        public Task RecordFailedAsync(string address)
         {
-            var entry = await GetOrCreateAsync(address);
-            entry.OpsFailed++;
-            await UpdateStatusAsync(entry);
-            await UpdateAsync(entry);
+            MutateEntry(address, entry => entry.OpsFailed++);
+            return Task.CompletedTask;
         }
 
-        public async Task RecordDroppedAsync(string address)
+        public Task RecordDroppedAsync(string address)
         {
-            var entry = await GetOrCreateAsync(address);
-            entry.OpsDropped++;
-            await UpdateStatusAsync(entry);
-            await UpdateAsync(entry);
+            MutateEntry(address, entry => entry.OpsDropped++);
+            return Task.CompletedTask;
         }
 
-        public async Task<bool> IsThrottledAsync(string address)
+        public Task RecordSeenAsync(string address, int delta = 1)
         {
-            var entry = await GetAsync(address);
-            if (entry == null) return false;
+            if (string.IsNullOrEmpty(address)) return Task.CompletedTask;
 
-            if (entry.Status == ReputationStatus.Throttled)
+            MutateEntry(address, entry => entry.OpsSeen = Math.Max(0, entry.OpsSeen + delta));
+            return Task.CompletedTask;
+        }
+
+        public Task ApplyStakedAccountabilityPenaltyAsync(string address)
+        {
+            if (string.IsNullOrEmpty(address)) return Task.CompletedTask;
+
+            MutateEntry(address, entry =>
             {
+                entry.OpsSeen += _config.StakedAccountabilityPenalty;
+                entry.OpsIncluded = 0;
+            });
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> IsThrottledAsync(string address)
+        {
+            lock (_lock)
+            {
+                var key = address?.ToLowerInvariant() ?? "";
+                if (!_entries.TryGetValue(key, out var entry) || entry.Status != ReputationStatus.Throttled)
+                {
+                    return Task.FromResult(false);
+                }
+
                 if (entry.ThrottledUntil.HasValue && entry.ThrottledUntil.Value <= DateTimeOffset.UtcNow)
                 {
                     entry.Status = ReputationStatus.Ok;
                     entry.ThrottledUntil = null;
-                    await UpdateAsync(entry);
-                    return false;
+                    entry.LastUpdated = DateTimeOffset.UtcNow;
+                    return Task.FromResult(false);
                 }
-                return true;
-            }
 
-            return false;
+                return Task.FromResult(true);
+            }
         }
 
-        public async Task<bool> IsBannedAsync(string address)
+        public Task<bool> IsBannedAsync(string address)
         {
-            var entry = await GetAsync(address);
-            if (entry == null) return false;
-
-            if (entry.Status == ReputationStatus.Banned)
+            lock (_lock)
             {
+                var key = address?.ToLowerInvariant() ?? "";
+                if (!_entries.TryGetValue(key, out var entry) || entry.Status != ReputationStatus.Banned)
+                {
+                    return Task.FromResult(false);
+                }
+
                 if (entry.BannedUntil.HasValue && entry.BannedUntil.Value <= DateTimeOffset.UtcNow)
                 {
                     entry.Status = ReputationStatus.Ok;
                     entry.BannedUntil = null;
-                    await UpdateAsync(entry);
-                    return false;
+                    entry.LastUpdated = DateTimeOffset.UtcNow;
+                    return Task.FromResult(false);
                 }
-                return true;
+
+                return Task.FromResult(true);
             }
-
-            return false;
         }
 
-        public async Task SetBannedAsync(string address, TimeSpan duration)
+        public Task SetBannedAsync(string address, TimeSpan duration)
         {
-            var entry = await GetOrCreateAsync(address);
-            entry.Status = ReputationStatus.Banned;
-            entry.BannedUntil = DateTimeOffset.UtcNow.Add(duration);
-            await UpdateAsync(entry);
+            lock (_lock)
+            {
+                var entry = GetOrCreateUnlocked(address);
+                entry.Status = ReputationStatus.Banned;
+                entry.BannedUntil = DateTimeOffset.UtcNow.Add(duration);
+                PersistUnlocked(entry);
+            }
+            return Task.CompletedTask;
         }
 
-        public async Task SetThrottledAsync(string address, TimeSpan duration)
+        public Task SetThrottledAsync(string address, TimeSpan duration)
         {
-            var entry = await GetOrCreateAsync(address);
-            entry.Status = ReputationStatus.Throttled;
-            entry.ThrottledUntil = DateTimeOffset.UtcNow.Add(duration);
-            await UpdateAsync(entry);
+            lock (_lock)
+            {
+                var entry = GetOrCreateUnlocked(address);
+                entry.Status = ReputationStatus.Throttled;
+                entry.ThrottledUntil = DateTimeOffset.UtcNow.Add(duration);
+                PersistUnlocked(entry);
+            }
+            return Task.CompletedTask;
         }
 
         public Task ClearAsync(string address)
@@ -169,54 +204,94 @@ namespace Nethereum.AccountAbstraction.Bundler.Reputation
             return Task.CompletedTask;
         }
 
-        public async Task DecayAsync()
+        public Task DecayAsync()
         {
-            var entries = await GetAllAsync();
-            foreach (var entry in entries)
+            lock (_lock)
             {
-                entry.OpsIncluded = (int)(entry.OpsIncluded * _config.DecayFactor);
-                entry.OpsFailed = (int)(entry.OpsFailed * _config.DecayFactor);
-                entry.OpsDropped = (int)(entry.OpsDropped * _config.DecayFactor);
-                await UpdateAsync(entry);
-            }
-        }
-
-        private async Task<ReputationEntry> GetOrCreateAsync(string address)
-        {
-            var entry = await GetAsync(address);
-            if (entry == null)
-            {
-                entry = new ReputationEntry
+                foreach (var key in _entries.Keys.ToList())
                 {
-                    Address = address?.ToLowerInvariant() ?? "",
-                    LastUpdated = DateTimeOffset.UtcNow
-                };
-            }
-            return entry;
-        }
-
-        private Task UpdateStatusAsync(ReputationEntry entry)
-        {
-            if (entry.Status == ReputationStatus.Banned) return Task.CompletedTask;
-
-            var totalOps = entry.OpsIncluded + entry.OpsFailed;
-            double failRate = totalOps > 0 ? (double)entry.OpsFailed / totalOps : 0;
-
-            if (entry.OpsFailed >= _config.BanThreshold)
-            {
-                entry.Status = ReputationStatus.Banned;
-                entry.BannedUntil = DateTimeOffset.UtcNow.Add(_config.DefaultBanDuration);
-            }
-            else if (entry.OpsFailed >= _config.ThrottleThreshold || failRate >= _config.ThrottleFailRate)
-            {
-                if (entry.Status != ReputationStatus.Throttled)
-                {
-                    entry.Status = ReputationStatus.Throttled;
-                    entry.ThrottledUntil = DateTimeOffset.UtcNow.Add(_config.DefaultThrottleDuration);
+                    var entry = _entries[key];
+                    if (ReputationDecayCalculator.Decay(entry, _config))
+                    {
+                        _entries.Remove(key);
+                    }
+                    else
+                    {
+                        ApplyReputationStatus(entry);
+                        entry.LastUpdated = DateTimeOffset.UtcNow;
+                    }
                 }
             }
-
             return Task.CompletedTask;
+        }
+
+        private void MutateEntry(string address, Action<ReputationEntry> mutate)
+        {
+            lock (_lock)
+            {
+                var entry = GetOrCreateUnlocked(address);
+                mutate(entry);
+                ApplyReputationStatus(entry);
+                PersistUnlocked(entry);
+            }
+        }
+
+        private ReputationEntry GetOrCreateUnlocked(string address)
+        {
+            var key = address?.ToLowerInvariant() ?? "";
+            if (_entries.TryGetValue(key, out var entry))
+            {
+                return entry;
+            }
+
+            return new ReputationEntry
+            {
+                Address = key,
+                LastUpdated = DateTimeOffset.UtcNow
+            };
+        }
+
+        private void PersistUnlocked(ReputationEntry entry)
+        {
+            var key = entry.Address?.ToLowerInvariant() ?? "";
+            entry.Address = key;
+            entry.LastUpdated = DateTimeOffset.UtcNow;
+            _entries[key] = entry;
+        }
+
+        private void ApplyReputationStatus(ReputationEntry entry)
+        {
+            entry.Status = ReputationStatusCalculator.Compute(entry.OpsSeen, entry.OpsIncluded, _config);
+
+            switch (entry.Status)
+            {
+                case ReputationStatus.Banned:
+                    entry.BannedUntil = DateTimeOffset.UtcNow.Add(_config.DefaultBanDuration);
+                    break;
+                case ReputationStatus.Throttled:
+                    entry.ThrottledUntil = DateTimeOffset.UtcNow.Add(_config.DefaultThrottleDuration);
+                    break;
+                default:
+                    entry.BannedUntil = null;
+                    entry.ThrottledUntil = null;
+                    break;
+            }
+        }
+
+        private static ReputationEntry Copy(ReputationEntry entry)
+        {
+            return new ReputationEntry
+            {
+                Address = entry.Address,
+                OpsSeen = entry.OpsSeen,
+                OpsIncluded = entry.OpsIncluded,
+                OpsFailed = entry.OpsFailed,
+                OpsDropped = entry.OpsDropped,
+                Status = entry.Status,
+                LastUpdated = entry.LastUpdated,
+                BannedUntil = entry.BannedUntil,
+                ThrottledUntil = entry.ThrottledUntil
+            };
         }
     }
 }

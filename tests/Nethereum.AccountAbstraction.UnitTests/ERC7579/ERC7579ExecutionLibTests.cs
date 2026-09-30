@@ -1,4 +1,4 @@
-using Nethereum.AccountAbstraction.BaseAccount.ContractDefinition;
+using Nethereum.AccountAbstraction.Structs;
 using Nethereum.AccountAbstraction.ERC7579;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Numerics;

@@ -1,0 +1,105 @@
+@inherits ObservingComponentBase
+@inject WorkflowsViewModel Vm
+
+<section class="tab-card">
+    <h2>Workflows - ERC-7579 OwnableExecutor</h2>
+    <p class="tab-help">
+        Delegated automation: an <code>OwnableExecutor</code> module lets a SEPARATE agent EOA act on
+        your account WITHOUT your account signing each operation - no UserOperation, no owner
+        signature. Create the agent, grant it executor rights, then watch it call
+        <code>count()</code> on your behalf directly. A different, unauthorized EOA trying the same
+        call is rejected by the executor's own owner check.
+    </p>
+
+    <dl class="fact-list">
+        <dt>Module (OwnableExecutor)</dt>
+        <dd><code>@Vm.ExecutorAddress</code></dd>
+    </dl>
+
+    @if (Vm.AgentAddress is null)
+    {
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.CreateAgentCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Creating..." : "Create automation agent")
+        </button>
+    }
+    else
+    {
+        <dl class="fact-list">
+            <dt>Automation agent</dt>
+            <dd><code>@Vm.AgentAddress</code></dd>
+            <dt>Executor installed?</dt>
+            <dd>@(Vm.IsExecutorInstalled ? "Yes - the agent can act on your account" : "No")</dd>
+        </dl>
+
+        @if (!Vm.IsExecutorInstalled)
+        {
+            <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.InstallExecutorCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Installing..." : "Grant the agent executor rights")
+            </button>
+        }
+        else
+        {
+            <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.RunDelegatedActionCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Sending..." : "Run delegated action (agent calls count())")
+            </button>
+
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryUnauthorizedActionCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Trying..." : "Try unauthorized action (different EOA)")
+            </button>
+
+            @if (Vm.UnauthorizedRejected == true)
+            {
+                <p class="status-message">Rejected as expected - only the registered agent may act on your account.</p>
+            }
+            @if (Vm.UnauthorizedRejected == false)
+            {
+                <p class="error-message">Unexpected: the unauthorized call was NOT rejected.</p>
+            }
+
+            <hr />
+
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.UninstallExecutorCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Uninstalling..." : "Revoke executor")
+            </button>
+        }
+    }
+
+    @if (Vm.Count > 0)
+    {
+        <dl class="fact-list">
+            <dt>Counter (via delegated agent)</dt>
+            <dd>@Vm.Count</dd>
+        </dl>
+    }
+
+    @if (Vm.LastDelegatedTxHash is not null)
+    {
+        <dl class="fact-list">
+            <dt>Delegated tx hash</dt>
+            <dd><code>@Vm.LastDelegatedTxHash</code></dd>
+        </dl>
+    }
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

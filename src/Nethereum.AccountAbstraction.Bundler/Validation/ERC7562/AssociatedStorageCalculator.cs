@@ -10,7 +10,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
     {
         private readonly Dictionary<BigInteger, KeccakPreimage> _keccakPreimages = new();
         private readonly Dictionary<string, HashSet<BigInteger>> _associatedSlots = new();
+
+        private readonly Dictionary<string, HashSet<BigInteger>> _associatedSlotsByAddress = new();
         private readonly Sha3Keccack _keccak = new Sha3Keccack();
+
+        private const int AssociatedStorageWindow = 128;
 
         public void TrackKeccak(byte[] input, byte[] output)
         {
@@ -45,10 +49,21 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 return true;
             }
 
+            var addressCacheKey = normalizedContract + "|" + normalizedSender;
+            if (_associatedSlotsByAddress.TryGetValue(addressCacheKey, out var addressSlots) && addressSlots.Contains(slot))
+            {
+                return true;
+            }
+
             var association = CheckSlotAssociation(slot, normalizedSender);
             if (association != SlotAssociationType.None)
             {
-                TrackAssociatedSlot(normalizedContract, slot);
+                if (!_associatedSlotsByAddress.TryGetValue(addressCacheKey, out var newAddressSlots))
+                {
+                    newAddressSlots = new HashSet<BigInteger>();
+                    _associatedSlotsByAddress[addressCacheKey] = newAddressSlots;
+                }
+                newAddressSlots.Add(slot);
                 return true;
             }
 
@@ -97,23 +112,42 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         private SlotAssociationType CheckSlotAssociation(BigInteger slot, string senderAddress)
         {
-            if (!_keccakPreimages.TryGetValue(slot, out var preimage))
+            if (_keccakPreimages.TryGetValue(slot, out var preimage))
             {
-                return SlotAssociationType.None;
-            }
-
-            if (preimage.ContainsAddress && preimage.Address != null &&
-                preimage.Address.Equals(senderAddress, StringComparison.OrdinalIgnoreCase))
-            {
-                return SlotAssociationType.Mapping;
-            }
-
-            if (preimage.BaseSlot.HasValue)
-            {
-                var baseAssociation = CheckSlotAssociation(preimage.BaseSlot.Value, senderAddress);
-                if (baseAssociation != SlotAssociationType.None)
+                if (preimage.ContainsAddress && preimage.Address != null &&
+                    preimage.Address.Equals(senderAddress, StringComparison.OrdinalIgnoreCase))
                 {
-                    return SlotAssociationType.NestedMapping;
+                    return SlotAssociationType.Mapping;
+                }
+
+                if (preimage.BaseSlot.HasValue)
+                {
+                    var baseAssociation = CheckSlotAssociation(preimage.BaseSlot.Value, senderAddress);
+                    if (baseAssociation != SlotAssociationType.None)
+                    {
+                        return SlotAssociationType.NestedMapping;
+                    }
+                }
+            }
+
+            return CheckStructMemberWindowAssociation(slot, senderAddress);
+        }
+
+        private SlotAssociationType CheckStructMemberWindowAssociation(BigInteger slot, string senderAddress)
+        {
+            foreach (var kvp in _keccakPreimages)
+            {
+                var preimage = kvp.Value;
+                if (!preimage.ContainsAddress || preimage.Address == null ||
+                    !preimage.Address.Equals(senderAddress, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var offset = slot - kvp.Key;
+                if (offset >= 0 && offset < AssociatedStorageWindow)
+                {
+                    return SlotAssociationType.Mapping;
                 }
             }
 

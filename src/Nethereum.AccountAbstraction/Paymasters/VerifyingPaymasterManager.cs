@@ -6,6 +6,7 @@ using Nethereum.ABI.Encoders;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Signer;
+using Nethereum.Util;
 using Nethereum.Web3;
 
 namespace Nethereum.AccountAbstraction.Paymasters
@@ -98,15 +99,16 @@ namespace Nethereum.AccountAbstraction.Paymasters
 
         private byte[] BuildPaymasterAndData(ulong validUntil, ulong validAfter, byte[] signature)
         {
-            var addressBytes = Address.HexToByteArray();
+            return ByteUtil.Merge(Address.HexToByteArray(), BuildVerifyingPaymasterData(validUntil, validAfter, signature));
+        }
+
+        internal static byte[] BuildVerifyingPaymasterData(ulong validUntil, ulong validAfter, byte[] signature)
+        {
             var validUntilBytes = new IntTypeEncoder().EncodePacked(validUntil);
             var validAfterBytes = new IntTypeEncoder().EncodePacked(validAfter);
 
-            var result = new byte[addressBytes.Length + 6 + 6 + signature.Length];
+            var result = new byte[6 + 6 + signature.Length];
             var offset = 0;
-
-            Buffer.BlockCopy(addressBytes, 0, result, offset, addressBytes.Length);
-            offset += addressBytes.Length;
 
             Buffer.BlockCopy(validUntilBytes, validUntilBytes.Length - 6, result, offset, 6);
             offset += 6;

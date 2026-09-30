@@ -148,11 +148,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.True(result1?.Success ?? false, "First operation should succeed");
 
             using var bundler2 = _fixture.CreateNewBundlerService();
-            await bundler2.SendUserOperationAsync(packedOp2, _fixture.EntryPointService.ContractAddress);
-            var result2 = await bundler2.ExecuteBundleAsync();
 
-            Assert.False(result2?.Success ?? true,
-                "Second operation with same nonce should fail");
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(() =>
+                bundler2.SendUserOperationAsync(packedOp2, _fixture.EntryPointService.ContractAddress));
+
+            Assert.Equal(BundlerErrorCodes.SimulateValidation, ex.Code);
+            Assert.Contains("AA25", ex.Message);
         }
 
         [Fact]
@@ -174,7 +175,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 CallData = executeFunction.GetCallData(),
                 CallGasLimit = 1000,
                 VerificationGasLimit = 1000,
-                PreVerificationGas = 1000,
+                PreVerificationGas = 100_000,
                 MaxFeePerGas = 2_000_000_000,
                 MaxPriorityFeePerGas = 1_000_000_000
             };

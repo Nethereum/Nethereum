@@ -6,7 +6,7 @@ ERC-4337 Account Abstraction for [Nethereum AppChain](../Nethereum.AppChain/READ
 
 ## Overview
 
-AppChain operation is centralised, and this package takes advantage of that trust model to simplify account abstraction. It automates the deployment of all required ERC-4337 infrastructure (EntryPoint, AccountFactory, AccountRegistry, SponsoredPaymaster) and provides a high-level `AppChainService` API for account management, user invitations, and sponsored gas operations.
+AppChain operation is centralised, and this package takes advantage of that trust model to simplify account abstraction. It automates the deployment of all required ERC-4337 infrastructure (EntryPoint, AccountFactory, AccountRegistry, SponsoredPaymaster) and provides a high-level `AppChainAccountAdminService` API for account management, user invitations, and sponsored gas operations.
 
 Unlike the standard bundler which enforces strict ERC-7562 validation and reputation tracking for public mempools, the AppChain variant operates with admin-controlled whitelists and pre-funded paymaster sponsorship — your business, your rules for user onboarding.
 
@@ -28,30 +28,35 @@ dotnet add package Nethereum.AccountAbstraction.AppChain
 
 - **Nethereum.AccountAbstraction** - Core ERC-4337 types and services
 - **Nethereum.AccountAbstraction.Bundler** - Bundler configuration
-- **Nethereum.Web3** - Web3 instance for contract interaction
-- **Nethereum.Contracts** - Contract service base classes
+- **Nethereum.AppChain** - Core AppChain abstraction (IAppChain, genesis)
+
+Nethereum.Web3 and Nethereum.Contracts are pulled in transitively.
 
 ## Quick Start
 
 ```csharp
-using Nethereum.AccountAbstraction.AppChain;
+using Nethereum.AccountAbstraction.AppChain.Configuration;
+using Nethereum.AccountAbstraction.AppChain.Deployment;
+using Nethereum.AccountAbstraction.AppChain.Services;
+using Nethereum.Web3;
 
 // Deploy all AA infrastructure
 var deployer = new AADeployer(web3);
 var deployment = await deployer.DeployAsync(new AppChainConfig
 {
     Owner = ownerAddress,
-    InitialPaymasterDeposit = Web3.Convert.ToWei(10)
+    InitialPaymasterDeposit = 10 // ETH; AADeployer converts to wei internally
 });
 
 // Use the high-level service
-var aaService = new AppChainService(web3, deployment);
+var aaService = new AppChainAccountAdminService(web3, deployment);
 
 // Invite a user
 await aaService.InviteUserAsync(userAddress);
 
-// Create an account for the user
-var accountAddress = await aaService.GetAccountAddressAsync(salt: 0, initData);
+// Predict the account address for the user's config (stable before deployment)
+var accountConfig = new AppChainAccountConfig { Owner = userAddress, Salt = 0 };
+var accountAddress = await aaService.GetAccountAddressForConfigAsync(accountConfig);
 ```
 
 ## Usage Examples
@@ -59,14 +64,17 @@ var accountAddress = await aaService.GetAccountAddressAsync(salt: 0, initData);
 ### Example 1: Full Deployment
 
 ```csharp
-using Nethereum.AccountAbstraction.AppChain;
+using Nethereum.AccountAbstraction.AppChain.Configuration;
+using Nethereum.AccountAbstraction.AppChain.Deployment;
+using Nethereum.AccountAbstraction.AppChain.Services;
+using Nethereum.Web3;
 
 var deployer = new AADeployer(web3);
 var deployment = await deployer.DeployAsync(new AppChainConfig
 {
     Owner = ownerAddress,
     Admins = new[] { admin1, admin2 },
-    InitialPaymasterDeposit = Web3.Convert.ToWei(100)
+    InitialPaymasterDeposit = 100 // ETH; AADeployer converts to wei internally
 });
 
 Console.WriteLine($"EntryPoint: {deployment.EntryPointAddress}");
@@ -78,7 +86,7 @@ Console.WriteLine($"Paymaster: {deployment.SponsoredPaymasterAddress}");
 ### Example 2: User Management
 
 ```csharp
-var service = new AppChainService(web3, deployment);
+var service = new AppChainAccountAdminService(web3, deployment);
 
 // Invite a user (adds to whitelist)
 await service.InviteUserAsync(userAddress);
@@ -91,44 +99,56 @@ bool active = await service.IsActiveAsync(userAddress);
 await service.BanUserAsync(userAddress, "Policy violation");
 ```
 
-### Example 3: Account Operations
+### Example 3: Provision a modular account
+
+Provisioning composes the owner-validator init data from the deployment's ECDSAValidator module, so an
+AppChain account is a standard modular `NethereumSmartAccount` the on-ramp client can drive. The service
+deploys the account contract but never signs a user's operations - the owner installs further modules and
+operates with their own key.
 
 ```csharp
-var service = new AppChainService(web3, deployment);
+var service = new AppChainAccountAdminService(web3, deployment);
+var accountConfig = new AppChainAccountConfig { Owner = ownerAddress, Salt = 0 };
 
-// Predict account address
-var accountAddress = await service.GetAccountAddressAsync(salt: 0, initData);
+// Predict the account address (stable before deployment)
+var accountAddress = await service.GetAccountAddressForConfigAsync(accountConfig);
 
-// Check if deployed
+// Enroll: invite -> provision (deploy) -> activate, in one admin flow (idempotent on retry)
+await service.EnrollAccountAsync(accountConfig);
+
+// Or provision without the registry overlay
+await service.ProvisionAccountAsync(accountConfig);
+
 bool deployed = await service.IsAccountDeployedAsync(accountAddress);
-
-// Create the account
-await service.CreateAccountAsync(salt: 0, initData);
-
-// Get nonce for UserOperation
 var nonce = await service.GetNonceAsync(accountAddress, key: 0);
 ```
 
 ## API Reference
 
-### AppChainService
+### AppChainAccountAdminService
 
 High-level AppChain Account Abstraction API.
 
 ```csharp
-public class AppChainService
+public class AppChainAccountAdminService
 {
     // User management
-    public Task InviteUserAsync(string userAddress);
-    public Task BanUserAsync(string userAddress, string reason);
+    public Task<string> InviteUserAsync(string userAddress);
+    public Task<string> BanUserAsync(string userAddress, string reason);
     public Task<bool> IsInvitedAsync(string userAddress);
     public Task<bool> IsActiveAsync(string userAddress);
 
-    // Account operations
-    public Task<string> GetAccountAddressAsync(BigInteger salt, byte[] initData);
-    public Task CreateAccountAsync(BigInteger salt, byte[] initData);
+    // Provision modular accounts (owner init data composed from the ECDSAValidator module)
+    public Task<string> GetAccountAddressForConfigAsync(AppChainAccountConfig accountConfig);
+    public Task<string> ProvisionAccountAsync(AppChainAccountConfig accountConfig);
+    public Task<string> EnrollAccountAsync(AppChainAccountConfig accountConfig);
+
+    // Low-level escape hatch (hand-built init data)
+    public Task<string> GetAccountAddressAsync(byte[] salt, byte[] initData);
+    public Task<string> CreateAccountAsync(byte[] salt, byte[] initData);
+
     public Task<bool> IsAccountDeployedAsync(string accountAddress);
-    public Task ActivateAccountAsync();
+    public Task<string> ActivateAccountAsync(string accountAddress);
     public Task<BigInteger> GetNonceAsync(string sender, BigInteger key);
 }
 ```
@@ -156,6 +176,7 @@ Properties: `EntryPointAddress`, `AccountFactoryAddress`, `AccountRegistryAddres
 ### Dependencies
 - **[Nethereum.AccountAbstraction](../Nethereum.AccountAbstraction/README.md)** - Core ERC-4337 framework
 - **[Nethereum.AccountAbstraction.Bundler](../Nethereum.AccountAbstraction.Bundler/README.md)** - Bundler configuration
+- **[Nethereum.AppChain](../Nethereum.AppChain/README.md)** - Core AppChain abstraction (IAppChain, genesis)
 
 ### See Also
 - **[Nethereum.AppChain.Server](../Nethereum.AppChain.Server/README.md)** - AppChain server that hosts the bundler

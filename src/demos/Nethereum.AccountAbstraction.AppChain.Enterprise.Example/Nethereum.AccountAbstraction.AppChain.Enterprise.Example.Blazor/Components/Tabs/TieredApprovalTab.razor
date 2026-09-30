@@ -1,0 +1,140 @@
+@inherits ObservingComponentBase
+@inject TieredApprovalViewModel Vm
+
+<section class="tab-card">
+    <h2>3. Tiered approval</h2>
+    <p class="tab-help">
+        The account <strong>OWNER</strong> installs TWO value bands on their account in ONE on-chain call:
+        tier-1 is a single operator session key capped small; tier-2 is an <code>OwnableValidator</code>
+        N-of-M <strong>member quorum</strong> capped larger, sharing the same cap-policy stack as tier-1 but
+        with its own authority and its own, bigger cap. A genuine tier-2 quorum can then pay up to the
+        large cap. Three adversarial attempts follow, each rejected by a different gate: too few
+        signers is stopped by the tier-2 <strong>AUTHORITY</strong> (the quorum itself); a genuine quorum
+        asking for too much is stopped by the tier-2 <strong>CAP POLICY</strong>; and the tier-1 operator
+        key, still perfectly valid for its own small band, cannot reach into the large-tier band because
+        <strong>tier-1's own cap</strong> stops it first - the tier boundary holds even for a key that is
+        otherwise completely legitimate.
+    </p>
+
+    <dl class="fact-list">
+        <dt>Managing user</dt>
+        <dd>@(Vm.ActiveUserId ?? "- none selected -")</dd>
+    </dl>
+    @if (Vm.ActiveUserId is null)
+    {
+        <p class="tab-help">Create or select a user on <strong>1. Create / select user</strong> first.</p>
+    }
+
+    @if (!Vm.IsInstalled)
+    {
+        <label class="field-label" for="small-cap-input">Tier-1 cap (wei) - operator key</label>
+        <input id="small-cap-input" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="SmallCapText" />
+
+        <label class="field-label" for="large-cap-input">Tier-2 cap (wei) - member quorum</label>
+        <input id="large-cap-input" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="LargeCapText" />
+
+        <div class="btn-row">
+            <button class="btn btn-primary" disabled="@(Vm.IsBusy || Vm.ActiveUserId is null)" @onclick="() => Vm.InstallTier2RoleCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Installing..." : "Install tiered roles")
+            </button>
+        </div>
+    }
+    else
+    {
+        <dl class="fact-list">
+            <dt>Tier-1 operator key</dt>
+            <dd><code>@Vm.OperatorAddress</code></dd>
+            <dt>Tier-1 permission id</dt>
+            <dd><code>@Vm.Tier1PermissionIdHex</code></dd>
+            <dt>Tier-2 permission id</dt>
+            <dd><code>@Vm.Tier2PermissionIdHex</code></dd>
+            <dt>Tier-2 members (@Vm.MemberAddresses.Count)</dt>
+            <dd>
+                <ul>
+                    @foreach (var address in Vm.MemberAddresses)
+                    {
+                        <li><code>@address</code></li>
+                    }
+                </ul>
+            </dd>
+        </dl>
+
+        <hr />
+
+        <label class="field-label" for="quorum-pay-amount">Quorum pay amount (wei) - within tier-2 cap, above tier-1 cap</label>
+        <input id="quorum-pay-amount" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="QuorumPayAmountText" />
+        <div class="btn-row">
+            <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.PayWithQuorumCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Paying..." : "Pay with tier-2 quorum")
+            </button>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryUnderQuorumCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Trying..." : "Try under-quorum payment (should be rejected by the AUTHORITY)")
+            </button>
+        </div>
+
+        <label class="field-label" for="over-cap-amount">Over-cap amount (wei) - above tier-2 cap</label>
+        <input id="over-cap-amount" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="OverCapAmountText" />
+        <div class="btn-row">
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryOverCapCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Trying..." : "Try over-cap quorum payment (should be rejected by the CAP POLICY)")
+            </button>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryTier1OverItsTierCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Trying..." : "Try tier-1 key over its own tier (should be rejected by TIER-1's OWN cap)")
+            </button>
+        </div>
+
+        <dl class="fact-list">
+            <dt>PayableTarget balance</dt>
+            <dd>@Vm.TargetBalance wei</dd>
+            <dt>Under-quorum rejected?</dt>
+            <dd>@(Vm.UnderQuorumRejected == true ? "Yes" : Vm.UnderQuorumRejected == false ? "No (unexpected)" : "-")</dd>
+            <dt>Over-cap rejected?</dt>
+            <dd>@(Vm.OverCapRejected == true ? "Yes" : Vm.OverCapRejected == false ? "No (unexpected)" : "-")</dd>
+            <dt>Tier-1-over-its-tier rejected?</dt>
+            <dd>@(Vm.Tier1OverItsTierRejected == true ? "Yes" : Vm.Tier1OverItsTierRejected == false ? "No (unexpected)" : "-")</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    private string SmallCapText
+    {
+        get => Vm.SmallCap.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.SmallCap = parsed; }
+    }
+
+    private string LargeCapText
+    {
+        get => Vm.LargeCap.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.LargeCap = parsed; }
+    }
+
+    private string QuorumPayAmountText
+    {
+        get => Vm.QuorumPayAmount.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.QuorumPayAmount = parsed; }
+    }
+
+    private string OverCapAmountText
+    {
+        get => Vm.OverCapAmount.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.OverCapAmount = parsed; }
+    }
+}

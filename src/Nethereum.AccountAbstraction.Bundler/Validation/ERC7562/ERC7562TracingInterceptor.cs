@@ -4,24 +4,42 @@ using System.Numerics;
 using Nethereum.EVM;
 using Nethereum.Hex.HexConvertors.Extensions;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 {
     public class ERC7562TracingInterceptor
     {
         private readonly ERC7562ValidationContext _context;
         private readonly ERC7562RuleEnforcer _enforcer;
-        private readonly List<ERC7562Violation> _violations = new();
+        private readonly HashSet<int> _precompilesActiveAtThisFork;
 
         private Instruction? _previousOpcode;
         private int _currentProgramCounter;
 
-        public IReadOnlyList<ERC7562Violation> Violations => _violations;
-        public bool HasViolations => _violations.Count > 0;
+        private ERC7562Violation? _pendingEntryPointExtCodeSizeViolation;
+
+        public IReadOnlyList<ERC7562Violation> Violations => _context.Violations;
+        public bool HasViolations => _context.HasViolations;
 
         public ERC7562TracingInterceptor(ERC7562ValidationContext context)
+            : this(context, null)
+        {
+        }
+
+        /// <summary>
+        /// ERC-7562 [OP-041] forbids calling an address without deployed code, and a precompile
+        /// has none - so the exemption must name the precompiles active AT THE SIMULATED FORK.
+        /// A fixed range exempts addresses that are ordinary empty accounts at an earlier fork,
+        /// and rejects real precompiles added at a later one.
+        /// </summary>
+        public ERC7562TracingInterceptor(
+            ERC7562ValidationContext context, IEnumerable<int> precompilesActiveAtThisFork)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _enforcer = new ERC7562RuleEnforcer();
+            _precompilesActiveAtThisFork = precompilesActiveAtThisFork == null
+                ? null
+                : new HashSet<int>(precompilesActiveAtThisFork);
         }
 
         public void OnOpcodeExecution(Instruction opcode, string executingAddress, int depth, int programCounter)
@@ -30,13 +48,22 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             _context.CallDepth = depth;
             _context.UpdateCurrentEntity(executingAddress);
 
-            var nextOpcode = _previousOpcode.HasValue ? opcode : (Instruction?)null;
-            if (_previousOpcode.HasValue)
+            if (_pendingEntryPointExtCodeSizeViolation != null)
+            {
+                if (opcode != Instruction.ISZERO)
+                {
+                    _context.Violations.Add(_pendingEntryPointExtCodeSizeViolation);
+                }
+                _pendingEntryPointExtCodeSizeViolation = null;
+            }
+
+            if (_previousOpcode.HasValue &&
+                _previousOpcode.Value != Instruction.CREATE &&
+                _previousOpcode.Value != Instruction.CREATE2)
             {
                 var violation = _enforcer.ValidateOpcode(_previousOpcode.Value, opcode, _context);
                 if (violation != null)
                 {
-                    _violations.Add(violation);
                     _context.Violations.Add(violation);
                 }
             }
@@ -54,12 +81,17 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             _previousOpcode = opcode;
         }
 
+        public void OnOutOfGas()
+        {
+            var violation = _enforcer.ValidateOutOfGas(_context);
+            _context.Violations.Add(violation);
+        }
+
         public void OnStorageAccess(string contractAddress, BigInteger slot, bool isWrite, bool isTransient = false)
         {
             var violation = _enforcer.ValidateStorageAccess(contractAddress, slot, isWrite, isTransient, _context);
             if (violation != null)
             {
-                _violations.Add(violation);
                 _context.Violations.Add(violation);
             }
 
@@ -74,7 +106,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             });
         }
 
-        public void OnCall(string from, string to, BigInteger value, byte[] data, int depth)
+        public void OnCall(string from, string to, BigInteger value, byte[] data, int depth, bool hasCode = true)
         {
             var isPrecompile = IsPrecompileAddress(to);
 
@@ -84,8 +116,16 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 var violation = _enforcer.ValidatePrecompileCall(precompileAddr, _context);
                 if (violation != null)
                 {
-                    _violations.Add(violation);
                     _context.Violations.Add(violation);
+                    return;
+                }
+            }
+            else
+            {
+                var codeViolation = _enforcer.ValidateCodeAccess(to, hasCode, _context);
+                if (codeViolation != null)
+                {
+                    _context.Violations.Add(codeViolation);
                     return;
                 }
             }
@@ -93,11 +133,14 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             var callViolation = _enforcer.ValidateCall(from, to, value, data, _context);
             if (callViolation != null)
             {
-                _violations.Add(callViolation);
                 _context.Violations.Add(callViolation);
             }
+            else if (ERC7562ValidationContext.AddressEquals(to, _context.EntryPointAddress))
+            {
+                _context.EnterPermittedEntryPointCall(depth + 1);
+            }
 
-            _context.Calls.Add(new CallInfo
+            _context.Calls.Add(new TracedCall
             {
                 From = from,
                 To = to ?? "",
@@ -116,9 +159,13 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         public void OnExtCodeAccess(Instruction opcode, string targetAddress, bool hasCode)
         {
             var violation = _enforcer.ValidateExtCodeOpcode(opcode, targetAddress, hasCode, _context);
-            if (violation != null)
+
+            if (opcode == Instruction.EXTCODESIZE && violation?.Rule == "OP-054")
             {
-                _violations.Add(violation);
+                _pendingEntryPointExtCodeSizeViolation = violation;
+            }
+            else if (violation != null)
+            {
                 _context.Violations.Add(violation);
             }
 
@@ -132,7 +179,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             var violation = _enforcer.ValidateOpcode(opcode, null, _context);
             if (violation != null)
             {
-                _violations.Add(violation);
                 _context.Violations.Add(violation);
             }
 
@@ -151,31 +197,21 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             }
         }
 
-        public void OnKeccak256(byte[] data, BigInteger resultHash)
-        {
-            if (data == null || data.Length < 64) return;
-
-            var potentialAddress = TryExtractAddress(data);
-            if (!string.IsNullOrEmpty(potentialAddress))
-            {
-                _context.KeccakPreimages[resultHash] = potentialAddress;
-
-                var senderAddr = _context.Sender?.Address?.ToLowerInvariant();
-                if (potentialAddress.ToLowerInvariant() == senderAddr)
-                {
-                    _context.TrackAssociatedSlot(senderAddr, resultHash);
-                }
-            }
-        }
-
         public void FinalizeValidation()
         {
-            if (_previousOpcode.HasValue)
+            if (_pendingEntryPointExtCodeSizeViolation != null)
+            {
+                _context.Violations.Add(_pendingEntryPointExtCodeSizeViolation);
+                _pendingEntryPointExtCodeSizeViolation = null;
+            }
+
+            if (_previousOpcode.HasValue &&
+                _previousOpcode.Value != Instruction.CREATE &&
+                _previousOpcode.Value != Instruction.CREATE2)
             {
                 var violation = _enforcer.ValidateOpcode(_previousOpcode.Value, null, _context);
                 if (violation != null)
                 {
-                    _violations.Add(violation);
                     _context.Violations.Add(violation);
                 }
             }
@@ -186,15 +222,15 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return new ERC7562ValidationResult
             {
                 IsValid = !HasViolations,
-                Violations = new List<ERC7562Violation>(_violations),
+                Violations = new List<ERC7562Violation>(_context.Violations),
                 StorageAccesses = new List<StorageSlotAccess>(_context.StorageAccesses),
                 OpcodeExecutions = new List<OpcodeExecution>(_context.OpcodeExecutions),
-                Calls = new List<CallInfo>(_context.Calls),
+                Calls = new List<TracedCall>(_context.Calls),
                 AccessedAddresses = new HashSet<string>(_context.AccessedAddresses)
             };
         }
 
-        private static bool IsPrecompileAddress(string address)
+        private bool IsPrecompileAddress(string address)
         {
             if (string.IsNullOrEmpty(address)) return false;
 
@@ -209,7 +245,9 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             var lastTwo = addr.Substring(38);
             if (int.TryParse(lastTwo, System.Globalization.NumberStyles.HexNumber, null, out int val))
             {
-                return val >= 1 && val <= 0x0A;
+                return _precompilesActiveAtThisFork == null
+                    ? val >= 1 && val <= 0x0A
+                    : _precompilesActiveAtThisFork.Contains(val);
             }
             return false;
         }
@@ -229,37 +267,16 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return 0;
         }
 
-        private static string TryExtractAddress(byte[] data)
-        {
-            if (data == null || data.Length < 32) return null;
-
-            var first12Bytes = new byte[12];
-            Array.Copy(data, 0, first12Bytes, 0, Math.Min(12, data.Length));
-
-            bool allZero = true;
-            for (int i = 0; i < first12Bytes.Length; i++)
-            {
-                if (first12Bytes[i] != 0) { allZero = false; break; }
-            }
-
-            if (allZero && data.Length >= 32)
-            {
-                var addressBytes = new byte[20];
-                Array.Copy(data, 12, addressBytes, 0, 20);
-                return "0x" + addressBytes.ToHex();
-            }
-
-            return null;
-        }
     }
 
+    [NethereumDocExample(DocSection.AccountAbstraction, "bundler", "ERC7562ValidationResult - the verdict plus the traced opcodes, storage and calls")]
     public class ERC7562ValidationResult
     {
         public bool IsValid { get; set; }
         public List<ERC7562Violation> Violations { get; set; } = new();
         public List<StorageSlotAccess> StorageAccesses { get; set; } = new();
         public List<OpcodeExecution> OpcodeExecutions { get; set; } = new();
-        public List<CallInfo> Calls { get; set; } = new();
+        public List<TracedCall> Calls { get; set; } = new();
         public HashSet<string> AccessedAddresses { get; set; } = new();
     }
 }

@@ -122,7 +122,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                             });
 
                             services.AddSingleton<RpcContext>(provider =>
-                                new RpcContext(null!, serverConfig.ChainId, provider));
+                                new RpcContext(
+                                    (Func<Nethereum.CoreChain.IChainNode>)(() => throw new InvalidOperationException(
+                                        "The bundler RPC server has no in-process chain node")),
+                                    serverConfig.ChainId,
+                                    provider));
 
                             services.AddSingleton<RpcDispatcher>(provider =>
                             {
@@ -143,16 +147,17 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                                     using var reader = new StreamReader(context.Request.Body);
                                     var json = await reader.ReadToEndAsync();
 
-                                    var request = JsonSerializer.Deserialize<RpcRequestMessage>(json, _jsonOptions);
+                                    var request = JsonSerializer.Deserialize<JsonRpcRequest>(json, _jsonOptions);
                                     if (request == null)
                                     {
                                         context.Response.StatusCode = 400;
                                         return;
                                     }
 
-                                    var response = await dispatcher.DispatchAsync(request);
+                                    var response = await dispatcher.DispatchAsync(request.ToRpcRequestMessage());
                                     context.Response.ContentType = "application/json";
-                                    await context.Response.WriteAsync(JsonSerializer.Serialize(response, _jsonOptions));
+                                    await context.Response.WriteAsync(
+                                        JsonSerializer.Serialize(response.ToJsonRpcResponse(), _jsonOptions));
                                 });
 
                                 endpoints.MapGet("/", async context =>

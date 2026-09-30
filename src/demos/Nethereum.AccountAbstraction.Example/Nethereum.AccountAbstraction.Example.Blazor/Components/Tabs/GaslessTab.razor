@@ -1,0 +1,59 @@
+@inherits ObservingComponentBase
+@inject GaslessViewModel Vm
+
+<section class="tab-card">
+    <h2>Gasless - a paymaster sponsors the gas</h2>
+    <p class="tab-help">
+        Drives <code>TestCounter.count()</code> through a funded <code>VerifyingPaymaster</code>
+        instead of the account's own ETH (<code>AAContractHandler.WithPaymaster</code>). Works even
+        for a zero-balance account - the balance before and after the call is shown below to prove the
+        account never paid.
+    </p>
+    <p class="tab-help">
+        Paymaster sponsorship isn't limited to this tab: <strong>Setup</strong> and
+        <strong>Passkey</strong> both offer a per-account payment-mode choice (self-funded vs
+        paymaster-sponsored) when creating an account, and once chosen, every action tab
+        (<strong>Send</strong>, <strong>Batch</strong>, <strong>Custom Contract</strong>,
+        <strong>Passkey</strong>) applies it automatically through the same mechanism this tab
+        demonstrates directly. Like this tab, that choice is unavailable in use-existing
+        infrastructure mode, since no provider ships a paymaster alongside its standard modules.
+    </p>
+
+    @if (!Vm.HasPaymaster)
+    {
+        <p class="tab-help">No paymaster is configured for this infrastructure (use-existing mode); gasless is unavailable here.</p>
+    }
+
+    <button class="btn btn-primary" disabled="@(!Vm.CanSendGasless)" @onclick="() => Vm.SendGaslessCommand.ExecuteAsync(null)">
+        @(Vm.IsBusy ? "Sending..." : "Send Gasless")
+    </button>
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+            <dt>Sender balance before</dt>
+            <dd>@Vm.SenderBalanceBefore wei</dd>
+            <dt>Sender balance after</dt>
+            <dd>@Vm.SenderBalanceAfter wei</dd>
+            <dt>Balance unchanged?</dt>
+            <dd>@Vm.SenderBalanceUnchanged</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

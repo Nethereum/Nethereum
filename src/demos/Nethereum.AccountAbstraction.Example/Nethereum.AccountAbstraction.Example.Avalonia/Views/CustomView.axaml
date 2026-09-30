@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             xmlns:conv="clr-namespace:Nethereum.AccountAbstraction.Example.Avalonia.Converters"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.CustomView"
+             x:DataType="core:CustomViewModel">
+    <UserControl.Resources>
+        <conv:StringToBigIntegerConverter x:Key="ToBigInteger" />
+    </UserControl.Resources>
+
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="Custom Contract - typed reverts through AA" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Drives the demo BookingRegistry contract, showing the two ways a dApp must decode a
+                revert beyond a generic failure message. Book Slot books a free slot; booking one
+                someone else already holds is a deterministic revert, so the bundler's pre-flight
+                eth_estimateUserOperationGas rejects it before anything is sent (the same pre-flight
+                path Send's failing call exercises) - the AA client surfaces it exactly as a plain
+                (non-AA) contract call would, a SmartContractCustomErrorRevertException carrying the
+                raw revert bytes, decoded here into the typed SlotAlreadyBooked error (slot + guest)
+                via the standard DecodeExceptionEncodedData idiom. Release Slot is the
+                require-with-string path: the session's account is never the registry's owner, so
+                releasing always reverts with a plain string reason.
+            </TextBlock>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Slot number" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                <TextBox x:Name="SlotInput" Text="1" Width="160" HorizontalAlignment="Left" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Book Slot" Command="{Binding BookCommand}"
+                        CommandParameter="{Binding #SlotInput.Text, Converter={StaticResource ToBigInteger}}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" Padding="20,8" />
+                <Button Content="Guest Of Slot" Command="{Binding GuestOfCommand}"
+                        CommandParameter="{Binding #SlotInput.Text, Converter={StaticResource ToBigInteger}}"
+                        IsEnabled="{Binding !IsBusy}" Padding="20,8" />
+                <Button Content="Release Slot" Command="{Binding ReleaseCommand}"
+                        CommandParameter="{Binding #SlotInput.Text, Converter={StaticResource ToBigInteger}}"
+                        IsEnabled="{Binding !IsBusy}" Padding="20,8" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Working..." FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        IsVisible="{Binding GuestOfLastQuery, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Guest of last queried slot" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                <TextBlock Text="{Binding GuestOfLastQuery}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                  IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                  IsVisible="{Binding SlotAlreadyBooked, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Slot already booked - slot" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SlotAlreadyBooked.Slot}" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Guest" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SlotAlreadyBooked.Guest}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

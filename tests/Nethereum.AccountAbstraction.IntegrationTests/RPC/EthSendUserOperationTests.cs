@@ -38,7 +38,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.RPC
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
-                    VerificationGasLimit = 100_000
+                    VerificationGasLimit = 100_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -72,7 +73,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.RPC
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
-                    VerificationGasLimit = 100_000
+                    VerificationGasLimit = 100_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -106,7 +108,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.RPC
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
-                    VerificationGasLimit = 100_000
+                    VerificationGasLimit = 100_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -148,7 +151,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.RPC
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 200_000,
-                    VerificationGasLimit = 200_000
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -185,7 +189,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.RPC
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 200_000,
-                    VerificationGasLimit = 200_000
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -224,7 +229,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.RPC
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 200_000,
-                    VerificationGasLimit = 200_000
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 

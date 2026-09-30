@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Headless UI-wiring smoke test for the Avalonia head: proves the views really bind to the Core
+       view models (a resolved view model as DataContext renders and its commands/observable
+       properties resolve) without needing a display - see Avalonia.Headless.XUnit. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Avalonia\Nethereum.AccountAbstraction.Example.Avalonia.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Core\Nethereum.AccountAbstraction.Example.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Contracts\Nethereum.AccountAbstraction.Example.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction.Bundler.InProcess\Nethereum.AccountAbstraction.Bundler.InProcess.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.WebAuthn.Windows\Nethereum.WebAuthn.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

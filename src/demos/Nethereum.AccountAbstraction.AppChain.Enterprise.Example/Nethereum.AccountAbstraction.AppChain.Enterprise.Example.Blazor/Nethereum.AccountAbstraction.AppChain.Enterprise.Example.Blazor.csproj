@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Blazor</RootNamespace>
+    <UserSecretsId>aa-appchain-enterprise-example-blazor</UserSecretsId>
+    <!-- The MAX_PATH obj/bin redirect (same as the sibling Core/Core.Tests/Hosting projects) lives in
+         this project's own Directory.Build.props, not here - see that file for why. -->
+  </PropertyGroup>
+
+  <!-- Blazor Server head for the AppChain enterprise example (slice 1b): thin components bound to the
+       head-agnostic view models in .Core (InfrastructureSetupViewModel/EnterpriseAdminViewModel/
+       EnterpriseOperatorViewModel). Nothing is deployed at startup - Setup (tab0) provisions the stack
+       on demand via .Hosting's AddEnterpriseDemoHostDeferred, exactly like Example.Blazor's own tab0.
+       Plain Blazor only - no MudBlazor/wallet-UI packages. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Hosting\Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

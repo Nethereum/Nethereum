@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.GaslessView"
+             x:DataType="core:GaslessViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="Gasless - a paymaster sponsors the gas" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Drives TestCounter.count() through a funded VerifyingPaymaster instead of the account's
+                own ETH (AAContractHandler.WithPaymaster). Works even for a zero-balance account - the
+                balance before and after the call is shown below to prove the account never paid.
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Paymaster sponsorship isn't limited to this tab: Setup and Passkey both offer a
+                per-account payment-mode choice (self-funded vs paymaster-sponsored) when creating an
+                account, and once chosen, every action tab (Send, Batch, Custom Contract, Passkey)
+                applies it automatically through the same mechanism this tab demonstrates directly.
+                Like this tab, that choice is unavailable in use-existing infrastructure mode, since no
+                provider ships a paymaster alongside its standard modules.
+            </TextBlock>
+
+            <TextBlock Text="No paymaster is configured for this infrastructure (use-existing mode); gasless is unavailable here."
+                       TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource SystemBaseMediumColor}"
+                       IsVisible="{Binding !HasPaymaster}" />
+
+            <Button Content="Send Gasless" Command="{Binding SendGaslessCommand}"
+                    IsEnabled="{Binding CanSendGasless}" Classes="accent" HorizontalAlignment="Left"
+                    Padding="20,8" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Sending..." FontSize="12" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                  IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Sender balance before" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SenderBalanceBefore, StringFormat='{}{0} wei'}" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Sender balance after" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SenderBalanceAfter, StringFormat='{}{0} wei'}" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Balance unchanged?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SenderBalanceUnchanged}" FontSize="12" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

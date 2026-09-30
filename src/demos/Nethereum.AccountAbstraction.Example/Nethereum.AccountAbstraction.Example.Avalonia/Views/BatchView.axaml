@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.BatchView"
+             x:DataType="core:BatchViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="Batch - one UserOperation, several calls" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Sends two TestCounter.count() calls as ONE UserOperation via ERC-7579 batch execution
+                (AAContractHandler.BatchExecuteAsync) rather than two independently-validated-and-paid
+                operations - the account's own executeBatch entry point runs every call in the batch as
+                part of a single on-chain transaction. Batch: 2x Count shows the atomic happy path: the
+                counter advances by two in one operation. Batch: Count + Failing Call mixes in
+                countFail(), which always reverts - because the batch is atomic, the bundler's
+                pre-flight gas estimation detects the guaranteed failure and rejects the WHOLE batch
+                before it is ever sent, so neither call lands, not even the one that would have
+                succeeded alone.
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Batch: 2x Count" Command="{Binding SendBatchCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" Padding="20,8" />
+                <Button Content="Batch: Count + Failing Call" Command="{Binding SendBatchWithAFailingCallCommand}"
+                        IsEnabled="{Binding !IsBusy}" Padding="20,8" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Sending..." FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Counter value" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                <TextBlock Text="{Binding Count}" FontWeight="SemiBold" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                  IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

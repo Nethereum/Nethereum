@@ -20,6 +20,9 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             _fixture = fixture;
         }
 
+        private const string DummySignature =
+            "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c";
+
         [Fact]
         public async Task EstimateGas_ExistingAccount_ReturnsValidEstimates()
         {
@@ -29,10 +32,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             var userOpObject = new
             {
                 sender = accountAddress,
-                nonce = "0x0",
+                nonce = await NonceHexAsync(accountAddress),
                 initCode = "0x",
                 callData = "0x",
-                signature = "0x" + new string('0', 130)
+                signature = DummySignature
             };
 
             var response = await _fixture.SendRpcRequestAsync(
@@ -63,13 +66,14 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             var salt = (ulong)Random.Shared.NextInt64();
             var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt, 1m);
 
+            var accountNonce = await NonceHexAsync(accountAddress);
             var emptyCallOp = new
             {
                 sender = accountAddress,
-                nonce = "0x0",
+                nonce = accountNonce,
                 initCode = "0x",
                 callData = "0x",
-                signature = "0x" + new string('0', 130)
+                signature = DummySignature
             };
 
             var emptyResponse = await _fixture.SendRpcRequestAsync(
@@ -91,10 +95,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             var withCallDataOp = new
             {
                 sender = accountAddress,
-                nonce = "0x0",
+                nonce = accountNonce,
                 initCode = "0x",
                 callData = executeFunction.GetCallData().ToHex(true),
-                signature = "0x" + new string('0', 130)
+                signature = DummySignature
             };
 
             var withCallResponse = await _fixture.SendRpcRequestAsync(
@@ -126,10 +130,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             var newAccountOp = new
             {
                 sender = predictedAddress,
-                nonce = "0x0",
-                initCode = initCode.ToHex(true),
+                nonce = await NonceHexAsync(predictedAddress),
+                factory = "0x" + initCode.Take(20).ToArray().ToHex(),
+                factoryData = "0x" + initCode.Skip(20).ToArray().ToHex(),
                 callData = "0x",
-                signature = "0x" + new string('0', 130)
+                signature = DummySignature
             };
 
             var response = await _fixture.SendRpcRequestAsync(
@@ -157,7 +162,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
                 nonce = "0x0",
                 initCode = "0x",
                 callData = "0x",
-                signature = "0x" + new string('0', 130)
+                signature = DummySignature
             };
 
             var response = await _fixture.SendRpcRequestAsync(
@@ -177,10 +182,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             var userOpObject = new
             {
                 sender = accountAddress,
-                nonce = "0x0",
+                nonce = await NonceHexAsync(accountAddress),
                 initCode = "0x",
                 callData = "0x",
-                signature = "0x" + new string('0', 130)
+                signature = DummySignature
             };
 
             var response1 = await _fixture.SendRpcRequestAsync(
@@ -200,6 +205,12 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             var callGas2 = response2.Result!.Value.GetProperty("callGasLimit").GetString();
 
             Assert.Equal(callGas1, callGas2);
+        }
+
+        private async Task<string> NonceHexAsync(string account)
+        {
+            var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(account, 0);
+            return "0x" + nonce.ToString("x");
         }
 
         private static BigInteger ParseHexBigInteger(string hex)

@@ -15,40 +15,34 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             Instruction? nextOpcode,
             ERC7562ValidationContext context)
         {
-            // [OP-013] Unassigned opcodes are always forbidden
             if (!ForbiddenOpcodes.IsValidOpcode(opcode))
             {
                 return ERC7562Violation.FromOpcode("OP-013", $"Unassigned opcode: {opcode}", opcode, context);
             }
 
-            // [OP-011] Always forbidden opcodes
             if (ForbiddenOpcodes.IsAlwaysForbidden(opcode))
             {
-                return ERC7562Violation.FromOpcode("OP-011", $"Forbidden opcode during validation: {opcode}", opcode, context);
+                return ERC7562Violation.FromOpcode("OP-011", $"{context.CurrentEntity.ToErc7562EntityName()} uses banned opcode: {opcode}", opcode, context);
             }
 
-            // [OP-080] Staked-only opcodes (BALANCE, SELFBALANCE)
             if (ForbiddenOpcodes.RequiresStaking(opcode))
             {
                 var violation = ValidateStakedOnlyOpcode(opcode, context);
                 if (violation != null) return violation;
             }
 
-            // [OP-012] GAS opcode must be followed by CALL
             if (opcode == Instruction.GAS)
             {
                 var violation = ValidateGasOpcode(nextOpcode, context);
                 if (violation != null) return violation;
             }
 
-            // [OP-031] CREATE2 restrictions
             if (opcode == Instruction.CREATE2)
             {
                 var violation = ValidateCreate2(context);
                 if (violation != null) return violation;
             }
 
-            // [OP-032] CREATE restrictions
             if (opcode == Instruction.CREATE)
             {
                 var violation = ValidateCreate(context);
@@ -58,6 +52,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             return null;
         }
 
+        public ERC7562Violation ValidateOutOfGas(ERC7562ValidationContext context)
+        {
+            return ERC7562Violation.FromOpcode("OP-020", $"{context.CurrentEntity.ToErc7562EntityName()} out-of-gas during validation is forbidden", Instruction.GAS, context);
+        }
+
         public ERC7562Violation? ValidateStorageAccess(
             string address,
             BigInteger slot,
@@ -65,52 +64,56 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             bool isTransient,
             ERC7562ValidationContext context)
         {
-            var entityInfo = context.GetCurrentEntityInfo();
+            var entity = context.GetCurrentEntity();
 
-            // [STO-010] Sender can always access own storage
             if (context.CurrentEntity == EntityType.Sender &&
                 ERC7562ValidationContext.AddressEquals(address, context.Sender?.Address))
             {
                 return null;
             }
 
-            // Entity accessing its own storage
-            if (entityInfo != null && ERC7562ValidationContext.AddressEquals(address, entityInfo.Address))
+            if (entity != null && ERC7562ValidationContext.AddressEquals(address, entity.Address))
             {
-                if (entityInfo.IsStaked)
+                if (entity.IsStaked)
                 {
                     return null;
                 }
             }
 
-            // [STO-021, STO-022] Associated storage rules
-            if (context.IsAssociatedSlot(address, slot))
+            if (entity?.IsStaked == true && context.IsEntityOwnAssociatedSlot(address, slot))
             {
-                if (context.Factory?.IsStaked == true || !context.IsDeploymentPhase)
+                return null;
+            }
+
+            var isEntityOwnContract = entity != null && ERC7562ValidationContext.AddressEquals(address, entity.Address);
+            if (!isEntityOwnContract && context.IsAssociatedSlot(address, slot))
+            {
+                if (context.Factory?.IsStaked == true || !context.HasDeployingFactory)
                 {
                     return null;
                 }
             }
 
-            // [STO-031, STO-032, STO-033] Staked entity privileges
-            if (entityInfo?.IsStaked == true)
+            if (entity?.IsStaked == true)
             {
-                // [STO-033] Staked can read any non-entity storage
                 if (!isWrite && !context.IsEntityAddress(address))
                 {
                     return null;
                 }
 
-                // [STO-031, STO-032] Staked can R/W associated storage
                 if (context.IsAssociatedSlot(address, slot))
                 {
                     return null;
                 }
             }
 
-            // Check if accessing EntryPoint
             if (ERC7562ValidationContext.AddressEquals(address, context.EntryPointAddress))
             {
+                if (context.IsInsidePermittedEntryPointCall(context.CallDepth))
+                {
+                    return null;
+                }
+
                 return ERC7562Violation.FromStorage("STO-010", "Direct EntryPoint storage access not allowed", address, slot, context);
             }
 
@@ -126,13 +129,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             byte[]? data,
             ERC7562ValidationContext context)
         {
-            // [OP-042] Exception: access to sender address allowed during deployment
             if (ERC7562ValidationContext.AddressEquals(target, context.Sender?.Address) && context.IsDeploymentPhase)
             {
                 return null;
             }
 
-            // [OP-061] CALL with value forbidden except to EntryPoint
             if (value > 0)
             {
                 if (!ERC7562ValidationContext.AddressEquals(target, context.EntryPointAddress))
@@ -141,7 +142,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 }
             }
 
-            // [OP-051 through OP-055] EntryPoint call restrictions
             if (ERC7562ValidationContext.AddressEquals(target, context.EntryPointAddress))
             {
                 var violation = ValidateEntryPointCall(from, data, context);
@@ -156,10 +156,8 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             bool hasCode,
             ERC7562ValidationContext context)
         {
-            // [OP-041] Access to address without code is forbidden for EXTCODE* and *CALL
             if (!hasCode)
             {
-                // [OP-042] Exception: sender address during deployment
                 if (ERC7562ValidationContext.AddressEquals(target, context.Sender?.Address) && context.IsDeploymentPhase)
                 {
                     return null;
@@ -175,7 +173,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             int precompileAddress,
             ERC7562ValidationContext context)
         {
-            // [OP-062] Only known precompiles allowed
             if (!ForbiddenOpcodes.IsAllowedPrecompile(precompileAddress, context.AllowRip7212Precompile))
             {
                 return new ERC7562Violation
@@ -196,10 +193,13 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             bool hasCode,
             ERC7562ValidationContext context)
         {
-            // [OP-041] EXTCODE* to address without code is forbidden
+            if (ERC7562ValidationContext.AddressEquals(targetAddress, context.EntryPointAddress))
+            {
+                return ERC7562Violation.FromOpcode("OP-054", $"EXTCODE access to the EntryPoint is forbidden: {targetAddress}", opcode, context);
+            }
+
             if (!hasCode)
             {
-                // [OP-042] Exception: sender during deployment
                 if (ERC7562ValidationContext.AddressEquals(targetAddress, context.Sender?.Address) && context.IsDeploymentPhase)
                 {
                     return null;
@@ -213,11 +213,11 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         private ERC7562Violation? ValidateStakedOnlyOpcode(Instruction opcode, ERC7562ValidationContext context)
         {
-            var entityInfo = context.GetCurrentEntityInfo();
+            var entity = context.GetCurrentEntity();
 
-            if (entityInfo == null || !entityInfo.IsStaked)
+            if (entity == null || !entity.IsStaked)
             {
-                return ERC7562Violation.FromOpcode("OP-080", $"{opcode} opcode requires staked entity", opcode, context);
+                return ERC7562Violation.FromOpcode("OP-080", $"unstaked {context.CurrentEntity.ToErc7562EntityName()} uses banned opcode: {opcode}", opcode, context);
             }
 
             return null;
@@ -225,10 +225,9 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         private ERC7562Violation? ValidateGasOpcode(Instruction? nextOpcode, ERC7562ValidationContext context)
         {
-            // [OP-012] GAS is allowed only if immediately followed by *CALL
             if (!nextOpcode.HasValue || !ForbiddenOpcodes.IsCallOpcode(nextOpcode.Value))
             {
-                return ERC7562Violation.FromOpcode("OP-012", "GAS opcode must be immediately followed by CALL/STATICCALL/DELEGATECALL/CALLCODE", Instruction.GAS, context);
+                return ERC7562Violation.FromOpcode("OP-012", $"{context.CurrentEntity.ToErc7562EntityName()} uses banned opcode: GAS", Instruction.GAS, context);
             }
 
             return null;
@@ -236,24 +235,21 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         private ERC7562Violation? ValidateCreate2(ERC7562ValidationContext context)
         {
-            var entityInfo = context.GetCurrentEntityInfo();
-
-            // Staked entities can use CREATE2 freely
-            if (entityInfo?.IsStaked == true)
+            if (context.Factory?.IsStaked == true &&
+                (ERC7562ValidationContext.AddressEquals(context.CurrentAddress, context.Sender?.Address) ||
+                 ERC7562ValidationContext.AddressEquals(context.CurrentAddress, context.Factory?.Address)))
             {
                 return null;
             }
 
-            // [OP-031] Unstaked: CREATE2 allowed exactly once to deploy sender
             if (context.Create2Count > 0)
             {
-                return ERC7562Violation.FromOpcode("OP-031", "CREATE2 already used - unstaked entity can only use it once for sender deployment", Instruction.CREATE2, context);
+                return ERC7562Violation.FromOpcode("OP-031", $"{context.CurrentEntity.ToErc7562EntityName()} uses banned opcode: CREATE2", Instruction.CREATE2, context);
             }
 
-            // Must be in deployment phase (factory context)
             if (!context.IsDeploymentPhase && context.CurrentEntity != EntityType.Factory)
             {
-                return ERC7562Violation.FromOpcode("OP-031", "CREATE2 only allowed in deployment phase by factory", Instruction.CREATE2, context);
+                return ERC7562Violation.FromOpcode("OP-031", $"{context.CurrentEntity.ToErc7562EntityName()} uses banned opcode: CREATE2", Instruction.CREATE2, context);
             }
 
             context.Create2Count++;
@@ -262,27 +258,27 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
         private ERC7562Violation? ValidateCreate(ERC7562ValidationContext context)
         {
-            var entityInfo = context.GetCurrentEntityInfo();
+            var entity = context.GetCurrentEntity();
 
-            // [EREP-060, EREP-061] Staked factory can use CREATE
-            if (context.Factory?.IsStaked == true)
+            if (context.Factory?.IsStaked == true &&
+                (ERC7562ValidationContext.AddressEquals(context.CurrentAddress, context.Sender?.Address) ||
+                 ERC7562ValidationContext.AddressEquals(context.CurrentAddress, context.Factory?.Address)))
             {
                 return null;
             }
 
-            // [OP-032] CREATE allowed if factory exists (even unstaked) and called from sender
-            if (context.Factory != null && context.CurrentEntity == EntityType.Sender)
+            if (context.Factory != null &&
+                ERC7562ValidationContext.AddressEquals(context.CurrentAddress, context.Sender?.Address))
             {
                 return null;
             }
 
-            // Staked sender can use CREATE
-            if (context.CurrentEntity == EntityType.Sender && entityInfo?.IsStaked == true)
+            if (context.CurrentEntity == EntityType.Sender && entity?.IsStaked == true)
             {
                 return null;
             }
 
-            return ERC7562Violation.FromOpcode("OP-032", "CREATE not allowed: requires staked entity or factory-deployed sender", Instruction.CREATE, context);
+            return ERC7562Violation.FromOpcode("OP-032", $"{context.CurrentEntity.ToErc7562EntityName()} uses banned opcode: CREATE", Instruction.CREATE, context);
         }
 
         private ERC7562Violation? ValidateEntryPointCall(
@@ -292,7 +288,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
         {
             if (data == null || data.Length < 4)
             {
-                // Fallback call (no selector) - [OP-053] allowed from sender only
                 if (context.CurrentEntity != EntityType.Sender)
                 {
                     return ERC7562Violation.FromCall("OP-053", "EntryPoint fallback call only allowed from sender", context.EntryPointAddress, context);
@@ -302,7 +297,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 
             var selector = data.Take(4).ToArray().ToHex();
 
-            // [OP-052] depositTo(address) - allowed from sender or factory
             if (selector == DepositToSelector)
             {
                 if (context.CurrentEntity != EntityType.Sender &&
@@ -313,7 +307,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 return null;
             }
 
-            // [OP-054] incrementNonce(uint192) - allowed from sender only
             if (selector == IncrementNonceSelector)
             {
                 if (context.CurrentEntity != EntityType.Sender)
@@ -323,7 +316,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
                 return null;
             }
 
-            // [OP-055] Any other access to EntryPoint is forbidden
             return ERC7562Violation.FromCall("OP-055", $"Unauthorized EntryPoint method call: 0x{selector}", context.EntryPointAddress, context);
         }
     }

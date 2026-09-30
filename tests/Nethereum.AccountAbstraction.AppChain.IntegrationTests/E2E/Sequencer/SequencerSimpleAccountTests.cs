@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.EntryPoint;
@@ -10,9 +11,12 @@ using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDe
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount.ContractDefinition;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Contracts;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.AppChain;
 using Nethereum.AppChain.Sequencer;
-using Nethereum.CoreChain.Storage.InMemory;
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3;
@@ -20,7 +24,6 @@ using Nethereum.Web3.Accounts;
 using Xunit;
 
 using AppChainCore = Nethereum.AppChain.AppChain;
-using AppChainSequencer = Nethereum.AppChain.Sequencer.Sequencer;
 
 namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 {
@@ -29,11 +32,13 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
         private const int CHAIN_ID = 420422;
 
         private AppChainCore _appChain = null!;
-        private AppChainSequencer _sequencer = null!;
+        private ISequencer _sequencer = null!;
         private AppChainNode _node = null!;
         private IWeb3 _web3 = null!;
         private BundlerService _bundlerService = null!;
         private AppChainRpcClient _rpcClient = null!;
+        private AppChainComposedNode? _composed;
+        private bool _signRecoverableBeforeCompose;
 
         private EntryPointService _entryPointService = null!;
         private SimpleAccountFactoryService _accountFactoryService = null!;
@@ -49,54 +54,36 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             _bundlerAccount = new Account("0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a", CHAIN_ID);
             _userAccount = new Account("0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6", CHAIN_ID);
 
-            var blockStore = new InMemoryBlockStore();
-            var transactionStore = new InMemoryTransactionStore(blockStore);
-            var receiptStore = new InMemoryReceiptStore();
-            var logStore = new InMemoryLogStore();
-            var stateStore = new InMemoryStateStore();
-
-            var appChainConfig = AppChainConfig.CreateWithName("SimpleAccountTest", CHAIN_ID);
-            appChainConfig.SequencerAddress = _operatorAccount.Address;
-            appChainConfig.BaseFee = 1_000_000_000;
-            appChainConfig.BlockGasLimit = 30_000_000;
-
-            _appChain = new AppChainCore(
-                appChainConfig,
-                blockStore,
-                transactionStore,
-                receiptStore,
-                logStore,
-                stateStore);
-
-            var prefundedAddresses = new[]
+            var config = new AppChainServerConfig
             {
-                _operatorAccount.Address,
-                _bundlerAccount.Address,
-                _userAccount.Address
+                ChainId = CHAIN_ID,
+                ChainName = "SimpleAccountTest",
+                BaseFee = 1_000_000_000
             };
+            config.Genesis.Owner.PrivateKey = operatorPrivateKey;
+            config.Consensus.Sequencer.PrivateKey = operatorPrivateKey;
+            config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
+            config.Consensus.BlockTimeMs = 0;
+            config.Node.Storage.InMemory = true;
+            config.Node.Network.Serve = false;
+            config.Node.Sync.Mode = SyncMode.None;
+            config.Mud.DeployWorld = false;
 
-            var genesisOptions = new GenesisOptions
+            _signRecoverableBeforeCompose = EthECKey.SignRecoverable;
+            _composed = await AppChainComposition.ComposeAsync(config, NullLoggerFactory.Instance, CancellationToken.None);
+            _appChain = _composed.AppChain;
+            _sequencer = _composed.Sequencer!;
+            _node = _composed.Node;
+
+            var prefundBalance = Web3.Web3.Convert.ToWei(1000);
+            foreach (var address in new[] { _bundlerAccount.Address, _userAccount.Address })
             {
-                PrefundedAddresses = prefundedAddresses,
-                PrefundBalance = Web3.Web3.Convert.ToWei(1000),
-                DeployCreate2Factory = true
-            };
-            await _appChain.InitializeAsync(genesisOptions);
-
-            var sequencerConfig = new SequencerConfig
-            {
-                SequencerAddress = _operatorAccount.Address,
-                SequencerPrivateKey = _operatorAccount.PrivateKey,
-                BlockTimeMs = 0,
-                MaxTransactionsPerBlock = 1000,
-                BlockProductionMode = BlockProductionMode.OnDemand,
-                Policy = PolicyConfig.OpenAccess
-            };
-
-            _sequencer = new AppChainSequencer(_appChain, sequencerConfig);
-            await _sequencer.StartAsync();
-
-            _node = new AppChainNode(_appChain, _sequencer);
+                await _appChain.State.SaveAccountAsync(address, new Nethereum.Model.Account
+                {
+                    Balance = prefundBalance,
+                    Nonce = 0
+                });
+            }
 
             _rpcClient = new AppChainRpcClient(_node, CHAIN_ID);
             _web3 = new Web3.Web3(_operatorAccount, _rpcClient);
@@ -109,9 +96,10 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
         public async Task DisposeAsync()
         {
             _bundlerService?.Dispose();
-            if (_sequencer != null)
+            if (_composed != null)
             {
-                await _sequencer.StopAsync();
+                await _composed.DisposeAsync();
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
             }
         }
 
@@ -163,7 +151,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             Assert.True(!string.IsNullOrEmpty(senderCreatorCode) && senderCreatorCode.Length > 2,
                 $"SenderCreator at {epSenderCreator} should have code, got: {senderCreatorCode}");
 
-            // Verify factory's expected SenderCreator matches EntryPoint's
             var factorySenderCreator = await _accountFactoryService.SenderCreatorQueryAsync();
             Assert.Equal(epSenderCreator.ToLower(), factorySenderCreator.ToLower());
         }
@@ -172,7 +159,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
         [Trait("Category", "AppChain-AA-SimpleAccount")]
         public async Task Given_Sequencer_When_QueryChainId_Then_MatchesExpected()
         {
-            // Verify chain ID is correct for signature verification
             var reportedChainId = await _web3.Eth.ChainId.SendRequestAsync();
             Assert.Equal(CHAIN_ID, (int)reportedChainId.Value);
         }
@@ -182,32 +168,26 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
         public async Task Given_SequencerWithSimpleAccount_When_FactoryCalledDirectly_Then_RejectedBySenderCreatorProtection()
         {
             // ERC-4337 v0.7 SimpleAccountFactory only allows createAccount to be called from SenderCreator
-            // Direct calls should be rejected - this tests the security protection is working
             var ownerKey = EthECKey.GenerateKey();
             var ownerAddress = ownerKey.GetPublicAddress();
             ulong salt = 99999;
 
-            // Get counterfactual address
             var smartAccountAddress = await _accountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
 
-            // Verify no code at address yet
             var codeBefore = await _web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
             Assert.True(string.IsNullOrEmpty(codeBefore) || codeBefore == "0x", "Account should not exist yet");
 
-            // Attempt to call factory directly - this should fail
             var createAccountFunction = new CreateAccountFunction
             {
                 Owner = ownerAddress,
                 Salt = salt
             };
 
-            var exception = await Assert.ThrowsAsync<Nethereum.ABI.FunctionEncoding.SmartContractRevertException>(
+            var exception = await Assert.ThrowsAsync<Nethereum.Contracts.SmartContractCustomErrorRevertException>(
                 async () => await _accountFactoryService.CreateAccountRequestAndWaitForReceiptAsync(createAccountFunction));
 
-            // Verify the correct protection error
-            Assert.Contains("only callable from SenderCreator", exception.Message);
+            Assert.True(exception.IsCustomErrorFor<Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory.ContractDefinition.NotSenderCreatorError>());
 
-            // Verify account was NOT deployed (protection worked)
             var codeAfter = await _web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
             Assert.True(string.IsNullOrEmpty(codeAfter) || codeAfter == "0x",
                 "Account should NOT be deployed when calling factory directly");
@@ -220,28 +200,22 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var recipient = _userAccount;
             var transferAmount = Web3.Web3.Convert.ToWei(0.01m);
 
-            // First verify SenderCreator is deployed
             var epSenderCreator = await _entryPointService.SenderCreatorQueryAsync();
             var senderCreatorCode = await _web3.Eth.GetCode.SendRequestAsync(epSenderCreator);
             Assert.True(!string.IsNullOrEmpty(senderCreatorCode) && senderCreatorCode.Length > 2,
                 $"SenderCreator at {epSenderCreator} should have code");
 
-            // Create SimpleAccount using the same approach as working tests
             var ownerKey = EthECKey.GenerateKey();
             var ownerAddress = ownerKey.GetPublicAddress();
             ulong salt = 12345;
 
-            // Get counterfactual address
             var smartAccountAddress = await _accountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
 
-            // Fund the smart account address via ETH transfer (same as working tests)
             await _web3.Eth.GetEtherTransferService()
                 .TransferEtherAndWaitForReceiptAsync(smartAccountAddress, 1m);
 
-            // Build initCode: factory address + createAccount calldata
             var initCode = _accountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
 
-            // Create UserOperation with explicitly set values (same approach as working DevChain tests)
             var userOp = new UserOperation
             {
                 Sender = smartAccountAddress,
@@ -257,7 +231,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 
             var packedDeployOp = await _entryPointService.SignAndInitialiseUserOperationAsync(userOp, ownerKey);
 
-            // Deploy account via handleOps directly (simpler than bundler for debugging)
             var handleOpsFunction = new HandleOpsFunction
             {
                 Ops = new List<Nethereum.AccountAbstraction.Structs.PackedUserOperation> { packedDeployOp },
@@ -271,11 +244,9 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             Assert.True(deployReceipt.Status?.Value == 1,
                 $"Account deployment failed with status: {deployReceipt.Status?.Value}, tx: {deployReceipt.TransactionHash}");
 
-            // Verify account is deployed
             var code = await _web3.Eth.GetCode.SendRequestAsync(smartAccountAddress);
             Assert.True(!string.IsNullOrEmpty(code) && code.Length > 2, "Account should have code deployed");
 
-            // Deposit to EntryPoint for gas sponsorship
             await _entryPointService.DepositToRequestAndWaitForReceiptAsync(
                 new DepositToFunction
                 {
@@ -285,7 +256,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 
             var recipientBalanceBefore = await _web3.Eth.GetBalance.SendRequestAsync(recipient.Address);
 
-            // Create UserOperation for transfer
             var executeFunction = new ExecuteFunction
             {
                 Target = recipient.Address,
@@ -303,7 +273,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 },
                 ownerKey);
 
-            // Execute via handleOps
             var executeOpsFunction = new HandleOpsFunction
             {
                 Ops = new List<Nethereum.AccountAbstraction.Structs.PackedUserOperation> { packedUserOp },

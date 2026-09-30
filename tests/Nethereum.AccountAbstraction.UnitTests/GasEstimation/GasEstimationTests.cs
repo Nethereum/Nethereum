@@ -1,4 +1,6 @@
+using System;
 using System.Numerics;
+using Nethereum.ABI;
 using Nethereum.AccountAbstraction.GasEstimation;
 using Nethereum.Util;
 using Nethereum.Web3;
@@ -111,9 +113,40 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
             var estimator = new UserOperationGasEstimator((IWeb3)null!, "0x0000000000000000000000000000000000000000");
             var preVerificationGas = estimator.CalculatePreVerificationGas(userOp);
 
-            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
+            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS
+                              + GasEstimationConstants.PER_USER_OP_OVERHEAD;
             Assert.True(preVerificationGas >= minExpected,
-                $"PreVerificationGas {preVerificationGas} should be >= {minExpected} (2x BASE_TRANSACTION_GAS)");
+                $"PreVerificationGas {preVerificationGas} should be >= {minExpected} "
+                + "(transaction stipend + per-userOp overhead)");
+        }
+
+        [Fact]
+        public void CalculatePreVerificationGas_ChargesEachFixedCostExactlyOnce()
+        {
+            var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
+            var bare = new UserOperation
+            {
+                Sender = "0x1234567890123456789012345678901234567890",
+                Nonce = 0,
+                CallData = Array.Empty<byte>(),
+                InitCode = Array.Empty<byte>(),
+                Signature = Array.Empty<byte>()
+            };
+
+            var gas = estimator.CalculatePreVerificationGas(bare);
+
+            var packed = new ABIEncode().GetABIParamsEncoded(
+                UserOperationGasEstimator.PackUserOperationForGasEstimate(bare));
+            var wordCount = (packed.Length + GasEstimationConstants.WORD_SIZE - 1)
+                            / GasEstimationConstants.WORD_SIZE;
+            var sizeDriven = UserOperationGasEstimator.CalculateCalldataCost(packed)
+                             + wordCount * GasEstimationConstants.PER_USER_OP_WORD_GAS;
+
+            var fixedPart = gas - sizeDriven;
+
+            Assert.Equal(
+                GasEstimationConstants.BASE_TRANSACTION_GAS + GasEstimationConstants.PER_USER_OP_OVERHEAD,
+                fixedPart);
         }
 
         [Fact]
@@ -163,7 +196,8 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
             var signatureGasCost = GasEstimationConstants.SIGNATURE_SIZE * GasEstimationConstants.NON_ZERO_BYTE_GAS_COST;
-            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2 + signatureGasCost;
+            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS
+                              + GasEstimationConstants.PER_USER_OP_OVERHEAD + signatureGasCost;
             Assert.True(gas >= minExpected,
                 $"PreVerificationGas ({gas}) should include base costs plus signature cost");
         }
@@ -187,12 +221,6 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
         public void NonZeroByteGasCost_MatchesEIP2028()
         {
             Assert.Equal(16, GasEstimationConstants.NON_ZERO_BYTE_GAS_COST);
-        }
-
-        [Fact]
-        public void Create2Cost_Is32000()
-        {
-            Assert.Equal(32000, GasEstimationConstants.CREATE2_COST);
         }
 
         [Fact]
@@ -225,12 +253,12 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 Nonce = 0
             };
 
+            var explicitZero = new UserOperation { Sender = AddressUtil.ZERO_ADDRESS, Nonce = 0 };
+
             var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
-            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
-            Assert.True(gas >= minExpected,
-                $"Should use zero address default and calculate gas. Got {gas}, expected >= {minExpected}");
+            Assert.Equal(estimator.CalculatePreVerificationGas(explicitZero), gas);
         }
 
         [Fact]
@@ -242,12 +270,12 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
                 Nonce = 0
             };
 
+            var explicitZero = new UserOperation { Sender = AddressUtil.ZERO_ADDRESS, Nonce = 0 };
+
             var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
-            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
-            Assert.True(gas >= minExpected,
-                $"Should use zero address default and calculate gas. Got {gas}, expected >= {minExpected}");
+            Assert.Equal(estimator.CalculatePreVerificationGas(explicitZero), gas);
         }
 
         [Fact]
@@ -263,7 +291,8 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
             var estimator = new UserOperationGasEstimator((IWeb3?)null, "0x0000000000000000000000000000000000000000");
             var gas = estimator.CalculatePreVerificationGas(userOp);
 
-            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS * 2;
+            var minExpected = GasEstimationConstants.BASE_TRANSACTION_GAS
+                              + GasEstimationConstants.PER_USER_OP_OVERHEAD;
             Assert.True(gas >= minExpected,
                 $"CalculatePreVerificationGas should calculate gas. Got {gas}, expected >= {minExpected}");
         }
@@ -499,7 +528,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.GasEstimation
         }
 
         [Fact]
-        public void AccountDeploymentBaseGas_Is32000()
+        public void AccountDeploymentBaseGas_IsPreAmsterdamGCreate()
         {
             Assert.Equal(32000, GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS);
         }

@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions.Policies.UniActionPolicy.ContractDefinition;
 using Nethereum.ABI;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 
 namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
 {
     public enum ParamCondition : byte
     {
-        Unconstrained = 0,
-        Equal = 1,
-        GreaterThan = 2,
-        LessThan = 3,
-        GreaterThanOrEqual = 4,
-        LessThanOrEqual = 5,
-        NotEqual = 6
+        Equal = 0,
+        GreaterThan = 1,
+        LessThan = 2,
+        GreaterThanOrEqual = 3,
+        LessThanOrEqual = 4,
+        NotEqual = 5,
+        InRange = 6
     }
 
     public class UniActionPolicyBuilder
@@ -90,11 +91,20 @@ namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
             };
 
             var abiEncoder = new ABIEncode();
-            return abiEncoder.GetABIEncoded(
-                new ABIValue("uint256", _valueLimitPerUse),
-                new ABIValue("uint256", paramRules.Length),
-                new ABIValue("tuple[16]", paramRules.Rules)
-            );
+            return abiEncoder.GetABIParamsEncoded(new ActionConfigDto
+            {
+                ValueLimitPerUse = _valueLimitPerUse,
+                ParamRules = paramRules
+            });
+        }
+
+        private class ActionConfigDto
+        {
+            [Parameter("uint256", "valueLimitPerUse", 1)]
+            public virtual BigInteger ValueLimitPerUse { get; set; }
+
+            [Parameter("tuple", "paramRules", 2)]
+            public virtual ParamRules ParamRules { get; set; }
         }
 
         public static byte[] EmptyPolicy(BigInteger valueLimitPerUse = default)
@@ -108,7 +118,7 @@ namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
         {
             return new ParamRule
             {
-                Condition = (byte)ParamCondition.Unconstrained,
+                Condition = (byte)ParamCondition.Equal,
                 Offset = 0,
                 IsLimited = false,
                 Ref = new byte[32],

@@ -1,0 +1,123 @@
+@inherits ObservingComponentBase
+@inject EnterpriseOperatorViewModel Vm
+
+<section class="tab-card">
+    <h2>2. User - operate a capped role</h2>
+    <p class="tab-help">
+        The account <strong>OWNER</strong> (the enrolled user themself) installs a tier-1 role on their
+        own account - a session key capped by the P1-D <code>ValueCapCombinator</code> policy - then
+        uses it to pay a target contract. Paying within the cap succeeds; paying over the cap is
+        rejected on-chain by the policy, not merely client-side. This tab never uses the org's admin key.
+    </p>
+
+    <dl class="fact-list">
+        <dt>Managing user</dt>
+        <dd>@(Vm.ActiveUserId ?? "- none selected -")</dd>
+    </dl>
+    @if (Vm.ActiveUserId is null)
+    {
+        <p class="tab-help">Create or select a user on <strong>1. Create / select user</strong> first.</p>
+    }
+
+    @if (!Vm.HasCappedRole)
+    {
+        <label class="field-label" for="cap-input">Cap (wei)</label>
+        <input id="cap-input" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="CapText" />
+
+        <div class="btn-row">
+            <button class="btn btn-primary" disabled="@(Vm.IsBusy || Vm.ActiveUserId is null)" @onclick="() => Vm.InstallCappedRoleCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Installing..." : "Install capped role")
+            </button>
+        </div>
+    }
+    else
+    {
+        <dl class="fact-list">
+            <dt>Session key</dt>
+            <dd><code>@Vm.SessionKeyAddress</code></dd>
+            <dt>Permission id</dt>
+            <dd><code>@Vm.PermissionIdHex</code></dd>
+        </dl>
+
+        <hr />
+
+        <label class="field-label" for="within-cap-amount">Within-cap amount (wei)</label>
+        <input id="within-cap-amount" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="WithinCapAmountText" />
+        <div class="btn-row">
+            <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.PayWithinCapCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Paying..." : "Pay within cap")
+            </button>
+        </div>
+
+        <label class="field-label" for="over-cap-amount">Over-cap amount (wei)</label>
+        <input id="over-cap-amount" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="OverCapAmountText" />
+        <div class="btn-row">
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryOverCapCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Trying..." : "Try over-cap payment (should be rejected)")
+            </button>
+        </div>
+
+        <dl class="fact-list">
+            <dt>PayableTarget balance</dt>
+            <dd>@Vm.TargetBalance wei</dd>
+            <dt>Over-cap rejected?</dt>
+            <dd>@(Vm.OverCapRejected == true ? "Yes" : Vm.OverCapRejected == false ? "No (unexpected)" : "-")</dd>
+        </dl>
+
+        <hr />
+
+        <p class="tab-help">
+            SmartSession installs once per account, so there is no in-place edit: <strong>Edit cap</strong>
+            re-issues the role at a new cap - a brand new session key, the old one dies. <strong>Revoke
+            role</strong> uninstalls the role outright - the session key becomes dead.
+        </p>
+
+        <label class="field-label" for="new-cap-input">New cap (wei)</label>
+        <input id="new-cap-input" class="field-input" type="number" min="0" disabled="@Vm.IsBusy" @bind="NewCapText" />
+        <div class="btn-row">
+            <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.EditCapCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Editing..." : "Edit cap")
+            </button>
+            <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.RevokeRoleCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Revoking..." : "Revoke role")
+            </button>
+        </div>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    private string CapText
+    {
+        get => Vm.Cap.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.Cap = parsed; }
+    }
+
+    private string WithinCapAmountText
+    {
+        get => Vm.WithinCapAmount.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.WithinCapAmount = parsed; }
+    }
+
+    private string OverCapAmountText
+    {
+        get => Vm.OverCapAmount.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.OverCapAmount = parsed; }
+    }
+
+    private string NewCapText
+    {
+        get => Vm.NewCap.ToString();
+        set { if (BigInteger.TryParse(value, out var parsed)) Vm.NewCap = parsed; }
+    }
+}

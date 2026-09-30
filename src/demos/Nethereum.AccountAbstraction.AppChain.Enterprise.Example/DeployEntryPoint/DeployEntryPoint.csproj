@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Nethereum.AccountAbstraction.AppChain.Enterprise.Example.DeployEntryPoint</RootNamespace>
+    <!-- Deliberately short folder/project name (unlike Core/Hosting/Core.Tests) - the parent
+         directory name is already long, and this project is launched via "dotnet run" from
+         run-enterprise-local-stack.ps1, where MSBuild resolves the .csproj's OWN path (not just
+         obj/bin) before this BaseIntermediateOutputPath override applies; a long name here tipped
+         the plain project path itself over Windows' 260 char MAX_PATH limit. Redirecting obj/bin
+         below still keeps deep generated paths out of harm's way, matching the sibling projects. -->
+    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\obj\aa-appchain-enterprise-example\DeployEntryPoint\'))</BaseIntermediateOutputPath>
+    <BaseOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\bin\aa-appchain-enterprise-example\DeployEntryPoint\'))</BaseOutputPath>
+  </PropertyGroup>
+
+  <!-- A one-shot tool for run-enterprise-local-stack.ps1 only: deploys JUST the ERC-4337 EntryPoint onto
+       a running node, so the standalone Bundler.RpcServer has an EntryPoint address to pin to before the
+       demo's own Setup tab (External mode) deploys the rest of the AppChain stack on top of it, reusing
+       this EntryPoint via AADeployer's production-faithful on-chain-code check (it never redeploys a
+       canonical EntryPoint that already has code) rather than deploying a second one. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+</Project>

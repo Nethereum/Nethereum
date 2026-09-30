@@ -1,0 +1,28 @@
+[
+    {
+        "paths": [
+            "../../../../contracts/out/BookingRegistry.sol/BookingRegistry.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Example.Contracts",
+                "basePath": ".",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "../../../../contracts/out/SmartSessionRegistryStub.sol/SmartSessionRegistryStub.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Example.Contracts",
+                "basePath": ".",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    }
+]

@@ -46,7 +46,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 InitCode = Array.Empty<byte>(),
                 CallData = Array.Empty<byte>(),
                 AccountGasLimits = accountGasLimits,
-                PreVerificationGas = 21_000,
+                PreVerificationGas = 100_000,
                 GasFees = gasFees,
                 PaymasterAndData = Array.Empty<byte>(),
                 Signature = signature ?? new byte[65]
@@ -102,18 +102,44 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
-        public async Task ValidateStructure_WithMissingSignature_ReturnsFailure()
+        public async Task ValidateStructure_WithEmptySignature_ReturnsSuccess()
         {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
+
             var validator = new UserOpValidator(_fixture.Web3, _fixture.BundlerConfig);
-            var userOp = CreateValidPackedUserOp("0x1234567890123456789012345678901234567890");
-            userOp.Signature = Array.Empty<byte>();
+            var userOp = CreateValidPackedUserOp(accountAddress, signature: Array.Empty<byte>());
+            userOp.Nonce = nonce;
 
             var result = await validator.ValidateStructureAsync(
                 userOp,
                 _fixture.EntryPointService.ContractAddress);
 
-            Assert.False(result.IsValid);
-            Assert.Equal(UserOpValidationError.InvalidSignature, result.ErrorCode);
+            Assert.True(result.IsValid, result.Error);
+            Assert.NotEqual(UserOpValidationError.InvalidSignature, result.ErrorCode);
+        }
+
+        [Fact]
+        public async Task Validate_WithEmptySignature_ReachesRealValidation_NotRejectedStructurally()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+            var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
+
+            var userOp = CreateValidPackedUserOp(accountAddress, signature: Array.Empty<byte>());
+            userOp.Nonce = nonce;
+
+            var validator = new UserOpValidator(_fixture.Web3, CreateSimulationConfig());
+
+            var result = await validator.ValidateAsync(
+                userOp,
+                _fixture.EntryPointService.ContractAddress);
+
+            Assert.False(result.IsValid, "an empty signature must still be rejected - but by real validation, not structurally");
+            Assert.NotEqual(UserOpValidationError.InvalidSignature, result.ErrorCode);
+            Assert.DoesNotContain("Signature required", result.Error);
         }
 
         [Fact]
@@ -278,7 +304,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                     Sender = accountAddress,
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
-                    VerificationGasLimit = 100_000
+                    VerificationGasLimit = 100_000,
+                    PreVerificationGas = 100_000
                 },
                 accountKey);
 
@@ -290,6 +317,198 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 
             Assert.True(result.IsValid);
         }
+
+        #region Real validation simulation (EntryPointSimulations via eth_call state override)
+
+        private BundlerConfig CreateSimulationConfig() => new()
+        {
+            SupportedEntryPoints = _fixture.BundlerConfig.SupportedEntryPoints,
+            BeneficiaryAddress = _fixture.BundlerConfig.BeneficiaryAddress,
+            MinPriorityFeePerGas = 0,
+            AutoBundleIntervalMs = 0,
+            StrictValidation = false,
+            SimulateValidation = true,
+            UnsafeMode = true,
+            ChainId = _fixture.BundlerConfig.ChainId
+        };
+
+        [Fact]
+        public async Task SimulateValidation_WrongSignerSignature_RejectsWithAA24()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+            var wrongKey = Nethereum.Signer.EthECKey.GenerateKey();
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = accountAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(
+                new UserOperation
+                {
+                    Sender = accountAddress,
+                    CallData = executeFunction.GetCallData(),
+                    CallGasLimit = 100_000,
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
+                    MaxFeePerGas = 2_000_000_000,
+                    MaxPriorityFeePerGas = 1_000_000_000
+                },
+                wrongKey);
+
+            var validator = new UserOpValidator(_fixture.Web3, CreateSimulationConfig());
+
+            var result = await validator.SimulateValidationAsync(
+                userOp,
+                _fixture.EntryPointService.ContractAddress);
+
+            Assert.False(result.IsValid, "a structurally valid signature from the WRONG signer must be rejected");
+            Assert.Contains("AA24", result.Error);
+            Assert.Equal(UserOpValidationError.InvalidSignature, result.ErrorCode);
+        }
+
+        [Fact]
+        public async Task SendUserOperation_WrongSignerSignature_ThrowsInvalidSignatureCode()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, _) = await _fixture.CreateFundedAccountAsync(salt);
+            var wrongKey = Nethereum.Signer.EthECKey.GenerateKey();
+
+            var userOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(
+                new UserOperation
+                {
+                    Sender = accountAddress,
+                    CallData = Array.Empty<byte>(),
+                    CallGasLimit = 100_000,
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
+                    MaxFeePerGas = 2_000_000_000,
+                    MaxPriorityFeePerGas = 1_000_000_000
+                },
+                wrongKey);
+
+            using var bundler = _fixture.CreateNewBundlerService(CreateSimulationConfig());
+
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(() =>
+                bundler.SendUserOperationAsync(userOp, _fixture.EntryPointService.ContractAddress));
+
+            Assert.Equal(BundlerErrorCodes.InvalidSignature, ex.Code);
+        }
+
+        [Fact]
+        public async Task SimulateValidation_CorrectlySignedOp_SucceedsWithOpenTimeRange()
+        {
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = accountAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var userOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(
+                new UserOperation
+                {
+                    Sender = accountAddress,
+                    CallData = executeFunction.GetCallData(),
+                    CallGasLimit = 100_000,
+                    VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
+                    MaxFeePerGas = 2_000_000_000,
+                    MaxPriorityFeePerGas = 1_000_000_000
+                },
+                accountKey);
+
+            var validator = new UserOpValidator(_fixture.Web3, CreateSimulationConfig());
+
+            var result = await validator.SimulateValidationAsync(
+                userOp,
+                _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(result.IsValid, result.Error);
+            Assert.Equal(0UL, result.ValidAfter);
+            Assert.Equal(0UL, result.ValidUntil);
+            Assert.Null(result.Aggregator);
+        }
+
+        [Fact]
+        public async Task SimulateValidation_CounterfactualSenderWithInitCode_RunsDeploymentInSimulation()
+        {
+            var accountKey = Nethereum.Signer.EthECKey.GenerateKey();
+            var ownerAddress = accountKey.GetPublicAddress();
+            var salt = (ulong)Random.Shared.NextInt64();
+
+            var accountAddress = await _fixture.GetAccountAddressAsync(ownerAddress, salt);
+            await _fixture.FundAccountAsync(accountAddress, 1m);
+
+            var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
+
+            var userOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(
+                new UserOperation
+                {
+                    Sender = accountAddress,
+                    Nonce = 0,
+                    InitCode = initCode,
+                    CallData = Array.Empty<byte>(),
+                    CallGasLimit = 100_000,
+                    VerificationGasLimit = 500_000,
+                    PreVerificationGas = 100_000,
+                    MaxFeePerGas = 2_000_000_000,
+                    MaxPriorityFeePerGas = 1_000_000_000
+                },
+                accountKey);
+
+            var validator = new UserOpValidator(_fixture.Web3, CreateSimulationConfig());
+
+            var result = await validator.SimulateValidationAsync(
+                userOp,
+                _fixture.EntryPointService.ContractAddress);
+
+            Assert.True(result.IsValid,
+                $"counterfactual deployment must run inside the simulation, got: {result.Error}");
+        }
+
+        [Fact]
+        public async Task SimulateValidation_UnfundedCounterfactualSender_RejectsWithAA21()
+        {
+            var accountKey = Nethereum.Signer.EthECKey.GenerateKey();
+            var ownerAddress = accountKey.GetPublicAddress();
+            var salt = (ulong)Random.Shared.NextInt64();
+
+            var accountAddress = await _fixture.GetAccountAddressAsync(ownerAddress, salt);
+            var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
+
+            var userOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(
+                new UserOperation
+                {
+                    Sender = accountAddress,
+                    Nonce = 0,
+                    InitCode = initCode,
+                    CallData = Array.Empty<byte>(),
+                    CallGasLimit = 100_000,
+                    VerificationGasLimit = 500_000,
+                    PreVerificationGas = 100_000,
+                    MaxFeePerGas = 2_000_000_000,
+                    MaxPriorityFeePerGas = 1_000_000_000
+                },
+                accountKey);
+
+            var validator = new UserOpValidator(_fixture.Web3, CreateSimulationConfig());
+
+            var result = await validator.SimulateValidationAsync(
+                userOp,
+                _fixture.EntryPointService.ContractAddress);
+
+            Assert.False(result.IsValid, "an op whose sender cannot pay the prefund must be rejected");
+            Assert.Contains("AA21", result.Error);
+        }
+
+        #endregion
 
         [Fact]
         public async Task EstimateGas_WithValidOp_ReturnsEstimates()

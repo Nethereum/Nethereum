@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.Bundler.RocksDB\Nethereum.AccountAbstraction.Bundler.RocksDB.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
 </Project>

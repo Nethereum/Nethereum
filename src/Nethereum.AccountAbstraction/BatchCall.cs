@@ -1,8 +1,10 @@
 using System.Numerics;
 using Nethereum.Contracts;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "BatchCall - one call inside a batched UserOperation")]
     public class BatchCall
     {
         public byte[] CallData { get; set; }

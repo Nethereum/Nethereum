@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.SendView"
+             x:DataType="core:InteractionViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="Send - drive a contract call through AA" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Drives TestCounter.count() through Account Abstraction instead of a plain transaction:
+                IAAClient.Configure wraps the typed contract service in a handler that builds a
+                UserOperation for the active account, has it signed by the account's configured
+                validator, and submits it to the bundler rather than sending a transaction to the node
+                directly. The bundler simulates it and forwards it to the EntryPoint, and the returned
+                AATransactionReceipt carries its own UserOpHash/UserOpSuccess - a UserOp can still fail
+                even once its wrapping transaction is mined. Send Failing Count calls countFail(),
+                which always reverts: the bundler's own pre-flight gas estimation
+                (eth_estimateUserOperationGas) detects the guaranteed revert and rejects the operation
+                before it is ever sent, so the failure surfaces as an error message here, not a
+                receipt.
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Send Count" Command="{Binding SendCountCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" Padding="20,8" />
+                <Button Content="Send Failing Count" Command="{Binding SendFailingCountCommand}"
+                        IsEnabled="{Binding !IsBusy}" Padding="20,8" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Sending..." FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Counter value" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                <TextBlock Text="{Binding Count}" FontWeight="SemiBold" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                  IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

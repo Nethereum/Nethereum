@@ -31,7 +31,9 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
                     ?? throw new JsonException("Failed to deserialize UserOperation");
 
                 var packedUserOp = rpcUserOp.ToPackedUserOperation();
-                var userOpHash = await _bundler.SendUserOperationAsync(packedUserOp, entryPoint);
+                // The EIP-7702 auth is a side-channel not folded into the packed form, so carry it
+                // alongside the packed op into the bundler (v0.9 EntryPoint). Null when unset.
+                var userOpHash = await _bundler.SendUserOperationAsync(packedUserOp, entryPoint, rpcUserOp.Eip7702Auth);
 
                 return Success(request.Id, userOpHash);
             }
@@ -39,21 +41,21 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             {
                 throw;
             }
+            catch (BundlerRpcException ex)
+            {
+                return Error(request.Id, ex.Code, ex.Message, ex.ErrorData);
+            }
             catch (JsonException ex)
             {
-                return Error(request.Id, -32602, $"Invalid UserOperation format: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InvalidFields, $"Invalid UserOperation format: {ex.Message}");
             }
             catch (ArgumentException ex)
             {
-                return Error(request.Id, -32602, ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Error(request.Id, -32500, ex.Message);
+                return Error(request.Id, BundlerErrorCodes.InvalidFields, ex.Message);
             }
             catch (Exception ex)
             {
-                return Error(request.Id, -32603, $"Internal error: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
             }
         }
 

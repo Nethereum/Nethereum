@@ -8,9 +8,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="ILogger.Moq" Version="1.1.10" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-		<PackageReference Include="xunit" Version="2.3.1" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+		<PackageReference Include="xunit" Version="2.6.6" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+		<PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
 		<DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
 	</ItemGroup>
 
@@ -21,7 +23,9 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.SimpleAccount\Nethereum.AccountAbstraction.SimpleAccount.csproj" />
 		<ProjectReference Include="..\..\src\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+		<ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.WebAuthn\Nethereum.AccountAbstraction.WebAuthn.csproj" />
 		<ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
+		<ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.Bundler.InProcess\Nethereum.AccountAbstraction.Bundler.InProcess.csproj" />
 		<ProjectReference Include="..\..\src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
 		<ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
 		<ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />

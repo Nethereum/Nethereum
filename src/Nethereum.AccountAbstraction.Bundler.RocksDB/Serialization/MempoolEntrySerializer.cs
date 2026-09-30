@@ -3,7 +3,9 @@ using System.Text;
 using Nethereum.AccountAbstraction.Bundler.Mempool;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RLP;
+using Nethereum.RPC.Eth.DTOs;
 using BigInteger = System.Numerics.BigInteger;
 
 namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
@@ -32,7 +34,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                 RLP.RLP.EncodeElement(entry.ValidAfter.HasValue ? ((BigInteger)entry.ValidAfter.Value).ToBytesForRLPEncoding() : Array.Empty<byte>()),
                 RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(entry.Factory ?? "")),
                 RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(entry.Paymaster ?? "")),
-                RLP.RLP.EncodeElement(entry.Priority.ToBytesForRLPEncoding())
+                RLP.RLP.EncodeElement(entry.Priority.ToBytesForRLPEncoding()),
+                RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(entry.BlockHash ?? "")),
+                // Trailing element (index 17): the EIP-7702 authorisation side-channel. Empty when
+                // unset; a count guard on read keeps rows written before this element deserializing.
+                RLP.RLP.EncodeElement(SerializeAuthorisation(entry.Eip7702Auth))
             );
         }
 
@@ -63,7 +69,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                 ValidAfter = elements[12].RLPData?.Length > 0 ? (ulong)elements[12].RLPData.ToLongFromRLPDecoded() : null,
                 Factory = GetNullableString(elements[13].RLPData),
                 Paymaster = GetNullableString(elements[14].RLPData),
-                Priority = elements[15].RLPData.ToBigIntegerFromRLPDecoded()
+                Priority = elements[15].RLPData.ToBigIntegerFromRLPDecoded(),
+                BlockHash = elements.Count > 16 ? GetNullableString(elements[16].RLPData) : null,
+                // Count guard: rows written before the EIP-7702 element (index 17) leave it absent,
+                // so an older payload deserializes with Eip7702Auth null.
+                Eip7702Auth = elements.Count > 17 ? DeserializeAuthorisation(elements[17].RLPData) : null
             };
         }
 
@@ -105,6 +115,48 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
             };
         }
 
+        /// <summary>
+        /// Encodes the EIP-7702 authorisation tuple's six fields (chainId, address, nonce,
+        /// yParity, r, s) as a nested RLP list, or an empty element when the tuple is null so the
+        /// trailing slot stays present in the fixed entry list.
+        /// </summary>
+        private static byte[] SerializeAuthorisation(Authorisation? auth)
+        {
+            if (auth == null) return Array.Empty<byte>();
+
+            return RLP.RLP.EncodeList(
+                RLP.RLP.EncodeElement(auth.ChainId?.Value.ToBytesForRLPEncoding() ?? Array.Empty<byte>()),
+                RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(auth.Address ?? "")),
+                RLP.RLP.EncodeElement(auth.Nonce?.Value.ToBytesForRLPEncoding() ?? Array.Empty<byte>()),
+                RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(auth.YParity ?? "")),
+                RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(auth.R ?? "")),
+                RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(auth.S ?? ""))
+            );
+        }
+
+        private static Authorisation? DeserializeAuthorisation(byte[]? data)
+        {
+            // The whole-auth empty-element sentinel is the ONLY "no auth" signal. Within a present
+            // auth, every field is always meaningful: for the numeric fields, empty bytes mean the
+            // value 0 (BigInteger 0 encodes to empty), not absent - so ChainId=0 (EIP-7702's
+            // "valid on any chain" sentinel) and Nonce=0 (a fresh EOA's first delegation) survive
+            // a reload rather than round-tripping to null.
+            if (data == null || data.Length == 0) return null;
+
+            var decoded = RLP.RLP.Decode(data);
+            var elements = (RLPCollection)decoded;
+
+            return new Authorisation
+            {
+                ChainId = new HexBigInteger(elements[0].RLPData.ToBigIntegerFromRLPDecoded()),
+                Address = GetNullableString(elements[1].RLPData),
+                Nonce = new HexBigInteger(elements[2].RLPData.ToBigIntegerFromRLPDecoded()),
+                YParity = GetNullableString(elements[3].RLPData),
+                R = GetNullableString(elements[4].RLPData),
+                S = GetNullableString(elements[5].RLPData)
+            };
+        }
+
         private static string? GetNullableString(byte[]? data)
         {
             if (data == null || data.Length == 0) return null;
@@ -112,9 +164,16 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
             return string.IsNullOrEmpty(str) ? null : str;
         }
 
-        public static byte[] CreateSenderKey(string sender, BigInteger nonce)
+        /// <summary>
+        /// Sender-index key: sender ‖ entryPoint ‖ nonce. One row per (sender, entryPoint,
+        /// nonce) pointing at the occupying operation's hash key — the admission lookup for
+        /// the ERC-4337 one-pending-op-per-nonce rule. Sender first so sender-prefix scans
+        /// keep working.
+        /// </summary>
+        public static byte[] CreateSenderKey(string sender, string entryPoint, BigInteger nonce)
         {
             var senderBytes = (sender?.ToLowerInvariant() ?? "").HexToByteArray();
+            var entryPointBytes = (entryPoint?.ToLowerInvariant() ?? "").HexToByteArray();
             var nonceBytes = nonce.ToBytesForRLPEncoding();
             var paddedNonce = new byte[32];
             if (nonceBytes.Length <= 32)
@@ -122,9 +181,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                 Buffer.BlockCopy(nonceBytes, 0, paddedNonce, 32 - nonceBytes.Length, nonceBytes.Length);
             }
 
-            var result = new byte[senderBytes.Length + paddedNonce.Length];
+            var result = new byte[senderBytes.Length + entryPointBytes.Length + paddedNonce.Length];
             Buffer.BlockCopy(senderBytes, 0, result, 0, senderBytes.Length);
-            Buffer.BlockCopy(paddedNonce, 0, result, senderBytes.Length, paddedNonce.Length);
+            Buffer.BlockCopy(entryPointBytes, 0, result, senderBytes.Length, entryPointBytes.Length);
+            Buffer.BlockCopy(paddedNonce, 0, result, senderBytes.Length + entryPointBytes.Length, paddedNonce.Length);
             return result;
         }
 

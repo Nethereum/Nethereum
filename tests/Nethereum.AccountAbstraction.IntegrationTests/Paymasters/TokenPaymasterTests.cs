@@ -1,6 +1,7 @@
 using Nethereum.AccountAbstraction.Contracts.Paymaster.TokenPaymaster;
 using Nethereum.AccountAbstraction.Contracts.Paymaster.TokenPaymaster.ContractDefinition;
 using Nethereum.AccountAbstraction.IntegrationTests.Bundler;
+using Nethereum.Util;
 using Nethereum.XUnitEthereumClients;
 using System.Numerics;
 using Xunit;
@@ -26,7 +27,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
             var deployment = new TokenPaymasterDeployment
             {
                 EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.BeneficiaryAddress
+                Owner = _fixture.BeneficiaryAddress,
+                TokenAddress = AddressUtil.ZERO_ADDRESS,
+                OracleAddress = AddressUtil.ZERO_ADDRESS,
+                Markup = BigInteger.Zero
             };
 
             _paymasterService = await TokenPaymasterService.DeployContractAndGetServiceAsync(
@@ -41,7 +45,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
             var deployment = new TokenPaymasterDeployment
             {
                 EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.BeneficiaryAddress
+                Owner = _fixture.BeneficiaryAddress,
+                TokenAddress = AddressUtil.ZERO_ADDRESS,
+                OracleAddress = AddressUtil.ZERO_ADDRESS,
+                Markup = BigInteger.Zero
             };
 
             var service = await TokenPaymasterService.DeployContractAndGetServiceAsync(

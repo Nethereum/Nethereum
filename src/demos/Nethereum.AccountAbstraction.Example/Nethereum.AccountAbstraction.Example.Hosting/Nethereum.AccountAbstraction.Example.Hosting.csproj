@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AccountAbstraction.Example.Hosting</RootNamespace>
+  </PropertyGroup>
+
+  <!-- The example's shared self-bootstrap: brings up an in-process DevChain + bundler (ERC-4337
+       validation ON), deploys the AA contract stack (EntryPoint/ECDSAValidator/
+       NethereumAccountFactory) plus the demo TestCounter/BookingRegistry contracts and a funded
+       sponsoring VerifyingPaymaster, and registers the result (AddExampleHost) so every UI head -
+       Blazor, Avalonia, whatever comes next - shares the identical startup and DI wiring instead of
+       each copy-pasting it. No UI framework dependency here. -->
+  <!-- Microsoft.Extensions.DependencyInjection.Abstractions (for IServiceCollection) is pulled in
+       transitively via the Bundler.InProcess/Core project references - not pinned directly here so
+       it does not fight with the higher version those already resolve to. The concrete
+       Microsoft.Extensions.DependencyInjection package (ServiceCollection/BuildServiceProvider) IS
+       pinned directly: HostBootstrap.DeployStackAsync builds the IAAClient on-ramp the same way
+       ExampleFixture does, and nothing else in this project's dependency graph brings it in. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Core\Nethereum.AccountAbstraction.Example.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Contracts\Nethereum.AccountAbstraction.Example.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction.Bundler.InProcess\Nethereum.AccountAbstraction.Bundler.InProcess.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction.WebAuthn\Nethereum.AccountAbstraction.WebAuthn.csproj" />
+  </ItemGroup>
+
+</Project>

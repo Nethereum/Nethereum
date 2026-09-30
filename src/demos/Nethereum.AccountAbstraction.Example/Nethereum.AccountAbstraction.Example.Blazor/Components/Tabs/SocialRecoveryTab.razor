@@ -1,0 +1,111 @@
+@inherits ObservingComponentBase
+@inject SocialRecoveryViewModel Vm
+
+<section class="tab-card">
+    <h2>Social Recovery - guardian quorum</h2>
+    <p class="tab-help">
+        The "lost owner key" story: an N-of-M guardian quorum can rotate your account's
+        <code>ECDSAValidator</code> owner WITHOUT your original owner key ever signing. Set up a
+        guardian quorum, then simulate losing your key - a quorum of guardians recovers the account to
+        a brand new owner key, and the active account switches over to it. A quorum of FEWER than the
+        required guardians is rejected on-chain, not merely client-side.
+    </p>
+
+    <dl class="fact-list">
+        <dt>Module (SocialRecovery)</dt>
+        <dd><code>@Vm.SocialRecoveryAddress</code></dd>
+        <dt>Guardian quorum (default)</dt>
+        <dd>@Vm.Threshold of @Vm.GuardianCount guardians</dd>
+        <dt>Installed?</dt>
+        <dd>@(Vm.IsGuardiansInstalled ? "Yes" : "No")</dd>
+    </dl>
+
+    @if (!Vm.IsGuardiansInstalled)
+    {
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.SetupGuardiansCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Installing..." : "Set up guardians")
+        </button>
+    }
+    else
+    {
+        <dl class="fact-list">
+            <dt>Guardian addresses</dt>
+            <dd>
+                <ul>
+                    @foreach (var guardian in Vm.GuardianAddresses ?? Array.Empty<string>())
+                    {
+                        <li><code>@guardian</code></li>
+                    }
+                </ul>
+            </dd>
+        </dl>
+
+        @if (Vm.NewOwnerAddress is null)
+        {
+            <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.RecoverCommand.ExecuteAsync(null)">
+                @(Vm.IsBusy ? "Recovering..." : "Lose key & recover with guardian quorum")
+            </button>
+        }
+        else
+        {
+            <dl class="fact-list">
+                <dt>New owner (from recovery)</dt>
+                <dd><code>@Vm.NewOwnerAddress</code></dd>
+                <dt>On-chain owner (GetOwner)</dt>
+                <dd><code>@Vm.RotatedOwnerAddress</code></dd>
+            </dl>
+
+            @if (!Vm.IsRecoveredAccountActive)
+            {
+                <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.SwitchToRecoveredOwnerCommand.ExecuteAsync(null)">
+                    @(Vm.IsBusy ? "Switching..." : "Switch active account to new owner & prove it")
+                </button>
+            }
+            else
+            {
+                <dl class="fact-list">
+                    <dt>Counter (signed by the new owner key)</dt>
+                    <dd>@Vm.ProvedCount</dd>
+                </dl>
+            }
+        }
+
+        <hr />
+
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryUnderThresholdRecoveryCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Trying..." : "Try under-threshold recovery (should be rejected)")
+        </button>
+
+        @if (Vm.UnderThresholdRejected == true)
+        {
+            <p class="status-message">Rejected as expected - fewer than the required guardian quorum cannot recover the account.</p>
+        }
+        @if (Vm.UnderThresholdRejected == false)
+        {
+            <p class="error-message">Unexpected: the under-threshold recovery attempt was NOT rejected.</p>
+        }
+    }
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

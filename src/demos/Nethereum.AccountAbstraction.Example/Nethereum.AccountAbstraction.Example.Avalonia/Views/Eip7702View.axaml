@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.Eip7702View"
+             x:DataType="core:Eip7702AccountViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="EIP-7702 - upgrade an EOA in place" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                This is a plain EOA - a normal wallet, generated fresh below. Upgrade it in place to a
+                smart account with EIP-7702: same address, now with AA powers. Unlike every other tab
+                (which creates a brand new counterfactual CREATE2 account), this one delegates the EOA's
+                OWN code to a deployed smart-account implementation and drives it through Account
+                Abstraction without ever changing its address.
+            </TextBlock>
+
+            <Button Content="Generate EOA" Command="{Binding GenerateEoaCommand}"
+                    IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left"
+                    Padding="20,8" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Working..." FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Spacing="6" IsVisible="{Binding EoaAddress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="EOA address" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding EoaAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Upgraded?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="Yes - now a smart account, same address" IsVisible="{Binding IsUpgraded}" FontSize="12" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="No - still a plain EOA" IsVisible="{Binding !IsUpgraded}" FontSize="12" />
+                </Grid>
+
+                <Button Content="Fund EOA" Command="{Binding FundEoaCommand}"
+                        IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" Padding="20,8" />
+
+                <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,8,0,8" />
+
+                <Button Content="Upgrade via EIP-7702 &amp; Send" Command="{Binding UpgradeAndSendCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left"
+                        Padding="20,8" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Counter value" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                    <TextBlock Text="{Binding Count}" FontWeight="SemiBold" />
+                </StackPanel>
+
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                      IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" />
+                </Grid>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core;assembly=Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Avalonia.Views.AdminEnrollView"
+             x:DataType="core:EnterpriseAdminViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="1. Create / select user" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                The org's directory ADMIN creates a userId onto the AppChain account registry: this
+                looks the user up (standing in for an existing AD/SSO directory), generates them a fresh
+                owner key, and deploys/activates their counterfactual account through the org-signed
+                registry. The admin never signs an operation on the user's behalf - only the account
+                owner (the User tab) can do that. The user just created becomes the ACTIVE USER every
+                other tab (User, Tiered approval, Offboard) operates on - click a different row in the
+                directory below to switch it.
+            </TextBlock>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="userId" FontSize="12" Foreground="{DynamicResource SystemBaseMediumColor}" />
+                <TextBox Text="{Binding UserId}" IsEnabled="{Binding !IsBusy}" Width="300" HorizontalAlignment="Left" />
+            </StackPanel>
+
+            <Button Content="Create user" Command="{Binding EnrollCommand}"
+                    IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left"
+                    Padding="20,8" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Creating..." FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Spacing="6"
+                        IsVisible="{Binding ResolvedAddress, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Resolved address" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ResolvedAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Active?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding IsActive}" FontSize="12" />
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,8" />
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="Active user" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding ActiveUserId, TargetNullValue='- none selected -'}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" />
+                </Grid>
+                <TextBlock Text="Directory - click a row to make it the active user" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" />
+                <ItemsControl x:Name="DirectoryList" ItemsSource="{Binding Directory}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="core:EnrolledUserSummary">
+                            <Button Command="{Binding $parent[ItemsControl].((core:EnterpriseAdminViewModel)DataContext).SelectUserCommand}"
+                                    CommandParameter="{Binding UserId}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                    Margin="0,2" Padding="8,6">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="{Binding UserId}" FontSize="12" Width="90" />
+                                    <TextBlock Text="{Binding OwnerAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" />
+                                    <TextBlock Text="{Binding AccountAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="11" />
+                                    <TextBlock Text="{Binding IsActive}" FontSize="12" />
+                                    <TextBlock Text="ACTIVE" FontSize="11" FontWeight="Bold" Foreground="#7fd99b" IsVisible="{Binding IsSelected}" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

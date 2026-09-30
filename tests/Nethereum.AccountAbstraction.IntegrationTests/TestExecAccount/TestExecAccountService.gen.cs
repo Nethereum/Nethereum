@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
@@ -11,7 +12,7 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
 using Nethereum.AccountAbstraction.IntegrationTests.TestExecAccount.ContractDefinition;
-using Nethereum.AccountAbstraction.Structs;
+using Call = Nethereum.AccountAbstraction.IntegrationTests.TestExecAccount.ContractDefinition.Call;
 
 namespace Nethereum.AccountAbstraction.IntegrationTests.TestExecAccount
 {
@@ -445,7 +446,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.TestExecAccount
                 typeof(ExecuteErrorError),
                 typeof(FailedCallError),
                 typeof(InvalidInitializationError),
+                typeof(NotFromEntryPointError),
                 typeof(NotInitializingError),
+                typeof(NotOwnerError),
+                typeof(NotOwnerOrEntryPointError),
                 typeof(UUPSUnauthorizedCallContextError),
                 typeof(UUPSUnsupportedProxiableUUIDError)
             };

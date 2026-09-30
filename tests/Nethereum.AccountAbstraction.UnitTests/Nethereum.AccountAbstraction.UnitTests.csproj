@@ -14,8 +14,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.SimpleAccount\Nethereum.AccountAbstraction.SimpleAccount.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

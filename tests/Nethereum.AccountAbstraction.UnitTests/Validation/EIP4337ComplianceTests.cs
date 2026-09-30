@@ -103,21 +103,15 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         }
 
         [Fact]
-        public void HashUserOperation_ProducesConsistentEncodedData()
+        public void HashUserOperation_ProducesDeterministic32ByteHash()
         {
             var userOp = CreateTestUserOperation();
             var packed = UserOperationBuilder.PackUserOperation(userOp);
             var entryPoint = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
             BigInteger chainId = 1;
 
-            var encoded1 = UserOperationBuilder.HashUserOperation(packed, entryPoint, chainId);
-            var encoded2 = UserOperationBuilder.HashUserOperation(packed, entryPoint, chainId);
-
-            Assert.Equal(encoded1, encoded2);
-            Assert.True(encoded1.Length > 0, "Encoded data should not be empty");
-
-            var hash1 = Sha3Keccack.Current.CalculateHash(encoded1);
-            var hash2 = Sha3Keccack.Current.CalculateHash(encoded2);
+            var hash1 = UserOperationBuilder.HashUserOperation(packed, entryPoint, chainId);
+            var hash2 = UserOperationBuilder.HashUserOperation(packed, entryPoint, chainId);
 
             Assert.Equal(hash1, hash2);
             Assert.Equal(32, hash1.Length);
@@ -184,19 +178,19 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         }
     }
 
-    public class ValidationDataHelperTests
+    public class ValidationDataCodecTests
     {
         [Fact]
         public void Pack_SignatureSuccess_ReturnsZeroForAggregator()
         {
-            var result = ValidationDataHelper.Pack(false, 0, 0, null);
+            var result = ValidationDataCodec.Pack(false, 0, 0, null);
             Assert.Equal(BigInteger.Zero, result);
         }
 
         [Fact]
         public void Pack_SignatureFailed_ReturnsOne()
         {
-            var result = ValidationDataHelper.Pack(true, 0, 0, null);
+            var result = ValidationDataCodec.Pack(true, 0, 0, null);
             Assert.Equal(BigInteger.One, result);
         }
 
@@ -204,9 +198,9 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         public void Pack_ValidUntil_CorrectBitPosition()
         {
             ulong validUntil = 1700000000;
-            var result = ValidationDataHelper.Pack(false, validUntil, 0, null);
+            var result = ValidationDataCodec.Pack(false, validUntil, 0, null);
 
-            var (sigFailed, parsedValidUntil, parsedValidAfter, aggregator) = ValidationDataHelper.Parse(result);
+            var (sigFailed, parsedValidUntil, parsedValidAfter, aggregator) = ValidationDataCodec.Parse(result);
 
             Assert.False(sigFailed);
             Assert.Equal(validUntil, parsedValidUntil);
@@ -218,9 +212,9 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         public void Pack_ValidAfter_CorrectBitPosition()
         {
             ulong validAfter = 1600000000;
-            var result = ValidationDataHelper.Pack(false, 0, validAfter, null);
+            var result = ValidationDataCodec.Pack(false, 0, validAfter, null);
 
-            var (sigFailed, parsedValidUntil, parsedValidAfter, aggregator) = ValidationDataHelper.Parse(result);
+            var (sigFailed, parsedValidUntil, parsedValidAfter, aggregator) = ValidationDataCodec.Parse(result);
 
             Assert.False(sigFailed);
             Assert.Equal(0UL, parsedValidUntil);
@@ -233,8 +227,8 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
             ulong validUntil = 1700000000;
             ulong validAfter = 1600000000;
 
-            var result = ValidationDataHelper.Pack(true, validUntil, validAfter, null);
-            var (sigFailed, parsedValidUntil, parsedValidAfter, aggregator) = ValidationDataHelper.Parse(result);
+            var result = ValidationDataCodec.Pack(true, validUntil, validAfter, null);
+            var (sigFailed, parsedValidUntil, parsedValidAfter, aggregator) = ValidationDataCodec.Parse(result);
 
             Assert.True(sigFailed);
             Assert.Equal(validUntil, parsedValidUntil);
@@ -244,7 +238,7 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         [Fact]
         public void Parse_Zero_ReturnsAllDefaults()
         {
-            var (sigFailed, validUntil, validAfter, aggregator) = ValidationDataHelper.Parse(BigInteger.Zero);
+            var (sigFailed, validUntil, validAfter, aggregator) = ValidationDataCodec.Parse(BigInteger.Zero);
 
             Assert.False(sigFailed);
             Assert.Equal(0UL, validUntil);
@@ -255,31 +249,31 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         [Fact]
         public void IsValidNow_SignatureFailed_ReturnsFalse()
         {
-            var validationData = ValidationDataHelper.Pack(true, 0, 0, null);
-            Assert.False(ValidationDataHelper.IsValidNow(validationData));
+            var validationData = ValidationDataCodec.Pack(true, 0, 0, null);
+            Assert.False(ValidationDataCodec.IsValidNow(validationData));
         }
 
         [Fact]
         public void IsValidNow_ValidSignature_ReturnsTrue()
         {
-            var validationData = ValidationDataHelper.Pack(false, 0, 0, null);
-            Assert.True(ValidationDataHelper.IsValidNow(validationData));
+            var validationData = ValidationDataCodec.Pack(false, 0, 0, null);
+            Assert.True(ValidationDataCodec.IsValidNow(validationData));
         }
 
         [Fact]
         public void IsValidNow_FutureValidAfter_ReturnsFalse()
         {
             var futureTime = (ulong)DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
-            var validationData = ValidationDataHelper.Pack(false, 0, futureTime, null);
-            Assert.False(ValidationDataHelper.IsValidNow(validationData));
+            var validationData = ValidationDataCodec.Pack(false, 0, futureTime, null);
+            Assert.False(ValidationDataCodec.IsValidNow(validationData));
         }
 
         [Fact]
         public void IsValidNow_PastValidUntil_ReturnsFalse()
         {
             var pastTime = (ulong)DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeSeconds();
-            var validationData = ValidationDataHelper.Pack(false, pastTime, 0, null);
-            Assert.False(ValidationDataHelper.IsValidNow(validationData));
+            var validationData = ValidationDataCodec.Pack(false, pastTime, 0, null);
+            Assert.False(ValidationDataCodec.IsValidNow(validationData));
         }
 
         [Fact]
@@ -288,11 +282,11 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
             ulong accountValidUntil = 1700000000;
             ulong paymasterValidUntil = 1650000000;
 
-            var accountData = ValidationDataHelper.Pack(false, accountValidUntil, 0, null);
-            var paymasterData = ValidationDataHelper.Pack(false, paymasterValidUntil, 0, null);
+            var accountData = ValidationDataCodec.Pack(false, accountValidUntil, 0, null);
+            var paymasterData = ValidationDataCodec.Pack(false, paymasterValidUntil, 0, null);
 
-            var merged = ValidationDataHelper.Merge(accountData, paymasterData);
-            var (_, mergedValidUntil, _, _) = ValidationDataHelper.Parse(merged);
+            var merged = ValidationDataCodec.Merge(accountData, paymasterData);
+            var (_, mergedValidUntil, _, _) = ValidationDataCodec.Parse(merged);
 
             Assert.Equal(paymasterValidUntil, mergedValidUntil);
         }
@@ -300,11 +294,11 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
         [Fact]
         public void Merge_EitherSigFailed_ResultsFailed()
         {
-            var accountData = ValidationDataHelper.Pack(true, 0, 0, null);
-            var paymasterData = ValidationDataHelper.Pack(false, 0, 0, null);
+            var accountData = ValidationDataCodec.Pack(true, 0, 0, null);
+            var paymasterData = ValidationDataCodec.Pack(false, 0, 0, null);
 
-            var merged = ValidationDataHelper.Merge(accountData, paymasterData);
-            var (sigFailed, _, _, _) = ValidationDataHelper.Parse(merged);
+            var merged = ValidationDataCodec.Merge(accountData, paymasterData);
+            var (sigFailed, _, _, _) = ValidationDataCodec.Parse(merged);
 
             Assert.True(sigFailed);
         }

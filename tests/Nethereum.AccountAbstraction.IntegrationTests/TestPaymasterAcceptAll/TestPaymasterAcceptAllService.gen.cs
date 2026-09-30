@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Contracts.CQS;
@@ -11,7 +12,6 @@ using Nethereum.Contracts.ContractHandlers;
 using Nethereum.Contracts;
 using System.Threading;
 using Nethereum.AccountAbstraction.IntegrationTests.TestPaymasterAcceptAll.ContractDefinition;
-using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.IntegrationTests.TestPaymasterAcceptAll
 {
@@ -373,6 +373,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.TestPaymasterAcceptAll
         {
             return new List<Type>
             {
+                typeof(ERC165ErrorError),
+                typeof(MustOverrideError),
+                typeof(NotFromEntryPointError),
                 typeof(OwnableInvalidOwnerError),
                 typeof(OwnableUnauthorizedAccountError)
             };

@@ -1,0 +1,14 @@
+<Project>
+  <!-- Sets the MAX_PATH workaround BEFORE Microsoft.Common.props imports (see the sibling .Hosting
+       project's csproj comment for the full rationale) - MSBuild's own warning MSB3539 says setting
+       BaseIntermediateOutputPath/BaseOutputPath inside the .csproj body itself is too late for a
+       Microsoft.NET.Sdk.Web project (NuGet restore still writes to the un-redirected default
+       obj\ next to the project, then a later static-web-assets copy step looks for it at the
+       redirected path and fails with MSB3030). A Directory.Build.props right next to this project's
+       own .csproj (picked up only by this project, not any sibling) is evaluated early enough to avoid
+       that. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\obj\aa-appchain-enterprise-example\Blazor\'))</BaseIntermediateOutputPath>
+    <BaseOutputPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\bin\aa-appchain-enterprise-example\Blazor\'))</BaseOutputPath>
+  </PropertyGroup>
+</Project>

@@ -23,14 +23,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase1_GaslessTransactions_SessionWithPaymasterPermission()
         {
-            // USE CASE: User wants gasless transactions via paymaster
-            //
-            // The user wants to interact with a dApp without paying gas directly.
-            // A paymaster (sponsor) will cover gas costs.
-            //
-            // Configuration:
-            // - Enable paymaster permission
-            // - Allow specific dApp interactions
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var sudoPolicy = "0x2222222222222222222222222222222222222222";
@@ -52,12 +44,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase2_DelegatedWallet_MultipleTokenApprovalSession()
         {
-            // USE CASE: User delegates wallet management to a third party
-            //
-            // A portfolio manager needs limited access to manage funds:
-            // - Can transfer multiple tokens up to daily limits
-            // - Cannot withdraw ETH
-            // - Cannot call arbitrary contracts
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var spendingPolicy = "0x2222222222222222222222222222222222222222";
@@ -68,9 +54,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
             var dai = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
             var weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
-            var usdcLimit = BigInteger.Parse("10000000000"); // 10,000 USDC
-            var daiLimit = BigInteger.Parse("10000000000000000000000"); // 10,000 DAI
-            var wethLimit = BigInteger.Parse("5000000000000000000"); // 5 WETH
+            var usdcLimit = BigInteger.Parse("10000000000");
+            var daiLimit = BigInteger.Parse("10000000000000000000000");
+            var wethLimit = BigInteger.Parse("5000000000000000000");
 
             var session = new SmartSessionConfig()
                 .WithSessionValidator(sessionKeyValidator)
@@ -87,13 +73,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase3_SocialLoginSession_WebAppWithLimitedAccess()
         {
-            // USE CASE: Web3 app with social login (passkey/WebAuthn)
-            //
-            // A user logs in via social/passkey to a web app.
-            // The session key is stored in browser, with strict limits:
-            // - Very low spending limits (micro-transactions)
-            // - Only app-specific contract calls
-            // - Short-lived session (enforced off-chain)
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var spendingPolicy = "0x2222222222222222222222222222222222222222";
@@ -103,7 +82,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
             var salt = new byte[32];
             salt[31] = 3;
 
-            var microLimit = BigInteger.Parse("10000000"); // 10 USDC only
+            var microLimit = BigInteger.Parse("10000000");
 
             var session = new SmartSessionConfig()
                 .WithSessionValidator(sessionKeyValidator)
@@ -121,12 +100,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase4_AutomatedDCA_RecurringBuySession()
         {
-            // USE CASE: Automated Dollar-Cost Averaging (DCA)
-            //
-            // User wants to automate weekly ETH purchases:
-            // - Can call swap() on DEX
-            // - Maximum $100 worth per transaction
-            // - Only specific DEX router allowed
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var uniActionPolicy = "0x2222222222222222222222222222222222222222";
@@ -135,7 +108,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
             var salt = new byte[32];
             salt[31] = 4;
 
-            var maxSwapValue = BigInteger.Parse("100000000"); // 100 USDC worth
+            var maxSwapValue = BigInteger.Parse("100000000");
 
             var policyData = new UniActionPolicyBuilder()
                 .WithValueLimit(maxSwapValue)
@@ -158,13 +131,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase5_NFTGallerySession_AutomatedListingManagement()
         {
-            // USE CASE: NFT Gallery automated listing
-            //
-            // An NFT collector automates gallery management:
-            // - Can list NFTs for sale (setApprovalForAll)
-            // - Can update listing prices
-            // - Cannot transfer NFTs directly
-            // - All actions limited to specific marketplace
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var sudoPolicy = "0x2222222222222222222222222222222222222222";
@@ -191,12 +157,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase6_MultiChainSession_SameSessionAcrossChains()
         {
-            // USE CASE: Multi-chain session configuration
-            //
-            // A user wants consistent session across L2s:
-            // - Same session key validator
-            // - Same salt (deterministic permissionId)
-            // - Different contract addresses per chain (handled at runtime)
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var sudoPolicy = "0x2222222222222222222222222222222222222222";
@@ -220,12 +180,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase7_SubscriptionSession_RecurringPayments()
         {
-            // USE CASE: Subscription payments
-            //
-            // User authorizes recurring subscription payments:
-            // - Can call chargeSubscription() on billing contract
-            // - Limited to specific amount per period
-            // - Only billing contract can be called
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var uniActionPolicy = "0x2222222222222222222222222222222222222222";
@@ -234,7 +188,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
             var salt = new byte[32];
             salt[31] = 7;
 
-            var monthlyLimit = BigInteger.Parse("50000000"); // 50 USDC per month
+            var monthlyLimit = BigInteger.Parse("50000000");
 
             var policyData = new UniActionPolicyBuilder()
                 .WithValueLimit(monthlyLimit)
@@ -257,12 +211,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase8_DAOGovernance_VotingSession()
         {
-            // USE CASE: DAO governance voting
-            //
-            // A DAO member delegates voting to an agent:
-            // - Can call vote(proposalId, support) on governance
-            // - Cannot call execute() or propose()
-            // - Voting power is preserved (snapshot-based)
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var sudoPolicy = "0x2222222222222222222222222222222222222222";
@@ -284,12 +232,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase9_EmergencyRecovery_LimitedAccessSession()
         {
-            // USE CASE: Emergency recovery session
-            //
-            // A backup key with severely limited access:
-            // - Can only call emergencyWithdraw()
-            // - No token transfers
-            // - No contract interactions
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var sudoPolicy = "0x2222222222222222222222222222222222222222";
@@ -311,13 +253,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
         [Fact]
         public void UseCase10_ComplexDeFi_MultiProtocolSession()
         {
-            // USE CASE: Complex DeFi session across protocols
-            //
-            // Power user wants to automate complex DeFi strategies:
-            // - Uniswap: swap tokens
-            // - Aave: supply/withdraw collateral
-            // - Compound: borrow/repay
-            // - All with value limits
 
             var sessionKeyValidator = "0x1111111111111111111111111111111111111111";
             var uniActionPolicy = "0x2222222222222222222222222222222222222222";
@@ -328,9 +263,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Modules.SmartSession
             var aave = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2";
             var compound = "0xc3d688B66703497DAA19211EEdff47f25384cdc3";
 
-            var swapLimit = BigInteger.Parse("1000000000000000000"); // 1 ETH
-            var supplyLimit = BigInteger.Parse("5000000000000000000"); // 5 ETH
-            var borrowLimit = BigInteger.Parse("500000000000000000"); // 0.5 ETH
+            var swapLimit = BigInteger.Parse("1000000000000000000");
+            var supplyLimit = BigInteger.Parse("5000000000000000000");
+            var borrowLimit = BigInteger.Parse("500000000000000000");
 
             var session = new SmartSessionConfig()
                 .WithSessionValidator(sessionKeyValidator)

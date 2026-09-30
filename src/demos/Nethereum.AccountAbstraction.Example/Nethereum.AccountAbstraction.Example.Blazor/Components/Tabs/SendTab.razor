@@ -1,0 +1,56 @@
+@inherits ObservingComponentBase
+@inject InteractionViewModel Vm
+
+<section class="tab-card">
+    <h2>Send - drive a contract call through AA</h2>
+    <p class="tab-help">
+        Drives <code>TestCounter.count()</code> through Account Abstraction instead of a plain
+        transaction: <code>IAAClient.Configure</code> wraps the typed contract service in a handler
+        that builds a UserOperation for the active account, has it signed by the account's configured
+        validator, and submits it to the bundler rather than sending a transaction to the node
+        directly. The bundler simulates it and forwards it to the EntryPoint, and the returned
+        <code>AATransactionReceipt</code> carries its own <code>UserOpHash</code>/<code>UserOpSuccess</code> -
+        a UserOp can still fail even once its wrapping transaction is mined. <strong>Send Failing
+        Count</strong> calls <code>countFail()</code>, which always reverts: the bundler's own
+        pre-flight gas estimation (<code>eth_estimateUserOperationGas</code>) detects the guaranteed
+        revert and rejects the operation before it is ever sent, so the failure surfaces as an error
+        message here, not a receipt.
+    </p>
+
+    <div class="btn-row">
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.SendCountCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Send Count")
+        </button>
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.SendFailingCountCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Send Failing Count")
+        </button>
+    </div>
+
+    <dl class="fact-list">
+        <dt>Counter value</dt>
+        <dd>@Vm.Count</dd>
+    </dl>
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

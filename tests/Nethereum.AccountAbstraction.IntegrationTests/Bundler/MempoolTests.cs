@@ -7,15 +7,19 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 {
     public class MempoolTests
     {
+        private static int _senderCounter;
+
         private static MempoolEntry CreateTestEntry(
             string userOpHash,
-            string sender = "0x1234567890123456789012345678901234567890",
+            string? sender = null,
             BigInteger? priority = null,
             ulong? validAfter = null,
             ulong? validUntil = null,
             BigInteger? verificationGas = null,
             BigInteger? callGas = null)
         {
+            sender ??= "0x" + System.Threading.Interlocked.Increment(ref _senderCounter).ToString("x40");
+
             var vGas = verificationGas ?? 100_000;
             var cGas = callGas ?? 100_000;
 
@@ -55,7 +59,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                     PaymasterAndData = Array.Empty<byte>(),
                     Signature = new byte[65]
                 },
-                EntryPoint = "0x433709009B8330FDa32311DF1C2AFA402eD8D009", // v0.9
+                EntryPoint = "0x433709009B8330FDa32311DF1C2AFA402eD8D009",
                 Priority = priority ?? 1_000_000_000,
                 Prefund = 1_000_000_000_000_000,
                 ValidAfter = validAfter,
@@ -64,18 +68,18 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
         }
 
         [Fact]
-        public async Task AddAsync_WithValidEntry_ReturnsTrue()
+        public async Task AddAsync_WithValidEntry_ReturnsAdded()
         {
             var mempool = new InMemoryUserOpMempool();
             var entry = CreateTestEntry("0x" + new string('1', 64));
 
             var result = await mempool.AddAsync(entry);
 
-            Assert.True(result);
+            Assert.Equal(MempoolAddOutcome.Added, result);
         }
 
         [Fact]
-        public async Task AddAsync_WithDuplicateHash_ReturnsFalse()
+        public async Task AddAsync_WithDuplicateHash_ReturnsRejectedDuplicate()
         {
             var mempool = new InMemoryUserOpMempool();
             var hash = "0x" + new string('2', 64);
@@ -85,12 +89,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var result1 = await mempool.AddAsync(entry1);
             var result2 = await mempool.AddAsync(entry2);
 
-            Assert.True(result1);
-            Assert.False(result2);
+            Assert.Equal(MempoolAddOutcome.Added, result1);
+            Assert.Equal(MempoolAddOutcome.RejectedDuplicate, result2);
         }
 
         [Fact]
-        public async Task AddAsync_WhenFull_ReturnsFalse()
+        public async Task AddAsync_WhenFull_ReturnsRejectedFull()
         {
             var mempool = new InMemoryUserOpMempool(maxSize: 2);
 
@@ -102,7 +106,141 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             await mempool.AddAsync(entry2);
             var result = await mempool.AddAsync(entry3);
 
-            Assert.False(result);
+            Assert.Equal(MempoolAddOutcome.RejectedFull, result);
+        }
+
+        [Fact]
+        public async Task AddAsync_SameSenderNonceWithTenPercentFeeBump_ReplacesPendingOp()
+        {
+            var mempool = new InMemoryUserOpMempool();
+            var sender = "0x9999999999999999999999999999999999999999";
+
+            var original = CreateTestEntry("0x" + new string('a', 64), sender, priority: 1_000_000_000);
+            Assert.Equal(MempoolAddOutcome.Added, await mempool.AddAsync(original));
+
+            var replacement = CreateTestEntry("0x" + new string('b', 64), sender, priority: 1_100_000_000);
+            Assert.Equal(MempoolAddOutcome.Replaced, await mempool.AddAsync(replacement));
+
+            Assert.Null(await mempool.GetAsync(original.UserOpHash));
+            Assert.NotNull(await mempool.GetAsync(replacement.UserOpHash));
+
+            var pending = await mempool.GetPendingAsync(10);
+            Assert.Single(pending);
+            Assert.Equal(replacement.UserOpHash, pending[0].UserOpHash);
+        }
+
+        [Fact]
+        public async Task AddAsync_SameSenderNonceWithoutFeeBump_ReturnsRejectedUnderpriced()
+        {
+            var mempool = new InMemoryUserOpMempool();
+            var sender = "0x8888888888888888888888888888888888888888";
+
+            var original = CreateTestEntry("0x" + new string('c', 64), sender, priority: 1_000_000_000);
+            Assert.Equal(MempoolAddOutcome.Added, await mempool.AddAsync(original));
+
+            var samePriced = CreateTestEntry("0x" + new string('d', 64), sender, priority: 1_000_000_000);
+            Assert.Equal(MempoolAddOutcome.RejectedUnderpriced, await mempool.AddAsync(samePriced));
+
+            var belowTenPercent = CreateTestEntry("0x" + new string('e', 64), sender, priority: 1_050_000_000);
+            Assert.Equal(MempoolAddOutcome.RejectedUnderpriced, await mempool.AddAsync(belowTenPercent));
+
+            Assert.NotNull(await mempool.GetAsync(original.UserOpHash));
+        }
+
+        [Fact]
+        public async Task AddAsync_SameSenderNonceWhileSubmitted_ReturnsRejectedDuplicate()
+        {
+            var mempool = new InMemoryUserOpMempool();
+            var sender = "0x7777777777777777777777777777777777777777";
+
+            var original = CreateTestEntry("0x" + new string('f', 64), sender, priority: 1_000_000_000);
+            await mempool.AddAsync(original);
+            await mempool.MarkSubmittedAsync(new[] { original.UserOpHash }, "0x" + new string('5', 64));
+
+            var replacement = CreateTestEntry("0x" + new string('9', 64), sender, priority: 5_000_000_000);
+
+            Assert.Equal(MempoolAddOutcome.RejectedDuplicate, await mempool.AddAsync(replacement));
+        }
+
+        [Fact]
+        public async Task GetPendingAsync_MultipleNoncesSameSender_ReturnsFullContiguousChain()
+        {
+            var mempool = new InMemoryUserOpMempool();
+            var sender = "0x6666666666666666666666666666666666666666";
+
+            var entry1 = CreateTestEntry("0x" + new string('1', 63) + "a", sender);
+            entry1.UserOperation.Nonce = BigInteger.Zero;
+            var entry2 = CreateTestEntry("0x" + new string('2', 63) + "b", sender);
+            entry2.UserOperation.Nonce = BigInteger.One;
+
+            await mempool.AddAsync(entry1);
+            await mempool.AddAsync(entry2);
+
+            var pending = await mempool.GetPendingAsync(10);
+
+            Assert.Equal(2, pending.Length);
+            Assert.Equal(BigInteger.Zero, pending[0].UserOperation.Nonce);
+            Assert.Equal(BigInteger.One, pending[1].UserOperation.Nonce);
+        }
+
+        [Fact]
+        public async Task GetPendingAsync_MiddleNonceOutsideValidityWindow_TruncatesAtGap()
+        {
+            var mempool = new InMemoryUserOpMempool();
+            var sender = "0x6767676767676767676767676767676767676767";
+            var longExpired = 1UL;
+
+            var entry0 = CreateTestEntry("0x" + new string('3', 63) + "0", sender);
+            entry0.UserOperation.Nonce = BigInteger.Zero;
+
+            var entry1 = CreateTestEntry("0x" + new string('3', 63) + "1", sender, validUntil: longExpired);
+            entry1.UserOperation.Nonce = BigInteger.One;
+
+            var entry2 = CreateTestEntry("0x" + new string('3', 63) + "2", sender);
+            entry2.UserOperation.Nonce = 2;
+
+            await mempool.AddAsync(entry0);
+            await mempool.AddAsync(entry1);
+            await mempool.AddAsync(entry2);
+
+            var pending = await mempool.GetPendingAsync(10);
+
+            Assert.Single(pending);
+            Assert.Equal(entry0.UserOpHash, pending[0].UserOpHash);
+        }
+
+        [Fact]
+        public async Task GetPendingAsync_SenderWithTwoIndependentNonceKeys_ReturnsBothContiguousRuns()
+        {
+            var mempool = new InMemoryUserOpMempool();
+            var sender = "0x6868686868686868686868686868686868686868";
+
+            BigInteger key0 = 0;
+            BigInteger key1 = 1;
+
+            var key0Entry0 = CreateTestEntry("0x" + new string('4', 63) + "0", sender);
+            key0Entry0.UserOperation.Nonce = (key0 << 64) | 0;
+            var key0Entry1 = CreateTestEntry("0x" + new string('4', 63) + "1", sender);
+            key0Entry1.UserOperation.Nonce = (key0 << 64) | 1;
+
+            var key1Entry0 = CreateTestEntry("0x" + new string('4', 63) + "2", sender);
+            key1Entry0.UserOperation.Nonce = (key1 << 64) | 0;
+            var key1Entry1 = CreateTestEntry("0x" + new string('4', 63) + "3", sender);
+            key1Entry1.UserOperation.Nonce = (key1 << 64) | 1;
+
+            await mempool.AddAsync(key0Entry0);
+            await mempool.AddAsync(key0Entry1);
+            await mempool.AddAsync(key1Entry0);
+            await mempool.AddAsync(key1Entry1);
+
+            var pending = await mempool.GetPendingAsync(10);
+
+            Assert.Equal(4, pending.Length);
+            var byHash = pending.ToDictionary(e => e.UserOpHash);
+            Assert.Contains(key0Entry0.UserOpHash, byHash.Keys);
+            Assert.Contains(key0Entry1.UserOpHash, byHash.Keys);
+            Assert.Contains(key1Entry0.UserOpHash, byHash.Keys);
+            Assert.Contains(key1Entry1.UserOpHash, byHash.Keys);
         }
 
         [Fact]
@@ -247,6 +385,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
 
             var entry1 = CreateTestEntry("0x" + new string('1', 64), sender: sender1);
             var entry2 = CreateTestEntry("0x" + new string('2', 64), sender: sender1);
+            entry2.UserOperation.Nonce = BigInteger.One;
             var entry3 = CreateTestEntry("0x" + new string('3', 64), sender: sender2);
 
             await mempool.AddAsync(entry1);
@@ -382,6 +521,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var entry1 = CreateTestEntry("0x" + new string('1', 64), sender: "0x1111111111111111111111111111111111111111");
             var entry2 = CreateTestEntry("0x" + new string('2', 64), sender: "0x2222222222222222222222222222222222222222");
             var entry3 = CreateTestEntry("0x" + new string('3', 64), sender: "0x1111111111111111111111111111111111111111");
+            entry3.UserOperation.Nonce = BigInteger.One;
 
             await mempool.AddAsync(entry1);
             await mempool.AddAsync(entry2);

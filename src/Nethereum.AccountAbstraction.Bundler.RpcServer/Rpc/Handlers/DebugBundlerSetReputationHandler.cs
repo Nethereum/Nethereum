@@ -32,8 +32,9 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
                     var reputation = new ReputationEntry
                     {
                         Address = entry.Address,
-                        OpsIncluded = entry.OpsIncluded,
-                        OpsFailed = entry.OpsFailed,
+                        OpsSeen = (int)ParseHexOrDecimalLong(entry.OpsSeen),
+                        OpsIncluded = (int)ParseHexOrDecimalLong(entry.OpsIncluded),
+                        OpsFailed = (int)ParseHexOrDecimalLong(entry.OpsFailed),
                         Status = ParseStatus(entry.Status)
                     };
 
@@ -42,13 +43,17 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
 
                 return Success(request.Id, "ok");
             }
+            catch (RpcException ex)
+            {
+                return Error(request.Id, ex.Code, ex.Message, ex.Data);
+            }
             catch (JsonException ex)
             {
-                return Error(request.Id, -32602, $"Invalid reputation format: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InvalidFields, $"Invalid reputation format: {ex.Message}");
             }
             catch (Exception ex)
             {
-                return Error(request.Id, -32603, $"Internal error: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
             }
         }
 
@@ -66,8 +71,13 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
         private class ReputationInputEntry
         {
             public string Address { get; set; } = null!;
-            public int OpsIncluded { get; set; }
-            public int OpsFailed { get; set; }
+
+            // ERC-4337 debug_bundler_setReputation sends these as hex-quantity strings
+            // (e.g. "0x10"), not JSON numbers; deserialize loosely and parse via
+            // ParseHexOrDecimalLong so both forms are accepted.
+            public JsonElement OpsSeen { get; set; }
+            public JsonElement OpsIncluded { get; set; }
+            public JsonElement OpsFailed { get; set; }
             public string? Status { get; set; }
         }
     }

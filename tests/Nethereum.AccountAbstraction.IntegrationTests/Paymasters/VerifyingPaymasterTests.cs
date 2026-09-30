@@ -1,5 +1,8 @@
+using Nethereum.AccountAbstraction;
+using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.Contracts.Paymaster.VerifyingPaymaster;
 using Nethereum.AccountAbstraction.Contracts.Paymaster.VerifyingPaymaster.ContractDefinition;
+using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
 using Nethereum.AccountAbstraction.IntegrationTests.Bundler;
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount.ContractDefinition;
 using Nethereum.AccountAbstraction.Structs;
@@ -8,6 +11,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Web3;
 using Nethereum.XUnitEthereumClients;
+using System;
 using System.Numerics;
 using Xunit;
 
@@ -415,6 +419,82 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
 
             Assert.Equal(deposit1, balance1);
             Assert.Equal(deposit2, balance2);
+        }
+
+        [Fact]
+        public async Task ValidatePaymasterUserOp_WithV07PaymasterData_SponsorsAndExecutes()
+        {
+            var signerKey = EthECKey.GenerateKey();
+            var signerAddress = signerKey.GetPublicAddress();
+
+            var deployment = new VerifyingPaymasterDeployment
+            {
+                EntryPoint = _fixture.EntryPointService.ContractAddress,
+                Owner = _fixture.BeneficiaryAddress,
+                Signer = signerAddress
+            };
+
+            var paymaster = await VerifyingPaymasterService.DeployContractAndGetServiceAsync(
+                _fixture.Web3, deployment);
+
+            await _fixture.EntryPointService.DepositToRequestAndWaitForReceiptAsync(
+                new DepositToFunction
+                {
+                    Account = paymaster.ContractAddress,
+                    AmountToSend = Web3.Web3.Convert.ToWei(1m)
+                });
+
+            var salt = (ulong)Random.Shared.NextInt64();
+            var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt);
+
+            var executeFunction = new ExecuteFunction
+            {
+                Target = _fixture.BeneficiaryAddress,
+                Value = 0,
+                Data = Array.Empty<byte>()
+            };
+
+            var validUntil = (ulong)DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
+            ulong validAfter = 0;
+            var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, 0);
+
+            var userOp = new UserOperation
+            {
+                Sender = accountAddress,
+                Nonce = nonce,
+                CallData = executeFunction.GetCallData(),
+                CallGasLimit = 100_000,
+                VerificationGasLimit = 300_000,
+                PreVerificationGas = 100_000,
+                MaxFeePerGas = 2_000_000_000,
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Paymaster = paymaster.ContractAddress,
+                PaymasterVerificationGasLimit = 100_000,
+                PaymasterPostOpGasLimit = 50_000,
+                PaymasterData = new byte[6 + 6 + 65]
+            };
+
+            var packedForHash = UserOperationBuilder.PackUserOperation(userOp);
+            packedForHash.InitCode ??= Array.Empty<byte>();
+            packedForHash.CallData ??= Array.Empty<byte>();
+            packedForHash.PaymasterAndData ??= Array.Empty<byte>();
+            packedForHash.Signature ??= Array.Empty<byte>();
+            var paymasterHash = await paymaster.GetHashQueryAsync(packedForHash, validUntil, validAfter);
+
+            var paymasterSignature = new EthereumMessageSigner().Sign(paymasterHash, signerKey).HexToByteArray();
+
+            userOp.PaymasterData = VerifyingPaymasterDataBuilder.Build(validUntil, validAfter, paymasterSignature);
+
+            var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
+
+            using var bundler = _fixture.CreateNewBundlerService();
+            var opHash = await bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
+            Assert.False(string.IsNullOrEmpty(opHash));
+
+            var result = await bundler.ExecuteBundleAsync();
+            Assert.NotNull(result);
+            Assert.True(result.Success,
+                $"Paymaster-sponsored userOp should validate and execute without AA33/AA34. Error: {result?.Error}");
         }
     }
 }

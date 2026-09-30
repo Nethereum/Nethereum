@@ -201,9 +201,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.ERC7579
         [Fact]
         public async Task ProxiableUUID_ReturnsValidUUID()
         {
-            var account = await CreateAndFundAccountAsync();
+            var implementationAddress = await _fixture.AccountFactoryService.AccountImplementationQueryAsync();
+            var implementation = new NethereumAccountService(_fixture.Web3, implementationAddress);
 
-            var uuid = await account.ProxiableUUIDQueryAsync();
+            var uuid = await implementation.ProxiableUUIDQueryAsync();
 
             Assert.NotNull(uuid);
             Assert.True(uuid.Length > 0);

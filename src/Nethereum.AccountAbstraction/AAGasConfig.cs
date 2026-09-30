@@ -1,7 +1,9 @@
 using System.Numerics;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "AAGasConfig - gas buffers, multipliers and receipt-poll settings")]
     public class AAGasConfig
     {
         public BigInteger? VerificationGasBuffer { get; set; }
@@ -12,6 +14,9 @@ namespace Nethereum.AccountAbstraction
         public int ReceiptPollIntervalMs { get; set; } = 1000;
         public int ReceiptTimeoutMs { get; set; } = 60000;
 
-        public static AAGasConfig Default => new AAGasConfig();
+        public static AAGasConfig Default => new AAGasConfig
+        {
+            PreVerificationGasBuffer = 1000
+        };
     }
 }

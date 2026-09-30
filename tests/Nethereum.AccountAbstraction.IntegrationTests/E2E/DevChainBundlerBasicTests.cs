@@ -60,20 +60,16 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         [Fact]
         public async Task SenderCreator_IsDeployedAndMatchesFactory()
         {
-            // Check SenderCreator from EntryPoint
             var epSenderCreator = await _fixture.EntryPointService.SenderCreatorQueryAsync();
             Assert.NotNull(epSenderCreator);
 
-            // Check SenderCreator expected by Factory
             var factorySenderCreator = await _fixture.AccountFactoryService.SenderCreatorQueryAsync();
             Assert.NotNull(factorySenderCreator);
 
-            // They should match
             Assert.Equal(
                 epSenderCreator.ToLower(),
                 factorySenderCreator.ToLower());
 
-            // Verify SenderCreator has code
             var code = await _fixture.GetCodeAsync(epSenderCreator);
             Assert.NotNull(code);
             Assert.True(code.Length > 0, $"SenderCreator should have code, address: {epSenderCreator}");
@@ -86,27 +82,20 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var ownerAddress = accountKey.GetPublicAddress();
             ulong salt = 100;
 
-            // Step 1: Get predicted address from factory
             var accountAddress = await _fixture.AccountFactoryService.GetAddressQueryAsync(ownerAddress, salt);
             Assert.NotNull(accountAddress);
 
-            // Step 2: Fund the predicted address (account needs to pay for gas)
-            // Gas required: (verificationGas + callGas + preVerGas) * maxFeePerGas
-            // = (500000 + 50000 + 50000) * 2 gwei = 1.2 ETH max
             await _fixture.FundAccountAsync(accountAddress, 2m);
             var balance = await _fixture.GetBalanceAsync(accountAddress);
             Assert.True(balance > 0, $"Account should be funded, balance: {balance}");
 
-            // Step 3: Verify no code yet
             var codeBefore = await _fixture.GetCodeAsync(accountAddress);
             Assert.True(codeBefore == null || codeBefore.Length == 0, "Account should not have code before deployment");
 
-            // Step 4: Get init code (factory address + createAccount calldata)
             var initCode = _fixture.AccountFactoryService.GetCreateAccountInitCode(ownerAddress, salt);
             Assert.NotNull(initCode);
-            Assert.Equal(88, initCode.Length); // 20 bytes address + 68 bytes calldata
+            Assert.Equal(88, initCode.Length);
 
-            // Step 5: Create UserOperation with sender already set
             var userOp = new Nethereum.AccountAbstraction.UserOperation
             {
                 Sender = accountAddress,
@@ -120,12 +109,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 MaxPriorityFeePerGas = 1000000000
             };
 
-            // Step 6: Sign the UserOperation
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
             Assert.NotNull(packedOp);
             Assert.Equal(accountAddress.ToLower(), packedOp.Sender.ToLower());
 
-            // Step 7: First try eth_call to get revert reason
             var handleOpsFunction = new HandleOpsFunction
             {
                 Ops = new System.Collections.Generic.List<PackedUserOperation> { packedOp },
@@ -283,9 +270,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var entryPointHash = await _fixture.EntryPointService.GetUserOpHashQueryAsync(packedOp);
 
-            Assert.Equal(
-                entryPointHash.ToHex().ToLower(),
-                Sha3Keccack.Current.CalculateHash(clientHash).ToHex().ToLower());
+            Assert.Equal(entryPointHash.ToHex().ToLower(), clientHash.ToHex().ToLower());
         }
 
         [Fact]

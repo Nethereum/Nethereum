@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Nethereum.AccountAbstraction.Example.Contracts</RootNamespace>
+  </PropertyGroup>
+
+  <!-- The example's "business logic" layer: generated contract services (Nethereum code-gen)
+       for the demo contracts. The view models in .Core consume these; UI heads never see raw
+       ABI. Kept as its own project so the same generated services back both the demo and its
+       tests without either owning the contracts. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,78 @@
+@inherits ObservingComponentBase
+@inject PoliciesViewModel Vm
+
+<section class="tab-card">
+    <h2>Policies - session keys scoped by SmartSession</h2>
+    <p class="tab-help">
+        Session keys: a temporary key scoped by a policy - here it may ONLY call <code>count()</code>
+        (via a SudoPolicy, unconditionally allowed) and <code>gasWaster(repeat)</code> up to a small cap
+        (via a UniActionPolicy that checks the argument itself). Create it, use it, then see an
+        out-of-policy call rejected.
+    </p>
+
+    @if (!Vm.HasScopedSession)
+    {
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.CreateScopedSessionKeyCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Creating..." : "Create scoped session key")
+        </button>
+    }
+    else
+    {
+        <dl class="fact-list">
+            <dt>Session key</dt>
+            <dd><code>@Vm.SessionKeyAddress</code></dd>
+            <dt>Policy</dt>
+            <dd>@Vm.PolicySummary</dd>
+        </dl>
+
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.UseSessionKeyCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Use session key (Count via session key)")
+        </button>
+
+        <hr />
+
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.TryOutOfPolicyActionCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Trying..." : "Try out-of-policy action (gasWaster over the cap)")
+        </button>
+
+        @if (Vm.OutOfPolicyRejected == true)
+        {
+            <p class="status-message">Rejected as expected - the policy held.</p>
+        }
+        @if (Vm.OutOfPolicyRejected == false)
+        {
+            <p class="error-message">Unexpected: the out-of-policy call was NOT rejected.</p>
+        }
+    }
+
+    @if (Vm.Count > 0)
+    {
+        <dl class="fact-list">
+            <dt>Counter (via session key)</dt>
+            <dd>@Vm.Count</dd>
+        </dl>
+    }
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

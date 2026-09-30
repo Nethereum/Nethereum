@@ -5,7 +5,7 @@ using System.Numerics;
 using Nethereum.ABI;
 using Nethereum.ABI.Encoders;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.AccountAbstraction.BaseAccount.ContractDefinition;
+using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 

@@ -67,7 +67,15 @@ namespace Nethereum.AccountAbstraction
         {
             var domain = new ERC4337Domain(entryPointAddress, chainId);
             var typedData = CreateUserOperationTypeData(domain);
-            var packedUserOperation = new PackedUserOperationForHash
+            var packedUserOperation = ToForHash(userOperation);
+
+            var typedDataEncoder = new Eip712TypedDataEncoder();
+            return typedDataEncoder.EncodeAndHashTypedData(packedUserOperation, typedData);
+        }
+
+        private static PackedUserOperationForHash ToForHash(PackedUserOperation userOperation)
+        {
+            return new PackedUserOperationForHash
             {
                 Sender = userOperation.Sender,
                 Nonce = userOperation.Nonce,
@@ -78,11 +86,14 @@ namespace Nethereum.AccountAbstraction
                 GasFees = userOperation.GasFees,
                 PaymasterAndData = userOperation.PaymasterAndData
             };
+        }
 
-            var typedDataEncoder = new Eip712TypedDataEncoder();
-            var encoded = typedDataEncoder.EncodeTypedData(packedUserOperation, typedData);
-            return encoded;
-
+        public static string BuildUserOperationTypedDataJson(PackedUserOperation userOperation, string entryPointAddress, BigInteger chainId)
+        {
+            var domain = new ERC4337Domain(entryPointAddress, chainId);
+            var typedData = CreateUserOperationTypeData(domain);
+            var packedUserOperationForHash = ToForHash(userOperation);
+            return typedData.ToJson(packedUserOperationForHash);
         }
 
         public static byte[] PackPaymasterData(string paymaster, BigInteger paymasterVerificationGasLimit, BigInteger postOpGasLimit, byte[] paymasterData)
@@ -91,7 +102,7 @@ namespace Nethereum.AccountAbstraction
                 new AddressTypeEncoder().EncodePacked(paymaster),
                 ByteUtil.PadBytesLeft(paymasterVerificationGasLimit.ToBytesForRLPEncoding(), 16),
                 ByteUtil.PadBytesLeft(postOpGasLimit.ToBytesForRLPEncoding(), 16),
-                paymasterData
+                paymasterData ?? Array.Empty<byte>()
             );
         }
 
@@ -100,28 +111,33 @@ namespace Nethereum.AccountAbstraction
             return PackAndHashEIP712UserOperation(userOperation, new ERC4337Domain(entryPointAddress, chainId));
         }
 
-        public static PackedUserOperation PackAndSignEIP712UserOperation(UserOperation userOperation, string entryPointAddress, BigInteger chainId, EthECKey signer)
+        public static (PackedUserOperation packedOp, byte[] hash) PackAndHashEIP712UserOperationForSigning(UserOperation userOperation, string entryPointAddress, BigInteger chainId)
         {
-            var typedDataSigner = new Eip712TypedDataSigner();
-            var packedUserOperation = PackUserOperationForHash(userOperation);
+            var packedUserOperationForHash = PackUserOperationForHash(userOperation);
             var domain = new ERC4337Domain(entryPointAddress, chainId);
             var typedData = CreateUserOperationTypeData(domain);
 
-            var signature = typedDataSigner.SignTypedDataV4(packedUserOperation, typedData, signer);
+            var hash = new Eip712TypedDataEncoder().EncodeAndHashTypedData(packedUserOperationForHash, typedData);
 
-            var packedUserOperationWithSignature = new PackedUserOperation
+            var packedUserOperation = new PackedUserOperation
             {
-                Sender = packedUserOperation.Sender,
-                Nonce = packedUserOperation.Nonce,
-                InitCode = packedUserOperation.InitCode,
-                CallData = packedUserOperation.CallData,
-                AccountGasLimits = packedUserOperation.AccountGasLimits,
-                PreVerificationGas = packedUserOperation.PreVerificationGas,
-                GasFees = packedUserOperation.GasFees,
-                PaymasterAndData = packedUserOperation.PaymasterAndData,
-                Signature = signature.HexToByteArray()
+                Sender = packedUserOperationForHash.Sender,
+                Nonce = packedUserOperationForHash.Nonce,
+                InitCode = packedUserOperationForHash.InitCode,
+                CallData = packedUserOperationForHash.CallData,
+                AccountGasLimits = packedUserOperationForHash.AccountGasLimits,
+                PreVerificationGas = packedUserOperationForHash.PreVerificationGas,
+                GasFees = packedUserOperationForHash.GasFees,
+                PaymasterAndData = packedUserOperationForHash.PaymasterAndData
             };
-            return packedUserOperationWithSignature;
+            return (packedUserOperation, hash);
+        }
+
+        public static PackedUserOperation PackAndSignEIP712UserOperation(UserOperation userOperation, string entryPointAddress, BigInteger chainId, EthECKey signer)
+        {
+            var (packedUserOperation, hash) = PackAndHashEIP712UserOperationForSigning(userOperation, entryPointAddress, chainId);
+            packedUserOperation.Signature = EthECDSASignature.CreateStringSignature(signer.SignAndCalculateV(hash)).HexToByteArray();
+            return packedUserOperation;
         }
 
         public static byte[] PackAndHashEIP712UserOperation(UserOperation userOperation, ERC4337Domain domain)

@@ -1,0 +1,79 @@
+@page "/"
+@implements IDisposable
+@inject SessionState Session
+
+<PageTitle>Nethereum AppChain Enterprise Example</PageTitle>
+
+<div class="tab-strip" role="tablist">
+    @foreach (var tab in _tabs)
+    {
+        var locked = tab.Id != "setup" && !Session.IsReady;
+        <button type="button"
+                class="tab-strip-button @(tab.Id == _activeTabId ? "active" : "")"
+                role="tab"
+                aria-selected="@(tab.Id == _activeTabId)"
+                disabled="@locked"
+                title="@(locked ? "Deploy infrastructure in 0. Setup first" : null)"
+                @onclick="() => _activeTabId = tab.Id">
+            @tab.Label
+        </button>
+    }
+</div>
+
+@if (!Session.IsReady && _activeTabId != "setup")
+{
+    <p class="tab-help">Deploy infrastructure in <strong>0. Setup</strong> first - Admin and User both need it.</p>
+}
+
+@*
+    All five tab components are mounted for the lifetime of the page and only hidden with CSS (never
+    conditionally removed): the view models behind them are registered transient, so unmounting a tab
+    component would drop its view model - and with it whatever the user just did on that tab - the
+    moment they switched away.
+*@
+<div class="tab-panel" style="display:@(_activeTabId == "setup" ? "block" : "none")">
+    <SetupTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "admin" ? "block" : "none")">
+    <AdminEnrollTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "operator" ? "block" : "none")">
+    <OperatorRoleTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "tiered" ? "block" : "none")">
+    <TieredApprovalTab />
+</div>
+<div class="tab-panel" style="display:@(_activeTabId == "offboard" ? "block" : "none")">
+    <OffboardTab />
+</div>
+
+@code {
+    private record TabInfo(string Id, string Label);
+
+    private readonly TabInfo[] _tabs =
+    {
+        new("setup", "0. Setup"),
+        new("admin", "1. Create / select user"),
+        new("operator", "2. User"),
+        new("tiered", "3. Tiered approval"),
+        new("offboard", "4. Offboard")
+    };
+
+    private string _activeTabId = "setup";
+
+    protected override void OnInitialized()
+    {
+        Session.PropertyChanged += OnSessionChanged;
+    }
+
+    private void OnSessionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SessionState.IsReady))
+            InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Session.PropertyChanged -= OnSessionChanged;
+    }
+}

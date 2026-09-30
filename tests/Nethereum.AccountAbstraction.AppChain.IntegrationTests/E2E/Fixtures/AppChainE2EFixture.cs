@@ -15,7 +15,6 @@ using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.DevChain;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Util;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Xunit;
@@ -274,9 +273,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
 
         public byte[] EncodeInitData(string ownerAddress)
         {
-            return ByteUtil.Merge(
-                ECDSAValidatorService.ContractAddress.HexToByteArray(),
-                ownerAddress.HexToByteArray());
+            return Nethereum.AccountAbstraction.ERC7579.Modules.AccountInitDataBuilder.BuildEcdsa(
+                ECDSAValidatorService.ContractAddress, ownerAddress);
         }
     }
 }

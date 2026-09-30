@@ -1,5 +1,8 @@
+using Nethereum.Documentation;
+
 namespace Nethereum.AccountAbstraction.Bundler.RocksDB
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "run-bundler", "Tune RocksDB-backed bundler mempool and reputation storage", Order = 1)]
     public class BundlerRocksDbOptions
     {
         public string DatabasePath { get; set; } = "./bundlerdata";

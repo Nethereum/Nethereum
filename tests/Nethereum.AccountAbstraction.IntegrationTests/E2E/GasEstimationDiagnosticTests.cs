@@ -70,7 +70,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             await erc20Service.TransferRequestAndWaitForReceiptAsync(accountAddress, Web3.Web3.Convert.ToWei(500));
 
             var nodeDataService = new RpcNodeDataService(_fixture.Web3.Eth, BlockParameter.CreateLatest());
-            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, HardforkConfig.Default);
+            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var evmGasEstimator = new UserOperationGasEstimator(evmEstimator, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
             var nodeGasEstimator = new UserOperationGasEstimator(_fixture.Web3, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
@@ -129,7 +129,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(_fixture.Web3, new TestCounterDeployment());
 
             var nodeDataService = new RpcNodeDataService(_fixture.Web3.Eth, BlockParameter.CreateLatest());
-            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, HardforkConfig.Default);
+            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var evmGasEstimator = new UserOperationGasEstimator(evmEstimator, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
             var nodeGasEstimator = new UserOperationGasEstimator(_fixture.Web3, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
@@ -211,7 +211,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.True(deployResult?.Success == true, $"Account deployment should succeed: {deployResult?.Error}");
 
             var nodeDataService = new RpcNodeDataService(_fixture.Web3.Eth, BlockParameter.CreateLatest());
-            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, HardforkConfig.Default);
+            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var evmGasEstimator = new UserOperationGasEstimator(evmEstimator, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
             var nodeGasEstimator = new UserOperationGasEstimator(_fixture.Web3, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
@@ -273,7 +273,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var testCounter = await TestCounterService.DeployContractAndGetServiceAsync(_fixture.Web3, new TestCounterDeployment());
 
             var nodeDataService = new RpcNodeDataService(_fixture.Web3.Eth, BlockParameter.CreateLatest());
-            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, HardforkConfig.Default);
+            var evmEstimator = new TransactionExecutorGasEstimator(nodeDataService, DevChainBundlerFixture.CHAIN_ID, Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
             var evmGasEstimator = new UserOperationGasEstimator(evmEstimator, _fixture.EntryPointService.ContractAddress, _fixture.OperatorAccount.Address);
 
             var countFunc = new CountFunction();

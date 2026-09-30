@@ -1,0 +1,54 @@
+@inherits ObservingComponentBase
+@inject BatchViewModel Vm
+
+<section class="tab-card">
+    <h2>Batch - one UserOperation, several calls</h2>
+    <p class="tab-help">
+        Sends two <code>TestCounter.count()</code> calls as ONE UserOperation via ERC-7579 batch
+        execution (<code>AAContractHandler.BatchExecuteAsync</code>) rather than two
+        independently-validated-and-paid operations - the account's own <code>executeBatch</code>
+        entry point runs every call in the batch as part of a single on-chain transaction.
+        <strong>Batch: 2x Count</strong> shows the atomic happy path: the counter advances by two in
+        one operation. <strong>Batch: Count + Failing Call</strong> mixes in <code>countFail()</code>,
+        which always reverts - because the batch is atomic, the bundler's pre-flight gas estimation
+        detects the guaranteed failure and rejects the WHOLE batch before it is ever sent, so neither
+        call lands, not even the one that would have succeeded alone.
+    </p>
+
+    <div class="btn-row">
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.SendBatchCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Batch: 2x Count")
+        </button>
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.SendBatchWithAFailingCallCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Sending..." : "Batch: Count + Failing Call")
+        </button>
+    </div>
+
+    <dl class="fact-list">
+        <dt>Counter value</dt>
+        <dd>@Vm.Count</dd>
+    </dl>
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

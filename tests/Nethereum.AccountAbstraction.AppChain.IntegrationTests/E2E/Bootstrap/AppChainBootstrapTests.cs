@@ -1,12 +1,9 @@
 using System.Numerics;
 using Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory.ContractDefinition;
-using Nethereum.AccountAbstraction.ERC7579;
 using Nethereum.Contracts;
 using Nethereum.CoreChain.Rpc;
-using Nethereum.Util;
 
-using NethereumAccountExecuteFunction = Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount.ContractDefinition.ExecuteFunction;
 using Nethereum.DevChain;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
@@ -31,7 +28,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                 AutoMine = true
             };
 
-            var node = new DevChainNode(config);
+            using var node = new DevChainNode(config);
             var operatorAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
             await node.StartAsync(new[] { operatorAddress }, BigInteger.Parse("100000000000000000000000"));
 
@@ -67,7 +64,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                 AutoMine = true
             };
 
-            var node = new DevChainNode(config);
+            using var node = new DevChainNode(config);
             var operatorAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
             await node.StartAsync(new[] { operatorAddress }, BigInteger.Parse("100000000000000000000000"));
 
@@ -338,7 +335,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
 
             await _fixture.SetBalanceAsync(smartAccountAddress, Web3.Web3.Convert.ToWei(10));
 
-            // Pre-deposit funds to EntryPoint for the smart account (avoids _payPrefund call during validation)
             var depositFunction = new Nethereum.AccountAbstraction.EntryPoint.ContractDefinition.DepositToFunction
             {
                 Account = smartAccountAddress,
@@ -347,17 +343,11 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
             var depositReceipt = await _fixture.EntryPointService.DepositToRequestAndWaitForReceiptAsync(depositFunction);
             Assert.True(depositReceipt.Status.Value == 1, "Deposit to EntryPoint should succeed");
 
-            // Activate the smart account in the registry
             var activateReceipt = await _fixture.AccountRegistryService.ActivateAccountRequestAndWaitForReceiptAsync(smartAccountAddress);
             Assert.True(activateReceipt.Status.Value == 1, "Account activation should succeed");
 
-            var mode = ERC7579ModeLib.EncodeSingleDefault();
-            var executionCalldata = ERC7579ExecutionLib.EncodeSingle(recipientAccount.Address, transferAmount, System.Array.Empty<byte>());
-            var executeFunction = new NethereumAccountExecuteFunction
-            {
-                Mode = mode,
-                ExecutionCalldata = executionCalldata
-            };
+            var executeCallData = new Nethereum.AccountAbstraction.Execution.Erc7579ExecuteEncoder().EncodeExecute(
+                recipientAccount.Address, transferAmount, System.Array.Empty<byte>());
 
             var nonce = await _fixture.EntryPointService.GetNonceQueryAsync(smartAccountAddress, BigInteger.Zero);
 
@@ -366,7 +356,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                 Sender = smartAccountAddress,
                 Nonce = nonce,
                 InitCode = System.Array.Empty<byte>(),
-                CallData = executeFunction.GetCallData(),
+                CallData = executeCallData,
                 CallGasLimit = 1000000,
                 VerificationGasLimit = 10000000,
                 PreVerificationGas = 1000000,
@@ -386,14 +376,11 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                 AppChainE2EFixture.CHAIN_ID,
                 signerKey);
 
-            // Prefix signature with validator address for modular account
-            packedUserOp.Signature = ByteUtil.Merge(
-                _fixture.ECDSAValidatorService.ContractAddress.HexToByteArray(),
-                packedUserOp.Signature);
+            packedUserOp.Signature = Nethereum.AccountAbstraction.Signing.EcdsaValidatorModule.ApplySignaturePrefix(
+                _fixture.ECDSAValidatorService.ContractAddress, packedUserOp.Signature);
 
             var userOpHash = await _fixture.EntryPointService.GetUserOpHashQueryAsync(packedUserOp);
 
-            // Check if account is active in registry before handleOps
             var isAccountActive = await _fixture.AccountRegistryService.IsActiveQueryAsync(smartAccountAddress);
             var accountStatus = await _fixture.AccountRegistryService.GetStatusQueryAsync(smartAccountAddress);
 
@@ -418,7 +405,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
 
             var callData = handleOpsFunction.GetCallData();
 
-            // Trace the call to see what's happening inside the EVM
             var traceResult = await _fixture.Node.TraceCallAsync(
                 new Nethereum.RPC.Eth.DTOs.CallInput
                 {
@@ -428,7 +414,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
                     Gas = new Nethereum.Hex.HexTypes.HexBigInteger(10000000)
                 });
 
-            // Check if ecrecover was called and what it returned
             var ecrecoverCalls = traceResult.StructLogs?
                 .Select((log, idx) => new { log, idx })
                 .Where(x => x.log.Op == "STATICCALL" && x.idx > 0)
@@ -459,7 +444,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
             var revertDebug = "";
             var gasDebug = "";
 
-            // Log simulation result but don't fail on it - try actual execution instead
             var simulationInfo = "";
             if (!callResult.Success)
             {
@@ -469,7 +453,6 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Bootstrap
 
             try
             {
-                // Try actual execution regardless of simulation result
                 var receipt = await _fixture.EntryPointService.HandleOpsRequestAndWaitForReceiptAsync(handleOpsFunction);
                 Assert.NotNull(receipt);
                 Assert.True(receipt.Status.Value == 1, $"HandleOps should succeed. Status: {receipt.Status.Value}{simulationInfo}{debugInfo}\nGas Debug:{gasDebug}\nEcRecover Debug:{ecRecoverDebug}\nCall Debug:{callDebug}\nRevert Debug:{revertDebug}");

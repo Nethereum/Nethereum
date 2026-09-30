@@ -17,7 +17,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                 RLP.RLP.EncodeElement(entry.LastUpdated.ToUnixTimeMilliseconds().ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(((int)entry.Status).ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(entry.BannedUntil?.ToUnixTimeMilliseconds().ToBytesForRLPEncoding() ?? Array.Empty<byte>()),
-                RLP.RLP.EncodeElement(entry.ThrottledUntil?.ToUnixTimeMilliseconds().ToBytesForRLPEncoding() ?? Array.Empty<byte>())
+                RLP.RLP.EncodeElement(entry.ThrottledUntil?.ToUnixTimeMilliseconds().ToBytesForRLPEncoding() ?? Array.Empty<byte>()),
+                RLP.RLP.EncodeElement(entry.OpsSeen.ToBytesForRLPEncoding())
             );
         }
 
@@ -41,7 +42,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                     : null,
                 ThrottledUntil = elements[7].RLPData?.Length > 0
                     ? DateTimeOffset.FromUnixTimeMilliseconds(elements[7].RLPData.ToLongFromRLPDecoded())
-                    : null
+                    : null,
+                // Added for ERC-7562 opsSeen tracking; records persisted before this field
+                // existed simply have no 9th element and default to unseen (0).
+                OpsSeen = elements.Count > 8 ? (int)elements[8].RLPData.ToLongFromRLPDecoded() : 0
             };
         }
 

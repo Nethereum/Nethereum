@@ -1,6 +1,3 @@
-using System.Numerics;
-using Nethereum.AccountAbstraction.Structs;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 
 namespace Nethereum.AccountAbstraction.SessionKeys
@@ -85,43 +82,6 @@ namespace Nethereum.AccountAbstraction.SessionKeys
                 entry.IsActive = true;
                 await _store.SaveAsync(entry);
             }
-        }
-
-        public async Task<byte[]> SignUserOpHashAsync(string keyAddress, byte[] userOpHash)
-        {
-            var entry = await GetSessionKeyAsync(keyAddress);
-            if (entry == null)
-            {
-                throw new ArgumentException($"Session key not found: {keyAddress}");
-            }
-
-            var ecKey = new EthECKey(entry.PrivateKey);
-            var signature = ecKey.SignAndCalculateV(userOpHash);
-
-            return EthECDSASignature.CreateStringSignature(signature).HexToByteArray();
-        }
-
-        public async Task<PackedUserOperation> SignUserOperationAsync(
-            PackedUserOperation userOp,
-            string keyAddress,
-            string entryPoint,
-            BigInteger chainId)
-        {
-            var hash = UserOperationBuilder.HashUserOperation(userOp, entryPoint, chainId);
-            var signature = await SignUserOpHashAsync(keyAddress, hash);
-
-            return new PackedUserOperation
-            {
-                Sender = userOp.Sender,
-                Nonce = userOp.Nonce,
-                InitCode = userOp.InitCode,
-                CallData = userOp.CallData,
-                AccountGasLimits = userOp.AccountGasLimits,
-                PreVerificationGas = userOp.PreVerificationGas,
-                GasFees = userOp.GasFees,
-                PaymasterAndData = userOp.PaymasterAndData,
-                Signature = signature
-            };
         }
 
         public async Task RemoveSessionKeyAsync(string keyAddress)

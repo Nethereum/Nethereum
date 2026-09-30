@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:Nethereum.AccountAbstraction.Example.Core;assembly=Nethereum.AccountAbstraction.Example.Core"
+             x:Class="Nethereum.AccountAbstraction.Example.Avalonia.Views.PoliciesView"
+             x:DataType="core:PoliciesViewModel">
+    <ScrollViewer Padding="20">
+        <StackPanel Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Text="Policies - session keys scoped by SmartSession" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource SystemBaseMediumColor}" FontSize="13">
+                Session keys: a temporary key scoped by a policy - here it may ONLY call count() (via a
+                SudoPolicy, unconditionally allowed) and gasWaster(repeat) up to a small cap (via a
+                UniActionPolicy that checks the argument itself). Create it, use it, then see an
+                out-of-policy call rejected.
+            </TextBlock>
+
+            <!-- Not created yet: only the create action is available. -->
+            <StackPanel Spacing="10" IsVisible="{Binding !HasScopedSession}">
+                <Button Content="Create scoped session key" Command="{Binding CreateScopedSessionKeyCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left"
+                        Padding="20,8" />
+            </StackPanel>
+
+            <!-- Created: use it, then try an out-of-policy action. -->
+            <StackPanel Spacing="10" IsVisible="{Binding HasScopedSession}">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Session key" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SessionKeyAddress}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Policy" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PolicySummary}" FontSize="12" TextWrapping="Wrap" />
+                </Grid>
+
+                <Button Content="Use session key (Count via session key)" Command="{Binding UseSessionKeyCommand}"
+                        IsEnabled="{Binding !IsBusy}" Classes="accent" HorizontalAlignment="Left" Padding="20,8" />
+
+                <Border BorderBrush="{DynamicResource SystemBaseLowColor}" BorderThickness="0,1,0,0" Margin="0,4,0,4" />
+
+                <Button Content="Try out-of-policy action (gasWaster over the cap)" Command="{Binding TryOutOfPolicyActionCommand}"
+                        IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" Padding="20,8" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16" />
+                <TextBlock Text="Working..." FontSize="12" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                  IsVisible="{Binding LastReceipt, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="UserOp hash" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,4" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceipt.UserOpHash}" FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Margin="0,0,0,4" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Success?" Foreground="{DynamicResource SystemBaseMediumColor}" Margin="0,0,12,0" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastReceipt.UserOpSuccess}" FontSize="12" />
+            </Grid>
+
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#7fd99b"
+                       FontSize="13" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="#ff8080"
+                       FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

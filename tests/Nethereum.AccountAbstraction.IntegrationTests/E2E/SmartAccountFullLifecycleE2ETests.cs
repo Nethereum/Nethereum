@@ -1,6 +1,6 @@
 using System.Numerics;
-using Call = Nethereum.AccountAbstraction.BaseAccount.ContractDefinition.Call;
-using Nethereum.AccountAbstraction.Builders;
+using Call = Nethereum.AccountAbstraction.Structs.Call;
+using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount.ContractDefinition;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory.ContractDefinition;
@@ -23,7 +23,6 @@ using Nethereum.AccountAbstraction.ERC7579.Modules;
 using Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession;
 using Nethereum.AccountAbstraction.Extensions;
 using Nethereum.AccountAbstraction.Paymasters;
-using Nethereum.AccountAbstraction.Services;
 using Nethereum.AccountAbstraction.SessionKeys;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.ABI;
@@ -164,36 +163,30 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             _output.WriteLine("\n========== SMART ACCOUNT FULL LIFECYCLE E2E TEST ==========\n");
 
-            // ============================================================
-            // PHASE 1: Create Smart Account using SmartAccountFactoryService
-            // ============================================================
-            _output.WriteLine("PHASE 1: Creating Smart Account with SmartAccountFactoryService");
+            _output.WriteLine("PHASE 1: Creating Smart Account with NethereumAccountFactoryService");
 
             var salt = CreateSalt((ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var initData = CreateInitData();
 
-            var factoryService = await SmartAccountFactoryService.LoadAsync(_web3, _factoryService.ContractAddress);
-            _output.WriteLine($"  Factory loaded: {factoryService.Address}");
-            _output.WriteLine($"  EntryPoint: {factoryService.EntryPointAddress}");
+            var factoryService = new NethereumAccountFactoryService(_web3, _factoryService.ContractAddress);
+            _output.WriteLine($"  Factory loaded: {factoryService.ContractAddress}");
+            _output.WriteLine($"  EntryPoint: {await factoryService.EntryPointQueryAsync()}");
 
-            var predictedAddress = await factoryService.GetAccountAddressAsync(salt, initData);
+            var predictedAddress = await factoryService.GetAddressQueryAsync(salt, initData);
             _output.WriteLine($"  Predicted account address: {predictedAddress}");
 
             await _node.SetBalanceAsync(predictedAddress, Web3.Web3.Convert.ToWei(10));
             _output.WriteLine($"  Funded account with 10 ETH");
 
-            await factoryService.CreateAccountAsync(salt, initData);
-            var smartAccountService = await SmartAccountService.LoadAsync(_web3, predictedAddress);
-            Assert.Equal(predictedAddress, smartAccountService.Address);
-            _output.WriteLine($"  Account created at: {smartAccountService.Address}");
+            await factoryService.CreateAccountRequestAndWaitForReceiptAsync(salt, initData);
+            var smartAccountService = new NethereumAccountService(_web3, predictedAddress);
+            Assert.Equal(predictedAddress, smartAccountService.ContractAddress);
+            _output.WriteLine($"  Account created at: {smartAccountService.ContractAddress}");
 
             var isDeployed = await smartAccountService.IsDeployedAsync();
             Assert.True(isDeployed);
             _output.WriteLine($"  Account deployed: {isDeployed}");
 
-            // ============================================================
-            // PHASE 2: Query Module Support (SmartSession is TYPE_VALIDATOR)
-            // ============================================================
             _output.WriteLine("\nPHASE 2: Querying SmartSession Module Support");
 
             var moduleTypeValidator = ERC7579ModuleTypes.TYPE_VALIDATOR;
@@ -205,9 +198,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.False(isSmartSessionExecutor);
             _output.WriteLine($"  SmartSession is executor module: {isSmartSessionExecutor}");
 
-            // ============================================================
-            // PHASE 3: Query SocialRecovery Module (it's an executor)
-            // ============================================================
             _output.WriteLine("\nPHASE 3: Querying SocialRecovery Module Support");
 
             var guardian1Address = _guardian1Key.GetPublicAddress();
@@ -220,16 +210,13 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"  Guardian 1 address: {guardian1Address}");
             _output.WriteLine($"  Guardian 2 address: {guardian2Address}");
 
-            // ============================================================
-            // PHASE 4: Create Session using SessionKeyManager
-            // ============================================================
             _output.WriteLine("\nPHASE 4: Creating Session with SessionKeyManager");
 
             var sessionKeyStore = new InMemorySessionKeyStore();
             var sessionKeyManager = new SessionKeyManager(sessionKeyStore);
 
             var generatedSession = await sessionKeyManager.GenerateSessionKeyAsync(
-                smartAccountService.Address, validDays: 7);
+                smartAccountService.ContractAddress, validDays: 7);
             _output.WriteLine($"  Session key generated: {generatedSession.Key}");
             _output.WriteLine($"  Valid until: {DateTimeOffset.FromUnixTimeSeconds((long)generatedSession.ValidUntil)}");
 
@@ -257,9 +244,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.True(storedKey.IsActive);
             _output.WriteLine($"  Session key marked as active");
 
-            // ============================================================
-            // PHASE 5: Setup VerifyingPaymasterManager
-            // ============================================================
             _output.WriteLine("\nPHASE 5: Setting up VerifyingPaymasterManager");
 
             var paymasterManager = await VerifyingPaymasterManager.LoadAsync(
@@ -275,25 +259,16 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"  Paymaster deposit balance: {Web3.Web3.Convert.FromWei(paymasterDeposit)} ETH");
             Assert.True(paymasterDeposit > 0);
 
-            // ============================================================
-            // PHASE 6: Transfer tokens to smart account
-            // ============================================================
             _output.WriteLine("\nPHASE 6: Funding Smart Account with ERC20 Tokens");
 
             var fundAmount = Web3.Web3.Convert.ToWei(5000);
             await _tokenService.TransferRequestAndWaitForReceiptAsync(
-                new TransferFunction { To = smartAccountService.Address, Value = fundAmount });
+                new TransferFunction { To = smartAccountService.ContractAddress, Value = fundAmount });
 
-            var accountTokenBalance = await _tokenService.BalanceOfQueryAsync(smartAccountService.Address);
+            var accountTokenBalance = await _tokenService.BalanceOfQueryAsync(smartAccountService.ContractAddress);
             Assert.Equal(fundAmount, accountTokenBalance);
             _output.WriteLine($"  Account token balance: {Web3.Web3.Convert.FromWei(accountTokenBalance)} TEST");
 
-            // ============================================================
-            // PHASE 7: Verify ERC-7579 Execution Encoding
-            // ============================================================
-            // Note: Direct execution via SmartAccountService.ExecuteAsync requires
-            // the call to come from the EntryPoint (via UserOp) or the account itself.
-            // Here we verify the ERC-7579 encoding utilities work correctly.
             _output.WriteLine("\nPHASE 7: Verifying ERC-7579 Execution Encoding");
 
             var recipient = "0x" + new string('A', 40);
@@ -317,9 +292,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"  Value: {call.Value}");
             _output.WriteLine($"  Data length: {call.Data.Length} bytes");
 
-            // ============================================================
-            // PHASE 8: Verify Batch Execution Encoding
-            // ============================================================
             _output.WriteLine("\nPHASE 8: Verifying ERC-7579 Batch Execution Encoding");
 
             var recipient2 = "0x" + new string('B', 40);
@@ -354,14 +326,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
                 _output.WriteLine($"    - Target: {c.Target}, Value: {c.Value}, Data: {c.Data.Length} bytes");
             }
 
-            // ============================================================
-            // PHASE 9: Test Paymaster Sponsorship
-            // ============================================================
             _output.WriteLine("\nPHASE 9: Testing Paymaster Sponsorship");
 
             var mockUserOp = new Nethereum.AccountAbstraction.Structs.PackedUserOperation
             {
-                Sender = smartAccountService.Address,
+                Sender = smartAccountService.ContractAddress,
                 Nonce = BigInteger.Zero,
                 InitCode = Array.Empty<byte>(),
                 CallData = Array.Empty<byte>(),
@@ -379,24 +348,18 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"    PaymasterAndData length: {sponsorResult.PaymasterAndData.Length} bytes");
             _output.WriteLine($"    Valid until: {DateTimeOffset.FromUnixTimeSeconds((long)sponsorResult.ValidUntil)}");
 
-            // ============================================================
-            // PHASE 10: Session Key Management - Retrieve Best Key
-            // ============================================================
             _output.WriteLine("\nPHASE 10: Session Key Management");
 
-            var bestKey = await sessionKeyManager.GetBestSessionKeyAsync(smartAccountService.Address);
+            var bestKey = await sessionKeyManager.GetBestSessionKeyAsync(smartAccountService.ContractAddress);
             Assert.NotNull(bestKey);
             Assert.True(bestKey.IsValidNow());
             _output.WriteLine($"  Best session key: {bestKey.Key}");
             _output.WriteLine($"  Is valid now: {bestKey.IsValidNow()}");
 
-            var allKeys = await sessionKeyManager.GetSessionKeysForAccountAsync(smartAccountService.Address);
+            var allKeys = await sessionKeyManager.GetSessionKeysForAccountAsync(smartAccountService.ContractAddress);
             Assert.Single(allKeys);
             _output.WriteLine($"  Total session keys for account: {allKeys.Length}");
 
-            // ============================================================
-            // PHASE 11: Revoke Session Key
-            // ============================================================
             _output.WriteLine("\nPHASE 11: Revoking Session Key");
 
             await sessionKeyManager.RemoveSessionKeyAsync(generatedSession.Key);
@@ -405,13 +368,10 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.Null(removedKey);
             _output.WriteLine($"  Session key removed from store");
 
-            var noMoreKeys = await sessionKeyManager.GetSessionKeysForAccountAsync(smartAccountService.Address);
+            var noMoreKeys = await sessionKeyManager.GetSessionKeysForAccountAsync(smartAccountService.ContractAddress);
             Assert.Empty(noMoreKeys);
             _output.WriteLine($"  Session keys remaining: {noMoreKeys.Length}");
 
-            // ============================================================
-            // PHASE 12: Verify Policy Contracts
-            // ============================================================
             _output.WriteLine("\nPHASE 12: Verifying Policy Contracts");
 
             var sudoPolicySupports = await _sudoPolicyService.SupportsInterfaceQueryAsync("0x05c00895".HexToByteArray());
@@ -422,27 +382,23 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.True(spendingLimitSupports);
             _output.WriteLine($"  ERC20SpendingLimitPolicy supports IActionPolicy: {spendingLimitSupports}");
 
-            // ============================================================
-            // PHASE 13: Verify Final Account State
-            // ============================================================
             _output.WriteLine("\nPHASE 13: Final Account State Verification");
 
-            var finalTokenBalance = await _tokenService.BalanceOfQueryAsync(smartAccountService.Address);
+            var finalTokenBalance = await _tokenService.BalanceOfQueryAsync(smartAccountService.ContractAddress);
             Assert.Equal(fundAmount, finalTokenBalance);
             _output.WriteLine($"  Final token balance: {Web3.Web3.Convert.FromWei(finalTokenBalance)} TEST");
 
-            var finalDeposit = await smartAccountService.GetDepositAsync();
+            var finalDeposit = await smartAccountService.GetDepositQueryAsync();
             _output.WriteLine($"  Account deposit at EntryPoint: {Web3.Web3.Convert.FromWei(finalDeposit)} ETH");
 
-            var nonce = await smartAccountService.GetNonceAsync(0);
+            var nonce = await smartAccountService.GetNonceQueryAsync(0);
             _output.WriteLine($"  Account nonce: {nonce}");
 
             _output.WriteLine("\n========== TEST COMPLETED SUCCESSFULLY ==========");
             _output.WriteLine("\nConsolidated services used in this test (from Nethereum.AccountAbstraction):");
-            _output.WriteLine("  FROM Services/:");
-            _output.WriteLine("    - SmartAccountService - high-level account wrapper");
-            _output.WriteLine("    - SmartAccountFactoryService - factory wrapper for account creation");
-            _output.WriteLine("    - ISmartAccount, ISmartAccountFactory - service interfaces");
+            _output.WriteLine("  FROM Contracts/Core/:");
+            _output.WriteLine("    - NethereumAccountService - generated account service (execute/deposit/nonce)");
+            _output.WriteLine("    - NethereumAccountFactoryService - generated factory service for account creation");
             _output.WriteLine("  FROM SessionKeys/:");
             _output.WriteLine("    - SessionKeyManager - client-side session key management");
             _output.WriteLine("    - InMemorySessionKeyStore - in-memory key storage");
@@ -457,7 +413,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine("    - ERC20SpendingLimitBuilder - spending limit encoding");
             _output.WriteLine("    - ActionDataBuilder - action configuration");
             _output.WriteLine("  FROM Extensions/:");
-            _output.WriteLine("    - Web3SmartAccountExtensions - IWeb3 extension methods");
+            _output.WriteLine("    - Web3PaymasterExtensions - IWeb3 extension methods");
         }
 
         [Fact]
@@ -468,43 +424,31 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             _output.WriteLine("\n========== WEB3 EXTENSIONS E2E TEST ==========\n");
 
-            // ============================================================
-            // Using Web3 extension methods for cleaner API
-            // ============================================================
             _output.WriteLine("PHASE 1: Create Account via Factory Extension");
 
             var salt = CreateSalt((ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var initData = CreateInitData();
 
-            var factoryService = await _web3.GetSmartAccountFactoryAsync(_factoryService.ContractAddress);
-            var address = await factoryService.GetAccountAddressAsync(salt, initData);
+            var factoryService = new NethereumAccountFactoryService(_web3, _factoryService.ContractAddress);
+            var address = await factoryService.GetAddressQueryAsync(salt, initData);
             await _node.SetBalanceAsync(address, Web3.Web3.Convert.ToWei(5));
 
-            await factoryService.CreateAccountAsync(salt, initData);
-            var account = await _web3.GetSmartAccountAsync(address);
-            _output.WriteLine($"  Account created: {account.Address}");
+            await factoryService.CreateAccountRequestAndWaitForReceiptAsync(salt, initData);
+            var account = new NethereumAccountService(_web3, address);
+            _output.WriteLine($"  Account created: {account.ContractAddress}");
 
-            // ============================================================
-            // Load existing account via extension
-            // ============================================================
             _output.WriteLine("\nPHASE 2: Load Existing Account via Extension");
 
-            var loadedAccount = await _web3.GetSmartAccountAsync(account.Address);
-            Assert.Equal(account.Address, loadedAccount.Address);
-            _output.WriteLine($"  Loaded account: {loadedAccount.Address}");
+            var loadedAccount = new NethereumAccountService(_web3, account.ContractAddress);
+            Assert.Equal(account.ContractAddress, loadedAccount.ContractAddress);
+            _output.WriteLine($"  Loaded account: {loadedAccount.ContractAddress}");
 
-            // ============================================================
-            // Load factory via extension
-            // ============================================================
             _output.WriteLine("\nPHASE 3: Load Factory via Extension");
 
-            var factory = await _web3.GetSmartAccountFactoryAsync(_factoryService.ContractAddress);
-            Assert.Equal(_factoryService.ContractAddress, factory.Address);
-            _output.WriteLine($"  Factory loaded: {factory.Address}");
+            var factory = new NethereumAccountFactoryService(_web3, _factoryService.ContractAddress);
+            Assert.Equal(_factoryService.ContractAddress, factory.ContractAddress);
+            _output.WriteLine($"  Factory loaded: {factory.ContractAddress}");
 
-            // ============================================================
-            // Load paymaster via extension
-            // ============================================================
             _output.WriteLine("\nPHASE 4: Load Paymaster via Extension");
 
             await _node.SetBalanceAsync(_paymasterContractService.ContractAddress, Web3.Web3.Convert.ToWei(10));
@@ -515,9 +459,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.Equal(_paymasterContractService.ContractAddress, paymaster.Address);
             _output.WriteLine($"  Paymaster loaded: {paymaster.Address}");
 
-            // ============================================================
-            // Deposit paymaster via extension
-            // ============================================================
             _output.WriteLine("\nPHASE 5: Load Deposit Paymaster via Extension");
 
             var depositPaymaster = await _web3.GetDepositPaymasterAsync(
@@ -537,9 +478,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var accountAddress = "0x" + new string('1', 40);
 
-            // ============================================================
-            // Test InMemorySessionKeyStore
-            // ============================================================
             _output.WriteLine("PHASE 1: InMemorySessionKeyStore Operations");
 
             var store = new InMemorySessionKeyStore();
@@ -554,9 +492,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"    Key 2 (7 days): {key2.Key}");
             _output.WriteLine($"    Key 3 (1 day): {key3.Key}");
 
-            // ============================================================
-            // Test retrieval
-            // ============================================================
             _output.WriteLine("\nPHASE 2: Key Retrieval");
 
             var retrieved = await manager.GetSessionKeyAsync(key1.Key);
@@ -564,18 +499,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             Assert.Equal(key1.Key, retrieved.Key);
             _output.WriteLine($"  Retrieved key 1: {retrieved.Key}");
 
-            // ============================================================
-            // Test GetSessionKeysForAccount
-            // ============================================================
             _output.WriteLine("\nPHASE 3: Get All Keys for Account");
 
             var allKeys = await manager.GetSessionKeysForAccountAsync(accountAddress);
             Assert.Equal(3, allKeys.Length);
             _output.WriteLine($"  Total keys for account: {allKeys.Length}");
 
-            // ============================================================
-            // Test MarkRegistered
-            // ============================================================
             _output.WriteLine("\nPHASE 4: Mark Keys as Registered");
 
             await manager.MarkRegisteredAsync(key1.Key);
@@ -592,9 +521,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"  Key 2 active: {active2.IsActive}");
             _output.WriteLine($"  Key 3 active: {inactive3.IsActive}");
 
-            // ============================================================
-            // Test GetBestSessionKey (should return key with longest validity among active)
-            // ============================================================
             _output.WriteLine("\nPHASE 5: Get Best Session Key");
 
             var best = await manager.GetBestSessionKeyAsync(accountAddress);
@@ -603,9 +529,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             _output.WriteLine($"  Best key (longest validity): {best.Key}");
             _output.WriteLine($"  Valid until: {DateTimeOffset.FromUnixTimeSeconds((long)best.ValidUntil)}");
 
-            // ============================================================
-            // Test RemoveSessionKey
-            // ============================================================
             _output.WriteLine("\nPHASE 6: Remove Session Key");
 
             await manager.RemoveSessionKeyAsync(key1.Key);

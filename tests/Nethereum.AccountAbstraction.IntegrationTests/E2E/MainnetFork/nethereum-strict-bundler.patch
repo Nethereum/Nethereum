@@ -1,0 +1,62 @@
+diff --git a/packages/bundler/src/BundlerConfig.ts b/packages/bundler/src/BundlerConfig.ts
+index fe33a02..bb230cb 100644
+--- a/packages/bundler/src/BundlerConfig.ts
++++ b/packages/bundler/src/BundlerConfig.ts
+@@ -33,6 +33,14 @@ export interface BundlerConfig {
+   gethDevMode: boolean
+ 
+   eip7702Support: boolean
++
++  /**
++   * Minimum block number to start scanning for events (default: 0).
++   * On mainnet forks, set this to the fork block number to avoid querying
++   * billions of historical blocks from the remote RPC.
++   */
++  minLogBlock?: number
++
+   // Config overrides for PreVerificationGas calculation
+   fixedGasOverhead?: number
+   perUserOpGasOverhead?: number
+@@ -73,6 +81,8 @@ export const BundlerConfigShape = {
+   gethDevMode: ow.boolean,
+   eip7702Support: ow.boolean,
+ 
++  minLogBlock: ow.optional.number,
++
+   // Config overrides for PreVerificationGas calculation
+   fixedGasOverhead: ow.optional.number,
+   perUserOpGasOverhead: ow.optional.number,
+diff --git a/packages/bundler/src/MethodHandlerERC4337.ts b/packages/bundler/src/MethodHandlerERC4337.ts
+index 14a325e..6c2a730 100644
+--- a/packages/bundler/src/MethodHandlerERC4337.ts
++++ b/packages/bundler/src/MethodHandlerERC4337.ts
+@@ -209,7 +209,10 @@ export class MethodHandlerERC4337 {
+ 
+   async _getUserOperationEvent (userOpHash: string): Promise<UserOperationEventEvent> {
+     // TODO: eth_getLogs is throttled. must be acceptable for finding a UserOperation by hash
+-    const event = await this.entryPoint.queryFilter(this.entryPoint.filters.UserOperationEvent(userOpHash))
++    // Use minLogBlock from config to avoid querying billions of blocks on mainnet forks
++    const fromBlock = this.config.minLogBlock ?? 0
++    console.log(`[NETHEREUM-PATCH] getUserOperationEvent using fromBlock: ${fromBlock} (minLogBlock: ${this.config.minLogBlock})`)
++    const event = await this.entryPoint.queryFilter(this.entryPoint.filters.UserOperationEvent(userOpHash), fromBlock)
+     return event[0]
+   }
+ 
+diff --git a/packages/utils/src/decodeRevertReason.ts b/packages/utils/src/decodeRevertReason.ts
+index 9743577..5fd929c 100644
+--- a/packages/utils/src/decodeRevertReason.ts
++++ b/packages/utils/src/decodeRevertReason.ts
+@@ -16,7 +16,12 @@ const decodeRevertReasonContracts = new Interface([
+ export function decodeRevertReason (data: string | Error, nullIfNoMatch = true): string | null {
+   if (typeof data !== 'string') {
+     const err = data as any
+-    data = (err.data?.data ?? err.data ?? err.error.data) as string
++    data = (err.data?.data ?? err.data ?? err.error?.data ?? err.message) as string
++    // If we still don't have usable data, return a descriptive error
++    if (!data || typeof data !== 'string') {
++      console.error('[NETHEREUM-DEBUG] decodeRevertReason received error without data:', JSON.stringify(err, null, 2))
++      return nullIfNoMatch ? null : `Unknown error: ${JSON.stringify(err)}`
++    }
+   }
+   const methodSig = data.slice(0, 10)
+   const dataParams = '0x' + data.slice(10)

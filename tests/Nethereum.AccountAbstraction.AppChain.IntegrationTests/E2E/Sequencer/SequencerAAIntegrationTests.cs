@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures;
 using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory.ContractDefinition;
-using Nethereum.AccountAbstraction.ERC7579;
+using Nethereum.AccountAbstraction.Signing;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -12,8 +12,6 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Web3.Accounts;
 using Xunit;
-
-using NethereumAccountExecuteFunction = Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount.ContractDefinition.ExecuteFunction;
 
 namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 {
@@ -29,21 +27,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
 
         private byte[] CreateERC7579ExecuteCallData(string target, BigInteger value, byte[] data)
         {
-            var mode = ERC7579ModeLib.EncodeSingleDefault();
-            var executionCalldata = ERC7579ExecutionLib.EncodeSingle(target, value, data);
-            var executeFunction = new NethereumAccountExecuteFunction
-            {
-                Mode = mode,
-                ExecutionCalldata = executionCalldata
-            };
-            return executeFunction.GetCallData();
-        }
-
-        private byte[] PrefixSignatureWithValidator(byte[] signature)
-        {
-            return ByteUtil.Merge(
-                _fixture.ECDSAValidatorService.ContractAddress.HexToByteArray(),
-                signature);
+            return new Nethereum.AccountAbstraction.Execution.Erc7579ExecuteEncoder().EncodeExecute(target, value, data);
         }
 
         [Fact]
@@ -129,7 +113,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 _fixture.EntryPointService.ContractAddress,
                 SequencerAAFixture.CHAIN_ID,
                 signerKey);
-            packedUserOp.Signature = PrefixSignatureWithValidator(packedUserOp.Signature);
+            packedUserOp.Signature = EcdsaValidatorModule.ApplySignaturePrefix(_fixture.ECDSAValidatorService.ContractAddress, packedUserOp.Signature);
 
             var userOpHash = await _fixture.BundlerService.SendUserOperationAsync(
                 packedUserOp,
@@ -216,7 +200,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 _fixture.EntryPointService.ContractAddress,
                 SequencerAAFixture.CHAIN_ID,
                 signerKey);
-            packedUserOp.Signature = PrefixSignatureWithValidator(packedUserOp.Signature);
+            packedUserOp.Signature = EcdsaValidatorModule.ApplySignaturePrefix(_fixture.ECDSAValidatorService.ContractAddress, packedUserOp.Signature);
 
             await _fixture.BundlerService.SendUserOperationAsync(
                 packedUserOp,
@@ -314,7 +298,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                     _fixture.EntryPointService.ContractAddress,
                     SequencerAAFixture.CHAIN_ID,
                     signerKey);
-                packedUserOp.Signature = PrefixSignatureWithValidator(packedUserOp.Signature);
+                packedUserOp.Signature = EcdsaValidatorModule.ApplySignaturePrefix(_fixture.ECDSAValidatorService.ContractAddress, packedUserOp.Signature);
 
                 await _fixture.BundlerService.SendUserOperationAsync(
                     packedUserOp,
@@ -418,7 +402,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 _fixture.EntryPointService.ContractAddress,
                 SequencerAAFixture.CHAIN_ID,
                 signerKey);
-            packedUserOp.Signature = PrefixSignatureWithValidator(packedUserOp.Signature);
+            packedUserOp.Signature = EcdsaValidatorModule.ApplySignaturePrefix(_fixture.ECDSAValidatorService.ContractAddress, packedUserOp.Signature);
 
             var userOpHash = await _fixture.BundlerService.SendUserOperationAsync(
                 packedUserOp,
@@ -454,7 +438,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var latestBlock = await _fixture.Sequencer.GetLatestBlockAsync();
 
             Assert.NotNull(latestBlock);
-            Assert.Equal(blockNumber, latestBlock.BlockNumber);
+            Assert.Equal(blockNumber, (BigInteger)latestBlock.BlockNumber);
             Assert.NotNull(latestBlock.StateRoot);
             Assert.NotNull(latestBlock.TransactionsHash);
             Assert.Equal(SequencerAAFixture.CHAIN_ID, _fixture.AppChain.Config.ChainId);

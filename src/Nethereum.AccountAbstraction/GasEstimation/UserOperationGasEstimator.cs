@@ -29,6 +29,7 @@ namespace Nethereum.AccountAbstraction.GasEstimation
         private readonly string _entryPointAddress;
         private readonly IEvmGasEstimator _evmEstimator;
         private readonly string _bundlerAddress;
+        private string _senderCreatorAddress;
 
         public UserOperationGasEstimator(IWeb3 web3, string entryPointAddress, string bundlerAddress = null)
         {
@@ -58,10 +59,8 @@ namespace Nethereum.AccountAbstraction.GasEstimation
 
             var result = new UserOperationGasEstimateResult();
 
-            // PreVerificationGas - always calculated via formula
             result.PreVerificationGas = CalculatePreVerificationGas(userOp);
 
-            // Try handleOps-based estimation first
             var handleOpsEstimation = await TryEstimateViaHandleOpsAsync(userOp);
 
             if (handleOpsEstimation.Success)
@@ -70,21 +69,17 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             }
             else
             {
-                // Fallback to legacy per-phase estimation
                 result.VerificationGasLimit = await EstimateVerificationGasLegacyAsync(userOp);
             }
 
-            // CallGasLimit - estimate separately
             result.CallGasLimit = await EstimateCallGasAsync(userOp);
 
-            // Paymaster gas limits
             if (HasPaymaster(userOp))
             {
                 result.PaymasterVerificationGasLimit = GasEstimationConstants.DEFAULT_PAYMASTER_VERIFICATION_GAS_FALLBACK;
                 result.PaymasterPostOpGasLimit = GasEstimationConstants.DEFAULT_PAYMASTER_POST_OP_GAS_FALLBACK;
             }
 
-            // Gas prices
             var (maxFeePerGas, maxPriorityFeePerGas) = await GetGasPricesAsync();
             result.MaxFeePerGas = maxFeePerGas;
             result.MaxPriorityFeePerGas = maxPriorityFeePerGas;
@@ -98,19 +93,16 @@ namespace Nethereum.AccountAbstraction.GasEstimation
 
             try
             {
-                // Create a copy with callGasLimit=0 so only verification runs
                 var verificationOnlyOp = CreateVerificationOnlyUserOp(userOp);
                 var packedOp = UserOperationBuilder.PackUserOperation(verificationOnlyOp);
                 var handleOpsData = EncodeHandleOps(new[] { packedOp });
 
                 BigInteger gasUsed;
 
-                // Try Node RPC first if available
                 if (_web3 != null)
                 {
                     gasUsed = await EstimateHandleOpsViaNodeAsync(handleOpsData);
                 }
-                // Fall back to EVM simulation
                 else if (_evmEstimator != null)
                 {
                     gasUsed = await EstimateHandleOpsViaEvmAsync(handleOpsData);
@@ -120,7 +112,6 @@ namespace Nethereum.AccountAbstraction.GasEstimation
                     return result;
                 }
 
-                // Subtract fixed overhead and add buffer
                 var verificationGas = gasUsed - GasEstimationConstants.HANDLE_OPS_FIXED_OVERHEAD;
                 verificationGas = ApplyBuffer(verificationGas, GasEstimationConstants.VERIFICATION_GAS_BUFFER_PERCENT);
                 verificationGas = BigInteger.Max(verificationGas, GasEstimationConstants.VERIFICATION_GAS_BUFFER);
@@ -131,7 +122,6 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             }
             catch
             {
-                // Estimation failed, will use fallback
             }
 
             return result;
@@ -176,7 +166,7 @@ namespace Nethereum.AccountAbstraction.GasEstimation
                 Nonce = original.Nonce ?? 0,
                 InitCode = original.InitCode ?? Array.Empty<byte>(),
                 CallData = original.CallData ?? Array.Empty<byte>(),
-                CallGasLimit = 0, // Key: set to 0 so only verification runs
+                CallGasLimit = 0,
                 VerificationGasLimit = GasEstimationConstants.MAX_VERIFICATION_GAS,
                 PreVerificationGas = GasEstimationConstants.PRE_VERIFICATION_OVERHEAD_GAS,
                 MaxFeePerGas = original.MaxFeePerGas ?? 1_000_000_000,
@@ -294,14 +284,14 @@ namespace Nethereum.AccountAbstraction.GasEstimation
                 {
                     var callInput = new CallInput
                     {
-                        From = _entryPointAddress,
+                        From = await GetSenderCreatorAsync(),
                         To = factoryAddress,
                         Data = factoryData.ToHex(true),
                         Gas = new HexBigInteger(GasEstimationConstants.MAX_SIMULATION_GAS)
                     };
 
                     var gasEstimate = await _web3.Eth.Transactions.EstimateGas.SendRequestAsync(callInput);
-                    return gasEstimate.Value + GasEstimationConstants.CREATE2_COST;
+                    return gasEstimate.Value;
                 }
                 else if (_evmEstimator != null)
                 {
@@ -314,16 +304,25 @@ namespace Nethereum.AccountAbstraction.GasEstimation
 
                     if (evmResult.Success)
                     {
-                        return evmResult.GasUsed + GasEstimationConstants.CREATE2_COST;
+                        return evmResult.GasUsed;
                     }
                 }
             }
             catch
             {
-                // Fall through to default
             }
 
-            return GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS + GasEstimationConstants.CREATE2_COST;
+            return GasEstimationConstants.ACCOUNT_DEPLOYMENT_BASE_GAS;
+        }
+
+        private async Task<string> GetSenderCreatorAsync()
+        {
+            if (_senderCreatorAddress == null)
+            {
+                var entryPointService = new EntryPoint.EntryPointService(_web3.Eth, _entryPointAddress);
+                _senderCreatorAddress = await entryPointService.SenderCreatorQueryAsync();
+            }
+            return _senderCreatorAddress;
         }
 
         private async Task<BigInteger> EstimateAccountValidationGasAsync(UserOperation userOp)
@@ -344,7 +343,6 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             }
             catch
             {
-                // Fall through to default
             }
 
             return GasEstimationConstants.VERIFICATION_GAS_BUFFER;
@@ -356,15 +354,17 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             var encodedOp = new ABIEncode().GetABIParamsEncoded(packedOp);
             var calldataCost = CalculateCalldataCost(encodedOp);
 
-            var fixedCost = GasEstimationConstants.BASE_TRANSACTION_GAS;
+            return GasEstimationConstants.BASE_TRANSACTION_GAS
+                   + calldataCost
+                   + PerUserOpWordGas(encodedOp)
+                   + GasEstimationConstants.PER_USER_OP_OVERHEAD;
+        }
 
-            var packedSize = encodedOp.Length;
-            var wordCount = (packedSize + GasEstimationConstants.WORD_SIZE - 1) / GasEstimationConstants.WORD_SIZE;
-            var perWordGas = wordCount * GasEstimationConstants.PER_USER_OP_WORD_GAS;
-
-            var overhead = GasEstimationConstants.BASE_TRANSACTION_GAS;
-
-            return fixedCost + calldataCost + perWordGas + overhead;
+        private static BigInteger PerUserOpWordGas(byte[] encodedOp)
+        {
+            var wordCount = (encodedOp.Length + GasEstimationConstants.WORD_SIZE - 1)
+                            / GasEstimationConstants.WORD_SIZE;
+            return wordCount * GasEstimationConstants.PER_USER_OP_WORD_GAS;
         }
 
         private async Task<(BigInteger maxFeePerGas, BigInteger maxPriorityFeePerGas)> GetGasPricesAsync()
@@ -385,7 +385,6 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             }
             catch
             {
-                // Fall through to default
             }
 
             return (1_000_000_000, 1_000_000_000);
@@ -457,7 +456,7 @@ namespace Nethereum.AccountAbstraction.GasEstimation
             return (factoryAddressBytes.ToHex(true), factoryData);
         }
 
-        private static PackedUserOperation PackUserOperationForGasEstimate(UserOperation userOp)
+        public static PackedUserOperation PackUserOperationForGasEstimate(UserOperation userOp)
         {
             var tempOp = new UserOperation
             {

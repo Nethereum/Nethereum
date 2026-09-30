@@ -1,5 +1,4 @@
 using Nethereum.CoreChain.Rpc;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
@@ -26,31 +25,15 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
                     ? pending
                     : pending.Where(p => p.EntryPoint.Equals(entryPoint, StringComparison.OrdinalIgnoreCase)).ToArray();
 
-                var result = filtered.Select(p => new
-                {
-                    userOperation = new
-                    {
-                        sender = p.UserOperation.Sender,
-                        nonce = ToHex(p.UserOperation.Nonce),
-                        initCode = p.UserOperation.InitCode?.ToHex(true) ?? "0x",
-                        callData = p.UserOperation.CallData?.ToHex(true) ?? "0x",
-                        accountGasLimits = p.UserOperation.AccountGasLimits?.ToHex(true) ?? "0x",
-                        preVerificationGas = ToHex(p.UserOperation.PreVerificationGas),
-                        gasFees = p.UserOperation.GasFees?.ToHex(true) ?? "0x",
-                        paymasterAndData = p.UserOperation.PaymasterAndData?.ToHex(true) ?? "0x",
-                        signature = p.UserOperation.Signature?.ToHex(true) ?? "0x"
-                    },
-                    entryPoint = p.EntryPoint,
-                    userOpHash = p.UserOpHash,
-                    submittedAt = p.SubmittedAt.ToUnixTimeSeconds(),
-                    retryCount = p.RetryCount
-                }).ToArray();
+                var result = filtered
+                    .Select(p => AccountAbstraction.UserOperationConverter.ToRpcFormat(p.UserOperation).ToUnpackedRpcDictionary())
+                    .ToArray();
 
                 return Success(request.Id, result);
             }
             catch (Exception ex)
             {
-                return Error(request.Id, -32603, $"Internal error: {ex.Message}");
+                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
             }
         }
     }

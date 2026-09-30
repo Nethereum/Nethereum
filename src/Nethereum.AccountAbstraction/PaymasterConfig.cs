@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "PaymasterConfig - static or per-op paymaster data")]
     public class PaymasterConfig
     {
         public string Address { get; set; }
@@ -21,17 +23,6 @@ namespace Nethereum.AccountAbstraction
         {
             Address = address;
             DataProvider = dataProvider;
-        }
-
-        public async Task<byte[]> GetPaymasterDataAsync(UserOperation userOperation)
-        {
-            if (Data != null)
-                return Data;
-
-            if (DataProvider != null)
-                return await DataProvider(userOperation);
-
-            return Array.Empty<byte>();
         }
     }
 }

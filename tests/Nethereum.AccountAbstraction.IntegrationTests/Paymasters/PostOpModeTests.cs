@@ -8,6 +8,7 @@ using Nethereum.AccountAbstraction.IntegrationTests.TestPaymasterAcceptAll.Contr
 using Nethereum.AccountAbstraction.SimpleAccount.SimpleAccount.ContractDefinition;
 using Nethereum.AccountAbstraction.Structs;
 using Nethereum.Contracts;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.XUnitEthereumClients;
 using System.Numerics;
@@ -20,6 +21,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
     public class PostOpModeTests
     {
         private readonly BundlerTestFixture _fixture;
+
+        private const string DUMMY_SIGNATURE =
+            "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c";
 
         public PostOpModeTests(BundlerTestFixture fixture)
         {
@@ -111,7 +115,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
                     PaymasterVerificationGasLimit = 100_000,
                     PaymasterPostOpGasLimit = 50_000,
                     MaxFeePerGas = 2_000_000_000,
-                    MaxPriorityFeePerGas = 1_000_000_000
+                    MaxPriorityFeePerGas = 1_000_000_000,
+                    Signature = DUMMY_SIGNATURE.HexToByteArray()
                 };
 
                 var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -167,7 +172,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
                 PaymasterVerificationGasLimit = paymasterVerificationGas,
                 PaymasterPostOpGasLimit = paymasterPostOpGas,
                 MaxFeePerGas = 2_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -214,7 +220,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
                 PaymasterVerificationGasLimit = 100_000,
                 PaymasterPostOpGasLimit = 50_000,
                 MaxFeePerGas = 2_000_000_000,
-                MaxPriorityFeePerGas = 1_000_000_000
+                MaxPriorityFeePerGas = 1_000_000_000,
+                Signature = DUMMY_SIGNATURE.HexToByteArray()
             };
 
             var estimate = await _fixture.BundlerService.EstimateUserOperationGasAsync(
@@ -294,8 +301,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Paymasters
         {
             var paymasterDeployment = new TestPaymasterAcceptAllDeployment
             {
-                EntryPoint = _fixture.EntryPointService.ContractAddress,
-                Owner = _fixture.BeneficiaryAddress
+                EntryPoint = _fixture.EntryPointService.ContractAddress
             };
 
             var paymasterService = await TestPaymasterAcceptAllService.DeployContractAndGetServiceAsync(

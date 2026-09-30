@@ -104,6 +104,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.EntryPoint
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
                     VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
                     Nonce = initialNonce
                 },
                 accountKey);
@@ -142,6 +143,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.EntryPoint
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
                     VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
                     Nonce = EncodeNonce(key0, GetSequence(nonceKey0Before))
                 },
                 accountKey);
@@ -180,15 +182,16 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.EntryPoint
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
                     VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
                     Nonce = wrongNonce
                 },
                 accountKey);
 
             using var bundler = _fixture.CreateNewBundlerService();
-            await bundler.SendUserOperationAsync(userOp, _fixture.EntryPointService.ContractAddress);
 
             try
             {
+                await bundler.SendUserOperationAsync(userOp, _fixture.EntryPointService.ContractAddress);
                 await bundler.FlushAsync();
             }
             catch
@@ -221,6 +224,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.EntryPoint
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
                     VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
                     Nonce = currentNonce
                 },
                 accountKey);
@@ -232,6 +236,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.EntryPoint
                     CallData = executeFunction.GetCallData(),
                     CallGasLimit = 100_000,
                     VerificationGasLimit = 200_000,
+                    PreVerificationGas = 100_000,
                     Nonce = currentNonce
                 },
                 accountKey);
@@ -273,6 +278,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.EntryPoint
                         CallData = executeFunction.GetCallData(),
                         CallGasLimit = 100_000,
                         VerificationGasLimit = 200_000,
+                        PreVerificationGas = 100_000,
                         Nonce = currentNonce
                     },
                     accountKey);

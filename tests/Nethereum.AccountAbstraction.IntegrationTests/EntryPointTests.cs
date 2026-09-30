@@ -142,10 +142,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
            
 
-            // Deploy TestCounter contract
             var counterService = await TestCounterService.DeployContractAndGetServiceAsync(web3, new TestCounterDeployment());
 
-            // Prepare calldata for counter.count()
             var countCall = new CountFunction();
 
             var accountOwner2 = TestAccounts.Account2Address;
@@ -156,21 +154,16 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             
 
             var account2Address = await factory.GetAddressQueryAsync(accountOwner2, 999);
-            //var account2 = await factory.CreateAndDeployAccountAsync(accountOwner2, accountOwner2,
-            //    entryPoint.ContractAddress, accountOwner2Key, 0.01m, 888);
 
             var account3Address = await factory.GetAddressQueryAsync(accountOwner3, 999);
             var account3 = await factory.CreateAndDeployAccountAsync(accountOwner3, accountOwner3,
                 entryPoint.ContractAddress, accountOwner3Key, 0.01m, 999);
 
 
-            //Fund the 4337 accounts
 
-            //this one will be created on the first op
             var fundTx = await web3.Eth.GetEtherTransferService()
               .TransferEtherAndWaitForReceiptAsync(account2Address, 0.02m);
 
-            //this one has been already created (and funded with 0.01) but just adding more funds
             fundTx = await web3.Eth.GetEtherTransferService()
               .TransferEtherAndWaitForReceiptAsync(account3.AccountAddress, 0.02m);
 
@@ -183,7 +176,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             };
            
 
-            // Operation 1: create + execute
             var initCode1 = factory.GetCreateAccountInitCode(accountOwner2, 999);
             var op1 = await entryPoint.SignAndInitialiseUserOperationAsync(new UserOperation
             {
@@ -193,7 +185,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
                 VerificationGasLimit = 2_000_000
             }, accountOwner2Key);
 
-            // Operation 2: from deployed account
             var op2 = await entryPoint.SignAndInitialiseUserOperationAsync(new UserOperation
             {
                 Sender = account3Address,
@@ -205,7 +196,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
 
             try
             {
-                // Static call check
                 await entryPoint.HandleOpsQueryAsync(new HandleOpsFunction
                 {
                     Ops = new List<Structs.PackedUserOperation> { op1, op2 },
@@ -221,7 +211,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests
             }
 
 
-            // Execute both
             var receipt = await entryPoint.HandleOpsRequestAndWaitForReceiptAsync(new HandleOpsFunction
             {
                 Ops = new List<Structs.PackedUserOperation> { op1, op2 },

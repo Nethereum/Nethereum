@@ -66,6 +66,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.TestCounter
              return ContractHandler.SendRequestAndWaitForReceiptAsync<CountFunction>(null, cancellationToken);
         }
 
+
+
         public Task<BigInteger> CountersQueryAsync(CountersFunction countersFunction, BlockParameter blockParameter = null)
         {
             return ContractHandler.QueryAsync<CountersFunction, BigInteger>(countersFunction, blockParameter);
@@ -158,6 +160,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.TestCounter
             return new List<Type>
             {
                 typeof(CountFunction),
+                typeof(CountFailFunction),
                 typeof(CountersFunction),
                 typeof(GasWasterFunction),
                 typeof(JustemitFunction),

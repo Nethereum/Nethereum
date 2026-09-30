@@ -3,10 +3,19 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions.SmartSession.ContractDefinition;
 using Nethereum.ABI;
+using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
 {
+    public enum SmartSessionMode : byte
+    {
+        Use = 0,
+        Enable = 1,
+        UnsafeEnable = 2
+    }
+
     public class SmartSessionConfig : ModuleConfigBase
     {
         public override BigInteger ModuleTypeId => ERC7579ModuleTypes.TYPE_VALIDATOR;
@@ -22,6 +31,8 @@ namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
         };
         public List<ActionData> Actions { get; private set; } = new List<ActionData>();
         public bool PermitERC4337Paymaster { get; set; } = false;
+
+        public SmartSessionMode InstallMode { get; set; } = SmartSessionMode.UnsafeEnable;
 
         public SmartSessionConfig WithSessionValidator(string validatorAddress)
         {
@@ -133,6 +144,12 @@ namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
             return this;
         }
 
+        public SmartSessionConfig WithInstallMode(SmartSessionMode mode)
+        {
+            InstallMode = mode;
+            return this;
+        }
+
         public Session ToSession()
         {
             Validate();
@@ -153,12 +170,14 @@ namespace Nethereum.AccountAbstraction.ERC7579.Modules.SmartSession
         {
             var session = ToSession();
             var abiEncoder = new ABIEncode();
-            return abiEncoder.GetABIEncoded(
-                new ABIValue("address", session.SessionValidator),
-                new ABIValue("bytes", session.SessionValidatorInitData),
-                new ABIValue("bytes32", session.Salt),
-                new ABIValue("bool", session.PermitERC4337Paymaster)
-            );
+            var sessionsEncoded = abiEncoder.GetABIParamsEncoded(new SessionArrayDto { Sessions = new List<Session> { session } });
+            return ByteUtil.Merge(new[] { (byte)InstallMode }, sessionsEncoded);
+        }
+
+        private class SessionArrayDto
+        {
+            [Parameter("tuple[]", "sessions", 1)]
+            public virtual List<Session> Sessions { get; set; }
         }
 
         private void Validate()

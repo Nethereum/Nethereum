@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.AccountAbstraction.AppChain.Contracts.Paymaster.SponsoredPaymaster;
 using Nethereum.AccountAbstraction.AppChain.Contracts.Paymaster.SponsoredPaymaster.ContractDefinition;
@@ -15,17 +16,19 @@ using Nethereum.AccountAbstraction.Contracts.Modules.Native.ECDSAValidator;
 using Nethereum.AccountAbstraction.Contracts.Modules.Native.ECDSAValidator.ContractDefinition;
 using Nethereum.AccountAbstraction.EntryPoint;
 using Nethereum.AccountAbstraction.EntryPoint.ContractDefinition;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.AppChain;
 using Nethereum.AppChain.Sequencer;
-using Nethereum.CoreChain.Storage.InMemory;
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Util;
+using Nethereum.Signer;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Xunit;
 
 using AppChainCore = Nethereum.AppChain.AppChain;
-using AppChainSequencer = Nethereum.AppChain.Sequencer.Sequencer;
 
 namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
 {
@@ -41,7 +44,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
     public partial class SequencerAAFixture
     {
         public AppChainCore AppChain { get; private set; } = null!;
-        public AppChainSequencer Sequencer { get; private set; } = null!;
+        public ISequencer Sequencer { get; private set; } = null!;
         public AppChainNode Node { get; private set; } = null!;
         public IWeb3 Web3 { get; private set; } = null!;
         public BundlerService BundlerService { get; private set; } = null!;
@@ -58,6 +61,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
         public Account[] UserAccounts { get; private set; } = null!;
 
         private AppChainRpcClient _rpcClient = null!;
+        private AppChainComposedNode _composed = null!;
+        private bool _signRecoverableBeforeCompose;
         private int _bundlerAccountIndex = 0;
 
         public async Task InitializeAsync()
@@ -72,54 +77,33 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
                 UserAccounts[i] = CreateTestAccount(i + 2);
             }
 
-            var blockStore = new InMemoryBlockStore();
-            var transactionStore = new InMemoryTransactionStore(blockStore);
-            var receiptStore = new InMemoryReceiptStore();
-            var logStore = new InMemoryLogStore();
-            var stateStore = new InMemoryStateStore();
-
-            var appChainConfig = AppChainConfig.CreateWithName("SequencerAATest", CHAIN_ID);
-            appChainConfig.SequencerAddress = OperatorAccount.Address;
-            appChainConfig.BaseFee = 1_000_000_000;
-            appChainConfig.BlockGasLimit = 30_000_000;
-
-            AppChain = new AppChainCore(
-                appChainConfig,
-                blockStore,
-                transactionStore,
-                receiptStore,
-                logStore,
-                stateStore);
-
-            var prefundedAddresses = new List<string>
+            var config = new AppChainServerConfig
             {
-                OperatorAccount.Address,
-                BundlerAccount.Address
+                ChainId = CHAIN_ID,
+                ChainName = "SequencerAATest",
+                BaseFee = 1_000_000_000
             };
-            prefundedAddresses.AddRange(UserAccounts.Select(a => a.Address));
+            config.Genesis.Owner.PrivateKey = operatorPrivateKey;
+            config.Consensus.Sequencer.PrivateKey = operatorPrivateKey;
+            config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
+            config.Consensus.BlockTimeMs = 0;
+            config.Node.Storage.InMemory = true;
+            config.Node.Network.Serve = false;
+            config.Node.Sync.Mode = SyncMode.None;
+            config.Mud.DeployWorld = false;
 
-            var genesisOptions = new GenesisOptions
+            _signRecoverableBeforeCompose = EthECKey.SignRecoverable;
+            _composed = await AppChainComposition.ComposeAsync(config, NullLoggerFactory.Instance, CancellationToken.None);
+            AppChain = _composed.AppChain;
+            Sequencer = _composed.Sequencer!;
+            Node = _composed.Node;
+
+            var fundedAccounts = new List<Account> { BundlerAccount };
+            fundedAccounts.AddRange(UserAccounts);
+            foreach (var account in fundedAccounts)
             {
-                PrefundedAddresses = prefundedAddresses.ToArray(),
-                PrefundBalance = Nethereum.Web3.Web3.Convert.ToWei(1000),
-                DeployCreate2Factory = true
-            };
-            await AppChain.InitializeAsync(genesisOptions);
-
-            var sequencerConfig = new SequencerConfig
-            {
-                SequencerAddress = OperatorAccount.Address,
-                SequencerPrivateKey = operatorPrivateKey,
-                BlockTimeMs = 0,
-                MaxTransactionsPerBlock = 1000,
-                BlockProductionMode = BlockProductionMode.OnDemand,
-                Policy = PolicyConfig.OpenAccess
-            };
-
-            Sequencer = new AppChainSequencer(AppChain, sequencerConfig);
-            await Sequencer.StartAsync();
-
-            Node = new AppChainNode(AppChain, Sequencer);
+                await SetBalanceAsync(account.Address, Nethereum.Web3.Web3.Convert.ToWei(1000));
+            }
 
             _rpcClient = new AppChainRpcClient(Node, CHAIN_ID);
             Web3 = new Web3.Web3(OperatorAccount, _rpcClient);
@@ -200,13 +184,17 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
         public async Task DisposeAsync()
         {
             BundlerService?.Dispose();
-            await Sequencer?.StopAsync()!;
-            await Task.CompletedTask;
+            if (_composed != null)
+            {
+                await _composed.DisposeAsync();
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
+            }
         }
 
         private Account CreateTestAccount(int index)
         {
             var keyBytes = new byte[32];
+            keyBytes[0] = 0xAA;
             keyBytes[31] = (byte)(index + 1);
             var privateKey = "0x" + BitConverter.ToString(keyBytes).Replace("-", "").ToLowerInvariant();
             return new Account(privateKey, CHAIN_ID);
@@ -301,9 +289,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
 
         public byte[] EncodeInitData(string ownerAddress)
         {
-            return ByteUtil.Merge(
-                ECDSAValidatorService.ContractAddress.HexToByteArray(),
-                ownerAddress.HexToByteArray());
+            return Nethereum.AccountAbstraction.ERC7579.Modules.AccountInitDataBuilder.BuildEcdsa(
+                ECDSAValidatorService.ContractAddress, ownerAddress);
         }
     }
 }

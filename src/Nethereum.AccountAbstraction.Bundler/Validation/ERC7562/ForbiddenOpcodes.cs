@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using Nethereum.EVM;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "bundler", "ForbiddenOpcodes - the ERC-7562 opcode sets and the allowed-precompile set")]
     public static class ForbiddenOpcodes
     {
-        // [OP-011] Always forbidden during validation phase
         public static readonly HashSet<Instruction> AlwaysForbidden = new()
         {
             Instruction.ORIGIN,
@@ -23,14 +24,12 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             Instruction.SELFDESTRUCT,
         };
 
-        // [OP-080] Forbidden unless entity is staked
         public static readonly HashSet<Instruction> StakedOnlyOpcodes = new()
         {
             Instruction.BALANCE,
             Instruction.SELFBALANCE,
         };
 
-        // Opcodes requiring special validation logic
         public static readonly HashSet<Instruction> ConditionalOpcodes = new()
         {
             Instruction.GAS,
@@ -38,7 +37,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             Instruction.CREATE2,
         };
 
-        // Call-type opcodes (for GAS validation - OP-012)
         public static readonly HashSet<Instruction> CallOpcodes = new()
         {
             Instruction.CALL,
@@ -47,21 +45,18 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             Instruction.STATICCALL,
         };
 
-        // Storage opcodes (for STO-xxx rules)
         public static readonly HashSet<Instruction> StorageOpcodes = new()
         {
             Instruction.SLOAD,
             Instruction.SSTORE,
         };
 
-        // [OP-070] Transient storage follows same rules as SLOAD/SSTORE
         public static readonly HashSet<Instruction> TransientStorageOpcodes = new()
         {
             Instruction.TLOAD,
             Instruction.TSTORE,
         };
 
-        // External code access opcodes (for OP-041)
         public static readonly HashSet<Instruction> ExtCodeOpcodes = new()
         {
             Instruction.EXTCODESIZE,
@@ -69,7 +64,6 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             Instruction.EXTCODEHASH,
         };
 
-        // All valid EVM opcodes - for OP-013 (unassigned opcode check)
         public static readonly HashSet<Instruction> ValidOpcodes = new()
         {
             Instruction.STOP, Instruction.ADD, Instruction.MUL, Instruction.SUB, Instruction.DIV,
@@ -105,22 +99,36 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation.ERC7562
             Instruction.CREATE2, Instruction.STATICCALL, Instruction.REVERT, Instruction.INVALID, Instruction.SELFDESTRUCT,
         };
 
-        // [OP-062] Allowed precompile addresses (0x01 - 0x0A)
+        /// <summary>
+        /// ERC-7562 [OP-062]: <i>"Precompiles: Only known, accepted precompiles on the network
+        /// that do not access anything in the blockchain state or environment are allowed. The
+        /// core precompiles <c>0x1</c>-<c>0x11</c>. The <c>P256VERIFY</c> secp256r1 precompile
+        /// defined in EIP-7951."</i>
+        ///
+        /// <para>This is the ERC's own fixed list, so it is written out rather than derived from a
+        /// fork: deriving it would accept a future precompile the ERC has not accepted.</para>
+        /// </summary>
         public static readonly HashSet<int> AllowedPrecompiles = new()
         {
-            0x01,  // ecRecover
-            0x02,  // SHA2-256
-            0x03,  // RIPEMD-160
-            0x04,  // identity (datacopy)
-            0x05,  // modexp
-            0x06,  // ecAdd
-            0x07,  // ecMul
-            0x08,  // ecPairing
-            0x09,  // blake2f
-            0x0A,  // point evaluation (KZG)
+            0x01,
+            0x02,
+            0x03,
+            0x04,
+            0x05,
+            0x06,
+            0x07,
+            0x08,
+            0x09,
+            0x0A,
+            0x0B,
+            0x0C,
+            0x0D,
+            0x0E,
+            0x0F,
+            0x10,
+            0x11,
         };
 
-        // RIP-7212 secp256r1 precompile address (network-dependent)
         public const int Secp256r1Precompile = 0x100;
 
         public static bool IsAlwaysForbidden(Instruction opcode)

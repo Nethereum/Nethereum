@@ -11,9 +11,9 @@ Each handler extends `RpcHandlerBase` from Nethereum.CoreChain.Rpc, allowing sea
 ### Key Features
 
 - **Full ERC-4337 RPC**: All spec-required bundler JSON-RPC methods
-- **Debug Endpoints**: Mempool dump, flush, reputation get/set
+- **Debug Endpoints**: The `debug_bundler_*` surface used by the eth-infinitism compliance suite (state/mempool/reputation control, bundling mode)
 - **Standard Integration**: Extends CoreChain `RpcHandlerBase` for plug-and-play registration
-- **Error Codes**: Proper JSON-RPC error codes per ERC-4337 spec (-32602, -32500, -32603)
+- **Error Codes**: ERC-7769 error codes (`-32500`…`-32508` with structured `data`, plus standard `-32602`/`-32603`) via `BundlerErrorCodes`/`BundlerRpcException`
 
 ## Installation
 
@@ -46,12 +46,19 @@ dotnet add package Nethereum.AccountAbstraction.Bundler.RpcServer
 | `debug_bundler_dumpMempool` | List all pending UserOperations |
 | `debug_bundler_sendBundleNow` | Force immediate bundle execution |
 | `debug_bundler_setReputation` | Set entity reputation entries |
-| `debug_bundler_dumpReputation` | Get entity reputation status |
+| `debug_bundler_dumpReputation` | Dump reputation entries for all known entities |
+| `debug_bundler_clearState` | Clear mempool, reputation and cached receipts |
+| `debug_bundler_clearMempool` | Clear the mempool only |
+| `debug_bundler_clearReputation` | Clear all reputation entries |
+| `debug_bundler_setBundlingMode` | Switch between `auto` and `manual` bundling |
+| `debug_bundler_getStakeStatus` | Report an entity's on-chain stake (`stakeInfo`) and whether it meets the stake thresholds (`isStaked`) |
 
 ## Quick Start
 
 ```csharp
 using Nethereum.AccountAbstraction.Bundler.RpcServer;
+using Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers;
+using Nethereum.CoreChain.Rpc;
 
 // Register handlers in RPC registry
 var registry = new RpcHandlerRegistry();
@@ -68,6 +75,9 @@ registry.Register(new BundlerEthChainIdHandler(bundlerService));
 ### Example 1: Register All Bundler Handlers
 
 ```csharp
+using Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers;
+using Nethereum.CoreChain.Rpc;
+
 var bundlerService = new BundlerService(web3, bundlerConfig);
 var registry = new RpcHandlerRegistry();
 
@@ -80,7 +90,7 @@ registry.Register(new EthSupportedEntryPointsHandler(bundlerService));
 
 // Debug methods
 registry.Register(new DebugBundlerDumpMempoolHandler(bundlerService));
-registry.Register(new DebugBundlerFlushHandler(bundlerService));
+registry.Register(new DebugBundlerSendBundleNowHandler(bundlerService));
 
 // Recommended: use extension methods for one-line registration
 // registry.AddBundlerHandlers(bundlerService);       // all standard handlers
@@ -95,14 +105,14 @@ Handles `eth_sendUserOperation` - submits UserOperation to mempool.
 
 Parameters: `[userOp (JSON object), entryPoint (address)]`
 Returns: `userOpHash (hex string)`
-Errors: `-32602` (invalid params), `-32500` (validation failed), `-32603` (internal error)
+Errors (ERC-7769): `-32500` (rejected by validation simulation, AAxx reason in message), `-32501` (paymaster validation), `-32502` (opcode/ERC-7562 rule), `-32503` (out of time range), `-32504` (entity throttled/banned, entity address in `data`), `-32507` (invalid signature), `-32508` (paymaster deposit too low), `-32602` (invalid fields/unsupported EntryPoint/duplicate), `-32603` (internal error)
 
 ### EthEstimateUserOperationGasHandler
 
 Handles `eth_estimateUserOperationGas` - estimates gas limits.
 
 Parameters: `[userOp (JSON object), entryPoint (address)]`
-Returns: `{ preVerificationGas, verificationGasLimit, callGasLimit, maxFeePerGas, maxPriorityFeePerGas }`
+Returns: `{ callGasLimit, verificationGasLimit, preVerificationGas, maxFeePerGas, maxPriorityFeePerGas, paymasterVerificationGasLimit, paymasterPostOpGasLimit }`
 
 ### EthGetUserOperationReceiptHandler
 

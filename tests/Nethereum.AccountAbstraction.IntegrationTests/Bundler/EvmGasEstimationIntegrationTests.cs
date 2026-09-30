@@ -31,7 +31,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var targetAddress = "0x" + new string('4', 40);
 
@@ -55,7 +55,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -96,7 +96,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var evmGasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -146,7 +146,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -206,7 +206,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -262,7 +262,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -304,7 +304,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -363,7 +363,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,
@@ -409,7 +409,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
             var evmEstimator = new TransactionExecutorGasEstimator(
                 nodeDataService,
                 _fixture.ChainId,
-                HardforkConfig.Default);
+                Nethereum.EVM.Precompiles.DefaultHardforkConfigs.Osaka);
 
             var gasEstimator = new UserOperationGasEstimator(
                 evmEstimator,

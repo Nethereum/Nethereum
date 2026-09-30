@@ -1,0 +1,83 @@
+@inherits ObservingComponentBase
+@inject CustomViewModel Vm
+
+<section class="tab-card">
+    <h2>Custom Contract - typed reverts through AA</h2>
+    <p class="tab-help">
+        Drives the demo <code>BookingRegistry</code> contract, showing the two ways a dApp must decode
+        a revert beyond a generic failure message. <strong>Book Slot</strong> books a free slot;
+        booking one someone else already holds is a deterministic revert, so the bundler's pre-flight
+        <code>eth_estimateUserOperationGas</code> rejects it before anything is sent (the same
+        pre-flight path <strong>Send</strong>'s failing call exercises) - the AA client surfaces it
+        exactly as a plain (non-AA) contract call would, a
+        <code>SmartContractCustomErrorRevertException</code> carrying the raw revert bytes, decoded
+        here into the typed <code>SlotAlreadyBooked</code> error (slot + guest) via the standard
+        <code>DecodeExceptionEncodedData</code> idiom. <strong>Release Slot</strong> is the
+        require-with-string path: the session's account is never the registry's owner, so releasing
+        always reverts with a plain string reason.
+    </p>
+
+    <label class="field-label" for="slot-input">Slot number</label>
+    <input id="slot-input" class="field-input" type="number" min="0" @bind="_slotText" />
+
+    <div class="btn-row">
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="BookAsync">
+            @(Vm.IsBusy ? "Working..." : "Book Slot")
+        </button>
+        <button class="btn btn-secondary" disabled="@Vm.IsBusy" @onclick="GuestOfAsync">
+            @(Vm.IsBusy ? "Working..." : "Guest Of Slot")
+        </button>
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="ReleaseAsync">
+            @(Vm.IsBusy ? "Working..." : "Release Slot")
+        </button>
+    </div>
+
+    @if (Vm.GuestOfLastQuery is not null)
+    {
+        <dl class="fact-list">
+            <dt>Guest of last queried slot</dt>
+            <dd><code>@Vm.GuestOfLastQuery</code></dd>
+        </dl>
+    }
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+        </dl>
+    }
+
+    @if (Vm.SlotAlreadyBooked is not null)
+    {
+        <dl class="fact-list">
+            <dt>Slot already booked</dt>
+            <dd>slot @Vm.SlotAlreadyBooked.Slot, guest <code>@Vm.SlotAlreadyBooked.Guest</code></dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    private string _slotText = "1";
+
+    private BigInteger CurrentSlot => BigInteger.TryParse(_slotText, out var slot) ? slot : BigInteger.Zero;
+
+    private Task BookAsync() => Vm.BookCommand.ExecuteAsync(CurrentSlot);
+
+    private Task ReleaseAsync() => Vm.ReleaseCommand.ExecuteAsync(CurrentSlot);
+
+    private Task GuestOfAsync() => Vm.GuestOfCommand.ExecuteAsync(CurrentSlot);
+}

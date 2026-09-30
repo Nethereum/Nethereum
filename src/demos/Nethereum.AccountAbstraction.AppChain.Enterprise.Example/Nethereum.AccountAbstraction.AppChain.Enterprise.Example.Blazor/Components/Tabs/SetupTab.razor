@@ -1,0 +1,101 @@
+@inherits ObservingComponentBase
+@inject InfrastructureSetupViewModel Vm
+
+<section class="tab-card">
+    <h2>0. Setup - deploy the AppChain AA stack</h2>
+    <p class="tab-help">
+        <strong>Setup</strong> is where an operator launches or points at the node + bundler and deploys
+        the AppChain account-abstraction stack (EntryPoint, AccountRegistry, factory,
+        SponsoredPaymaster) plus the enterprise P1-D rule stack (RuleRegistry, ValueCapCombinator,
+        PayableTarget) that Admin and User both depend on. <strong>Embedded</strong> brings up an
+        in-process DevChain + bundler for a zero-setup run. <strong>External</strong> deploys the SAME
+        stack against a node + bundler you already run (see <code>run-enterprise-local-stack.ps1</code>),
+        through your funder account. Admin and User stay locked until this finishes.
+    </p>
+
+    <div class="btn-row">
+        <label>
+            <input type="radio" name="infra-mode" checked="@(Vm.Mode == InfrastructureMode.Embedded)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.Mode = InfrastructureMode.Embedded" />
+            Embedded
+        </label>
+        <label>
+            <input type="radio" name="infra-mode" checked="@(Vm.Mode == InfrastructureMode.External)"
+                   disabled="@Vm.IsBusy" @onchange="() => Vm.Mode = InfrastructureMode.External" />
+            External
+        </label>
+    </div>
+
+    @if (Vm.Mode == InfrastructureMode.Embedded)
+    {
+        <p class="tab-help">
+            Brings up an in-process ERC-4337 bundler + DevChain, then deploys the full AppChain stack and
+            the P1-D enterprise rule stack on top of it.
+        </p>
+    }
+    else
+    {
+        <p class="tab-help">
+            Deploys the same stack against a node + bundler you already run - real HTTP hops end to end -
+            through your funder account, which pays for every deployment.
+        </p>
+
+        <label class="field-label" for="node-rpc-url">Node RPC URL</label>
+        <input id="node-rpc-url" class="field-input" placeholder="http://localhost:8545"
+               disabled="@Vm.IsBusy" @bind="Vm.NodeRpcUrl" />
+
+        <label class="field-label" for="bundler-url">Bundler URL</label>
+        <input id="bundler-url" class="field-input" placeholder="http://localhost:4337"
+               disabled="@Vm.IsBusy" @bind="Vm.BundlerUrl" />
+
+        <label class="field-label" for="funder-key">Funder private key</label>
+        <input id="funder-key" class="field-input" type="password"
+               disabled="@Vm.IsBusy" @bind="Vm.FunderPrivateKey" />
+    }
+
+    <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.DeployCommand.ExecuteAsync(null)">
+        @(Vm.IsBusy ? "Deploying..." : Vm.DeployButtonLabel)
+    </button>
+
+    @if (Vm.Log.Count > 0)
+    {
+        <pre class="tab-log">@string.Join("\n", Vm.Log)</pre>
+    }
+
+    @if (Vm.IsReady)
+    {
+        <dl class="fact-list">
+            <dt>EntryPoint</dt>
+            <dd><code>@Vm.EntryPointAddress</code></dd>
+            <dt>AccountFactory</dt>
+            <dd><code>@Vm.AccountFactoryAddress</code></dd>
+            <dt>AccountRegistry</dt>
+            <dd><code>@Vm.AccountRegistryAddress</code></dd>
+            <dt>SponsoredPaymaster</dt>
+            <dd><code>@Vm.SponsoredPaymasterAddress</code></dd>
+            <dt>ValueCapCombinator</dt>
+            <dd><code>@Vm.ValueCapCombinatorAddress</code></dd>
+            <dt>PayableTarget</dt>
+            <dd><code>@Vm.PayableTargetAddress</code></dd>
+        </dl>
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Vm.Log.CollectionChanged += (_, _) => InvokeAsync(StateHasChanged);
+    }
+}

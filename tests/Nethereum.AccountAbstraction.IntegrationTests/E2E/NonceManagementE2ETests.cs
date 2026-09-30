@@ -160,11 +160,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
             using var bundler = _fixture.CreateNewBundlerService();
-            await bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
-            var result = await bundler.ExecuteBundleAsync();
 
-            Assert.False(result?.Success ?? true,
-                "Operation with future nonce should fail");
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+                await bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress));
         }
 
         [Fact]

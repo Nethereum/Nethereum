@@ -134,7 +134,7 @@ namespace Nethereum.AccountAbstraction.SimpleAccount.SimpleAccountFactory
         {
             return new List<Type>
             {
-
+                typeof(NotSenderCreatorError)
             };
         }
     }

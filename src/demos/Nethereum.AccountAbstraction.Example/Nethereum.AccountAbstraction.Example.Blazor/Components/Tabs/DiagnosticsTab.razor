@@ -1,0 +1,155 @@
+@inherits ObservingComponentBase
+@inject DiagnosticsViewModel Vm
+
+<section class="tab-card">
+    <h2>Diagnostics - what happened to a UserOperation</h2>
+    <p class="tab-help">
+        A developer/observability view of the session's active account: run the SAME
+        <code>count()</code> call three ways - a normal success, a guaranteed revert
+        (<code>countFail()</code>), and the same call starved of gas - and inspect the real receipt,
+        gas, bundler lookup and packed-wire data behind each outcome.
+    </p>
+    <p class="tab-help">
+        Note: the reverting and out-of-gas runs are <strong>deliberately forced past the bundler's
+        pre-flight gas estimate</strong> so they reach mining and produce a receipt to inspect. A real
+        bundler rejects both during <code>eth_estimateUserOperationGas</code> with an error, so these two
+        outcomes would never normally return a receipt - only the successful run reflects the normal flow.
+    </p>
+
+    <div class="btn-row">
+        <button class="btn btn-primary" disabled="@Vm.IsBusy" @onclick="() => Vm.RunDiagnosedOpCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Running..." : "Run diagnosed op (success)")
+        </button>
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.RunRevertingOpCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Running..." : "Run reverting op")
+        </button>
+        <button class="btn btn-danger" disabled="@Vm.IsBusy" @onclick="() => Vm.RunOutOfGasOpCommand.ExecuteAsync(null)">
+            @(Vm.IsBusy ? "Running..." : "Run out-of-gas op")
+        </button>
+    </div>
+
+    @if (Vm.LastReceipt is not null)
+    {
+        <h3>Outcome summary - @Vm.Flavor</h3>
+        <dl class="fact-list">
+            <dt>Failure kind</dt>
+            <dd>@Vm.LastReceipt.FailureKind</dd>
+            <dt>UserOp success?</dt>
+            <dd>@Vm.LastReceipt.UserOpSuccess</dd>
+            <dt>Likely out of gas?</dt>
+            <dd>@Vm.LastReceipt.IsLikelyOutOfGas</dd>
+            <dt>Revert reason</dt>
+            <dd>@(Vm.LastReceipt.RevertReason ?? "(none)")</dd>
+        </dl>
+
+        @if (Vm.LastReceipt.FailureDiagnostic is not null)
+        {
+            <p class="status-message">@Vm.LastReceipt.FailureDiagnostic</p>
+        }
+
+        <h3>Receipt</h3>
+        <dl class="fact-list">
+            <dt>UserOp hash</dt>
+            <dd><code>@Vm.LastReceipt.UserOpHash</code></dd>
+            <dt>Sender</dt>
+            <dd><code>@Vm.LastReceipt.Sender</code></dd>
+            <dt>Paymaster</dt>
+            <dd>@(string.IsNullOrEmpty(Vm.LastReceipt.Paymaster) ? "(none - self-paid)" : Vm.LastReceipt.Paymaster)</dd>
+            <dt>Transaction hash</dt>
+            <dd><code>@Vm.LastReceipt.TransactionHash</code></dd>
+            <dt>Block number</dt>
+            <dd>@Vm.LastReceipt.BlockNumber?.Value</dd>
+            <dt>Status</dt>
+            <dd>@Vm.LastReceipt.Status?.Value</dd>
+            <dt>Transaction-scoped logs</dt>
+            <dd>@Vm.LogCount</dd>
+        </dl>
+
+        @if (Vm.GasPanel is { } gas)
+        {
+            <h3>Gas - requested vs. actually charged</h3>
+            <dl class="fact-list">
+                <dt>Requested callGasLimit</dt>
+                <dd>@gas.RequestedCallGasLimit</dd>
+                <dt>Requested verificationGasLimit</dt>
+                <dd>@gas.RequestedVerificationGasLimit</dd>
+                <dt>Requested preVerificationGas</dt>
+                <dd>@gas.RequestedPreVerificationGas</dd>
+                <dt>Actual gas used (EntryPoint)</dt>
+                <dd>@gas.ActualGasUsed</dd>
+                <dt>Actual gas cost (wei)</dt>
+                <dd>@gas.ActualGasCost</dd>
+                <dt>Transaction gas used</dt>
+                <dd>@gas.TransactionGasUsed</dd>
+                <dt>Effective gas price</dt>
+                <dd>@gas.EffectiveGasPrice</dd>
+                <dt>AAGasConfig - call/verification buffer</dt>
+                <dd>@gas.CallGasBuffer / @gas.VerificationGasBuffer</dd>
+                <dt>AAGasConfig - call/verification multiplier</dt>
+                <dd>@gas.CallGasMultiplier / @gas.VerificationGasMultiplier</dd>
+            </dl>
+        }
+
+        @if (Vm.BundlerLookup is { } lookup)
+        {
+            <h3>Bundler lookup - eth_getUserOperationByHash</h3>
+            <dl class="fact-list">
+                <dt>Sender</dt>
+                <dd><code>@lookup.Sender</code></dd>
+                <dt>Nonce</dt>
+                <dd>@lookup.Nonce</dd>
+                <dt>Call data</dt>
+                <dd><code>@lookup.CallDataHex</code></dd>
+                <dt>Signature</dt>
+                <dd><code>@lookup.SignatureHex</code></dd>
+                <dt>Paymaster</dt>
+                <dd>@lookup.Paymaster</dd>
+                <dt>EntryPoint</dt>
+                <dd><code>@lookup.EntryPoint</code></dd>
+                <dt>Pending / mined?</dt>
+                <dd>@(lookup.IsPending ? "Pending" : $"Mined in block {lookup.BlockNumber}")</dd>
+                <dt>Transaction hash</dt>
+                <dd><code>@lookup.TransactionHash</code></dd>
+            </dl>
+        }
+
+        @if (Vm.PackedView is { } packed)
+        {
+            <h3>Packed UserOperation - what was actually signed</h3>
+            <p class="tab-help">
+                A faithful reconstruction, <strong>not</strong> the exact bytes <code>AAContractHandler</code>
+                signed (it signs and sends its packed op internally and exposes no API to hand those back):
+                the bundler's unpacked fields, re-packed into the wire's <code>accountGasLimits</code>/
+                <code>gasFees</code> bytes32 words via <code>UserOperationBuilder.PackAccountGasLimits</code>,
+                then unpacked again via <code>PackedUserOperationGasExtensions</code> to prove the round trip.
+            </p>
+            <dl class="fact-list">
+                <dt>accountGasLimits (bytes32)</dt>
+                <dd><code>@packed.AccountGasLimitsHex</code></dd>
+                <dt>gasFees (bytes32)</dt>
+                <dd><code>@packed.GasFeesHex</code></dd>
+                <dt>Unpacked verification/call gas limit</dt>
+                <dd>@packed.UnpackedVerificationGasLimit / @packed.UnpackedCallGasLimit</dd>
+                <dt>Unpacked priority/max fee per gas</dt>
+                <dd>@packed.UnpackedMaxPriorityFeePerGas / @packed.UnpackedMaxFeePerGas</dd>
+                <dt>Unpacked paymaster verification/postOp gas</dt>
+                <dd>@packed.UnpackedPaymasterVerificationGasLimit / @packed.UnpackedPaymasterPostOpGasLimit</dd>
+                <dt>Total gas (GetTotalGas)</dt>
+                <dd>@packed.TotalGas</dd>
+            </dl>
+        }
+    }
+
+    @if (Vm.StatusMessage is not null)
+    {
+        <p class="status-message">@Vm.StatusMessage</p>
+    }
+    @if (Vm.ErrorMessage is not null)
+    {
+        <p class="error-message">@Vm.ErrorMessage</p>
+    }
+</section>
+
+@code {
+    protected override INotifyPropertyChanged Observed => Vm;
+}

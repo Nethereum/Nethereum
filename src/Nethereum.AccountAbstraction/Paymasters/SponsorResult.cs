@@ -1,7 +1,9 @@
 using System.Numerics;
 
+using Nethereum.Documentation;
 namespace Nethereum.AccountAbstraction.Paymasters
 {
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "SponsorResult - sponsored plus the data to attach, or the refusal")]
     public class SponsorResult
     {
         public bool IsSponsored { get; set; }
@@ -34,6 +36,7 @@ namespace Nethereum.AccountAbstraction.Paymasters
         }
     }
 
+    [NethereumDocExample(DocSection.AccountAbstraction, "account-abstraction", "SponsorContext - what a sponsorship decision may be conditioned on")]
     public class SponsorContext
     {
         public string? SenderAddress { get; set; }

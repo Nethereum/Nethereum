@@ -15,12 +15,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.UnitTests
         {
             _testDbPath = Path.Combine(Path.GetTempPath(), $"bundler_rep_test_{Guid.NewGuid():N}");
             var options = new BundlerRocksDbOptions { DatabasePath = _testDbPath };
-            _config = new ReputationConfig
-            {
-                ThrottleThreshold = 5,
-                BanThreshold = 10,
-                ThrottleFailRate = 0.3
-            };
+            _config = new ReputationConfig();
             _manager = new BundlerRocksDbManager(options);
             _store = new RocksDbReputationStore(_manager, _config);
         }
@@ -50,33 +45,62 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task RecordFailedAsync_ThrottlesAtThreshold()
+        public async Task RecordFailedAsync_AloneDoesNotChangeStatus()
         {
             var address = "0x2222222222222222222222222222222222222222";
 
-            for (int i = 0; i < _config.ThrottleThreshold; i++)
+            for (int i = 0; i < 20; i++)
             {
                 await _store.RecordFailedAsync(address);
             }
 
             var entry = await _store.GetAsync(address);
             Assert.NotNull(entry);
+            Assert.Equal(20, entry.OpsFailed);
+            Assert.Equal(ReputationStatus.Ok, entry.Status);
+        }
+
+        [Fact]
+        public async Task RecordSeenAsync_ThrottlesWhenExpectedInclusionExceedsThrottlingSlack()
+        {
+            var address = "0x2222222222222222222222222222222222222222";
+
+            await _store.RecordSeenAsync(address, 110);
+
+            var entry = await _store.GetAsync(address);
+            Assert.NotNull(entry);
+            Assert.Equal(110, entry.OpsSeen);
             Assert.Equal(ReputationStatus.Throttled, entry.Status);
             Assert.NotNull(entry.ThrottledUntil);
         }
 
         [Fact]
-        public async Task RecordFailedAsync_BansAtThreshold()
+        public async Task RecordSeenAsync_BansWhenExpectedInclusionExceedsBanSlack()
         {
             var address = "0x3333333333333333333333333333333333333333";
 
-            for (int i = 0; i < _config.BanThreshold; i++)
-            {
-                await _store.RecordFailedAsync(address);
-            }
+            await _store.RecordSeenAsync(address, 510);
 
             var entry = await _store.GetAsync(address);
             Assert.NotNull(entry);
+            Assert.Equal(510, entry.OpsSeen);
+            Assert.Equal(ReputationStatus.Banned, entry.Status);
+            Assert.NotNull(entry.BannedUntil);
+        }
+
+        [Fact]
+        public async Task ApplyStakedAccountabilityPenaltyAsync_BansEntityAndResetsOpsIncluded()
+        {
+            var address = "0x2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f2f";
+            await _store.RecordSeenAsync(address, 1);
+            await _store.RecordIncludedAsync(address);
+
+            await _store.ApplyStakedAccountabilityPenaltyAsync(address);
+
+            var entry = await _store.GetAsync(address);
+            Assert.NotNull(entry);
+            Assert.True(entry.OpsSeen >= 10000, $"expected opsSeen >= 10000, got {entry.OpsSeen}");
+            Assert.Equal(0, entry.OpsIncluded);
             Assert.Equal(ReputationStatus.Banned, entry.Status);
             Assert.NotNull(entry.BannedUntil);
         }
@@ -116,19 +140,57 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task DecayAsync_ReducesCounts()
+        public async Task DecayAsync_DecaysOpsSeenAndOpsIncludedBy23Over24()
         {
+            // ERC-4337 hourly decay: opsSeen and opsIncluded are each multiplied by
+            // 23/24 (integer division) via the shared ReputationDecayCalculator, the same
+            // formula the in-memory backend runs. 240 -> 230, 48 -> 46.
             var address = "0x7777777777777777777777777777777777777777";
-            for (int i = 0; i < 10; i++)
+            await _store.RecordSeenAsync(address, 240);
+            for (int i = 0; i < 48; i++)
             {
                 await _store.RecordIncludedAsync(address);
             }
 
-            await _store.DecayAsync(0.5);
+            await _store.DecayAsync();
 
             var entry = await _store.GetAsync(address);
             Assert.NotNull(entry);
-            Assert.Equal(5, entry.OpsIncluded);
+            Assert.Equal(230, entry.OpsSeen);
+            Assert.Equal(46, entry.OpsIncluded);
+        }
+
+        [Fact]
+        public async Task DecayAsync_RepeatedTicks_ConvergeTowardZeroAndDropTheEntry()
+        {
+            var address = "0x7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c";
+            await _store.RecordSeenAsync(address, 5);
+
+            for (int i = 0; i < 200; i++)
+            {
+                await _store.DecayAsync();
+            }
+
+            var entry = await _store.GetAsync(address);
+            Assert.Null(entry);
+            Assert.Empty(await _store.GetAllAsync());
+        }
+
+        [Fact]
+        public async Task DecayAsync_ClearsAThrottleOnceOpsSeenFallsBelowThreshold()
+        {
+            var address = "0x7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d7d";
+            await _store.RecordSeenAsync(address, 110);
+            var before = await _store.GetAsync(address);
+            Assert.Equal(ReputationStatus.Throttled, before!.Status);
+
+            await _store.DecayAsync();
+
+            var after = await _store.GetAsync(address);
+            Assert.NotNull(after);
+            Assert.Equal(105, after!.OpsSeen);
+            Assert.Equal(ReputationStatus.Ok, after.Status);
+            Assert.False(await _store.IsThrottledAsync(address));
         }
 
         [Fact]

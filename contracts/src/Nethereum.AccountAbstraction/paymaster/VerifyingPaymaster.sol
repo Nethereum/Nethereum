@@ -76,14 +76,23 @@ contract VerifyingPaymaster is BasePaymaster, IVerifyingPaymaster {
         emit GasSponsored(sender, actualGasCost);
     }
 
+    // ERC-4337 v0.7+ paymasterAndData layout:
+    //   [0:20]   paymaster address
+    //   [20:36]  paymasterVerificationGasLimit
+    //   [36:52]  paymasterPostOpGasLimit
+    //   [52:]    paymasterData -> validUntil(6) | validAfter(6) | signature
+    // The paymaster-specific data begins at PAYMASTER_DATA_OFFSET (52), after the
+    // address and the two packed gas-limit fields the EntryPoint reads.
+    uint256 private constant PAYMASTER_DATA_OFFSET = 52;
+
     function _parsePaymasterData(
         bytes calldata paymasterAndData
     ) internal pure returns (uint48 validUntil, uint48 validAfter, bytes memory signature) {
-        require(paymasterAndData.length >= 20 + 6 + 6, "Invalid paymaster data");
+        require(paymasterAndData.length >= PAYMASTER_DATA_OFFSET + 6 + 6, "Invalid paymaster data");
 
-        validUntil = uint48(bytes6(paymasterAndData[20:26]));
-        validAfter = uint48(bytes6(paymasterAndData[26:32]));
-        signature = paymasterAndData[32:];
+        validUntil = uint48(bytes6(paymasterAndData[PAYMASTER_DATA_OFFSET:PAYMASTER_DATA_OFFSET + 6]));
+        validAfter = uint48(bytes6(paymasterAndData[PAYMASTER_DATA_OFFSET + 6:PAYMASTER_DATA_OFFSET + 12]));
+        signature = paymasterAndData[PAYMASTER_DATA_OFFSET + 12:];
     }
 
     function _getHash(

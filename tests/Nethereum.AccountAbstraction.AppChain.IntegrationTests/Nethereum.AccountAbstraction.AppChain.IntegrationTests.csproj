@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -19,9 +19,11 @@
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.AppChain\Nethereum.AccountAbstraction.AppChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.Bundler\Nethereum.AccountAbstraction.Bundler.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.WebAuthn\Nethereum.AccountAbstraction.WebAuthn.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.SimpleAccount\Nethereum.AccountAbstraction.SimpleAccount.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AppChain\Nethereum.AppChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AppChain.Sequencer\Nethereum.AppChain.Sequencer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AppChain.Server.Core\Nethereum.AppChain.Server.Core.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />

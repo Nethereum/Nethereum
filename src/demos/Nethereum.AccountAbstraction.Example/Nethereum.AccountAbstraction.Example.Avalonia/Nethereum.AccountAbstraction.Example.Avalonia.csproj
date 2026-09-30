@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RootNamespace>Nethereum.AccountAbstraction.Example.Avalonia</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Avalonia desktop head for the AA example (Stage 7): the same five head-agnostic view models
+       from .Core that back the Blazor head, native Avalonia views instead of Razor components.
+       Self-bootstraps the same in-process DevChain + bundler as the Blazor head, via the shared
+       Example.Hosting project - no head-specific bootstrap/DI duplication. -->
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.4" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.4">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Core\Nethereum.AccountAbstraction.Example.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Contracts\Nethereum.AccountAbstraction.Example.Contracts.csproj" />
+    <ProjectReference Include="..\Nethereum.AccountAbstraction.Example.Hosting\Nethereum.AccountAbstraction.Example.Hosting.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
+    <ProjectReference Include="..\..\..\Nethereum.WebAuthn.Windows\Nethereum.WebAuthn.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

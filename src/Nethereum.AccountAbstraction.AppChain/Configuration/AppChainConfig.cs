@@ -1,4 +1,5 @@
 using System.Numerics;
+using Nethereum.AccountAbstraction.Deployment;
 
 namespace Nethereum.AccountAbstraction.AppChain.Configuration
 {
@@ -18,13 +19,7 @@ namespace Nethereum.AccountAbstraction.AppChain.Configuration
         public bool InstallOwnerValidator { get; set; } = true;
         public bool InstallSessionKeys { get; set; } = true;
         public bool InstallSocialRecovery { get; set; } = true;
-        public ModuleAddresses? ModuleAddresses { get; set; }
-    }
 
-    public class ModuleAddresses
-    {
-        public string? ECDSAValidator { get; set; }
-        public string? SmartSession { get; set; }
-        public string? SocialRecovery { get; set; }
+        public AAModuleAddresses? ModuleAddresses { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-using Nethereum.AccountAbstraction.AppChain.Configuration;
+using AACoreDeployment = Nethereum.AccountAbstraction.Deployment;
 
 namespace Nethereum.AccountAbstraction.AppChain.Deployment
 {
@@ -8,6 +8,6 @@ namespace Nethereum.AccountAbstraction.AppChain.Deployment
         public string AccountRegistryAddress { get; set; }
         public string SponsoredPaymasterAddress { get; set; }
         public string AccountFactoryAddress { get; set; }
-        public ModuleAddresses Modules { get; set; }
+        public AACoreDeployment.AAModuleAddresses Modules { get; set; }
     }
 }
