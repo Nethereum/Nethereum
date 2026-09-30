@@ -67,6 +67,15 @@ namespace Nethereum.DevChain.Storage.Sqlite
             return Task.CompletedTask;
         }
 
+        public async Task SaveManyLogsAsync(
+            IReadOnlyList<(List<Log> Logs, byte[] TxHash, int TxIndex)> txLogs,
+            byte[] blockHash, BigInteger blockNumber)
+        {
+            if (txLogs == null) return;
+            foreach (var (logs, txHash, txIndex) in txLogs)
+                await SaveLogsAsync(logs, txHash, blockHash, blockNumber, txIndex).ConfigureAwait(false);
+        }
+
         public Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom)
         {
             if (bloom == null || bloom.Length != 256) return Task.CompletedTask;

@@ -7,12 +7,16 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.EVM.Gas;
 using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Util;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevChain
 {
@@ -20,13 +24,13 @@ namespace Nethereum.DevChain
     {
         private const int MaxExecutionResultsCache = 10000;
         private static readonly byte[] EMPTY_LIST_HASH = new Sha3Keccack().CalculateHash(RLP.RLP.EncodeList());
-        private readonly Sha3Keccack _keccak = new();
 
         private readonly IBlockStore _blockStore;
         private readonly IStateStore _stateStore;
         private readonly ITransactionVerificationAndRecovery _txVerifier;
         private readonly DevChainConfig _config;
         private readonly IBlockProducer _blockProducer;
+        private readonly CoreChain.BlockExecutor _engine;
         private readonly ITrieNodeStore _trieNodeStore;
         private readonly SemaphoreSlim _mineLock = new SemaphoreSlim(1, 1);
 
@@ -40,6 +44,17 @@ namespace Nethereum.DevChain
         private CancellationTokenSource _mineLoopCts;
         private Task _mineLoopTask;
 
+        /// <summary>
+        /// Whether headers on this chain carry the EIP-7928 block access list hash and
+        /// the EIP-7843 slot number. One predicate for both, because the pair is emitted
+        /// together or not at all — asking it through the header codec keeps the answer
+        /// where the encoding rule already lives instead of restating a fork ordering.
+        /// </summary>
+        private bool CarriesAmsterdamHeaderFieldsAt(long blockNumber, ulong timestamp) =>
+            Model.Codecs.BlockHeaderCodecs
+                .ForFork(_config.ResolveActivations().ResolveAt(blockNumber, timestamp))
+                .CarriesBlockAccessList;
+
         public BlockManager(
             IBlockStore blockStore,
             ITransactionStore transactionStore,
@@ -50,21 +65,72 @@ namespace Nethereum.DevChain
             ITransactionVerificationAndRecovery txVerifier,
             DevChainConfig config,
             ITrieNodeStore trieNodeStore = null)
+            : this(blockStore, transactionStore, receiptStore, logStore, stateStore,
+                   transactionProcessor, txVerifier, config, trieNodeStore, blockAccessListStore: null)
+        {
+        }
+
+        public BlockManager(
+            IBlockStore blockStore,
+            ITransactionStore transactionStore,
+            IReceiptStore receiptStore,
+            ILogStore logStore,
+            IStateStore stateStore,
+            CoreChain.TransactionProcessor transactionProcessor,
+            ITransactionVerificationAndRecovery txVerifier,
+            DevChainConfig config,
+            ITrieNodeStore trieNodeStore,
+            IBlockAccessListStore blockAccessListStore)
         {
             _blockStore = blockStore;
             _stateStore = stateStore;
             _txVerifier = txVerifier;
             _config = config;
-            _trieNodeStore = trieNodeStore;
+            _trieNodeStore = trieNodeStore ?? new InMemoryContentNodeStore();
 
+            StateRootCalculator = config.StateTree == StateTreeType.Binary
+                ? config.CreateBinaryIncrementalStateRootCalculator(stateStore)
+                : new IncrementalStateRootCalculator(stateStore, _trieNodeStore);
+            var stateRootCalc = StateRootCalculator;
+
+            var activations = _config.ResolveActivations();
+            var engine = new BlockExecutor(
+                stateStore,
+                blockStore,
+                activations,
+                chainConfigFactory: _ => config,
+                hardforkConfigFactory: config.ConfigForFork,
+                stateRootCalculator: stateRootCalc,
+                rewardPolicy: config.RewardPolicy ?? NoRewardPolicy.Instance,
+                trieNodeStore: _trieNodeStore);
+            _engine = engine;
+
+            // EIP-7928 / AMS-7928-06. DevChain is deliberately Amsterdam-capable -- the fork is
+            // user-configurable through DevChainConfig.Hardfork, CarriesAmsterdamHeaderFields
+            // stamps the slot number, and genesis predeploys the system contracts per fork. So
+            // when it is pinned to Amsterdam it MINTS a block access list and commits
+            // keccak(rlp(bal)) into the header. The authoring node holds the only copy of that
+            // list in existence: unlike uncles or withdrawals, which a peer can re-serve from a
+            // block body forever, a BAL exists nowhere else once execution ends. The in-memory
+            // fallback keeps that copy for the life of the process for callers who supply no
+            // store; a node that outlives its process must pass a durable one.
             _blockProducer = new BlockProducer(
+                engine,
                 blockStore,
                 transactionStore,
                 receiptStore,
                 logStore,
                 stateStore,
-                transactionProcessor,
-                trieNodeStore);
+                _trieNodeStore,
+                stateRootCalc,
+                orderingPolicy: null,
+                blockHashProvider: null,
+                blockEncodingProvider: null,
+                blockRootsProvider: null,
+                withdrawalStore: null,
+                nodeCommitBlockContext: null,
+                blockAccessListStore: blockAccessListStore ?? new CoreChain.Storage.InMemory.InMemoryBlockAccessListStore(blockStore),
+                hardforkConfigFactory: config.ConfigForFork);
         }
 
         public async Task InitializeAsync()
@@ -73,6 +139,10 @@ namespace Nethereum.DevChain
             if (latestBlock == null)
             {
                 await CreateGenesisBlockAsync();
+            }
+            else
+            {
+                await EnsureStoredGenesisMatchesPinnedForkAsync();
             }
 
             await InitializePendingBlockAsync();
@@ -117,10 +187,28 @@ namespace Nethereum.DevChain
             }, ct);
         }
 
+        private async Task EnsureStoredGenesisMatchesPinnedForkAsync()
+        {
+            var storedGenesis = await _blockStore.GetByNumberAsync(0);
+            if (storedGenesis == null)
+                throw new InvalidOperationException(
+                    "This store holds blocks but no genesis, so nothing states which chain they belong to.");
+
+            GenesisHeaderFields.EnsureShapeMatchesPinnedFork(storedGenesis, _config.PinnedFork);
+        }
+
         private async Task CreateGenesisBlockAsync()
         {
-            var stateRootCalculator = new StateRootCalculator();
-            var stateRoot = await stateRootCalculator.ComputeStateRootAsync(_stateStore);
+            // EIP-2935 / EIP-4788 expect their system contracts to be in state
+            // already when the fork activates — mainnet deployed both before
+            // their fork block and every EEST fixture ships them in `pre:`.
+            // DevChain pins a fork in config, so genesis is where they have to
+            // come from; without them BLOCKHASH at Prague+ reads an empty
+            // history contract and silently answers zero.
+            await SystemContractPredeploys.ApplyGenesisAllocationAsync(
+                _stateStore, _config.PinnedFork);
+
+            var stateRoot = await StateRootCalculator.ComputeStateRootAsync();
 
             var genesisHeader = new BlockHeader
             {
@@ -131,18 +219,23 @@ namespace Nethereum.DevChain
                 TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
                 ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
                 LogsBloom = new byte[256],
-                Difficulty = 1,
+                Difficulty = _config.GenesisDifficulty ?? 0,
                 BlockNumber = 0,
                 GasLimit = (long)_config.BlockGasLimit,
                 GasUsed = 0,
-                Timestamp = DateTime.UtcNow.ToUnixTimestamp(),
-                ExtraData = new byte[0],
-                MixHash = new byte[32],
-                Nonce = new byte[8],
-                BaseFee = _config.BaseFee
+                Timestamp = _config.GenesisTimestamp,
+                ExtraData = _config.GenesisExtraData ?? new byte[0],
+                MixHash = _config.GenesisMixHash ?? new byte[32],
+                Nonce = _config.GenesisNonce ?? new byte[8],
+                BaseFee = _config.BaseFee,
+                ExcessBlobGas = _config.GenesisExcessBlobGas,
+                BlobGasUsed = _config.GenesisBlobGasUsed,
+                SlotNumber = (ulong?)_config.GenesisSlotNumber
             };
 
-            var genesisHash = CalculateBlockHash(genesisHeader);
+            GenesisHeaderFields.Apply(genesisHeader, _config.PinnedFork);
+
+            var genesisHash = CoreChain.BlockHashCalculator.ForFork(genesisHeader, _config.PinnedFork);
             await _blockStore.SaveAsync(genesisHeader, genesisHash);
             _trieNodeStore?.Flush();
         }
@@ -155,6 +248,8 @@ namespace Nethereum.DevChain
 
             _pendingBlockContext = CoreChain.BlockContext.FromConfig(_config, nextBlockNumber, timestamp);
             _pendingBlockContext.BaseFee = _config.BaseFee;
+            _pendingBlockContext.SlotNumber = CarriesAmsterdamHeaderFieldsAt((long)nextBlockNumber, (ulong)timestamp)
+                ? (ulong)nextBlockNumber : (ulong?)null;
         }
 
 
@@ -176,6 +271,14 @@ namespace Nethereum.DevChain
                 }
             }
         }
+
+        public bool CaptureWitness { get; set; }
+
+        public IIncrementalStateRootCalculator StateRootCalculator { get; }
+
+        public CoreChain.BlockExecutor Engine => _engine;
+
+        public IBlockProducer BlockProducer => _blockProducer;
 
         public async Task<byte[]> MineBlockAsync() => await MineBlockAsync(null);
 
@@ -220,7 +323,20 @@ namespace Nethereum.DevChain
                 PrevRandao = prevRandao,
                 ExtraData = Array.Empty<byte>(),
                 ChainId = blockContext.ChainId,
-                ParentBeaconBlockRoot = parentBeaconBlockRoot
+                ParentBeaconBlockRoot = parentBeaconBlockRoot,
+                // EIP-7843. DevChain has no consensus layer, so the producer is the
+                // authority for the slot exactly as it is for the timestamp: one block
+                // per slot, none missed, so the slot IS the block number. Supplied here
+                // rather than defaulted inside BlockProducer, which must keep failing
+                // loudly for a chain whose slot really does come from somewhere else.
+                //
+                // Gated on the same predicate as the block access list hash, because
+                // EIP-7843 and EIP-7928 are emitted together or not at all: a Prague
+                // header carrying a slot is a shape no fork produces, and
+                // BlockHeaderCodecSelector refuses to encode it.
+                SlotNumber = CarriesAmsterdamHeaderFieldsAt((long)blockContext.BlockNumber, (ulong)blockContext.Timestamp)
+                    ? (ulong)blockContext.BlockNumber : (ulong?)null,
+                CaptureWitness = CaptureWitness
             };
 
             var result = await _blockProducer.ProduceBlockAsync(transactions, options);
@@ -251,10 +367,13 @@ namespace Nethereum.DevChain
                 };
             }
 
+            LastBlockProductionResult = result;
             await InitializePendingBlockAsync();
 
             return result.BlockHash;
         } // end MineBlockInternalAsync
+
+        public BlockProductionResult LastBlockProductionResult { get; private set; }
 
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
         {
@@ -326,14 +445,23 @@ namespace Nethereum.DevChain
                 return result;
             }
 
-            var txData = CoreChain.TransactionProcessor.GetTransactionData(tx);
-            var isContractCreation = string.IsNullOrEmpty(txData.To);
+            var isContractCreation = tx.IsContractCreation();
 
-            var intrinsicGas = CoreChain.TransactionProcessor.CalculateIntrinsicGas(txData.Data, isContractCreation);
-            if (txData.GasLimit < intrinsicGas)
+            // EIP-2780 (Amsterdam+): the recipient/value component of the
+            // intrinsic base depends on whether the transaction is a
+            // self-transfer and whether it carries value. Ignored by
+            // IntrinsicGasRules pre-Amsterdam.
+            var isSelfTransfer = !isContractCreation && senderAddress.IsTheSameAddress(tx.GetReceiverAddress());
+            var hasValue = !tx.GetValue().IsZero;
+
+            var gasLimit = tx.GetGasLimit();
+            var intrinsicGas = _config.GetHardforkConfig().IntrinsicGasRules
+                .CalculateMinimumGasLimit(tx.GetData(), isContractCreation,
+                    AccessListEntry.From(tx.GetAccessList()), isSelfTransfer, hasValue);
+            if (gasLimit.ToBigInteger() < intrinsicGas)
             {
                 result.Success = false;
-                result.RevertReason = $"Intrinsic gas too low: have {txData.GasLimit}, want {intrinsicGas}";
+                result.RevertReason = $"Intrinsic gas too low: have {gasLimit}, want {intrinsicGas}";
                 return result;
             }
 
@@ -343,20 +471,24 @@ namespace Nethereum.DevChain
                 senderAccount = new Account { Balance = 0, Nonce = 0 };
             }
 
+            var nonce = tx.GetNonce();
+
             lock (_pendingLock)
             {
                 var expectedNonce = _pendingNonces.TryGetValue(senderAddress, out var pendingNonce)
                     ? pendingNonce
-                    : senderAccount.Nonce;
+                    : senderAccount.Nonce.ToBigInteger();
 
-                if (expectedNonce != txData.Nonce)
+                var txNonce = nonce.ToBigInteger();
+
+                if (txNonce < expectedNonce)
                 {
                     result.Success = false;
-                    result.RevertReason = $"Invalid nonce: have {txData.Nonce}, want {expectedNonce}";
+                    result.RevertReason = $"nonce too low: have {txNonce}, want {expectedNonce}";
                     return result;
                 }
 
-                var maxCost = txData.GasLimit * txData.GasPrice + txData.Value;
+                var maxCost = gasLimit * tx.GetMaxFeePerGas() + tx.GetValue();
                 if (senderAccount.Balance < maxCost)
                 {
                     result.Success = false;
@@ -364,7 +496,8 @@ namespace Nethereum.DevChain
                     return result;
                 }
 
-                _pendingNonces[senderAddress] = txData.Nonce + 1;
+                if (txNonce == expectedNonce)
+                    _pendingNonces[senderAddress] = (nonce + 1).ToBigInteger();
             }
 
             result.Success = true;
@@ -403,13 +536,6 @@ namespace Nethereum.DevChain
         public CoreChain.BlockContext GetPendingBlockContext()
         {
             return _pendingBlockContext;
-        }
-
-        private byte[] CalculateBlockHash(BlockHeader header)
-        {
-            var encoder = BlockHeaderEncoder.Current;
-            var encoded = encoder.Encode(header);
-            return _keccak.CalculateHash(encoded);
         }
 
         public async ValueTask DisposeAsync()

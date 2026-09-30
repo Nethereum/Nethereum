@@ -11,10 +11,12 @@ namespace Nethereum.DevChain.Storage.Sqlite
     public class SqliteTransactionStore : ITransactionStore
     {
         private readonly SqliteStorageManager _manager;
+        private readonly IBlockEncodingProvider _provider;
 
-        public SqliteTransactionStore(SqliteStorageManager manager)
+        public SqliteTransactionStore(SqliteStorageManager manager, IBlockEncodingProvider provider = null)
         {
             _manager = manager;
+            _provider = provider ?? RlpBlockEncodingProvider.Instance;
         }
 
         public Task<ISignedTransaction> GetByHashAsync(byte[] txHash)
@@ -28,7 +30,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var data = cmd.ExecuteScalar() as byte[];
             if (data == null) return Task.FromResult<ISignedTransaction>(null);
 
-            var tx = TransactionFactory.CreateTransaction(data);
+            var tx = _provider.DecodeTransaction(data);
             return Task.FromResult(tx);
         }
 
@@ -45,7 +47,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             while (reader.Read())
             {
                 var data = (byte[])reader["tx_data"];
-                var tx = TransactionFactory.CreateTransaction(data);
+                var tx = _provider.DecodeTransaction(data);
                 if (tx != null) result.Add(tx);
             }
 
@@ -83,7 +85,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             while (reader.Read())
             {
                 var data = (byte[])reader["tx_data"];
-                var tx = TransactionFactory.CreateTransaction(data);
+                var tx = _provider.DecodeTransaction(data);
                 if (tx != null) result.Add(tx);
             }
 
@@ -95,14 +97,14 @@ namespace Nethereum.DevChain.Storage.Sqlite
             if (tx == null || blockHash == null) return Task.CompletedTask;
 
             var txHash = tx.Hash.ToHex();
-            var txRlp = tx.GetRLPEncoded();
+            var txBytes = _provider.EncodeTransaction(tx);
             var blockHashHex = blockHash.ToHex();
 
             using var cmd = _manager.Connection.CreateCommand();
             cmd.CommandText = @"INSERT OR REPLACE INTO transactions (tx_hash, tx_data, block_hash, block_number, tx_index)
                                 VALUES (@txHash, @txData, @blockHash, @blockNumber, @txIndex)";
             cmd.Parameters.AddWithValue("@txHash", txHash);
-            cmd.Parameters.AddWithValue("@txData", txRlp);
+            cmd.Parameters.AddWithValue("@txData", txBytes);
             cmd.Parameters.AddWithValue("@blockHash", blockHashHex);
             cmd.Parameters.AddWithValue("@blockNumber", (long)blockNumber);
             cmd.Parameters.AddWithValue("@txIndex", txIndex);

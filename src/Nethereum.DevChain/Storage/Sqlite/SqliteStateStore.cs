@@ -8,27 +8,40 @@ using Microsoft.Data.Sqlite;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.RLP;
 using Nethereum.Util;
 
 namespace Nethereum.DevChain.Storage.Sqlite
 {
-    public class SqliteStateStore : IStateStore
+    public partial class SqliteStateStore : IStateStore
     {
         private readonly SqliteStorageManager _manager;
+        private readonly IAccountLayoutStrategy _accountLayout;
         private readonly object _lock = new object();
         private int _nextSnapshotId = 0;
         private readonly Dictionary<int, SqliteStateSnapshot> _activeSnapshots = new Dictionary<int, SqliteStateSnapshot>();
         private readonly HashSet<string> _dirtyAccounts = new HashSet<string>();
         private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots = new Dictionary<string, HashSet<BigInteger>>();
 
-        public SqliteStateStore(SqliteStorageManager manager)
+        public SqliteStateStore(SqliteStorageManager manager, IAccountLayoutStrategy accountLayout = null)
         {
             _manager = manager;
+            _accountLayout = accountLayout ?? RlpAccountLayout.Instance;
         }
 
         private static string NormalizeAddress(string address)
         {
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static string OriginalAddress(string address)
+        {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+        }
+
+        private static byte[] InlineAddressBytes(string address)
+        {
+            return AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
         }
 
         public Task<Account> GetAccountAsync(string address)
@@ -40,29 +53,48 @@ namespace Nethereum.DevChain.Storage.Sqlite
         private Account GetAccountInternal(string normalizedAddress)
         {
             using var cmd = _manager.Connection.CreateCommand();
-            cmd.CommandText = "SELECT account_data FROM accounts WHERE address = @addr";
+            cmd.CommandText = _accountLayout.HasExternalCodeHash
+                ? "SELECT account_data, code_hash FROM accounts WHERE address = @addr"
+                : "SELECT account_data FROM accounts WHERE address = @addr";
             cmd.Parameters.AddWithValue("@addr", normalizedAddress);
 
-            var data = cmd.ExecuteScalar() as byte[];
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read()) return null;
+
+            var data = reader["account_data"] as byte[];
             if (data == null) return null;
 
-            return AccountEncoder.Current.Decode(data);
+            var account = _accountLayout.DecodeAccount(data);
+            if (account != null && _accountLayout.HasExternalCodeHash)
+                account.CodeHash = reader["code_hash"] as byte[];
+
+            return account;
         }
 
         public Task SaveAccountAsync(string address, Account account)
         {
             var normalized = NormalizeAddress(address);
-            var data = AccountEncoder.Current.Encode(account);
+            var data = _accountLayout.EncodeAccount(account);
+            var inline = InlineAddressBytes(address);
 
             using var cmd = _manager.Connection.CreateCommand();
-            cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data) VALUES (@addr, @data)";
+            if (_accountLayout.HasExternalCodeHash)
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, code_hash, address_inline) VALUES (@addr, @data, @ch, @inline)";
+                cmd.Parameters.AddWithValue("@ch", (object)account.CodeHash ?? System.DBNull.Value);
+            }
+            else
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, address_inline) VALUES (@addr, @data, @inline)";
+            }
             cmd.Parameters.AddWithValue("@addr", normalized);
             cmd.Parameters.AddWithValue("@data", data);
+            cmd.Parameters.AddWithValue("@inline", inline);
             cmd.ExecuteNonQuery();
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
+                _dirtyAccounts.Add(OriginalAddress(address));
             }
 
             return Task.CompletedTask;
@@ -95,7 +127,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
+                _dirtyAccounts.Add(OriginalAddress(address));
             }
 
             return Task.CompletedTask;
@@ -104,19 +136,66 @@ namespace Nethereum.DevChain.Storage.Sqlite
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
             var result = new Dictionary<string, Account>();
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
 
             using var cmd = _manager.Connection.CreateCommand();
-            cmd.CommandText = "SELECT address, account_data FROM accounts";
+            cmd.CommandText = hasExtCodeHash
+                ? "SELECT account_data, code_hash, address_inline FROM accounts"
+                : "SELECT account_data, address_inline FROM accounts";
 
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                var addr = reader.GetString(0);
-                var data = (byte[])reader[1];
-                result[addr] = AccountEncoder.Current.Decode(data);
+                var data = (byte[])reader[0];
+                var account = _accountLayout.DecodeAccount(data);
+                if (account == null) continue;
+                byte[] inline;
+                if (hasExtCodeHash)
+                {
+                    account.CodeHash = reader[1] as byte[];
+                    inline = reader[2] as byte[];
+                }
+                else
+                {
+                    inline = reader[1] as byte[];
+                }
+                var addr = inline != null ? "0x" + inline.ToHex() : null;
+                if (addr != null)
+                    result[addr] = account;
             }
 
             return Task.FromResult(result);
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+#pragma warning restore CS1998
+        {
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
+            using var cmd = _manager.Connection.CreateCommand();
+            cmd.CommandText = hasExtCodeHash
+                ? "SELECT account_data, code_hash, address_inline FROM accounts"
+                : "SELECT account_data, address_inline FROM accounts";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var data = (byte[])reader[0];
+                var account = _accountLayout.DecodeAccount(data);
+                if (account == null) continue;
+                byte[] inline;
+                if (hasExtCodeHash)
+                {
+                    account.CodeHash = reader[1] as byte[];
+                    inline = reader[2] as byte[];
+                }
+                else
+                {
+                    inline = reader[1] as byte[];
+                }
+                if (inline == null) continue;
+                var addr = "0x" + inline.ToHex();
+                yield return new System.Collections.Generic.KeyValuePair<string, Account>(addr, account);
+            }
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
@@ -131,6 +210,33 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             var value = cmd.ExecuteScalar() as byte[];
             return Task.FromResult(value);
+        }
+
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+        {
+            if (slotKeccak == null || slotKeccak.Length != 32)
+                throw new System.ArgumentException("slotKeccak must be 32 bytes", nameof(slotKeccak));
+            var normalized = NormalizeAddress(address);
+
+            if (value == null || IsAllZero(value))
+            {
+                using var cmd = _manager.Connection.CreateCommand();
+                cmd.CommandText = "DELETE FROM account_storage WHERE address = @addr AND slot = @slot";
+                cmd.Parameters.AddWithValue("@addr", normalized);
+                cmd.Parameters.AddWithValue("@slot", slotKeccak);
+                cmd.ExecuteNonQuery();
+            }
+            else
+            {
+                using var cmd = _manager.Connection.CreateCommand();
+                cmd.CommandText = "INSERT OR REPLACE INTO account_storage (address, slot, value) VALUES (@addr, @slot, @val)";
+                cmd.Parameters.AddWithValue("@addr", normalized);
+                cmd.Parameters.AddWithValue("@slot", slotKeccak);
+                cmd.Parameters.AddWithValue("@val", value);
+                cmd.ExecuteNonQuery();
+            }
+
+            return Task.CompletedTask;
         }
 
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
@@ -152,17 +258,18 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 cmd.CommandText = "INSERT OR REPLACE INTO account_storage (address, slot, value) VALUES (@addr, @slot, @val)";
                 cmd.Parameters.AddWithValue("@addr", normalized);
                 cmd.Parameters.AddWithValue("@slot", slotBytes);
-                cmd.Parameters.AddWithValue("@val", value);
+                cmd.Parameters.AddWithValue("@val", value.TrimZeroBytes());
                 cmd.ExecuteNonQuery();
             }
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
-                if (!_dirtyStorageSlots.TryGetValue(normalized, out var dirtySlots))
+                var originalAddr = OriginalAddress(address);
+                _dirtyAccounts.Add(originalAddr);
+                if (!_dirtyStorageSlots.TryGetValue(originalAddr, out var dirtySlots))
                 {
                     dirtySlots = new HashSet<BigInteger>();
-                    _dirtyStorageSlots[normalized] = dirtySlots;
+                    _dirtyStorageSlots[originalAddr] = dirtySlots;
                 }
                 dirtySlots.Add(slot);
             }
@@ -170,10 +277,10 @@ namespace Nethereum.DevChain.Storage.Sqlite
             return Task.CompletedTask;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
         {
             var normalized = NormalizeAddress(address);
-            var result = new Dictionary<BigInteger, byte[]>();
+            var result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
 
             using var cmd = _manager.Connection.CreateCommand();
             cmd.CommandText = "SELECT slot, value FROM account_storage WHERE address = @addr";
@@ -182,10 +289,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                var slotBytesRaw = (byte[])reader[0];
+                var slotHash = (byte[])reader[0];
                 var value = (byte[])reader[1];
-                var slot = new BigInteger(slotBytesRaw, isUnsigned: true, isBigEndian: true);
-                result[slot] = value;
+                result[slotHash] = value;
             }
 
             return Task.FromResult(result);
@@ -202,7 +308,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                _dirtyAccounts.Add(normalized);
+                _dirtyAccounts.Add(OriginalAddress(address));
             }
 
             return Task.CompletedTask;
@@ -309,12 +415,15 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             lock (_lock)
             {
-                var normalized = NormalizeAddress(address);
-                if (!_dirtyStorageSlots.TryGetValue(normalized, out var dirtySlots))
+                var key = OriginalAddress(address);
+                if (!_dirtyStorageSlots.TryGetValue(key, out var dirtySlots))
                     return Task.FromResult<IReadOnlyCollection<BigInteger>>(Array.Empty<BigInteger>());
                 return Task.FromResult<IReadOnlyCollection<BigInteger>>(dirtySlots.ToList());
             }
         }
+
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+            => Task.FromResult<IReadOnlyCollection<string>>(System.Array.Empty<string>());
 
         public Task ClearDirtyTrackingAsync()
         {
@@ -333,9 +442,11 @@ namespace Nethereum.DevChain.Storage.Sqlite
             cmd.ExecuteNonQuery();
         }
 
+        // Yellow Paper §4.1 storage-trie path: keys are keccak(padded slot bytes).
+        // Matches the snap/1 wire shape natively.
         private static byte[] SlotToBytes(BigInteger slot)
         {
-            return slot.ToByteArray(isUnsigned: true, isBigEndian: true);
+            return Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot);
         }
 
         private static bool IsAllZero(byte[] value)

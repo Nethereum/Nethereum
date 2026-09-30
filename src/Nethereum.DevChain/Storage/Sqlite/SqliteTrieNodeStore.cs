@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Data.Sqlite;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Merkle.Patricia;
 using Nethereum.Util;
+using Nethereum.Merkle.Patricia.Nodes;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevChain.Storage.Sqlite
 {
-    public class SqliteTrieNodeStore : ITrieNodeStore
+    public class SqliteTrieNodeStore : ITrieNodeStore, INodeBlobStore
     {
         private readonly SqliteStorageManager _manager;
         private readonly ConcurrentDictionary<byte[], byte[]> _cache;
@@ -123,5 +126,20 @@ namespace Nethereum.DevChain.Storage.Sqlite
             cmd.CommandText = "DELETE FROM trie_nodes";
             cmd.ExecuteNonQuery();
         }
+
+        public void Commit(TrieNodeSet nodes)
+        {
+            if (nodes == null) return;
+            foreach (var node in nodes.Nodes)
+            {
+                var key = node.GetHash();
+                _cache[key] = node.GetEncodedData();
+                _dirty.TryAdd(key, 0);
+            }
+        }
+
+        public byte[] Get(Node reference) => reference == null ? null : Get(reference.GetHash());
+
+        public bool Contains(Node reference) => reference != null && ContainsKey(reference.GetHash());
     }
 }

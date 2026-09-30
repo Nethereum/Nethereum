@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Nethereum.CoreChain.Storage;
 using Nethereum.DevChain.Accounts;
+using Nethereum.DevChain.Configuration;
 
 namespace Nethereum.DevChain.Hosting
 {
@@ -40,13 +43,22 @@ namespace Nethereum.DevChain.Hosting
             }
 
             _logger?.LogInformation("Starting DevChain node...");
-            await _node.StartAsync(_accountManager.Accounts.Select(a => a.Address));
+
+            var config = _serviceProvider.GetRequiredService<DevChainServerConfig>();
+            var bundle = _serviceProvider.GetRequiredService<IChainStoreBundle>();
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+
+            await DevChainComposition.ComposeAsync(
+                config, _node, bundle,
+                node => node.StartAsync(_accountManager.Accounts.Select(a => a.Address)),
+                loggerFactory, cancellationToken);
+
             _logger?.LogInformation("DevChain node started");
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (_stopped) return Task.CompletedTask;
+            if (_stopped) return;
             _stopped = true;
 
             _logger?.LogInformation("Stopping DevChain node...");
@@ -57,8 +69,11 @@ namespace Nethereum.DevChain.Hosting
             var sqliteManager = _serviceProvider.GetService<Nethereum.DevChain.Storage.Sqlite.SqliteStorageManager>();
             sqliteManager?.Dispose();
 
+            var rocksStorage = _serviceProvider.GetService<Nethereum.ChainNode.Hosting.ChainNodeStorage>();
+            if (rocksStorage != null)
+                await rocksStorage.DisposeAsync();
+
             _logger?.LogInformation("DevChain node stopped");
-            return Task.CompletedTask;
         }
 
         public void Dispose()

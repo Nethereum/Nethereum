@@ -1,56 +1,132 @@
 using System.Numerics;
+using Nethereum.ChainNode.Hosting.Configuration;
+using Nethereum.CoreChain;
 
 namespace Nethereum.DevChain.Configuration
 {
     public class DevChainServerConfig
     {
         public const string DefaultMnemonic = "test test test test test test test test test test test junk";
+        public const string DefaultServerHardfork = "amsterdam";
 
-        public int Port { get; set; } = 8545;
-        public string Host { get; set; } = "127.0.0.1";
-        public int ChainId { get; set; } = 31337;
-        public long BlockGasLimit { get; set; } = 30_000_000;
-        public bool AutoMine { get; set; } = true;
-        public long BlockTime { get; set; } = 0;
-        public int AccountCount { get; set; } = 10;
+        public static readonly long LargestDeploymentAnyForkPermits =
+            Nethereum.EVM.Gas.GasConstants.EIP8037_LARGEST_CODE_DEPOSIT_ANY_FORK_PERMITS;
+
+        public DevChainConfig Chain { get; set; } = new DevChainConfig
+        {
+            ChainId = 31337,
+            Hardfork = DefaultServerHardfork,
+            MaxTransactionsPerBlock = 10000
+        };
+
+        public ChainNodeConfig Node { get; set; } = DevChainDefaultNode();
+
+        public int Port
+        {
+            get => Node.Rpc.Port;
+            set => Node.Rpc.Port = value;
+        }
+
+        public string Host
+        {
+            get => Node.Rpc.Host;
+            set => Node.Rpc.Host = value;
+        }
+
         public string Mnemonic { get; set; } = DefaultMnemonic;
-        public string AccountBalance { get; set; } = "10000000000000000000000";
-        public ForkConfig? Fork { get; set; }
+        public int AccountCount { get; set; } = 10;
         public bool Verbose { get; set; } = false;
-        public int AutoMineBatchSize { get; set; } = 1;
-        public int AutoMineBatchTimeoutMs { get; set; } = 10;
-        public int MaxTransactionsPerBlock { get; set; } = 10000;
         public string Storage { get; set; } = "sqlite";
         public string DataDir { get; set; } = "./chaindata";
         public bool Persist { get; set; } = false;
+        public ForkConfig? Fork { get; set; }
 
-        public BigInteger GetAccountBalance()
+        public bool EngineApiEnabled { get; set; } = false;
+        public string? EngineJwtSecretPath { get; set; }
+        public int EnginePort { get; set; } = Nethereum.DevChain.Hosting.EngineApiServerConfig.DefaultPort;
+        public string? EngineBindAddress { get; set; }
+
+        public int ChainId
         {
-            return BigInteger.Parse(AccountBalance);
+            get => (int)Chain.ChainId;
+            set => Chain.ChainId = value;
         }
+
+        public string Hardfork
+        {
+            get => Chain.Hardfork;
+            set => Chain.Hardfork = value;
+        }
+
+        public long BlockGasLimit
+        {
+            get => (long)Chain.BlockGasLimit;
+            set => Chain.BlockGasLimit = value;
+        }
+
+        public bool AutoMine
+        {
+            get => Chain.AutoMine;
+            set => Chain.AutoMine = value;
+        }
+
+        public long BlockTime
+        {
+            get => Chain.BlockTime;
+            set => Chain.BlockTime = value;
+        }
+
+        public int AutoMineBatchSize
+        {
+            get => Chain.AutoMineBatchSize;
+            set => Chain.AutoMineBatchSize = value;
+        }
+
+        public int AutoMineBatchTimeoutMs
+        {
+            get => Chain.AutoMineBatchTimeoutMs;
+            set => Chain.AutoMineBatchTimeoutMs = value;
+        }
+
+        public int MaxTransactionsPerBlock
+        {
+            get => Chain.MaxTransactionsPerBlock;
+            set => Chain.MaxTransactionsPerBlock = value;
+        }
+
+        public string AccountBalance
+        {
+            get => Chain.InitialBalance.ToString();
+            set => Chain.InitialBalance = BigInteger.Parse(value);
+        }
+
+        public BigInteger GetAccountBalance() => Chain.InitialBalance;
 
         public void SetAccountBalanceEth(string ethAmount)
         {
             var eth = BigInteger.Parse(ethAmount);
-            AccountBalance = (eth * BigInteger.Parse("1000000000000000000")).ToString();
+            Chain.InitialBalance = eth * BigInteger.Parse("1000000000000000000");
         }
 
-        public DevChainConfig ToDevChainConfig()
+        public DevChainConfig GetLiveChainConfig()
         {
-            return new DevChainConfig
-            {
-                ChainId = ChainId,
-                BlockGasLimit = BlockGasLimit,
-                AutoMine = AutoMine,
-                BlockTime = BlockTime,
-                AutoMineBatchSize = AutoMineBatchSize,
-                AutoMineBatchTimeoutMs = AutoMineBatchTimeoutMs,
-                MaxTransactionsPerBlock = MaxTransactionsPerBlock,
-                InitialBalance = GetAccountBalance(),
-                ForkUrl = Fork?.Url,
-                ForkBlockNumber = Fork?.BlockNumber
-            };
+            Chain.ForkUrl = Fork?.Url;
+            Chain.ForkBlockNumber = Fork?.BlockNumber;
+            Node.Rpc.ApplyTo(Chain);
+
+            return Chain;
         }
+
+        private static ChainNodeConfig DevChainDefaultNode() =>
+            new ChainNodeConfig
+            {
+                Network = new ChainNodeNetworkConfig
+                {
+                    Serve = false,
+                    Discovery = new ChainNodeDiscoveryConfig { DisableDiscv4 = true, DisableDiscv5 = true },
+                },
+                Sync = new ChainNodeSyncConfig { Mode = SyncMode.None },
+            };
     }
 
     public class ForkConfig

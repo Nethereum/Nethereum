@@ -15,6 +15,14 @@ namespace Nethereum.DevChain
     {
         private readonly object _nextBlockLock = new();
 
+        public override System.Numerics.BigInteger BlockGasLimit
+        {
+            get => _blockGasLimit ?? BlockGasLimitLargeEnoughToDeployAt(NewestForkThisChainRuns);
+            set => _blockGasLimit = value;
+        }
+
+        public Nethereum.CoreChain.IRewardPolicy RewardPolicy { get; set; }
+
         public bool AutoMine { get; set; } = true;
         public int MaxTransactionsPerBlock { get; set; } = 100;
         public long BlockTime { get; set; } = 0;

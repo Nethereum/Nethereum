@@ -1,13 +1,25 @@
+using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nethereum.CoreChain;
+using Nethereum.EVM;
+using Nethereum.ChainNode.Hosting;
 using Nethereum.DevChain;
 using Nethereum.DevChain.Accounts;
+using Nethereum.DevChain.Composition;
 using Nethereum.DevChain.Configuration;
 using Nethereum.DevChain.Hosting;
+using Nethereum.DevChain.Server.Metrics;
+using OpenTelemetry.Metrics;
 
 if (args.Any(a => a == "--help" || a == "-h" || a == "-?"))
 {
     PrintHelp();
+    return;
+}
+
+if (DevChainCli.TryHandleAdvancedHelp(args, Console.Out))
+{
     return;
 }
 
@@ -20,34 +32,141 @@ var config = new DevChainServerConfig();
 builder.Configuration.GetSection("DevChain").Bind(config);
 
 ApplyCommandLineOverrides(config, args);
+RefuseUnknownHardfork(config);
+config.Chain.Registry = Nethereum.EVM.Precompiles.Bls.Bls12381AwareMainnetHardforkRegistry.Build(
+    Nethereum.EVM.Precompiles.Kzg.KzgAwareMainnetHardforkRegistry.Instance,
+    new Nethereum.Signer.Bls.Herumi.Bls12381Operations());
 
-builder.AddDevChainServer(config);
-builder.WebHost.ConfigureKestrel(options =>
-    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
-builder.Logging.SetMinimumLevel(LogLevel.Warning);
-builder.Logging.AddFilter("Nethereum", config.Verbose ? LogLevel.Debug : LogLevel.Information);
+try
+{
+    DevChainServerConfigValidator.Validate(config);
+}
+catch (InvalidOperationException ex)
+{
+    Console.Error.WriteLine($"DevChain failed to start: {ex.Message}");
+    Environment.Exit(1);
+}
 
-var app = builder.Build();
+if (ChainNodeMaintenanceRunner.AnyRequested(config.Node.Maintenance))
+{
+    Environment.Exit(await RunMaintenanceAsync(config));
+    return;
+}
 
-var node = app.Services.GetRequiredService<DevChainNode>();
-var accountManager = app.Services.GetRequiredService<DevAccountManager>();
+try
+{
+    builder.AddDevChainServer(config);
+    builder.AddPrometheusMetrics(config.Node.Rpc.MetricsPort);
+    if (config.Node.Rpc.MetricsPort > 0)
+        builder.Services.AddOpenTelemetry().WithMetrics(metrics => metrics.AddMeter("Nethereum.DevChain"));
+    builder.WebHost.ConfigureKestrel(options =>
+        options.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
+    builder.Logging.SetMinimumLevel(LogLevel.Warning);
+    builder.Logging.AddFilter("Nethereum", config.Verbose ? LogLevel.Debug : LogLevel.Information);
+    builder.Logging.AddFilter("Microsoft.Extensions.Hosting.Internal.Host", LogLevel.None);
 
-await node.StartAsync(accountManager.Accounts.Select(a => a.Address));
+    var app = builder.Build();
 
-PrintBanner(config, accountManager, app);
+    var node = app.Services.GetRequiredService<DevChainNode>();
+    var accountManager = app.Services.GetRequiredService<DevAccountManager>();
 
-await app.MapDevChainEndpointsAsync();
+    if (config.Node.Rpc.MetricsPort > 0)
+        _ = new DevChainNodeMetrics(node);
 
-app.Run($"http://{config.Host}:{config.Port}");
+    await node.StartAsync(accountManager.Accounts.Select(a => a.Address));
+
+    PrintBanner(config, accountManager, app);
+
+    await app.MapDevChainEndpointsAsync();
+
+    app.MapPrometheusMetrics(config.Host, config.Port, config.Node.Rpc.MetricsPort);
+
+    if (config.Node.Rpc.MetricsPort > 0)
+        app.Run();
+    else
+        app.Run($"http://{config.Host}:{config.Port}");
+}
+catch (Exception ex) when (StartupFailureMessage(ex, config) is string friendly)
+{
+    Console.Error.WriteLine();
+    Console.Error.WriteLine(friendly);
+    Environment.Exit(1);
+}
 
 // ──────────────────────────────────────────────────────────────────
 // CLI
 // ──────────────────────────────────────────────────────────────────
 
+async Task<int> RunMaintenanceAsync(DevChainServerConfig config)
+{
+    using var loggerFactory = LoggerFactory.Create(logging =>
+    {
+        logging.AddSimpleConsole(options =>
+        {
+            options.TimestampFormat = "[HH:mm:ss.fff] ";
+            options.SingleLine = true;
+        });
+        logging.SetMinimumLevel(LogLevel.Information);
+    });
+    var logger = loggerFactory.CreateLogger("Nethereum.DevChain.Server");
+
+    var (bundle, backendHandle) = DevChainStorageBackend.Open(config);
+    try
+    {
+        return await ChainNodeMaintenanceRunner.RunAndReportExitCodeAsync(
+            bundle, config.Node.Maintenance, logger, CancellationToken.None);
+    }
+    finally
+    {
+        await backendHandle.DisposeAsync();
+    }
+}
+
+void RefuseUnknownHardfork(DevChainServerConfig config)
+{
+    try
+    {
+        HardforkNames.Parse(config.Hardfork);
+    }
+    catch (ArgumentException)
+    {
+        Console.Error.WriteLine($"Unknown hardfork '{config.Hardfork}'. Known forks are named by HardforkName.");
+        Environment.Exit(1);
+    }
+}
+
+string? StartupFailureMessage(Exception ex, DevChainServerConfig config)
+{
+    var socketFailure = FirstOfType<SocketException>(ex);
+    if (socketFailure != null && socketFailure.SocketErrorCode == SocketError.AddressAlreadyInUse)
+        return
+            $"DevChain failed to start: port {config.Port} is already in use." + Environment.NewLine +
+            "Another process — perhaps another DevChain instance — is already listening there." + Environment.NewLine +
+            "Stop it, or pick a different port with --port.";
+
+    var sqliteFailure = FirstOfType<Microsoft.Data.Sqlite.SqliteException>(ex);
+    if (sqliteFailure != null)
+        return
+            $"DevChain failed to start: could not open the chain data at '{config.DataDir}'." + Environment.NewLine +
+            "This usually means another DevChain process already has that data directory open." + Environment.NewLine +
+            "Stop it, or point --persist at a different directory." + Environment.NewLine +
+            $"({sqliteFailure.Message})";
+
+    return null;
+}
+
+TException? FirstOfType<TException>(Exception ex) where TException : Exception
+{
+    for (var current = ex; current != null; current = current.InnerException)
+        if (current is TException match)
+            return match;
+
+    return null;
+}
+
 void PrintHelp()
 {
-    var version = typeof(Program).Assembly.GetName().Version;
-    Console.WriteLine($"Nethereum DevChain Server v{version?.Major}.{version?.Minor}.{version?.Build}");
+    Console.WriteLine($"Nethereum DevChain Server v{Nethereum.CoreChain.NodeVersion.Version}");
     Console.WriteLine("Local Ethereum development node with JSON-RPC server");
     Console.WriteLine();
     Console.WriteLine("USAGE: nethereum-devchain [OPTIONS]");
@@ -66,6 +185,7 @@ void PrintHelp()
     Console.WriteLine("  -c, --chain-id <ID>         Chain ID (default: 31337)");
     Console.WriteLine("  -b, --block-time <MS>       Block time in ms, 0 = auto-mine (default: 0)");
     Console.WriteLine("      --gas-limit <GAS>       Block gas limit (default: 30000000)");
+    Console.WriteLine($"      --hardfork <NAME>       Hardfork to run (default: {DevChainServerConfig.DefaultServerHardfork})");
     Console.WriteLine();
     Console.WriteLine("FORK:");
     Console.WriteLine("  -f, --fork <URL>            Fork from a remote RPC endpoint");
@@ -74,6 +194,8 @@ void PrintHelp()
     Console.WriteLine("STORAGE:");
     Console.WriteLine("      --persist [DIR]         Persist chain data to disk (default: ./chaindata)");
     Console.WriteLine("      --in-memory             Use in-memory storage instead of SQLite");
+    Console.WriteLine("      --rocksdb               Use RocksDB storage with path-based state, same as mainnet");
+    Console.WriteLine("      --data-dir <DIR>        Data directory for --rocksdb (default: ./chaindata)");
     Console.WriteLine();
     Console.WriteLine("  Default storage is SQLite with auto-cleanup on exit.");
     Console.WriteLine("  Use --persist to keep data between restarts.");
@@ -84,6 +206,8 @@ void PrintHelp()
     Console.WriteLine("  nethereum-devchain -f https://eth.llamarpc.com --fork-block 19000000");
     Console.WriteLine("  nethereum-devchain --persist ./mychain");
     Console.WriteLine("  nethereum-devchain -b 1000 -c 1234");
+    Console.WriteLine();
+    Console.WriteLine("Run with --help-advanced for the expert --DevChain:Node:* settings.");
 }
 
 void ApplyCommandLineOverrides(DevChainServerConfig config, string[] args)
@@ -141,6 +265,10 @@ void ApplyCommandLineOverrides(DevChainServerConfig config, string[] args)
             if (long.TryParse(args[++i], out var gasLimit))
                 config.BlockGasLimit = gasLimit;
         }
+        else if (arg == "--hardfork" && i + 1 < args.Length)
+        {
+            config.Hardfork = args[++i];
+        }
 
         // Fork
         else if ((arg == "--fork" || arg == "-f") && i + 1 < args.Length)
@@ -168,6 +296,10 @@ void ApplyCommandLineOverrides(DevChainServerConfig config, string[] args)
         else if (arg == "--in-memory")
         {
             config.Storage = "memory";
+        }
+        else if (arg == "--rocksdb")
+        {
+            config.Storage = "rocksdb";
         }
 
         // Legacy aliases (kept for backwards compat, hidden from help)
@@ -208,8 +340,7 @@ void PrintBanner(DevChainServerConfig config, DevAccountManager accounts, WebApp
     Console.WriteLine(@"|_| \_|\___|\__|_| |_|\___|_|  \___|\__,_|_| |_| |_|");
     Console.WriteLine();
     Console.ForegroundColor = ConsoleColor.Yellow;
-    var version = typeof(Program).Assembly.GetName().Version;
-    Console.WriteLine($"              DevChain Server v{version?.Major}.{version?.Minor}.{version?.Build}");
+    Console.WriteLine($"              DevChain Server v{Nethereum.CoreChain.NodeVersion.Version}");
     Console.ResetColor();
     Console.WriteLine();
 
@@ -217,6 +348,7 @@ void PrintBanner(DevChainServerConfig config, DevAccountManager accounts, WebApp
     Console.WriteLine($"  RPC:        http://{config.Host}:{config.Port}");
     Console.ResetColor();
     Console.WriteLine($"  Chain ID:   {config.ChainId}");
+    Console.WriteLine($"  Hardfork:   {config.Hardfork}");
     Console.WriteLine($"  Gas Limit:  {config.BlockGasLimit:N0}");
 
     if (config.BlockTime > 0)
@@ -228,6 +360,10 @@ void PrintBanner(DevChainServerConfig config, DevAccountManager accounts, WebApp
     if (storageMode == "memory")
     {
         Console.WriteLine($"  Storage:    in-memory");
+    }
+    else if (storageMode == "rocksdb")
+    {
+        Console.WriteLine($"  Storage:    RocksDB, path-based state ({config.DataDir})");
     }
     else
     {

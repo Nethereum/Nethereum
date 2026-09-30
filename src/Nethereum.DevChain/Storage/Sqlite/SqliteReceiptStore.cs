@@ -11,10 +11,12 @@ namespace Nethereum.DevChain.Storage.Sqlite
     public class SqliteReceiptStore : IReceiptStore
     {
         private readonly SqliteStorageManager _manager;
+        private readonly IBlockEncodingProvider _provider;
 
-        public SqliteReceiptStore(SqliteStorageManager manager)
+        public SqliteReceiptStore(SqliteStorageManager manager, IBlockEncodingProvider provider = null)
         {
             _manager = manager;
+            _provider = provider ?? RlpBlockEncodingProvider.Instance;
         }
 
         public Task<Receipt> GetByTxHashAsync(byte[] txHash)
@@ -28,7 +30,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var data = cmd.ExecuteScalar() as byte[];
             if (data == null) return Task.FromResult<Receipt>(null);
 
-            return Task.FromResult(ReceiptEncoder.Current.Decode(data));
+            return Task.FromResult(_provider.DecodeReceipt(data));
         }
 
         public Task<ReceiptInfo> GetInfoByTxHashAsync(byte[] txHash)
@@ -43,7 +45,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             if (!reader.Read()) return Task.FromResult<ReceiptInfo>(null);
 
             var receiptData = (byte[])reader["receipt_data"];
-            var receipt = ReceiptEncoder.Current.Decode(receiptData);
+            var receipt = _provider.DecodeReceipt(receiptData);
 
             var info = new ReceiptInfo
             {
@@ -73,7 +75,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             while (reader.Read())
             {
                 var data = (byte[])reader["receipt_data"];
-                var receipt = ReceiptEncoder.Current.Decode(data);
+                var receipt = _provider.DecodeReceipt(data);
                 if (receipt != null) result.Add(receipt);
             }
 
@@ -92,7 +94,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             while (reader.Read())
             {
                 var data = (byte[])reader["receipt_data"];
-                var receipt = ReceiptEncoder.Current.Decode(data);
+                var receipt = _provider.DecodeReceipt(data);
                 if (receipt != null) result.Add(receipt);
             }
 
@@ -103,7 +105,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (receipt == null || txHash == null) return Task.CompletedTask;
 
-            var receiptData = ReceiptEncoder.Current.Encode(receipt);
+            var receiptData = _provider.EncodeReceipt(receipt);
 
             using var cmd = _manager.Connection.CreateCommand();
             cmd.CommandText = @"INSERT OR REPLACE INTO receipts

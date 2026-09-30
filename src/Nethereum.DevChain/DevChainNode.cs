@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Composition;
+using Nethereum.CoreChain.Services;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
+using Nethereum.DevChain.Composition;
 using Nethereum.DevChain.Storage.Sqlite;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
@@ -19,6 +23,8 @@ using Nethereum.RPC;
 using Nethereum.JsonRpc.Client;
 using Nethereum.Util;
 using Account = Nethereum.Web3.Accounts.Account;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevChain
 {
@@ -28,10 +34,16 @@ namespace Nethereum.DevChain
         private readonly BlockManager _blockManager;
         private readonly object _snapshotsLock = new object();
         private readonly Dictionary<int, SnapshotInfo> _snapshots = new();
+        private readonly SemaphoreSlim _genesisResetLock = new(1, 1);
+        private Dictionary<string, Model.Account> _genesisAccounts;
+        private Dictionary<string, Dictionary<byte[], byte[]>> _genesisStorageByAddress;
         private volatile bool _initialized;
         private bool _disposed;
 
         private SqliteStorageManager _sqliteManager;
+
+        private readonly IChainMetadataStore _rewindMetadataStore = new InMemoryChainMetadataStore();
+        private StateRewindService _stateRewindService;
 
         public DevChainNode() : this(DevChainConfig.Default)
         {
@@ -41,15 +53,22 @@ namespace Nethereum.DevChain
         {
         }
 
-        private DevChainNode(DevChainConfig config, SqliteStorageManager sqliteManager) : this(
+        private DevChainNode(DevChainConfig config, SqliteStorageManager sqliteManager)
+            : this(config, sqliteManager, new SqliteBlockStore(sqliteManager))
+        {
+        }
+
+        private DevChainNode(DevChainConfig config, SqliteStorageManager sqliteManager, SqliteBlockStore blockStore) : this(
             config,
-            new SqliteBlockStore(sqliteManager),
+            blockStore,
             new SqliteTransactionStore(sqliteManager),
             new SqliteReceiptStore(sqliteManager),
             new SqliteLogStore(sqliteManager),
-            new HistoricalStateStore(new SqliteStateStore(sqliteManager), new SqliteStateDiffStore(sqliteManager), HistoricalStateOptions.DevChainDefault),
+            new StateLayer().Stores.DevChainSqlite(sqliteManager),
             new InMemoryFilterStore(),
-            new SqliteTrieNodeStore(sqliteManager))
+            new SqliteTrieNodeStore(sqliteManager),
+            blobStore: null,
+            blockAccessListStore: new SqliteBlockAccessListStore(sqliteManager, blockStore))
         {
             _sqliteManager = sqliteManager;
         }
@@ -74,9 +93,10 @@ namespace Nethereum.DevChain
                 new InMemoryTransactionStore(blockStore),
                 new InMemoryReceiptStore(),
                 new InMemoryLogStore(),
-                new HistoricalStateStore(new InMemoryStateStore(), new InMemoryStateDiffStore(), HistoricalStateOptions.DevChainDefault),
+                new StateLayer().Stores.DevChainInMemory(),
                 new InMemoryFilterStore(),
-                new InMemoryTrieNodeStore());
+                new InMemoryContentNodeStore(),
+                new Storage.InMemoryBlobStore());
         }
 
         public DevChainNode(
@@ -87,7 +107,24 @@ namespace Nethereum.DevChain
             ILogStore logStore,
             IStateStore stateStore,
             IFilterStore filterStore,
-            ITrieNodeStore trieNodeStore = null)
+            ITrieNodeStore trieNodeStore = null,
+            IBlobStore blobStore = null)
+            : this(config, blockStore, transactionStore, receiptStore, logStore, stateStore,
+                   filterStore, trieNodeStore, blobStore, blockAccessListStore: null)
+        {
+        }
+
+        public DevChainNode(
+            DevChainConfig config,
+            IBlockStore blockStore,
+            ITransactionStore transactionStore,
+            IReceiptStore receiptStore,
+            ILogStore logStore,
+            IStateStore stateStore,
+            IFilterStore filterStore,
+            ITrieNodeStore trieNodeStore,
+            IBlobStore blobStore,
+            IBlockAccessListStore blockAccessListStore)
             : base(
                 blockStore,
                 transactionStore,
@@ -97,8 +134,12 @@ namespace Nethereum.DevChain
                 filterStore,
                 CreateTransactionProcessor(stateStore, blockStore, config, SharedTxVerifier),
                 SharedTxVerifier,
+                blockAccessListStore ?? new CoreChain.Storage.InMemory.InMemoryBlockAccessListStore(blockStore),
                 CreateNodeDataService(stateStore, blockStore, config),
-                trieNodeStore)
+                trieNodeStore,
+                blobStore,
+                uncleStore: null,
+                hardforkConfig: (config ?? DevChainConfig.Default).GetHardforkConfig())
         {
             _config = config ?? DevChainConfig.Default;
 
@@ -111,7 +152,8 @@ namespace Nethereum.DevChain
                 _transactionProcessor,
                 _txVerifier,
                 _config,
-                trieNodeStore);
+                trieNodeStore,
+                BlockAccessLists);
         }
 
         private static readonly ITransactionVerificationAndRecovery SharedTxVerifier = new TransactionVerificationAndRecoveryImp();
@@ -128,7 +170,7 @@ namespace Nethereum.DevChain
                 effectiveConfig.GetHardforkConfig());
         }
 
-        private static INodeDataService CreateNodeDataService(
+        private static IStateReader CreateNodeDataService(
             IStateStore stateStore, IBlockStore blockStore, DevChainConfig config)
         {
             if (config?.IsForkEnabled == true)
@@ -148,12 +190,44 @@ namespace Nethereum.DevChain
         public DevChainConfig DevConfig => _config;
         public BlockManager BlockManager => _blockManager;
 
+        public CoreChain.Storage.IWitnessStore WitnessStore { get; set; }
+        public CoreChain.Proving.IBlockProver BlockProver { get; set; }
+        public CoreChain.Proving.ProofCadence ProofCadence { get; set; }
+        public CoreChain.Proving.WitnessRetentionPolicy WitnessRetention { get; set; }
+
+        private CoreChain.Services.IProofService _binaryProofService;
+
+        public override CoreChain.Services.IProofService ProofService
+        {
+            get
+            {
+                if (_config.StateTree == StateTreeType.Binary)
+                {
+                    if (_binaryProofService != null)
+                        return _binaryProofService;
+
+                    var binaryCalc = _blockManager.StateRootCalculator
+                        as BinaryIncrementalStateRootCalculator;
+                    if (binaryCalc?.Trie != null)
+                    {
+                        _binaryProofService = new CoreChain.Services.BinaryProofService(
+                            binaryCalc.Trie,
+                            _config.StateTreeHashProvider
+                                ?? new Merkle.Binary.Hashing.Blake3HashProvider());
+                        return _binaryProofService;
+                    }
+                }
+                return base.ProofService;
+            }
+        }
+
         public async Task StartAsync()
         {
             if (_initialized)
                 return;
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -168,6 +242,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -182,6 +257,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -196,6 +272,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -210,6 +287,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -224,6 +302,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -238,6 +317,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -252,6 +332,7 @@ namespace Nethereum.DevChain
             }
 
             await _blockManager.InitializeAsync();
+            await CaptureGenesisStateAsync();
             _initialized = true;
         }
 
@@ -329,16 +410,103 @@ namespace Nethereum.DevChain
             return accounts;
         }
 
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(Model.BlobSidecar Sidecar, System.Collections.Generic.List<byte[]> VersionedHashes, byte[] TxHash)>
+            _pendingBlobSidecars = new();
+
         public override async Task<CoreChain.TransactionExecutionResult> SendTransactionAsync(ISignedTransaction tx)
         {
             EnsureInitialized();
+
+            if (tx is Model.Transaction4844 blobTx && blobTx.Sidecar != null)
+            {
+                var sidecar = blobTx.Sidecar;
+                var hashes = blobTx.BlobVersionedHashes;
+                blobTx.Sidecar = null;
+
+                var result = await _blockManager.SendTransactionAsync(tx);
+
+                if ((result.Success || result.Receipt != null) && result.TransactionHash != null)
+                    _pendingBlobSidecars.Enqueue((sidecar, hashes, result.TransactionHash));
+
+                return result;
+            }
+
             return await _blockManager.SendTransactionAsync(tx);
         }
 
         public async Task<byte[]> MineBlockAsync()
         {
             EnsureInitialized();
-            return await _blockManager.MineBlockAsync();
+            _blockManager.CaptureWitness = WitnessStore != null;
+            var hash = await _blockManager.MineBlockAsync();
+            await FlushPendingBlobsAsync();
+            await CaptureWitnessAndProveAsync();
+            return hash;
+        }
+
+        private async Task CaptureWitnessAndProveAsync()
+        {
+            var result = _blockManager.LastBlockProductionResult;
+            if (result == null) return;
+
+            var blockNumber = result.Header.BlockNumber;
+            var postStateRoot = result.Header.StateRoot;
+            var preStateRoot = result.PreStateRoot;
+
+            if (WitnessStore != null && result.WitnessBytes != null && result.WitnessBytes.Length > 0)
+            {
+                await WitnessStore.StoreWitnessAsync(blockNumber, result.WitnessBytes);
+
+                var cadence = ProofCadence;
+                var shouldProve = cadence == null
+                    ? BlockProver != null
+                    : cadence.ShouldProve((long)blockNumber);
+
+                if (shouldProve && BlockProver != null)
+                {
+                    var proof = await BlockProver.ProveBlockAsync(
+                        result.WitnessBytes, preStateRoot, postStateRoot, (long)blockNumber);
+                    await WitnessStore.StoreProofAsync(blockNumber, proof);
+                }
+
+                if (WitnessRetention != null)
+                    await WitnessStore.PurgeWitnessesAsync(WitnessRetention, blockNumber);
+            }
+        }
+
+        public async Task<CoreChain.Proving.BlockProofResult> ProveBlockOnDemandAsync(long blockNumber)
+        {
+            if (BlockProver == null)
+                throw new System.InvalidOperationException("No BlockProver configured");
+
+            byte[] witnessBytes;
+            if (WitnessStore != null)
+            {
+                witnessBytes = await WitnessStore.GetWitnessAsync(blockNumber);
+            }
+            else
+            {
+                witnessBytes = await CaptureBlockWitnessAsync(blockNumber);
+            }
+
+            if (witnessBytes == null || witnessBytes.Length == 0)
+                throw new System.InvalidOperationException($"No witness available for block {blockNumber}");
+
+            var block = await GetBlockByNumberAsync(blockNumber);
+            byte[] preStateRoot = null;
+            if (blockNumber > 0)
+            {
+                var prevBlock = await GetBlockByNumberAsync(blockNumber - 1);
+                preStateRoot = prevBlock?.StateRoot;
+            }
+
+            var proof = await BlockProver.ProveBlockAsync(
+                witnessBytes, preStateRoot, block?.StateRoot, blockNumber);
+
+            if (WitnessStore != null)
+                await WitnessStore.StoreProofAsync(blockNumber, proof);
+
+            return proof;
         }
 
         public async Task<byte[]> MineBlockAsync(byte[] parentBeaconBlockRoot)
@@ -350,7 +518,33 @@ namespace Nethereum.DevChain
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
         {
             EnsureInitialized();
-            return await _blockManager.MineBlockWithTransactionAsync(tx);
+            var hash = await _blockManager.MineBlockWithTransactionAsync(tx);
+            await FlushPendingBlobsAsync();
+            return hash;
+        }
+
+        private async Task FlushPendingBlobsAsync()
+        {
+            if (_blobStore == null) return;
+            var blockNumber = await GetBlockNumberAsync();
+
+            while (_pendingBlobSidecars.TryDequeue(out var pending))
+            {
+                var records = new System.Collections.Generic.List<CoreChain.Storage.BlobSidecarRecord>();
+                for (int i = 0; i < pending.Sidecar.Blobs.Count; i++)
+                {
+                    records.Add(new CoreChain.Storage.BlobSidecarRecord
+                    {
+                        Index = i,
+                        Blob = pending.Sidecar.Blobs[i],
+                        KzgCommitment = i < pending.Sidecar.Commitments.Count ? pending.Sidecar.Commitments[i] : null,
+                        KzgProof = i < pending.Sidecar.Proofs.Count ? pending.Sidecar.Proofs[i] : null,
+                        VersionedHash = i < pending.VersionedHashes.Count ? pending.VersionedHashes[i] : null,
+                        TransactionHash = pending.TxHash
+                    });
+                }
+                await _blobStore.StoreBlobsAsync(blockNumber, pending.TxHash, records);
+            }
         }
 
         public async Task SetBalanceAsync(string address, BigInteger balance)
@@ -364,6 +558,21 @@ namespace Nethereum.DevChain
         public async Task SetBlockHashAsync(BigInteger blockNumber, byte[] hash)
         {
             await _blockStore.UpdateBlockHashAsync(blockNumber, hash);
+            // EIP-2935: BLOCKHASH reads from the history contract's storage at
+            // slot (blockNumber % 8191). Persist the hash there so in-guest
+            // execution resolves it without a side-channel.
+            await WriteToHistoryStorageAsync(blockNumber, hash);
+        }
+
+        private async Task WriteToHistoryStorageAsync(BigInteger blockNumber, byte[] hash)
+        {
+            if (hash == null || hash.Length == 0) return;
+            var slot = (BigInteger)((long)(blockNumber % Nethereum.EVM.Witness.HistoryContractHelpers.HISTORY_SERVE_WINDOW));
+            var value = hash.Length == 32 ? hash : hash.PadTo32Bytes();
+            await _stateStore.SaveStorageAsync(
+                Nethereum.EVM.Witness.HistoryContractHelpers.HISTORY_STORAGE_ADDRESS,
+                slot,
+                value);
         }
 
         public async Task SetNonceAsync(string address, BigInteger nonce)
@@ -430,15 +639,124 @@ namespace Nethereum.DevChain
 
             await _stateStore.RevertSnapshotAsync(info.StateSnapshot);
 
-            if (info.BlockHeight > 0)
-            {
-                await PruneStoresAfterBlockAsync(info.BlockHeight);
+            await PruneStoresAfterBlockAsync(info.BlockHeight);
 
-                if (_stateStore is HistoricalStateStore historicalStore)
-                    await historicalStore.PurgeDiffsAboveBlockAsync(info.BlockHeight);
-            }
+            if (_stateStore is HistoricalStateStore historicalStore)
+                await historicalStore.PurgeDiffsAboveBlockAsync(info.BlockHeight);
 
             await _blockManager.ReinitializePendingBlockAsync();
+        }
+
+        private async Task CaptureGenesisStateAsync()
+        {
+            _genesisAccounts = await _stateStore.GetAllAccountsAsync();
+
+            _genesisStorageByAddress = new Dictionary<string, Dictionary<byte[], byte[]>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var address in _genesisAccounts.Keys)
+            {
+                var storage = await _stateStore.GetAllStorageAsync(address);
+                if (storage.Count > 0)
+                    _genesisStorageByAddress[address] = storage;
+            }
+        }
+
+        public async Task SetHeadAsync(BigInteger blockNumber)
+        {
+            EnsureInitialized();
+
+            if (_genesisAccounts == null)
+                throw new InvalidOperationException("The genesis state has not been captured; SetHeadAsync requires StartAsync to have completed.");
+
+            await _genesisResetLock.WaitAsync();
+            try
+            {
+                var latestBlock = await _blockStore.GetLatestAsync();
+                BigInteger currentHead = latestBlock?.BlockNumber ?? BigInteger.Zero;
+                if (currentHead.CompareTo(blockNumber) <= 0)
+                    throw new InvalidOperationException("not allowed to rewind to a future block");
+
+                if (blockNumber == 0)
+                {
+                    await ResetAccountsAndStorageToGenesisAsync();
+                    await PruneStoresAfterBlockAsync(0);
+
+                    if (_stateStore is HistoricalStateStore historicalStore)
+                        await historicalStore.PurgeDiffsAboveBlockAsync(0);
+                }
+                else
+                {
+                    if (_stateStore is not HistoricalStateStore historicalStore)
+                        throw new NotSupportedException(
+                            $"debug_setHead to block {blockNumber} requires a journaling {nameof(HistoricalStateStore)}; {_stateStore.GetType().Name} does not record reverse diffs.");
+
+                    var journalProvider = (IHistoricalStateProvider)historicalStore;
+                    while (historicalStore.CurrentBufferedBlock is BigInteger buffered && buffered.CompareTo(blockNumber) > 0)
+                        await journalProvider.RevertCurrentBlockAsync();
+
+                    await GetOrCreateStateRewindService(historicalStore)
+                        .RewindWithJournalAsync((ulong)blockNumber);
+                    historicalStore.ClearCache();
+                    await historicalStore.PurgeDiffsAboveBlockAsync(blockNumber);
+                    await PruneStoresAfterBlockAsync(blockNumber);
+                }
+
+                await _blockManager.ReinitializePendingBlockAsync();
+            }
+            finally
+            {
+                _genesisResetLock.Release();
+            }
+        }
+
+        private StateRewindService GetOrCreateStateRewindService(HistoricalStateStore historicalStore)
+            => _stateRewindService ??= new StateRewindService(
+                historicalStore.InnerStateStore,
+                historicalStore.DiffStore,
+                _blockStore,
+                _rewindMetadataStore);
+
+        private async Task ResetAccountsAndStorageToGenesisAsync()
+        {
+            var currentAccounts = await _stateStore.GetAllAccountsAsync();
+
+            foreach (var address in currentAccounts.Keys)
+            {
+                if (!_genesisAccounts.ContainsKey(address))
+                {
+                    await _stateStore.DeleteAccountAsync(address);
+                    await _stateStore.ClearStorageAsync(address);
+                }
+            }
+
+            foreach (var kvp in _genesisAccounts)
+            {
+                await _stateStore.SaveAccountAsync(kvp.Key, new Model.Account
+                {
+                    Nonce = kvp.Value.Nonce,
+                    Balance = kvp.Value.Balance,
+                    StateRoot = kvp.Value.StateRoot,
+                    CodeHash = kvp.Value.CodeHash
+                });
+                await ReconcileStorageToGenesisAsync(kvp.Key);
+            }
+        }
+
+        private async Task ReconcileStorageToGenesisAsync(string address)
+        {
+            var currentStorage = await _stateStore.GetAllStorageAsync(address);
+            _genesisStorageByAddress.TryGetValue(address, out var genesisStorage);
+
+            foreach (var slotKeccak in currentStorage.Keys)
+            {
+                if (genesisStorage == null || !genesisStorage.ContainsKey(slotKeccak))
+                    await _stateStore.SaveStorageByKeccakAsync(address, slotKeccak, null);
+            }
+
+            if (genesisStorage == null)
+                return;
+
+            foreach (var kvp in genesisStorage)
+                await _stateStore.SaveStorageByKeccakAsync(address, kvp.Key, kvp.Value);
         }
 
         private async Task PruneStoresAfterBlockAsync(System.Numerics.BigInteger snapshotBlockHeight)
@@ -446,7 +764,7 @@ namespace Nethereum.DevChain
             var latestBlock = await _blockStore.GetLatestAsync();
             if (latestBlock == null) return;
 
-            for (var blockNum = latestBlock.BlockNumber; blockNum > snapshotBlockHeight; blockNum--)
+            for (var blockNum = latestBlock.BlockNumber.ToBigInteger(); blockNum > snapshotBlockHeight; blockNum--)
             {
                 await _logStore.DeleteByBlockNumberAsync(blockNum);
                 await _receiptStore.DeleteByBlockNumberAsync(blockNum);
@@ -519,6 +837,8 @@ namespace Nethereum.DevChain
 
                 _sqliteManager?.Dispose();
                 _sqliteManager = null;
+
+                _genesisResetLock.Dispose();
 
                 _initialized = false;
             }

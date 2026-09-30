@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Description>Nethereum MainnetChain - read-only mainnet follower + serving library: composes FollowerChainNode (CoreChain) + DevP2P sync orchestration + optional beacon LightClient consensus gate + eth_/net_/web3_ JSON-RPC. Hostable from a CLI, Aspire, or tests via AddMainnetChainServer / MapMainnetChainEndpoints.</Description>
+    <AssemblyTitle>Nethereum.MainnetChain</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <!-- net8.0 added (alongside the server's $(ServerFrameworks)=net10.0) so the RocksDB unit-test project
+         (net8.0) can reference MainnetChainNodeFactory directly and share its follower executor-stack
+         composition instead of hand-rolling a parallel copy. Every project this library depends on already
+         supports net8.0 (CoreChainFrameworks / DevP2P.Sync / UIFrameworksBlazor). -->
+    <TargetFrameworks>net8.0;$(ServerFrameworks)</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Nethereum.MainnetChain</AssemblyName>
+    <PackageId>Nethereum.MainnetChain</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Nethereum.MainnetChain.UnitTests" Key="0024000004800000940000000602000000240000525341310004000001000100d90181381ce37fcd30d5dcbea4eeb9665a845853878b90278cecf8d94965b49c2dfea39e67f397c29719fb6b130db7d23d1fe3639650974c1013c6f18d02a41b820398561cf9b41c923f9f2bbc7efe314e9d36c6107df2c31658cd4efce0f9e7ff4a41105b61eb999861cff4f1951b0ff62dc1d707c2b82c1ef8ee635cfbc4b6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\MainnetGenesis.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.ChainNode.Hosting\Nethereum.ChainNode.Hosting.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM.Precompiles.Bls\Nethereum.EVM.Precompiles.Bls.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
+    <ProjectReference Include="..\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
+    <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj" />
+    <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
+    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+  </ItemGroup>
+
+  <!-- Herumi referenced as a NuGet package (from ./nativeartifacts via nuget.config
+       source mapping): a package reference flows runtimes/<rid>/native/libbls_eth.so
+       into the self-contained publish output, which a project reference does not. -->
+  <ItemGroup>
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="6.5.0" />
+  </ItemGroup>
+
+</Project>
