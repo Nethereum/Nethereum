@@ -22,11 +22,11 @@ namespace Nethereum.CoreChain.UnitTests.Storage
         private static ISignedTransaction MakeTx(byte[] hash)
         {
             var tx = new LegacyTransaction(
-                nonce: new byte[] { 0x00 },
+                nonce: new byte[] { },
                 gasPrice: new byte[] { 0x01 },
                 gasLimit: new byte[] { 0x52, 0x08 },
                 receiveAddress: new byte[20],
-                value: new byte[] { 0x00 },
+                value: new byte[] { },
                 data: Array.Empty<byte>()
             );
             return new TestSignedTransaction(tx, hash);

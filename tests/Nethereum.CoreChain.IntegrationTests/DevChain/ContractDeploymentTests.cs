@@ -26,7 +26,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.True(result.Success, $"Deployment failed: {result.RevertReason}");
 
-            // Get contract address from ReceiptInfo (SendTransactionAsync doesn't populate ContractAddress)
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             Assert.NotNull(receiptInfo);
             Assert.NotNull(receiptInfo.ContractAddress);
@@ -43,7 +42,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.True(result.Success);
 
-            // Get contract address from ReceiptInfo
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             Assert.NotNull(receiptInfo?.ContractAddress);
 
@@ -79,7 +77,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.True(result.Success);
 
-            // Get GasUsed from ReceiptInfo
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             Assert.True(receiptInfo.GasUsed > 21000, "Contract deployment should use more gas than simple transfer");
         }
@@ -94,15 +91,12 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.True(result.Success);
 
-            // Get contract address from ReceiptInfo
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             Assert.NotNull(receiptInfo?.ContractAddress);
 
-            // Contract address should be a valid 20-byte hex address
             Assert.StartsWith("0x", receiptInfo.ContractAddress);
-            Assert.Equal(42, receiptInfo.ContractAddress.Length); // 0x + 40 hex chars = 20 bytes
+            Assert.Equal(42, receiptInfo.ContractAddress.Length);
 
-            // Contract should have code at the address
             var code = await _fixture.Node.GetCodeAsync(receiptInfo.ContractAddress);
             Assert.NotNull(code);
             Assert.NotEmpty(code);
@@ -136,7 +130,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.True(result.Success);
 
-            // Get GasUsed from ReceiptInfo
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             var expectedCost = gasPrice * receiptInfo.GasUsed;
             var finalBalance = await _fixture.Node.GetBalanceAsync(_fixture.Address);

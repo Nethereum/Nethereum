@@ -93,7 +93,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var request = new RpcRequestMessage(1, "debug_traceCall", callInput, "latest");
@@ -115,7 +115,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var config = JObject.FromObject(new
@@ -149,7 +149,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var newBalance = "0x1000000000000000000";
@@ -166,6 +166,38 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
+        }
+
+        [Fact]
+        public async Task DebugTraceCall_CodeOverrideOnTarget_NowHonored()
+        {
+            var initCodeReturns42 = "600a600c600039600a6000f3602a60005260206000f3";
+            var deployTx = _fixture.CreateContractDeploymentTransaction(initCodeReturns42.HexToByteArray());
+            var deployResult = await _fixture.Node.SendTransactionAsync(deployTx);
+            Assert.True(deployResult.Success);
+            var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(deployTx.Hash);
+            var contractAddress = receiptInfo.ContractAddress;
+
+            var callInput = JObject.FromObject(new
+            {
+                to = contractAddress,
+                data = "0x"
+            });
+
+            var config = JObject.FromObject(new
+            {
+                stateOverrides = new Dictionary<string, object>
+                {
+                    [contractAddress] = new { code = "0x606360005260206000f3" }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "debug_traceCall", callInput, "latest", config);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            var traceResponse = ParseTraceResponse(response.Result);
+            Assert.Equal(new BigInteger(99), traceResponse.ReturnValue.HexToBigInteger(false));
         }
 
         [Fact]
@@ -222,7 +254,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var config = JObject.FromObject(new { tracer = "callTracer" });
@@ -248,7 +280,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var blockHex = new HexBigInteger(blockBeforeDeploy).HexValue;
@@ -273,7 +305,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var blockHex = new HexBigInteger(blockAfterDeploy).HexValue;
@@ -325,6 +357,46 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             Assert.NotNull(traceAtTransfer.StructLogs);
             Assert.NotEmpty(traceAtMint.StructLogs);
             Assert.NotEmpty(traceAtTransfer.StructLogs);
+
+            Assert.Equal(BigInteger.Zero, traceAtMint.ReturnValue.HexToBigInteger(false));
+            Assert.Equal(new BigInteger(500), traceAtTransfer.ReturnValue.HexToBigInteger(false));
+        }
+
+        [Fact]
+        public async Task DebugTraceCall_AtHistoricalBlock_FailsWhenBlockContextComesFromHeadNotRequestedBlock()
+        {
+            var requestedBlock = await _fixture.Node.GetBlockNumberAsync();
+
+            await _fixture.Node.SendTransactionAsync(
+                _fixture.CreateSignedTransaction(_fixture.RecipientAddress, 1));
+            await _fixture.Node.SendTransactionAsync(
+                _fixture.CreateSignedTransaction(_fixture.RecipientAddress, 1));
+
+            var head = await _fixture.Node.GetBlockNumberAsync();
+            Assert.True(head > requestedBlock);
+
+            var callInput = JObject.FromObject(new
+            {
+                from = _fixture.Address,
+                to = _fixture.RecipientAddress,
+                data = "0x"
+            });
+
+            var config = JObject.FromObject(new
+            {
+                stateOverrides = new Dictionary<string, object>
+                {
+                    [_fixture.RecipientAddress] = new { code = "0x4360005260206000f3" }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "debug_traceCall",
+                callInput, new HexBigInteger(requestedBlock).HexValue, config);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            var traceResponse = ParseTraceResponse(response.Result);
+            Assert.Equal(requestedBlock, traceResponse.ReturnValue.HexToBigInteger(false));
         }
 
         [Fact]
@@ -337,7 +409,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var config = JObject.FromObject(new { tracer = "callTracer" });
@@ -391,7 +463,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var config = JObject.FromObject(new { tracer = "prestateTracer" });
@@ -413,7 +485,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             {
                 from = _fixture.Address,
                 to = contractAddress,
-                data = "0x18160ddd" // totalSupply()
+                data = "0x18160ddd"
             });
 
             var newBalance = "0x1000000000000000000";

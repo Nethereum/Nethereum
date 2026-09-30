@@ -1,0 +1,56 @@
+using System.Collections.Generic;
+using Nethereum.CoreChain.Storage;
+using Nethereum.Model;
+using Nethereum.Util.HashProviders;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
+
+namespace Nethereum.CoreChain
+{
+    public class PatriciaBlockRootsProvider : IBlockRootsProvider
+    {
+        public static PatriciaBlockRootsProvider Instance { get; } = new PatriciaBlockRootsProvider();
+
+        private readonly RootCalculator _rootCalculator;
+        private readonly IBlockEncodingProvider _encodingProvider;
+        private readonly ITrieNodeStore _trieNodeStore;
+
+        public PatriciaBlockRootsProvider(
+            IBlockEncodingProvider encodingProvider = null,
+            IHashProvider hashProvider = null,
+            ITrieNodeStore trieNodeStore = null)
+        {
+            _encodingProvider = encodingProvider ?? RlpBlockEncodingProvider.Instance;
+            _rootCalculator = hashProvider != null ? new RootCalculator(hashProvider) : new RootCalculator();
+            _trieNodeStore = trieNodeStore;
+        }
+
+        public byte[] CalculateTransactionsRoot(IList<ISignedTransaction> transactions)
+        {
+            if (transactions == null || transactions.Count == 0)
+                return DefaultValues.EMPTY_TRIE_HASH;
+
+            var encoded = new List<byte[]>(transactions.Count);
+            foreach (var tx in transactions)
+                encoded.Add(_encodingProvider.EncodeTransaction(tx));
+
+            return _rootCalculator.CalculateTransactionsRoot(encoded, _trieNodeStore);
+        }
+
+        public byte[] CalculateReceiptsRoot(IList<Receipt> receipts)
+        {
+            if (receipts == null || receipts.Count == 0)
+                return DefaultValues.EMPTY_TRIE_HASH;
+
+            return _rootCalculator.CalculateReceiptsRoot(receipts, _trieNodeStore);
+        }
+
+        public byte[] CalculateWithdrawalsRoot(IList<Withdrawal> withdrawals)
+        {
+            if (withdrawals == null || withdrawals.Count == 0)
+                return DefaultValues.EMPTY_TRIE_HASH;
+
+            return _rootCalculator.CalculateWithdrawalsRoot(withdrawals, _trieNodeStore);
+        }
+    }
+}

@@ -25,16 +25,14 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             if (blockHash == null)
                 return Success(request.Id, null);
 
-            var txStore = context.GetService<ITransactionStore>();
-            if (txStore == null)
-                return Success(request.Id, null);
+            var blockHeader = await context.Node.GetBlockByNumberAsync(blockNumber);
 
-            var txs = await txStore.GetByBlockHashAsync(blockHash);
+            var txs = await context.Node.Transactions.GetByBlockHashAsync(blockHash);
             if (txs == null || index >= txs.Count)
                 return Success(request.Id, null);
 
             var tx = txs[index];
-            return Success(request.Id, tx.ToRpcTransaction(blockHash, blockNumber, index));
+            return Success(request.Id, TransactionRpcBuilder.Build(tx, blockHash, blockNumber, index, blockHeader));
         }
     }
 }

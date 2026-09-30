@@ -4,6 +4,7 @@ using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Newtonsoft.Json;
+using Stj = System.Text.Json.Serialization;
 
 namespace Nethereum.CoreChain.Tracing
 {
@@ -73,27 +74,34 @@ namespace Nethereum.CoreChain.Tracing
         public ulong GasCost { get; set; }
 
         [JsonProperty("memory")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string Memory { get; set; }
 
         [JsonProperty("memSize")]
+        [Stj.JsonIgnore]
         public int MemSize { get; set; }
 
         [JsonProperty("stack")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public List<HexBigInteger> Stack { get; set; }
 
         [JsonProperty("storage")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string> Storage { get; set; }
 
         [JsonProperty("depth")]
         public int Depth { get; set; }
 
         [JsonProperty("refund")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingDefault)]
         public ulong Refund { get; set; }
 
         [JsonProperty("error")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string Error { get; set; }
 
         [JsonProperty("address")]
+        [Stj.JsonIgnore]
         public string Address { get; set; }
     }
 
@@ -124,12 +132,15 @@ namespace Nethereum.CoreChain.Tracing
         public string Output { get; set; }
 
         [JsonProperty("error")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string Error { get; set; }
 
         [JsonProperty("revertReason")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public string RevertReason { get; set; }
 
         [JsonProperty("calls")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
         public List<CallTraceResult> Calls { get; set; }
     }
 
@@ -164,5 +175,6 @@ namespace Nethereum.CoreChain.Tracing
         public ExecutionStateService StateService { get; set; }
         public bool IsContractCreation { get; set; }
         public bool IsSimpleTransfer { get; set; }
+        public long TotalGasUsed { get; set; }
     }
 }

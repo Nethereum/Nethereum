@@ -41,6 +41,26 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         }
 
         [Fact]
+        public async Task CreateAccessList_PrecompileTouched_ExcludesPrecompileFromList()
+        {
+            var initCode = "0x600d80600b6000396000f3600060006000600060045afa00".HexToByteArray();
+            var deployTx = _fixture.CreateContractDeploymentTransaction(initCode);
+            Assert.True((await _fixture.Node.SendTransactionAsync(deployTx)).Success);
+            var receipt = await _fixture.Node.GetTransactionReceiptInfoAsync(deployTx.Hash);
+            var contract = receipt.ContractAddress;
+
+            var callInput = new { from = _fixture.Address, to = contract, data = "0x" };
+            var request = new RpcRequestMessage(1, "eth_createAccessList", callInput, "latest");
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            var accessList = ResultToJObject(response.Result)["accessList"] as JArray;
+            Assert.NotNull(accessList);
+            Assert.DoesNotContain(accessList,
+                e => e["address"]?.Value<string>() == "0x0000000000000000000000000000000000000004");
+        }
+
+        [Fact]
         public async Task CreateAccessList_SimpleTransfer_ReturnsEmptyAccessList()
         {
             var callInput = new
@@ -217,7 +237,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var gasUsedStr = result["gasUsed"]?.Value<string>();
             Assert.NotNull(gasUsedStr);
             var gasUsed = gasUsedStr.HexToBigInteger(false);
-            Assert.Equal(BigInteger.Zero, gasUsed);
+            Assert.True(gasUsed >= 21000, $"expected base intrinsic (>= 21000), got {gasUsed}");
         }
 
         [Fact]
@@ -277,9 +297,9 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var resultAfter = ResultToJObject(respAfter.Result);
             var gasAfter = resultAfter["gasUsed"]?.Value<string>().HexToBigInteger(false) ?? BigInteger.Zero;
 
-            Assert.Equal(BigInteger.Zero, gasBefore);
-            Assert.True(gasAfter > BigInteger.Zero,
-                "Access list at block after deploy should have gas > 0");
+            Assert.True(gasBefore >= 21000, $"expected base intrinsic (>= 21000) before deployment, got {gasBefore}");
+            Assert.True(gasAfter > gasBefore,
+                "access list at the block after deploy runs contract code, so gas exceeds the empty-account intrinsic");
         }
     }
 }

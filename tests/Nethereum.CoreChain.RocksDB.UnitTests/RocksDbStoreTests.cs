@@ -59,11 +59,11 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var r = new byte[32]; r[0] = 0x01;
             var s = new byte[32]; s[0] = 0x01;
             var tx = new LegacyTransaction(
-                nonce: new byte[] { 0x00 },
+                nonce: new byte[] { },
                 gasPrice: new byte[] { 0x01 },
                 gasLimit: new byte[] { 0x52, 0x08 },
                 receiveAddress: new byte[20],
-                value: new byte[] { 0x00 },
+                value: new byte[] { },
                 data: Array.Empty<byte>(),
                 r: r,
                 s: s,

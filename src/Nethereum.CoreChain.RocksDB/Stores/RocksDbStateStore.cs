@@ -8,11 +8,13 @@ using Nethereum.CoreChain.RocksDB.Snapshots;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.RLP;
 using Nethereum.Util;
+using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
-    public class RocksDbStateStore : IStateStore, IDisposable
+    public class RocksDbStateStore : IStateStore, IAddressHashCache, ISnapFlatStateWriter, IFlatStateBatchWriter, IDisposable
     {
         private readonly RocksDbManager _manager;
         private readonly object _lock = new object();
@@ -20,11 +22,25 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private readonly Dictionary<int, RocksDbStateSnapshot> _activeSnapshots = new Dictionary<int, RocksDbStateSnapshot>();
         private readonly HashSet<string> _dirtyAccounts = new HashSet<string>();
         private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots = new Dictionary<string, HashSet<BigInteger>>();
+        private readonly HashSet<string> _storageClearedAddresses = new HashSet<string>();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<EvmAddress, byte[]> _addressHashCache = new();
         private bool _disposed;
 
-        public RocksDbStateStore(RocksDbManager manager)
+        private readonly RocksDbSerializer _serializer;
+        private readonly IAccountLayoutStrategy _accountLayout;
+
+        private readonly bool _stateValuesVersioned;
+
+        public RocksDbStateStore(
+            RocksDbManager manager,
+            RocksDbSerializer serializer = null,
+            IAccountLayoutStrategy accountLayout = null,
+            bool stateValuesVersioned = false)
         {
             _manager = manager;
+            _serializer = serializer ?? RocksDbSerializer.Default;
+            _accountLayout = accountLayout ?? RlpAccountLayout.Instance;
+            _stateValuesVersioned = stateValuesVersioned;
         }
 
         public void Dispose()
@@ -52,19 +68,50 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
         }
 
+        public bool TryGetAddressHash(EvmAddress address, out byte[] hash) => _addressHashCache.TryGetValue(address, out hash);
+
+        public void SetAddressHash(EvmAddress address, byte[] hash) => _addressHashCache[address] = hash;
+
+        public void ClearAddressHashCache() => _addressHashCache.Clear();
+
         public Task<Account> GetAccountAsync(string address)
+            => Task.FromResult(ReadAccountByFlatKey(GetAccountKey(address)));
+
+        public Task<Account> GetAccountAsync(EvmAddress address)
+            => Task.FromResult(ReadAccountByFlatKey(GetAccountKeyBytes(address)));
+
+        public Task<Account> GetAccountByHashAsync(byte[] accountHash)
+            => Task.FromResult(ReadAccountByFlatKey(accountHash));
+
+        private Account ReadAccountByFlatKey(byte[] key)
         {
-            var key = GetAccountKey(address);
             var data = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, key);
-            var account = RocksDbSerializer.DeserializeAccount(data);
-            return Task.FromResult(account);
+            var account = DecodeAccountValue(data);
+
+            if (account != null && _accountLayout.HasExternalCodeHash)
+                account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(key));
+
+            return account;
         }
 
         public Task SaveAccountAsync(string address, Account account)
         {
             var key = GetAccountKey(address);
-            var data = RocksDbSerializer.SerializeAccount(account);
+            var data = EncodeAccountValue(address, account);
             _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, key, data);
+            if (_accountLayout.HasExternalCodeHash && account.CodeHash != null)
+                _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(key), account.CodeHash);
+            TrackAccountModification(address);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveAccountAsync(EvmAddress address, Account account)
+        {
+            var key = GetAccountKeyBytes(address);
+            var data = EncodeAccountValue(address, account);
+            _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, key, data);
+            if (_accountLayout.HasExternalCodeHash && account.CodeHash != null)
+                _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(key), account.CodeHash);
             TrackAccountModification(address);
             return Task.CompletedTask;
         }
@@ -76,35 +123,108 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.FromResult(exists);
         }
 
+        public Task<bool> AccountExistsAsync(EvmAddress address)
+        {
+            var key = GetAccountKeyBytes(address);
+            var exists = _manager.KeyExists(RocksDbManager.CF_STATE_ACCOUNTS, key);
+            return Task.FromResult(exists);
+        }
+
+        public Task SaveAccountByHashAsync(byte[] accountHash, Account account)
+        {
+            _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, accountHash, EncodeFlatAccountValueByHash(account));
+            if (_accountLayout.HasExternalCodeHash && account.CodeHash != null)
+                _manager.Put(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(accountHash), account.CodeHash);
+            return Task.CompletedTask;
+        }
+
+        internal byte[] EncodeFlatAccountValueByHash(Account account)
+        {
+            var encoded = _accountLayout.EncodeAccount(account);
+            var data = new byte[20 + encoded.Length];
+            Buffer.BlockCopy(encoded, 0, data, 20, encoded.Length);
+            return _stateValuesVersioned ? StateValueEnvelope.Encode(data) : data;
+        }
+
+        internal byte[] GetCodeHashRowKey(byte[] accountHash) => GetCodeHashKey(accountHash);
+
+        public Task SaveStorageByHashAsync(byte[] accountHash, byte[] slotKeccak, byte[] value)
+        {
+            if (accountHash == null || accountHash.Length != 32)
+                throw new ArgumentException("accountHash must be 32 bytes", nameof(accountHash));
+            if (slotKeccak == null || slotKeccak.Length != 32)
+                throw new ArgumentException("slotKeccak must be 32 bytes", nameof(slotKeccak));
+            var key = new byte[64];
+            Buffer.BlockCopy(accountHash, 0, key, 0, 32);
+            Buffer.BlockCopy(slotKeccak, 0, key, 32, 32);
+            if (SnapFlatStorageValue.ClearsSlot(value)) _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
+            else _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, TrimStorageValue(value));
+            return Task.CompletedTask;
+        }
+
+        internal Account DecodeFlatAccountValue(byte[] data) => DecodeAccountValue(data);
+
+        internal bool HasExternalCodeHashLayout => _accountLayout.HasExternalCodeHash;
+
+        internal byte[] GetFlatCodeHash(byte[] accountHash)
+            => _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(accountHash));
+
+        internal void DeleteFlatAccountByHash(byte[] accountHash)
+        {
+            _manager.Delete(RocksDbManager.CF_STATE_ACCOUNTS, accountHash);
+            _manager.Delete(RocksDbManager.CF_STATE_ACCOUNTS, GetCodeHashKey(accountHash));
+        }
+
+        public Task DeleteAccountByHashAsync(byte[] accountHash)
+        {
+            DeleteFlatAccountByHash(accountHash);
+            return Task.CompletedTask;
+        }
+
         public Task DeleteAccountAsync(string address)
         {
-            var key = GetAccountKey(address);
-
             using var batch = _manager.CreateWriteBatch();
             var accountsCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_ACCOUNTS);
             var storageCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+            AddAccountDeleteToBatch(batch, accountsCf, storageCf, address);
+            _manager.Write(batch);
+            TrackAccountModification(address);
+            return Task.CompletedTask;
+        }
 
+        public Task DeleteAccountAsync(EvmAddress address)
+        {
+            using var batch = _manager.CreateWriteBatch();
+            var accountsCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_ACCOUNTS);
+            var storageCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+            AddAccountDeleteToBatchByKey(batch, accountsCf, storageCf, GetAccountKeyBytes(address));
+            _manager.Write(batch);
+            TrackAccountModification(address);
+            return Task.CompletedTask;
+        }
+
+        private void AddAccountDeleteToBatch(WriteBatch batch, ColumnFamilyHandle accountsCf, ColumnFamilyHandle storageCf, string address)
+            => AddAccountDeleteToBatchByKey(batch, accountsCf, storageCf, GetAccountKey(address));
+
+        private void AddAccountDeleteToBatchByKey(WriteBatch batch, ColumnFamilyHandle accountsCf, ColumnFamilyHandle storageCf, byte[] key)
+        {
             batch.Delete(key, accountsCf);
-
-            var prefix = key;
+            if (_accountLayout.HasExternalCodeHash)
+                batch.Delete(GetCodeHashKey(key), accountsCf);
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
-            iterator.Seek(prefix);
-
+            iterator.Seek(key);
             while (iterator.Valid())
             {
                 var storageKey = iterator.Key();
-                if (!StartsWith(storageKey, prefix))
-                    break;
+                if (!Nethereum.Util.ByteUtil.StartsWith(storageKey, key)) break;
                 batch.Delete(storageKey, storageCf);
                 iterator.Next();
             }
-
-            _manager.Write(batch);
-            return Task.CompletedTask;
         }
 
         public Task<Dictionary<string, Account>> GetAllAccountsAsync()
         {
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
             var result = new Dictionary<string, Account>();
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_ACCOUNTS);
@@ -113,19 +233,62 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                var data = iterator.Value();
 
-                var address = "0x" + key.ToHex();
-                var account = RocksDbSerializer.DeserializeAccount(data);
-                if (account != null)
+                if (key.Length != 32)
                 {
-                    result[address.ToLowerInvariant()] = account;
+                    iterator.Next();
+                    continue;
+                }
+
+                var data = iterator.Value();
+                var account = DecodeAccountValue(data, out var inlineAddress);
+                if (account != null && inlineAddress != null)
+                {
+                    if (hasExtCodeHash)
+                    {
+                        var chKey = GetCodeHashKey(key);
+                        account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, chKey);
+                    }
+
+                    var address = "0x" + inlineAddress.ToHex();
+                    result[address] = account;
                 }
 
                 iterator.Next();
             }
 
             return Task.FromResult(result);
+        }
+
+#pragma warning disable CS1998
+        public async System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
+#pragma warning restore CS1998
+        {
+            var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_ACCOUNTS);
+            iterator.SeekToFirst();
+            while (iterator.Valid())
+            {
+                var key = iterator.Key();
+                if (key.Length != 32)
+                {
+                    iterator.Next();
+                    continue;
+                }
+                var data = iterator.Value();
+                var account = DecodeAccountValue(data, out var inlineAddress);
+                if (account != null && inlineAddress != null)
+                {
+                    if (hasExtCodeHash)
+                    {
+                        var chKey = GetCodeHashKey(key);
+                        account.CodeHash = _manager.Get(RocksDbManager.CF_STATE_ACCOUNTS, chKey);
+                    }
+                    var address = "0x" + inlineAddress.ToHex();
+                    yield return new System.Collections.Generic.KeyValuePair<string, Account>(address, account);
+                }
+                iterator.Next();
+            }
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
@@ -135,27 +298,70 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.FromResult(data);
         }
 
+        public Task<byte[]> GetStorageAsync(EvmAddress address, BigInteger slot)
+        {
+            var key = GetStorageKeyFromBytes(GetAccountKeyBytes(address), slot);
+            var data = _manager.Get(RocksDbManager.CF_STATE_STORAGE, key);
+            return Task.FromResult(data);
+        }
+
         public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
         {
             var key = GetStorageKey(address, slot);
-
-            if (value == null || value.All(b => b == 0))
-            {
-                _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
-            }
-            else
-            {
-                _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, value);
-            }
-
+            if (SnapFlatStorageValue.ClearsSlot(value)) _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
+            else _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, TrimStorageValue(value));
             TrackStorageModification(key, address, slot);
             return Task.CompletedTask;
         }
 
-        public Task<Dictionary<BigInteger, byte[]>> GetAllStorageAsync(string address)
+        public Task SaveStorageAsync(EvmAddress address, BigInteger slot, byte[] value)
         {
-            var result = new Dictionary<BigInteger, byte[]>();
-            var prefix = GetAccountKey(address);
+            var key = GetStorageKeyFromBytes(GetAccountKeyBytes(address), slot);
+            if (SnapFlatStorageValue.ClearsSlot(value)) _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
+            else _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, TrimStorageValue(value));
+            TrackStorageModification(key, address, slot);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
+        {
+            if (slotKeccak == null || slotKeccak.Length != 32)
+                throw new ArgumentException("slotKeccak must be 32 bytes (keccak(slot))", nameof(slotKeccak));
+
+            var addressBytes = GetAccountKey(address);
+            var key = new byte[addressBytes.Length + 32];
+            Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
+            Buffer.BlockCopy(slotKeccak, 0, key, addressBytes.Length, 32);
+
+            if (SnapFlatStorageValue.ClearsSlot(value)) _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
+            else _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, TrimStorageValue(value));
+            return Task.CompletedTask;
+        }
+
+        public Task SaveStorageByKeccakAsync(EvmAddress address, byte[] slotKeccak, byte[] value)
+        {
+            if (slotKeccak == null || slotKeccak.Length != 32)
+                throw new ArgumentException("slotKeccak must be 32 bytes (keccak(slot))", nameof(slotKeccak));
+
+            var addressBytes = GetAccountKeyBytes(address);
+            var key = new byte[addressBytes.Length + 32];
+            Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
+            Buffer.BlockCopy(slotKeccak, 0, key, addressBytes.Length, 32);
+
+            if (SnapFlatStorageValue.ClearsSlot(value)) _manager.Delete(RocksDbManager.CF_STATE_STORAGE, key);
+            else _manager.Put(RocksDbManager.CF_STATE_STORAGE, key, TrimStorageValue(value));
+            return Task.CompletedTask;
+        }
+
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
+            => GetAllStorageByPrefixAsync(GetAccountKey(address));
+
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(EvmAddress address)
+            => GetAllStorageByPrefixAsync(GetAccountKeyBytes(address));
+
+        private Task<Dictionary<byte[], byte[]>> GetAllStorageByPrefixAsync(byte[] prefix)
+        {
+            var result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
             iterator.Seek(prefix);
@@ -163,14 +369,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                     break;
 
-                var slotBytes = new byte[key.Length - prefix.Length];
-                Buffer.BlockCopy(key, prefix.Length, slotBytes, 0, slotBytes.Length);
-                var slot = new BigInteger(slotBytes, isUnsigned: true, isBigEndian: true);
+                var slotHash = new byte[key.Length - prefix.Length];
+                Buffer.BlockCopy(key, prefix.Length, slotHash, 0, slotHash.Length);
 
-                result[slot] = iterator.Value();
+                result[slotHash] = iterator.Value();
                 iterator.Next();
             }
 
@@ -179,25 +384,48 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task ClearStorageAsync(string address)
         {
-            var prefix = GetAccountKey(address);
-
             using var batch = _manager.CreateWriteBatch();
-            var storageCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+            var cf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+            AddStorageClearToBatch(batch, cf, address, out var normalizedAddress);
+            _manager.Write(batch);
+            lock (_lock)
+            {
+                _storageClearedAddresses.Add(normalizedAddress);
+            }
+            return Task.CompletedTask;
+        }
 
+        public Task ClearStorageAsync(EvmAddress address)
+        {
+            using var batch = _manager.CreateWriteBatch();
+            var cf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+            AddStorageClearToBatchByKey(batch, cf, GetAccountKeyBytes(address));
+            var normalizedAddress = address.ToHexLower();
+            _manager.Write(batch);
+            lock (_lock)
+            {
+                _storageClearedAddresses.Add(normalizedAddress);
+            }
+            return Task.CompletedTask;
+        }
+
+        private void AddStorageClearToBatch(WriteBatch batch, ColumnFamilyHandle storageCf, string address, out string normalizedAddress)
+        {
+            AddStorageClearToBatchByKey(batch, storageCf, GetAccountKey(address));
+            normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+        }
+
+        private void AddStorageClearToBatchByKey(WriteBatch batch, ColumnFamilyHandle storageCf, byte[] prefix)
+        {
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
             iterator.Seek(prefix);
-
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (!StartsWith(key, prefix))
-                    break;
+                if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix)) break;
                 batch.Delete(key, storageCf);
                 iterator.Next();
             }
-
-            _manager.Write(batch);
-            return Task.CompletedTask;
         }
 
         public Task<byte[]> GetCodeAsync(byte[] codeHash)
@@ -212,6 +440,81 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (codeHash == null) return Task.CompletedTask;
             _manager.Put(RocksDbManager.CF_STATE_CODE, codeHash, code);
             TrackCodeModification(codeHash);
+            return Task.CompletedTask;
+        }
+
+        private void AddAccountPutToBatch(WriteBatch batch, ColumnFamilyHandle accountsCf, string address, Account account)
+        {
+            var key = GetAccountKey(address);
+            var data = EncodeAccountValue(address, account);
+            batch.Put(key, data, accountsCf);
+            if (_accountLayout.HasExternalCodeHash && account.CodeHash != null)
+                batch.Put(GetCodeHashKey(key), account.CodeHash, accountsCf);
+        }
+
+        private void AddStorageWriteToBatch(WriteBatch batch, ColumnFamilyHandle storageCf, string address, BigInteger slot, byte[] value)
+        {
+            var key = GetStorageKey(address, slot);
+            bool isZero = value == null || value.All(b => b == 0);
+            if (isZero) batch.Delete(key, storageCf);
+            else batch.Put(key, TrimStorageValue(value), storageCf);
+        }
+
+        private static byte[] TrimStorageValue(byte[] value) => value.TrimZeroBytes();
+
+        internal void AddBatchToWriteBatch(WriteBatch writeBatch, FlatStateBatch batch)
+        {
+            var accountsCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_ACCOUNTS);
+            var storageCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_STORAGE);
+            var codeCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_CODE);
+
+            foreach (var address in batch.DeletedAccountAddresses)
+                AddAccountDeleteToBatch(writeBatch, accountsCf, storageCf, address);
+
+            foreach (var address in batch.ClearedStorageAddresses)
+                AddStorageClearToBatch(writeBatch, storageCf, address, out _);
+
+            foreach (var entry in batch.NonZeroStorage)
+                AddStorageWriteToBatch(writeBatch, storageCf, entry.Address, entry.Slot, entry.Value);
+
+            foreach (var entry in batch.DeletedSlots)
+                AddStorageWriteToBatch(writeBatch, storageCf, entry.Address, entry.Slot, Array.Empty<byte>());
+
+            foreach (var entry in batch.Accounts)
+                AddAccountPutToBatch(writeBatch, accountsCf, entry.Address, entry.Account);
+
+            foreach (var entry in batch.Code)
+                writeBatch.Put(entry.CodeHash, entry.Code, codeCf);
+        }
+
+        public Task ApplyBatchAsync(FlatStateBatch batch)
+        {
+            if (batch == null) throw new ArgumentNullException(nameof(batch));
+
+            using var writeBatch = _manager.CreateWriteBatch();
+            AddBatchToWriteBatch(writeBatch, batch);
+
+            _manager.Write(writeBatch);
+
+            foreach (var address in batch.DeletedAccountAddresses)
+                TrackAccountModification(address);
+            if (batch.ClearedStorageAddresses.Count > 0)
+            {
+                lock (_lock)
+                {
+                    foreach (var address in batch.ClearedStorageAddresses)
+                        _storageClearedAddresses.Add(AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant());
+                }
+            }
+            foreach (var entry in batch.NonZeroStorage)
+                TrackStorageModification(GetStorageKey(entry.Address, entry.Slot), entry.Address, entry.Slot);
+            foreach (var entry in batch.DeletedSlots)
+                TrackStorageModification(GetStorageKey(entry.Address, entry.Slot), entry.Address, entry.Slot);
+            foreach (var entry in batch.Accounts)
+                TrackAccountModification(entry.Address);
+            foreach (var entry in batch.Code)
+                TrackCodeModification(entry.CodeHash);
+
             return Task.CompletedTask;
         }
 
@@ -250,7 +553,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     while (iterator.Valid())
                     {
                         var key = iterator.Key();
-                        if (!StartsWith(key, prefix))
+                        if (!Nethereum.Util.ByteUtil.StartsWith(key, prefix))
                             break;
                         batch.Delete(key, storageCf);
                         iterator.Next();
@@ -260,7 +563,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 foreach (var kvp in rocksSnapshot.PendingAccounts)
                 {
                     var key = kvp.Key.HexToByteArray();
-                    var data = RocksDbSerializer.SerializeAccount(kvp.Value);
+                    rocksSnapshot.OriginalAddresses.TryGetValue(kvp.Key, out var originalAddr);
+                    var data = EncodeAccountValue(originalAddr, kvp.Value);
                     batch.Put(key, data, accountsCf);
                 }
 
@@ -276,7 +580,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                         }
                         else
                         {
-                            batch.Put(key, slotKvp.Value, storageCf);
+                            batch.Put(key, TrimStorageValue(slotKvp.Value), storageCf);
                         }
                     }
                 }
@@ -361,13 +665,25 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return Task.CompletedTask;
         }
 
-        private static byte[] GetAccountKey(string address)
+        private byte[] GetAccountKey(string address) => GetAccountKeyBytes(EvmAddress.FromHex(address));
+
+        private byte[] GetAccountKeyBytes(EvmAddress address)
         {
-            var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
-            return normalized.HexToByteArray();
+            if (_addressHashCache.TryGetValue(address, out var cached)) return cached;
+            var key = StateKeys.AccountKey(address);
+            _addressHashCache[address] = key;
+            return key;
         }
 
-        private static byte[] GetStorageKey(string address, BigInteger slot)
+        private static byte[] GetCodeHashKey(byte[] accountKey)
+        {
+            var chKey = new byte[accountKey.Length + 1];
+            Buffer.BlockCopy(accountKey, 0, chKey, 0, accountKey.Length);
+            chKey[accountKey.Length] = 0x01;
+            return chKey;
+        }
+
+        private byte[] GetStorageKey(string address, BigInteger slot)
         {
             var addressBytes = GetAccountKey(address);
             return GetStorageKeyFromBytes(addressBytes, slot);
@@ -375,24 +691,45 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private static byte[] GetStorageKeyFromBytes(byte[] addressBytes, BigInteger slot)
         {
-            var slotBytes = slot.ToByteArray(isUnsigned: true, isBigEndian: true).PadBytes(32);
+            var slotHash = StateKeys.StorageSlotKey(slot);
 
-            var key = new byte[addressBytes.Length + slotBytes.Length];
+            var key = new byte[addressBytes.Length + slotHash.Length];
             Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
-            Buffer.BlockCopy(slotBytes, 0, key, addressBytes.Length, slotBytes.Length);
+            Buffer.BlockCopy(slotHash, 0, key, addressBytes.Length, slotHash.Length);
             return key;
         }
 
-        private static bool StartsWith(byte[] data, byte[] prefix)
-        {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
+        private byte[] EncodeAccountValue(string address, Account account)
+            => EncodeAccountValue(EvmAddress.FromHex(address), account);
 
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (data[i] != prefix[i]) return false;
-            }
-            return true;
+        private byte[] EncodeAccountValue(EvmAddress address, Account account)
+        {
+            var encoded = _accountLayout.EncodeAccount(account);
+            var addressBytes = address.ToByteArray();
+            var value = new byte[20 + encoded.Length];
+            Buffer.BlockCopy(addressBytes, 0, value, 0, 20);
+            Buffer.BlockCopy(encoded, 0, value, 20, encoded.Length);
+            return _stateValuesVersioned ? StateValueEnvelope.Encode(value) : value;
+        }
+
+        private Account DecodeAccountValue(byte[] data)
+        {
+            return DecodeAccountValue(data, out _);
+        }
+
+        private Account DecodeAccountValue(byte[] data, out byte[] inlineAddress)
+        {
+            inlineAddress = null;
+            if (data == null) return null;
+
+            ReadOnlySpan<byte> payload = _stateValuesVersioned
+                ? StateValueEnvelope.Decode(data, out _)
+                : data;
+
+            if (payload.Length < 20) return null;
+            inlineAddress = payload.Slice(0, 20).ToArray();
+            var encoded = payload.Slice(20).ToArray();
+            return _accountLayout.DecodeAccount(encoded);
         }
 
         private void TrackAccountModification(string address)
@@ -408,11 +745,45 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
         }
 
+        private void TrackAccountModification(EvmAddress address)
+        {
+            var addressHex = address.ToHexLower();
+            lock (_lock)
+            {
+                _dirtyAccounts.Add(addressHex);
+                foreach (var snapshot in _activeSnapshots.Values)
+                {
+                    snapshot.TrackAccountModification(addressHex);
+                }
+            }
+        }
+
         private void TrackStorageModification(byte[] storageKey, string address, BigInteger slot)
         {
             lock (_lock)
             {
                 var normalizedAddress = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+                _dirtyAccounts.Add(normalizedAddress);
+
+                if (!_dirtyStorageSlots.TryGetValue(normalizedAddress, out var dirtySlots))
+                {
+                    dirtySlots = new HashSet<BigInteger>();
+                    _dirtyStorageSlots[normalizedAddress] = dirtySlots;
+                }
+                dirtySlots.Add(slot);
+
+                foreach (var snapshot in _activeSnapshots.Values)
+                {
+                    snapshot.TrackStorageModification(storageKey);
+                }
+            }
+        }
+
+        private void TrackStorageModification(byte[] storageKey, EvmAddress address, BigInteger slot)
+        {
+            var normalizedAddress = address.ToHexLower();
+            lock (_lock)
+            {
                 _dirtyAccounts.Add(normalizedAddress);
 
                 if (!_dirtyStorageSlots.TryGetValue(normalizedAddress, out var dirtySlots))
@@ -459,13 +830,23 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
         }
 
+        public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
+        {
+            lock (_lock)
+            {
+                return Task.FromResult<IReadOnlyCollection<string>>(_storageClearedAddresses.ToList());
+            }
+        }
+
         public Task ClearDirtyTrackingAsync()
         {
             lock (_lock)
             {
                 _dirtyAccounts.Clear();
                 _dirtyStorageSlots.Clear();
+                _storageClearedAddresses.Clear();
             }
+            _addressHashCache.Clear();
             return Task.CompletedTask;
         }
     }

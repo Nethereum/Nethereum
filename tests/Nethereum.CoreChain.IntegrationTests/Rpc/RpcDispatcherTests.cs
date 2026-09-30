@@ -64,7 +64,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             Assert.Null(response.Error);
             Assert.NotNull(response.Result);
-            // ChainId 31337 = 0x7a69
             var resultStr = response.Result?.ToString();
             Assert.True(resultStr == "0x7a69" || resultStr == "31337", $"Expected 0x7a69 or 31337, got {resultStr}");
         }
@@ -115,7 +114,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            // EOA has no code, should return "0x" or empty
             var result = response.Result?.ToString();
             Assert.True(result == "0x" || result == null || result == "",
                 $"Expected empty code for EOA, got: {result}");
@@ -158,7 +156,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         [Fact]
         public async Task EthGetBlockByNumber_WithTransactions_ReturnsFullBlock()
         {
-            // First send a transaction to have something in a block
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
                 BigInteger.Parse("100000000000000000"));
@@ -223,7 +220,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         [Fact]
         public async Task EthGetTransactionReceipt_ReturnsReceipt()
         {
-            // First send a transaction
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
                 BigInteger.Parse("100000000000000000"));
@@ -646,6 +642,202 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             Assert.NotNull(response.Result);
         }
 
+        private const string ConstantReturn42InitCode = "600a600c600039600a6000f3602a60005260206000f3";
+        private const string ConstantReturn99RuntimeCode = "0x606360005260206000f3";
+        private const string OwnBalanceReturnInitCode = "600a600c600039600a6000f3303160005260206000f3";
+
+        private async Task<string> DeployBytecodeAsync(string initCodeHex)
+        {
+            var deployTx = _fixture.CreateContractDeploymentTransaction(initCodeHex.HexToByteArray());
+            var deployResult = await _fixture.Node.SendTransactionAsync(deployTx);
+            Assert.True(deployResult.Success);
+
+            var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(deployTx.Hash);
+            return receiptInfo.ContractAddress;
+        }
+
+        [Fact]
+        public async Task EthCall_WithCodeOverride_OnCallTarget_UsesOverriddenCode()
+        {
+            var contractAddress = await DeployBytecodeAsync(ConstantReturn42InitCode);
+
+            var callInput = JObject.FromObject(new
+            {
+                to = contractAddress,
+                data = "0x"
+            });
+
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new { code = ConstantReturn99RuntimeCode }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            var result = response.Result.ToString();
+            Assert.Equal(new BigInteger(99), result.HexToBigInteger(false));
+        }
+
+        [Fact]
+        public async Task EthCall_WithCodeOverride_DoesNotPersist()
+        {
+            var contractAddress = await DeployBytecodeAsync(ConstantReturn42InitCode);
+
+            var callInput = JObject.FromObject(new
+            {
+                to = contractAddress,
+                data = "0x"
+            });
+
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new { code = ConstantReturn99RuntimeCode }
+            });
+
+            var overriddenRequest = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var overriddenResponse = await _dispatcher.DispatchAsync(overriddenRequest);
+            Assert.Null(overriddenResponse.Error);
+            Assert.Equal(new BigInteger(99), overriddenResponse.Result.ToString().HexToBigInteger(false));
+
+            var plainRequest = new RpcRequestMessage(1, "eth_call", callInput, "latest");
+            var plainResponse = await _dispatcher.DispatchAsync(plainRequest);
+
+            Assert.Null(plainResponse.Error);
+            Assert.Equal(new BigInteger(42), plainResponse.Result.ToString().HexToBigInteger(false));
+        }
+
+        [Fact]
+        public async Task EthCall_WithBalanceOverride_Reflected()
+        {
+            var contractAddress = await DeployBytecodeAsync(OwnBalanceReturnInitCode);
+
+            var callInput = JObject.FromObject(new
+            {
+                to = contractAddress,
+                data = "0x"
+            });
+
+            var overriddenBalance = BigInteger.Parse("1000000000000000000");
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new { balance = new HexBigInteger(overriddenBalance).HexValue }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            Assert.Equal(overriddenBalance, response.Result.ToString().HexToBigInteger(false));
+        }
+
+        private const string SloadSlot0InitCode =
+            "602a600055600b6011600039600b6000f360005460005260206000f3";
+
+        private const string StorageSlot1 =
+            "0x0000000000000000000000000000000000000000000000000000000000000001";
+        private const string StorageSlot1ValueFf =
+            "0x00000000000000000000000000000000000000000000000000000000000000ff";
+
+        [Fact]
+        public async Task EthCall_StateDiffOverride_PreservesUnlistedSlots()
+        {
+            var contractAddress = await DeployBytecodeAsync(SloadSlot0InitCode);
+
+            var callInput = JObject.FromObject(new { to = contractAddress, data = "0x" });
+
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new
+                {
+                    stateDiff = new Dictionary<string, string> { [StorageSlot1] = StorageSlot1ValueFf }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            Assert.Equal(new BigInteger(0x2a), response.Result.ToString().HexToBigInteger(false));
+        }
+
+        [Fact]
+        public async Task EthCall_StateOverride_FullReplace_ClearsUnlistedSlots()
+        {
+            var contractAddress = await DeployBytecodeAsync(SloadSlot0InitCode);
+
+            var callInput = JObject.FromObject(new { to = contractAddress, data = "0x" });
+
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new
+                {
+                    state = new Dictionary<string, string> { [StorageSlot1] = StorageSlot1ValueFf }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.Null(response.Error);
+            Assert.Equal(BigInteger.Zero, response.Result.ToString().HexToBigInteger(false));
+        }
+
+        [Fact]
+        public async Task EthCall_MalformedStateField_ReturnsInvalidParams()
+        {
+            var contractAddress = await DeployBytecodeAsync(SloadSlot0InitCode);
+
+            var callInput = JObject.FromObject(new { to = contractAddress, data = "0x" });
+
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new { state = "0xnotanobject" }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.NotNull(response.Error);
+            Assert.Equal(-32602, response.Error.Code);
+        }
+
+        [Fact]
+        public async Task EthCall_MalformedOverrideSet_ReturnsInvalidParams()
+        {
+            var callInput = JObject.FromObject(new { to = _fixture.RecipientAddress, data = "0x" });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", "notanobject");
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.NotNull(response.Error);
+            Assert.Equal(-32602, response.Error.Code);
+        }
+
+        [Fact]
+        public async Task EthCall_BothStateAndStateDiff_ReturnsInvalidParams()
+        {
+            var contractAddress = await DeployBytecodeAsync(SloadSlot0InitCode);
+
+            var callInput = JObject.FromObject(new { to = contractAddress, data = "0x" });
+
+            var stateOverrides = JObject.FromObject(new Dictionary<string, object>
+            {
+                [contractAddress] = new
+                {
+                    state = new Dictionary<string, string> { [StorageSlot1] = StorageSlot1ValueFf },
+                    stateDiff = new Dictionary<string, string> { [StorageSlot1] = StorageSlot1ValueFf }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_call", callInput, "latest", stateOverrides);
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.NotNull(response.Error);
+            Assert.Equal(-32602, response.Error.Code);
+        }
+
         #endregion
 
         #region eth_estimateGas Tests
@@ -797,7 +989,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var response = await _dispatcher.DispatchAsync(request);
 
             Assert.Null(response.Error);
-            // Result may be null or a JsonElement with ValueKind.Null
             if (response.Result is JsonElement jsonElement)
             {
                 Assert.Equal(JsonValueKind.Null, jsonElement.ValueKind);
@@ -873,6 +1064,68 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             var toValue = tx["to"]?.ToString();
             Assert.True(string.IsNullOrEmpty(toValue) || toValue == "null");
+        }
+
+        #endregion
+
+        #region eth_simulateV1 validation-abort tests (RefuseFailedExecution RpcException passthrough)
+
+        private const string UnfundedSender = "0x000000000000000000000000000000000000ad";
+
+        [Fact]
+        public async Task EthSimulateV1_ValidationTrueWithAnUnfundedSender_ReturnsInsufficientFundsErrorThroughTheDispatcher()
+        {
+            var payload = JObject.FromObject(new
+            {
+                validation = true,
+                blockStateCalls = new object[]
+                {
+                    new
+                    {
+                        blockOverrides = new { baseFeePerGas = "0x0" },
+                        calls = new object[]
+                        {
+                            new { from = UnfundedSender, to = _fixture.RecipientAddress, value = "0x1", maxFeePerGas = "0x1" }
+                        }
+                    }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_simulateV1", payload);
+
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.NotNull(response.Error);
+            Assert.Equal(-38014, response.Error.Code);
+            Assert.Contains("insufficient funds", response.Error.Message);
+        }
+
+        [Fact]
+        public async Task EthSimulateV1_ValidationTrueWithMaxFeeBelowBaseFee_ReturnsFeeErrorThroughTheDispatcher()
+        {
+            var payload = JObject.FromObject(new
+            {
+                validation = true,
+                blockStateCalls = new object[]
+                {
+                    new
+                    {
+                        blockOverrides = new { baseFeePerGas = "0x3b9aca00" },
+                        calls = new object[]
+                        {
+                            new { from = _fixture.Address, to = _fixture.RecipientAddress, value = "0x0", maxFeePerGas = "0x1" }
+                        }
+                    }
+                }
+            });
+
+            var request = new RpcRequestMessage(1, "eth_simulateV1", payload);
+
+            var response = await _dispatcher.DispatchAsync(request);
+
+            Assert.NotNull(response.Error);
+            Assert.Equal(-38012, response.Error.Code);
+            Assert.Contains("base fee", response.Error.Message);
         }
 
         #endregion

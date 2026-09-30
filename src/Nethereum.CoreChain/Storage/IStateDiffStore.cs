@@ -12,6 +12,10 @@ namespace Nethereum.CoreChain.Storage
 
         Task<(bool Found, byte[] PreValue)> GetFirstStoragePreValueAfterBlockAsync(string address, BigInteger slot, BigInteger blockNumber);
 
+        Task<BlockStateDiff> GetBlockDiffAsync(BigInteger blockNumber);
+
+        Task DeleteBlockDiffAsync(BigInteger blockNumber);
+
         Task DeleteDiffsAboveBlockAsync(BigInteger blockNumber);
 
         Task DeleteDiffsBelowBlockAsync(BigInteger blockNumber);

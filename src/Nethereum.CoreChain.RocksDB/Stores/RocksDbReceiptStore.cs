@@ -1,10 +1,13 @@
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.RocksDB.History;
 using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Storage.History;
 using Nethereum.Model;
+using Nethereum.Util;
+using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
@@ -12,158 +15,122 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly RocksDbManager _manager;
         private readonly IBlockStore _blockStore;
+        private readonly RocksDbSerializer _serializer;
+        private readonly ColumnFamilyHandle _receiptBody, _txHashIndex;
+        private readonly bool _writeTxHashIndex;
 
-        public RocksDbReceiptStore(RocksDbManager manager, IBlockStore blockStore = null)
+        public RocksDbReceiptStore(RocksDbManager manager, IBlockStore blockStore = null, RocksDbSerializer serializer = null,
+            string receiptBodyCf = null, string txHashIndexCf = null, bool writeTxHashIndex = true)
         {
             _manager = manager;
             _blockStore = blockStore;
+            _serializer = serializer ?? RocksDbSerializer.Default;
+            _receiptBody = manager.GetColumnFamily(receiptBodyCf ?? HistoryColumnFamilies.ReceiptBody);
+            _txHashIndex = manager.GetColumnFamily(txHashIndexCf ?? HistoryColumnFamilies.TxHashIndex);
+            _writeTxHashIndex = writeTxHashIndex;
+        }
+
+        private ReceiptInfo InfoAt(ulong n, uint i)
+        {
+            using var lease = _manager.Lease();
+            var b = lease.Database.Get(HistoryKeys.TxKey(n, i), _receiptBody);
+            return b == null ? null : _serializer.DeserializeReceiptInfoWith(b);
+        }
+
+        private ReceiptInfo InfoByHash(byte[] txHash)
+        {
+            byte[] loc;
+            using (var lease = _manager.Lease()) loc = lease.Database.Get(txHash, _txHashIndex);
+            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
+            return InfoAt(HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc));
         }
 
         public Task<Receipt> GetByTxHashAsync(byte[] txHash)
-        {
-            if (txHash == null) return Task.FromResult<Receipt>(null);
-
-            var data = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
-            if (data == null) return Task.FromResult<Receipt>(null);
-
-            var info = RocksDbSerializer.DeserializeReceiptInfo(data);
-            return Task.FromResult(info?.Receipt);
-        }
+            => Task.FromResult(txHash == null ? null : InfoByHash(txHash)?.Receipt);
 
         public Task<ReceiptInfo> GetInfoByTxHashAsync(byte[] txHash)
-        {
-            if (txHash == null) return Task.FromResult<ReceiptInfo>(null);
+            => Task.FromResult(txHash == null ? null : InfoByHash(txHash));
 
-            var data = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
-            if (data == null) return Task.FromResult<ReceiptInfo>(null);
-
-            var info = RocksDbSerializer.DeserializeReceiptInfo(data);
-            return Task.FromResult(info);
-        }
-
-        public Task<List<Receipt>> GetByBlockHashAsync(byte[] blockHash)
+        public Task<List<Receipt>> GetByBlockNumberAsync(BigInteger blockNumber)
         {
             var result = new List<Receipt>();
-            if (blockHash == null) return Task.FromResult(result);
-
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_RECEIPT_BY_BLOCK);
-            iterator.Seek(blockHash);
-
-            while (iterator.Valid())
+            var n = (ulong)blockNumber;
+            using var lease = _manager.Lease();
+            using var it = lease.Database.NewIterator(_receiptBody);
+            for (it.Seek(HistoryKeys.TxKey(n, 0)); it.Valid(); it.Next())
             {
-                var key = iterator.Key();
-                if (!StartsWith(key, blockHash))
-                    break;
-
-                var txHash = iterator.Value();
-                var receiptData = _manager.Get(RocksDbManager.CF_RECEIPTS, txHash);
-                if (receiptData != null)
-                {
-                    var info = RocksDbSerializer.DeserializeReceiptInfo(receiptData);
-                    if (info != null)
-                        result.Add(info.Receipt);
-                }
-
-                iterator.Next();
+                if (HistoryKeys.ReadBlockNumber(it.Key()) != n) break;
+                var info = _serializer.DeserializeReceiptInfoWith(it.Value());
+                if (info != null) result.Add(info.Receipt);
             }
-
             return Task.FromResult(result);
         }
 
-        public async Task<List<Receipt>> GetByBlockNumberAsync(BigInteger blockNumber)
+        public async Task<List<Receipt>> GetByBlockHashAsync(byte[] blockHash)
         {
-            if (_blockStore == null)
-                return new List<Receipt>();
-
-            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
-            if (blockHash == null)
-                return new List<Receipt>();
-
-            return await GetByBlockHashAsync(blockHash);
+            var n = await NumberOf(blockHash).ConfigureAwait(false);
+            return n.HasValue ? await GetByBlockNumberAsync(n.Value).ConfigureAwait(false) : new List<Receipt>();
         }
 
         public Task SaveAsync(Receipt receipt, byte[] txHash, byte[] blockHash, BigInteger blockNumber, int txIndex, BigInteger gasUsed, string contractAddress, BigInteger effectiveGasPrice)
         {
             if (receipt == null || txHash == null) return Task.CompletedTask;
-
-            var info = new ReceiptInfo
-            {
-                Receipt = receipt,
-                TxHash = txHash,
-                BlockHash = blockHash,
-                BlockNumber = blockNumber,
-                TransactionIndex = txIndex,
-                GasUsed = gasUsed,
-                ContractAddress = contractAddress,
-                EffectiveGasPrice = effectiveGasPrice
-            };
-
+            var key = HistoryKeys.TxKey((ulong)blockNumber, (uint)txIndex);
             using var batch = _manager.CreateWriteBatch();
-            var receiptsCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPTS);
-            var receiptByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPT_BY_BLOCK);
-
-            var data = RocksDbSerializer.SerializeReceiptInfo(info);
-            batch.Put(txHash, data, receiptsCf);
-
-            if (blockHash != null)
+            batch.Put(key, _serializer.SerializeReceiptInfoWith(new ReceiptInfo
             {
-                var blockReceiptKey = CreateBlockReceiptKey(blockHash, txIndex);
-                batch.Put(blockReceiptKey, txHash, receiptByBlockCf);
-            }
-
+                Receipt = receipt, TxHash = txHash, BlockHash = blockHash, BlockNumber = blockNumber,
+                TransactionIndex = txIndex, GasUsed = gasUsed, ContractAddress = contractAddress, EffectiveGasPrice = effectiveGasPrice,
+            }), _receiptBody);
+            if (_writeTxHashIndex) batch.Put(txHash, key, _txHashIndex);
             _manager.Write(batch);
             return Task.CompletedTask;
         }
 
-        public async Task DeleteByBlockNumberAsync(BigInteger blockNumber)
+        public Task SaveManyAsync(byte[] blockHash, BigInteger blockNumber, IReadOnlyList<ReceiptSaveItem> items)
         {
-            if (_blockStore == null) return;
-
-            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
-            if (blockHash == null) return;
-
+            if (items == null || items.Count == 0) return Task.CompletedTask;
             using var batch = _manager.CreateWriteBatch();
-            var receiptsCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPTS);
-            var receiptByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_RECEIPT_BY_BLOCK);
-
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_RECEIPT_BY_BLOCK);
-            iterator.Seek(blockHash);
-
-            while (iterator.Valid())
-            {
-                var key = iterator.Key();
-                if (!StartsWith(key, blockHash))
-                    break;
-
-                var txHash = iterator.Value();
-                batch.Delete(txHash, receiptsCf);
-                batch.Delete(key, receiptByBlockCf);
-
-                iterator.Next();
-            }
-
+            StageManyInto(batch, blockHash, blockNumber, items);
             _manager.Write(batch);
+            return Task.CompletedTask;
         }
 
-        private static byte[] CreateBlockReceiptKey(byte[] blockHash, int txIndex)
+        public void StageManyInto(WriteBatch batch, byte[] blockHash, BigInteger blockNumber, IReadOnlyList<ReceiptSaveItem> items)
         {
-            var indexBytes = BitConverter.GetBytes(txIndex);
-            var key = new byte[blockHash.Length + indexBytes.Length];
-            Buffer.BlockCopy(blockHash, 0, key, 0, blockHash.Length);
-            Buffer.BlockCopy(indexBytes, 0, key, blockHash.Length, indexBytes.Length);
-            return key;
-        }
-
-        private static bool StartsWith(byte[] data, byte[] prefix)
-        {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
-
-            for (int i = 0; i < prefix.Length; i++)
+            if (items == null || items.Count == 0) return;
+            var n = (ulong)blockNumber;
+            foreach (var it in items)
             {
-                if (data[i] != prefix[i]) return false;
+                if (it.Receipt == null || it.TxHash == null) continue;
+                var key = HistoryKeys.TxKey(n, (uint)it.TxIndex);
+                batch.Put(key, _serializer.SerializeReceiptInfoWith(new ReceiptInfo
+                {
+                    Receipt = it.Receipt, TxHash = it.TxHash, BlockHash = blockHash, BlockNumber = blockNumber,
+                    TransactionIndex = it.TxIndex, GasUsed = it.GasUsed, ContractAddress = it.ContractAddress, EffectiveGasPrice = it.EffectiveGasPrice,
+                }), _receiptBody);
+                if (_writeTxHashIndex) batch.Put(it.TxHash, key, _txHashIndex);
             }
-            return true;
         }
+
+        public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
+        {
+            if (blockNumber < 0) return Task.CompletedTask;
+            var fromKey = HistoryKeys.TxKey((ulong)blockNumber, 0);
+            using var batch = _manager.CreateWriteBatch();
+            batch.DeleteRange(fromKey, (ulong)fromKey.Length, MaxTxBound, (ulong)MaxTxBound.Length, _receiptBody);
+            _manager.Write(batch);
+            return Task.CompletedTask;
+        }
+
+        private async Task<ulong?> NumberOf(byte[] blockHash)
+        {
+            if (blockHash == null || _blockStore == null) return null;
+            var header = await _blockStore.GetByHashAsync(blockHash).ConfigureAwait(false);
+            return header == null ? (ulong?)null : (ulong)header.BlockNumber.ToBigInteger();
+        }
+
+        private static readonly byte[] MaxTxBound =
+            { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
     }
 }

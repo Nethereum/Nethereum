@@ -11,7 +11,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
             var filterInput = GetJsonElement(request, 0);
-            var filter = await ParseLogFilterAsync(filterInput, context);
+            var filter = await LogFilterParser.ParseAsync(filterInput, context);
             var currentBlock = await context.Node.GetBlockNumberAsync();
             var filterId = context.Node.Filters.CreateLogFilter(filter, currentBlock);
             return Success(request.Id, filterId);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Rpc;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
@@ -33,7 +34,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                     var configJson = GetJsonElement(request, 2);
                     if (configJson.TryGetProperty("tracer", out var tracerProp))
                         tracer = tracerProp.GetString();
-                    opcodeConfig = ParseOpcodeConfig(configJson);
+                    opcodeConfig = DebugTraceConfigParser.ParseOpcodeConfig(configJson);
                     stateOverrides = ParseStateOverrides(configJson);
                 }
 
@@ -104,87 +105,15 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
         private static Dictionary<string, StateOverride> ParseStateOverrides(JsonElement element)
         {
-            if (!element.TryGetProperty("stateOverrides", out var stateOverridesProp))
+            if (!element.TryGetProperty("stateOverrides", out var stateOverridesProp) ||
+                stateOverridesProp.ValueKind == JsonValueKind.Null)
                 return null;
 
-            var overrides = new Dictionary<string, StateOverride>();
-            foreach (var prop in stateOverridesProp.EnumerateObject())
-            {
-                overrides[prop.Name] = ParseStateOverride(prop.Value);
-            }
-            return overrides;
+            if (stateOverridesProp.ValueKind != JsonValueKind.Object)
+                throw RpcException.InvalidParams("'stateOverrides' must be an object");
+
+            return StateOverrideJsonParser.ParseStateOverrideSet(stateOverridesProp);
         }
 
-        private static StateOverride ParseStateOverride(JsonElement element)
-        {
-            var stateOverride = new StateOverride();
-
-            if (element.TryGetProperty("balance", out var balanceProp))
-            {
-                var balanceStr = balanceProp.GetString();
-                if (!string.IsNullOrEmpty(balanceStr))
-                    stateOverride.Balance = new HexBigInteger(balanceStr);
-            }
-
-            if (element.TryGetProperty("nonce", out var nonceProp))
-                stateOverride.Nonce = nonceProp.GetString();
-
-            if (element.TryGetProperty("code", out var codeProp))
-                stateOverride.Code = codeProp.GetString();
-
-            if (element.TryGetProperty("state", out var stateProp))
-            {
-                stateOverride.State = new Dictionary<string, string>();
-                foreach (var prop in stateProp.EnumerateObject())
-                {
-                    stateOverride.State[prop.Name] = prop.Value.GetString();
-                }
-            }
-
-            if (element.TryGetProperty("stateDiff", out var stateDiffProp))
-            {
-                stateOverride.StateDiff = new Dictionary<string, string>();
-                foreach (var prop in stateDiffProp.EnumerateObject())
-                {
-                    stateOverride.StateDiff[prop.Name] = prop.Value.GetString();
-                }
-            }
-
-            return stateOverride;
-        }
-
-        private static OpcodeTraceConfig ParseOpcodeConfig(JsonElement element)
-        {
-            var config = new OpcodeTraceConfig();
-
-            if (element.TryGetProperty("enableMemory", out var enableMemoryProp))
-                config.EnableMemory = enableMemoryProp.GetBoolean();
-
-            if (element.TryGetProperty("disableStack", out var disableStackProp))
-                config.DisableStack = disableStackProp.GetBoolean();
-
-            if (element.TryGetProperty("disableStorage", out var disableStorageProp))
-                config.DisableStorage = disableStorageProp.GetBoolean();
-
-            if (element.TryGetProperty("enableReturnData", out var enableReturnDataProp))
-                config.EnableReturnData = enableReturnDataProp.GetBoolean();
-
-            if (element.TryGetProperty("limit", out var limitProp))
-                config.Limit = limitProp.GetInt32();
-
-            if (element.TryGetProperty("tracerConfig", out var tracerConfigProp))
-            {
-                if (tracerConfigProp.TryGetProperty("enableMemory", out var tcEnableMemory))
-                    config.EnableMemory = tcEnableMemory.GetBoolean();
-                if (tracerConfigProp.TryGetProperty("disableStack", out var tcDisableStack))
-                    config.DisableStack = tcDisableStack.GetBoolean();
-                if (tracerConfigProp.TryGetProperty("disableStorage", out var tcDisableStorage))
-                    config.DisableStorage = tcDisableStorage.GetBoolean();
-                if (tracerConfigProp.TryGetProperty("limit", out var tcLimit))
-                    config.Limit = tcLimit.GetInt32();
-            }
-
-            return config;
-        }
     }
 }

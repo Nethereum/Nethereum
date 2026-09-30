@@ -13,6 +13,9 @@ using Nethereum.RLP;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Xunit;
+using Nethereum.Merkle.Patricia.ProofVerification;
+using Nethereum.Merkle.Patricia.Proofs;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
@@ -51,6 +54,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
         public Task DisposeAsync()
         {
+            _node?.Dispose();
             _fixture.Dispose();
             return Task.CompletedTask;
         }
@@ -81,7 +85,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.NotNull(block);
             Assert.NotNull(block.StateRoot);
 
-            var stateRootNode = _fixture.TrieNodeStore.Get(block.StateRoot);
+            var stateRootNode = ((Nethereum.Merkle.Patricia.Storage.INodeBlobStore)_fixture.TrieNodeStore).Get(block.StateRoot);
             Assert.NotNull(stateRootNode);
         }
 
@@ -142,11 +146,15 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
-            var proof = trie.GenerateProof(key);
+            var proof = ProofGenerator.GenerateProof(trie, key);
             Assert.NotNull(proof);
 
-            var verifyTrie = new PatriciaTrie(block.TransactionsHash);
-            var retrieved = verifyTrie.Get(key, proof);
+            var proofStore = new InMemoryContentNodeStore();
+            var keccak = new Sha3Keccack();
+            foreach (var proofNode in proof) proofStore.Put(keccak.CalculateHash(proofNode), proofNode);
+
+            var verifyTrie = new PatriciaTrie(block.TransactionsHash, proofStore);
+            var retrieved = verifyTrie.Get(key);
 
             Assert.NotNull(retrieved);
             Assert.True(encodedTx.SequenceEqual(retrieved),
@@ -347,10 +355,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 StateRoot = proof.StorageHash.HexToByteArray()
             };
 
-            var isValid = AccountProofVerification.VerifyAccountProofs(
-                _recipientAddress,
+            var isValid = ProofVerification.Current.Account.Verify(
                 block.StateRoot,
                 proofBytes,
+                _recipientAddress,
                 account);
 
             Assert.True(isValid, "Account proof should verify against state root");
@@ -380,10 +388,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 StateRoot = proof.StorageHash.HexToByteArray()
             };
 
-            var isValid = AccountProofVerification.VerifyAccountProofs(
-                _recipientAddress,
+            var isValid = ProofVerification.Current.Account.Verify(
                 block.StateRoot,
                 proofBytes,
+                _recipientAddress,
                 wrongAccount);
 
             Assert.False(isValid, "Proof with wrong balance should fail verification");

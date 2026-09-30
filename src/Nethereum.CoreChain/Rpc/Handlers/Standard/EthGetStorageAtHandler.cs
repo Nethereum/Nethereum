@@ -16,6 +16,10 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var slotHex = GetParam<string>(request, 1);
             var blockTag = GetOptionalParam<string>(request, 2, "latest");
 
+            if (slotHex != null && slotHex.StartsWith("0x") && slotHex.Length - 2 > 64)
+                throw RpcException.InvalidParams(
+                    $"storage key too long (want at most 32 bytes): \"{slotHex}\"");
+
             var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
             var slot = slotHex.HexToBigInteger(false);
 

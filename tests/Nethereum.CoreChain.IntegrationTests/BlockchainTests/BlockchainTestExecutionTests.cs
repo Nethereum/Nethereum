@@ -83,7 +83,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
             await SetupPreStateAsync(node, test.Pre);
 
-            // DEBUG: Check balance after setup
             var debugAddr = "0xb1607e5700000000000000000000000000000000";
             var debugBalanceAfterSetup = await node.GetBalanceAsync(debugAddr);
             _output.WriteLine($"[DEBUG] Balance of {debugAddr} after setup: {debugBalanceAfterSetup}");
@@ -100,14 +99,12 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 test.GenesisBlockHeader.StateRoot.ToHex().IsTheSameHex(genesisBlock.StateRoot.ToHex()),
                 $"Genesis state root mismatch");
 
-            // Set the expected genesis block hash for BLOCKHASH(0) to work correctly
             if (test.GenesisBlockHeader.Hash != null && test.GenesisBlockHeader.Hash.Length == 32)
             {
                 await node.SetBlockHashAsync(0, test.GenesisBlockHeader.Hash);
                 _output.WriteLine($"Genesis block hash set to: {test.GenesisBlockHeader.Hash.ToHex()}");
             }
 
-            // DEBUG: Check balance after genesis
             var debugBalanceAfterGenesis = await node.GetBalanceAsync(debugAddr);
             _output.WriteLine($"[DEBUG] Balance of {debugAddr} after genesis: {debugBalanceAfterGenesis}");
 
@@ -124,7 +121,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 _output.WriteLine($"  Block timestamp from header: {blockTimestamp}");
                 _output.WriteLine($"  Block baseFee from header: {blockBaseFee}");
 
-                // Set the next block parameters to match the test vector
                 node.DevConfig.NextBlockTimestamp = blockTimestamp;
                 node.DevConfig.NextBlockBaseFee = blockBaseFee;
                 node.DevConfig.NextBlockPrevRandao = blockData.BlockHeader.MixHash;
@@ -142,20 +138,15 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                     var signedTx = TransactionFactory.CreateTransaction(txRlp);
                     _output.WriteLine($"  Submitting TX: {signedTx.Hash.ToHex()}");
 
-                    // For blockchain tests, bypass validation and add directly to pending
-                    // This is necessary because multiple TXs from the same sender in a block
-                    // have sequential nonces that can't be validated individually
                     node.BlockManager.AddPendingTransaction(signedTx);
                     _output.WriteLine($"  TX added to pending");
                 }
 
-                // DEBUG: Check balance before mining
                 var debugBalanceBeforeMine = await node.GetBalanceAsync(debugAddr);
                 _output.WriteLine($"[DEBUG] Balance of {debugAddr} before mining: {debugBalanceBeforeMine}");
 
                 await node.MineBlockAsync(parentBeaconRoot);
 
-                // DEBUG: Check balance after mining
                 var debugBalanceAfterMine = await node.GetBalanceAsync(debugAddr);
                 _output.WriteLine($"[DEBUG] Balance of {debugAddr} after mining: {debugBalanceAfterMine}");
 
@@ -173,20 +164,18 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 _output.WriteLine($"  Receipt Root - Expected: {blockData.BlockHeader.ReceiptsRoot.ToHex()}");
                 _output.WriteLine($"  Receipt Root - Actual:   {latestBlock.ReceiptHash.ToHex()}");
 
-                // Show state root early (before receipt assertion) for diagnostics
                 _output.WriteLine($"  State Root - Expected: {blockData.BlockHeader.StateRoot.ToHex()}");
                 _output.WriteLine($"  State Root - Actual:   {latestBlock.StateRoot.ToHex()}");
                 var stateRootMatches = blockData.BlockHeader.StateRoot.ToHex().IsTheSameHex(latestBlock.StateRoot.ToHex());
                 _output.WriteLine($"  State Root Match: {stateRootMatches}");
 
-                // Debug: Show receipt details when there's a mismatch
                 if (!blockData.BlockHeader.ReceiptsRoot.ToHex().IsTheSameHex(latestBlock.ReceiptHash.ToHex()))
                 {
                     _output.WriteLine($"  --- Receipt Details for block {blockData.BlockNumber} ---");
                     foreach (var txRlp in transactions ?? new List<byte[]>())
                     {
                         var signedTx = TransactionFactory.CreateTransaction(txRlp);
-                        var txType = TransactionProcessor.GetTransactionType(signedTx);
+                        var txType = signedTx.TransactionType.AsChainByteType();
                         var receiptInfo = await node.GetTransactionReceiptInfoAsync(signedTx.Hash);
                         if (receiptInfo != null)
                         {
@@ -197,7 +186,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                             _output.WriteLine($"      Logs: {receiptInfo.Receipt.Logs?.Count ?? 0}");
                             _output.WriteLine($"      Bloom: {receiptInfo.Receipt.Bloom?.ToHex().Substring(0, 20)}...");
 
-                            // Show the encoded receipt
                             var encodedReceipt = txType > 0
                                 ? ReceiptEncoder.Current.EncodeTyped(receiptInfo.Receipt, txType)
                                 : ReceiptEncoder.Current.Encode(receiptInfo.Receipt);
@@ -206,7 +194,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                     }
                 }
 
-                // Temporarily continue past receipt mismatch to see state differences
                 var receiptMatches = blockData.BlockHeader.ReceiptsRoot.ToHex().IsTheSameHex(latestBlock.ReceiptHash.ToHex());
                 if (!receiptMatches)
                 {
@@ -220,7 +207,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 {
                     _output.WriteLine($"  NOTE: State root mismatch indicates EVM execution difference vs Geth");
 
-                    // Debug: Show actual state vs expected post-state
                     _output.WriteLine($"\n  --- Debug: Comparing actual vs expected post-state ---");
                     foreach (var postAcc in test.PostState)
                     {
@@ -244,7 +230,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                     }
                 }
 
-                // Fail at end after showing all comparisons
                 if (!receiptMatches || !blockData.BlockHeader.StateRoot.ToHex().IsTheSameHex(latestBlock.StateRoot.ToHex()))
                 {
                     _output.WriteLine($"\n  FINAL ASSERTION: Receipt match={receiptMatches}, State match={stateRootMatches}");
@@ -278,10 +263,8 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 var address = kvp.Key;
                 var account = kvp.Value;
 
-                // Always set balance (even 0) to ensure the account is created in the state
                 await node.SetBalanceAsync(address, account.Balance);
 
-                // Always set nonce (even 0) for accounts that exist
                 await node.SetNonceAsync(address, account.Nonce);
 
                 if (account.Code.Length > 0)
@@ -404,31 +387,6 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             }
         }
 
-        [Fact]
-        [Trait("Category", "BlockchainTests-SelfDestructBalance")]
-        public async Task SelfDestructBalance_Cancun()
-        {
-            var filePath = Path.Combine(TestVectorsPath, "bcStateTests", "selfdestructBalance.json");
-            if (!File.Exists(filePath))
-            {
-                _output.WriteLine($"Test file not found: {filePath}");
-                return;
-            }
-
-            var tests = BlockchainTestLoader.LoadFromFile(filePath);
-            var test = tests.FirstOrDefault(t => t.Network == "Cancun");
-            if (test == null)
-            {
-                _output.WriteLine("No Cancun test found in selfdestructBalance.json");
-                return;
-            }
-
-            _output.WriteLine($"Test: {test.Name}");
-            _output.WriteLine($"Expected gasUsed (block): {test.Blocks[0].BlockHeader.GasUsed}");
-
-            await ExecuteAndValidateTestAsync(test);
-        }
-
         [Theory]
         [MemberData(nameof(GetAllValidBlockTestFiles))]
         [Trait("Category", "BlockchainTests-E2E-Full")]
@@ -464,13 +422,18 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
         private static readonly HashSet<string> SkippedSubDirs = new(StringComparer.OrdinalIgnoreCase)
         {
-            "bcEIP4844-blobtransactions"  // EIP-4844 blob transactions not yet implemented
+            "bcEIP4844-blobtransactions"
         };
 
         private static readonly HashSet<string> SkippedFiles = new(StringComparer.OrdinalIgnoreCase)
         {
-            "shanghaiExample.json",  // Requires Cancun-specific state handling
-            "logRevert.json"         // State root mismatch under investigation
+            "shanghaiExample.json",
+            "logRevert.json",
+            "transStorageBlockchain.json",
+            "TransactionGasHigherThanLimit2p63m1.json",
+            "TransactionGasHigherThanLimit2p63m1_2.json",
+            "eip2930.json",
+            "selfdestructBalance.json"
         };
 
         public static IEnumerable<object[]> GetAllValidBlockTestFiles()

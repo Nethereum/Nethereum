@@ -45,6 +45,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
         public Task DisposeAsync()
         {
+            _node?.Dispose();
             _fixture.Dispose();
             return Task.CompletedTask;
         }

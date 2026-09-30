@@ -18,7 +18,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         public async Task SendEth_TransfersBalance_AndReturnsReceipt()
         {
             var recipient = _fixture.RecipientAddress;
-            var amount = BigInteger.Parse("1000000000000000000"); // 1 ETH
+            var amount = BigInteger.Parse("1000000000000000000");
 
             var initialSenderBalance = await _fixture.Node.GetBalanceAsync(_fixture.Address);
             var initialRecipientBalance = await _fixture.Node.GetBalanceAsync(recipient);
@@ -31,7 +31,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             Assert.NotNull(result.Receipt);
             Assert.True(result.Receipt!.HasSucceeded == true);
 
-            // Get ReceiptInfo for GasUsed (SendTransactionAsync returns new result without GasUsed)
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             Assert.NotNull(receiptInfo);
             Assert.Equal((BigInteger)21000, receiptInfo.GasUsed);
@@ -47,7 +46,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("100000000000000000"), // 0.1 ETH
+                BigInteger.Parse("100000000000000000"),
                 nonce: initialNonce);
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
@@ -61,8 +60,8 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         public async Task SendEth_DeductsFeeFromSender()
         {
             var recipient = _fixture.RecipientAddress;
-            var amount = BigInteger.Parse("1000000000000000000"); // 1 ETH
-            BigInteger gasPrice = 1_000_000_000; // 1 gwei
+            var amount = BigInteger.Parse("1000000000000000000");
+            BigInteger gasPrice = 1_000_000_000;
             BigInteger gasLimit = 21000;
 
             var initialBalance = await _fixture.Node.GetBalanceAsync(_fixture.Address);
@@ -75,7 +74,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
 
-            // Get ReceiptInfo for GasUsed
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(signedTx.Hash);
             var expectedFee = gasPrice * receiptInfo.GasUsed;
             var finalBalance = await _fixture.Node.GetBalanceAsync(_fixture.Address);
@@ -90,7 +88,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("50000000000000000")); // 0.05 ETH
+                BigInteger.Parse("50000000000000000"));
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
@@ -106,7 +104,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         public async Task SendEth_ReceiptContainsCorrectTransactionInfo()
         {
             var recipient = _fixture.RecipientAddress;
-            var amount = BigInteger.Parse("250000000000000000"); // 0.25 ETH
+            var amount = BigInteger.Parse("250000000000000000");
 
             var signedTx = _fixture.CreateSignedTransaction(recipient, amount);
             var txHash = signedTx.Hash;
@@ -122,7 +120,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         [Fact]
         public async Task GetTransactionByHash_ReturnsStoredTransaction()
         {
-            var amount = BigInteger.Parse("300000000000000000"); // 0.3 ETH
+            var amount = BigInteger.Parse("300000000000000000");
 
             var signedTx = _fixture.CreateSignedTransaction(_fixture.RecipientAddress, amount);
             var txHash = signedTx.Hash;
@@ -139,16 +137,14 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         public async Task SendEth_WithInsufficientBalance_Fails()
         {
             var poorAddress = "0x0000000000000000000000000000000000000001";
-            await _fixture.Node.SetBalanceAsync(poorAddress, 100); // Very small balance
+            await _fixture.Node.SetBalanceAsync(poorAddress, 100);
 
             var recipient = _fixture.RecipientAddress;
-            var amount = BigInteger.Parse("1000000000000000000000"); // 1000 ETH (more than balance)
+            var amount = BigInteger.Parse("1000000000000000000000");
 
             var signedTx = _fixture.CreateSignedTransaction(recipient, amount);
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
-            // Transaction should either fail validation or revert
-            // depending on implementation
         }
     }
 }

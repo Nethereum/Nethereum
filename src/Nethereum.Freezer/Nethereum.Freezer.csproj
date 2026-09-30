@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum.Freezer - geth-compatible append-only ancient store (freezer) for write-once historical block data (headers, bodies, receipts, hashes, block access lists)</Description>
+    <AssemblyTitle>Nethereum.Freezer</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.Freezer</AssemblyName>
+    <PackageId>Nethereum.Freezer</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IronSnappy" Version="1.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
+    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+  </ItemGroup>
+
+</Project>

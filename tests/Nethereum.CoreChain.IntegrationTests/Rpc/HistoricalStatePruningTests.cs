@@ -12,6 +12,8 @@ using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Model;
 using Nethereum.Signer;
 using Xunit;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.IntegrationTests.Rpc
 {
@@ -54,7 +56,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
                 new InMemoryLogStore(),
                 stateStore,
                 new InMemoryFilterStore(),
-                new InMemoryTrieNodeStore());
+                new InMemoryContentNodeStore());
 
             await _node.StartAsync(new[] { _address }, BigInteger.Parse("10000000000000000000000"));
 
@@ -67,7 +69,11 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             _dispatcher = new RpcDispatcher(registry, context);
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public Task DisposeAsync()
+        {
+            _node?.Dispose();
+            return Task.CompletedTask;
+        }
 
         private ISignedTransaction CreateTransfer(BigInteger value, BigInteger? nonce = null)
         {
@@ -91,7 +97,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             for (int i = 0; i < 10; i++)
             {
-                var tx = CreateTransfer(BigInteger.Parse("100000000000000000")); // 0.1 ETH
+                var tx = CreateTransfer(BigInteger.Parse("100000000000000000"));
                 var result = await _node.SendTransactionAsync(tx);
                 Assert.True(result.Success);
             }

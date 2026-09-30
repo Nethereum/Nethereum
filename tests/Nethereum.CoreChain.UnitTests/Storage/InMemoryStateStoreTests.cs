@@ -112,5 +112,30 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             Assert.NotNull(retrieved);
             Assert.Equal(100, retrieved.Balance);
         }
+
+        [Fact]
+        public async Task SaveStorageAsync_LeadingZeroValue_StoredBytesAreTrimmed_NotPadded()
+        {
+            var store = new InMemoryStateStore();
+            var padded = new byte[32];
+            padded[31] = 0x09;
+
+            await store.SaveStorageAsync("0x1234", BigInteger.One, padded);
+            var retrieved = await store.GetStorageAsync("0x1234", BigInteger.One);
+
+            Assert.Equal(new byte[] { 0x09 }, retrieved);
+        }
+
+        [Fact]
+        public async Task SaveStorageAsync_AllZeroPaddedValue_StillDeletes()
+        {
+            var store = new InMemoryStateStore();
+            await store.SaveStorageAsync("0x1234", BigInteger.One, new byte[] { 0x09 });
+
+            await store.SaveStorageAsync("0x1234", BigInteger.One, new byte[32]);
+
+            var retrieved = await store.GetStorageAsync("0x1234", BigInteger.One);
+            Assert.Null(retrieved);
+        }
     }
 }

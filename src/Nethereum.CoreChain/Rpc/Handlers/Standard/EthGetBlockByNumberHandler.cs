@@ -1,11 +1,9 @@
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
-using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 {
@@ -28,23 +26,26 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             var blockHash = await context.Node.GetBlockHashByNumberAsync(blockNumber);
 
-            var txStore = context.GetService<ITransactionStore>();
+            var txStore = context.Node.Transactions;
+            var signedTxs = await txStore.GetByBlockHashAsync(blockHash);
+            var withdrawals = await WithdrawalsLoader.LoadAsync(context, blockHeader, blockHash);
+            var uncles = await UnclesLoader.LoadAsync(context, blockHash);
+            var blockSize = BlockHeaderExtensions.CalculateFullBlockSize(blockHeader, signedTxs, uncles, withdrawals);
+
             if (includeTransactions)
             {
-                var signedTxs = txStore != null ? await txStore.GetByBlockHashAsync(blockHash) : null;
                 var transactions = signedTxs?
-                    .Select((tx, index) => SignedTransactionExtensions.ToRpcTransaction(tx, blockHash, blockNumber, index))
+                    .Select((tx, index) => TransactionRpcBuilder.Build(tx, blockHash, blockNumber, index, blockHeader))
                     .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions));
+                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions, blockSize, withdrawals, uncles));
             }
             else
             {
-                var hashes = txStore != null ? await txStore.GetHashesByBlockHashAsync(blockHash) : null;
-                var txHashes = hashes?
-                    .Select(h => h?.ToHex(true))
+                var txHashes = signedTxs?
+                    .Select(tx => tx.Hash?.ToHex(true))
                     .Where(h => h != null)
                     .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes));
+                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes, blockSize, withdrawals, uncles));
             }
         }
     }

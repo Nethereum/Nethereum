@@ -23,18 +23,14 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             await _fixture.Node.SetBalanceAsync(testAddress, initialBalance);
             var snapshot = await _fixture.Node.TakeSnapshotAsync();
 
-            // Modify state
             var newBalance = BigInteger.Parse("9000000000000000000");
             await _fixture.Node.SetBalanceAsync(testAddress, newBalance);
 
-            // Verify modified
             var modifiedBalance = await _fixture.Node.GetBalanceAsync(testAddress);
             Assert.Equal(newBalance, modifiedBalance);
 
-            // Revert
             await _fixture.Node.RevertToSnapshotAsync(snapshot);
 
-            // Verify reverted
             var revertedBalance = await _fixture.Node.GetBalanceAsync(testAddress);
             Assert.Equal(initialBalance, revertedBalance);
         }
@@ -99,20 +95,16 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var snapshot = await _fixture.Node.TakeSnapshotAsync();
 
-            // Send ETH
-            var amount = BigInteger.Parse("1000000000000000000"); // 1 ETH
+            var amount = BigInteger.Parse("1000000000000000000");
             var signedTx = _fixture.CreateSignedTransaction(_fixture.RecipientAddress, amount);
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
 
-            // Verify transfer occurred
             var recipientAfter = await _fixture.Node.GetBalanceAsync(_fixture.RecipientAddress);
             Assert.Equal(recipientBefore + amount, recipientAfter);
 
-            // Revert
             await _fixture.Node.RevertToSnapshotAsync(snapshot);
 
-            // Verify reverted
             var recipientReverted = await _fixture.Node.GetBalanceAsync(_fixture.RecipientAddress);
             Assert.Equal(recipientBefore, recipientReverted);
         }
@@ -159,12 +151,13 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var testAddress = "0x8888888888888888888888888888888888888888";
             var slot = new BigInteger(10);
             var value = new byte[32];
-            value[31] = 0x42; // Store value 66
+            value[31] = 0x42;
 
             await _fixture.Node.SetStorageAtAsync(testAddress, slot, value);
 
             var retrieved = await _fixture.Node.GetStorageAtAsync(testAddress, slot);
-            Assert.Equal(value, retrieved);
+            Assert.Equal(new BigInteger(value, isUnsigned: true, isBigEndian: true),
+                new BigInteger(retrieved, isUnsigned: true, isBigEndian: true));
         }
 
         [Fact]

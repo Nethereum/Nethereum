@@ -1,11 +1,13 @@
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.RocksDB.History;
 using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Storage.History;
 using Nethereum.Model;
-using Nethereum.RLP;
+using Nethereum.Util;
+using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
@@ -13,229 +15,150 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly RocksDbManager _manager;
         private readonly IBlockStore _blockStore;
+        private readonly IBlockEncodingProvider _provider;
+        private readonly IHistoryReorgDecoder _reorg;
+        private readonly ColumnFamilyHandle _txBody, _txHashIndex;
 
-        public RocksDbTransactionStore(RocksDbManager manager, IBlockStore blockStore = null)
+        public RocksDbTransactionStore(
+            RocksDbManager manager,
+            IBlockStore blockStore = null,
+            IBlockEncodingProvider provider = null,
+            IHistoryReorgDecoder reorgDecoder = null)
         {
             _manager = manager;
             _blockStore = blockStore;
+            _provider = provider ?? RlpBlockEncodingProvider.Instance;
+            _reorg = reorgDecoder ?? new HistoryReorgDecoder(_provider);
+            _txBody = manager.GetColumnFamily(HistoryColumnFamilies.TxBody);
+            _txHashIndex = manager.GetColumnFamily(HistoryColumnFamilies.TxHashIndex);
+        }
+
+        private TxLoc? Find(byte[] txHash)
+        {
+            using var lease = _manager.Lease();
+            var loc = lease.Database.Get(txHash, _txHashIndex);
+            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
+            return new TxLoc(HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc));
         }
 
         public Task<ISignedTransaction> GetByHashAsync(byte[] txHash)
         {
             if (txHash == null) return Task.FromResult<ISignedTransaction>(null);
-
-            var data = _manager.Get(RocksDbManager.CF_TRANSACTIONS, txHash);
-            if (data == null) return Task.FromResult<ISignedTransaction>(null);
-
-            var tx = DeserializeStoredTransaction(data);
-            return Task.FromResult(tx);
+            var loc = Find(txHash);
+            if (!loc.HasValue) return Task.FromResult<ISignedTransaction>(null);
+            using var lease = _manager.Lease();
+            var b = lease.Database.Get(HistoryKeys.TxKey(loc.Value.Block, loc.Value.Index), _txBody);
+            return Task.FromResult(b == null ? null : _provider.DecodeTransaction(b));
         }
 
-        public Task<List<ISignedTransaction>> GetByBlockHashAsync(byte[] blockHash)
+        public Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber)
         {
             var result = new List<ISignedTransaction>();
-            if (blockHash == null) return Task.FromResult(result);
-
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_TX_BY_BLOCK);
-            var prefix = blockHash;
-            iterator.Seek(prefix);
-
-            while (iterator.Valid())
+            var n = (ulong)blockNumber;
+            using var lease = _manager.Lease();
+            using var it = lease.Database.NewIterator(_txBody);
+            for (it.Seek(HistoryKeys.TxKey(n, 0)); it.Valid(); it.Next())
             {
-                var key = iterator.Key();
-                if (!StartsWith(key, prefix))
-                    break;
-
-                var txHash = iterator.Value();
-                var txData = _manager.Get(RocksDbManager.CF_TRANSACTIONS, txHash);
-                if (txData != null)
-                {
-                    var tx = DeserializeStoredTransaction(txData);
-                    if (tx != null)
-                    {
-                        result.Add(tx);
-                    }
-                }
-
-                iterator.Next();
+                if (HistoryKeys.ReadBlockNumber(it.Key()) != n) break;
+                result.Add(_provider.DecodeTransaction(it.Value()));
             }
-
             return Task.FromResult(result);
         }
 
-        public Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash)
+        public async Task<List<ISignedTransaction>> GetByBlockHashAsync(byte[] blockHash)
+        {
+            var n = await NumberOf(blockHash).ConfigureAwait(false);
+            return n.HasValue ? await GetByBlockNumberAsync(n.Value).ConfigureAwait(false) : new List<ISignedTransaction>();
+        }
+
+        public async Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash)
         {
             var result = new List<byte[]>();
-            if (blockHash == null) return Task.FromResult(result);
-
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_TX_BY_BLOCK);
-            var prefix = blockHash;
-            iterator.Seek(prefix);
-
-            while (iterator.Valid())
+            var n = await NumberOf(blockHash).ConfigureAwait(false);
+            if (!n.HasValue) return result;
+            using var lease = _manager.Lease();
+            using var it = lease.Database.NewIterator(_txBody);
+            for (it.Seek(HistoryKeys.TxKey((ulong)n.Value, 0)); it.Valid(); it.Next())
             {
-                var key = iterator.Key();
-                if (!StartsWith(key, prefix))
-                    break;
-
-                var txHash = iterator.Value();
-                if (txHash != null)
-                    result.Add(txHash);
-
-                iterator.Next();
+                if (HistoryKeys.ReadBlockNumber(it.Key()) != (ulong)n.Value) break;
+                result.Add(_provider.DecodeTransaction(it.Value()).Hash);
             }
-
-            return Task.FromResult(result);
+            return result;
         }
 
-        public async Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber)
+        public async Task<TransactionLocation> GetLocationAsync(byte[] txHash)
         {
-            if (_blockStore == null)
-                return new List<ISignedTransaction>();
-
-            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
-            if (blockHash == null)
-                return new List<ISignedTransaction>();
-
-            return await GetByBlockHashAsync(blockHash);
+            if (txHash == null) return null;
+            var loc = Find(txHash);
+            if (!loc.HasValue) return null;
+            var blockHash = _blockStore == null ? null : await _blockStore.GetHashByNumberAsync(loc.Value.Block).ConfigureAwait(false);
+            return new TransactionLocation { BlockHash = blockHash, BlockNumber = loc.Value.Block, TransactionIndex = (int)loc.Value.Index };
         }
 
         public Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber)
         {
-            if (tx == null || blockHash == null) return Task.CompletedTask;
-
+            if (tx == null) return Task.CompletedTask;
             using var batch = _manager.CreateWriteBatch();
-            var txCf = _manager.GetColumnFamily(RocksDbManager.CF_TRANSACTIONS);
-            var txByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_TX_BY_BLOCK);
-
-            var txHash = tx.Hash;
-            var txRlp = tx.GetRLPEncoded();
-            var storedData = SerializeStoredTransaction(txRlp, blockHash, txIndex, blockNumber);
-            batch.Put(txHash, storedData, txCf);
-
-            var blockTxKey = CreateBlockTxKey(blockHash, txIndex);
-            batch.Put(blockTxKey, txHash, txByBlockCf);
-
+            StageOne(batch, tx, txIndex, (ulong)blockNumber);
             _manager.Write(batch);
             return Task.CompletedTask;
         }
 
-        public Task<TransactionLocation> GetLocationAsync(byte[] txHash)
+        public Task SaveManyAsync(byte[] blockHash, BigInteger blockNumber, IReadOnlyList<ISignedTransaction> txs)
         {
-            if (txHash == null) return Task.FromResult<TransactionLocation>(null);
-
-            var data = _manager.Get(RocksDbManager.CF_TRANSACTIONS, txHash);
-            if (data == null) return Task.FromResult<TransactionLocation>(null);
-
-            var location = DeserializeTransactionLocation(data);
-            return Task.FromResult(location);
-        }
-
-        public async Task DeleteByBlockNumberAsync(BigInteger blockNumber)
-        {
-            if (_blockStore == null) return;
-
-            var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
-            if (blockHash == null) return;
-
+            if (txs == null || txs.Count == 0) return Task.CompletedTask;
             using var batch = _manager.CreateWriteBatch();
-            var txCf = _manager.GetColumnFamily(RocksDbManager.CF_TRANSACTIONS);
-            var txByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_TX_BY_BLOCK);
-
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_TX_BY_BLOCK);
-            iterator.Seek(blockHash);
-
-            while (iterator.Valid())
-            {
-                var key = iterator.Key();
-                if (!StartsWith(key, blockHash))
-                    break;
-
-                var txHash = iterator.Value();
-                batch.Delete(txHash, txCf);
-                batch.Delete(key, txByBlockCf);
-
-                iterator.Next();
-            }
-
+            StageManyInto(batch, blockHash, blockNumber, txs);
             _manager.Write(batch);
+            return Task.CompletedTask;
         }
 
-        private static byte[] SerializeStoredTransaction(byte[] txRlp, byte[] blockHash, int txIndex, BigInteger blockNumber)
+        public void StageManyInto(WriteBatch batch, byte[] blockHash, BigInteger blockNumber, IReadOnlyList<ISignedTransaction> txs)
         {
-            return RLP.RLP.EncodeList(
-                RLP.RLP.EncodeElement(txRlp),
-                RLP.RLP.EncodeElement(blockHash),
-                RLP.RLP.EncodeElement(txIndex.ToBytesForRLPEncoding()),
-                RLP.RLP.EncodeElement(blockNumber.ToBytesForRLPEncoding())
-            );
+            if (txs == null || txs.Count == 0) return;
+            var n = (ulong)blockNumber;
+            for (int i = 0; i < txs.Count; i++)
+                if (txs[i] != null) StageOne(batch, txs[i], i, n);
         }
 
-        private static ISignedTransaction DeserializeStoredTransaction(byte[] data)
+        private void StageOne(WriteBatch batch, ISignedTransaction tx, int txIndex, ulong blockNumber)
         {
-            if (data == null || data.Length == 0) return null;
-
-            try
-            {
-                var decoded = RLP.RLP.Decode(data);
-                var elements = (RLPCollection)decoded;
-
-                var txRlp = elements[0].RLPData;
-                return TransactionFactory.CreateTransaction(txRlp);
-            }
-            catch
-            {
-                return null;
-            }
+            var key = HistoryKeys.TxKey(blockNumber, (uint)txIndex);
+            batch.Put(key, _provider.EncodeTransaction(tx), _txBody);
+            if (tx.Hash != null) batch.Put(tx.Hash, key, _txHashIndex);
         }
 
-        private static TransactionLocation DeserializeTransactionLocation(byte[] data)
+        public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
         {
-            if (data == null || data.Length == 0) return null;
-
-            try
-            {
-                var decoded = RLP.RLP.Decode(data);
-                var elements = (RLPCollection)decoded;
-
-                var location = new TransactionLocation
+            if (blockNumber < 0) return Task.CompletedTask;
+            var fromKey = HistoryKeys.TxKey((ulong)blockNumber, 0);
+            using var batch = _manager.CreateWriteBatch();
+            using (var lease = _manager.Lease())
+            using (var it = lease.Database.NewIterator(_txBody))
+                for (it.Seek(fromKey); it.Valid(); it.Next())
                 {
-                    BlockHash = elements[1].RLPData,
-                    TransactionIndex = (int)elements[2].RLPData.ToLongFromRLPDecoded()
-                };
-
-                if (elements.Count > 3 && elements[3].RLPData != null)
-                {
-                    location.BlockNumber = elements[3].RLPData.ToBigIntegerFromRLPDecoded();
+                    var h = _reorg.TxHash(it.Value());
+                    if (h != null) batch.Delete(h, _txHashIndex);
                 }
-
-                return location;
-            }
-            catch
-            {
-                return null;
-            }
+            batch.DeleteRange(fromKey, (ulong)fromKey.Length, MaxTxBound, (ulong)MaxTxBound.Length, _txBody);
+            _manager.Write(batch);
+            return Task.CompletedTask;
         }
 
-        private static byte[] CreateBlockTxKey(byte[] blockHash, int txIndex)
+        private async Task<ulong?> NumberOf(byte[] blockHash)
         {
-            var indexBytes = BitConverter.GetBytes(txIndex);
-            var key = new byte[blockHash.Length + indexBytes.Length];
-            Buffer.BlockCopy(blockHash, 0, key, 0, blockHash.Length);
-            Buffer.BlockCopy(indexBytes, 0, key, blockHash.Length, indexBytes.Length);
-            return key;
+            if (blockHash == null || _blockStore == null) return null;
+            var header = await _blockStore.GetByHashAsync(blockHash).ConfigureAwait(false);
+            return header == null ? (ulong?)null : (ulong)header.BlockNumber.ToBigInteger();
         }
 
-        private static bool StartsWith(byte[] data, byte[] prefix)
+        private readonly struct TxLoc
         {
-            if (data == null || prefix == null) return false;
-            if (data.Length < prefix.Length) return false;
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (data[i] != prefix[i]) return false;
-            }
-            return true;
+            public readonly ulong Block; public readonly uint Index;
+            public TxLoc(ulong b, uint i) { Block = b; Index = i; }
         }
+
+        private static readonly byte[] MaxTxBound =
+            { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
     }
 }

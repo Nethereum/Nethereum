@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Nethereum.CoreChain.RocksDB.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="RocksDB" Version="10.4.2.62149" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,)" />
@@ -23,7 +27,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
-    <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+    <ProjectReference Include="..\Nethereum.Freezer\Nethereum.Freezer.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain.Freezer\Nethereum.CoreChain.Freezer.csproj" />
   </ItemGroup>
 
   <!-- Strong naming disabled for this project because RocksDB dependency is not strong-named -->

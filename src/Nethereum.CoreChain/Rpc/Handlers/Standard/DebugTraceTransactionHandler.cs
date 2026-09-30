@@ -40,7 +40,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
                     default:
                         var config = optionsElement.ValueKind != JsonValueKind.Undefined
-                            ? ParseOpcodeConfig(optionsElement)
+                            ? DebugTraceConfigParser.ParseOpcodeConfig(optionsElement)
                             : null;
                         var opcodeResult = await context.Node.TraceTransactionAsync(txHash, config);
                         return Success(request.Id, opcodeResult);
@@ -58,28 +58,6 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             {
                 return Error(request.Id, -32603, ex.Message);
             }
-        }
-
-        private static OpcodeTraceConfig ParseOpcodeConfig(JsonElement element)
-        {
-            var config = new OpcodeTraceConfig();
-
-            if (element.TryGetProperty("enableMemory", out var enableMemoryProp))
-                config.EnableMemory = enableMemoryProp.GetBoolean();
-
-            if (element.TryGetProperty("disableStack", out var disableStackProp))
-                config.DisableStack = disableStackProp.GetBoolean();
-
-            if (element.TryGetProperty("disableStorage", out var disableStorageProp))
-                config.DisableStorage = disableStorageProp.GetBoolean();
-
-            if (element.TryGetProperty("enableReturnData", out var enableReturnDataProp))
-                config.EnableReturnData = enableReturnDataProp.GetBoolean();
-
-            if (element.TryGetProperty("limit", out var limitProp))
-                config.Limit = limitProp.GetInt32();
-
-            return config;
         }
     }
 }

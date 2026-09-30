@@ -10,20 +10,24 @@ using Nethereum.RLP;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Nethereum.Hex.HexTypes;
+using Nethereum.Merkle.Patricia.Storage;
+using Nethereum.Merkle.Patricia.Proofs;
 
 namespace Nethereum.CoreChain.Services
 {
-    public class ProofService
+    public class ProofService : IProofService
     {
         private readonly IStateStore _stateStore;
         private readonly ITrieNodeStore _trieNodeStore;
         private readonly RootCalculator _rootCalculator;
+        private readonly Sha3Keccack _sha3;
 
         public ProofService(IStateStore stateStore, ITrieNodeStore trieNodeStore = null)
         {
             _stateStore = stateStore;
             _trieNodeStore = trieNodeStore;
             _rootCalculator = new RootCalculator();
+            _sha3 = new Sha3Keccack();
         }
 
         public async Task<AccountProof> GenerateAccountProofAsync(
@@ -31,47 +35,54 @@ namespace Nethereum.CoreChain.Services
             List<BigInteger> storageKeys,
             byte[] stateRoot)
         {
-            var sha3 = new Sha3Keccack();
-            var account = await _stateStore.GetAccountAsync(address);
-
-            var addressBytesForProof = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
-            var addressHash = sha3.CalculateHash(addressBytesForProof);
+            var addressHash = GetHashedAddressKey(address);
 
             List<string> accountProofHex;
 
-            if (_trieNodeStore != null && stateRoot != null && stateRoot.Length == 32 && !stateRoot.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH))
+            BigInteger accountNonce;
+            BigInteger accountBalance;
+            byte[] accountCodeHash;
+            byte[] storageRoot;
+            bool trieBacked = false;
+
+            if (HasWalkableRoot(stateRoot))
             {
+                trieBacked = true;
+                RejectRootWithoutRetainedNodes(stateRoot);
+
                 var trie = PatriciaTrie.LoadFromStorage(stateRoot, _trieNodeStore);
-                var proofStorage = trie.GenerateProof(addressHash, _trieNodeStore);
-                accountProofHex = proofStorage?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
+
+                var accountRlp = trie.Get(addressHash);
+                if (accountRlp != null)
+                {
+                    var decoded = AccountEncoder.Current.Decode(accountRlp);
+                    accountNonce = decoded.Nonce;
+                    accountBalance = decoded.Balance;
+                    accountCodeHash = decoded.CodeHash ?? DefaultValues.EMPTY_DATA_HASH;
+                    storageRoot = decoded.StateRoot ?? DefaultValues.EMPTY_TRIE_HASH;
+                }
+                else
+                {
+                    accountNonce = BigInteger.Zero;
+                    accountBalance = BigInteger.Zero;
+                    accountCodeHash = DefaultValues.EMPTY_DATA_HASH;
+                    storageRoot = DefaultValues.EMPTY_TRIE_HASH;
+                }
+
+                accountProofHex = GenerateProofHex(trie, addressHash);
             }
             else
             {
+                var account = await _stateStore.GetAccountAsync(address);
+                accountNonce = account?.Nonce ?? BigInteger.Zero;
+                accountBalance = account?.Balance ?? BigInteger.Zero;
+                accountCodeHash = account?.CodeHash ?? DefaultValues.EMPTY_DATA_HASH;
+                storageRoot = account?.StateRoot;
+
                 accountProofHex = await GenerateAccountProofWithFullRebuildAsync(addressHash);
             }
 
-            byte[] storageRoot = account?.StateRoot;
-            byte[] storageHash = DefaultValues.EMPTY_TRIE_HASH;
-
-            if (storageRoot != null && storageRoot.Length == 32 && !storageRoot.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH))
-            {
-                storageHash = storageRoot;
-            }
-            else
-            {
-                var accountStorage = await _stateStore.GetAllStorageAsync(address);
-                if (accountStorage.Count > 0)
-                {
-                    var storageDict = new Dictionary<byte[], byte[]>();
-                    foreach (var storageKvp in accountStorage)
-                    {
-                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                        var hashedSlot = sha3.CalculateHash(slotBytes);
-                        storageDict[hashedSlot] = storageKvp.Value;
-                    }
-                    storageHash = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
-                }
-            }
+            var storageHash = await ResolveStorageHashAsync(address, storageRoot, trieBacked);
 
             var storageProofs = new List<StorageProof>();
             if (storageKeys != null && storageKeys.Count > 0)
@@ -82,29 +93,59 @@ namespace Nethereum.CoreChain.Services
             return new AccountProof
             {
                 Address = address,
-                Balance = new HexBigInteger(account?.Balance ?? BigInteger.Zero),
-                CodeHash = (account?.CodeHash ?? DefaultValues.EMPTY_DATA_HASH).ToHex(true),
-                Nonce = new HexBigInteger(account?.Nonce ?? BigInteger.Zero),
+                Balance = new HexBigInteger(accountBalance),
+                CodeHash = accountCodeHash.ToHex(true),
+                Nonce = new HexBigInteger(accountNonce),
                 StorageHash = storageHash.ToHex(true),
                 AccountProofs = accountProofHex,
                 StorageProof = storageProofs
             };
         }
 
+        private void RejectRootWithoutRetainedNodes(byte[] stateRoot)
+        {
+            if (!_trieNodeStore.ContainsKey(stateRoot))
+                throw new StateNotAvailableException(stateRoot);
+        }
+
+        private async Task<byte[]> ResolveStorageHashAsync(string address, byte[] storageRoot, bool trieBacked)
+        {
+            byte[] storageHash = DefaultValues.EMPTY_TRIE_HASH;
+
+            if (trieBacked)
+            {
+                storageHash = (storageRoot != null && storageRoot.Length == 32)
+                    ? storageRoot
+                    : DefaultValues.EMPTY_TRIE_HASH;
+            }
+            else if (IsNonEmptyRoot(storageRoot))
+            {
+                storageHash = storageRoot;
+            }
+            else
+            {
+                var accountStorage = await _stateStore.GetAllStorageAsync(address);
+                if (accountStorage.Count > 0)
+                {
+                    storageHash = _rootCalculator.CalculateStorageRoot(accountStorage, _trieNodeStore);
+                }
+            }
+
+            return storageHash;
+        }
+
         private async Task<List<string>> GenerateAccountProofWithFullRebuildAsync(byte[] addressHash)
         {
-            var sha3 = new Sha3Keccack();
             var accounts = await _stateStore.GetAllAccountsAsync();
 
-            var trie = new PatriciaTrie();
-            ITrieNodeStore nodeStore = _trieNodeStore ?? new InMemoryTrieNodeStore();
+            ITrieNodeStore nodeStore = _trieNodeStore ?? new InMemoryContentNodeStore();
+            var trie = new PatriciaTrie(nodeStore);
 
             foreach (var kvp in accounts)
             {
                 if (kvp.Value == null) continue;
 
-                var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(kvp.Key).HexToByteArray();
-                var hashedKey = sha3.CalculateHash(addressBytes);
+                var hashedKey = GetHashedAddressKey(kvp.Key);
 
                 var storage = await _stateStore.GetAllStorageAsync(kvp.Key);
                 var acc = new Account
@@ -116,14 +157,7 @@ namespace Nethereum.CoreChain.Services
 
                 if (storage.Count > 0)
                 {
-                    var storageDict = new Dictionary<byte[], byte[]>();
-                    foreach (var storageKvp in storage)
-                    {
-                        var slotBytes = storageKvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                        var hashedSlot = sha3.CalculateHash(slotBytes);
-                        storageDict[hashedSlot] = storageKvp.Value;
-                    }
-                    acc.StateRoot = _rootCalculator.CalculateStorageRoot(storageDict, _trieNodeStore);
+                    acc.StateRoot = _rootCalculator.CalculateStorageRoot(storage, _trieNodeStore);
                 }
                 else
                 {
@@ -131,11 +165,10 @@ namespace Nethereum.CoreChain.Services
                 }
 
                 var encodedAccount = AccountEncoder.Current.Encode(acc);
-                trie.Put(hashedKey, encodedAccount, nodeStore);
+                trie.Put(hashedKey, encodedAccount);
             }
 
-            var proofStorage = trie.GenerateProof(addressHash);
-            return proofStorage?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
+            return GenerateProofHex(trie, addressHash);
         }
 
         private async Task<List<StorageProof>> GenerateStorageProofsAsync(
@@ -143,37 +176,17 @@ namespace Nethereum.CoreChain.Services
             List<BigInteger> storageKeys,
             byte[] storageRoot)
         {
-            var sha3 = new Sha3Keccack();
             var proofs = new List<StorageProof>();
 
-            bool hasValidRoot = _trieNodeStore != null
-                && storageRoot != null
-                && storageRoot.Length == 32
-                && !storageRoot.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH);
-
-            if (hasValidRoot)
+            if (HasWalkableRoot(storageRoot))
             {
-                var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, _trieNodeStore);
+                AddProofsFromWalkedStorageRoot(proofs, address, storageKeys, storageRoot);
+                return proofs;
+            }
 
-                foreach (var key in storageKeys)
-                {
-                    var slotBytes = key.ToBytesForRLPEncoding().PadBytes(32);
-                    var hashedSlot = sha3.CalculateHash(slotBytes);
-
-                    var proof = storageTrie.GenerateProof(hashedSlot, _trieNodeStore);
-                    var proofHex = proof?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
-
-                    var storageValue = await _stateStore.GetStorageAsync(address, key);
-                    var valueBigInt = storageValue != null ? storageValue.ToBigIntegerFromRLPDecoded() : BigInteger.Zero;
-
-                    proofs.Add(new StorageProof
-                    {
-                        Key = new HexBigInteger(key),
-                        Value = new HexBigInteger(valueBigInt),
-                        Proof = proofHex
-                    });
-                }
-
+            if (_trieNodeStore != null)
+            {
+                AddZeroValuedProofs(proofs, storageKeys);
                 return proofs;
             }
 
@@ -181,40 +194,65 @@ namespace Nethereum.CoreChain.Services
 
             if (storage.Count == 0)
             {
-                foreach (var key in storageKeys)
-                {
-                    proofs.Add(new StorageProof
-                    {
-                        Key = new HexBigInteger(key),
-                        Value = new HexBigInteger(BigInteger.Zero),
-                        Proof = new List<string>()
-                    });
-                }
+                AddZeroValuedProofs(proofs, storageKeys);
                 return proofs;
             }
 
-            var rebuildTrie = new PatriciaTrie();
-            var storageNodeStore = new InMemoryTrieNodeStore();
+            AddProofsFromRebuiltStorageTrie(proofs, storageKeys, storage);
+            return proofs;
+        }
+
+        private void AddProofsFromWalkedStorageRoot(
+            List<StorageProof> proofs,
+            string address,
+            List<BigInteger> storageKeys,
+            byte[] storageRoot)
+        {
+            var owner = GetHashedAddressKey(address);
+            var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, _trieNodeStore, owner);
+
+            foreach (var key in storageKeys)
+            {
+                var hashedSlot = GetHashedSlotKey(key);
+
+                var proofHex = GenerateProofHex(storageTrie, hashedSlot);
+
+                var storageLeaf = storageTrie.Get(hashedSlot);
+                var valueBigInt = storageLeaf != null
+                    ? RLP.RLP.Decode(storageLeaf).RLPData.ToBigIntegerFromRLPDecoded()
+                    : BigInteger.Zero;
+
+                proofs.Add(new StorageProof
+                {
+                    Key = new HexBigInteger(key),
+                    Value = new HexBigInteger(valueBigInt),
+                    Proof = proofHex
+                });
+            }
+        }
+
+        private void AddProofsFromRebuiltStorageTrie(
+            List<StorageProof> proofs,
+            List<BigInteger> storageKeys,
+            Dictionary<byte[], byte[]> storage)
+        {
+            ITrieNodeStore storageNodeStore = new InMemoryContentNodeStore();
+            var rebuildTrie = new PatriciaTrie(storageNodeStore);
 
             foreach (var kvp in storage)
             {
                 if (kvp.Value == null) continue;
-
-                var slotBytes = kvp.Key.ToBytesForRLPEncoding().PadBytes(32);
-                var hashedSlot = sha3.CalculateHash(slotBytes);
                 var encodedValue = RLP.RLP.EncodeElement(kvp.Value);
-                rebuildTrie.Put(hashedSlot, encodedValue, storageNodeStore);
+                rebuildTrie.Put(kvp.Key, encodedValue);
             }
 
             foreach (var key in storageKeys)
             {
-                var slotBytes = key.ToBytesForRLPEncoding().PadBytes(32);
-                var hashedSlot = sha3.CalculateHash(slotBytes);
+                var hashedSlot = GetHashedSlotKey(key);
 
-                var proof = rebuildTrie.GenerateProof(hashedSlot);
-                var proofHex = proof?.Storage?.Values?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
+                var proofHex = GenerateProofHex(rebuildTrie, hashedSlot);
 
-                storage.TryGetValue(key, out var value);
+                storage.TryGetValue(hashedSlot, out var value);
                 var valueBigInt = value != null ? value.ToBigIntegerFromRLPDecoded() : BigInteger.Zero;
 
                 proofs.Add(new StorageProof
@@ -224,8 +262,42 @@ namespace Nethereum.CoreChain.Services
                     Proof = proofHex
                 });
             }
+        }
 
-            return proofs;
+        private static void AddZeroValuedProofs(List<StorageProof> proofs, List<BigInteger> storageKeys)
+        {
+            foreach (var key in storageKeys)
+            {
+                proofs.Add(new StorageProof
+                {
+                    Key = new HexBigInteger(key),
+                    Value = new HexBigInteger(BigInteger.Zero),
+                    Proof = new List<string>()
+                });
+            }
+        }
+
+        private static List<string> GenerateProofHex(PatriciaTrie trie, byte[] hashedKey)
+        {
+            var proofNodes = ProofGenerator.GenerateProof(trie, hashedKey);
+            return proofNodes?.Where(p => p != null).Select(p => p.ToHex(true)).ToList() ?? new List<string>();
+        }
+
+        private bool HasWalkableRoot(byte[] root) => _trieNodeStore != null && IsNonEmptyRoot(root);
+
+        private static bool IsNonEmptyRoot(byte[] root)
+            => root != null && root.Length == 32 && !root.SequenceEqual(DefaultValues.EMPTY_TRIE_HASH);
+
+        private byte[] GetHashedAddressKey(string address)
+        {
+            var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
+            return _sha3.CalculateHash(addressBytes);
+        }
+
+        private byte[] GetHashedSlotKey(BigInteger slot)
+        {
+            var slotBytes = slot.ToBytesForRLPEncoding().PadBytes(32);
+            return _sha3.CalculateHash(slotBytes);
         }
     }
 }

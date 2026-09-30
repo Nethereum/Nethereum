@@ -20,7 +20,8 @@ namespace Nethereum.CoreChain.Storage
     public class StorageDiffEntry
     {
         public string Address { get; set; }
-        public BigInteger Slot { get; set; }
+
+        public byte[] SlotKey { get; set; }
         public byte[] PreValue { get; set; }
     }
 }

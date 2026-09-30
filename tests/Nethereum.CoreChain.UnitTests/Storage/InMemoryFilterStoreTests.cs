@@ -43,7 +43,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             Assert.NotNull(state);
             Assert.Equal(FilterType.Log, state.Type);
             Assert.NotNull(state.LogFilter);
-            Assert.Equal(10, state.LastCheckedBlock); // Uses FromBlock when specified
+            Assert.Equal(10, state.LastCheckedBlock);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var state = store.GetFilter(filterId);
 
             Assert.NotNull(state);
-            Assert.Equal(15, state.LastCheckedBlock); // Uses currentBlock when FromBlock not specified
+            Assert.Equal(15, state.LastCheckedBlock);
         }
 
         [Fact]

@@ -146,12 +146,7 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
                     request.RawParameters = jsonRequest.Params.Value;
 
                 var response = await handler.HandleAsync(request, _rpcContext);
-                var jsonResponse = new JsonRpcResponse
-                {
-                    Id = response.Id,
-                    Result = response.HasError ? null : response.Result,
-                    Error = response.HasError ? new JsonRpcError { Code = response.Error.Code, Message = response.Error.Message, Data = response.Error.Data } : null
-                };
+                var jsonResponse = response.ToJsonRpcResponse();
                 return JsonSerializer.Serialize(jsonResponse, _serializerOptions);
             }
             catch (Exception ex)
@@ -163,7 +158,7 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
 
         private string HandleSubscribe(JsonRpcRequest request, string connectionId)
         {
-            var subType = "newHeads";
+            string subType = null;
             LogFilter logFilter = null;
 
             if (request.Params.HasValue)
@@ -171,12 +166,19 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
                 var paramsElement = request.Params.Value;
                 if (paramsElement.ValueKind == JsonValueKind.Array && paramsElement.GetArrayLength() > 0)
                 {
-                    subType = paramsElement[0].GetString() ?? "newHeads";
+                    subType = paramsElement[0].GetString();
 
                     if (subType == "logs" && paramsElement.GetArrayLength() > 1)
                         logFilter = ParseLogFilter(paramsElement[1]);
                 }
             }
+
+            if (subType != "newHeads" && subType != "logs")
+                return JsonSerializer.Serialize(new JsonRpcResponse
+                {
+                    Id = request.Id,
+                    Error = new JsonRpcError { Code = -32000, Message = $"no \"{subType}\" subscription in eth namespace" }
+                }, _serializerOptions);
 
             var type = subType == "logs" ? SubscriptionType.Logs : SubscriptionType.NewHeads;
             var subId = _subscriptionManager.Subscribe(connectionId, type, logFilter);

@@ -24,23 +24,26 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 return Success(request.Id, null);
             }
 
-            var txStore = context.GetService<ITransactionStore>();
+            var txStore = context.Node.Transactions;
+            var signedTxs = await txStore.GetByBlockHashAsync(blockHash);
+            var withdrawals = await WithdrawalsLoader.LoadAsync(context, blockHeader, blockHash);
+            var uncles = await UnclesLoader.LoadAsync(context, blockHash);
+            var blockSize = BlockHeaderExtensions.CalculateFullBlockSize(blockHeader, signedTxs, uncles, withdrawals);
+
             if (includeTransactions)
             {
-                var signedTxs = txStore != null ? await txStore.GetByBlockHashAsync(blockHash) : null;
                 var transactions = signedTxs?
-                    .Select((tx, index) => SignedTransactionExtensions.ToRpcTransaction(tx, blockHash, blockHeader.BlockNumber, index))
+                    .Select((tx, index) => TransactionRpcBuilder.Build(tx, blockHash, blockHeader.BlockNumber, index, blockHeader))
                     .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions));
+                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions, blockSize, withdrawals, uncles));
             }
             else
             {
-                var hashes = txStore != null ? await txStore.GetHashesByBlockHashAsync(blockHash) : null;
-                var txHashes = hashes?
-                    .Select(h => h?.ToHex(true))
+                var txHashes = signedTxs?
+                    .Select(tx => tx.Hash?.ToHex(true))
                     .Where(h => h != null)
                     .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes));
+                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes, blockSize, withdrawals, uncles));
             }
         }
     }

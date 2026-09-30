@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Nethereum.CoreChain.Services;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
@@ -27,10 +26,38 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 return Error(request.Id, -32602, "Block not found");
             }
 
-            var proofService = new ProofService(context.Node.State, context.Node.TrieNodes);
-            var proof = await proofService.GenerateAccountProofAsync(address, storageKeys, block.StateRoot);
+            var proofService = await SelectProofServiceAsync(context, block);
+
+            AccountProof proof;
+            try
+            {
+                proof = await proofService.GenerateAccountProofAsync(address, storageKeys, block.StateRoot);
+            }
+            catch (Nethereum.CoreChain.Storage.StateNotAvailableException)
+            {
+                return Error(request.Id, -32000, "missing trie node: state not available for block");
+            }
 
             return Success(request.Id, proof);
+        }
+
+        private static async Task<Nethereum.CoreChain.Services.IProofService> SelectProofServiceAsync(
+            RpcContext context, Nethereum.Model.BlockHeader block)
+        {
+            var latest = await context.Node.GetLatestBlockAsync();
+            bool isLatest = latest == null || block.BlockNumber == latest.BlockNumber;
+
+            if (!isLatest
+                && context.Node is Nethereum.CoreChain.Services.IHistoricalProofCapable capable)
+            {
+                var target = block.BlockNumber.ToULong();
+                if (capable.CanServeProofAsOf(target, latest.BlockNumber.ToULong()))
+                {
+                    return capable.ProofServiceAsOf(target);
+                }
+            }
+
+            return context.Node.ProofService;
         }
 
         private List<BigInteger> ParseStorageKeys(RpcRequestMessage request)
@@ -109,6 +136,12 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             if (blockParameter == BlockParameter.BlockParameterType.earliest.ToString())
             {
                 return await context.Node.GetBlockByNumberAsync(0);
+            }
+
+            if (BlockTagResolver.IsBlockHash(blockParameter))
+            {
+                // EIP-1898: a 32-byte block parameter is a block hash, not a quantity.
+                return await context.Node.GetBlockByHashAsync(blockParameter.HexToByteArray());
             }
 
             if (blockParameter.StartsWith("0x"))

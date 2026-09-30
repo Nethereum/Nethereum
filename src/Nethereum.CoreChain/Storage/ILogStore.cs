@@ -9,6 +9,10 @@ namespace Nethereum.CoreChain.Storage
     public interface ILogStore
     {
         Task SaveLogsAsync(List<Log> logs, byte[] txHash, byte[] blockHash, BigInteger blockNumber, int txIndex);
+
+        Task SaveManyLogsAsync(
+            IReadOnlyList<(List<Log> Logs, byte[] TxHash, int TxIndex)> txLogs,
+            byte[] blockHash, BigInteger blockNumber);
         Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom);
         Task<List<FilteredLog>> GetLogsAsync(LogFilter filter);
         Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash);

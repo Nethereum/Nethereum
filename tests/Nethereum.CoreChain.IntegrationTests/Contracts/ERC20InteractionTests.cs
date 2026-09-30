@@ -7,7 +7,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
     public class ERC20InteractionTests : IClassFixture<DevChainNodeFixture>
     {
         private readonly DevChainNodeFixture _fixture;
-        private static readonly BigInteger OneToken = BigInteger.Parse("1000000000000000000"); // 18 decimals
+        private static readonly BigInteger OneToken = BigInteger.Parse("1000000000000000000");
 
         public ERC20InteractionTests(DevChainNodeFixture fixture)
         {
@@ -27,7 +27,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
         [Fact]
         public async Task DeployERC20_WithMint_SetsInitialBalance()
         {
-            var initialSupply = OneToken * 1000; // 1000 tokens
+            var initialSupply = OneToken * 1000;
             var contractAddress = await _fixture.DeployERC20Async(initialSupply);
 
             var balance = await _fixture.GetERC20BalanceAsync(contractAddress, _fixture.Address);
@@ -97,7 +97,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
         public async Task Transfer_FailsWithInsufficientBalance()
         {
             var initialBalance = OneToken * 10;
-            var transferAmount = OneToken * 100; // More than balance
+            var transferAmount = OneToken * 100;
             var contractAddress = await _fixture.DeployERC20Async(initialBalance);
 
             var result = await _fixture.TransferERC20Async(contractAddress, _fixture.RecipientAddress, transferAmount);
@@ -156,7 +156,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
             var transferAmount = OneToken * 100;
             var contractAddress = await _fixture.DeployERC20Async(initialBalance);
 
-            // Approve self (Address approves Address) so msg.sender has allowance
             await _fixture.ApproveERC20Async(contractAddress, _fixture.Address, approvalAmount);
 
             var result = await _fixture.TransferFromERC20Async(
@@ -182,7 +181,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
             var transferAmount = OneToken * 100;
             var contractAddress = await _fixture.DeployERC20Async(initialBalance);
 
-            // Approve self so msg.sender has allowance
             await _fixture.ApproveERC20Async(contractAddress, _fixture.Address, approvalAmount);
 
             await _fixture.TransferFromERC20Async(
@@ -194,7 +192,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
             var remainingAllowance = await _fixture.GetERC20AllowanceAsync(
                 contractAddress,
                 _fixture.Address,
-                _fixture.Address);  // Check allowance for self (the spender)
+                _fixture.Address);
 
             Assert.Equal(approvalAmount - transferAmount, remainingAllowance);
         }
@@ -204,10 +202,9 @@ namespace Nethereum.CoreChain.IntegrationTests.Contracts
         {
             var initialBalance = OneToken * 1000;
             var approvalAmount = OneToken * 50;
-            var transferAmount = OneToken * 100; // More than allowance
+            var transferAmount = OneToken * 100;
             var contractAddress = await _fixture.DeployERC20Async(initialBalance);
 
-            // Approve self with limited amount
             await _fixture.ApproveERC20Async(contractAddress, _fixture.Address, approvalAmount);
 
             var result = await _fixture.TransferFromERC20Async(

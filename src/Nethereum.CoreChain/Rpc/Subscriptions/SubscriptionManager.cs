@@ -55,7 +55,8 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
             {
                 if (sub.Type == SubscriptionType.NewHeads)
                 {
-                    var headerDto = header.ToBlockWithTransactionHashes(blockHash);
+                    var headerOnlySize = BlockHeaderExtensions.CalculateFullBlockSize(header, transactions: null, uncles: null);
+                    var headerDto = header.ToBlockWithTransactionHashes(blockHash, transactionHashes: null, headerOnlySize);
                     notifications.Add(new SubscriptionNotification
                     {
                         SubscriptionId = sub.Id,
@@ -69,7 +70,7 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
                     {
                         if (MatchesFilter(log, sub.LogFilter))
                         {
-                            var logDto = ToFilterLog(log);
+                            var logDto = log.ToRpcFilterLog();
                             notifications.Add(new SubscriptionNotification
                             {
                                 SubscriptionId = sub.Id,
@@ -90,22 +91,6 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
         {
             if (filter == null) return true;
             return filter.MatchesAddress(log.Address) && filter.MatchesTopics(log.Topics);
-        }
-
-        private static FilterLog ToFilterLog(FilteredLog log)
-        {
-            return new FilterLog
-            {
-                Address = log.Address,
-                Topics = log.Topics?.Select(t => (object)t.ToHex(true)).ToArray() ?? Array.Empty<object>(),
-                Data = log.Data?.ToHex(true) ?? "0x",
-                BlockNumber = new HexBigInteger(log.BlockNumber),
-                TransactionHash = log.TransactionHash?.ToHex(true),
-                TransactionIndex = new HexBigInteger(log.TransactionIndex),
-                BlockHash = log.BlockHash?.ToHex(true),
-                LogIndex = new HexBigInteger(log.LogIndex),
-                Removed = log.Removed
-            };
         }
 
         private string GenerateSubscriptionId()

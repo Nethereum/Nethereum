@@ -82,8 +82,9 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var addr1 = "0x1111111111111111111111111111111111111111";
             var addr2 = "0x2222222222222222222222222222222222222222";
 
-            await _store.SaveBlockDiffAsync(MakeDiff(5, (addr1, MakeAccount(100))));
-            await _store.SaveBlockDiffAsync(MakeDiff(5, (addr2, MakeAccount(200))));
+            await _store.SaveBlockDiffAsync(MakeDiff(5,
+                (addr1, MakeAccount(100)),
+                (addr2, MakeAccount(200))));
 
             var (found1, pre1) = await _store.GetFirstAccountPreValueAfterBlockAsync(addr1, 4);
             var (found2, pre2) = await _store.GetFirstAccountPreValueAfterBlockAsync(addr2, 4);
@@ -101,7 +102,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             diff.StorageDiffs.Add(new StorageDiffEntry
             {
                 Address = "0x1111111111111111111111111111111111111111",
-                Slot = 42,
+                SlotKey = Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(42),
                 PreValue = new byte[] { 1, 2, 3 }
             });
             await _store.SaveBlockDiffAsync(diff);
@@ -141,19 +142,16 @@ namespace Nethereum.CoreChain.UnitTests.Storage
 
             await _store.DeleteDiffsBelowBlockAsync(5);
 
-            // Block 3 was pruned, so first diff after block 2 is now block 5 (not 3)
             var (found, pre) = await _store.GetFirstAccountPreValueAfterBlockAsync(
                 "0x1111111111111111111111111111111111111111", 2);
             Assert.True(found);
             Assert.Equal(50, pre.Balance);
 
-            // Block 5 still exists
             var (found5, pre5) = await _store.GetFirstAccountPreValueAfterBlockAsync(
                 "0x1111111111111111111111111111111111111111", 4);
             Assert.True(found5);
             Assert.Equal(50, pre5.Balance);
 
-            // Oldest diff is now 5
             var oldest = await _store.GetOldestDiffBlockAsync();
             Assert.Equal(5, oldest);
         }

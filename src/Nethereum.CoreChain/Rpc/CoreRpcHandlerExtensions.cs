@@ -27,7 +27,10 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new EthFeeHistoryHandler());
             registry.Register(new EthGetBlockTransactionCountByHashHandler());
             registry.Register(new EthGetBlockTransactionCountByNumberHandler());
+            registry.Register(new EthGetUncleCountByBlockHashHandler());
+            registry.Register(new EthGetUncleCountByBlockNumberHandler());
             registry.Register(new EthGetBlockReceiptsHandler());
+            registry.Register(new EthGetBlockAccessListHandler());
             registry.Register(new EthGetTransactionByBlockHashAndIndexHandler());
             registry.Register(new EthGetTransactionByBlockNumberAndIndexHandler());
             registry.Register(new EthSyncingHandler());
@@ -39,16 +42,29 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new Web3ClientVersionHandler());
             registry.Register(new Web3Sha3Handler());
 
-            // Filter handlers
             registry.Register(new EthNewFilterHandler());
             registry.Register(new EthGetFilterChangesHandler());
             registry.Register(new EthGetFilterLogsHandler());
             registry.Register(new EthUninstallFilterHandler());
             registry.Register(new EthNewBlockFilterHandler());
 
-            // Debug handlers
+            registry.Register(new EthBlobBaseFeeHandler());
+            registry.Register(new EthConfigHandler());
+            registry.Register(new EthSimulateV1Handler());
+            registry.Register(new EthCapabilitiesHandler());
+
+            registry.Register(new TxpoolStatusHandler());
+            registry.Register(new TxpoolContentHandler());
+            registry.Register(new TxpoolContentFromHandler());
+
             registry.Register(new DebugTraceTransactionHandler());
             registry.Register(new DebugTraceCallHandler());
+            registry.Register(new DebugTraceBlockByNumberHandler());
+            registry.Register(new DebugTraceBlockByHashHandler());
+            registry.Register(new DebugGetRawHeaderHandler());
+            registry.Register(new DebugGetRawBlockHandler());
+            registry.Register(new DebugGetRawReceiptsHandler());
+            registry.Register(new DebugGetRawTransactionHandler());
 
             return registry;
         }

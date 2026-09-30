@@ -1,0 +1,4 @@
+# Freezer conformance fixtures use geth's ".meta" freezer-table metadata files.
+# The repo-root "*.meta" rule (for Unity .meta files) would otherwise silently
+# drop them, breaking the conformance tests on a fresh clone. Keep them tracked.
+!*.meta

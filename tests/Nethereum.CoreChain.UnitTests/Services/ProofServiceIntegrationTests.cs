@@ -13,6 +13,10 @@ using Nethereum.RLP;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Xunit;
+using Nethereum.Merkle.Patricia.Storage;
+using Nethereum.Merkle.Patricia.Nodes;
+using Nethereum.Merkle.Patricia.ProofVerification;
+using Nethereum.Merkle.Patricia.Proofs;
 
 namespace Nethereum.CoreChain.UnitTests.Services
 {
@@ -21,7 +25,7 @@ namespace Nethereum.CoreChain.UnitTests.Services
         private DevChainNode _node;
         private InMemoryBlockStore _blockStore;
         private InMemoryStateStore _stateStore;
-        private InMemoryTrieNodeStore _trieNodeStore;
+        private InMemoryContentNodeStore _trieNodeStore;
 
         private readonly string _privateKey = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
         private readonly string _address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
@@ -34,7 +38,7 @@ namespace Nethereum.CoreChain.UnitTests.Services
         {
             _blockStore = new InMemoryBlockStore();
             _stateStore = new InMemoryStateStore();
-            _trieNodeStore = new InMemoryTrieNodeStore();
+            _trieNodeStore = new InMemoryContentNodeStore();
 
             var config = new DevChainConfig
             {
@@ -97,7 +101,7 @@ namespace Nethereum.CoreChain.UnitTests.Services
         {
             var account = await _stateStore.GetAccountAsync(ContractAddress);
 
-            var storageTrie = PatriciaTrie.LoadFromStorage(account.StateRoot, _trieNodeStore);
+            var storageTrie = PatriciaTrie.LoadFromStorage(account.StateRoot, (ITrieNodeStore)_trieNodeStore);
             Assert.NotNull(storageTrie);
             Assert.NotNull(storageTrie.Root);
             Assert.False(storageTrie.Root is EmptyNode,
@@ -107,11 +111,10 @@ namespace Nethereum.CoreChain.UnitTests.Services
             var slotBytes = BigInteger.Zero.ToBytesForRLPEncoding().PadBytes(32);
             var hashedSlot = sha3.CalculateHash(slotBytes);
 
-            var proof = storageTrie.GenerateProof(hashedSlot, _trieNodeStore);
+            var proof = ProofGenerator.GenerateProof(storageTrie, hashedSlot);
             Assert.NotNull(proof);
-            Assert.NotNull(proof.Storage);
 
-            var proofNodes = proof.Storage.Values.Where(p => p != null).ToList();
+            var proofNodes = proof.Where(p => p != null).ToList();
             Assert.NotEmpty(proofNodes);
         }
 
@@ -161,8 +164,8 @@ namespace Nethereum.CoreChain.UnitTests.Services
                 var sp = result.StorageProof[i];
                 var proofBytes = sp.Proof.Select(p => p.HexToByteArray()).ToList();
 
-                var verifyTrie = new PatriciaTrie(account.StateRoot);
-                var inMemoryStorage = new InMemoryTrieStorage();
+                var inMemoryStorage = new InMemoryContentNodeStore();
+                var verifyTrie = new PatriciaTrie(account.StateRoot, inMemoryStorage);
 
                 foreach (var proofItem in proofBytes)
                 {
@@ -172,7 +175,7 @@ namespace Nethereum.CoreChain.UnitTests.Services
                 var slotBytes = sp.Key.Value.ToBytesForRLPEncoding().PadBytes(32);
                 var hashedSlot = sha3.CalculateHash(slotBytes);
 
-                var valueFromTrie = verifyTrie.Get(hashedSlot, inMemoryStorage);
+                var valueFromTrie = verifyTrie.Get(hashedSlot);
                 Assert.NotNull(valueFromTrie);
 
                 var expectedValueBytes = TrimLeadingZeros(
@@ -210,10 +213,10 @@ namespace Nethereum.CoreChain.UnitTests.Services
                 StateRoot = result.StorageHash.HexToByteArray()
             };
 
-            var accountValid = AccountProofVerification.VerifyAccountProofs(
-                ContractAddress,
+            var accountValid = ProofVerification.Current.Account.Verify(
                 block.StateRoot,
                 accountProofBytes,
+                ContractAddress,
                 accountForVerify);
             Assert.True(accountValid, "Account proof should verify cryptographically against block state root");
 
@@ -302,10 +305,10 @@ namespace Nethereum.CoreChain.UnitTests.Services
                 StateRoot = result.StorageHash.HexToByteArray()
             };
 
-            var accountValid = AccountProofVerification.VerifyAccountProofs(
-                ContractAddress,
+            var accountValid = ProofVerification.Current.Account.Verify(
                 block.StateRoot,
                 accountProofBytes,
+                ContractAddress,
                 accountForVerify);
             Assert.True(accountValid, "Account proof should still verify after multiple blocks");
         }

@@ -14,6 +14,8 @@ namespace Nethereum.CoreChain.Consensus
         BlockProductionOptions PrepareBlockOptions(long blockNumber, BlockHeader? parentHeader);
 
         Task FinalizeBlockAsync(BlockHeader header, byte[] blockHash, BlockProductionResult result);
+
+        string ResolveFeeRecipient(BlockHeader header) => header.Coinbase;
     }
 
     public class DefaultBlockProductionStrategy : IBlockProductionStrategy

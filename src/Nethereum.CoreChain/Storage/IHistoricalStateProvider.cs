@@ -8,6 +8,13 @@ namespace Nethereum.CoreChain.Storage
     {
         void SetCurrentBlockNumber(BigInteger blockNumber);
         Task ClearCurrentBlockNumberAsync();
+
+        Task RecordBlockDiffAsync();
+
+        Task RevertCurrentBlockAsync();
+
+        Task<FlatStateBatch> CaptureBufferAsync();
+
         Task<Account> GetAccountAtBlockAsync(string address, BigInteger blockNumber);
         Task<byte[]> GetStorageAtBlockAsync(string address, BigInteger slot, BigInteger blockNumber);
     }

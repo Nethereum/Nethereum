@@ -20,6 +20,7 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         private readonly Dictionary<string, byte[]> _pendingCode = new Dictionary<string, byte[]>();
         private readonly HashSet<string> _deletedAccounts = new HashSet<string>();
         private readonly HashSet<string> _clearedStorage = new HashSet<string>();
+        private readonly Dictionary<string, string> _originalAddresses = new Dictionary<string, string>();
         private readonly HashSet<string> _modifiedAddresses = new HashSet<string>();
         private readonly HashSet<byte[]> _modifiedStorageKeys = new HashSet<byte[]>(ByteArrayComparer.Current);
         private readonly HashSet<byte[]> _modifiedCodeHashes = new HashSet<byte[]>(ByteArrayComparer.Current);
@@ -40,6 +41,7 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         {
             var normalized = NormalizeAddress(address);
             _pendingAccounts[normalized] = account;
+            _originalAddresses[normalized] = OriginalAddress(address);
             _deletedAccounts.Remove(normalized);
         }
 
@@ -80,6 +82,7 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         public Dictionary<string, byte[]> PendingCode => _pendingCode;
         public HashSet<string> DeletedAccounts => _deletedAccounts;
         public HashSet<string> ClearedStorage => _clearedStorage;
+        public Dictionary<string, string> OriginalAddresses => _originalAddresses;
         public ReadOptions SnapshotReadOptions => _readOptions;
         public HashSet<string> ModifiedAddresses => _modifiedAddresses;
         public HashSet<byte[]> ModifiedStorageKeys => _modifiedStorageKeys;
@@ -119,6 +122,11 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         }
 
         private static string NormalizeAddress(string address)
+        {
+            return StateKeys.AccountKeyHex(address);
+        }
+
+        private static string OriginalAddress(string address)
         {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }

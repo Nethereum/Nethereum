@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Storage;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
 
@@ -13,7 +14,21 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         {
             var blockTag = GetParam<string>(request, 0);
 
-            var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
+            System.Numerics.BigInteger blockNumber;
+            if (BlockTagResolver.IsBlockHash(blockTag))
+            {
+                // EIP-1898: a 32-byte parameter is a block hash. An unknown block hash is null, not [].
+                var byHash = await BlockTagResolver.TryResolveBlockHashAsync(blockTag, context);
+                if (!byHash.HasValue)
+                {
+                    return Success(request.Id, null);
+                }
+                blockNumber = byHash.Value;
+            }
+            else
+            {
+                blockNumber = await ResolveBlockNumberAsync(blockTag, context);
+            }
 
             var blockHash = await context.Node.GetBlockHashByNumberAsync(blockNumber);
             if (blockHash == null)
@@ -27,15 +42,26 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 return Success(request.Id, new List<object>());
             }
 
-            var result = new List<object>();
+            var header = await context.Node.GetBlockByNumberAsync(blockNumber);
+
+            var receiptInfos = new List<ReceiptInfo>(transactions.Count);
             foreach (var tx in transactions)
             {
-                var receiptInfo = await context.Node.Receipts.GetInfoByTxHashAsync(tx.Hash);
+                receiptInfos.Add(await context.Node.Receipts.GetInfoByTxHashAsync(tx.Hash));
+            }
+
+            var result = new List<object>();
+            for (int i = 0; i < transactions.Count; i++)
+            {
+                var receiptInfo = receiptInfos[i];
                 if (receiptInfo != null)
                 {
-                    var from = GetSenderAddress(tx);
-                    var to = GetReceiverAddress(tx);
-                    result.Add(receiptInfo.ToTransactionReceipt(from, to));
+                    var tx = transactions[i];
+                    var from = RpcTransactionAddress.ResolveSender(tx);
+                    var to = RpcTransactionAddress.ResolveReceiver(tx);
+                    var (blobGasUsed, blobGasPrice) = ReceiptBlobGas.Resolve(tx, header, context.Node.Config);
+                    var startingLogIndex = ReceiptExtensions.ComputeStartingLogIndex(receiptInfos, i);
+                    result.Add(receiptInfo.ToTransactionReceipt(from, to, tx.TransactionType, startingLogIndex, blobGasUsed, blobGasPrice, header?.Timestamp));
                 }
             }
 

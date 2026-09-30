@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
@@ -120,10 +121,27 @@ namespace Nethereum.CoreChain.IntegrationTests.TransactionTests
         {
             var exception = result.GetProperty("exception").GetString() ?? "";
 
+            var isLegacyScalar =
+                exception == "TransactionException.RLP_LEADING_ZEROS_NONCE" ||
+                exception == "TransactionException.RLP_LEADING_ZEROS_GASPRICE" ||
+                exception == "TransactionException.RLP_LEADING_ZEROS_GASLIMIT" ||
+                exception == "TransactionException.RLP_LEADING_ZEROS_VALUE";
+            var isNonCanonicalScalar = isLegacyScalar;
+
             try
             {
                 var signedTx = TransactionFactory.CreateTransaction(txBytes);
+
+                Assert.False(isNonCanonicalScalar,
+                    $"{testName}: a leading-zero scalar was DECODED. The fixture declares {exception}; " +
+                    "the Yellow Paper dismisses a non-canonical item completely, so this transaction " +
+                    "must be refused rather than accepted.");
+
                 _output.WriteLine($"  {testName}: INVALID tx decoded without exception (expected: {exception}) - some validation happens at execution time");
+            }
+            catch (Xunit.Sdk.XunitException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

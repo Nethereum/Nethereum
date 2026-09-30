@@ -61,7 +61,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             var logs = await context.Node.Logs.GetLogsAsync(filter);
             context.Node.Filters.UpdateFilterLastBlock(filterState.Id, currentBlock);
 
-            var result = logs.Select(ConvertToRpcLog).ToList();
+            var result = logs.Select(FilteredLogRpcMapper.ToRpcFilterLog).ToList();
             return Success(request.Id, result);
         }
 

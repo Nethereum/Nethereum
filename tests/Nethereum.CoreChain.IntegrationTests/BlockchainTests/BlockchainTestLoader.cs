@@ -1,6 +1,10 @@
+﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
@@ -13,7 +17,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public BigInteger ChainId { get; set; }
             public Dictionary<string, AccountData> Pre { get; set; } = new();
             public Dictionary<string, AccountData> PostState { get; set; } = new();
-            public GenesisBlockHeader GenesisBlockHeader { get; set; } = new();
+            public BlockHeader GenesisBlockHeader { get; set; } = new();
             public List<BlockData> Blocks { get; set; } = new();
             public byte[] LastBlockHash { get; set; } = Array.Empty<byte>();
             public string SealEngine { get; set; } = "";
@@ -27,39 +31,24 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public Dictionary<BigInteger, BigInteger> Storage { get; set; } = new();
         }
 
-        public class GenesisBlockHeader
-        {
-            public byte[] Hash { get; set; } = Array.Empty<byte>();
-            public byte[] ParentHash { get; set; } = Array.Empty<byte>();
-            public byte[] StateRoot { get; set; } = Array.Empty<byte>();
-            public byte[] TransactionsRoot { get; set; } = Array.Empty<byte>();
-            public byte[] ReceiptsRoot { get; set; } = Array.Empty<byte>();
-            public byte[] UncleHash { get; set; } = Array.Empty<byte>();
-            public byte[] Coinbase { get; set; } = Array.Empty<byte>();
-            public byte[] LogsBloom { get; set; } = Array.Empty<byte>();
-            public BigInteger Difficulty { get; set; }
-            public BigInteger Number { get; set; }
-            public BigInteger GasLimit { get; set; }
-            public BigInteger GasUsed { get; set; }
-            public BigInteger Timestamp { get; set; }
-            public byte[] ExtraData { get; set; } = Array.Empty<byte>();
-            public byte[] MixHash { get; set; } = Array.Empty<byte>();
-            public byte[] Nonce { get; set; } = Array.Empty<byte>();
-            public BigInteger? BaseFee { get; set; }
-            public byte[]? WithdrawalsRoot { get; set; }
-            public long? BlobGasUsed { get; set; }
-            public long? ExcessBlobGas { get; set; }
-            public byte[]? ParentBeaconBlockRoot { get; set; }
-            public byte[]? RequestsHash { get; set; }
-        }
-
         public class BlockData
         {
             public BlockHeader BlockHeader { get; set; } = new();
             public List<TransactionData> Transactions { get; set; } = new();
+            public List<WithdrawalData> Withdrawals { get; set; } = new();
             public byte[] Rlp { get; set; } = Array.Empty<byte>();
             public int BlockNumber { get; set; }
             public string? ExpectException { get; set; }
+
+            public List<AccountChanges>? BlockAccessList { get; set; }
+        }
+
+        public class WithdrawalData
+        {
+            public ulong Index { get; set; }
+            public ulong ValidatorIndex { get; set; }
+            public string Address { get; set; } = "";
+            public ulong Amount { get; set; }
         }
 
         public class BlockHeader
@@ -86,6 +75,8 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public long? ExcessBlobGas { get; set; }
             public byte[]? ParentBeaconBlockRoot { get; set; }
             public byte[]? RequestsHash { get; set; }
+            public byte[]? BlockAccessListHash { get; set; }
+            public BigInteger? SlotNumber { get; set; }
         }
 
         public class TransactionData
@@ -150,7 +141,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
                 if (testData.TryGetProperty("genesisBlockHeader", out var genesis))
                 {
-                    test.GenesisBlockHeader = ParseGenesisHeader(genesis);
+                    test.GenesisBlockHeader = ParseHeader(genesis);
                 }
 
                 if (testData.TryGetProperty("blocks", out var blocks))
@@ -196,9 +187,9 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             return accounts;
         }
 
-        private static GenesisBlockHeader ParseGenesisHeader(JsonElement element)
+        private static BlockHeader ParseHeader(JsonElement element)
         {
-            var header = new GenesisBlockHeader
+            var header = new BlockHeader
             {
                 Hash = GetBytesOrDefault(element, "hash"),
                 ParentHash = GetBytesOrDefault(element, "parentHash"),
@@ -238,18 +229,31 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 header.ExcessBlobGas = (long)ParseBigInteger(excessBlobGas.GetString());
             }
 
-            if (element.TryGetProperty("parentBeaconBlockRoot", out var genesisBeaconRoot))
+            if (element.TryGetProperty("parentBeaconBlockRoot", out var beaconRoot))
             {
-                header.ParentBeaconBlockRoot = genesisBeaconRoot.GetString()?.HexToByteArray();
+                header.ParentBeaconBlockRoot = beaconRoot.GetString()?.HexToByteArray();
             }
 
-            if (element.TryGetProperty("requestsRoot", out var genesisRequestsRoot))
+            if (TryGetRequestsHash(element, out var requestsRoot))
             {
-                header.RequestsHash = genesisRequestsRoot.GetString()?.HexToByteArray();
+                header.RequestsHash = requestsRoot.GetString()?.HexToByteArray();
+            }
+
+            if (element.TryGetProperty("blockAccessListHash", out var blockAccessListHash))
+            {
+                header.BlockAccessListHash = blockAccessListHash.GetString()?.HexToByteArray();
+            }
+
+            if (element.TryGetProperty("slotNumber", out var slotNumber))
+            {
+                header.SlotNumber = ParseBigInteger(slotNumber.GetString());
             }
 
             return header;
         }
+
+        private static bool TryGetRequestsHash(JsonElement element, out JsonElement value) =>
+            element.TryGetProperty("requestsHash", out value) || element.TryGetProperty("requestsRoot", out value);
 
         private static List<BlockData> ParseBlocks(JsonElement element)
         {
@@ -274,58 +278,22 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
                 if (blockEl.TryGetProperty("blockHeader", out var header))
                 {
-                    block.BlockHeader = new BlockHeader
-                    {
-                        Hash = GetBytesOrDefault(header, "hash"),
-                        ParentHash = GetBytesOrDefault(header, "parentHash"),
-                        StateRoot = GetBytesOrDefault(header, "stateRoot"),
-                        TransactionsRoot = GetBytesOrDefault(header, "transactionsTrie"),
-                        ReceiptsRoot = GetBytesOrDefault(header, "receiptTrie"),
-                        UncleHash = GetBytesOrDefault(header, "uncleHash"),
-                        Coinbase = GetBytesOrDefault(header, "coinbase"),
-                        LogsBloom = GetBytesOrDefault(header, "bloom"),
-                        Difficulty = ParseBigInteger(GetStringOrDefault(header, "difficulty")),
-                        Number = ParseBigInteger(GetStringOrDefault(header, "number")),
-                        GasLimit = ParseBigInteger(GetStringOrDefault(header, "gasLimit")),
-                        GasUsed = ParseBigInteger(GetStringOrDefault(header, "gasUsed")),
-                        Timestamp = ParseBigInteger(GetStringOrDefault(header, "timestamp")),
-                        ExtraData = GetBytesOrDefault(header, "extraData"),
-                        MixHash = GetBytesOrDefault(header, "mixHash"),
-                        Nonce = GetBytesOrDefault(header, "nonce")
-                    };
-
-                    if (header.TryGetProperty("baseFeePerGas", out var baseFee))
-                    {
-                        block.BlockHeader.BaseFee = ParseBigInteger(baseFee.GetString());
-                    }
-
-                    if (header.TryGetProperty("withdrawalsRoot", out var withdrawals))
-                    {
-                        block.BlockHeader.WithdrawalsRoot = withdrawals.GetString()?.HexToByteArray();
-                    }
-
-                    if (header.TryGetProperty("blobGasUsed", out var blockBlobGasUsed))
-                    {
-                        block.BlockHeader.BlobGasUsed = (long)ParseBigInteger(blockBlobGasUsed.GetString());
-                    }
-
-                    if (header.TryGetProperty("excessBlobGas", out var blockExcessBlobGas))
-                    {
-                        block.BlockHeader.ExcessBlobGas = (long)ParseBigInteger(blockExcessBlobGas.GetString());
-                    }
-
-                    if (header.TryGetProperty("parentBeaconBlockRoot", out var beaconRoot))
-                    {
-                        block.BlockHeader.ParentBeaconBlockRoot = beaconRoot.GetString()?.HexToByteArray();
-                    }
-
-                    if (header.TryGetProperty("requestsRoot", out var blockRequestsRoot))
-                    {
-                        block.BlockHeader.RequestsHash = blockRequestsRoot.GetString()?.HexToByteArray();
-                    }
+                    block.BlockHeader = ParseHeader(header);
                 }
 
-                if (blockEl.TryGetProperty("transactions", out var txs))
+                if (blockEl.TryGetProperty("blockAccessList", out var accessListEl))
+                {
+                    block.BlockAccessList = ReadAccessList(accessListEl);
+                }
+                else if (blockEl.TryGetProperty("rlp_decoded", out var decodedBlock)
+                         && decodedBlock.TryGetProperty("blockAccessList", out var decodedAccessList))
+                {
+                    block.BlockAccessList = ReadAccessList(decodedAccessList);
+                }
+
+                if (blockEl.TryGetProperty("transactions", out var txs)
+                    || (blockEl.TryGetProperty("rlp_decoded", out var decodedForTransactions)
+                        && decodedForTransactions.TryGetProperty("transactions", out txs)))
                 {
                     foreach (var txEl in txs.EnumerateArray())
                     {
@@ -354,6 +322,20 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                         }
 
                         block.Transactions.Add(tx);
+                    }
+                }
+
+                if (blockEl.TryGetProperty("withdrawals", out var wdls))
+                {
+                    foreach (var wEl in wdls.EnumerateArray())
+                    {
+                        block.Withdrawals.Add(new WithdrawalData
+                        {
+                            Index = (ulong)ParseBigInteger(GetStringOrDefault(wEl, "index")),
+                            ValidatorIndex = (ulong)ParseBigInteger(GetStringOrDefault(wEl, "validatorIndex")),
+                            Address = GetStringOrDefault(wEl, "address"),
+                            Amount = (ulong)ParseBigInteger(GetStringOrDefault(wEl, "amount"))
+                        });
                     }
                 }
 
@@ -401,6 +383,62 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             }
 
             return BigInteger.Parse(value);
+        }
+
+        private static List<AccountChanges> ReadAccessList(JsonElement array)
+        {
+            var list = new List<AccountChanges>();
+            foreach (var a in array.EnumerateArray())
+            {
+                var account = new AccountChanges(a.GetProperty("address").GetString());
+
+                foreach (var slotEl in a.GetProperty("storageChanges").EnumerateArray())
+                {
+                    var slot = new SlotChanges(AccessListValue(slotEl.GetProperty("slot").GetString()));
+                    foreach (var c in slotEl.GetProperty("slotChanges").EnumerateArray())
+                        slot.Changes.Add(new StorageChange(
+                            AccessListIndex(c.GetProperty("blockAccessIndex").GetString()),
+                            AccessListValue(c.GetProperty("postValue").GetString())));
+                    account.StorageChanges.Add(slot);
+                }
+
+                foreach (var r in a.GetProperty("storageReads").EnumerateArray())
+                    account.StorageReads.Add(AccessListValue(r.GetString()));
+
+                foreach (var c in a.GetProperty("balanceChanges").EnumerateArray())
+                    account.BalanceChanges.Add(new BalanceChange(
+                        AccessListIndex(c.GetProperty("blockAccessIndex").GetString()),
+                        AccessListValue(c.GetProperty("postBalance").GetString())));
+
+                foreach (var c in a.GetProperty("nonceChanges").EnumerateArray())
+                    account.NonceChanges.Add(new NonceChange(
+                        AccessListIndex(c.GetProperty("blockAccessIndex").GetString()),
+                        AccessListIndex(c.GetProperty("postNonce").GetString())));
+
+                foreach (var c in a.GetProperty("codeChanges").EnumerateArray())
+                    account.CodeChanges.Add(new CodeChange(
+                        AccessListIndex(c.GetProperty("blockAccessIndex").GetString()),
+                        c.GetProperty("newCode").GetString().HexToByteArray()));
+
+                list.Add(account);
+            }
+            return list;
+        }
+
+        private static EvmUInt256 AccessListValue(string hex)
+        {
+            var bytes = hex.HexToByteArray();
+            if (bytes.Length == 32) return EvmUInt256.FromBigEndian(bytes);
+            var padded = new byte[32];
+            Array.Copy(bytes, 0, padded, 32 - bytes.Length, bytes.Length);
+            return EvmUInt256.FromBigEndian(padded);
+        }
+
+        private static ulong AccessListIndex(string hex)
+        {
+            ulong v = 0;
+            foreach (var b in hex.HexToByteArray()) v = (v << 8) | b;
+            return v;
         }
 
         public static IEnumerable<string> GetTestFilesInDirectory(string directory)

@@ -1,0 +1,104 @@
+using System;
+using System.Numerics;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
+
+namespace Nethereum.Chain.TestData
+{
+    public static class LoadTestToken
+    {
+        public const string Bytecode =
+            "0x60808060405234601557610550908161001a8239f35b5f80fdfe60806040526004361015610011575f80fd5b5f3560" +
+            "e01c806306fdde031461042057806318160ddd14610404578063197bc336146103d45780631aab9a9f146103b7578063" +
+            "1e7807f21461030f578063313ce567146102f457806370a08231146102bc5780638c1951221461020f57806395d89b41" +
+            "146101a8578063a9059cbb1461012c5763b24cb89214610092575f80fd5b34610128576100a036610499565b91600181" +
+            "01809111610114576001600160a01b031690600181019081106101145760205f5160206104fb5f395f51905f52916001" +
+            "8060a01b031693835f526002825260405f206100f18282546104ed565b9055845f526002825260405f20610109828254" +
+            "6104c9565b9055604051908152a3005b634e487b7160e01b5f52601160045260245ffd5b5f80fd5b3461012857604036" +
+            "6003190112610128576101456104b3565b60243590335f52600260205260405f206101608382546104ed565b90556001" +
+            "8060a01b031690815f52600260205260405f206101828282546104c9565b90556040519081525f5160206104fb5f395f" +
+            "51905f5260203392a3602060405160018152f35b34610128575f36600319011261012857604051604081019080821067" +
+            "ffffffffffffffff8311176101fb576101f79160405260048152631313d05160e21b6020820152604051918291826104" +
+            "6f565b0390f35b634e487b7160e01b5f52604160045260245ffd5b346101285761021d36610499565b5f5b8281106102" +
+            "6757508181029080820483149015171561011457610243905f546104c9565b5f5561024f81836104c9565b6001541061" +
+            "025957005b610262916104c9565b600155005b6001906001600160a01b0361028461027f83886104c9565b6104d6565b" +
+            "16805f52600260205260405f2061029c8582546104c9565b90555f5f5160206104fb5f395f51905f5260206040518781" +
+            "52a30161021f565b34610128576020366003190112610128576001600160a01b036102dd6104b3565b165f5260026020" +
+            "52602060405f2054604051908152f35b34610128575f36600319011261012857602060405160128152f35b3461012857" +
+            "61031d36610499565b5f5b82811061032857005b61033561027f82866104c9565b9061034081866104c9565b91600183" +
+            "01809311610114576103576001936104d6565b90838060a01b031690815f52600260205260405f206103778682546104" +
+            "ed565b9055838060a01b031690815f52600260205260405f206103988682546104c9565b90555f5160206104fb5f395f" +
+            "51905f526020604051878152a30161031f565b34610128575f366003190112610128576020600154604051908152f35b" +
+            "346101285760203660031901126101285760206103f26004356104d6565b6040516001600160a01b039091168152f35b" +
+            "34610128575f3660031901126101285760205f54604051908152f35b34610128575f3660031901126101285760405160" +
+            "4081019080821067ffffffffffffffff8311176101fb576101f7916040526008815267131bd85915195cdd60c21b6020" +
+            "820152604051918291825b602060409281835280519182918282860152018484015e5f828201840152601f01601f1916" +
+            "010190565b606090600319011261012857600435906024359060443590565b600435906001600160a01b038216820361" +
+            "012857565b9190820180921161011457565b60018101809111610114576001600160a01b031690565b91908203918211" +
+            "6101145756feddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa2646970667358221220" +
+            "b8cfb54fbd92e893cff185f4c36ec846675b3e7ddcbbf5094a1ca833c7afda3264736f6c634300081c0033";
+
+        public static string HolderAt(int index)
+        {
+            var bytes = new byte[20];
+            var value = (uint)(index + 1);
+            bytes[16] = (byte)(value >> 24);
+            bytes[17] = (byte)(value >> 16);
+            bytes[18] = (byte)(value >> 8);
+            bytes[19] = (byte)value;
+            return "0x" + Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.ToHex(bytes);
+        }
+    }
+
+    [Function("airdrop")]
+    public class AirdropFunction : FunctionMessage
+    {
+        [Parameter("uint256", "startIndex", 1)]
+        public BigInteger StartIndex { get; set; }
+
+        [Parameter("uint256", "count", 2)]
+        public BigInteger Count { get; set; }
+
+        [Parameter("uint256", "amount", 3)]
+        public BigInteger Amount { get; set; }
+    }
+
+    [Function("churn")]
+    public class ChurnFunction : FunctionMessage
+    {
+        [Parameter("uint256", "startIndex", 1)]
+        public BigInteger StartIndex { get; set; }
+
+        [Parameter("uint256", "count", 2)]
+        public BigInteger Count { get; set; }
+
+        [Parameter("uint256", "amount", 3)]
+        public BigInteger Amount { get; set; }
+    }
+
+    [Function("moveBetweenHolders")]
+    public class MoveBetweenHoldersFunction : FunctionMessage
+    {
+        [Parameter("uint256", "fromIndex", 1)]
+        public BigInteger FromIndex { get; set; }
+
+        [Parameter("uint256", "toIndex", 2)]
+        public BigInteger ToIndex { get; set; }
+
+        [Parameter("uint256", "amount", 3)]
+        public BigInteger Amount { get; set; }
+    }
+
+    [Event("Transfer")]
+    public class TransferEventDTO : IEventDTO
+    {
+        [Parameter("address", "from", 1, true)]
+        public string From { get; set; }
+
+        [Parameter("address", "to", 2, true)]
+        public string To { get; set; }
+
+        [Parameter("uint256", "value", 3, false)]
+        public BigInteger Value { get; set; }
+    }
+}

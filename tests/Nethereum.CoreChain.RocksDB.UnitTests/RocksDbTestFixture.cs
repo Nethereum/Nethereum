@@ -3,6 +3,8 @@ using System.IO;
 using Nethereum.CoreChain.RocksDB;
 using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {

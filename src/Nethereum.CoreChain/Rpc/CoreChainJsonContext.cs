@@ -3,7 +3,10 @@ using System.Text.Json.Serialization;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.Eth.DTOs.Engine;
+using Nethereum.RPC.TxPool.DTOs;
 
 namespace Nethereum.CoreChain.Rpc
 {
@@ -50,6 +53,7 @@ namespace Nethereum.CoreChain.Rpc
     [JsonSerializable(typeof(AccessListItem))]
     [JsonSerializable(typeof(AccessListGasUsed))]
     [JsonSerializable(typeof(FeeHistoryResult))]
+    [JsonSerializable(typeof(EthSyncingSnapOutput))]
     [JsonSerializable(typeof(AccountProof))]
     [JsonSerializable(typeof(StorageProof))]
     [JsonSerializable(typeof(OpcodeTraceResult))]
@@ -60,6 +64,55 @@ namespace Nethereum.CoreChain.Rpc
     [JsonSerializable(typeof(PrestateTraceResult))]
     [JsonSerializable(typeof(PrestateAccountInfo))]
     [JsonSerializable(typeof(Dictionary<string, PrestateAccountInfo>))]
+    [JsonSerializable(typeof(BlockResponseItemDto<OpcodeTraceResult>))]
+    [JsonSerializable(typeof(List<BlockResponseItemDto<OpcodeTraceResult>>))]
+    [JsonSerializable(typeof(BlockResponseItemDto<CallTraceResult>))]
+    [JsonSerializable(typeof(List<BlockResponseItemDto<CallTraceResult>>))]
+    [JsonSerializable(typeof(AccountAccessDto))]
+    [JsonSerializable(typeof(List<AccountAccessDto>))]
+    [JsonSerializable(typeof(SlotChangesDto))]
+    [JsonSerializable(typeof(StorageChangeDto))]
+    [JsonSerializable(typeof(BalanceChangeDto))]
+    [JsonSerializable(typeof(NonceChangeDto))]
+    [JsonSerializable(typeof(CodeChangeDto))]
+    [JsonSerializable(typeof(ChainConfiguration))]
+    [JsonSerializable(typeof(ChainConfigurationEntry))]
+    [JsonSerializable(typeof(BlobScheduleConfiguration))]
+    [JsonSerializable(typeof(EthSimulateBlockResult))]
+    [JsonSerializable(typeof(List<EthSimulateBlockResult>))]
+    [JsonSerializable(typeof(EthSimulateCallResult))]
+    [JsonSerializable(typeof(EthSimulateCallError))]
+    [JsonSerializable(typeof(EthSimulateInput))]
+    [JsonSerializable(typeof(BlockStateCall))]
+    [JsonSerializable(typeof(BlockOverrides))]
+    [JsonSerializable(typeof(AccountOverride))]
+    [JsonSerializable(typeof(Dictionary<string, AccountOverride>))]
+    [JsonSerializable(typeof(EthCapabilitiesResult))]
+    [JsonSerializable(typeof(EthCapabilitiesHead))]
+    [JsonSerializable(typeof(EthCapabilitiesEffectiveResource))]
+    [JsonSerializable(typeof(EthCapabilitiesDeleteStrategy))]
+    [JsonSerializable(typeof(TxPoolContentResponse))]
+    [JsonSerializable(typeof(TxPoolContentFromResponse))]
+    [JsonSerializable(typeof(TxPoolStatusResponse))]
+    [JsonSerializable(typeof(PendingTransactionInfo))]
+    [JsonSerializable(typeof(Dictionary<string, PendingTransactionInfo>))]
+    [JsonSerializable(typeof(Dictionary<string, Dictionary<string, PendingTransactionInfo>>))]
+    [JsonSerializable(typeof(ExecutionPayloadV1))]
+    [JsonSerializable(typeof(ExecutionPayloadV2))]
+    [JsonSerializable(typeof(ExecutionPayloadV3))]
+    [JsonSerializable(typeof(ExecutionPayloadV4))]
+    [JsonSerializable(typeof(ForkchoiceStateV1))]
+    [JsonSerializable(typeof(PayloadAttributesV1))]
+    [JsonSerializable(typeof(PayloadAttributesV2))]
+    [JsonSerializable(typeof(PayloadAttributesV3))]
+    [JsonSerializable(typeof(PayloadAttributesV4))]
+    [JsonSerializable(typeof(BlobsBundleV1))]
+    [JsonSerializable(typeof(GetPayloadV4Response))]
+    [JsonSerializable(typeof(GetPayloadV6Response))]
+    [JsonSerializable(typeof(PayloadStatusV1))]
+    [JsonSerializable(typeof(ForkchoiceUpdatedResponseV1))]
+    [JsonSerializable(typeof(ClientVersionV1))]
+    [JsonSerializable(typeof(List<ClientVersionV1>))]
     public partial class CoreChainJsonContext : JsonSerializerContext
     {
     }

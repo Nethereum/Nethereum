@@ -9,6 +9,8 @@ using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Util;
 using Nethereum.Util.HashProviders;
+using Nethereum.Merkle.Patricia.Storage;
+using Nethereum.Merkle.Patricia.Nodes;
 
 namespace Nethereum.CoreChain
 {
@@ -17,7 +19,7 @@ namespace Nethereum.CoreChain
         private readonly IHashProvider _hashProvider;
         private readonly Sha3Keccack _sha3;
 
-        public StateRootCalculator() : this(new Sha3KeccackHashProvider())
+        public StateRootCalculator() : this(Sha3KeccackHashProvider.Instance)
         {
         }
 
@@ -33,7 +35,8 @@ namespace Nethereum.CoreChain
             if (accounts.Count == 0)
                 return DefaultValues.EMPTY_TRIE_HASH;
 
-            var stateTrie = new PatriciaTrie(_hashProvider);
+            var store = AsNodeStore(trieNodeStore);
+            var stateTrie = new PatriciaTrie(store, _hashProvider);
 
             foreach (var kvp in accounts)
             {
@@ -57,21 +60,17 @@ namespace Nethereum.CoreChain
 
                 if (filteredStorage.Count > 0)
                 {
-                    var storageTrie = new PatriciaTrie(_hashProvider);
+                    var storageTrie = new PatriciaTrie(store, _hashProvider);
                     foreach (var storageKvp in filteredStorage)
                     {
-                        var slot = storageKvp.Key;
-                        var value = storageKvp.Value;
-
-                        var hashedSlot = GetHashedSlotKey(slot);
-                        var trimmedValue = TrimLeadingZeros(value);
+                        var trimmedValue = TrimLeadingZeros(storageKvp.Value);
                         var encodedValue = RLP.RLP.EncodeElement(trimmedValue);
-                        storageTrie.Put(hashedSlot, encodedValue, trieNodeStore);
+                        storageTrie.Put(storageKvp.Key, encodedValue);
                     }
 
                     if (trieNodeStore != null)
                     {
-                        storageTrie.SaveNodesToStorage(trieNodeStore);
+                        storageTrie.SaveNodesToStorage();
                     }
 
                     accountForTrie.StateRoot = storageTrie.Root.GetHash();
@@ -82,7 +81,7 @@ namespace Nethereum.CoreChain
                 }
 
                 var encodedAccount = AccountEncoder.Current.Encode(accountForTrie);
-                stateTrie.Put(hashedKey, encodedAccount, trieNodeStore);
+                stateTrie.Put(hashedKey, encodedAccount);
             }
 
             if (stateTrie.Root is EmptyNode)
@@ -90,7 +89,7 @@ namespace Nethereum.CoreChain
 
             if (trieNodeStore != null)
             {
-                stateTrie.SaveNodesToStorage(trieNodeStore);
+                stateTrie.SaveNodesToStorage();
             }
 
             return stateTrie.Root.GetHash();
@@ -101,7 +100,8 @@ namespace Nethereum.CoreChain
             if (accounts == null || accounts.Count == 0)
                 return DefaultValues.EMPTY_TRIE_HASH;
 
-            var stateTrie = new PatriciaTrie(_hashProvider);
+            var store = AsNodeStore(trieNodeStore);
+            var stateTrie = new PatriciaTrie(store, _hashProvider);
 
             foreach (var kvp in accounts)
             {
@@ -127,7 +127,7 @@ namespace Nethereum.CoreChain
 
                 if (filteredStorage != null && filteredStorage.Count > 0)
                 {
-                    var storageTrie = new PatriciaTrie(_hashProvider);
+                    var storageTrie = new PatriciaTrie(store, _hashProvider);
                     foreach (var storageKvp in filteredStorage)
                     {
                         var slot = storageKvp.Key;
@@ -136,12 +136,12 @@ namespace Nethereum.CoreChain
                         var hashedSlot = GetHashedSlotKey(slot);
                         var trimmedValue = TrimLeadingZeros(value);
                         var encodedValue = RLP.RLP.EncodeElement(trimmedValue);
-                        storageTrie.Put(hashedSlot, encodedValue, trieNodeStore);
+                        storageTrie.Put(hashedSlot, encodedValue);
                     }
 
                     if (trieNodeStore != null)
                     {
-                        storageTrie.SaveNodesToStorage(trieNodeStore);
+                        storageTrie.SaveNodesToStorage();
                     }
 
                     accountForTrie.StateRoot = storageTrie.Root.GetHash();
@@ -152,7 +152,7 @@ namespace Nethereum.CoreChain
                 }
 
                 var encodedAccount = AccountEncoder.Current.Encode(accountForTrie);
-                stateTrie.Put(hashedKey, encodedAccount, trieNodeStore);
+                stateTrie.Put(hashedKey, encodedAccount);
             }
 
             if (stateTrie.Root is EmptyNode)
@@ -160,11 +160,13 @@ namespace Nethereum.CoreChain
 
             if (trieNodeStore != null)
             {
-                stateTrie.SaveNodesToStorage(trieNodeStore);
+                stateTrie.SaveNodesToStorage();
             }
 
             return stateTrie.Root.GetHash();
         }
+
+        private static ITrieNodeStore AsNodeStore(ITrieNodeStore nodeStore) => nodeStore;
 
         private byte[] GetHashedAddressKey(string address)
         {

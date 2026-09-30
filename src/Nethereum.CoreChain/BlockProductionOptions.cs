@@ -1,9 +1,15 @@
+using System;
+using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.EVM;
+using Nethereum.Model;
 
 namespace Nethereum.CoreChain
 {
     public class BlockProductionOptions
     {
+        public Action<BlockHeader>? ApplyConsensusSeal { get; set; }
+
         public long Timestamp { get; set; }
         public string Coinbase { get; set; }
         public BigInteger BaseFee { get; set; }
@@ -14,5 +20,11 @@ namespace Nethereum.CoreChain
         public BigInteger ChainId { get; set; }
         public byte[] ParentBeaconBlockRoot { get; set; }
         public byte[] Nonce { get; set; }
+
+        public ulong? SlotNumber { get; set; }
+        public bool CaptureWitness { get; set; }
+        public HardforkName HardforkName { get; set; } = HardforkName.Prague;
+
+        public IList<Withdrawal> Withdrawals { get; set; }
     }
 }

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.CoreChain.Freezer Unit + Conformance Tests</Description>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Nethereum.CoreChain.Freezer.UnitTests</AssemblyName>
+    <PackageId>Nethereum.CoreChain.Freezer.UnitTests</PackageId>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain.Freezer\Nethereum.CoreChain.Freezer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Nethereum.Freezer.UnitTests\Fixtures\geth-ancient-txs\*">
+      <Link>Fixtures\geth-ancient-txs\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Nethereum.Freezer.UnitTests\Fixtures\geth-ancient\*">
+      <Link>Fixtures\geth-ancient\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4" />
+  </ItemGroup>
+
+</Project>

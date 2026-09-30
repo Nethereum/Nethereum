@@ -266,7 +266,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var newest = await diffStore.GetNewestDiffBlockAsync();
             var atNewest = await store.GetAccountAtBlockAsync(Addr1, newest.Value);
             Assert.NotNull(atNewest);
-            Assert.Equal(100 + newest.Value * 10, atNewest.Balance);
+            Assert.Equal(100 + newest.Value * 10, (BigInteger)atNewest.Balance);
         }
 
         [Fact]
@@ -357,6 +357,92 @@ namespace Nethereum.CoreChain.UnitTests.Storage
                 await Assert.ThrowsAsync<HistoricalStateNotAvailableException>(
                     () => store.GetAccountAtBlockAsync(Addr1, oldest.Value - 1));
             }
+        }
+
+
+        [Fact]
+        public async Task RecordBlockDiffAsync_AfterManualDrain_MatchesClearCurrentBlockNumberAsync()
+        {
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 100 });
+
+            _store.SetCurrentBlockNumber(1);
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 200 });
+            await _store.DrainBufferToDiskAsync();
+            await _store.RecordBlockDiffAsync();
+
+            var atBlock0 = await _store.GetAccountAtBlockAsync(Addr1, 0);
+            Assert.Equal(100, atBlock0.Balance);
+
+            var current = await _store.GetAccountAsync(Addr1);
+            Assert.Equal(200, current.Balance);
+
+            var newest = await _diffStore.GetNewestDiffBlockAsync();
+            Assert.True(newest.HasValue);
+            Assert.Equal((System.Numerics.BigInteger)1, newest.Value);
+        }
+
+        [Fact]
+        public async Task RecordBlockDiffAsync_WithoutDraining_StillRecordsTheDiff()
+        {
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 100 });
+
+            _store.SetCurrentBlockNumber(1);
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 200 });
+            await _store.RecordBlockDiffAsync();
+
+            var newest = await _diffStore.GetNewestDiffBlockAsync();
+            Assert.True(newest.HasValue);
+            Assert.Equal((System.Numerics.BigInteger)1, newest.Value);
+
+            var atBlock0 = await _store.GetAccountAtBlockAsync(Addr1, 0);
+            Assert.Equal(100, atBlock0.Balance);
+        }
+
+
+        [Fact]
+        public async Task RevertCurrentBlockAsync_MidWindow_K2Simulated_ThrowsNotSupported()
+        {
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 100 });
+
+            _store.SetCurrentBlockNumber(1);
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 200 });
+            await _store.RecordBlockDiffAsync();
+
+            _store.SetCurrentBlockNumber(2);
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 300 });
+
+            await Assert.ThrowsAsync<System.NotSupportedException>(() => _store.RevertCurrentBlockAsync());
+        }
+
+        [Fact]
+        public async Task RevertCurrentBlockAsync_SingleBlock_K1Equivalent_GuardInert_RevertSucceeds()
+        {
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 100 });
+
+            _store.SetCurrentBlockNumber(1);
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 200 });
+
+            await _store.RevertCurrentBlockAsync();
+
+            var current = await _store.GetAccountAsync(Addr1);
+            Assert.Equal(100, current.Balance);
+        }
+
+        [Fact]
+        public async Task RevertCurrentBlockAsync_AfterSeveralFlushedBlocks_GuardStillInert()
+        {
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 100 });
+
+            await ProduceBlock(1, Addr1, 200);
+            await ProduceBlock(2, Addr1, 300);
+
+            _store.SetCurrentBlockNumber(3);
+            await _store.SaveAccountAsync(Addr1, new Account { Balance = 400 });
+
+            await _store.RevertCurrentBlockAsync();
+
+            var current = await _store.GetAccountAsync(Addr1);
+            Assert.Equal(300, current.Balance);
         }
     }
 }

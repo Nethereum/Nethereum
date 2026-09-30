@@ -40,7 +40,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("1000000000000000000")); // 1 ETH
+                BigInteger.Parse("1000000000000000000"));
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
 
@@ -60,7 +60,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
 
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("2000000000000000000")); // 2 ETH
+                BigInteger.Parse("2000000000000000000"));
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
 
@@ -84,7 +84,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
         [Fact]
         public async Task ERC20BalanceOf_ViaEthCall_AtHistoricalBlock()
         {
-            var mintAmount = BigInteger.Parse("1000000000000000000000"); // 1000 tokens
+            var mintAmount = BigInteger.Parse("1000000000000000000000");
             var contractAddress = await _fixture.DeployERC20Async(mintAmount);
 
             var blockAfterMint = await _fixture.Node.GetBlockNumberAsync();
@@ -119,7 +119,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Rpc
             var nonceBefore = await _fixture.Node.GetNonceAsync(_fixture.Address, blockBefore);
 
             var signedTx = _fixture.CreateSignedTransaction(
-                _fixture.RecipientAddress, BigInteger.Parse("100000000000000000")); // 0.1 ETH
+                _fixture.RecipientAddress, BigInteger.Parse("100000000000000000"));
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
 

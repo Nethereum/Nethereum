@@ -6,6 +6,8 @@ using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Util;
 using Xunit;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.UnitTests
 {
@@ -186,7 +188,7 @@ namespace Nethereum.CoreChain.UnitTests
         [Fact]
         public void RootCalculation_WithNodeStore_ShouldProduceSameRootAsWithoutStore()
         {
-            var nodeStore = new InMemoryTrieNodeStore();
+            var nodeStore = new InMemoryContentNodeStore();
             var tx = "0xf86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83".HexToByteArray();
 
             var rootWithStore = _calculator.CalculateTransactionsRoot(new List<byte[]> { tx }, nodeStore);

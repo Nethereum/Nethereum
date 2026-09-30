@@ -1,10 +1,13 @@
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.EVM.Gas;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.Model;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 {
@@ -21,66 +24,60 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             BigInteger? value = callInput.Value?.Value;
 
-            // Use a high gas limit for estimation
-            var estimationGasLimit = (BigInteger)30_000_000;
+            var isContractCreation = SignedTransactionExtensions.IsContractCreationRecipient(callInput.To);
 
-            // Check if this is contract creation (no 'to' address)
-            var isContractCreation = string.IsNullOrEmpty(callInput.To) || callInput.To == "0x";
+            var gasRules = await context.ResolveGasRulesAtBlockOrHeadAsync(blockNumber);
+            var dataBytes = callInput.Data?.HexToByteArray();
 
-            // Calculate intrinsic gas using TransactionProcessor constants
-            var intrinsicGas = TransactionProcessor.CalculateIntrinsicGas(
-                callInput.Data?.HexToByteArray(),
-                isContractCreation);
+            var isSelfTransfer = !isContractCreation && callInput.From.IsTheSameAddress(callInput.To);
+            var hasValue = value.HasValue && value.Value > 0;
 
-            BigInteger executionGas = 0;
+            var execution = await ExecuteForEstimateAsync(
+                context, callInput, blockNumber, value, EstimationCeiling(gasRules), isContractCreation);
 
-            if (isContractCreation)
-            {
-                // For contract creation, execute the init code to estimate gas
-                var createResult = await context.Node.EstimateContractCreationGasAsync(
-                    callInput.Data?.HexToByteArray(),
-                    blockNumber,
-                    callInput.From,
-                    value,
-                    estimationGasLimit - intrinsicGas
-                );
+            if (!execution.Success) return RevertedError(request.Id, execution);
 
-                if (!createResult.Success)
-                {
-                    var reason = !string.IsNullOrEmpty(createResult.RevertReason) ? createResult.RevertReason : "revert";
-                    return Error(request.Id, 3, $"execution reverted: {reason}", createResult.ReturnData?.ToHex(true) ?? "0x");
-                }
+            var floorGas = (BigInteger)gasRules.CalculateFloorGasLimit(dataBytes, isContractCreation, isSelfTransfer, hasValue, accessList: null);
 
-                executionGas = createResult.GasUsed;
-            }
-            else
-            {
-                // For regular calls, use the existing CallAsync
-                var result = await context.Node.CallAsync(
-                    callInput.To,
-                    callInput.Data?.HexToByteArray(),
-                    blockNumber,
-                    callInput.From,
-                    value,
-                    estimationGasLimit - intrinsicGas
-                );
-
-                if (!result.Success)
-                {
-                    var reason = !string.IsNullOrEmpty(result.RevertReason) ? result.RevertReason : "revert";
-                    return Error(request.Id, 3, $"execution reverted: {reason}", result.ReturnData?.ToHex(true) ?? "0x");
-                }
-
-                executionGas = result.GasUsed;
-            }
-
-            // Total gas = intrinsic gas + execution gas
-            var totalGas = intrinsicGas + executionGas;
-
-            // Add 10% buffer for safety
-            var estimate = totalGas * 110 / 100;
+            var estimate = TotalGasTheCallerMustFund(execution, floorGas)
+                * (100 + context.Node.Config.EstimateGasPaddingPercent) / 100;
 
             return Success(request.Id, new HexBigInteger(estimate));
+        }
+
+        private static BigInteger TotalGasTheCallerMustFund(CallResult execution, BigInteger floorGas)
+            => BigInteger.Max(execution.GasUsed, floorGas + execution.StateGasUsed);
+
+        private static BigInteger EstimationCeiling(IntrinsicGasRules gasRules)
+        {
+            const long ExecutionGasCeiling = 30_000_000;
+            if (!gasRules.StateGasActive) return ExecutionGasCeiling;
+
+            return ExecutionGasCeiling + LargestCodeDepositTheForkAllows;
+        }
+
+        private static BigInteger LargestCodeDepositTheForkAllows
+            => (BigInteger)GasConstants.EIP7954_MAX_CODE_SIZE * GasConstants.EIP8037_COST_PER_STATE_BYTE;
+
+        private static Task<CallResult> ExecuteForEstimateAsync(
+            RpcContext context, CallInput callInput, BigInteger blockNumber,
+            BigInteger? value, BigInteger gasBudget, bool isContractCreation)
+        {
+            if (isContractCreation)
+                return context.Node.EstimateContractCreationGasAsync(
+                    callInput.Data?.HexToByteArray(), blockNumber, callInput.From, value, gasBudget);
+
+            var data = callInput.Data?.HexToByteArray();
+            if (context.Node is ChainNodeBase node)
+                return node.CallWithFeePolicyAsync(
+                    callInput.To, data, blockNumber, callInput.From, value, gasBudget,
+                    stateOverrides: null, authorisationList: null,
+                    gasPrice: callInput.GasPrice?.Value,
+                    maxFeePerGas: callInput.MaxFeePerGas?.Value,
+                    maxPriorityFeePerGas: callInput.MaxPriorityFeePerGas?.Value);
+
+            return context.Node.CallAsync(
+                callInput.To, data, blockNumber, callInput.From, value, gasBudget);
         }
     }
 }

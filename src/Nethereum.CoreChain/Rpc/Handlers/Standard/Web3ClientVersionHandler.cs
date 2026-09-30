@@ -10,7 +10,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
         public override Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
-            return Task.FromResult(Success(request.Id, "Nethereum.DevChain/1.0.0"));
+            return Task.FromResult(Success(request.Id, NodeVersion.ClientVersion));
         }
     }
 }

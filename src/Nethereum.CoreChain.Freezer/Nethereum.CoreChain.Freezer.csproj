@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>Nethereum.CoreChain.Freezer - CoreChain adapter for Nethereum.Freezer: typed per-stream codecs (headers, bodies, receipts, hashes, block access lists) that turn domain block data into geth-compatible freezer item bytes</Description>
+    <AssemblyTitle>Nethereum.CoreChain.Freezer</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
+    <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
+    <AssemblyName>Nethereum.CoreChain.Freezer</AssemblyName>
+    <PackageId>Nethereum.CoreChain.Freezer</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nethereum.Freezer\Nethereum.Freezer.csproj" />
+    <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+  </ItemGroup>
+
+</Project>

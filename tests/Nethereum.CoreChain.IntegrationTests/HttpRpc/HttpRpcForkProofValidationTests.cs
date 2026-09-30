@@ -8,6 +8,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Util;
 using Xunit;
+using Nethereum.Merkle.Patricia.ProofVerification;
 
 namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
 {
@@ -16,9 +17,7 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
     {
         private readonly DevChainForkHttpFixture _fixture;
 
-        // totalSupply() selector
         private const string TotalSupplySelector = "0x18160ddd";
-        // balanceOf(address) selector
         private const string BalanceOfSelector = "0x70a08231";
 
         public HttpRpcForkProofValidationTests(DevChainForkHttpFixture fixture)
@@ -29,12 +28,10 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_USDC_AccountProofVerifies()
         {
-            if (!_fixture.IsAvailable) return; // MAINNET_RPC_URL not set — skip
+            if (!_fixture.IsAvailable) return;
 
-            // Touch USDC to trigger ForkingNodeDataService to fetch from mainnet
             await CallContractAsync(DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
 
-            // Force block production to compute state root over forked state
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
             var proof = await _fixture.Web3.Eth.GetProof.SendRequestAsync(
@@ -51,13 +48,12 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var stateRoot = block.StateRoot.HexToByteArray();
 
             var account = proof.ToAccount();
-            var valid = AccountProofVerification.VerifyAccountProofs(
-                DevChainForkHttpFixture.UsdcAddress, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var valid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                DevChainForkHttpFixture.UsdcAddress, account);
 
             Assert.True(valid, "USDC account proof should verify cryptographically against fork state root");
 
-            // USDC is a contract — it should have code
             Assert.NotEqual(
                 "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
                 proof.CodeHash.ToLowerInvariant());
@@ -66,16 +62,13 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_USDC_StorageProofVerifies()
         {
-            if (!_fixture.IsAvailable) return; // MAINNET_RPC_URL not set — skip
+            if (!_fixture.IsAvailable) return;
 
-            // Read totalSupply via eth_call
             var totalSupplyResult = await CallContractAsync(
                 DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
 
-            // Force block production
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
-            // Get proof for storage slot 0x0 (common base slot)
             var proof = await _fixture.Web3.Eth.GetProof.SendRequestAsync(
                 DevChainForkHttpFixture.UsdcAddress,
                 new[] { "0x0" },
@@ -87,11 +80,11 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var sp = proof.StorageProof[0];
             if (sp.Proof != null && sp.Proof.Count > 0)
             {
-                var storageValid = StorageProofVerification.ValidateValueFromStorageProof(
+                var storageValid = ProofVerification.Current.Storage.Verify(
+                    proof.StorageHash.HexToByteArray(),
+                    sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                     sp.Key.HexValue.HexToByteArray(),
-                    sp.Value.HexValue.HexToByteArray(),
-                    sp.Proof.Select(x => x.HexToByteArray()),
-                    proof.StorageHash.HexToByteArray());
+                    sp.Value.HexValue.HexToByteArray());
                 Assert.True(storageValid, "USDC storage proof should verify cryptographically");
             }
         }
@@ -99,25 +92,20 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_USDC_BalanceOfKnownHolder()
         {
-            if (!_fixture.IsAvailable) return; // MAINNET_RPC_URL not set — skip
+            if (!_fixture.IsAvailable) return;
 
-            // Use the fixture's own address as a test — after fork, touch USDC to populate state
             var testAddress = DevChainForkHttpFixture.Address;
 
-            // Read balanceOf(testAddress) to trigger state loading
             var balanceOfData = BalanceOfSelector +
                 testAddress.Replace("0x", "").PadLeft(64, '0');
             await CallContractAsync(DevChainForkHttpFixture.UsdcAddress, balanceOfData);
 
-            // Compute the balanceOf mapping slot: keccak256(abi.encode(address, 9))
-            // USDC uses slot 9 for _balances mapping (FiatTokenV2_1 proxy pattern)
             var sha3 = new Sha3Keccack();
             var slotKey = testAddress.Replace("0x", "").PadLeft(64, '0') +
                           new BigInteger(9).ToString("x64");
             var hashedSlot = sha3.CalculateHash(slotKey.HexToByteArray());
             var storageKey = "0x" + hashedSlot.ToHex();
 
-            // Force block production
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
             var proof = await _fixture.Web3.Eth.GetProof.SendRequestAsync(
@@ -128,21 +116,20 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             Assert.NotNull(proof);
             Assert.NotEmpty(proof.StorageProof);
 
-            // Verify account proof
             var block = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
                 .SendRequestAsync(BlockParameter.CreateLatest());
             var stateRoot = block.StateRoot.HexToByteArray();
             var account = proof.ToAccount();
-            var accountValid = AccountProofVerification.VerifyAccountProofs(
-                DevChainForkHttpFixture.UsdcAddress, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var accountValid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                DevChainForkHttpFixture.UsdcAddress, account);
             Assert.True(accountValid, "Account proof should verify for USDC balanceOf query");
         }
 
         [Fact]
         public async Task ForkProof_MultipleForkAccounts_AllVerify()
         {
-            if (!_fixture.IsAvailable) return; // MAINNET_RPC_URL not set — skip
+            if (!_fixture.IsAvailable) return;
 
             var contracts = new[]
             {
@@ -151,13 +138,11 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                 DevChainForkHttpFixture.DaiAddress
             };
 
-            // Touch all contracts to trigger state loading
             foreach (var addr in contracts)
             {
                 await CallContractAsync(addr, TotalSupplySelector);
             }
 
-            // Force block production
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
             var block = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
@@ -173,9 +158,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                 Assert.NotEmpty(proof.AccountProofs);
 
                 var account = proof.ToAccount();
-                var valid = AccountProofVerification.VerifyAccountProofs(
-                    addr, stateRoot,
-                    proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+                var valid = ProofVerification.Current.Account.Verify(
+                    stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                    addr, account);
 
                 Assert.True(valid, $"Account proof for {addr} should verify against fork state root");
             }
@@ -184,9 +169,8 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_ProofValidationService_WorksWithForkedState()
         {
-            if (!_fixture.IsAvailable) return; // MAINNET_RPC_URL not set — skip
+            if (!_fixture.IsAvailable) return;
 
-            // Touch USDC to load state
             await CallContractAsync(DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
@@ -236,15 +220,15 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var forkBlock = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
                 .SendRequestAsync(BlockParameter.CreateLatest());
             var forkAccount = forkProof.ToAccount();
-            var forkValid = AccountProofVerification.VerifyAccountProofs(
-                DevChainForkHttpFixture.UsdcAddress, forkBlock.StateRoot.HexToByteArray(),
-                forkProof.AccountProofs.Select(x => x.HexToByteArray()), forkAccount);
+            var forkValid = ProofVerification.Current.Account.Verify(
+                forkBlock.StateRoot.HexToByteArray(), forkProof.AccountProofs.Select(x => x.HexToByteArray()),
+                DevChainForkHttpFixture.UsdcAddress, forkAccount);
             Assert.True(forkValid, "Fork proof should verify against fork state root");
 
             var mainnetAccount = mainnetProof.ToAccount();
-            var mainnetValid = AccountProofVerification.VerifyAccountProofs(
-                DevChainForkHttpFixture.UsdcAddress, mainnetBlock.StateRoot.HexToByteArray(),
-                mainnetProof.AccountProofs.Select(x => x.HexToByteArray()), mainnetAccount);
+            var mainnetValid = ProofVerification.Current.Account.Verify(
+                mainnetBlock.StateRoot.HexToByteArray(), mainnetProof.AccountProofs.Select(x => x.HexToByteArray()),
+                DevChainForkHttpFixture.UsdcAddress, mainnetAccount);
             Assert.True(mainnetValid, "Mainnet proof should verify against mainnet state root");
         }
 
@@ -333,9 +317,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             Assert.NotEmpty(mainnetProof.AccountProofs);
 
             var mainnetAccount = mainnetProof.ToAccount();
-            var mainnetValid = AccountProofVerification.VerifyAccountProofs(
-                DevChainForkHttpFixture.UsdcAddress, mainnetStateRoot,
-                mainnetProof.AccountProofs.Select(x => x.HexToByteArray()), mainnetAccount);
+            var mainnetValid = ProofVerification.Current.Account.Verify(
+                mainnetStateRoot, mainnetProof.AccountProofs.Select(x => x.HexToByteArray()),
+                DevChainForkHttpFixture.UsdcAddress, mainnetAccount);
             Assert.True(mainnetValid, "Mainnet USDC proof should verify against mainnet state root");
 
             Assert.NotEqual(

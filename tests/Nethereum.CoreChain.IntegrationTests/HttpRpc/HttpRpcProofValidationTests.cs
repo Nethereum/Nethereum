@@ -9,6 +9,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Signer;
 using Xunit;
+using Nethereum.Merkle.Patricia.ProofVerification;
 
 namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
 {
@@ -36,9 +37,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var stateRoot = block.StateRoot.HexToByteArray();
 
             var account = proof.ToAccount();
-            var valid = AccountProofVerification.VerifyAccountProofs(
-                _fixture.Account.Address, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var valid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                _fixture.Account.Address, account);
 
             Assert.True(valid, "Account proof should verify cryptographically against block state root");
         }
@@ -56,20 +57,20 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var stateRoot = block.StateRoot.HexToByteArray();
 
             var account = proof.ToAccount();
-            var accountValid = AccountProofVerification.VerifyAccountProofs(
-                contractAddress, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var accountValid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                contractAddress, account);
             Assert.True(accountValid, "Account proof for contract should verify");
 
             Assert.NotEmpty(proof.StorageProof);
             var sp = proof.StorageProof[0];
             if (sp.Proof != null && sp.Proof.Count > 0)
             {
-                var storageValid = StorageProofVerification.ValidateValueFromStorageProof(
+                var storageValid = ProofVerification.Current.Storage.Verify(
+                    proof.StorageHash.HexToByteArray(),
+                    sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                     sp.Key.HexValue.HexToByteArray(),
-                    sp.Value.HexValue.HexToByteArray(),
-                    sp.Proof.Select(x => x.HexToByteArray()),
-                    proof.StorageHash.HexToByteArray());
+                    sp.Value.HexValue.HexToByteArray());
                 Assert.True(storageValid, "Storage proof should verify cryptographically");
             }
         }
@@ -125,13 +126,36 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                     addr, Array.Empty<string>(), BlockParameter.CreateLatest());
 
                 var account = proof.ToAccount();
-                var valid = AccountProofVerification.VerifyAccountProofs(
-                    addr, stateRoot,
-                    proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+                var valid = ProofVerification.Current.Account.Verify(
+                    stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                    addr, account);
 
                 Assert.True(valid, $"Account proof for {addr} should verify");
                 Assert.True(proof.Balance.Value > 0, $"Balance for {addr} should be non-zero");
             }
+        }
+
+        [Fact]
+        public async Task Given_AFreshAccountFundedByATransfer_When_ItsProofIsRequestedAtTheFundingBlock_Then_ItVerifiesAgainstThatHeaderStateRootAndCarriesTheTransferredBalance()
+        {
+            var fresh = EthECKey.GenerateKey().GetPublicAddress();
+            var receipt = await SendEthTransferAsync(fresh, OneToken);
+            var fundingBlock = new BlockParameter(receipt.BlockNumber);
+
+            var header = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
+                .SendRequestAsync(fundingBlock);
+            var proof = await _fixture.Web3.Eth.GetProof.SendRequestAsync(
+                fresh, Array.Empty<string>(), fundingBlock);
+            var rpcBalance = await _fixture.Web3.Eth.GetBalance.SendRequestAsync(fresh, fundingBlock);
+
+            Assert.Equal(OneToken, rpcBalance.Value);
+            Assert.Equal(OneToken, proof.Balance.Value);
+            Assert.NotEmpty(proof.AccountProofs);
+            Assert.Equal(header.StateRoot,
+                new Nethereum.Util.Sha3Keccack().CalculateHash(proof.AccountProofs[0].HexToByteArray()).ToHex(true));
+            Assert.True(ProofVerification.Current.Account.Verify(
+                header.StateRoot.HexToByteArray(), proof.AccountProofs.Select(x => x.HexToByteArray()),
+                fresh, proof.ToAccount()));
         }
 
         [Fact]
@@ -151,7 +175,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             await transferHandler.SendRequestAndWaitForReceiptAsync(contractAddress,
                 new TransferFunction { To = recipient3, Value = OneToken * 300 });
 
-            // Storage slot 0x2 = totalSupply in ERC20, request multiple keys
             var proof = await _fixture.Web3.Eth.GetProof.SendRequestAsync(
                 contractAddress, new[] { "0x0", "0x1", "0x2" }, BlockParameter.CreateLatest());
 
@@ -160,9 +183,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var stateRoot = block.StateRoot.HexToByteArray();
 
             var account = proof.ToAccount();
-            var accountValid = AccountProofVerification.VerifyAccountProofs(
-                contractAddress, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var accountValid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                contractAddress, account);
             Assert.True(accountValid, "Account proof should verify for multi-slot request");
 
             Assert.Equal(3, proof.StorageProof.Count);
@@ -170,11 +193,11 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             {
                 if (sp.Proof != null && sp.Proof.Count > 0)
                 {
-                    var valid = StorageProofVerification.ValidateValueFromStorageProof(
+                    var valid = ProofVerification.Current.Storage.Verify(
+                        proof.StorageHash.HexToByteArray(),
+                        sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                         sp.Key.HexValue.HexToByteArray(),
-                        sp.Value.HexValue.HexToByteArray(),
-                        sp.Proof.Select(x => x.HexToByteArray()),
-                        proof.StorageHash.HexToByteArray());
+                        sp.Value.HexValue.HexToByteArray());
                     Assert.True(valid, $"Storage proof for key {sp.Key.Value} should verify");
                 }
             }
@@ -199,9 +222,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                 _fixture.Account.Address, Array.Empty<string>(), BlockParameter.CreateLatest());
 
             var account = proof.ToAccount();
-            var valid = AccountProofVerification.VerifyAccountProofs(
-                _fixture.Account.Address, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var valid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                _fixture.Account.Address, account);
 
             Assert.True(valid, "Account proof should verify after multiple blocks of state changes");
         }
@@ -221,9 +244,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             var account = proof.ToAccount();
             account.Balance += 1;
 
-            var valid = AccountProofVerification.VerifyAccountProofs(
-                _fixture.Account.Address, stateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var valid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                _fixture.Account.Address, account);
 
             Assert.False(valid, "Tampered balance should cause account proof verification to fail");
         }
@@ -245,9 +268,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             lastNode[lastNode.Length - 1] ^= 0xFF;
 
             var account = proof.ToAccount();
-            var valid = AccountProofVerification.VerifyAccountProofs(
-                _fixture.Account.Address, stateRoot,
-                proofNodes, account);
+            var valid = ProofVerification.Current.Account.Verify(
+                stateRoot, proofNodes,
+                _fixture.Account.Address, account);
 
             Assert.False(valid, "Flipped byte in proof node should cause verification to fail");
         }
@@ -271,11 +294,11 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             else
                 tamperedValue = new byte[] { 0x01 };
 
-            var storageValid = StorageProofVerification.ValidateValueFromStorageProof(
+            var storageValid = ProofVerification.Current.Storage.Verify(
+                proof.StorageHash.HexToByteArray(),
+                sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                 sp.Key.HexValue.HexToByteArray(),
-                tamperedValue,
-                sp.Proof.Select(x => x.HexToByteArray()),
-                proof.StorageHash.HexToByteArray());
+                tamperedValue);
 
             Assert.False(storageValid, "Tampered storage value should cause storage proof verification to fail");
         }
@@ -293,9 +316,9 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             fakeStateRoot[1] = 0xAD;
 
             var account = proof.ToAccount();
-            var valid = AccountProofVerification.VerifyAccountProofs(
-                _fixture.Account.Address, fakeStateRoot,
-                proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+            var valid = ProofVerification.Current.Account.Verify(
+                fakeStateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                _fixture.Account.Address, account);
 
             Assert.False(valid, "Wrong state root should cause account proof verification to fail");
         }
@@ -321,17 +344,22 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
                 var stateRoot = block.StateRoot.HexToByteArray();
 
                 var account = proof.ToAccount();
-                var valid = AccountProofVerification.VerifyAccountProofs(
-                    nonExistentAddress, stateRoot,
-                    proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+                var valid = ProofVerification.Current.Account.Verify(
+                    stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                    nonExistentAddress, account);
                 Assert.False(valid, "Non-existent account proof should not verify as a real account");
             }
         }
 
         private async Task<TransactionReceipt> DeployERC20Async()
         {
+            var gas = await _fixture.Web3.Eth.TransactionManager.EstimateGasAsync(new Nethereum.RPC.Eth.DTOs.CallInput
+            {
+                From = _fixture.Account.Address,
+                Data = Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.EnsureHexPrefix(ERC20Contract.BYTECODE)
+            });
             return await _fixture.Web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
-                ERC20Contract.BYTECODE, _fixture.Account.Address, new HexBigInteger(3000000));
+                ERC20Contract.BYTECODE, _fixture.Account.Address, gas);
         }
 
         private async Task<string> DeployAndMintAsync(BigInteger mintAmount)
@@ -350,10 +378,12 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             {
                 From = _fixture.Account.Address,
                 To = to,
-                Value = new HexBigInteger(value),
-                Gas = new HexBigInteger(21000)
+                Value = new HexBigInteger(value)
             };
-            return await _fixture.Web3.Eth.TransactionManager.SendTransactionAndWaitForReceiptAsync(txInput);
+            txInput.Gas = await _fixture.Web3.Eth.TransactionManager.EstimateGasAsync(txInput);
+            var receipt = await _fixture.Web3.Eth.TransactionManager.SendTransactionAndWaitForReceiptAsync(txInput);
+            Assert.False(receipt.HasErrors() == true, $"Transfer of {value} wei to {to} failed in block {receipt.BlockNumber.Value}");
+            return receipt;
         }
     }
 }

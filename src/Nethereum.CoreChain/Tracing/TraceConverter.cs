@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.CoreChain.Rpc;
 using Nethereum.EVM;
+using Nethereum.Util;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -12,7 +14,8 @@ namespace Nethereum.CoreChain.Tracing
     {
         public static OpcodeTraceResult ConvertToOpcodeResult(
             Program program,
-            OpcodeTraceConfig config = null)
+            OpcodeTraceConfig config = null,
+            long? totalGasUsedOverride = null)
         {
             config = config ?? new OpcodeTraceConfig();
 
@@ -33,7 +36,7 @@ namespace Nethereum.CoreChain.Tracing
                     Pc = (ulong)(trace.Instruction?.Step ?? 0),
                     Op = trace.Instruction?.Instruction?.ToString() ?? "UNKNOWN",
                     Gas = gasRemaining < 0 ? 0 : (gasRemaining > ulong.MaxValue ? ulong.MaxValue : (ulong)gasRemaining),
-                    GasCost = trace.GasCost < 0 ? 0 : (trace.GasCost > ulong.MaxValue ? ulong.MaxValue : (ulong)trace.GasCost),
+                    GasCost = trace.GasCost < 0 ? 0 : (ulong)trace.GasCost,
                     Depth = trace.Depth + 1,
                     Address = trace.CodeAddress
                 };
@@ -56,7 +59,7 @@ namespace Nethereum.CoreChain.Tracing
                     step.MemSize = trace.Memory.Length / 2;
                 }
 
-                if (!config.DisableStorage && trace.Storage != null)
+                if (!config.DisableStorage && trace.Storage != null && trace.Storage.Count > 0)
                 {
                     step.Storage = new Dictionary<string, string>(trace.Storage);
                 }
@@ -69,7 +72,7 @@ namespace Nethereum.CoreChain.Tracing
 
             return new OpcodeTraceResult
             {
-                Gas = (ulong)program.TotalGasUsed,
+                Gas = (ulong)(totalGasUsedOverride ?? program.TotalGasUsed),
                 Failed = program.ProgramResult?.IsRevert ?? false,
                 ReturnValue = returnValue,
                 StructLogs = structLogs
@@ -79,7 +82,8 @@ namespace Nethereum.CoreChain.Tracing
         public static CallTraceResult ConvertToCallTraceResult(
             Program program,
             CallInput callInput,
-            bool isContractCreation)
+            bool isContractCreation,
+            long? totalGasUsedOverride = null)
         {
             var result = program.ProgramResult;
             var output = result?.Result?.ToHex(true) ?? "0x";
@@ -87,11 +91,11 @@ namespace Nethereum.CoreChain.Tracing
             var response = new CallTraceResult
             {
                 Type = isContractCreation ? "CREATE" : "CALL",
-                From = callInput.From,
-                To = isContractCreation ? null : callInput.To,
+                From = RpcTransactionAddress.Normalize(callInput.From),
+                To = isContractCreation ? null : RpcTransactionAddress.Normalize(callInput.To),
                 Value = callInput.Value ?? new HexBigInteger(0),
                 Gas = callInput.Gas ?? new HexBigInteger(0),
-                GasUsed = new HexBigInteger(program.TotalGasUsed),
+                GasUsed = new HexBigInteger(totalGasUsedOverride ?? program.TotalGasUsed),
                 Input = callInput.Data ?? "0x",
                 Output = output
             };
@@ -133,12 +137,12 @@ namespace Nethereum.CoreChain.Tracing
                 var node = new CallTraceResult
                 {
                     Type = GetCallType(inner.FrameType),
-                    From = inner.CallInput?.From,
-                    To = inner.CallInput?.To,
-                    Value = inner.CallInput?.Value ?? new HexBigInteger(0),
-                    Gas = inner.CallInput?.Gas ?? new HexBigInteger(0),
+                    From = RpcTransactionAddress.Normalize(inner.CallInput?.From),
+                    To = RpcTransactionAddress.Normalize(inner.CallInput?.To),
+                    Value = new HexBigInteger((BigInteger)(inner.CallInput?.Value ?? EvmUInt256.Zero)),
+                    Gas = new HexBigInteger(inner.CallInput?.Gas ?? 0),
                     GasUsed = new HexBigInteger(inner.GasUsed),
-                    Input = inner.CallInput?.Data ?? "0x",
+                    Input = inner.CallInput?.Data != null ? inner.CallInput.Data.ToHex(true) : "0x",
                     Output = inner.Output?.ToHex(true) ?? "0x"
                 };
 
@@ -169,16 +173,14 @@ namespace Nethereum.CoreChain.Tracing
             return rootChildren;
         }
 
-        public static PrestateTraceResult ConvertToPrestateResult(
-            ExecutionStateService stateService,
-            INodeDataService nodeDataService)
+        public static PrestateTraceResult ConvertToPrestateResult(ExecutionStateService stateService)
         {
             var pre = new Dictionary<string, PrestateAccountInfo>();
             var post = new Dictionary<string, PrestateAccountInfo>();
 
             foreach (var kvp in stateService.AccountsState)
             {
-                var address = kvp.Key;
+                var address = kvp.Key.ToHexLower();
                 var accountState = kvp.Value;
 
                 var preBalance = accountState.Balance.InitialChainBalance ?? BigInteger.Zero;
@@ -211,13 +213,13 @@ namespace Nethereum.CoreChain.Tracing
 
                     foreach (var storageKvp in accountState.OriginalStorageValues)
                     {
-                        var slot = "0x" + storageKvp.Key.ToString("x64");
+                        var slot = "0x" + storageKvp.Key.ToBigEndian().ToHex().PadLeft(64, '0');
                         preItem.Storage[slot] = storageKvp.Value?.ToHex(true) ?? "0x0";
                     }
 
                     foreach (var storageKvp in accountState.Storage)
                     {
-                        var slot = "0x" + storageKvp.Key.ToString("x64");
+                        var slot = "0x" + storageKvp.Key.ToBigEndian().ToHex().PadLeft(64, '0');
                         postItem.Storage[slot] = storageKvp.Value?.ToHex(true) ?? "0x0";
                     }
                 }

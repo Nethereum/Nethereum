@@ -8,6 +8,8 @@ using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Util;
 using Xunit;
+using Nethereum.Merkle.Patricia.Proofs;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.IntegrationTests.DevChain
 {
@@ -15,6 +17,14 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
     {
         private readonly DevChainNodeFixture _fixture;
         private static readonly BigInteger OneToken = BigInteger.Parse("1000000000000000000");
+
+        private static InMemoryContentNodeStore ProofToStore(System.Collections.Generic.List<byte[]> proofNodes)
+        {
+            var store = new InMemoryContentNodeStore();
+            var keccak = new Sha3Keccack();
+            foreach (var proofNode in proofNodes) store.Put(keccak.CalculateHash(proofNode), proofNode);
+            return store;
+        }
 
         public MerkleProofTests(DevChainNodeFixture fixture)
         {
@@ -77,11 +87,11 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.Equal(block.TransactionsHash, trie.Root.GetHash());
 
-            var proof = trie.GenerateProof(key);
+            var proof = ProofGenerator.GenerateProof(trie, key);
             Assert.NotNull(proof);
 
-            var verifyTrie = new PatriciaTrie(block.TransactionsHash);
-            var retrievedValue = verifyTrie.Get(key, proof);
+            var verifyTrie = new PatriciaTrie(block.TransactionsHash, ProofToStore(proof));
+            var retrievedValue = verifyTrie.Get(key);
             Assert.NotNull(retrievedValue);
             Assert.True(encodedTx.SequenceEqual(retrievedValue));
         }
@@ -234,11 +244,11 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
-            var proof = trie.GenerateProof(key);
+            var proof = ProofGenerator.GenerateProof(trie, key);
             Assert.NotNull(proof);
 
-            var verifyTrie = new PatriciaTrie(block.TransactionsHash);
-            var verified = verifyTrie.Get(key, proof);
+            var verifyTrie = new PatriciaTrie(block.TransactionsHash, ProofToStore(proof));
+            var verified = verifyTrie.Get(key);
 
             Assert.NotNull(verified);
             Assert.True(encodedTx.SequenceEqual(verified), "Transaction proof verification failed");
@@ -266,11 +276,11 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             Assert.Equal(block.ReceiptHash, trie.Root.GetHash());
 
-            var proof = trie.GenerateProof(key);
+            var proof = ProofGenerator.GenerateProof(trie, key);
             Assert.NotNull(proof);
 
-            var verifyTrie = new PatriciaTrie(block.ReceiptHash);
-            var verified = verifyTrie.Get(key, proof);
+            var verifyTrie = new PatriciaTrie(block.ReceiptHash, ProofToStore(proof));
+            var verified = verifyTrie.Get(key);
 
             Assert.NotNull(verified);
             Assert.True(encodedReceipt.SequenceEqual(verified), "Receipt proof verification failed");
@@ -297,10 +307,10 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var key = RLP.RLP.EncodeElement(0.ToBytesForRLPEncoding());
             trie.Put(key, encodedTx);
 
-            var proof = trie.GenerateProof(key);
+            var proof = ProofGenerator.GenerateProof(trie, key);
 
-            var verifyTrie = new PatriciaTrie(corruptedRoot);
-            var verified = verifyTrie.Get(key, proof);
+            var verifyTrie = new PatriciaTrie(corruptedRoot, ProofToStore(proof));
+            var verified = verifyTrie.Get(key);
 
             Assert.Null(verified);
         }

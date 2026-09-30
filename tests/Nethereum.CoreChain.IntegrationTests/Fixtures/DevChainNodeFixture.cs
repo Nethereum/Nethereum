@@ -22,7 +22,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
         public string Address2 { get; } = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 
         public BigInteger ChainId { get; } = 31337;
-        public BigInteger InitialBalance { get; } = BigInteger.Parse("10000000000000000000000"); // 10000 ETH
+        public BigInteger InitialBalance { get; } = BigInteger.Parse("10000000000000000000000");
 
         public string RecipientAddress { get; } = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC";
 
@@ -44,6 +44,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
 
         public Task DisposeAsync()
         {
+            Node?.Dispose();
             return Task.CompletedTask;
         }
 
@@ -56,7 +57,7 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
             BigInteger? nonce = null)
         {
             var txNonce = nonce ?? Node.GetNonceAsync(Address).Result;
-            var txGasPrice = gasPrice ?? 1_000_000_000; // 1 gwei
+            var txGasPrice = gasPrice ?? 1_000_000_000;
             var txGasLimit = gasLimit ?? (data != null ? 500_000 : 21_000);
 
             var signedTxHex = _signer.SignTransaction(
@@ -79,12 +80,12 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
         {
             var txNonce = nonce ?? Node.GetNonceAsync(Address).Result;
             var txGasLimit = gasLimit ?? 3_000_000;
-            BigInteger txGasPrice = 1_000_000_000; // 1 gwei
+            BigInteger txGasPrice = 1_000_000_000;
 
             var signedTxHex = _signer.SignTransaction(
                 PrivateKey.HexToByteArray(),
                 ChainId,
-                "", // empty to address for contract deployment
+                "",
                 BigInteger.Zero,
                 txNonce,
                 txGasPrice,

@@ -1,8 +1,10 @@
 using System.Numerics;
+using Nethereum.EVM.Execution;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain
 {
-    public class BlockContext
+    public class BlockContext : IBlockEnvironment
     {
         public BigInteger BlockNumber { get; set; }
         public long Timestamp { get; set; }
@@ -12,6 +14,24 @@ namespace Nethereum.CoreChain
         public BigInteger Difficulty { get; set; } = 1;
         public byte[] PrevRandao { get; set; }
         public BigInteger ChainId { get; set; }
+
+        public long ExcessBlobGas { get; set; }
+
+        public ulong? SlotNumber { get; set; }
+
+        EvmUInt256 IBlockEnvironment.BlockNumber => BlockNumber;
+
+        EvmUInt256 IBlockEnvironment.Timestamp => EvmUInt256.FromHeaderScalar(Timestamp);
+
+        EvmUInt256 IBlockEnvironment.BaseFee => BaseFee;
+
+        EvmUInt256 IBlockEnvironment.Difficulty => Difficulty;
+
+        EvmUInt256 IBlockEnvironment.BlockGasLimit => GasLimit;
+
+        EvmUInt256 IBlockEnvironment.ChainId => ChainId;
+
+        EvmUInt256 IBlockEnvironment.ExcessBlobGas => (ulong)ExcessBlobGas;
 
         public static BlockContext FromConfig(ChainConfig config, BigInteger blockNumber, long timestamp)
         {

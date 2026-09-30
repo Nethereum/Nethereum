@@ -1,6 +1,9 @@
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Storage;
+using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 {
@@ -10,7 +13,46 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
         public override Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
-            return Task.FromResult(Success(request.Id, false));
+            var metadata = context.GetService<IChainStoreBundle>()?.Metadata
+                ?? context.GetService<IChainMetadataStore>();
+            var state = metadata?.GetSnapSyncState();
+
+            if (state == null
+                || state.Phase == SnapPhase.NotStarted
+                || state.Phase == SnapPhase.Complete)
+            {
+                return Task.FromResult(Success(request.Id, false));
+            }
+
+            var executed = (System.Numerics.BigInteger)metadata.GetLastBlock();
+            var bodyCursor = (System.Numerics.BigInteger)metadata.GetLastFetchedBody();
+            var currentBlock = bodyCursor > executed ? bodyCursor : executed;
+            var counters = state.Counters ?? SnapSyncCounters.Zero;
+
+            var trustedTip = HeaderSubchains.TrustedTip(metadata.GetHeaderSyncState());
+            var highestBlock = trustedTip > 0
+                ? (System.Numerics.BigInteger)trustedTip
+                : (System.Numerics.BigInteger)state.PivotBlockNumber;
+
+            var output = new EthSyncingSnapOutput
+            {
+                StartingBlock       = new HexBigInteger(0),
+                CurrentBlock        = new HexBigInteger(currentBlock),
+                HighestBlock        = new HexBigInteger(highestBlock),
+                SyncedAccounts      = new HexBigInteger(counters.AccountsSynced),
+                SyncedAccountBytes  = new HexBigInteger(counters.AccountBytes),
+                SyncedBytecodes     = new HexBigInteger(counters.BytecodesSynced),
+                SyncedBytecodeBytes = new HexBigInteger(counters.BytecodeBytes),
+                SyncedStorage       = new HexBigInteger(counters.StorageSlotsSynced),
+                SyncedStorageBytes  = new HexBigInteger(counters.StorageBytes),
+                HealedTrienodes     = new HexBigInteger(counters.TrieNodesHealed),
+                HealedTrienodeBytes = new HexBigInteger(counters.TrieNodeBytesHealed),
+                HealedBytecodes     = new HexBigInteger(counters.BytecodesHealed),
+                HealingBytecode     = new HexBigInteger(0),
+                HealingTrienodes    = new HexBigInteger(0),
+            };
+
+            return Task.FromResult(Success(request.Id, output));
         }
     }
 }

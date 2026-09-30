@@ -12,6 +12,15 @@ namespace Nethereum.CoreChain.Storage
         Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash);
         Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber);
         Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber);
+
+        async Task SaveManyAsync(byte[] blockHash, BigInteger blockNumber, IReadOnlyList<ISignedTransaction> txs)
+        {
+            if (txs == null) return;
+            for (int i = 0; i < txs.Count; i++)
+                if (txs[i] != null)
+                    await SaveAsync(txs[i], blockHash, i, blockNumber).ConfigureAwait(false);
+        }
+
         Task<TransactionLocation> GetLocationAsync(byte[] txHash);
         Task DeleteByBlockNumberAsync(BigInteger blockNumber);
     }

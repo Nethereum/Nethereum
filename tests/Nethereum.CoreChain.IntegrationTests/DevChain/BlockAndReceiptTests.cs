@@ -2,6 +2,7 @@ using System.Numerics;
 using Nethereum.CoreChain.IntegrationTests.Contracts;
 using Nethereum.CoreChain.IntegrationTests.Fixtures;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.CoreChain.IntegrationTests.DevChain
@@ -23,24 +24,21 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var genesisBlock = await _fixture.Node.GetBlockByNumberAsync(0);
             Assert.NotNull(genesisBlock);
-            Assert.Equal(BigInteger.Zero, genesisBlock.BlockNumber);
+            Assert.Equal(BigInteger.Zero, genesisBlock.BlockNumber.ToBigInteger());
         }
 
         [Fact]
         public async Task Block_HasCorrectParentHash()
         {
-            // Get current block before mining
             var currentBlockNumber = await _fixture.Node.GetBlockNumberAsync();
             var currentBlockHash = await _fixture.Node.GetBlockHashByNumberAsync(currentBlockNumber);
             Assert.NotNull(currentBlockHash);
 
-            // Mine a new block
             var newBlockHash = await _fixture.Node.MineBlockAsync();
 
             var newBlock = await _fixture.Node.GetBlockByHashAsync(newBlockHash);
             Assert.NotNull(newBlock);
 
-            // New block's parent should be the previous block
             Assert.Equal(currentBlockHash, newBlock.ParentHash);
         }
 
@@ -49,16 +47,14 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         {
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("100000000000000000")); // 0.1 ETH
+                BigInteger.Parse("100000000000000000"));
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
 
-            // With AutoMine=true, transaction should be in a block
             var latestBlock = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(latestBlock);
 
-            // TransactionsHash should not be empty trie root if block has transactions
             Assert.NotNull(latestBlock.TransactionsHash);
         }
 
@@ -72,7 +68,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(block);
 
-            // Block timestamp should be within reasonable range
             var timestamp = (long)block.Timestamp;
             Assert.True(timestamp >= beforeMine - 1, $"Timestamp {timestamp} is before expected {beforeMine}");
             Assert.True(timestamp <= afterMine + 1, $"Timestamp {timestamp} is after expected {afterMine}");
@@ -83,7 +78,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         {
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("50000000000000000")); // 0.05 ETH
+                BigInteger.Parse("50000000000000000"));
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
             Assert.True(result.Success);
@@ -98,7 +93,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         {
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("100000000000000000")); // 0.1 ETH
+                BigInteger.Parse("100000000000000000"));
             var txHash = signedTx.Hash;
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
@@ -106,7 +101,6 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
 
             var receiptInfo = await _fixture.Node.GetTransactionReceiptInfoAsync(txHash);
             Assert.NotNull(receiptInfo);
-            // Simple ETH transfer uses 21000 gas
             Assert.Equal((BigInteger)21000, receiptInfo.GasUsed);
         }
 
@@ -115,7 +109,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         {
             var signedTx = _fixture.CreateSignedTransaction(
                 _fixture.RecipientAddress,
-                BigInteger.Parse("100000000000000000")); // 0.1 ETH
+                BigInteger.Parse("100000000000000000"));
             var txHash = signedTx.Hash;
 
             var result = await _fixture.Node.SendTransactionAsync(signedTx);
@@ -127,9 +121,9 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(block);
 
-            Assert.Equal(block.BlockNumber, receiptInfo.BlockNumber);
+            Assert.Equal(block.BlockNumber.ToBigInteger(), receiptInfo.BlockNumber);
 
-            var blockHash = await _fixture.Node.GetBlockHashByNumberAsync(block.BlockNumber);
+            var blockHash = await _fixture.Node.GetBlockHashByNumberAsync(block.BlockNumber.ToBigInteger());
             Assert.Equal(blockHash, receiptInfo.BlockHash);
         }
 
@@ -179,7 +173,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetBlockByNumberAsync(blockNumber);
 
             Assert.NotNull(block);
-            Assert.Equal(blockNumber, block.BlockNumber);
+            Assert.Equal(blockNumber, block.BlockNumber.ToBigInteger());
         }
 
         [Fact]

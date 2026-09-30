@@ -1,10 +1,14 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Services;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Tracing;
 using Nethereum.Model;
+using Nethereum.RPC.DebugNode.Dtos.Tracing;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain
 {
@@ -13,11 +17,16 @@ namespace Nethereum.CoreChain
         ChainConfig Config { get; }
         IBlockStore Blocks { get; }
         ITransactionStore Transactions { get; }
+        IUncleStore Uncles { get; }
         IReceiptStore Receipts { get; }
         ILogStore Logs { get; }
         IStateStore State { get; }
         IFilterStore Filters { get; }
         ITrieNodeStore TrieNodes { get; }
+        IBlobStore BlobStore { get; }
+
+        IBlockAccessListStore BlockAccessLists { get; }
+        IProofService ProofService { get; }
 
         Task<BigInteger> GetBlockNumberAsync();
         Task<BlockHeader> GetBlockByHashAsync(byte[] hash);
@@ -32,15 +41,15 @@ namespace Nethereum.CoreChain
         Task<BigInteger> GetBalanceAsync(string address);
         Task<BigInteger> GetNonceAsync(string address);
         Task<byte[]> GetCodeAsync(string address);
-        Task<byte[]> GetStorageAtAsync(string address, BigInteger slot);
+        Task<byte[]> GetStorageAtAsync(string address, Nethereum.Util.EvmUInt256 slot);
 
         Task<BigInteger> GetBalanceAsync(string address, BigInteger blockNumber);
         Task<BigInteger> GetNonceAsync(string address, BigInteger blockNumber);
         Task<byte[]> GetCodeAsync(string address, BigInteger blockNumber);
-        Task<byte[]> GetStorageAtAsync(string address, BigInteger slot, BigInteger blockNumber);
+        Task<byte[]> GetStorageAtAsync(string address, Nethereum.Util.EvmUInt256 slot, BigInteger blockNumber);
 
-        Task<CallResult> CallAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
-        Task<CallResult> CallAsync(string to, byte[] data, BigInteger blockNumber, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
+        Task<CallResult> CallAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null, Dictionary<string, StateOverride> stateOverrides = null, List<Authorisation7702Signed> authorisationList = null);
+        Task<CallResult> CallAsync(string to, byte[] data, BigInteger blockNumber, string from = null, BigInteger? value = null, BigInteger? gasLimit = null, Dictionary<string, StateOverride> stateOverrides = null, List<Authorisation7702Signed> authorisationList = null);
         Task<CallResult> EstimateContractCreationGasAsync(byte[] initCode, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
         Task<CallResult> EstimateContractCreationGasAsync(byte[] initCode, BigInteger blockNumber, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
         Task<AccessListResult> CreateAccessListAsync(string to, byte[] data, string from = null, BigInteger? value = null, BigInteger? gasLimit = null);
@@ -49,14 +58,23 @@ namespace Nethereum.CoreChain
 
         Task<List<ISignedTransaction>> GetPendingTransactionsAsync();
 
+        Task<List<Storage.BlobSidecarRecord>> GetBlobSidecarsByBlockNumberAsync(System.Numerics.BigInteger blockNumber);
+
         Task<OpcodeTraceResult> TraceTransactionAsync(string txHash, OpcodeTraceConfig config = null);
         Task<CallTraceResult> TraceTransactionCallTracerAsync(string txHash);
         Task<PrestateTraceResult> TraceTransactionPrestateAsync(string txHash);
+        Task<List<BlockResponseItemDto<OpcodeTraceResult>>> TraceBlockByNumberAsync(BigInteger blockNumber, OpcodeTraceConfig config = null);
+        Task<List<BlockResponseItemDto<OpcodeTraceResult>>> TraceBlockByHashAsync(byte[] blockHash, OpcodeTraceConfig config = null);
+        Task<List<BlockResponseItemDto<CallTraceResult>>> TraceBlockCallTracerByNumberAsync(BigInteger blockNumber);
+        Task<List<BlockResponseItemDto<CallTraceResult>>> TraceBlockCallTracerByHashAsync(byte[] blockHash);
+        Task<byte[]> CaptureBlockWitnessAsync(long blockNumber);
         Task<OpcodeTraceResult> TraceCallAsync(CallInput callInput, OpcodeTraceConfig config = null, Dictionary<string, StateOverride> stateOverrides = null);
         Task<OpcodeTraceResult> TraceCallAsync(CallInput callInput, BigInteger blockNumber, OpcodeTraceConfig config = null, Dictionary<string, StateOverride> stateOverrides = null);
         Task<CallTraceResult> TraceCallCallTracerAsync(CallInput callInput, Dictionary<string, StateOverride> stateOverrides = null);
         Task<CallTraceResult> TraceCallCallTracerAsync(CallInput callInput, BigInteger blockNumber, Dictionary<string, StateOverride> stateOverrides = null);
         Task<PrestateTraceResult> TraceCallPrestateAsync(CallInput callInput, Dictionary<string, StateOverride> stateOverrides = null);
         Task<PrestateTraceResult> TraceCallPrestateAsync(CallInput callInput, BigInteger blockNumber, Dictionary<string, StateOverride> stateOverrides = null);
+
+        Task<List<EthSimulateBlockResult>> SimulateAsync(EthSimulateInput input, BigInteger? baseBlockNumber);
     }
 }

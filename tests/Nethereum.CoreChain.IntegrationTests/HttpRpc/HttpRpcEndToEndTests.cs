@@ -364,10 +364,15 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
 
         private async Task<TransactionReceipt> DeployERC20Async()
         {
+            var gas = await _fixture.Web3.Eth.TransactionManager.EstimateGasAsync(new Nethereum.RPC.Eth.DTOs.CallInput
+            {
+                From = _fixture.Account.Address,
+                Data = Nethereum.Hex.HexConvertors.Extensions.HexByteConvertorExtensions.EnsureHexPrefix(ERC20Contract.BYTECODE)
+            });
             return await _fixture.Web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
                 ERC20Contract.BYTECODE,
                 _fixture.Account.Address,
-                new HexBigInteger(3000000));
+                gas);
         }
 
         private async Task<string> DeployAndMintAsync(BigInteger mintAmount)

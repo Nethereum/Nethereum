@@ -1,6 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
+using Nethereum.CoreChain.Composition;
+using Nethereum.CoreChain.RocksDB.Composition;
 using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.RocksDB
 {
@@ -22,7 +26,18 @@ namespace Nethereum.CoreChain.RocksDB
                 return new RocksDbManager(opts);
             });
 
-            services.AddSingleton<ITrieNodeStore, RocksDbTrieNodeStore>();
+            if (options.BufferTrieWrites)
+            {
+                services.AddSingleton<ITrieNodeStore>(sp =>
+                {
+                    var manager = sp.GetRequiredService<RocksDbManager>();
+                    return new BufferedTrieStorage(new RocksDbTrieNodeStore(manager), manager);
+                });
+            }
+            else
+            {
+                services.AddSingleton<ITrieNodeStore, RocksDbTrieNodeStore>();
+            }
             services.AddSingleton<IBlockStore, RocksDbBlockStore>();
             services.AddSingleton<ITransactionStore>(sp =>
             {
@@ -39,7 +54,8 @@ namespace Nethereum.CoreChain.RocksDB
             services.AddSingleton<IStateStore>(sp =>
             {
                 var manager = sp.GetRequiredService<RocksDbManager>();
-                return new HistoricalStateStore(new RocksDbStateStore(manager), new RocksDbStateDiffStore(manager), HistoricalStateOptions.Default);
+                var rawState = new RocksDbStateStore(manager);
+                return new StateLayer().Stores.MainnetFollower(rawState, new RocksDbStateDiffStore(manager), HistoricalStateOptions.Default);
             });
             services.AddSingleton<ILogStore, RocksDbLogStore>();
             services.AddSingleton<IFilterStore, RocksDbFilterStore>();

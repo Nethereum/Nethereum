@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Signer;
+using Nethereum.Documentation;
 using Xunit;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.UnitTests
 {
-    public class BlockProducerTests
+    public class BlockProducerTests : IAsyncLifetime
     {
         private const string PrivateKey = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
         private const string SenderAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
@@ -28,6 +32,12 @@ namespace Nethereum.CoreChain.UnitTests
         private readonly TransactionProcessor _transactionProcessor;
         private readonly BlockProducer _blockProducer;
 
+        public Task InitializeAsync() =>
+            Nethereum.CoreChain.Forks.SystemContractPredeploys
+                .ApplyGenesisAllocationAsync(_stateStore, Nethereum.EVM.HardforkName.Prague);
+
+        public Task DisposeAsync() => Task.CompletedTask;
+
         public BlockProducerTests()
         {
             _blockStore = new InMemoryBlockStore();
@@ -40,9 +50,21 @@ namespace Nethereum.CoreChain.UnitTests
             var txVerifier = new TransactionVerificationAndRecoveryImp();
             _transactionProcessor = new TransactionProcessor(_stateStore, _blockStore, config, txVerifier);
 
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var stateRootCalculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = new BlockExecutor(
+                _stateStore,
+                _blockStore,
+                new FixedChainActivations(Nethereum.EVM.HardforkName.Prague),
+                chainConfigFactory: _ => config,
+                hardforkConfigFactory: _ => config.GetHardforkConfig(),
+                stateRootCalculator: stateRootCalculator,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
             _blockProducer = new BlockProducer(
+                engine,
                 _blockStore, _transactionStore, _receiptStore, _logStore, _stateStore,
-                _transactionProcessor);
+                trieNodeStore, stateRootCalculator);
         }
 
         private BlockProductionOptions DefaultOptions() => new BlockProductionOptions
@@ -66,7 +88,7 @@ namespace Nethereum.CoreChain.UnitTests
 
         private ISignedTransaction CreateSignedTransaction(string to, BigInteger value, BigInteger nonce, BigInteger gasPrice = default, BigInteger gasLimit = default)
         {
-            if (gasPrice == 0) gasPrice = 1;
+            if (gasPrice == 0) gasPrice = 2_000_000_000;
             if (gasLimit == 0) gasLimit = 21_000;
             var signedTxHex = Signer.SignTransaction(
                 PrivateKey.HexToByteArray(),
@@ -164,11 +186,12 @@ namespace Nethereum.CoreChain.UnitTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "Compose the executor stack and produce a block containing a transfer")]
         public async Task ProduceBlock_WithValidTransfer_Succeeds()
         {
             await FundSender(BigInteger.Parse("10000000000000000000"));
 
-            var tx = CreateSignedTransaction(RecipientAddress, 1000, 0, gasPrice: 1, gasLimit: 21_000);
+            var tx = CreateSignedTransaction(RecipientAddress, 1000, 0, gasPrice: 2_000_000_000, gasLimit: 21_000);
             var result = await _blockProducer.ProduceBlockAsync(
                 new List<ISignedTransaction> { tx }, DefaultOptions());
 
@@ -201,6 +224,23 @@ namespace Nethereum.CoreChain.UnitTests
 
             var receipt = await _receiptStore.GetByTxHashAsync(tx.Hash);
             Assert.NotNull(receipt);
+        }
+
+        [Fact]
+        public async Task ProduceBlock_LegacyTx_ReceiptEffectiveGasPriceIsTxGasPrice_NotBaseFee()
+        {
+            await FundSender(BigInteger.Parse("10000000000000000000"));
+
+            var tx = CreateSignedTransaction(RecipientAddress, 100, 0, gasPrice: 3_000_000_000, gasLimit: 21_000);
+            var options = DefaultOptions();
+            options.BaseFee = 2;
+
+            await _blockProducer.ProduceBlockAsync(
+                new List<ISignedTransaction> { tx }, options);
+
+            var info = await _receiptStore.GetInfoByTxHashAsync(tx.Hash);
+            Assert.NotNull(info);
+            Assert.Equal(new BigInteger(3_000_000_000), info.EffectiveGasPrice);
         }
 
         [Fact]
@@ -347,50 +387,101 @@ namespace Nethereum.CoreChain.UnitTests
         [Fact]
         public async Task ProduceBlock_NullTransactionsList_Throws()
         {
-            await Assert.ThrowsAsync<NullReferenceException>(() =>
+            await Assert.ThrowsAsync<ArgumentNullException>(() =>
                 _blockProducer.ProduceBlockAsync(null, DefaultOptions()));
+        }
+
+        private BlockExecutor BuildEngine(IncrementalStateRootCalculator calc, ITrieNodeStore trieNodeStore)
+        {
+            var config = new ChainConfig { ChainId = ChainId, BlockGasLimit = 30_000_000, BaseFee = 0 };
+            return new BlockExecutor(
+                _stateStore,
+                _blockStore,
+                new FixedChainActivations(Nethereum.EVM.HardforkName.Prague),
+                chainConfigFactory: _ => config,
+                hardforkConfigFactory: _ => config.GetHardforkConfig(),
+                stateRootCalculator: calc,
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore);
+        }
+
+        [Fact]
+        public void Constructor_NullEngine_Throws()
+        {
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            Assert.Throws<ArgumentNullException>(() =>
+                new BlockProducer(null, _blockStore, _transactionStore, _receiptStore, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullBlockStore_Throws()
         {
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(null, _transactionStore, _receiptStore, _logStore, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, null, _transactionStore, _receiptStore, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullTransactionStore_Throws()
         {
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, null, _receiptStore, _logStore, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, null, _receiptStore, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullReceiptStore_Throws()
         {
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, null, _logStore, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, _transactionStore, null, _logStore, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullLogStore_Throws()
         {
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, _receiptStore, null, _stateStore, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, _transactionStore, _receiptStore, null, _stateStore, trieNodeStore, calculator));
         }
 
         [Fact]
         public void Constructor_NullStateStore_Throws()
         {
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
             Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, _receiptStore, _logStore, null, _transactionProcessor));
+                new BlockProducer(engine, _blockStore, _transactionStore, _receiptStore, _logStore, null, trieNodeStore, calculator));
         }
 
         [Fact]
-        public void Constructor_NullTransactionProcessor_Throws()
+        public async Task Given_a_produced_post_Shanghai_block_with_zero_withdrawals_When_ProduceBlockAsync_runs_Then_the_withdrawal_store_holds_an_empty_row()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-                new BlockProducer(_blockStore, _transactionStore, _receiptStore, _logStore, _stateStore, null));
+            var trieNodeStore = new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(_stateStore, trieNodeStore);
+            var engine = BuildEngine(calculator, trieNodeStore);
+            var withdrawalStore = new InMemoryWithdrawalStore();
+            var producer = new BlockProducer(
+                engine, _blockStore, _transactionStore, _receiptStore, _logStore, _stateStore,
+                trieNodeStore, calculator, withdrawalStore: withdrawalStore);
+
+            var result = await producer.ProduceBlockAsync(new List<ISignedTransaction>(), DefaultOptions());
+
+            Assert.NotNull(result.Header.WithdrawalsRoot);
+
+            var stored = await withdrawalStore.GetByBlockHashAsync(result.BlockHash);
+            Assert.NotNull(stored);
+            Assert.Empty(stored);
         }
     }
 }

@@ -8,6 +8,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Model;
+using Nethereum.Util;
 using Nethereum.RLP;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
@@ -33,12 +34,15 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         private RpcResponseMessage BuildDefaultResponse(RpcRequestMessage request, BigInteger baseFee)
         {
             var baseFeeHex = new HexBigInteger(baseFee);
+            var zeroBlobFee = new HexBigInteger(0);
             var result = new FeeHistoryResult
             {
                 OldestBlock = new HexBigInteger(0),
                 BaseFeePerGas = new[] { baseFeeHex, baseFeeHex },
                 GasUsedRatio = new[] { 0m },
-                Reward = new[] { new[] { new HexBigInteger(0) } }
+                Reward = new[] { new[] { new HexBigInteger(0) } },
+                BaseFeePerBlobGas = new[] { zeroBlobFee, zeroBlobFee },
+                BlobGasUsedRatio = new[] { 0m }
             };
             return Success(request.Id, result);
         }
@@ -102,9 +106,13 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             var baseFeePerGas = new List<HexBigInteger>();
             var gasUsedRatio = new List<decimal>();
+            var baseFeePerBlobGas = new List<HexBigInteger>();
+            var blobGasUsedRatio = new List<decimal>();
             var reward = rewardPercentiles != null ? new List<HexBigInteger[]>() : null;
 
             var oldestBlock = BigInteger.Max(0, newestBlock - blockCount + 1);
+
+            Model.BlockHeader newestHeader = null;
 
             for (var i = oldestBlock; i <= newestBlock; i++)
             {
@@ -113,10 +121,14 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                     var block = await context.Node.GetBlockByNumberAsync(i);
                     if (block != null)
                     {
+                        if (i == newestBlock) newestHeader = block;
+
                         var blockBaseFee = block.BaseFee ?? context.Node.Config.BaseFee;
                         baseFeePerGas.Add(new HexBigInteger(blockBaseFee));
                         var ratio = block.GasLimit > 0 ? (decimal)block.GasUsed / (decimal)block.GasLimit : 0m;
                         gasUsedRatio.Add(ratio);
+                        baseFeePerBlobGas.Add(BlobBaseFeeForBlock(context, block));
+                        blobGasUsedRatio.Add(BlobGasUsedRatioForBlock(block));
 
                         if (reward != null && rewardPercentiles != null)
                         {
@@ -128,12 +140,12 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                     }
                     else
                     {
-                        AddDefaultBlockEntry(context, baseFeePerGas, gasUsedRatio, reward, rewardPercentiles);
+                        AddDefaultBlockEntry(context, baseFeePerGas, gasUsedRatio, baseFeePerBlobGas, blobGasUsedRatio, reward, rewardPercentiles);
                     }
                 }
                 catch
                 {
-                    AddDefaultBlockEntry(context, baseFeePerGas, gasUsedRatio, reward, rewardPercentiles);
+                    AddDefaultBlockEntry(context, baseFeePerGas, gasUsedRatio, baseFeePerBlobGas, blobGasUsedRatio, reward, rewardPercentiles);
                 }
             }
 
@@ -141,20 +153,25 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             {
                 baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee));
                 gasUsedRatio.Add(0m);
+                baseFeePerBlobGas.Add(new HexBigInteger(0));
+                blobGasUsedRatio.Add(0m);
                 if (reward != null && rewardPercentiles != null)
                 {
                     reward.Add(rewardPercentiles.Select(_ => new HexBigInteger(0)).ToArray());
                 }
             }
 
-            baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee));
+            baseFeePerGas.Add(new HexBigInteger(ProjectedNextBaseFee(context, newestHeader)));
+            baseFeePerBlobGas.Add(ProjectedNextBlobBaseFee(context, newestHeader));
 
             var result = new FeeHistoryResult
             {
                 OldestBlock = new HexBigInteger(oldestBlock),
                 BaseFeePerGas = baseFeePerGas.ToArray(),
                 GasUsedRatio = gasUsedRatio.ToArray(),
-                Reward = reward?.ToArray()
+                Reward = reward?.ToArray(),
+                BaseFeePerBlobGas = baseFeePerBlobGas.ToArray(),
+                BlobGasUsedRatio = blobGasUsedRatio.ToArray()
             };
 
             return Success(request.Id, result);
@@ -164,15 +181,66 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             RpcContext context,
             List<HexBigInteger> baseFeePerGas,
             List<decimal> gasUsedRatio,
+            List<HexBigInteger> baseFeePerBlobGas,
+            List<decimal> blobGasUsedRatio,
             List<HexBigInteger[]> reward,
             List<double> rewardPercentiles)
         {
             baseFeePerGas.Add(new HexBigInteger(context.Node.Config.BaseFee));
             gasUsedRatio.Add(0m);
+            baseFeePerBlobGas.Add(new HexBigInteger(0));
+            blobGasUsedRatio.Add(0m);
             if (reward != null && rewardPercentiles != null)
             {
                 reward.Add(rewardPercentiles.Select(_ => new HexBigInteger(0)).ToArray());
             }
+        }
+
+        /// <summary>EIP-4844 base fee per blob gas for a block; zero for a header from before EIP-4844.</summary>
+        private static HexBigInteger BlobBaseFeeForBlock(RpcContext context, Model.BlockHeader block)
+        {
+            if (block?.ExcessBlobGas == null) return new HexBigInteger(0);
+
+            var hardforkConfig = context.Node.Config.GetHardforkConfigAt(
+                (long)block.BlockNumber, (ulong)block.Timestamp);
+            var blobRule = hardforkConfig.IntrinsicGasRules.Blob;
+            var excess = (EvmUInt256)(ulong)block.ExcessBlobGas.Value;
+            var fee = blobRule != null
+                ? blobRule.CalculateBlobBaseFee(excess)
+                : Model.BlobGasCalculator.CalculateBlobBaseFee(excess);
+            return new HexBigInteger((BigInteger)fee);
+        }
+
+        private static decimal BlobGasUsedRatioForBlock(Model.BlockHeader block)
+        {
+            if (block?.BlobGasUsed == null) return 0m;
+            return (decimal)block.BlobGasUsed.Value / Model.BlobGasCalculator.MAX_BLOB_GAS_PER_BLOCK;
+        }
+
+        /// <summary>EIP-1559 projected base fee per gas for the block after the newest of the range.</summary>
+        private static BigInteger ProjectedNextBaseFee(RpcContext context, Model.BlockHeader newest)
+        {
+            if (newest == null) return context.Node.Config.BaseFee;
+            return (BigInteger)Model.BaseFeeCalculator.CalculateExpectedBaseFeePerGas(
+                newest.BaseFee, newest.GasLimit, newest.GasUsed);
+        }
+
+        /// <summary>EIP-4844 projected base fee per blob gas for the block after the newest of the range.</summary>
+        private static HexBigInteger ProjectedNextBlobBaseFee(RpcContext context, Model.BlockHeader newest)
+        {
+            if (newest?.ExcessBlobGas == null) return new HexBigInteger(0);
+
+            var hardforkConfig = context.Node.Config.GetHardforkConfigAt(
+                (long)newest.BlockNumber, (ulong)newest.Timestamp);
+            var blobRule = hardforkConfig.IntrinsicGasRules.Blob;
+            var target = (ulong)hardforkConfig.TargetBlobsPerBlock * (ulong)Model.BlobGasCalculator.GAS_PER_BLOB;
+            var nextExcess = Model.BlobGasCalculator.CalculateExcessBlobGas(
+                (ulong)newest.ExcessBlobGas.Value, (ulong)(newest.BlobGasUsed ?? 0), target);
+            var excess = (EvmUInt256)nextExcess;
+            var fee = blobRule != null
+                ? blobRule.CalculateBlobBaseFee(excess)
+                : Model.BlobGasCalculator.CalculateBlobBaseFee(excess);
+            return new HexBigInteger((BigInteger)fee);
         }
 
         private async Task<HexBigInteger[]> CalculateRewardPercentilesAsync(
@@ -207,30 +275,31 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             return results;
         }
 
-        private BigInteger CalculateEffectivePriorityFee(ISignedTransaction tx, BigInteger baseFee)
+        private EvmUInt256 CalculateEffectivePriorityFee(ISignedTransaction tx, EvmUInt256 baseFee)
         {
             if (tx is Transaction1559 tx1559)
             {
-                var maxPriorityFee = tx1559.MaxPriorityFeePerGas ?? BigInteger.Zero;
-                var maxFee = tx1559.MaxFeePerGas ?? BigInteger.Zero;
-                return BigInteger.Min(maxPriorityFee, maxFee - baseFee);
+                var maxPriorityFee = tx1559.MaxPriorityFeePerGas ?? EvmUInt256.Zero;
+                var maxFee = tx1559.MaxFeePerGas ?? EvmUInt256.Zero;
+                var diff = maxFee - baseFee;
+                return maxPriorityFee < diff ? maxPriorityFee : diff;
             }
             if (tx is Transaction2930 tx2930)
             {
-                var gasPrice = tx2930.GasPrice ?? BigInteger.Zero;
-                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+                var gasPrice = tx2930.GasPrice ?? EvmUInt256.Zero;
+                return gasPrice > baseFee ? gasPrice - baseFee : EvmUInt256.Zero;
             }
             if (tx is LegacyTransaction legacyTx)
             {
-                var gasPrice = legacyTx.GasPrice.ToBigIntegerFromRLPDecoded();
-                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+                var gasPrice = legacyTx.GasPrice.ToEvmUInt256FromRLPDecoded();
+                return gasPrice > baseFee ? gasPrice - baseFee : EvmUInt256.Zero;
             }
             if (tx is LegacyTransactionChainId legacyChainIdTx)
             {
-                var gasPrice = legacyChainIdTx.GasPrice.ToBigIntegerFromRLPDecoded();
-                return gasPrice > baseFee ? gasPrice - baseFee : BigInteger.Zero;
+                var gasPrice = legacyChainIdTx.GasPrice.ToEvmUInt256FromRLPDecoded();
+                return gasPrice > baseFee ? gasPrice - baseFee : EvmUInt256.Zero;
             }
-            return BigInteger.Zero;
+            return EvmUInt256.Zero;
         }
     }
 }

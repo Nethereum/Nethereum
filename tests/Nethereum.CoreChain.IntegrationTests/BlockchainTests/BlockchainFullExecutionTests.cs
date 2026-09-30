@@ -115,15 +115,13 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             }
         }
 
-        [Fact]
+        [SkippableFact]
         [Trait("Category", "BlockchainTests-Full")]
         public void CountAvailableTestFiles()
         {
-            if (!Directory.Exists(TestVectorsPath))
-            {
-                _output.WriteLine($"Test vectors directory not found: {TestVectorsPath}");
-                return;
-            }
+            Skip.IfNot(Directory.Exists(TestVectorsPath),
+                $"ethereum/tests corpus not present at {TestVectorsPath} — see external/README.md. " +
+                "Reported as skipped rather than passed: an absent corpus must never look green.");
 
             var files = BlockchainTestLoader.GetTestFilesInDirectory(TestVectorsPath).ToList();
             _output.WriteLine($"Found {files.Count} test files in ValidBlocks");
