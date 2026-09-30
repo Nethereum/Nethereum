@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 #else
 using Nethereum.JsonRpc.Client;
 #endif
+using Nethereum.Util;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
@@ -107,6 +108,8 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
 
         public async Task ProcessTransferAsync(ITokenTransferLogView transfer)
         {
+            if (transfer.IsNativeTransfer()) return;
+
             switch (transfer.TokenType)
             {
                 case "ERC20":
@@ -125,13 +128,13 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
         {
             if (!BigInteger.TryParse(transfer.Amount ?? "0", out var amount)) return;
 
-            if (!IsZeroAddress(transfer.FromAddress))
+            if (!AddressUtil.Current.IsNullEmptyOrAllZeroHex(transfer.FromAddress))
             {
                 await UpdateBalanceAsync(transfer.FromAddress, transfer.ContractAddress,
                     -amount, "ERC20", transfer.BlockNumber).ConfigureAwait(false);
             }
 
-            if (!IsZeroAddress(transfer.ToAddress))
+            if (!AddressUtil.Current.IsNullEmptyOrAllZeroHex(transfer.ToAddress))
             {
                 await UpdateBalanceAsync(transfer.ToAddress, transfer.ContractAddress,
                     amount, "ERC20", transfer.BlockNumber).ConfigureAwait(false);
@@ -140,7 +143,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
 
         private async Task ProcessERC721TransferAsync(ITokenTransferLogView transfer)
         {
-            if (!IsZeroAddress(transfer.FromAddress))
+            if (!AddressUtil.Current.IsNullEmptyOrAllZeroHex(transfer.FromAddress))
             {
                 var existingNft = await _nftRepository.GetByTokenAsync(
                     transfer.ContractAddress, transfer.TokenId).ConfigureAwait(false);
@@ -162,7 +165,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
                 }
             }
 
-            if (!IsZeroAddress(transfer.ToAddress))
+            if (!AddressUtil.Current.IsNullEmptyOrAllZeroHex(transfer.ToAddress))
             {
                 await _nftRepository.UpsertAsync(new NFTInventory
                 {
@@ -183,7 +186,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
         {
             if (!BigInteger.TryParse(transfer.Amount ?? "0", out var amount)) return;
 
-            if (!IsZeroAddress(transfer.FromAddress))
+            if (!AddressUtil.Current.IsNullEmptyOrAllZeroHex(transfer.FromAddress))
             {
                 var existingNft = await _nftRepository.GetByTokenAsync(
                     transfer.ContractAddress, transfer.TokenId).ConfigureAwait(false);
@@ -220,7 +223,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
                 }
             }
 
-            if (!IsZeroAddress(transfer.ToAddress))
+            if (!AddressUtil.Current.IsNullEmptyOrAllZeroHex(transfer.ToAddress))
             {
                 var existingNft = await _nftRepository.GetByTokenAsync(
                     transfer.ContractAddress, transfer.TokenId).ConfigureAwait(false);
@@ -269,12 +272,5 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             }).ConfigureAwait(false);
         }
 
-        private static bool IsZeroAddress(string address)
-        {
-            if (string.IsNullOrEmpty(address)) return true;
-            return address == "0x0000000000000000000000000000000000000000" ||
-                   address == "0x0" ||
-                   address.TrimStart('0').Length == 0;
-        }
     }
 }

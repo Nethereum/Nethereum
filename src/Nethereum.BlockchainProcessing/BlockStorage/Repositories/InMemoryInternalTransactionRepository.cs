@@ -55,6 +55,14 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
             return Task.FromResult(results);
         }
 
+        public Task<List<TransactionToTrace>> GetContractTransactionsInRangeAsync(BigInteger fromBlock, BigInteger toBlock)
+        {
+            // In-memory repo doesn't know about outer Transactions records — return nothing.
+            // Hosts that care should supply a real repository; this implementation exists so
+            // orchestration tests can wire the pipeline without an EF backend.
+            return Task.FromResult(new List<TransactionToTrace>());
+        }
+
         public Task MarkNonCanonicalAsync(BigInteger blockNumber)
         {
             var blockNum = (long)blockNumber;

@@ -12,6 +12,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
         public string Data { get; set; }
         public long BlockNumber { get; set; }
         public string BlockHash { get; set; }
+        public long BlockTimestamp { get; set; }
         public bool IsCanonical { get; set; } = true;
     }
 }

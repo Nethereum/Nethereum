@@ -31,7 +31,7 @@ var abiStorage = ABIInfoStorageFactory.CreateDefault(etherscanApiKey: "YOUR_KEY"
 
 // Get full contract ABI
 var abiInfo = await abiStorage.GetABIInfoAsync(chainId: 1, "0xdAC17F958D2ee523a2206206994597C13D831ec7");
-Console.WriteLine($"Contract: {abiInfo.ContractName}, Functions: {abiInfo.FunctionABIs.Count}");
+Console.WriteLine($"Contract: {abiInfo.ContractName}, Functions: {abiInfo.ContractABI?.Functions?.Length}");
 
 // Find a specific function by selector
 var transfer = await abiStorage.FindFunctionABIFromInputDataAsync(
@@ -173,18 +173,18 @@ var sourceFiles = new Dictionary<string, string>
 };
 var verifyResult = await sourcify.PostVerifyAsync(chainId: 1, "0xAddr...", sourceFiles);
 
-// Check verification status
-var status = await sourcify.GetVerificationStatusAsync(verifyResult.VerificationId);
+// Check verification status (VerifyFromEtherscanAsync returns a job carrying a VerificationId)
+var status = await sourcify.GetVerificationStatusAsync(result.VerificationId);
 ```
 
 ### Proxy Resolution
 
-The `SourcifyABIInfoStorage` automatically resolves proxy contracts and fetches the implementation ABI:
+The `SourcifyABIInfoStorage` detects proxy contracts and records their implementation addresses in `ABIInfo.ProxyImplementationAddresses`; it does not fetch the implementation ABI itself. `CompositeABIInfoStorage` then fetches and caches the implementation ABIs:
 
 ```csharp
 var sourcifyStorage = new SourcifyABIInfoStorage(); // resolveProxies: true by default
 
-// Automatically detects proxy and returns implementation ABI
+// Returns the proxy's own ABI; ProxyImplementationAddresses lists the implementation addresses
 var abiInfo = await sourcifyStorage.GetABIInfoAsync(chainId: 1, "0xProxyAddress...");
 ```
 
@@ -201,7 +201,7 @@ var fourByte = new FourByteDirectoryService();
 
 // Look up function by 4-byte selector
 var result = await fourByte.GetFunctionSignatureByHexSignatureAsync("0xa9059cbb");
-foreach (var sig in result.Results)
+foreach (var sig in result.Signatures)
     Console.WriteLine(sig.TextSignature); // "transfer(address,uint256)"
 
 // Look up event by topic hash
@@ -318,7 +318,7 @@ var allChains = await chainlist.GetAllChainsAsync();
 var polygon = await chainlist.GetChainByIdAsync(137);
 Console.WriteLine($"Name: {polygon.Name}");
 foreach (var rpc in polygon.Rpc)
-    Console.WriteLine($"  RPC: {rpc}");
+    Console.WriteLine($"  RPC: {rpc.Url}");
 ```
 
 ## Sourcify Parquet Exports
@@ -346,7 +346,7 @@ await parquet.DownloadFileToPathAsync(files[0].Key, "/data/verified_contracts_0.
 var syncResult = await parquet.SyncToDirectoryAsync(
     "/data/sourcify-export",
     progress: new Progress<SourcifyParquetSyncProgress>(p =>
-        Console.WriteLine($"Downloaded {p.FilesDownloaded}/{p.TotalFiles}")));
+        Console.WriteLine($"Processed {p.FilesProcessed}/{p.TotalFiles}")));
 
 Console.WriteLine($"New: {syncResult.FilesDownloaded}, Skipped: {syncResult.FilesSkipped}");
 ```

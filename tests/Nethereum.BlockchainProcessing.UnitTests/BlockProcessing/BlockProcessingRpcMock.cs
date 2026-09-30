@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using Nethereum.BlockchainProcessing.UnitTests.TestUtils;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
@@ -66,7 +66,12 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockProcessing
 
                 for (var l = 0; l < logsPerTransaction; l++)
                 {
-                    logs[l] = new FilterLog() { LogIndex = new HexBigInteger(l) };
+                    logs[l] = new FilterLog
+                    {
+                        LogIndex = new HexBigInteger(l),
+                        TransactionHash = tx.TransactionHash,
+                        BlockNumber = new HexBigInteger(blockNumber)
+                    };
                 }
 
                 Receipts.AddRange(new[] {new TransactionReceipt {

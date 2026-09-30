@@ -27,17 +27,31 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
         public ContractCreatedCrawlerStep ContractCreatedCrawlerStep { get; }
 
         public FilterLogCrawlerStep FilterLogCrawlerStep { get; }
+        public BlockAccessListCrawlerStep BlockAccessListCrawlerStep { get; }
         public IChainStateRepository ChainStateRepository { get; set; }
         public INonCanonicalBlockRepository NonCanonicalBlockRepository { get; set; }
         public INonCanonicalTransactionRepository NonCanonicalTransactionRepository { get; set; }
         public INonCanonicalTransactionLogRepository NonCanonicalTransactionLogRepository { get; set; }
         public INonCanonicalTokenTransferLogRepository NonCanonicalTokenTransferLogRepository { get; set; }
         public INonCanonicalInternalTransactionRepository NonCanonicalInternalTransactionRepository { get; set; }
+        public IBlockAccessListRepository NonCanonicalBlockAccessListRepository { get; set; }
         public ITokenBalanceRepository TokenBalanceRepository { get; set; }
         public INFTInventoryRepository NFTInventoryRepository { get; set; }
         public IReorgHandler ReorgHandler { get; set; }
         public BigInteger ReorgBuffer { get; set; } = 0;
         public bool UseBatchReceipts { get; set; }
+
+        private bool _indexBlockAccessLists;
+        public bool IndexBlockAccessLists
+        {
+            get => _indexBlockAccessLists;
+            set
+            {
+                _indexBlockAccessLists = value;
+                BlockAccessListCrawlerStep.Enabled = value;
+            }
+        }
+
         private Dictionary<string, TransactionReceipt> _batchedReceipts;
 
         public BlockCrawlOrchestrator(IEthApiContractService ethApi, BlockProcessingSteps blockProcessingSteps)
@@ -56,6 +70,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             TransactionWithReceiptCrawlerStep = new TransactionReceiptCrawlerStep(ethApi);
             ContractCreatedCrawlerStep = new ContractCreatedCrawlerStep(ethApi);
             FilterLogCrawlerStep = new FilterLogCrawlerStep(ethApi);
+            BlockAccessListCrawlerStep = new BlockAccessListCrawlerStep(ethApi);
         }
 
         public virtual async Task CrawlBlockAsync(BigInteger blockNumber)
@@ -65,6 +80,8 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             {
                 await ValidateCanonicalAsync(blockCrawlerStepCompleted.StepData).ConfigureAwait(false);
             }
+
+            await CrawlBlockAccessListAsync(blockNumber, blockCrawlerStepCompleted).ConfigureAwait(false);
 
             if (UseBatchReceipts && TransactionWithReceiptCrawlerStep.Enabled)
             {
@@ -80,6 +97,22 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
                 await UpdateChainStateAsync(blockCrawlerStepCompleted.StepData).ConfigureAwait(false);
             }
         }
+        protected virtual async Task CrawlBlockAccessListAsync(BigInteger blockNumber, CrawlerStepCompleted<BlockWithTransactions> completedBlockStep)
+        {
+            if (!BlockAccessListCrawlerStep.Enabled) return;
+            if (completedBlockStep?.StepData == null) return;
+
+            var accounts = await EthApi.Blocks.GetBlockAccessList
+                .SendRequestAsync(new BlockParameter(new HexBigInteger(blockNumber)))
+                .ConfigureAwait(false);
+
+            if (accounts == null) return;
+
+            var blockAccessListVO = new BlockAccessListVO((long)blockNumber, completedBlockStep.StepData.BlockHash ?? string.Empty, accounts);
+
+            await BlockAccessListCrawlerStep.ExecuteStepAsync(blockAccessListVO, ProcessingStepsCollection).ConfigureAwait(false);
+        }
+
         protected virtual async Task CrawlTransactionsAsync(CrawlerStepCompleted<BlockWithTransactions> completedStep)
         {
             if (completedStep != null)
@@ -291,6 +324,11 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
                 {
                     await MarkInternalTransactionsNonCanonicalAsync(rewindTo, lastCanonicalNumber).ConfigureAwait(false);
                 }
+
+                if (NonCanonicalBlockAccessListRepository != null)
+                {
+                    await MarkBlockAccessListsNonCanonicalAsync(rewindTo, lastCanonicalNumber).ConfigureAwait(false);
+                }
             }
 
             if (NonCanonicalTokenTransferLogRepository != null)
@@ -402,6 +440,14 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
             for (var blockNumber = fromBlockNumber; blockNumber <= toBlockNumber; blockNumber++)
             {
                 await NonCanonicalInternalTransactionRepository.MarkNonCanonicalAsync(blockNumber).ConfigureAwait(false);
+            }
+        }
+
+        private async Task MarkBlockAccessListsNonCanonicalAsync(BigInteger fromBlockNumber, BigInteger toBlockNumber)
+        {
+            for (var blockNumber = fromBlockNumber; blockNumber <= toBlockNumber; blockNumber++)
+            {
+                await NonCanonicalBlockAccessListRepository.MarkNonCanonicalAsync(blockNumber).ConfigureAwait(false);
             }
         }
 

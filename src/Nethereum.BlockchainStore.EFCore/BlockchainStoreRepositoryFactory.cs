@@ -20,6 +20,7 @@ namespace Nethereum.BlockchainStore.EFCore
         public ITransactionVMStackRepository CreateTransactionVmStackRepository() => new TransactionVMStackRepository(_blockchainDbContextFactory);
         public ITransactionRepository CreateTransactionRepository() => new TransactionRepository(_blockchainDbContextFactory);
         public IInternalTransactionRepository CreateInternalTransactionRepository() => new InternalTransactionRepository(_blockchainDbContextFactory);
+        public IBlockAccessListRepository CreateBlockAccessListRepository() => new BlockAccessListRepository(_blockchainDbContextFactory);
 
         public IBlockProgressRepository CreateBlockProgressRepository() => new BlockProgressRepository(_blockchainDbContextFactory);
         public IBlockProgressRepository CreateInternalTransactionBlockProgressRepository() => new InternalTransactionBlockProgressRepository(_blockchainDbContextFactory);

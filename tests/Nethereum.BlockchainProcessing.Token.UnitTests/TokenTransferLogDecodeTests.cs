@@ -1,9 +1,11 @@
-using System.Numerics;
+﻿using System.Numerics;
+using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainProcessing.Services.SmartContracts;
 using Nethereum.Contracts;
 using Nethereum.Contracts.Standards.ERC1155.ContractDefinition;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 using ERC20Transfer = Nethereum.Contracts.Standards.ERC20.ContractDefinition.TransferEventDTO;
 
 namespace Nethereum.BlockchainProcessing.Token.UnitTests
@@ -24,6 +26,57 @@ namespace Nethereum.BlockchainProcessing.Token.UnitTests
 
         private static string PadUint256(BigInteger value) =>
             "0x" + value.ToString("x64");
+
+        private static FilterLog TransferLog(string emitter, BigInteger amount)
+        {
+            return new FilterLog
+            {
+                Address = emitter,
+                TransactionHash = "0xabc123",
+                LogIndex = new HexBigInteger(0),
+                BlockNumber = new HexBigInteger(100),
+                BlockHash = "0xblockhash",
+                Topics = new object[]
+                {
+                    TransferSig,
+                    PadAddress("0x1111111111111111111111111111111111111111"),
+                    PadAddress("0x2222222222222222222222222222222222222222")
+                },
+                Data = PadUint256(amount)
+            };
+        }
+
+        [Fact]
+        public void Given_ATopicMatchFromTheSystemEmitter_When_Decoded_Then_ItReadsAsNative()
+        {
+            var results = TokenTransferLogProcessingService.DecodeTransferLog(
+                TransferLog(AddressUtil.SYSTEM_ADDRESS, 5000));
+
+            Assert.Single(results);
+            Assert.True(results[0].IsNativeTransfer());
+            Assert.Equal(AddressUtil.SYSTEM_ADDRESS, results[0].ContractAddress);
+        }
+
+        [Fact]
+        public void Given_ATopicMatchFromAnOrdinaryContract_When_Decoded_Then_ItDoesNotReadAsNative()
+        {
+            var results = TokenTransferLogProcessingService.DecodeTransferLog(
+                TransferLog("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 5000));
+
+            Assert.Single(results);
+            Assert.False(results[0].IsNativeTransfer());
+        }
+
+        [Fact]
+        public void Given_AnEthTransfer_When_Decoded_Then_ItStillCarriesTheAmountAndParties()
+        {
+            var results = TokenTransferLogProcessingService.DecodeTransferLog(
+                TransferLog(AddressUtil.SYSTEM_ADDRESS, 7777));
+
+            Assert.Equal("7777", results[0].Amount);
+            Assert.Equal("0x1111111111111111111111111111111111111111", results[0].FromAddress);
+            Assert.Equal("0x2222222222222222222222222222222222222222", results[0].ToAddress);
+        }
 
         [Fact]
         public void DecodeTransferLog_ERC20_DecodesCorrectly()

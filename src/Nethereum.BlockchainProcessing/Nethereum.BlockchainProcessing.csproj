@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
     <ProjectReference Include="..\Nethereum.Contracts\Nethereum.Contracts.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
   </ItemGroup>
 
   <ItemGroup>

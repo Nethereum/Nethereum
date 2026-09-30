@@ -53,7 +53,8 @@ Options are bound from `IConfiguration`. The extension method checks for a `"Blo
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `BlockchainUrl` | `string` | required | JSON-RPC endpoint URL |
-| `Name` | `string` | `null` | Optional chain name for logging |
+| `Name` | `string` | `null` | Optional chain name for logging (configuration key `Blockchain`) |
+| `MinimumBlockNumber` | `ulong?` | `null` | Lowest block number of interest. Bound from configuration but not yet consumed by the processors (use `FromBlock` to set the start block) |
 | `MinimumBlockConfirmations` | `uint?` | `12` | Blocks behind chain head to wait before processing |
 | `FromBlock` | `BigInteger?` | `null` | Starting block if no progress exists |
 | `ToBlock` | `BigInteger?` | `null` | Stop at this block (null = continuous) |
@@ -63,6 +64,8 @@ Options are bound from `IConfiguration`. The extension method checks for a `"Blo
 | `RetryWeight` | `int` | `50` | Reduce batch size on retry failures |
 | `ProcessBlockTransactionsInParallel` | `bool` | `true` | Parallel transaction processing within a block |
 | `PostVm` | `bool` | `false` | Include VM stack traces |
+| `UseLocalEvmReplayForInternalTransactions` | `bool` | `false` | Source internal transactions via local EVM replay (`EvmReplayInternalTransactionSource`) instead of `debug_traceTransaction` — useful against RPC nodes that don't expose the `debug_` namespace |
+| `Hardfork` | `string` | `null` | Hardfork name used when `UseLocalEvmReplayForInternalTransactions` is true. When null or empty, the fork is resolved per block via `DefaultChainForkResolver.Default`; when set, it is parsed via `Nethereum.EVM.HardforkNames.Parse` and looked up in `DefaultMainnetHardforkRegistry` |
 
 ## Related Packages
 

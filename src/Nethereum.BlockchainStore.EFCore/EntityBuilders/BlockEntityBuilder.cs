@@ -35,6 +35,8 @@ namespace Nethereum.BlockchainStore.EFCore.EntityBuilders
             entityBuilder.Property(b => b.TransactionsRoot).IsHash();
             entityBuilder.Property(b => b.MixHash).IsHash();
             entityBuilder.Property(b => b.Sha3Uncles).IsHash();
+            entityBuilder.Property(b => b.BlockAccessListHash).IsHash();
+            entityBuilder.Property(b => b.SlotNumber).IsBigInteger();
 
             entityBuilder.HasIndex(b => new {b.BlockNumber, b.Hash}).IsUnique();
             entityBuilder.HasIndex(b => b.BlockNumber);

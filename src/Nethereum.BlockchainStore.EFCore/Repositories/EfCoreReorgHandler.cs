@@ -60,6 +60,15 @@ namespace Nethereum.BlockchainStore.EFCore.Repositories
                                 itx.IsCanonical = false;
                             if (internalTxs.Count > 0)
                                 context.InternalTransactions.UpdateRange(internalTxs);
+
+                            var blockAccessListAccounts = await context.BlockAccessListAccounts
+                                .Where(a => a.BlockNumber == blockNum && a.IsCanonical)
+                                .ToListAsync()
+                                .ConfigureAwait(false);
+                            foreach (var account in blockAccessListAccounts)
+                                account.IsCanonical = false;
+                            if (blockAccessListAccounts.Count > 0)
+                                context.BlockAccessListAccounts.UpdateRange(blockAccessListAccounts);
                         }
 
                         await context.SaveChangesAsync().ConfigureAwait(false);

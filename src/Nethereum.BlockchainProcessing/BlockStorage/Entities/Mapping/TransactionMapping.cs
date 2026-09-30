@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
@@ -32,6 +33,9 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             to.MaxPriorityFeePerGas = @from.MaxPriorityFeePerGas?.Value.ToString();
             to.TransactionType = (long)(@from.Type?.Value ?? 0);
             to.MaxFeePerBlobGas = @from.MaxFeePerBlobGas?.Value.ToString();
+            to.AuthorizationList = @from.AuthorisationList != null && @from.AuthorisationList.Count > 0
+                ? JsonConvert.SerializeObject(@from.AuthorisationList)
+                : null;
         }
 
         public static Transaction MapToStorageEntityForUpsert(this TransactionReceiptVO transactionReceiptVO)

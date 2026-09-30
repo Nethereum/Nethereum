@@ -49,6 +49,8 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             block.TransactionsRoot = source.TransactionsRoot;
             block.MixHash = source.MixHash;
             block.Sha3Uncles = source.Sha3Uncles;
+            block.BlockAccessListHash = source.BlockAccessListHash;
+            block.SlotNumber = source.SlotNumber?.Value.ToString();
         }
 
         private static int TransactionCount(Nethereum.RPC.Eth.DTOs.Block block)

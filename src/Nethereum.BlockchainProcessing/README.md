@@ -101,11 +101,16 @@ Process all blocks, transactions, and logs:
 ```csharp
 using Nethereum.BlockchainProcessing;
 using Nethereum.Web3;
+using Nethereum.RPC.Eth.DTOs;
+using System.Collections.Generic;
 using System.Numerics;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_KEY");
 
-var processedData = new ProcessedData();
+var blocks = new List<BlockWithTransactions>();
+var transactions = new List<TransactionVO>();
+var transactionsWithReceipt = new List<TransactionReceiptVO>();
+var filterLogs = new List<FilterLogVO>();
 
 var blockProcessor = web3.Processing.Blocks.CreateBlockProcessor(steps =>
 {
@@ -113,28 +118,28 @@ var blockProcessor = web3.Processing.Blocks.CreateBlockProcessor(steps =>
     steps.BlockStep.AddSynchronousProcessorHandler(block =>
     {
         Console.WriteLine($"Block: {block.Number}");
-        processedData.Blocks.Add(block);
+        blocks.Add(block);
     });
 
     // Process each transaction
     steps.TransactionStep.AddSynchronousProcessorHandler(tx =>
     {
         Console.WriteLine($"  Transaction: {tx.Transaction.TransactionHash}");
-        processedData.Transactions.Add(tx);
+        transactions.Add(tx);
     });
 
     // Process transaction receipts
     steps.TransactionReceiptStep.AddSynchronousProcessorHandler(tx =>
     {
         Console.WriteLine($"  Receipt - Gas Used: {tx.TransactionReceipt.GasUsed}");
-        processedData.TransactionsWithReceipt.Add(tx);
+        transactionsWithReceipt.Add(tx);
     });
 
     // Process event logs
     steps.FilterLogStep.AddSynchronousProcessorHandler(filterLog =>
     {
         Console.WriteLine($"    Log: {filterLog.Log.Address}");
-        processedData.FilterLogs.Add(filterLog);
+        filterLogs.Add(filterLog);
     });
 });
 
@@ -222,23 +227,21 @@ Process only specific transactions:
 ```csharp
 var blockProcessor = web3.Processing.Blocks.CreateBlockProcessor(steps =>
 {
-    // Only process transactions with non-zero value
-    steps.TransactionStep.SetMatchCriteria(tx =>
-        tx.Transaction.Value?.Value > 0);
-
-    // Only process receipts for transaction index 0
+    // Set the match criteria on the step (SetMatchCriteria comes from IProcessorHandler<T>,
+    // which IProcessor<T> inherits), then add the handler. Only handle receipts for
+    // high-value transactions at index 0.
     steps.TransactionReceiptStep.SetMatchCriteria(tx =>
+        tx.Transaction.Value?.Value > 0 &&
         tx.Transaction.TransactionIndex.Value == 0);
-
-    steps.TransactionReceiptStep.AddSynchronousProcessorHandler(tx =>
+    steps.TransactionReceiptStep.AddProcessorHandler(async tx =>
     {
-        Console.WriteLine($"High-value transaction at index 0: {tx.TransactionHash}");
+        Console.WriteLine($"High-value transaction at index 0: {tx.Transaction.TransactionHash}");
     });
 });
 
 await blockProcessor.ExecuteAsync(new BigInteger(110), CancellationToken.None, new BigInteger(100));
 
-// Only transactions matching ALL criteria will be processed
+// Only receipts matching the handler's criteria will be processed
 ```
 
 From test: `BlockProcessing/BlockProcessingTests.cs:134-161`
@@ -253,7 +256,7 @@ var blockProcessor = web3.Processing.Blocks.CreateBlockProcessor(steps =>
     // Only interested in blocks, not transactions
     steps.BlockStep.AddSynchronousProcessorHandler(block =>
     {
-        Console.WriteLine($"Block {block.Number}: {block.TransactionCount} transactions");
+        Console.WriteLine($"Block {block.Number}: {block.TransactionCount()} transactions");
     });
 });
 
@@ -279,7 +282,7 @@ var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_KEY");
 
 // In-memory storage (replace with your database implementation)
 var context = new InMemoryBlockchainStorageRepositoryContext();
-var repositoryFactory = new InMemoryBlockchainStorageRepositoryFactory(context);
+var repositoryFactory = new InMemoryBlockchainStoreRepositoryFactory(context);
 
 var processor = web3.Processing.Blocks.CreateBlockStorageProcessor(
     repositoryFactory,
@@ -306,7 +309,7 @@ From test: `BlockStorage/BlockStorageProcessorTests.cs:16-39`
 Add custom processing alongside storage:
 
 ```csharp
-var repositoryFactory = new InMemoryBlockchainStorageRepositoryFactory(context);
+var repositoryFactory = new InMemoryBlockchainStoreRepositoryFactory(context);
 
 var processor = web3.Processing.Blocks.CreateBlockStorageProcessor(
     repositoryFactory,
@@ -320,9 +323,12 @@ var processor = web3.Processing.Blocks.CreateBlockStorageProcessor(
             Console.WriteLine($"New block stored: {block.Number}");
         });
 
-        // Add custom filtering
-        steps.TransactionStep.SetMatchCriteria(tx =>
-            tx.Transaction.Value?.Value > Web3.Convert.ToWei(1));
+        // Set the match criteria on the step, then add the handler.
+        steps.TransactionStep.SetMatchCriteria(tx => tx.Transaction.Value?.Value > Web3.Convert.ToWei(1));
+        steps.TransactionStep.AddProcessorHandler(async tx =>
+        {
+            Console.WriteLine($"High-value transaction: {tx.Transaction.TransactionHash}");
+        });
     }
 );
 
@@ -469,7 +475,7 @@ Built-in support for ERC20 token tracking:
 using Nethereum.BlockchainProcessing.Services.SmartContracts;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_KEY");
-var erc20Service = new ERC20LogProcessingService(web3.Eth);
+var erc20Service = new ERC20LogProcessingService(web3.Processing.Logs, web3.Eth);
 
 var usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
@@ -508,7 +514,8 @@ var accountTransfers = await erc20Service.GetAllTransferEventsFromAndToAccount(
     contractAddresses: tokenAddresses,
     account: accountAddress,
     fromBlockNumber: new BigInteger(100),
-    toBlockNumber: new BigInteger(110)
+    toBlockNumber: new BigInteger(110),
+    cancellationToken: CancellationToken.None
 );
 
 var received = accountTransfers.Count(t => t.Event.To.Equals(accountAddress, StringComparison.OrdinalIgnoreCase));
@@ -527,7 +534,7 @@ Track NFT ownership from transfer events:
 using Nethereum.BlockchainProcessing.Services.SmartContracts;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_KEY");
-var erc721Service = new ERC721LogProcessingService(web3.Eth);
+var erc721Service = new ERC721LogProcessingService(web3.Processing.Logs, web3.Eth);
 
 var nftContract = "0xYourNFTContract";
 
@@ -535,7 +542,8 @@ var nftContract = "0xYourNFTContract";
 var owners = await erc721Service.GetAllCurrentOwnersProcessingAllTransferEvents(
     contractAddress: nftContract,
     fromBlockNumber: new BigInteger(0),  // Process all history
-    toBlockNumber: null  // Up to latest
+    toBlockNumber: null,  // Up to latest
+    cancellationToken: CancellationToken.None
 );
 
 foreach (var owner in owners)
@@ -554,11 +562,12 @@ Get all NFTs owned by an account:
 var accountAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
 var nftContract = "0xYourNFTContract";
 
-var ownedNFTs = await erc721Service.GetErc721OwnedByAccountUsingAllTransfers(
+var ownedNFTs = await erc721Service.GetErc721OwnedByAccountUsingAllTransfersForContract(
     contractAddress: nftContract,
     account: accountAddress,
     fromBlockNumber: new BigInteger(0),
-    toBlockNumber: null
+    toBlockNumber: null,
+    cancellationToken: CancellationToken.None
 );
 
 Console.WriteLine($"Account owns {ownedNFTs.Count} NFTs:");
@@ -568,7 +577,7 @@ foreach (var nft in ownedNFTs)
 }
 ```
 
-From: `Services/SmartContracts/ERC721LogProcessingService.cs:26-36`
+From: `Services/SmartContracts/ERC721LogProcessingService.cs:38-48`
 
 ## Progress Tracking
 
@@ -734,14 +743,34 @@ public class MyDatabaseRepositoryFactory : IBlockchainStoreRepositoryFactory
         return new MyAddressTransactionRepository(_connection);
     }
 
-    public ITransactionVMStackRepository CreateTransactionVMStackRepository()
+    public ITransactionVMStackRepository CreateTransactionVmStackRepository()
     {
         return new MyTransactionVMStackRepository(_connection);
+    }
+
+    public IInternalTransactionRepository CreateInternalTransactionRepository()
+    {
+        return new MyInternalTransactionRepository(_connection);
+    }
+
+    public IReorgHandler CreateReorgHandler()
+    {
+        return new MyReorgHandler(_connection);
+    }
+
+    public IBlockProgressRepository CreateInternalTransactionBlockProgressRepository()
+    {
+        return new MyInternalTransactionBlockProgressRepository(_connection);
+    }
+
+    public IBlockAccessListRepository CreateBlockAccessListRepository()
+    {
+        return new MyBlockAccessListRepository(_connection);
     }
 }
 ```
 
-From: `BlockStorage/Repositories/IBlockchainStoreRepositoryFactory.cs:5-11`
+From: `BlockStorage/Repositories/IBlockchainStoreRepositoryFactory.cs:5-17`
 
 ### Storage Entities
 
@@ -783,6 +812,50 @@ The package provides ready-to-use entity models:
 - Input, Output, Error, RevertReason
 - IsCanonical
 
+**TransactionToTrace Entity** (`BlockStorage/Entities/TransactionToTrace.cs`):
+- TransactionHash, BlockNumber, BlockHash. Carried by
+  `IInternalTransactionRepository.GetContractTransactionsInRangeAsync`
+  as the set of contract-interacting transactions that want internal-tx
+  tracing in a given block range.
+
+### Internal-Transaction Sources
+
+`IInternalTransactionSource.ProduceAsync(transactionHash)` abstracts
+over how internal-tx entries are produced for a given top-level
+transaction:
+
+- **`DebugTraceInternalTransactionSource`** — calls `debug_traceTransaction`
+  against an RPC node (Geth call-tracer format) and flattens the nested
+  call tree into `InternalTransaction` entries. Requires a node that
+  exposes the `debug_` namespace.
+- **`EvmReplayInternalTransactionSource`** — replays the transaction
+  locally against `Nethereum.EVM`'s `TransactionExecutor` using the
+  pre-transaction state fetched by RPC (`eth_getTransactionByHash` +
+  `eth_getBlockByNumber` + parent-state reads via
+  `RpcNodeDataService`). Works against RPC nodes that don't expose
+  `debug_traceTransaction`. Configured with a `HardforkConfig`
+  obtained from `DefaultMainnetHardforkRegistry` (or
+  `ChainActivationsRegistry` for per-block fork resolution).
+
+Both sources produce byte-identical `InternalTransaction` output for
+the same tx hash — verified by
+`tests/Nethereum.CoreChain.IntegrationTests/DevChain/InternalTransactionSourceParityTests.cs`
+against the in-process DevChain.
+
+### Repository Interface Additions
+
+`IInternalTransactionRepository` and `ITransactionRepository` gained
+persistence methods so orchestrators don't need to cast to a concrete
+implementation:
+
+- `ITransactionRepository.UpdateRevertReasonAsync(string txHash, string revertReason)`
+- `IInternalTransactionRepository.GetContractTransactionsInRangeAsync(BigInteger fromBlock, BigInteger toBlock)`
+
+In-memory implementations (`InMemoryTransactionRepository`,
+`InMemoryInternalTransactionRepository`,
+`InMemoryBlockchainStoreRepositoryFactory`) provide trivial versions
+so tests and no-DB scenarios keep working without an EF backend.
+
 **TokenTransferLog Entity** (`BlockStorage/Entities/TokenTransferLog.cs`):
 - TransactionHash, LogIndex, BlockNumber, BlockHash
 - ContractAddress, EventHash, FromAddress, ToAddress
@@ -811,59 +884,58 @@ All numeric indexing fields (BlockNumber, LogIndex, TransactionIndex, Nonce, Tim
 
 ### Log Processing Batch Size
 
-Configure batch size for log retrieval:
+Batch size (`defaultNumberOfBlocksPerRequest`) and `retryWeight` are supplied when the processor is created; the log orchestrator sizes each `getLogs` request from them and shrinks the range on failure. They are constructor-time values, not mutable properties:
 
 ```csharp
-using Nethereum.BlockchainProcessing.LogProcessing;
+using Nethereum.BlockchainProcessing.Processor;
+using Nethereum.RPC.Eth.DTOs;
 
-var logProcessor = web3.Processing.Logs.CreateProcessor(filterLog => { /* ... */ });
+var handler = new ProcessorHandler<FilterLog>(async filterLog => { /* ... */ });
 
-// Customize batch size (default: 1,000,000 blocks)
-logProcessor.Orchestrator.BlockRangeRequestStrategy = new BlockRangeRequestStrategy(
+var logProcessor = web3.Processing.Logs.CreateProcessor(
+    logProcessors: new[] { handler },
     defaultNumberOfBlocksPerRequest: 10000,  // 10k blocks per batch
-    retryWeight: 50  // Reduce batch size on failures
-);
+    retryWeight: 50);                         // reduce batch size on failures
 
 await logProcessor.ExecuteAsync(new BigInteger(110), startAtBlockNumberIfNotProcessed: new BigInteger(100));
 ```
 
-From: `Services/BlockchainLogProcessingService.cs:24-25`
+From: `Services/IBlockchainLogProcessingService.cs:121-128`
 
 ### Retry Configuration
 
-Configure retry behavior for log retrieval:
+Retry counts are fixed compile-time constants on `LogOrchestrator`, not per-instance settings:
 
 ```csharp
-var logProcessor = web3.Processing.Logs.CreateProcessor(filterLog => { /* ... */ });
-
-// Configure retries (default: 10 retries)
-logProcessor.Orchestrator.MaxGetLogsRetries = 5;
-logProcessor.Orchestrator.MaxGetLogsNullRetries = 2;
-
-await logProcessor.ExecuteAsync(new BigInteger(110), startAtBlockNumberIfNotProcessed: new BigInteger(100));
+// LogProcessing/LogOrchestrator.cs
+public const int MaxGetLogsRetries = 10;      // getLogs retries on error
+public const int MaxGetLogsNullRetries = 1;   // retries when a null result is returned
 ```
 
-From: `LogProcessing/LogOrchestrator.cs:57-58`
+To lower the load per attempt, reduce the batch size via `defaultNumberOfBlocksPerRequest` (see above); the orchestrator also shrinks the requested range automatically using `retryWeight` after failures.
+
+From: `LogProcessing/LogOrchestrator.cs:59-60`
 
 ### Parallel vs Sequential Log Processing
 
-Choose processing strategy:
+`LogOrchestrator.LogProcessStrategy` selects how matched logs are dispatched. The default is `LogProcessParallelStrategy` (parallel). Set it on a manually constructed orchestrator to force ordered processing:
 
 ```csharp
 using Nethereum.BlockchainProcessing.LogProcessing;
+using Nethereum.BlockchainProcessing.Processor;
+using Nethereum.RPC.Eth.DTOs;
 
-var logProcessor = web3.Processing.Logs.CreateProcessor(filterLog => { /* ... */ });
+var handlers = new[] { new ProcessorHandler<FilterLog>(async log => { /* ... */ }) };
+var orchestrator = new LogOrchestrator(web3.Eth, handlers);
 
-// Sequential processing (default for most use cases)
-logProcessor.Orchestrator.LogProcessStrategy = new LogProcessSequentialStrategy();
+// Default is parallel dispatch:
+orchestrator.LogProcessStrategy = new LogProcessParallelStrategy();
 
-// Parallel processing (faster but uses more resources)
-logProcessor.Orchestrator.LogProcessStrategy = new LogProcessParallelStrategy();
-
-await logProcessor.ExecuteAsync(new BigInteger(110), startAtBlockNumberIfNotProcessed: new BigInteger(100));
+// Opt into ordered, sequential processing instead:
+orchestrator.LogProcessStrategy = new LogProcessSequentialStrategy();
 ```
 
-From: `LogProcessing/LogOrchestrator.cs:64, LogProcessing/ILogProcessStrategy.cs`
+From: `LogProcessing/LogOrchestrator.cs:67, LogProcessing/ILogProcessStrategy.cs`
 
 ### Contract Creation Code Retrieval
 
@@ -986,7 +1058,7 @@ var blockProcessor = web3.Processing.Blocks.CreateBlockProcessor(steps =>
 
 ### Log Processing Retry
 
-Log processing has built-in retry with exponential backoff:
+Log processing retries automatically on RPC errors (up to `MaxGetLogsRetries`), shrinking the requested block range on each retry (`BlockRangeRequestStrategy`):
 
 ```csharp
 // Automatically retries on RPC errors
@@ -1056,7 +1128,7 @@ Track token balances for addresses:
 ```csharp
 var balances = new Dictionary<string, BigInteger>();
 
-var erc20Service = new ERC20LogProcessingService(web3.Eth);
+var erc20Service = new ERC20LogProcessingService(web3.Processing.Logs, web3.Eth);
 
 var transfers = await erc20Service.GetAllTransferEventsForContract(
     usdcAddress,
@@ -1089,8 +1161,7 @@ Monitor NFT transfers in real-time:
 var progressRepo = new JsonBlockProgressRepository(/* ... */);
 
 var logProcessor = web3.Processing.Logs.CreateProcessor<TransferEventDTO>(
-    progressRepo,
-    transferEvent =>
+    action: transferEvent =>
     {
         Console.WriteLine($"NFT Transfer:");
         Console.WriteLine($"  Token: {transferEvent.Event.TokenId}");
@@ -1099,7 +1170,8 @@ var logProcessor = web3.Processing.Logs.CreateProcessor<TransferEventDTO>(
         Console.WriteLine($"  Tx: {transferEvent.Log.TransactionHash}");
 
         // Send notification, update database, etc.
-    }
+    },
+    blockProgressRepository: progressRepo
 );
 
 // Run continuously
@@ -1133,26 +1205,30 @@ The `TokenBalanceAggregationService` reads stored `TokenTransferLog` records and
 var aggregationService = new TokenBalanceAggregationService(
     transferLogRepository, balanceRepository, nftRepository, progressRepository);
 
-await aggregationService.AggregateAsync(fromBlock, toBlock, cancellationToken);
+// Aggregates forward from the last stored checkpoint until it runs out of transfer logs
+await aggregationService.ProcessFromCheckpointAsync(cancellationToken);
 ```
 
-From: `Services/SmartContracts/TokenBalanceAggregationService.cs`
+From: `Services/SmartContracts/TokenBalanceAggregationService.cs:65`
 
 ## Internal Transaction Processing
 
-The `InternalTransactionPostProcessor` orchestrates trace-based internal transaction indexing. It accepts a trace provider function (e.g., `debug_traceTransaction`) and stores results via `IInternalTransactionRepository`:
+`InternalTransactionPostProcessorService` builds a trace-based internal transaction processor. It accepts a trace provider function (e.g., `debug_traceTransaction`) and stores results via `IInternalTransactionRepository`. `CreateProcessor` returns a `BlockchainProcessor` you drive with `ExecuteAsync`:
 
 ```csharp
-var postProcessor = new InternalTransactionPostProcessor(
-    internalTransactionRepository,
+var postProcessorService = new InternalTransactionPostProcessorService();
+
+var processor = postProcessorService.CreateProcessor(
+    repository: internalTransactionRepository,
     traceProvider: async txHash => await GetTracesFromRpc(txHash),
     getContractTransactionsInRange: async (from, to) => await GetContractTxs(from, to),
-    progressRepository, lastConfirmedBlockService);
+    blockProgressRepository: progressRepository,
+    lastConfirmedBlockNumberService: lastConfirmedBlockService);
 
-await postProcessor.ExecuteAsync(cancellationToken);
+await processor.ExecuteAsync(cancellationToken);
 ```
 
-From: `Services/InternalTransactionPostProcessor.cs`
+From: `Services/InternalTransactionPostProcessor.cs:106-126`
 
 ## Metrics and Observability
 
@@ -1164,8 +1240,8 @@ using Nethereum.BlockchainProcessing.Metrics;
 var metrics = new LogProcessingMetrics(
     chainId: "1", processorType: "TokenTransfers", name: "MyApp");
 
-// Pass to log processing service
-var processor = logProcessingService.CreateProcessor(
+// Pass to the token transfer log processing service
+var processor = tokenService.CreateProcessor(
     transferLogRepository, blockProgressRepository,
     observer: metrics);
 
@@ -1211,7 +1287,7 @@ Repository interfaces for marking records as non-canonical during reorg recovery
 - `INonCanonicalTransactionRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
 - `INonCanonicalTransactionLogRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
 - `INonCanonicalTokenTransferLogRepository` — `MarkNonCanonicalAsync(BigInteger blockNumber)`
-- `IReorgHandler` — composite interface combining all non-canonical operations with `HandleReorgAsync(BigInteger fromBlock)`
+- `IReorgHandler` — coordinates reorg recovery through a single method `MarkBlockRangeNonCanonicalAsync(BigInteger fromBlock, BigInteger toBlock)`
 
 From: `BlockStorage/Repositories/INonCanonical*.cs`, `BlockStorage/Repositories/IReorgHandler.cs`
 
@@ -1223,6 +1299,7 @@ Required packages:
 - **Nethereum.RPC** - RPC DTOs and services
 - **Nethereum.Util** - Utility functions
 - **Nethereum.Contracts** - Contract interaction and event decoding
+- **Nethereum.EVM** - Local EVM replay for internal transaction tracing (`EvmReplayInternalTransactionSource`)
 
 ## Source Files Reference
 

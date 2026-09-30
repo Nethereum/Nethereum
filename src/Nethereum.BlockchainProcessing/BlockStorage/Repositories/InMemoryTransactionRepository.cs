@@ -52,6 +52,23 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
             }
         }
 
+        public Task UpdateRevertReasonAsync(string txHash, string revertReason)
+        {
+            lock (_lock)
+            {
+                foreach (var record in Records)
+                {
+                    if (record is TransactionBase tx && string.Equals(tx.Hash, txHash, System.StringComparison.OrdinalIgnoreCase)
+                        && string.IsNullOrEmpty(tx.RevertReason))
+                    {
+                        tx.RevertReason = revertReason;
+                        break;
+                    }
+                }
+            }
+            return Task.FromResult(0);
+        }
+
         public Task MarkNonCanonicalAsync(System.Numerics.BigInteger blockNumber)
         {
             lock (_lock)

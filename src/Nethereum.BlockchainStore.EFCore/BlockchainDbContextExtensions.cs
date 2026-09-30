@@ -60,5 +60,12 @@ namespace Nethereum.BlockchainStore.EFCore
                 .SingleOrDefaultAsync(t => t.TransactionHash == transactionHash && t.Address == address);
         }
 
+        public static async Task<BlockAccessListAccount> FindByBlockNumberAndAddressAsync(
+            this DbSet<BlockAccessListAccount> blockAccessListAccounts, long blockNumber, string address)
+        {
+            return await blockAccessListAccounts
+                .SingleOrDefaultAsync(a => a.BlockNumber == blockNumber && a.Address == address);
+        }
+
     }
 }

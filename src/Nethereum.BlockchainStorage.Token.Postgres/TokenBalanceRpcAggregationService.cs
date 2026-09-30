@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nethereum.Util;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
 using Nethereum.BlockchainStorage.Token.Postgres.Repositories;
@@ -218,6 +219,8 @@ namespace Nethereum.BlockchainStorage.Token.Postgres
         {
             foreach (var (address, contract) in ExtractAccounts(logs, TokenTypeERC20))
             {
+                if (contract.IsNativeTransferLogEmitter()) continue;
+
                 var fn = new ERC20Def.BalanceOfFunction { Owner = address };
                 calls.Add(new MulticallInputOutput<ERC20Def.BalanceOfFunction, ERC20Def.BalanceOfOutputDTO>(fn, contract));
                 callMeta.Add((address, contract, TokenTypeERC20, null));
@@ -379,7 +382,7 @@ namespace Nethereum.BlockchainStorage.Token.Postgres
                     (Address: l.FromAddress?.ToLowerInvariant(), Contract: l.ContractAddress?.ToLowerInvariant()),
                     (Address: l.ToAddress?.ToLowerInvariant(), Contract: l.ContractAddress?.ToLowerInvariant())
                 })
-                .Where(x => !IsZeroAddress(x.Address))
+                .Where(x => !AddressUtil.Current.IsNullEmptyOrAllZeroHex(x.Address))
                 .Distinct()
                 .ToList();
         }
@@ -394,18 +397,10 @@ namespace Nethereum.BlockchainStorage.Token.Postgres
                     (Address: l.FromAddress?.ToLowerInvariant(), Contract: l.ContractAddress?.ToLowerInvariant(), TokenId: l.TokenId),
                     (Address: l.ToAddress?.ToLowerInvariant(), Contract: l.ContractAddress?.ToLowerInvariant(), TokenId: l.TokenId)
                 })
-                .Where(x => !IsZeroAddress(x.Address))
+                .Where(x => !AddressUtil.Current.IsNullEmptyOrAllZeroHex(x.Address))
                 .Distinct()
                 .ToList();
         }
 
-        private static bool IsZeroAddress(string address)
-        {
-            if (string.IsNullOrEmpty(address)) return true;
-            var normalized = address.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                ? address.Substring(2)
-                : address;
-            return normalized.Length == 0 || normalized.All(c => c == '0');
-        }
     }
 }

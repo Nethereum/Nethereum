@@ -37,6 +37,7 @@ public static class ExplorerServiceCollectionExtensions
         services.AddScoped<AuthenticationStateProvider, EthereumAuthenticationStateProvider>();
 
         services.AddScoped<IBlockQueryService, BlockQueryService>();
+        services.AddScoped<IBlockAccessListQueryService, BlockAccessListQueryService>();
         services.AddScoped<ITransactionQueryService, TransactionQueryService>();
         services.AddScoped<IContractQueryService, ContractQueryService>();
         services.AddScoped<IAccountQueryService, AccountQueryService>();

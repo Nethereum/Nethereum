@@ -1,3 +1,4 @@
+@using Nethereum.Util
 @if (TokenTransfers.Any())
 {
     <div class="card mb-3">
@@ -22,14 +23,26 @@
                         {
                             var fromAddr = ExplorerFormatUtils.ExtractAddressFromTopic(transfer.IndexVal1);
                             var toAddr = ExplorerFormatUtils.ExtractAddressFromTopic(transfer.IndexVal2);
-                            var decimals = TokenDecimals.GetValueOrDefault(transfer.Address ?? "", 18);
+                            var isNativeAsset = transfer.Address.IsNativeTransferLogEmitter();
+                            var decimals = isNativeAsset
+                                ? NativeAssetDecimals
+                                : TokenDecimals.GetValueOrDefault(transfer.Address ?? "", 18);
                             var amount = ExplorerFormatUtils.FormatTokenAmount(transfer.Data, decimals);
                             <tr>
                                 <td><HexDisplay Value="@fromAddr" Link="@($"/account/{fromAddr}")" MaxLength="14" ShowCopy="false" /></td>
                                 <td class="text-center px-0"><i class="bi bi-arrow-right text-color-dim"></i></td>
                                 <td><HexDisplay Value="@toAddr" Link="@($"/account/{toAddr}")" MaxLength="14" ShowCopy="false" /></td>
                                 <td class="text-end font-monospace text-color-primary">@amount</td>
-                                <td><HexDisplay Value="@transfer.Address" Link="@($"/contract/{transfer.Address}")" MaxLength="14" ShowCopy="false" /></td>
+                                <td>
+                                    @if (isNativeAsset)
+                                    {
+                                        <span class="badge explorer-badge explorer-badge-primary">@NativeAssetSymbol</span>
+                                    }
+                                    else
+                                    {
+                                        <HexDisplay Value="@transfer.Address" Link="@($"/contract/{transfer.Address}")" MaxLength="14" ShowCopy="false" />
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -43,4 +56,6 @@
     [Parameter, EditorRequired] public List<ITransactionLogView> TokenTransfers { get; set; } = new();
     [Parameter, EditorRequired] public Dictionary<string, int> TokenDecimals { get; set; } = new();
     [Parameter, EditorRequired] public ExplorerLocalizer L { get; set; } = default!;
+    [Parameter] public string NativeAssetSymbol { get; set; } = "ETH";
+    [Parameter] public int NativeAssetDecimals { get; set; } = 18;
 }

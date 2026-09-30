@@ -16,13 +16,6 @@ using Nethereum.RPC.Eth.Blocks;
 
 namespace Nethereum.BlockchainProcessing.Services
 {
-    public class TransactionToTrace
-    {
-        public string TransactionHash { get; set; }
-        public string BlockNumber { get; set; }
-        public string BlockHash { get; set; }
-    }
-
     public class InternalTransactionOrchestrator : IBlockchainProcessingOrchestrator
     {
         private readonly IInternalTransactionRepository _repository;

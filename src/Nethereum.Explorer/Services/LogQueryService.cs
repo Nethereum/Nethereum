@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainStore.EFCore;
+using Nethereum.Util;
 
 namespace Nethereum.Explorer.Services;
 
@@ -50,6 +51,7 @@ public class LogQueryService : ILogQueryService
             .AsNoTracking()
             .Where(l => l.IsCanonical
                 && l.EventHash == ExplorerFormatUtils.ERC20_TRANSFER_TOPIC
+                && l.Address != AddressUtil.SYSTEM_ADDRESS
                 && (l.IndexVal1 == paddedAddress || l.IndexVal2 == paddedAddress))
             .Select(l => l.Address)
             .Distinct()

@@ -19,6 +19,7 @@ namespace Nethereum.BlockchainStore.EFCore
         public DbSet<AccountState> AccountStates { get; set; }
         public DbSet<ChainState> ChainStates { get; set; }
         public DbSet<InternalTransactionBlockProgress> InternalTransactionBlockProgress { get; set; }
+        public DbSet<BlockAccessListAccount> BlockAccessListAccounts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +34,7 @@ namespace Nethereum.BlockchainStore.EFCore
             modelBuilder.ApplyConfiguration(new AccountStateEntityBuilder(){ColumnTypeForUnlimitedText = ColumnTypeForUnlimitedText});
             modelBuilder.ApplyConfiguration(new ChainStateEntityBuilder(){ColumnTypeForUnlimitedText = ColumnTypeForUnlimitedText});
             modelBuilder.ApplyConfiguration(new InternalTransactionBlockProgressEntityBuilder());
+            modelBuilder.ApplyConfiguration(new BlockAccessListAccountEntityBuilder(){ColumnTypeForUnlimitedText = ColumnTypeForUnlimitedText});
             base.OnModelCreating(modelBuilder);
         }
     }

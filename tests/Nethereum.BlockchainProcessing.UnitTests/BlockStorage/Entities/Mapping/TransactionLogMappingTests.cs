@@ -37,9 +37,15 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockStorage.Entities.Mapping
 
             public string IndexVal3 { get; set; }
 
-            public string LogIndex { get; set; }
+            public long LogIndex { get; set; }
 
             public string TransactionHash { get; set; }
+
+            public long BlockNumber { get; set; }
+
+            public string BlockHash { get; set; }
+
+            public long BlockTimestamp { get; set; }
         }
 
 
@@ -65,7 +71,7 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockStorage.Entities.Mapping
             var logFromRepo = new TransactionLogView
             {
                 TransactionHash = sourceTransferEventLog.Log.TransactionHash,
-                LogIndex = sourceTransferEventLog.Log.LogIndex.Value.ToString(),
+                LogIndex = (long)sourceTransferEventLog.Log.LogIndex.Value,
                 Address = sourceTransferEventLog.Log.Address,
                 Data = sourceTransferEventLog.Log.Data,
                 EventHash = (string)sourceTransferEventLog.Log.Topics[0],
@@ -84,6 +90,24 @@ namespace Nethereum.BlockchainProcessing.UnitTests.BlockStorage.Entities.Mapping
             Assert.Equal(sourceTransferEventLog.Event.To, rehyrdratedTransferEventLog.Event.To);
             Assert.Equal(sourceTransferEventLog.Event.Value, rehyrdratedTransferEventLog.Event.Value);
 
+        }
+
+        [Fact]
+        public void Map_Sets_BlockTimestamp_From_FilterLog()
+        {
+            var sourceLog = new RPC.Eth.DTOs.FilterLog
+            {
+                Address = "0x5f236f062f16a9b19819c535127398df9a01d762",
+                TransactionHash = "0x4e80be130e453015a9e82fa2964c1ebe6cb53d058eb7d79e847e699eee0f2e79",
+                LogIndex = new HexBigInteger("0x76"),
+                BlockNumber = new HexBigInteger(100),
+                BlockTimestamp = new HexBigInteger(1700000000)
+            };
+
+            var transactionLog = new TransactionLog();
+            transactionLog.Map(sourceLog);
+
+            Assert.Equal(1700000000, transactionLog.BlockTimestamp);
         }
 
         [Fact]

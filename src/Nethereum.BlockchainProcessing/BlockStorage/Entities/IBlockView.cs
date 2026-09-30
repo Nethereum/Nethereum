@@ -29,5 +29,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
         string TransactionsRoot { get; }
         string MixHash { get; }
         string Sha3Uncles { get; }
+        string BlockAccessListHash { get; }
+        string SlotNumber { get; }
     }
 }

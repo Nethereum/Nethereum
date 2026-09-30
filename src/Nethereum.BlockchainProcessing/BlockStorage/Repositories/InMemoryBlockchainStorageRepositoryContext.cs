@@ -12,5 +12,6 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
         public List<IInternalTransactionView> InternalTransactions = new List<IInternalTransactionView>();
         public List<ITransactionView> Transactions = new List<ITransactionView>();
         public List<ITransactionVmStackView> VmStacks = new List<ITransactionVmStackView>();
+        public List<BlockAccessListAccount> BlockAccessListAccounts = new List<BlockAccessListAccount>();
     }
 }

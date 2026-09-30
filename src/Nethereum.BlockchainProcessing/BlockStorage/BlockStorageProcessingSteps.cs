@@ -16,6 +16,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage
             AddContractCreationStepStorageHandler(repositoryFactory);
             AddTransactionReceiptStepStorageHandler(repositoryFactory);
             AddFilterLogStepStorageHandler(repositoryFactory);
+            AddBlockAccessListStepStorageHandler(repositoryFactory);
         }
 
         protected virtual void AddBlockStepStorageHandler(IBlockchainStoreRepositoryFactory repositoryFactory)
@@ -40,6 +41,12 @@ namespace Nethereum.BlockchainProcessing.BlockStorage
         {
             var handler = new FilterLogStorageStepHandler(repositoryFactory.CreateTransactionLogRepository());
             this.FilterLogStep.AddProcessorHandler(handler);
+        }
+
+        protected virtual void AddBlockAccessListStepStorageHandler(IBlockchainStoreRepositoryFactory repositoryFactory)
+        {
+            var handler = new BlockAccessListStorageStepHandler(repositoryFactory.CreateBlockAccessListRepository());
+            this.BlockAccessListStep.AddProcessorHandler(handler);
         }
 
         public virtual void AddInternalTransactionStepStorageHandler(

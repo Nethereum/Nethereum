@@ -24,6 +24,7 @@ dotnet add package Nethereum.Sourcify.Database
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Nethereum.Sourcify.Database;
+using Nethereum.DataServices.Sourcify.Database;
 
 // Register in DI
 services.AddDbContext<SourcifyDbContext>(options =>
@@ -69,7 +70,7 @@ byte[] selector = new byte[] { 0xa9, 0x05, 0x9c, 0xbb };
 var sig = await repository.GetSignatureByHash4Async(selector);
 Console.WriteLine(sig?.SignatureText); // "transfer(address,uint256)"
 
-// Full-text search (returns up to 100 results)
+// Substring search (returns up to 100 results)
 var results = await repository.SearchSignaturesAsync("transfer");
 foreach (var s in results)
     Console.WriteLine($"{s.SignatureText}");
@@ -132,7 +133,7 @@ Signature (function/event/error signatures, indexed by 4-byte selector)
 | `compiled_contracts` | `id` (Guid) | `compiler`, `version`, `language`, `name`, `compiler_settings` (JSONB) |
 | `sources` | `source_hash` (byte[]) | `source_hash_keccak`, `content` (text) |
 | `compiled_contracts_sources` | `id` (Guid) | `compilation_id`, `source_hash`, `path` |
-| `signatures` | `signature_hash` (byte[32]) | `selector` (byte[4], indexed), `signature_text` |
+| `signatures` | `signature_hash` (byte[32]) | `selector` (byte[4], indexed), `signature` |
 | `compiled_contracts_signatures` | `id` (Guid) | `compilation_id`, `signature_hash`, `type` (Function/Event/Error) |
 | `verified_contracts` | `id` (long) | `deployment_id`, `compilation_id`, creation/runtime match flags, JSONB values |
 | `sourcify_matches` | `id` (long) | `verified_contract_id`, `creation_match`, `runtime_match`, `metadata` (JSONB) |

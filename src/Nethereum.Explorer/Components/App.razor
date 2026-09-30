@@ -1,6 +1,8 @@
 @using Microsoft.Extensions.Options
+@using Nethereum.Explorer.Services
 @inject ExplorerLocalizer L
 @inject IOptions<ExplorerOptions> Options
+@inject IEnumerable<IExplorerNavContributor> NavContributors
 
 <!DOCTYPE html>
 <html lang="en">
@@ -53,6 +55,18 @@
                         </li>
                     }
                     <MudNavItem @rendermode="InteractiveServer" />
+                    @foreach (var item in NavContributors.SelectMany(c => c.GetNavItems()).OrderBy(i => i.Order))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="@item.Href">
+                                @if (!string.IsNullOrEmpty(item.IconClass))
+                                {
+                                    <i class="@item.IconClass me-1"></i>
+                                }
+                                @item.Label
+                            </a>
+                        </li>
+                    }
                 </ul>
                 <SearchBar @rendermode="InteractiveServer" />
                 <button class="theme-toggle ms-3" onclick="toggleTheme()" title="Toggle theme">

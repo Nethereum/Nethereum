@@ -4,6 +4,7 @@
 @using Nethereum.ABI.FunctionEncoding
 @using Nethereum.BlockchainProcessing.BlockStorage.Entities
 @using Nethereum.Explorer.Services
+@using Nethereum.Util
 @inject ITransactionQueryService TransactionQuery
 @inject ILogQueryService LogQuery
 @inject IInternalTransactionQueryService InternalTxQuery
@@ -131,7 +132,9 @@ else
 
     <TxAttributesCard Tx="_tx" L="L" />
 
-    <TxTokenTransfersCard TokenTransfers="_tokenTransfers" TokenDecimals="_tokenDecimals" L="L" />
+    <TxTokenTransfersCard TokenTransfers="_tokenTransfers" TokenDecimals="_tokenDecimals" L="L"
+                          NativeAssetSymbol="@ChainService.CurrencySymbol"
+                          NativeAssetDecimals="@((int)ChainService.CurrencyDecimals)" />
 
     <!-- Internal Transactions (from indexed DB data) -->
     @if (Options.Value.EnableInternalTransactions && _dbInternalTxs != null && _dbInternalTxs.Any())
@@ -291,7 +294,9 @@ else
 
                 if (_tokenTransfers.Any() && Rpc.IsAvailable)
                 {
-                    var uniqueTokens = _tokenTransfers.Select(t => t.Address).Where(a => !string.IsNullOrEmpty(a)).Distinct(StringComparer.OrdinalIgnoreCase);
+                    var uniqueTokens = _tokenTransfers.Select(t => t.Address)
+                        .Where(a => !string.IsNullOrEmpty(a) && !a.IsNativeTransferLogEmitter())
+                        .Distinct(StringComparer.OrdinalIgnoreCase);
                     foreach (var tokenAddr in uniqueTokens)
                     {
                         try

@@ -32,5 +32,6 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
         public string MaxFeePerBlobGas { get; set; }
         public string BlobGasUsed { get; set; }
         public string BlobGasPrice { get; set; }
+        public string AuthorizationList { get; set; }
     }
 }

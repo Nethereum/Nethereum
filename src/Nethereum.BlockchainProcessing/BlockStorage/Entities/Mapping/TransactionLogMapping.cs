@@ -35,6 +35,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
             transactionLog.Data = log.Data;
             transactionLog.BlockNumber = (long)(log.BlockNumber?.Value ?? 0);
             transactionLog.BlockHash = log.BlockHash;
+            transactionLog.BlockTimestamp = (long)(log.BlockTimestamp?.Value ?? 0);
             transactionLog.IsCanonical = true;
 
             transactionLog.EventHash = log.EventSignature();
@@ -53,6 +54,7 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping
                 LogIndex = new Hex.HexTypes.HexBigInteger(new BigInteger(transactionLogView.LogIndex)),
                 BlockHash = transactionLogView.BlockHash,
                 BlockNumber = new Hex.HexTypes.HexBigInteger(new BigInteger(transactionLogView.BlockNumber)),
+                BlockTimestamp = new Hex.HexTypes.HexBigInteger(new BigInteger(transactionLogView.BlockTimestamp)),
                 Topics = TrimTrailingNulls(new[] {transactionLogView.EventHash,
                                 transactionLogView.IndexVal1,
                                 transactionLogView.IndexVal2,

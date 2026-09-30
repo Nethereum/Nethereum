@@ -29,6 +29,8 @@ namespace Nethereum.BlockchainStorage.Processors
                     options.RetryWeight = source.RetryWeight;
                     options.ReorgBuffer = source.ReorgBuffer;
                     options.UseBatchReceipts = source.UseBatchReceipts;
+                    options.UseLocalEvmReplayForInternalTransactions = source.UseLocalEvmReplayForInternalTransactions;
+                    options.Hardfork = source.Hardfork;
                 });
 
             return services;

@@ -146,6 +146,11 @@ namespace Nethereum.BlockchainStore.Postgres.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("blobgasused");
 
+                    b.Property<string>("BlockAccessListHash")
+                        .HasMaxLength(67)
+                        .HasColumnType("character varying(67)")
+                        .HasColumnName("blockaccesslisthash");
+
                     b.Property<long>("BlockNumber")
                         .HasColumnType("bigint")
                         .HasColumnName("blocknumber");
@@ -250,6 +255,11 @@ namespace Nethereum.BlockchainStore.Postgres.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("size");
 
+                    b.Property<string>("SlotNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("slotnumber");
+
                     b.Property<string>("StateRoot")
                         .HasMaxLength(67)
                         .HasColumnType("character varying(67)")
@@ -298,6 +308,77 @@ namespace Nethereum.BlockchainStore.Postgres.Migrations
                         .HasDatabaseName("ix_blocks_iscanonical_blocknumber");
 
                     b.ToTable("Blocks", (string)null);
+                });
+
+            modelBuilder.Entity("Nethereum.BlockchainProcessing.BlockStorage.Entities.BlockAccessListAccount", b =>
+                {
+                    b.Property<int>("RowIndex")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("rowindex");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RowIndex"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(43)
+                        .HasColumnType("character varying(43)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("BalanceChanges")
+                        .HasColumnType("text")
+                        .HasColumnName("balancechanges");
+
+                    b.Property<string>("BlockHash")
+                        .HasMaxLength(67)
+                        .HasColumnType("character varying(67)")
+                        .HasColumnName("blockhash");
+
+                    b.Property<long>("BlockNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("blocknumber");
+
+                    b.Property<string>("CodeChanges")
+                        .HasColumnType("text")
+                        .HasColumnName("codechanges");
+
+                    b.Property<bool>("IsCanonical")
+                        .HasColumnType("boolean")
+                        .HasColumnName("iscanonical");
+
+                    b.Property<string>("NonceChanges")
+                        .HasColumnType("text")
+                        .HasColumnName("noncechanges");
+
+                    b.Property<DateTime?>("RowCreated")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rowcreated");
+
+                    b.Property<DateTime?>("RowUpdated")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rowupdated");
+
+                    b.Property<string>("StorageChanges")
+                        .HasColumnType("text")
+                        .HasColumnName("storagechanges");
+
+                    b.Property<string>("StorageReads")
+                        .HasColumnType("text")
+                        .HasColumnName("storagereads");
+
+                    b.HasKey("RowIndex")
+                        .HasName("pk_blockaccesslistaccounts");
+
+                    b.HasIndex("Address")
+                        .HasDatabaseName("ix_blockaccesslistaccounts_address");
+
+                    b.HasIndex("BlockNumber", "Address")
+                        .IsUnique()
+                        .HasDatabaseName("ix_blockaccesslistaccounts_blocknumber_address");
+
+                    b.HasIndex("IsCanonical", "BlockNumber")
+                        .HasDatabaseName("ix_blockaccesslistaccounts_iscanonical_blocknumber");
+
+                    b.ToTable("BlockAccessListAccounts", (string)null);
                 });
 
             modelBuilder.Entity("Nethereum.BlockchainProcessing.BlockStorage.Entities.BlockProgress", b =>
@@ -591,6 +672,10 @@ namespace Nethereum.BlockchainStore.Postgres.Migrations
                         .HasColumnType("character varying(43)")
                         .HasColumnName("addressto");
 
+                    b.Property<string>("AuthorizationList")
+                        .HasColumnType("text")
+                        .HasColumnName("authorizationlist");
+
                     b.Property<string>("BlobGasPrice")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -774,6 +859,10 @@ namespace Nethereum.BlockchainStore.Postgres.Migrations
                     b.Property<long>("BlockNumber")
                         .HasColumnType("bigint")
                         .HasColumnName("blocknumber");
+
+                    b.Property<long>("BlockTimestamp")
+                        .HasColumnType("bigint")
+                        .HasColumnName("blocktimestamp");
 
                     b.Property<string>("Data")
                         .HasColumnType("text")

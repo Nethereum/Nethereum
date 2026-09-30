@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Nethereum.JsonRpc.Client;
 #endif
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
+using Nethereum.Contracts.Standards.EthTransfers;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping;
 using Nethereum.BlockchainProcessing.BlockStorage.Repositories;
 using Nethereum.BlockchainProcessing.Metrics;
@@ -28,11 +29,20 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
         protected readonly IBlockchainLogProcessingService _blockchainLogProcessing;
         protected readonly IEthApiContractService _ethApiContractService;
 
+        protected readonly TransferLogFilter _logFilter;
+
         public TokenTransferLogProcessingService(IBlockchainLogProcessingService blockchainLogProcessing,
             IEthApiContractService ethApiContractService)
+            : this(blockchainLogProcessing, ethApiContractService, TransferLogFilter.Everything)
+        {
+        }
+
+        public TokenTransferLogProcessingService(IBlockchainLogProcessingService blockchainLogProcessing,
+            IEthApiContractService ethApiContractService, TransferLogFilter logFilter)
         {
             _blockchainLogProcessing = blockchainLogProcessing;
             _ethApiContractService = ethApiContractService;
+            _logFilter = logFilter ?? TransferLogFilter.Everything;
         }
 
         public static NewFilterInput CreateTransferFilterInput(string[] contractAddresses = null)
@@ -98,7 +108,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
             var logProcessorHandler = new ProcessorHandler<FilterLog>(
                 action: async (filterLog) =>
                     await ProcessTransferLogAsync(repository, filterLog).ConfigureAwait(false),
-                criteria: (filterLog) => filterLog.Removed == false);
+                criteria: (filterLog) => filterLog.Removed == false && _logFilter.Matches(filterLog));
 
             return _blockchainLogProcessing.CreateProcessor(
                 new ProcessorHandler<FilterLog>[] { logProcessorHandler },
@@ -129,7 +139,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
 
             foreach (var log in logs)
             {
-                if (log.Removed) continue;
+                if (log.Removed || !_logFilter.Matches(log)) continue;
                 await ProcessTransferLogAsync(repository, log).ConfigureAwait(false);
             }
         }

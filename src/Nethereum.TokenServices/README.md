@@ -173,7 +173,7 @@ var watchlist = new[]
 {
     new TokenInfo { Address = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", Symbol = "USDC", Decimals = 6 },
     new TokenInfo { Address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", Symbol = "WETH", Decimals = 18 },
-    new TokenInfo { Address = "0x6B175474E89094C44Da98b954EescdeCB5BAD0", Symbol = "DAI", Decimals = 18 }
+    new TokenInfo { Address = "0x6B175474E89094C44Da98b954EedeAC495271d0F", Symbol = "DAI", Decimals = 18 }
 };
 
 var balances = await tokenService.GetBalancesForTokensWithPricesAsync(
@@ -210,7 +210,9 @@ var strategy = new EventLogDiscoveryStrategy(eventScanner, balanceProvider, toke
 
 ### Custom Discovery Strategies (Pluggable)
 
-Implement `IDiscoveryStrategy` for custom sources (e.g., Etherscan API):
+Implement `IDiscoveryStrategy` for custom sources (e.g., Etherscan API). The
+following is an illustrative template — the `_etherscanClient` / `_balanceProvider`
+members are your own and are shown for shape only:
 
 ```csharp
 public class EtherscanDiscoveryStrategy : IDiscoveryStrategy
@@ -235,9 +237,12 @@ public class EtherscanDiscoveryStrategy : IDiscoveryStrategy
         var tokens = tokenAddresses.Select(a => new TokenInfo { Address = a, Decimals = 18 });
         var balances = await _balanceProvider.GetBalancesAsync(web3, accountAddress, tokens);
 
+        // Successful(List<TokenBalance> tokens, DiscoveryProgress progress, string strategyName = null)
+        // The engine's DiscoveryProgress differs from the IProgress<DiscoveryProgress>
+        // callback parameter, so pass a DiscoveryProgress (or null) here — not the callback.
         return TokenDiscoveryResult.Successful(
             balances.Where(b => b.Balance > 0).ToList(),
-            progress, StrategyName);
+            progress: null, StrategyName);
     }
 
     public Task<bool> SupportsChainAsync(long chainId) => Task.FromResult(chainId == 1);
@@ -372,8 +377,8 @@ services.AddErc20TokenServices()
 
 | Interface | Purpose | Default |
 |-----------|---------|---------|
-| `ITokenListDiffStorage` | Stores tokens discovered beyond embedded lists | `FileTokenListDiffStorage` |
-| `ICoinMappingDiffStorage` | Stores contract→CoinGecko ID mappings | `FileCoinMappingDiffStorage` |
+| `ITokenListDiffStorage` | Stores tokens discovered beyond embedded lists | `NullTokenListDiffStorage` (`FileTokenListDiffStorage` when `UseFileDiffStorage = true`) |
+| `ICoinMappingDiffStorage` | Stores contract→CoinGecko ID mappings | `NullCoinMappingDiffStorage` (`FileCoinMappingDiffStorage` when `UseFileDiffStorage = true`) |
 | `ICacheProvider` | General key-value cache with expiry | `MemoryCacheProvider` |
 
 ## Dependency Injection Setup
@@ -395,7 +400,6 @@ services.AddErc20TokenServices(options =>
     options.PriceCacheExpiry = TimeSpan.FromMinutes(5);
     options.TokenListCacheExpiry = TimeSpan.FromDays(7);
     options.MultiCallBatchSize = 100;
-    options.MaxParallelChains = 3;
 });
 ```
 
@@ -436,7 +440,10 @@ The Token Catalog provides a persistent, refreshable token registry that replace
 ### Setup
 
 ```csharp
-using Nethereum.TokenServices.Catalog;
+using Nethereum.TokenServices;               // AddTokenCatalog, AddTokenCatalogWithCustomRepository
+using Nethereum.TokenServices.ERC20.Catalog; // ITokenCatalogRepository, adapters, refresh sources
+using Nethereum.TokenServices.ERC20.Catalog.Migration; // TokenCatalogMigrationService, MigrationOptions
+using Nethereum.TokenServices.ERC20.Models;  // CatalogTokenInfo
 
 // Basic setup with default file-based repository
 services.AddTokenCatalog(options =>
@@ -604,23 +611,25 @@ Nethereum.TokenServices/
 │   ├── Events/
 │   │   ├── ITokenEventScanner.cs
 │   │   └── Erc20EventScanner.cs
+│   ├── Catalog/
+│   │   ├── ITokenCatalogRepository.cs      # Persistent catalog storage
+│   │   ├── ITokenCatalogRefreshService.cs  # Refresh orchestration
+│   │   ├── ITokenCatalogRefreshSource.cs   # Plugin interface for sources
+│   │   ├── TokenCatalogRefreshService.cs
+│   │   ├── CatalogTokenListProviderAdapter.cs  # Bridge to ITokenListProvider
+│   │   ├── Migration/
+│   │   │   └── TokenCatalogMigrationService.cs  # Legacy diff → catalog migration
+│   │   └── Sources/
+│   │       └── CoinGeckoRefreshSource.cs
 │   └── Models/
 │       ├── TokenInfo.cs
 │       ├── TokenBalance.cs
-│       └── TokenPrice.cs
+│       ├── TokenPrice.cs
+│       └── CatalogTokenInfo.cs          # Catalog token model
 ├── MultiAccount/
 │   ├── IMultiAccountTokenService.cs    # Multi-wallet scanning
 │   ├── MultiAccountTokenService.cs
 │   └── Models/
-├── Catalog/
-│   ├── ITokenCatalogRepository.cs      # Persistent catalog storage
-│   ├── ITokenCatalogRefreshService.cs  # Refresh orchestration
-│   ├── ITokenCatalogRefreshSource.cs   # Plugin interface for sources
-│   ├── TokenCatalogRefreshService.cs
-│   ├── CatalogTokenInfo.cs             # Catalog token model
-│   ├── CatalogTokenListProviderAdapter.cs  # Bridge to ITokenListProvider
-│   ├── TokenCatalogMigrationService.cs # Legacy diff → catalog migration
-│   └── TokenCatalogServiceCollectionExtensions.cs  # DI setup
 ├── Caching/
 │   ├── ICacheProvider.cs
 │   ├── MemoryCacheProvider.cs
@@ -630,7 +639,9 @@ Nethereum.TokenServices/
 │   ├── FileCoinMappingDiffStorage.cs   # File-based impl
 │   ├── NullTokenListDiffStorage.cs     # No-op impl
 │   └── NullCoinMappingDiffStorage.cs   # No-op impl
-└── Resources/                          # Embedded token lists
+├── Resources/                          # Embedded token lists
+├── TokenServiceCollectionExtensions.cs         # DI setup (AddErc20TokenServices)
+└── TokenCatalogServiceCollectionExtensions.cs  # DI setup (AddTokenCatalog)
 ```
 
 ## Supported Chains (Out of Box)

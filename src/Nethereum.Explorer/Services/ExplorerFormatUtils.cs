@@ -166,7 +166,7 @@ public static class ExplorerFormatUtils
         return long.TryParse(val, out var n) ? n : 0;
     }
 
-    public const string ERC20_TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    public const string ERC20_TRANSFER_TOPIC = Nethereum.Model.Erc20TransferEventTopic.Prefixed;
 
     public static string ExtractAddressFromTopic(string? topic)
     {

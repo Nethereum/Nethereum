@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,7 +55,7 @@ namespace Nethereum.BlockchainStorage.Token.Postgres
                     break;
 
                 var processed = await TokenDenormalizerProcessingService
-                    .ProcessBatchAsync(rawLogs, _transferLogRepository)
+                    .ProcessBatchAsync(rawLogs, _transferLogRepository, _options.LogFilter)
                     .ConfigureAwait(false);
 
                 lastRowIndex = rawLogs[rawLogs.Count - 1].RowIndex;

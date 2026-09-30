@@ -19,6 +19,10 @@ namespace Nethereum.BlockchainStorage.Processors
         public int ReorgBuffer { get; set; } = 0;
         public bool UseBatchReceipts { get; set; } = true;
 
+        public bool UseLocalEvmReplayForInternalTransactions { get; set; } = false;
+
+        public string Hardfork { get; set; }
+
         public static BlockchainProcessingOptions Load(IConfiguration configuration)
         {
             var options = new BlockchainProcessingOptions();
@@ -45,6 +49,10 @@ namespace Nethereum.BlockchainStorage.Processors
             options.UseBatchReceipts =
                 ParseBool(configuration["UseBatchReceipts"])
                 ?? options.UseBatchReceipts;
+            options.UseLocalEvmReplayForInternalTransactions =
+                ParseBool(configuration["UseLocalEvmReplayForInternalTransactions"])
+                ?? options.UseLocalEvmReplayForInternalTransactions;
+            options.Hardfork = configuration["Hardfork"] ?? options.Hardfork;
 
             return options;
         }

@@ -27,7 +27,6 @@ Targets `net8.0` and `net10.0`.
 ### Dependencies
 
 - **Nethereum.BlockchainStore.EFCore** - Base `BlockchainDbContextBase`, entity builders, and repository implementations
-- **Nethereum.Microsoft.Configuration.Utils** - `ConfigurationUtils.Build()` for appsettings-based connection string resolution
 - **Microsoft.EntityFrameworkCore.SqlServer** - SQL Server EF Core provider
 - **Microsoft.EntityFrameworkCore.Design** - Design-time migration support (private asset)
 
@@ -98,10 +97,9 @@ await processor.ExecuteAsync(cancellationToken);
 
 ### Connection String Resolution
 
-`SqlServerBlockchainDbContext` resolves the connection string in this order:
-1. Constructor parameter (explicit string)
-2. `ConnectionStrings:SqlServerConnection` from `appsettings.json`
-3. `ConnectionStrings:BlockchainDbStorage` from `appsettings.json`
+The `SqlServerBlockchainDbContext` constructor takes an explicit connection string and an optional `schema`. The fallback resolution from configuration is performed by the static `SqlServerBlockchainDbContextFactory.Create(IConfigurationRoot)` method, which resolves in this order:
+1. `ConnectionStrings:SqlServerConnection` from `appsettings.json`
+2. `ConnectionStrings:BlockchainDbStorage` from `appsettings.json` (via `GetBlockchainStorageConnectionString()`)
 
 ## Database Schema
 

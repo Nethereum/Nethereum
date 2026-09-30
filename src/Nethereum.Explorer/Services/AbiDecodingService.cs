@@ -1,3 +1,6 @@
+using Nethereum.Contracts.Standards.ERC20.ContractDefinition;
+using Nethereum.Contracts;
+using Nethereum.Util;
 using Microsoft.Extensions.Logging;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
@@ -58,10 +61,17 @@ public class AbiDecodingService : IAbiDecodingService
         }
     }
 
+    private static readonly ContractABI NativeAssetTransferAbi = new ContractABI
+    {
+        Events = new[] { ABITypedRegistry.GetEvent<TransferEventDTO>() }
+    };
+
     public async Task<List<DecodedEventLog>> DecodeEventLogsAsync(string contractAddress, IEnumerable<RawEventLog> logs)
     {
         var result = new List<DecodedEventLog>();
-        var abiInfo = await _storage.GetContractAbiAsync(contractAddress);
+        var contractAbi = contractAddress.IsNativeTransferLogEmitter()
+            ? NativeAssetTransferAbi
+            : (await _storage.GetContractAbiAsync(contractAddress))?.ContractABI;
 
         foreach (var log in logs)
         {
@@ -71,9 +81,9 @@ public class AbiDecodingService : IAbiDecodingService
                 Address = log.Address
             };
 
-            if (abiInfo?.ContractABI != null && !string.IsNullOrEmpty(log.EventHash))
+            if (contractAbi != null && !string.IsNullOrEmpty(log.EventHash))
             {
-                var eventAbi = abiInfo.ContractABI.FindEventABI(log.EventHash);
+                var eventAbi = contractAbi.FindEventABI(log.EventHash);
                 if (eventAbi != null)
                 {
                     decoded.EventName = eventAbi.Name;

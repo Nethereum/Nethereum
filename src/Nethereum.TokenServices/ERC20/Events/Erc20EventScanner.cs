@@ -53,6 +53,7 @@ namespace Nethereum.TokenServices.ERC20.Events
 
                 result.AffectedTokenAddresses = result.Transfers
                     .Select(t => t.TokenAddress)
+                    .Where(address => !address.IsNativeTransferLogEmitter())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 

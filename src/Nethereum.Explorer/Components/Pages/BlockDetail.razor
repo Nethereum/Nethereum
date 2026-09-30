@@ -1,6 +1,7 @@
 @page "/block/{BlockNumberOrHash}"
 @using Nethereum.Explorer.Services
 @inject IBlockQueryService BlockQuery
+@inject IBlockAccessListQueryService BlockAccessListQuery
 @inject ITransactionQueryService TransactionQuery
 @inject ExplorerChainService ChainService
 @inject ILogger<BlockDetail> Logger
@@ -132,6 +133,27 @@ else
                 <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Size]</div>
                 <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(_block.Size) @L[ExplorerKeys.BlockDetail.Bytes]</div>
             </div>
+            @if (!string.IsNullOrEmpty(_block.BlobGasUsed))
+            {
+                <div class="row detail-row">
+                    <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.BlobGasUsed]</div>
+                    <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(_block.BlobGasUsed)</div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_block.ExcessBlobGas))
+            {
+                <div class="row detail-row">
+                    <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.ExcessBlobGas]</div>
+                    <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(_block.ExcessBlobGas)</div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_block.SlotNumber))
+            {
+                <div class="row detail-row">
+                    <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.SlotNumber]</div>
+                    <div class="col-sm-9 detail-value">@ExplorerFormatUtils.FormatNumber(_block.SlotNumber)</div>
+                </div>
+            }
             @if (!string.IsNullOrEmpty(_block.BaseFeePerGas) && _block.BaseFeePerGas != "0")
             {
                 <div class="row detail-row">
@@ -261,6 +283,60 @@ else
                         </div>
                     </div>
                 }
+                @if (!string.IsNullOrEmpty(_block.TransactionsRoot))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.TransactionsRoot]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.TransactionsRoot" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.Sha3Uncles))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.Sha3Uncles]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.Sha3Uncles" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.MixHash))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.MixHash]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.MixHash" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.ParentBeaconBlockRoot))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.ParentBeaconBlockRoot]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.ParentBeaconBlockRoot" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.RequestsHash))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.RequestsHash]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.RequestsHash" MaxLength="66" />
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_block.BlockAccessListHash))
+                {
+                    <div class="row detail-row">
+                        <div class="col-sm-3 detail-label">@L[ExplorerKeys.BlockDetail.BlockAccessListHash]</div>
+                        <div class="col-sm-9 detail-value">
+                            <HexDisplay Value="@_block.BlockAccessListHash" MaxLength="66" />
+                        </div>
+                    </div>
+                }
                 @if (!string.IsNullOrEmpty(_block.LogsBloom) && _block.LogsBloom != "0x" + new string('0', 512))
                 {
                     <div class="row detail-row">
@@ -277,6 +353,45 @@ else
     }
 
     } @* end else (!_showJson) *@
+
+    @if (_blockAccessList != null && _blockAccessList.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-columns me-2"></i>@L[ExplorerKeys.BlockDetail.BlockAccessList]</span>
+                <span class="badge badge-info">@_blockAccessList.Count</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>@L[ExplorerKeys.BlockDetail.AccessedAccount]</th>
+                                <th class="text-end">@L[ExplorerKeys.BlockDetail.StorageChanges]</th>
+                                <th class="text-end">@L[ExplorerKeys.BlockDetail.StorageReads]</th>
+                                <th class="text-end">@L[ExplorerKeys.BlockDetail.BalanceChanges]</th>
+                                <th class="text-end">@L[ExplorerKeys.BlockDetail.NonceChanges]</th>
+                                <th class="text-end">@L[ExplorerKeys.BlockDetail.CodeChanges]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var account in _blockAccessList)
+                            {
+                                <tr>
+                                    <td><HexDisplay Value="@account.Address" Link="@($"/account/{account.Address}")" MaxLength="14" ShowCopy="false" /></td>
+                                    <td class="text-end">@(account.StorageChanges?.Count ?? 0)</td>
+                                    <td class="text-end">@(account.StorageReads?.Count ?? 0)</td>
+                                    <td class="text-end">@(account.BalanceChanges?.Count ?? 0)</td>
+                                    <td class="text-end">@(account.NonceChanges?.Count ?? 0)</td>
+                                    <td class="text-end">@(account.CodeChanges?.Count ?? 0)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Transactions -->
     @if (_transactions != null && _transactions.Any())
@@ -364,6 +479,7 @@ else
     [Parameter] public string BlockNumberOrHash { get; set; } = "";
     private IBlockView? _block;
     private List<ITransactionView>? _transactions;
+    private List<Nethereum.RPC.Eth.DTOs.AccountAccess>? _blockAccessList;
     private bool _notFound;
     private bool _error;
     private string? _errorMessage;
@@ -379,6 +495,7 @@ else
         _errorMessage = null;
         _block = null;
         _transactions = null;
+        _blockAccessList = null;
 
         try
         {
@@ -400,6 +517,9 @@ else
             else
             {
                 _transactions = await TransactionQuery.GetBlockTransactionsAsync(_block.BlockNumber);
+
+                if (!string.IsNullOrEmpty(_block.BlockAccessListHash))
+                    _blockAccessList = await BlockAccessListQuery.GetForBlockAsync(_block.BlockNumber);
             }
         }
         catch (Exception ex)

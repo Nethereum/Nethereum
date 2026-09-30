@@ -12,5 +12,6 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Entities
         string TransactionHash { get;  }
         long BlockNumber { get; }
         string BlockHash { get; }
+        long BlockTimestamp { get; }
     }
 }

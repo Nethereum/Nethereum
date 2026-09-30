@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainProcessing.BlockStorage.Entities.Mapping;
@@ -34,9 +34,17 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
                 || eventHash == TransferBatchEventHash;
         }
 
-        public static async Task<int> ProcessBatchAsync(
+        public static Task<int> ProcessBatchAsync(
             IEnumerable<ITransactionLogView> rawLogs,
             ITokenTransferLogRepository repository)
+        {
+            return ProcessBatchAsync(rawLogs, repository, TransferLogFilter.Everything);
+        }
+
+        public static async Task<int> ProcessBatchAsync(
+            IEnumerable<ITransactionLogView> rawLogs,
+            ITokenTransferLogRepository repository,
+            TransferLogFilter logFilter)
         {
             int count = 0;
             foreach (var rawLog in rawLogs)
@@ -44,6 +52,7 @@ namespace Nethereum.BlockchainProcessing.Services.SmartContracts
                 if (!IsTransferEvent(rawLog.EventHash)) continue;
 
                 var filterLog = rawLog.ToFilterLog();
+                if (!logFilter.Matches(filterLog)) continue;
                 var transferLogs = TokenTransferLogProcessingService.DecodeTransferLog(filterLog);
                 foreach (var transferLog in transferLogs)
                 {

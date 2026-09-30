@@ -15,7 +15,7 @@ namespace Nethereum.BlockchainProcessing.BlockProcessing
 
         public List<string> EventSignatures { get; set; } = new List<string>
         {
-            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+            Nethereum.Model.Erc20TransferEventTopic.Prefixed,
             "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
             "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62",
             "0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb"

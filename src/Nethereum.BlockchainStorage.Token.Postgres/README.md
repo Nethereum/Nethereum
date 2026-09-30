@@ -68,11 +68,12 @@ Bound from `"TokenLogProcessing"` configuration section:
 ```json
 {
   "TokenLogProcessing": {
-    "BlockchainUrl": "http://localhost:8545",
+    "RpcUrl": "http://localhost:8545",
     "NumberOfBlocksToProcessPerRequest": 1000,
     "RetryWeight": 50,
     "MinimumNumberOfConfirmations": 0,
     "ReorgBuffer": 10,
+    "StartAtBlockNumberIfNotProcessed": 0,
     "ContractAddresses": null
   }
 }
@@ -80,10 +81,12 @@ Bound from `"TokenLogProcessing"` configuration section:
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `BlockchainUrl` | `string` | required | JSON-RPC endpoint |
+| `RpcUrl` | `string` | required | JSON-RPC endpoint |
 | `NumberOfBlocksToProcessPerRequest` | `int` | `1000` | Log retrieval batch size |
+| `RetryWeight` | `int` | `50` | Backoff weight applied when a request fails |
 | `MinimumNumberOfConfirmations` | `uint` | `0` | Wait for block confirmations |
 | `ReorgBuffer` | `int` | `0` | Re-check recent blocks for reorgs |
+| `StartAtBlockNumberIfNotProcessed` | `BigInteger` | `0` | Starting block when no progress exists |
 | `ContractAddresses` | `string[]` | `null` | Filter to specific contracts (null = all) |
 
 ### Token Denormalizer
@@ -92,7 +95,9 @@ Bound from `"TokenDenormalizer"` section:
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| `ProcessingIntervalSeconds` | `int` | `5` | Delay between processing passes |
 | `BatchSize` | `int` | `1000` | Rows per processing batch |
+| `LogFilter` | `TransferLogFilter` | `Everything` | Which transfer logs to denormalize |
 
 ### Balance Aggregation
 
@@ -101,7 +106,8 @@ Bound from `"TokenBalanceAggregation"` section:
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `RpcUrl` | `string` | required | JSON-RPC endpoint for balance queries |
-| `BatchSize` | `int` | `1000` | Transfer logs per processing batch |
+| `BatchSize` | `int` | `500` | Transfer logs per processing batch |
+| `ProcessingIntervalSeconds` | `int` | `10` | Delay between processing passes |
 
 ## Database Schema
 
@@ -176,7 +182,7 @@ This registers `ITokenTransferLogRepository`, `ITokenBalanceRepository`, `INFTIn
 ```csharp
 var balanceRepo = serviceProvider.GetRequiredService<ITokenBalanceRepository>();
 
-var balances = await balanceRepo.GetBalancesForAddressAsync(
+var balances = await balanceRepo.GetByAddressAsync(
     "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
 
 foreach (var balance in balances)

@@ -20,6 +20,7 @@ namespace Nethereum.BlockchainStore.EFCore.EntityBuilders
             entityBuilder.Property(m => m.IndexVal3).IsHash();
             entityBuilder.Property(m => m.Data).IsUnlimitedText(ColumnTypeForUnlimitedText);
             entityBuilder.Property(m => m.BlockHash).IsHash();
+            entityBuilder.Property(m => m.BlockTimestamp);
 
             entityBuilder.HasIndex(m => new { m.TransactionHash, m.LogIndex}).IsUnique();
             entityBuilder.HasIndex(m => m.Address);

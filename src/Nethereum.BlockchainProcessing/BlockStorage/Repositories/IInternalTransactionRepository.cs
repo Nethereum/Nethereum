@@ -10,6 +10,12 @@ namespace Nethereum.BlockchainProcessing.BlockStorage.Repositories
         Task UpsertAsync(InternalTransaction internalTransaction);
         Task<List<IInternalTransactionView>> GetByTransactionHashAsync(string txHash);
         Task<List<IInternalTransactionView>> GetByAddressAsync(string address, int page, int pageSize);
+
+        /// <summary>
+        /// Returns the canonical contract-call transactions in the given block range that have not yet
+        /// been internal-traced. Used by InternalTransactionOrchestrator to enumerate outstanding work.
+        /// </summary>
+        Task<List<TransactionToTrace>> GetContractTransactionsInRangeAsync(BigInteger fromBlock, BigInteger toBlock);
     }
 
     public interface INonCanonicalInternalTransactionRepository
