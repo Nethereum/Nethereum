@@ -1,42 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.RLP
 {
-    /// <summary>
-    ///     Recursive Length Prefix (RLP) encoding.
-    ///     <para>
-    ///         The purpose of RLP is to encode arbitrarily nested arrays of binary data, and
-    ///         RLP is the main encoding method used to serialize objects in Ethereum. The
-    ///         only purpose of RLP is to encode structure; encoding specific atomic data
-    ///         types (eg. strings, integers, floats) is left up to higher-order protocols; in
-    ///         Ethereum the standard is that integers are represented in big endian binary
-    ///         form. If one wishes to use RLP to encode a dictionary, the two suggested
-    ///         canonical forms are to either use [[k1,v1],[k2,v2]...] with keys in
-    ///         lexicographic order or to use the higher-level Patricia Tree encoding as
-    ///         Ethereum does.
-    ///     </para>
-    ///     <para>
-    ///         The RLP encoding function takes in an item. An item is defined as follows:
-    ///     </para>
-    ///     <para>
-    ///         - A string (ie. byte array) is an item - A list of items is an item
-    ///     </para>
-    ///     <para>
-    ///         For example, an empty string is an item, as is the string containing the word
-    ///         "cat", a list containing any number of strings, as well as more complex data
-    ///         structures like ["cat",["puppy","cow"],"horse",[[]],"pig",[""],"sheep"]. Note
-    ///         that in the context of the rest of this article, "string" will be used as a
-    ///         synonym for "a certain number of bytes of binary data"; no special encodings
-    ///         are used and no knowledge about the content of the strings is implied.
-    ///     </para>
-    ///     <para>
-    ///         See:
-    ///     </para>
-    ///     <see cref="https://github.com/ethereum/wiki/wiki/RLP" />
-    /// </summary>
     public class RLP
     {
         /// <summary>
@@ -381,13 +348,18 @@ namespace Nethereum.RLP
         public static byte[] EncodeDataItemsAsElementOrListAndCombineAsList(byte[][] dataItems, int[] indexOfListDataItems = null)
         {
             if(indexOfListDataItems == null)
-            return EncodeList(dataItems.Select(EncodeElement).ToArray());
+            {
+                var encoded = new byte[dataItems.Length][];
+                for (int i = 0; i < dataItems.Length; i++)
+                    encoded[i] = EncodeElement(dataItems[i]);
+                return EncodeList(encoded);
+            }
             
             var encodedData = new List<byte[]>();
 
             for (var i = 0; i < dataItems.Length; i++)
             {
-                if (indexOfListDataItems.Contains(i))
+                if (Array.IndexOf(indexOfListDataItems, i) >= 0)
                 {
                     var item = dataItems[i];
                     encodedData.Add(EncodeList(item));
@@ -467,6 +439,53 @@ namespace Nethereum.RLP
         public static bool IsSingleZero(byte[] array)
         {
             return array.Length == 1 && array[0] == 0;
+        }
+
+        public static int GetFirstElementLength(byte[] data, int offset = 0)
+        {
+            byte prefix = data[offset];
+
+            if (prefix < OFFSET_SHORT_ITEM)
+                return 1;
+
+            if (prefix <= OFFSET_LONG_ITEM)
+                return 1 + (prefix - OFFSET_SHORT_ITEM);
+
+            if (prefix < OFFSET_SHORT_LIST)
+            {
+                int lenOfLen = prefix - OFFSET_LONG_ITEM;
+                int len = CalculateLength(lenOfLen, data, offset);
+                return 1 + lenOfLen + len;
+            }
+
+            if (prefix <= OFFSET_LONG_LIST)
+                return 1 + (prefix - OFFSET_SHORT_LIST);
+
+            int lengthOfLength = prefix - OFFSET_LONG_LIST;
+            int length = CalculateLength(lengthOfLength, data, offset);
+            return 1 + lengthOfLength + length;
+        }
+
+        public static bool TryReadLeadingListUInt64(byte[] payload, out ulong value)
+        {
+            value = 0;
+            if (payload == null || payload.Length < 1) return false;
+            byte listPrefix = payload[0];
+            if (listPrefix < OFFSET_SHORT_LIST) return false;
+            int headerLength = listPrefix <= OFFSET_LONG_LIST
+                ? 1
+                : 1 + (listPrefix - OFFSET_LONG_LIST);
+            if (headerLength >= payload.Length) return false;
+
+            var first = DecodeFirstElement(payload, headerLength);
+            var data = first?.RLPData;
+            if (data == null || data.Length == 0 || data.Length > 8) return false;
+
+            ulong result = 0;
+            for (var i = 0; i < data.Length; i++)
+                result = (result << 8) | data[i];
+            value = result;
+            return true;
         }
 
         private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)

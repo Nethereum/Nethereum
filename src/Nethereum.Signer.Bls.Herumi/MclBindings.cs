@@ -127,10 +127,22 @@ namespace Nethereum.Signer.Bls.Herumi
         public static extern ulong mclBnFr_deserialize(ref MclBnFr x, [In] byte[] buf, ulong bufSize);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int mclBnFr_setLittleEndian(ref MclBnFr x, [In] byte[] buf, ulong bufSize);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int mclBnFr_setLittleEndianMod(ref MclBnFr x, [In] byte[] buf, ulong bufSize);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int mclBnG1_isValid(in MclBnG1 x);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int mclBnG2_isValid(in MclBnG2 x);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int mclBnG1_isValidOrder(in MclBnG1 x);
+
+        [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int mclBnG2_isValidOrder(in MclBnG2 x);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int mclBnG1_isZero(in MclBnG1 x);

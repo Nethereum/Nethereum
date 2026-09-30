@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using System;
 using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util.Keccak;
@@ -19,13 +19,19 @@ namespace Nethereum.Util
 
         public string CalculateHashFromHex(params string[] hexValues)
         {
-            var joinedHex = string.Join("", hexValues.Select(x => x.RemoveHexPrefix()).ToArray());
+            var parts = new string[hexValues.Length];
+            for (int i = 0; i < hexValues.Length; i++)
+                parts[i] = hexValues[i].RemoveHexPrefix();
+            var joinedHex = string.Join("", parts);
             return CalculateHash(joinedHex.HexToByteArray()).ToHex();
         }
 
+        [ThreadStatic] private static KeccakDigest _threadDigest;
+
         public byte[] CalculateHash(byte[] value)
         {
-            var digest = new KeccakDigest(256);
+            var digest = _threadDigest ??= new KeccakDigest(256);
+            digest.Reset();
             var output = new byte[digest.GetDigestSize()];
             digest.BlockUpdate(value, 0, value.Length);
             digest.DoFinal(output, 0);

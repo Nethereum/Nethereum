@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Util
@@ -33,6 +32,8 @@ namespace Nethereum.Util
         public const string AddressEmptyAsHex = "0x0";
         public const string ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
+        public const string SYSTEM_ADDRESS = "0xfffffffffffffffffffffffffffffffffffffffe";
+
         public static AddressUtil Current
         {
             get
@@ -46,12 +47,28 @@ namespace Nethereum.Util
         {
             if (address.Length > 20)
             {
-                return ConvertToChecksumAddress(address.Skip(address.Length - 20).ToArray().ToHex());
+                var trimmed = new byte[20];
+                Array.Copy(address, address.Length - 20, trimmed, 0, 20);
+                return ConvertToChecksumAddress(trimmed.ToHex());
             }
             else
             {
                 return ConvertToChecksumAddress(address.ToHex());
             }
+        }
+
+        public static byte[] EncodeAddressTo32Bytes(string address)
+        {
+            var hex = address;
+            if (hex.StartsWith("0x") || hex.StartsWith("0X"))
+                hex = hex.Substring(2);
+            if (hex.Length % 2 != 0) hex = "0" + hex;
+
+            var addressBytes = HexByteConvertorExtensions.HexToByteArray(hex);
+            var result = new byte[32];
+            int len = Math.Min(addressBytes.Length, 32);
+            Array.Copy(addressBytes, 0, result, 32 - len, len);
+            return result;
         }
 
         public bool IsAnEmptyAddress(string address)
@@ -70,6 +87,18 @@ namespace Nethereum.Util
             if (string.IsNullOrEmpty(address)) return false;
             var normalized = ConvertToValid20ByteAddress(address);
             return string.Equals(normalized, ZERO_ADDRESS, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool IsNullEmptyOrZeroAddress(string address)
+        {
+            return string.IsNullOrEmpty(address) || IsZeroAddress(address);
+        }
+
+        public bool IsNullEmptyOrAllZeroHex(string address)
+        {
+            if (string.IsNullOrEmpty(address)) return true;
+            var digits = address.RemoveHexPrefix();
+            return digits.TrimStart('0').Length == 0;
         }
 
         public bool IsNotAnEmptyAddress(string address)
@@ -99,7 +128,7 @@ namespace Nethereum.Util
         public string ConvertToChecksumAddress(string address)
         {
             address = address.ToLower().RemoveHexPrefix();
-            var addressHash = new Sha3Keccack().CalculateHash(address);
+            var addressHash = Sha3Keccack.Current.CalculateHash(address);
             var checksumAddress = "0x";
 
             for (var i = 0; i < address.Length; i++)
@@ -115,6 +144,12 @@ namespace Nethereum.Util
             if (address == null) address = string.Empty;
             address = address.RemoveHexPrefix();
             return address.PadLeft(40, '0').EnsureHexPrefix();
+        }
+
+        public string ConvertToValid20ByteAddressLowerCase(string address)
+        {
+            if (address == null) return null;
+            return ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
 
         public bool IsValidAddressLength(string address)

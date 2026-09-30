@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>Nethereum.HdWallet.IntegrationTests Class Library</Description>
     <Authors>Juan Blanco</Authors>
-	 <TargetFrameworks>net6.0</TargetFrameworks>
+	 <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyName>Nethereum.HdWallet.IntegrationTests</AssemblyName>
     <PackageId>Nethereum.HdWallet.IntegrationTests</PackageId>
   </PropertyGroup>

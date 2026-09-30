@@ -1,7 +1,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Ssz;
 using Nethereum.Util;
@@ -17,7 +16,7 @@ namespace Nethereum.Model.SSZ
             return chunk;
         }
 
-        public static byte[] HashTreeRootUint64(BigInteger? value)
+        public static byte[] HashTreeRootUint64(EvmUInt256? value)
         {
             return HashTreeRootUint64(value.HasValue ? (ulong)value.Value : 0UL);
         }
@@ -36,14 +35,14 @@ namespace Nethereum.Model.SSZ
             return chunk;
         }
 
-        public static byte[] HashTreeRootUint256(BigInteger value)
+        public static byte[] HashTreeRootUint256(EvmUInt256 value)
         {
-            return value.BigIntegerToFixedLengthByteArrayLE(32);
+            return value.ToLittleEndian();
         }
 
-        public static byte[] HashTreeRootUint256(BigInteger? value)
+        public static byte[] HashTreeRootUint256(EvmUInt256? value)
         {
-            return HashTreeRootUint256(value ?? BigInteger.Zero);
+            return (value ?? EvmUInt256.Zero).ToLittleEndian();
         }
 
         public static byte[] HashTreeRootAddress(string hexAddress)

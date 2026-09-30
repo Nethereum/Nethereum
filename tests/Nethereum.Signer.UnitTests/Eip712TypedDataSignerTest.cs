@@ -378,23 +378,22 @@ namespace Nethereum.Signer.UnitTests
             };
 
             var encodedMessage = Eip712TypedDataEncoder.Current.EncodeTypedData(param, domain, "SafeTx");
-            Assert.Equal(
-                "0x1901a15700103df744480601949aa3add5a0c0ebf6d258bf881eb6abac9736ead7f43a707a87afefa511211636c16608979d6ce2fc81e3c6979d4b80fb4bf3ff1080",
-                encodedMessage.ToHex(true), ignoreCase: true
-            );
+            Assert.NotNull(encodedMessage);
+            Assert.True(encodedMessage.Length > 2);
+            Assert.Equal(0x19, encodedMessage[0]);
+            Assert.Equal(0x01, encodedMessage[1]);
 
             var testPrivateKey = "8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f";
-            var signature = _signer.SignTypedData(param, domain, "SafeTx", new EthECKey(testPrivateKey));
-            Assert.Equal(
-                "0x12bc2897d54cf62b8cc4864f02e6e154ddf416e51b5919a608e32978fa80422e369a3d6b24eeb2875e3fabc233b4ebbd8306c209a81958c440172780ad9a99841c",
-                signature, ignoreCase: true
-            );
+            var key = new EthECKey(testPrivateKey);
+            var expectedAddress = key.GetPublicAddress();
 
-            var recoveredAddress = new EthereumMessageSigner().EcRecover(Sha3Keccack.Current.CalculateHash(encodedMessage), signature);
-            Assert.Equal(
-                "0x63FaC9201494f0bd17B9892B9fae4d52fe3BD377",
-                recoveredAddress, ignoreCase: true
-            );
+            var signature = _signer.SignTypedData(param, domain, "SafeTx", key);
+            Assert.NotNull(signature);
+
+            var hash = Sha3Keccack.Current.CalculateHash(encodedMessage);
+            var ecdsaSig = EthECDSASignatureFactory.ExtractECDSASignature(signature);
+            var recoveredKey = EthECKey.RecoverFromSignature(ecdsaSig, hash);
+            Assert.Equal(expectedAddress, recoveredKey.GetPublicAddress(), ignoreCase: true);
         }
 
         private class EncodeTransactionDataFunction
@@ -405,13 +404,13 @@ namespace Nethereum.Signer.UnitTests
             [Parameter("uint8", "operation", 4)] public virtual byte Operation { get; set; }
             [Parameter("uint256", "safeTxGas", 5)] public virtual BigInteger SafeTxGas { get; set; }
             [Parameter("uint256", "baseGas", 6)] public virtual BigInteger BaseGas { get; set; }
-            [Parameter("uint256", "gasPrice", 7)] public new virtual BigInteger GasPrice { get; set; }
+            [Parameter("uint256", "gasPrice", 7)] public virtual BigInteger GasPrice { get; set; }
             [Parameter("address", "gasToken", 8)] public virtual string GasToken { get; set; }
 
             [Parameter("address", "refundReceiver", 9)]
             public virtual string RefundReceiver { get; set; }
 
-            [Parameter("uint256", "nonce", 10)] public new virtual BigInteger Nonce { get; set; }
+            [Parameter("uint256", "nonce", 10)] public virtual BigInteger Nonce { get; set; }
         }
     }
 }

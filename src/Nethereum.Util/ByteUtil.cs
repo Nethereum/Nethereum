@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -13,6 +12,35 @@ namespace Nethereum.Util
     {
         public static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         public static readonly byte[] ZERO_BYTE_ARRAY = {0};
+
+        public static byte[] BigEndianToBigIntegerLittleEndianUnsigned(byte[] bigEndianBytes)
+        {
+            if (bigEndianBytes == null) return null;
+            var result = new byte[bigEndianBytes.Length + 1];
+            for (int i = 0; i < bigEndianBytes.Length; i++)
+                result[i] = bigEndianBytes[bigEndianBytes.Length - 1 - i];
+            return result;
+        }
+
+        public static int LeadingZeroBits(byte[] bytes)
+        {
+            if (bytes == null) return 0;
+            int count = 0;
+            foreach (var b in bytes)
+            {
+                if (b == 0)
+                {
+                    count += 8;
+                    continue;
+                }
+                for (int bit = 7; bit >= 0; bit--)
+                {
+                    if ((b & (1 << bit)) == 0) count++;
+                    else return count;
+                }
+            }
+            return count;
+        }
 
         /// <summary>
         ///     Creates a copy of bytes and appends b to the end of it
@@ -32,8 +60,29 @@ namespace Nethereum.Util
                 end = org.Length + end;
             start = Math.Max(0, start);
             end = Math.Max(start, end);
+            if (end > org.Length) end = org.Length;
 
-            return org.Skip(start).Take(end - start).ToArray();
+            var length = end - start;
+            if (length <= 0) return new byte[0];
+            var result = new byte[length];
+            Array.Copy(org, start, result, 0, length);
+            return result;
+        }
+
+        public static byte[] SliceFrom(this byte[] arr, int start)
+        {
+            if (start >= arr.Length) return new byte[0];
+            var result = new byte[arr.Length - start];
+            Array.Copy(arr, start, result, 0, result.Length);
+            return result;
+        }
+
+        public static byte[] ConcatArrays(this byte[] a, byte[] b)
+        {
+            var result = new byte[a.Length + b.Length];
+            Array.Copy(a, 0, result, 0, a.Length);
+            Array.Copy(b, 0, result, a.Length, b.Length);
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,7 +102,17 @@ namespace Nethereum.Util
         /// <returns> - merged array </returns>
         public static byte[] Merge(params byte[][] arrays)
         {
-            return MergeToEnum(arrays).ToArray();
+            int totalLen = 0;
+            foreach (var a in arrays)
+                totalLen += a.Length;
+            var result = new byte[totalLen];
+            int offset = 0;
+            foreach (var a in arrays)
+            {
+                Array.Copy(a, 0, result, offset, a.Length);
+                offset += a.Length;
+            }
+            return result;
         }
 
         public static byte[] XOR(this byte[] a, byte[] b)
@@ -180,6 +239,17 @@ namespace Nethereum.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ConstantTimeEquals(byte[] a, byte[] b)
+        {
+            if (a == null || b == null) return a == b;
+            if (a.Length != b.Length) return false;
+            int diff = 0;
+            for (int i = 0; i < a.Length; i++)
+                diff |= a[i] ^ b[i];
+            return diff == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AreEqual(byte[] a, byte[] b)
         {
             if (a == null && b == null) return true;
@@ -190,6 +260,16 @@ namespace Nethereum.Util
             {
                 if (a[i] != b[i]) return false;
             }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith(byte[] data, byte[] prefix)
+        {
+            if (data == null || prefix == null) return false;
+            if (data.Length < prefix.Length) return false;
+            for (int i = 0; i < prefix.Length; i++)
+                if (data[i] != prefix[i]) return false;
             return true;
         }
 
@@ -244,7 +324,7 @@ namespace Nethereum.Util
                 result = x[index].CompareTo(y[index]);
                 if (result != 0) return result;
             }
-            return x.Count().CompareTo(y.Count());
+            return x.Length.CompareTo(y.Length);
         }
 
         public bool Equals(byte[] x, byte[] y)
@@ -275,7 +355,7 @@ namespace Nethereum.Util
                 result = x[index].CompareTo(y[index]);
                 if (result != 0) return result;
             }
-            return x.Count().CompareTo(y.Count());
+            return x.Count.CompareTo(y.Count);
         }
     }
 }

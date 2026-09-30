@@ -36,6 +36,11 @@
             return AddressUtil.Current.AreAddressesTheSame(address, otherAddress);
         }
 
+        public static bool IsNullEmptyOrZeroAddress(this string address)
+        {
+            return AddressUtil.Current.IsNullEmptyOrZeroAddress(address);
+        }
+
         public static bool IsAnEmptyAddress(this string address)
         {
             return AddressUtil.Current.IsAnEmptyAddress(address);
@@ -49,6 +54,16 @@
         public static string AddressValueOrEmpty(this string address)
         {
             return AddressUtil.Current.AddressValueOrEmpty(address);
+        }
+
+        public static string ConvertToValid20ByteAddressLowerCase(this string address)
+        {
+            return AddressUtil.Current.ConvertToValid20ByteAddressLowerCase(address);
+        }
+
+        public static bool IsNativeTransferLogEmitter(this string address)
+        {
+            return address.IsTheSameAddress(AddressUtil.SYSTEM_ADDRESS);
         }
 
         public static bool IsEmptyOrEqualsAddress(this string address1, string candidate)

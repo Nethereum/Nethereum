@@ -1,7 +1,9 @@
-﻿using Nethereum.Util;
+using Nethereum.Documentation;
+using Nethereum.Util;
 
 namespace Nethereum.Merkle
 {
+    [NethereumDocExample(DocSection.SmartContracts, "merkle-tree", "A node in a Merkle tree - the root is the on-chain commitment")]
     public class MerkleTreeNode
     {
         public byte[] Hash { get; set; }

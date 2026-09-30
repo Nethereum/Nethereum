@@ -120,37 +120,26 @@ public class ApiResponse
 
 ### Example 2: Dependency Injection Pattern (Real Example from BeaconApiClient)
 
+`Nethereum.Beaconchain.BeaconApiClient` is a real consumer of `IRestHttpHelper` — its
+constructors accept either an `HttpClient` or an `IRestHttpHelper` directly (for testing),
+and it exposes light-client operations through its `LightClient` property.
+
 ```csharp
+using Nethereum.Beaconchain;
+using Nethereum.Beaconchain.LightClient.Responses;
 using Nethereum.Util.Rest;
 using System.Net.Http;
+using System.Threading.Tasks;
 
-// Service class using dependency injection
-public class BeaconApiClient
-{
-    private readonly IRestHttpHelper _restHelper;
-    public string BaseUrl { get; }
+// Constructor with HttpClient
+var beaconClient = new BeaconApiClient("https://beacon-node.example.com", new HttpClient());
 
-    // Constructor with HttpClient
-    public BeaconApiClient(string baseUrl, HttpClient httpClient = null)
-    {
-        BaseUrl = baseUrl.TrimEnd('/');
-        _restHelper = new RestHttpHelper(httpClient ?? new HttpClient());
-    }
+// Constructor with IRestHttpHelper (for testing)
+IRestHttpHelper fakeRestHelper = null; // supply a test double
+var testableClient = new BeaconApiClient("https://beacon-node.example.com", fakeRestHelper);
 
-    // Constructor with IRestHttpHelper (for testing)
-    public BeaconApiClient(string baseUrl, IRestHttpHelper restHelper)
-    {
-        BaseUrl = baseUrl.TrimEnd('/');
-        _restHelper = restHelper;
-    }
-
-    // Example method
-    public async Task<BootstrapResponse> GetBootstrapAsync(string blockRoot)
-    {
-        var url = $"{BaseUrl}/eth/v1/beacon/light_client/bootstrap/{blockRoot}";
-        return await _restHelper.GetAsync<BootstrapResponse>(url);
-    }
-}
+// Light-client calls go through the LightClient property (ILightClientApi)
+LightClientBootstrapResponse bootstrap = await beaconClient.LightClient.GetBootstrapAsync(blockRoot);
 ```
 
 ### Example 3: 4byte.directory API Integration (Real Example)
@@ -207,6 +196,8 @@ public class FourByteDirectoryService
 ### Example 4: Sourcify Contract Verification API (Real Example)
 
 ```csharp
+using Nethereum.ABI.CompilationMetadata;
+using Nethereum.DataServices.Sourcify.Responses;
 using Nethereum.Util.Rest;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -485,6 +476,13 @@ public interface IRestHttpHelper
 }
 ```
 
+`RestHttpHelper` additionally exposes a lower-level method not on the interface:
+
+```csharp
+// Send a fully-constructed HttpRequestMessage directly (RestHttpHelper.cs:164)
+public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request);
+```
+
 ### RestHttpHelper
 
 Concrete implementation of IRestHttpHelper.
@@ -582,7 +580,10 @@ public class MultipartFile
 
 ### Error Handling
 
-All methods throw `Exception` on non-success HTTP status codes:
+All methods throw `Exception` on non-success HTTP status codes. The message format
+differs slightly by method: only `GetAsync` includes the response headers
+(`RestHttpHelper.cs:57`); `PostAsync`, `PutAsync`, `DeleteAsync`, and `PostMultipartAsync`
+omit them (`RestHttpHelper.cs:98,139,160,211`).
 
 ```csharp
 try
@@ -591,7 +592,19 @@ try
 }
 catch (Exception ex)
 {
-    // ex.Message contains: "Error: {StatusCode}, {ResponseBody}, {Headers}"
+    // From GetAsync, ex.Message contains: "Error: {StatusCode}, {ResponseBody}, {Headers}"
+    Console.WriteLine($"API error: {ex.Message}");
+}
+
+try
+{
+    var response = await restHelper.PostAsync<CreateUserResponse, CreateUserRequest>(
+        "https://api.example.com/users", request);
+}
+catch (Exception ex)
+{
+    // From PostAsync/PutAsync/DeleteAsync/PostMultipartAsync, ex.Message contains:
+    // "Error: {StatusCode}, {ResponseBody}" — no headers
     Console.WriteLine($"API error: {ex.Message}");
 }
 ```

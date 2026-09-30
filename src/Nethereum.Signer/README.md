@@ -58,6 +58,16 @@ Ethereum signatures consist of three components:
 
 Combined signature format: `0x` + r (64 hex) + s (64 hex) + v (2 hex) = 132 hex characters
 
+Both `ECDSASignature` and `EthECDSASignature` expose predicates for
+spec compliance:
+
+- **`IsLowS`** — `s ≤ N/2` (EIP-2 malleability guard; signatures where
+  `s > N/2` are rejected by Ethereum consensus since Homestead).
+- **`IsCanonical`** — stricter: `0 < r < N` AND `0 < s ≤ N/2`. Use
+  this to validate any received signature (transaction, EIP-7702
+  authorization tuple, off-chain message) before address recovery.
+  EIP-7702 specifically requires canonical form on each auth entry.
+
 ### Ethereum Message Signing
 
 Ethereum messages are prefixed before signing to prevent signing malicious transactions:
@@ -116,7 +126,7 @@ byte[] privateKeyBytes = key.GetPrivateKeyAsBytes();
 
 // Get public key
 byte[] publicKey = key.GetPubKey(); // Uncompressed (65 bytes with 0x04 prefix)
-byte[] publicKeyCompressed = key.GetPubKeyCompressed(); // Compressed (33 bytes)
+byte[] publicKeyCompressed = key.GetPubKey(true); // Compressed (33 bytes)
 
 // Get Ethereum address
 string address = key.GetPublicAddress();
@@ -231,21 +241,21 @@ Console.WriteLine($"Match: {key.GetPublicAddress() == recoveredAddress}");
 ```csharp
 using Nethereum.Signer;
 using Nethereum.Model;
-using Nethereum.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
-using System.Numerics;
 
 var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
 
 // EIP-1559 transaction with maxFeePerGas and maxPriorityFeePerGas
-var chainId = new BigInteger(1); // Mainnet
-var nonce = new BigInteger(5);
-var maxPriorityFeePerGas = new BigInteger(2000000000); // 2 gwei
-var maxFeePerGas = new BigInteger(100000000000); // 100 gwei
-var gasLimit = new BigInteger(21000);
+// Transaction1559's numeric fields are EvmUInt256, which has implicit
+// conversions from long/ulong, so plain literals are enough here.
+long chainId = 1; // Mainnet
+long nonce = 5;
+long maxPriorityFeePerGas = 2000000000; // 2 gwei
+long maxFeePerGas = 100000000000; // 100 gwei
+long gasLimit = 21000;
 var to = "0x3535353535353535353535353535353535353535";
-var value = new BigInteger(1000000000000000000); // 1 ETH
-var data = "".HexToByteArray();
+long value = 1000000000000000000; // 1 ETH
+var data = ""; // Data is a hex string, not raw bytes
 
 var tx = new Transaction1559(
     chainId,
@@ -259,17 +269,18 @@ var tx = new Transaction1559(
     null // access list
 );
 
-// Sign
+// Sign (SignTransaction mutates tx and also returns the signed RLP hex)
 var signer = new Transaction1559Signer();
-signer.SignTransaction(privateKey.HexToByteArray(), tx);
+string signedTxHex = signer.SignTransaction(privateKey.HexToByteArray(), tx);
 
 // Transaction type 0x02 for EIP-1559
 byte[] signedTx = tx.GetRLPEncoded();
 Console.WriteLine($"Type: 0x{signedTx[0]:X2}"); // 0x02
 
-// Recover signer
-var recovered = new Transaction1559(signedTx);
-Console.WriteLine($"Signer: {recovered.Key.GetPublicAddress()}");
+// Recover signer: decode the RLP back into a Transaction1559 (there is no
+// Transaction1559(byte[]) constructor), then recover via the GetKey() extension.
+var recovered = Transaction1559Encoder.Current.Decode(signedTx);
+Console.WriteLine($"Signer: {recovered.GetKey().GetPublicAddress()}");
 ```
 
 ### Example 6: Hash and Sign Raw Messages
@@ -278,6 +289,7 @@ Console.WriteLine($"Signer: {recovered.Key.GetPublicAddress()}");
 using Nethereum.Signer;
 using Nethereum.Util;
 using Nethereum.Hex.HexConvertors.Extensions;
+using System.Text;
 
 var privateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
 var key = new EthECKey(privateKey);
@@ -290,7 +302,7 @@ Console.WriteLine($"Ethereum signature: {signature1}");
 
 // Method 2: Hash message yourself, then sign with prefix
 var hasher = new Sha3Keccack();
-byte[] messageHash = hasher.CalculateHash(message);
+byte[] messageHash = hasher.CalculateHash(Encoding.UTF8.GetBytes(message));
 string signature2 = signer.Sign(messageHash, key);
 Console.WriteLine($"Pre-hashed signature: {signature2}");
 
@@ -299,55 +311,28 @@ var rawSigner = new MessageSigner();
 string signature3 = rawSigner.Sign(messageHash, key);
 Console.WriteLine($"Raw signature: {signature3}");
 
-// Verify: signature1 == signature2 (both use Ethereum prefix)
-Console.WriteLine($"Ethereum signatures match: {signature1 == signature2}");
+// signature1 != signature2: Sign(messageHash, key) applies the prefix to the 32-byte hash, whereas EncodeUTF8AndSign applies it to the message bytes
+Console.WriteLine($"Signatures match: {signature1 == signature2}"); // False
 ```
 
-### Example 7: Deterministic Key Generation from Seed
+### Example 7: Verify Signature with AllowOnlyLowS (Prevent Malleability)
 
 ```csharp
 using Nethereum.Signer;
-using Nethereum.Hex.HexConvertors.Extensions;
 using System.Text;
-
-// Generate deterministic key from seed (useful for testing)
-byte[] seed = Encoding.UTF8.GetBytes("my-secret-seed-phrase");
-var key1 = EthECKey.GenerateKey(seed);
-var key2 = EthECKey.GenerateKey(seed);
-
-// Same seed = same key
-Console.WriteLine($"Key 1: {key1.GetPrivateKey()}");
-Console.WriteLine($"Key 2: {key2.GetPrivateKey()}");
-Console.WriteLine($"Match: {key1.GetPrivateKey() == key2.GetPrivateKey()}");
-
-// Different seed = different key
-byte[] differentSeed = Encoding.UTF8.GetBytes("different-seed");
-var key3 = EthECKey.GenerateKey(differentSeed);
-Console.WriteLine($"Key 3: {key3.GetPrivateKey()}");
-Console.WriteLine($"Different: {key1.GetPrivateKey() != key3.GetPrivateKey()}");
-
-// WARNING: For production, use truly random keys:
-var randomKey = EthECKey.GenerateKey(); // Cryptographically secure random
-```
-
-### Example 8: Verify Signature with AllowOnlyLowS (Prevent Malleability)
-
-```csharp
-using Nethereum.Signer;
-using Nethereum.Signer.Crypto;
-using Nethereum.Hex.HexConvertors.Extensions;
 
 var privateKey = "0x4646464646464646464646464646464646464646464646464646464646464646";
 var key = new EthECKey(privateKey);
-var message = "test message".HexToByteArray();
+var message = Encoding.UTF8.GetBytes("test message");
 
 // Sign message
 var signer = new MessageSigner();
 string signatureHex = signer.Sign(message, key);
-byte[] signatureBytes = signatureHex.HexToByteArray();
 
-// Parse signature
-var signature = new EthECDSASignature(signatureBytes);
+// Parse signature: MessageSigner.Sign returns r|s|v (65 raw bytes), NOT a
+// DER-encoded blob, so it must go through EthECDSASignatureFactory, not the
+// EthECDSASignature(byte[] derSig) constructor.
+var signature = EthECDSASignatureFactory.ExtractECDSASignature(signatureHex);
 
 // Verify with low-S enforcement (prevents signature malleability)
 bool isValid = key.VerifyAllowingOnlyLowS(message, signature);
@@ -363,7 +348,7 @@ Console.WriteLine($"Signature valid (any S): {isValidAny}");
 // Always use VerifyAllowingOnlyLowS for security
 ```
 
-### Example 9: Shared Secret Calculation (ECDH)
+### Example 8: Shared Secret Calculation (ECDH)
 
 ```csharp
 using Nethereum.Signer;
@@ -412,8 +397,7 @@ public static EthECKey GenerateKey(byte[] seed);
 // Properties & Methods
 public string GetPrivateKey(); // Hex string with 0x prefix
 public byte[] GetPrivateKeyAsBytes();
-public byte[] GetPubKey(); // Uncompressed (65 bytes)
-public byte[] GetPubKeyCompressed(); // Compressed (33 bytes)
+public byte[] GetPubKey(bool compressed = false); // false = 65 bytes uncompressed, true = 33 bytes compressed
 public string GetPublicAddress(); // Ethereum address (0x...)
 
 // Signing & Verification
@@ -441,7 +425,7 @@ public class EthereumMessageSigner : MessageSigner
     // Recover signer address
     public string EncodeUTF8AndEcRecover(string message, string signature);
     public override string EcRecover(byte[] message, string signature);
-    public override string HashAndEcRecover(string message, string signature);
+    public string HashAndEcRecover(string message, string signature); // inherited from MessageSigner
 
     // Hash with Ethereum prefix
     public byte[] HashPrefixedMessage(string message);
@@ -457,7 +441,7 @@ Raw message signing (without Ethereum prefix).
 public class MessageSigner
 {
     public virtual string Sign(byte[] message, EthECKey key);
-    public virtual string Sign(byte[] message, string privateKey);
+    public string Sign(byte[] message, string privateKey);
     public virtual string HashAndSign(byte[] plainMessage, EthECKey key);
     public string HashAndSign(string plainMessage, string privateKey);
     public string HashAndSign(byte[] plainMessage, string privateKey);
@@ -471,30 +455,39 @@ public class MessageSigner
 
 ### Transaction Signers
 
+Every transaction signer mutates the transaction in place (sets its `Signature`)
+**and** returns the signed transaction as an RLP-encoded hex string.
+
 ```csharp
 // Legacy transactions
 public class LegacyTransactionSigner
 {
-    public void SignTransaction(byte[] privateKey, LegacyTransaction transaction);
-    public void SignTransaction(byte[] privateKey, LegacyTransactionChainId transaction);
+    public string SignTransaction(byte[] privateKey, LegacyTransaction transaction);
+    public string SignTransaction(byte[] privateKey, LegacyTransactionChainId transaction);
 }
 
-// EIP-1559 transactions
-public class Transaction1559Signer
-{
-    public void SignTransaction(byte[] privateKey, Transaction1559 transaction);
-}
+// EIP-1559 / EIP-7702 / EIP-4844 transactions all share TypeTransactionSigner<T>
+public class Transaction1559Signer : TypeTransactionSigner<Transaction1559> { }
+public class Transaction7702Signer : TypeTransactionSigner<Transaction7702> { }
+public class Transaction4844Signer : TypeTransactionSigner<Transaction4844> { }
 
-// EIP-7702 transactions
-public class Transaction7702Signer
+public class TypeTransactionSigner<T> where T : SignedTypeTransaction
 {
-    public void SignTransaction(byte[] privateKey, Transaction7702 transaction);
+    public string SignTransaction(string privateKey, T transaction);
+    public string SignTransaction(byte[] privateKey, T transaction);
+    public string SignTransaction(EthECKey ecKey, T transaction);
 }
 
 // Authorization lists (EIP-7702)
 public class Authorisation7702Signer
 {
-    public void Sign(byte[] privateKey, Authorisation7702 authorisation);
+    public Authorisation7702Signed SignAuthorisation(string privateKey, Authorisation7702 authorisation);
+    public Authorisation7702Signed SignAuthorisation(byte[] privateKey, Authorisation7702 authorisation);
+    public Authorisation7702Signed SignAuthorisation(EthECKey ecKey, Authorisation7702 authorisation);
+
+    public List<Authorisation7702Signed> SignAuthorisations(string privateKey, List<Authorisation7702> authorisations);
+    public List<Authorisation7702Signed> SignAuthorisations(byte[] privateKey, List<Authorisation7702> authorisations);
+    public List<Authorisation7702Signed> SignAuthorisations(EthECKey ecKey, List<Authorisation7702> authorisations);
 }
 ```
 
@@ -507,16 +500,70 @@ public class EthECDSASignature
 {
     public byte[] R { get; }
     public byte[] S { get; }
-    public byte[] V { get; }
+    public byte[] V { get; set; }
 
     public EthECDSASignature(BigInteger r, BigInteger s, byte[] v);
     public EthECDSASignature(ECDSASignature signature);
-    public EthECDSASignature(byte[] derSig);
+    public EthECDSASignature(byte[] derSig); // Parses a DER-encoded signature, NOT r|s|v
 
     public bool IsLowS { get; }
+    public bool IsCanonical { get; }
     public byte[] ToDER();
     public static EthECDSASignature FromDER(byte[] sig);
     public static string CreateStringSignature(EthECDSASignature signature);
+}
+```
+
+To parse a raw `r|s|v` signature (the format returned by `MessageSigner.Sign` /
+`EthereumMessageSigner.EncodeUTF8AndSign`), use `EthECDSASignatureFactory`
+instead of the `byte[] derSig` constructor:
+
+```csharp
+public static class EthECDSASignatureFactory
+{
+    public static EthECDSASignature FromComponents(byte[] r, byte[] s);
+    public static EthECDSASignature FromComponents(byte[] r, byte[] s, byte v);
+    public static EthECDSASignature FromComponents(byte[] r, byte[] s, byte[] v);
+    public static EthECDSASignature FromComponents(byte[] rs);
+    public static EthECDSASignature FromSignature(ISignature signature);
+    public static EthECDSASignature ExtractECDSASignature(string signature); // "0x" + r + s + v hex string
+}
+```
+
+### IEthExternalSigner / EthExternalSignerBase
+
+External signer abstraction for hardware wallets and key vaults (Ledger, Trezor,
+Azure Key Vault, AWS KMS). Implementations derive from `EthExternalSignerBase`,
+which handles recovery-ID calculation and only requires the public key and the
+raw ECDSA signing step:
+
+```csharp
+public interface IEthExternalSigner
+{
+    bool CalculatesV { get; }
+    ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; }
+    Task<string> GetAddressAsync();
+    Task<EthECDSASignature> SignAsync(byte[] rawBytes);
+    Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes);
+    Task<EthECDSASignature> SignAsync(byte[] rawBytes, BigInteger chainId);
+    Task SignAsync(LegacyTransaction transaction);
+    Task SignAsync(LegacyTransactionChainId transaction);
+    Task SignAsync(Transaction1559 transaction);
+    Task SignAsync(Transaction7702 transaction);
+    Task SignAsync(Transaction4844 transaction);
+    Task<string> SignTypedDataJsonAsync(string typedDataJson, string messageKeySelector = "message");
+
+    bool Supported1559 { get; }
+}
+
+public abstract class EthExternalSignerBase : IEthExternalSigner
+{
+    // Implementors provide these two:
+    protected abstract Task<byte[]> GetPublicKeyAsync();
+    protected abstract Task<ECDSASignature> SignExternallyAsync(byte[] bytes);
+
+    // Everything else (address derivation, recovery-ID calculation,
+    // per-transaction-type signing, typed-data signing) is provided.
 }
 ```
 
@@ -524,7 +571,6 @@ public class EthECDSASignature
 
 ### Used By (Consumers)
 - **Nethereum.Accounts** - Account management with key-based signing
-- **Nethereum.KeyStore** - Encrypted keystore (UTC/JSON) wallet files
 - **Nethereum.HDWallet** - BIP32/BIP39 hierarchical deterministic wallets
 - **Nethereum.Signer.EIP712** - EIP-712 typed structured data signing
 - **Nethereum.Signer.Ledger** - Ledger hardware wallet integration
@@ -598,7 +644,7 @@ string sig = signer.EncodeUTF8AndSign(message, key);
 
 ### BouncyCastle vs NBitcoin.Secp256k1
 
-.NET 6+ uses NBitcoin.Secp256k1 for better performance:
+`EthECKey.SignRecoverable` defaults to `true` (NBitcoin.Secp256k1) on .NET 8+ and `false` on earlier targets; on .NET 6+ you can enable it explicitly:
 
 ```csharp
 #if NET6_0_OR_GREATER

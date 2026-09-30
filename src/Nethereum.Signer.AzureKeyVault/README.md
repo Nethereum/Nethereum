@@ -11,7 +11,7 @@ Nethereum.Signer.AzureKeyVault provides **external signing capability** for Ethe
 - Private keys never leave Azure Key Vault
 - FIPS 140-2 Level 2 (standard tier) or Level 3 (premium HSM tier) validated
 - Support for Legacy, EIP-1559, and EIP-7702 transactions
-- Message signing with secp256k1 (ES256K)
+- Message signing with secp256k1 (`ECDSA256` by default; `ES256K` when `UseLegacyECDSA256 = false`)
 - Azure Active Directory authentication (Managed Identity, Service Principal, etc.)
 - Scalable for enterprise and serverless architectures
 - Audit logging and access control via Azure RBAC
@@ -34,6 +34,7 @@ dotnet add package Nethereum.Signer.AzureKeyVault
 
 **External:**
 - **Azure.Security.KeyVault.Keys** (v4.2.0) - Azure Key Vault SDK for key operations and cryptography
+- **Azure.Identity** - **not referenced by this package's `.csproj`.** `TokenCredential` (the abstract base type accepted by `AzureKeyVaultExternalSigner`) comes transitively from `Azure.Core`, but concrete credential types used in the examples below (`DefaultAzureCredential`, `ManagedIdentityCredential`, `ClientSecretCredential`, `ClientCertificateCredential`, `AzureCliCredential`) live in `Azure.Identity`. Install it explicitly: `dotnet add package Azure.Identity`
 
 **Nethereum:**
 - **Nethereum.Signer** - Core signing infrastructure (provides EthExternalSignerBase)
@@ -71,7 +72,9 @@ dotnet add package Nethereum.Signer.AzureKeyVault
 ## Quick Start
 
 ```csharp
+// Requires the Azure.Identity package: dotnet add package Azure.Identity
 using Nethereum.Signer.AzureKeyVault;
+using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Azure.Identity;
 
@@ -90,7 +93,7 @@ var account = new ExternalAccount(signer, chainId: 1);
 await account.InitialiseAsync();
 
 // Use with Web3
-var web3 = new Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
 Console.WriteLine($"Address: {account.Address}");
 ```
@@ -113,8 +116,8 @@ public class AzureKeyVaultExternalSigner : EthExternalSignerBase
     public KeyClient KeyClient { get; }
     public string KeyName { get; }
     public bool UseLegacyECDSA256 { get; set; } = true; // Use "ECDSA256" instead of "ES256K"
-    public override bool CalculatesV { get; } = false;
-    public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; } = ExternalSignerTransactionFormat.Hash;
+    public override bool CalculatesV { get; protected set; } = false;
+    public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;
     public override bool Supported1559 { get; } = true;
 
     // Methods
@@ -123,8 +126,20 @@ public class AzureKeyVaultExternalSigner : EthExternalSignerBase
     public override Task SignAsync(LegacyTransaction transaction);
     public override Task SignAsync(LegacyTransactionChainId transaction);
     public override Task SignAsync(Transaction1559 transaction);
-    public override Task SignAsync(Transaction7702 transaction);
+    public override Task SignAsync(Transaction7702 transaction); // forwards to the hash-signing path
+    public override Task SignAsync(Transaction4844 transaction); // forwards to the hash-signing path (blob sidecar handling is the caller's responsibility)
 }
+```
+
+### Inherited from EthExternalSignerBase
+
+`AzureKeyVaultExternalSigner` also exposes the following members inherited from its base class (`Nethereum.Signer.EthExternalSignerBase`), unchanged:
+
+```csharp
+public virtual Task<string> GetAddressAsync();
+public virtual Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes);
+public virtual Task<EthECDSASignature> SignTypedDataAsync<TDomain>(TypedData<TDomain> typedData);
+public virtual Task<string> SignTypedDataJsonAsync(string typedDataJson, string messageKeySelector = "message");
 ```
 
 ## Important Notes
@@ -171,8 +186,9 @@ az keyvault key create \
 |------|-----------|-------|
 | Legacy | Yes | EIP-155 with chain ID (no raw Legacy without chain ID) |
 | EIP-1559 (Type 2) | Yes | MaxFeePerGas, MaxPriorityFeePerGas |
-| EIP-2930 (Type 1) | Yes | Access lists |
+| EIP-2930 (Type 1) | No | No `SignAsync(Transaction2930)` overload; the transaction manager drops access lists for signers that aren't 1559/7702 |
 | EIP-7702 (Type 4) | Yes | Account abstraction |
+| EIP-4844 (Type 3, blob) | Yes | `SignAsync(Transaction4844)` signs the transaction hash |
 
 ### Security Considerations
 
@@ -256,7 +272,7 @@ catch (RequestFailedException ex)
 | **Azure Key Vault** | HSM-backed | Medium | ~200ms | Enterprise, cloud-native |
 | **Ledger/Trezor** | Hardware wallet | Low | User-dependent | Development, manual signing |
 | **AWS KMS** | HSM-backed | Medium | ~200ms | AWS-based infrastructure |
-| **HDWallet** | Software | Free | <1ms | Development, non-production |
+| **HdWallet** | Software | Free | <1ms | Development, non-production |
 
 ## Related Packages
 

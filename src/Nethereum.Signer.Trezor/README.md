@@ -8,10 +8,10 @@ Nethereum.Signer.Trezor provides **external signing capability** for Ethereum tr
 
 **Key Features:**
 - Sign transactions with TREZOR hardware wallet
-- Support for Legacy and EIP-1559 (Type 2) transactions
-- **Full EIP-712 typed data signing** with interactive confirmation
+- Support for Legacy (with chain ID) and EIP-1559 (Type 2) transactions
+- **Full EIP-712 typed data signing** with interactive confirmation (falls back to hash signing if the device firmware doesn't support the interactive flow)
 - Message signing (EIP-191) with device confirmation
-- Cross-platform support (Windows HID, Linux/macOS LibUSB)
+- Cross-platform device factories (Windows HID/WinUSB, Linux/macOS LibUSB)
 - PIN and passphrase protection
 - Custom derivation paths
 - Direct integration with ExternalAccount and Web3
@@ -31,9 +31,9 @@ dotnet add package Nethereum.Signer.Trezor
 ```
 
 **Platform-Specific Setup:**
-- **Windows**: Works with USB HID out of the box
-- **Linux**: Requires `libusb` and udev rules
-- **macOS**: Requires `libusb` (install via Homebrew: `brew install libusb`)
+- **Windows**: Works with USB HID/WinUSB out of the box via `WindowsHidUsbDeviceFactoryProvider`
+- **Linux**: Requires `libusb` and udev rules; use `LibUsbDeviceFactoryProvider`
+- **macOS**: Requires `libusb` (install via Homebrew: `brew install libusb`); use `LibUsbDeviceFactoryProvider`
 
 ## Dependencies
 
@@ -46,7 +46,7 @@ dotnet add package Nethereum.Signer.Trezor
 - **protobuf-net** (v3.2.52) - Protocol Buffers for TREZOR messages
 - **protobuf-net.Reflection** (v3.2.52) - Protocol Buffers reflection support
 
-**Note:** TREZOR communication protocol implementation is built internally. The external Trezor.Net library is no longer used.
+**Note:** The TREZOR wire-protocol/device-management layer (`Trezor.Net` namespace) is adapted and vendored directly inside this package (`TrezorNet/`) until the upstream `Trezor.Net` project is upgraded; it is not pulled in as a separate NuGet dependency.
 
 **Nethereum:**
 - **Nethereum.Accounts** - Account and transaction management (includes Nethereum.Signer, Nethereum.Signer.EIP712)
@@ -55,33 +55,34 @@ dotnet add package Nethereum.Signer.Trezor
 
 ```csharp
 using Nethereum.Signer.Trezor;
+using Nethereum.Signer.Trezor.Abstractions;
+using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Microsoft.Extensions.Logging;
 
 // Create logger factory
 var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 
-// Create prompt handler for PIN/passphrase
-var promptHandler = new ConsoleTrezorPromptHandler();
+// Use the shipped console prompt handler for PIN/passphrase/button confirmations
+var promptHandler = new ConsolePromptHandler();
 
-// Initialize TREZOR connection (Windows)
-var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(
-    promptHandler,
-    loggerFactory
-);
+// CreateDefault picks the right device factory for the current OS: Windows HID/WinUSB,
+// and LibUSB on Linux/macOS by default (no extra arguments needed - works cross-platform).
+var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateDefault(promptHandler, loggerFactory);
 
-// Wait for TREZOR device
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+// Wait for the first connected TREZOR to initialize
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-// Create external signer (account index 0)
-var trezorSigner = new TrezorExternalSigner(trezorManager, index: 0);
+// TrezorSessionExternalSigner is the recommended entry point - it exposes InitializeAsync()
+var signer = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await signer.InitializeAsync();
 
 // Create external account
-var account = new ExternalAccount(trezorSigner, chainId: 1);
+var account = new ExternalAccount(signer, chainId: 1);
 await account.InitialiseAsync();
 
 // Use with Web3
-var web3 = new Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
 Console.WriteLine($"TREZOR Address: {account.Address}");
 ```
@@ -107,7 +108,8 @@ using Nethereum.Web3.Accounts;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
-// Implement prompt handler for PIN/passphrase
+// Implement a custom prompt handler for PIN/passphrase/button confirmations.
+// All three members are required by ITrezorPromptHandler.
 public class ConsoleTrezorPromptHandler : ITrezorPromptHandler
 {
     public Task<string> GetPinAsync()
@@ -121,11 +123,19 @@ public class ConsoleTrezorPromptHandler : ITrezorPromptHandler
         Console.WriteLine("Enter passphrase (leave empty if none):");
         return Task.FromResult(Console.ReadLine());
     }
+
+    public Task ButtonAckAsync(string context)
+    {
+        Console.WriteLine($"Confirm on device: {context}");
+        return Task.CompletedTask;
+    }
 }
 
 // Create connection
 var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 var promptHandler = new ConsoleTrezorPromptHandler();
+// The package also ships a ready-made Nethereum.Signer.Trezor.Abstractions.ConsolePromptHandler
+// that implements the same interface, if you don't need custom prompt behaviour.
 
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(
     promptHandler,
@@ -134,14 +144,12 @@ var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(
 );
 
 Console.WriteLine("Waiting for TREZOR device...");
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 Console.WriteLine("TREZOR connected!");
 
-// Create signer for account 0 (m/44'/60'/0'/0/0)
-var trezorSigner = new TrezorExternalSigner(
-    trezorManager,
-    index: 0
-);
+// TrezorSessionExternalSigner for account 0 (m/44'/60'/0'/0/0)
+var trezorSigner = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await trezorSigner.InitializeAsync();
 
 var account = new ExternalAccount(trezorSigner, chainId: 1);
 await account.InitialiseAsync();
@@ -161,12 +169,12 @@ using Nethereum.Hex.HexTypes;
 
 // Connect to TREZOR (see Example 1)
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-var externalAccount = new ExternalAccount(
-    new TrezorExternalSigner(trezorManager, index: 0),
-    chainId: 1
-);
+var trezorSigner = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await trezorSigner.InitializeAsync();
+
+var externalAccount = new ExternalAccount(trezorSigner, chainId: 1);
 await externalAccount.InitialiseAsync();
 
 // Create Web3 instance
@@ -199,12 +207,12 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexTypes;
 
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-var externalAccount = new ExternalAccount(
-    new TrezorExternalSigner(trezorManager, index: 0),
-    chainId: 1
-);
+var trezorSigner = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await trezorSigner.InitializeAsync();
+
+var externalAccount = new ExternalAccount(trezorSigner, chainId: 1);
 await externalAccount.InitialiseAsync();
 
 // EIP-1559 transaction with priority fee
@@ -219,8 +227,7 @@ var transactionInput = new TransactionInput
 };
 
 Console.WriteLine("Approve EIP-1559 transaction on TREZOR...");
-var signedTx = await externalAccount.TransactionManager
-    .SignTransactionAsync(transactionInput);
+var signedTx = await externalAccount.TransactionManager.SignTransactionAsync(transactionInput);
 
 Console.WriteLine($"Signed EIP-1559 TX: {signedTx}");
 ```
@@ -248,12 +255,12 @@ public class TransferFunction : FunctionMessage
 
 // Connect to TREZOR
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-var externalAccount = new ExternalAccount(
-    new TrezorExternalSigner(trezorManager, index: 0),
-    chainId: 1
-);
+var trezorSigner = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await trezorSigner.InitializeAsync();
+
+var externalAccount = new ExternalAccount(trezorSigner, chainId: 1);
 await externalAccount.InitialiseAsync();
 
 var web3 = new Web3(externalAccount, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
@@ -295,36 +302,20 @@ using Nethereum.Signer.EIP712;
 using Nethereum.ABI.EIP712;
 using Nethereum.Hex.HexConvertors.Extensions;
 using System.Numerics;
-
-// ERC-2612 Permit domain and message
-public class EIP712Domain
-{
-    public string Name { get; set; }
-    public string Version { get; set; }
-    public BigInteger ChainId { get; set; }
-    public string VerifyingContract { get; set; }
-}
-
-public class Permit
-{
-    public string Owner { get; set; }
-    public string Spender { get; set; }
-    public BigInteger Value { get; set; }
-    public BigInteger Nonce { get; set; }
-    public BigInteger Deadline { get; set; }
-}
+using System.Collections.Generic;
 
 // Connect to TREZOR
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-var trezorSigner = new TrezorExternalSigner(trezorManager, index: 0);
-await trezorSigner.GetAddressAsync();
+var trezorSigner = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await trezorSigner.InitializeAsync();
+var signerAddress = await trezorSigner.GetAddressAsync();
 
 // Create typed data
-var typedData = new TypedData<EIP712Domain>
+var typedData = new TypedData<Domain>
 {
-    Domain = new EIP712Domain
+    Domain = new Domain
     {
         Name = "USD Coin",
         Version = "2",
@@ -352,7 +343,7 @@ var typedData = new TypedData<EIP712Domain>
     PrimaryType = "Permit",
     Message = new[]
     {
-        new MemberValue { TypeName = "address", Value = await trezorSigner.GetAddressAsync() },
+        new MemberValue { TypeName = "address", Value = signerAddress },
         new MemberValue { TypeName = "address", Value = "0x1234567890123456789012345678901234567890" },
         new MemberValue { TypeName = "uint256", Value = new BigInteger(1000000000000) },
         new MemberValue { TypeName = "uint256", Value = BigInteger.Zero },
@@ -360,12 +351,12 @@ var typedData = new TypedData<EIP712Domain>
     }
 };
 
-// TREZOR shows full typed data on device for user confirmation
+// TREZOR shows the typed data on device for user confirmation (falls back to hash
+// signing if the connected firmware doesn't support the interactive EIP-712 flow)
 Console.WriteLine("Review and approve typed data on TREZOR...");
 var signature = await trezorSigner.SignTypedDataAsync(typedData);
 
 Console.WriteLine($"EIP-712 Signature: {signature.CreateStringSignature()}");
-// User sees: "Permit owner to spender" with all details on device
 ```
 
 ### Example 6: Sign Personal Message
@@ -377,9 +368,10 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using System.Text;
 
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
-var trezorSigner = new TrezorExternalSigner(trezorManager, index: 0);
+var trezorSigner = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await trezorSigner.InitializeAsync();
 var address = await trezorSigner.GetAddressAsync();
 
 // Message to sign
@@ -409,29 +401,26 @@ using Nethereum.Signer.Trezor;
 using Nethereum.Web3.Accounts;
 
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
 // Account 0 (Ethereum #1 in TREZOR Suite)
-var account0 = new ExternalAccount(
-    new TrezorExternalSigner(trezorManager, index: 0),
-    chainId: 1
-);
+var signer0 = new TrezorSessionExternalSigner(trezorManager, index: 0);
+await signer0.InitializeAsync();
+var account0 = new ExternalAccount(signer0, chainId: 1);
 await account0.InitialiseAsync();
 Console.WriteLine($"Account 0: {account0.Address}");
 
 // Account 1 (Ethereum #2 in TREZOR Suite)
-var account1 = new ExternalAccount(
-    new TrezorExternalSigner(trezorManager, index: 1),
-    chainId: 1
-);
+var signer1 = new TrezorSessionExternalSigner(trezorManager, index: 1);
+await signer1.InitializeAsync();
+var account1 = new ExternalAccount(signer1, chainId: 1);
 await account1.InitialiseAsync();
 Console.WriteLine($"Account 1: {account1.Address}");
 
 // Account 5 (Ethereum #6 in TREZOR Suite)
-var account5 = new ExternalAccount(
-    new TrezorExternalSigner(trezorManager, index: 5),
-    chainId: 1
-);
+var signer5 = new TrezorSessionExternalSigner(trezorManager, index: 5);
+await signer5.InitializeAsync();
+var account5 = new ExternalAccount(signer5, chainId: 1);
 await account5.InitialiseAsync();
 Console.WriteLine($"Account 5: {account5.Address}");
 ```
@@ -443,15 +432,16 @@ using Nethereum.Signer.Trezor;
 using Nethereum.Web3.Accounts;
 
 var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(promptHandler, loggerFactory);
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 
 // Custom path for account 1 instead of 0
 string customPath = "m/44'/60'/1'/0"; // Will derive m/44'/60'/1'/0/3
-var trezorSigner = new TrezorExternalSigner(
+var trezorSigner = new TrezorSessionExternalSigner(
     trezorManager,
-    customPath: customPath,
+    customPath,
     index: 3
 );
+await trezorSigner.InitializeAsync();
 
 var account = new ExternalAccount(trezorSigner, chainId: 1);
 await account.InitialiseAsync();
@@ -467,9 +457,12 @@ using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 
 var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-var promptHandler = new ConsoleTrezorPromptHandler();
+var promptHandler = new ConsolePromptHandler();
 
-// Auto-detect platform and use appropriate device factory
+// The no-argument CreateDefault already works on Linux/macOS (LibUSB by default).
+// You only need to pass platformProviders to OVERRIDE the device factory; if you pass a
+// PlatformDeviceFactoryProviders with LinuxProvider/MacProvider set to null, CreateDefault
+// throws PlatformNotSupportedException for that platform.
 var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateDefault(
     promptHandler,
     loggerFactory,
@@ -484,7 +477,7 @@ var trezorBroker = NethereumTrezorManagerBrokerFactory.CreateDefault(
 Console.WriteLine($"Platform: {RuntimeInformation.OSDescription}");
 Console.WriteLine("Waiting for TREZOR device...");
 
-var trezorManager = await trezorBroker.WaitForFirstDeviceAsync();
+var trezorManager = await trezorBroker.WaitForFirstTrezorAsync();
 Console.WriteLine("TREZOR connected!");
 
 // Linux users: Ensure udev rules are configured
@@ -493,34 +486,89 @@ Console.WriteLine("TREZOR connected!");
 // Run: sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
+### Example 10: MAUI / App Service Usage (Real Pattern)
+
+```csharp
+using Nethereum.Signer.Trezor;
+using Nethereum.Signer.Trezor.Abstractions;
+using Microsoft.Extensions.Logging;
+
+// Mirrors NetDapps' ITrezorSessionProvider implementation: resolve a prompt handler,
+// create a broker per-platform, wait for the device, then hand back an
+// ITrezorSession (implemented by TrezorSessionExternalSigner) to the caller.
+async Task<ITrezorSession> CreateSignerAsync(
+    ITrezorPromptHandler promptHandler,
+    ILoggerFactory loggerFactory,
+    NethereumTrezorManagerBrokerFactory.PlatformDeviceFactoryProviders platformProviders,
+    uint index,
+    string? knownAddress = null)
+{
+    var broker = NethereumTrezorManagerBrokerFactory.CreateDefault(promptHandler, loggerFactory, platformProviders);
+    var manager = await broker.WaitForFirstTrezorAsync();
+    var signer = new TrezorSessionExternalSigner(manager, index, knownAddress);
+    await signer.InitializeAsync();
+    return signer;
+}
+```
+
 ## API Reference
+
+### TrezorSessionExternalSigner (recommended entry point)
+
+Extends `TrezorExternalSigner` and implements `ITrezorSession`, surfacing `InitializeAsync()` so the manager returned by the broker can be initialized before the first signing call. This is the type used end-to-end in `consoletests/Nethereum.Signer.Trezor.Console/Program.cs` and `src/NetDapps/Services/NetDappsTrezorSessionProvider.cs`.
+
+```csharp
+public class TrezorSessionExternalSigner : TrezorExternalSigner, ITrezorSession
+{
+    // Constructors
+    public TrezorSessionExternalSigner(TrezorManagerBase<MessageType> manager, uint index, string? knownAddress = null, ILogger<TrezorExternalSigner>? logger = null);
+    public TrezorSessionExternalSigner(TrezorManagerBase<MessageType> manager, string customPath, uint index, string? knownAddress = null, ILogger<TrezorExternalSigner>? logger = null);
+
+    // Methods
+    public Task InitializeAsync();
+}
+```
+
+### ITrezorSession
+
+```csharp
+public interface ITrezorSession : IEthExternalSigner
+{
+    Task InitializeAsync();
+}
+```
 
 ### TrezorExternalSigner
 
-External signer implementation for TREZOR hardware wallets.
+Base external signer implementation for TREZOR hardware wallets.
 
 ```csharp
 public class TrezorExternalSigner : EthExternalSignerBase
 {
     // Constructors
-    public TrezorExternalSigner(TrezorManagerBase<MessageType> trezorManager, uint index, string knownAddress = null, ILogger<TrezorExternalSigner> logger = null);
-    public TrezorExternalSigner(TrezorManagerBase<MessageType> trezorManager, string customPath, uint index, string knownAddress = null, ILogger<TrezorExternalSigner> logger = null);
+    public TrezorExternalSigner(TrezorManagerBase<MessageType> trezorManager, uint index, string? knownAddress = null, ILogger<TrezorExternalSigner>? logger = null);
+    public TrezorExternalSigner(TrezorManagerBase<MessageType> trezorManager, string customPath, uint index, string? knownAddress = null, ILogger<TrezorExternalSigner>? logger = null);
 
     // Properties
     public TrezorManagerBase<MessageType> TrezorManager { get; }
-    public override bool CalculatesV { get; } = true;
-    public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; } = ExternalSignerTransactionFormat.Transaction;
+    public override bool CalculatesV { get; protected set; } = true;
+    public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Transaction;
     public override bool Supported1559 { get; } = true;
 
     // Methods
     public override Task<string> GetAddressAsync();
     public Task<string> RefreshAddressFromDeviceAsync();
     public override Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes);
+    public Task<EthECDSASignature> SignTypedDataHashAsync(byte[] domainSeparatorHash, byte[] messageHash = null, byte[] encodedNetwork = null, byte[] typedDataHash = null);
     public override Task<EthECDSASignature> SignTypedDataAsync<TDomain>(TypedData<TDomain> typedData);
-    public Task<EthECDSASignature> SignTypedDataAsync<TDomain>(TypedData<TDomain> typedData, byte[] encodedNetwork);
-    public Task<EthECDSASignature> SignTypedDataHashAsync(byte[] domainSeparatorHash, byte[] messageHash, byte[] encodedNetwork, byte[] typedDataHash);
+    public Task<EthECDSASignature> SignTypedDataAsync<TDomain>(TypedData<TDomain> typedData, byte[] encodedNetwork = null);
+    public Task<EthECDSASignature> SignTypedDataAsync<TDomain, TMessage>(TypedData<TDomain> typedData, TMessage message, byte[] encodedNetwork = null);
+    public override Task<string> SignTypedDataJsonAsync(string typedDataJson, string messageKeySelector = "message");
     public override Task SignAsync(LegacyTransactionChainId transaction);
     public override Task SignAsync(Transaction1559 transaction);
+    public override Task SignAsync(LegacyTransaction transaction); // throws NotSupportedException("Please provide a chain Id")
+    public override Task SignAsync(Transaction7702 transaction);   // throws NotSupportedException("Not supported by Trezor")
+    public override Task SignAsync(Transaction4844 transaction);   // throws NotSupportedException("Not supported by Trezor")
     public uint[] GetPath();
 }
 ```
@@ -532,21 +580,47 @@ Factory for creating TREZOR device connections.
 ```csharp
 public class NethereumTrezorManagerBrokerFactory
 {
-    public static NethereumTrezorManagerBroker Create(ITrezorPromptHandler promptHandler, ILoggerFactory loggerFactory, int? pollInterval = 2000);
+    public static NethereumTrezorManagerBroker Create(ITrezorDeviceFactoryProvider deviceFactoryProvider, ITrezorPromptHandler promptHandler, ILoggerFactory loggerFactory, int? pollInterval = 2000);
     public static NethereumTrezorManagerBroker CreateWindowsHidUsb(EnterPinArgs enterPinCallback, EnterPinArgs enterPassPhrase, ILoggerFactory loggerFactory, int? pollInterval = 2000);
+    public static NethereumTrezorManagerBroker Create(ITrezorPromptHandler promptHandler, ILoggerFactory loggerFactory, int? pollInterval = 2000);
+    public static NethereumTrezorManagerBroker Create(IDeviceFactory deviceFactory, EnterPinArgs enterPinCallback, EnterPinArgs enterPassPhrase, ILoggerFactory loggerFactory, int? pollInterval = 2000);
     public static NethereumTrezorManagerBroker CreateDefault(ITrezorPromptHandler promptHandler, ILoggerFactory loggerFactory, PlatformDeviceFactoryProviders platformProviders = null, int? pollInterval = 2000);
+
+    public class PlatformDeviceFactoryProviders
+    {
+        public ITrezorDeviceFactoryProvider WindowsProvider { get; set; } = new WindowsHidUsbDeviceFactoryProvider();
+        public ITrezorDeviceFactoryProvider LinuxProvider { get; set; } = new LibUsbDeviceFactoryProvider();
+        public ITrezorDeviceFactoryProvider MacProvider { get; set; } = new LibUsbDeviceFactoryProvider();
+        public ITrezorDeviceFactoryProvider AndroidProvider { get; set; }
+    }
 }
 ```
 
+The broker itself (returned by every `Create*` method above) exposes `Task<ExtendedTrezorManager> WaitForFirstTrezorAsync()` to wait for the first connected, initialized device.
+
 ### ITrezorPromptHandler
 
-Interface for handling PIN and passphrase prompts.
+Interface for handling PIN, passphrase and on-device button confirmation prompts. Implementations must provide all three members.
 
 ```csharp
 public interface ITrezorPromptHandler
 {
     Task<string> GetPinAsync();
     Task<string> GetPassphraseAsync();
+    Task ButtonAckAsync(string context);
+}
+```
+
+### ConsolePromptHandler
+
+Simple console implementation of `ITrezorPromptHandler` shipped with the package, ready to use for CLI scenarios.
+
+```csharp
+public class ConsolePromptHandler : ITrezorPromptHandler
+{
+    public Task<string> GetPinAsync();
+    public Task<string> GetPassphraseAsync();
+    public Task ButtonAckAsync(string context);
 }
 ```
 
@@ -582,37 +656,39 @@ Enables plausible deniability - can reveal standard wallet under duress.
 
 | Type | Supported | Notes |
 |------|-----------|-------|
-| Legacy | Yes | EIP-155 with chain ID (requires chain ID, no raw Legacy) |
+| Legacy | Yes | Requires a chain ID (`SignAsync(LegacyTransaction)` throws `NotSupportedException`) |
 | EIP-1559 (Type 2) | Yes | MaxFeePerGas, MaxPriorityFeePerGas |
 | EIP-2930 (Type 1) | No | Access lists not supported |
-| EIP-7702 (Type 4) | No | Not yet implemented |
+| EIP-7702 (Type 4) | No | `SignAsync(Transaction7702)` throws `NotSupportedException("Not supported by Trezor")` |
+| EIP-4844 (Type 3, blob) | No | `SignAsync(Transaction4844)` throws `NotSupportedException("Not supported by Trezor")` |
 
 ### EIP-712 Signing
 
-TREZOR provides **interactive EIP-712 signing** - the device displays:
+TREZOR attempts **interactive EIP-712 signing** first - the device displays:
 - Domain information (name, version, contract address)
 - Full message structure with field names and values
 - User reviews ALL data before signing
 
-This is more secure than "blind signing" hash-only approaches.
+If the connected firmware doesn't support the interactive flow (`FailureType.FailureUnexpectedMessage`), signing automatically falls back to the domain/message-hash flow (`SignTypedDataHashAsync`).
 
 ### Device Compatibility
 
-Supports all TREZOR devices with latest firmware. All Ethereum features (transactions, EIP-712, message signing) work across all models.
+Supports all TREZOR devices with up-to-date firmware. All Ethereum features (transactions, EIP-712, message signing) work across all models; older firmware may fall back to hash-only EIP-712 signing as described above.
 
 ### Platform Support
 
-| Platform | Connection Method | Setup Required |
-|----------|-------------------|----------------|
-| **Windows** | USB HID | None (plug and play) |
-| **Linux** | LibUSB | udev rules required |
-| **macOS** | LibUSB | `brew install libusb` |
-| **Android** | Custom provider | Platform-specific implementation |
+| Platform | Device Factory | Setup Required |
+|----------|-----------------|----------------|
+| **Windows** | `WindowsHidUsbDeviceFactoryProvider` (HID + WinUSB) | None (plug and play) |
+| **Linux** | `LibUsbDeviceFactoryProvider` | `libusb` + udev rules required |
+| **macOS** | `LibUsbDeviceFactoryProvider` | `brew install libusb` |
+| **Android** | Custom `ITrezorDeviceFactoryProvider` | Platform-specific implementation (set `PlatformDeviceFactoryProviders.AndroidProvider`) |
 
 ### Error Handling
 
 ```csharp
 using hw.trezor.messages.common;
+using Trezor.Net;
 
 try
 {
@@ -672,7 +748,7 @@ var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(
 
 ### Alternatives
 - **Nethereum.Signer.Ledger** - Ledger hardware wallet integration
-- **Nethereum.HDWallet** - Software HD wallets
+- **Nethereum.HdWallet** - Software HD wallets
 
 ## Additional Resources
 
@@ -688,6 +764,6 @@ var trezorBroker = NethereumTrezorManagerBrokerFactory.Create(
 - All signing happens on the secure element chip
 - Users must physically confirm each transaction on device screen
 - Device displays full transaction details for verification
-- **EIP-712 data is displayed in human-readable format** on device
+- **EIP-712 data is displayed in human-readable format** on device when the interactive flow is supported
 - No software can extract private keys from device
 - Passphrase adds extra security layer (25th word)

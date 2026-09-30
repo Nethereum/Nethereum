@@ -16,6 +16,9 @@ namespace Nethereum.Model
     {
         public static byte AsByte(this TransactionType transactionType) => (byte)transactionType;
 
+        public static byte AsChainByteType(this TransactionType transactionType) =>
+            (int)transactionType < 0 ? (byte)0 : (byte)transactionType;
+
         /// <summary>
         /// Converts to a valid Typed transaction (ie 0x02 for 1559), if not throws an exception (ie legacy or not in range)
         /// </summary>

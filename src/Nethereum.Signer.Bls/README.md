@@ -41,7 +41,7 @@ using Nethereum.Signer.Bls;
 using Nethereum.Signer.Bls.Herumi;  // Concrete implementation
 
 // Create BLS instance with Herumi implementation
-var blsBindings = new HerumiBlsBindings();
+var blsBindings = new HerumiNativeBindings();
 var bls = new NativeBls(blsBindings);
 await bls.InitializeAsync();
 
@@ -50,7 +50,7 @@ bool isValid = bls.VerifyAggregate(
     aggregateSignature: aggregateSig,      // 96 bytes
     publicKeys: validatorPublicKeys,       // Array of 48-byte public keys
     messages: messages,                    // Array of signing roots
-    domain: domainSeparationTag            // 32 bytes: forkDigest|domainType
+    domain: domain                         // 32-byte consensus-spec domain
 );
 
 Console.WriteLine($"Signature valid: {isValid}");
@@ -60,33 +60,70 @@ Console.WriteLine($"Signature valid: {isValid}");
 
 ### IBls Interface
 
-Core interface for BLS operations.
+Core interface for BLS operations, implemented by `NativeBls`.
 
 ```csharp
 public interface IBls
 {
-    /// <summary>
-    /// Verifies an aggregate BLS signature over one or more messages and public keys.
-    /// </summary>
-    bool VerifyAggregate(
-        byte[] aggregateSignature,  // 96 bytes
-        byte[][] publicKeys,        // Array of 48-byte public keys
-        byte[][] messages,          // Array of 32-byte message hashes
-        byte[] domain               // 32 bytes domain separation
-    );
+    // Verifies an aggregate BLS signature (typically sync committees) over one or
+    // more messages and public keys; the domain is only length-checked (32 bytes).
+    bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain);
+
+    // Aggregates multiple BLS signatures into a single signature.
+    // Used for ERC-4337 BLS signature aggregation to reduce gas costs.
+    byte[] AggregateSignatures(byte[][] signatures);
+
+    // Verifies an individual BLS signature over a message.
+    bool Verify(byte[] signature, byte[] publicKey, byte[] message);
+
+    // Splits a combined signature+publicKey byte array (ERC-4337 format) into its parts.
+    (byte[] Signature, byte[] PublicKey) ExtractSignatureAndPublicKey(byte[] signatureWithPubKey);
 }
 ```
 
 ### NativeBls Class
 
-Native BLS implementation wrapper.
+`IBls` implementation that routes verification requests to a native BLST/MCL backend
+via an `INativeBlsBindings` implementation (e.g. `HerumiNativeBindings`).
 
 ```csharp
 public class NativeBls : IBls
 {
     public NativeBls(INativeBlsBindings bindings);
     public Task InitializeAsync(CancellationToken cancellationToken = default);
+
     public bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain);
+    public byte[] AggregateSignatures(byte[][] signatures);
+    public bool Verify(byte[] signature, byte[] publicKey, byte[] message);
+    public (byte[] Signature, byte[] PublicKey) ExtractSignatureAndPublicKey(byte[] signatureWithPubKey);
+}
+```
+
+`ExtractSignatureAndPublicKey` is implemented directly on `NativeBls` (it is pure byte
+slicing — 96 bytes signature + 48 bytes public key — and needs no native call), so it
+works even before `InitializeAsync` is called.
+
+### IBls12381Operations Interface
+
+EIP-2537 BLS12-381 precompile primitives (point/scalar operations), separate from the
+signature-verification surface of `IBls`. Implemented by `Nethereum.Signer.Bls.Herumi`'s
+`Bls12381Operations` and consumed by `Nethereum.EVM.Precompiles.Bls`.
+
+```csharp
+public interface IBls12381Operations
+{
+    byte[] G1Add(byte[] p1, byte[] p2);
+    byte[] G1Mul(byte[] point, byte[] scalar);
+    byte[] G1Msm(byte[][] points, byte[][] scalars);
+
+    byte[] G2Add(byte[] p1, byte[] p2);
+    byte[] G2Mul(byte[] point, byte[] scalar);
+    byte[] G2Msm(byte[][] points, byte[][] scalars);
+
+    bool Pairing(byte[][] g1Points, byte[][] g2Points);
+
+    byte[] MapFpToG1(byte[] fp);
+    byte[] MapFp2ToG2(byte[] fp2);
 }
 ```
 
@@ -114,9 +151,7 @@ public enum BlsImplementationKind
 
 Ethereum consensus layer uses domain separation to prevent signature reuse:
 
-```
-domain = fork_version || domain_type
-```
+`domain` is the 32-byte consensus-spec domain (`domain_type` followed by the first 28 bytes of `fork_data_root`). `NativeBls`/`HerumiNativeBindings` only validate that it is 32 bytes when supplied.
 
 Common domain types:
 - `DOMAIN_BEACON_PROPOSER` = `0x00000000` - Block proposals
@@ -133,8 +168,6 @@ BLS supports signature aggregation - multiple signatures can be combined into on
 ### Performance
 
 - Aggregate verification is **faster** than verifying N signatures individually
-- ~50-100ms to verify 512-validator sync committee on modern hardware
-- Native implementations (Herumi/BLST) are 100x faster than pure managed code
 
 ## Consensus Layer Use Cases
 
@@ -151,10 +184,13 @@ BLS supports signature aggregation - multiple signatures can be combined into on
 ### Implementations
 - **Nethereum.Signer.Bls.Herumi** - Native Herumi BLS (production-ready)
 
-### Used By
-- **Nethereum.Consensus.Ssz** - SSZ encoding/decoding
-- Light client implementations
-- Beacon chain tools
+### Used By (per `ProjectReference`/`PackageReference` in `src/`)
+- **Nethereum.Consensus.LightClient** - Beacon chain sync committee / light client verification
+- **Nethereum.EVM.Precompiles.Bls** - EIP-2537 BLS12-381 precompiles (`IBls12381Operations`)
+- **Nethereum.AccountAbstraction.Bundler** - ERC-4337 BLS signature aggregation
+- **Nethereum.Wallet** - Wallet BLS signing/verification
+- **Nethereum.MainnetChain** / **Nethereum.MainnetChain.Server** - via the `Nethereum.Signer.Bls.Herumi` package
+- **Nethereum.Node.HarnessServer** - via the `Nethereum.Signer.Bls.Herumi` package
 
 ## Additional Resources
 

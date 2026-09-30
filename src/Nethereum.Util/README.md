@@ -8,6 +8,7 @@ Nethereum.Util provides essential utility functions for Ethereum development. It
 
 ### Key Features
 
+- **EVM 256-bit Integer Types**: `EvmUInt256` / `EvmInt256` — stack-allocated 4×u64 readonly structs with Knuth long division, BigInteger-free hot paths for AOT/trim targets (zkVM, small-binary scenarios)
 - **Keccak-256 Hashing (SHA-3)**: Ethereum's primary cryptographic hash function
 - **Poseidon Hashing**: ZK-proof-friendly hash function with Circom-compatible presets
 - **Hash Provider Abstraction**: `IHashProvider` interface for pluggable hash implementations
@@ -57,6 +58,30 @@ Ethereum uses wei as the smallest unit (10^-18 ether). Common denominations:
 | Ether | 10^18 | User-facing amounts |
 
 The `UnitConversion` class handles conversions between 20+ denominations including wei, kwei, mwei, gwei, szabo, finney, ether, kether, and more.
+
+### EVM 256-bit Integer Types
+
+Ethereum's native word size is 256 bits. For EVM execution paths that need
+hundreds of millions of arithmetic operations per proof (zkVM, stateless
+block verification, gas-metered simulation), `System.Numerics.BigInteger`
+allocates on every operation and pulls in reflection/dynamic code that AOT
+compilation and binary trimmers cannot eliminate.
+
+`EvmUInt256` is a `readonly struct` holding four `ulong` limbs
+(little-endian limb order: `U0` is bits 0–63, `U3` is bits 192–255). All
+arithmetic is stack-allocated and inlined. Public API mirrors the EVM's
+unsigned 256-bit word semantics: wrap-around add/sub/mul, truncated
+div/mod, modular `AddMod`/`MulMod`, full 512-bit `BigMul`, bitwise and
+shift ops, hex / big-endian / little-endian byte conversions.
+
+`EvmInt256` is the signed counterpart built on `EvmUInt256` — two's
+complement with wrap-around arithmetic, sign extension (EVM `SIGNEXTEND`
+semantics), arithmetic right shift (`SAR`), and signed comparisons.
+
+`BigInteger` interop is intentionally isolated in partial
+(`EvmUInt256.BigInteger.cs`, `EvmInt256.BigInteger.cs`) and extension
+(`EvmUInt256BigIntegerExtensions.cs`) classes so consumers that don't
+need it never drag `System.Numerics` into the trimmed binary.
 
 ## Quick Start
 
@@ -394,6 +419,110 @@ string fromLong = addressUtil.ConvertToChecksumAddress(longAddress);
 // Uses last 20 bytes
 ```
 
+### Example 10: EvmUInt256 Core Arithmetic
+
+All examples below are drawn verbatim from `tests/Nethereum.Util.UnitTests/EvmUInt256Tests.cs`.
+
+```csharp
+using Nethereum.Util;
+
+// Construction — implicit from int / long / ulong, explicit via 4-limb ctor
+EvmUInt256 a = 3_000_000;                       // limb U0 only
+var b = new EvmUInt256(42UL);                   // ulong ctor
+var c = new EvmUInt256(0xA, 0xB, 0xC, 0xD);     // u3..u0 explicit
+
+// Constants
+EvmUInt256 zero = EvmUInt256.Zero;
+EvmUInt256 one = EvmUInt256.One;
+EvmUInt256 max = EvmUInt256.MaxValue;
+
+// Addition — wraps on overflow (EVM semantics)
+Assert.Equal(new EvmUInt256(8), new EvmUInt256(3) + new EvmUInt256(5));
+Assert.Equal(EvmUInt256.Zero, EvmUInt256.MaxValue + EvmUInt256.One);
+
+// Subtraction — wraps on underflow
+Assert.Equal(new EvmUInt256(7), new EvmUInt256(10) - new EvmUInt256(3));
+Assert.Equal(EvmUInt256.MaxValue, EvmUInt256.Zero - EvmUInt256.One);
+
+// Multiplication — low 256 bits (EVM MUL)
+Assert.Equal(new EvmUInt256(42), new EvmUInt256(6) * new EvmUInt256(7));
+
+// Full 512-bit product (EVM MULMOD prep / extended precision)
+EvmUInt256 upper = EvmUInt256.BigMul(EvmUInt256.MaxValue, new EvmUInt256(2), out EvmUInt256 lower);
+// upper = high 256 bits, lower = low 256 bits of the true product
+
+// Division / modulus — div-by-zero returns zero (EVM semantics)
+Assert.Equal(new EvmUInt256(7), new EvmUInt256(42) / new EvmUInt256(6));
+Assert.Equal(EvmUInt256.Zero, new EvmUInt256(42) / EvmUInt256.Zero);
+Assert.Equal(new EvmUInt256(1), new EvmUInt256(10) % new EvmUInt256(3));
+
+// Modular arithmetic (EVM ADDMOD / MULMOD)
+var addmod = EvmUInt256.AddMod(new EvmUInt256(10), new EvmUInt256(15), new EvmUInt256(7));
+var mulmod = EvmUInt256.MulMod(new EvmUInt256(10), new EvmUInt256(10), new EvmUInt256(8));
+
+// Comparison, IsZero
+Assert.True(new EvmUInt256(3) < new EvmUInt256(5));
+Assert.True(EvmUInt256.Zero.IsZero);
+```
+
+### Example 11: EvmUInt256 Byte / Hex / BigInteger Interop
+
+```csharp
+using Nethereum.Util;
+using System.Numerics;
+
+// Hex
+var v = EvmUInt256.FromHex("0xdeadbeef");
+string hex = v.ToHexString();            // "0xdeadbeef" (leading zero bytes stripped, not 32-byte padded)
+
+// Big-endian byte roundtrip
+byte[] be = v.ToBigEndian();             // always 32 bytes
+var back = EvmUInt256.FromBigEndian(be);
+Assert.Equal(v, back);
+
+// Short byte arrays pad on the left
+var small = EvmUInt256.FromBigEndian(new byte[] { 0x12, 0x34 });
+Assert.Equal(new EvmUInt256(0x1234), small);
+
+// BigInteger roundtrip (opt-in via the .BigInteger.cs partial / extensions)
+var big = BigInteger.Pow(2, 256) - 1;
+var fromBig = EvmUInt256BigIntegerExtensions.FromBigInteger(big);
+Assert.Equal(EvmUInt256.MaxValue, fromBig);
+Assert.Equal(big, fromBig.ToBigInteger());
+```
+
+### Example 12: EvmInt256 Signed Arithmetic
+
+Examples drawn from `tests/Nethereum.Util.UnitTests/EvmInt256Tests.cs`.
+
+```csharp
+using Nethereum.Util;
+
+// Two's-complement constants
+EvmInt256 minusOne = EvmInt256.MinusOne;       // all-ones bit pattern
+EvmInt256 min = EvmInt256.MinValue;            // 0x8000...0000
+EvmInt256 max = EvmInt256.MaxValue;            // 0x7FFF...FFFF
+
+// Sign inspection (backed by EvmUInt256.IsHighBitSet)
+Assert.True(minusOne.IsNegative);
+Assert.False(EvmInt256.One.IsNegative);
+
+// Signed comparisons — EvmInt256 implements < > <= >=
+Assert.True(minusOne < EvmInt256.Zero);
+Assert.True(EvmInt256.MinValue < EvmInt256.MaxValue);
+
+// Arithmetic — wraps on overflow, like the EVM
+Assert.Equal(new EvmInt256(-7), new EvmInt256(-3) + new EvmInt256(-4));
+Assert.Equal(minusOne, -EvmInt256.One);
+
+// Signed division / modulus (EVM SDIV / SMOD)
+Assert.Equal(new EvmInt256(-5), new EvmInt256(10) / new EvmInt256(-2));
+
+// Arithmetic right shift (EVM SAR) via operator >>
+// SAR of -1 preserves the sign bit regardless of shift count.
+Assert.Equal(EvmInt256.MinusOne, EvmInt256.MinusOne >> 1);
+```
+
 ## API Reference
 
 ### Sha3Keccack
@@ -497,7 +626,7 @@ public static class AddressExtensions
 {
     // Address validation
     public static bool IsValidEthereumAddressHexFormat(this string address);
-    public static bool IsChecksumAddress(this string address);
+    public static bool IsEthereumChecksumAddress(this string address);
 
     // Empty checks
     public static bool IsAnEmptyAddress(this string address);
@@ -509,7 +638,7 @@ public static class AddressExtensions
 
     // Conversion
     public static string ConvertToEthereumChecksumAddress(this string address);
-    public static string ConvertToValid20ByteAddress(this string address);
+    public static string ConvertToValid20ByteAddressLowerCase(this string address);
 }
 ```
 
@@ -518,7 +647,7 @@ public static class AddressExtensions
 High-precision decimal arithmetic for large value conversions.
 
 ```csharp
-public class BigDecimal
+public struct BigDecimal : IComparable, IComparable<BigDecimal>
 {
     public BigDecimal(BigInteger mantissa, int exponent);
 
@@ -567,6 +696,45 @@ public enum PoseidonParameterPreset
 }
 ```
 
+### PoseidonEvmHasher
+
+BigInteger-free Poseidon using `EvmUInt256` field arithmetic. Designed for
+NativeAOT and zkVM builds where `System.Runtime.Numerics` cannot be linked.
+Uses precomputed round constants (no runtime parameter generation).
+
+```csharp
+public class PoseidonEvmHasher
+{
+    public PoseidonEvmHasher();                                  // Default (CircomT3)
+    public PoseidonEvmHasher(PoseidonParameterPreset preset);    // Specific preset
+
+    public EvmUInt256 Hash(params EvmUInt256[] inputs);          // Hash field elements
+    public byte[] HashBytesToBytes(params byte[][] inputs);      // Bytes in, bytes out
+}
+```
+
+Both `PoseidonHasher` (BigInteger API) and `PoseidonEvmHasher` (EvmUInt256 API)
+share the same generic permutation via `PoseidonCore<T>` parameterised by
+`IPoseidonFieldOps<T>`. Cross-validated to produce identical results.
+
+### BN254 Montgomery Poseidon
+
+For performance-critical paths (binary trie state root computation), `BN254PoseidonPairHashProvider` uses Montgomery CIOS field arithmetic instead of generic `EvmUInt256.MulMod`:
+
+```csharp
+// Opt-in fast Poseidon for binary trie (BN254 scalar field, Montgomery form)
+IHashProvider fast = new BN254PoseidonPairHashProvider();
+
+// Original Poseidon (EvmUInt256, generic — used by PrivacyPools, LeanIMT, etc.)
+IHashProvider standard = new PoseidonPairHashProvider();
+
+// Both produce byte-identical output — cross-validated with 400+ random inputs
+```
+
+- `BN254FieldElement` — 4×ulong struct in Montgomery form, CIOS multiply (no division)
+- `BN254PoseidonCore` — specialised CircomT2 permuter, direct static calls (no interface dispatch), unrolled 3×3 MDS
+- `BN254PoseidonPairHashProvider` — `IHashProvider` implementation, reads 64-byte inputs directly without allocation
+
 ### IHashProvider
 
 Pluggable hash provider interface.
@@ -579,7 +747,13 @@ public interface IHashProvider
 
 // Implementations:
 // - Sha3KeccackHashProvider (Keccak-256)
-// - PoseidonHashProvider (Poseidon with configurable preset)
+// - Sha256HashProvider (SHA-256)
+// - PoseidonHashProvider (Poseidon1 BN254, uses PoseidonEvmHasher internally)
+// - PoseidonPairHashProvider (Poseidon1 BN254 CircomT2, expects 32 or 64-byte input)
+// - BN254PoseidonPairHashProvider (Poseidon1 CircomT2 with BN254 Montgomery CIOS,
+//     ~10x faster than PoseidonPairHashProvider, for Privacy Pools / SMT)
+// - GoldilocksPoseidon2HashProvider (Poseidon2 over Goldilocks field p=2^64-2^32+1,
+//     width=16, rate=12, x^7 S-box, for Zisk zkVM binary trie state roots)
 ```
 
 ### Additional Utilities
@@ -588,8 +762,12 @@ public interface IHashProvider
 ```csharp
 public static class DateTimeHelper
 {
-    public static DateTime UnixTimeStampToDateTime(ulong unixTimeStamp);
-    public static ulong GetUnixTimeStampSeconds(DateTime dateTime);
+    // Extension methods on DateTime
+    public static long ToUnixTimestamp(this DateTime value);
+    public static long UnixTimestamp(this DateTime ignored);  // ignores the instance, returns DateTime.UtcNow as a Unix timestamp
+
+    // Static method
+    public static DateTime ParseUnixTimestamp(long timestamp);
 }
 ```
 
@@ -610,7 +788,7 @@ Poseidon is a hash function designed for zero-knowledge proof circuits (zk-SNARK
 using Nethereum.Util;
 using System.Numerics;
 
-// Default hasher (CircomT3 preset - 2 inputs)
+// Default hasher (CircomT3 preset - up to 3 inputs)
 var hasher = new PoseidonHasher();
 
 // Hash field elements
@@ -636,14 +814,27 @@ BigInteger hexResult = hasher.HashHex("0x1234", "0x5678");
 // Use specific Circom preset
 var hasherT1 = new PoseidonHasher(PoseidonParameterPreset.CircomT1);   // 1 input
 var hasherT2 = new PoseidonHasher(PoseidonParameterPreset.CircomT2);   // 2 inputs (Merkle nodes)
-var hasherT6 = new PoseidonHasher(PoseidonParameterPreset.CircomT6);   // up to 5 inputs
-var hasherT14 = new PoseidonHasher(PoseidonParameterPreset.CircomT14); // up to 13 inputs
-var hasherT16 = new PoseidonHasher(PoseidonParameterPreset.CircomT16); // up to 15 inputs
+var hasherT6 = new PoseidonHasher(PoseidonParameterPreset.CircomT6);   // 6 inputs
+var hasherT14 = new PoseidonHasher(PoseidonParameterPreset.CircomT14); // 14 inputs
+var hasherT16 = new PoseidonHasher(PoseidonParameterPreset.CircomT16); // 16 inputs
 ```
 
 Available presets: `CircomT1` (1 input), `CircomT2` (2 inputs), `CircomT3` (default, 3 inputs), `CircomT6` (6 inputs), `CircomT14` (14 inputs), `CircomT16` (16 inputs).
 
 **Privacy Pools usage:** `CircomT1` for nullifier hashing (single field element), `CircomT2` for Merkle tree node hashing (left + right children), `CircomT3` for commitment hashing (e.g., secret + nullifier + amount).
+
+### Poseidon2 / Goldilocks (zkVM State Trie)
+
+Poseidon2 over the Goldilocks field (p = 2^64 - 2^32 + 1) for binary trie state roots in Zisk zkVM proving. Width=16, rate=12, capacity=4, S-box x^7. Constants from pil2-proofman (= HorizenLabs reference).
+
+```csharp
+using Nethereum.Util.HashProviders;
+
+IHashProvider poseidon2 = new GoldilocksPoseidon2HashProvider();
+byte[] hash = poseidon2.ComputeHash(data); // 32-byte digest (4 Goldilocks elements)
+```
+
+The permutation is implemented in `Poseidon2Core` with `GoldilocksField` arithmetic. Validated against pil2-proofman test vectors for width 4, 8, 12, and 16.
 
 ### Hash Provider Abstraction
 
@@ -656,12 +847,13 @@ using Nethereum.Util.HashProviders;
 IHashProvider keccakProvider = new Sha3KeccackHashProvider();
 byte[] keccakHash = keccakProvider.ComputeHash(data);
 
-// Poseidon provider
+// Poseidon1 BN254 provider (Privacy Pools, Circom)
 IHashProvider poseidonProvider = new PoseidonHashProvider();
 byte[] poseidonHash = poseidonProvider.ComputeHash(data);
 
-// Poseidon with specific preset
-IHashProvider poseidonT6 = new PoseidonHashProvider(PoseidonParameterPreset.CircomT6);
+// Poseidon2 Goldilocks provider (Zisk zkVM binary trie)
+IHashProvider poseidon2Provider = new GoldilocksPoseidon2HashProvider();
+byte[] poseidon2Hash = poseidon2Provider.ComputeHash(data);
 ```
 
 ## Related Packages

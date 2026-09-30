@@ -1,6 +1,5 @@
 using System;
 using Org.BouncyCastle.Math;
-
 namespace Nethereum.Signer.Crypto.BN128
 {
     /// <summary>
@@ -150,13 +149,15 @@ namespace Nethereum.Signer.Crypto.BN128
         /// Multiplies by a scalar from Fp (BigInteger).
         /// Each Fp2 component has both real and imaginary parts multiplied by the scalar.
         /// </summary>
-        public Fp6 MulGFP(Fp6 a, BigInteger k)
+        public Fp6 MulGFP(Fp6 a, Fp k)
         {
             X.MulScalar(a.X, k);
             Y.MulScalar(a.Y, k);
             Z.MulScalar(a.Z, k);
             return this;
         }
+
+        public Fp6 MulGFP(Fp6 a, BigInteger k) => MulGFP(a, Fp.FromBigInteger(k));
 
         /// <summary>
         /// Multiplies by τ: (x*τ² + y*τ + z) * τ = x*τ³ + y*τ² + z*τ = ξ*x + y*τ² + z*τ
@@ -272,8 +273,8 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp6 FrobeniusP2(Fp6 a)
         {
-            X.MulScalar(a.X, BN128Constants.XiTo2PSquaredMinus2Over3);
-            Y.MulScalar(a.Y, BN128Constants.XiToPSquaredMinus1Over3);
+            X.MulScalar(a.X, BN128Constants.XiTo2PSquaredMinus2Over3Fp);
+            Y.MulScalar(a.Y, BN128Constants.XiToPSquaredMinus1Over3Fp);
             Z.Set(a.Z);
             return this;
         }

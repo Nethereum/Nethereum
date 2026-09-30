@@ -87,6 +87,7 @@ dotnet add package Nethereum.Signer.AWSKeyManagement
 
 ```csharp
 using Nethereum.Signer.AWSKeyManagement;
+using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Amazon;
 
@@ -101,7 +102,7 @@ var account = new ExternalAccount(signer, chainId: 1);
 await account.InitialiseAsync();
 
 // Use with Web3
-var web3 = new Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
 Console.WriteLine($"Address: {account.Address}");
 ```
@@ -122,20 +123,32 @@ public class AWSKeyManagementExternalSigner : EthExternalSignerBase
     public AWSKeyManagementExternalSigner(IAmazonKeyManagementService keyClient, string keyId);
 
     // Properties
-    protected IAmazonKeyManagementService KeyClient { get; }
+    protected IAmazonKeyManagementService KeyClient { get; private set; }
     public string KeyId { get; }
-    public override bool CalculatesV { get; } = false;
-    public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; } = ExternalSignerTransactionFormat.Hash;
+    public override bool CalculatesV { get; protected set; } = false;
+    public override ExternalSignerTransactionFormat ExternalSignerTransactionFormat { get; protected set; } = ExternalSignerTransactionFormat.Hash;
     public override bool Supported1559 { get; } = true;
 
     // Methods
     protected override Task<byte[]> GetPublicKeyAsync();
-    protected override Task<ECDSASignature> SignExternallyAsync(byte[] hash);
+    protected override Task<ECDSASignature> SignExternallyAsync(byte[] hashBytes);
     public override Task SignAsync(LegacyTransaction transaction);
     public override Task SignAsync(LegacyTransactionChainId transaction);
     public override Task SignAsync(Transaction1559 transaction);
-    public override Task SignAsync(Transaction7702 transaction);
+    public override Task SignAsync(Transaction7702 transaction); // AWS KMS supports 7702 - forwards to the hash-signing path
+    public override Task SignAsync(Transaction4844 transaction); // forwards to the hash-signing path (blob sidecar handling is the caller's responsibility)
 }
+```
+
+### Inherited from EthExternalSignerBase
+
+`AWSKeyManagementExternalSigner` also exposes the following members inherited from its base class (`Nethereum.Signer.EthExternalSignerBase`), unchanged:
+
+```csharp
+public virtual Task<string> GetAddressAsync();
+public virtual Task<EthECDSASignature> SignEthereumMessageAsync(byte[] rawBytes);
+public virtual Task<EthECDSASignature> SignTypedDataAsync<TDomain>(TypedData<TDomain> typedData);
+public virtual Task<string> SignTypedDataJsonAsync(string typedDataJson, string messageKeySelector = "message");
 ```
 
 ## Important Notes
@@ -175,8 +188,9 @@ aws kms create-key \
 |------|-----------|-------|
 | Legacy | Yes | EIP-155 with chain ID (no raw Legacy without chain ID) |
 | EIP-1559 (Type 2) | Yes | MaxFeePerGas, MaxPriorityFeePerGas |
-| EIP-2930 (Type 1) | Yes | Access lists |
+| EIP-2930 (Type 1) | No | No `SignAsync(Transaction2930)` overload; the transaction manager drops access lists for signers that aren't 1559/7702 |
 | EIP-7702 (Type 4) | Yes | Account abstraction |
+| EIP-4844 (Type 3, blob) | Yes | `SignAsync(Transaction4844)` signs the transaction hash |
 
 ### Security Considerations
 
@@ -243,13 +257,15 @@ aws kms create-key \
 ### Error Handling
 
 ```csharp
+using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
+using Amazon.Runtime;
 
 try
 {
     var signature = await account.TransactionManager.SignTransactionAsync(transactionInput);
 }
-catch (AccessDeniedException ex)
+catch (AmazonKeyManagementServiceException ex) when (ex.ErrorCode == "AccessDeniedException")
 {
     // IAM permissions insufficient
     Console.WriteLine($"Access denied: {ex.Message}");
@@ -266,7 +282,7 @@ catch (KMSInvalidStateException ex)
 }
 catch (AmazonServiceException ex)
 {
-    // Other AWS errors
+    // Other AWS errors (AmazonKeyManagementServiceException also derives from this)
     Console.WriteLine($"AWS error: {ex.ErrorCode} - {ex.Message}");
 }
 ```
@@ -297,7 +313,7 @@ RegionEndpoint.APSoutheast1 // Singapore
 | **AWS KMS** | HSM-backed | Medium | ~200ms | AWS-based infrastructure |
 | **Azure Key Vault** | HSM-backed | Medium | ~200ms | Azure-based infrastructure |
 | **Ledger/Trezor** | Hardware wallet | Low | User-dependent | Development, manual signing |
-| **HDWallet** | Software | Free | <1ms | Development, non-production |
+| **HdWallet** | Software | Free | <1ms | Development, non-production |
 
 ## Related Packages
 

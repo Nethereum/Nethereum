@@ -1,17 +1,78 @@
 # Nethereum.Merkle.Binary
 
-Binary Merkle Trie implementation for Ethereum stateless execution per [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864). Provides a stem-based binary trie with 256-value stem nodes, proof generation/verification, key derivation, and pluggable hash providers.
+The EIP-7864 binary Merkle trie — the proposed replacement for Ethereum's hexary Merkle Patricia Trie. A depth-256 binary tree over 32-byte keys, where an account's basic data, code hash and first 64 storage slots share one leaf node instead of a subtree.
 
-## Overview
+## What you can do with it
 
-EIP-7864 proposes replacing Ethereum's Patricia Merkle Trie with a binary trie structure that enables stateless block execution through smaller proofs. This library implements the complete specification:
+- **Compute an EIP-7864 state root** over accounts, code chunks and storage slots.
+- **Map an account onto the tree** — derive the keys for its balance and nonce, its code hash, each code chunk, and each storage slot.
+- **Prove a key against a root**, and verify a proof you were given without holding the tree.
+- **Produce and verify a block state diff** — the stems and sub-indices a block changed, plus the roots it moves between, which is the unit stateless verification needs.
+- **Chain a run of blocks**, checking each block's post-root is the next one's pre-root.
+- **Sync one contract, or the top of the tree only** — the node store indexes by depth and by address, so a checkpoint or a per-contract slice is a single call.
+- **Swap the hash function** — Blake3 for the spec vectors, Poseidon for ZK, SHA-256 for anything else.
 
-- **Binary trie** with stems (31 bytes) and 256 colocated values per stem node
-- **Key derivation** for account data, code chunks, and storage slots
-- **BasicDataLeaf packing** — version, code size, nonce, and balance in a single 32-byte leaf
-- **Code chunking** — split contract bytecode into 31-byte chunks with PUSH continuation tracking
-- **Proof generation and verification** — compact Merkle proofs for stateless validation
-- **Pluggable hashing** — SHA-256 (default) or BLAKE3
+## Quick start
+
+Put a value, take the root, prove the key, verify the proof.
+
+*From `ProofTests.Proof_SingleEntry_Verifies` (use case `binary-trie-proofs`) — a tagged, passing test. `CreateTrie`, `MakeKey` and `MakeVal` are that test class's own private helpers, reproduced here from `tests/Nethereum.Merkle.Binary.Tests/ProofTests.cs:15-32` so the block runs as written.*
+
+```csharp
+static byte[] MakeKey(byte prefix, byte leafIdx)
+{
+    var k = new byte[32];
+    k[0] = prefix;
+    k[31] = leafIdx;
+    return k;
+}
+
+static byte[] MakeVal(byte b)
+{
+    var v = new byte[32];
+    v[0] = b;
+    return v;
+}
+
+BinaryTrie CreateTrie(IHashProvider hp = null)
+{
+    return new BinaryTrie(hp ?? new Sha256HashProvider());
+}
+
+var trie = CreateTrie();
+var key = MakeKey(0x00, 1);
+var val = MakeVal(0xAA);
+trie.Put(key, val);
+
+var prover = new BinaryTrieProver(trie);
+var proof = prover.BuildProof(key);
+Assert.NotNull(proof);
+Assert.NotEmpty(proof.Nodes);
+
+var verifier = new BinaryTrieProofVerifier(trie.HashProvider);
+var result = verifier.VerifyProof(trie.ComputeRoot(), key, proof);
+Assert.NotNull(result);
+Assert.Equal(val, result);
+```
+
+Verification is by reconstruction, so a proof that does not rebuild the root returns `null` rather than throwing.
+
+## Entry points
+
+**Start with `BinaryTrie`.** `new BinaryTrie()` gives you a working tree — hashed with SHA-256, which is the default, *not* the Blake3 the EIP-7864 spec vectors use. Everything else hangs off it.
+
+| I want to… | Reach for |
+|---|---|
+| **Build a tree and get its root** | **`new BinaryTrie()` → `Put(key, value)` → `ComputeRoot()`** |
+| Use a specific hash | `new BinaryTrie(new Blake3HashProvider())` |
+| Turn an account into tree keys | `new BinaryTreeKeyDerivation(hashProvider).GetTreeKeyForBasicData(address)` and friends |
+| Pack an account header leaf | `BasicDataLeaf.Pack(version, codeSize, nonce, balance)` |
+| Split code into chunks | `CodeChunker.ChunkifyCode(code)` |
+| Prove a key | `new BinaryTrieProver(trie).BuildProof(key)` |
+| Verify a proof | `new BinaryTrieProofVerifier(hashProvider).VerifyProof(root, key, proof)` |
+| Persist the tree | `trie.SaveToStorage(new InMemoryBinaryTrieNodeStore())` |
+| Produce a block diff | `BinaryTrieStateDiffProducer.Produce(blockNumber, preRoot, postRoot, nodeStore)` |
+| Verify a block diff | `new BinaryTrieStateDiffVerifier(hashProvider).Verify(diff, preTrie)` |
 
 ## Installation
 
@@ -19,362 +80,318 @@ EIP-7864 proposes replacing Ethereum's Patricia Merkle Trie with a binary trie s
 dotnet add package Nethereum.Merkle.Binary
 ```
 
-### Dependencies
-
-- **Nethereum.Util** — Hash providers (`IHashProvider`), byte array utilities
-- **Nethereum.Hex** — Hex string conversions
-
-## Key Concepts
-
-### Binary Trie vs Patricia Trie
-
-| Aspect | Patricia Trie (current) | Binary Trie (EIP-7864) |
-|--------|------------------------|----------------------|
-| Branching | 16-way (hex nibbles) | 2-way (binary bits) |
-| Key structure | Nibble path | 31-byte stem + 1-byte suffix |
-| Values per node | 1 | 256 (colocated under stem) |
-| Proof size | Larger (16 children per branch) | Smaller (2 children per branch) |
-| Hashing | Keccak-256 | BLAKE3 or SHA-256 |
-| Use case | Current Ethereum state | Stateless execution |
-
-### Stem Structure
-
-A 32-byte key is split into:
-- **Stem** (bytes 0-30): Shared prefix identifying a group of 256 related values
-- **Suffix** (byte 31): Index 0-255 within the stem node
-
-Account basic data, code hash, inline storage, and code chunks for the same address share a stem, allowing efficient access patterns.
-
-## Quick Start
+## Shape of the trie
 
 ```csharp
-using Nethereum.Merkle.Binary;
-
-var trie = new BinaryTrie();
-
-// Put a value (32-byte key, 32-byte value)
-var key = new byte[32];
-key[31] = 0x01;
-var value = new byte[32];
-value[0] = 0xFF;
-
-trie.Put(key, value);
-
-// Get the value back
-var retrieved = trie.Get(key);
-
-// Compute the root hash
-var root = trie.ComputeRoot();
-```
-
-## Usage Examples
-
-### Example 1: Basic Trie Operations
-
-```csharp
-using Nethereum.Merkle.Binary;
-
-var trie = new BinaryTrie();
-
-// Insert
-var key = new byte[32];
-var value = new byte[32];
-value[0] = 0xAA;
-trie.Put(key, value);
-
-// Retrieve
-var result = trie.Get(key);  // returns value
-
-// Delete (sets to zero)
-trie.Delete(key);
-var deleted = trie.Get(key);  // returns 32 zero bytes
-
-// Root hash
-var root = trie.ComputeRoot();
-```
-
-### Example 2: EIP-7864 Key Derivation
-
-```csharp
-using Nethereum.Merkle.Binary.Keys;
-using Nethereum.Merkle.Binary.Hashing;
-using System.Numerics;
-
-var keyDerivation = new BinaryTreeKeyDerivation(new Blake3HashProvider());
-var address = new byte[20];  // Ethereum address
-
-// Account basic data key (nonce, balance, code size)
-var basicDataKey = keyDerivation.GetTreeKeyForBasicData(address);
-
-// Code hash key
-var codeHashKey = keyDerivation.GetTreeKeyForCodeHash(address);
-
-// Storage slot key
-var storageKey = keyDerivation.GetTreeKeyForStorageSlot(address, BigInteger.Zero);
-
-// Code chunk key
-var codeChunkKey = keyDerivation.GetTreeKeyForCodeChunk(address, chunkId: 5);
-```
-
-### Example 3: Proof Generation and Verification
-
-```csharp
-using Nethereum.Merkle.Binary;
-using Nethereum.Merkle.Binary.Proofs;
-
-var trie = new BinaryTrie();
-
-// Insert some data
-var key = new byte[32];
-key[0] = 0x01;
-var value = new byte[32];
-value[0] = 0xFF;
-trie.Put(key, value);
-
-// Generate proof
-var prover = new BinaryTrieProver(trie);
-var proof = prover.BuildProof(key);
-
-// Verify proof (can be done without the full trie)
-var verifier = new BinaryTrieProofVerifier(trie.HashProvider);
-var verified = verifier.VerifyProof(trie.ComputeRoot(), key, proof);
-// verified == value
-```
-
-### Example 4: BasicDataLeaf Packing
-
-Pack account state into a single 32-byte leaf:
-
-```csharp
-using Nethereum.Merkle.Binary.Keys;
-using System.Numerics;
-
-byte version = 1;
-uint codeSize = 24576;
-ulong nonce = 42;
-var balance = BigInteger.Parse("1000000000000000000");  // 1 ETH in wei
-
-// Pack into 32 bytes
-var packed = BasicDataLeaf.Pack(version, codeSize, nonce, balance);
-
-// Unpack
-BasicDataLeaf.Unpack(packed, out var v, out var cs, out var n, out var b);
-// v == 1, cs == 24576, n == 42, b == 1000000000000000000
-```
-
-**Leaf layout (32 bytes):**
-
-| Offset | Size | Field |
-|--------|------|-------|
-| 0 | 1 byte | Version |
-| 1-4 | 4 bytes | Reserved |
-| 5-7 | 3 bytes | Code size (big-endian) |
-| 8-15 | 8 bytes | Nonce (big-endian) |
-| 16-31 | 16 bytes | Balance (big-endian) |
-
-### Example 5: Code Chunking
-
-```csharp
-using Nethereum.Merkle.Binary.Keys;
-
-// Split bytecode into 31-byte chunks
-var code = new byte[] { 0x60, 0x80, 0x60, 0x40, 0x52 };  // PUSH1 0x80 PUSH1 0x40 MSTORE
-var chunks = CodeChunker.ChunkifyCode(code);
-
-// Each chunk is 32 bytes: [continuation_byte][31 bytes of code]
-// continuation_byte tracks PUSH data spanning chunk boundaries
-```
-
-### Example 6: Custom Hash Provider
-
-```csharp
-using Nethereum.Merkle.Binary;
-using Nethereum.Merkle.Binary.Hashing;
-using Nethereum.Util.HashProviders;
-
-// SHA-256 (default)
-var sha256Trie = new BinaryTrie(new Sha256HashProvider());
-
-// BLAKE3 (faster, managed implementation)
-var blake3Trie = new BinaryTrie(new Blake3HashProvider());
-
-// Both produce deterministic roots given the same data
-```
-
-### Example 7: Stem Operations (Bulk Insert)
-
-```csharp
-using Nethereum.Merkle.Binary;
-
-var trie = new BinaryTrie();
-
-// Insert 256 values at a stem in one operation
-var stem = new byte[31];
-var values = new byte[256][];
-values[0] = new byte[32]; values[0][0] = 0xAA;
-values[255] = new byte[32]; values[255][0] = 0xCC;
-// null entries are treated as zero
-
-trie.PutStem(stem, values);
-
-// Retrieve all values at a stem
-var retrieved = trie.GetValuesAtStem(stem);
-// retrieved[0][0] == 0xAA, retrieved[255][0] == 0xCC
-```
-
-### Example 8: Persistent Storage
-
-```csharp
-using Nethereum.Merkle.Binary;
-using Nethereum.Merkle.Binary.Storage;
-
-// Save trie to storage
-var storage = new InMemoryBinaryTrieStorage();
-trie.SaveToStorage(storage);
-
-// Load with a node resolver for lazy loading
-var options = new BinaryTrieOptions
+public static class BinaryTrieConstants
 {
-    HashProvider = new Blake3HashProvider(),
-    NodeResolver = (path, hash) => storage.Get(hash)
-};
-var loaded = new BinaryTrie(options);
-```
+    public const int StemNodeWidth = 256;
+    public const int StemSize = 31;
+    public const int HashSize = 32;
+    public const int BitmapSize = 32;
+    public const int NodeTypeBytes = 1;
+    public const int ValueMerkleLevels = 8;
 
-## API Reference
+    public const byte NodeTypeStem = 1;
+    public const byte NodeTypeInternal = 2;
 
-### BinaryTrie
-
-```csharp
-public class BinaryTrie
-{
-    BinaryTrie();
-    BinaryTrie(IHashProvider hashProvider);
-    BinaryTrie(BinaryTrieOptions options);
-
-    byte[] Get(byte[] key);                                         // 32-byte key
-    void Put(byte[] key, byte[] value);                            // 32-byte key and value
-    void Delete(byte[] key);                                       // Sets value to zero
-    byte[][] GetValuesAtStem(byte[] stem);                         // 31-byte stem
-    void PutStem(byte[] stem, byte[][] values);                    // Bulk insert 256 values
-    void ApplyBatch(IEnumerable<KeyValuePair<byte[], byte[]>> entries);
-    byte[] ComputeRoot();
-    int GetHeight();
-    BinaryTrie Copy();
-    void SaveToStorage(IBinaryTrieStorage storage);
-
-    IHashProvider HashProvider { get; }
+    public static byte[] ZeroHash { get; }
+    public static bool IsZeroHash(byte[] hash);
 }
 ```
 
-### BinaryTreeKeyDerivation
+`StemSize` is the 31 key bytes that identify a stem and `StemNodeWidth` the 256 values held under it; `ValueMerkleLevels` is **8** — the depth of the binary merkleisation over those values, which is what makes 2⁸ = 256 = `StemNodeWidth` of them. `NodeTypeStem` / `NodeTypeInternal` and `BitmapSize` belong to the compact node encoding. `ZeroHash` and `IsZeroHash` express the EIP-7864 zero-propagation shortcut: `hash([0x00] * 64) = [0x00] * 32`, so an all-empty subtree collapses to zeros instead of hashing.
+
+Node types implement one interface, `IBinaryNode` (`src/Nethereum.Merkle.Binary/Nodes/IBinaryNode.cs`):
+
+```csharp
+public interface IBinaryNode
+{
+    byte[] Get(byte[] key, NodeResolverFunc resolver);
+    IBinaryNode Insert(byte[] key, byte[] value, NodeResolverFunc resolver, int depth);
+    byte[][] GetValuesAtStem(byte[] stem, NodeResolverFunc resolver);
+    IBinaryNode InsertValuesAtStem(byte[] stem, byte[][] values, NodeResolverFunc resolver, int depth);
+    byte[] ComputeHash(IHashProvider hashProvider);
+    IBinaryNode Copy();
+    int GetHeight();
+}
+```
+
+`Insert` and `InsertValuesAtStem` return the *replacement* node rather than mutating in place, which is how `Copy()` can hand out an independent pre-state trie for diff verification.
+
+| Node | Role |
+|---|---|
+| `StemBinaryNode` | holds `Stem` and its `Values` (256 slots); `GetHeight()` is always 1 |
+| `InternalBinaryNode` | `Left` / `Right` children, branching on one bit of the key |
+| `HashedBinaryNode` | a `Hash` standing in for a subtree not in memory; resolved through the `NodeResolverFunc` |
+| `EmptyBinaryNode` | the empty subtree; shared `EmptyBinaryNode.Instance` |
+
+`NodeResolverFunc` is `delegate byte[] NodeResolverFunc(byte[] path, byte[] hash)` — the hook the trie calls to pull a missing node's blob from storage. It is supplied through `BinaryTrieOptions { HashProvider, NodeResolver }`. `BinaryTrieOptions.Default` leaves `NodeResolver` null — nothing is pulled from storage — and sets `HashProvider = new Sha256HashProvider()` (`BinaryTrieOptions.cs:12-15`), so **`new BinaryTrie()` hashes with SHA-256, not Blake3**. The EIP-7864 spec vectors are Blake3: a trie built with the default hash produces a different root, so pass `new BinaryTrie(new Blake3HashProvider())` when the root has to match the spec or a peer.
+
+## Usage
+
+Every snippet below is extracted verbatim from a `[NethereumDocExample(DocSection.ChainInfrastructure, …)]`-tagged passing test in `tests/Nethereum.Merkle.Binary.Tests`.
+
+**They are fragments, not programs.** Extraction keeps the body of the test method, so a snippet may call the test class's private helpers (`MakeKey`, `MakeValue`, `MakeVal`, `CreateTrie`, `CreateBlake3Trie`, `BuildTrieWithTwoAccounts`, `ProduceOneDiff`) or its fields (`_keyDerivation`, `_hashProvider`), and it may end in `Assert`. Open the named test file for the setup before copying — only the Quick Start above is reproduced complete.
+
+### Put and get
+
+*From `BinaryTrieTests.SingleEntry_PutGet_ReturnsValue` (use case `binary-trie`).*
+
+```csharp
+var trie = new BinaryTrie();
+var key = MakeKey(0x00, 0x01);
+var value = MakeValue(0xAB);
+
+trie.Put(key, value);
+var result = trie.Get(key);
+
+Assert.Equal(value, result);
+```
+
+`new BinaryTrie()` uses `BinaryTrieOptions.Default`, and therefore **SHA-256** — swap in `new BinaryTrie(new Blake3HashProvider())` for EIP-7864 spec roots. The other constructors are `BinaryTrie(BinaryTrieOptions options)`, `BinaryTrie(IHashProvider hashProvider)`, and the static `BinaryTrie.FromRootHash(byte[] rootHash, BinaryTrieOptions options)` for attaching to an existing root through a resolver.
+
+### Round-trip with Blake3, and what deletion means
+
+*From `BinaryTrieSpecVectorTests.PutGetDelete_RoundTrip_Blake3` (use case `binary-trie`).*
+
+```csharp
+var trie = CreateBlake3Trie();
+var key = new byte[32]; key[31] = 0x01;
+var val = "deadbeef00000000000000000000000000000000000000000000000000000000".HexToByteArray();
+
+trie.Put(key, val);
+var got = trie.Get(key);
+Assert.Equal(val, got);
+
+var hashAfterPut = trie.ComputeRoot();
+Assert.NotEqual(new byte[32], hashAfterPut);
+
+trie.Delete(key);
+got = trie.Get(key);
+Assert.Null(got);
+```
+
+`Delete` marks the sub-index absent. The companion test `Delete_ProducesAbsentRoot_NotZeroValueRoot_Blake3` pins the distinction that matters for consensus: an *absent* value and a *zero* value do not produce the same root.
+
+### The rest of the trie surface
+
+| Member | Purpose |
+|---|---|
+| `byte[] Get(byte[] key)` / `void Put(byte[] key, byte[] value)` / `void Delete(byte[] key)` | single-key access |
+| `byte[][] GetValuesAtStem(byte[] stem)` / `void PutStem(byte[] stem, byte[][] values)` | read/write a whole stem's 256 slots at once |
+| `void ApplyBatch(IEnumerable<KeyValuePair<byte[], byte[]>> entries)` | bulk insert |
+| `byte[] ComputeRoot()` | the state root |
+| `BinaryTrie Copy()` | independent copy (used to keep a pre-state trie for diff verification) |
+| `int GetHeight()` | tree height |
+| `List<IBinaryNode> FindPath(byte[] stem)` | root-to-stem node path |
+| `IHashProvider HashProvider` | the hash in use |
+| `void SaveToStorage(IBinaryTrieStorage storage)` | persist the trie's nodes |
+
+## Key derivation — mapping accounts onto stems
+
+`BinaryTreeKeyDerivation` turns an address plus a tree index into a 32-byte key.
+
+| Member | Value / meaning |
+|---|---|
+| `BasicDataLeafKey` | `0` — sub-index of the packed basic-data leaf |
+| `CodeHashLeafKey` | `1` — sub-index of the code hash |
+| `HeaderStorageOffset` | `64` — where the account header's inline storage slots begin |
+| `CodeOffset` | `128` — where code chunks begin |
+| `byte[] GetTreeKey(byte[] address32, EvmUInt256 treeIndex, byte subIndex)` | the general form |
+| `byte[] GetTreeKeyForBasicData(byte[] address)` | version, code size, nonce, balance |
+| `byte[] GetTreeKeyForCodeHash(byte[] address)` | code hash |
+| `byte[] GetTreeKeyForCodeChunk(byte[] address, ulong chunkId)` | one 31-byte code chunk |
+| `byte[] GetTreeKeyForStorageSlot(byte[] address, EvmUInt256 storageKey)` | storage slot |
+| `static byte[] AddressTo32(byte[] address)` | left-pads a 20-byte address to 32 |
 
 ```csharp
 public class BinaryTreeKeyDerivation
 {
-    BinaryTreeKeyDerivation(IHashProvider hashProvider);
+    public const byte BasicDataLeafKey = 0;
+    public const byte CodeHashLeafKey = 1;
+    public const int HeaderStorageOffset = 64;
+    public const int CodeOffset = 128;
 
-    byte[] GetTreeKey(byte[] address32, BigInteger treeIndex, byte subIndex);
-    byte[] GetTreeKeyForBasicData(byte[] address);
-    byte[] GetTreeKeyForCodeHash(byte[] address);
-    byte[] GetTreeKeyForCodeChunk(byte[] address, ulong chunkId);
-    byte[] GetTreeKeyForStorageSlot(byte[] address, BigInteger storageKey);
+    public byte[] GetTreeKey(byte[] address32, EvmUInt256 treeIndex, byte subIndex);
+    public byte[] GetTreeKeyForBasicData(byte[] address);
+    public byte[] GetTreeKeyForCodeHash(byte[] address);
+    public byte[] GetTreeKeyForCodeChunk(byte[] address, ulong chunkId);
+    public byte[] GetTreeKeyForStorageSlot(byte[] address, EvmUInt256 storageKey);
 
-    static byte[] AddressTo32(byte[] address);
+    public static byte[] AddressTo32(byte[] address);
 }
 ```
 
-### BasicDataLeaf
+The design point is *locality*: slots 0–63 land inside the account's header stem (`HeaderStorageOffset` … `CodeOffset - 1`), so a contract's hot slots are read with its balance and nonce in one node. Slot 64 onward moves to a different stem.
+
+*From `KeyDerivationTests.GetTreeKeyForStorageSlot_MainStorage64_DifferentStem` (use case `binary-trie-keys`).*
+
+```csharp
+var addr = new byte[20]; addr[0] = 0x11;
+var key63 = _keyDerivation.GetTreeKeyForStorageSlot(addr, (EvmUInt256)63);
+var key64 = _keyDerivation.GetTreeKeyForStorageSlot(addr, (EvmUInt256)64);
+
+bool stemsDiffer = false;
+for (int i = 0; i < 31; i++)
+    if (key63[i] != key64[i]) { stemsDiffer = true; break; }
+Assert.True(stemsDiffer);
+```
+
+Two helpers complete the account mapping:
+
+**`BasicDataLeaf`** packs version, code size, nonce and balance into one 32-byte leaf at fixed offsets:
 
 ```csharp
 public static class BasicDataLeaf
 {
-    static byte[] Pack(byte version, uint codeSize, ulong nonce, BigInteger balance);
-    static void Unpack(byte[] leaf, out byte version, out uint codeSize,
-                       out ulong nonce, out BigInteger balance);
+    public const int VersionOffset = 0;
+    public const int CodeSizeOffset = 5;
+    public const int NonceOffset = 8;
+    public const int BalanceOffset = 16;
+
+    public static byte[] Pack(byte version, uint codeSize, ulong nonce, EvmUInt256 balance);
+    public static void Unpack(byte[] leaf, out byte version, out uint codeSize, out ulong nonce, out EvmUInt256 balance);
 }
 ```
 
-### CodeChunker
+**`CodeChunker`** cuts contract code into 31-byte pieces (zero-padding the tail) and stores each as a 32-byte chunk: byte 0 is the number of leading bytes that are PUSH data spilling in from the previous chunk, bytes 1–31 are the code. That header is what lets a chunk be executed or verified without its predecessor (`CodeChunkerTests.Push32_SpansBoundary`).
 
 ```csharp
-public static class CodeChunker
-{
-    static byte[][] ChunkifyCode(byte[] code);  // Returns 32-byte chunks
-}
+public static byte[][] ChunkifyCode(byte[] code);
 ```
 
-### BinaryTrieProver / BinaryTrieProofVerifier
+## Hashing
+
+| Type | Purpose |
+|---|---|
+| `Blake3HashProvider` | Blake3 as an `IHashProvider`; `Blake3HashProvider(IBlake3Strategy strategy)` lets you swap in a native implementation for the default `ManagedBlake3Strategy` |
+| `ValuesMerkleizer.Merkleize(byte[][] values, IHashProvider hashProvider)` | merkleises a stem's 256 values |
+| `CachedValuesMerkleizer` | the same, incrementally — `MarkDirty(int subIndex)`, `MarkFullDirty()`, `ComputeRoot(byte[][] values, IHashProvider hashProvider)` recompute only the touched path |
+
+The trie is hash-agnostic, and **the default is SHA-256** (`BinaryTrieOptions.Default`). `Blake3HashProvider` is what the EIP-7864 spec vectors require; the test suite also exercises Poseidon (`Verify_Poseidon_Passes`) and SHA-256. The hash is part of the root — two tries over the same keys under different providers do not agree.
+
+## Proofs
+
+`BinaryTrieProver` walks the trie and collects the nodes on a key's path; `BinaryTrieProofVerifier` replays them against a root and returns the value, or `null` if the proof does not reconstruct that root.
+
+| Type | Surface |
+|---|---|
+| `BinaryTrieProof` | `byte[][] Nodes` |
+| `BinaryTrieProver` | `BinaryTrieProver(BinaryTrie trie)`, `BinaryTrieProof BuildProof(byte[] key)` |
+| `BinaryTrieProofVerifier` | `BinaryTrieProofVerifier(IHashProvider hashProvider)`, `byte[] VerifyProof(byte[] rootHash, byte[] key, BinaryTrieProof proof)` |
 
 ```csharp
-public class BinaryTrieProver
-{
-    BinaryTrieProver(BinaryTrie trie);
-    BinaryTrieProof BuildProof(byte[] key);
-}
-
-public class BinaryTrieProofVerifier
-{
-    BinaryTrieProofVerifier(IHashProvider hashProvider);
-    byte[] VerifyProof(byte[] rootHash, byte[] key, BinaryTrieProof proof);
-}
-
 public class BinaryTrieProof
 {
-    byte[][] Nodes { get; set; }
+    public byte[][] Nodes { get; set; }
 }
 ```
 
-### ValuesMerkleizer
+*From `ProofTests.Proof_SingleEntry_Verifies` (use case `binary-trie-proofs`).*
 
 ```csharp
-public static class ValuesMerkleizer
-{
-    static byte[] Merkleize(byte[][] values, IHashProvider hashProvider);
-}
+var trie = CreateTrie();
+var key = MakeKey(0x00, 1);
+var val = MakeVal(0xAA);
+trie.Put(key, val);
+
+var prover = new BinaryTrieProver(trie);
+var proof = prover.BuildProof(key);
+Assert.NotNull(proof);
+Assert.NotEmpty(proof.Nodes);
+
+var verifier = new BinaryTrieProofVerifier(trie.HashProvider);
+var result = verifier.VerifyProof(trie.ComputeRoot(), key, proof);
+Assert.NotNull(result);
+Assert.Equal(val, result);
 ```
 
-Merkleizes a 256-element sparse array of 32-byte values into a single root hash using an 8-level binary tree.
+Verification is by reconstruction, so failure is expressed as `null` rather than a thrown exception. Flipping one bit in one proof node is enough:
 
-### Hash Providers
+*From `ProofTests.Proof_TamperedNode_FailsVerification` (use case `binary-trie-proofs`).*
 
 ```csharp
-// BLAKE3 (managed implementation, no native dependencies)
-public class Blake3HashProvider : IHashProvider
-{
-    Blake3HashProvider();
-    byte[] ComputeHash(byte[] data);
-}
-
-// SHA-256 (from Nethereum.Util)
-public class Sha256HashProvider : IHashProvider
+proof.Nodes[0][1] ^= 0x01;
+var tampered = verifier.VerifyProof(trie.ComputeRoot(), key, proof);
+Assert.Null(tampered);
 ```
 
-### Node Types
+`BuildProof` always returns a `BinaryTrieProof`; when the key is not in the trie, or the trie is empty, the proof simply does not reconstruct the root and the verifier returns `null` (`Proof_MissingKey_ReturnsNull`, `Proof_EmptyTrie_ReturnsNull`). It throws `ArgumentException` if the key is not exactly 32 bytes. The verifier also returns `null` for a null or empty proof and for a null root (`Proof_NullInputs_ReturnsNull`).
 
-| Type | Description |
-|------|-------------|
-| `EmptyBinaryNode` | Singleton empty node, returns 32 zero bytes as hash |
-| `StemBinaryNode` | Holds 31-byte stem + up to 256 values (sparse) |
-| `InternalBinaryNode` | Binary branch with left/right children |
-| `HashedBinaryNode` | Lazy-loaded placeholder resolved via `NodeResolver` |
+## State diffs — carrying one root to the next
 
-### CompactBinaryNodeCodec
+A `BinaryTrieStateDiff` is the stateless-verification unit: the stems and sub-indices a block changed, plus the roots it moves between.
 
 ```csharp
-public static class CompactBinaryNodeCodec
+public class BinaryTrieStateDiff
 {
-    static byte[] Encode(IBinaryNode node, IHashProvider hashProvider);
-    static IBinaryNode Decode(byte[] data, int depth);
+    public const byte VERSION = 1;
+
+    public byte Version { get; set; }
+    public long BlockNumber { get; set; }
+    public byte[] PreStateRoot { get; set; }
+    public byte[] PostStateRoot { get; set; }
+    public List<StemDiff> StemDiffs { get; set; }
+    public List<byte[]> ProofSiblings { get; set; }
+}
+
+public class StemDiff
+{
+    public byte[] Stem { get; set; }
+    public List<SuffixDiff> SuffixDiffs { get; set; }
+}
+
+public class SuffixDiff
+{
+    public byte SuffixIndex { get; set; }
+    public byte[] OldValue { get; set; }
+    public byte[] NewValue { get; set; }
+}
+
+public class StateDiffVerificationResult
+{
+    public bool Success { get; }
+    public string ErrorMessage { get; }
+    public byte[] ComputedRoot { get; }
+    public byte[] ExpectedRoot { get; }
+    public int StemsApplied { get; }
+    public int SuffixesApplied { get; }
+
+    public static StateDiffVerificationResult Pass(int stems, int suffixes, byte[] root);
+    public static StateDiffVerificationResult Fail(string message, byte[] computed, byte[] expected);
 }
 ```
 
-Encoding formats:
-- **Stem node**: `[0x01][stem:31][bitmap:32][present values...]` — bitmap indicates which of 256 slots are populated
-- **Internal node**: `[0x02][leftHash:32][rightHash:32]` — always 65 bytes
-- **Empty node**: empty byte array
+The diff is produced from the store's dirty nodes and verified back against the pre-state trie:
 
-### Storage
+```csharp
+public static BinaryTrieStateDiff Produce(
+    long blockNumber,
+    byte[] preStateRoot,
+    byte[] postStateRoot,
+    IBinaryTrieNodeStore nodeStore);
+```
+
+`BinaryTrieStateDiffEncoder.Encode(BinaryTrieStateDiff diff)` / `Decode(byte[] data)` are the wire format, and `BinaryTrieStateDiffVerifier(IHashProvider hashProvider)` exposes `Verify(BinaryTrieStateDiff diff, BinaryTrie preTrie)` plus `VerifySequence(...)` for a run of blocks.
+
+*From `StateDiffVerifierTests.Verify_ValidDiff_Passes` (use case `binary-trie-state-diff`).*
+
+```csharp
+var (preTrie, diff) = ProduceOneDiff();
+var verifier = new BinaryTrieStateDiffVerifier(_hashProvider);
+var result = verifier.Verify(diff, preTrie);
+
+Assert.True(result.Success, result.ErrorMessage);
+Assert.True(result.StemsApplied > 0);
+Assert.True(result.SuffixesApplied > 0);
+```
+
+`StateDiffVerificationResult` is constructed only through its two public factories, `Pass(stems, suffixes, root)` and `Fail(message, computed, expected)` — the properties are read-only, so a custom verifier reuses the same result type rather than setting fields.
+
+The verifier applies the diff to the pre-state trie and checks the result against `PostStateRoot`. Tampering with either root, or with a value inside the diff, fails it — asserted by `Verify_TamperedPostRoot_Fails`, `Verify_TamperedPreRoot_Fails` and `Verify_TamperedValue_Fails` in the same file. `VerifySequence` chains blocks so each block's post-root must be the next block's pre-root.
+
+## Storage
 
 ```csharp
 public interface IBinaryTrieStorage
@@ -384,24 +401,89 @@ public interface IBinaryTrieStorage
     void Delete(byte[] key);
 }
 
-public class InMemoryBinaryTrieStorage : IBinaryTrieStorage
+public interface IBinaryTrieNodeStore : IBinaryTrieStorage
+{
+    void PutNode(byte[] hash, byte[] encoded, int depth, byte nodeType, byte[] stem);
+
+    void RegisterAddressStem(byte[] address, byte[] stemNodeHash);
+
+    IReadOnlyList<NodeEntry> GetNodesByDepthRange(int minDepth, int maxDepth);
+
+    IReadOnlyList<NodeEntry> GetStemNodesByAddress(byte[] address);
+
+    IReadOnlyList<NodeEntry> GetDirtyNodes();
+
+    void MarkBlockCommitted(long blockNumber);
+
+    void ClearDirtyTracking();
+
+    byte[] ExportCheckpoint(int maxDepth);
+
+    void ImportCheckpoint(byte[] checkpoint);
+
+    int NodeCount { get; }
+}
+
+public class NodeEntry
+{
+    public byte[] Hash { get; set; }
+    public byte[] Encoded { get; set; }
+    public int Depth { get; set; }
+    public byte NodeType { get; set; }
+    public byte[] Stem { get; set; }
+    public long BlockNumber { get; set; }
+    public bool IsDirty { get; set; }
+}
 ```
 
-## Differences from Nethereum.Merkle
+`InMemoryBinaryTrieStorage` is the plain in-memory blob store (with a `Count`); `InMemoryBinaryTrieNodeStore` implements the full node-store contract. `CompactBinaryNodeCodec.Encode(IBinaryNode node, IHashProvider hashProvider)` / `Decode(byte[] data, int depth)` is the per-node format.
 
-| Aspect | Nethereum.Merkle | Nethereum.Merkle.Binary |
-|--------|-----------------|------------------------|
-| Structure | Standard/sparse Merkle trees | EIP-7864 binary trie with stems |
-| Use case | Airdrops, whitelisting, ZK state | Stateless Ethereum execution |
-| Key size | Variable | 32 bytes (31-byte stem + suffix) |
-| Value size | Variable | 32 bytes |
-| Values per node | 1 | 256 (colocated under stem) |
-| Hashing | Keccak-256, Poseidon | BLAKE3, SHA-256 |
-| Specification | Various | EIP-7864 |
-| Proofs | OpenZeppelin-compatible | Binary inclusion proofs |
+`BinaryTrieCheckpointSerializer` is the checkpoint format. It is **not** symmetric: it serialises `NodeEntry` but deserialises into `CheckpointEntry`, a separate public struct carrying only the five fields the checkpoint stores — no `BlockNumber`, no `IsDirty` (`Storage/BinaryTrieCheckpointSerializer.cs:6-13,54`):
 
-## Related Packages
+```csharp
+public struct CheckpointEntry
+{
+    public byte[] Hash;
+    public byte[] Encoded;
+    public int Depth;
+    public byte NodeType;
+    public byte[] Stem;
+}
 
-- **Nethereum.Util** — `IHashProvider` interface, `Sha256HashProvider`, byte utilities
-- **Nethereum.Merkle** — Standard and sparse Merkle trees for airdrops, whitelisting, and ZK state
-- **Nethereum.Hex** — Hex string conversions
+public static class BinaryTrieCheckpointSerializer
+{
+    public static byte[] Export(IReadOnlyList<NodeEntry> nodes);
+    public static List<CheckpointEntry> Import(byte[] checkpoint);
+}
+```
+
+The node store's depth and address indexes are what make partial sync possible: `GetNodesByDepthRange(0, maxDepth)` is a small top-of-tree checkpoint, and `GetStemNodesByAddress` pulls just one contract's stems (see `NodeStoreTests.PerContractSync_SimulateUsdcLightClient`).
+
+*From `NodeStoreTests.ExportImportCheckpoint_RoundTrips` (use case `binary-trie-storage`).*
+
+```csharp
+var store = new InMemoryBinaryTrieNodeStore();
+var trie = BuildTrieWithTwoAccounts();
+trie.SaveToStorage(store);
+
+var maxDepth = 5;
+var checkpoint = store.ExportCheckpoint(maxDepth);
+Assert.True(checkpoint.Length > 0);
+
+var imported = new InMemoryBinaryTrieNodeStore();
+imported.ImportCheckpoint(checkpoint);
+
+var originalNodes = store.GetNodesByDepthRange(0, maxDepth);
+var importedNodes = imported.GetNodesByDepthRange(0, maxDepth);
+
+Assert.Equal(originalNodes.Count, importedNodes.Count);
+```
+
+## Utilities
+
+`BinaryTrieUtils` exposes the bit helpers the trie navigates with: `GetBit(byte[] data, int bitIndex)`, `ByteArrayEquals(byte[] a, byte[] b)` and `ByteArrayEquals(byte[] a, byte[] b, int length)`.
+
+## Related packages
+
+- **`Nethereum.Merkle.Patricia`** — the hexary Merkle Patricia Trie this structure is proposed to replace, with path-keyed node storage and snap/1 range proofs.
+- **`Nethereum.EVM.Core`** — `BlockFeatureConfig.BinaryBlake3(...)` / `BinaryPoseidon(...)` select the binary state tree and its hash in a block witness (`WitnessStateTreeType`, `WitnessHashFunction`).

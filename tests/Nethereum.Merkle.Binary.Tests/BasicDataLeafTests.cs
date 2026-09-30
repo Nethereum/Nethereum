@@ -1,5 +1,6 @@
-using System.Numerics;
+using System;
 using Nethereum.Merkle.Binary.Keys;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Merkle.Binary.Tests
@@ -13,7 +14,7 @@ namespace Nethereum.Merkle.Binary.Tests
             byte version = 1;
             uint codeSize = 100;
             ulong nonce = 5;
-            var balance = BigInteger.Pow(10, 18);
+            var balance = (EvmUInt256)1_000_000_000_000_000_000UL; // 1 ETH in wei
 
             var packed = BasicDataLeaf.Pack(version, codeSize, nonce, balance);
             BasicDataLeaf.Unpack(packed, out var v, out var cs, out var n, out var b);
@@ -28,7 +29,7 @@ namespace Nethereum.Merkle.Binary.Tests
         [Trait("Category", "BasicDataLeaf")]
         public void Pack_ByteOffsets()
         {
-            var packed = BasicDataLeaf.Pack(0xFF, 0x00AABBCC, 0x0102030405060708, BigInteger.Zero);
+            var packed = BasicDataLeaf.Pack(0xFF, 0x00AABBCC, 0x0102030405060708, EvmUInt256.Zero);
 
             Assert.Equal(0xFF, packed[0]);
             for (int i = 1; i <= 4; i++)
@@ -46,7 +47,7 @@ namespace Nethereum.Merkle.Binary.Tests
         [Trait("Category", "BasicDataLeaf")]
         public void Pack_ZeroValues_AllZeros()
         {
-            var packed = BasicDataLeaf.Pack(0, 0, 0, BigInteger.Zero);
+            var packed = BasicDataLeaf.Pack(0, 0, 0, EvmUInt256.Zero);
             for (int i = 0; i < 32; i++)
                 Assert.Equal(0, packed[i]);
         }
@@ -55,7 +56,8 @@ namespace Nethereum.Merkle.Binary.Tests
         [Trait("Category", "BasicDataLeaf")]
         public void Pack_MaxBalance_RoundTrip()
         {
-            var maxBalance = BigInteger.Pow(2, 128) - 1;
+            // 2^128 - 1: lower two ulongs set, upper two zero
+            var maxBalance = new EvmUInt256(0UL, 0UL, ulong.MaxValue, ulong.MaxValue);
             var packed = BasicDataLeaf.Pack(0, 0, 0, maxBalance);
             BasicDataLeaf.Unpack(packed, out _, out _, out _, out var balance);
             Assert.Equal(maxBalance, balance);
@@ -63,9 +65,18 @@ namespace Nethereum.Merkle.Binary.Tests
 
         [Fact]
         [Trait("Category", "BasicDataLeaf")]
+        public void Pack_BalanceOverflow_Throws()
+        {
+            // 2^128 overflows the 128-bit leaf field (u2 bit 0 set)
+            var overflowBalance = new EvmUInt256(0UL, 1UL, 0UL, 0UL);
+            Assert.Throws<ArgumentOutOfRangeException>(() => BasicDataLeaf.Pack(0, 0, 0, overflowBalance));
+        }
+
+        [Fact]
+        [Trait("Category", "BasicDataLeaf")]
         public void Pack_Returns32Bytes()
         {
-            var packed = BasicDataLeaf.Pack(1, 42, 100, new BigInteger(1000000));
+            var packed = BasicDataLeaf.Pack(1, 42, 100, (EvmUInt256)1000000UL);
             Assert.Equal(32, packed.Length);
         }
     }

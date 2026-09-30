@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Model.SSZ;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Model.SSZ.Tests
@@ -82,7 +82,7 @@ namespace Nethereum.Model.SSZ.Tests
             Assert.Equal(auth1.S, decoded.AuthorisationList[0].S);
             Assert.Equal(auth1.V, decoded.AuthorisationList[0].V);
 
-            Assert.Equal((BigInteger)137, decoded.AuthorisationList[1].ChainId);
+            Assert.Equal((EvmUInt256)137, decoded.AuthorisationList[1].ChainId);
         }
 
         [Fact]

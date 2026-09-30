@@ -1,7 +1,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Ssz;
 using Nethereum.Util;
@@ -64,8 +63,8 @@ namespace Nethereum.Model.SSZ
             writer.WriteFixedBytes(header.MixHash ?? new byte[32], 32);
 
             // BlobFeesPerGas: base_fees_per_gas (regular + blob)
-            writer.WriteFixedBytes((header.BaseFee ?? BigInteger.Zero).BigIntegerToFixedLengthByteArrayLE(32), 32);
-            writer.WriteFixedBytes(BigInteger.Zero.BigIntegerToFixedLengthByteArrayLE(32), 32); // blob base fee — not in BlockHeader yet
+            writer.WriteFixedBytes((header.BaseFee ?? EvmUInt256.Zero).ToLittleEndian(), 32);
+            writer.WriteFixedBytes(EvmUInt256.Zero.ToLittleEndian(), 32); // blob base fee — not in BlockHeader yet
 
             writer.WriteFixedBytes(header.WithdrawalsRoot ?? new byte[32], 32);
 
@@ -142,7 +141,7 @@ namespace Nethereum.Model.SSZ
                 GasUsed = (long)gasUsed,
                 Timestamp = (long)timestamp,
                 MixHash = mixHash,
-                BaseFee = baseFeeBytes.ToBigIntegerFromFixedLengthByteArrayLE(),
+                BaseFee = EvmUInt256.FromLittleEndian(baseFeeBytes),
                 WithdrawalsRoot = withdrawalsRoot,
                 BlobGasUsed = gasLimitBlob > 0 ? (long?)gasLimitBlob : null,
                 ExcessBlobGas = excessBlobGas > 0 ? (long?)excessBlobGas : null,
@@ -199,7 +198,7 @@ namespace Nethereum.Model.SSZ
             return SszMerkleizer.HashTreeRootProgressiveContainer(fieldRoots, GasAmountsActiveFields);
         }
 
-        private byte[] HashTreeRootBlobFees(BigInteger? regularFee, BigInteger? blobFee)
+        private byte[] HashTreeRootBlobFees(EvmUInt256? regularFee, EvmUInt256? blobFee)
         {
             var fieldRoots = new List<byte[]>
             {

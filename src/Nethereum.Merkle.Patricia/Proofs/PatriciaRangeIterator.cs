@@ -1,0 +1,174 @@
+using Nethereum.Documentation;
+using System;
+using System.Collections.Generic;
+
+using Nethereum.Merkle.Patricia.Nodes;
+using Nethereum.Merkle.Patricia.Storage;
+namespace Nethereum.Merkle.Patricia.Proofs
+{
+    public static class PatriciaRangeIterator
+    {
+        [NethereumDocExample(DocSection.ChainInfrastructure, "snap-range-proofs", "One key and value yielded by a trie range walk")]
+        public class RangeEntry
+        {
+            public byte[] KeyBytes { get; set; }
+            public byte[] Value { get; set; }
+        }
+
+        [NethereumDocExample(DocSection.ChainInfrastructure, "snap-range-proofs", "Walk a trie range lexicographically from a start key")]
+        public static IEnumerable<RangeEntry> EnumerateRange(
+            Node root,
+            ITrieNodeStore store,
+            byte[] startKey,
+            int maxCount = int.MaxValue,
+            long maxResponseBytes = long.MaxValue)
+        {
+            if (root == null || root is EmptyNode) yield break;
+            if (startKey == null) throw new ArgumentNullException(nameof(startKey));
+            if (startKey.Length != 32)
+                throw new ArgumentException("startKey must be 32 bytes (state-trie hash)", nameof(startKey));
+
+            var startNibbles = startKey.ConvertToNibbles();
+            var pathBuffer = new List<byte>(64);
+            int count = 0;
+            long bytes = 0;
+
+            foreach (var entry in EnumerateNode(root, store, startNibbles, 0, true, pathBuffer))
+            {
+                yield return entry;
+                count++;
+                bytes += entry.KeyBytes.Length + entry.Value.Length;
+                if (count >= maxCount) yield break;
+                if (bytes >= maxResponseBytes) yield break;
+            }
+        }
+
+        private static IEnumerable<RangeEntry> EnumerateNode(
+            Node node,
+            ITrieNodeStore store,
+            byte[] startNibbles,
+            int startOffset,
+            bool boundary,
+            List<byte> pathSoFar)
+        {
+            HashNode resolvedHere = null;
+            if (node is HashNode hashNode)
+            {
+                if (hashNode.InnerNode == null && store != null)
+                {
+                    hashNode.DecodeInnerNode(store, false);
+                    resolvedHere = hashNode;
+                }
+                if (hashNode.InnerNode == null) yield break;
+                node = hashNode.InnerNode;
+            }
+            if (node == null || node is EmptyNode) yield break;
+
+            try
+            {
+                switch (node)
+                {
+                    case LeafNode leaf:
+                    {
+                        if (boundary)
+                        {
+                            if (CompareLeafToStart(pathSoFar, leaf.Nibbles, startNibbles) < 0) yield break;
+                        }
+                        yield return new RangeEntry
+                        {
+                            KeyBytes = PackPath(pathSoFar, leaf.Nibbles),
+                            Value = leaf.Value
+                        };
+                        yield break;
+                    }
+                    case ExtendedNode ext:
+                    {
+                        if (boundary)
+                        {
+                            var cmp = CompareExtensionToStart(ext.Nibbles, startNibbles, startOffset);
+                            if (cmp < 0) yield break;
+                            if (cmp > 0) boundary = false;
+                        }
+                        int origLen = pathSoFar.Count;
+                        pathSoFar.AddRange(ext.Nibbles);
+                        foreach (var e in EnumerateNode(ext.InnerNode, store, startNibbles, startOffset + ext.Nibbles.Length, boundary, pathSoFar))
+                            yield return e;
+                        pathSoFar.RemoveRange(origLen, pathSoFar.Count - origLen);
+                        yield break;
+                    }
+                    case BranchNode branch:
+                    {
+                        int firstChild = 0;
+                        if (boundary)
+                        {
+                            if (startOffset >= startNibbles.Length)
+                            {
+                                firstChild = 0;
+                                boundary = false;
+                            }
+                            else
+                            {
+                                firstChild = startNibbles[startOffset];
+                            }
+                        }
+                        for (int i = firstChild; i < 16; i++)
+                        {
+                            var child = branch.Children[i];
+                            if (child == null || child is EmptyNode) continue;
+                            bool childBoundary = boundary && (i == firstChild);
+                            pathSoFar.Add((byte)i);
+                            foreach (var e in EnumerateNode(child, store, startNibbles, startOffset + 1, childBoundary, pathSoFar))
+                                yield return e;
+                            pathSoFar.RemoveAt(pathSoFar.Count - 1);
+                        }
+                        yield break;
+                    }
+                    default:
+                        yield break;
+                }
+            }
+            finally
+            {
+                resolvedHere?.ReleaseInnerNode();
+            }
+        }
+
+        private static int CompareLeafToStart(List<byte> pathSoFar, byte[] leafNibbles, byte[] startNibbles)
+        {
+            int total = pathSoFar.Count + leafNibbles.Length;
+            int min = Math.Min(total, startNibbles.Length);
+            for (int i = 0; i < min; i++)
+            {
+                byte a = i < pathSoFar.Count ? pathSoFar[i] : leafNibbles[i - pathSoFar.Count];
+                byte b = startNibbles[i];
+                if (a != b) return a < b ? -1 : 1;
+            }
+            return total.CompareTo(startNibbles.Length);
+        }
+
+        private static int CompareExtensionToStart(byte[] extNibbles, byte[] startNibbles, int startOffset)
+        {
+            int remainingStart = startNibbles.Length - startOffset;
+            int min = Math.Min(extNibbles.Length, remainingStart);
+            for (int i = 0; i < min; i++)
+            {
+                byte a = extNibbles[i];
+                byte b = startNibbles[startOffset + i];
+                if (a != b) return a < b ? -1 : 1;
+            }
+            return extNibbles.Length <= remainingStart ? 0 : 1;
+        }
+
+        private static byte[] PackPath(List<byte> pathSoFar, byte[] tail)
+        {
+            int totalNibbles = pathSoFar.Count + tail.Length;
+            if ((totalNibbles & 1) != 0)
+                throw new InvalidOperationException(
+                    $"Leaf key has odd nibble length {totalNibbles}; state-trie keys must be 64 nibbles (32 bytes)");
+            var allNibbles = new byte[totalNibbles];
+            for (int i = 0; i < pathSoFar.Count; i++) allNibbles[i] = pathSoFar[i];
+            for (int i = 0; i < tail.Length; i++) allNibbles[pathSoFar.Count + i] = tail[i];
+            return allNibbles.ConvertFromNibbles();
+        }
+    }
+}

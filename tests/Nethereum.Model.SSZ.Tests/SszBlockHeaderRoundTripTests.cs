@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Model.SSZ;
+using Nethereum.Util;
 using Xunit;
 
 namespace Nethereum.Model.SSZ.Tests
@@ -80,7 +80,7 @@ namespace Nethereum.Model.SSZ.Tests
             Assert.Equal(0L, decoded.GasLimit);
             Assert.Equal(0L, decoded.GasUsed);
             Assert.Equal(0L, decoded.Timestamp);
-            Assert.Equal(BigInteger.Zero, decoded.BaseFee);
+            Assert.Equal((EvmUInt256?)EvmUInt256.Zero, decoded.BaseFee);
             Assert.Empty(decoded.ExtraData);
         }
 
@@ -127,7 +127,7 @@ namespace Nethereum.Model.SSZ.Tests
         public void LargeBaseFee_RoundTrip()
         {
             var original = MakeHeader();
-            original.BaseFee = BigInteger.Parse("100000000000000000000"); // 100 ETH in wei
+            original.BaseFee = (EvmUInt256)100 * (EvmUInt256)1_000_000_000_000_000_000UL; // 100 ETH in wei (1e20)
 
             var encoded = SszBlockHeaderEncoder.Current.Encode(original);
             var decoded = SszBlockHeaderEncoder.Current.Decode(encoded);

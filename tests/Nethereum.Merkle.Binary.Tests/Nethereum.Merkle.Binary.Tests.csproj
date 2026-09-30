@@ -13,5 +13,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Nethereum.Merkle.Binary\Nethereum.Merkle.Binary.csproj" />
 		<ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
+		<ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
 	</ItemGroup>
 </Project>

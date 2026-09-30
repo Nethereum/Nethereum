@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
-using System.Numerics;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -31,7 +31,7 @@ namespace Nethereum.Model
                 case TransactionType.LegacyTransaction: case TransactionType.LegacyChainTransaction:
                     throw new NotSupportedException(
                         "Legacy transactions are not supported, use CreateTransaction instead to decode");
-                    
+
                 case TransactionType.EIP1559:
                     return new Transaction1559Encoder();
 
@@ -40,27 +40,41 @@ namespace Nethereum.Model
 
                 case TransactionType.EIP7702:
                     return new Transaction7702Encoder();
+                case TransactionType.Blob:
+                    return new Transaction4844Encoder();
                 default:
                     throw new ArgumentOutOfRangeException(nameof(transactionType), transactionType, null);
             }
 
         }
-      
+
 
         public static ISignedTransaction CreateTransaction(byte[] rlp)
         {
+            return CreateTransaction(rlp, allowBlobNetworkWrapper: true);
+        }
+
+        public static ISignedTransaction CreateTransaction(byte[] rlp, bool allowBlobNetworkWrapper)
+        {
             if (rlp.IsTypeTransaction())
             {
-                var decoder = GetTransactionTypeDecoder((TransactionType) rlp[0]);
+                var transactionType = (TransactionType) rlp[0];
+                if (!allowBlobNetworkWrapper && transactionType == TransactionType.Blob)
+                {
+                    var blobTx = Transaction4844Encoder.Current.Decode(rlp, allowNetworkWrapper: false);
+                    blobTx.OriginalRlpEncoded = DefensiveCopyOf(rlp);
+                    return blobTx;
+                }
+
+                var decoder = GetTransactionTypeDecoder(transactionType);
                 var tx = decoder.DecodeAsGeneric(rlp);
-                // Clone to prevent external mutation of the cached original encoding
-                var rlpCopy = new byte[rlp.Length];
-                Array.Copy(rlp, rlpCopy, rlp.Length);
-                tx.OriginalRlpEncoded = rlpCopy;
+                tx.OriginalRlpEncoded = DefensiveCopyOf(rlp);
                 return tx;
             }
             else
             {
+                LegacyTransactionRlp.RejectMalformedScalars(rlp);
+
                 var rlpSigner = SignedLegacyTransaction.CreateDefaultRLPSigner(rlp);
                 return rlpSigner.IsVSignatureForChain()
                     ? (SignedLegacyTransaction) new LegacyTransactionChainId(rlpSigner)
@@ -68,17 +82,24 @@ namespace Nethereum.Model
             }
         }
 
-        public static ISignedTransaction CreateLegacyTransaction(string to, BigInteger gas, BigInteger gasPrice, BigInteger amount, string data, BigInteger nonce, string r, string s, string v)
+        private static byte[] DefensiveCopyOf(byte[] rlp)
+        {
+            var copy = new byte[rlp.Length];
+            Array.Copy(rlp, copy, rlp.Length);
+            return copy;
+        }
+
+        public static ISignedTransaction CreateLegacyTransaction(string to, EvmUInt256 gas, EvmUInt256 gasPrice, EvmUInt256 amount, string data, EvmUInt256 nonce, string r, string s, string v)
         {
             var rBytes = r.HexToByteArray();
             var sBytes = s.HexToByteArray();
             var vBytes = v.HexToByteArray();
-            
+
             var signature = new Signature(rBytes, sBytes, vBytes);
             if (signature.IsVSignedForChain())
             {
-                var vBigInteger = vBytes.ToBigIntegerFromRLPDecoded();
-                var chainId = VRecoveryAndChainCalculations.GetChainFromVChain(vBigInteger);
+                var vValue = vBytes.ToEvmUInt256FromRLPDecoded();
+                var chainId = VRecoveryAndChainCalculations.GetChainFromVChain(vValue);
                 return new LegacyTransactionChainId(nonce.ToBytesForRLPEncoding(), gasPrice.ToBytesForRLPEncoding(), gas.ToBytesForRLPEncoding(),
                     to.HexToByteArray(), amount.ToBytesForRLPEncoding(), data.HexToByteArray(), chainId.ToBytesForRLPEncoding(), rBytes, sBytes, vBytes);
             }
@@ -89,9 +110,9 @@ namespace Nethereum.Model
             }
         }
 
-        public static ISignedTransaction Create1559Transaction(BigInteger? chainId, BigInteger? nonce,
-            BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,
-            BigInteger? gasLimit, string to, BigInteger? amount, string data,
+        public static ISignedTransaction Create1559Transaction(EvmUInt256? chainId, EvmUInt256? nonce,
+            EvmUInt256? maxPriorityFeePerGas, EvmUInt256? maxFeePerGas,
+            EvmUInt256? gasLimit, string to, EvmUInt256? amount, string data,
             List<AccessListItem> accessList, string r, string s, string v)
         {
             var rBytes = r.HexToByteArray();
@@ -104,9 +125,9 @@ namespace Nethereum.Model
                 signature);
         }
 
-        public static ISignedTransaction Create7702Transaction(BigInteger? chainId, BigInteger? nonce,
-            BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas,
-            BigInteger? gasLimit, string to, BigInteger? amount, string data,
+        public static ISignedTransaction Create7702Transaction(EvmUInt256? chainId, EvmUInt256? nonce,
+            EvmUInt256? maxPriorityFeePerGas, EvmUInt256? maxFeePerGas,
+            EvmUInt256? gasLimit, string to, EvmUInt256? amount, string data,
             List<AccessListItem> accessList, List<Authorisation7702Signed> authorisationList,
             string r, string s, string v)
             {
@@ -121,9 +142,9 @@ namespace Nethereum.Model
 
 
 
-        public static ISignedTransaction Create2930Transaction(BigInteger? chainId, BigInteger? nonce,
-           BigInteger? gasPrice,
-           BigInteger? gasLimit, string to, BigInteger? amount, string data,
+        public static ISignedTransaction Create2930Transaction(EvmUInt256? chainId, EvmUInt256? nonce,
+           EvmUInt256? gasPrice,
+           EvmUInt256? gasLimit, string to, EvmUInt256? amount, string data,
            List<AccessListItem> accessList, string r, string s, string v)
         {
             var rBytes = r.HexToByteArray();
@@ -138,9 +159,24 @@ namespace Nethereum.Model
 
 
 
-        public static ISignedTransaction CreateTransaction(BigInteger? chainId, byte? transactionType, BigInteger? nonce,
-            BigInteger? maxPriorityFeePerGas, BigInteger? maxFeePerGas, BigInteger? gasPrice,
-            BigInteger? gasLimit, string to, BigInteger? amount, string data,
+        public static ISignedTransaction Create4844Transaction(EvmUInt256? chainId, EvmUInt256? nonce,
+            EvmUInt256? maxPriorityFeePerGas, EvmUInt256? maxFeePerGas,
+            EvmUInt256? gasLimit, string to, EvmUInt256? amount, string data,
+            List<AccessListItem> accessList, EvmUInt256? maxFeePerBlobGas, List<byte[]> blobVersionedHashes,
+            string r, string s, string v)
+        {
+            var rBytes = r.HexToByteArray();
+            var sBytes = s.HexToByteArray();
+            var vBytes = v.HexToByteArray();
+
+            var signature = new Signature(rBytes, sBytes, vBytes);
+            return new Transaction4844(chainId ?? 0, nonce ?? 0, maxPriorityFeePerGas ?? 0, maxFeePerGas ?? 0,
+                gasLimit ?? 0, to, amount ?? 0, data, accessList, maxFeePerBlobGas ?? 0, blobVersionedHashes ?? new List<byte[]>(), signature);
+        }
+
+        public static ISignedTransaction CreateTransaction(EvmUInt256? chainId, byte? transactionType, EvmUInt256? nonce,
+            EvmUInt256? maxPriorityFeePerGas, EvmUInt256? maxFeePerGas, EvmUInt256? gasPrice,
+            EvmUInt256? gasLimit, string to, EvmUInt256? amount, string data,
             List<AccessListItem> accessList, List<Authorisation7702Signed> authorisationLists, string r, string s, string v)
         {
             if (transactionType.HasValue && transactionType == (int)TransactionType.EIP1559)
@@ -171,6 +207,6 @@ namespace Nethereum.Model
                 "Transaction type has not been implemented: " + transactionType.ToString());
 
         }
-        
+
     }
 }

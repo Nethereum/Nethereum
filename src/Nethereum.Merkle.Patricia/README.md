@@ -1,17 +1,55 @@
 # Nethereum.Merkle.Patricia
 
-Patricia Merkle Trie implementation for Ethereum state verification, proof generation, and cryptographic validation.
+The Modified Merkle Patricia Trie — the data structure behind Ethereum account state, contract storage, and transaction and receipt roots. Build one, commit it, prove a key against its root, or verify someone else's proof without holding the state.
 
-## Overview
+## What you can do with it
 
-Nethereum.Merkle.Patricia implements the Modified Merkle Patricia Trie, the core data structure used by Ethereum for:
+- **Compute a state, storage or transaction root** from a set of key/value pairs.
+- **Prove a key** — generate the root-first, EIP-1186 node list a light client or contract needs.
+- **Verify an account, a storage slot or a transaction** against a trusted root, without the rest of the state.
+- **Serve and verify snap/1 range proofs** — hand out a slice of the trie with edge proofs, and check one you were given.
+- **Store trie nodes by path instead of by hash**, so an updated node overwrites its predecessor and the database does not grow with history.
+- **Keep many contract storage tries in one store**, separated by owner, without slot-key collisions.
+- **Build a trie larger than memory**, persisting and collapsing as you go.
 
-- **State Storage**: Account balances, nonces, contract code, and storage
-- **Proof Verification**: Validate account state, storage values, and transactions
-- **Light Clients**: Verify data without downloading the entire blockchain
-- **State Roots**: Compute cryptographic commitments to blockchain state
+## Quick start
 
-This package provides a complete implementation of the Ethereum Yellow Paper specification for Patricia tries, including proof generation and verification capabilities.
+Compute a root, prove a key against it, and verify the proof.
+
+*From `ProofVerificationFrontDoorTests.QuickStart_ComputeARootProveAKeyAndVerifyIt` (use case `quick-start`) — a tagged, passing test.*
+
+```csharp
+var hashProvider = Sha3KeccackHashProvider.Instance;
+var trie = new PatriciaTrie(new InMemoryContentNodeStore());
+
+for (var i = 0; i < 128; i++)
+    trie.Put(hashProvider.ComputeHash(new[] { (byte)i }), new byte[] { (byte)i, 0xAB });
+trie.SaveNodesToStorage();
+
+var root = trie.Root.GetHash();
+var key = hashProvider.ComputeHash(new byte[] { 7 });
+var proof = ProofGenerator.GenerateProof(trie, key);
+
+Assert.Equal(root, hashProvider.ComputeHash(proof[0]));
+Assert.True(ProofVerification.Current.Range.VerifyEntry(root, key, new byte[] { 7, 0xAB }, proof));
+```
+
+## Entry points
+
+**Start with `PatriciaTrie`.** It holds its own node store, so `Get`, `Put` and `Delete` take no storage argument.
+
+| I want to… | Reach for |
+|---|---|
+| **Build a trie and get its root** | **`new PatriciaTrie(store)` → `Put(key, value)` → `SaveNodesToStorage()` → `Root.GetHash()`** |
+| Reload a trie from a root | `new PatriciaTrie(rootHash, store)` |
+| Prove a key | `ProofGenerator.GenerateProof(trie, key)` |
+| Verify an account or storage proof | `ProofVerification.Current.Account.Verify(…)` / `.Storage.Verify(…)` |
+| Serve a snap/1 range | `PatriciaRangeIterator.EnumerateRange(…)` + `PatriciaRangeProofGenerator.GenerateProof(…)` |
+| Verify a snap/1 range | `ProofVerification.Current.Range.Verify(…)` |
+| Keep a contract's storage trie apart | `new PatriciaTrie(store, owner: keccak(address))` |
+| Build something bigger than memory | `SaveDirtyNodesToStorageAndCollapse()` every N writes |
+
+Two node stores ship in the box: `InMemoryContentNodeStore` (keyed by hash — what proof verification uses) and `InMemoryPathNodeStore` (keyed by owner and path — what a node uses). Persistent RocksDB implementations live in `Nethereum.CoreChain.RocksDB`.
 
 ## Installation
 
@@ -19,733 +57,359 @@ This package provides a complete implementation of the Ethereum Yellow Paper spe
 dotnet add package Nethereum.Merkle.Patricia
 ```
 
-### Dependencies
+## Architecture: the trie holds one node store
 
-**Nethereum Dependencies:**
-- **Nethereum.Model** - Account and transaction models
-- **Nethereum.RLP** - RLP encoding/decoding for trie nodes
+The trie **holds a single node store** (`ITrieNodeStore`) rather than threading a storage object through every `Get`/`Put`/`Delete`. Each node carries its own identity — its hash (`GetHash()`) and its location (`Owner`, `Path`) — and **the store alone decides which of the two it keys on**.
 
-## Key Concepts
+That one decision is the whole difference between the two storage models:
 
-### What is a Patricia Merkle Trie?
+| | Content-addressed store | Path-keyed (location-addressed) store |
+|---|---|---|
+| Key | `node.GetHash()` | `Owner ‖ Path` |
+| Nodes stored | every node, including embedded <32-byte ones | only nodes ≥32 bytes; shorter children are inlined in the parent and re-decoded on read |
+| Effect of an update | a new key appears; the old node stays | the same key is **overwritten** — the trie does not grow with history |
+| Deletions | nothing to do | need tombstones, emitted from an `ITrieTracer` |
+| Integrity on read | implicit (the key *is* the hash) | explicit — the store verifies the blob against the reference hash it was asked for |
+| In-box implementation | `InMemoryContentNodeStore` | `InMemoryPathNodeStore` |
 
-A **Patricia Merkle Trie** (also called a "Merkle Patricia Tree") is a combination of:
+`Owner` is empty for the account trie and `keccak(address)` for a contract's storage trie, so many storage tries coexist in one path store without colliding on slot keys. This single-store model is what lets the same trie code run over an in-memory content store (proofs) or a persistent path-keyed database (a full node's state) with no API change.
 
-1. **Patricia Trie**: Radix trie optimized for sparse data (compressed paths)
-2. **Merkle Tree**: Cryptographic hash tree for efficient verification
+Persistent RocksDB implementations of `ITrieNodeStore` — path-keyed and content-addressed, with node history — live in **`Nethereum.CoreChain.RocksDB`** (`src/Nethereum.CoreChain.RocksDB/Stores/`).
 
-**Key Properties:**
-- Deterministic: Same data always produces same root hash
-- Efficient proofs: Prove inclusion/exclusion in O(log n) space
-- Optimized for sparse data: Common prefixes are compressed
+## Key concepts
 
-### Ethereum Uses
+- **Nodes** — `LeafNode` (path + value), `ExtendedNode` (shared-prefix path + one child), `BranchNode` (16 children + optional value), `HashNode` (a 32-byte reference that lazily decodes its inner node through the held store), `EmptyNode`.
+- **Nibbles** — keys are traversed a nibble (4 bits) at a time; leaves and extensions carry hex-prefix-encoded nibble paths.
+- **Node identity** — every `Node` has `GetHash()` (keccak of its RLP), plus `Owner` and `Path`. The store keys on one or the other.
+- **`TrieNodeSet`** — the unit of a write: a batch of nodes to persist, plus `TrieNodeDelete` tombstones for removals. The trie collects dirty nodes into a set and calls `store.Commit(set)`.
+- **Hash provider** — every constructor has an overload taking an `IHashProvider`; the default is `Sha3KeccackHashProvider.Instance` (`Nethereum.Util.HashProviders`).
 
-Ethereum uses three Patricia tries per block:
+## The node store
 
-1. **State Trie**: Mapping address → account (balance, nonce, storage root, code hash)
-2. **Transaction Trie**: Mapping index → transaction data
-3. **Receipt Trie**: Mapping index → transaction receipt (logs, status)
+| Type | Role |
+|---|---|
+| `ITrieNodeStore` | The unified store the trie holds: `Commit(TrieNodeSet nodes)`, `Get(Node reference)` (returns raw RLP; the store never decodes), `Contains(Node reference)`, `ContainsKey(byte[] stateRoot)`, `Flush()`, `Clear()`. |
+| `InMemoryContentNodeStore` | Content-addressed in-memory store (keyed by keccak). Also implements `INodeBlobStore`. Stores all nodes; self-verifying. The accumulator every proof verifier uses. |
+| `InMemoryPathNodeStore` | Location-addressed in-memory store (keyed by `owner ‖ path`). Skips <32-byte nodes, verifies on read, applies tombstones. |
+| `ContentAddressedNodeStore` | Adapter presenting a raw `INodeBlobStore` as a content-addressed `ITrieNodeStore` (`ContentAddressedNodeStore.Wrap(INodeBlobStore storage)`). |
+| `INodeBlobStore` | The raw hash→blob byte store: `Put(byte[] key, byte[] value)`, `Get(byte[] key)`, `Delete(byte[] key)`. |
+| `IRawNodeReader` | `TryGetRawNode(byte[] owner, byte[] path)` — reattach a trie to a root read straight out of a path store (`PatriciaTrie.ReattachFromRawRoot`). |
+| `ITrieTracer` / `TrieTracer` | Observes node removals (`OnRemove(byte[] owner, byte[] path, byte[] prevBlob)`, `Removals`, `Reset()`) so a path-store commit can emit tombstones. Zero cost when absent (content mode). |
+| `IContractStorageWipeable` | `DeleteRange(byte[] owner)` — wipes a whole contract's storage subtree (SELFDESTRUCT) on a path store. |
+| `TransientFlushUnavailableException` | Raised by a store that cannot honour a `Flush()` at this moment. |
 
-### Node Types
+### Storage declarations
 
-The Patricia trie uses four node types:
+These declarations are copied from the source files under `src/Nethereum.Merkle.Patricia/Storage/`.
 
-- **EmptyNode**: Represents absence of data
-- **LeafNode**: Terminal node containing value and remaining path
-- **ExtensionNode**: Compressed path of shared nibbles
-- **BranchNode**: 16-way fork (one per hex digit) plus optional value
+`ReadmeTraceabilityTests` (`tests/Nethereum.Merkle.Patricia.Tests/ReadmeTraceabilityTests.cs`) checks that each tagged type is *named* in a README code block, and that **every public member it declares — properties, fields and methods — is named somewhere in this file**. Interfaces are covered by that: rename or remove `TryGetRawNode`, `Put`, `DeleteRange` or any member below and the test goes red naming the member.
 
-### Nibbles
-
-Keys are split into **nibbles** (4-bit values, 0-F hex digits):
-- Byte `0x12` → Nibbles `[1, 2]`
-- Byte `0xAB` → Nibbles `[A, B]`
-
-This allows efficient 16-way branching at each node.
-
-## Quick Start
+Argument **order** is checked too, but only where this README writes the member with parentheses, and the check is a subsequence scan over the whole block rather than a signature parse. So a swapped pair is caught when the block names those parameters once, and can be masked when a neighbouring signature in the same block supplies the same names in the old order. Treat the suite as a reliable guard against renames and removals, and read the source file when the exact parameter order matters.
 
 ```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Util.ByteArrayConvertors;
-using System.Text;
+public interface ITrieNodeStore
+{
+    void Commit(TrieNodeSet nodes);
+    byte[] Get(Node reference);
+    bool Contains(Node reference);
+    void Flush();
+    void Clear();
 
-// Create a Patricia trie
-var trie = new PatriciaTrie();
+    bool ContainsKey(byte[] stateRoot);
+}
 
-// Insert key-value pairs
-trie.Put(new byte[] { 1, 2, 3, 4 }, Encoding.UTF8.GetBytes("monkey"));
-trie.Put(new byte[] { 1, 2 }, Encoding.UTF8.GetBytes("giraffe"));
+public interface INodeBlobStore
+{
+    void Put(byte[] key, byte[] value);
+    byte[] Get(byte[] key);
+    void Delete(byte[] key);
+}
 
-// Get the root hash (represents entire trie state)
-var rootHash = trie.Root.GetHash().ToHex();
+public interface IRawNodeReader
+{
+    byte[] TryGetRawNode(byte[] owner, byte[] path);
+}
 
-// Retrieve a value
-var value = trie.Get(new byte[] { 1, 2 }, new InMemoryTrieStorage());
-// value = "giraffe" (UTF-8 bytes)
+public interface IContractStorageWipeable
+{
+    void DeleteRange(byte[] owner);
+}
 ```
 
-## Usage Examples
-
-### Example 1: Basic Patricia Trie Operations
+A commit carries removals as well as writes. `TrieNodeSet.AddDelete(byte[] owner, byte[] path, byte[] prevBlob)` records one:
 
 ```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Util.ByteArrayConvertors;
-using Nethereum.Hex.HexConvertors.Extensions;
+public readonly struct TrieNodeDelete
+{
+    public byte[] Owner { get; }
+    public byte[] Path { get; }
+    public byte[] PrevBlob { get; }
 
-// Create a trie
-var trie = new PatriciaTrie();
-
-// Insert values
-trie.Put(new byte[] { 1, 2, 3, 4 }, new StringByteArrayConvertor().ConvertToByteArray("monkey"));
-trie.Put(new byte[] { 1, 2 }, new StringByteArrayConvertor().ConvertToByteArray("giraffe"));
-
-// Get root hash
-var hash = trie.Root.GetHash();
-// Result: "a02d89d1c0a595eecbcbee8b30c7c677be66b2314bc2661e163f1349868f45c7"
-
-// Update an existing key
-trie.Put(new byte[] { 1, 2 }, new StringByteArrayConvertor().ConvertToByteArray("elephant"));
-
-// New root hash (changed!)
-hash = trie.Root.GetHash();
-// Result: "f249e880b1b8af8e788411e0cf26313cdfedb4388250f64ef10bea45ef76f9d1"
+    public TrieNodeDelete(byte[] owner, byte[] path, byte[] prevBlob);
+}
 ```
 
-*Source: `PatriciaTrieTests.cs:13-34`*
+A content store ignores those — its keys are hashes, so a superseded node is simply never referenced again. A path store must apply them, because the key would otherwise still resolve.
 
-### Example 2: Generating and Verifying Proofs
+## Usage
+
+Every snippet below is extracted verbatim from a `[NethereumDocExample(DocSection.ChainInfrastructure, …)]`-tagged passing test in `tests/Nethereum.Merkle.Patricia.Tests`.
+
+**They are fragments, not programs.** Extraction keeps the body of the test method, so a snippet may use variables built in the test's arrange step or private fixture helpers (`KeyHash`, `Value`, `RefOf`, `keys`, `values`, `rootHash`, …) that are not shown here, and it may end in `Assert`. Open the named test file for the surrounding setup before copying — only the Quick Start above is self-contained.
+
+### Build, commit, reload — the store is held, not threaded
+
+*From `ProofVerificationFrontDoorTests.BuildCommitAndReloadThroughOneHeldStore` (use case `patricia-trie`).*
 
 ```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Util.ByteArrayConvertors;
-using Nethereum.Util.HashProviders;
-using Nethereum.Hex.HexConvertors.Extensions;
+var keccak = new Sha3Keccack();
+var store = new InMemoryContentNodeStore();
+var trie = new PatriciaTrie(store);
 
-// Build a trie with multiple values
-var trie = new PatriciaTrie();
-trie.Put(new byte[] { 1, 2, 3 }, new StringByteArrayConvertor().ConvertToByteArray("monkey"));
-trie.Put(new byte[] { 1, 2, 3, 4, 5 }, new StringByteArrayConvertor().ConvertToByteArray("giraffe"));
+var keys = new List<byte[]>();
+var values = new List<byte[]>();
+for (var i = 0; i < 200; i++)
+{
+    var key = keccak.CalculateHash(new byte[] { (byte)i, (byte)(i >> 8) });
+    var value = Nethereum.RLP.RLP.EncodeElement(new byte[] { (byte)i });
+    keys.Add(key);
+    values.Add(value);
+    trie.Put(key, value);
+}
+trie.SaveNodesToStorage();
 
-// Generate proof for a specific key
-var key = new byte[] { 1, 2, 3 };
-var proofStorage = trie.GenerateProof(key);
-
-// Proof is a collection of RLP-encoded nodes
-// Now verify the proof with just the root hash (no need for full trie)
-
-// Create a new trie from root hash only
 var rootHash = trie.Root.GetHash();
-var trie2 = new PatriciaTrie(rootHash, new Sha3KeccackHashProvider());
+var reloaded = new PatriciaTrie(rootHash, store);
 
-// Retrieve value using only the proof (minimal data)
-var value = trie2.Get(key, proofStorage);
-
-// Verify we got the correct value
-Assert.Equal(
-    new StringByteArrayConvertor().ConvertToByteArray("monkey").ToHex(),
-    value.ToHex()
-);
-
-// Verify root hashes match
-Assert.Equal(trie.Root.GetHash().ToHex(), trie2.Root.GetHash().ToHex());
+for (var i = 0; i < keys.Count; i++)
+    Assert.Equal(values[i], reloaded.Get(keys[i]));
 ```
 
-*Source: `PatriciaTrieTests.cs:38-56`*
+`HeldStoreTrieTests.Reads_Through_Held_Store_Without_Threading` runs the same reload over **both** store kinds from one `[Theory]`, which is the point: the trie code does not know which it is holding.
 
-### Example 3: Account Proof Verification (Light Clients)
+`Get`/`Put`/`Delete` take **no** storage parameter. `PatriciaTrie.LoadFromStorage(rootHash, store)` is the `(rootHash, store)` constructor *plus an empty-root branch*: a null or empty `rootHash` returns `new PatriciaTrie(store, …)` — an empty trie — where the constructor would build a `HashNode` over those bytes (`PatriciaTrie.cs:120-125`). Use `LoadFromStorage` when the root may not exist yet.
+
+`SaveNodesToStorage()` commits the whole trie; `SaveDirtyNodesToStorage()` commits only what changed.
+
+### Account and contract-storage tries in one path store
+
+*From `PathStoreAppliesTombstonesTests.Storage_Trie_Owner_Keyed_Deletes_Do_Not_Touch_Account_Trie` (use case `key-path-storage`).*
 
 ```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Model;
-using Nethereum.Hex.HexConvertors.Extensions;
-using System.Numerics;
-using System.Collections.Generic;
+var store = new InMemoryPathNodeStore();
+var keccak = new Sha3Keccack();
+var owner = keccak.CalculateHash(new byte[] { 0xC0, 0xDE });
 
-// Scenario: Light client wants to verify account balance without full state
-
-// State root from block header (trustworthy via PoS/PoW consensus)
-var stateRoot = "0x1234...".HexToByteArray();
-
-// Account to verify
-var accountAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
-
-// Proofs received from full node (via eth_getProof RPC)
-var accountProofs = new List<byte[]>
+var account = new PatriciaTrie(store) { Tracer = new TrieTracer() };
+var storage = new PatriciaTrie(store, owner) { Tracer = new TrieTracer() };
+foreach (var k in keys)
 {
-    "0xf90211a0...".HexToByteArray(),  // RLP-encoded trie nodes
-    "0xf90211a0...".HexToByteArray(),
-    "0xf8518080...".HexToByteArray()
-};
+    account.Put(k, Nethereum.RLP.RLP.EncodeElement(new byte[] { 0xAC }));
+    storage.Put(k, Nethereum.RLP.RLP.EncodeElement(new byte[] { 0x57 }));
+}
+account.SaveDirtyNodesToStorage();
+storage.SaveDirtyNodesToStorage();
+```
 
-// Expected account state
-var account = new Account
+Both tries use the *same* keys and the *same* store. Deleting every storage slot afterwards leaves the account trie intact, because the path store keys each node on `owner ‖ path` and `owner` differs. Attaching a `TrieTracer` is what lets the commit emit tombstones for the removed nodes.
+
+### A path store verifies what it hands back
+
+*From `UnifiedITrieNodeStoreTests.Path_Store_Commit_Resolves_Referenceable_Nodes_And_Rejects_Tamper` (use case `key-path-storage`).*
+
+```csharp
+var pathStore = new InMemoryPathNodeStore();
+((ITrieNodeStore)pathStore).Commit(set);
+
+foreach (var node in referenceable)
+    Assert.Equal(node.GetEncodedData(), ((ITrieNodeStore)pathStore).Get(RefOf(node)));
+
+var victim = referenceable[0];
+var wrongRef = new HashNode { Hash = new byte[32], Owner = victim.Owner, Path = victim.Path };
+Assert.Throws<InvalidOperationException>(() => ((ITrieNodeStore)pathStore).Get(wrongRef));
+```
+
+A content store cannot be lied to — the key *is* the hash. A path store can, so it re-hashes the blob on every read and throws when the blob does not match the hash the caller asked for. The same check is exposed directly as `ProofVerification.Current.TrieNode.Verify(expectedHash, blob, hashProvider)`.
+
+### Bounded memory on large builds — save and collapse
+
+*From `PatriciaTrieSaveAndCollapseTests.RootHash_IsIdentical_WithPeriodicCollapse` (use case `patricia-trie`).*
+
+```csharp
+var store = new InMemoryContentNodeStore();
+var trie = new PatriciaTrie(store);
+for (int i = 0; i < 2000; i++)
 {
-    Nonce = 42,
-    Balance = BigInteger.Parse("5000000000000000000"),  // 5 ETH
-    StateRoot = DefaultValues.EMPTY_TRIE_HASH,
-    CodeHash = DefaultValues.EMPTY_DATA_HASH
-};
+    trie.Put(KeyHash(i), Value(i));
+    if (i % 250 == 249) trie.SaveDirtyNodesToStorageAndCollapse();
+}
+var actual = trie.Root.GetHash();
+```
 
-// Verify the proof
-var isValid = AccountProofVerification.VerifyAccountProofs(
-    accountAddress,
-    stateRoot,
-    accountProofs,
-    account
-);
+`SaveDirtyNodesToStorageAndCollapse()` persists the dirty nodes and then drops the materialised subtrees back to `HashNode`s, so a multi-million-key build does not have to fit in memory. The root is byte-for-byte the same as building without collapsing.
 
-if (isValid)
+## Proofs
+
+### Generating an account/storage proof (root-first, EIP-1186 order)
+
+*From `ProofGeneratorRootFirstOrderingTests.FirstProofNode_HashesTo_StateRoot` (use case `state-proofs`).*
+
+```csharp
+var proof = ProofGenerator.GenerateProof(trie, keys[0]);
+
+Assert.NotNull(proof);
+Assert.NotEmpty(proof);
+Assert.Equal(rootHash, new Sha3Keccack().CalculateHash(proof[0]));
+```
+
+```csharp
+public static List<byte[]> GenerateProof(PatriciaTrie trie, byte[] key)
+```
+
+It returns a `List<byte[]>` of RLP node blobs, root first. **It returns `null` when the key is not in the trie** — there is no path to prove, so a caller must null-check rather than expect an empty list.
+
+### Verifying against a trusted root
+
+All verifiers hang off the `ProofVerification.Current` front door — `Account`, `Storage`, `Range`, `Transaction`, `TrieNode`:
+
+| Verifier | Signature |
+|---|---|
+| `IAccountProofVerifier` | `bool Verify(byte[] stateRoot, IEnumerable<byte[]> proof, string accountAddress, Account account)` |
+| `IStorageProofVerifier` | `bool Verify(byte[] stateRoot, IList<byte[]> proof, byte[] key, byte[] value)` |
+| `IRangeProofVerifier` | `RangeProofResult Verify(byte[] rootHash, byte[] firstKey, IList<byte[]> keys, IList<byte[]> values, IList<byte[]> proofNodes)` and `bool VerifyEntry(byte[] root, byte[] keyHash, byte[] expectedValue, IList<byte[]> proof)` |
+| `ITransactionProofVerifier` | `bool Verify(string transactionsRoot, List<IndexedSignedTransaction> transactions)` |
+| `ITrieNodeVerifier` | `bool Verify(byte[] expectedHash, byte[] blob, IHashProvider hashProvider)` |
+
+Each concrete verifier also exposes its own `Current` singleton, and `ProofVerification` has a constructor taking all five so you can substitute one. The concrete class names do **not** follow one pattern — the range verifier is `PatriciaRangeProofVerifier`, not a `RangeProofVerification`:
+
+| Front-door property | Concrete class with `Current` |
+|---|---|
+| `Account` | `AccountProofVerification` |
+| `Storage` | `StorageProofVerification` |
+| `Range` | `PatriciaRangeProofVerifier` |
+| `Transaction` | `TransactionProofVerification` |
+| `TrieNode` | `TrieNodeVerification` |
+
+```csharp
+public interface IProofVerification
 {
-    // Account state is cryptographically verified!
-    // We know the balance is correct without downloading entire state
-    Console.WriteLine($"Account balance verified: {account.Balance} wei");
+    IAccountProofVerifier Account { get; }
+    IStorageProofVerifier Storage { get; }
+    IRangeProofVerifier Range { get; }
+    ITransactionProofVerifier Transaction { get; }
+    ITrieNodeVerifier TrieNode { get; }
 }
 ```
 
-*Source: `AccountProofVerification.cs:15-36`*
-
-### Example 4: Storage Proof Verification (Smart Contract Storage)
+*From `ProofVerificationFrontDoorTests.AccountProof_VerifiesAgainstTheStateRoot` (use case `state-proofs`).*
 
 ```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Hex.HexConvertors.Extensions;
-using System.Collections.Generic;
+var stateRoot = accountTrie.Root.GetHash();
+var proof = ProofGenerator.GenerateProof(accountTrie, accountKey);
 
-// Scenario: Verify a specific storage slot value in a smart contract
+Assert.True(ProofVerification.Current.Account.Verify(stateRoot, proof, TargetAddress, account));
+```
 
-// Storage slot key (e.g., slot 0 for a simple variable)
-var storageKey = "0x0000000000000000000000000000000000000000000000000000000000000000".HexToByteArray();
+Swapping the balance for a value the state root does not commit to makes the same call return `false` (`AccountProof_WithATamperedBalance_IsRejected`).
 
-// Expected value in that slot
-var storageValue = "0x000000000000000000000000000000000000000000000000000000000000007B".HexToByteArray(); // 123 in hex
+Storage slots go through `AccountStorage.EncodeKeyForStorage` / `EncodeValueForStorage` (from `Nethereum.Model`) — the verifier applies that encoding itself, so you pass the *raw* slot and value:
 
-// Storage root from account (from account proof)
-var storageRoot = "0xabcd...".HexToByteArray();
+*From `ProofVerificationFrontDoorTests.StorageProof_VerifiesASetSlot_AndAnAbsentKeyYieldsNoProof` (use case `state-proofs`).*
 
-// Storage proofs from full node
-var storageProofs = new List<byte[]>
+```csharp
+var storageRoot = storageTrie.Root.GetHash();
+var inclusion = ProofGenerator.GenerateProof(
+    storageTrie, AccountStorage.EncodeKeyForStorage(slot, hashProvider));
+
+Assert.True(ProofVerification.Current.Storage.Verify(storageRoot, inclusion, slot, slotValue));
+```
+
+Under the hood a verifier loads the proof nodes into an `InMemoryContentNodeStore`, builds a `PatriciaTrie(root, thatStore)`, and re-reads — a proof that reconstructs the authentic root is unforgeable.
+
+### snap/1 range proofs
+
+For snap sync, a range of the trie is served with edge proofs and verified without the full trie:
+
+- `PatriciaRangeProofGenerator.GenerateProof(Node root, ITrieNodeStore store, byte[] startKey)` and the four-argument overload `(…, byte[] startKey, byte[] lastReturnedKey)` — boundary proof for a served range.
+- `PatriciaRangeIterator.EnumerateRange(Node root, ITrieNodeStore store, byte[] startKey, int maxCount = int.MaxValue, long maxResponseBytes = long.MaxValue)` — lexicographic enumeration yielding `PatriciaRangeIterator.RangeEntry { KeyBytes, Value }` — a class **nested inside `PatriciaRangeIterator`**, not a top-level type — resolving `HashNode`s lazily through the store. `startKey` must be 32 bytes.
+- `ProofVerification.Current.Range.Verify(…)` → `RangeProofResult { Valid, HasMore }` — the full snap/1 range-proof algorithm (proof-to-path, unset-internal, has-right-element).
+
+```csharp
+public static IEnumerable<RangeEntry> EnumerateRange(
+    Node root,
+    ITrieNodeStore store,
+    byte[] startKey,
+    int maxCount = int.MaxValue,
+    long maxResponseBytes = long.MaxValue)
+
+public class RangeEntry
 {
-    "0xf90211a0...".HexToByteArray(),
-    "0xf87180a0...".HexToByteArray()
-};
+    public byte[] KeyBytes { get; set; }
+    public byte[] Value { get; set; }
+}
 
-// Verify storage value
-var isValid = StorageProofVerification.ValidateValueFromStorageProof(
-    storageKey,
-    storageValue,
-    storageProofs,
-    storageRoot
-);
-
-if (isValid)
+public readonly struct RangeProofResult
 {
-    Console.WriteLine("Storage value verified: Contract's variable at slot 0 is 123");
+    public bool Valid { get; }
+    public bool HasMore { get; }
+
+    public RangeProofResult(bool valid, bool hasMore);
+
+    public static readonly RangeProofResult Invalid;
 }
 ```
 
-*Source: `StorageProofVerification.cs:17-61`*
-
-### Example 5: Transaction Trie Validation
+*From `PatriciaRangeProofVerifierTests.Verify_BoundedRange_RoundTrip_Succeeds_WithHasMore` (use case `snap-range-proofs`).*
 
 ```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Model;
-using Nethereum.RLP;
-using Nethereum.Hex.HexConvertors.Extensions;
-using System.Collections.Generic;
-using System.Numerics;
+var proof = PatriciaRangeProofGenerator.GenerateProof(trie.Root, storage, startKey, lastKey);
 
-// Scenario: Validate that transactions in a block match the transaction root
+var r = ProofVerification.Current.Range.Verify(rootHash, startKey, keys, values, proof);
+Assert.True(r.Valid);
+Assert.True(r.HasMore);
+```
 
-// Transactions from a block (with indices)
-var transactions = new List<IndexedSignedTransaction>
+`HasMore` tells the syncing peer whether another chunk follows. Tampering with a value, dropping a key, or presenting keys out of order all make `Valid` false — the companion tests in the same file assert each of those.
+
+## Node types (reference)
+
+| Node | Members |
+|---|---|
+| `Node` (abstract base) | `Owner`, `Path`, `GetHash()`, `GetEncodedData()`, `MarkDirty()`, `IsDirty`, `NeedsPersist`, `ClearNeedsPersist()`, `MarkPersisted()` |
+| `LeafNode` | `Nibbles`, `Value`, `GetPrefixedNibbles()` |
+| `ExtendedNode` | `Nibbles`, `InnerNode`, `CollapseInner()`, `GetPrefixedNibbles()` |
+| `BranchNode` | `Children` (16), `Value`, `SetChild(int nibble, Node node)`, `RemoveChild(int nibble)`, `CollapseChild(int nibble)` |
+| `HashNode` | `Hash`, lazy `InnerNode`, `DecodeInnerNode(ITrieNodeStore store, bool decodeInnerHashNodes)`, `ReleaseInnerNode()` |
+| `EmptyNode` | the empty subtree; shared `EmptyNode.Instance` |
+
+Decoding is one unified path through `NodeDecoder`, which threads `Owner`/`Path` onto each child reference — no storage-type sniffing. Both members are **instance** methods, so you construct a `NodeDecoder` first (`Nodes/Rlp/NodeDecoder.cs:8,13`):
+
+```csharp
+public class NodeDecoder
 {
-    new IndexedSignedTransaction
-    {
-        Index = 0,
-        SignedTransaction = new Transaction1559(
-            chainId: 1,
-            nonce: 0,
-            maxPriorityFeePerGas: 2_000_000_000,
-            maxFeePerGas: 100_000_000_000,
-            gasLimit: 21000,
-            receiverAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-            amount: BigInteger.Parse("1000000000000000000"),
-            data: "",
-            accessList: null,
-            signature: new Signature(rBytes, sBytes, vBytes)
-        )
-    },
-    new IndexedSignedTransaction
-    {
-        Index = 1,
-        SignedTransaction = new LegacyTransaction(/* ... */)
-    }
-    // ... more transactions
-};
-
-// Transaction root from block header
-var transactionsRoot = "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
-
-// Validate
-var isValid = TransactionProofVerification.ValidateTransactions(
-    transactionsRoot,
-    transactions
-);
-
-if (isValid)
-{
-    Console.WriteLine("All transactions verified against block header!");
+    public Node Decode(HashNode reference, ITrieNodeStore store, bool decodeHashNodes);
+    public Node DecodeFromRlpData(byte[] currentData, byte[] owner, byte[] path, bool decodeHashNodes, ITrieNodeStore store);
 }
 ```
 
-*Source: `TransactionProofVerification.cs:10-21`*
-
-### Example 6: Building a Trie with Leaf Nodes
-
-```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Util.ByteArrayConvertors;
-using Nethereum.Hex.HexConvertors.Extensions;
-
-// Create trie
-var trie = new PatriciaTrie();
-
-// Insert a single key-value (creates a leaf node)
-var key = new byte[] { 1, 2, 3, 4 };
-var value = new StringByteArrayConvertor().ConvertToByteArray("monkey");
-trie.Put(key, value);
-
-// The root IS the leaf node at this point
-// Manually create equivalent leaf node to verify structure
-var leafNode = new LeafNode();
-leafNode.Nibbles = key.ConvertToNibbles();  // [0, 1, 0, 2, 0, 3, 0, 4]
-leafNode.Value = value;
-
-// Verify hashes match
-var trieHash = trie.Root.GetHash();
-var leafNodeHash = leafNode.GetHash();
-
-Assert.Equal(
-    "f6ec9fe71a6649f422350f383ff0e2e33b42a2941b1c95599f145e1e3697b864",
-    trieHash.ToHex()
-);
-Assert.Equal(trieHash.ToHex(), leafNodeHash.ToHex());
-```
-
-*Source: `PatriciaTrieTests.cs:59-72`*
-
-### Example 7: Extension and Branch Node Creation
-
-```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Util.ByteArrayConvertors;
-using Nethereum.Hex.HexConvertors.Extensions;
-
-// Start with a leaf
-var trie = new PatriciaTrie();
-var key1 = new byte[] { 1, 2, 3, 4 };
-var value1 = new StringByteArrayConvertor().ConvertToByteArray("monkey");
-trie.Put(key1, value1);
-
-// Add a second key that shares a prefix
-// This will create an ExtensionNode (shared prefix) + BranchNode (fork)
-var key2 = new byte[] { 1, 2, 3 };
-var value2 = new StringByteArrayConvertor().ConvertToByteArray("giraffe");
-trie.Put(key2, value2);
-
-// Resulting structure:
-// ExtensionNode [0,1,0,2,0,3]
-//   → BranchNode (value="giraffe")
-//       → Child[0]: LeafNode [4] (value="monkey")
-
-// Manually verify structure
-var leafNode = new LeafNode
-{
-    Nibbles = new byte[] { 4 },  // Only the differing nibble
-    Value = value1
-};
-
-var branchNode = new BranchNode();
-branchNode.SetChild(0, leafNode);
-branchNode.Value = value2;  // Branch can have a value!
-
-var extendedNode = new ExtendedNode
-{
-    InnerNode = branchNode,
-    Nibbles = key2.ConvertToNibbles()  // Shared prefix
-};
-
-// Verify structure matches
-var trieHash = trie.Root.GetHash();
-var extendedNodeHash = extendedNode.GetHash();
-
-Assert.Equal(
-    "3b8255bc1fb241a4e8eef2bebc2b783ad3aed8da7a5ceb06db39bda447be1531",
-    trieHash.ToHex()
-);
-Assert.Equal(extendedNodeHash.ToHex(), trieHash.ToHex());
-```
-
-*Source: `PatriciaTrieTests.cs:75-107`*
-
-### Example 8: Using Hash Nodes (Lazy Loading)
-
-```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Util.HashProviders;
-
-// Hash nodes represent nodes not yet loaded into memory
-// Used for efficient trie traversal with external storage
-
-// Create a trie and populate it
-var trie = new PatriciaTrie();
-trie.Put(new byte[] { 1, 2, 3 }, "value1".ToBytes());
-trie.Put(new byte[] { 1, 2, 4 }, "value2".ToBytes());
-trie.Put(new byte[] { 5, 6, 7 }, "value3".ToBytes());
-
-// Get root hash
-var rootHash = trie.Root.GetHash();
-
-// Store trie nodes in external storage
-var storage = new InMemoryTrieStorage();
-var rlpData = trie.Root.GetRLPEncodedData();
-storage.Put(rootHash, rlpData);
-
-// Later: Create trie from hash only (doesn't load full tree)
-var trie2 = new PatriciaTrie(rootHash, new Sha3KeccackHashProvider());
-
-// Root is initially a HashNode (not yet decoded)
-Assert.IsType<HashNode>(trie2.Root);
-
-// When we query, nodes are decoded on-demand
-var value = trie2.Get(new byte[] { 1, 2, 3 }, storage);
-// Hash node automatically decodes inner node during traversal
-```
-
-*Source: `PatriciaTrie.cs:62-78`*
-
-### Example 9: Working with Nibbles
-
-```csharp
-using Nethereum.Merkle.Patricia;
-using Nethereum.Hex.HexConvertors.Extensions;
-
-// Understanding nibble conversion
-
-// Byte array to nibbles
-var bytes = new byte[] { 0x12, 0xAB, 0xCD };
-var nibbles = bytes.ConvertToNibbles();
-// Result: [1, 2, A, B, C, D] (12 nibbles total, 2 per byte)
-
-// Nibbles are used as the path through the trie
-// Each nibble (0-F) selects one of 16 branches in a BranchNode
-
-// Example: Storing address 0x742d35Cc... in state trie
-var address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb".HexToByteArray();
-var addressNibbles = address.ConvertToNibbles();
-// addressNibbles = [7,4,2,d,3,5,C,c,6,6,3,4,C,0,5,3,2,9,2,5,a,3,b,8,4,4,B,c,9,e,7,5,9,5,f,0,b,E,b]
-
-// Each nibble represents one step in the trie traversal
-```
-
-*Source: `NiblesBytesExtension.cs`*
-
-## API Reference
-
-### PatriciaTrie
-
-Main Patricia Merkle Trie implementation.
-
-**Constructors:**
-```csharp
-PatriciaTrie()
-PatriciaTrie(IHashProvider hashProvider)
-PatriciaTrie(byte[] hashRoot)
-PatriciaTrie(byte[] hashRoot, IHashProvider hashProvider)
-```
-
-**Properties:**
-- `Node Root`: Root node of the trie
-- `IHashProvider HashProvider`: Hash provider (default: Keccak-256)
-
-**Key Methods:**
-
-**`void Put(byte[] key, byte[] value, ITrieStorage storage = null)`**
-- Insert or update a key-value pair
-- Automatically rebuilds affected nodes
-- Time complexity: O(key length)
-
-**`byte[] Get(byte[] key, ITrieStorage storage)`**
-- Retrieve value for a key
-- Returns `null` if key doesn't exist
-- Requires storage for hash node resolution
-
-**`InMemoryTrieStorage GenerateProof(byte[] key)`**
-- Generate Merkle proof for a key
-- Returns storage containing all nodes needed for verification
-- Proof size: O(log n) where n = number of keys
-
-### Proof Verification
-
-Static classes for verifying proofs.
-
-#### AccountProofVerification
-
-**`static bool VerifyAccountProofs(string accountAddress, byte[] stateRoot, IEnumerable<byte[]> rlpProofs, Account account)`**
-- Verify account state against state root
-- Used by light clients to verify balances
-- Parameters:
-  - `accountAddress`: Ethereum address (hex string)
-  - `stateRoot`: Block's state root hash
-  - `rlpProofs`: RLP-encoded proof nodes (from `eth_getProof`)
-  - `account`: Expected account state
-- Returns: `true` if account state matches proof
-
-#### StorageProofVerification
-
-**`static bool ValidateValueFromStorageProof(byte[] key, byte[] value, IEnumerable<byte[]> proofs, byte[] stateRoot = null)`**
-- Verify smart contract storage value
-- Parameters:
-  - `key`: Storage slot key
-  - `value`: Expected storage value
-  - `proofs`: RLP-encoded proof nodes
-  - `stateRoot`: Storage root (from account)
-- Returns: `true` if storage value matches proof
-
-#### TransactionProofVerification
-
-**`static bool ValidateTransactions(string transactionsRoot, List<IndexedSignedTransaction> transactions)`**
-- Verify transactions match transaction root
-- Rebuilds transaction trie and compares roots
-- Parameters:
-  - `transactionsRoot`: Transaction root from block header
-  - `transactions`: List of indexed transactions
-- Returns: `true` if reconstructed root matches
-
-### Node Types
-
-All nodes inherit from abstract `Node` class.
-
-#### Node (Abstract Base)
-
-**Properties:**
-- `IHashProvider HashProvider`: Hash provider
-
-**Methods:**
-- `abstract byte[] GetRLPEncodedData()`: RLP encoding of node
-- `virtual byte[] GetHash()`: Keccak-256 hash of RLP data
-
-#### EmptyNode
-
-Represents absence of a node (null placeholder).
-
-#### LeafNode
-
-Terminal node containing the final value.
-
-**Properties:**
-- `byte[] Nibbles`: Remaining path (nibbles)
-- `byte[] Value`: Stored value
-
-#### ExtensionNode
-
-Represents compressed path of shared nibbles.
-
-**Properties:**
-- `byte[] Nibbles`: Shared path prefix
-- `Node InnerNode`: Child node (branch or leaf)
-
-#### BranchNode
-
-16-way fork (one child per hex digit 0-F).
-
-**Properties:**
-- `Node[] Children`: 16 children (indexed 0-15)
-- `byte[] Value`: Optional value (if key ends at branch)
-
-**Methods:**
-- `void SetChild(byte index, Node node)`: Set child at index (0-15)
-
-#### HashNode
-
-Placeholder for a node not yet loaded from storage.
-
-**Properties:**
-- `byte[] Hash`: Hash of the node
-- `Node InnerNode`: Decoded node (lazy loaded)
-
-**Methods:**
-- `void DecodeInnerNode(ITrieStorage storage, bool decodeHashNodes)`: Load and decode from storage
-
-### Storage Interfaces
-
-#### ITrieStorage
-
-Interface for trie node storage.
-
-**Methods:**
-- `byte[] Get(byte[] key)`: Retrieve node by hash
-- `void Put(byte[] key, byte[] value)`: Store node
-
-#### InMemoryTrieStorage
-
-In-memory implementation of `ITrieStorage`.
-
-**Usage:**
-- For testing and proof generation
-- For temporary trie operations
-- Not suitable for large persistent tries
-
-### Utility Classes
-
-#### NodeDecoder
-
-Decodes RLP-encoded nodes.
-
-**Methods:**
-- `Node DecodeNode(byte[] hash, bool decodeHashNodes, ITrieStorage storage)`: Decode node from storage
-
-#### NiblesBytesExtension
-
-Extension methods for nibble conversion.
-
-**Methods:**
-- `byte[] ConvertToNibbles(this byte[] bytes)`: Convert bytes to nibbles
-- `byte[] FindAllTheSameBytesFromTheStart(this byte[] a, byte[] b)`: Find common prefix
-
-## Related Packages
-
-### Used By (Consumers)
-
-- **Nethereum.RPC** - eth_getProof RPC methods return Patricia trie proofs
-- **Light Clients** - Verify state without full blockchain
-- **State Verification Tools** - Validate blockchain state integrity
-- **Archive Nodes** - Serve historical state proofs
-
-### Dependencies
-
-- **Nethereum.Model** - Account and transaction models for verification
-- **Nethereum.RLP** - RLP encoding for trie nodes
-
-## Important Notes
-
-### Ethereum State Trie
-
-The Ethereum state trie maps:
-```
-keccak256(address) → RLP([nonce, balance, storageRoot, codeHash])
-```
-
-**Key Points:**
-- Keys are hashed (prevents rainbow table attacks)
-- Values are RLP-encoded account objects
-- Storage root points to account's storage trie
-
-### Storage Trie
-
-Each contract has its own storage trie:
-```
-keccak256(slot) → RLP(value)
-```
-
-**Key Points:**
-- Keys are hashed storage slots
-- Values are RLP-encoded
-- Root stored in account's `stateRoot` field
-
-### Transaction and Receipt Tries
-
-```
-RLP(index) → RLP(transaction)
-```
-
-**Key Points:**
-- Keys are transaction indices (0, 1, 2, ...)
-- Not hashed (sequential access pattern)
-- Rebuilt from transaction list
-
-### Proof Size
-
-Proof size depends on trie depth:
-- Average depth: ~5-7 nodes
-- Worst case: ~64 nodes (256-bit key / 4 bits per nibble)
-- Each node: ~500-1500 bytes (RLP encoded)
-- Total proof: ~2.5-100 KB typically
-
-### Security Considerations
-
-**Proof Verification:**
-- Always verify against a trusted root hash
-- Root hash comes from block header (validated by consensus)
-- Never trust client-provided roots
-
-**Hash Collisions:**
-- Keccak-256 provides 128-bit collision resistance
-- Sufficient for all practical blockchain use cases
-
-**Denial of Service:**
-- Deep tries can be expensive to traverse
-- Use storage limits for untrusted tries
-- Consider proof size limits
-
-### Performance Optimization
-
-**For Large Tries:**
-- Use external storage (database) for production
-- Implement `ITrieStorage` with persistent backend
-- Cache frequently accessed nodes
-- Use HashNodes for lazy loading
-
-**For Proof Generation:**
-- Only generate proofs for necessary keys
-- Cache proofs if queried frequently
-- Consider proof caching service
-
-**Memory Management:**
-- Use HashNodes to avoid loading entire trie
-- Implement node eviction for memory-constrained environments
-- Clear storage after proof verification
-
-### Common Pitfalls
-
-1. **Forgetting to Hash Keys**: State trie uses `keccak256(address)` as keys, not raw address
-2. **Wrong Encoding**: Keys are RLP-encoded before nibble conversion
-3. **Missing Storage**: `Get()` requires storage parameter for hash node resolution
-4. **Null vs Empty**: EmptyNode vs null value - check both
-5. **Nibble Confusion**: Remember keys are nibbles, not bytes (2 nibbles per byte)
-
-### Differences from Standard Patricia Trie
-
-Ethereum's Modified Merkle Patricia Trie differs from standard Patricia tries:
-
-1. **Merkle Hashing**: Nodes are hashed (Merkle property)
-2. **RLP Encoding**: All data is RLP-encoded
-3. **Hexary**: 16-way branching instead of binary
-4. **Hash Nodes**: Lazy loading support via hash references
-5. **Compact Encoding**: Special encoding for nibble paths (with terminator flag)
-
-## Additional Resources
-
-### Ethereum Yellow Paper
-- [Section 4.1: World State](https://ethereum.github.io/yellowpaper/paper.pdf) - State trie specification
-- [Appendix D: Modified Merkle Patricia Trie](https://ethereum.github.io/yellowpaper/paper.pdf) - Complete trie specification
-
-### Ethereum Documentation
-- [Patricia Merkle Trie](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)
-- [State and Storage Proofs](https://blog.ethereum.org/2015/11/15/merkling-in-ethereum)
-- [eth_getProof RPC Method](https://eips.ethereum.org/EIPS/eip-1186)
-
-### Research Papers
-- [Merkle Patricia Trie Specification](https://github.com/ethereum/wiki/wiki/Patricia-Tree) - Ethereum Wiki
-
-### Nethereum Documentation
-- [Nethereum Documentation](https://docs.nethereum.com)
-- [Nethereum GitHub](https://github.com/Nethereum/Nethereum)
-
-### Light Client Resources
-- [EIP-1186: RPC-Method to get Merkle Proofs](https://eips.ethereum.org/EIPS/eip-1186)
-- [Light Client Protocol](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/sync-protocol.md)
+A 32-byte child becomes a `HashNode` carrying `{Hash, Owner, Path}`; a shorter child is decoded inline.
+
+`PatriciaPathWalker` exposes the nibble/compact conversions the trie uses — `CompactToNibbles(byte[] compact)`, `NibblesToCompact(byte[] nibbles)`, `WalkPath(Node root, ITrieNodeStore store, byte[] pathNibbles)`.
+
+## PatriciaTrie surface (reference)
+
+| Member | Notes |
+|---|---|
+| Constructors | `()` (empty trie, Keccak), `(IHashProvider)`, `(byte[] hashRoot)`, `(Node root)`, `(ITrieNodeStore store)`, `(byte[] hashRoot, ITrieNodeStore store)`, `(Node root, ITrieNodeStore store)`, `(ITrieNodeStore store, byte[] owner)`, `(byte[] hashRoot, ITrieNodeStore store, byte[] owner)`, `(Node root, ITrieNodeStore store, byte[] owner)` — each with an extra `IHashProvider` overload |
+| `LoadFromStorage` | `(byte[] rootHash, ITrieNodeStore store[, byte[] owner][, IHashProvider])` |
+| `ReattachFromRawRoot` | `(IRawNodeReader rawReader, ITrieNodeStore store, byte[] owner[, IHashProvider])` |
+| Properties | `Root`, `Store`, `HashProvider`, `Tracer` |
+| Reads | `Get(byte[] key)` |
+| Writes | `Put(byte[] key, byte[] value)`, `Delete(byte[] key)` |
+| Commits | `SaveNodesToStorage()`, `SaveDirtyNodesToStorage()`, `SaveDirtyNodesToStorageAndCollapse()` |
+
+## Related packages
+
+- **`Nethereum.Merkle.Binary`** — the EIP-7864 binary trie, the proposed replacement for this structure.
+- **`Nethereum.CoreChain.RocksDB`** — persistent path-keyed and content-addressed `ITrieNodeStore` implementations with node history and reorg rewind.
+- **`Nethereum.Merkle`** — general-purpose Merkle trees (airdrops, whitelists, sparse trees), unrelated to the state trie.

@@ -19,17 +19,7 @@ Nethereum.BigInteger.N351 is a complete port of the .NET Foundation's `System.Nu
 
 ## Installation
 
-```bash
-dotnet add package Nethereum.BigInteger.N351
-```
-
-Or via Package Manager Console:
-
-```powershell
-Install-Package Nethereum.BigInteger.N351
-```
-
-**Note:** This package is automatically referenced by Nethereum when building for .NET 3.5 targets. You typically don't need to reference it directly.
+This is not installed separately. Its sources are compiled into **Nethereum.Hex** through linked files (`src/Nethereum.Hex/Nethereum.Hex.csproj`); .NET 3.5 builds of Nethereum.Hex expose `System.Numerics.BigInteger` from here.
 
 ## Dependencies
 
@@ -167,7 +157,7 @@ var twoPointFiveEth = BigInteger.Multiply(25, BigInteger.Pow(10, 17));
 Console.WriteLine($"2.5 ETH in wei: {twoPointFiveEth}");
 
 // Convert wei back to ETH (with precision loss)
-var weiAmount = new BigInteger("1234567890123456789"); // ~1.23 ETH
+var weiAmount = BigInteger.Parse("1234567890123456789"); // ~1.23 ETH
 var ethAmount = weiAmount / oneEth;
 var weiRemainder = weiAmount % oneEth;
 
@@ -446,11 +436,7 @@ public int Sign { get; } // Returns -1, 0, or 1
 ## Related Packages
 
 ### Used By (Consumers)
-- All Nethereum packages when building for .NET 3.5
-- **Nethereum.Util** - Unit conversions (wei/gwei/ether)
-- **Nethereum.ABI** - ABI encoding/decoding of uint256 values
-- **Nethereum.RLP** - RLP encoding of large integers
-- **Nethereum.Signer** - Cryptographic signature operations
+- **Nethereum.Hex** (embeds the sources; all other Nethereum packages depend on Hex)
 
 ### Dependencies
 - None
@@ -556,8 +542,7 @@ BigInteger is **immutable** and therefore **thread-safe**. All operations return
 
 When upgrading from .NET 3.5 to .NET 4.0+:
 
-1. Remove `Nethereum.BigInteger.N351` reference (no longer needed)
-2. Code using `System.Numerics.BigInteger` continues to work unchanged
-3. Built-in BigInteger provides better performance
+1. Code using `System.Numerics.BigInteger` continues to work unchanged
+2. Built-in BigInteger provides better performance
 
 No code changes required - namespace and API are identical!

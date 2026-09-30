@@ -118,7 +118,7 @@ namespace Nethereum.Signer.Crypto.BN128
             // minusQ2: The p² Frobenius gives a factor of -1 for y, but we absorb it
             // by calling this point minusQ2 (see Geth comments)
             var minusQ2 = new TwistPoint();
-            minusQ2.X.MulScalar(aAffine.X, BN128Constants.XiToPSquaredMinus1Over3);
+            minusQ2.X.MulScalar(aAffine.X, BN128Constants.XiToPSquaredMinus1Over3Fp);
             minusQ2.Y.Set(aAffine.Y);  // NOT negated - the -1 is absorbed in the name
             minusQ2.Z.SetOne();
             minusQ2.T.SetOne();
@@ -188,7 +188,7 @@ namespace Nethereum.Signer.Crypto.BN128
             t.Add(t, t);
             // b = -t * q.x = -2 * E * r.t * q.x
             var b = new Fp2().Neg(t);
-            b.MulScalar(b, qX.B);  // qX.B is the real part (the scalar value)
+            b.MulScalar(b, qX.BF);
 
             // a = (r.x + E)² - A - G - 4*B
             var a = new Fp2().Add(r.X, E);
@@ -202,7 +202,7 @@ namespace Nethereum.Signer.Crypto.BN128
             // c = 2 * rOut.z * r.t * q.y
             var c = new Fp2().Mul(rOutZ, r.T);
             c.Add(c, c);
-            c.MulScalar(c, qY.B);  // qY.B is the real part (the scalar value)
+            c.MulScalar(c, qY.BF);
 
             return new LineFunctionResult { A = a, B = b, C = c, ROut = rOut };
         }
@@ -281,12 +281,12 @@ namespace Nethereum.Signer.Crypto.BN128
             var a = new Fp2().Sub(t2, t);
 
             // c = 2 * rOut.z * q.y
-            var c = new Fp2().MulScalar(rOutZ, qY.B);
+            var c = new Fp2().MulScalar(rOutZ, qY.BF);
             c.Add(c, c);
 
             // b = -2 * L1 * q.x
             var b = new Fp2().Neg(L1);
-            b.MulScalar(b, qX.B);
+            b.MulScalar(b, qX.BF);
             b.Add(b, b);
 
             return new LineFunctionResult { A = a, B = b, C = c, ROut = rOut };

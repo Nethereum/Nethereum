@@ -1,12 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
+using System.Collections.Generic;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
     public class Transaction2930: SignedTypeTransaction
     {
-        public Transaction2930(BigInteger chainId, BigInteger? nonce, BigInteger? gasPrice,
-            BigInteger? gasLimit, string receiverAddress, BigInteger? amount, string data, List<AccessListItem> accessList)
+        public Transaction2930(EvmUInt256 chainId, EvmUInt256? nonce, EvmUInt256? gasPrice,
+            EvmUInt256? gasLimit, string receiverAddress, EvmUInt256? amount, string data, List<AccessListItem> accessList)
         {
             ChainId = chainId;
             Nonce = nonce;
@@ -18,20 +18,20 @@ namespace Nethereum.Model
             AccessList = accessList;
         }
 
-        public Transaction2930(BigInteger chainId, BigInteger nonce, BigInteger gasPrice,
-            BigInteger gasLimit, string receiverAddress, BigInteger amount, string data, List<AccessListItem> accessList, Signature signature) :
+        public Transaction2930(EvmUInt256 chainId, EvmUInt256 nonce, EvmUInt256 gasPrice,
+            EvmUInt256 gasLimit, string receiverAddress, EvmUInt256 amount, string data, List<AccessListItem> accessList, Signature signature) :
             this(chainId, nonce, gasPrice, gasLimit, receiverAddress, amount, data, accessList)
         {
             Signature = signature;
         }
 
-        public BigInteger ChainId { get; private set; }
-        public BigInteger? Nonce { get; private set; }
-        public BigInteger? GasPrice { get; private set; }
-        public BigInteger? GasLimit { get; private set; }
+        public EvmUInt256 ChainId { get; private set; }
+        public EvmUInt256? Nonce { get; private set; }
+        public EvmUInt256? GasPrice { get; private set; }
+        public EvmUInt256? GasLimit { get; private set; }
 
         public string ReceiverAddress { get; private set; }
-        public BigInteger? Amount { get; private set; }
+        public EvmUInt256? Amount { get; private set; }
 
         public string Data { get; private set; }
         public List<AccessListItem> AccessList { get; private set; }

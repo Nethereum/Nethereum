@@ -6,6 +6,7 @@ using Nethereum.Merkle.Binary.Hashing;
 using Nethereum.Merkle.Binary.Nodes;
 using Nethereum.Merkle.Binary.Storage;
 using Nethereum.Util.HashProviders;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Merkle.Binary.Tests
@@ -36,6 +37,7 @@ namespace Nethereum.Merkle.Binary.Tests
             Assert.Equal(new byte[32], root);
         }
 
+        [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie", "Put and get a 32-byte key in an EIP-7864 binary trie", Order = 1)]
         [Fact]
         [Trait("Category", "BinaryTrie")]
         public void SingleEntry_PutGet_ReturnsValue()
@@ -129,7 +131,7 @@ namespace Nethereum.Merkle.Binary.Tests
 
         [Fact]
         [Trait("Category", "BinaryTrie")]
-        public void Delete_SetsValueToZero()
+        public void Delete_SetsValueToAbsent()
         {
             var trie = new BinaryTrie();
             var key = MakeKey(0x00, 0x01);
@@ -137,7 +139,7 @@ namespace Nethereum.Merkle.Binary.Tests
             trie.Delete(key);
 
             var result = trie.Get(key);
-            Assert.Equal(new byte[32], result);
+            Assert.Null(result);
         }
 
         [Fact]

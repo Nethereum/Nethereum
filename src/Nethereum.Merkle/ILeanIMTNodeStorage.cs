@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System.Collections.Generic;
 
 namespace Nethereum.Merkle
 {
+    [NethereumDocExample(DocSection.SmartContracts, "incremental-merkle-tree", "One level, index and value written into lean-IMT storage")]
     public class LeanIMTNodeEntry
     {
         public int Level { get; set; }
@@ -16,6 +18,7 @@ namespace Nethereum.Merkle
         }
     }
 
+    [NethereumDocExample(DocSection.SmartContracts, "incremental-merkle-tree", "Node storage behind a lean incremental Merkle tree")]
     public interface ILeanIMTNodeStorage
     {
         byte[] GetNode(int level, int index);

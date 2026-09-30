@@ -242,8 +242,9 @@ namespace Nethereum.Signer.Bls.Tests
                 var directory = new DirectoryInfo(AppContext.BaseDirectory);
                 while (directory != null)
                 {
-                    var solution = Path.Combine(directory.FullName, "Nethereum.sln");
-                    if (File.Exists(solution))
+                    var slnx = Path.Combine(directory.FullName, "Nethereum.slnx");
+                    var sln = Path.Combine(directory.FullName, "Nethereum.sln");
+                    if (File.Exists(slnx) || File.Exists(sln))
                     {
                         return directory.FullName;
                     }

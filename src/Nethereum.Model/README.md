@@ -36,6 +36,30 @@ Ethereum has evolved to support multiple transaction formats:
 - **EIP-2930** (`Transaction2930`): Transactions with access lists for gas optimization
 - **EIP-1559** (`Transaction1559`): Fee market transactions with base fee and priority fee
 - **EIP-7702** (`Transaction7702`): Account abstraction with authorization lists
+- **EIP-4844** (`Transaction4844`): Blob transactions with KZG commitments for data availability
+
+### Blob Encoding
+
+`BlobEncoder` converts arbitrary data to/from EIP-4844 blobs (131,072 bytes each, 4096 field elements):
+
+```csharp
+// Encode data into blobs (auto-splits if > 126,976 bytes)
+var blobs = BlobEncoder.EncodeBlobs(myData);
+
+// Decode blobs back to original data
+var decoded = BlobEncoder.DecodeBlobs(blobs);
+```
+
+`BlobSidecar` carries the blob data alongside the transaction for network transmission:
+
+```csharp
+var tx = new Transaction4844(chainId, nonce, maxPriorityFee, maxFee, gasLimit,
+    to, value, data, accessList, maxFeePerBlobGas, blobVersionedHashes);
+tx.Sidecar = new BlobSidecar(blobs, commitments, proofs);
+
+// Encode with sidecar for eth_sendRawTransaction
+var networkBytes = tx.GetRLPEncodedWithSidecar();
+```
 
 ### RLP Encoding
 
@@ -54,6 +78,32 @@ Ethereum uses ECDSA signatures with three components:
 ### Chain Identification
 
 The `Chain` enum provides constants for major Ethereum networks (MainNet, Sepolia, Polygon, Arbitrum, Optimism, Base, etc.) and is used with EIP-155 to prevent cross-chain replay attacks.
+
+### Numeric Types — `EvmUInt256`
+
+Transaction amounts, gas limits, fees, nonces, chain IDs, block numbers,
+balances, and cumulative gas — every 256-bit scalar field on the model
+types — are typed as `Nethereum.Util.EvmUInt256`. The struct provides
+EVM-semantic unsigned arithmetic (wrap-around, divide-by-zero → zero)
+without `System.Numerics.BigInteger` allocations in hot paths.
+
+`BigInteger` remains supported at the API boundary through an implicit
+conversion, so existing consumer code like
+`amount: BigInteger.Parse("1000000000000000000")` continues to compile
+and behave identically. For new code, prefer the direct `EvmUInt256`
+constructor for small values (`new EvmUInt256(1_000_000_000_000_000_000UL)`)
+or the conversion helpers in `EvmUInt256BigIntegerExtensions` for
+arbitrary-precision input.
+
+### Block / Receipt Encoding Providers
+
+`IBlockEncodingProvider` abstracts over the binary encoding of block
+headers, receipts, accounts, logs, and withdrawals so callers outside
+`Nethereum.Model` (state-root calculators, witness producers, SSZ
+encoders) can swap in alternative encoders without taking a direct RLP
+dependency. The default implementation is `RlpBlockEncodingProvider`
+(RLP canonical encoding for Ethereum mainnet); `Nethereum.Model.SSZ`
+supplies the beacon-chain SSZ variant.
 
 ## Quick Start
 
@@ -102,6 +152,7 @@ var legacyTx = new LegacyTransaction(
 ```csharp
 using Nethereum.Model;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.RLP;
 
 // RLP-encoded signed transaction (typically from network or storage)
 var rlpHex = "f86b8085e8d4a510008227109413978aee95f38490e9769c39b2773ed763d9cd5f872386f26fc10000801ba0eab47c1a49bf2fe5d40e01d313900e19ca485867d462fe06e139e3a536c6d4f4a014a569d327dcda4b29f74f93c0e9729d2f49ad726e703f9cd90dbb0fbf6649f1";
@@ -165,6 +216,7 @@ switch (transaction.TransactionType)
 
 ```csharp
 using Nethereum.Model;
+using Nethereum.Signer;
 using System.Numerics;
 using System.Collections.Generic;
 
@@ -182,7 +234,7 @@ var accessList = new List<AccessListItem>
 
 // Create an EIP-1559 transaction
 var tx1559 = new Transaction1559(
-    chainId: (BigInteger)Chain.MainNet,
+    chainId: (int)Chain.MainNet,
     nonce: 42,
     maxPriorityFeePerGas: new BigInteger(2_000_000_000),   // 2 gwei tip
     maxFeePerGas: new BigInteger(100_000_000_000),         // 100 gwei max
@@ -247,7 +299,7 @@ var log = Log.Create(
 // Or create log without data
 var logWithoutData = Log.Create(
     address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    topics: topic1, topic2, topic3
+    topics: new[] { topic1, topic2, topic3 }
 );
 ```
 
@@ -281,7 +333,7 @@ var blockHeader = new BlockHeader
 };
 
 // Encode the block header for hashing
-var encoded = BlockHeaderEncoder.Current.EncodeHeader(blockHeader);
+var encoded = BlockHeaderEncoder.Current.Encode(blockHeader);
 ```
 
 *Source: src/Nethereum.Model/BlockHeader.cs*
@@ -295,7 +347,7 @@ using System.Numerics;
 
 // Ethereum Mainnet transaction
 var mainnetTx = new Transaction1559(
-    chainId: (BigInteger)Chain.MainNet,  // 1
+    chainId: (int)Chain.MainNet,  // 1
     nonce: 0,
     maxPriorityFeePerGas: new BigInteger(2_000_000_000),
     maxFeePerGas: new BigInteger(50_000_000_000),
@@ -308,7 +360,7 @@ var mainnetTx = new Transaction1559(
 
 // Polygon transaction (lower gas fees)
 var polygonTx = new Transaction1559(
-    chainId: (BigInteger)Chain.Polygon,  // 137
+    chainId: (int)Chain.Polygon,  // 137
     nonce: 0,
     maxPriorityFeePerGas: new BigInteger(30_000_000_000),  // 30 gwei
     maxFeePerGas: new BigInteger(200_000_000_000),         // 200 gwei
@@ -321,7 +373,7 @@ var polygonTx = new Transaction1559(
 
 // Base L2 transaction
 var baseTx = new Transaction1559(
-    chainId: (BigInteger)Chain.Base,  // 8453
+    chainId: (int)Chain.Base,  // 8453
     nonce: 0,
     maxPriorityFeePerGas: new BigInteger(100_000),      // Very low on L2
     maxFeePerGas: new BigInteger(1_000_000),
@@ -383,24 +435,23 @@ Pre-EIP-155 transaction format with basic fields.
 
 **Key Methods:**
 - `byte[] GetRLPEncoded()`: Get signed transaction RLP encoding
-- `EthECKey GetKey()`: Recover signer's public key from signature
 
 #### `LegacyTransactionChainId`
 EIP-155 transaction with chain ID to prevent replay attacks.
 
-Inherits from `LegacyTransaction` with added chain ID in V signature component.
+Inherits from `SignedLegacyTransaction` (the same base `LegacyTransaction` inherits) with an added chain ID in the V signature component.
 
 #### `Transaction1559`
 EIP-1559 fee market transaction.
 
 **Key Properties:**
-- `BigInteger ChainId`: Network chain identifier
-- `BigInteger? Nonce`: Transaction sequence number
-- `BigInteger? MaxPriorityFeePerGas`: Miner tip
-- `BigInteger? MaxFeePerGas`: Maximum total fee per gas
-- `BigInteger? GasLimit`: Gas limit
+- `EvmUInt256 ChainId`: Network chain identifier
+- `EvmUInt256? Nonce`: Transaction sequence number
+- `EvmUInt256? MaxPriorityFeePerGas`: Miner tip
+- `EvmUInt256? MaxFeePerGas`: Maximum total fee per gas
+- `EvmUInt256? GasLimit`: Gas limit
 - `string ReceiverAddress`: Recipient
-- `BigInteger? Amount`: Value to transfer
+- `EvmUInt256? Amount`: Value to transfer
 - `string Data`: Call data
 - `List<AccessListItem> AccessList`: Optional access list
 
@@ -417,13 +468,13 @@ Similar structure to `Transaction1559` but uses `GasPrice` instead of base/prior
 EIP-7702 transaction that allows EOAs to temporarily set account code for a single transaction via signed authorizations.
 
 **Key Properties:**
-- `BigInteger ChainId`: Network chain identifier
-- `BigInteger? Nonce`: Transaction sequence number
-- `BigInteger? MaxPriorityFeePerGas`: Miner tip
-- `BigInteger? MaxFeePerGas`: Maximum total fee per gas
-- `BigInteger? GasLimit`: Gas limit
+- `EvmUInt256 ChainId`: Network chain identifier
+- `EvmUInt256? Nonce`: Transaction sequence number
+- `EvmUInt256? MaxPriorityFeePerGas`: Miner tip
+- `EvmUInt256? MaxFeePerGas`: Maximum total fee per gas
+- `EvmUInt256? GasLimit`: Gas limit
 - `string ReceiverAddress`: Recipient
-- `BigInteger? Amount`: Value to transfer
+- `EvmUInt256? Amount`: Value to transfer
 - `string Data`: Call data
 - `List<AccessListItem> AccessList`: Optional access list
 - `List<Authorisation7702Signed> AuthorisationList`: Signed authorization tuples
@@ -462,23 +513,23 @@ Ethereum block header structure.
 - `byte[] StateRoot`: State trie root hash
 - `byte[] TransactionsHash`: Transactions trie root hash
 - `byte[] ReceiptHash`: Receipts trie root hash
-- `BigInteger BlockNumber`: Block height
+- `EvmUInt256 BlockNumber`: Block height
 - `byte[] LogsBloom`: Bloom filter for logs
-- `BigInteger Difficulty`: Mining difficulty (0 post-merge)
+- `EvmUInt256 Difficulty`: Mining difficulty (0 post-merge)
 - `long Timestamp`: Block timestamp (Unix seconds)
 - `long GasLimit`: Maximum gas for block
 - `long GasUsed`: Total gas used in block
 - `byte[] MixHash`: PoW mix hash (random post-merge)
 - `byte[] ExtraData`: Arbitrary extra data
 - `byte[] Nonce`: PoW nonce (0 post-merge)
-- `BigInteger? BaseFee`: EIP-1559 base fee per gas
+- `EvmUInt256? BaseFee`: EIP-1559 base fee per gas
 
 #### `BlockHeaderEncoder`
 RLP encoder/decoder for block headers.
 
 **Methods:**
-- `byte[] EncodeHeader(BlockHeader header)`: Encode block header to RLP
-- `BlockHeader DecodeHeader(byte[] rlp)`: Decode RLP to block header
+- `byte[] Encode(BlockHeader header, bool legacyMode = false)`: Encode block header to RLP
+- `BlockHeader Decode(byte[] rawdata, bool legacyMode = false)`: Decode RLP to block header
 
 ### Account Models
 
@@ -486,8 +537,8 @@ RLP encoder/decoder for block headers.
 Ethereum account state.
 
 **Properties:**
-- `BigInteger Nonce`: Transaction count or contract creation count
-- `BigInteger Balance`: Account balance in wei
+- `EvmUInt256 Nonce`: Transaction count or contract creation count
+- `EvmUInt256 Balance`: Account balance in wei
 - `byte[] StateRoot`: Storage trie root (default: empty trie hash)
 - `byte[] CodeHash`: Contract code hash (default: empty data hash)
 
@@ -516,8 +567,7 @@ ECDSA signature components.
 Extension methods for signature operations.
 
 **Key Methods:**
-- `bool IsVSignedForChain(this Signature)`: Check if V indicates chain-specific signature
-- `BigInteger GetChainFromVChain(BigInteger v)`: Extract chain ID from V
+- `bool IsVSignedForChain(this ISignature signature)`: Check if V indicates chain-specific signature
 
 ### Event Log Models
 
@@ -558,17 +608,17 @@ RLP encoder/decoder for access lists.
 Unsigned authorization tuple specifying which contract code an EOA delegates to.
 
 **Properties:**
-- `BigInteger ChainId`: Chain ID the authorization is valid for
+- `EvmUInt256 ChainId`: Chain ID the authorization is valid for
 - `string Address`: Contract address whose code the EOA will execute
-- `BigInteger Nonce`: Nonce of the authorizing account at time of signing
+- `EvmUInt256 Nonce`: Nonce of the authorizing account at time of signing
 
 #### `Authorisation7702Signed`
 Signed authorization extending `Authorisation7702` with ECDSA signature components. Implements `ISignature`.
 
 **Properties (inherited from `Authorisation7702`):**
-- `BigInteger ChainId`: Chain ID the authorization is valid for
+- `EvmUInt256 ChainId`: Chain ID the authorization is valid for
 - `string Address`: Contract address whose code the EOA will execute
-- `BigInteger Nonce`: Nonce of the authorizing account
+- `EvmUInt256 Nonce`: Nonce of the authorizing account
 
 **Properties (signature):**
 - `byte[] V`: YParity value
@@ -577,7 +627,7 @@ Signed authorization extending `Authorisation7702` with ECDSA signature componen
 
 **Constructors:**
 - `Authorisation7702Signed()`: Default constructor
-- `Authorisation7702Signed(BigInteger chainId, string address, BigInteger nonce, byte[] r, byte[] s, byte[] v)`: Create with all fields
+- `Authorisation7702Signed(EvmUInt256 chainId, string address, EvmUInt256 nonce, byte[] r, byte[] s, byte[] v)`: Create with all fields
 - `Authorisation7702Signed(Authorisation7702 authorisation, Signature signature)`: Create from unsigned authorization and signature
 - `Authorisation7702Signed(Authorisation7702 authorisation, byte[] r, byte[] s, byte[] v)`: Create from unsigned authorization and raw signature bytes
 
@@ -615,7 +665,7 @@ Default constant values used throughout the package.
 Utilities for signature V value and chain ID calculations.
 
 **Methods:**
-- `static BigInteger GetChainFromVChain(BigInteger vChain)`: Extract chain ID from V
+- `static EvmUInt256 GetChainFromVChain(EvmUInt256 vChain)`: Extract chain ID from V
 - V value encoding/decoding for EIP-155
 
 ## Related Packages

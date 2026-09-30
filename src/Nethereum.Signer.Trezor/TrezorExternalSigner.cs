@@ -1,4 +1,4 @@
-﻿using hw.trezor.messages;
+using hw.trezor.messages;
 using hw.trezor.messages.bitcoin;
 using hw.trezor.messages.bootloader;
 using hw.trezor.messages.common;
@@ -281,12 +281,12 @@ namespace Nethereum.Signer.Trezor
             Transaction1559Encoder encoder = new Transaction1559Encoder();
             EthereumSignTxEIP1559 txMessage = new EthereumSignTxEIP1559
             {
-                Nonce = encoder.GetBigIntegerForEncoding(transaction.Nonce),
-                MaxGasFee = encoder.GetBigIntegerForEncoding(transaction.MaxFeePerGas),
-                MaxPriorityFee = encoder.GetBigIntegerForEncoding(transaction.MaxPriorityFeePerGas),
-                GasLimit = encoder.GetBigIntegerForEncoding(transaction.GasLimit),
+                Nonce = encoder.GetValueForEncoding(transaction.Nonce),
+                MaxGasFee = encoder.GetValueForEncoding(transaction.MaxFeePerGas),
+                MaxPriorityFee = encoder.GetValueForEncoding(transaction.MaxPriorityFeePerGas),
+                GasLimit = encoder.GetValueForEncoding(transaction.GasLimit),
                 To = ((transaction.ReceiverAddress != null && transaction.ReceiverAddress.Length > 0) ? transaction.ReceiverAddress.ConvertToEthereumChecksumAddress() : ""),
-                Value = encoder.GetBigIntegerForEncoding(transaction.Amount),
+                Value = encoder.GetValueForEncoding(transaction.Amount),
                 AddressNs = GetPath(),
                 ChainId = (ulong)transaction.ChainId
             };
@@ -352,6 +352,11 @@ namespace Nethereum.Signer.Trezor
         }
 
         public override async Task SignAsync(Transaction7702 transaction)
+        {
+            throw new System.NotSupportedException("Not supported by Trezor");
+        }
+
+        public override async Task SignAsync(Transaction4844 transaction)
         {
             throw new System.NotSupportedException("Not supported by Trezor");
         }

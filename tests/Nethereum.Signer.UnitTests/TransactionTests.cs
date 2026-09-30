@@ -164,9 +164,8 @@ namespace Nethereum.Signer.UnitTests
         [Fact]
         public void TestTransactionFromUnSignedRLP()
         {
-            Exception ex = Assert.Throws<Exception>(() =>
-                new LegacyTransaction(RLP_ENCODED_UNSIGNED_TX.HexToByteArray()));
-            Assert.Equal("Signature not initiated or calculated", ex.Message);
+            var tx = new LegacyTransaction(RLP_ENCODED_UNSIGNED_TX.HexToByteArray());
+            Assert.Null(tx.Signature);
         }
     }
 }

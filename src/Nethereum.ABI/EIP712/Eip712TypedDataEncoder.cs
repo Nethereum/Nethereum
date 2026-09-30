@@ -29,11 +29,6 @@ namespace Nethereum.ABI.EIP712
             return EncodeTypedDataRaw(typedData);
         }
 
-        /// <summary>
-        /// Encodes data according to EIP-712.
-        /// Infers types of message fields from <see cref="Nethereum.ABI.FunctionEncoding.Attributes.ParameterAttribute"/>. 
-        /// For flat messages only, for complex messages with reference type fields use "EncodeTypedData(TypedData typedData).
-        /// </summary>
         public byte[] EncodeTypedData<T, TDomain>(T data, TDomain domain, string primaryTypeName)
         {
             var typedData = GenerateTypedData(data, domain, primaryTypeName);

@@ -22,12 +22,13 @@ dotnet add package Nethereum.Hex
 
 ### Dependencies
 
-None. This package has zero dependencies.
+**Nethereum.Hex has no Nethereum package dependencies**, but it does carry a real external one:
+
+- **Newtonsoft.Json** - a hard `PackageReference` (`[11.0.2,14)`) pulled in for every target framework except .NET 3.5 (`buildConf/Frameworks.props:70-72`)
 
 **JSON Serialization Support:**
-- Includes converters for **Newtonsoft.Json** (if available in your application)
-- Includes converters for **System.Text.Json** (.NET 6.0+, if available in your application)
-- These are peer dependencies - not included by this package
+- Includes converters for **Newtonsoft.Json** (always available, via the hard dependency above)
+- Includes converters for **System.Text.Json** (.NET 6.0+, using the framework-provided implementation — no extra package needed)
 
 ## Key Concepts
 

@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System;
 
 namespace Nethereum.Merkle.Binary
 {
+    [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie", "The EIP-7864 shape constants: stem width, sizes and node-type tags")]
     public static class BinaryTrieConstants
     {
         public const int StemNodeWidth = 256;

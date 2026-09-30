@@ -4,29 +4,22 @@ namespace Nethereum.Util.HashProviders
 {
     public class PoseidonHashProvider : IHashProvider
     {
-        private readonly PoseidonHasher _hasher;
+        private readonly PoseidonEvmHasher _hasher;
 
         public PoseidonHashProvider()
-            : this(null)
+            : this(PoseidonParameterPreset.CircomT3)
         {
         }
 
         public PoseidonHashProvider(PoseidonParameterPreset preset)
-            : this(new PoseidonHasher(preset))
         {
-        }
-
-        public PoseidonHashProvider(PoseidonHasher hasher)
-        {
-            _hasher = hasher ?? new PoseidonHasher();
+            _hasher = new PoseidonEvmHasher(preset);
         }
 
         public byte[] ComputeHash(byte[] data)
         {
             if (data == null)
-            {
                 throw new ArgumentNullException(nameof(data));
-            }
 
             return _hasher.HashBytesToBytes(data);
         }

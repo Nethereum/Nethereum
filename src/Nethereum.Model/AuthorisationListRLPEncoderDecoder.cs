@@ -40,9 +40,9 @@ namespace Nethereum.Model
             {
                 var decodedItem = (RLPCollection)rlpElement;
                 var authorisationListItem = new Authorisation7702Signed();
-                authorisationListItem.ChainId = decodedItem[0].RLPData.ToBigIntegerFromRLPDecoded();
+                authorisationListItem.ChainId = decodedItem[0].RLPData.ToEvmUInt256FromRLPDecoded();
                 authorisationListItem.Address = decodedItem[1].RLPData.ToHex();
-                authorisationListItem.Nonce = decodedItem[2].RLPData.ToBigIntegerFromRLPDecoded();
+                authorisationListItem.Nonce = decodedItem[2].RLPData.ToEvmUInt256FromRLPDecoded();
                 authorisationListItem.V = decodedItem[3].RLPData ?? new byte[0];
                 authorisationListItem.R = decodedItem[4].RLPData ?? new byte[0];
                 authorisationListItem.S = decodedItem[5].RLPData ?? new byte[0];

@@ -29,6 +29,18 @@ dotnet add package Nethereum.Model.SSZ
 
 - **Nethereum.Ssz** — SszWriter, SszReader, SszMerkleizer
 - **Nethereum.Model** — Transaction1559, Transaction7702, BlockHeader, Log, AccessListItem
+- **Nethereum.Util** — `EvmUInt256` (base-fee, blob-fee, and other 256-bit model fields)
+
+## Note on Numeric Types
+
+The SSZ encoders consume `Nethereum.Model` types whose 256-bit fields
+(`BlockHeader.BaseFee`, `Receipt.CumulativeGasUsed`, transaction amounts
+/ fees / nonces / gas limits, etc.) are now `EvmUInt256`. `BigInteger`
+remains interoperable via `EvmUInt256`'s implicit conversion, so
+existing call sites like `Value = BigInteger.Parse("1000...")` continue
+to compile. Internally, the SSZ encoders use `EvmUInt256.ToLittleEndian`
+and `EvmUInt256.FromLittleEndian` for the 32-byte fixed-length binary
+encoding required by the SSZ spec.
 
 ## Quick Start
 
@@ -52,19 +64,20 @@ var root = SszTransactionEncoder.Current.HashTreeRootTransaction1559(tx);
 ```csharp
 using Nethereum.Model;
 using Nethereum.Model.SSZ;
-using System.Numerics;
+using System.Collections.Generic;
 
-var tx = new Transaction1559
-{
-    ChainId = 1,
-    Nonce = 42,
-    MaxPriorityFeePerGas = 1_500_000_000,
-    MaxFeePerGas = 30_000_000_000,
-    GasLimit = 21000,
-    ReceiveAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb".HexToByteArray(),
-    Value = BigInteger.Parse("1000000000000000000"),
-    Data = Array.Empty<byte>()
-};
+// Transaction1559 is immutable — construct via its positional constructor
+// (see tests/Nethereum.Model.SSZ.Tests/SszTransactionRoundTripTests.cs:16-25)
+var tx = new Transaction1559(
+    chainId: 1,
+    nonce: 42,
+    maxPriorityFeePerGas: 1_500_000_000,
+    maxFeePerGas: 30_000_000_000,
+    gasLimit: 21000,
+    receiverAddress: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    amount: 1000000000000000000,
+    data: "",
+    accessList: new List<AccessListItem>());
 
 // Encode payload
 var encoded = SszTransactionEncoder.Current.EncodeTransaction1559Payload(tx);
@@ -103,18 +116,23 @@ var fullTx = SszTransactionEncoder.Current.EncodeTransaction(
 ### Example 4: EIP-7702 Transaction
 
 ```csharp
-var tx7702 = new Transaction7702
-{
-    ChainId = 1,
-    Nonce = 1,
-    MaxPriorityFeePerGas = 1_000_000_000,
-    MaxFeePerGas = 20_000_000_000,
-    GasLimit = 100_000,
-    ReceiveAddress = targetAddress,
-    Value = BigInteger.Zero,
-    Data = callData,
-    AuthorisationList = new List<Authorisation7702Signed> { auth }
-};
+using Nethereum.Model;
+using Nethereum.Model.SSZ;
+using System.Collections.Generic;
+
+// targetAddress and callData are hex strings — Transaction7702.ReceiverAddress
+// and .Data are both `string`, not byte[]
+var tx7702 = new Transaction7702(
+    chainId: 1,
+    nonce: 1,
+    maxPriorityFeePerGas: 1_000_000_000,
+    maxFeePerGas: 20_000_000_000,
+    gasLimit: 100_000,
+    receiverAddress: targetAddress,
+    amount: 0,
+    data: callData,
+    accessList: new List<AccessListItem>(),
+    authorisationList: new List<Authorisation7702Signed> { auth });
 
 var encoded = SszTransactionEncoder.Current.EncodeTransaction7702Payload(tx7702);
 var decoded = SszTransactionEncoder.Current.DecodeTransaction7702Payload(encoded);
@@ -124,12 +142,13 @@ var root = SszTransactionEncoder.Current.HashTreeRootTransaction7702(tx7702);
 ### Example 5: Receipt Encoding
 
 ```csharp
+using System.Collections.Generic;
+using Nethereum.Model;
 using Nethereum.Model.SSZ;
-using Nethereum.RPC.Eth.DTOs;
 
 // Basic receipt (transfer)
 var encoded = SszReceiptEncoder.Current.EncodeBasicReceipt(
-    from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    from: "0xbeef000000000000000000000000000000000001",
     gasUsed: 21000,
     logs: new List<Log>(),
     status: true);

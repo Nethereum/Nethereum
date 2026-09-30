@@ -1,5 +1,9 @@
+
+using Nethereum.Documentation;
+
 namespace Nethereum.Merkle.Sparse
 {
+    [NethereumDocExample(DocSection.SmartContracts, "sparse-merkle-tree", "How a key becomes a bit path, and how deep the tree is")]
     public interface ISmtKeyHasher
     {
         byte[] ComputePath(byte[] key);

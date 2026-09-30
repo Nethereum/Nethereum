@@ -1,18 +1,68 @@
 # Nethereum.Merkle
 
-Comprehensive Merkle tree implementations for Ethereum smart contract verification, airdrops, whitelisting, and large-scale state management.
+Merkle trees for smart-contract verification: prove that an address is on an airdrop list, a whitelist or a snapshot, without putting the list on-chain.
 
-## Overview
+## What you can do with it
 
-Nethereum.Merkle provides production-ready Merkle tree data structures optimized for blockchain use cases:
+- **Build an airdrop or whitelist tree** from a list of recipients and get the root your contract stores.
+- **Produce a proof** a claimant passes to `MerkleProof.verify` on-chain.
+- **Interoperate with OpenZeppelin** — the same root and the same proofs as their JavaScript `StandardMerkleTree` and `MerkleProof.sol`.
+- **Verify a proof off-chain**, with or without rebuilding the tree.
+- **Update a tree without rebuilding it** — insert, update or batch-update leaves incrementally.
+- **Append cheaply up to a fixed capacity** — a frontier tree keeps O(depth) memory however many leaves have gone in, but holds at most `1 << depth` of them and throws once full.
+- **Commit a huge key space** — a sparse tree materialises only the occupied leaves, over in-memory or database storage.
+- **Target a ZK circuit** — Poseidon or Celestia-compatible hashing, with the bit-order and empty-hash conventions those circuits expect.
 
-- **Standard Merkle Trees**: For airdrops, whitelisting, and contract verification
-- **OpenZeppelin Compatible**: Interoperable with OpenZeppelin's JavaScript library and Solidity contracts
-- **Incremental Trees**: Efficient updates without rebuilding the entire tree
-- **Sparse Merkle Trees**: Handle millions of records with database-backed storage
-- **Proof Generation & Verification**: Create and verify cryptographic proofs on-chain and off-chain
+> This is **not** the Ethereum state trie. For the Modified Merkle Patricia Trie use **`Nethereum.Merkle.Patricia`**; for the EIP-7864 binary state tree use **`Nethereum.Merkle.Binary`**.
 
-Use Merkle trees to efficiently verify membership in large datasets, enable token airdrops, implement whitelists, or manage scalable state commitments.
+## Quick start
+
+Build a tree from a list, take the root, and produce a proof.
+
+*From `SimpleMerkleTest` in `tests/Nethereum.Contracts.IntegrationTests/Trie/MerkleDrop/MerkleUnitTests.cs:37` (use case `merkle-tree`) — a tagged, passing test. Two classes named `MerkleUnitTests` exist in that project; the tagged one is the `Trie.MerkleDrop` namespace, under the `Trie/` folder.*
+
+```csharp
+var elements = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".ToCharArray().ToList();
+var merkleTree = new MerkleTree<char>(new Sha3KeccackHashProvider(), new ChartByteArrayConvertor());
+merkleTree.BuildTree(elements);
+var hexRoot = merkleTree.Root.Hash.ToHex(true);
+Assert.Equal("0xec0dffcb601ee38fa372bbf1d89ed16761db0a0b215480032b783f8c33230783", hexRoot);
+
+var proofs = merkleTree.GetProof('A');
+```
+
+For an on-chain airdrop or whitelist you almost always want the OpenZeppelin-compatible tree instead, over an ABI struct that mirrors your Solidity one. `SingleParam` below stands for that struct — in the tests it is a one-field type declared alongside them (`tests/Nethereum.Contracts.IntegrationTests/Trie/MerkleDrop/OpenZeppelinMerkleUnitTests.cs:82-87`), and `items` is a `List<SingleParam>`:
+
+```csharp
+[Struct("SingleParam")]
+public class SingleParam
+{
+    [Parameter("address", 1)]
+    public string User { get; set; }
+}
+
+var merkleTree = new OpenZeppelinStandardMerkleTree<SingleParam>();
+merkleTree.BuildTree(items);
+
+var hexRoot = merkleTree.Root.Hash.ToHex(true);
+```
+
+## Entry points
+
+**Start with `OpenZeppelinStandardMerkleTree<T>`** if the proof will be checked by a contract — it fixes the hashing and pairing conventions OpenZeppelin's `MerkleProof.sol` expects, and takes no constructor arguments. Use `MerkleTree<T>` when you control both ends.
+
+| I want to… | Reach for |
+|---|---|
+| **Airdrop or whitelist, verified on-chain** | **`new OpenZeppelinStandardMerkleTree<T>()` → `BuildTree(items)` → `Root.Hash` / `GetProof(item)`** |
+| A tree over my own data type | `new MerkleTree<T>(hashProvider, byteArrayConvertor)` |
+| A ready-made `(address, amount)` airdrop leaf | `new MerkleDropMerkleTree()` with `MerkleDropItem` |
+| Verify a proof without the tree | `MerkleTree<T>.VerifyProof(proof, rootHash, itemHash, hashProvider, pairingType)` |
+| Add leaves without rebuilding | `new LeanIncrementalMerkleTree<T>(…)` → `InsertLeaf` / `Update` |
+| Append-only, fixed depth, O(depth) memory | `new FrontierMerkleTree(depth, hashProvider)` → `Append(leafHash)` |
+| Commit millions of keys | `new SparseMerkleTree<T>(depth, hashProvider, convertor, storage)` |
+| Feed a ZK circuit | `new SparseMerkleBinaryTree<T>(new PoseidonSmtHasher(), …)` |
+
+On `MerkleTree<T>` and its subclasses `Root` is a `MerkleTreeNode`, so the value your contract stores is `tree.Root.Hash`. The other three trees expose the root differently: `LeanIncrementalMerkleTree<T>.Root` and `FrontierMerkleTree.Root` are raw `byte[]`, `SparseMerkleTree<T>` has `GetRootHashAsync()`, and `SparseMerkleBinaryTree<T>` has `ComputeRoot()`.
 
 ## Installation
 
@@ -20,908 +70,300 @@ Use Merkle trees to efficiently verify membership in large datasets, enable toke
 dotnet add package Nethereum.Merkle
 ```
 
-### Dependencies
+## Key concepts
 
-**Nethereum Dependencies:**
-- **Nethereum.ABI** - ABI encoding for struct-based Merkle leaves
-- **Nethereum.Util** - Keccak-256 hashing and byte array utilities
+### Hashing and leaf serialisation are injected
 
-## Key Concepts
+`MerkleTree<T>` never assumes how your leaf becomes bytes or how bytes become a hash:
 
-### What is a Merkle Tree?
-
-A Merkle tree is a cryptographic data structure that allows efficient verification of large datasets:
-
-1. **Leaves**: Data elements (hashed)
-2. **Branches**: Hashes of pairs of child nodes
-3. **Root**: Single hash representing the entire dataset
-
-**Key Property**: You can prove an element exists in the dataset by providing a small "proof" (log₂(n) hashes) instead of the entire dataset.
-
-### Pairing Strategies
-
-When combining hash pairs, Nethereum.Merkle supports:
-
-- **Sorted Pairing** (`PairingConcatType.Sorted`): Hashes are ordered before concatenation (OpenZeppelin standard)
-- **Normal Pairing** (`PairingConcatType.Normal`): Hashes concatenated in given order
-
-### Use Cases
-
-1. **Token Airdrops**: Distribute tokens to thousands of addresses efficiently
-2. **Whitelisting**: Verify user eligibility on-chain with minimal gas
-3. **State Commitments**: Compress large state into a single hash
-4. **Fraud Proofs**: Prove invalid state transitions in layer 2 solutions
-5. **NFT Metadata**: Prove authenticity of off-chain metadata
-
-## Quick Start
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.Util.HashProviders;
-using Nethereum.Util.ByteArrayConvertors;
-using System.Collections.Generic;
-
-// Create a simple merkle tree with string addresses
-var addresses = new List<string>
-{
-    "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-    "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7",
-    "0xfa6179E49EE57a06391F218965b35B632F930472"
-};
-
-var merkleTree = new MerkleTree<string>(
-    new Sha3KeccackHashProvider(),
-    new HexStringByteArrayConvertor()
-);
-merkleTree.BuildTree(addresses);
-
-// Get the root hash for your smart contract
-var rootHash = merkleTree.Root.Hash.ToHex(true);
-
-// Generate proof for an address
-var proof = merkleTree.GetProof(addresses[0]);
-
-// Verify proof
-var isValid = merkleTree.VerifyProof(proof, addresses[0]);
-```
-
-## Usage Examples
-
-### Example 1: Simple Merkle Tree with Character Data
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.Util.HashProviders;
-using Nethereum.Util.ByteArrayConvertors;
-using Nethereum.Hex.HexConvertors.Extensions;
-using System.Linq;
-
-// Create a list of characters
-var elements = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-    .ToCharArray()
-    .ToList();
-
-// Build the merkle tree
-var merkleTree = new MerkleTree<char>(
-    new Sha3KeccackHashProvider(),
-    new ChartByteArrayConvertor()
-);
-merkleTree.BuildTree(elements);
-
-// Get the root hash
-var hexRoot = merkleTree.Root.Hash.ToHex(true);
-// Result: "0xec0dffcb601ee38fa372bbf1d89ed16761db0a0b215480032b783f8c33230783"
-
-// Generate proof for 'A'
-var proofs = merkleTree.GetProof('A');
-
-// Verify the proof
-var isValid = merkleTree.VerifyProof(proofs, 'A');  // Returns true
-```
-
-*Source: tests/Nethereum.Contracts.IntegrationTests/MerkleDrop/MerkleUnitTests.cs*
-
-### Example 2: OpenZeppelin-Compatible Merkle Tree for Airdrops
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-using System.Collections.Generic;
-using System.Numerics;
-
-// Define your airdrop recipient struct (must match Solidity struct)
-[Struct("AirdropRecipient")]
-public class AirdropRecipient
-{
-    [Parameter("address", 1)]
-    public string User { get; set; }
-
-    [Parameter("uint256", "amount", 2)]
-    public BigInteger Amount { get; set; }
-}
-
-// Create recipients list
-var recipients = new List<AirdropRecipient>
-{
-    new AirdropRecipient
-    {
-        User = "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-        Amount = BigInteger.Parse("1000000000000000000")  // 1 token
-    },
-    new AirdropRecipient
-    {
-        User = "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7",
-        Amount = BigInteger.Parse("2000000000000000000")  // 2 tokens
-    },
-    new AirdropRecipient
-    {
-        User = "0xfa6179E49EE57a06391F218965b35B632F930472",
-        Amount = BigInteger.Parse("500000000000000000")   // 0.5 tokens
-    }
-};
-
-// Build OpenZeppelin-compatible merkle tree
-var merkleTree = new OpenZeppelinStandardMerkleTree<AirdropRecipient>();
-merkleTree.BuildTree(recipients);
-
-// Deploy your smart contract with this root
-var rootHash = merkleTree.Root.Hash.ToHex(true);
-
-// User wants to claim - generate their proof
-var userToClaim = recipients[0];
-var proof = merkleTree.GetProof(userToClaim);
-
-// User submits proof + their data to claim() function on-chain
-// Contract verifies using OpenZeppelin's MerkleProof.sol
-```
-
-*Source: tests/Nethereum.Contracts.IntegrationTests/MerkleDrop/OpenZeppelinMerkleUnitTests.cs*
-
-### Example 3: Whitelist with Single Parameter
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.ABI.FunctionEncoding.Attributes;
-using System.Collections.Generic;
-
-[Struct("WhitelistEntry")]
-public class WhitelistEntry
-{
-    [Parameter("address", 1)]
-    public string User { get; set; }
-}
-
-// Create whitelist
-var whitelist = new List<WhitelistEntry>
-{
-    new WhitelistEntry { User = "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5" },
-    new WhitelistEntry { User = "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7" },
-    new WhitelistEntry { User = "0xfa6179E49EE57a06391F218965b35B632F930472" },
-    new WhitelistEntry { User = "0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326" }
-};
-
-var merkleTree = new OpenZeppelinStandardMerkleTree<WhitelistEntry>();
-merkleTree.BuildTree(whitelist);
-
-// Store root hash in your smart contract constructor
-var rootHash = merkleTree.Root.Hash.ToHex(true);
-
-// User proves they're whitelisted
-var userEntry = whitelist[0];
-var proof = merkleTree.GetProof(userEntry);
-var isWhitelisted = merkleTree.VerifyProof(proof, userEntry);  // true
-```
-
-*Source: tests/Nethereum.Contracts.IntegrationTests/MerkleDrop/OpenZeppelinMerkleUnitTests.cs*
-
-### Example 4: Lean Incremental Merkle Tree (Efficient Updates)
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.Util.HashProviders;
-using Nethereum.Util.ByteArrayConvertors;
-using System.Numerics;
-
-// Create an incremental tree (efficient for frequent updates)
-var tree = new LeanIncrementalMerkleTree<BigInteger>(
-    new Sha3KeccackHashProvider(),
-    new BigIntegerByteArrayConvertor(),
-    PairingConcatType.Normal
-);
-
-// Insert leaves one at a time (tree updates incrementally)
-tree.InsertLeaf(BigInteger.Parse("100"));
-tree.InsertLeaf(BigInteger.Parse("200"));
-tree.InsertLeaf(BigInteger.Parse("300"));
-
-// Get current root
-var root = tree.Root.ToHex(true);
-
-// Insert many leaves at once
-var newValues = new[] {
-    BigInteger.Parse("400"),
-    BigInteger.Parse("500")
-};
-tree.InsertMany(newValues);
-
-// Update existing leaf
-tree.Update(0, BigInteger.Parse("150"));  // Change first leaf from 100 to 150
-
-// Check if value exists
-var hasValue = tree.Has(BigInteger.Parse("200"));  // true
-var index = tree.IndexOf(BigInteger.Parse("200"));  // 1
-
-// Generate proof
-var proof = tree.GenerateProof(1);  // Proof for index 1
-
-// Verify proof
-var isValid = tree.VerifyProof(proof, BigInteger.Parse("200"), tree.Root);
-
-// Export tree (for storage or sharing)
-var exported = tree.Export();  // JSON string
-
-// Import tree later
-var imported = LeanIncrementalMerkleTree<BigInteger>.Import(
-    new Sha3KeccackHashProvider(),
-    new BigIntegerByteArrayConvertor(),
-    exported,
-    s => BigInteger.Parse(s)  // Leaf mapper
-);
-```
-
-*Source: src/Nethereum.Merkle/LeanIncrementalMerkleTree.cs*
-
-### Example 5: Sparse Merkle Tree for Large Datasets
-
-```csharp
-using Nethereum.Merkle.Sparse;
-using Nethereum.Util.HashProviders;
-using Nethereum.Util.ByteArrayConvertors;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-// Create sparse merkle tree with in-memory storage
-// (use DatabaseSparseMerkleTreeStorage for millions of records)
-var storage = new InMemorySparseMerkleTreeStorage<string>();
-
-var sparseTree = new SparseMerkleTree<string>(
-    depth: 256,  // Tree depth (bits for key space)
-    hashProvider: new Sha3KeccackHashProvider(),
-    byteArrayConvertor: new HexStringByteArrayConvertor(),
-    storage: storage
-);
-
-// Set leaves by key (async for database support)
-await sparseTree.SetLeafAsync("key1", "value1");
-await sparseTree.SetLeafAsync("key2", "value2");
-await sparseTree.SetLeafAsync("key3", "value3");
-
-// Batch update for performance (critical for processing blocks)
-var updates = new Dictionary<string, string>
-{
-    ["key4"] = "value4",
-    ["key5"] = "value5",
-    ["key6"] = "value6"
-};
-await sparseTree.SetLeavesAsync(updates);
-
-// Get root hash (cached for performance)
-var root = await sparseTree.GetRootHashAsync();
-
-// Get individual leaf
-var value = await sparseTree.GetLeafAsync("key1");
-
-// Get leaf count
-var count = await sparseTree.GetLeafCountAsync();  // 6
-
-// Clear all data
-await sparseTree.ClearAsync();
-```
-
-*Source: src/Nethereum.Merkle/Sparse/SparseMerkleTree.cs*
-
-### Example 6: Using MerkleDropMerkleTree for Token Airdrops
-
-```csharp
-using Nethereum.Merkle;
-using System.Collections.Generic;
-using System.Numerics;
-
-// MerkleDropItem is pre-defined for airdrop scenarios
-var airdropItems = new List<MerkleDropItem>
-{
-    new MerkleDropItem
-    {
-        Index = 0,
-        Account = "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-        Amount = BigInteger.Parse("1000000000000000000")
-    },
-    new MerkleDropItem
-    {
-        Index = 1,
-        Account = "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7",
-        Amount = BigInteger.Parse("2500000000000000000")
-    },
-    new MerkleDropItem
-    {
-        Index = 2,
-        Account = "0xfa6179E49EE57a06391F218965b35B632F930472",
-        Amount = BigInteger.Parse("750000000000000000")
-    }
-};
-
-// Build airdrop merkle tree
-var merkleDropTree = new MerkleDropMerkleTree();
-merkleDropTree.BuildTree(airdropItems);
-
-// Get root for smart contract
-var root = merkleDropTree.Root.Hash.ToHex(true);
-
-// Generate proof for a specific recipient
-var proof = merkleDropTree.GetProof(airdropItems[0]);
-
-// Recipient calls claim(proof, index, account, amount) on contract
-```
-
-*Source: src/Nethereum.Merkle/MerkleDropMerkleTree.cs*
-
-### Example 7: Custom Merkle Tree with Custom Data Types
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.Util.HashProviders;
-using Nethereum.Util.ByteArrayConvertors;
-using System.Collections.Generic;
-using System.Text;
-
-// Create custom byte array convertor for your data type
-public class MyDataConvertor : IByteArrayConvertor<MyCustomData>
-{
-    public byte[] ConvertToByteArray(MyCustomData value)
-    {
-        // Serialize your data type to bytes
-        var json = JsonConvert.SerializeObject(value);
-        return Encoding.UTF8.GetBytes(json);
-    }
-}
-
-public class MyCustomData
-{
-    public string Name { get; set; }
-    public int Value { get; set; }
-}
-
-// Create merkle tree with custom type
-var items = new List<MyCustomData>
-{
-    new MyCustomData { Name = "Alice", Value = 100 },
-    new MyCustomData { Name = "Bob", Value = 200 },
-    new MyCustomData { Name = "Charlie", Value = 150 }
-};
-
-var merkleTree = new MerkleTree<MyCustomData>(
-    new Sha3KeccackHashProvider(),
-    new MyDataConvertor(),
-    PairingConcatType.Sorted  // OpenZeppelin compatible
-);
-
-merkleTree.BuildTree(items);
-
-// Get root
-var root = merkleTree.Root.Hash.ToHex(true);
-
-// Generate and verify proof
-var proof = merkleTree.GetProof(items[0]);
-var isValid = merkleTree.VerifyProof(proof, items[0]);
-```
-
-*Source: src/Nethereum.Merkle/MerkleTree.cs*
-
-### Example 8: Dynamically Adding Leaves to Existing Tree
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.Util.HashProviders;
-using Nethereum.Util.ByteArrayConvertors;
-
-// Start with initial set
-var addresses = new List<string>
-{
-    "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
-    "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7"
-};
-
-var merkleTree = new MerkleTree<string>(
-    new Sha3KeccackHashProvider(),
-    new HexStringByteArrayConvertor()
-);
-merkleTree.BuildTree(addresses);
-
-var initialRoot = merkleTree.Root.Hash.ToHex(true);
-
-// Add single leaf (tree rebuilds)
-merkleTree.InsertLeaf("0xfa6179E49EE57a06391F218965b35B632F930472");
-
-var newRoot = merkleTree.Root.Hash.ToHex(true);
-// Root has changed!
-
-// Add multiple leaves at once
-var newAddresses = new[]
-{
-    "0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326",
-    "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-};
-merkleTree.InsertLeaves(newAddresses);
-
-// Tree now has 5 leaves total
-var finalRoot = merkleTree.Root.Hash.ToHex(true);
-```
-
-*Source: src/Nethereum.Merkle/MerkleTree.cs*
-
-### Example 9: Static Proof Verification (Without Building Tree)
-
-```csharp
-using Nethereum.Merkle;
-using Nethereum.Util.HashProviders;
-using Nethereum.Hex.HexConvertors.Extensions;
-
-// You have a proof from somewhere (API, database, etc.)
-var proof = new List<byte[]>
-{
-    "0x1f675bff07515f5df96737194ea945c36c41e7b4fcef307b7cd4d0e602a69111".HexToByteArray(),
-    "0xe62e1dfc08d58fd144947903447473a090c958fe34e2425d578237fcdf1ab5a4".HexToByteArray(),
-    "0x1907ce7877ec74782a26c166b562bfbdd4c8d8833f98ad82ae9dc8e98db20093".HexToByteArray()
-};
-
-var rootHash = "0xec0dffcb601ee38fa372bbf1d89ed16761db0a0b215480032b783f8c33230783".HexToByteArray();
-var itemHash = "0x3f4a1640bcca71e45d053d67ab9891fe44608f4db37cc45e5523588c76c79539".HexToByteArray();
-
-// Verify without building the tree (static method)
-var hashProvider = new Sha3KeccackHashProvider();
-var isValid = MerkleTree<object>.VerifyProof(
-    proof,
-    rootHash,
-    itemHash,
-    hashProvider,
-    PairingConcatType.Sorted
-);
-
-// Returns true if proof is valid
-```
-
-*Source: src/Nethereum.Merkle/MerkleTree.cs*
-
-## API Reference
-
-### MerkleTree<T>
-
-Generic Merkle tree implementation with pluggable hashing and serialization.
-
-**Constructor:**
 ```csharp
 MerkleTree(
     IHashProvider hashProvider,
     IByteArrayConvertor<T> byteArrayConvertor,
-    PairingConcatType pairingConcatType = PairingConcatType.Sorted
-)
+    PairingConcatType pairingConcatType = PairingConcatType.Sorted)
 ```
 
-**Key Properties:**
-- `MerkleTreeNode Root`: The root node of the tree
-- `List<MerkleTreeNode> Leaves`: All leaf nodes
-- `List<List<MerkleTreeNode>> Layers`: All layers of the tree (for proof generation)
-
-**Key Methods:**
-- `void BuildTree(List<T> items)`: Build tree from items
-- `void InsertLeaf(T item)`: Add single item and rebuild
-- `void InsertLeaves(IEnumerable<T> items)`: Add multiple items and rebuild
-- `List<byte[]> GetProof(T item)`: Generate proof for an item
-- `List<byte[]> GetProof(int index)`: Generate proof by leaf index
-- `List<byte[]> GetProof(byte[] hashLeaf)`: Generate proof by leaf hash
-- `bool VerifyProof(IEnumerable<byte[]> proof, T item)`: Verify proof for item
-- `bool VerifyProof(IEnumerable<byte[]> proof, byte[] itemHash)`: Verify proof for hash
-- `static bool VerifyProof(proof, rootHash, itemHash, hashProvider, pairingType)`: Static verification
-
-### OpenZeppelinStandardMerkleTree<T>
-
-Merkle tree compatible with OpenZeppelin's JavaScript library and Solidity contracts.
+`IHashProvider` (`Nethereum.Util.HashProviders`) is a single method, `byte[] ComputeHash(byte[] data)`; `Sha3KeccackHashProvider` is the Keccak-256 one. `IByteArrayConvertor<T>` (`Nethereum.Util.ByteArrayConvertors`) is a **two-way** contract — implement both halves:
 
 ```csharp
-var tree = new OpenZeppelinStandardMerkleTree<TAbiStruct>();
+byte[] ConvertToByteArray(T data);
+T ConvertFromByteArray(byte[] data);
 ```
 
-- Inherits from `AbiStructSha3KeccackMerkleTree<T>`
-- Uses sorted pairing (OpenZeppelin standard)
-- Works with ABI-annotated structs (`[Struct]` and `[Parameter]` attributes)
+The convertors that ship in `Nethereum.Util.ByteArrayConvertors` are `StringByteArrayConvertor` (UTF-8), `HexToByteArrayConvertor` (hex string ⇄ bytes), `ChartByteArrayConvertor` (`char`), and `ByteArrayToByteArrayConvertor` (identity).
 
-**Requirements:**
-- Type `T` must have `[Struct]` attribute
-- Properties must have `[Parameter]` attributes with correct types and order
+### Pairing strategies
 
-### AbiStructMerkleTree<T>
+When combining a pair of hashes, the order matters and must match the verifier on the other side:
 
-Merkle tree for ABI-encoded structs.
+| `PairingConcatType` | Strategy | Meaning |
+|---|---|---|
+| `Sorted` | `SortedPairConcatStrategy` | sort the two hashes lexicographically before concatenating — **the OpenZeppelin convention** |
+| `Normal` | `PairConcatStrategy` | concatenate left‖right as given |
 
 ```csharp
-var tree = new AbiStructMerkleTree<MyStruct>();
+public enum PairingConcatType
+{
+    Normal,
+    Sorted
+}
+
+public interface IPairConcatStrategy
+{
+    byte[] Concat(byte[] left, byte[] right);
+}
 ```
 
-- Uses `AbiStructEncoderPackedByteConvertor<T>` for encoding
-- Uses Keccak-256 (Sha3) hashing
-- Sorted pairing by default
+`PairingConcatFactory.GetPairConcatStrategy(PairingConcatType type)` returns the strategy for a given type.
 
-### MerkleDropMerkleTree
+Sorted pairing is why `MerkleTree<T>.GetProof` returns only sibling hashes and no direction bits — the verifier can re-sort. `LeanIncrementalMerkleTree<T>` defaults to `Normal` and therefore returns a `MerkleProof` carrying explicit `PathIndices`.
 
-Specialized tree for token airdrops using `MerkleDropItem`.
+### Use cases
+
+Token airdrops, whitelists / allowlists, state commitments, fraud proofs, and off-chain metadata attestation — anywhere a contract must check membership of a large set without storing it.
+
+## Usage
+
+Snippets marked *From …* are extracted verbatim from `[NethereumDocExample(DocSection.SmartContracts, …)]`-tagged passing tests under `tests/Nethereum.Contracts.IntegrationTests/Trie/`.
+
+**They are fragments, not programs.** Extraction keeps the body of the test method, so a snippet may use the fixture's fields and constants (`_hashProvider`, `_convertor`, `Leaves`, `TreeSize`, `ExpectedRootAfterInsert`) or a test-only `[Struct]` type such as `SingleParam`, and it may end in `Assert`. Open the named test file for the setup before copying.
+
+### Build a tree, prove a leaf, verify the proof
+
+*From `Trie.MerkleDrop.MerkleUnitTests.SimpleMerkleTest` (use case `merkle-tree`) — `tests/Nethereum.Contracts.IntegrationTests/Trie/MerkleDrop/MerkleUnitTests.cs:37`.*
+
+```csharp
+var elements = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".ToCharArray().ToList();
+var merkleTree = new MerkleTree<char>(new Sha3KeccackHashProvider(), new ChartByteArrayConvertor());
+merkleTree.BuildTree(elements);
+var hexRoot = merkleTree.Root.Hash.ToHex(true);
+Assert.Equal("0xec0dffcb601ee38fa372bbf1d89ed16761db0a0b215480032b783f8c33230783", hexRoot);
+
+var proofs = merkleTree.GetProof('A');
+```
+
+`Root` is a `MerkleTreeNode`, so the on-chain root is `merkleTree.Root.Hash`. `GetProof` has three overloads — by item (`T`), by leaf hash (`byte[]`), and by leaf index (`int`).
+
+### OpenZeppelin-compatible whitelist over an ABI struct
+
+`OpenZeppelinStandardMerkleTree<T>` is `AbiStructSha3KeccackMerkleTree<T>` under a name that says what it is compatible with — it adds nothing and takes no constructor arguments. Its leaf is `keccak(keccak(abi.encode(params)))`: the convertor hashes the ABI encoding, and `MerkleTree<T>` hashes the leaf again — matching OpenZeppelin's `StandardMerkleTree` and `MerkleProof.sol`.
+
+`AbiStructSha3KeccackMerkleTree<T>` also **sorts the leaves by hash before building** (`AbiStructSha3KeccackMerkleTree.cs:15-19` overrides `InitialiseLeavesAndLayersAndBuildTree` to `leaves.Sort(new MerkleTreeNodeComparer())`), which is the other half of OpenZeppelin compatibility. Two consequences: the tree's leaf order is **not** the order you passed items in, so `Leaves[i]` and `GetProof(int index)` index the sorted order; and the root is independent of input order. `AbiStructMerkleTree<T>` does *not* sort — it is the same ABI leaf without that override (`AbiStructMerkleTree.cs:7-12`). `T` must carry `[Struct]` and its properties `[Parameter]`, exactly as the Solidity struct declares them.
+
+*From `Trie.MerkleDrop.OpenZeppelinMerkleUnitTests.SingleParamMultipleItems` (use case `merkle-tree`) — `tests/Nethereum.Contracts.IntegrationTests/Trie/MerkleDrop/OpenZeppelinMerkleUnitTests.cs:32`. This class is duplicated in the same project too; the tagged copy is the one under `Trie/`.*
+
+```csharp
+var item1 = new SingleParam { User = "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5" };
+var item2 = new SingleParam { User = "0xA61b1fB89Dd42fcDDD2D3fA19c2B715c426692c7" };
+var item3 = new SingleParam { User = "0xfa6179E49EE57a06391F218965b35B632F930472" };
+var item4 = new SingleParam { User = "0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326" };
+
+var items = new List<SingleParam> { item1, item2, item3, item4 };
+
+var merkleTree = new OpenZeppelinStandardMerkleTree<SingleParam>();
+merkleTree.BuildTree(items);
+
+var hexRoot = merkleTree.Root.Hash.ToHex(true);
+```
+
+The root here is `0xa1b819a3413fb3120a911642ee7fbdb17572e844090a95a0848d07aa230eb702` — pinned by the test, and produced by OpenZeppelin's JS `StandardMerkleTree` for the same input. `MultiParam_MultipleItems` in the same file pins a two-field struct.
+
+Send `merkleTree.Root.Hash` to your contract's constructor, and give each claimant `merkleTree.GetProof(theirItem)` to pass to `MerkleProof.verify`.
+
+### Airdrops: `MerkleDropMerkleTree`
+
+`MerkleDropMerkleTree : AbiStructMerkleTree<MerkleDropItem>` is the pre-wired airdrop tree. `MerkleDropItem` is a `[Struct("MerkleDropItem")]` with exactly two parameters:
+
+```csharp
+[Struct("MerkleDropItem")]
+public class MerkleDropItem
+{
+    [Parameter("address", "address")]
+    public string Address { get; set; }
+
+    [Parameter("uint256", "amount", 2)]
+    public BigInteger Amount { get; set; }
+}
+```
+
+*From `Trie.MerkleDrop.MerkleUnitTests.MerkleDropTree_ProvesARecipientAgainstItsRoot` (use case `merkle-tree`) — `tests/Nethereum.Contracts.IntegrationTests/Trie/MerkleDrop/MerkleUnitTests.cs:15`.*
 
 ```csharp
 var tree = new MerkleDropMerkleTree();
+tree.BuildTree(items);
+
+var root = tree.Root.Hash.ToHex(true);
+var proof = tree.GetProof(items[0]);
+
+Assert.StartsWith("0x", root);
+Assert.NotEmpty(proof);
+Assert.True(tree.VerifyProof(proof, items[0]));
 ```
 
-**MerkleDropItem Properties:**
-- `BigInteger Index`: Sequential index
-- `string Account`: Recipient address
-- `BigInteger Amount`: Token amount
+There is no index field — the leaf is `(address, amount)`. If your contract's leaf includes an index or any other field, define your own `[Struct]` type and use `AbiStructMerkleTree<T>` (packed ABI encoding) or `AbiStructSha3KeccackMerkleTree<T>` (Keccak of the ABI encoding) instead.
 
-### LeanIncrementalMerkleTree<T>
+### Incremental updates: `LeanIncrementalMerkleTree<T>`
 
-Efficient incremental tree optimized for frequent updates.
+*From `LeanIncrementalMerkleTreeBigIntTests.InsertLeaves_ShouldProduceExpectedRootAndDepth` (use case `incremental-merkle-tree`).* **`_hashProvider` in that fixture is a toy `SumHashProvider` that adds two bytes and returns one** (`tests/Nethereum.Contracts.IntegrationTests/Trie/LeanIMT/LeanIncrementalMerkleTreeBigIntTests.cs:17,36-47`), which is the only reason the last two assertions hold: the root is one byte long, and `ExpectedRootAfterInsert` is the arithmetic sum `((0+1)+(2+3))+4 = 10` (`:27`). Under a real `Sha3KeccackHashProvider` the root is 32 bytes and `Assert.Single` would fail — read those two lines as fixture arithmetic, not as tree behaviour.
 
-**Constructor:**
 ```csharp
-LeanIncrementalMerkleTree(
-    IHashProvider hashProvider,
-    IByteArrayConvertor<T> byteArrayConvertor,
-    PairingConcatType pairingType = PairingConcatType.Normal
-)
+var tree = new LeanIncrementalMerkleTree<byte[]>(_hashProvider, _convertor);
+foreach (var leaf in Leaves)
+    tree.InsertLeaf(leaf);
+
+Assert.Equal(TreeSize, tree.Size);
+Assert.Equal((int)Math.Ceiling(Math.Log2(TreeSize)), tree.Depth);
+Assert.Single(tree.Root);
+Assert.Equal(ExpectedRootAfterInsert, tree.Root[0]);
 ```
 
-**Key Properties:**
-- `byte[] Root`: Current root hash (auto-updated)
-- `List<T> Leaves`: Current leaves
-- `int Size`: Number of leaves
-- `int Depth`: Tree depth
+The two assertions that *do* generalise are the first two: `Size` counts the leaves inserted, and `Depth` is `ceil(log2(Size))`. `Root` here is a raw `byte[]` — its length is whatever the hash provider returns — not a `MerkleTreeNode`; the lean tree is a different type, not a `MerkleTree<T>` subclass. Inserting does not rebuild the whole tree.
 
-**Key Methods:**
-- `void InsertLeaf(T leaf)`: Add single leaf (incremental update)
-- `void InsertMany(IEnumerable<T> leaves)`: Batch insert
-- `void Update(int index, T newLeaf)`: Update existing leaf
-- `void UpdateMany(int[] indices, T[] newLeaves)`: Batch update
-- `bool Has(T leaf)`: Check if leaf exists
-- `int IndexOf(T leaf)`: Find leaf index
-- `MerkleProof GenerateProof(int leafIndex)`: Generate proof
-- `bool VerifyProof(MerkleProof proof, T leaf, byte[] root)`: Verify proof
-- `string Export(Func<byte[], string> formatter = null)`: Export to JSON
-- `static Import(hashProvider, convertor, json, leafMapper, ...)`: Import from JSON
+Proofs carry direction, because the lean tree pairs in `Normal` order:
 
-### SparseMerkleTree<T>
+*From `LeanIncrementalMerkleTreeBigIntTests.GenerateAndVerifyProof_ForEachLeaf_ShouldBeValid` (use case `incremental-merkle-tree`).*
 
-High-performance sparse tree for millions of records with pluggable storage.
-
-**Constructor:**
 ```csharp
-SparseMerkleTree(
-    int depth,  // 1-256
-    IHashProvider hashProvider,
-    IByteArrayConvertor<T> byteArrayConvertor,
-    ISparseMerkleTreeStorage<T> storage
-)
-```
-
-**Key Properties:**
-- `int Depth`: Tree depth (key space size)
-- `string EmptyLeafHash`: Hash of empty leaf
-
-**Key Methods:**
-- `async Task SetLeafAsync(string key, T value)`: Set leaf value
-- `async Task<T> GetLeafAsync(string key)`: Get leaf value
-- `async Task<string> GetRootHashAsync()`: Get cached root hash
-- `async Task SetLeavesAsync(Dictionary<string, T> updates)`: Batch update (optimized)
-- `async Task<long> GetLeafCountAsync()`: Count non-empty leaves
-- `async Task ClearAsync()`: Clear all data
-
-**Synchronous Overloads:**
-- `void SetLeaf(string key, T value)`
-- `T GetLeaf(string key)`
-- `string GetRootHash()`
-
-**Storage Implementations:**
-- `InMemorySparseMerkleTreeStorage<T>`: For testing/small datasets
-- `DatabaseSparseMerkleTreeStorage<T>`: For production/large datasets (requires `ISparseMerkleRepository`)
-
-### MerkleProof
-
-Container for merkle proof data.
-
-**Properties:**
-- `List<byte[]> ProofNodes`: Hashes needed to verify membership
-
-### MerkleTreeNode
-
-Node in the merkle tree.
-
-**Properties:**
-- `byte[] Hash`: Node hash value
-
-**Methods:**
-- `bool Matches(byte[] hash)`: Check if hash matches
-- `MerkleTreeNode Clone()`: Create copy
-
-### Pairing Strategies
-
-#### PairingConcatType Enum
-- `Sorted`: Sort hashes before concatenating (OpenZeppelin standard)
-- `Normal`: Concatenate in given order
-
-#### IPairConcatStrategy
-Interface for custom pairing strategies.
-
-**Implementations:**
-- `SortedPairConcatStrategy`: Lexicographic sorting
-- `PairConcatStrategy`: Direct concatenation
-
-**Factory:**
-- `PairingConcatFactory.GetPairConcatStrategy(PairingConcatType)`: Get strategy instance
-
-## Related Packages
-
-### Used By (Consumers)
-
-- **Nethereum.Contracts** - Uses merkle trees for airdrop contract deployments
-- **Smart Contract Verification** - On-chain proof verification
-- **Token Distribution** - ERC-20/ERC-721 airdrops
-- **Whitelisting Systems** - NFT mints, presales
-
-### Dependencies
-
-- **Nethereum.ABI** - ABI encoding for struct-based leaves
-- **Nethereum.Util** - Keccak-256 and Poseidon hashing, byte conversions
-
-### Related ZK Packages
-
-- **Nethereum.ZkProofsVerifier** - Groth16 proof verification on BN128 (Circom/snarkjs)
-- **Nethereum.Merkle.Binary** - EIP-7864 Binary Merkle Trie for stateless execution
-
-## Important Notes
-
-### Gas Optimization
-
-**On-Chain Verification:**
-- Proof verification costs approximately `keccak256(32 bytes) * depth` gas
-- For tree depth 20 (1M leaves): ~20 keccak operations
-- Much cheaper than storing/checking entire list on-chain
-
-**Best Practices:**
-- Use sorted pairing for OpenZeppelin compatibility
-- Keep tree balanced (number of leaves close to power of 2)
-- For very large trees, consider sparse merkle trees
-
-### OpenZeppelin Compatibility
-
-To ensure compatibility with OpenZeppelin's `MerkleProof.sol`:
-
-1. Use `OpenZeppelinStandardMerkleTree<T>`
-2. Use sorted pairing (`PairingConcatType.Sorted`)
-3. Struct fields must match Solidity struct exactly (order and types)
-4. Use `keccak256(abi.encodePacked(...))` encoding
-
-**Solidity Example:**
-```solidity
-function claim(bytes32[] calldata proof, address account, uint256 amount) external {
-    bytes32 leaf = keccak256(abi.encodePacked(account, amount));
-    require(MerkleProof.verify(proof, merkleRoot, leaf), "Invalid proof");
-    // ... claim logic
+var tree = new LeanIncrementalMerkleTree<byte[]>(_hashProvider, _convertor);
+tree.InsertMany(Leaves);
+for (int i = 0; i < TreeSize; i++)
+{
+    var proof = tree.GenerateProof(i);
+    Assert.True(tree.VerifyProof(proof, Leaves[i], tree.Root));
 }
 ```
 
-### Performance Considerations
+A tree can be serialised and rebuilt — `Export()` produces JSON, `Import(...)` takes it back with a mapper from the exported leaf string to `T`:
 
-**Standard MerkleTree:**
-- Building: O(n log n)
-- Proof generation: O(log n)
-- Proof verification: O(log n)
-- Inserting leaves: O(n log n) (rebuilds tree)
+*From `LeanIncrementalMerkleTreeBigIntTests.ExportImport_RoundTripPreservesTree` (use case `incremental-merkle-tree`).*
 
-**LeanIncrementalMerkleTree:**
-- Insert single leaf: O(n) (linear scan to rebuild)
-- Better for frequent reads, occasional writes
-- Export/import for persistence
+```csharp
+var tree = new LeanIncrementalMerkleTree<byte[]>(_hashProvider, _convertor);
+tree.InsertMany(Leaves);
+var json = tree.Export();
+var imported = LeanIncrementalMerkleTree<byte[]>.Import(
+    _hashProvider,
+    _convertor,
+    json,
+    str => Convert.FromBase64String(str)
+);
+Assert.Equal(tree.Size, imported.Size);
+Assert.Equal(tree.Depth, imported.Depth);
+Assert.Equal(tree.Root[0], imported.Root[0]);
+```
 
-**SparseMerkleTree:**
-- Set leaf: O(log n) with path invalidation optimization
-- Batch updates: O(m log n) for m leaves
-- Root computation: O(1) when cached, O(log n) when dirty
-- Optimized for millions of records with database storage
+`Import` verifies the imported node set against the leaves by default (`verifyIntegrity: true`); `Import_WithMismatchedTreeData_ShouldThrow` is the test that pins that.
 
-**Recommendation:**
-- **< 10K items**: Use `MerkleTree<T>` or `OpenZeppelinStandardMerkleTree<T>`
-- **10K-100K items**: Use `LeanIncrementalMerkleTree<T>` for updates
-- **> 100K items**: Use `SparseMerkleTree<T>` with database storage
+### Append-only: `FrontierMerkleTree`
 
-### Tree Depth Calculation
+`FrontierMerkleTree` is a fixed-depth append-only tree that keeps only the right-hand frontier — O(depth) memory regardless of how many leaves have been appended. It is the shape a Solidity deposit contract uses.
 
-For n leaves:
-- Depth = ⌈log₂(n)⌉
-- Proof size = depth × 32 bytes
+```csharp
+public class FrontierMerkleTree
+{
+    public FrontierMerkleTree(
+        int depth,
+        IHashProvider hashProvider,
+        PairingConcatType pairingConcatType = PairingConcatType.Sorted);
 
-Examples:
-- 100 leaves: depth 7, proof 224 bytes
-- 1,000 leaves: depth 10, proof 320 bytes
-- 1,000,000 leaves: depth 20, proof 640 bytes
+    public byte[] Root { get; }
+    public int NextIndex { get; }
+    public int Capacity { get; }
 
-### Security Considerations
+    public void Append(byte[] leafHash);
 
-**Second Preimage Attacks:**
-- Nethereum.Merkle mitigates by using different encoding for leaves vs branches
-- Leaves are hashed once, branches hash the concatenation of children
+    public static bool VerifyProof(
+        MerkleProof proof,
+        byte[] root,
+        byte[] leafHash,
+        IHashProvider hashProvider,
+        PairingConcatType pairingConcatType = PairingConcatType.Sorted);
+}
+```
 
-**Collision Resistance:**
-- Keccak-256 provides 128-bit collision resistance
-- Sufficient for all practical Ethereum use cases
+`depth` must be 1–30, `Capacity` is `1 << depth`, and `Append` takes a **pre-hashed** leaf.
 
-**Proof Validation:**
-- Always verify proofs on-chain before taking action
-- Store merkle root on-chain (in contract storage or as constant)
-- Never trust client-provided roots
+### Sparse trees over a large key space: `SparseMerkleTree<T>`
 
-### Common Pitfalls
+*From `SparseMerkleTreeNewTests.NewImplementation_SimpleTest_ShouldWork` (use case `sparse-merkle-tree`).*
 
-1. **Forgetting to Rebuild**: After `InsertLeaf()`, the tree is rebuilt automatically
-2. **Wrong Pairing Type**: Use `Sorted` for OpenZeppelin compatibility
-3. **ABI Encoding Mismatch**: Ensure C# struct matches Solidity struct exactly
-4. **Index vs Hash**: `GetProof()` has overloads for item, index, or hash
-5. **Sparse Tree Keys**: Keys must fit within the tree depth (depth 256 = 256-bit keys)
-
-### Sparse Merkle Tree Storage
-
-**In-Memory** (testing only):
 ```csharp
 var storage = new InMemorySparseMerkleTreeStorage<string>();
+var convertor = new StringByteArrayConvertor();
+var tree = new SparseMerkleTree<string>(8, _hashProvider, convertor, storage);
+
+var emptyRoot = await tree.GetRootHashAsync();
+
+await tree.SetLeafAsync("10", "test_value");
+var newRoot = await tree.GetRootHashAsync();
+
+Assert.NotEqual(emptyRoot, newRoot);
+
+var leafCount = await tree.GetLeafCountAsync();
+Assert.Equal(1, leafCount);
 ```
 
-**Database** (production):
-```csharp
-public class MyRepository : ISparseMerkleRepository
-{
-    // Implement database access
-}
+The API is **async only** — there are no synchronous `SetLeaf` / `GetLeaf` / `GetRootHash` methods, because the storage behind it may be a database. `SetLeavesAsync(Dictionary<string, T> keyValuePairs)` batches a block's worth of updates into one pass instead of recomputing the root per key.
 
-var storage = new DatabaseSparseMerkleTreeStorage<string>(
-    new MyRepository(),
-    new HexStringByteArrayConvertor()
-);
-```
+Storage is `ISparseMerkleTreeStorage<T>`, with two implementations: `InMemorySparseMerkleTreeStorage<T>` for tests and small sets, and `DatabaseSparseMerkleTreeStorage<T>` for production, whose single constructor parameter is an `ISparseMerkleRepository<T>` you implement against your database. (Both the repository and the storage are generic in the leaf type `T`.)
 
-Database storage is **critical** for:
-- Persisting tree across restarts
-- Handling millions of records
-- Enabling horizontal scaling
+### ZK-oriented sparse tree: `SparseMerkleBinaryTree<T>`
 
-## Sparse Merkle Binary Tree (ZK-Optimized)
-
-`SparseMerkleBinaryTree<T>` is a high-performance binary sparse Merkle tree designed for zero-knowledge circuits. It supports pluggable hash strategies (Poseidon for ZK, Celestia-compatible SHA-256, or generic hash providers), optional persistent storage with lazy node loading, and both synchronous and asynchronous APIs.
-
-### Quick Start
+`SparseMerkleBinaryTree<T>` is the binary sparse tree used for zero-knowledge circuits. It takes the hash *strategy* rather than a plain hash provider, because a ZK-friendly SMT differs in bit order, empty-hash handling and single-leaf collapsing:
 
 ```csharp
-using Nethereum.Merkle.Sparse;
-using Nethereum.Util.ByteArrayConvertors;
-
-// Create a Poseidon-based SMT for ZK circuits
-var smt = new SparseMerkleBinaryTree<byte[]>(
-    new PoseidonSmtHasher(),
-    new ByteArrayToByteArrayConvertor(),
-    new IdentitySmtKeyHasher(256));
-
-smt.Put(key1, value1);
-smt.Put(key2, value2);
-var root = smt.ComputeRoot();
-
-// Retrieve
-var value = smt.Get(key1);
-
-// Delete
-smt.Delete(key1);
+SparseMerkleBinaryTree(
+    ISmtHasher hasher,
+    IByteArrayConvertor<T> valueConvertor,
+    ISmtKeyHasher keyHasher = null,      // defaults to IdentitySmtKeyHasher(256)
+    ISmtNodeStorage storage = null)
 ```
 
-### Async API with Persistent Storage
+| Sync | Async |
+|---|---|
+| `Put(byte[] key, T value)` | `PutAsync` |
+| `Get(byte[] key)` | `GetAsync` |
+| `Delete(byte[] key)` | `DeleteAsync` |
+| `ComputeRoot()` | `ComputeRootAsync` |
+| `PutBatch(IEnumerable<KeyValuePair<byte[], T>> entries)` | `PutBatchAsync` |
 
-```csharp
-using Nethereum.Merkle.Sparse;
+Three more members have no counterpart in the other column and are **not** async pairs of anything: `void Clear()` (`SparseMerkleBinaryTree.cs:75`) drops the in-memory tree and has no `ClearAsync`; `Task FlushAsync()` (`:126`) writes dirty nodes back to `ISmtNodeStorage`; `Task LoadRootAsync(byte[] rootHash)` (`:132`) attaches to a stored root and lazy-loads nodes as the walk needs them.
 
-var storage = new InMemorySmtNodeStorage();
-var smt = new SparseMerkleBinaryTree<byte[]>(
-    new CelestiaSmtHasher(),
-    new ByteArrayToByteArrayConvertor(),
-    storage: storage);
+Plus `Depth`, `EmptyLeafHash` and `LeafCount`.
 
-await smt.PutAsync(key1, value1);
-await smt.PutAsync(key2, value2);
-var root = await smt.ComputeRootAsync();
-await smt.FlushAsync();  // Persist to storage
-
-// Load from storage in a new instance
-var smt2 = new SparseMerkleBinaryTree<byte[]>(
-    new CelestiaSmtHasher(),
-    new ByteArrayToByteArrayConvertor(),
-    storage: storage);
-await smt2.LoadRootAsync(root);  // Lazy-loads nodes on demand
-var value = await smt2.GetAsync(key1);
-```
-
-### ISmtHasher — Hashing Strategies
-
-The `ISmtHasher` interface defines how leaves and internal nodes are hashed:
+#### `ISmtHasher` — hashing strategies
 
 ```csharp
 public interface ISmtHasher
 {
-    bool MsbFirst { get; }              // Bit ordering for key path traversal
-    bool UseFixedEmptyHash { get; }     // Fixed vs per-level empty hash
-    bool CollapseSingleLeaf { get; }    // Skip hashing single leaf up to root
-    byte[] EmptyLeaf { get; }           // Hash of empty/zero leaf
-
+    bool MsbFirst { get; }
+    bool UseFixedEmptyHash { get; }
+    bool CollapseSingleLeaf { get; }
+    byte[] EmptyLeaf { get; }
     byte[] HashLeaf(byte[] path, byte[] valueBytes);
     byte[] HashNode(byte[] leftHash, byte[] rightHash);
 }
 ```
 
-**Built-in implementations:**
+| Hasher | `MsbFirst` | `UseFixedEmptyHash` | `CollapseSingleLeaf` | Use case |
+|---|---|---|---|---|
+| `PoseidonSmtHasher` | `false` | `true` | `true` | ZK circuits (Circom, Privacy Pools). `PoseidonSmtHasher(PoseidonHasher leafHasher, PoseidonHasher nodeHasher)` swaps the permutations. |
+| `CelestiaSmtHasher` | `true` | `true` | `true` | Celestia sparse-Merkle-tree compatibility |
+| `DefaultSmtHasher(IHashProvider hashProvider)` | `false` | `false` | `false` | generic — Keccak, SHA-256, anything |
 
-| Hasher | Hash Function | Bit Order | Use Case |
-|--------|--------------|-----------|----------|
-| `PoseidonSmtHasher` | Poseidon (CircomT3 leaf, CircomT2 node) | LSB-first | ZK circuits (Circom, Privacy Pools) |
-| `CelestiaSmtHasher` | SHA-256 with domain prefixes | MSB-first | Celestia namespace tree compatibility |
-| `DefaultSmtHasher` | Any `IHashProvider` (Keccak, SHA-256) | LSB-first | Generic use |
-
-### PoseidonSmtHasher
-
-Poseidon-based hasher optimized for zero-knowledge circuits:
-
-```csharp
-var hasher = new PoseidonSmtHasher();
-// Leaf: Poseidon(key, value, 1) using CircomT3 (3 inputs)
-// Node: Poseidon(leftHash, rightHash) using CircomT2 (2 inputs)
-
-var smt = new SparseMerkleBinaryTree<byte[]>(
-    hasher,
-    new ByteArrayToByteArrayConvertor(),
-    new IdentitySmtKeyHasher(140));  // 140-bit key paths
-```
-
-### CelestiaSmtHasher
-
-SHA-256-based hasher compatible with Celestia's sparse Merkle tree:
-
-```csharp
-var hasher = new CelestiaSmtHasher();
-// Leaf: SHA256(0x00 || path || SHA256(value))
-// Node: SHA256(0x01 || leftHash || rightHash)
-
-var smt = new SparseMerkleBinaryTree<byte[]>(
-    hasher,
-    new ByteArrayToByteArrayConvertor());
-```
-
-### ISmtKeyHasher — Key Path Computation
-
-Controls how keys are mapped to tree paths:
+#### `ISmtKeyHasher` — key → path
 
 ```csharp
 public interface ISmtKeyHasher
 {
-    byte[] ComputePath(byte[] key);  // Key → bit path
-    int PathBitLength { get; }       // Tree depth (1-256)
+    byte[] ComputePath(byte[] key);
+    int PathBitLength { get; }
 }
 ```
 
-| Implementation | Description |
-|---------------|-------------|
-| `IdentitySmtKeyHasher(n)` | Direct key as path (no hashing), n-bit depth |
-| `Sha256SmtKeyHasher` | SHA-256(key) → 256-bit path |
+`IdentitySmtKeyHasher(int bitLength)` uses the key itself as the path; `Sha256SmtKeyHasher` hashes it to a 256-bit path. The tree's depth *is* `PathBitLength`, and must be 1–256.
 
-### ISmtNodeStorage — Persistence
+#### `ISmtNodeStorage` and `SmtNodeCodec`
 
 ```csharp
 public interface ISmtNodeStorage
@@ -932,41 +374,138 @@ public interface ISmtNodeStorage
 }
 ```
 
-`InMemorySmtNodeStorage` provides a thread-safe in-memory implementation using `ConcurrentDictionary`.
-
-### SmtNodeCodec — Node Serialization
-
-Encodes/decodes nodes for storage:
-
-- **Leaf**: `[0x00][pathLen:2][path][valueLen:2][value]`
-- **Branch**: `[0x01][leftHash][rightHash]`
+`InMemorySmtNodeStorage` is the in-box implementation, and `SmtNodeCodec` is the wire format those nodes are stored in:
 
 ```csharp
-byte[] encoded = SmtNodeCodec.EncodeLeaf(path, valueBytes);
-SmtNodeCodec.DecodeLeaf(encoded, out var path, out var value);
+public static class SmtNodeCodec
+{
+    public static byte[] EncodeLeaf(byte[] path, byte[] valueBytes);
+    public static void DecodeLeaf(byte[] data, out byte[] path, out byte[] valueBytes);
 
-byte[] branch = SmtNodeCodec.EncodeBranch(leftHash, rightHash);
-SmtNodeCodec.DecodeBranch(branch, 32, out var left, out var right);
+    public static byte[] EncodeBranch(byte[] leftHash, byte[] rightHash);
+    public static void DecodeBranch(byte[] data, int hashSize, out byte[] leftHash, out byte[] rightHash);
 
-bool isLeaf = SmtNodeCodec.IsLeaf(data);
-bool isBranch = SmtNodeCodec.IsBranch(data);
+    public static bool IsLeaf(byte[] data);
+    public static bool IsBranch(byte[] data);
+}
 ```
 
-## Additional Resources
+## API reference
 
-### Ethereum & Merkle Trees
-- [Merkle Trees on Ethereum.org](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)
-- [OpenZeppelin Merkle Tree JavaScript Library](https://github.com/OpenZeppelin/merkle-tree)
-- [OpenZeppelin MerkleProof.sol](https://docs.openzeppelin.com/contracts/4.x/api/utils#MerkleProof)
+### `MerkleTree<T>`
 
-### Use Case Examples
-- [Uniswap Merkle Distributor](https://github.com/Uniswap/merkle-distributor) - Token airdrop pattern
-- [ENS Airdrop](https://ens.mirror.xyz/cfvfKRpQSPtZJjPQOprWqEeqv2rytE7tQkxDg6ht7Oo) - Real-world example
+| Member | |
+|---|---|
+| `MerkleTree(IHashProvider hashProvider, IByteArrayConvertor<T> byteArrayConvertor, PairingConcatType pairingConcatType = PairingConcatType.Sorted)` | constructor |
+| `MerkleTreeNode Root` | root node |
+| `List<MerkleTreeNode> Leaves` | leaf nodes |
+| `List<List<MerkleTreeNode>> Layers` | every layer, bottom-up |
+| `void BuildTree(List<T> items)` | build from items |
+| `MerkleTreeNode BuildTree(List<MerkleTreeNode> nodes)` | build from pre-hashed nodes; returns the root |
+| `void InsertLeaf(T item)` / `void InsertLeaves(IEnumerable<T> items)` | add and rebuild (both `virtual`) |
+| `List<byte[]> GetProof(T item)` / `GetProof(byte[] hashLeaf)` / `GetProof(int index)` | sibling hashes, leaf-to-root |
+| `bool VerifyProof(IEnumerable<byte[]> proof, T item)` / `VerifyProof(IEnumerable<byte[]> proof, byte[] itemHash)` | verify against this tree's root |
+| `static bool VerifyProof(IEnumerable<byte[]> proof, byte[] rootHash, byte[] itemHash, IHashProvider hashProvider, PairingConcatType pairingConcatType = PairingConcatType.Sorted)` | verify without a tree |
+| `static byte[] ConcatAndHashPair(byte[] left, byte[] right, IHashProvider hashProvider, PairingConcatType pairingConcatType = PairingConcatType.Sorted)` | one pairing step |
 
-### Research Papers
-- [Certificate Transparency (Merkle Trees in Practice)](https://certificate.transparency.dev/)
-- [Sparse Merkle Trees](https://eprint.iacr.org/2016/683.pdf)
+Subclasses: `AbiStructMerkleTree<T>` (packed ABI encoding, Keccak, sorted), `AbiStructSha3KeccackMerkleTree<T>` (Keccak-of-ABI leaf hashing, Keccak, sorted), `OpenZeppelinStandardMerkleTree<T> : AbiStructSha3KeccackMerkleTree<T>`, `MerkleDropMerkleTree : AbiStructMerkleTree<MerkleDropItem>`. All four are parameterless.
 
-### Nethereum Documentation
-- [Nethereum Documentation](https://docs.nethereum.com)
-- [Nethereum GitHub](https://github.com/Nethereum/Nethereum)
+### `LeanIncrementalMerkleTree<T>`
+
+| Member | |
+|---|---|
+| `LeanIncrementalMerkleTree(IHashProvider hashProvider, IByteArrayConvertor<T> byteArrayConvertor, PairingConcatType pairingConcatType = PairingConcatType.Normal, bool hashLeafOnInsert = true, ILeanIMTNodeStorage storage = null)` | constructor |
+| `byte[] Root` | current root (raw bytes) |
+| `IReadOnlyList<T> Leaves`, `int Size`, `int Depth` | state |
+| `ILeanIMTNodeStorage Storage` | the node store in use |
+| `void InsertLeaf(T leaf)` / `void InsertMany(IEnumerable<T> leaves)` | append |
+| `void Update(int index, T newLeaf)` / `void UpdateMany(int[] indices, T[] newLeaves)` | in-place update |
+| `bool Has(T leaf)` / `int IndexOf(T leaf)` | lookup |
+| `MerkleProof GenerateProof(int leafIndex)` / `bool VerifyProof(MerkleProof proof, T leaf, byte[] root)` | proofs |
+| `string Export(Func<byte[], string> nodeFormatter = null)` | JSON |
+| `static LeanIncrementalMerkleTree<T> Import(IHashProvider hashProvider, IByteArrayConvertor<T> byteArrayConvertor, string json, Func<string, T> leafMapper, Func<string, byte[]> nodeParser = null, PairingConcatType pairingConcatType = PairingConcatType.Normal, bool hashLeafOnInsert = true, ILeanIMTNodeStorage storage = null, bool verifyIntegrity = true)` | rebuild from JSON |
+| `void VerifyStorageIntegrity()` | re-derive every node and throw on mismatch |
+
+Node storage is pluggable, and defaults to `InMemoryLeanIMTNodeStorage`:
+
+```csharp
+public interface ILeanIMTNodeStorage
+{
+    byte[] GetNode(int level, int index);
+    void SetNode(int level, int index, byte[] value);
+    void SetNodesBatch(IEnumerable<LeanIMTNodeEntry> nodes);
+
+    int GetNodeCount(int level);
+    void EnsureLevel(int level);
+    int GetLevelCount();
+
+    void Clear();
+}
+
+public class LeanIMTNodeEntry
+{
+    public int Level { get; set; }
+    public int Index { get; set; }
+    public byte[] Value { get; set; }
+
+    public LeanIMTNodeEntry(int level, int index, byte[] value);
+}
+```
+
+### `SparseMerkleTree<T>`
+
+| Member | |
+|---|---|
+| `SparseMerkleTree(int depth, IHashProvider hashProvider, IByteArrayConvertor<T> byteArrayConvertor, ISparseMerkleTreeStorage<T> storage)` and the overload adding `ISmtHasher hasher` | constructors; `depth` 1–256 |
+| `int Depth`, `string EmptyLeafHash`, `IHashProvider HashProvider` | state |
+| `Task SetLeafAsync(string key, T value)` / `Task<T> GetLeafAsync(string key)` | leaf access |
+| `Task SetLeavesAsync(Dictionary<string, T> keyValuePairs)` | batch update |
+| `Task<string> GetRootHashAsync()` | cached root |
+| `Task<long> GetLeafCountAsync()` / `Task ClearAsync()` | maintenance |
+
+### Supporting types
+
+```csharp
+public class MerkleProof
+{
+    public List<byte[]> ProofNodes { get; set; }
+    public List<int> PathIndices { get; set; }
+}
+
+public class MerkleTreeNode
+{
+    public byte[] Hash { get; set; }
+
+    public MerkleTreeNode(byte[] hash);
+
+    public int Compare(MerkleTreeNode other);
+    public int Compare(byte[] hashOther);
+    public bool Matches(byte[] hashOther);
+    public bool Matches(MerkleTreeNode other);
+    public MerkleTreeNode Clone();
+}
+```
+
+`MerkleTreeNodeComparer` is the `IComparer<MerkleTreeNode>` over those hash bytes, reachable as `MerkleTreeNodeComparer.Current`.
+
+`MerkleProof` is default-constructible (both lists start empty), but `MerkleTreeNode` and `LeanIMTNodeEntry` are **not** — each declares only the constructor shown, so `new MerkleTreeNode { Hash = h }` does not compile; write `new MerkleTreeNode(h)` and `new LeanIMTNodeEntry(level, index, value)`.
+
+## Notes and gotchas
+
+- **`MerkleProof` is not what `MerkleTree<T>` returns.** `MerkleTree<T>.GetProof` returns a bare `List<byte[]>` (sorted pairing needs no direction); `LeanIncrementalMerkleTree<T>.GenerateProof` and `FrontierMerkleTree.VerifyProof` use the `MerkleProof` type with its `PathIndices`.
+- **Pairing must match the verifier.** Sorted pairing is OpenZeppelin's convention; a contract written against a normal-order tree will reject sorted proofs and vice versa.
+- **A `[Struct]` type must mirror the Solidity struct**: same parameter types, same order, correct `[Parameter]` order indices. A mismatch produces a different leaf hash and a silently unverifiable proof.
+- **`FrontierMerkleTree.Append` takes a hash, not an item** — hash the leaf yourself before appending.
+- **`IByteArrayConvertor<T>` has two methods.** A convertor that only implements `ConvertToByteArray` will not compile.
+- **Duplicate leaves** are permitted, but `GetProof(T item)` and `LeanIncrementalMerkleTree<T>.IndexOf` both resolve to the *first* match.
+- **`GetProof` throws when the leaf is absent** — `MerkleTree<T>.GetProof(byte[] hashLeaf)` raises `Exception("Leaf not found")` rather than returning an empty proof.
+- **The `byte[] itemHash` overload of the instance `VerifyProof` always verifies with `Sorted` pairing**, whatever the tree was constructed with — it does not forward the tree's `PairingConcatType`. On a `Normal`-order tree, use the `T item` overload or the static one and pass the pairing explicitly (`MerkleTree.cs:119`).
+- **`AbiStructSha3KeccackHashByteArrayConvertor<T>.ConvertFromByteArray` throws `NotSupportedException`** — hashing is one-way, so an OpenZeppelin tree can prove a leaf but cannot recover it.
+- **`FrontierMerkleTree.Append` throws `InvalidOperationException` once `NextIndex` reaches `Capacity`** — the tree is fixed-depth and does not grow.
+
+## Related packages
+
+- **`Nethereum.Merkle.Patricia`** — the Ethereum state trie: Modified Merkle Patricia Trie, path-keyed node storage, EIP-1186 and snap/1 range proofs.
+- **`Nethereum.Merkle.Binary`** — EIP-7864 binary Merkle trie for stateless execution.
+- **`Nethereum.ABI`** — the `[Struct]` / `[Parameter]` attributes and the packed encoders the ABI-struct trees use.
+- **`Nethereum.Util`** — `IHashProvider`, `IByteArrayConvertor<T>`, `Sha3Keccack`, `PoseidonHasher`.

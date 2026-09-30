@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Nethereum.Signer.UnitTests
 {
+    [Collection("SignRecoverableBackendMutation")]
     public class EthereumMessageSignerTests
     {
         [Fact]

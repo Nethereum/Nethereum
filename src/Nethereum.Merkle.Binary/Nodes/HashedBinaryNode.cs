@@ -16,12 +16,24 @@ namespace Nethereum.Merkle.Binary.Nodes
 
         public byte[] Get(byte[] key, NodeResolverFunc resolver)
         {
-            throw new InvalidOperationException("Cannot get from unresolved hashed node");
+            var resolved = Resolve(key, resolver);
+            return resolved.Get(key, resolver);
         }
 
         public IBinaryNode Insert(byte[] key, byte[] value, NodeResolverFunc resolver, int depth)
         {
-            throw new InvalidOperationException("Cannot insert into unresolved hashed node");
+            var resolved = Resolve(key, resolver);
+            return resolved.Insert(key, value, resolver, depth);
+        }
+
+        private IBinaryNode Resolve(byte[] keyOrStem, NodeResolverFunc resolver)
+        {
+            if (resolver == null)
+                throw new InvalidOperationException("Resolver required for hashed node");
+            var data = resolver(keyOrStem, Hash);
+            if (data == null)
+                throw new InvalidOperationException($"Failed to resolve node {BitConverter.ToString(Hash, 0, Math.Min(4, Hash.Length))}");
+            return CompactBinaryNodeCodec.Decode(data, NodeDepth);
         }
 
         public byte[][] GetValuesAtStem(byte[] stem, NodeResolverFunc resolver)

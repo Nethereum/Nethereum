@@ -46,6 +46,15 @@ namespace Nethereum.Signer.Crypto
 
         public bool IsLowS => S.CompareTo(ECKey.HALF_CURVE_ORDER) <= 0;
 
+        /// <summary>
+        /// True when r and s lie in the canonical ranges required by EIP-2 / EIP-7702:
+        /// 0 &lt; r &lt; N and 0 &lt; s &lt;= N/2. Used to validate ECDSA signatures
+        /// (including EIP-7702 authorization tuples) before address recovery.
+        /// </summary>
+        public bool IsCanonical =>
+            R.SignValue > 0 && R.CompareTo(ECKey.CURVE_ORDER) < 0 &&
+            S.SignValue > 0 && IsLowS;
+
         public static ECDSASignature FromDER(byte[] sig)
         {
             return new ECDSASignature(sig);

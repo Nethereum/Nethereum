@@ -4,6 +4,7 @@ using Nethereum.RLP;
 using Nethereum.Signer;
 using Nethereum.XUnitEthereumClients;
 using Nethereum.Documentation;
+using Nethereum.Util;
 using System.Numerics;
 using System.Collections.Generic;
 using Xunit;
@@ -65,13 +66,13 @@ namespace Nethereum.Signer.UnitTests
         [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "Create EIP-1559 transaction")]
         public void Transaction1559_CreateAndEncode()
         {
-            var chainId = new BigInteger(1);
-            var nonce = new BigInteger(0);
-            var maxPriorityFeePerGas = new BigInteger(2000000000);
-            var maxFeePerGas = new BigInteger(100000000000);
-            var gasLimit = new BigInteger(21000);
+            var chainId = new EvmUInt256(1);
+            var nonce = new EvmUInt256(0);
+            var maxPriorityFeePerGas = new EvmUInt256(2000000000);
+            var maxFeePerGas = new EvmUInt256(100000000000);
+            var gasLimit = new EvmUInt256(21000);
             var receiverAddress = "0x13978aee95f38490e9769C39B2773Ed763d9cd5F";
-            var amount = new BigInteger(10000000000000000);
+            var amount = new EvmUInt256(10000000000000000);
             var data = "";
 
             var tx = new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, receiverAddress, amount, data, null);
@@ -106,13 +107,13 @@ namespace Nethereum.Signer.UnitTests
             var account = new Account
             {
                 Nonce = 5,
-                Balance = BigInteger.Parse("1000000000000000000"),
+                Balance = EvmUInt256.Parse("1000000000000000000"),
                 StateRoot = new byte[32],
                 CodeHash = new byte[32]
             };
 
-            Assert.Equal(new BigInteger(5), account.Nonce);
-            Assert.Equal(BigInteger.Parse("1000000000000000000"), account.Balance);
+            Assert.Equal(new EvmUInt256(5), account.Nonce);
+            Assert.Equal(EvmUInt256.Parse("1000000000000000000"), account.Balance);
             Assert.Equal(32, account.StateRoot.Length);
             Assert.Equal(32, account.CodeHash.Length);
         }
@@ -154,15 +155,15 @@ namespace Nethereum.Signer.UnitTests
                 BaseFee = 1000000000
             };
 
-            Assert.Equal(new BigInteger(1000), blockHeader.BlockNumber);
-            Assert.Equal(new BigInteger(131072), blockHeader.Difficulty);
+            Assert.Equal(new EvmUInt256(1000), blockHeader.BlockNumber);
+            Assert.Equal(new EvmUInt256(131072), blockHeader.Difficulty);
             Assert.Equal(8000000, blockHeader.GasLimit);
             Assert.Equal(21000, blockHeader.GasUsed);
             Assert.Equal(1638300000, blockHeader.Timestamp);
             Assert.Equal("0x0000000000000000000000000000000000000000", blockHeader.Coinbase);
             Assert.Equal(32, blockHeader.ParentHash.Length);
             Assert.Equal(32, blockHeader.StateRoot.Length);
-            Assert.Equal(new BigInteger(1000000000), blockHeader.BaseFee);
+            Assert.Equal(new EvmUInt256(1000000000), blockHeader.BaseFee);
         }
 
         [Fact]
@@ -187,12 +188,12 @@ namespace Nethereum.Signer.UnitTests
         [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "Create EIP-2930 access list transaction")]
         public void Transaction2930_CreateWithAccessList()
         {
-            var chainId = new BigInteger(1);
-            var nonce = new BigInteger(0);
-            var gasPrice = new BigInteger(20000000000);
-            var gasLimit = new BigInteger(21000);
+            var chainId = new EvmUInt256(1);
+            var nonce = new EvmUInt256(0);
+            var gasPrice = new EvmUInt256(20000000000);
+            var gasLimit = new EvmUInt256(21000);
             var receiverAddress = "0x13978aee95f38490e9769C39B2773Ed763d9cd5F";
-            var amount = new BigInteger(10000000000000000);
+            var amount = new EvmUInt256(10000000000000000);
 
             var storageKey = new byte[32];
             storageKey[31] = 0x01;
@@ -221,17 +222,17 @@ namespace Nethereum.Signer.UnitTests
         [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "Create EIP-7702 authorization transaction")]
         public void Transaction7702_CreateWithAuthorisation()
         {
-            var chainId = new BigInteger(1);
-            var nonce = new BigInteger(0);
-            var maxPriorityFeePerGas = new BigInteger(2000000000);
-            var maxFeePerGas = new BigInteger(100000000000);
-            var gasLimit = new BigInteger(100000);
+            var chainId = new EvmUInt256(1);
+            var nonce = new EvmUInt256(0);
+            var maxPriorityFeePerGas = new EvmUInt256(2000000000);
+            var maxFeePerGas = new EvmUInt256(100000000000);
+            var gasLimit = new EvmUInt256(100000);
             var receiverAddress = "0x13978aee95f38490e9769C39B2773Ed763d9cd5F";
             var amount = BigInteger.Zero;
 
-            var authChainId = new BigInteger(1);
+            var authChainId = new EvmUInt256(1);
             var authAddress = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-            var authNonce = new BigInteger(0);
+            var authNonce = new EvmUInt256(0);
 
             var authorisation = new Authorisation7702 { ChainId = authChainId, Address = authAddress, Nonce = authNonce };
 
@@ -260,8 +261,8 @@ namespace Nethereum.Signer.UnitTests
         [NethereumDocExample(DocSection.CoreFoundation, "transaction-models", "TransactionFactory detects EIP-1559 and EIP-2930")]
         public void TransactionFactory_Detects1559And2930()
         {
-            var chainId = new BigInteger(1);
-            var nonce = new BigInteger(0);
+            var chainId = new EvmUInt256(1);
+            var nonce = new EvmUInt256(0);
 
             var tx1559 = new Transaction1559(chainId, nonce, 2000000000, 100000000000, 21000,
                 "0x13978aee95f38490e9769C39B2773Ed763d9cd5F", 10000000000000000, null, null);

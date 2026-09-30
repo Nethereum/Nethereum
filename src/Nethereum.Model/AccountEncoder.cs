@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Nethereum.RLP;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -24,8 +25,8 @@ namespace Nethereum.Model
             var decodedList = RLP.RLP.Decode(rawdata);
             var decodedElements = (RLPCollection) decodedList;
             var account = new Account();
-            account.Nonce = decodedElements[0].RLPData.ToBigIntegerFromRLPDecoded();
-            account.Balance = decodedElements[1].RLPData.ToBigIntegerFromRLPDecoded();
+            account.Nonce = decodedElements[0].RLPData.ToEvmUInt256FromRLPDecoded();
+            account.Balance = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
             account.StateRoot = decodedElements[2].RLPData;
             account.CodeHash = decodedElements[3].RLPData;
             return account;

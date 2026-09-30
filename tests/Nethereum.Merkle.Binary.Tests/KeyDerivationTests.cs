@@ -1,7 +1,8 @@
 using System;
-using System.Numerics;
 using Nethereum.Merkle.Binary.Hashing;
 using Nethereum.Merkle.Binary.Keys;
+using Nethereum.Util;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Merkle.Binary.Tests
@@ -17,7 +18,7 @@ namespace Nethereum.Merkle.Binary.Tests
         {
             var addr = new byte[20]; addr[0] = 0xAA;
             var addr32 = BinaryTreeKeyDerivation.AddressTo32(addr);
-            var key = _keyDerivation.GetTreeKey(addr32, BigInteger.Zero, 128);
+            var key = _keyDerivation.GetTreeKey(addr32, EvmUInt256.Zero, 128);
             Assert.Equal(128, key[31]);
         }
 
@@ -27,8 +28,8 @@ namespace Nethereum.Merkle.Binary.Tests
         {
             var addr = new byte[20]; addr[0] = 0x11;
             var addr32 = BinaryTreeKeyDerivation.AddressTo32(addr);
-            var k0 = _keyDerivation.GetTreeKey(addr32, BigInteger.Zero, 0);
-            var k1 = _keyDerivation.GetTreeKey(addr32, BigInteger.One, 0);
+            var k0 = _keyDerivation.GetTreeKey(addr32, EvmUInt256.Zero, 0);
+            var k1 = _keyDerivation.GetTreeKey(addr32, EvmUInt256.One, 0);
 
             bool differs = false;
             for (int i = 0; i < 31; i++)
@@ -52,7 +53,7 @@ namespace Nethereum.Merkle.Binary.Tests
             var addr = new byte[20]; addr[0] = 0x42;
             var key = _keyDerivation.GetTreeKeyForBasicData(addr);
             var expected = _keyDerivation.GetTreeKey(
-                BinaryTreeKeyDerivation.AddressTo32(addr), BigInteger.Zero, BinaryTreeKeyDerivation.BasicDataLeafKey);
+                BinaryTreeKeyDerivation.AddressTo32(addr), EvmUInt256.Zero, BinaryTreeKeyDerivation.BasicDataLeafKey);
             Assert.Equal(expected, key);
         }
 
@@ -94,7 +95,7 @@ namespace Nethereum.Merkle.Binary.Tests
         public void GetTreeKeyForStorageSlot_InlineSlot0()
         {
             var addr = new byte[20]; addr[0] = 0x11;
-            var key = _keyDerivation.GetTreeKeyForStorageSlot(addr, BigInteger.Zero);
+            var key = _keyDerivation.GetTreeKeyForStorageSlot(addr, EvmUInt256.Zero);
             Assert.Equal(BinaryTreeKeyDerivation.HeaderStorageOffset, key[31]);
         }
 
@@ -103,17 +104,18 @@ namespace Nethereum.Merkle.Binary.Tests
         public void GetTreeKeyForStorageSlot_InlineSlot63()
         {
             var addr = new byte[20]; addr[0] = 0x11;
-            var key = _keyDerivation.GetTreeKeyForStorageSlot(addr, new BigInteger(63));
+            var key = _keyDerivation.GetTreeKeyForStorageSlot(addr, (EvmUInt256)63);
             Assert.Equal(127, key[31]);
         }
 
+        [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie-keys", "Derive binary-tree keys for basic data, code chunks and storage slots", Order = 1)]
         [Fact]
         [Trait("Category", "KeyDerivation")]
         public void GetTreeKeyForStorageSlot_MainStorage64_DifferentStem()
         {
             var addr = new byte[20]; addr[0] = 0x11;
-            var key63 = _keyDerivation.GetTreeKeyForStorageSlot(addr, new BigInteger(63));
-            var key64 = _keyDerivation.GetTreeKeyForStorageSlot(addr, new BigInteger(64));
+            var key63 = _keyDerivation.GetTreeKeyForStorageSlot(addr, (EvmUInt256)63);
+            var key64 = _keyDerivation.GetTreeKeyForStorageSlot(addr, (EvmUInt256)64);
 
             bool stemsDiffer = false;
             for (int i = 0; i < 31; i++)
@@ -129,7 +131,7 @@ namespace Nethereum.Merkle.Binary.Tests
             var seen = new System.Collections.Generic.HashSet<string>();
             for (int i = 0; i < 200; i++)
             {
-                var key = _keyDerivation.GetTreeKeyForStorageSlot(addr, new BigInteger(i));
+                var key = _keyDerivation.GetTreeKeyForStorageSlot(addr, (EvmUInt256)i);
                 var hex = BitConverter.ToString(key);
                 Assert.DoesNotContain(hex, seen);
                 seen.Add(hex);
@@ -142,7 +144,7 @@ namespace Nethereum.Merkle.Binary.Tests
         {
             var addr = new byte[20]; addr[0] = 0x77;
             var basicKey = _keyDerivation.GetTreeKeyForBasicData(addr);
-            var storageKey = _keyDerivation.GetTreeKeyForStorageSlot(addr, BigInteger.Zero);
+            var storageKey = _keyDerivation.GetTreeKeyForStorageSlot(addr, EvmUInt256.Zero);
             Assert.NotEqual(basicKey, storageKey);
         }
 

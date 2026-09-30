@@ -1,4 +1,5 @@
-﻿using Nethereum.RLP;
+using Nethereum.RLP;
+using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -30,12 +31,12 @@ namespace Nethereum.Model
             return header - 27;
         }
 
-        public static int GetRecIdFromVChain(BigInteger vChain, BigInteger chainId)
+        public static int GetRecIdFromVChain(EvmUInt256 vChain, EvmUInt256 chainId)
         {
-            return (int)(vChain - chainId * 2 - 35);
+            return (int)(ulong)(vChain - chainId * 2 - 35);
         }
 
-        public static BigInteger GetChainFromVChain(BigInteger vChain)
+        public static EvmUInt256 GetChainFromVChain(EvmUInt256 vChain)
         {
             var start = vChain - 35;
             var even = start % 2 == 0;
@@ -43,14 +44,14 @@ namespace Nethereum.Model
             return (start - 1) / 2;
         }
 
-        public static int GetRecIdFromVChain(byte[] vChain, BigInteger chainId)
+        public static int GetRecIdFromVChain(byte[] vChain, EvmUInt256 chainId)
         {
-            return GetRecIdFromVChain(vChain.ToBigIntegerFromRLPDecoded(), chainId);
+            return GetRecIdFromVChain(vChain.ToEvmUInt256FromRLPDecoded(), chainId);
         }
 
-        public static BigInteger CalculateV(BigInteger chainId, int recId)
+        public static EvmUInt256 CalculateV(EvmUInt256 chainId, int recId)
         {
-            return chainId * 2 + recId + 35;
+            return chainId * 2 + (EvmUInt256)recId + 35;
         }
     }
 }

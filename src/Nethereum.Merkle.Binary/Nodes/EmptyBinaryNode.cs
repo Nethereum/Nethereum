@@ -16,6 +16,9 @@ namespace Nethereum.Merkle.Binary.Nodes
 
         public IBinaryNode Insert(byte[] key, byte[] value, NodeResolverFunc resolver, int depth)
         {
+            if (value == null)
+                return this;
+
             var values = new byte[BinaryTrieConstants.StemNodeWidth][];
             values[key[BinaryTrieConstants.StemSize]] = value;
             var stem = new byte[BinaryTrieConstants.StemSize];

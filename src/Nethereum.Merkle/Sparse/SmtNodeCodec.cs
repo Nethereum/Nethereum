@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System;
 
 namespace Nethereum.Merkle.Sparse
 {
+    [NethereumDocExample(DocSection.SmartContracts, "sparse-merkle-tree", "The leaf and branch wire format for stored SMT nodes")]
     public static class SmtNodeCodec
     {
         private const byte TypeLeaf = 0x00;

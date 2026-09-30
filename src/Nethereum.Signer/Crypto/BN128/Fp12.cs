@@ -191,7 +191,7 @@ namespace Nethereum.Signer.Crypto.BN128
         public Fp12 FrobeniusP2(Fp12 a)
         {
             X.FrobeniusP2(a.X);
-            X.MulGFP(X, BN128Constants.XiToPSquaredMinus1Over6);
+            X.MulGFP(X, BN128Constants.XiToPSquaredMinus1Over6Fp);
             Y.FrobeniusP2(a.Y);
             return this;
         }
@@ -201,7 +201,7 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp12 FrobeniusP4(Fp12 a)
         {
-            X.MulGFP(a.X, BN128Constants.XiTo2PSquaredMinus2Over3);
+            X.MulGFP(a.X, BN128Constants.XiTo2PSquaredMinus2Over3Fp);
             Y.Set(a.Y);
             return this;
         }

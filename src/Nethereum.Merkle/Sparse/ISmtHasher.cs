@@ -1,5 +1,9 @@
+
+using Nethereum.Documentation;
+
 namespace Nethereum.Merkle.Sparse
 {
+    [NethereumDocExample(DocSection.SmartContracts, "sparse-merkle-tree", "The hashing strategy a sparse binary Merkle tree is built on")]
     public interface ISmtHasher
     {
         bool MsbFirst { get; }

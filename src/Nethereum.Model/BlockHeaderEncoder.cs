@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.RLP;
-
+using System;
+using Nethereum.Model.Codecs;
+using Nethereum.Util;
 
 namespace Nethereum.Model
 {
@@ -10,142 +8,52 @@ namespace Nethereum.Model
     {
         public static BlockHeaderEncoder Current { get; } = new BlockHeaderEncoder();
 
-        private byte[][] GetBaseFields(BlockHeader header)
+        public byte[] Encode(BlockHeader header, bool legacyMode = false)
         {
-            return new byte[][]
-            {
-                header.ParentHash,
-                header.UnclesHash,
-                header.Coinbase.HexToByteArray(),
-                header.StateRoot,
-                header.TransactionsHash,
-                header.ReceiptHash,
-                header.LogsBloom,
-                header.Difficulty.ToBytesForRLPEncoding(),
-                header.BlockNumber.ToBytesForRLPEncoding(),
-                header.GasLimit.ToBytesForRLPEncoding(),
-                header.GasUsed.ToBytesForRLPEncoding(),
-                header.Timestamp.ToBytesForRLPEncoding(),
-                header.ExtraData,
-                header.MixHash,
-                header.Nonce
-            };
+            return SelectForEncode(header, legacyMode).Encode(header);
         }
 
-        private byte[][] GetBaseFieldsCliqueSig(BlockHeader header)
+        private const int CliqueSealSuffixLength = 65;
+
+        public byte[] EncodeCliqueSigHeader(BlockHeader header, bool legacyMode = false)
         {
-            return new byte[][]
-            {
-                header.ParentHash,
-                header.UnclesHash,
-                header.Coinbase.HexToByteArray(),
-                header.StateRoot,
-                header.TransactionsHash,
-                header.ReceiptHash,
-                header.LogsBloom,
-                header.Difficulty.ToBytesForRLPEncoding(),
-                header.BlockNumber.ToBytesForRLPEncoding(),
-                header.GasLimit.ToBytesForRLPEncoding(),
-                header.GasUsed.ToBytesForRLPEncoding(),
-                header.Timestamp.ToBytesForRLPEncoding(),
-                header.ExtraData.Take(header.ExtraData.Length - 65).ToArray(),
-                header.MixHash,
-                header.Nonce
-            };
+            var sealed_ = header.ShallowCopy();
+            sealed_.ExtraData = header.ExtraData == null
+                ? null
+                : header.ExtraData.Slice(0, header.ExtraData.Length - CliqueSealSuffixLength);
+
+            return SelectForEncode(sealed_, legacyMode).Encode(sealed_);
         }
 
         public byte[] EncodeCliqueSigHeaderAndHash(BlockHeader header, bool legacyMode = false)
         {
-            return new Util.Sha3Keccack().CalculateHash(EncodeCliqueSigHeader(header, legacyMode));
-        }
-
-        public byte[] EncodeCliqueSigHeader(BlockHeader header, bool legacyMode = false)
-        {
-            var fields = new List<byte[]>(GetBaseFieldsCliqueSig(header));
-            AppendPostLondonFields(fields, header, legacyMode);
-            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(fields.ToArray());
-        }
-
-        public byte[] Encode(BlockHeader header, bool legacyMode = false)
-        {
-            var fields = new List<byte[]>(GetBaseFields(header));
-            AppendPostLondonFields(fields, header, legacyMode);
-            return RLP.RLP.EncodeDataItemsAsElementOrListAndCombineAsList(fields.ToArray());
-        }
-
-        private static void AppendPostLondonFields(List<byte[]> fields, BlockHeader header, bool legacyMode)
-        {
-            if (legacyMode || header.BaseFee == null) return;
-
-            fields.Add(header.BaseFee.Value.ToBytesForRLPEncoding());
-
-            if (header.WithdrawalsRoot == null) return;
-            fields.Add(header.WithdrawalsRoot);
-
-            if (header.ParentBeaconBlockRoot == null) return;
-            fields.Add((header.BlobGasUsed ?? 0).ToBytesForRLPEncoding());
-            fields.Add((header.ExcessBlobGas ?? 0).ToBytesForRLPEncoding());
-            fields.Add(header.ParentBeaconBlockRoot);
-
-            if (header.RequestsHash != null)
-            {
-                fields.Add(header.RequestsHash);
-            }
+            return new Sha3Keccack().CalculateHash(EncodeCliqueSigHeader(header, legacyMode));
         }
 
         public BlockHeader Decode(byte[] rawdata, bool legacyMode = false)
         {
-            var decodedList = RLP.RLP.Decode(rawdata);
-            var decodedElements = (RLPCollection)decodedList;
+            if (legacyMode) return LegacyBlockHeaderCodec.Instance.Decode(rawdata);
 
-            var blockHeader = new BlockHeader();
-            blockHeader.ParentHash = decodedElements[0].RLPData;
-            blockHeader.UnclesHash = decodedElements[1].RLPData;
-            blockHeader.Coinbase = decodedElements[2].RLPData.ToHex();
-            blockHeader.StateRoot = decodedElements[3].RLPData;
-            blockHeader.TransactionsHash = decodedElements[4].RLPData;
-            blockHeader.ReceiptHash = decodedElements[5].RLPData;
-            blockHeader.LogsBloom = decodedElements[6].RLPData;
-            blockHeader.Difficulty = decodedElements[7].RLPData.ToBigIntegerFromRLPDecoded();
-            blockHeader.BlockNumber = decodedElements[8].RLPData.ToBigIntegerFromRLPDecoded();
-            blockHeader.GasLimit = decodedElements[9].RLPData.ToLongFromRLPDecoded();
-            blockHeader.GasUsed = decodedElements[10].RLPData.ToLongFromRLPDecoded();
-            blockHeader.Timestamp = decodedElements[11].RLPData.ToLongFromRLPDecoded();
-            blockHeader.ExtraData = decodedElements[12].RLPData;
-            blockHeader.MixHash = decodedElements[13].RLPData;
-            blockHeader.Nonce = decodedElements[14].RLPData;
+            var decoded = RLP.RLP.Decode(rawdata) as RLP.RLPCollection;
+            if (decoded == null)
+                throw new ArgumentException("Block header RLP is not a list.", nameof(rawdata));
 
-            if (legacyMode) return blockHeader;
+            var codec = BlockHeaderCodecSelector.ForFieldCount(decoded.Count);
+            if (codec == null)
+                throw new ArgumentException(
+                    $"A block header with {decoded.Count} fields matches no fork this build knows. " +
+                    "Decoding it as the nearest shorter fork would discard the trailing fields, and the " +
+                    "header would then re-encode to different bytes and fail its own hash check.",
+                    nameof(rawdata));
 
-            var count = decodedElements.Count;
+            return codec.Decode(rawdata);
+        }
 
-            // London (16 fields)
-            if (count >= 16)
-            {
-                blockHeader.BaseFee = decodedElements[15].RLPData.ToBigIntegerFromRLPDecoded();
-            }
-
-            // Shanghai (17 fields)
-            if (count >= 17)
-            {
-                blockHeader.WithdrawalsRoot = decodedElements[16].RLPData;
-            }
-
-            // Cancun (20 fields)
-            if (count >= 20)
-            {
-                blockHeader.BlobGasUsed = decodedElements[17].RLPData.ToLongFromRLPDecoded();
-                blockHeader.ExcessBlobGas = decodedElements[18].RLPData.ToLongFromRLPDecoded();
-                blockHeader.ParentBeaconBlockRoot = decodedElements[19].RLPData;
-            }
-
-            // Prague (21 fields)
-            if (count >= 21)
-            {
-                blockHeader.RequestsHash = decodedElements[20].RLPData;
-            }
-
-            return blockHeader;
+        private static IBlockHeaderCodec SelectForEncode(BlockHeader header, bool legacyMode)
+        {
+            return legacyMode
+                ? LegacyBlockHeaderCodec.Instance
+                : BlockHeaderCodecSelector.ForHeader(header);
         }
     }
 }

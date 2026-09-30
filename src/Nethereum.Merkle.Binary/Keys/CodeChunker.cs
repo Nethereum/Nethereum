@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 
 namespace Nethereum.Merkle.Binary.Keys
@@ -8,6 +9,7 @@ namespace Nethereum.Merkle.Binary.Keys
         private const byte Push32 = 0x7f;
         private const byte PushOffset = 0x5f;
 
+        [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie-keys", "Cuts contract code into verifiable 32-byte chunks")]
         public static byte[][] ChunkifyCode(byte[] code)
         {
             if (code == null || code.Length == 0)

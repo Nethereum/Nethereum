@@ -29,7 +29,11 @@ namespace Nethereum.Signer
         /// <summary>
         /// Enables / Disables whilst signing creating a recoverable id, as opposed to afterward. When enabled this uses NBitcoin.Secp256k1 as opposed to BouncyCastle to create the signature.
         /// </summary>
+#if NET8_0_OR_GREATER
+        public static bool SignRecoverable { get; set; } = true;
+#else
         public static bool SignRecoverable { get; set; } = false;
+#endif
 #endif
         public static byte DEFAULT_PREFIX = 0x04;
         private readonly ECKey _ecKey;
@@ -71,6 +75,22 @@ namespace Nethereum.Signer
             var z = agreement.CalculateAgreement(publicKey._ecKey.GetPublicKeyParameters());
 
             return BigIntegers.AsUnsignedByteArray(agreement.GetFieldSize(), z);
+        }
+
+        public byte[] CalculateEcdhSharedPointCompressed(byte[] remoteCompressedPublicKey)
+        {
+            if (remoteCompressedPublicKey == null || remoteCompressedPublicKey.Length != 33)
+                throw new ArgumentException("remote public key must be 33 bytes (compressed)", nameof(remoteCompressedPublicKey));
+            var remotePoint = ECKey.Secp256k1.Curve.DecodePoint(remoteCompressedPublicKey);
+            if (remotePoint == null || remotePoint.IsInfinity)
+                throw new ArgumentException("remote public key is the point at infinity", nameof(remoteCompressedPublicKey));
+            if (!remotePoint.IsValid())
+                throw new ArgumentException("remote public key is not a valid secp256k1 point", nameof(remoteCompressedPublicKey));
+            var privateScalar = new Org.BouncyCastle.Math.BigInteger(1, GetPrivateKeyAsBytes());
+            var sharedPoint = remotePoint.Multiply(privateScalar).Normalize();
+            if (sharedPoint.IsInfinity)
+                throw new ArgumentException("ECDH shared point collapsed to the point at infinity");
+            return sharedPoint.GetEncoded(true);
         }
 
         //Note: Y coordinates can only be forced, so it is assumed 0 and 1 will be the recId (even if implementation allows for 2 and 3)
@@ -137,9 +157,17 @@ namespace Nethereum.Signer
         {
             if (_privateKey == null)
             {
-                _privateKey = _ecKey.PrivateKey.D.ToByteArrayUnsigned();
+                _privateKey = LeftPadTo32(_ecKey.PrivateKey.D.ToByteArrayUnsigned());
             }
             return _privateKey;
+        }
+
+        private static byte[] LeftPadTo32(byte[] value)
+        {
+            if (value.Length >= 32) return value;
+            var padded = new byte[32];
+            Buffer.BlockCopy(value, 0, padded, 32 - value.Length, value.Length);
+            return padded;
         }
 
         public string GetPrivateKey()

@@ -31,31 +31,30 @@ namespace Nethereum.Signer.Bls.Herumi
                 if (!_initialized)
                 {
                     BLS.Init();
-                    MclBindings.mclBn_setETHserialization(0);
                     _initialized = true;
                 }
             }
         }
 
-        public byte[] G1Add(byte[] p1, byte[] p2)
+        public byte[] G1Add(byte[] p1, byte[] p2) => MclSerialization.InEvmMode(() =>
         {
-            MclBindings.MclBnG1 x = DecodeG1(p1);
-            MclBindings.MclBnG1 y = DecodeG1(p2);
+            MclBindings.MclBnG1 x = DecodeG1(p1, requireSubgroup: false);
+            MclBindings.MclBnG1 y = DecodeG1(p2, requireSubgroup: false);
             MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
             MclBindings.mclBnG1_add(ref z, in x, in y);
             return EncodeG1(z);
-        }
+        });
 
-        public byte[] G1Mul(byte[] point, byte[] scalar)
+        public byte[] G1Mul(byte[] point, byte[] scalar) => MclSerialization.InEvmMode(() =>
         {
             MclBindings.MclBnG1 x = DecodeG1(point);
             MclBindings.MclBnFr y = DecodeScalar(scalar);
             MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
             MclBindings.mclBnG1_mul(ref z, in x, in y);
             return EncodeG1(z);
-        }
+        });
 
-        public byte[] G1Msm(byte[][] points, byte[][] scalars)
+        public byte[] G1Msm(byte[][] points, byte[][] scalars) => MclSerialization.InEvmMode(() =>
         {
             if (points.Length != scalars.Length)
             {
@@ -75,27 +74,27 @@ namespace Nethereum.Signer.Bls.Herumi
             MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
             MclBindings.mclBnG1_mulVec(ref z, in array[0], in array2[0], (ulong)points.Length);
             return EncodeG1(z);
-        }
+        });
 
-        public byte[] G2Add(byte[] p1, byte[] p2)
+        public byte[] G2Add(byte[] p1, byte[] p2) => MclSerialization.InEvmMode(() =>
         {
-            MclBindings.MclBnG2 x = DecodeG2(p1);
-            MclBindings.MclBnG2 y = DecodeG2(p2);
+            MclBindings.MclBnG2 x = DecodeG2(p1, requireSubgroup: false);
+            MclBindings.MclBnG2 y = DecodeG2(p2, requireSubgroup: false);
             MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
             MclBindings.mclBnG2_add(ref z, in x, in y);
             return EncodeG2(z);
-        }
+        });
 
-        public byte[] G2Mul(byte[] point, byte[] scalar)
+        public byte[] G2Mul(byte[] point, byte[] scalar) => MclSerialization.InEvmMode(() =>
         {
             MclBindings.MclBnG2 x = DecodeG2(point);
             MclBindings.MclBnFr y = DecodeScalar(scalar);
             MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
             MclBindings.mclBnG2_mul(ref z, in x, in y);
             return EncodeG2(z);
-        }
+        });
 
-        public byte[] G2Msm(byte[][] points, byte[][] scalars)
+        public byte[] G2Msm(byte[][] points, byte[][] scalars) => MclSerialization.InEvmMode(() =>
         {
             if (points.Length != scalars.Length)
             {
@@ -115,9 +114,9 @@ namespace Nethereum.Signer.Bls.Herumi
             MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
             MclBindings.mclBnG2_mulVec(ref z, in array[0], in array2[0], (ulong)points.Length);
             return EncodeG2(z);
-        }
+        });
 
-        public bool Pairing(byte[][] g1Points, byte[][] g2Points)
+        public bool Pairing(byte[][] g1Points, byte[][] g2Points) => MclSerialization.InEvmMode(() =>
         {
             if (g1Points.Length != g2Points.Length)
             {
@@ -138,9 +137,9 @@ namespace Nethereum.Signer.Bls.Herumi
             MclBindings.mclBn_millerLoopVec(ref z, in array[0], in array2[0], (ulong)g1Points.Length);
             MclBindings.mclBn_finalExp(ref z, in z);
             return MclBindings.mclBnGT_isOne(in z) == 1;
-        }
+        });
 
-        public byte[] MapFpToG1(byte[] fp)
+        public byte[] MapFpToG1(byte[] fp) => MclSerialization.InEvmMode(() =>
         {
             if (fp.Length != 64)
             {
@@ -153,9 +152,9 @@ namespace Nethereum.Signer.Bls.Herumi
                 throw new ArgumentException("Failed to map Fp to G1");
             }
             return EncodeG1(y);
-        }
+        });
 
-        public byte[] MapFp2ToG2(byte[] fp2)
+        public byte[] MapFp2ToG2(byte[] fp2) => MclSerialization.InEvmMode(() =>
         {
             if (fp2.Length != 128)
             {
@@ -168,9 +167,9 @@ namespace Nethereum.Signer.Bls.Herumi
                 throw new ArgumentException("Failed to map Fp2 to G2");
             }
             return EncodeG2(y);
-        }
+        });
 
-        private MclBindings.MclBnG1 DecodeG1(byte[] eip2537)
+        private MclBindings.MclBnG1 DecodeG1(byte[] eip2537, bool requireSubgroup = true)
         {
             if (eip2537.Length != 128)
             {
@@ -186,24 +185,29 @@ namespace Nethereum.Signer.Bls.Herumi
             }
             MclBindings.MclBnG1 x2 = default(MclBindings.MclBnG1);
             byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
-            if (MclBindings.mclBnFp_setLittleEndianMod(ref x2.x, array, (ulong)array.Length) != 0)
-            {
-                throw new ArgumentException("Invalid G1 point: failed to set x coordinate");
-            }
             byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
-            if (MclBindings.mclBnFp_setLittleEndianMod(ref x2.y, array2, (ulong)array2.Length) != 0)
+            // EIP-2537 strict Fp decode: every coordinate must be in
+            // [0, p). setLittleEndianMod silently reduces inputs >= p,
+            // accepting points the spec rejects.
+            ulong xOk = MclBindings.mclBnFp_deserialize(ref x2.x, array, (ulong)array.Length);
+            ulong yOk = MclBindings.mclBnFp_deserialize(ref x2.y, array2, (ulong)array2.Length);
+            if (xOk == 0L || yOk == 0L)
             {
-                throw new ArgumentException("Invalid G1 point: failed to set y coordinate");
+                throw new ArgumentException("Invalid G1 point: coordinate not in field");
             }
             MclBindings.mclBnFp_setInt(ref x2.z, 1);
             if (MclBindings.mclBnG1_isValid(in x2) == 0)
             {
-                throw new ArgumentException("Invalid G1 point: not on curve or not in subgroup");
+                throw new ArgumentException("Invalid G1 point: not on curve");
+            }
+            if (requireSubgroup && MclBindings.mclBnG1_isValidOrder(in x2) != 1)
+            {
+                throw new ArgumentException("Invalid G1 point: not in prime-order subgroup");
             }
             return x2;
         }
 
-        private MclBindings.MclBnG2 DecodeG2(byte[] eip2537)
+        private MclBindings.MclBnG2 DecodeG2(byte[] eip2537, bool requireSubgroup = true)
         {
             if (eip2537.Length != 256)
             {
@@ -236,7 +240,11 @@ namespace Nethereum.Signer.Bls.Herumi
             MclBindings.mclBnFp_setInt(ref x2.z.c1, 0);
             if (MclBindings.mclBnG2_isValid(in x2) == 0)
             {
-                throw new ArgumentException("Invalid G2 point: not on curve or not in subgroup");
+                throw new ArgumentException("Invalid G2 point: not on curve");
+            }
+            if (requireSubgroup && MclBindings.mclBnG2_isValidOrder(in x2) != 1)
+            {
+                throw new ArgumentException("Invalid G2 point: not in prime-order subgroup");
             }
             return x2;
         }
@@ -252,8 +260,12 @@ namespace Nethereum.Signer.Bls.Herumi
             {
                 array[i] = eip2537[31 - i];
             }
+            // EIP-2537: scalars are 256-bit integers reduced modulo r.
+            // mclBnFr_deserialize is strict — it rejects values >= r,
+            // which fails legitimate test inputs like max_scalar,
+            // q_times_point and unnormalized_scalar variants.
             MclBindings.MclBnFr x = default(MclBindings.MclBnFr);
-            if (MclBindings.mclBnFr_deserialize(ref x, array, (ulong)array.Length) == 0L)
+            if (MclBindings.mclBnFr_setLittleEndianMod(ref x, array, (ulong)array.Length) != 0)
             {
                 throw new ArgumentException("Invalid scalar");
             }

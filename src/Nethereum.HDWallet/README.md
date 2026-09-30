@@ -1,10 +1,10 @@
-# Nethereum.HDWallet
+# Nethereum.HdWallet
 
 BIP32 and BIP39 hierarchical deterministic (HD) wallet implementation for generating Ethereum-compatible addresses from mnemonic seed phrases.
 
 ## Overview
 
-Nethereum.HDWallet implements **BIP32** (Hierarchical Deterministic Wallets) and **BIP39** (Mnemonic Code for Generating Deterministic Keys) standards to generate an HD tree of Ethereum addresses from a single mnemonic seed phrase. This is the **same standard** used by MetaMask, TREZOR, MyEtherWallet, Ledger, Jaxx, Exodus, and most hardware/software wallets.
+Nethereum.HdWallet implements **BIP32** (Hierarchical Deterministic Wallets) and **BIP39** (Mnemonic Code for Generating Deterministic Keys) standards to generate an HD tree of Ethereum addresses from a single mnemonic seed phrase. This is the **same standard** used by MetaMask, TREZOR, MyEtherWallet, Ledger, Jaxx, Exodus, and most hardware/software wallets.
 
 **Key Features:**
 - Generate 12/15/18/21/24-word mnemonic seed phrases (BIP39)
@@ -24,7 +24,7 @@ Nethereum.HDWallet implements **BIP32** (Hierarchical Deterministic Wallets) and
 ## Installation
 
 ```bash
-dotnet add package Nethereum.HDWallet
+dotnet add package Nethereum.HdWallet
 ```
 
 ## Dependencies
@@ -39,6 +39,7 @@ dotnet add package Nethereum.HDWallet
 
 ```csharp
 using Nethereum.HdWallet;
+using Nethereum.Web3;
 using NBitcoin;
 
 // Generate new wallet with random 12-word seed
@@ -51,7 +52,7 @@ var addresses = wallet.GetAddresses(5);
 var account = wallet.GetAccount(0);
 
 // Use with Web3
-var web3 = new Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 ```
 
 ## BIP32/BIP39 Standards
@@ -108,7 +109,7 @@ var wallet = new Wallet(words, password);
 var account = wallet.GetAccount(0);
 
 // Use with Web3 for transactions
-var web3 = new Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
+var web3 = new Nethereum.Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
 // All addresses derived from this seed will match the original wallet
 ```
@@ -161,6 +162,10 @@ else
 {
     Console.WriteLine("Address not found in first 20 accounts");
 }
+
+// To resume a search from a later index (e.g. paging through accounts), use the
+// 3-argument overload: GetPrivateKey(startIndex, address, maxIndexSearch)
+byte[] privateKeyFromIndex20 = wallet.GetPrivateKey(20, targetAddress, maxIndexSearch: 20);
 ```
 
 ### Example 5: Use Electrum/Ledger Derivation Path
@@ -238,9 +243,10 @@ using NBitcoin;
 
 var wallet = new Wallet(Wordlist.English, WordCount.Twelve);
 
-// Get extended public key (xPub)
+// Get extended public key (xPub). Use ExtPubKey.ToBytes(), NOT ExtPubKey.PubKey.ToBytes() -
+// the latter drops the chain code, so PublicWallet(byte[]) can't reconstruct child keys from it.
 var extPubKey = wallet.GetMasterExtPubKey();
-byte[] xPubBytes = extPubKey.PubKey.ToBytes();
+byte[] xPubBytes = extPubKey.ToBytes();
 
 Console.WriteLine("Extended Public Key: " + xPubBytes.ToHex());
 
@@ -271,12 +277,12 @@ var account = wallet.GetAccount(0, chainId: 1); // 1 = Ethereum mainnet
 // Create Web3 instance with account
 var web3 = new Web3(account, "https://mainnet.infura.io/v3/YOUR-PROJECT-ID");
 
-// Send transaction
+// Send transaction. TransferEtherAndWaitForReceiptAsync returns a TransactionReceipt, not a hash.
 var toAddress = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
-var transactionHash = await web3.Eth.GetEtherTransferService()
+var transactionReceipt = await web3.Eth.GetEtherTransferService()
     .TransferEtherAndWaitForReceiptAsync(toAddress, 0.01m);
 
-Console.WriteLine("Transaction sent: " + transactionHash);
+Console.WriteLine("Transaction mined: " + transactionReceipt.TransactionHash);
 
 // Use different account from same wallet
 var account5 = wallet.GetAccount(5, chainId: 1);
@@ -297,9 +303,12 @@ public class Wallet
     public const string ELECTRUM_LEDGER_PATH = "m/44'/60'/0'/x"; // Electrum, Ledger
 
     // Constructors
-    public Wallet(Wordlist wordList, WordCount wordCount, string seedPassword = null, string path = DEFAULT_PATH);
-    public Wallet(string words, string seedPassword, string path = DEFAULT_PATH);
-    public Wallet(byte[] seed, string path = DEFAULT_PATH);
+    // Every constructor takes a trailing IRandom random = null (NBitcoin.IRandom) so callers
+    // can inject a deterministic/test RNG; when null, RandomNumberGeneratorRandom (or
+    // SecureRandom pre-.NET Standard 2.0) is used to seed NBitcoin's RandomUtils.
+    public Wallet(Wordlist wordList, WordCount wordCount, string seedPassword = null, string path = DEFAULT_PATH, IRandom random = null);
+    public Wallet(string words, string seedPassword, string path = DEFAULT_PATH, IRandom random = null);
+    public Wallet(byte[] seed, string path = DEFAULT_PATH, IRandom random = null);
 
     // Properties
     public string Seed { get; }
@@ -311,6 +320,7 @@ public class Wallet
     public string[] GetAddresses(int numberOfAddresses = 20);
     public byte[] GetPrivateKey(int index);
     public byte[] GetPrivateKey(string address, int maxIndexSearch = 20);
+    public byte[] GetPrivateKey(int startIndex, string address, int maxIndexSearch = 20); // scans indices [startIndex, startIndex + maxIndexSearch)
     public byte[] GetPublicKey(int index);
     public Account GetAccount(int index, BigInteger? chainId = null);
     public Account GetAccount(string address, int maxIndexSearch = 20, BigInteger? chainId = null);
@@ -417,7 +427,6 @@ var depositAddress = publicWallet.GetAddress(customerID);
 ## Related Packages
 
 ### Used By (Consumers)
-- **Nethereum.Accounts** - Account management
 - Wallet applications
 - Multi-sig services
 - Payment processors

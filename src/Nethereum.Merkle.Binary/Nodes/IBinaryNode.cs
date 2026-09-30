@@ -1,5 +1,9 @@
+
+using Nethereum.Documentation;
+
 namespace Nethereum.Merkle.Binary.Nodes
 {
+    [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie", "The one node contract every binary-trie node implements")]
     public interface IBinaryNode
     {
         byte[] Get(byte[] key, NodeResolverFunc resolver);

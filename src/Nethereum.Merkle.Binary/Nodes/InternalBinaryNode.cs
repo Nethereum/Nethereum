@@ -8,6 +8,8 @@ namespace Nethereum.Merkle.Binary.Nodes
         public IBinaryNode Left { get; set; }
         public IBinaryNode Right { get; set; }
         internal int Depth { get; }
+        private byte[] _cachedHash;
+        private bool _dirty = true;
 
         public InternalBinaryNode(int depth)
         {
@@ -33,9 +35,22 @@ namespace Nethereum.Merkle.Binary.Nodes
 
         public IBinaryNode Insert(byte[] key, byte[] value, NodeResolverFunc resolver, int depth)
         {
-            var values = new byte[BinaryTrieConstants.StemNodeWidth][];
-            values[key[BinaryTrieConstants.StemSize]] = value;
-            return InsertValuesAtStem(key, values, resolver, depth);
+            int bit = BinaryTrieUtils.GetBit(key, Depth);
+
+            if (bit == 0)
+            {
+                Left = TryResolve(Left, key, resolver);
+                Left = Left.Insert(key, value, resolver, depth + 1);
+            }
+            else
+            {
+                Right = TryResolve(Right, key, resolver);
+                Right = Right.Insert(key, value, resolver, depth + 1);
+            }
+
+            _dirty = true;
+            _cachedHash = null;
+            return this;
         }
 
         public byte[][] GetValuesAtStem(byte[] stem, NodeResolverFunc resolver)
@@ -71,11 +86,16 @@ namespace Nethereum.Merkle.Binary.Nodes
                 Right = Right.InsertValuesAtStem(stem, values, resolver, depth + 1);
             }
 
+            _dirty = true;
+            _cachedHash = null;
             return this;
         }
 
         public byte[] ComputeHash(IHashProvider hashProvider)
         {
+            if (!_dirty && _cachedHash != null)
+                return _cachedHash;
+
             var leftHash = Left.ComputeHash(hashProvider);
             var rightHash = Right.ComputeHash(hashProvider);
 
@@ -83,7 +103,9 @@ namespace Nethereum.Merkle.Binary.Nodes
             Array.Copy(leftHash, 0, pair, 0, BinaryTrieConstants.HashSize);
             Array.Copy(rightHash, 0, pair, BinaryTrieConstants.HashSize, BinaryTrieConstants.HashSize);
 
-            return hashProvider.ComputeHash(pair);
+            _cachedHash = Hashing.BinaryTrieHash.Compute(hashProvider, pair);
+            _dirty = false;
+            return _cachedHash;
         }
 
         public IBinaryNode Copy()

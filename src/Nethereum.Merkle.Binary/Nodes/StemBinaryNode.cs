@@ -9,6 +9,9 @@ namespace Nethereum.Merkle.Binary.Nodes
         public byte[] Stem { get; }
         public byte[][] Values { get; }
         internal int Depth { get; private set; }
+        private byte[] _cachedHash;
+        private bool _dirty = true;
+        private readonly CachedValuesMerkleizer _valuesMerkle = new CachedValuesMerkleizer();
 
         public StemBinaryNode(byte[] stem, byte[][] values, int depth)
         {
@@ -32,7 +35,11 @@ namespace Nethereum.Merkle.Binary.Nodes
             if (value != null && value.Length != BinaryTrieConstants.HashSize)
                 throw new ArgumentException("Value must be 32 bytes");
 
-            Values[key[BinaryTrieConstants.StemSize]] = value;
+            var subIndex = key[BinaryTrieConstants.StemSize];
+            Values[subIndex] = value;
+            _valuesMerkle.MarkDirty(subIndex);
+            _dirty = true;
+            _cachedHash = null;
             return this;
         }
 
@@ -51,21 +58,31 @@ namespace Nethereum.Merkle.Binary.Nodes
             for (int i = 0; i < values.Length && i < BinaryTrieConstants.StemNodeWidth; i++)
             {
                 if (values[i] != null)
+                {
                     Values[i] = values[i];
+                    _valuesMerkle.MarkDirty(i);
+                }
             }
+            _dirty = true;
+            _cachedHash = null;
             return this;
         }
 
         public byte[] ComputeHash(IHashProvider hashProvider)
         {
-            var valuesRoot = ValuesMerkleizer.Merkleize(Values, hashProvider);
+            if (!_dirty && _cachedHash != null)
+                return _cachedHash;
+
+            var valuesRoot = _valuesMerkle.ComputeRoot(Values, hashProvider);
 
             var preimage = new byte[BinaryTrieConstants.StemSize + 1 + BinaryTrieConstants.HashSize];
             Array.Copy(Stem, 0, preimage, 0, BinaryTrieConstants.StemSize);
             preimage[BinaryTrieConstants.StemSize] = 0;
             Array.Copy(valuesRoot, 0, preimage, BinaryTrieConstants.StemSize + 1, BinaryTrieConstants.HashSize);
 
-            return hashProvider.ComputeHash(preimage);
+            _cachedHash = Hashing.BinaryTrieHash.Compute(hashProvider, preimage);
+            _dirty = false;
+            return _cachedHash;
         }
 
         public IBinaryNode Copy()

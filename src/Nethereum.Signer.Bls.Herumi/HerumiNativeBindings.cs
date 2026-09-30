@@ -6,9 +6,6 @@ using mcl;
 
 namespace Nethereum.Signer.Bls.Herumi
 {
-    /// <summary>
-    /// Adapter that wires the Herumi/MCL ETH-mode bindings into <see cref="INativeBlsBindings"/>.
-    /// </summary>
     public class HerumiNativeBindings : INativeBlsBindings
     {
         private static readonly object InitLock = new object();
@@ -41,7 +38,7 @@ namespace Nethereum.Signer.Bls.Herumi
             return Task.CompletedTask;
         }
 
-        public bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain)
+        public bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain) => MclSerialization.InEthMode(() =>
         {
             if (aggregateSignature == null || aggregateSignature.Length == 0)
             {
@@ -76,7 +73,7 @@ namespace Nethereum.Signer.Bls.Herumi
 
             var msgVector = PrepareMessageVector(messages);
             return BLS.AggregateVerify(in signature, in herumiPublicKeys, in msgVector);
-        }
+        });
 
         private static BLS.Signature DeserializeSignature(byte[] payload)
         {
@@ -140,7 +137,7 @@ namespace Nethereum.Signer.Bls.Herumi
             return msgVector;
         }
 
-        public byte[] AggregateSignatures(byte[][] signatures)
+        public byte[] AggregateSignatures(byte[][] signatures) => MclSerialization.InEthMode(() =>
         {
             if (signatures == null || signatures.Length == 0)
             {
@@ -160,9 +157,9 @@ namespace Nethereum.Signer.Bls.Herumi
             }
 
             return aggregated.Serialize();
-        }
+        });
 
-        public bool Verify(byte[] signature, byte[] publicKey, byte[] message)
+        public bool Verify(byte[] signature, byte[] publicKey, byte[] message) => MclSerialization.InEthMode(() =>
         {
             if (signature == null || signature.Length == 0)
             {
@@ -188,6 +185,6 @@ namespace Nethereum.Signer.Bls.Herumi
             pk.Deserialize(publicKey);
 
             return pk.Verify(sig, message);
-        }
+        });
     }
 }

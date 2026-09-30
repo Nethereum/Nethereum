@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +7,7 @@ using Nethereum.Util.HashProviders;
 
 namespace Nethereum.Merkle
 {
+    [NethereumDocExample(DocSection.SmartContracts, "incremental-merkle-tree", "Append-only fixed-depth tree keeping only the right-hand frontier")]
     public class FrontierMerkleTree
     {
         private readonly int _depth;

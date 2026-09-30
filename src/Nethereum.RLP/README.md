@@ -271,9 +271,9 @@ using Nethereum.RLP;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 // List containing short and long strings
-string short = "cat";
-string long = "Lorem ipsum dolor sit amet, consectetur adipisicing elit";
-string[] mixed = { short, long };
+string shortStr = "cat";
+string longStr = "Lorem ipsum dolor sit amet, consectetur adipisicing elit";
+string[] mixed = { shortStr, longStr };
 
 byte[][] mixedBytes = mixed.ToBytesForRLPEncoding();
 
@@ -294,7 +294,7 @@ Assert.Equal(
 // Decode back
 RLPCollection decoded = RLP.Decode(encodedList) as RLPCollection;
 Assert.Equal("cat", decoded[0].RLPData.ToStringFromRLPDecoded());
-Assert.Equal(long, decoded[1].RLPData.ToStringFromRLPDecoded());
+Assert.Equal(longStr, decoded[1].RLPData.ToStringFromRLPDecoded());
 ```
 
 ### Example 7: Multiple String List
@@ -368,12 +368,10 @@ public class RLP
     public static byte[] EncodeList(params byte[][] elements);
 
     // Decoding
-    public static IRLPElement Decode(byte[] data);
-    public static IRLPElement Decode(byte[] data, int position);
+    public static IRLPElement Decode(byte[] msgData);
 
     // Utilities
     public static int ByteArrayToInt(byte[] bytes);
-    public static byte[] IntToByteArray(int value);
 }
 ```
 
@@ -406,7 +404,7 @@ Represents a list of RLP elements (can be nested).
 ```csharp
 public class RLPCollection : List<IRLPElement>, IRLPElement
 {
-    public byte[] RLPData { get; }
+    public byte[] RLPData { get; set; }
 
     // List operations via base class
     public int Count { get; }
@@ -450,7 +448,6 @@ RLP is used throughout Nethereum for Ethereum data encoding:
 - **Nethereum.Util** - Address derivation uses RLP encoding
 - **Nethereum.Merkle.Patricia** - Patricia Merkle Trie uses RLP for nodes
 - **Nethereum.RPC** - Some RPC methods work with RLP-encoded data
-- **Nethereum.Consensus** - Consensus layer data structures use RLP
 
 ### Dependencies
 

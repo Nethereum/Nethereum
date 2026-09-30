@@ -12,50 +12,64 @@ namespace Nethereum.Signer.Crypto.BN128
     {
         public static readonly BigInteger P = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
 
-        public BigInteger A { get; private set; }
-        public BigInteger B { get; private set; }
+        private static readonly Fp Nine = Fp.FromBigInteger(BigInteger.ValueOf(9));
+
+        private Fp _a;
+        private Fp _b;
+
+        public BigInteger A => _a.ToBigInteger();
+        public BigInteger B => _b.ToBigInteger();
+
+        internal Fp AF => _a;
+        internal Fp BF => _b;
 
         public Fp2()
         {
-            A = BigInteger.Zero;
-            B = BigInteger.Zero;
+            _a = Fp.Zero;
+            _b = Fp.Zero;
         }
 
         public Fp2(BigInteger a, BigInteger b)
         {
-            A = a.Mod(P);
-            B = b.Mod(P);
+            _a = Fp.FromBigInteger(a);
+            _b = Fp.FromBigInteger(b);
+        }
+
+        internal Fp2(Fp a, Fp b)
+        {
+            _a = a;
+            _b = b;
         }
 
         public Fp2 Set(Fp2 other)
         {
-            A = other.A;
-            B = other.B;
+            _a = other._a;
+            _b = other._b;
             return this;
         }
 
         public Fp2 SetZero()
         {
-            A = BigInteger.Zero;
-            B = BigInteger.Zero;
+            _a = Fp.Zero;
+            _b = Fp.Zero;
             return this;
         }
 
         public Fp2 SetOne()
         {
-            A = BigInteger.Zero;
-            B = BigInteger.One;
+            _a = Fp.Zero;
+            _b = Fp.One;
             return this;
         }
 
         public bool IsZero()
         {
-            return A.Equals(BigInteger.Zero) && B.Equals(BigInteger.Zero);
+            return _a.IsZero && _b.IsZero;
         }
 
         public bool IsOne()
         {
-            return A.Equals(BigInteger.Zero) && B.Equals(BigInteger.One);
+            return _a.IsZero && _b.Equals(Fp.One);
         }
 
         /// <summary>
@@ -63,8 +77,8 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Add(Fp2 x, Fp2 y)
         {
-            A = x.A.Add(y.A).Mod(P);
-            B = x.B.Add(y.B).Mod(P);
+            _a = x._a.Add(y._a);
+            _b = x._b.Add(y._b);
             return this;
         }
 
@@ -73,8 +87,8 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Sub(Fp2 x, Fp2 y)
         {
-            A = x.A.Subtract(y.A).Mod(P);
-            B = x.B.Subtract(y.B).Mod(P);
+            _a = x._a.Sub(y._a);
+            _b = x._b.Sub(y._b);
             return this;
         }
 
@@ -83,8 +97,8 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Neg(Fp2 x)
         {
-            A = x.A.Negate().Mod(P);
-            B = x.B.Negate().Mod(P);
+            _a = x._a.Neg();
+            _b = x._b.Neg();
             return this;
         }
 
@@ -93,8 +107,8 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Conjugate(Fp2 x)
         {
-            A = x.A.Negate().Mod(P);
-            B = x.B;
+            _a = x._a.Neg();
+            _b = x._b;
             return this;
         }
 
@@ -105,14 +119,11 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Mul(Fp2 x, Fp2 y)
         {
-            // tx = a1*b2 + a2*b1 (imaginary part coefficient)
-            var tx = x.A.Multiply(y.B).Add(y.A.Multiply(x.B)).Mod(P);
+            var tx = x._a.Mul(y._b).Add(y._a.Mul(x._b));
+            var ty = x._b.Mul(y._b).Sub(x._a.Mul(y._a));
 
-            // ty = b1*b2 - a1*a2 (real part)
-            var ty = x.B.Multiply(y.B).Subtract(x.A.Multiply(y.A)).Mod(P);
-
-            A = tx;
-            B = ty;
+            _a = tx;
+            _b = ty;
             return this;
         }
 
@@ -122,18 +133,15 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Square(Fp2 x)
         {
-            // t1 = b - a
-            var t1 = x.B.Subtract(x.A);
-            // t2 = b + a
-            var t2 = x.B.Add(x.A);
-            // ty = (b-a)(b+a) = b² - a²
-            var ty = t1.Multiply(t2).Mod(P);
+            var t1 = x._b.Sub(x._a);
+            var t2 = x._b.Add(x._a);
+            var ty = t1.Mul(t2);
 
-            // tx = 2*a*b
-            var tx = x.A.Multiply(x.B).ShiftLeft(1).Mod(P);
+            var ab = x._a.Mul(x._b);
+            var tx = ab.Add(ab);
 
-            A = tx;
-            B = ty;
+            _a = tx;
+            _b = ty;
             return this;
         }
 
@@ -142,27 +150,26 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 Invert(Fp2 x)
         {
-            // t = a² + b²
-            var t = x.B.Multiply(x.B).Add(x.A.Multiply(x.A)).Mod(P);
+            var t = x._b.Mul(x._b).Add(x._a.Mul(x._a));
 
-            // inv = 1/t mod P
-            var inv = t.ModInverse(P);
+            var inv = t.Inv();
 
-            // result = (-a + b*i) * inv
-            A = x.A.Negate().Multiply(inv).Mod(P);
-            B = x.B.Multiply(inv).Mod(P);
+            _a = x._a.Neg().Mul(inv);
+            _b = x._b.Mul(inv);
             return this;
         }
 
         /// <summary>
         /// Multiplies by a scalar from Fp.
         /// </summary>
-        public Fp2 MulScalar(Fp2 x, BigInteger k)
+        public Fp2 MulScalar(Fp2 x, Fp k)
         {
-            A = x.A.Multiply(k).Mod(P);
-            B = x.B.Multiply(k).Mod(P);
+            _a = x._a.Mul(k);
+            _b = x._b.Mul(k);
             return this;
         }
+
+        public Fp2 MulScalar(Fp2 x, BigInteger k) => MulScalar(x, Fp.FromBigInteger(k));
 
         /// <summary>
         /// Multiplies by xi = i + 9, which is the non-residue used in the tower.
@@ -173,31 +180,30 @@ namespace Nethereum.Signer.Crypto.BN128
         /// </summary>
         public Fp2 MulXi(Fp2 x)
         {
-            var nine = BigInteger.ValueOf(9);
-            var newA = x.A.Multiply(nine).Add(x.B).Mod(P);
-            var newB = x.B.Multiply(nine).Subtract(x.A).Mod(P);
-            A = newA;
-            B = newB;
+            var newA = x._a.Mul(Nine).Add(x._b);
+            var newB = x._b.Mul(Nine).Sub(x._a);
+            _a = newA;
+            _b = newB;
             return this;
         }
 
         public Fp2 Copy()
         {
-            return new Fp2(A, B);
+            return new Fp2(_a, _b);
         }
 
         public override bool Equals(object obj)
         {
             if (obj is Fp2 other)
             {
-                return A.Equals(other.A) && B.Equals(other.B);
+                return _a.Equals(other._a) && _b.Equals(other._b);
             }
             return false;
         }
 
         public override int GetHashCode()
         {
-            return A.GetHashCode() ^ B.GetHashCode();
+            return _a.GetHashCode() ^ _b.GetHashCode();
         }
 
         public override string ToString()

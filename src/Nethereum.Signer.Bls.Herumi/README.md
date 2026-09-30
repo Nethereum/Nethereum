@@ -7,12 +7,12 @@ Native Herumi BLS implementation for Ethereum consensus layer (Beacon Chain) sig
 Nethereum.Signer.Bls.Herumi provides a **production-ready native implementation** of BLS (Boneh-Lynn-Shacham) signatures using the Herumi BLS library. This is the recommended implementation for verifying Ethereum consensus layer signatures (sync committees, validator attestations, light clients).
 
 **Key Features:**
-- Native Herumi BLS library (MCL/BLST backend)
+- Native Herumi BLS library (MCL backend)
 - High-performance BLS12-381 operations
-- Cross-platform support (Windows, Linux, macOS)
+- Cross-platform support (Windows, Linux, macOS, Android)
 - Ethereum 2.0 sync committee verification
+- EIP-2537 BLS12-381 precompile operations (`Bls12381Operations`)
 - Light client signature verification
-- Production-tested in Ethereum infrastructure
 
 **Use Cases:**
 - Light clients (verify beacon chain without full node)
@@ -27,9 +27,9 @@ Nethereum.Signer.Bls.Herumi provides a **production-ready native implementation*
 dotnet add package Nethereum.Signer.Bls.Herumi
 ```
 
-**Platform Support:**
-- Windows (x64)
-- Linux (x64)
+**Platform Support:** the package bundles native binaries under `runtimes/<rid>/native/` for
+6 RIDs: `win-x64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, `android-arm64`.
+`BlsNativeLibraryResolver` resolves the platform-specific library name at load time.
 
 ## Dependencies
 
@@ -81,7 +81,7 @@ public class NativeBls : IBls
 }
 ```
 
-- `VerifyAggregate` — verifies an aggregate BLS signature over one or more messages using ETH2-style domain separation.
+- `VerifyAggregate` — verifies an aggregate signature over 32-byte signing roots; the `domain` argument is only length-checked (32 bytes when supplied) by `HerumiNativeBindings`.
 - `AggregateSignatures` — combines multiple BLS signatures into a single aggregated signature (used for ERC-4337 BLS aggregation).
 - `Verify` — verifies an individual BLS signature over a single message.
 - `ExtractSignatureAndPublicKey` — splits a combined `signatureWithPubKey` byte array into the 96-byte signature and 48-byte public key.
@@ -93,10 +93,40 @@ Low-level native Herumi BLS bindings implementing `INativeBlsBindings`. Used int
 ```csharp
 public class HerumiNativeBindings : INativeBlsBindings
 {
-    public Task EnsureAvailableAsync(CancellationToken cancellationToken = default);
+    // No default value on the token - it is a required parameter (INativeBlsBindings member)
+    public Task EnsureAvailableAsync(CancellationToken cancellationToken);
     public bool VerifyAggregate(byte[] aggregateSignature, byte[][] publicKeys, byte[][] messages, byte[] domain);
     public byte[] AggregateSignatures(byte[][] signatures);
     public bool Verify(byte[] signature, byte[] publicKey, byte[] message);
+}
+```
+
+Note `HerumiNativeBindings` does not implement `ExtractSignatureAndPublicKey` — that member lives only
+on `IBls`/`NativeBls` (it is pure byte slicing and needs no native call).
+
+### Bls12381Operations
+
+Implements `IBls12381Operations` (from `Nethereum.Signer.Bls`) — the EIP-2537 BLS12-381 precompile
+primitives consumed by `Nethereum.EVM.Precompiles.Bls`. Distinct from `NativeBls`/`IBls`: this is
+point/scalar arithmetic on raw EIP-2537-encoded G1/G2 points, not signature aggregation/verification.
+
+```csharp
+public class Bls12381Operations : IBls12381Operations
+{
+    public Bls12381Operations();
+
+    public byte[] G1Add(byte[] p1, byte[] p2);
+    public byte[] G1Mul(byte[] point, byte[] scalar);
+    public byte[] G1Msm(byte[][] points, byte[][] scalars);
+
+    public byte[] G2Add(byte[] p1, byte[] p2);
+    public byte[] G2Mul(byte[] point, byte[] scalar);
+    public byte[] G2Msm(byte[][] points, byte[][] scalars);
+
+    public bool Pairing(byte[][] g1Points, byte[][] g2Points);
+
+    public byte[] MapFpToG1(byte[] fp);
+    public byte[] MapFp2ToG2(byte[] fp2);
 }
 ```
 
@@ -120,48 +150,44 @@ Ethereum consensus layer uses domain types to prevent cross-context signature re
 | RANDAO | `0x02000000` | Randomness reveals |
 | Sync Committee | `0x07000000` | Light client sync |
 
-These domain bytes are passed to BLS signing/verification as the `domain` parameter.
+The `domain` argument is validated (32 bytes when non-empty) but not applied by the bindings — compute the signing root, including the domain, before calling.
 
 ### Native Library Loading
 
-The package includes native binaries in the `runtimes/` folder:
+The package includes native binaries under `runtimes/<rid>/native/` for all 6 supported RIDs, e.g.:
 
 ```
 runtimes/
   win-x64/native/bls_eth.dll
   win-x64/native/mcl.dll
   linux-x64/native/libbls_eth.so
+  linux-arm64/native/libbls_eth.so
+  osx-x64/native/libbls_eth.dylib
+  osx-arm64/native/libbls_eth.dylib
+  android-arm64/native/libbls_eth.so
 ```
 
-.NET automatically loads the correct native library for your platform.
-
-### Performance
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| **Init** | ~10ms | One-time initialization |
-| **Verify 1 sig** | ~5ms | Single signature |
-| **Verify 512 aggregate** | ~70ms | Sync committee (modern CPU) |
-| **Verify 1000 aggregate** | ~130ms | Large aggregation |
-
-**Optimization Tips:**
-- Initialize once and reuse `NativeBls` instance
-- Aggregate verification is much faster than N individual verifications
-- Use cached domain values
+`BlsNativeLibraryResolver` (registered via `[ModuleInitializer]`) intercepts the `DllImport("bls_eth")`
+calls in `bls_eth.cs` and resolves them to the platform-specific file name, since plain `DllImport`
+resolution does not work on Android.
 
 ### Thread Safety
 
-`NativeBls` is **thread-safe** after initialization:
+All Herumi/MCL calls (`HerumiNativeBindings`, `Bls12381Operations`) are serialized through a single
+process-wide lock in `MclSerialization` (`InEthMode`/`InEvmMode`), because MCL's serialization mode and
+subgroup-check policy are process-global and shared between ETH2 (`NativeBls`) and EVM precompile
+(`Bls12381Operations`) callers. This makes concurrent calls safe, but it also means calls do not run in
+parallel — there is no throughput speed-up from calling BLS operations off multiple threads.
 
 ```csharp
 // Initialize once
 var bls = new NativeBls(new HerumiNativeBindings());
 await bls.InitializeAsync();
 
-// Safe to use from multiple threads
+// Safe to call concurrently, but calls are serialized internally by MclSerialization
 Parallel.For(0, 100, i =>
 {
-    var isValid = bls.VerifyAggregate(...);
+    var isValid = bls.VerifyAggregate(aggregateSig, publicKeys, messages, domain);
 });
 ```
 
@@ -172,30 +198,30 @@ try
 {
     await bls.InitializeAsync();
 }
-catch (DllNotFoundException ex)
+catch (PlatformNotSupportedException ex)
 {
-    // Native library not found for platform
+    // BLS.Init(): wrong curve type, or not a 64-bit process
     Console.WriteLine($"Platform not supported: {ex.Message}");
 }
-catch (InvalidOperationException ex)
+catch (ArgumentException ex)
 {
-    // BLS library initialization failed
+    // BLS.Init(): native blsInit() call failed ("blsInit")
     Console.WriteLine($"BLS init failed: {ex.Message}");
 }
 
 // Verification errors
 try
 {
-    var isValid = bls.VerifyAggregate(...);
+    var isValid = bls.VerifyAggregate(aggregateSig, publicKeys, messages, domain);
 }
 catch (ArgumentException ex)
 {
-    // Invalid input (wrong sizes, null arrays)
+    // Invalid input (wrong sizes, null/empty arrays) - thrown by HerumiNativeBindings
     Console.WriteLine($"Invalid input: {ex.Message}");
 }
 catch (InvalidOperationException ex)
 {
-    // Not initialized
+    // Not initialized - thrown by NativeBls before InitializeAsync has completed
     Console.WriteLine($"Call InitializeAsync first: {ex.Message}");
 }
 ```
@@ -206,20 +232,26 @@ catch (InvalidOperationException ex)
 - Requires Visual C++ Redistributable (usually pre-installed)
 - Includes both `bls_eth.dll` and `mcl.dll`
 
-### Linux (x64)
+### Linux (x64 / arm64)
 - Works on most distros (Ubuntu, Debian, Fedora, Alpine)
 - May require `libstdc++6` on some systems
 - Uses `libbls_eth.so`
+
+### macOS (x64 / arm64) and Android (arm64)
+- Uses `libbls_eth.dylib` (macOS) / `libbls_eth.so` (Android)
+- Android resolution goes through `BlsNativeLibraryResolver` and the `buildTransitive/*.targets`
+  file that registers the library as an `AndroidNativeLibrary` in the APK
 
 ## Related Packages
 
 ### Dependencies
 - **Nethereum.Signer.Bls** - Core BLS abstraction
 
-### Used By
-- **Nethereum.Consensus.Ssz** - SSZ encoding
-- Light client implementations
-- Beacon chain verification tools
+### Used By (per `ProjectReference`/`PackageReference` in `src/`)
+- **Nethereum.Node.HarnessServer** - `ProjectReference`
+- **Nethereum.AccountAbstraction.Bundler** - `PackageReference`
+- **Nethereum.Wallet** - `PackageReference`
+- **Nethereum.MainnetChain** / **Nethereum.MainnetChain.Server** - `PackageReference`
 
 ## Developer Guide: Native Library Packaging
 

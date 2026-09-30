@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Nethereum.Util.Keccak
 {
-    internal class KeccakDigest
+    public class KeccakDigest
     {
         private static readonly ulong[] KeccakRoundConstants = KeccakInitializeRoundConstants();
 

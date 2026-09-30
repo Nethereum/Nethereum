@@ -5,6 +5,7 @@ using Nethereum.Merkle.Binary.Hashing;
 using Nethereum.Merkle.Binary.Nodes;
 using Nethereum.Merkle.Binary.Proofs;
 using Nethereum.Util.HashProviders;
+using Nethereum.Documentation;
 using Xunit;
 
 namespace Nethereum.Merkle.Binary.Tests
@@ -31,6 +32,7 @@ namespace Nethereum.Merkle.Binary.Tests
             return new BinaryTrie(hp ?? new Sha256HashProvider());
         }
 
+        [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie-proofs", "Build a binary-trie proof and verify it against the root", Order = 1)]
         [Fact]
         [Trait("Category", "Proofs")]
         public void Proof_SingleEntry_Verifies()
@@ -89,6 +91,7 @@ namespace Nethereum.Merkle.Binary.Tests
             Assert.Null(result);
         }
 
+        [NethereumDocExample(DocSection.ChainInfrastructure, "binary-trie-proofs", "A tampered proof node fails verification", Order = 2)]
         [Fact]
         [Trait("Category", "Proofs")]
         public void Proof_TamperedNode_FailsVerification()

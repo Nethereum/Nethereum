@@ -224,43 +224,56 @@ Assert.Equal(ecKey.GetPrivateKey(), key.ToHex(true));
 
 ## API Reference
 
-### KeyStoreScryptService
+### KeyStoreServiceBase&lt;T&gt;
 
-Scrypt-based keystore encryption (recommended).
+`KeyStoreScryptService` and `KeyStorePbkdf2Service` are thin subclasses of this abstract base
+(`T : KdfParams`) — almost every method below is inherited, not redeclared per-KDF. Note the
+`EncryptAndGenerateKeyStoreAsJson` overloads take the address parameter as `addresss` (a real
+typo in the shipped signature, kept for source compatibility); the object-returning
+`EncryptAndGenerateKeyStore` overloads spell it correctly as `address`.
 
 ```csharp
-public class KeyStoreScryptService
+public abstract class KeyStoreServiceBase<T> : IKeyStoreService<T> where T : KdfParams
 {
-    // Encrypt and generate JSON (default parameters)
-    public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string address);
+    public const int CurrentVersion = 3;
 
-    // Encrypt with default Scrypt parameters
-    public KeyStore<ScryptParams> EncryptAndGenerateKeyStore(
-        string password, byte[] privateKey, string address);
+    // Key store (private key) encryption
+    public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address);
+    public KeyStore<T> EncryptAndGenerateKeyStore(string password, byte[] privateKey, string address, T kdfParams);
+    public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss);
+    public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss, T kdfParams);
 
-    // Encrypt with custom Scrypt parameters
-    public KeyStore<ScryptParams> EncryptAndGenerateKeyStore(
-        string password, byte[] privateKey, string address, ScryptParams kdfParams);
-
-    // Encrypt with custom parameters directly to JSON
-    public string EncryptAndGenerateKeyStoreAsJson(
-        string password, byte[] privateKey, string address, ScryptParams kdfParams);
-
-    // Serialize keystore to JSON
-    public string SerializeKeyStoreToJson(KeyStore<ScryptParams> keyStore);
-
-    // Deserialize JSON to keystore
-    public KeyStore<ScryptParams> DeserializeKeyStoreFromJson(string json);
-
-    // Decrypt from JSON
     public byte[] DecryptKeyStoreFromJson(string password, string json);
+    public virtual byte[] DecryptKeyStore(string password, KeyStore<T> keyStore);
 
-    // Decrypt from keystore object
-    public byte[] DecryptKeyStore(string password, KeyStore<ScryptParams> keyStore);
+    public abstract KeyStore<T> DeserializeKeyStoreFromJson(string json);   // overridden per-KDF
+    public abstract string SerializeKeyStoreToJson(KeyStore<T> keyStore);  // overridden per-KDF
+    public abstract string GetKdfType();                                  // "scrypt" / "pbkdf2"
+    public virtual string GetCipherType(); // "aes-128-ctr"
+
+    // Generic payload (arbitrary byte[]/string) encryption - same KDF/cipher, no "address" field
+    public CryptoStore<T> EncryptAndGenerateCryptoStore(string password, byte[] payload);
+    public CryptoStore<T> EncryptAndGenerateCryptoStore(string password, byte[] payload, T kdfParams);
+    public string EncryptAndGenerateCryptoStoreAsJson(string password, byte[] payload);
+    public string EncryptAndGenerateCryptoStoreFromStringAsJson(string password, string payload);
+    public byte[] DecryptCryptoStoreFromJson(string password, string json);
+    public byte[] DecryptCryptoStore(string password, CryptoStore<T> cryptoStore);
 }
 ```
 
-**Default Scrypt Parameters:**
+### KeyStoreScryptService : KeyStoreServiceBase&lt;ScryptParams&gt;
+
+Scrypt-based keystore encryption (recommended). Adds only the KDF-specific pieces; everything
+else above is inherited unchanged.
+
+```csharp
+public class KeyStoreScryptService : KeyStoreServiceBase<ScryptParams>
+{
+    public const string KdfType = "scrypt";
+}
+```
+
+**Default Scrypt Parameters** (`GetDefaultParams()`):
 ```csharp
 N = 262144  // CPU/memory cost (2^18)
 R = 1       // Block size
@@ -268,77 +281,119 @@ P = 8       // Parallelization
 Dklen = 32  // Derived key length
 ```
 
-### KeyStorePbkdf2Service
+### KeyStorePbkdf2Service : KeyStoreServiceBase&lt;Pbkdf2Params&gt;
 
-PBKDF2-based keystore encryption (legacy).
+PBKDF2-based keystore encryption (legacy). Same relationship to the base class as
+`KeyStoreScryptService`.
 
 ```csharp
-public class KeyStorePbkdf2Service
+public class KeyStorePbkdf2Service : KeyStoreServiceBase<Pbkdf2Params>
 {
-    // Same methods as KeyStoreScryptService but using PBKDF2
-    public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string address);
-    public KeyStore<Pbkdf2Params> DeserializeKeyStoreFromJson(string json);
-    public byte[] DecryptKeyStoreFromJson(string password, string json);
-    public byte[] DecryptKeyStore(string password, KeyStore<Pbkdf2Params> keyStore);
+    public const string KdfType = "pbkdf2";
 }
+```
+
+**Default PBKDF2 Parameters** (`GetDefaultParams()`):
+```csharp
+Count = 262144      // Iteration count
+Prf = "hmac-sha256"
+Dklen = 32          // Derived key length
 ```
 
 ### KeyStoreService
 
-Unified service with default encryption.
+Unified service: wraps a `KeyStoreScryptService` + `KeyStorePbkdf2Service` + `KeyStoreKdfChecker`
+internally, and also carries the file-naming/address-extraction and raw-payload-encryption helpers
+that are NOT on `KeyStoreServiceBase<T>`.
 
 ```csharp
 public class KeyStoreService
 {
-    // Encrypt with default Scrypt parameters
-    public string EncryptAndGenerateDefaultKeyStoreAsJson(string password, byte[] privateKey, string address);
+    public KeyStoreService();
+    public KeyStoreService(KeyStoreKdfChecker keyStoreKdfChecker, KeyStoreScryptService keyStoreScryptService,
+        KeyStorePbkdf2Service keyStorePbkdf2Service);
 
-    // Decrypt (auto-detects KDF type)
+    // Encrypt with default Scrypt parameters
+    public string EncryptAndGenerateDefaultKeyStoreAsJson(string password, byte[] key, string address);
+
+    // Decrypt (auto-detects KDF type via KeyStoreKdfChecker)
     public byte[] DecryptKeyStoreFromJson(string password, string json);
+#if !PCL
+    public byte[] DecryptKeyStoreFromFile(string password, string filePath);
+#endif
+
+    // Read the "address" field straight out of a keystore JSON document, without deserializing it fully
+    public string GetAddressFromKeyStore(string json);
+
+    // "UTC--<ISO8601 with ':' replaced by '-'>--<address without 0x>", the standard Ethereum
+    // keystore file-naming convention
+    public string GenerateUTCFileName(string address);
+
+    // Generic payload encryption (delegates to the internal KeyStoreScryptService's
+    // CryptoStore<ScryptParams> methods - no address field, just password + payload)
+    public string EncryptPayloadAsJson(string password, byte[] data);
+    public string EncryptPayloadFromStringAsJson(string password, string data);
+    public byte[] DecryptPayloadFromJson(string password, string json);
+    public string DecryptPayloadToUtf8String(string password, string json);
 }
 ```
 
 ### KeyStoreKdfChecker
 
-Detect KDF type from JSON.
+Detect KDF type from JSON. This is the only detection API — there is no `IsScryptKdf`/`IsPbkdf2Kdf`.
 
 ```csharp
 public class KeyStoreKdfChecker
 {
     public enum KdfType { scrypt, pbkdf2 }
 
+    // Throws if "crypto.kdf" is missing or is neither "scrypt" nor "pbkdf2"
     public KdfType GetKeyStoreKdfType(string json);
-    public bool IsScryptKdf(string json);
-    public bool IsPbkdf2Kdf(string json);
 }
 ```
 
 ### Model Classes
 
+`ScryptParams` and `Pbkdf2Params` both derive from `KdfParams`, which carries `Dklen`/`Salt`;
+`N`/`R`/`P` and `Count`/`Prf` live on the subclasses. Note `Pbkdf2Params.Count` (JSON `"c"`), not `C`.
+
 ```csharp
-public class ScryptParams
+public class KdfParams
 {
+    [JsonProperty("dklen")]
     public int Dklen { get; set; }  // Derived key length (32)
+
+    [JsonProperty("salt")]
+    public string Salt { get; set; } // Random salt (hex)
+}
+
+public class ScryptParams : KdfParams
+{
+    [JsonProperty("n")]
     public int N { get; set; }      // CPU/memory cost (262144)
+
+    [JsonProperty("r")]
     public int R { get; set; }      // Block size (1)
+
+    [JsonProperty("p")]
     public int P { get; set; }      // Parallelization (8)
-    public string Salt { get; set; } // Random salt (hex)
 }
 
-public class Pbkdf2Params
+public class Pbkdf2Params : KdfParams
 {
-    public int Dklen { get; set; }  // Derived key length (32)
-    public int C { get; set; }      // Iteration count (262144)
+    [JsonProperty("c")]
+    public int Count { get; set; }  // Iteration count (262144)
+
+    [JsonProperty("prf")]
     public string Prf { get; set; } // PRF algorithm (hmac-sha256)
-    public string Salt { get; set; } // Random salt (hex)
 }
 
-public class KeyStore<TKdfParams>
+public class KeyStore<TKdfParams> where TKdfParams : KdfParams
 {
     public CryptoInfo<TKdfParams> Crypto { get; set; }
     public string Id { get; set; }      // UUID
-    public int Version { get; set; }    // Always 3
     public string Address { get; set; } // Ethereum address (optional)
+    public int Version { get; set; }    // Always 3
 }
 ```
 
@@ -382,7 +437,7 @@ P = 1
 | **R** | Block size | Linear | Linear |
 | **P** | Parallelization | Linear | Linear (if parallel) |
 
-**N dominates:** Doubling N doubles time and memory. N=262144 uses ~256MB RAM.
+**N dominates:** Doubling N doubles time and memory. Scrypt needs about 128 x N x R bytes, so the default N=262144 with R=1 uses ~32MB RAM.
 
 ## Web3 Secret Storage Format
 
