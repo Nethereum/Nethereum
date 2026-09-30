@@ -274,6 +274,8 @@ namespace Nethereum.Mud.EncodingDecoding
 
         private static object GetDefaultValue(ABIType abiType)
         {
+            if (abiType is StringType) return string.Empty;
+
             var type = abiType.GetDefaultDecodingType();
 #if NETSTANDARD2_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER || NET461_OR_GREATER || NET5_0_OR_GREATER
             try

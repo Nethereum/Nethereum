@@ -143,16 +143,15 @@ Console.WriteLine($"Connected to World at {worldAddress}");
 ```csharp
 using Nethereum.Mud;
 using Nethereum.Mud.Contracts.World;
-using Nethereum.ABI.FunctionEncoding;
+using Nethereum.Mud.EncodingDecoding;
+using Nethereum.Contracts;
 
 // Create resource ID for the system
-var moveSystemResource = new SystemResource("Game", "MoveSystem");
-var systemId = moveSystemResource.ResourceIdEncoded;
+var systemId = ResourceEncoder.EncodeSystem("Game", "MoveSystem");
 
 // Encode function call (e.g., move(direction))
-var functionEncoder = new FunctionCallEncoder();
 var moveFunction = new MoveFunction { Direction = 1 }; // Assuming generated function DTO
-var callData = functionEncoder.EncodeRequest(moveFunction);
+var callData = moveFunction.GetCallData(); // byte[]
 
 // Call the system via World
 var receipt = await worldService.CallRequestAndWaitForReceiptAsync(
@@ -185,6 +184,7 @@ Console.WriteLine($"Health: {playerRecord.Values.Health}");
 
 ```csharp
 using Nethereum.Mud.Contracts.Core.StoreEvents;
+using Nethereum.Mud.EncodingDecoding;
 
 var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
 
@@ -205,7 +205,7 @@ foreach (var log in setRecordEvents)
 }
 
 // Get SetRecord events for a specific table
-var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+var playerTableId = ResourceEncoder.EncodeTable("Game", "Player");
 var playerEvents = await storeEventsService.GetAllSetRecordForTable(
     playerTableId,
     fromBlockNumber: 0,
@@ -223,19 +223,19 @@ using Nethereum.Mud.Contracts.Core.StoreEvents;
 using Nethereum.Mud.TableRepository;
 
 // Create table repository
-var playerRepository = new InMemoryTableRepository<PlayerTableRecord>();
+var playerRepository = new InMemoryTableRepository();
 
 // Setup event processing
 var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
-var progressRepository = new InMemoryBlockProgressRepository();
+var progressRepository = new InMemoryBlockchainProgressRepository();
 
 var processor = storeEventsService.CreateProcessor(
     playerRepository,
     progressRepository,
-    logger: null,
-    blocksPerRequest: 1000,
+    log: null,
+    numberOfBlocksPerRequest: 1000,
     retryWeight: 50,
-    minimumBlockConfirmations: 12
+    minimumNumberOfConfirmations: 12
 );
 
 // Start processing from block 0
@@ -252,23 +252,24 @@ Console.WriteLine("Store events processed to repository");
 ```csharp
 using Nethereum.Mud.Contracts.World;
 using Nethereum.Mud.Contracts.World.Systems.BatchCallSystem;
+using Nethereum.Mud.EncodingDecoding;
 
 // Prepare multiple system calls
 var systemCalls = new List<SystemCallData>
 {
     new SystemCallData
     {
-        SystemId = moveSystemResource.ResourceIdEncoded,
+        SystemId = ResourceEncoder.EncodeSystem("Game", "MoveSystem"),
         CallData = EncodeMoveCall(direction: 1)
     },
     new SystemCallData
     {
-        SystemId = attackSystemResource.ResourceIdEncoded,
+        SystemId = ResourceEncoder.EncodeSystem("Game", "AttackSystem"),
         CallData = EncodeAttackCall(targetId: 5)
     },
     new SystemCallData
     {
-        SystemId = craftSystemResource.ResourceIdEncoded,
+        SystemId = ResourceEncoder.EncodeSystem("Game", "CraftSystem"),
         CallData = EncodeCraftCall(itemId: 10, quantity: 1)
     }
 };
@@ -285,10 +286,10 @@ Console.WriteLine($"Batch call successful. Gas used: {receipt.GasUsed.Value}");
 ```csharp
 using Nethereum.Mud;
 using Nethereum.Mud.Contracts.World.Systems.AccessManagementSystem;
+using Nethereum.Mud.EncodingDecoding;
 
 // Create resource ID for a table
-var playerTableResource = new Resource("Game", "Player");
-var tableId = playerTableResource.ResourceIdEncoded;
+var tableId = ResourceEncoder.EncodeTable("Game", "Player");
 
 // Use AccessManagementSystemService for access control
 var accessService = new AccessManagementSystemService(web3, worldAddress);
@@ -334,39 +335,41 @@ Console.WriteLine($"World deployed at: {worldAddress}");
 ### Example 9: Register Custom Table
 
 ```csharp
+using System.Collections.Generic;
 using Nethereum.Mud;
 using Nethereum.Mud.EncodingDecoding;
 
 // Define table schema
-var playerTableResource = new Resource("Game", "Player");
+var playerTableId = ResourceEncoder.EncodeTable("Game", "Player");
 var schema = SchemaEncoder.GetSchemaEncoded<PlayerKey, PlayerValue>(
-    playerTableResource.ResourceIdEncoded
+    playerTableId
 );
 
 // Register table via RegistrationSystemService
 var registrationService = new RegistrationSystemService(web3, worldAddress);
 var registerTableReceipt = await registrationService.RegisterTableRequestAndWaitForReceiptAsync(
-    tableId: playerTableResource.ResourceIdEncoded,
+    tableId: playerTableId,
     fieldLayout: schema.FieldLayout,
     keySchema: schema.KeySchema,
     valueSchema: schema.ValueSchema,
-    keyNames: new[] { "playerId" },
-    fieldNames: new[] { "name", "level", "health" }
+    keyNames: new List<string> { "playerId" },
+    fieldNames: new List<string> { "name", "level", "health" }
 );
 
-Console.WriteLine($"Table registered: {playerTableResource.NameSpace}:{playerTableResource.Name}");
+Console.WriteLine("Table registered: Game:Player");
 ```
 
 ### Example 10: Read Table Schema from Chain
 
 ```csharp
 using Nethereum.Mud.Contracts.Store.Tables;
+using Nethereum.Mud.EncodingDecoding;
 
 // TablesTableService queries the on-chain Tables table
 var tablesService = new TablesTableService(web3, worldAddress);
 
 // Get schema for a specific table
-var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+var playerTableId = ResourceEncoder.EncodeTable("Game", "Player");
 var tableRecord = await tablesService.GetTableRecordAsync(playerTableId);
 
 var schema = tableRecord.GetTableSchema();
@@ -383,7 +386,7 @@ Console.WriteLine($"Values: {string.Join(", ", schema.SchemaValues.Select(v => v
 ```csharp
 public class WorldService : ContractWeb3ServiceBase
 {
-    public WorldService(Web3 web3, string contractAddress);
+    public WorldService(IWeb3 web3, string contractAddress);
 
     // System calls
     Task<TransactionReceipt> CallRequestAndWaitForReceiptAsync(
@@ -437,8 +440,8 @@ public class RegistrationSystemService
         byte[] fieldLayout,
         byte[] keySchema,
         byte[] valueSchema,
-        string[] keyNames,
-        string[] fieldNames
+        List<string> keyNames,
+        List<string> fieldNames
     );
 }
 ```
@@ -448,7 +451,7 @@ public class RegistrationSystemService
 ```csharp
 public class StoreEventsLogProcessingService
 {
-    public StoreEventsLogProcessingService(Web3 web3, string contractAddress);
+    public StoreEventsLogProcessingService(IWeb3 web3, string contractAddress);
 
     // Query all SetRecord events
     Task<List<EventLog<StoreSetRecordEventDTO>>> GetAllSetRecord(...);
@@ -469,22 +472,36 @@ public class StoreEventsLogProcessingService
 
 Example of a generated table service:
 
+Generated table services derive from `TableService<TTableRecord, TKey, TValue>`,
+inheriting its read/write methods and adding a typed convenience overload built
+from the table's key fields:
+
 ```csharp
-public class PlayerTableService
+public partial class PlayerTableService
+    : TableService<PlayerTableRecord, PlayerKey, PlayerValue>
 {
-    public PlayerTableService(Web3 web3, string worldAddress);
+    public PlayerTableService(IWeb3 web3, string contractAddress);
 
-    // Query single record
-    Task<PlayerTableRecord> GetTableRecordAsync(BigInteger playerId);
-
-    // Query all records (via events)
-    Task<List<PlayerTableRecord>> GetTableRecordsAsync(
-        BigInteger? fromBlock = null,
-        BigInteger? toBlock = null
+    // Generated convenience overload: builds the PlayerKey from the key fields
+    Task<PlayerTableRecord> GetTableRecordAsync(
+        BigInteger playerId,
+        BlockParameter blockParameter = null
     );
 
-    // Get table resource
-    Resource GetTableResource();
+    // --- Inherited from TableService base ---
+
+    // Query a single record by its typed key
+    // Task<PlayerTableRecord> GetTableRecordAsync(PlayerKey key, BlockParameter blockParameter = null);
+
+    // Query multiple records by key in a single multicall
+    // Task<List<PlayerTableRecord>> GetTableRecordsMulticallRpcAsync(List<PlayerKey> key, BlockParameter blockParameter = null);
+
+    // Read all records previously indexed into a table repository
+    // Task<IEnumerable<PlayerTableRecord>> GetTableRecordsAsync(ITableRepository tableRepository);
+
+    // Set / delete records through the World
+    // Task<TransactionReceipt> SetRecordRequestAndWaitForReceiptAsync(PlayerKey key, PlayerValue value);
+    // Task<TransactionReceipt> DeleteRecordRequestAndWaitForReceiptAsync(PlayerKey key);
 }
 ```
 
@@ -559,10 +576,10 @@ Generate table and system services using `.nethereum-gen.multisettings`:
 
 ```bash
 # Install Nethereum code generator
-npm install -g nethereum-codegen
+dotnet tool install -g Nethereum.Generator.Console
 
 # Generate C# code
-nethereum-codegen generate
+Nethereum.Generator.Console generate from-config -cfg .nethereum-gen.multisettings
 
 # Or use VS Code extension
 # https://github.com/juanfranblanco/vscode-solidity
@@ -598,16 +615,16 @@ foreach (var eventLog in events)
 
 ```csharp
 var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
-var progressRepo = new InMemoryBlockProgressRepository();
-var tableRepo = new InMemoryTableRepository<PlayerTableRecord>();
+var progressRepo = new InMemoryBlockchainProgressRepository();
+var tableRepo = new InMemoryTableRepository();
 
 var processor = storeEventsService.CreateProcessor(
     tableRepo,
     progressRepo,
-    logger: null,
-    blocksPerRequest: 1000,
+    log: null,
+    numberOfBlocksPerRequest: 1000,
     retryWeight: 50,
-    minimumBlockConfirmations: 12
+    minimumNumberOfConfirmations: 12
 );
 
 // Process all historical events
@@ -621,7 +638,7 @@ await processor.ExecuteAsync(
 
 ```csharp
 var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
-var tableRepo = new InMemoryTableRepository<PlayerTableRecord>();
+var tableRepo = new InMemoryTableRepository();
 
 // Process all store changes (SetRecord, DeleteRecord, SpliceStaticData, SpliceDynamicData)
 await storeEventsService.ProcessAllStoreChangesAsync(
@@ -632,7 +649,7 @@ await storeEventsService.ProcessAllStoreChangesAsync(
 );
 
 // Or process changes for a specific table only
-var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+var playerTableId = ResourceEncoder.EncodeTable("Game", "Player");
 await storeEventsService.ProcessAllStoreChangesAsync(
     tableRepo,
     playerTableId,
@@ -669,7 +686,7 @@ public class CustomEventHandler
 ### Filtering Events by Table
 
 ```csharp
-var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+var playerTableId = ResourceEncoder.EncodeTable("Game", "Player");
 
 // Use GetAllSetRecordForTable to query events for a specific table
 var playerEvents = await storeEventsService.GetAllSetRecordForTable(
@@ -725,49 +742,64 @@ await storeEventsService.ProcessAllStoreChangesAsync(
 // Initialize World connection
 var worldService = new WorldService(web3, worldAddress);
 
-// Load initial state from chain
+// Load initial state by indexing Store events into a repository
+var tableRepository = new InMemoryTableRepository();
+var storeEventsService = new StoreEventsLogProcessingService(web3, worldAddress);
+await storeEventsService.ProcessAllStoreChangesAsync(tableRepository);
+
 var playerTable = new PlayerTableService(web3, worldAddress);
-var players = await playerTable.GetTableRecordsAsync(fromBlock: 0);
+var players = await playerTable.GetTableRecordsAsync(tableRepository);
 
 // Subscribe to updates
 var subscription = await SubscribeToStoreEvents(worldAddress);
 
 // User action: Move player
-var moveSystemResource = new SystemResource("Game", "MoveSystem");
+var moveSystemId = ResourceEncoder.EncodeSystem("Game", "MoveSystem");
 await worldService.CallRequestAndWaitForReceiptAsync(
-    moveSystemResource.ResourceIdEncoded,
+    moveSystemId,
     EncodeMoveCall(direction: 1)
 );
 ```
 
 ### 2. MUD Indexer
 
+The `Nethereum.Mud.Repositories.Postgres` package ships a Postgres-backed indexer
+built on Entity Framework Core. Point `MudPostgresStoreRecordsProcessingService` at
+the World and RPC endpoint; it resumes from the last processed block on restart.
+
 ```csharp
-// Continuously index all MUD events to database
-var dbRepository = new PostgresTableRepository(connectionString);
-var progressRepo = new PostgresBlockProgressRepository(connectionString);
+using Microsoft.EntityFrameworkCore;
+using Nethereum.Mud.Repositories.Postgres;
 
-var processor = storeEventsService.CreateProcessor(
-    dbRepository,
-    progressRepo,
-    logger,
-    blocksPerRequest: 1000,
-    retryWeight: 50,
-    minimumBlockConfirmations: 12
-);
+// Configure the EF Core DbContext for Postgres
+var options = new DbContextOptionsBuilder<MudPostgresStoreRecordsDbContext>()
+    .UseNpgsql(connectionString)
+    .UseLowerCaseNamingConvention()
+    .Options;
 
-while (true)
+using var context = new MudPostgresStoreRecordsDbContext(options);
+await context.Database.MigrateAsync();
+
+// Index all Store events (SetRecord, DeleteRecord, Splice) into Postgres
+var processingService = new MudPostgresStoreRecordsProcessingService(context, logger)
 {
-    try
-    {
-        await processor.ExecuteAsync(0);
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Indexer error, retrying...");
-        await Task.Delay(30000);
-    }
-}
+    Address = worldAddress,
+    RpcUrl = rpcUrl,
+    StartAtBlockNumberIfNotProcessed = 0,
+    NumberOfBlocksToProcessPerRequest = 1000,
+    RetryWeight = 50,
+    MinimumNumberOfConfirmations = 12
+};
+
+await processingService.ExecuteAsync(cancellationToken);
+```
+
+For a hosted service that reads its configuration (connection string, World
+address, RPC URL) from `IConfiguration`, register the shipped background indexer
+instead:
+
+```csharp
+services.AddMudPostgresProcessing(configuration, connectionString);
 ```
 
 ### 3. Multi-World Aggregator
@@ -780,9 +812,14 @@ var world2Service = new WorldService(web3, world2Address);
 var player1Table = new PlayerTableService(web3, world1Address);
 var player2Table = new PlayerTableService(web3, world2Address);
 
-// Aggregate player data from both worlds
-var players1 = await player1Table.GetTableRecordsAsync();
-var players2 = await player2Table.GetTableRecordsAsync();
+// Aggregate player data from both worlds (indexed into repositories first)
+var repo1 = new InMemoryTableRepository();
+var repo2 = new InMemoryTableRepository();
+await new StoreEventsLogProcessingService(web3, world1Address).ProcessAllStoreChangesAsync(repo1);
+await new StoreEventsLogProcessingService(web3, world2Address).ProcessAllStoreChangesAsync(repo2);
+
+var players1 = await player1Table.GetTableRecordsAsync(repo1);
+var players2 = await player2Table.GetTableRecordsAsync(repo2);
 
 var allPlayers = players1.Concat(players2).ToList();
 ```

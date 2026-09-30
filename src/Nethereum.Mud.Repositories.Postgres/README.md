@@ -175,23 +175,26 @@ if (record != null)
 Use predicates for complex queries:
 
 ```csharp
+using System.Collections.Generic;
 using Nethereum.Mud.TableRepository;
 using Nethereum.Mud.Repositories.Postgres;
 
 var repository = new MudPostgresStoreRecordsTableRepository(context);
 
-// Build predicate
+// Build predicate: key0 > 0
 var predicate = new TablePredicate
 {
-    Conditions = new List<TableCondition>
+    CombineOperator = "AND",
+    Conditions = new List<KeyValueOperator>
     {
-        new TableCondition
+        new KeyValueOperator
         {
             TableId = "0x7462...",
             Address = "0xWorldAddress",
             Key = "key0",
+            AbiType = "uint256",
             ComparisonOperator = ">",
-            HexValue = "0x0000000000000000000000000000000000000000000000000000000000000000",
+            HexValue = "0000000000000000000000000000000000000000000000000000000000000000",
             UnionOperator = "AND"
         }
     }
@@ -208,10 +211,11 @@ Retrieve strongly-typed MUD table records:
 ```csharp
 using Nethereum.Mud;
 using Nethereum.Mud.TableRepository;
+using Nethereum.Mud.EncodingDecoding;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 // Assume PlayerTableRecord is a generated MUD table record
-var playerTableResource = new Resource("Game", "Player");
-var tableIdHex = playerTableResource.ResourceIdEncoded.ToHex(true);
+var tableIdHex = ResourceEncoder.EncodeTable("Game", "Player").ToHex(true);
 
 var repository = new MudPostgresStoreRecordsTableRepository(context);
 var playerRecords = await repository.GetTableRecordsAsync<PlayerTableRecord>(tableIdHex);
@@ -232,6 +236,7 @@ Use the normalizer to create typed PostgreSQL tables:
 using Npgsql;
 using Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser;
 using Nethereum.Mud.Contracts.Store;
+using Nethereum.Mud.EncodingDecoding;
 using Nethereum.Web3;
 using Microsoft.Extensions.Logging;
 
@@ -250,7 +255,7 @@ var storeNamespace = new StoreNamespace(web3, worldAddress);
 var normalizer = new MudPostgresStoreRecordsNormaliser(connection, storeNamespace, logger, worldAddress);
 
 // Get table schema from on-chain
-var playerTableId = new Resource("Game", "Player").ResourceIdEncoded;
+var playerTableId = ResourceEncoder.EncodeTable("Game", "Player");
 var schema = await normalizer.GetTableSchemaAsync(playerTableId);
 
 Console.WriteLine($"Table: {schema.Namespace}:{schema.Name}");
@@ -589,7 +594,7 @@ r.TableId == tableIdHex
 
 **2. Leverage composite indexes:**
 ```sql
-CREATE INDEX ix_address_tableid_key0 ON storedrecords (addressbytes, tableidbytes, key0bytes);
+CREATE INDEX ix_address_tableid_key0 ON storedrecords (address, tableid, key0);
 ```
 
 **3. Use NUMERIC for BigInteger:**
@@ -619,19 +624,25 @@ ON CONFLICT (id)
 DO UPDATE SET maxplayers = 100, ispaused = false;
 ```
 
-### Custom Table Schemas
+### Table Naming
 
-Override `GetTableName` to customize table naming:
+Table names are derived automatically from the MUD schema and cannot be overridden
+(`GetTableName` is private and non-virtual). The naming rules are:
+
+- Root-namespace tables use the (lowercased) table name, e.g. `player`.
+- Namespaced tables use `namespace_name`, e.g. `game_player`.
+
+The only naming control is the optional `worldAddress` argument on the
+`MudPostgresStoreRecordsNormaliser` constructor. When supplied, every table is
+prefixed with `w_<first 6 hex chars of the address>_`, which keeps tables from
+multiple worlds isolated in the same database:
 
 ```csharp
-public class CustomNormaliser : MudPostgresStoreRecordsNormaliser
-{
-    protected override string GetTableName(TableSchema schema)
-    {
-        // Custom naming: prefix all tables with "mud_"
-        return $"mud_{base.GetTableName(schema)}";
-    }
-}
+// worldAddress is optional; when provided, tables are prefixed with w_<addr6>_
+var normalizer = new MudPostgresStoreRecordsNormaliser(
+    connection, storeNamespace, logger, worldAddress: "0xabc123...");
+
+// A "Game":"Player" table then becomes: w_abc123_game_player
 ```
 
 ### Query Normalized Tables Directly
@@ -675,7 +686,7 @@ await normalizeService.ExecuteAsync(cancellationToken);
 
 ```csharp
 // Write: Via MUD contracts
-await worldService.CallFromRequestAndWaitForReceiptAsync(systemId, callData);
+await worldService.CallRequestAndWaitForReceiptAsync(systemId, callData);
 
 // Read: From normalized table
 var players = await connection.QueryAsync<PlayerInfo>(
@@ -714,27 +725,29 @@ services.AddDbContext<MudPostgresStoreRecordsDbContext>(options =>
 ```sql
 CREATE TABLE storedrecords (
     rowid BIGSERIAL,
-    addressbytes BYTEA NOT NULL,
-    tableidbytes BYTEA NOT NULL,
-    keybytes BYTEA NOT NULL,
-    key0bytes BYTEA,
-    key1bytes BYTEA,
-    key2bytes BYTEA,
-    key3bytes BYTEA,
+    address BYTEA NOT NULL,
+    tableid BYTEA NOT NULL,
+    key BYTEA NOT NULL,
+    key0 BYTEA,
+    key1 BYTEA,
+    key2 BYTEA,
+    key3 BYTEA,
     static_data BYTEA,
     encoded_lengths BYTEA,
     dynamic_data BYTEA,
     isdeleted BOOLEAN NOT NULL DEFAULT false,
     blocknumber NUMERIC(1000, 0),
     logindex INTEGER,
-    PRIMARY KEY (addressbytes, tableidbytes, keybytes)
+    PRIMARY KEY (address, tableid, key)
 );
 
 CREATE INDEX ix_rowid ON storedrecords (rowid);
-CREATE INDEX ix_address_tableid_key0 ON storedrecords (addressbytes, tableidbytes, key0bytes);
+CREATE INDEX ix_address_tableid_key0 ON storedrecords (address, tableid, key0);
 ```
 
 ### ChainStates Table (Chain Validation)
+
+The EF model maps `ChainState` to `mud_chainstates` (and `BlockProgress` to `mud_blockprogress`); the shipped upgrade script creates a table named `chainstates`, as shown below.
 
 ```sql
 CREATE TABLE chainstates (

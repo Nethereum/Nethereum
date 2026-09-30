@@ -26,14 +26,21 @@ In order to add GSN support to Nethereum `Web3` instance, follow the next steps:
     ```
     var options = new GSNOptions { UseGSN = true };
     var relayClient = new RelayClient(options.HttpTimeout);
-    var relayHubManager = new RelayHubManager(options, web3.Eth, relayClient);
+
+    // Discovers relays registered on the RelayHub via its events
+    var relayQuery = new RelayQuery(options.RelayLookupLimitBlocks, web3.Eth, relayClient);
+    var relayHubManager = new RelayHubManager(web3.Eth, relayQuery);
+
+    // The Relayer selects a ready relay by policy and validates the recipient balance
+    var balanceValidator = new RecipientBalanceValidator(web3.Eth);
+    var relayer = new Relayer(relayHubManager, balanceValidator, new DefaultRelayPolicy());
+
     var transactionManager = new GSNTransactionManager(
         options,
-        relayHubManager,
+        relayer,
         web3.Eth,
         web3.Client,
         relayClient,
-        new DefaultRelayPolicy(),
         "ED3..."                                            // Private key of sender
     );
     ```

@@ -25,7 +25,7 @@ Main service for interacting with Gnosis Safe contracts (GnosisSafeService.cs:13
 **Transaction Building:**
 
 ```csharp
-// GnosisSafeService.cs:31-39
+// ExtendedGnosisSafeService.cs:31-39
 public async Task<ExecTransactionFunction> BuildTransactionAsync(
     EncodeTransactionDataFunction transactionData,
     BigInteger chainId,
@@ -40,7 +40,7 @@ public async Task<ExecTransactionFunction> BuildTransactionAsync(
 **Multi-Signature Transaction Building:**
 
 ```csharp
-// GnosisSafeService.cs:63-82
+// ExtendedGnosisSafeService.cs:63-82
 public async Task<ExecTransactionFunction> BuildMultiSignatureTransactionAsync<TFunctionMessage>(
     EncodeTransactionDataFunction transactionData,
     TFunctionMessage functionMessage,
@@ -67,7 +67,7 @@ public async Task<ExecTransactionFunction> BuildMultiSignatureTransactionAsync<T
 **MultiSend Support:**
 
 ```csharp
-// GnosisSafeService.cs:41-50
+// ExtendedGnosisSafeService.cs:41-50
 public Task<ExecTransactionFunction> BuildMultiSendTransactionAsync(
     EncodeTransactionDataFunction transactionData,
     BigInteger chainId,
@@ -86,7 +86,7 @@ public Task<ExecTransactionFunction> BuildMultiSendTransactionAsync(
 **Type Definition Creation:**
 
 ```csharp
-// GnosisSafeService.cs:147-159
+// ExtendedGnosisSafeService.cs:147-159
 public static TypedData<GnosisSafeEIP712Domain> GetGnosisSafeTypedDefinition(
     BigInteger chainId, string verifyingContractAddress)
 {
@@ -107,7 +107,7 @@ public static TypedData<GnosisSafeEIP712Domain> GetGnosisSafeTypedDefinition(
 **Transaction Hash Computation:**
 
 ```csharp
-// GnosisSafeService.cs:181-186
+// ExtendedGnosisSafeService.cs:181-186
 public static byte[] GetEncodedTransactionDataHash(
     EncodeTransactionDataFunction transactionData,
     BigInteger chainId,
@@ -121,7 +121,7 @@ public static byte[] GetEncodedTransactionDataHash(
 **Safe Hashes Computation:**
 
 ```csharp
-// GnosisSafeService.cs:132-145
+// ExtendedGnosisSafeService.cs:132-145
 public static SafeHashes GetSafeHashes(
     EncodeTransactionDataFunction transactionData,
     BigInteger chainId,
@@ -145,7 +145,7 @@ public static SafeHashes GetSafeHashes(
 **Multi-Signature Signing:**
 
 ```csharp
-// GnosisSafeService.cs:198-213
+// ExtendedGnosisSafeService.cs:198-213
 public List<SafeSignature> SignMultipleEncodedTransactionDataHash(
     byte[] hashEncoded, params string[] privateKeySigners)
 {
@@ -174,7 +174,7 @@ public List<SafeSignature> SignMultipleEncodedTransactionDataHash(
 Gnosis Safe requires signature V values to be offset by +4 from standard Ethereum V values.
 
 ```csharp
-// GnosisSafeService.cs:215-225
+// ExtendedGnosisSafeService.cs:215-225
 public static string ConvertSignatureStringToGnosisVFormat(string signatureString)
 {
     var signature = MessageSigner.ExtractEcdsaSignature(signatureString);
@@ -190,15 +190,15 @@ public static string ConvertSignatureStringToGnosisVFormat(string signatureStrin
 
 **Signature Ordering:**
 
-Gnosis Safe requires signatures to be ordered by signer address.
+Gnosis Safe requires signatures to be ordered by ascending signer address. `GetCombinedSignaturesInOrder` sorts the signatures by each `SafeSignature.Address`, converts them to Safe V format and concatenates them.
 
 ```csharp
-// GnosisSafeService.cs:258-268
+// ExtendedGnosisSafeService.cs:258-269
 public byte[] GetCombinedSignaturesInOrder(IEnumerable<SafeSignature> signatures)
 {
-    var signaturesFormatted = signatures.Select(
-        x => ConvertSignatureStringToGnosisVFormat(x.Signature)).ToList();
-    var orderedSignatures = signaturesFormatted.OrderBy(x => x.ToLower());
+    var orderedSignatures = signatures
+        .OrderBy(x => x.Address.ToLowerInvariant(), System.StringComparer.Ordinal)
+        .Select(x => ConvertSignatureStringToGnosisVFormat(x.Signature));
     var fullSignatures = "0x";
     foreach (var signature in orderedSignatures)
     {
@@ -437,13 +437,13 @@ var chainId = 1;
 var safeAccount = new SafeAccount(safeAddress, chainId, privateKey);
 var web3 = new Web3(safeAccount, "https://mainnet.infura.io/v3/YOUR_INFURA_KEY");
 
-// Any contract service will automatically use Safe execution
-var erc20Address = "0x...";
-var erc20Service = new Nethereum.Contracts.Standards.ERC20.ERC20ContractService(
-    web3.Eth, erc20Address);
+// Any ContractWeb3ServiceBase-derived service will automatically use Safe execution
+// (for example a HubService or a generated MyService(web3, address); the built-in ERC20ContractService does not qualify)
+var tokenAddress = "0x...";
+var tokenService = new MyTokenService(web3, tokenAddress);
 
 // This transfer will be executed through the Safe
-var transferReceipt = await erc20Service.TransferRequestAndWaitForReceiptAsync(
+var transferReceipt = await tokenService.TransferRequestAndWaitForReceiptAsync(
     "0x...", // to
     1000000  // amount
 );
@@ -454,20 +454,20 @@ var transferReceipt = await erc20Service.TransferRequestAndWaitForReceiptAsync(
 ```csharp
 using Nethereum.Web3;
 using Nethereum.GnosisSafe;
-using Nethereum.Contracts.Standards.ERC20;
 
 var web3 = new Web3("https://mainnet.infura.io/v3/YOUR_INFURA_KEY");
 var safeAddress = "0x...";
 var contractAddress = "0x...";
 
-var erc20Service = new ERC20ContractService(web3.Eth, contractAddress);
+// Any ContractWeb3ServiceBase-derived service (a HubService or a generated MyService(web3, address))
+var tokenService = new MyTokenService(web3, contractAddress);
 
 // Change to Safe execution
 var privateKeys = new[] { "0x...", "0x..." };
-erc20Service.ChangeContractHandlerToSafeExecTransaction(safeAddress, privateKeys);
+tokenService.ChangeContractHandlerToSafeExecTransaction(safeAddress, privateKeys);
 
 // All transactions now go through Safe
-var receipt = await erc20Service.TransferRequestAndWaitForReceiptAsync("0x...", 1000);
+var receipt = await tokenService.TransferRequestAndWaitForReceiptAsync("0x...", 1000);
 ```
 
 ### MultiSend Transaction
@@ -610,7 +610,7 @@ var modules = await safeService.GetModulesPaginatedQueryAsync(
 2. **Nonce Assignment**: Safe nonce is automatically fetched and assigned
 3. **EIP-712 Hash**: Transaction data is hashed according to EIP-712 standard
 4. **Signature Collection**: Each owner signs the hash with their private key
-5. **Signature Ordering**: Signatures must be ordered by signer address (ascending)
+5. **Signature Ordering**: Safe requires signatures ordered by signer address (ascending); `GetCombinedSignaturesInOrder` sorts by each `SafeSignature.Address`, so set `Address` on every signature you pass in
 6. **V Value Conversion**: V values are offset by +4 for Gnosis Safe compatibility
 7. **Execution**: execTransaction is called with combined ordered signatures
 
@@ -620,7 +620,7 @@ Gnosis Safe uses a custom V value format:
 - Ethereum standard: v = 27 or 28
 - Gnosis Safe format: v = 31 or 32 (standard + 4)
 
-The ConvertSignatureStringToGnosisVFormat method (GnosisSafeService.cs:215-225) handles this conversion automatically.
+The ConvertSignatureStringToGnosisVFormat method (ExtendedGnosisSafeService.cs:215-225) handles this conversion automatically.
 
 ### Operation Types
 
@@ -643,7 +643,7 @@ Safe transactions support advanced gas configuration:
 
 ## Platform Support
 
-Supports all Nethereum target frameworks. Async methods require .NET Framework 4.5+, .NET Standard 1.1+, or .NET Core 1.0+.
+Supports all Nethereum target frameworks. Async methods require .NET Framework 4.5+, .NET Standard 2.0+, or .NET Core 1.0+.
 
 ## References
 

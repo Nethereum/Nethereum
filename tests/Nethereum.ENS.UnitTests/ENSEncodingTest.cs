@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using Nethereum.Contracts.Standards.ENS;
+using Xunit;
 
 namespace Nethereum.ENS.UnitTests
 {

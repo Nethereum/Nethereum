@@ -149,7 +149,7 @@ foreach (var relation in trustRelations.Response)
 ## Dependencies
 
 - **Nethereum.Web3**: Core Web3 functionality
-- **Nethereum.GnosisSafe**: For Safe-based transaction execution (optional)
+- **Nethereum.GnosisSafe**: Optional companion package for Safe-based transaction execution (not a dependency of Nethereum.Circles)
 
 ## References
 

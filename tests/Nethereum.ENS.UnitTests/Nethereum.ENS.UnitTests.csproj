@@ -3,13 +3,14 @@
   <PropertyGroup>
     <Description>Nethereum.ENS.UnitTests Class Library</Description>
     <Authors>Juan Blanco</Authors>
-     <TargetFrameworks>netcoreapp2.0;net461;netcoreapp2.1</TargetFrameworks>
+     <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyName>Nethereum.ENS.UnitTests</AssemblyName>
     <PackageId>Nethereum.ENS.UnitTests</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
      <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
+     <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

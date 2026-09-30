@@ -86,7 +86,7 @@ var service = new SiweMessageService(
 | Method | Description |
 |---|---|
 | `BuildMessageToSign(SiweMessage)` | Assigns a new nonce, stores the session, and returns the canonical string for signing |
-| `IsValidMessage(SiweMessage, string)` | Full validation: signature + dates + session match + user registration |
+| `IsValidMessage(SiweMessage, string)` | Full validation: signature + dates + session match |
 | `IsMessageSignatureValid(SiweMessage, string)` | Validates signature only (EOA via `EthereumMessageSigner`, or ERC-1271/ERC-6492 for smart wallets) |
 | `HasMessageDateStartedAndNotExpired(SiweMessage)` | Checks `NotBefore` and `ExpirationTime` against current UTC time |
 | `IsMessageTheSameAsSessionStored(SiweMessage)` | Verifies the message matches the session stored under its nonce |
@@ -175,7 +175,7 @@ public class User
 A complete Blazor + REST API SIWE authentication template is available at [`Nethereum.Templates.Siwe`](https://github.com/Nethereum/Nethereum.Templates.Pack), providing:
 
 - **REST API** — Nonce generation, authentication endpoint, JWT creation and middleware validation
-- **Blazor WebAssembly** — MetaMask signing, JWT local storage, `SiweAuthenticationWasmStateProvider`
+- **Blazor WebAssembly** — MetaMask signing, JWT local storage
 - **Blazor Server** — Direct signing via `NethereumSiweAuthenticatorService`, protected session storage
 - **Blazor `<AuthorizeView>`** — Role-based access with `EthereumConnected` and `SiweAuthenticated` claims
 

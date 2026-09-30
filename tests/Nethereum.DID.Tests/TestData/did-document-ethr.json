@@ -1,0 +1,36 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/secp256k1recovery-2020/v2"
+  ],
+  "id": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a",
+  "controller": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a",
+  "verificationMethod": [
+    {
+      "id": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#controller",
+      "type": "EcdsaSecp256k1RecoveryMethod2020",
+      "controller": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a",
+      "blockchainAccountId": "eip155:1:0xb9c5714089478a327f09197987f16f9e5d936e8a"
+    },
+    {
+      "id": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#delegate-1",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a",
+      "publicKeyHex": "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71"
+    }
+  ],
+  "authentication": [
+    "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#controller"
+  ],
+  "assertionMethod": [
+    "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#controller",
+    "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#delegate-1"
+  ],
+  "service": [
+    {
+      "id": "did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a#service-1",
+      "type": "MessagingService",
+      "serviceEndpoint": "https://messenger.example.com"
+    }
+  ]
+}

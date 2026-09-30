@@ -257,8 +257,9 @@ namespace Nethereum.GnosisSafe
 
         public byte[] GetCombinedSignaturesInOrder(IEnumerable<SafeSignature> signatures)
         {
-            var signaturesFormatted = signatures.Select(x =>  ConvertSignatureStringToGnosisVFormat(x.Signature)).ToList();
-            var orderedSignatures = signaturesFormatted.OrderBy(x => x.ToLower());
+            var orderedSignatures = signatures
+                .OrderBy(x => x.Address.ToLowerInvariant(), System.StringComparer.Ordinal)
+                .Select(x => ConvertSignatureStringToGnosisVFormat(x.Signature));
             var fullSignatures = "0x";
             foreach (var signature in orderedSignatures)
             {

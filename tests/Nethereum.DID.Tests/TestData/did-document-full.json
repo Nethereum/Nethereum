@@ -1,0 +1,80 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/secp256k1-2019/v1",
+    "https://w3id.org/security/suites/ed25519-2020/v1"
+  ],
+  "id": "did:example:123456789abcdefghi",
+  "alsoKnownAs": [
+    "https://example.com/users/alice"
+  ],
+  "controller": [
+    "did:example:123456789abcdefghi",
+    "did:example:controller1"
+  ],
+  "verificationMethod": [
+    {
+      "id": "did:example:123456789abcdefghi#keys-1",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:example:123456789abcdefghi",
+      "publicKeyHex": "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71"
+    },
+    {
+      "id": "did:example:123456789abcdefghi#keys-2",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:example:123456789abcdefghi",
+      "publicKeyMultibase": "zH3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+    },
+    {
+      "id": "did:example:123456789abcdefghi#keys-3",
+      "type": "JsonWebKey2020",
+      "controller": "did:example:123456789abcdefghi",
+      "publicKeyJwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "WfY7Px6AgH6x-_dgAoRbg8weYRJA36ON-gQiFnETrqw",
+        "y": "IzFx3BUGztK0cyDStiunGj_bL88aFkIELb8mJBrsoYk"
+      }
+    }
+  ],
+  "authentication": [
+    "did:example:123456789abcdefghi#keys-1",
+    {
+      "id": "did:example:123456789abcdefghi#keys-auth-1",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "controller": "did:example:123456789abcdefghi",
+      "publicKeyHex": "04b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71"
+    }
+  ],
+  "assertionMethod": [
+    "did:example:123456789abcdefghi#keys-2"
+  ],
+  "keyAgreement": [
+    {
+      "id": "did:example:123456789abcdefghi#keys-agree-1",
+      "type": "X25519KeyAgreementKey2019",
+      "controller": "did:example:123456789abcdefghi",
+      "publicKeyBase58": "FbQWLPRhTH95MCkQUeFYdiSoQt8zMwetqfWoxqPgaq7x"
+    }
+  ],
+  "capabilityInvocation": [
+    "did:example:123456789abcdefghi#keys-1"
+  ],
+  "capabilityDelegation": [
+    "did:example:123456789abcdefghi#keys-2"
+  ],
+  "service": [
+    {
+      "id": "did:example:123456789abcdefghi#linked-domain",
+      "type": "LinkedDomains",
+      "serviceEndpoint": "https://example.com"
+    },
+    {
+      "id": "did:example:123456789abcdefghi#hub",
+      "type": "IdentityHub",
+      "serviceEndpoint": {
+        "instances": ["https://hub.example.com"]
+      }
+    }
+  ]
+}

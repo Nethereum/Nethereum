@@ -162,11 +162,11 @@ public partial class PlayerTableRecord : TableRecord<PlayerKey, PlayerValue>
 ### Running Code Generation
 
 ```bash
-# Using Nethereum.Generators.JavaScript
-npm install -g nethereum-codegen
+# Install the Nethereum code generator
+dotnet tool install -g Nethereum.Generator.Console
 
-# Generate from mud.config.ts
-nethereum-codegen generate
+# Generate from the multisettings file
+Nethereum.Generator.Console generate from-config -cfg .nethereum-gen.multisettings
 ```
 
 Or use the VS Code Solidity extension with multisettings support: https://github.com/juanfranblanco/vscode-solidity
@@ -185,12 +185,14 @@ Table schemas are encoded into `bytes32`:
 ```csharp
 using Nethereum.Mud.EncodingDecoding;
 
-var schema = SchemaEncoder.GetSchemaEncoded<PlayerKey, PlayerValue>(resourceId);
+var resourceId = ResourceEncoder.EncodeTable("Game", "Player");
+var schema = SchemaEncoder.GetSchemaEncoded<PlayerTableRecord.PlayerKey, PlayerTableRecord.PlayerValue>(resourceId);
 
 Console.WriteLine($"Key schema: {schema.KeySchema.ToHex()}");
 Console.WriteLine($"Value schema: {schema.ValueSchema.ToHex()}");
-Console.WriteLine($"Static fields: {schema.NumStaticFields}");
-Console.WriteLine($"Dynamic fields: {schema.NumDynamicFields}");
+Console.WriteLine($"Field layout: {schema.FieldLayout.ToHex()}");
+Console.WriteLine($"Key names: {string.Join(", ", schema.KeyNames)}");
+Console.WriteLine($"Field names: {string.Join(", ", schema.FieldNames)}");
 ```
 
 ### Key Encoding
@@ -299,8 +301,8 @@ Console.WriteLine($"Player {playerRecord.Keys.PlayerId}: {playerRecord.Values.Na
 ```csharp
 using Nethereum.Mud.TableRepository;
 
-// Create in-memory repository
-var repository = new InMemoryTableRepository<PlayerTableRecord>();
+// The repository is not generic; a single instance stores records for any table
+var repository = new InMemoryTableRepository();
 
 // Add records
 var player1 = new PlayerTableRecord
@@ -315,16 +317,17 @@ var player2 = new PlayerTableRecord
     Values = new() { Name = "Bob", Level = 5, Health = 50 }
 };
 
-await repository.UpsertAsync(player1);
-await repository.UpsertAsync(player2);
+// SetRecordAsync<T> resolves the table id and key from the record itself
+await repository.SetRecordAsync(player1);
+await repository.SetRecordAsync(player2);
 
-// Query by key
-var record = await repository.GetByKeyAsync(player1.GetEncodedKey());
-Console.WriteLine($"Found player: {record.Values.Name}");
-
-// Query all records
-var allPlayers = await repository.GetAsync();
+// Read all records for a table, decoded to the strongly-typed record
+var allPlayers = (await repository.GetTableRecordsAsync<PlayerTableRecord>()).ToList();
 Console.WriteLine($"Total players: {allPlayers.Count}");
+
+// Read a single raw stored record by encoded table id + combined key bytes
+var keyBytes = TableRepositoryBase.ConvertKeyToCombinedHex(player1.GetEncodedKey()).HexToByteArray();
+var stored = await repository.GetRecordAsync(player1.ResourceIdEncoded, keyBytes);
 ```
 
 ### Example 3: Query with Predicates
@@ -332,18 +335,18 @@ Console.WriteLine($"Total players: {allPlayers.Count}");
 ```csharp
 using Nethereum.Mud.TableRepository;
 
-var repository = new InMemoryTableRepository<PlayerTableRecord>();
+// Predicates filter on KEY fields. The builder takes three type parameters
+// (record, key, value) and the World address, and is finalized with Expand().
+var predicate = new TablePredicateBuilder<PlayerTableRecord, PlayerTableRecord.PlayerKey, PlayerTableRecord.PlayerValue>("0xWorldAddress")
+    .AndEqual(key => key.PlayerId, 1)     // AND key0 = 0x01
+    .OrEqual(key => key.PlayerId, 2)      // OR  key0 = 0x02
+    .AndNotEqual(key => key.PlayerId, 3)  // AND key0 != 0x03
+    .Expand();                            // Finalize the predicate
 
-// Add multiple records
-// ...
-
-// Query with predicate builder
-var predicate = new TablePredicateBuilder<PlayerTableRecord>()
-    .Where(player => player.Values.Level > 5)
-    .And(player => player.Values.Health >= 50)
-    .Build();
-
-var results = await repository.GetAsync(predicate);
+// Run the predicate against a repository that supports predicate queries.
+// InMemoryTableRepository does not (query AllRecords with LINQ instead);
+// the REST API client and the EF/Postgres repositories do.
+var results = await apiClient.GetTableRecordsAsync<PlayerTableRecord>(predicate);
 
 foreach (var player in results)
 {
@@ -356,24 +359,26 @@ foreach (var player in results)
 ```csharp
 using Nethereum.Mud.TableRepository;
 
-// Repository with change tracking
-var repository = new InMemoryChangeTrackerTableRepository<PlayerTableRecord>();
+// Repository with change tracking (non-generic)
+var repository = new InMemoryChangeTrackerTableRepository();
+repository.StartTracking();
 
-// Modify records
-var player = await repository.GetByKeyAsync(encodedKey);
+// Modify and upsert a record (tracked once tracking is enabled)
 player.Values.Level += 1;
 player.Values.Health -= 10;
-await repository.UpsertAsync(player);
+await repository.SetRecordAsync(player);
 
-// Get all changes since last checkpoint
-var changeSet = repository.GetChangeSet();
+// The accumulated changes: Upserted and Deleted are keyed by table id then key
+var changeSet = repository.ChangeSet;
+Console.WriteLine($"Tables with upserts: {changeSet.Upserted.Count}");
+Console.WriteLine($"Tables with deletes: {changeSet.Deleted.Count}");
 
-Console.WriteLine($"Added: {changeSet.AddedRecords.Count}");
-Console.WriteLine($"Updated: {changeSet.UpdatedRecords.Count}");
-Console.WriteLine($"Deleted: {changeSet.DeletedRecords.Count}");
+// Project the changes for a specific table to strongly-typed records
+var playerChanges = changeSet.GetTableRecordChanges<PlayerTableRecord>();
+Console.WriteLine($"Upserted: {playerChanges.Upserted.Count}, Deleted: {playerChanges.Deleted.Count}");
 
-// Clear change tracking
-repository.ClearChangeSet();
+// Take a snapshot and clear the tracker in one step (or ClearChangeSet() to just clear)
+var snapshot = repository.GetAndClearChangeSet();
 ```
 
 ### Example 5: Resource Identifiers
@@ -403,13 +408,15 @@ Console.WriteLine($"Namespace: {decoded.Namespace}, Name: {decoded.Name}");
 ```csharp
 using Nethereum.Mud.EncodingDecoding;
 
-// Get schema for a table record type
-var schema = SchemaEncoder.GetSchemaEncoded<PlayerKey, PlayerValue>(resourceId);
+// Get schema for a table record type (pass the encoded table resource id)
+var resourceId = ResourceEncoder.EncodeTable("Game", "Player");
+var schema = SchemaEncoder.GetSchemaEncoded<PlayerTableRecord.PlayerKey, PlayerTableRecord.PlayerValue>(resourceId);
 
 Console.WriteLine($"Key schema: {schema.KeySchema.ToHex()}");
 Console.WriteLine($"Value schema: {schema.ValueSchema.ToHex()}");
-Console.WriteLine($"Total static fields: {schema.NumStaticFields}");
-Console.WriteLine($"Total dynamic fields: {schema.NumDynamicFields}");
+Console.WriteLine($"Field layout: {schema.FieldLayout.ToHex()}");
+Console.WriteLine($"Key names: {string.Join(", ", schema.KeyNames)}");
+Console.WriteLine($"Field names: {string.Join(", ", schema.FieldNames)}");
 ```
 
 ### Example 7: REST API Client
@@ -417,49 +424,59 @@ Console.WriteLine($"Total dynamic fields: {schema.NumDynamicFields}");
 ```csharp
 using Nethereum.Mud.TableRepository;
 
-// Connect to remote table repository API
+// Connect to a remote table repository API
+// ctor: (IRestHttpHelper httpHelper, string baseUrl, string postPath = "storedrecords")
 var httpHelper = new RestHttpHelper(new HttpClient());
 var apiClient = new StoredRecordRestApiClient(httpHelper, "https://api.example.com/mud");
 
-// Query specific table
-var records = await apiClient.GetRecordsAsync<PlayerTableRecord>(
-    worldAddress: "0xWorldAddress",
-    tableId: playerTableResource.ResourceIdEncoded.ToHex()
-);
+// Build a predicate (filters on key fields) and query typed records
+var predicate = new TablePredicateBuilder<PlayerTableRecord, PlayerTableRecord.PlayerKey, PlayerTableRecord.PlayerValue>("0xWorldAddress")
+    .AndEqual(key => key.PlayerId, 1)
+    .Expand();
 
+IEnumerable<PlayerTableRecord> records = await apiClient.GetTableRecordsAsync<PlayerTableRecord>(predicate);
 foreach (var record in records)
 {
     Console.WriteLine($"Player {record.Keys.PlayerId}: {record.Values.Name}");
 }
 
-// Query with filters
-var filteredRecords = await apiClient.GetRecordsAsync<PlayerTableRecord>(
-    worldAddress: "0xWorldAddress",
-    tableId: playerTableResource.ResourceIdEncoded.ToHex(),
-    filter: $"Level gt 5"
-);
+// Or fetch the raw stored records matching the predicate
+List<StoredRecord> stored = await apiClient.GetRecordsAsync(predicate);
 ```
 
 ### Example 8: Working with Stored Records
 
 ```csharp
+using Nethereum.Mud;
 using Nethereum.Mud.TableRepository;
 
-// StoredRecord is the persisted form of a table record
+// StoredRecord is the persisted form of a table record.
+// It derives from EncodedValues, so StaticData/DynamicData/EncodedLengths are byte[];
+// the *Hex string setters (and TableId/Key0/Address) accept hex strings.
+var playerTableResourceId = ResourceEncoder.EncodeTable("Game", "Player");
+var encodedKey = playerRecord.GetEncodedKey();
+var encodedValues = playerRecord.GetEncodeValues();
+
 var storedRecord = new StoredRecord
 {
-    WorldAddress = "0xWorldAddress",
-    TableId = playerTableResource.ResourceIdEncoded.ToHex(),
-    Key0 = encodedKey[0].ToHex(),  // First key component
-    StaticData = encodedStaticData.ToHex(),
-    DynamicData = encodedDynamicData.ToHex(),
-    EncodedLengths = encodedLengths.ToHex(),
+    Address = "0xWorldAddress",                              // the World address (property is Address)
+    TableId = playerTableResourceId.ToHex(true),
+    Key = TableRepositoryBase.ConvertKeyToCombinedHex(encodedKey), // combined key (hex string setter)
+    Key0 = encodedKey[0].ToHex(true),                        // first key component (hex string setter)
+    StaticDataHex = encodedValues.StaticData.ToHex(true),
+    DynamicDataHex = encodedValues.DynamicData.ToHex(true),
+    EncodedLengthsHex = encodedValues.EncodedLengths.ToHex(true),
     IsDeleted = false
 };
 
-// Convert to table record
-var mapper = new StoredRecordDTOMapper<PlayerTableRecord>();
-var tableRecord = mapper.MapFromStoredRecord(storedRecord);
+// Map to/from the transport DTO with the static extension methods
+StoredRecordDTO dto = storedRecord.MapToStoredRecordDTO();
+StoredRecord roundTripped = dto.MapToStoredRecord();
+
+// Decode a stored record into a strongly-typed table record
+var tableRecord = new PlayerTableRecord();
+tableRecord.DecodeValues(roundTripped);                      // StoredRecord : EncodedValues
+tableRecord.DecodeKey(KeyUtils.ConvertKeyFromCombinedHex(roundTripped.Key));
 
 Console.WriteLine($"Restored player {tableRecord.Keys.PlayerId}");
 ```
@@ -505,40 +522,33 @@ using Nethereum.Mud;
 using Nethereum.Mud.TableRepository;
 using Nethereum.Web3;
 
-// Initialize repository with change tracking
-var playerRepository = new InMemoryChangeTrackerTableRepository<PlayerTableRecord>();
-var inventoryRepository = new InMemoryChangeTrackerTableRepository<InventoryTableRecord>();
+// Initialize repositories with change tracking (non-generic; one stores many tables)
+var playerRepository = new InMemoryChangeTrackerTableRepository();
+var inventoryRepository = new InMemoryChangeTrackerTableRepository();
+playerRepository.StartTracking();
+inventoryRepository.StartTracking();
 
 // Load initial state from chain or database
 // ...
 
-// Application logic modifies records
-var player = await playerRepository.GetByKeyAsync(encodedPlayerId);
+// Application logic modifies records, then upserts them
 player.Values.Level += 1;
 player.Values.Health = 100;
-await playerRepository.UpsertAsync(player);
+await playerRepository.SetRecordAsync(player);
 
-var inventory = await inventoryRepository.GetByKeyAsync(encodedInventoryKey);
 inventory.Values.Quantity -= 1;
-await inventoryRepository.UpsertAsync(inventory);
+await inventoryRepository.SetRecordAsync(inventory);
 
-// Get changes to sync with chain
-var playerChanges = playerRepository.GetChangeSet();
-var inventoryChanges = inventoryRepository.GetChangeSet();
+// Snapshot the changes to sync with chain (GetAndClearChangeSet also clears the tracker)
+InMemoryChangeSet playerChanges = playerRepository.GetAndClearChangeSet();
+InMemoryChangeSet inventoryChanges = inventoryRepository.GetAndClearChangeSet();
 
-// Batch changes for on-chain transaction
-var allChanges = new List<TableRecordChangeSet>
-{
-    playerChanges,
-    inventoryChanges
-};
+// Project to strongly-typed changes per table when needed
+TableRecordChangeSet<PlayerTableRecord> typedPlayerChanges =
+    playerChanges.GetTableRecordChanges<PlayerTableRecord>();
 
 // Send to chain via MUD World contract
 // (See Nethereum.Mud.Contracts for World interaction)
-
-// Clear change tracking after sync
-playerRepository.ClearChangeSet();
-inventoryRepository.ClearChangeSet();
 ```
 
 ## Core Classes
@@ -548,17 +558,20 @@ inventoryRepository.ClearChangeSet();
 Base class for MUD table records with keys.
 
 ```csharp
-public abstract class TableRecord<TKey, TValue> : ITableRecord
+public abstract class TableRecord<TKey, TValue> : TableRecordSingleton<TValue>, ITableRecord
     where TKey : class, new()
     where TValue : class, new()
 {
     public TKey Keys { get; set; }
-    public TValue Values { get; set; }
+    // Values is inherited from TableRecordSingleton<TValue>
 
-    public List<byte[]> GetEncodedKey();
-    public EncodedValues GetEncodeValues();
-    public void DecodeKey(List<byte[]> encodedKey);
-    public void DecodeValues(EncodedValues encodedValues);
+    public virtual List<byte[]> GetEncodedKey();
+    public virtual void DecodeKey(List<byte[]> encodedKey);
+    public override SchemaEncoded GetSchemaEncoded();
+
+    // Inherited from TableRecordSingleton<TValue>:
+    // public virtual EncodedValues GetEncodeValues();
+    // public void DecodeValues(EncodedValues encodedValues);
 }
 ```
 
@@ -579,16 +592,40 @@ public abstract class TableRecordSingleton<TValue> : ITableRecordSingleton
 
 ### ITableRepository
 
-Interface for table record storage and querying.
+Interface for table record storage and querying. It is **not** generic: a single
+repository stores records for any table, and the record type is supplied per call.
 
 ```csharp
-public interface ITableRepository<TTableRecord> where TTableRecord : ITableRecord, new()
+public interface ITableRepository : ITablePredicateQueryRepository
 {
-    Task<TTableRecord> GetByKeyAsync(List<byte[]> key);
-    Task<List<TTableRecord>> GetAsync();
-    Task<List<TTableRecord>> GetAsync(TablePredicate<TTableRecord> predicate);
-    Task UpsertAsync(TTableRecord record);
-    Task DeleteAsync(List<byte[]> key);
+    Task SetRecordAsync<TTableRecord>(TTableRecord record, string address = null,
+        BigInteger? blockNumber = null, int? logIndex = null) where TTableRecord : ITableRecord;
+    Task SetRecordsAsync<TTableRecord>(IEnumerable<TTableRecord> records, string address = null,
+        BigInteger? blockNumber = null, int? logIndex = null) where TTableRecord : ITableRecord;
+    Task SetRecordAsync(byte[] tableId, List<byte[]> key, EncodedValues encodedValues,
+        string address = null, BigInteger? blockNumber = null, int? logIndex = null);
+
+    Task<StoredRecord> GetRecordAsync(byte[] tableId, byte[] key);
+    Task<IEnumerable<EncodedTableRecord>> GetRecordsAsync(byte[] tableId);
+    Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>()
+        where TTableRecord : ITableRecordSingleton, new();
+
+    Task DeleteRecordAsync(byte[] tableId, List<byte[]> key, string address = null,
+        BigInteger? blockNumber = null, int? logIndex = null);
+
+    Task SetSpliceStaticDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData,
+        string address = null, BigInteger? blockNumber = null, int? logIndex = null);
+    Task SetSpliceDynamicDataAsync(byte[] tableId, List<byte[]> key, ulong start, byte[] newData,
+        ulong deleteCount, byte[] encodedLengths, string address = null,
+        BigInteger? blockNumber = null, int? logIndex = null);
+}
+
+// Predicate queries are declared on the base interface:
+public interface ITablePredicateQueryRepository
+{
+    Task<IEnumerable<TTableRecord>> GetTableRecordsAsync<TTableRecord>(TablePredicate predicate)
+        where TTableRecord : ITableRecord, new();
+    Task<List<StoredRecord>> GetRecordsAsync(TablePredicate predicate);
 }
 ```
 
@@ -616,15 +653,23 @@ public static class ResourceEncoder
 ```csharp
 using Nethereum.Mud.EncodingDecoding;
 
-// Custom key encoding
+// Custom key encoding (EncodeKey<T> returns the key components as List<byte[]>)
 var customKeys = KeyEncoderDecoder.EncodeKey(new MyKey
 {
     PlayerId = 1,
     ItemId = 42
 });
 
-// Custom value encoding
-var customValues = ValueEncoderDecoder.EncodeValues(new MyValue
+// Custom value encoding.
+// EncodeValues takes a List<FieldValue>; to encode an object, use EncodedValues<T>
+// (returns EncodedValues) or EncodeValuesAsyByteArray<T> (returns a single packed byte[]).
+EncodedValues customValues = ValueEncoderDecoder.EncodedValues(new MyValue
+{
+    Quantity = 10,
+    IsActive = true
+});
+
+byte[] packedValues = ValueEncoderDecoder.EncodeValuesAsyByteArray(new MyValue
 {
     Quantity = 10,
     IsActive = true
@@ -636,11 +681,11 @@ var customValues = ValueEncoderDecoder.EncodeValues(new MyValue
 ```csharp
 using Nethereum.Mud.EncodingDecoding;
 
-// Get field layout for a schema
-var fieldLayout = FieldLayoutEncoder.Encode(
-    staticFieldLengths: new List<byte> { 32, 32, 1 }, // uint256, uint256, bool
-    numDynamicFields: 2 // Two dynamic fields (bytes or arrays)
-);
+// Get field layout for a schema.
+// EncodeFieldLayout takes the value fields (List<FieldInfo>) and derives the static
+// field lengths and dynamic field count from them.
+List<FieldInfo> valueFields = SchemaEncoder.GetFieldsFromType<PlayerTableRecord.PlayerValue>();
+byte[] fieldLayout = FieldLayoutEncoder.EncodeFieldLayout(valueFields);
 ```
 
 ### Resource Registry
@@ -648,12 +693,12 @@ var fieldLayout = FieldLayoutEncoder.Encode(
 ```csharp
 using Nethereum.Mud;
 
-// Register custom resource types
-ResourceTypeRegistry.Register("CustomType", 0x1234);
+// Map an encoded resource id (hex) to a .NET record type
+var playerTableResourceId = ResourceEncoder.EncodeTable("Game", "Player");
+ResourceTypeRegistry.RegisterType(playerTableResourceId.ToHex(true), typeof(PlayerTableRecord));
 
-// Get resource type
-var tableType = ResourceTypeRegistry.GetResourceTypeId("Table"); // 0x7462...
-var systemType = ResourceTypeRegistry.GetResourceTypeId("System"); // 0x7379...
+// Look the type back up by its encoded resource id
+Type recordType = ResourceTypeRegistry.GetResourceType(playerTableResourceId.ToHex(true));
 ```
 
 ## Production Patterns
@@ -663,16 +708,19 @@ var systemType = ResourceTypeRegistry.GetResourceTypeId("System"); // 0x7379...
 Keep MUD table data in memory for fast reads, sync changes to chain:
 
 ```csharp
-// In-memory repositories for all tables
-var repositories = new Dictionary<string, object>
+// A change-tracking repository is not generic and stores records for every table.
+// Use one instance, or key several by concern if you prefer isolated change sets.
+var repositories = new Dictionary<string, InMemoryChangeTrackerTableRepository>
 {
-    ["Player"] = new InMemoryChangeTrackerTableRepository<PlayerTableRecord>(),
-    ["Inventory"] = new InMemoryChangeTrackerTableRepository<InventoryTableRecord>(),
+    ["Player"] = new InMemoryChangeTrackerTableRepository(),
+    ["Inventory"] = new InMemoryChangeTrackerTableRepository(),
     // ...
 };
 
-// User interacts locally
-// Changes tracked automatically
+foreach (var repo in repositories.Values)
+    repo.StartTracking();
+
+// User interacts locally; upserts are tracked automatically
 
 // Periodic sync to chain
 await SyncAllChangesToChainAsync(repositories);
@@ -684,12 +732,15 @@ await SyncAllChangesToChainAsync(repositories);
 // Load initial state from REST API
 var httpHelper = new RestHttpHelper(new HttpClient());
 var apiClient = new StoredRecordRestApiClient(httpHelper, "https://api.mud.game");
-var records = await apiClient.GetRecordsAsync<PlayerTableRecord>(worldAddress, tableId);
 
-var localRepo = new InMemoryTableRepository<PlayerTableRecord>();
+var predicate = new TablePredicateBuilder<PlayerTableRecord, PlayerTableRecord.PlayerKey, PlayerTableRecord.PlayerValue>(worldAddress)
+    .Expand();
+var records = await apiClient.GetTableRecordsAsync<PlayerTableRecord>(predicate);
+
+var localRepo = new InMemoryTableRepository();
 foreach (var record in records)
 {
-    await localRepo.UpsertAsync(record);
+    await localRepo.SetRecordAsync(record);
 }
 
 // Work offline
@@ -704,15 +755,17 @@ await SyncToChainAsync(changes);
 
 ```csharp
 // Subscribe to on-chain table updates
-// (See Nethereum.Mud.Contracts for event subscriptions)
+// (See Nethereum.Mud.Contracts for event subscriptions that yield StoredRecord instances)
 
-void OnStoreSetRecordEvent(StoreSetRecordEventDTO evt)
+async Task OnStoreSetRecord(StoredRecord storedRecord)
 {
-    var storedRecord = evt.ToStoredRecord();
-    var tableRecord = mapper.MapFromStoredRecord<PlayerTableRecord>(storedRecord);
+    // Decode the stored record into a strongly-typed record
+    var tableRecord = new PlayerTableRecord();
+    tableRecord.DecodeValues(storedRecord);                  // StoredRecord : EncodedValues
+    tableRecord.DecodeKey(KeyUtils.ConvertKeyFromCombinedHex(storedRecord.Key));
 
     // Update local repository
-    await repository.UpsertAsync(tableRecord);
+    await repository.SetRecordAsync(tableRecord);
 
     // Notify UI
     NotifyUIOfUpdate(tableRecord);
@@ -766,7 +819,7 @@ MUD enables complex on-chain applications:
 - [MUD Documentation](https://mud.dev/)
 - [MUD GitHub](https://github.com/latticexyz/mud)
 - [Nethereum MUD Console Tests](https://github.com/Nethereum/Nethereum/tree/master/consoletests/NethereumMudLogProcessing)
-- [Code Generation Guide](../Nethereum.Contracts/README.md#advanced-multi-settings-configuration-preferred)
+- [Code Generation Guide](../Nethereum.Contracts/README.md#pattern-3-code-generation-production-recommended)
 
 ## Support
 
