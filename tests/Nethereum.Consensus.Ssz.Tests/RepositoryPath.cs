@@ -1,4 +1,3 @@
-﻿#nullable enable
 using System;
 using System.IO;
 
@@ -6,17 +5,18 @@ namespace Nethereum.Consensus.Ssz.Tests
 {
     internal static class RepositoryPath
     {
-        private static readonly Lazy<string?> _root = new Lazy<string?>(ResolveRepositoryRoot);
+        private const string VectorsRelativePath = "tests/LightClientVectors";
 
-        public static string? Root => _root.Value;
+        private static readonly Lazy<string> _root = new Lazy<string>(ResolveTheDirectoryHoldingTheVectors);
 
-        private static string? ResolveRepositoryRoot()
+        public static string Root => _root.Value;
+
+        private static string ResolveTheDirectoryHoldingTheVectors()
         {
             var directory = new DirectoryInfo(AppContext.BaseDirectory);
             while (directory != null)
             {
-                var marker = Path.Combine(directory.FullName, "LIGHTCLIENT_ROADMAP.md");
-                if (File.Exists(marker))
+                if (Directory.Exists(Path.Combine(directory.FullName, "tests", "LightClientVectors")))
                 {
                     return directory.FullName;
                 }
@@ -24,7 +24,10 @@ namespace Nethereum.Consensus.Ssz.Tests
                 directory = directory.Parent;
             }
 
-            return null;
+            throw new InvalidOperationException(
+                $"No ancestor of {AppContext.BaseDirectory} contains {VectorsRelativePath}, so the " +
+                "consensus-spec vectors cannot be located. Every vector-driven theory would otherwise " +
+                "report \"No data found\", which says nothing about why.");
         }
     }
 }

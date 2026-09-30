@@ -9,10 +9,16 @@ namespace Nethereum.Consensus.Clique
         public List<string> Signers { get; set; } = new();
         public Dictionary<string, CliqueVote> Votes { get; set; } = new();
         public Dictionary<string, int> VoteTally { get; set; } = new();
+        public Dictionary<long, string> Recents { get; set; } = new();
 
         public bool IsAuthorized(string address)
         {
             return Signers.Any(s => s.IsTheSameAddress(address));
+        }
+
+        public bool ValidVote(string target, bool authorize)
+        {
+            return IsAuthorized(target) != authorize;
         }
 
         public int SignerIndex(string address)
@@ -24,6 +30,31 @@ namespace Nethereum.Consensus.Clique
 
         public int RequiredVotes => (TotalSigners / 2) + 1;
 
+        public bool SignedWithinLimit(string signer, long blockNumber, int limit)
+        {
+            foreach (var entry in Recents)
+            {
+                if (entry.Value.IsTheSameAddress(signer) && entry.Key > blockNumber - limit)
+                    return true;
+            }
+            return false;
+        }
+
+        public void RecordSigner(long blockNumber, string signer, int limit)
+        {
+            Recents[blockNumber] = signer;
+            if (blockNumber >= limit)
+                Recents.Remove(blockNumber - limit);
+        }
+
+        public static List<string> NormalizedAndSorted(IEnumerable<string> signers)
+        {
+            return signers
+                .Select(AddressUtil.Current.ConvertToValid20ByteAddressLowerCase)
+                .OrderBy(s => s, StringComparer.Ordinal)
+                .ToList();
+        }
+
         public CliqueSnapshot Clone()
         {
             return new CliqueSnapshot
@@ -32,7 +63,8 @@ namespace Nethereum.Consensus.Clique
                 BlockHash = (byte[])BlockHash.Clone(),
                 Signers = new List<string>(Signers),
                 Votes = new Dictionary<string, CliqueVote>(Votes),
-                VoteTally = new Dictionary<string, int>(VoteTally)
+                VoteTally = new Dictionary<string, int>(VoteTally),
+                Recents = new Dictionary<long, string>(Recents)
             };
         }
     }
@@ -45,10 +77,4 @@ namespace Nethereum.Consensus.Clique
         public long BlockNumber { get; set; }
     }
 
-    public class CliqueSigner
-    {
-        public string Address { get; set; } = "";
-        public bool IsAuthorized { get; set; }
-        public long LastSignedBlock { get; set; }
-    }
 }

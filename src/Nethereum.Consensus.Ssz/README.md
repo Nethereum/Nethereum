@@ -121,9 +121,9 @@ var header = new BeaconBlockHeader
 {
     Slot = 5000000,
     ProposerIndex = 123456,
-    ParentRoot = new byte[32] { 0x01, 0x02, /* ... */ },
-    StateRoot = new byte[32] { 0x03, 0x04, /* ... */ },
-    BodyRoot = new byte[32] { 0x05, 0x06, /* ... */ }
+    ParentRoot = new byte[32], // 32-byte root
+    StateRoot = new byte[32],  // 32-byte root
+    BodyRoot = new byte[32]    // 32-byte root
 };
 
 // Encode to SSZ bytes (always 112 bytes)
@@ -202,12 +202,17 @@ Assert.True(root.SequenceEqual(root2));
 ```csharp
 using Nethereum.Consensus.Ssz;
 
-// Bootstrap data for light client initialization
-var bootstrap = new LightClientBootstrap();
+// Bootstrap data for a Capella light client. The container Fork, the nested
+// Header.Fork and the fork passed to Encode/Decode must all agree.
+var fork = ConsensusFork.Capella;
 
-// Current header
+var bootstrap = new LightClientBootstrap { Fork = fork };
+
+// Current header. Capella+ headers carry an ExecutionPayloadHeader (same Fork)
+// plus a 4-root execution branch (ExecutionBranchDepth = 4).
 bootstrap.Header = new LightClientHeader
 {
+    Fork = fork,
     Beacon = new BeaconBlockHeader
     {
         Slot = 5000000,
@@ -215,33 +220,50 @@ bootstrap.Header = new LightClientHeader
         ParentRoot = new byte[32],
         StateRoot = new byte[32],
         BodyRoot = new byte[32]
+    },
+    Execution = new ExecutionPayloadHeader
+    {
+        Fork = fork,
+        ParentHash = new byte[32],
+        FeeRecipient = new byte[20],
+        StateRoot = new byte[32],
+        ReceiptsRoot = new byte[32],
+        LogsBloom = new byte[256],
+        PrevRandao = new byte[32],
+        ExtraData = new byte[0],
+        BaseFeePerGas = new byte[32],
+        BlockHash = new byte[32],
+        TransactionsRoot = new byte[32],
+        WithdrawalsRoot = new byte[32] // Capella+
+    },
+    ExecutionBranch = new List<byte[]>
+    {
+        new byte[32], new byte[32], new byte[32], new byte[32] // depth 4
     }
 };
 
-// Current sync committee
+// Current sync committee: exactly 512 pubkeys (48 bytes each) + aggregate
 bootstrap.CurrentSyncCommittee = new SyncCommittee
 {
     PubKeys = new List<byte[]>(),
     AggregatePubKey = new byte[48]
 };
-
-// Add 512 validator pubkeys
-for (int i = 0; i < 512; i++)
+for (int i = 0; i < SszBasicTypes.SyncCommitteeSize; i++)
 {
     bootstrap.CurrentSyncCommittee.PubKeys.Add(new byte[48]);
 }
 
-// Merkle branch for verification (depth varies by spec)
+// current_sync_committee_branch: 5 roots for Altair-Deneb, 6 for Electra+
 bootstrap.CurrentSyncCommitteeBranch = new List<byte[]>
 {
-    new byte[32], new byte[32], new byte[32], new byte[32]
+    new byte[32], new byte[32], new byte[32], new byte[32], new byte[32]
 };
 
-// Encode for transmission
-byte[] encoded = bootstrap.Encode();
+// Encode for transmission (fork selects the container shape)
+byte[] encoded = bootstrap.Encode(fork);
 
-// Light client can decode and verify
-var decoded = LightClientBootstrap.Decode(encoded);
+// Light client can decode and verify - the same fork must be supplied
+var decoded = LightClientBootstrap.Decode(encoded, fork);
 ```
 
 ### Example 5: ExecutionPayloadHeader Handling
@@ -252,6 +274,7 @@ using Nethereum.Consensus.Ssz;
 // Post-merge blocks include execution layer data
 var executionHeader = new ExecutionPayloadHeader
 {
+    Fork = ConsensusFork.Bellatrix, // fork the header belongs to
     ParentHash = new byte[32],
     FeeRecipient = new byte[20], // Ethereum address
     StateRoot = new byte[32],
@@ -263,16 +286,17 @@ var executionHeader = new ExecutionPayloadHeader
     GasUsed = 12000000,
     Timestamp = 1663224162,
     ExtraData = new byte[0],
-    BaseFeePerGas = System.Numerics.BigInteger.Parse("15000000000"),
+    BaseFeePerGas = new byte[32], // 32-byte little-endian uint256
     BlockHash = new byte[32],
     TransactionsRoot = new byte[32]
+    // Capella adds WithdrawalsRoot; Deneb adds BlobGasUsed and ExcessBlobGas
 };
 
-// Encode execution header
+// Encode execution header (no-arg Encode uses the Fork set above)
 byte[] encoded = executionHeader.Encode();
 
-// Decode
-var decoded = ExecutionPayloadHeader.Decode(encoded);
+// Decode - the fork must be supplied so the right fields are read
+var decoded = ExecutionPayloadHeader.Decode(encoded, ConsensusFork.Bellatrix);
 
 Console.WriteLine($"Block number: {decoded.BlockNumber}");
 Console.WriteLine($"Gas used: {decoded.GasUsed}/{decoded.GasLimit}");
@@ -295,26 +319,30 @@ lightClientHeader.Beacon = new BeaconBlockHeader
     BodyRoot = new byte[32]
 };
 
-// Execution layer header (post-merge)
+// The fork the header belongs to (Capella+ carries an execution payload)
+lightClientHeader.Fork = ConsensusFork.Capella;
+
+// Execution layer header (post-merge) - its Fork must match the outer fork
 lightClientHeader.Execution = new ExecutionPayloadHeader
 {
+    Fork = ConsensusFork.Capella,
     BlockNumber = 15537394,
     BlockHash = new byte[32],
     ParentHash = new byte[32],
     // ... other fields
 };
 
-// Merkle branch proving execution payload inclusion
+// Merkle branch proving execution payload inclusion (depth 4, Capella+)
 lightClientHeader.ExecutionBranch = new List<byte[]>
 {
     new byte[32], new byte[32], new byte[32], new byte[32]
 };
 
 // Encode complete header
-byte[] encoded = lightClientHeader.Encode();
+byte[] encoded = lightClientHeader.Encode(ConsensusFork.Capella);
 
-// Light client uses this to verify execution layer blocks
-var decoded = LightClientHeader.Decode(encoded);
+// Light client uses this to verify execution layer blocks - supply the same fork
+var decoded = LightClientHeader.Decode(encoded, ConsensusFork.Capella);
 ```
 
 ### Example 7: Fixed vs Dynamic Section Handling
@@ -339,17 +367,55 @@ var header = new BeaconBlockHeader
 byte[] encoded = header.Encode();
 Assert.Equal(112, encoded.Length);
 
-// Containers with dynamic fields use offsets
+// Containers with variable-length fields use offsets. At Capella+ the
+// LightClientHeader is variable-size (its ExecutionPayloadHeader.extra_data),
+// so the bootstrap encodes it via an offset in the fixed section.
+var fork = ConsensusFork.Capella;
+
+var syncCommittee = new SyncCommittee
+{
+    PubKeys = new List<byte[]>(),
+    AggregatePubKey = new byte[48]
+};
+for (int i = 0; i < SszBasicTypes.SyncCommitteeSize; i++) // exactly 512
+{
+    syncCommittee.PubKeys.Add(new byte[48]);
+}
+
 var bootstrap = new LightClientBootstrap
 {
-    Header = new LightClientHeader(),
-    CurrentSyncCommittee = new SyncCommittee(),
-    CurrentSyncCommitteeBranch = new List<byte[]> { new byte[32] }
+    Fork = fork,
+    Header = new LightClientHeader
+    {
+        Fork = fork,
+        Beacon = new BeaconBlockHeader
+        {
+            ParentRoot = new byte[32],
+            StateRoot = new byte[32],
+            BodyRoot = new byte[32]
+        },
+        Execution = new ExecutionPayloadHeader
+        {
+            Fork = fork,
+            FeeRecipient = new byte[20],
+            LogsBloom = new byte[256],
+            ExtraData = new byte[0]
+        },
+        ExecutionBranch = new List<byte[]>
+        {
+            new byte[32], new byte[32], new byte[32], new byte[32] // depth 4
+        }
+    },
+    CurrentSyncCommittee = syncCommittee,
+    CurrentSyncCommitteeBranch = new List<byte[]>
+    {
+        new byte[32], new byte[32], new byte[32], new byte[32], new byte[32] // 5 roots
+    }
 };
 
-// Dynamic section comes after fixed section
-// Fixed section contains 4-byte offsets to dynamic data
-byte[] dynamicEncoded = bootstrap.Encode();
+// Dynamic (variable-size) header comes after the fixed section,
+// which holds a 4-byte offset pointing to it.
+byte[] dynamicEncoded = bootstrap.Encode(fork);
 ```
 
 ### Example 8: Container Verification Pattern
@@ -391,10 +457,11 @@ public bool VerifyLightClientUpdate(
 using Nethereum.Consensus.Ssz;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-// Step 1: Bootstrap light client
-var bootstrap = new LightClientBootstrap();
+// Step 1: Bootstrap light client (Bellatrix header is a bare beacon header)
+var bootstrap = new LightClientBootstrap { Fork = ConsensusFork.Bellatrix };
 bootstrap.Header = new LightClientHeader
 {
+    Fork = ConsensusFork.Bellatrix,
     Beacon = new BeaconBlockHeader
     {
         Slot = 5000000,
@@ -416,17 +483,18 @@ for (int i = 0; i < 512; i++)
     bootstrap.CurrentSyncCommittee.PubKeys.Add(new byte[48]);
 }
 
+// current_sync_committee_branch: 5 roots for Altair-Deneb (Bellatrix included)
 bootstrap.CurrentSyncCommitteeBranch = new List<byte[]>
 {
-    new byte[32], new byte[32], new byte[32], new byte[32]
+    new byte[32], new byte[32], new byte[32], new byte[32], new byte[32]
 };
 
 // Step 2: Encode and transmit
-byte[] bootstrapData = bootstrap.Encode();
+byte[] bootstrapData = bootstrap.Encode(ConsensusFork.Bellatrix);
 Console.WriteLine($"Bootstrap size: {bootstrapData.Length} bytes");
 
-// Step 3: Light client receives and decodes
-var decoded = LightClientBootstrap.Decode(bootstrapData);
+// Step 3: Light client receives and decodes with the same fork
+var decoded = LightClientBootstrap.Decode(bootstrapData, ConsensusFork.Bellatrix);
 
 // Step 4: Verify sync committee
 byte[] syncCommitteeRoot = decoded.CurrentSyncCommittee.HashTreeRoot();
@@ -438,6 +506,26 @@ Console.WriteLine($"Sync committee size: {decoded.CurrentSyncCommittee.PubKeys.C
 ```
 
 ## API Reference
+
+### ConsensusFork
+
+Consensus-layer hard forks affecting the `LightClient*` and `ExecutionPayloadHeader` container shapes, merkleization indices, and proof depths. Ordering is chronological, so comparisons such as `fork >= ConsensusFork.Capella` are spec-meaningful. Every fork-aware `Encode`/`Decode`/`HashTreeRoot` overload takes a `ConsensusFork` (the parameterless overloads use the container's `Fork` property).
+
+```csharp
+public enum ConsensusFork
+{
+    Phase0 = 0,
+    Altair = 1,
+    Bellatrix = 2,   // execution payload header first appears (HasExecutionPayloadContainer)
+    Capella = 3,     // LightClientHeader gains execution payload; adds WithdrawalsRoot
+    Deneb = 4,       // adds BlobGasUsed / ExcessBlobGas
+    Electra = 5,     // wider sync-committee / finality branches
+    Fulu = 6,
+    Gloas = 7
+}
+```
+
+The related helper `LightClientForkSpec` exposes the per-fork constants (branch lengths, gindices, and predicates such as `HasExecutionPayloadHeader`, `HasWithdrawalsRoot`, `HasBlobGasFields`) that these containers use internally.
 
 ### BeaconBlockHeader
 
@@ -465,7 +553,7 @@ Sync committee of 512 validators (24,624 bytes).
 ```csharp
 public class SyncCommittee
 {
-    public List<byte[]> PubKeys { get; set; }      // 512 x 48 bytes
+    public IList<byte[]> PubKeys { get; set; }     // 512 x 48 bytes
     public byte[] AggregatePubKey { get; set; }    // 48 bytes
 
     public byte[] Encode();
@@ -481,13 +569,16 @@ Beacon header with execution payload.
 ```csharp
 public class LightClientHeader
 {
+    public ConsensusFork Fork { get; set; }
     public BeaconBlockHeader Beacon { get; set; }
     public ExecutionPayloadHeader Execution { get; set; }
-    public List<byte[]> ExecutionBranch { get; set; }
+    public IList<byte[]> ExecutionBranch { get; set; }
 
-    public byte[] Encode();
-    public static LightClientHeader Decode(byte[] data);
-    public byte[] HashTreeRoot();
+    public byte[] Encode();                       // uses this.Fork
+    public byte[] Encode(ConsensusFork fork);
+    public static LightClientHeader Decode(byte[] data, ConsensusFork fork);
+    public byte[] HashTreeRoot();                 // uses this.Fork
+    public byte[] HashTreeRoot(ConsensusFork fork);
 }
 ```
 
@@ -498,13 +589,16 @@ Initial sync data for light clients.
 ```csharp
 public class LightClientBootstrap
 {
+    public ConsensusFork Fork { get; set; }
     public LightClientHeader Header { get; set; }
     public SyncCommittee CurrentSyncCommittee { get; set; }
-    public List<byte[]> CurrentSyncCommitteeBranch { get; set; }
+    public IList<byte[]> CurrentSyncCommitteeBranch { get; set; }
 
-    public byte[] Encode();
-    public static LightClientBootstrap Decode(byte[] data);
-    public byte[] HashTreeRoot();
+    public byte[] Encode();                       // uses this.Fork
+    public byte[] Encode(ConsensusFork fork);
+    public static LightClientBootstrap Decode(byte[] data, ConsensusFork fork);
+    public byte[] HashTreeRoot();                 // uses this.Fork
+    public byte[] HashTreeRoot(ConsensusFork fork);
 }
 ```
 
@@ -515,6 +609,7 @@ Full light client update with next sync committee and finality proof.
 ```csharp
 public class LightClientUpdate
 {
+    public ConsensusFork Fork { get; set; }
     public LightClientHeader AttestedHeader { get; set; }
     public SyncCommittee NextSyncCommittee { get; set; }
     public IList<byte[]> NextSyncCommitteeBranch { get; set; }
@@ -523,9 +618,11 @@ public class LightClientUpdate
     public SyncAggregate SyncAggregate { get; set; }
     public ulong SignatureSlot { get; set; }
 
-    public byte[] Encode();
-    public static LightClientUpdate Decode(byte[] data);
-    public byte[] HashTreeRoot();
+    public byte[] Encode();                       // uses this.Fork
+    public byte[] Encode(ConsensusFork fork);
+    public static LightClientUpdate Decode(byte[] data, ConsensusFork fork);
+    public byte[] HashTreeRoot();                 // uses this.Fork
+    public byte[] HashTreeRoot(ConsensusFork fork);
 }
 ```
 
@@ -536,15 +633,18 @@ Light client update proving finality without sync committee rotation.
 ```csharp
 public class LightClientFinalityUpdate
 {
+    public ConsensusFork Fork { get; set; }
     public LightClientHeader AttestedHeader { get; set; }
     public LightClientHeader FinalizedHeader { get; set; }
     public IList<byte[]> FinalityBranch { get; set; }
     public SyncAggregate SyncAggregate { get; set; }
     public ulong SignatureSlot { get; set; }
 
-    public byte[] Encode();
-    public static LightClientFinalityUpdate Decode(byte[] data);
-    public byte[] HashTreeRoot();
+    public byte[] Encode();                       // uses this.Fork
+    public byte[] Encode(ConsensusFork fork);
+    public static LightClientFinalityUpdate Decode(byte[] data, ConsensusFork fork);
+    public byte[] HashTreeRoot();                 // uses this.Fork
+    public byte[] HashTreeRoot(ConsensusFork fork);
 }
 ```
 
@@ -555,13 +655,16 @@ Lightweight update for optimistic header tracking.
 ```csharp
 public class LightClientOptimisticUpdate
 {
+    public ConsensusFork Fork { get; set; }
     public LightClientHeader AttestedHeader { get; set; }
     public SyncAggregate SyncAggregate { get; set; }
     public ulong SignatureSlot { get; set; }
 
-    public byte[] Encode();
-    public static LightClientOptimisticUpdate Decode(byte[] data);
-    public byte[] HashTreeRoot();
+    public byte[] Encode();                       // uses this.Fork
+    public byte[] Encode(ConsensusFork fork);
+    public static LightClientOptimisticUpdate Decode(byte[] data, ConsensusFork fork);
+    public byte[] HashTreeRoot();                 // uses this.Fork
+    public byte[] HashTreeRoot(ConsensusFork fork);
 }
 ```
 
@@ -588,6 +691,7 @@ Post-merge execution layer header.
 ```csharp
 public class ExecutionPayloadHeader
 {
+    public ConsensusFork Fork { get; set; }          // fork this header belongs to
     public byte[] ParentHash { get; set; }           // 32 bytes
     public byte[] FeeRecipient { get; set; }         // 20 bytes
     public byte[] StateRoot { get; set; }            // 32 bytes
@@ -598,14 +702,19 @@ public class ExecutionPayloadHeader
     public ulong GasLimit { get; set; }              // 8 bytes
     public ulong GasUsed { get; set; }               // 8 bytes
     public ulong Timestamp { get; set; }             // 8 bytes
-    public byte[] ExtraData { get; set; }            // Variable
-    public BigInteger BaseFeePerGas { get; set; }    // 32 bytes
+    public byte[] ExtraData { get; set; }            // Variable (max 32 bytes)
+    public byte[] BaseFeePerGas { get; set; }        // 32 bytes (little-endian uint256)
     public byte[] BlockHash { get; set; }            // 32 bytes
     public byte[] TransactionsRoot { get; set; }     // 32 bytes
+    public byte[] WithdrawalsRoot { get; set; }      // 32 bytes (Capella+)
+    public ulong BlobGasUsed { get; set; }           // 8 bytes (Deneb+)
+    public ulong ExcessBlobGas { get; set; }         // 8 bytes (Deneb+)
 
-    public byte[] Encode();
-    public static ExecutionPayloadHeader Decode(ReadOnlySpan<byte> data);
-    public byte[] HashTreeRoot();
+    public byte[] Encode();                          // uses this.Fork
+    public byte[] Encode(ConsensusFork fork);
+    public static ExecutionPayloadHeader Decode(ReadOnlySpan<byte> data, ConsensusFork fork);
+    public byte[] HashTreeRoot();                    // uses this.Fork
+    public byte[] HashTreeRoot(ConsensusFork fork);
 }
 ```
 

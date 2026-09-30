@@ -1,17 +1,43 @@
 using System;
+using Nethereum.Consensus.Ssz;
 
 namespace Nethereum.Consensus.LightClient
 {
-    /// <summary>
-    /// Represents the configuration toggles and checkpoints required to initialise a beacon light client.
-    /// </summary>
     public class LightClientConfig
     {
-        public byte[] GenesisValidatorsRoot { get; set; } = Array.Empty<byte>();
-        public byte[] CurrentForkVersion { get; set; } = new byte[4];
-        public ulong SlotsPerEpoch { get; set; } = 32;
+        private byte[] _genesisValidatorsRoot = new byte[Nethereum.Consensus.Ssz.SszBasicTypes.RootLength];
+        private byte[] _weakSubjectivityRoot = new byte[Nethereum.Consensus.Ssz.SszBasicTypes.RootLength];
+
+        public byte[] GenesisValidatorsRoot
+        {
+            get => _genesisValidatorsRoot;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value.Length != Nethereum.Consensus.Ssz.SszBasicTypes.RootLength)
+                    throw new InvalidOperationException(
+                        $"GenesisValidatorsRoot must be exactly {Nethereum.Consensus.Ssz.SszBasicTypes.RootLength} bytes; got {value.Length}.");
+                _genesisValidatorsRoot = value;
+            }
+        }
+
         public ulong SecondsPerSlot { get; set; } = 12;
-        public byte[] WeakSubjectivityRoot { get; set; } = Array.Empty<byte>();
+
+        public byte[] WeakSubjectivityRoot
+        {
+            get => _weakSubjectivityRoot;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value.Length != Nethereum.Consensus.Ssz.SszBasicTypes.RootLength)
+                    throw new InvalidOperationException(
+                        $"WeakSubjectivityRoot must be exactly {Nethereum.Consensus.Ssz.SszBasicTypes.RootLength} bytes; got {value.Length}.");
+                _weakSubjectivityRoot = value;
+            }
+        }
+
         public ulong WeakSubjectivityPeriod { get; set; } = 256 * 32;
+
+        public ChainSpec ChainSpec { get; set; } = ChainSpec.Mainnet;
     }
 }

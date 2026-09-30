@@ -4,9 +4,6 @@ using System.Collections.Generic;
 
 namespace Nethereum.Ssz
 {
-    /// <summary>
-    /// Minimal SSZ reader companion to <see cref="SszWriter"/>.
-    /// </summary>
     public ref struct SszReader
     {
         private ReadOnlySpan<byte> _data;

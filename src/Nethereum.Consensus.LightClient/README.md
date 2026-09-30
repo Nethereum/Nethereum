@@ -9,7 +9,7 @@ dotnet add package Nethereum.Consensus.LightClient
 dotnet add package Nethereum.Signer.Bls.Herumi  # For BLS signature verification
 ```
 
-**Native Library Requirement**: BLS signature verification requires the Herumi BLS native library (`bls_eth.dll`/`libbls_eth.so`/`libbls_eth.dylib`). The library is included in the `Nethereum.Signer.Bls.Herumi` NuGet package for Windows/Linux/macOS x64/arm64.
+**Native Library Requirement**: BLS signature verification requires the Herumi BLS native library (`bls_eth.dll`/`libbls_eth.so`/`libbls_eth.dylib`). The library is included in the `Nethereum.Signer.Bls.Herumi` NuGet package for Windows x64, Linux x64/arm64, macOS x64/arm64 and Android arm64 (there is no Windows arm64 build).
 
 ## Overview
 
@@ -26,7 +26,7 @@ Nethereum.Consensus.LightClient implements the Ethereum light client sync protoc
 
 **Security Model:**
 - Requires trusted weak subjectivity checkpoint to bootstrap
-- Verifies 512-validator sync committee signatures (67% participation threshold)
+- Verifies 512-validator sync committee signatures (baseline participation floor for updates; 2/3 supermajority participation required for finality updates)
 - Tracks both finalized (2/3 finality) and optimistic (latest) headers
 - Uses BLS12-381 signature aggregation for efficient verification
 
@@ -34,36 +34,67 @@ Nethereum.Consensus.LightClient implements the Ethereum light client sync protoc
 
 ### LightClientService
 
-Main orchestrator for light client synchronization (LightClientService.cs:14-393).
+Main orchestrator for light client synchronization (LightClientService.cs:14-1151). Exposes the sync-committee domain type constant `public static readonly byte[] DomainSyncCommittee` (LightClientService.cs:23) and `public string LastRejectReason { get; private set; }` (LightClientService.cs:366), which records why the most recent update was rejected.
 
 **Initialization:**
 
 ```csharp
-// LightClientService.cs:36-68
+// LightClientService.cs:43-115 (code verbatim; inline comments condensed)
 public async Task InitializeAsync(CancellationToken cancellationToken = default)
 {
+    cancellationToken.ThrowIfCancellationRequested();
+
     _state = await _store.LoadAsync().ConfigureAwait(false);
     if (_state != null)
     {
-        return; // Already initialized from persistent storage
+        // Resumed from persistence: refresh to the current head using the resumed
+        // committees. A transient light-client failure keeps the persisted head.
+        try
+        {
+            await UpdateAsync(cancellationToken).ConfigureAwait(false);
+            await UpdateFinalityAsync(cancellationToken).ConfigureAwait(false);
+            await UpdateOptimisticAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch
+        {
+            // Light client unreachable on resume — serve the persisted verified head.
+        }
+        return;
     }
 
-    // Bootstrap from weak subjectivity checkpoint
-    var blockRootHex = _config.WeakSubjectivityRoot.ToHex(true);
+    // Use the configured weak-subjectivity root, or derive it fresh from the
+    // beacon node's latest finality update when none is configured.
+    var bootstrapRoot = _config.WeakSubjectivityRoot;
+    if (IsEmptyRoot(bootstrapRoot))
+    {
+        var finalityResponse = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
+        var finalityUpdate = LightClientResponseMapper.ToDomain(finalityResponse);
+        bootstrapRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
+    }
+    var blockRootHex = bootstrapRoot.ToHex(true);
     var response = await _apiClient.GetBootstrapAsync(blockRootHex).ConfigureAwait(false);
     var bootstrap = LightClientResponseMapper.ToDomain(response);
-    ValidateBootstrap(bootstrap);
+    ValidateBootstrap(bootstrap, bootstrapRoot);
 
     _state = new LightClientState
     {
         FinalizedHeader = bootstrap.Header.Beacon,
         FinalizedExecutionPayload = bootstrap.Header.Execution,
         CurrentSyncCommittee = bootstrap.CurrentSyncCommittee,
-        NextSyncCommittee = bootstrap.CurrentSyncCommittee,
+        NextSyncCommittee = new SyncCommittee(),
         FinalizedSlot = bootstrap.Header.Beacon.Slot,
         CurrentPeriod = ComputePeriod(bootstrap.Header.Beacon.Slot),
         LastUpdated = DateTimeOffset.UtcNow
     };
+
+    if (bootstrap.Header.Execution != null)
+    {
+        _state.SetBlockHash(
+            bootstrap.Header.Execution.BlockNumber,
+            bootstrap.Header.Execution.BlockHash,
+            BlockHashFinality.Finalized);
+    }
 
     await _store.SaveAsync(_state).ConfigureAwait(false);
 }
@@ -77,31 +108,45 @@ public async Task InitializeAsync(CancellationToken cancellationToken = default)
 
 **BLS Signature Verification:**
 
+An update's sync aggregate is verified by `VerifyFullUpdateSyncAggregate` (LightClientService.cs:847-871), which enforces the baseline participation floor (and the supermajority quorum for finality updates) before delegating to `VerifyAggregateSignature`. That method selects the committee for the signature slot's period, derives the domain via `ComputeSyncCommitteeDomain(ulong signatureSlot)`, and verifies the BLS aggregate:
+
 ```csharp
-// LightClientService.cs:280-306
-private bool VerifySyncAggregateCore(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader)
+// LightClientService.cs:936-972
+private bool VerifyAggregateSignature(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader, ulong signatureSlot)
 {
-    if (bits.Length != SszBasicTypes.SyncCommitteeSize / 8)
+    if (bits == null || signature == null || attestedHeader == null)
     {
         return false;
     }
 
-    // Select participating validators from sync committee
-    var participants = SelectParticipantPubKeys(_state.CurrentSyncCommittee, bits);
+    // The sync aggregate is signed by the committee for the signature slot's sync-committee
+    // period: the store's current committee when the signature period equals the store
+    // (finalized) period, the next committee when it is period + 1. Verifying a next-period
+    // signature against the current committee fails BLS and freezes the LC at every committee
+    // boundary (process_light_client_update, specs/altair/light-client/sync-protocol.md).
+    var signaturePeriod = ComputePeriod(signatureSlot);
+    var storePeriod = ComputePeriod(_state.FinalizedSlot);
+    SyncCommittee committee;
+    if (signaturePeriod == storePeriod)
+        committee = _state.CurrentSyncCommittee;
+    else if (signaturePeriod == storePeriod + 1)
+        committee = _state.NextSyncCommittee;
+    else
+        return false;
+    if (committee == null)
+    {
+        return false;
+    }
+
+    var participants = SelectParticipantPubKeys(committee, bits);
     if (participants.Count == 0)
     {
         return false;
     }
 
-    // Compute domain and signing root
-    var domain = ComputeSyncCommitteeDomain();
+    var domain = ComputeSyncCommitteeDomain(signatureSlot);
     var message = ComputeSigningRoot(attestedHeader.HashTreeRoot(), domain);
-    if (message == null || message.Length == 0)
-    {
-        return false;
-    }
 
-    // Verify BLS aggregate signature
     return _bls.VerifyAggregate(signature, participants.ToArray(), new[] { message }, domain);
 }
 ```
@@ -109,7 +154,7 @@ private bool VerifySyncAggregateCore(byte[] bits, byte[] signature, BeaconBlockH
 **Participant Selection:**
 
 ```csharp
-// LightClientService.cs:319-343
+// LightClientService.cs:985-1017
 private List<byte[]> SelectParticipantPubKeys(SyncCommittee committee, byte[] bits)
 {
     var pubKeys = committee?.PubKeys;
@@ -120,7 +165,14 @@ private List<byte[]> SelectParticipantPubKeys(SyncCommittee committee, byte[] bi
         return participants;
     }
 
-    // Extract participating validators from bitfield
+    if (pubKeys.Count != SszBasicTypes.SyncCommitteeSize)
+    {
+        throw new InvalidOperationException(
+            $"SyncCommittee.PubKeys must contain exactly {SszBasicTypes.SyncCommitteeSize} keys; got {pubKeys.Count}.");
+    }
+
+    EnsureCommitteeBitsLength(bits);
+
     var memberIndex = 0;
     for (var byteIndex = 0; byteIndex < bits.Length && memberIndex < pubKeys.Count; byteIndex++)
     {
@@ -140,10 +192,28 @@ private List<byte[]> SelectParticipantPubKeys(SyncCommittee committee, byte[] bi
 
 ### LightClientState
 
-Tracks finalized and optimistic consensus state (LightClientState.cs:7-73).
+Tracks finalized and optimistic consensus state (LightClientState.cs:33-126). Block hashes are stored with provenance (optimistic vs finalized) so a finalized entry cannot be overwritten by a conflicting optimistic write.
 
 ```csharp
-// LightClientState.cs:7-26
+// LightClientState.cs:15-52
+public enum BlockHashFinality
+{
+    Optimistic = 0,
+    Finalized = 1
+}
+
+public readonly struct ProvenancedBlockHash
+{
+    public ProvenancedBlockHash(byte[] blockHash, BlockHashFinality finality)
+    {
+        BlockHash = blockHash;
+        Finality = finality;
+    }
+
+    public byte[] BlockHash { get; }
+    public BlockHashFinality Finality { get; }
+}
+
 public class LightClientState
 {
     public const int MaxBlockHashHistorySize = 256;
@@ -155,56 +225,103 @@ public class LightClientState
 
     public ulong FinalizedSlot { get; set; }
     public ulong CurrentPeriod { get; set; }
-    public DateTimeOffset LastUpdated { get; set; }
+    public DateTimeOffset LastUpdated { get; set; } = DateTimeOffset.MinValue;
 
     public BeaconBlockHeader? OptimisticHeader { get; set; }
     public ExecutionPayloadHeader? OptimisticExecutionPayload { get; set; }
     public ulong OptimisticSlot { get; set; }
-    public DateTimeOffset OptimisticLastUpdated { get; set; }
+    public DateTimeOffset OptimisticLastUpdated { get; set; } = DateTimeOffset.MinValue;
 
-    public Dictionary<ulong, byte[]> BlockHashHistory { get; set; } = new Dictionary<ulong, byte[]>();
+    public Dictionary<ulong, ProvenancedBlockHash> BlockHashHistory { get; set; }
+        = new Dictionary<ulong, ProvenancedBlockHash>();
+    // ...
 }
 ```
 
 **Block Hash Management:**
 
 ```csharp
-// LightClientState.cs:27-43
-public void AddBlockHash(ulong blockNumber, byte[] blockHash)
+// LightClientState.cs:54-97
+public void SetBlockHash(ulong blockNumber, byte[] blockHash, BlockHashFinality finality)
 {
     if (blockHash == null || blockHash.Length != 32) return;
 
-    BlockHashHistory[blockNumber] = blockHash;
+    if (BlockHashHistory.TryGetValue(blockNumber, out var existing))
+    {
+        if (existing.Finality == BlockHashFinality.Finalized)
+        {
+            if (!ByteArrayEquals(existing.BlockHash, blockHash))
+            {
+                if (finality == BlockHashFinality.Finalized)
+                {
+                    throw new InvalidOperationException(
+                        $"Finalized block hash conflict at block {blockNumber}.");
+                }
 
-    // Automatic pruning when exceeding max size
+                return;
+            }
+        }
+    }
+
+    BlockHashHistory[blockNumber] = new ProvenancedBlockHash(blockHash, finality);
+
     if (BlockHashHistory.Count > MaxBlockHashHistorySize)
     {
         PruneOldestEntries();
     }
 }
 
-public byte[] GetBlockHash(ulong blockNumber)
+public void AddBlockHash(ulong blockNumber, byte[] blockHash)
+    => SetBlockHash(blockNumber, blockHash, BlockHashFinality.Finalized);
+
+public byte[]? GetBlockHash(ulong blockNumber)
 {
-    return BlockHashHistory.TryGetValue(blockNumber, out var hash) ? hash : null;
+    return BlockHashHistory.TryGetValue(blockNumber, out var entry) ? entry.BlockHash : null;
+}
+
+public byte[]? GetFinalizedBlockHash(ulong blockNumber)
+{
+    return BlockHashHistory.TryGetValue(blockNumber, out var entry)
+           && entry.Finality == BlockHashFinality.Finalized
+        ? entry.BlockHash
+        : null;
 }
 ```
 
 ### LightClientConfig
 
-Configuration for light client initialization (LightClientConfig.cs:8-16).
+Configuration for light client initialization (LightClientConfig.cs:6-54). `GenesisValidatorsRoot` and `WeakSubjectivityRoot` are validating properties: each is backed by a 32-byte field (default `new byte[32]`) and the setter throws unless the assigned value is exactly 32 bytes. There is **no** `CurrentForkVersion` or `SlotsPerEpoch` on this type — fork versions and slots-per-epoch come from `ChainSpec` (defaulting to `ChainSpec.Mainnet`).
 
 ```csharp
-// LightClientConfig.cs:8-16
+// LightClientConfig.cs:6-54
 public class LightClientConfig
 {
-    public byte[] GenesisValidatorsRoot { get; set; } = Array.Empty<byte>();
-    public byte[] CurrentForkVersion { get; set; } = new byte[4];
-    public ulong SlotsPerEpoch { get; set; } = 32;
+    private byte[] _genesisValidatorsRoot = new byte[SszBasicTypes.RootLength]; // 32 bytes
+    private byte[] _weakSubjectivityRoot = new byte[SszBasicTypes.RootLength];  // 32 bytes
+
+    // Setter rejects any value whose length != 32.
+    public byte[] GenesisValidatorsRoot
+    {
+        get => _genesisValidatorsRoot;
+        set { /* null / length-32 validation */ _genesisValidatorsRoot = value; }
+    }
+
     public ulong SecondsPerSlot { get; set; } = 12;
-    public byte[] WeakSubjectivityRoot { get; set; } = Array.Empty<byte>();
-    public ulong WeakSubjectivityPeriod { get; set; } = 256 * 32; // ~27 hours
+
+    // Setter rejects any value whose length != 32.
+    public byte[] WeakSubjectivityRoot
+    {
+        get => _weakSubjectivityRoot;
+        set { /* null / length-32 validation */ _weakSubjectivityRoot = value; }
+    }
+
+    public ulong WeakSubjectivityPeriod { get; set; } = 256 * 32;
+
+    public ChainSpec ChainSpec { get; set; } = ChainSpec.Mainnet;
 }
 ```
+
+`ChainSpec` (in `Nethereum.Consensus.Ssz`) carries the fork-activation schedule and exposes `SlotsPerEpoch`, `SecondsPerSlot`, `GetForkAtSlot(ulong)` and `GetForkVersionAtSlot(ulong)`. The prebuilt `ChainSpec.Mainnet` maps each mainnet fork to its version (e.g. Electra = `0x05000000`, Fulu = `0x06000000`); the light client selects the correct fork version by slot internally, so applications normally leave `ChainSpec` at its default.
 
 ### TrustedHeaderProvider
 
@@ -220,6 +337,11 @@ public class TrustedHeaderProvider : ITrustedHeaderProvider
     public TimeSpan OptimisticStalenessThreshold { get; set; } = TimeSpan.FromMinutes(5);
     public bool ThrowOnStaleHeader { get; set; } = false;
     public event EventHandler<StaleHeaderEventArgs> StaleHeaderDetected;
+
+    public TrustedHeaderProvider(LightClientService lightClient)
+    {
+        _lightClient = lightClient ?? throw new ArgumentNullException(nameof(lightClient));
+    }
 
     public TrustedExecutionHeader GetLatestFinalized()
     {
@@ -253,7 +375,7 @@ private void ValidateStaleness(TrustedExecutionHeader header, DateTimeOffset las
         if (ThrowOnStaleHeader)
         {
             throw new StaleHeaderException(
-                $"{headerType} header is stale. Age: {age.TotalMinutes:F1} minutes, Threshold: {threshold.TotalMinutes:F1} minutes.",
+                $"{headerType} header is stale. Age: {age.TotalMinutes:F1} minutes, Threshold: {threshold.TotalMinutes:F1} minutes. Call UpdateAsync() or UpdateFinalityAsync() to refresh.",
                 age, threshold);
         }
     }
@@ -307,12 +429,41 @@ public class TrustedExecutionHeader
 }
 ```
 
+### LightClientStateCodec
+
+Purpose-built binary serializer for `LightClientState` (LightClientStateCodec.cs:8-178). `LightClientState` holds SSZ containers (`BeaconBlockHeader`, `ExecutionPayloadHeader`, `SyncCommittee`) and a `Dictionary<ulong, ProvenancedBlockHash>` whose value is a `readonly struct`, so it does not round-trip through generic reflection-based serializers. Use this codec for persistence instead. The frame is `Magic("LCST") + Version + payloadLength + payload + CRC32(payload)`; each SSZ container is encoded fork-aware via its own `Encode`/`Decode`, and `TryDecode` returns `false` (never throws) on a truncated, corrupt, or CRC-mismatched buffer.
+
+```csharp
+// LightClientStateCodec.cs:13, 57
+public static byte[] Encode(LightClientState state);
+public static bool TryDecode(byte[] bytes, out LightClientState state);
+```
+
+### LightClientNetworks
+
+Canonical per-network light-client constants (LightClientNetworks.cs:14-54). The `genesis_validators_root` is an immutable chain parameter fixed at genesis (it is part of the BLS signing domain, not a trust anchor), so it is baked in per network. The time-sensitive weak-subjectivity checkpoint root is deliberately **not** here — supply it out-of-band or let the client derive it from a trusted beacon endpoint.
+
+```csharp
+// LightClientNetworks.cs:16-42
+public const string MainnetGenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95";
+public const string SepoliaGenesisValidatorsRoot = "0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078";
+public const string HoleskyGenesisValidatorsRoot = "0x9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1";
+
+// chainId: 1 mainnet, 11155111 sepolia, 17000 holesky. False for unknown chains.
+public static bool TryGetGenesisValidatorsRoot(BigInteger chainId, out byte[] root);
+
+// Builds a LightClientConfig with SecondsPerSlot = 12 and the network's genesis
+// validators root (and the weak-subjectivity root when supplied).
+public static LightClientConfig CreateConfig(BigInteger chainId, byte[] weakSubjectivityRoot = null);
+```
+
 ## Usage Examples
 
 ### Example 1: Initialize Light Client with Real Mainnet Configuration
 
 ```csharp
 using Nethereum.Consensus.LightClient;
+using Nethereum.Consensus.Ssz;
 using Nethereum.Beaconchain;
 using Nethereum.Beaconchain.LightClient;
 using Nethereum.Signer.Bls;
@@ -329,14 +480,16 @@ var weakSubjectivityRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
 
 Console.WriteLine($"Using weak subjectivity root: {weakSubjectivityRoot.ToHex(true)}");
 
-// Mainnet configuration (LightClientLiveIntegrationTests.cs:289-299)
+// Mainnet configuration. LightClientNetworks.CreateConfig(1, ...) is the shorthand:
+//   var config = LightClientNetworks.CreateConfig(1, weakSubjectivityRoot);
+// The explicit form below shows the fields it populates. ChainSpec defaults to
+// ChainSpec.Mainnet (fork-version schedule + slots-per-epoch); set it only for a custom chain.
 var config = new LightClientConfig
 {
-    GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
-    CurrentForkVersion = "0x06000000".HexToByteArray(), // Electra fork
-    SlotsPerEpoch = 32,
+    GenesisValidatorsRoot = LightClientNetworks.MainnetGenesisValidatorsRoot.HexToByteArray(),
     SecondsPerSlot = 12,
-    WeakSubjectivityRoot = weakSubjectivityRoot
+    WeakSubjectivityRoot = weakSubjectivityRoot,
+    ChainSpec = ChainSpec.Mainnet
 };
 
 // Initialize BLS verification with Herumi native library
@@ -455,11 +608,18 @@ Console.WriteLine($"Timestamp: {optimistic.Timestamp}");
 
 ```csharp
 using Nethereum.Consensus.LightClient;
+using Nethereum.Consensus.Ssz;
 using Nethereum.ChainStateVerification;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth;
 using Nethereum.Beaconchain;
+using Nethereum.Beaconchain.LightClient;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer.Bls.Herumi;
+
+// This example additionally requires the Nethereum.ChainStateVerification and
+// Nethereum.RPC packages, which are NOT dependencies of Nethereum.Consensus.LightClient
+// (Nethereum.ChainStateVerification depends on this package, not the other way around).
 
 // Source: LightClientLiveIntegrationTests.cs:115-162
 
@@ -471,11 +631,10 @@ var weakSubjectivityRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
 
 var config = new LightClientConfig
 {
-    GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
-    CurrentForkVersion = "0x06000000".HexToByteArray(),
-    SlotsPerEpoch = 32,
+    GenesisValidatorsRoot = LightClientNetworks.MainnetGenesisValidatorsRoot.HexToByteArray(),
     SecondsPerSlot = 12,
-    WeakSubjectivityRoot = weakSubjectivityRoot
+    WeakSubjectivityRoot = weakSubjectivityRoot,
+    ChainSpec = ChainSpec.Mainnet
 };
 
 var nativeBls = new NativeBls(new HerumiNativeBindings());
@@ -551,12 +710,17 @@ Console.WriteLine($"Finalized block: {state.FinalizedExecutionPayload?.BlockNumb
 
 ### Example 7: Persistent Storage Implementation
 
+`LightClientState` holds SSZ containers and a `ProvenancedBlockHash` value struct, so it must be
+persisted with the package's `LightClientStateCodec` (a general JSON serializer will not round-trip
+it correctly). `Encode` returns a CRC32-framed, fork-aware binary blob; `TryDecode` returns `false`
+on a truncated or corrupt file rather than throwing.
+
 ```csharp
 using Nethereum.Consensus.LightClient;
 using System.IO;
-using System.Text.Json;
+using System.Threading.Tasks;
 
-// Custom persistent store
+// Custom persistent store backed by LightClientStateCodec
 public class FileLightClientStore : ILightClientStore
 {
     private readonly string _filePath;
@@ -573,22 +737,19 @@ public class FileLightClientStore : ILightClientStore
             return null;
         }
 
-        var json = await File.ReadAllTextAsync(_filePath);
-        return JsonSerializer.Deserialize<LightClientState>(json);
+        var bytes = await File.ReadAllBytesAsync(_filePath);
+        return LightClientStateCodec.TryDecode(bytes, out var state) ? state : null;
     }
 
     public async Task SaveAsync(LightClientState state)
     {
-        var json = JsonSerializer.Serialize(state, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-        await File.WriteAllTextAsync(_filePath, json);
+        var bytes = LightClientStateCodec.Encode(state);
+        await File.WriteAllBytesAsync(_filePath, bytes);
     }
 }
 
 // Usage
-var store = new FileLightClientStore("lightclient-state.json");
+var store = new FileLightClientStore("lightclient-state.bin");
 var lightClient = new LightClientService(apiClient, bls, config, store);
 
 // State persists across restarts
@@ -652,11 +813,13 @@ if (state.CurrentPeriod > previousPeriod)
 }
 ```
 
-### Example 9: Complete Integration Example
+### Example 10: Complete Integration Example
 
 ```csharp
 using Nethereum.Consensus.LightClient;
+using Nethereum.Consensus.Ssz;
 using Nethereum.Beaconchain;
+using Nethereum.Beaconchain.LightClient;
 using Nethereum.Signer.Bls.Herumi;
 using Nethereum.Hex.HexConvertors.Extensions;
 
@@ -671,16 +834,15 @@ public class EthereumLightClient
     {
         var config = new LightClientConfig
         {
-            GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
-            CurrentForkVersion = "0x06000000".HexToByteArray(), // Electra
-            SlotsPerEpoch = 32,
+            GenesisValidatorsRoot = LightClientNetworks.MainnetGenesisValidatorsRoot.HexToByteArray(),
             SecondsPerSlot = 12,
-            WeakSubjectivityRoot = checkpointRoot
+            WeakSubjectivityRoot = checkpointRoot,
+            ChainSpec = ChainSpec.Mainnet
         };
 
         var beaconClient = new BeaconApiClient(beaconNodeUrl);
         _nativeBls = new NativeBls(new HerumiNativeBindings());
-        var store = new FileLightClientStore("lightclient.json");
+        var store = new FileLightClientStore("lightclient-state.bin");
 
         _lightClient = new LightClientService(beaconClient.LightClient, _nativeBls, config, store);
         _headerProvider = new TrustedHeaderProvider(_lightClient)
@@ -862,12 +1024,18 @@ Light client maintains last 256 execution block hashes:
 
 ## Dependencies
 
-- **Nethereum.Beaconchain**: Beacon chain API client (ILightClientApi)
-- **Nethereum.Consensus.Ssz**: SSZ container types (BeaconBlockHeader, SyncCommittee, etc.)
-- **Nethereum.Signer.Bls**: BLS12-381 signature verification (IBls interface)
-- **Nethereum.Signer.Bls.Herumi**: Native BLS implementation using Herumi library
-- **Nethereum.Ssz**: SSZ serialization primitives (SszWriter, SszReader, SszMerkleizer)
-- **Nethereum.ChainStateVerification**: Verified state queries with merkle proofs (VerifiedStateService)
+Direct project references (Nethereum.Consensus.LightClient.csproj):
+
+- **Nethereum.Beaconchain**: Beacon chain API client (`ILightClientApi`, `LightClientResponseMapper`)
+- **Nethereum.Consensus.Ssz**: Consensus SSZ container types and helpers (`BeaconBlockHeader`, `SyncCommittee`, `ExecutionPayloadHeader`, `ChainSpec`, `ConsensusFork`, `SszBasicTypes`, `LightClientForkSpec`)
+- **Nethereum.Signer.Bls**: BLS12-381 signature verification abstraction (`IBls`)
+
+`Nethereum.Ssz` (providing `SszMerkleizer`) arrives transitively through `Nethereum.Consensus.Ssz` and is not referenced directly.
+
+Not dependencies of this package (add them separately when needed):
+
+- **Nethereum.Signer.Bls.Herumi**: native Herumi BLS backend (`NativeBls`, `HerumiNativeBindings`). Consumers add this package to obtain a working `IBls` implementation (see Installation).
+- **Nethereum.ChainStateVerification** and **Nethereum.RPC**: required only for Example 5 (`VerifiedStateService`, `EthGetProof`, `EthGetCode`). `Nethereum.ChainStateVerification` depends on this package, not the reverse, so the dependency direction is opposite to a normal prerequisite.
 
 ## References
 

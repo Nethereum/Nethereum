@@ -49,7 +49,7 @@ Ethereum stores state in a Merkle Patricia Trie:
 - **Proof** provides branch from root to specific value
 - **Verification** validates proof matches root
 
-Located in `TrieProofVerifier.cs:14-47`
+Located in `TrieProofVerifier.cs:13-49`
 
 ## Core Components
 
@@ -83,6 +83,15 @@ public VerifiedStateService(
     IEthGetCode getCode,                    // RPC eth_getCode
     ITrieProofVerifier proofVerifier       // Merkle proof verifier
 )
+
+// The 4-arg constructor delegates to this overload with a fresh VerifiedStateCache:
+public VerifiedStateService(
+    ITrustedHeaderProvider headerProvider,
+    IEthGetProof getProof,
+    IEthGetCode getCode,
+    ITrieProofVerifier proofVerifier,
+    VerifiedStateCache cache
+)
 ```
 
 **Properties:**
@@ -96,7 +105,7 @@ public VerifiedStateService(
 
 ### TrieProofVerifier
 
-Verifies Merkle Patricia Trie proofs. Located in `TrieProofVerifier.cs:12-48`.
+Verifies Merkle Patricia Trie proofs. Located in `TrieProofVerifier.cs:13-49`.
 
 **Methods:**
 - `VerifyAccountProof(byte[] stateRoot, AccountProof accountProof)` - Verifies account proof against state root
@@ -126,7 +135,7 @@ Cache is automatically cleared when block changes.
 
 ### VerifiedNodeDataService
 
-Adapter that implements `INodeDataService` (from `Nethereum.EVM.BlockchainState`) backed by verified state. This allows the EVM simulator to use proof-verified data for balance, code, storage, nonce, and block hash lookups. Located in `NodeData/VerifiedNodeDataService.cs:9-81`.
+Adapter that implements `IStateReader` (from `Nethereum.EVM.BlockchainState`) backed by verified state. This allows the EVM simulator to use proof-verified data for balance, code, storage, nonce, and block hash lookups. Located in `NodeData/VerifiedNodeDataService.cs:10-74`.
 
 **Constructor:**
 ```csharp
@@ -136,9 +145,44 @@ public VerifiedNodeDataService(IVerifiedStateService verifiedState)
 **Implements:**
 - `GetBalanceAsync(string address)` - Verified balance via merkle proof
 - `GetCodeAsync(string address)` - Verified contract code with hash check
-- `GetStorageAtAsync(string address, BigInteger position)` - Verified storage slot
-- `GetTransactionCount(string address)` - Verified nonce
-- `GetBlockHashAsync(BigInteger blockNumber)` - Block hash from light client (within 256-block window)
+- `GetStorageAtAsync(string address, EvmUInt256 position)` - Verified storage slot
+- `GetTransactionCountAsync(string address)` - Verified nonce (returns `EvmUInt256`)
+- `GetBlockHashAsync(long blockNumber)` - Block hash from light client (within 256-block window)
+- `AccountExistsAsync(string address)` - Verified account existence (returns `Task<bool>`)
+
+### StorageProofVerifier
+
+Standalone storage-slot verifier: implements `IStorageProofVerifier`. Fetches `eth_getProof` at the light client's finalized header, verifies the account proof against the header's state root, then verifies the requested storage-slot proof and returns the verified value. Located in `StorageProofVerifier.cs:11-59`.
+
+**Constructor:**
+```csharp
+public StorageProofVerifier(
+    ITrustedHeaderProvider headerProvider,
+    IEthGetProof getProof,
+    ITrieProofVerifier proofVerifier)
+```
+
+**Methods:**
+- `GetStorageValueAsync(string address, string storageSlotHex)` - Returns the merkle-verified storage value at the slot
+
+`IStorageProofVerifier` is the interface (single `GetStorageValueAsync` method). Located in `IStorageProofVerifier.cs:5-9`.
+
+### VerifiedStateBackend
+
+Standalone account verifier: implements `IVerifiedStateBackend`. Fetches `eth_getProof` at the light client's finalized header and returns the merkle-verified `Account` (balance, nonce, codeHash, storageRoot). Located in `VerifiedStateBackend.cs:10-44`.
+
+**Constructor:**
+```csharp
+public VerifiedStateBackend(
+    ITrustedHeaderProvider headerProvider,
+    IEthGetProof getProof,
+    ITrieProofVerifier proofVerifier)
+```
+
+**Methods:**
+- `GetAccountAsync(string address)` - Returns the merkle-verified `Account`
+
+`IVerifiedStateBackend` is the interface (single `GetAccountAsync` method). Located in `IVerifiedStateBackend.cs:6-10`.
 
 ### VerificationMode
 
@@ -420,33 +464,34 @@ From: `VerifiedStateService.cs:84-86, TrieProofVerifier.cs:22-25, 40-43`
 Complete setup with light client:
 
 ```csharp
+using Nethereum.Beaconchain;
+using Nethereum.Beaconchain.LightClient;
 using Nethereum.ChainStateVerification;
 using Nethereum.Consensus.LightClient;
-using Nethereum.Consensus.LightClient.BeaconApiClient;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Web3;
+using Nethereum.Consensus.Ssz;
+using Nethereum.JsonRpc.Client;
+using Nethereum.RPC.Eth;
+using Nethereum.Signer.Bls;
+using Nethereum.Signer.Bls.Herumi;
 
 // Step 1: Setup light client
-var beaconClient = new BeaconApiHttpClient("https://lodestar-mainnet.chainsafe.io");
+var beaconClient = new BeaconApiClient("https://lodestar-mainnet.chainsafe.io");
 
-var config = new LightClientConfig
-{
-    GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
-    CurrentForkVersion = "0x06000000".HexToByteArray(), // Electra
-    SlotsPerEpoch = 32,
-    SecondsPerSlot = 12,
-    WeakSubjectivityRoot = await beaconClient.GetFinalizedBlockRootAsync()
-};
+var response = await beaconClient.LightClient.GetFinalityUpdateAsync();
+var finalityUpdate = LightClientResponseMapper.ToDomain(response);
+var weakSubjectivityRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
+
+var config = LightClientNetworks.CreateConfig(1, weakSubjectivityRoot);
+
+var nativeBls = new NativeBls(new HerumiNativeBindings());
+await nativeBls.InitializeAsync();
 
 var store = new InMemoryLightClientStore();
-var bls = new HerumiNativeBindings();
-bls.InitializeLibrary();
-
-var lightClient = new LightClientService(config, beaconClient, store, bls);
+var lightClient = new LightClientService(beaconClient.LightClient, nativeBls, config, store);
 await lightClient.InitializeAsync();
 
-// Sync light client (run periodically)
-await lightClient.SyncAsync();
+// Update the light client (run periodically)
+await lightClient.UpdateAsync();
 
 // Step 2: Create verified state service
 var trustedProvider = new TrustedHeaderProvider(lightClient);
@@ -521,7 +566,7 @@ Console.WriteLine($"Verified nonce: {nonce}");
 1. **Use Finalized Mode** for maximum security
 2. **Enable Code Verification** (`VerifyCodeHash = true`)
 3. **Handle Exceptions** - switch RPC nodes on `InvalidChainDataException`
-4. **Keep Light Client Synced** - regularly call `lightClient.SyncAsync()`
+4. **Keep Light Client Synced** - regularly call `lightClient.UpdateAsync()` / `UpdateFinalityAsync()`
 5. **Monitor Staleness** - check header age: `DateTime.UtcNow - header.Timestamp`
 
 ## Performance Considerations
@@ -727,7 +772,8 @@ Core dependencies:
 - **Nethereum.Merkle.Patricia** - Merkle Patricia Trie verification
 - **Nethereum.Model** - Account and storage models
 - **Nethereum.RPC** - RPC infrastructure and `eth_getProof`
-- **Nethereum.EVM** - Blockchain state interfaces
+- **Nethereum.EVM** - Blockchain state interfaces (`IStateReader`)
+- **Nethereum.Web3** - `Web3`/`IClient` pipeline the interceptor extensions plug into
 
 ## Source Files Reference
 
@@ -736,6 +782,8 @@ Core dependencies:
 - `VerifiedStateService.cs` - Verified state implementation
 - `ITrieProofVerifier.cs` - Proof verifier interface
 - `TrieProofVerifier.cs` - Merkle proof verification
+- `IStorageProofVerifier.cs` / `StorageProofVerifier.cs` - Standalone verified storage-slot lookup
+- `IVerifiedStateBackend.cs` / `VerifiedStateBackend.cs` - Standalone verified account lookup
 
 **Caching:**
 - `Caching/VerifiedStateCache.cs` - Thread-safe state cache
@@ -751,7 +799,7 @@ Core dependencies:
 - `Interceptor/Web3VerifiedStateExtensions.cs` - Extension methods for IWeb3 and IClient
 
 **Node Data:**
-- `NodeData/VerifiedNodeDataService.cs` - INodeDataService adapter for EVM integration
+- `NodeData/VerifiedNodeDataService.cs` - IStateReader adapter for EVM integration
 
 **Test Files:**
 - `tests/Nethereum.Consensus.LightClient.Tests/Live/VerifiedStorageProofLiveTests.cs` - Storage proof tests

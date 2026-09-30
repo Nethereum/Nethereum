@@ -43,11 +43,11 @@ namespace Nethereum.Consensus.Clique
             EnableVoting = false
         };
 
-        public int CalculateRecentSignersLimit()
+        public int CalculateRecentSignersLimit(int signerCount)
         {
             if (RecentSignersLimit > 0)
                 return RecentSignersLimit;
-            return (InitialSigners.Count / 2) + 1;
+            return (signerCount / 2) + 1;
         }
     }
 }

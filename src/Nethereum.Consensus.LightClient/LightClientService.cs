@@ -13,7 +13,7 @@ namespace Nethereum.Consensus.LightClient
 {
     public class LightClientService
     {
-        private static readonly byte[] DomainSyncCommitteeType = { 0x07, 0x00, 0x00, 0x00 };
+        public static readonly byte[] DomainSyncCommittee = { 0x07, 0x00, 0x00, 0x00 };
 
         private readonly ILightClientApi _apiClient;
         private readonly IBls _bls;
@@ -40,20 +40,37 @@ namespace Nethereum.Consensus.LightClient
             _state = await _store.LoadAsync().ConfigureAwait(false);
             if (_state != null)
             {
+                try
+                {
+                    await UpdateAsync(cancellationToken).ConfigureAwait(false);
+                    await UpdateFinalityAsync(cancellationToken).ConfigureAwait(false);
+                    await UpdateOptimisticAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch
+                {
+                }
                 return;
             }
 
-            var blockRootHex = _config.WeakSubjectivityRoot.ToHex(true);
+            var bootstrapRoot = _config.WeakSubjectivityRoot;
+            if (IsEmptyRoot(bootstrapRoot))
+            {
+                var finalityResponse = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
+                var finalityUpdate = LightClientResponseMapper.ToDomain(finalityResponse);
+                bootstrapRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
+            }
+            var blockRootHex = bootstrapRoot.ToHex(true);
             var response = await _apiClient.GetBootstrapAsync(blockRootHex).ConfigureAwait(false);
             var bootstrap = LightClientResponseMapper.ToDomain(response);
-            ValidateBootstrap(bootstrap);
+            ValidateBootstrap(bootstrap, bootstrapRoot);
 
             _state = new LightClientState
             {
                 FinalizedHeader = bootstrap.Header.Beacon,
                 FinalizedExecutionPayload = bootstrap.Header.Execution,
                 CurrentSyncCommittee = bootstrap.CurrentSyncCommittee,
-                NextSyncCommittee = bootstrap.CurrentSyncCommittee,
+                NextSyncCommittee = new SyncCommittee(),
                 FinalizedSlot = bootstrap.Header.Beacon.Slot,
                 CurrentPeriod = ComputePeriod(bootstrap.Header.Beacon.Slot),
                 LastUpdated = DateTimeOffset.UtcNow
@@ -61,10 +78,21 @@ namespace Nethereum.Consensus.LightClient
 
             if (bootstrap.Header.Execution != null)
             {
-                _state.AddBlockHash(bootstrap.Header.Execution.BlockNumber, bootstrap.Header.Execution.BlockHash);
+                _state.SetBlockHash(
+                    bootstrap.Header.Execution.BlockNumber,
+                    bootstrap.Header.Execution.BlockHash,
+                    BlockHashFinality.Finalized);
             }
 
             await _store.SaveAsync(_state).ConfigureAwait(false);
+        }
+
+        private static bool IsEmptyRoot(byte[] root)
+        {
+            if (root == null || root.Length == 0) return true;
+            for (int i = 0; i < root.Length; i++)
+                if (root[i] != 0) return false;
+            return true;
         }
 
         public async Task<bool> UpdateAsync(CancellationToken cancellationToken = default)
@@ -107,35 +135,22 @@ namespace Nethereum.Consensus.LightClient
             }
 
             var response = await _apiClient.GetOptimisticUpdateAsync().ConfigureAwait(false);
-            var update = LightClientResponseMapper.ToDomain(response);
+            var optimistic = LightClientResponseMapper.ToDomain(response);
 
-            if (update?.AttestedHeader?.Beacon == null || update.AttestedHeader.Execution == null)
+            if (optimistic?.AttestedHeader?.Beacon == null)
             {
                 return false;
             }
 
-            if (!VerifyOptimisticSyncAggregate(update))
+            var synthesized = SynthesizeUpdate(optimistic);
+            var applied = TryApplyUpdate(_state, synthesized);
+            if (applied)
             {
-                return false;
+                _state.LastUpdated = DateTimeOffset.UtcNow;
+                await _store.SaveAsync(_state).ConfigureAwait(false);
             }
 
-            if (!VerifyExecutionBranch(update.AttestedHeader))
-            {
-                return false;
-            }
-
-            _state.OptimisticHeader = update.AttestedHeader.Beacon;
-            _state.OptimisticExecutionPayload = update.AttestedHeader.Execution;
-            _state.OptimisticSlot = update.AttestedHeader.Beacon.Slot;
-            _state.OptimisticLastUpdated = DateTimeOffset.UtcNow;
-
-            if (update.AttestedHeader.Execution != null)
-            {
-                _state.AddBlockHash(update.AttestedHeader.Execution.BlockNumber, update.AttestedHeader.Execution.BlockHash);
-            }
-
-            await _store.SaveAsync(_state).ConfigureAwait(false);
-            return true;
+            return applied;
         }
 
         public async Task<bool> UpdateFinalityAsync(CancellationToken cancellationToken = default)
@@ -147,46 +162,78 @@ namespace Nethereum.Consensus.LightClient
             }
 
             var response = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
-            var update = LightClientResponseMapper.ToDomain(response);
+            var finality = LightClientResponseMapper.ToDomain(response);
 
-            if (update?.FinalizedHeader?.Beacon == null || update.FinalizedHeader.Execution == null)
+            if (finality?.FinalizedHeader?.Beacon == null)
             {
                 return false;
             }
 
-            if (!VerifyFinalitySyncAggregate(update))
+            var synthesized = SynthesizeUpdate(finality);
+            var applied = TryApplyUpdate(_state, synthesized);
+            if (applied)
             {
-                return false;
+                _state.LastUpdated = DateTimeOffset.UtcNow;
+                await _store.SaveAsync(_state).ConfigureAwait(false);
             }
 
-            if (!VerifyExecutionBranch(update.AttestedHeader))
+            return applied;
+        }
+
+        internal static LightClientUpdate SynthesizeUpdate(LightClientFinalityUpdate finality)
+        {
+            if (finality == null) return null;
+
+            var branchLen = LightClientForkSpec.NextSyncCommitteeBranchLength(finality.Fork);
+            var zeroBranch = new List<byte[]>(branchLen);
+            for (var i = 0; i < branchLen; i++)
             {
-                return false;
+                zeroBranch.Add(new byte[SszBasicTypes.RootLength]);
             }
 
-            if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+            return new LightClientUpdate
             {
-                return false;
+                Fork = finality.Fork,
+                AttestedHeader = finality.AttestedHeader,
+                NextSyncCommittee = new SyncCommittee(),
+                NextSyncCommitteeBranch = zeroBranch,
+                FinalizedHeader = finality.FinalizedHeader,
+                FinalityBranch = finality.FinalityBranch,
+                SyncAggregate = finality.SyncAggregate,
+                SignatureSlot = finality.SignatureSlot
+            };
+        }
+
+        internal static LightClientUpdate SynthesizeUpdate(LightClientOptimisticUpdate optimistic)
+        {
+            if (optimistic == null) return null;
+
+            var nextBranchLen = LightClientForkSpec.NextSyncCommitteeBranchLength(optimistic.Fork);
+            var finalityBranchLen = LightClientForkSpec.FinalityBranchLength(optimistic.Fork);
+
+            var nextZeroBranch = new List<byte[]>(nextBranchLen);
+            for (var i = 0; i < nextBranchLen; i++)
+            {
+                nextZeroBranch.Add(new byte[SszBasicTypes.RootLength]);
             }
 
-            if (!VerifyExecutionBranch(update.FinalizedHeader))
+            var finalityZeroBranch = new List<byte[]>(finalityBranchLen);
+            for (var i = 0; i < finalityBranchLen; i++)
             {
-                return false;
+                finalityZeroBranch.Add(new byte[SszBasicTypes.RootLength]);
             }
 
-            _state.FinalizedHeader = update.FinalizedHeader.Beacon;
-            _state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
-            _state.FinalizedSlot = update.FinalizedHeader.Beacon.Slot;
-            _state.CurrentPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
-            _state.LastUpdated = DateTimeOffset.UtcNow;
-
-            if (update.FinalizedHeader.Execution != null)
+            return new LightClientUpdate
             {
-                _state.AddBlockHash(update.FinalizedHeader.Execution.BlockNumber, update.FinalizedHeader.Execution.BlockHash);
-            }
-
-            await _store.SaveAsync(_state).ConfigureAwait(false);
-            return true;
+                Fork = optimistic.Fork,
+                AttestedHeader = optimistic.AttestedHeader,
+                NextSyncCommittee = new SyncCommittee(),
+                NextSyncCommitteeBranch = nextZeroBranch,
+                FinalizedHeader = new LightClientHeader { Fork = optimistic.Fork },
+                FinalityBranch = finalityZeroBranch,
+                SyncAggregate = optimistic.SyncAggregate,
+                SignatureSlot = optimistic.SignatureSlot
+            };
         }
 
         public LightClientState GetState()
@@ -199,75 +246,463 @@ namespace Nethereum.Consensus.LightClient
             return _state;
         }
 
-        private static void ValidateBootstrap(LightClientBootstrap bootstrap)
+        private void ValidateBootstrap(LightClientBootstrap bootstrap, byte[] expectedRoot)
         {
             if (bootstrap == null) throw new ArgumentNullException(nameof(bootstrap));
             if (bootstrap.Header?.Beacon == null)
             {
-                throw new InvalidOperationException("Bootstrap must include a beacon header.");
+                throw new InvalidOperationException("Bootstrap missing beacon header");
             }
             if (bootstrap.CurrentSyncCommittee == null)
             {
-                throw new InvalidOperationException("Bootstrap missing sync committee.");
+                throw new InvalidOperationException("Bootstrap missing sync committee");
             }
+
+            var fork = bootstrap.Header.Fork;
+            var expectedBranchLength = LightClientForkSpec.CurrentSyncCommitteeBranchDepth(fork);
+            if (bootstrap.CurrentSyncCommitteeBranch == null ||
+                bootstrap.CurrentSyncCommitteeBranch.Count != expectedBranchLength)
+            {
+                throw new InvalidOperationException(
+                    $"Bootstrap current_sync_committee_branch must be exactly {expectedBranchLength} roots for fork {fork}; got {bootstrap.CurrentSyncCommitteeBranch?.Count ?? 0}.");
+            }
+
+            if (!IsValidLightClientHeader(bootstrap.Header))
+            {
+                throw new InvalidOperationException("Bootstrap header failed is_valid_light_client_header");
+            }
+
+            if (expectedRoot == null || expectedRoot.Length != SszBasicTypes.RootLength)
+            {
+                throw new InvalidOperationException(
+                    $"Bootstrap expected root must be exactly {SszBasicTypes.RootLength} bytes.");
+            }
+
+            var headerRoot = bootstrap.Header.Beacon.HashTreeRoot();
+            if (!headerRoot.SequenceEqual(expectedRoot))
+            {
+                throw new InvalidOperationException(
+                    $"Bootstrap header root 0x{headerRoot.ToHex()} does not match requested root 0x{expectedRoot.ToHex()}");
+            }
+
+            if (!VerifyCurrentSyncCommitteeBranch(
+                    bootstrap.Header,
+                    bootstrap.CurrentSyncCommittee,
+                    bootstrap.CurrentSyncCommitteeBranch))
+            {
+                throw new InvalidOperationException("Bootstrap sync committee branch invalid");
+            }
+        }
+
+        private static bool IsValidLightClientHeader(LightClientHeader header) =>
+            VerifyExecutionBranch(header);
+
+        private static bool VerifyCurrentSyncCommitteeBranch(
+            LightClientHeader header,
+            SyncCommittee committee,
+            IList<byte[]> branch)
+        {
+            if (header?.Beacon == null || committee == null || branch == null)
+                return false;
+
+            var fork = header.Fork;
+            var depth = LightClientForkSpec.CurrentSyncCommitteeBranchDepth(fork);
+            var index = LightClientForkSpec.CurrentSyncCommitteeBranchIndex(fork);
+
+            var leaf = committee.HashTreeRoot();
+
+            return SszMerkleizer.VerifyProof(
+                leaf,
+                branch,
+                depth,
+                index,
+                header.Beacon.StateRoot);
+        }
+
+        public string LastRejectReason { get; private set; }
+
+        private bool Reject(string reason)
+        {
+            LastRejectReason = reason;
+            return false;
         }
 
         private bool TryApplyUpdate(LightClientState state, LightClientUpdate update)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
-            if (update == null) return false;
+            if (update == null) return Reject("null_update");
+            if (update.AttestedHeader?.Beacon == null) return Reject("no_attested_beacon");
+            if (update.SyncAggregate == null) return Reject("no_sync_aggregate");
 
-            if (update.FinalizedHeader?.Beacon == null || update.FinalizedHeader.Execution == null)
+            var hasFinality = IsFinalityUpdate(update);
+            var hasSyncCommittee = IsSyncCommitteeUpdate(update);
+
+            if (hasFinality)
             {
-                return false;
+                if (update.FinalizedHeader?.Beacon == null) return Reject("no_finalized_beacon");
             }
 
-            if (!VerifySyncAggregate(update))
+            if (!HasMonotonicSlots(state, update, hasFinality))
             {
-                return false;
+                return Reject($"non_monotonic_slots attested={update.AttestedHeader.Beacon.Slot} optSlot={state.OptimisticSlot} finSlot={state.FinalizedSlot}");
+            }
+
+            if (!HasValidPeriodWindow(state, update))
+            {
+                return Reject($"invalid_period_window attestedPeriod={ComputePeriod(update.AttestedHeader.Beacon.Slot)} storeFinPeriod={ComputePeriod(state.FinalizedSlot)}");
             }
 
             if (!VerifyExecutionBranch(update.AttestedHeader))
             {
-                return false;
+                return Reject("exec_branch_attested");
             }
 
-            if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+            if (hasSyncCommittee)
             {
-                return false;
+                var updateAttestedPeriod = ComputePeriod(update.AttestedHeader.Beacon.Slot);
+                var storePeriod = ComputePeriod(state.FinalizedSlot);
+                if (updateAttestedPeriod == storePeriod && IsNextSyncCommitteeKnown(state))
+                {
+                    if (!SyncCommitteeEquals(update.NextSyncCommittee, state.NextSyncCommittee))
+                    {
+                        return Reject("next_sync_committee_mismatch");
+                    }
+                }
+
+                if (!VerifyNextSyncCommitteeBranch(
+                        update.AttestedHeader,
+                        update.NextSyncCommittee,
+                        update.NextSyncCommitteeBranch))
+                {
+                    return Reject("next_sync_committee_branch");
+                }
             }
 
-            if (!VerifyExecutionBranch(update.FinalizedHeader))
+            if (hasFinality)
             {
-                return false;
+                if (!VerifyFinalityBranch(update.AttestedHeader, update.FinalizedHeader, update.FinalityBranch))
+                {
+                    return Reject("finality_branch");
+                }
+
+                if (!VerifyExecutionBranch(update.FinalizedHeader))
+                {
+                    return Reject("exec_branch_finalized");
+                }
             }
 
-            var updatePeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
-
-            if (updatePeriod > state.CurrentPeriod && state.NextSyncCommittee != null)
+            if (!VerifyFullUpdateSyncAggregate(update))
             {
-                state.CurrentSyncCommittee = state.NextSyncCommittee;
+                return Reject("sync_aggregate_bls");
             }
 
-            state.FinalizedHeader = update.FinalizedHeader.Beacon;
-            state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
-            state.FinalizedSlot = update.FinalizedHeader.Beacon.Slot;
-            state.CurrentPeriod = updatePeriod;
+            var hasSupermajority = HasSupermajorityParticipation(update.SyncAggregate);
+            var finalityAdvances = hasFinality
+                                   && update.FinalizedHeader!.Beacon!.Slot > state.FinalizedSlot;
+            var updateHasFinalizedNsc = UpdateHasFinalizedNextSyncCommittee(state, update);
 
-            if (update.FinalizedHeader.Execution != null)
+            var willApplyFinality = hasSupermajority && (finalityAdvances || updateHasFinalizedNsc);
+            var willApplyOptimistic = update.AttestedHeader.Beacon.Slot > state.OptimisticSlot;
+
+            if (!willApplyFinality && !willApplyOptimistic)
             {
-                state.AddBlockHash(update.FinalizedHeader.Execution.BlockNumber, update.FinalizedHeader.Execution.BlockHash);
+                return Reject($"no_advance attested={update.AttestedHeader.Beacon.Slot} optSlot={state.OptimisticSlot} supermajority={hasSupermajority}");
             }
 
-            if (update.NextSyncCommittee != null)
-            {
-                state.NextSyncCommittee = update.NextSyncCommittee;
-            }
-
+            LastRejectReason = null;
+            ApplyLightClientUpdate(state, update, willApplyFinality, willApplyOptimistic);
             return true;
         }
 
+        private bool HasMonotonicSlots(LightClientState state, LightClientUpdate update, bool hasFinality)
+        {
+            if (update.SignatureSlot <= update.AttestedHeader.Beacon.Slot) return false;
+
+            if (hasFinality && update.AttestedHeader.Beacon.Slot < update.FinalizedHeader!.Beacon!.Slot)
+            {
+                return false;
+            }
+
+            var attestedAdvances = update.AttestedHeader.Beacon.Slot > state.FinalizedSlot;
+            var introducesNextCommittee = !IsNextSyncCommitteeKnown(state)
+                                          && IsSyncCommitteeUpdate(update)
+                                          && ComputePeriod(update.AttestedHeader.Beacon.Slot) == ComputePeriod(state.FinalizedSlot);
+
+            if (!attestedAdvances && !introducesNextCommittee && update.AttestedHeader.Beacon.Slot < state.FinalizedSlot)
+            {
+                return false;
+            }
+
+            return attestedAdvances || introducesNextCommittee || update.AttestedHeader.Beacon.Slot >= state.FinalizedSlot;
+        }
+
+        private void ApplyLightClientUpdate(
+            LightClientState state,
+            LightClientUpdate update,
+            bool applyFinality,
+            bool applyOptimistic)
+        {
+            if (applyFinality && update.FinalizedHeader?.Beacon != null)
+            {
+                var storePeriod = ComputePeriod(state.FinalizedSlot);
+                var updateFinalizedPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
+                var carriesNextCommittee = IsSyncCommitteeUpdate(update) && update.NextSyncCommittee != null;
+
+                if (!IsNextSyncCommitteeKnown(state))
+                {
+                    if (carriesNextCommittee && updateFinalizedPeriod == storePeriod)
+                    {
+                        state.NextSyncCommittee = update.NextSyncCommittee;
+                    }
+                }
+                else if (updateFinalizedPeriod == storePeriod + 1)
+                {
+                    state.CurrentSyncCommittee = state.NextSyncCommittee;
+                    state.NextSyncCommittee = carriesNextCommittee ? update.NextSyncCommittee : new SyncCommittee();
+                }
+            }
+
+            if (applyFinality)
+            {
+                state.FinalizedHeader = update.FinalizedHeader!.Beacon;
+                state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
+                state.FinalizedSlot = update.FinalizedHeader.Beacon!.Slot;
+                state.CurrentPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
+
+                if (update.FinalizedHeader.Execution != null)
+                {
+                    state.SetBlockHash(
+                        update.FinalizedHeader.Execution.BlockNumber,
+                        update.FinalizedHeader.Execution.BlockHash,
+                        BlockHashFinality.Finalized);
+                }
+            }
+
+            if (applyOptimistic)
+            {
+                state.OptimisticHeader = update.AttestedHeader.Beacon;
+                state.OptimisticExecutionPayload = update.AttestedHeader.Execution;
+                state.OptimisticSlot = update.AttestedHeader.Beacon.Slot;
+                state.OptimisticLastUpdated = DateTimeOffset.UtcNow;
+
+                if (update.AttestedHeader.Execution != null)
+                {
+                    state.SetBlockHash(
+                        update.AttestedHeader.Execution.BlockNumber,
+                        update.AttestedHeader.Execution.BlockHash,
+                        BlockHashFinality.Optimistic);
+                }
+            }
+
+            if (applyFinality && state.FinalizedSlot > state.OptimisticSlot)
+            {
+                state.OptimisticHeader = state.FinalizedHeader;
+                state.OptimisticExecutionPayload = state.FinalizedExecutionPayload;
+                state.OptimisticSlot = state.FinalizedSlot;
+                state.OptimisticLastUpdated = DateTimeOffset.UtcNow;
+            }
+        }
+
+        internal static bool IsNextSyncCommitteeKnown(LightClientState state)
+        {
+            var nsc = state?.NextSyncCommittee;
+            if (nsc == null) return false;
+
+            if (nsc.AggregatePubKey != null)
+            {
+                for (var i = 0; i < nsc.AggregatePubKey.Length; i++)
+                {
+                    if (nsc.AggregatePubKey[i] != 0) return true;
+                }
+            }
+
+            if (nsc.PubKeys == null || nsc.PubKeys.Count == 0) return false;
+
+            foreach (var pk in nsc.PubKeys)
+            {
+                if (pk == null) continue;
+                for (var i = 0; i < pk.Length; i++)
+                {
+                    if (pk[i] != 0) return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal bool UpdateHasFinalizedNextSyncCommittee(LightClientState state, LightClientUpdate update)
+        {
+            if (IsNextSyncCommitteeKnown(state)) return false;
+            if (!IsSyncCommitteeUpdate(update)) return false;
+            if (!IsFinalityUpdate(update)) return false;
+            if (update?.FinalizedHeader?.Beacon == null) return false;
+            if (update.AttestedHeader?.Beacon == null) return false;
+
+            var finalizedPeriod = ComputePeriod(update.FinalizedHeader.Beacon.Slot);
+            var attestedPeriod = ComputePeriod(update.AttestedHeader.Beacon.Slot);
+            return finalizedPeriod == attestedPeriod;
+        }
+
+        private bool HasValidPeriodWindow(LightClientState state, LightClientUpdate update)
+        {
+            var storePeriod = ComputePeriod(state.FinalizedSlot);
+            var updateSignaturePeriod = ComputePeriod(update.SignatureSlot);
+
+            if (IsNextSyncCommitteeKnown(state))
+            {
+                return updateSignaturePeriod == storePeriod ||
+                       updateSignaturePeriod == storePeriod + 1;
+            }
+
+            return updateSignaturePeriod == storePeriod;
+        }
+
+        internal static bool SyncCommitteeEquals(SyncCommittee a, SyncCommittee b)
+        {
+            if (ReferenceEquals(a, b)) return true;
+            if (a == null || b == null) return false;
+
+            byte[] rootA;
+            byte[] rootB;
+            try
+            {
+                rootA = a.HashTreeRoot();
+                rootB = b.HashTreeRoot();
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(rootA, rootB);
+        }
+
+        internal static bool IsSyncCommitteeUpdate(LightClientUpdate update)
+        {
+            if (update?.NextSyncCommitteeBranch == null || update.NextSyncCommitteeBranch.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var node in update.NextSyncCommitteeBranch)
+            {
+                if (node == null || node.Length != SszBasicTypes.RootLength)
+                {
+                    return false;
+                }
+
+                for (var i = 0; i < SszBasicTypes.RootLength; i++)
+                {
+                    if (node[i] != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool VerifyNextSyncCommitteeBranch(
+            LightClientHeader attestedHeader,
+            SyncCommittee nextSyncCommittee,
+            IList<byte[]> nextSyncCommitteeBranch)
+        {
+            if (attestedHeader?.Beacon == null || nextSyncCommittee == null || nextSyncCommitteeBranch == null)
+                return false;
+
+            var fork = attestedHeader.Fork;
+            var depth = LightClientForkSpec.NextSyncCommitteeBranchDepth(fork);
+            var index = LightClientForkSpec.NextSyncCommitteeBranchIndex(fork);
+
+            if (nextSyncCommitteeBranch.Count != depth)
+                return false;
+
+            byte[] leaf;
+            try
+            {
+                leaf = nextSyncCommittee.HashTreeRoot();
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+
+            return SszMerkleizer.VerifyProof(
+                leaf,
+                nextSyncCommitteeBranch,
+                depth,
+                index,
+                attestedHeader.Beacon.StateRoot);
+        }
+
+        internal static bool HasBaselineParticipation(SyncAggregate aggregate)
+        {
+            if (aggregate?.SyncCommitteeBits == null) return false;
+            EnsureCommitteeBitsLength(aggregate.SyncCommitteeBits);
+            return CountParticipants(aggregate.SyncCommitteeBits) >= LightClientForkSpec.MinSyncCommitteeParticipants;
+        }
+
+        internal static bool HasSupermajorityParticipation(SyncAggregate aggregate)
+        {
+            if (aggregate?.SyncCommitteeBits == null) return false;
+            EnsureCommitteeBitsLength(aggregate.SyncCommitteeBits);
+            var bitsLength = aggregate.SyncCommitteeBits.Length * 8;
+            return CountParticipants(aggregate.SyncCommitteeBits) * 3 >= bitsLength * 2;
+        }
+
+        internal static bool IsFinalityUpdate(LightClientUpdate update)
+        {
+            if (update?.FinalityBranch == null || update.FinalityBranch.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var node in update.FinalityBranch)
+            {
+                if (node == null) continue;
+                for (var i = 0; i < node.Length; i++)
+                {
+                    if (node[i] != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static int CountParticipants(byte[] bits)
+        {
+            var sum = 0;
+            for (var i = 0; i < bits.Length; i++)
+            {
+                var b = bits[i];
+                b = (byte)(b - ((b >> 1) & 0x55));
+                b = (byte)((b & 0x33) + ((b >> 2) & 0x33));
+                sum += (byte)((b + (b >> 4)) & 0x0F);
+            }
+
+            return sum;
+        }
+
+        private static void EnsureCommitteeBitsLength(byte[] bits)
+        {
+            var expected = SszBasicTypes.SyncCommitteeSize / 8;
+            if (bits.Length != expected)
+            {
+                throw new InvalidOperationException(
+                    $"SyncAggregate.SyncCommitteeBits must be exactly {expected} bytes ({SszBasicTypes.SyncCommitteeSize} bits); got {bits.Length}.");
+            }
+        }
+
         private bool VerifySyncAggregate(LightClientUpdate update)
+        {
+            return VerifyFullUpdateSyncAggregate(update);
+        }
+
+        private bool VerifyFullUpdateSyncAggregate(LightClientUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
                 update?.SyncAggregate == null ||
@@ -276,10 +711,21 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            return VerifySyncAggregateCore(
+            if (!HasBaselineParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            if (IsFinalityUpdate(update) && !HasSupermajorityParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            return VerifyAggregateSignature(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
-                update.AttestedHeader.Beacon);
+                update.AttestedHeader.Beacon,
+                update.SignatureSlot);
         }
 
         private bool VerifyOptimisticSyncAggregate(LightClientOptimisticUpdate update)
@@ -291,10 +737,16 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            return VerifySyncAggregateCore(
+            if (!HasBaselineParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            return VerifyAggregateSignature(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
-                update.AttestedHeader.Beacon);
+                update.AttestedHeader.Beacon,
+                update.SignatureSlot);
         }
 
         private bool VerifyFinalitySyncAggregate(LightClientFinalityUpdate update)
@@ -306,43 +758,59 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            return VerifySyncAggregateCore(
+            if (!HasBaselineParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            if (!HasSupermajorityParticipation(update.SyncAggregate))
+            {
+                return false;
+            }
+
+            return VerifyAggregateSignature(
                 update.SyncAggregate.SyncCommitteeBits,
                 update.SyncAggregate.SyncCommitteeSignature,
-                update.AttestedHeader.Beacon);
+                update.AttestedHeader.Beacon,
+                update.SignatureSlot);
         }
 
-        private bool VerifySyncAggregateCore(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader)
+        private bool VerifyAggregateSignature(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader, ulong signatureSlot)
         {
             if (bits == null || signature == null || attestedHeader == null)
             {
                 return false;
             }
 
-            if (bits.Length != SszBasicTypes.SyncCommitteeSize / 8)
+            var signaturePeriod = ComputePeriod(signatureSlot);
+            var storePeriod = ComputePeriod(_state.FinalizedSlot);
+            SyncCommittee committee;
+            if (signaturePeriod == storePeriod)
+                committee = _state.CurrentSyncCommittee;
+            else if (signaturePeriod == storePeriod + 1)
+                committee = _state.NextSyncCommittee;
+            else
+                return false;
+            if (committee == null)
             {
                 return false;
             }
 
-            var participants = SelectParticipantPubKeys(_state.CurrentSyncCommittee, bits);
+            var participants = SelectParticipantPubKeys(committee, bits);
             if (participants.Count == 0)
             {
                 return false;
             }
 
-            var domain = ComputeSyncCommitteeDomain();
+            var domain = ComputeSyncCommitteeDomain(signatureSlot);
             var message = ComputeSigningRoot(attestedHeader.HashTreeRoot(), domain);
-            if (message == null || message.Length == 0)
-            {
-                return false;
-            }
 
             return _bls.VerifyAggregate(signature, participants.ToArray(), new[] { message }, domain);
         }
 
         private ulong ComputePeriod(ulong slot)
         {
-            var slotsPerPeriod = _config.SlotsPerEpoch * 256;
+            var slotsPerPeriod = _config.ChainSpec.SlotsPerEpoch * 256;
             if (slotsPerPeriod == 0)
             {
                 return 0;
@@ -361,6 +829,14 @@ namespace Nethereum.Consensus.LightClient
                 return participants;
             }
 
+            if (pubKeys.Count != SszBasicTypes.SyncCommitteeSize)
+            {
+                throw new InvalidOperationException(
+                    $"SyncCommittee.PubKeys must contain exactly {SszBasicTypes.SyncCommitteeSize} keys; got {pubKeys.Count}.");
+            }
+
+            EnsureCommitteeBitsLength(bits);
+
             var memberIndex = 0;
             for (var byteIndex = 0; byteIndex < bits.Length && memberIndex < pubKeys.Count; byteIndex++)
             {
@@ -377,33 +853,37 @@ namespace Nethereum.Consensus.LightClient
             return participants;
         }
 
-        private byte[] ComputeSyncCommitteeDomain()
+        private byte[] ComputeSyncCommitteeDomain(ulong signatureSlot)
         {
+            var forkVersionSlot = signatureSlot == 0UL ? 0UL : signatureSlot - 1UL;
+            var forkVersion = _config.ChainSpec.GetForkVersionAtSlot(forkVersionSlot);
+
+            var forkDataRoot = ComputeForkDataRoot(forkVersion, _config.GenesisValidatorsRoot);
+            if (forkDataRoot.Length != SszBasicTypes.RootLength)
+                throw new InvalidOperationException(
+                    $"forkDataRoot must be exactly {SszBasicTypes.RootLength} bytes; got {forkDataRoot.Length}.");
+
             var domain = new byte[32];
-            Buffer.BlockCopy(DomainSyncCommitteeType, 0, domain, 0, DomainSyncCommitteeType.Length);
-            var forkDataRoot = ComputeForkDataRoot(_config.CurrentForkVersion, _config.GenesisValidatorsRoot);
-            Buffer.BlockCopy(forkDataRoot, 0, domain, DomainSyncCommitteeType.Length, Math.Min(28, forkDataRoot.Length));
+            Buffer.BlockCopy(DomainSyncCommittee, 0, domain, 0, 4);
+            Buffer.BlockCopy(forkDataRoot, 0, domain, 4, 28);
             return domain;
         }
 
         private static byte[] ComputeForkDataRoot(byte[] forkVersion, byte[] genesisValidatorsRoot)
         {
-            var version = new byte[4];
-            if (forkVersion != null)
-            {
-                Buffer.BlockCopy(forkVersion, 0, version, 0, Math.Min(4, forkVersion.Length));
-            }
-
-            var genesis = new byte[SszBasicTypes.RootLength];
-            if (genesisValidatorsRoot != null)
-            {
-                Buffer.BlockCopy(genesisValidatorsRoot, 0, genesis, 0, Math.Min(SszBasicTypes.RootLength, genesisValidatorsRoot.Length));
-            }
+            if (forkVersion == null) throw new ArgumentNullException(nameof(forkVersion));
+            if (genesisValidatorsRoot == null) throw new ArgumentNullException(nameof(genesisValidatorsRoot));
+            if (forkVersion.Length != 4)
+                throw new InvalidOperationException(
+                    $"ForkVersion must be exactly 4 bytes; got {forkVersion.Length}.");
+            if (genesisValidatorsRoot.Length != SszBasicTypes.RootLength)
+                throw new InvalidOperationException(
+                    $"GenesisValidatorsRoot must be exactly {SszBasicTypes.RootLength} bytes; got {genesisValidatorsRoot.Length}.");
 
             var fieldRoots = new[]
             {
-                SszBasicTypes.HashTreeRootFixedBytes(version, version.Length),
-                SszBasicTypes.HashTreeRootFixedBytes(genesis, genesis.Length)
+                SszBasicTypes.HashTreeRootFixedBytes(forkVersion, 4),
+                SszBasicTypes.HashTreeRootFixedBytes(genesisValidatorsRoot, SszBasicTypes.RootLength)
             };
 
             return SszMerkleizer.Merkleize(fieldRoots);
@@ -411,15 +891,19 @@ namespace Nethereum.Consensus.LightClient
 
         private static byte[] ComputeSigningRoot(byte[] objectRoot, byte[] domain)
         {
-            if (objectRoot == null || domain == null || domain.Length != 32)
-            {
-                return Array.Empty<byte>();
-            }
+            if (objectRoot == null) throw new ArgumentNullException(nameof(objectRoot));
+            if (domain == null) throw new ArgumentNullException(nameof(domain));
+            if (objectRoot.Length != SszBasicTypes.RootLength)
+                throw new InvalidOperationException(
+                    $"objectRoot must be exactly {SszBasicTypes.RootLength} bytes; got {objectRoot.Length}.");
+            if (domain.Length != 32)
+                throw new InvalidOperationException(
+                    $"domain must be exactly 32 bytes; got {domain.Length}.");
 
             var fieldRoots = new[]
             {
-                SszBasicTypes.HashTreeRootFixedBytes(objectRoot, objectRoot.Length),
-                SszBasicTypes.HashTreeRootFixedBytes(domain, domain.Length)
+                SszBasicTypes.HashTreeRootFixedBytes(objectRoot, SszBasicTypes.RootLength),
+                SszBasicTypes.HashTreeRootFixedBytes(domain, 32)
             };
 
             return SszMerkleizer.Merkleize(fieldRoots);
@@ -427,19 +911,25 @@ namespace Nethereum.Consensus.LightClient
 
         private static bool VerifyExecutionBranch(LightClientHeader header)
         {
-            if (header?.Beacon == null || header.Execution == null || header.ExecutionBranch == null)
+            if (header?.Beacon == null)
                 return false;
 
-            if (header.ExecutionBranch.Count < SszBasicTypes.ExecutionBranchDepth)
+            if (!LightClientForkSpec.HasExecutionPayloadHeader(header.Fork))
+                return true;
+
+            if (header.Execution == null || header.ExecutionBranch == null)
                 return false;
 
-            var executionRoot = header.Execution.HashTreeRoot();
+            var depth = LightClientForkSpec.ExecutionBranchDepth(header.Fork);
+            var index = LightClientForkSpec.ExecutionBranchIndex(header.Fork);
+
+            var executionRoot = header.Execution.HashTreeRoot(header.Fork);
 
             return SszMerkleizer.VerifyProof(
                 executionRoot,
                 header.ExecutionBranch,
-                SszBasicTypes.ExecutionBranchDepth,
-                SszBasicTypes.ExecutionBranchIndex,
+                depth,
+                index,
                 header.Beacon.BodyRoot
             );
         }
@@ -449,16 +939,20 @@ namespace Nethereum.Consensus.LightClient
             if (attestedHeader?.Beacon == null || finalizedHeader?.Beacon == null || finalityBranch == null)
                 return false;
 
-            if (finalityBranch.Count < SszBasicTypes.FinalityBranchDepth)
-                return false;
+            // Branch length/depth/gindex depend on the active fork at the finalized header's slot.
+            // EIP-7251 (Electra) reshaped BeaconState so the merkle path to FINALIZED_CHECKPOINT.root
+            // is longer (depth 7 vs 6) and rooted at a different generalised index (169 vs 105).
+            var fork = finalizedHeader.Fork;
+            var depth = LightClientForkSpec.FinalityBranchDepth(fork);
+            var index = LightClientForkSpec.FinalityBranchIndex(fork);
 
             var finalizedRoot = finalizedHeader.Beacon.HashTreeRoot();
 
             return SszMerkleizer.VerifyProof(
                 finalizedRoot,
                 finalityBranch,
-                SszBasicTypes.FinalityBranchDepth,
-                SszBasicTypes.FinalityBranchIndex,
+                depth,
+                index,
                 attestedHeader.Beacon.StateRoot
             );
         }

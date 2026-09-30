@@ -294,8 +294,6 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             return new LightClientConfig
             {
                 GenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95".HexToByteArray(),
-                CurrentForkVersion = "0x06000000".HexToByteArray(),
-                SlotsPerEpoch = 32,
                 SecondsPerSlot = 12,
                 WeakSubjectivityRoot = weakSubjectivityRoot
             };
@@ -362,7 +360,8 @@ namespace Nethereum.Consensus.LightClient.Tests.Live
             var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
             while (directory != null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "Nethereum.sln")))
+                if (File.Exists(Path.Combine(directory.FullName, "Nethereum.slnx")) ||
+                    File.Exists(Path.Combine(directory.FullName, "Nethereum.sln")))
                     return directory.FullName;
                 directory = directory.Parent;
             }

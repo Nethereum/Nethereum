@@ -6,6 +6,7 @@ using Nethereum.Model;
 using Nethereum.RPC.Eth.ChainValidation;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Mappers;
+using Nethereum.Merkle.Patricia.ProofVerification;
 
 namespace Nethereum.ChainStateVerification
 {
@@ -18,7 +19,7 @@ namespace Nethereum.ChainStateVerification
 
             var account = accountProof.ToAccount();
             var proofNodes = accountProof.AccountProofs.Select(p => p.HexToByteArray());
-            var valid = AccountProofVerification.VerifyAccountProofs(accountProof.Address, stateRoot, proofNodes, account);
+            var valid = ProofVerification.Current.Account.Verify(stateRoot, proofNodes, accountProof.Address, account);
             if (!valid)
             {
                 throw new InvalidChainDataException("Account proof did not match the provided state root.");
@@ -34,9 +35,9 @@ namespace Nethereum.ChainStateVerification
 
             var key = storageProof.Key.HexValue.HexToByteArray();
             var value = storageProof.Value.HexValue.HexToByteArray();
-            var proofNodes = storageProof.Proof.Select(p => p.HexToByteArray());
+            var proofNodes = storageProof.Proof.Select(p => p.HexToByteArray()).ToList();
 
-            var valid = StorageProofVerification.ValidateValueFromStorageProof(key, value, proofNodes, account.StateRoot);
+            var valid = ProofVerification.Current.Storage.Verify(account.StateRoot, proofNodes, key, value);
             if (!valid)
             {
                 throw new InvalidChainDataException("Storage proof did not match the account's storage root.");

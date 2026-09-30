@@ -316,7 +316,7 @@ namespace Nethereum.Ssz
         {
             if (leaf == null || leaf.Length != ChunkSize) return false;
             if (root == null || root.Length != ChunkSize) return false;
-            if (branch == null || branch.Count < depth) return false;
+            if (branch == null || branch.Count != depth) return false;
 
             var current = new byte[ChunkSize];
             Buffer.BlockCopy(leaf, 0, current, 0, ChunkSize);

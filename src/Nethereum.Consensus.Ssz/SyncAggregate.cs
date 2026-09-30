@@ -19,6 +19,12 @@ namespace Nethereum.Consensus.Ssz
 
         public static SyncAggregate Decode(ReadOnlySpan<byte> data)
         {
+            if (data.Length != SszBasicTypes.SyncAggregateLength)
+            {
+                throw new InvalidOperationException(
+                    $"SyncAggregate: input length {data.Length} must equal {SszBasicTypes.SyncAggregateLength} bytes.");
+            }
+
             var reader = new SszReader(data);
             return new SyncAggregate
             {

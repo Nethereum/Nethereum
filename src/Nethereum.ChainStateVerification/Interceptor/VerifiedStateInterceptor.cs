@@ -7,6 +7,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Util;
 
 namespace Nethereum.ChainStateVerification.Interceptor
 {
@@ -194,7 +195,10 @@ namespace Nethereum.ChainStateVerification.Interceptor
 
             var value = await _verifiedStateService.GetStorageAtAsync(address, position.Value)
                 .ConfigureAwait(false);
-            return value.ToHex(true);
+            if (value == null || value.Length == 0)
+                return "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+            return value.PadBytes(32).ToHex(true);
         }
 
         private object HandleGetBlockNumber()
