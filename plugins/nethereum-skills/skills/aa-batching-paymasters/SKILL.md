@@ -58,10 +58,15 @@ var depositCall = new DepositFunction().ToBatchCall(Web3.Convert.ToWei(1));
 var receipt = await handler.BatchExecuteAsync(encodedCallData1, encodedCallData2);
 ```
 
-## ERC-7579 Batch via SmartAccountService
+## ERC-7579 Batch via NethereumAccountService
+
+For a modular `NethereumAccount`, `ExecuteBatchAsync` sends the batch as a direct account transaction (not a UserOperation) using the account's own ERC-7579 `execute` entry point:
 
 ```csharp
-using Nethereum.AccountAbstraction.BaseAccount.ContractDefinition;
+using Nethereum.AccountAbstraction.Structs;
+using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccount;
+
+var accountService = new NethereumAccountService(web3, accountAddress);
 
 var calls = new[]
 {
@@ -69,7 +74,7 @@ var calls = new[]
     new Call { Target = dexAddress, Value = 0, Data = swapCallData }
 };
 
-var receipt = await account.ExecuteBatchAsync(calls);
+var receipt = await accountService.ExecuteBatchAsync(calls);
 ```
 
 ## Paymasters
@@ -89,19 +94,32 @@ handler.WithPaymaster(paymasterAddress, paymasterData);
 
 ### Verifying Paymaster (Off-Chain Signature)
 
+`VerifyingPaymasterManager.SponsorUserOperationAsync` signs a validity window and returns a `SponsorResult` whose `PaymasterAndData` is `address(20 bytes) ‖ data`. It takes a `PackedUserOperation`, not the `UserOperation` the `DataProvider` receives, so pack the op first with `UserOperationBuilder.PackUserOperation` - the paymaster signs over the FINAL gas values, which is exactly why this must happen inside the `DataProvider` (it only runs once gas is known). `PaymasterConfig`'s `DataProvider` only needs the data half - `WithPaymaster`'s address is set separately - so strip the 20-byte address prefix:
+
 ```csharp
-var paymaster = web3.GetVerifyingPaymasterAsync(paymasterAddress, paymasterSignerKey);
+var paymaster = await web3.GetVerifyingPaymasterAsync(paymasterAddress, paymasterSignerKey);
 
 handler.WithPaymaster(new PaymasterConfig(paymasterAddress, async userOp =>
 {
-    return await paymaster.GetPaymasterDataAsync(userOp);
+    var packed = UserOperationBuilder.PackUserOperation(userOp);
+    packed.InitCode ??= Array.Empty<byte>();
+    packed.CallData ??= Array.Empty<byte>();
+    packed.PaymasterAndData ??= Array.Empty<byte>();
+    packed.Signature ??= Array.Empty<byte>();
+
+    var sponsorResult = await paymaster.SponsorUserOperationAsync(packed);
+    return sponsorResult.PaymasterAndData.Skip(20).ToArray();
 }));
 ```
 
 ### Deposit Paymaster (Pre-Funded)
 
+A deposit paymaster charges the account's own pre-funded EntryPoint deposit, so no signed data is needed per operation - just fund the account once:
+
 ```csharp
-var depositPaymaster = web3.GetDepositPaymasterAsync(paymasterAddress);
+var depositPaymaster = await web3.GetDepositPaymasterAsync(paymasterAddress);
+await depositPaymaster.DepositForAsync(accountAddress, Web3.Convert.ToWei(0.1m));
+
 handler.WithPaymaster(paymasterAddress);
 ```
 

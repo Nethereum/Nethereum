@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Nethereum.DevP2P.ReceiptProbe</RootNamespace>
+    <AssemblyName>nethereum-receiptprobe</AssemblyName>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Model\Nethereum.Model.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Nethereum.ABI.EIP712;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
@@ -197,10 +197,9 @@ namespace Nethereum.Signer.Trezor.Console
             System.Console.WriteLine("Expected Hash: a85c2e2b118698e88db68a8105b794a8cc7cec074e89ef991cb4f5f533819cc2");
 
             var nethereumSigner = new Nethereum.Signer.EIP712.Eip712TypedDataSigner();
-            var typedSignature = EthECDSASignature.CreateStringSignature(signature);
-            var recovered = nethereumSigner.RecoverFromSignatureHashV4(hashResult.TypedDataHash, typedSignature);
+            var recovered = nethereumSigner.RecoverFromSignatureHashV4(hashResult.TypedDataHash, signature);
 
-            System.Console.WriteLine("Typed Data Signature: " + typedSignature);
+            System.Console.WriteLine("Typed Data Signature: " + signature);
             System.Console.WriteLine("Recovered Address: " + recovered);
         }
 

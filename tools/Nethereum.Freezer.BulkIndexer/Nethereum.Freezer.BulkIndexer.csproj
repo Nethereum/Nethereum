@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Nethereum.Freezer.BulkIndexer</RootNamespace>
+    <AssemblyName>nethereum-freezer-bulkindexer</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RocksDB" Version="10.4.2.62149" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain.Freezer\Nethereum.CoreChain.Freezer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Freezer\Nethereum.Freezer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -146,6 +146,21 @@
     },
     {
         "paths": [
+            "out/WebAuthnValidator.sol/WebAuthnValidator.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.WebAuthn.Contracts.Modules.Rhinestone",
+                "basePath": "../src/Nethereum.AccountAbstraction.WebAuthn/Contracts/Modules/Rhinestone",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
             "out/SmartSession.sol/SmartSession.json"
         ],
         "generatorConfigs": [
@@ -169,6 +184,39 @@
             {
                 "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions.Policies",
                 "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Modules/SmartSessions/Policies",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition",
+                "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],
+                "structReferencedTypes": ["PackedUserOperation"]
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/IRule.sol/IRule.json",
+            "out/ValueCapRule.sol/ValueCapRule.json",
+            "out/RuleRegistry.sol/RuleRegistry.json",
+            "out/ValueCapCombinator.sol/ValueCapCombinator.json",
+            "out/PayableTarget.sol/PayableTarget.json",
+            "out/BadOutputRule.sol/BadOutputRule.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Rules",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Rules",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
+    },
+    {
+        "paths": [
+            "out/ECDSASessionValidator.sol/ECDSASessionValidator.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AccountAbstraction.Contracts.Modules.SmartSessions.Validators",
+                "basePath": "../src/Nethereum.AccountAbstraction/Contracts/Modules/SmartSessions/Validators",
                 "codeGenLang": 0,
                 "generatorType": "ContractDefinition",
                 "referencedTypesNamespaces": ["Nethereum.AccountAbstraction.Structs"],

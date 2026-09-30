@@ -23,8 +23,10 @@ All standard services are accessible via `web3.Eth`:
 | `ERC1271Service` | `web3.Eth.ERC1271` | Contract signature validation |
 | `ERC6492Service` | `web3.Eth.ERC6492` | Pre-deploy signature validation |
 | `EIP3009Service` | `web3.Eth.EIP3009` | Gasless transfers (USDC) |
+| `Permit2Service` | `web3.Eth.GetPermit2Service()` | Uniswap Permit2 (canonical) |
 | `ERC2535DiamondService` | `web3.Eth.ERC2535Diamond` | Diamond proxy |
-| `ENSService` | `web3.Eth.GetEnsService()` | Name resolution |
+| `ENSService` | `web3.Eth.GetEnsService()` | Name resolution (ENSIP-23 Universal Resolver by default) |
+| `ENSUniversalResolverService` | `web3.Eth.GetEnsUniversalResolverService()` | Batched records + CCIP-Read |
 
 ## ERC-20: Fungible Tokens
 
@@ -116,24 +118,77 @@ var signer = new TransferWithAuthorisationSigner();
 var signature = await signer.SignWithPrivateKeyAsync(
     authorization, "USDC", "2", chainId, usdcAddress, privateKey);
 
-// Verify + settle
-var service = new X402TransferWithAuthorisation3009Service(
-    facilitatorKey, rpcEndpoints, tokenAddresses, chainIds, tokenNames, tokenVersions);
+// Verify + settle (x402 v2: only an RPC endpoint per chain id is configured)
+var clients = new Dictionary<int, IClient> { [84532] = new RpcClient(new Uri(rpcUrl)) };
+var service = new X402TransferWithAuthorisation3009Service(facilitatorKey, clients);
 var result = await service.VerifyPaymentAsync(paymentPayload, requirements);
 var settlement = await service.SettlePaymentAsync(paymentPayload, requirements);
 
 // ReceiveWithAuthorization (receiver pays gas)
-var receiveBuilder = new ReceiveWithAuthorisationBuilder();
-var receiveService = new X402ReceiveWithAuthorisation3009Service(
-    receiverKey, rpcEndpoints, tokenAddresses, chainIds, tokenNames, tokenVersions);
+var receiveService = new X402ReceiveWithAuthorisation3009Service(receiverKey, clients);
 ```
 
+## Permit2: Uniswap Token Approvals
+
+The canonical [Permit2](https://github.com/Uniswap/permit2) contract (same address on every EVM chain) is a first-class service via `web3.Eth.GetPermit2Service()` (defaults to `CommonAddresses.PERMIT2_ADDRESS`). It covers AllowanceTransfer (`approve`/`permit`/`transferFrom`) and SignatureTransfer (`permitTransferFrom`/`permitWitnessTransferFrom`) plus nonce management.
+
+```csharp
+using Nethereum.Contracts.Standards.Permit2;
+
+var permit2 = web3.Eth.GetPermit2Service();
+
+// Reads
+var domainSeparator = await permit2.DomainSeparatorQueryAsync();
+var allowance = await permit2.AllowanceQueryAsync(owner, token, spender);   // (amount, expiration, nonce)
+
+// SignatureTransfer: the owner's signature is produced with Nethereum.Signer.EIP712's PermitSigner.
+// The on-chain `permit` tuple omits spender (Permit2 uses msg.sender); the signed message includes it.
+var receipt = await permit2.PermitTransferFromRequestAndWaitForReceiptAsync(
+    permit,                                                    // PermitTransferFrom { permitted, nonce, deadline }
+    new SignatureTransferDetails { To = recipient, RequestedAmount = amount },
+    owner,
+    signature);
+```
+
+Sign SignatureTransfer messages with `PermitSigner` (from `Nethereum.Signer.EIP712`), which includes the `spender` the on-chain tuple omits:
+
+```csharp
+using Nethereum.ABI.EIP712.Permit2;
+using Nethereum.Signer.EIP712.Permit2;
+
+var signature = PermitSigner.SignPermitTransferFrom(
+    chainId, CommonAddresses.PERMIT2_ADDRESS,
+    new PermitTransferFromWithSpender
+    {
+        Permitted = new TokenPermissions { Token = token, Amount = amount },
+        Spender = spender,   // the caller; hashed as msg.sender on-chain
+        Nonce = nonce,
+        Deadline = deadline
+    },
+    key);
+```
+
+Layering: signing types in `Nethereum.ABI.EIP712.Permit2`, contract tuples in `Nethereum.Contracts.Standards.Permit2`, signer in `Nethereum.Signer.EIP712`. For x402 payments over Permit2 (witness variant), see the `x402-payments` skill.
+
 ## ENS: Name Resolution
+
+Resolution defaults to the ENSIP-23 Universal Resolver, with automatic EIP-3668
+CCIP-Read for offchain and wildcard (ENSIP-10) names.
 
 ```csharp
 var ensService = web3.Eth.GetEnsService();
 var address = await ensService.ResolveAddressAsync("vitalik.eth");
 var name = await ensService.ReverseResolveAsync(address);
+var url = await ensService.ResolveTextAsync("vitalik.eth", TextDataKey.url);
+```
+
+Batch a name's records (address + content hash + text records) in one round-trip,
+or resolve many names at once, via the Universal Resolver directly:
+
+```csharp
+var universalResolver = web3.Eth.GetEnsUniversalResolverService();
+var record = await universalResolver.ResolveRecordAsync("nick.eth", TextDataKey.url, TextDataKey.avatar);
+var records = await universalResolver.ResolveRecordsAsync(new[] { "nick.eth", "nethereum.eth" }, TextDataKey.url);
 ```
 
 ## Historical Queries

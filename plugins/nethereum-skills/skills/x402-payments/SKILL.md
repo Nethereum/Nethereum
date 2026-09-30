@@ -1,12 +1,14 @@
 ---
 name: x402-payments
-description: Accept HTTP 402 cryptocurrency payments using Nethereum (.NET/C#). Use this skill whenever the user asks about x402 protocol, HTTP 402 payments, pay-per-request APIs, EIP-3009 transfer authorization, USDC payments, crypto API monetization, payment middleware, or accepting cryptocurrency payments in ASP.NET with C# or .NET.
+description: Accept HTTP 402 cryptocurrency payments using Nethereum (.NET/C#). Use this skill whenever the user asks about x402 protocol (version 2), HTTP 402 payments, pay-per-request APIs, EIP-3009 transfer authorization, Permit2 payments, USDC payments, crypto API monetization, payment middleware, or accepting cryptocurrency payments in ASP.NET with C# or .NET.
 user-invocable: true
 ---
 
-# x402: Crypto Payments
+# x402: Crypto Payments (protocol v2)
 
-The x402 protocol implements HTTP 402 (Payment Required) for pay-per-request APIs. Clients pay with signed EIP-3009 USDC authorizations — the payer signs off-chain (no gas), and the server or facilitator settles on-chain. Nethereum's `Nethereum.X402` package provides `X402HttpClient` for automatic payments and `X402Middleware` for ASP.NET Core endpoint protection.
+The x402 protocol implements HTTP 402 (Payment Required) for pay-per-request APIs. A client pays with a signed authorization — off-chain (no gas) — and the server or a facilitator settles on-chain. Nethereum's `Nethereum.X402` package provides `X402HttpClient` for automatic payments and `X402Middleware` for ASP.NET Core endpoint protection.
+
+This library targets **x402 version 2**: payments carry `x402Version = 2`, the chosen requirement is echoed in the payload's `accepted` field, and networks use **CAIP-2** identifiers (`eip155:<chainId>`, e.g. `eip155:8453` for Base). The "exact" scheme supports two EVM asset-transfer methods: **EIP-3009** (default) and **Permit2**.
 
 NuGet: `Nethereum.X402`
 
@@ -14,27 +16,26 @@ NuGet: `Nethereum.X402`
 dotnet add package Nethereum.X402
 ```
 
+The v2 wire uses three base64 headers: `PAYMENT-REQUIRED` (402 response), `PAYMENT-SIGNATURE` (request), `PAYMENT-RESPONSE` (200 response).
+
 ## Client: Pay Automatically
 
-`X402HttpClient` handles the full 402 flow — detect payment requirement, sign EIP-3009 authorization, retry with payment:
+`X402HttpClient` handles the full 402 flow — detect requirement, select one, sign it, retry with the payment header. The signing domain (token, chain id, name/version) is derived from the server's `PaymentRequirements`, so the client is not pre-configured with a token:
 
 ```csharp
 using Nethereum.X402.Client;
 
 var options = new X402HttpClientOptions
 {
-    MaxPaymentAmount = 0.1m,       // Safety limit per request
-    PreferredNetwork = "base",
-    TokenName = "USD Coin",
-    TokenVersion = "2",
-    ChainId = 8453,
-    TokenAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    MaxAmount = "100000",           // Safety limit per request (USDC)
+    PreferredNetwork = "eip155:8453",  // CAIP-2 (Base)
+    PreferredScheme = "exact"
 };
 
 var x402Client = new X402HttpClient(httpClient, privateKey, options);
 var response = await x402Client.GetAsync("https://api.example.com/premium/content");
 
-// Check payment result from response headers
+// Check payment result from the PAYMENT-RESPONSE header
 if (response.HasPaymentResponse())
 {
     var txHash = response.GetTransactionHash();
@@ -43,24 +44,24 @@ if (response.HasPaymentResponse())
 }
 ```
 
-Supports `GetAsync`, `PostAsync`, `PutAsync`, `DeleteAsync`, `SendAsync`. Throws `X402PaymentExceedsMaximumException` if requested amount exceeds `MaxPaymentAmount`.
+Supports `GetAsync`, `PostAsync`, `PutAsync`, `DeleteAsync`, `SendAsync`. Throws `X402PaymentExceedsMaximumException` if the requested amount exceeds `MaxAmount`. The client automatically produces the right payload for the selected requirement's method (EIP-3009, or Permit2 when `extra.assetTransferMethod == "permit2"`).
 
 ### Manual Payment Flow
 
-Pass explicit `PaymentRequirements` for full control:
+Construct with just the payer key and pass explicit `PaymentRequirements`:
 
 ```csharp
-var x402Client = new X402HttpClient(httpClient, privateKey, "USD Coin", "2", 8453, usdcAddress);
+var x402Client = new X402HttpClient(httpClient, privateKey);
 
 var requirements = new PaymentRequirements
 {
     Scheme = "exact",
-    Network = "base",
-    MaxAmountRequired = "1000000",  // $1.00 USDC (6 decimals)
+    Network = "eip155:84532",   // Base Sepolia
+    Amount = "1000000",         // $1.00 USDC (6 decimals), atomic units
+    Asset = usdcAddress,
     PayTo = receiverAddress,
-    Resource = "/api/premium",
-    Description = "Premium content",
-    MaxTimeoutSeconds = 60
+    MaxTimeoutSeconds = 60,
+    Extra = new ExactSchemeExtra { Name = "USDC", Version = "2" }
 };
 
 var response = await x402Client.GetAsync("https://api.example.com/premium", requirements);
@@ -68,7 +69,7 @@ var response = await x402Client.GetAsync("https://api.example.com/premium", requ
 
 ## Server: Protect Endpoints
 
-Use route-based middleware to gate endpoints:
+Register a facilitator client, then add route-based middleware:
 
 ```csharp
 using Nethereum.X402.AspNetCore;
@@ -82,51 +83,72 @@ app.UseX402(options =>
     options.Routes.Add(new RoutePaymentConfig("/api/premium/*", new PaymentRequirements
     {
         Scheme = "exact",
-        Network = "base",
-        MaxAmountRequired = "1000000",
-        Asset = "USDC",
+        Network = "eip155:8453",
+        Amount = "1000000",
+        Asset = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         PayTo = "0xYourAddress",
-        Resource = "/api/premium",
-        Description = "Premium API access",
-        MaxTimeoutSeconds = 60
+        MaxTimeoutSeconds = 60,
+        Extra = new ExactSchemeExtra { AssetTransferMethod = "eip3009", Name = "USDC", Version = "2" }
     }));
 });
 ```
 
 ### Self-Facilitated (No External Facilitator)
 
-Process payments on-chain directly:
+Settle on-chain directly. Only an RPC endpoint per chain id is configured (token/chain/domain come from each requirement):
 
 ```csharp
 using Nethereum.X402.Extensions;
 
-// Transfer model: facilitator account pays gas
-builder.Services.AddX402TransferProcessor(
-    facilitatorPrivateKey: Environment.GetEnvironmentVariable("KEY"),
-    rpcEndpoints: new Dictionary<string, string> { ["base"] = "https://mainnet.base.org" },
-    tokenAddresses: new Dictionary<string, string> { ["base"] = usdcAddress },
-    chainIds: new Dictionary<string, int> { ["base"] = 8453 },
-    tokenNames: new Dictionary<string, string> { ["base"] = "USD Coin" },
-    tokenVersions: new Dictionary<string, string> { ["base"] = "2" });
+var rpcByChainId = new Dictionary<int, string> { [8453] = "https://mainnet.base.org" };
 
-// Or Receive model: receiver pays gas
-builder.Services.AddX402ReceiveProcessor(
-    receiverPrivateKey: Environment.GetEnvironmentVariable("KEY"),
-    ...same config dictionaries...);
+// EIP-3009 only (facilitator pays gas):
+builder.Services.AddX402TransferProcessor(facilitatorPrivateKey, rpcByChainId);
+
+// EIP-3009 AND Permit2 (routes by payload shape) — recommended:
+builder.Services.AddX402ExactProcessor(facilitatorPrivateKey, rpcByChainId);
+
+// Receiver-submitted model (receiver pays gas):
+builder.Services.AddX402ReceiveProcessor(receiverPrivateKey, rpcByChainId);
 ```
 
-## Two Payment Models
+Each overload also accepts an `IAccount` (external signers/KMS) or an `IServiceProvider` factory.
 
-| Model | Service | Who Submits TX | Who Pays Gas |
-|-------|---------|---------------|-------------|
-| Transfer | `X402TransferWithAuthorisation3009Service` | Facilitator | Facilitator |
-| Receive | `X402ReceiveWithAuthorisation3009Service` | Receiver | Receiver |
+## Asset-Transfer Methods
 
-Both implement `IX402PaymentProcessor` with `VerifyPaymentAsync`, `SettlePaymentAsync`, `GetSupportedAsync`.
+| Method | Processor | On-chain call |
+|--------|-----------|---------------|
+| EIP-3009 (default) | `X402TransferWithAuthorisation3009Service` | `transferWithAuthorization` |
+| EIP-3009 (receiver) | `X402ReceiveWithAuthorisation3009Service` | `receiveWithAuthorization` |
+| Permit2 | `X402ExactPermit2Service` | `x402ExactPermit2Proxy.settle` |
+| dispatcher | `X402ExactSchemeProcessor` | routes by payload shape |
 
-## Build Authorizations Directly
+All implement `IX402PaymentProcessor` (`VerifyPaymentAsync`, `SettlePaymentAsync`, `GetSupportedAsync`). A blockchain processor is constructed with a facilitator key (or `IAccount`) and a `Dictionary<int, IClient>` keyed by chain id.
 
-For custom payment flows:
+### Permit2 Method
+
+Permit2 works with any ERC-20 the payer has approved to the canonical Permit2 contract (no EIP-3009 support needed). A route opts in with `extra.assetTransferMethod = "permit2"`; the client signs a Permit2 `PermitWitnessTransferFrom` (spender = the x402ExactPermit2Proxy, witness = the recipient) and the facilitator settles via `proxy.settle`, which enforces that funds go only to that recipient:
+
+```csharp
+options.Routes.Add(new RoutePaymentConfig("/api/premium-permit2", new PaymentRequirements
+{
+    Scheme = "exact",
+    Network = "eip155:84532",
+    Amount = "10000",
+    Asset = usdcAddress,
+    PayTo = receiverAddress,
+    MaxTimeoutSeconds = 60,
+    Extra = new ExactSchemeExtra { AssetTransferMethod = "permit2" }
+}));
+
+// Facilitator: X402ExactPermit2Service (or AddX402ExactProcessor to serve both methods)
+```
+
+The Permit2/proxy addresses are canonical constants (`X402Permit2Addresses`), the same on every EVM chain. The underlying Permit2 signing lives in `Nethereum.Signer.EIP712`/`Nethereum.ABI`, and the contract in `Nethereum.Contracts` (`web3.Eth.GetPermit2Service()`).
+
+## Build EIP-3009 Authorizations Directly
+
+For custom flows:
 
 ```csharp
 using Nethereum.X402.Signers;
@@ -135,32 +157,40 @@ var builder = new TransferWithAuthorisationBuilder();
 var signer = new TransferWithAuthorisationSigner();
 
 var authorization = builder.BuildFromPaymentRequirements(requirements, payerAddress);
-// Default: validAfter = 10 min ago, validBefore = 1 hour from now
+// Default window: validAfter = 10 min ago, validBefore = 1 hour from now
 
 var signature = await signer.SignWithPrivateKeyAsync(
     authorization, "USD Coin", "2", chainId, usdcAddress, payerPrivateKey);
 
-// Or sign with Web3 account (hardware wallets, KMS)
+// Or sign with a Web3 account (hardware wallets, KMS)
 var signature = await signer.SignWithWeb3Async(
     authorization, "USD Coin", "2", chainId, usdcAddress, web3, signerAddress);
 ```
 
-## Error Codes
+## Error Codes (`X402ErrorCodes`)
 
 | Code | Meaning |
 |------|---------|
-| `insufficient_funds` | Payer doesn't have enough tokens |
-| `invalid_exact_evm_payload_signature` | Signature verification failed |
-| `invalid_exact_evm_payload_authorization_valid_before` | Authorization expired |
-| `invalid_exact_evm_payload_recipient_mismatch` | Receiver mismatch (Receive model) |
-| `invalid_exact_evm_payload_authorization_nonce_used` | Nonce already used |
+| `invalid_exact_evm_insufficient_balance` | Payer doesn't have enough tokens |
+| `invalid_exact_evm_signature` | EIP-3009 signature verification failed |
+| `invalid_exact_evm_authorization_value` | Amount below the requirement |
+| `invalid_exact_evm_recipient_mismatch` | Receiver mismatch |
+| `invalid_exact_evm_nonce_already_used` | Nonce already used |
+| `invalid_network` / `unsupported_payload_type` | Network/scheme not supported |
+| `invalid_permit2_recipient_mismatch` | Permit2 witness recipient ≠ `PayTo` |
+| `permit2_amount_mismatch` / `permit2_token_mismatch` | Permit2 amount/token mismatch |
+| `permit2_allowance_required` | Payer hasn't approved Permit2 for the asset |
+| `invalid_permit2_signature` | Permit2 signature verification failed |
 
 ## Supported Tokens
+
+Any EIP-3009 token (for the eip3009 method) or any ERC-20 approved to Permit2 (for the permit2 method). Common USDC addresses:
 
 | Token | Network | Address |
 |-------|---------|---------|
 | USDC | Ethereum | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
 | USDC | Base | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| USDC | Base Sepolia | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 | USDC | Polygon | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` |
 | USDC | Arbitrum | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` |
 | USDC | Optimism | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` |

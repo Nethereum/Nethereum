@@ -30,17 +30,24 @@ Switch any existing typed contract service to route through Account Abstraction.
 
 ```csharp
 using Nethereum.AccountAbstraction;
+using Nethereum.JsonRpc.Client;
+using Nethereum.Signer;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 
 var web3 = new Web3(new Account(privateKey), rpcUrl);
 var erc20Service = new StandardTokenService(web3, tokenAddress);
 
+// The signer key and bundler service - ChangeContractHandlerToAA takes an EthECKey and an
+// IAccountAbstractionBundlerService, not raw strings.
+var signerKey = new EthECKey(privateKey);
+var bundlerService = new AccountAbstractionBundlerService(new RpcClient(new Uri(bundlerUrl)));
+
 // One line: switch to AA
 erc20Service.ChangeContractHandlerToAA(
     accountAddress,    // smart account address
-    privateKey,        // signer key
-    bundlerUrl,        // bundler JSON-RPC endpoint
+    signerKey,         // signer key
+    bundlerService,    // bundler service
     entryPointAddress  // EntryPoint contract address
 );
 
@@ -59,7 +66,7 @@ If the smart account hasn't been deployed yet:
 
 ```csharp
 erc20Service.ChangeContractHandlerToAA(
-    accountAddress, privateKey, bundlerUrl, entryPointAddress,
+    accountAddress, signerKey, bundlerService, entryPointAddress,
     new FactoryConfig
     {
         FactoryAddress = factoryAddress,
@@ -68,15 +75,11 @@ erc20Service.ChangeContractHandlerToAA(
     });
 ```
 
-### With Explicit Key and Bundler Service
+### Configuring Gas and Paymaster
 
-For full control, pass an `EthECKey` and `IAccountAbstractionBundlerService`:
+`ChangeContractHandlerToAA` returns the `AAContractHandler`, so gas and paymaster settings chain off it directly:
 
 ```csharp
-var signerKey = new EthECKey(privateKey);
-var bundlerService = new AccountAbstractionBundlerService(
-    new RpcClient(new Uri(bundlerUrl)));
-
 var handler = erc20Service.ChangeContractHandlerToAA(
     accountAddress, signerKey, bundlerService, entryPointAddress);
 
@@ -139,10 +142,10 @@ var userOpHash = await bundlerService.SendUserOperation
 ## EntryPoint Versions
 
 ```csharp
-EntryPointAddresses.V06    // Original ERC-4337
-EntryPointAddresses.V07    // Packed format
-EntryPointAddresses.V08    // Incremental improvements
-EntryPointAddresses.V09    // 0x433709009B8330FDa32311DF1C2AFA402eD8D009
+EntryPointAddresses.V08    // EIP-712 userOpHash, EIP-7702 support
+EntryPointAddresses.V09    // 0x433709009B8330FDa32311DF1C2AFA402eD8D009 (latest)
+// V06/V07 constants exist for reference but are rejected by the handler:
+// they use the legacy keccak userOpHash, not the EIP-712 hash this library signs.
 EntryPointAddresses.Latest // Alias for V09 — recommended
 ```
 

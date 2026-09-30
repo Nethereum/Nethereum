@@ -56,7 +56,7 @@ var config = OwnableValidatorConfig.Create(validatorAddress, threshold: 2, owner
 var receipt = await accountService.InstallModuleAndWaitForReceiptAsync(config);
 
 // Fluent builder:
-var config = new OwnableValidatorConfig(validatorAddress)
+var config = new OwnableValidatorConfig { ModuleAddress = validatorAddress }
     .WithOwner(owner1).WithOwner(owner2).WithOwner(owner3)
     .WithThreshold(2);
 
@@ -72,7 +72,7 @@ var config = SocialRecoveryConfig.Create(moduleAddress, threshold: 2, guardian1,
 var receipt = await accountService.InstallModuleAndWaitForReceiptAsync(config);
 
 // Fluent:
-var config = new SocialRecoveryConfig(moduleAddress)
+var config = new SocialRecoveryConfig { ModuleAddress = moduleAddress }
     .WithGuardian(guardian1).WithGuardian(guardian2).WithGuardian(guardian3)
     .WithThreshold(2);
 
@@ -80,6 +80,8 @@ var config = new SocialRecoveryConfig(moduleAddress)
 await accountService.InstallSocialRecoveryAndWaitForReceiptAsync(
     moduleAddress, threshold: 2, guardian1, guardian2, guardian3);
 ```
+
+For the full guardian-recovery lifecycle — actually recovering a lost owner key, under-threshold rejection, and changing the guardian set later — see the `social-recovery` skill.
 
 ## Install Executor
 
@@ -118,6 +120,8 @@ var config = SmartSessionConfig.Create(sessionModuleAddress, sessionValidatorAdd
 var receipt = await accountService.InstallModuleAndWaitForReceiptAsync(config);
 ```
 
+For the full session lifecycle — enabling a policy-scoped session, `SudoPolicy` vs `UniActionPolicy` vs ERC-20 spending limits, using the session key, out-of-policy rejection, and revocation — see the `smart-sessions-and-policies` skill.
+
 ## Check and Remove Modules
 
 ```csharp
@@ -130,16 +134,25 @@ var receipt = await accountService.UninstallModuleAndWaitForReceiptAsync(config)
 
 ## Configure at Account Creation
 
-Bake modules in from the start with SmartAccountBuilder:
+`IAAClient.CreateAccountAsync` always bakes in a single ECDSA validator. To create a modular
+`NethereumAccount` with a different validator already installed - e.g. an `OwnableValidator`
+multisig from the start - build the factory's `initData` yourself with
+`AccountInitDataBuilder.Build(IModuleConfig)` and drive `NethereumAccountFactoryService` directly:
 
 ```csharp
-var builder = new SmartAccountBuilder()
-    .WithValidator(validatorAddress);
+using Nethereum.AccountAbstraction.Contracts.Core.NethereumAccountFactory;
+using Nethereum.AccountAbstraction.ERC7579.Modules;
 
-// Or with full init data:
-var initData = new OwnableValidatorConfig(validatorAddress, threshold: 2, owner1, owner2).GetInitData();
-var builder = new SmartAccountBuilder()
-    .WithModule(ERC7579ModuleTypes.TYPE_VALIDATOR, validatorAddress, initData);
+var validatorConfig = OwnableValidatorConfig.Create(validatorAddress, threshold: 2, owner1, owner2);
+var initData = AccountInitDataBuilder.Build(validatorConfig); // validator(20 bytes) ‖ validator's own initData
+
+var factory = new NethereumAccountFactoryService(web3, factoryAddress);
+var salt = new byte[32]; // your own CREATE2 salt
+var address = await factory.GetAddressQueryAsync(salt, initData);              // predict, before deploying
+var receipt = await factory.CreateAccountRequestAndWaitForReceiptAsync(salt, initData); // deploy now
+
+// Or leave it counterfactual: attach the account's InitCode to the first UserOperation instead
+// (see the smart-account-deployment skill's "Lazy Deployment via InitCode" section).
 ```
 
 ## Common Mistakes

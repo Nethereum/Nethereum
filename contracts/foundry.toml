@@ -54,7 +54,12 @@ remappings = [
     # SmartSessions (Rhinestone + Biconomy session key system)
     "@smartsessions/=lib/smartsessions/contracts/",
     "excessively-safe-call/=lib/excessively-safe-call/src/",
-    "stringutils/=lib/stringutils/src/"
+    "stringutils/=lib/stringutils/src/",
+    # WebAuthnValidator (Rhinestone core-modules) deps
+    "@webauthn/=lib/webauthn-sol/src/",
+    "FreshCryptoLib/=lib/FreshCryptoLib/solidity/src/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+    "@erc7579/enumerablemap4337/=lib/enumerablemap4337/src/"
 ]
 
 exclude_paths = [

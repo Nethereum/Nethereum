@@ -58,7 +58,7 @@ app.MapPost("/", async (HttpContext httpContext) =>
             {
                 var rpcRequests = requests.Select(ToRpcRequestMessage).ToArray();
                 var responses = await dispatcher.DispatchBatchAsync(rpcRequests);
-                var jsonResponses = responses.Select(ToJsonRpcResponse).ToArray();
+                var jsonResponses = responses.Select(r => r.ToJsonRpcResponse()).ToArray();
                 await httpContext.Response.WriteAsync(
                     JsonSerializer.Serialize(jsonResponses, CoreChainJsonContext.Default.JsonRpcResponseArray));
                 return;
@@ -75,7 +75,7 @@ app.MapPost("/", async (HttpContext httpContext) =>
 
         var rpcRequest = ToRpcRequestMessage(request);
         var response = await dispatcher.DispatchAsync(rpcRequest);
-        var jsonResponse = ToJsonRpcResponse(response);
+        var jsonResponse = response.ToJsonRpcResponse();
         await httpContext.Response.WriteAsync(
             JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
     }
@@ -107,28 +107,5 @@ static RpcRequestMessage ToRpcRequestMessage(JsonRpcRequest request)
         Method = request.Method,
         JsonRpcVersion = request.Jsonrpc,
         RawParameters = request.Params.HasValue ? request.Params.Value : null
-    };
-}
-
-static JsonRpcResponse ToJsonRpcResponse(RpcResponseMessage response)
-{
-    if (response.HasError)
-    {
-        return new JsonRpcResponse
-        {
-            Id = response.Id,
-            Error = new JsonRpcError
-            {
-                Code = response.Error.Code,
-                Message = response.Error.Message,
-                Data = response.Error.Data
-            }
-        };
-    }
-
-    return new JsonRpcResponse
-    {
-        Id = response.Id,
-        Result = response.Result
     };
 }

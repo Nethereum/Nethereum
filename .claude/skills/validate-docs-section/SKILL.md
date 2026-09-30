@@ -10,6 +10,39 @@ You are perfecting the documentation for a section of the Nethereum Docusaurus s
 
 **Golden rule: ZERO HALLUCINATION. Every class name, method name, namespace, parameter, and code example must be verified against actual source code. Code examples must compile.**
 
+---
+
+## Fully-Gated README Accuracy — READMEs are first-knowledge for humans *and* agents
+
+A README is the first thing both a developer and an AI agent read to learn a package. A hallucinated or stale claim doesn't just mislead a human — an agent acts on it and propagates the error into generated code. So a factual error in a README is a **correctness defect, BLOCKING** — same footing as a wrong result, not a docs nit.
+
+Self-verification is not enough. An author is blind to their own hallucination — they "remember" an API that never existed, and re-reading their own prose confirms the false memory. **A README is not done until an INDEPENDENT pass has re-verified it** — a different agent/session than the author, given only the README plus read-only repo access, re-checking **every** factual claim against the instantiated source: every class, interface, enum member, method signature (return type + every parameter + every default), property name, namespace, constant, advertised capability, and dependency.
+
+Rules of the independent gate (author ≠ gate):
+
+- **Verbatim from source, never from memory.** The reviewer opens the file and copies the signature out of it. Recall is not evidence — code drifts silently (a capability list read "eth/68, eth/69" while the code advertised eth/68/69/70/71; invisible without opening the source).
+- **Per-claim evidence table.** The verdict is one row per claim: **VERIFIED / STALE(→ exact current value) / MISSING** (a current public entity the README omits), each with `file:line`. STALE and MISSING rows first — they are the corrections.
+- **Any STALE, MISSING, or un-verifiable claim is BLOCKING.** The README ships only when every claim is VERIFIED, or corrected and then RE-verified by another independent pass.
+- **Examples must compile against current signatures** — verified against a real `[NethereumDocExample]` test or a throwaway compile. An example that won't compile is a blocking finding, not a nit.
+- **>2 unfindable types ⇒ treat the whole README as hallucinated** (the X402 rule below) — stop spot-checking, remap the real public surface from source + tests, rewrite.
+- **The verdict table is a deliverable** — recorded with the change so the next drift check starts from a known-verified baseline.
+
+The correction loop: **independent audit → fix from the verified values only → independent RE-audit of the changed claims → commit with the verdict recorded.** The author never certifies their own README. This gate governs every README-touching stage below (it is what Gate 2 enforces); a green self-review is never a substitute for it.
+
+### Traceability — every reference tagged at its source (`[NethereumDocExample]`)
+
+Verifying signatures against source at gate-time is a snapshot — it goes stale the next time the code changes. Traceability makes it structural: every code reference in a README is tagged AT ITS SOURCE with `[NethereumDocExample]`, so a tool can trace — and a test can drift-check — each block back to the live symbol.
+
+- **Runnable usage examples** → the example is a `[NethereumDocExample]`-tagged PASSING TEST. An untagged runnable example is blocking.
+- **API signature / declaration blocks** (a class surface, a method / interface / property / constructor signature) → the REAL production symbol carries `[NethereumDocExample]`. A reflection drift-verify test extracts the live signature from each tagged symbol and asserts the README still contains it; a documented signature with no tagged symbol behind it — or one that no longer matches the live symbol — is blocking.
+- **One attribute, both halves**: usages trace to tests, declarations trace to real code. The attribute targets `Method | Class | Interface | Property | Constructor | Enum | Struct` for exactly this. Tag each package's symbols with its `DocSection` (e.g. `DocSection.DevP2P`) so the drift-verify test can locate the package README from the symbol's assembly.
+
+This is what turns "verified once by a reviewer" into "CI will not let it drift." A declaration verified only by a gate-time audit is a snapshot; a declaration tagged on its live symbol and drift-checked cannot silently rot.
+
+### Running the gate — the verifier LOADS this skill and self-directs
+
+The independent gate is not a bespoke brief re-written from scratch each time. Dispatch the verifier agent with an instruction to **load this skill** (`validate-docs-section`) — read `.claude/skills/validate-docs-section/SKILL.md`, this "Fully-Gated README Accuracy" section in particular — and apply it itself. The agent then self-directs from the skill: it knows to produce the per-claim VERIFIED / STALE / MISSING evidence table, to copy signatures verbatim from source (never memory), to treat any stale / missing / untraceable claim as blocking, and to check that every runnable example is test-tagged and every signature block traces to a tagged real symbol. The dispatcher supplies only the target (which README) and read-only scope — the discipline lives in the skill, so it stays identical across every gate run and cannot drift from whatever a hand-written brief happened to remember to include.
+
 ## Paths
 
 | What | Path |
@@ -603,7 +636,9 @@ Status: ✅ Valid / ⚠️ Issues Found / ❌ Major Problems
 2. [missing functionality to add with draft content]
 ```
 
-### Gate 2: Present the full validation report. Wait for approval before applying fixes.
+### Gate 2: Independent accuracy gate (author ≠ gate). Present the full validation report. Wait for approval before applying fixes.
+
+Per **Fully-Gated README Accuracy** (top of this document), the validation report backing this gate MUST come from an INDEPENDENT verifier — a different agent/session than whoever wrote or last edited the README — not from the author's own re-read. It must be the per-claim evidence table (VERIFIED / STALE→exact value / MISSING, each with `file:line`), covering every claim, not a spot-check. Any STALE, MISSING, or un-verifiable claim is BLOCKING. After fixes are applied (Stage 3), the changed claims get one independent RE-audit before commit, and the verdict table is recorded with the change.
 
 ---
 

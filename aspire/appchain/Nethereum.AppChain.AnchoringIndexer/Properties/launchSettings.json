@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Nethereum.AppChain.AnchoringIndexer": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
