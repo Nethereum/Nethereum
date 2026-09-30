@@ -19,7 +19,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
 
         public MessageMerkleAccumulator()
         {
-            _hashProvider = new Sha3KeccackHashProvider();
+            _hashProvider = Sha3KeccackHashProvider.Instance;
             _byteArrayConvertor = new ByteArrayToByteArrayConvertor();
         }
 

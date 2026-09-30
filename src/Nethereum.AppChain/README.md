@@ -43,7 +43,7 @@ This package provides the foundational `IAppChain` interface and implementation.
 
 Genesis block construction includes account pre-funding, CREATE2 factory deployment (EIP-1014), and optional MUD World framework deployment. All storage operations are delegated through interfaces, enabling in-memory, RocksDB, or custom implementations.
 
-AppChain serves as the foundation that Sequencer and Sync packages build upon, providing the shared chain state that both producers and followers access.
+AppChain serves as the foundation that Sequencer and Server packages build upon, providing the shared chain state that both producers and followers access.
 
 ### Key Features
 
@@ -62,10 +62,13 @@ dotnet add package Nethereum.AppChain
 
 ### Dependencies
 
+Direct project references:
+
 - **Nethereum.CoreChain** - Storage abstractions (`IBlockStore`, `IStateStore`), state root calculation, block header encoding
-- **Nethereum.Model** - `BlockHeader`, transactions, receipts, and account structures
-- **Nethereum.Util** - Keccak hashing and address utilities
-- **Nethereum.RLP** - RLP encoding for state root computation
+- **Nethereum.CoreChain.RocksDB** - RocksDB-backed store implementations (`RocksDbManager`, `RocksDbStateStore`, `RocksDbTrieNodeStore`)
+- **Nethereum.Mud.Contracts** - MUD World framework contracts deployed during genesis
+
+`Nethereum.Model`, `Nethereum.Util`, and `Nethereum.RLP` are used transitively through `Nethereum.CoreChain`.
 
 ## Key Concepts
 
@@ -77,17 +80,34 @@ The central abstraction representing a running chain. Provides access to all sto
 public interface IAppChain
 {
     AppChainConfig Config { get; }
+
     IBlockStore Blocks { get; }
     IStateStore State { get; }
     ITransactionStore Transactions { get; }
     IReceiptStore Receipts { get; }
     ILogStore Logs { get; }
+    ITrieNodeStore TrieNodes { get; }
+
+    string WorldAddress { get; }
+    string Create2FactoryAddress { get; }
 
     Task InitializeAsync();
+    Task InitializeAsync(GenesisOptions options);
+    Task ApplyGenesisStateAsync(GenesisOptions options);
+
     Task<BigInteger> GetBlockNumberAsync();
+    Task<BlockHeader?> GetBlockByNumberAsync(BigInteger blockNumber);
+    Task<BlockHeader?> GetBlockByHashAsync(byte[] blockHash);
+    Task<BlockHeader?> GetLatestBlockAsync();
+
     Task<BigInteger> GetBalanceAsync(string address);
     Task<BigInteger> GetNonceAsync(string address);
-    Task<byte[]> GetCodeAsync(string address);
+    Task<byte[]?> GetCodeAsync(string address);
+    Task<byte[]?> GetStorageAtAsync(string address, BigInteger slot);
+    Task<Account?> GetAccountAsync(string address);
+
+    Task<ISignedTransaction?> GetTransactionByHashAsync(byte[] txHash);
+    Task<Receipt?> GetTransactionReceiptAsync(byte[] txHash);
 }
 ```
 
@@ -96,9 +116,9 @@ public interface IAppChain
 `AppChainGenesisBuilder` constructs the genesis block by applying pre-funded accounts to the initial state, computing the state root via Patricia trie, and encoding the block header:
 
 ```csharp
-var builder = new AppChainGenesisBuilder(stateStore, trieNodeStore);
+var builder = new AppChainGenesisBuilder(chainConfig, stateStore, trieNodeStore: trieNodeStore);
 builder.AddPrefundedAccount(ownerAddress, initialBalance);
-var genesis = await builder.BuildGenesisBlockAsync(chainConfig);
+var genesis = await builder.BuildGenesisBlockAsync();
 ```
 
 ### CREATE2 Factory
@@ -119,8 +139,7 @@ var appChain = new AppChain(config,
     new InMemoryTransactionStore(),
     new InMemoryReceiptStore(),
     new InMemoryLogStore(),
-    new InMemoryStateStore(),
-    new InMemoryTrieNodeStore());
+    new InMemoryStateStore());
 
 await appChain.InitializeAsync();
 var blockNumber = await appChain.GetBlockNumberAsync();
@@ -132,6 +151,7 @@ var blockNumber = await appChain.GetBlockNumberAsync();
 
 ```csharp
 using Nethereum.AppChain;
+using Nethereum.Web3;
 
 var config = AppChainConfig.CreateWithName("TestChain", chainId: 31337);
 var genesisOptions = new GenesisOptions
@@ -166,15 +186,16 @@ var receipt = await appChain.GetTransactionReceiptAsync(txHash);
 
 ```csharp
 using Nethereum.CoreChain.RocksDB;
+using Nethereum.CoreChain.RocksDB.Stores;   // RocksDb*Store types
 
-var rocksDb = new RocksDbManager(dbPath);
+var rocksDb = new RocksDbManager(new RocksDbStorageOptions { DatabasePath = dbPath });
 var appChain = new AppChain(config,
     new RocksDbBlockStore(rocksDb),
     new RocksDbTransactionStore(rocksDb),
     new RocksDbReceiptStore(rocksDb),
     new RocksDbLogStore(rocksDb),
     new RocksDbStateStore(rocksDb),
-    new InMemoryTrieNodeStore());
+    new RocksDbTrieNodeStore(rocksDb));
 
 await appChain.InitializeAsync();
 ```
@@ -198,8 +219,8 @@ public class AppChain : IAppChain
     public Task<BlockHeader?> GetBlockByNumberAsync(BigInteger number);
     public Task<BigInteger> GetBalanceAsync(string address);
     public Task<BigInteger> GetNonceAsync(string address);
-    public Task<byte[]> GetCodeAsync(string address);
-    public Task<byte[]> GetStorageAtAsync(string address, BigInteger slot);
+    public Task<byte[]?> GetCodeAsync(string address);
+    public Task<byte[]?> GetStorageAtAsync(string address, BigInteger slot);
 }
 ```
 
@@ -217,26 +238,28 @@ Key properties:
 
 Constructs genesis blocks with pre-funded accounts and state root computation.
 
+- `AppChainGenesisBuilder(AppChainConfig config, IStateStore stateStore, IBlockHashProvider blockHashProvider = null, ITrieNodeStore trieNodeStore = null)` - Constructor; `config` is the required first argument
 - `AddPrefundedAccount(string address, BigInteger balance)` - Add pre-funded account
-- `BuildGenesisBlockAsync(ChainConfig config)` - Build genesis with computed state root
+- `BuildGenesisBlockAsync()` - Build genesis with computed state root (takes no parameters)
 
 ### Create2FactoryGenesisBuilder
 
 Deploys the canonical CREATE2 factory during genesis.
 
-- `DeployCreate2FactoryAsync(IStateStore state)` - Deploy factory contract
-- `CalculateCreate2Address(address, salt, initCodeHash)` - Compute deterministic address
+- `Create2FactoryGenesisBuilder(IStateStore state)` - Constructor; the state store is supplied here
+- `DeployCreate2FactoryAsync()` - Deploy factory contract (no parameters)
+- `CalculateCreate2Address(string deployer, byte[] salt, byte[] initCode)` - Compute deterministic address; the last argument is the full init code, not a hash
 
 ## Related Packages
 
 ### Used By (Consumers)
 - **[Nethereum.AppChain.Sequencer](../Nethereum.AppChain.Sequencer/README.md)** - Block production and transaction ordering
-- **[Nethereum.AppChain.Sync](../Nethereum.AppChain.Sync/README.md)** - Follower synchronization
 - **[Nethereum.AppChain.Server](../Nethereum.AppChain.Server/README.md)** - HTTP JSON-RPC server
 
 ### Dependencies
 - **[Nethereum.CoreChain](../Nethereum.CoreChain/README.md)** - Storage interfaces and state root calculation
-- **[Nethereum.Model](../Nethereum.Model/README.md)** - Block and transaction data structures
+- **[Nethereum.CoreChain.RocksDB](../Nethereum.CoreChain.RocksDB/README.md)** - RocksDB-backed store implementations
+- **[Nethereum.Mud.Contracts](../Nethereum.Mud.Contracts/README.md)** - MUD World framework contracts
 
 ## Additional Resources
 

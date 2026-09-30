@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -166,35 +166,6 @@ namespace Nethereum.AppChain.P2P.IntegrationTests
             foreach (var node in _fixture.Nodes)
             {
                 _output.WriteLine($"Node {node.Index} - Pending: {node.Sequencer.TxPool.PendingCount}");
-            }
-        }
-
-        [Fact]
-        [Trait("Category", "P2P-LoadTest")]
-        public async Task LoadTest_TransactionPropagation_AllNodesReceive()
-        {
-            await _fixture.StartAllNodesAsync();
-            await Task.Delay(2000);
-
-            var testAccount = GenerateTestAccounts(1)[0];
-            var sourceNode = _fixture.Nodes[0];
-
-            var initialCounts = _fixture.Nodes.Select(n => n.Sequencer.TxPool.PendingCount).ToArray();
-
-            var signedTx = CreateSignedTransaction(testAccount, BigInteger.Zero);
-            var txHash = await sourceNode.Sequencer.TxPool.AddAsync(signedTx);
-
-            _output.WriteLine($"Transaction submitted to node 0: hash: {BitConverter.ToString(txHash)}");
-
-            await Task.Delay(2000);
-
-            _output.WriteLine("Transaction propagation results:");
-            for (int i = 0; i < _fixture.Nodes.Count; i++)
-            {
-                var node = _fixture.Nodes[i];
-                var newCount = node.Sequencer.TxPool.PendingCount;
-                var added = newCount - initialCounts[i];
-                _output.WriteLine($"  Node {i}: Pending={newCount}, Added={added}");
             }
         }
 

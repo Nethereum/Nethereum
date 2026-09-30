@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Storage;
+using Nethereum.Merkle.Patricia.Storage;
 using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Util;
@@ -22,13 +24,21 @@ namespace Nethereum.AppChain.Genesis
         private readonly IStateStore _stateStore;
         private readonly Dictionary<string, BigInteger> _prefundedAccounts = new Dictionary<string, BigInteger>();
         private readonly Sha3Keccack _keccak = new Sha3Keccack();
-        private readonly StateRootCalculator _stateRootCalculator = new StateRootCalculator();
+        private readonly IBlockHashProvider _blockHashProvider;
+        private readonly ITrieNodeStore _trieNodeStore;
 
-        public AppChainGenesisBuilder(AppChainConfig config, IStateStore stateStore)
+        public AppChainGenesisBuilder(
+            AppChainConfig config, IStateStore stateStore, IBlockHashProvider blockHashProvider = null,
+            ITrieNodeStore trieNodeStore = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+            _blockHashProvider = blockHashProvider ?? RlpKeccakBlockHashProvider.Instance;
+            _trieNodeStore = trieNodeStore;
         }
+
+        public Task<byte[]> PersistStateTrieAsync() =>
+            new IncrementalStateRootCalculator(_stateStore, _trieNodeStore).ComputeStateRootAsync();
 
         public void AddPrefundedAccount(string address, BigInteger balance)
         {
@@ -38,14 +48,24 @@ namespace Nethereum.AppChain.Genesis
 
         public async Task ApplyGenesisStateAsync()
         {
+            // Same allocation DevChain's genesis makes, from the same
+            // definition — an AppChain pinned at Prague needs the EIP-2935
+            // history contract in state for BLOCKHASH to resolve, exactly as
+            // mainnet does.
+            await SystemContractPredeploys.ApplyGenesisAllocationAsync(_stateStore, _config.NewestForkThisChainRuns);
+
             foreach (var kvp in _prefundedAccounts)
             {
-                var account = new Account
+                var account = new Account { Balance = kvp.Value };
+
+                var existing = await _stateStore.GetAccountAsync(kvp.Key).ConfigureAwait(false);
+                if (existing != null)
                 {
-                    Balance = kvp.Value,
-                    Nonce = 0
-                };
-                await _stateStore.SaveAccountAsync(kvp.Key, account);
+                    account.Nonce = existing.Nonce;
+                    account.CodeHash = existing.CodeHash;
+                }
+
+                await _stateStore.SaveAccountAsync(kvp.Key, account).ConfigureAwait(false);
             }
         }
 
@@ -53,7 +73,7 @@ namespace Nethereum.AppChain.Genesis
         {
             await ApplyGenesisStateAsync();
 
-            var stateRoot = await _stateRootCalculator.ComputeStateRootAsync(_stateStore);
+            var stateRoot = await PersistStateTrieAsync();
 
             var emptyListHash = _keccak.CalculateHash(RLP.RLP.EncodeList());
 
@@ -66,7 +86,7 @@ namespace Nethereum.AppChain.Genesis
                 TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
                 ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
                 LogsBloom = new byte[256],
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Timestamp = _config.GenesisTimestamp,
                 GasLimit = (long)_config.BlockGasLimit,
                 GasUsed = 0,
                 Coinbase = _config.Coinbase,
@@ -77,19 +97,15 @@ namespace Nethereum.AppChain.Genesis
                 BaseFee = _config.BaseFee
             };
 
-            var blockHash = ComputeBlockHash(genesisBlock);
+            GenesisHeaderFields.Apply(genesisBlock, _config.PinnedFork);
+
+            var blockHash = BlockHashCalculator.ForFork(genesisBlock, _config.PinnedFork, _blockHashProvider);
 
             return new GenesisBlockResult
             {
                 Header = genesisBlock,
                 BlockHash = blockHash
             };
-        }
-
-        private byte[] ComputeBlockHash(BlockHeader header)
-        {
-            var encoded = BlockHeaderEncoder.Current.Encode(header);
-            return _keccak.CalculateHash(encoded);
         }
     }
 }

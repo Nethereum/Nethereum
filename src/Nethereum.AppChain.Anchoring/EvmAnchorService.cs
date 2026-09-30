@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -14,10 +15,10 @@ namespace Nethereum.AppChain.Anchoring
     public class EvmAnchorService : IAnchorService
     {
         private readonly AnchorConfig _config;
-        private readonly Web3.Web3? _web3;
-        private readonly ILogger<EvmAnchorService>? _logger;
+        private readonly IWeb3 _web3;
+        private readonly ILogger<EvmAnchorService> _logger;
 
-        public EvmAnchorService(AnchorConfig config, ILogger<EvmAnchorService>? logger = null)
+        public EvmAnchorService(AnchorConfig config, ILogger<EvmAnchorService> logger = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger;
@@ -29,10 +30,10 @@ namespace Nethereum.AppChain.Anchoring
             }
         }
 
-        public EvmAnchorService(AnchorConfig config, IWeb3 web3, ILogger<EvmAnchorService>? logger = null)
+        public EvmAnchorService(AnchorConfig config, IWeb3 web3, ILogger<EvmAnchorService> logger = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _web3 = (Web3.Web3)(web3 ?? throw new ArgumentNullException(nameof(web3)));
+            _web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
             _logger = logger;
         }
 
@@ -74,7 +75,7 @@ namespace Nethereum.AppChain.Anchoring
 
                 var handler = _web3.Eth.GetContractTransactionHandler<EvmAnchorFunction>();
                 var receipt = await handler.SendRequestAndWaitForReceiptAsync(
-                    _config.AnchorContractAddress, anchorFunction);
+                    _config.AnchorContractAddress, anchorFunction).ConfigureAwait(false);
 
                 if (receipt.Succeeded())
                 {
@@ -116,7 +117,7 @@ namespace Nethereum.AppChain.Anchoring
                 var getAnchorFunction = new EvmGetAnchorFunction { BlockNumber = blockNumber };
                 var handler = _web3.Eth.GetContractQueryHandler<EvmGetAnchorFunction>();
                 var result = await handler.QueryDeserializingToObjectAsync<EvmAnchorOutputDTO>(
-                    getAnchorFunction, _config.AnchorContractAddress);
+                    getAnchorFunction, _config.AnchorContractAddress).ConfigureAwait(false);
 
                 if (result.Timestamp == 0)
                 {
@@ -152,7 +153,7 @@ namespace Nethereum.AppChain.Anchoring
                 var latestBlockFunction = new EvmLatestBlockFunction();
                 var handler = _web3.Eth.GetContractQueryHandler<EvmLatestBlockFunction>();
                 return await handler.QueryAsync<BigInteger>(
-                    _config.AnchorContractAddress, latestBlockFunction);
+                    _config.AnchorContractAddress, latestBlockFunction).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -167,29 +168,15 @@ namespace Nethereum.AppChain.Anchoring
             byte[] transactionsRoot,
             byte[] receiptsRoot)
         {
-            var anchor = await GetAnchorAsync(blockNumber);
+            var anchor = await GetAnchorAsync(blockNumber).ConfigureAwait(false);
             if (anchor == null)
             {
                 return false;
             }
 
-            return ByteArraysEqual(anchor.StateRoot, stateRoot) &&
-                   ByteArraysEqual(anchor.TransactionsRoot, transactionsRoot) &&
-                   ByteArraysEqual(anchor.ReceiptsRoot, receiptsRoot);
-        }
-
-        private static bool ByteArraysEqual(byte[] a, byte[] b)
-        {
-            if (a == null || b == null)
-                return a == b;
-            if (a.Length != b.Length)
-                return false;
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i])
-                    return false;
-            }
-            return true;
+            return anchor.StateRoot.SequenceEqual(stateRoot) &&
+                   anchor.TransactionsRoot.SequenceEqual(transactionsRoot) &&
+                   anchor.ReceiptsRoot.SequenceEqual(receiptsRoot);
         }
     }
 

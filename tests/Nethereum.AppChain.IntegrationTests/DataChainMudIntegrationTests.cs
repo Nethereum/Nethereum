@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.Contracts;
-using Nethereum.CoreChain.RocksDB;
-using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.AppChain.Genesis;
 using Nethereum.AppChain.Sequencer;
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.Mud;
 using Nethereum.Mud.Contracts;
 using Nethereum.Mud.Contracts.World;
@@ -28,9 +31,10 @@ namespace Nethereum.AppChain.IntegrationTests
     public class AppChainMudIntegrationTests : IAsyncLifetime, IDisposable
     {
         private string _databasePath = "";
-        private RocksDbManager? _dbManager;
+        private AppChainComposedNode? _composed;
+        private bool _signRecoverableBeforeCompose;
         private AppChainCore? _appChain;
-        private Sequencer.Sequencer? _sequencer;
+        private ISequencer? _sequencer;
         private Web3.Web3? _web3;
         private AppChainNode? _appChainNode;
 
@@ -50,40 +54,27 @@ namespace Nethereum.AppChain.IntegrationTests
         public async Task InitializeAsync()
         {
             _databasePath = Path.Combine(Path.GetTempPath(), $"appchain_mud_{Guid.NewGuid():N}");
-            var options = new RocksDbStorageOptions { DatabasePath = _databasePath };
-            _dbManager = new RocksDbManager(options);
 
-            var blockStore = new RocksDbBlockStore(_dbManager);
-            var transactionStore = new RocksDbTransactionStore(_dbManager, blockStore);
-            var receiptStore = new RocksDbReceiptStore(_dbManager, blockStore);
-            var logStore = new RocksDbLogStore(_dbManager);
-            var stateStore = new RocksDbStateStore(_dbManager);
-
-            var appChainConfig = AppChainConfig.CreateWithName("MudTestAppChain", (int)AppChainId);
-            appChainConfig.SequencerAddress = _deployerAddress;
-
-            _appChain = new AppChainCore(appChainConfig, blockStore, transactionStore, receiptStore, logStore, stateStore);
-
-            var genesisOptions = new GenesisOptions
+            var config = new AppChainServerConfig
             {
-                PrefundedAddresses = new[] { _deployerAddress },
-                PrefundBalance = BigInteger.Parse("10000000000000000000000"),
-                DeployCreate2Factory = true
+                ChainId = AppChainId,
+                ChainName = "MudTestAppChain"
             };
-            await _appChain.InitializeAsync(genesisOptions);
+            config.Genesis.Owner.PrivateKey = DeployerPrivateKey;
+            config.Consensus.Sequencer.PrivateKey = DeployerPrivateKey;
+            config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
+            config.Consensus.BlockTimeMs = 0;
+            config.Node.Storage.InMemory = false;
+            config.Node.Storage.DataDirectory = _databasePath;
+            config.Node.Network.Serve = false;
+            config.Node.Sync.Mode = SyncMode.None;
+            config.Mud.DeployWorld = false;
 
-            var sequencerConfig = new SequencerConfig
-            {
-                SequencerAddress = _deployerAddress,
-                SequencerPrivateKey = DeployerPrivateKey,
-                BlockTimeMs = 0,
-                MaxTransactionsPerBlock = 100,
-                Policy = Nethereum.AppChain.Sequencer.PolicyConfig.OpenAccess
-            };
-            _sequencer = new Sequencer.Sequencer(_appChain, sequencerConfig);
-            await _sequencer.StartAsync();
-
-            _appChainNode = new AppChainNode(_appChain, _sequencer);
+            _signRecoverableBeforeCompose = EthECKey.SignRecoverable;
+            _composed = await AppChainComposition.ComposeAsync(config, NullLoggerFactory.Instance, CancellationToken.None);
+            _appChain = _composed.AppChain;
+            _sequencer = _composed.Sequencer;
+            _appChainNode = _composed.Node;
 
             var account = new Account(DeployerPrivateKey, (int)AppChainId);
             var rpcClient = new AppChainRpcClient(_appChainNode, (long)AppChainId);
@@ -101,7 +92,13 @@ namespace Nethereum.AppChain.IntegrationTests
         {
             _sequencer = null;
             _appChain = null;
-            _dbManager?.Dispose();
+
+            if (_composed != null)
+            {
+                _composed.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                _composed = null;
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
+            }
 
             if (!string.IsNullOrEmpty(_databasePath) && Directory.Exists(_databasePath))
             {

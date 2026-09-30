@@ -84,7 +84,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
                     transactionsRoot,
                     receiptsRoot,
                     LastProcessedMessageId,
-                    Array.Empty<byte>());
+                    Array.Empty<byte>()).ConfigureAwait(false);
 
                 if (receipt.Succeeded())
                 {
@@ -118,7 +118,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
 
             try
             {
-                var result = await _hubService.GetAnchorQueryAsync(_config.ChainId, (ulong)blockNumber);
+                var result = await _hubService.GetAnchorQueryAsync(_config.ChainId, (ulong)blockNumber).ConfigureAwait(false);
                 if (result.Timestamp == 0) return null;
 
                 return new AnchorInfo
@@ -144,7 +144,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
 
             try
             {
-                var info = await _hubService.GetAppChainInfoQueryAsync(_config.ChainId);
+                var info = await _hubService.GetAppChainInfoQueryAsync(_config.ChainId).ConfigureAwait(false);
                 return info.LatestBlock;
             }
             catch (Exception ex)
@@ -169,7 +169,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
                     (ulong)blockNumber,
                     stateRoot,
                     transactionsRoot,
-                    receiptsRoot);
+                    receiptsRoot).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -184,7 +184,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
 
             try
             {
-                return await _hubService.VerifyAnchorProofQueryAsync(_config.ChainId, blockNumber, proof);
+                return await _hubService.VerifyAnchorProofQueryAsync(_config.ChainId, blockNumber, proof).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -199,7 +199,7 @@ namespace Nethereum.AppChain.Anchoring.Hub
 
             try
             {
-                var result = await _hubService.GetAppChainInfoQueryAsync(_config.ChainId);
+                var result = await _hubService.GetAppChainInfoQueryAsync(_config.ChainId).ConfigureAwait(false);
                 return new HubInfo
                 {
                     ChainId = _config.ChainId,

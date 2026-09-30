@@ -16,6 +16,7 @@ using Nethereum.Merkle.Patricia;
 using Nethereum.RPC.Eth.Mappers;
 
 using NethWeb3 = Nethereum.Web3.Web3;
+using Nethereum.Merkle.Patricia.ProofVerification;
 
 namespace Nethereum.AppChain.LoadTest;
 
@@ -434,9 +435,9 @@ public class Program
                             var pvStateRoot = pvBlock.StateRoot.HexToByteArray();
 
                             var pvAccount = pvProof.ToAccount();
-                            var pvAccountValid = AccountProofVerification.VerifyAccountProofs(
-                                pvAddress, pvStateRoot,
-                                pvProof.AccountProofs.Select(x => x.HexToByteArray()),
+                            var pvAccountValid = ProofVerification.Current.Account.Verify(
+                                pvStateRoot, pvProof.AccountProofs.Select(x => x.HexToByteArray()),
+                                pvAddress,
                                 pvAccount);
 
                             if (!pvAccountValid)
@@ -451,11 +452,11 @@ public class Program
                             {
                                 if (sp.Proof == null || sp.Proof.Count == 0)
                                     continue;
-                                var valid = StorageProofVerification.ValidateValueFromStorageProof(
+                                var valid = ProofVerification.Current.Storage.Verify(
+                                    pvProof.StorageHash.HexToByteArray(),
+                                    sp.Proof.Select(x => x.HexToByteArray()).ToList(),
                                     sp.Key.HexValue.HexToByteArray(),
-                                    sp.Value.HexValue.HexToByteArray(),
-                                    sp.Proof.Select(x => x.HexToByteArray()),
-                                    pvProof.StorageHash.HexToByteArray());
+                                    sp.Value.HexValue.HexToByteArray());
                                 if (!valid)
                                 {
                                     pvStorageValid = false;
@@ -1205,9 +1206,9 @@ public class Program
                         .SendRequestAsync(BlockParameter.CreateLatest());
                     var stateRoot = block.StateRoot.HexToByteArray();
                     var account = proof.ToAccount();
-                    var valid = AccountProofVerification.VerifyAccountProofs(
-                        targetAddr, stateRoot,
-                        proof.AccountProofs.Select(x => x.HexToByteArray()), account);
+                    var valid = ProofVerification.Current.Account.Verify(
+                        stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                        targetAddr, account);
 
                     if (valid) verifiedCount++;
                     else failedCount++;

@@ -43,7 +43,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                     {
                         try
                         {
-                            execResult = await _executor(message);
+                            execResult = await _executor(message).ConfigureAwait(false);
                         }
                         catch (Exception exExec)
                         {
@@ -98,7 +98,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                             TxHash = execResult.TxHash,
                             Success = execResult.Success,
                             DataHash = dataHash
-                        });
+                        }).ConfigureAwait(false);
                     }
 
                     result.Results.Add(new MessageProcessingResult

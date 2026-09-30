@@ -30,8 +30,8 @@ dotnet add package Nethereum.AppChain.Policy
 - **Nethereum.CoreChain** - Chain state access
 - **Nethereum.Web3** - L1 contract interaction for policy queries
 - **Nethereum.Contracts** - Contract function encoding/decoding
-- **Nethereum.Util** - Keccak hashing for merkle tree computation
 - **Microsoft.Extensions.Hosting.Abstractions** - `IHostedService` for policy sync
+- **Microsoft.Extensions.Logging.Abstractions** - `ILogger` for diagnostics
 
 ## Key Concepts
 
@@ -40,6 +40,8 @@ dotnet add package Nethereum.AppChain.Policy
 Rather than storing all authorized addresses on-chain (expensive), the policy contract stores only the merkle root. Writers prove their authorization by submitting a merkle proof that their address is included in the tree. This enables gas-efficient verification of large allowlists.
 
 ```csharp
+using Nethereum.AppChain.Policy.Bootstrap;
+
 var migrationService = new PolicyMigrationService();
 byte[] root = migrationService.ComputeMerkleRoot(allowedAddresses);
 byte[][] proof = migrationService.ComputeMerkleProof(myAddress, allowedAddresses);
@@ -61,12 +63,13 @@ Policy changes are versioned by epoch number. Each epoch represents an atomic up
 
 ```csharp
 using Nethereum.AppChain.Policy;
+using Nethereum.AppChain.Policy.Bootstrap;
 
 // Bootstrap with local policy
 var bootstrapConfig = new BootstrapPolicyConfig
 {
-    AllowedWriters = new[] { writer1, writer2 },
-    AllowedAdmins = new[] { admin1 },
+    AllowedWriters = new List<string> { writer1, writer2 },
+    AllowedAdmins = new List<string> { admin1 },
     MaxCalldataBytes = 128_000,
     MaxLogBytes = 64_000
 };
@@ -81,8 +84,14 @@ bool canWrite = await policyService.IsValidWriterAsync(writer1, proof, null);
 
 ```csharp
 using Nethereum.AppChain.Policy;
+using Nethereum.Hex.HexConvertors.Extensions;
 
-var policyService = new EvmPolicyService(web3, contractAddress);
+var config = new PolicyConfig
+{
+    TargetRpcUrl = "http://127.0.0.1:8545",
+    PolicyContractAddress = contractAddress
+};
+var policyService = new EvmPolicyService(config);
 var policy = await policyService.GetCurrentPolicyAsync();
 
 Console.WriteLine($"Epoch: {policy.Epoch}");
@@ -93,6 +102,8 @@ Console.WriteLine($"Writers Root: {policy.WritersRoot.ToHex()}");
 ### Example 2: Manage Local Policy
 
 ```csharp
+using Nethereum.AppChain.Policy.Bootstrap;
+
 var bootstrap = new BootstrapPolicyService(bootstrapConfig);
 
 // Dynamic policy updates without restart
@@ -106,6 +117,8 @@ Console.WriteLine($"Is admin: {bootstrap.IsValidAdmin(adminAddress)}");
 ### Example 3: Prepare Migration Data
 
 ```csharp
+using Nethereum.AppChain.Policy.Bootstrap;
+
 var migration = new PolicyMigrationService();
 var data = migration.PrepareMigrationData(bootstrapConfig);
 
@@ -127,6 +140,7 @@ public class EvmPolicyService : IPolicyService
     public Task<PolicyInfo> GetCurrentPolicyAsync();
     public Task<byte[]?> GetWritersRootAsync();
     public Task<byte[]?> GetAdminsRootAsync();
+    public Task<byte[]?> GetBlacklistRootAsync();
     public Task<BigInteger> GetEpochAsync();
     public Task<bool> IsValidWriterAsync(string address, byte[][] proof, byte[]? blacklistProof);
 }
@@ -143,6 +157,7 @@ public class BootstrapPolicyService : IPolicyService
     public void AddWriter(string address);
     public void RemoveWriter(string address);
     public void AddAdmin(string address);
+    public void RemoveAdmin(string address);
     public bool IsValidAdmin(string address);
 }
 ```
@@ -152,11 +167,14 @@ public class BootstrapPolicyService : IPolicyService
 Background service for L1 policy synchronization.
 
 ```csharp
-public class PolicySyncWorker : IHostedService
+public class PolicySyncWorker : IHostedService, IDisposable
 {
+    public PolicyInfo? CachedPolicy { get; }
+    public bool IsRunning { get; }
     public Task StartAsync(CancellationToken ct);
     public Task StopAsync(CancellationToken ct);
     public Task ForceSyncAsync();
+    public void Dispose();
     public event Action<PolicyInfo>? OnPolicyUpdated;
 }
 ```

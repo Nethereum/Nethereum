@@ -2,56 +2,27 @@
 
 > **PREVIEW** — This package is in preview. APIs may change between releases.
 
-Production-ready server for running a [Nethereum AppChain](../Nethereum.AppChain/README.md) — a lightweight, domain-specific execution layer that extends Ethereum L1/L2 with publicly readable, cryptographically verifiable state.
+The executable for running a [Nethereum AppChain](../Nethereum.AppChain/README.md) — a lightweight, domain-specific execution layer that extends Ethereum L1/L2 with publicly readable, cryptographically verifiable state. One process gives you block production, JSON-RPC (HTTP + WebSocket), DevP2P peering and sync, Clique PoA consensus, cross-chain messaging, L1 anchoring, and optional MUD World deployment.
 
-## Overview
+A node runs in one of three roles, chosen by which keys/addresses you hand it: **sequencer** (holds a private key, produces blocks), **follower** (holds only addresses, imports and verifies blocks from a peer), or **Clique validator** (one of several signers in a multi-node PoA set).
 
-Nethereum.AppChain.Server is the primary executable for running an AppChain node. It combines all subsystems into a single configurable server: block production, transaction processing, HTTP and WebSocket JSON-RPC endpoints, multi-peer synchronisation, L1 state anchoring, Prometheus metrics, batch serving, and optional MUD World deployment.
-
-The server supports three operational modes: **sequencer** (produces blocks — your business, your rules), **follower** (syncs and verifies — anyone can run one), or **Clique validator** (multi-signer PoA consensus). Configuration is entirely via command-line arguments, making it suitable for containerised deployments.
-
-### Key Features
-
-- **Full JSON-RPC 2.0**: All standard `eth_*`, `web3_*`, `net_*` methods plus admin RPC
-- **WebSocket Subscriptions**: `eth_subscribe`/`eth_unsubscribe` via `/ws` endpoint
-- **Consensus Modes**: Single-sequencer (default) or Clique PoA with multiple validators
-- **HTTP Sync**: Multi-peer sync with automatic failover and state re-execution
-- **Batch & Snapshot Serving**: REST endpoints for batch download and sync status
-- **MUD World Deployment**: Optional MUD framework contract deployment during genesis
-- **L1 Anchoring**: Periodic state commitment to Ethereum mainnet
-- **Prometheus Metrics**: Comprehensive instrumentation at `/metrics`
-- **Storage Options**: In-memory or RocksDB persistent storage
-- **CLI Configuration**: 30+ command-line options via System.CommandLine
-
-## Installation
+## Install
 
 ```bash
-# As a .NET tool
-dotnet tool install Nethereum.AppChain.Server
-
-# Run
-nethereum-appchain --help
+dotnet tool install -g Nethereum.AppChain.Server
 ```
 
-Or run directly from source:
+## Getting started
+
+Run it with no arguments:
 
 ```bash
-dotnet run --project src/Nethereum.AppChain.Server -- [options]
+nethereum-appchain
 ```
 
-### Dependencies
+With no genesis owner, sequencer, or Clique signer identity supplied, the server generates ephemeral keys in memory, logs `AppChain dev mode: generated ephemeral keys (NOT for production)`, and starts producing blocks straight away — single-sequencer consensus, RocksDB storage under `./appchain-data`, JSON-RPC on `http://127.0.0.1:8546`. This is the fastest way to get an AppChain running locally; the generated keys are lost on restart, so it is not for anything you need to come back to (`AppChainComposition.ApplyEphemeralDevKeys`, `src/Nethereum.AppChain.Server.Core/AppChainComposition.cs:136-142`, gated by `AppChainServerConfig.IsFullyUnconfigured`, `src/Nethereum.AppChain.Server.Core/Configuration/AppChainServerConfig.cs:42-45`).
 
-- **Nethereum.AppChain** - Core chain abstraction and genesis
-- **Nethereum.AppChain.Sequencer** - Block production and transaction ordering
-- **Nethereum.AppChain.Sync** - Multi-peer synchronization and batch import
-- **Nethereum.AppChain.P2P / P2P.DotNetty** - P2P networking for Clique mode
-- **Nethereum.Consensus.Clique** - Clique PoA consensus engine
-- **Nethereum.CoreChain** - RPC handler registry, storage interfaces
-- **Nethereum.CoreChain.RocksDB** - Persistent storage backend
-
-## Quick Start
-
-### Sequencer Mode
+For anything persistent, supply your own keys:
 
 ```bash
 nethereum-appchain \
@@ -63,7 +34,9 @@ nethereum-appchain \
   --block-time 1000
 ```
 
-### Follower Mode
+### Follower mode
+
+A follower supplies addresses instead of private keys, and points `--follow-peer` at a sequencer's enode. It imports and verifies blocks over DevP2P instead of producing any:
 
 ```bash
 nethereum-appchain \
@@ -72,141 +45,175 @@ nethereum-appchain \
   --name "MyAppChain" \
   --genesis-owner-address 0xOWNER_ADDRESS \
   --sequencer-address 0xSEQUENCER_ADDRESS \
-  --sync-peers http://sequencer:8546 \
-  --sync-poll-interval 100
+  --follow-peer enode://PRODUCER_PUBKEY@sequencer:30403
 ```
 
-## HTTP Endpoints
+Follower mode requires **both** `--genesis-owner-address` and `--sequencer-address` — the server needs to know who it's trusting before it will import a single block (`AppChainServerConfigValidator.ValidateOperatorKeys`, `src/Nethereum.AppChain.Server.Core/Configuration/AppChainServerConfigValidator.cs:46-61`).
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/` | JSON-RPC 2.0 (all `eth_*`, `web3_*`, `net_*`, `admin_*` methods) |
-| WS | `/ws` | WebSocket JSON-RPC (`eth_subscribe`, `eth_unsubscribe`) |
-| GET | `/health` | Health check |
-| GET | `/status` | Comprehensive node status |
-| GET | `/metrics` | Prometheus metrics |
-| GET | `/batches` | List available batches |
-| GET | `/batches/{fileName}` | Download batch file |
-| GET | `/batches/latest` | Latest batch info |
-| GET | `/blocks/latest` | Latest block header |
-| GET | `/blocks/{number}` | Block by number |
-| GET | `/blocks/range` | Block range query |
-| GET | `/finality` | Finality tracker status |
-| GET | `/finality/{blockNumber}` | Block finality status |
-| GET | `/sync/status` | Sync status |
-
-## CLI Options
-
-### Core
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--host` | `0.0.0.0` | HTTP listen address |
-| `--port` | `8546` | HTTP listen port |
-| `--chain-id` | `420420` | Chain ID |
-| `--name` | `AppChain` | Chain name |
-| `--block-time` | `1000` | Block production interval (ms) |
-| `--in-memory` | `false` | Use in-memory storage (no persistence) |
-| `--db-path` | `./appchain-data` | RocksDB data directory |
-
-### Genesis & Keys
-
-| Option | Description |
-|--------|-------------|
-| `--genesis-owner-key` | Private key for genesis owner (sequencer mode) |
-| `--genesis-owner-address` | Address of genesis owner (follower mode) |
-| `--sequencer-key` | Private key for block signing |
-| `--sequencer-address` | Address of sequencer (follower mode) |
-
-### Sync
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--sync-peers` | | Comma-separated peer URLs for HTTP sync |
-| `--sync-poll-interval` | `1000` | Sync poll interval (ms) |
-
-### Clique Consensus
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--clique` | `false` | Enable Clique PoA consensus |
-| `--clique-signers` | | Initial signer addresses |
-| `--clique-block-period` | `1` | Block period in seconds |
-| `--p2p-port` | `30303` | DotNetty P2P port |
-| `--p2p-peers` | | Bootstrap peer endpoints |
-
-### MUD & Anchoring
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--deploy-mud-world` | `true` | Deploy MUD World contracts on genesis |
-| `--anchor-l1-rpc` | | L1 RPC URL for anchoring |
-| `--anchor-contract` | | L1 anchor contract address |
-| `--anchor-cadence` | `100` | Blocks between L1 anchors |
-
-## Usage Examples
-
-### Example 1: Sequencer with RocksDB
-
-```bash
-nethereum-appchain \
-  --port 8546 \
-  --chain-id 420420 \
-  --name "ProdChain" \
-  --genesis-owner-key $OWNER_KEY \
-  --sequencer-key $SEQ_KEY \
-  --db-path /data/appchain \
-  --block-time 500 \
-  --deploy-mud-world true
-```
-
-### Example 2: Clique Multi-Validator
+### Clique multi-validator
 
 ```bash
 # Validator 1
 nethereum-appchain \
-  --port 8546 --clique \
-  --clique-signers $ADDR1,$ADDR2,$ADDR3 \
+  --port 8546 --consensus clique \
+  --initial-signers $ADDR1,$ADDR2,$ADDR3 \
+  --signer-key $KEY1 \
   --genesis-owner-key $KEY1 \
   --sequencer-key $KEY1 \
-  --p2p-port 30303
+  --enable-devp2p-serve --devp2p-serve-port 30403
 
 # Validator 2
 nethereum-appchain \
-  --port 8547 --clique \
-  --clique-signers $ADDR1,$ADDR2,$ADDR3 \
+  --port 8547 --consensus clique \
+  --initial-signers $ADDR1,$ADDR2,$ADDR3 \
+  --signer-key $KEY2 \
   --genesis-owner-key $KEY2 \
   --sequencer-key $KEY2 \
-  --p2p-port 30304 \
-  --p2p-peers 127.0.0.1:30303
+  --enable-devp2p-serve --devp2p-serve-port 30404 \
+  --devp2p-peers enode://VALIDATOR1_PUBKEY@127.0.0.1:30403
 ```
 
-### Example 3: Follower with L1 Anchoring Verification
+Clique consensus additionally requires `--signer-key` (unless following), at least one `--initial-signers` entry, and at least one DevP2P peer to reach — each is enforced at startup with a specific error, not a silent no-op (`AppChainServerConfigValidator.ValidateClique`, `src/Nethereum.AppChain.Server.Core/Configuration/AppChainServerConfigValidator.cs:67-81`).
 
-```bash
-nethereum-appchain \
-  --port 8547 \
-  --chain-id 420420 \
-  --genesis-owner-address $OWNER_ADDR \
-  --sequencer-address $SEQ_ADDR \
-  --sync-peers http://sequencer:8546 \
-  --anchor-l1-rpc https://mainnet.infura.io/v3/KEY \
-  --anchor-contract $ANCHOR_ADDR
+## HTTP endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | JSON-RPC 2.0 (all `eth_*`, `web3_*`, `net_*`, plus `admin_*`) |
+| WS | `/ws` | WebSocket JSON-RPC (`eth_subscribe`, `eth_unsubscribe`) |
+| GET | `/health` | Health check |
+| GET | `/status` | Chain ID, block number, RPC URL, consensus mode, sequencer status |
+| GET | `/blocks/latest` | Latest block header |
+| GET | `/blocks/{number}` | Block header by number |
+| GET | `/blocks/{number}/full` | Block with transactions by number |
+| GET | `/blocks/range?from=&to=` | Block range query |
+| GET | `/finality` | Finality tracker status |
+| GET | `/finality/{blockNumber}` | Block finality status |
+
+(`AppChainServerRunner.MapEndpoints`, `src/Nethereum.AppChain.Server.Core/AppChainServerRunner.cs:365-457`; `LiveBlockEndpoints.MapLiveBlockEndpoints`, `src/Nethereum.AppChain.Server.Core/Endpoints/LiveBlockEndpoints.cs:19`.)
+
+## CLI options
+
+Every option below is defined in `AppChainCliOptions` (`src/Nethereum.AppChain.Server/AppChainCli.cs:12-86`) — `Program.cs` just wires it up. This is the full set the tool understands today.
+
+### Server / RPC
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--host` | `127.0.0.1` | Host to bind to |
+| `--port` | `8546` | Port to listen on |
+| `--chain-id` | `420420` | Chain ID |
+| `--name` | `AppChain` | Chain name |
+| `--otlp-endpoint` | | OpenTelemetry OTLP endpoint URL (falls back to `OTEL_EXPORTER_OTLP_ENDPOINT` env var) |
+
+### Genesis & keys
+
+| Option | Description |
+|--------|-------------|
+| `--genesis-owner-key` | Genesis owner private key (deploys MUD, owns root namespace) |
+| `--genesis-owner-address` | Genesis owner address (for follower mode, no private key needed) |
+| `--sequencer-key` | Sequencer private key (produces blocks) |
+| `--sequencer-address` | Sequencer address (for follower mode, no private key needed) |
+
+Leave all four unset and the server generates ephemeral keys itself — see [Getting started](#getting-started).
+
+### Block production
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--block-time` | `1000` | Block time in milliseconds |
+| `--allow-empty-blocks` | `false` | Produce blocks even when no pending transactions |
+
+### Storage
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--db-path` (alias `--data-dir`) | `./appchain-data` | Database path (RocksDB) |
+| `--in-memory` | `false` | Use in-memory storage |
+
+### Consensus & DevP2P
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--consensus` | `single-sequencer` | Consensus mode: `single-sequencer` or `clique` |
+| `--enable-devp2p-serve` | `false` | Serve eth/snap over RLPx DevP2P (lets snap-sync followers cold-sync from this node) |
+| `--devp2p-serve-port` (alias `--listen-port`) | `30403` | DevP2P eth/snap serve listen port |
+| `--devp2p-peers` (alias `--trusted-peer`) | (empty) | Peer enodes to dial and trust (replaces `--sync-peers` and `--bootstrap-nodes`) |
+| `--node-key-hex` | | Hex-encoded DevP2P node identity private key (pins a stable enode across restarts) |
+| `--node-key-file` | | Persisted DevP2P node identity key file (default: `<db-path>/nodekey`, created on first run) |
+| `--follow-peer` | | Enode of the node to follow; syncs from it over DevP2P instead of producing blocks |
+| `--signer-key` | | Clique signer private key |
+| `--initial-signers` | (empty) | Initial Clique signers (addresses) |
+| `--clique-period` | `15` | Clique block period in seconds |
+| `--clique-epoch` | `30000` | Clique epoch length |
+
+### MUD
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--deploy-mud-world` | `true` | Deploy MUD World contracts at genesis (`--deploy-mud-world false` to skip) |
+| `--world-salt` | | MUD World salt (32 bytes hex) |
+
+### Anchoring
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--l1-rpc` | | L1 RPC URL for anchoring |
+| `--anchor-contract` | | Anchor contract address on L1 |
+
+### Cross-chain messaging
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--enable-messaging` | `false` | Enable cross-chain message processing |
+| `--hub-source-chains` | (empty) | Hub source chains, format: `chainId:rpcUrl:hubAddress` |
+| `--message-poll-interval` | `5000` | Message poll interval in milliseconds |
+| `--max-messages-per-poll` | `100` | Max messages per poll cycle |
+| `--enable-acknowledgment` | `false` | Enable message acknowledgment back to source Hubs |
+| `--acknowledgment-interval` | `30000` | Message acknowledgment interval in milliseconds |
+
+## Advanced configuration
+
+The everyday flags above are layered on top of a full configuration system, so you have three ways to set any value and they compose in a fixed order (later wins): `appsettings.json` → environment variables → command-line flags. `BuildLayeredConfiguration` wires all three (`src/Nethereum.AppChain.Server/AppChainCli.cs:102-107`); the `AppChain` section of `appsettings.json` and `AppChain__`-prefixed env vars bind straight onto `AppChainServerConfig`.
+
+Beyond the everyday flags, every setting on `AppChainServerConfig` can be set in its raw `--AppChain:<Path> <value>` form. Run `nethereum-appchain --help-advanced` to list the full expert surface (`TryHandleAdvancedHelp`/`PrintAdvancedHelp`, `src/Nethereum.AppChain.Server/AppChainCli.cs:178-199`, invoked from `Program.cs`).
+
+Node identity is a first-class concern: `--node-key-hex` pins the DevP2P identity from a hex key, and `--node-key-file` persists it to a file (defaulting to `<db-path>/nodekey`), so a node keeps a stable enode across restarts.
+
+## Embed it
+
+`AppChainServerRunner.RunAsync` is the whole server — composition, HTTP host, and endpoint mapping — packaged as a single call, so embedding it in your own process is one line:
+
+```csharp
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+
+var config = new AppChainServerConfig
+{
+    ChainId = 420420,
+    ChainName = "MyAppChain",
+};
+config.Consensus.Sequencer.PrivateKey = sequencerKey;
+config.Genesis.Owner.PrivateKey = genesisOwnerKey;
+
+await AppChainServerRunner.RunAsync(config);
 ```
 
-## Related Packages
+If you're composing your own ASP.NET Core host instead and only want the AppChain building blocks wired into your DI container, `AddAppChainServer` registers the config, `MudWorldDeployer`, and the in-memory finality tracker as singletons; pair it with `AddAppChainMetrics`, `AddAppChainOpenTelemetry`, and `AddAppChainHealthChecks` for the same instrumentation `AppChainServerRunner` sets up internally (`src/Nethereum.AppChain.Server.Core/Hosting/ServiceCollectionExtensions.cs`). Endpoint mapping (`/`, `/ws`, `/status`, `/blocks/*`, `/finality/*`) is not yet exposed as a reusable `Map*Endpoints` extension the way `Nethereum.DevChain.Server` and `Nethereum.MainnetChain.Server` offer it — `AppChainServerRunner.RunAsync` is the supported way to get the full HTTP surface today.
+
+## Related packages
 
 ### Dependencies
 - **[Nethereum.AppChain](../Nethereum.AppChain/README.md)** - Core chain abstraction
 - **[Nethereum.AppChain.Sequencer](../Nethereum.AppChain.Sequencer/README.md)** - Block production
-- **[Nethereum.AppChain.Sync](../Nethereum.AppChain.Sync/README.md)** - Synchronization
+- **[Nethereum.DevP2P.Sync](../Nethereum.DevP2P.Sync/README.md)** - DevP2P peering and sync
 - **[Nethereum.Consensus.Clique](../Nethereum.Consensus.Clique/README.md)** - PoA consensus
 
-### See Also
-- **[Nethereum.AppChain.P2P.Server](../Nethereum.AppChain.P2P.Server/README.md)** - Simpler P2P-focused server
+### See also
 - **[Nethereum.DevChain.Server](../Nethereum.DevChain.Server/README.md)** - Development chain server
+- **[Nethereum.MainnetChain.Server](../Nethereum.MainnetChain.Server/README.md)** - Mainnet follower server
 
-## Additional Resources
+## Additional resources
 
 - [MUD Framework](https://mud.dev)
 - [Nethereum Documentation](https://docs.nethereum.com)

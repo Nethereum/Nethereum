@@ -9,11 +9,11 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             IMessageResultStore store)
         {
             int totalRebuilt = 0;
-            var chainIds = await store.GetSourceChainIdsAsync();
+            var chainIds = await store.GetSourceChainIdsAsync().ConfigureAwait(false);
 
             foreach (var chainId in chainIds)
             {
-                var results = await store.GetAllBySourceChainOrderedByLeafIndexAsync(chainId);
+                var results = await store.GetAllBySourceChainOrderedByLeafIndexAsync(chainId).ConfigureAwait(false);
                 foreach (var result in results)
                 {
                     accumulator.AppendLeaf(chainId, result.ToLeaf());

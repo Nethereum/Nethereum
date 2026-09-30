@@ -21,6 +21,19 @@ namespace Nethereum.AppChain.Sequencer
         /// Creates an AppChainNode. For follower/read-only mode, sequencer can be null.
         /// </summary>
         public AppChainNode(IAppChain appChain, ISequencer? sequencer = null, IFilterStore? filterStore = null)
+            : this(appChain, sequencer, filterStore, blockAccessListStore: null)
+        {
+        }
+
+        /// <summary>
+        /// Creates an AppChainNode serving the EIP-7928 block access lists the host retains, so
+        /// <c>eth_getBlockAccessList</c> answers from the store the importer writes.
+        /// </summary>
+        public AppChainNode(
+            IAppChain appChain,
+            ISequencer? sequencer,
+            IFilterStore? filterStore,
+            IBlockAccessListStore? blockAccessListStore)
             : base(
                 appChain.Blocks,
                 appChain.Transactions,
@@ -34,7 +47,9 @@ namespace Nethereum.AppChain.Sequencer
                     appChain.Config,
                     new TransactionVerificationAndRecoveryImp()),
                 new TransactionVerificationAndRecoveryImp(),
-                new StateStoreNodeDataService(appChain.State, appChain.Blocks))
+                blockAccessListStore,
+                new StateStoreNodeDataService(appChain.State, appChain.Blocks),
+                hardforkConfig: appChain.Config.GetHardforkConfig())
         {
             _appChain = appChain ?? throw new ArgumentNullException(nameof(appChain));
             _sequencer = sequencer;
@@ -94,7 +109,8 @@ namespace Nethereum.AppChain.Sequencer
                 GasLimit = _config.BlockGasLimit,
                 BaseFee = _config.BaseFee,
                 ChainId = _config.ChainId,
-                Difficulty = 0
+                Difficulty = 0,
+                SlotNumber = latestBlock?.SlotNumber
             };
         }
 

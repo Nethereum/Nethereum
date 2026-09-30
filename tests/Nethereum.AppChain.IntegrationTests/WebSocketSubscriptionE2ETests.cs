@@ -12,14 +12,15 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.AppChain.Sequencer;
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.CoreChain.Rpc.Subscriptions;
-using Nethereum.CoreChain.RocksDB;
-using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
-using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Model;
 using Nethereum.Signer;
@@ -40,7 +41,7 @@ namespace Nethereum.AppChain.IntegrationTests
         private string _userAddress = null!;
 
         private AppChainCore _appChain = null!;
-        private Sequencer.Sequencer _sequencer = null!;
+        private ISequencer _sequencer = null!;
         private WebSocketRpcHandler _wsHandler = null!;
         private WebApplication _app = null!;
         private int _port;
@@ -48,7 +49,8 @@ namespace Nethereum.AppChain.IntegrationTests
         private ILogStore _logStore = null!;
 
         private string _databasePath = "";
-        private RocksDbManager? _dbManager;
+        private AppChainComposedNode? _composed;
+        private bool _signRecoverableBeforeCompose;
 
         public async Task InitializeAsync()
         {
@@ -56,40 +58,29 @@ namespace Nethereum.AppChain.IntegrationTests
             _userAddress = new EthECKey(UserPrivateKey).GetPublicAddress();
 
             _databasePath = Path.Combine(Path.GetTempPath(), $"ws_e2e_{Guid.NewGuid():N}");
-            var options = new RocksDbStorageOptions { DatabasePath = _databasePath };
-            _dbManager = new RocksDbManager(options);
 
-            var blockStore = new RocksDbBlockStore(_dbManager);
-            var transactionStore = new RocksDbTransactionStore(_dbManager, blockStore);
-            var receiptStore = new RocksDbReceiptStore(_dbManager, blockStore);
-            _logStore = new RocksDbLogStore(_dbManager);
-            var stateStore = new RocksDbStateStore(_dbManager);
-
-            var appChainConfig = AppChainConfig.CreateWithName("WsTestChain", ChainId);
-            appChainConfig.SequencerAddress = _sequencerAddress;
-
-            _appChain = new AppChainCore(appChainConfig, blockStore, transactionStore, receiptStore, _logStore, stateStore);
-
-            var genesisOptions = new GenesisOptions
+            var config = new AppChainServerConfig
             {
-                PrefundedAddresses = new[] { _sequencerAddress, _userAddress },
-                PrefundBalance = BigInteger.Parse("1000000000000000000000"),
-                DeployCreate2Factory = true
+                ChainId = ChainId,
+                ChainName = "WsTestChain"
             };
-            await _appChain.InitializeAsync(genesisOptions);
+            config.Genesis.Owner.PrivateKey = UserPrivateKey;
+            config.Consensus.Sequencer.PrivateKey = SequencerPrivateKey;
+            config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
+            config.Consensus.BlockTimeMs = 0;
+            config.Node.Storage.InMemory = false;
+            config.Node.Storage.DataDirectory = _databasePath;
+            config.Node.Network.Serve = false;
+            config.Node.Sync.Mode = SyncMode.None;
+            config.Mud.DeployWorld = false;
 
-            var sequencerConfig = new SequencerConfig
-            {
-                SequencerAddress = _sequencerAddress,
-                SequencerPrivateKey = SequencerPrivateKey,
-                BlockTimeMs = 0,
-                MaxTransactionsPerBlock = 100,
-                Policy = PolicyConfig.OpenAccess
-            };
-            _sequencer = new Sequencer.Sequencer(_appChain, sequencerConfig);
-            await _sequencer.StartAsync();
+            _signRecoverableBeforeCompose = EthECKey.SignRecoverable;
+            _composed = await AppChainComposition.ComposeAsync(config, NullLoggerFactory.Instance, CancellationToken.None);
+            _appChain = _composed.AppChain;
+            _sequencer = _composed.Sequencer!;
+            _logStore = _composed.Bundle.Logs;
 
-            var node = new AppChainNode(_appChain, _sequencer);
+            var node = _composed.Node;
 
             _port = FindFreePort();
             var builder = WebApplication.CreateBuilder();
@@ -137,8 +128,12 @@ namespace Nethereum.AppChain.IntegrationTests
         public async Task DisposeAsync()
         {
             try { await _app.StopAsync(); } catch { }
-            await _sequencer.StopAsync();
-            _dbManager?.Dispose();
+            if (_composed != null)
+            {
+                await _composed.DisposeAsync();
+                _composed = null;
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
+            }
             if (Directory.Exists(_databasePath))
                 try { Directory.Delete(_databasePath, true); } catch { }
         }
@@ -404,6 +399,74 @@ namespace Nethereum.AppChain.IntegrationTests
             }));
             var unsubResponse = JsonDocument.Parse(await ReceiveAsync(ws));
             Assert.True(unsubResponse.RootElement.GetProperty("result").GetBoolean());
+
+            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task WebSocket_EthSubscribe_NewPendingTransactions_ReturnsError()
+        {
+            using var ws = new ClientWebSocket();
+            await ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
+
+            await SendAsync(ws, JsonSerializer.Serialize(new
+            {
+                jsonrpc = "2.0", id = 1,
+                method = "eth_subscribe",
+                @params = new[] { "newPendingTransactions" }
+            }));
+
+            var response = JsonDocument.Parse(await ReceiveAsync(ws));
+            var root = response.RootElement;
+
+            Assert.False(root.TryGetProperty("result", out _));
+            Assert.True(root.TryGetProperty("error", out var error));
+            Assert.Equal("no \"newPendingTransactions\" subscription in eth namespace", error.GetProperty("message").GetString());
+
+            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task WebSocket_EthSubscribe_Syncing_ReturnsError()
+        {
+            using var ws = new ClientWebSocket();
+            await ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
+
+            await SendAsync(ws, JsonSerializer.Serialize(new
+            {
+                jsonrpc = "2.0", id = 1,
+                method = "eth_subscribe",
+                @params = new[] { "syncing" }
+            }));
+
+            var response = JsonDocument.Parse(await ReceiveAsync(ws));
+            var root = response.RootElement;
+
+            Assert.False(root.TryGetProperty("result", out _));
+            Assert.True(root.TryGetProperty("error", out var error));
+            Assert.Equal("no \"syncing\" subscription in eth namespace", error.GetProperty("message").GetString());
+
+            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task WebSocket_EthSubscribe_MissingType_ReturnsError()
+        {
+            using var ws = new ClientWebSocket();
+            await ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
+
+            await SendAsync(ws, JsonSerializer.Serialize(new
+            {
+                jsonrpc = "2.0", id = 1,
+                method = "eth_subscribe",
+                @params = Array.Empty<object>()
+            }));
+
+            var response = JsonDocument.Parse(await ReceiveAsync(ws));
+            var root = response.RootElement;
+
+            Assert.False(root.TryGetProperty("result", out _));
+            Assert.True(root.TryGetProperty("error", out var error));
 
             await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
         }

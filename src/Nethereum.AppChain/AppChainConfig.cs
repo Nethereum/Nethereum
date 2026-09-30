@@ -13,10 +13,15 @@ namespace Nethereum.AppChain
 
         public byte[]? GenesisHash { get; set; }
 
+        public override BigInteger BlockGasLimit
+        {
+            get => _blockGasLimit ?? BlockGasLimitLargeEnoughToDeployAt(NewestForkThisChainRuns);
+            set => _blockGasLimit = value;
+        }
+
         public static AppChainConfig Default => new AppChainConfig
         {
             ChainId = 420420,
-            BlockGasLimit = 30_000_000,
             BaseFee = 0,
             InitialBalance = BigInteger.Parse("10000000000000000000000")
         };
@@ -27,7 +32,6 @@ namespace Nethereum.AppChain
             {
                 AppChainName = name,
                 ChainId = chainId,
-                BlockGasLimit = 30_000_000,
                 BaseFee = 0,
                 InitialBalance = BigInteger.Parse("10000000000000000000000")
             };

@@ -12,8 +12,10 @@ namespace Nethereum.AppChain.Anchoring
         public long Timestamp { get; set; }
         public byte[]? AnchorTxHash { get; set; }
         public BigInteger? AnchorBlockNumber { get; set; }
+        public byte[]? ExtraData { get; set; }
+        public long GasUsed { get; set; }
         public AnchorStatus Status { get; set; } = AnchorStatus.Pending;
-        public string? ErrorMessage { get; set; }
+        public string ErrorMessage { get; set; } = "";
     }
 
     public enum AnchorStatus

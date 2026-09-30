@@ -38,7 +38,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
         {
             try
             {
-                var result = await _hubService.GetMessageQueryAsync(_targetChainId, messageId);
+                var result = await _hubService.GetMessageQueryAsync(_targetChainId, messageId).ConfigureAwait(false);
                 if (result.Timestamp == 0) return null;
 
                 return new MessageInfo
@@ -64,7 +64,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             var messages = new List<MessageInfo>();
             try
             {
-                var result = await _hubService.GetMessageRangeQueryAsync(_targetChainId, fromId, toId);
+                var result = await _hubService.GetMessageRangeQueryAsync(_targetChainId, fromId, toId).ConfigureAwait(false);
                 if (result?.ReturnValue1 == null) return messages;
 
                 ulong id = fromId;
@@ -98,7 +98,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
         {
             try
             {
-                return await _hubService.PendingMessageCountQueryAsync(_targetChainId);
+                return await _hubService.PendingMessageCountQueryAsync(_targetChainId).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -112,7 +112,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             var messages = new List<MessageInfo>();
             try
             {
-                var info = await _hubService.GetAppChainInfoQueryAsync(_targetChainId);
+                var info = await _hubService.GetAppChainInfoQueryAsync(_targetChainId).ConfigureAwait(false);
                 if (!info.Registered) return messages;
 
                 ulong fromId = lastProcessedId + 1;
@@ -121,7 +121,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                 if (fromId >= nextId) return messages;
 
                 ulong toId = Math.Min(fromId + (ulong)maxMessages, nextId);
-                return await GetMessageRangeAsync(fromId, toId);
+                return await GetMessageRangeAsync(fromId, toId).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

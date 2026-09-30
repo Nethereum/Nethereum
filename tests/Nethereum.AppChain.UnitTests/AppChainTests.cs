@@ -226,7 +226,7 @@ namespace Nethereum.AppChain.UnitTests
 
             var retrievedAccount = await newStateStore.GetAccountAsync(address);
             Assert.NotNull(retrievedAccount);
-            Assert.Equal(balance, retrievedAccount.Balance);
+            Assert.Equal(balance, (BigInteger)retrievedAccount.Balance);
 
             var create2Account = await newStateStore.GetAccountAsync(Create2FactoryGenesisBuilder.CREATE2_FACTORY_ADDRESS);
             Assert.NotNull(create2Account);

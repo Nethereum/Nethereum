@@ -7,6 +7,8 @@ using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.RPC.Accounts;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.AppChain.Sequencer.Builder
 {

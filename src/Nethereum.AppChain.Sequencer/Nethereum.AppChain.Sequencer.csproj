@@ -25,7 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.AppChain\Nethereum.AppChain.csproj" />
-    <ProjectReference Include="..\Nethereum.AppChain.Sync\Nethereum.AppChain.Sync.csproj" />
     <ProjectReference Include="..\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
   </ItemGroup>

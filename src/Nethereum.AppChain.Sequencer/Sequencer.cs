@@ -6,11 +6,13 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Nethereum.Util;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Consensus;
+using Nethereum.CoreChain.Storage;
 using Nethereum.AppChain.Anchoring.Messaging;
-using Nethereum.AppChain.Sync;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.EVM.Gas;
 using Nethereum.Model;
 using Nethereum.Signer;
 
@@ -25,8 +27,6 @@ namespace Nethereum.AppChain.Sequencer
         private readonly IPolicyEnforcer _policyEnforcer;
         private readonly ITransactionVerificationAndRecovery _txVerifier;
         private readonly IBlockProductionStrategy? _blockProductionStrategy;
-        private readonly IBatchProducer? _batchProducer;
-        private readonly IBatchStore? _batchStore;
         private readonly IMessageQueue? _messageQueue;
         private readonly IMessageProcessor? _messageProcessor;
         private readonly ILogger<Sequencer>? _logger;
@@ -43,10 +43,8 @@ namespace Nethereum.AppChain.Sequencer
         public CoreChain.ITxPool TxPool => _txPool;
         public IPolicyEnforcer PolicyEnforcer => _policyEnforcer;
         public IBlockProductionStrategy? BlockProductionStrategy => _blockProductionStrategy;
-        public IBatchProducer? BatchProducer => _batchProducer;
 
         public event EventHandler<BlockProductionResult>? BlockProduced;
-        public event EventHandler<BatchProductionResult>? BatchProduced;
 
         public Sequencer(
             IAppChain appChain,
@@ -54,14 +52,13 @@ namespace Nethereum.AppChain.Sequencer
             CoreChain.ITxPool? txPool = null,
             IBlockProducer? blockProducer = null,
             IPolicyEnforcer? policyEnforcer = null,
-            IBatchStore? batchStore = null,
-            IBatchProducer? batchProducer = null,
             IBlockProductionStrategy? blockProductionStrategy = null,
             IMessageQueue? messageQueue = null,
             IMessageProcessor? messageProcessor = null,
             ILogger<Sequencer>? logger = null,
             string? nodeId = null,
-            CoreChain.IncrementalStateRootCalculator? stateRootCalculator = null)
+            CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null,
+            IBlockAccessListStore? blockAccessListStore = null)
         {
             _appChain = appChain ?? throw new ArgumentNullException(nameof(appChain));
             _sequencerConfig = config ?? throw new ArgumentNullException(nameof(config));
@@ -78,23 +75,16 @@ namespace Nethereum.AppChain.Sequencer
             if (blockProducer == null)
             {
                 var transactionProcessor = CreateTransactionProcessor();
-                _blockProducer = new BlockProducer(appChain, transactionProcessor, blockProductionStrategy, stateRootCalculator);
+                _blockProducer = new BlockProducer(
+                    appChain,
+                    transactionProcessor,
+                    blockProductionStrategy,
+                    stateRootCalculator,
+                    blockAccessListStore: blockAccessListStore);
             }
             else
             {
                 _blockProducer = blockProducer;
-            }
-
-            if (config.BatchProduction.Enabled)
-            {
-                _batchStore = batchStore ?? new InMemoryBatchStore();
-                _batchProducer = batchProducer ?? new SequencerBatchProducer(
-                    appChain.Blocks,
-                    appChain.Transactions,
-                    appChain.Receipts,
-                    _batchStore,
-                    config.BatchProduction,
-                    appChain.Config.ChainId);
             }
         }
 
@@ -115,10 +105,6 @@ namespace Nethereum.AppChain.Sequencer
 
             await _appChain.InitializeAsync();
 
-            if (_batchProducer is SequencerBatchProducer sbp)
-            {
-                await sbp.InitializeAsync();
-            }
 
             _running = true;
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -185,8 +171,7 @@ namespace Nethereum.AppChain.Sequencer
 
         private void TrackNonceAfterAdd(ISignedTransaction transaction, string senderAddress)
         {
-            var txData = TransactionProcessor.GetTransactionData(transaction);
-            _txPool.TrackPendingNonce(senderAddress, txData.Nonce);
+            _txPool.TrackPendingNonce(senderAddress, transaction.GetNonce());
             _txPool.IncrementSenderTxCount(senderAddress);
         }
 
@@ -198,7 +183,6 @@ namespace Nethereum.AppChain.Sequencer
                 throw new InvalidOperationException("invalid sender: unable to recover sender address");
             }
 
-            var txData = TransactionProcessor.GetTransactionData(transaction);
             var isContractCreation = transaction.IsContractCreation();
 
             if (_txPool.MaxTxsPerSender > 0)
@@ -211,32 +195,43 @@ namespace Nethereum.AppChain.Sequencer
                 }
             }
 
-            var intrinsicGas = TransactionProcessor.CalculateIntrinsicGas(txData.Data, isContractCreation);
-            if (txData.GasLimit < intrinsicGas)
+            // EIP-2780 (Amsterdam+): the recipient/value component of the
+            // intrinsic base depends on whether the transaction is a
+            // self-transfer and whether it carries value. Ignored by
+            // IntrinsicGasRules pre-Amsterdam.
+            var isSelfTransfer = !isContractCreation && senderAddress.IsTheSameAddress(transaction.GetReceiverAddress());
+            var hasValue = !transaction.GetValue().IsZero;
+
+            var gasLimit = transaction.GetGasLimit();
+            var intrinsicGas = _appChain.Config.GetHardforkConfig().IntrinsicGasRules
+                .CalculateMinimumGasLimit(transaction.GetData(), isContractCreation,
+                    AccessListEntry.From(transaction.GetAccessList()), isSelfTransfer, hasValue);
+            if (gasLimit.ToBigInteger() < intrinsicGas)
             {
                 throw new InvalidOperationException(
-                    $"intrinsic gas too low: have {txData.GasLimit}, want {intrinsicGas}");
+                    $"intrinsic gas too low: have {gasLimit}, want {intrinsicGas}");
             }
 
             var senderAccount = await _appChain.State.GetAccountAsync(senderAddress);
-            var confirmedNonce = senderAccount?.Nonce ?? BigInteger.Zero;
+            var confirmedNonce = senderAccount?.Nonce.ToBigInteger() ?? BigInteger.Zero;
 
             var expectedNonce = await _txPool.GetPendingNonceAsync(senderAddress, confirmedNonce);
+            var txNonceBig = transaction.GetNonce().ToBigInteger();
 
-            if (txData.Nonce < expectedNonce)
+            if (txNonceBig < expectedNonce)
             {
                 throw new InvalidOperationException(
-                    $"nonce too low: address {senderAddress}, tx: {txData.Nonce} state: {expectedNonce}");
+                    $"nonce too low: address {senderAddress}, tx: {txNonceBig} state: {expectedNonce}");
             }
 
-            if (txData.Nonce > expectedNonce)
+            if (txNonceBig > expectedNonce)
             {
                 throw new InvalidOperationException(
-                    $"nonce too high: address {senderAddress}, tx: {txData.Nonce} state: {expectedNonce}");
+                    $"nonce too high: address {senderAddress}, tx: {txNonceBig} state: {expectedNonce}");
             }
 
             var balance = senderAccount?.Balance ?? BigInteger.Zero;
-            var maxCost = txData.GasLimit * txData.GasPrice + txData.Value;
+            var maxCost = gasLimit * transaction.GetMaxFeePerGas() + transaction.GetValue();
             if (balance < maxCost)
             {
                 throw new InvalidOperationException(
@@ -349,15 +344,6 @@ namespace Nethereum.AppChain.Sequencer
             BlockProduced?.Invoke(this, result);
 
             _txPool.ResetPendingNonces();
-
-            if (_batchProducer != null && _batchProducer.IsBatchDue(result.Header.BlockNumber))
-            {
-                var batchResult = await _batchProducer.ProduceBatchIfDueAsync(result.Header.BlockNumber, _cts?.Token ?? default);
-                if (batchResult.Success)
-                {
-                    BatchProduced?.Invoke(this, batchResult);
-                }
-            }
 
             return result.BlockHash;
         }

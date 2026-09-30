@@ -50,7 +50,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             _timer = new Timer(
                 async _ =>
                 {
-                    try { await ProcessAcknowledgmentsAsync(); }
+                    try { await ProcessAcknowledgmentsAsync().ConfigureAwait(false); }
                     catch (Exception ex) { _logger?.LogError(ex, "Unhandled error in acknowledgment timer callback"); }
                 },
                 null,
@@ -98,7 +98,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
 
                 if (tasks.Count > 0)
                 {
-                    await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -120,7 +120,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             for (int attempt = 0; attempt < _config.MaxRetries; attempt++)
             {
                 var success = await ackService.AcknowledgeMessagesAsync(
-                    sourceChainId, processedUpToMessageId, merkleRoot);
+                    sourceChainId, processedUpToMessageId, merkleRoot).ConfigureAwait(false);
 
                 if (success)
                 {
@@ -133,7 +133,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                     _logger?.LogWarning(
                         "Acknowledgment attempt {Attempt} failed for source chain {SourceChainId}, retrying in {DelayMs}ms",
                         attempt + 1, sourceChainId, _config.RetryDelayMs);
-                    await Task.Delay(_config.RetryDelayMs * (int)Math.Pow(2, attempt));
+                    await Task.Delay(_config.RetryDelayMs * (int)Math.Pow(2, attempt)).ConfigureAwait(false);
                 }
             }
 

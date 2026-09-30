@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Merkle\Nethereum.Merkle.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />

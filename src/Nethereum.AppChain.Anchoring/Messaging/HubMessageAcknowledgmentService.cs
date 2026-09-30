@@ -64,7 +64,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                 var receipt = await _hubService.AcknowledgeMessagesRequestAndWaitForReceiptAsync(
                     _appChainId,
                     processedUpToMessageId,
-                    merkleRoot);
+                    merkleRoot).ConfigureAwait(false);
 
                 if (receipt.Succeeded())
                 {

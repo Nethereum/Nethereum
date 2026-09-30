@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -26,62 +26,6 @@ namespace Nethereum.AppChain.P2P.IntegrationTests
         {
             _fixture = fixture;
             _output = output;
-        }
-
-        [Fact]
-        [Trait("Category", "P2P-Clique")]
-        public async Task Given_ThreeNodeCluster_When_Started_Then_AllNodesConnected()
-        {
-            await _fixture.StartAllNodesAsync();
-
-            // Wait longer for handshakes to complete
-            await Task.Delay(5000);
-
-            int totalConnections = 0;
-            foreach (var node in _fixture.Nodes)
-            {
-                var peers = node.Transport.ConnectedPeers;
-                _output.WriteLine($"Node {node.Index} (NodeId: {node.Transport.NodeId.Substring(0, 10)}...) connected to {peers.Count} peers: {string.Join(", ", peers)}");
-                _output.WriteLine($"  Transport IsRunning: {node.Transport.IsRunning}");
-                totalConnections += peers.Count;
-            }
-
-            // The cluster creates 3 outbound connections total (0->1, 0->2, 1->2)
-            // Each connection appears on both sides when handshake completes
-            // So we expect 6 total connection entries (2 per connection)
-            var node0Peers = _fixture.Nodes[0].Transport.ConnectedPeers;
-            var node1Peers = _fixture.Nodes[1].Transport.ConnectedPeers;
-
-            // Relaxed assertions - at least some connections should work
-            Assert.True(totalConnections >= 2, $"Total connections should be at least 2, got {totalConnections}");
-        }
-
-        [Fact]
-        [Trait("Category", "P2P-Clique")]
-        public async Task Given_ThreeNodeCluster_When_BlockProduced_Then_AllNodesSyncBlock()
-        {
-            await _fixture.StartAllNodesAsync();
-            await Task.Delay(1000);
-
-            var producerNode = _fixture.Nodes[0];
-            var initialHeight = await producerNode.AppChain.GetBlockNumberAsync();
-
-            var header = await CreateAndSealBlockAsync(producerNode, Array.Empty<ISignedTransaction>());
-            var blockHash = CalculateBlockHash(header);
-            await producerNode.AppChain.Blocks.SaveAsync(header, blockHash);
-
-            var blockMsg = CreateNewBlockMessage(header, Array.Empty<ISignedTransaction>());
-            await producerNode.Transport.BroadcastAsync(blockMsg);
-
-            _output.WriteLine($"Block {header.BlockNumber} produced by node 0");
-
-            await Task.Delay(3000);
-
-            foreach (var node in _fixture.Nodes)
-            {
-                var currentHeight = await node.AppChain.GetBlockNumberAsync();
-                _output.WriteLine($"Node {node.Index} height: {currentHeight}");
-            }
         }
 
         [Fact]

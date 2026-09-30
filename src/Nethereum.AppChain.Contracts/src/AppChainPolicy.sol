@@ -73,10 +73,13 @@ contract AppChainPolicy {
     function invite(
         address invitee,
         bytes32 newWritersRoot,
-        bytes32[] calldata proofCallerIsWriter
+        bytes32[] calldata proofCallerIsWriter,
+        bytes32[] calldata proofInviteeNotBlacklisted
     ) external {
         require(_verify(msg.sender, writersRoot, proofCallerIsWriter), "Not a writer");
-        require(!_isBlacklisted(invitee), "Invitee is blacklisted");
+        if (blacklistRoot != bytes32(0)) {
+            require(!_verify(invitee, blacklistRoot, proofInviteeNotBlacklisted), "Invitee is blacklisted");
+        }
 
         writersRoot = newWritersRoot;
         emit MemberInvited(msg.sender, invitee, newWritersRoot, epoch);
@@ -161,8 +164,4 @@ contract AppChainPolicy {
         return computedHash == root;
     }
 
-    function _isBlacklisted(address addr) internal view returns (bool) {
-        // Simplified check - in production would verify against blacklistRoot
-        return false;
-    }
 }

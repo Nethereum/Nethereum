@@ -1,12 +1,17 @@
 using System;
 using System.IO;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
+using Nethereum.AppChain.Sequencer;
+using Nethereum.AppChain.Server;
+using Nethereum.AppChain.Server.Configuration;
+using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.CoreChain.RocksDB;
-using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
 using Nethereum.DevChain;
-using Nethereum.AppChain.Sequencer;
+using Nethereum.Signer;
 
 using AppChainCore = Nethereum.AppChain.AppChain;
 
@@ -15,20 +20,23 @@ namespace Nethereum.AppChain.IntegrationTests
     public class AppChainE2ETestFixture : IDisposable
     {
         public string DatabasePath { get; }
-        public RocksDbManager? Manager { get; private set; }
+        public RocksDbManager? Manager => _composed?.ChainNode.Storage.Manager;
 
-        public IBlockStore? BlockStore { get; private set; }
-        public ITransactionStore? TransactionStore { get; private set; }
-        public IReceiptStore? ReceiptStore { get; private set; }
-        public ILogStore? LogStore { get; private set; }
-        public IStateStore? StateStore { get; private set; }
+        public IBlockStore? BlockStore => _composed?.Bundle.Blocks;
+        public ITransactionStore? TransactionStore => _composed?.Bundle.Transactions;
+        public IReceiptStore? ReceiptStore => _composed?.Bundle.Receipts;
+        public ILogStore? LogStore => _composed?.Bundle.Logs;
+        public IStateStore? StateStore => _composed?.Bundle.State;
 
         public DevChainNode? L1Node { get; private set; }
-        public AppChainCore? AppChain { get; private set; }
-        public Sequencer.Sequencer? Sequencer { get; private set; }
+        public AppChainCore? AppChain => _composed?.AppChain;
+        public ISequencer? Sequencer => _composed?.Sequencer;
 
         public string SequencerAddress { get; } = "0x12345678901234567890123456789012345678aa";
         public string SequencerPrivateKey { get; } = "0x12345678901234567890123456789012345678901234567890123456789012ab";
+
+        private AppChainComposedNode? _composed;
+        private bool _signRecoverableBeforeCompose;
 
         public AppChainE2ETestFixture()
         {
@@ -37,14 +45,6 @@ namespace Nethereum.AppChain.IntegrationTests
 
         public async Task InitializeAsync(bool deployCreate2Factory = true)
         {
-            var options = new RocksDbStorageOptions { DatabasePath = DatabasePath };
-            Manager = new RocksDbManager(options);
-            BlockStore = new RocksDbBlockStore(Manager);
-            TransactionStore = new RocksDbTransactionStore(Manager, BlockStore);
-            ReceiptStore = new RocksDbReceiptStore(Manager, BlockStore);
-            LogStore = new RocksDbLogStore(Manager);
-            StateStore = new RocksDbStateStore(Manager);
-
             var l1Config = new DevChainConfig
             {
                 ChainId = 1337,
@@ -55,46 +55,37 @@ namespace Nethereum.AppChain.IntegrationTests
             L1Node = new DevChainNode(l1Config);
             await L1Node.StartAsync(new[] { SequencerAddress });
 
-            var appChainConfig = AppChainConfig.CreateWithName("TestAppChain", 420420);
-            appChainConfig.SequencerAddress = SequencerAddress;
-
-            AppChain = new AppChainCore(
-                appChainConfig,
-                BlockStore,
-                TransactionStore,
-                ReceiptStore,
-                LogStore,
-                StateStore);
-
-            var genesisOptions = new GenesisOptions
+            var config = new AppChainServerConfig
             {
-                PrefundedAddresses = new[] { SequencerAddress },
-                PrefundBalance = BigInteger.Parse("10000000000000000000000"),
-                DeployCreate2Factory = deployCreate2Factory
+                ChainId = 420420,
+                ChainName = "TestAppChain"
             };
+            config.Genesis.Owner.PrivateKey = SequencerPrivateKey;
+            config.Genesis.DeployCreate2Factory = deployCreate2Factory;
+            config.Consensus.Sequencer.Address = SequencerAddress;
+            config.Consensus.Sequencer.PrivateKey = SequencerPrivateKey;
+            config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
+            config.Consensus.BlockTimeMs = 0;
+            config.Node.Storage.InMemory = false;
+            config.Node.Storage.DataDirectory = DatabasePath;
+            config.Node.Network.Serve = false;
+            config.Node.Sync.Mode = SyncMode.None;
+            config.Mud.DeployWorld = false;
 
-            await AppChain.InitializeAsync(genesisOptions);
-
-            var sequencerConfig = new SequencerConfig
-            {
-                SequencerAddress = SequencerAddress,
-                SequencerPrivateKey = SequencerPrivateKey,
-                BlockTimeMs = 0,
-                MaxTransactionsPerBlock = 100,
-                Policy = Nethereum.AppChain.Sequencer.PolicyConfig.OpenAccess
-            };
-
-            Sequencer = new Sequencer.Sequencer(AppChain, sequencerConfig);
+            _signRecoverableBeforeCompose = EthECKey.SignRecoverable;
+            _composed = await AppChainComposition.ComposeAsync(config, NullLoggerFactory.Instance, CancellationToken.None);
         }
 
         public async Task ResetAsync()
         {
-            Sequencer = null;
-            AppChain = null;
+            if (_composed != null)
+            {
+                await _composed.DisposeAsync();
+                _composed = null;
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
+            }
             L1Node?.Dispose();
             L1Node = null;
-            Manager?.Dispose();
-            Manager = null;
 
             if (Directory.Exists(DatabasePath))
             {
@@ -104,11 +95,14 @@ namespace Nethereum.AppChain.IntegrationTests
 
         public void Dispose()
         {
-            Sequencer = null;
-            AppChain = null;
+            if (_composed != null)
+            {
+                _composed.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                _composed = null;
+                EthECKey.SignRecoverable = _signRecoverableBeforeCompose;
+            }
             L1Node?.Dispose();
             L1Node = null;
-            Manager?.Dispose();
 
             if (Directory.Exists(DatabasePath))
             {

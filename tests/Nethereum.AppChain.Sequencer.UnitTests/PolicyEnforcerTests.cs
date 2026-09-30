@@ -11,6 +11,8 @@ using Xunit;
 using IAppChain = Nethereum.AppChain.IAppChain;
 using AppChainConfig = Nethereum.AppChain.AppChainConfig;
 using GenesisOptions = Nethereum.AppChain.GenesisOptions;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.AppChain.Sequencer.UnitTests
 {

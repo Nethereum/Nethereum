@@ -1,11 +1,14 @@
 using System;
 using System.Numerics;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.AppChain.Genesis;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.AppChain
 {
@@ -67,7 +70,7 @@ namespace Nethereum.AppChain
                 return;
             }
 
-            var genesisBuilder = new AppChainGenesisBuilder(_config, _stateStore);
+            var genesisBuilder = new AppChainGenesisBuilder(_config, _stateStore, trieNodeStore: _trieNodeStore);
 
             if (options.PrefundedAddresses != null)
             {
@@ -92,7 +95,7 @@ namespace Nethereum.AppChain
 
         public async Task ApplyGenesisStateAsync(GenesisOptions options)
         {
-            var genesisBuilder = new AppChainGenesisBuilder(_config, _stateStore);
+            var genesisBuilder = new AppChainGenesisBuilder(_config, _stateStore, trieNodeStore: _trieNodeStore);
 
             if (options.PrefundedAddresses != null)
             {
@@ -110,6 +113,7 @@ namespace Nethereum.AppChain
             }
 
             await genesisBuilder.ApplyGenesisStateAsync();
+            await genesisBuilder.PersistStateTrieAsync();
 
             _initialized = true;
         }
@@ -189,6 +193,8 @@ namespace Nethereum.AppChain
             {
                 throw new InvalidOperationException("Existing chain has no genesis block");
             }
+
+            GenesisHeaderFields.EnsureShapeMatchesPinnedFork(genesisBlock, _config.PinnedFork);
 
             if (_config.GenesisHash != null && _config.GenesisHash.Length > 0)
             {

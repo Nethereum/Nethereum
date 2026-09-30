@@ -38,6 +38,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.AppChain\Nethereum.AppChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AppChain.Sequencer\Nethereum.AppChain.Sequencer.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.AppChain.Server.Core\Nethereum.AppChain.Server.Core.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AppChain.Anchoring\Nethereum.AppChain.Anchoring.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AppChain.Policy\Nethereum.AppChain.Policy.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
@@ -50,7 +51,6 @@
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction\Nethereum.AccountAbstraction.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AccountAbstraction.AppChain\Nethereum.AccountAbstraction.AppChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.AppChain.Server\Nethereum.AppChain.Server.csproj" />
-    <ProjectReference Include="..\..\src\Nethereum.AppChain.Sync\Nethereum.AppChain.Sync.csproj" />
   </ItemGroup>
 
 </Project>

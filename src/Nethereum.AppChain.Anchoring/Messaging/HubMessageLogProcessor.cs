@@ -59,7 +59,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
 
             var processor = web3.Processing.Logs.CreateProcessorForContract<MessageSentEventDTO>(
                 HubContractAddress,
-                action: async (eventLog) => await ProcessEventAsync(eventLog),
+                action: async (eventLog) => await ProcessEventAsync(eventLog).ConfigureAwait(false),
                 minimumBlockConfirmations: MinimumBlockConfirmations,
                 criteria: (eventLog) => eventLog.Event.TargetChainId == _targetChainId,
                 blockProgressRepository: ReorgBuffer > 0
@@ -74,7 +74,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
 
             await processor.ExecuteAsync(
                 cancellationToken: cancellationToken,
-                startAtBlockNumberIfNotProcessed: StartAtBlockNumberIfNotProcessed);
+                startAtBlockNumberIfNotProcessed: StartAtBlockNumberIfNotProcessed).ConfigureAwait(false);
         }
 
         private async Task ProcessEventAsync(EventLog<MessageSentEventDTO> eventLog)
@@ -95,7 +95,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                 Target = evt.Target ?? "",
                 Data = evt.Data ?? Array.Empty<byte>(),
                 Timestamp = eventLog.Log.BlockNumber != null ? (long)eventLog.Log.BlockNumber.Value : 0
-            });
+            }).ConfigureAwait(false);
         }
     }
 }

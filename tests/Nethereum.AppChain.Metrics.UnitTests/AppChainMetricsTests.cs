@@ -1,6 +1,6 @@
 using Nethereum.AppChain.Anchoring.Metrics;
 using Nethereum.AppChain.Sequencer.Metrics;
-using Nethereum.AppChain.Sync.Metrics;
+using Nethereum.AppChain.Server.Metrics;
 using Nethereum.CoreChain.Metrics;
 using Xunit;
 

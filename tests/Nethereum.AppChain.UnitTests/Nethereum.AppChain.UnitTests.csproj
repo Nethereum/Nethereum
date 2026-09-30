@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.AppChain\Nethereum.AppChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Model.SSZ\Nethereum.Model.SSZ.csproj" />
   </ItemGroup>
 
   <ItemGroup>

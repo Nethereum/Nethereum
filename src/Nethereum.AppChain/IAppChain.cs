@@ -2,6 +2,8 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Model;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.AppChain
 {

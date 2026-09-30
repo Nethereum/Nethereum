@@ -50,7 +50,7 @@ namespace Nethereum.AppChain.Anchoring.Rpc
             if (accumulator == null)
                 return Error(request.Id, -32603, "Message accumulator not available");
 
-            var result = await resultStore.GetByMessageIdAsync(sourceChainId, messageId);
+            var result = await resultStore.GetByMessageIdAsync(sourceChainId, messageId).ConfigureAwait(false);
             if (result == null)
                 return Error(request.Id, -32602, $"Message {messageId} from chain {sourceChainId} not found");
 

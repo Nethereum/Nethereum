@@ -15,7 +15,6 @@ namespace Nethereum.AppChain.Sequencer
         public bool AllowEmptyBlocks { get; set; } = false;
         public BlockProductionMode BlockProductionMode { get; set; } = BlockProductionMode.Interval;
         public PolicyConfig Policy { get; set; } = new PolicyConfig();
-        public BatchProductionConfig BatchProduction { get; set; } = new BatchProductionConfig();
 
         public static SequencerConfig Default => new SequencerConfig
         {
@@ -24,7 +23,6 @@ namespace Nethereum.AppChain.Sequencer
             AllowEmptyBlocks = false,
             BlockProductionMode = BlockProductionMode.Interval,
             Policy = PolicyConfig.Default,
-            BatchProduction = BatchProductionConfig.Default
         };
 
         public static SequencerConfig OnDemand => new SequencerConfig
@@ -33,44 +31,9 @@ namespace Nethereum.AppChain.Sequencer
             MaxTransactionsPerBlock = 1000,
             BlockProductionMode = BlockProductionMode.OnDemand,
             Policy = PolicyConfig.Default,
-            BatchProduction = BatchProductionConfig.Default
         };
     }
 
-    public class BatchProductionConfig
-    {
-        public bool Enabled { get; set; } = false;
-        public int BatchCadence { get; set; } = 100;
-        public string BatchOutputDirectory { get; set; } = "./batches";
-        public bool CompressBatches { get; set; } = true;
-        public bool TriggerAnchorOnBatch { get; set; } = true;
-        public int TimeThresholdSeconds { get; set; } = 0;
-
-        public static BatchProductionConfig Default => new BatchProductionConfig
-        {
-            Enabled = false,
-            BatchCadence = 100,
-            CompressBatches = true,
-            TriggerAnchorOnBatch = true
-        };
-
-        public static BatchProductionConfig WithCadence(int cadence) => new BatchProductionConfig
-        {
-            Enabled = true,
-            BatchCadence = cadence,
-            CompressBatches = true,
-            TriggerAnchorOnBatch = true
-        };
-
-        public static BatchProductionConfig WithTimeThreshold(int cadence, int timeThresholdSeconds) => new BatchProductionConfig
-        {
-            Enabled = true,
-            BatchCadence = cadence,
-            TimeThresholdSeconds = timeThresholdSeconds,
-            CompressBatches = true,
-            TriggerAnchorOnBatch = true
-        };
-    }
 
     public enum BlockProductionMode
     {

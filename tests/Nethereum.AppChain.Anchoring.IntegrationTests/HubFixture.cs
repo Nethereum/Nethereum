@@ -87,7 +87,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                     {
                         var rpcRequests = requests.Select(ToRpcRequestMessage).ToArray();
                         var responses = await dispatcher.DispatchBatchAsync(rpcRequests);
-                        var jsonResponses = responses.Select(ToJsonRpcResponse).ToArray();
+                        var jsonResponses = responses.Select(r => r.ToJsonRpcResponse()).ToArray();
                         await httpContext.Response.WriteAsync(
                             JsonSerializer.Serialize(jsonResponses, CoreChainJsonContext.Default.JsonRpcResponseArray));
                         return;
@@ -99,7 +99,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
 
                 var rpcRequest = ToRpcRequestMessage(request);
                 var response = await dispatcher.DispatchAsync(rpcRequest);
-                var jsonResponse = ToJsonRpcResponse(response);
+                var jsonResponse = response.ToJsonRpcResponse();
                 await httpContext.Response.WriteAsync(
                     JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
             });
@@ -225,22 +225,5 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
             };
         }
 
-        private static JsonRpcResponse ToJsonRpcResponse(RpcResponseMessage response)
-        {
-            if (response.HasError)
-            {
-                return new JsonRpcResponse
-                {
-                    Id = response.Id,
-                    Error = new JsonRpcError
-                    {
-                        Code = response.Error.Code,
-                        Message = response.Error.Message,
-                        Data = response.Error.Data
-                    }
-                };
-            }
-            return new JsonRpcResponse { Id = response.Id, Result = response.Result };
-        }
     }
 }
