@@ -2,7 +2,7 @@
 
 Native circom witness generation for .NET using [iden3/circom-witnesscalc](https://github.com/iden3/circom-witnesscalc). Computes witnesses from circom circuit graphs without JavaScript or Node.js — works on desktop, server, and mobile.
 
-Companion to [Nethereum.ZkProofs.RapidSnark](../Nethereum.ZkProofs.RapidSnark/) for a fully native ZK proof pipeline.
+Companion to [Nethereum.ZkProofs.RapidSnark](../Nethereum.ZkProofs.RapidSnark/README.md) for a fully native ZK proof pipeline.
 
 ## How It Works
 
@@ -10,7 +10,7 @@ Circom circuits are normally executed via JavaScript (snarkjs + Node.js). This p
 
 1. **Compile** your `.circom` circuit into a binary graph (`.graph.bin`) using `build-circuit` (one-time)
 2. **At runtime**, pass the graph + JSON inputs to `WitnessCalculator.CalculateWitness()` which returns the witness bytes (`.wtns` format)
-3. **Feed the witness** to [Nethereum.ZkProofs.RapidSnark](../Nethereum.ZkProofs.RapidSnark/) for fast native proof generation
+3. **Feed the witness** to [Nethereum.ZkProofs.RapidSnark](../Nethereum.ZkProofs.RapidSnark/README.md) for fast native proof generation
 
 ```
                           ONE-TIME (build step)
@@ -72,7 +72,7 @@ Pre-built native binaries are included for all platforms (built via [Nethereum/c
 | macOS | x64 | `libcircom_witnesscalc.dylib` | 743 KB |
 | macOS | arm64 (Apple Silicon) | `libcircom_witnesscalc.dylib` | 745 KB |
 | Android | arm64 | `libcircom_witnesscalc.so` | 919 KB |
-| iOS | arm64 | `libcircom_witnesscalc.a` | via CI |
+| iOS | arm64 | `libcircom_witnesscalc.a` | build from source, not shipped in the package |
 
 ## Generating Circuit Graphs
 
@@ -184,7 +184,8 @@ cargo build --release
 
 ## C API
 
-The library exports a single function (`include/graph_witness.h`):
+The library exports the witness-calculation entry point plus a `gw_free`
+helper for releasing buffers it allocates (`include/graph_witness.h`):
 
 ```c
 typedef struct {
@@ -200,6 +201,9 @@ int gw_calc_witness(
     size_t *wtns_len,                // OUT: witness length
     const gw_status_t *status        // OUT: error status
 );
+
+// Frees a buffer returned via wtns_data or gw_status_t.error_msg.
+void gw_free(void *ptr);
 ```
 
 ## Credits

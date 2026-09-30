@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.PrivacyPools.Circuits\Nethereum.PrivacyPools.Circuits.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.PrivacyPools\Nethereum.PrivacyPools.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>

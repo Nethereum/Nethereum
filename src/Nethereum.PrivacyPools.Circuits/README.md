@@ -66,7 +66,7 @@ var proofProvider = new PrivacyPoolProofProvider(
 
 ```csharp
 var circuitSource = new PrivacyPoolCircuitSource();
-var blazorProvider = new SnarkjsBlazorProvider(jsRuntime, "./js/snarkjs.min.mjs");
+var blazorProvider = new SnarkjsBlazorProvider(jsRuntime, "./js/snarkjs.min.js");
 await blazorProvider.InitializeAsync();
 var proofProvider = new PrivacyPoolProofProvider(blazorProvider, circuitSource);
 ```

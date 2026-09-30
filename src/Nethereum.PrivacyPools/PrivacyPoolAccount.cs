@@ -14,17 +14,27 @@ namespace Nethereum.PrivacyPools
         public BigInteger MasterSecret { get; }
 
         public PrivacyPoolAccount(string mnemonic, string password = "")
+            : this(mnemonic, password, useLegacyDerivation: false)
+        {
+        }
+
+        private PrivacyPoolAccount(string mnemonic, string password, bool useLegacyDerivation)
         {
             var wallet = new MinimalHDWallet(mnemonic, password);
 
             var key1Bytes = wallet.GetKeyFromPath("m/44'/60'/0'/0/0").GetPrivateKeyAsBytes();
             var key2Bytes = wallet.GetKeyFromPath("m/44'/60'/1'/0/0").GetPrivateKeyAsBytes();
 
-            var key1 = BytesToBigIntViaDouble(key1Bytes);
-            var key2 = BytesToBigIntViaDouble(key2Bytes);
+            var key1 = useLegacyDerivation ? BytesToBigIntViaDouble(key1Bytes) : BytesToBigInt(key1Bytes);
+            var key2 = useLegacyDerivation ? BytesToBigIntViaDouble(key2Bytes) : BytesToBigInt(key2Bytes);
 
             MasterNullifier = HasherT1.Hash(key1);
             MasterSecret = HasherT1.Hash(key2);
+        }
+
+        public static PrivacyPoolAccount CreateLegacy(string mnemonic, string password = "")
+        {
+            return new PrivacyPoolAccount(mnemonic, password, useLegacyDerivation: true);
         }
 
         public PrivacyPoolAccount(BigInteger masterNullifier, BigInteger masterSecret)
@@ -64,11 +74,14 @@ namespace Nethereum.PrivacyPools
             return PrivacyPoolCommitment.Create(value, label, nullifier, secret);
         }
 
-        // Replicates viem's bytesToNumber() behavior which converts 32-byte private keys
-        // through JavaScript's Number type (IEEE 754 double, ~53 bits mantissa), losing
-        // precision for values > 2^53. The 0xbow SDK uses bytesToNumber() in generateMasterKeys(),
-        // so we must match this lossy conversion for cross-compatibility.
-        // See: https://github.com/0xbow-io/privacy-pools-core/packages/sdk/src/crypto.ts
+        // Full 256-bit big-endian conversion matching viem's bytesToBigInt (SDK v1.2.0+).
+        public static BigInteger BytesToBigInt(byte[] bytes)
+        {
+            return new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
+        }
+
+        // Replicates viem's bytesToNumber() which truncates to IEEE 754 double (~53-bit mantissa).
+        // Used by SDK v1.1.x and earlier; kept for backward compatibility with legacy deposits.
         public static BigInteger BytesToBigIntViaDouble(byte[] bytes)
         {
             double value = 0;

@@ -19,8 +19,8 @@ namespace Nethereum.ZkProofs.Snarkjs.Blazor
             _jsRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
             if (string.IsNullOrWhiteSpace(snarkjsUrl))
                 throw new ArgumentException(
-                    "snarkjsUrl is required. Provide a local path (e.g. \"./js/snarkjs.min.mjs\") " +
-                    "or a CDN URL. To self-host: npm install snarkjs, then copy build/snarkjs.min.mjs to your wwwroot.",
+                    "snarkjsUrl is required. Provide a local path (e.g. \"./js/snarkjs.min.js\") " +
+                    "or a CDN URL. To self-host: npm install snarkjs, then copy build/snarkjs.min.js to your wwwroot.",
                     nameof(snarkjsUrl));
             _snarkjsUrl = snarkjsUrl;
         }

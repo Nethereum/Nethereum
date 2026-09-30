@@ -10,16 +10,18 @@ namespace Nethereum.PrivacyPools
         public BigInteger BlockNumber { get; set; }
         public string TransactionHash { get; set; } = "";
         public BigInteger Timestamp { get; set; }
+        public bool IsMigration { get; set; }
 
         public static AccountCommitment FromCommitment(PrivacyPoolCommitment commitment, int leafIndex,
-            BigInteger blockNumber, string transactionHash)
+            BigInteger blockNumber, string transactionHash, bool isMigration = false)
         {
             return new AccountCommitment
             {
                 Commitment = commitment,
                 LeafIndex = leafIndex,
                 BlockNumber = blockNumber,
-                TransactionHash = transactionHash
+                TransactionHash = transactionHash,
+                IsMigration = isMigration
             };
         }
     }
@@ -31,12 +33,13 @@ namespace Nethereum.PrivacyPools
         public List<AccountCommitment> Withdrawals { get; set; } = new List<AccountCommitment>();
         public bool IsRagequitted { get; set; }
         public BigInteger RagequitBlockNumber { get; set; }
+        public bool IsMigrated { get; set; }
 
         public AccountCommitment LatestCommitment =>
             Withdrawals.Count > 0 ? Withdrawals[Withdrawals.Count - 1] : Deposit;
 
         public BigInteger SpendableValue => LatestCommitment.Commitment.Value;
 
-        public bool IsSpendable => !IsRagequitted && SpendableValue > BigInteger.Zero;
+        public bool IsSpendable => !IsRagequitted && !IsMigrated && SpendableValue > BigInteger.Zero;
     }
 }

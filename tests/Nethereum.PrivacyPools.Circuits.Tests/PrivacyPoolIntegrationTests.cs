@@ -56,7 +56,11 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             _output.WriteLine($"Pool: {_deployment.Pool.ContractAddress}");
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public Task DisposeAsync()
+        {
+            _node?.Dispose();
+            return Task.CompletedTask;
+        }
 
         private async Task ProcessEventsToCurrentBlockAsync(
             InMemoryPrivacyPoolRepository repository,
@@ -135,6 +139,31 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
             var isSpent = await pool.NullifierHashesQueryAsync(depositResult.Commitment.NullifierHash);
             Assert.True(isSpent);
             _output.WriteLine("Nullifier spent: verified");
+        }
+
+        [Fact]
+        [Trait("Category", "E2E-Integration")]
+        public async Task SafeOnlySyncFromChain_RecoversSafeDeposits()
+        {
+            var pp = PrivacyPool.FromDeployment(_web3, _deployment, TEST_MNEMONIC);
+            await pp.InitializeAsync();
+
+            var depositValue = Web3.Web3.Convert.ToWei(1);
+            var depositResult = await pp.DepositAsync(depositValue, depositIndex: 0);
+            Assert.False(depositResult.Receipt.HasErrors());
+
+            var safeOnly = PrivacyPool.FromDeployment(
+                _web3,
+                _deployment,
+                new PrivacyPoolAccount(TEST_MNEMONIC));
+            await safeOnly.InitializeAsync();
+
+            var sync = await safeOnly.SyncSafeFromChainAsync();
+
+            var recovered = Assert.Single(sync.PoolAccounts);
+            Assert.Equal(depositResult.Commitment.CommitmentHash, recovered.Deposit.Commitment.CommitmentHash);
+            Assert.Equal(depositValue, recovered.SpendableValue);
+            Assert.True(recovered.IsSpendable);
         }
 
         [Fact]

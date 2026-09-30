@@ -60,6 +60,13 @@ var result = await _provider.FullProveAsync(new ZkProofRequest
 
 ### 3. Verify the proof (pure C#)
 
+This step uses the managed Groth16 verifier, which ships in a separate
+package — add it alongside this one:
+
+```bash
+dotnet add package Nethereum.ZkProofsVerifier
+```
+
 ```csharp
 using Nethereum.ZkProofsVerifier.Circom;
 
