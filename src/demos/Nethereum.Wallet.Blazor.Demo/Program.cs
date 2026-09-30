@@ -28,8 +28,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Wallet core services
-builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>(); //wasm support
+builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
 builder.Services.AddSingleton<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddSingleton<IWalletConfigurationService, InMemoryWalletConfigurationService>();
 
@@ -40,7 +39,6 @@ builder.Services.AddSingleton<Nethereum.Wallet.Storage.IWalletStorageService, Lo
 builder.Services.AddSingleton<Nethereum.RPC.Chain.IChainFeaturesService>(sp =>
     Nethereum.RPC.Chain.ChainFeaturesService.Current);
 
-//This register chain management with ChainList as external source and a set of default chains
 builder.Services.AddNethereumChainManagement(o =>
 {
     o.Strategy = ChainFeatureStrategyType.PreconfiguredEnrich;
@@ -71,7 +69,6 @@ builder.Services.AddNethereumChainManagement(o =>
             var id = (long)chain.ChainId;
             if ((chain.HttpRpcs == null || chain.HttpRpcs.Count == 0) && rpcSeed.TryGetValue(id, out var urls))
             {
-                // Ensure list initialised (fixes nullable warning)
                 chain.HttpRpcs ??= new List<string>();
 
                 foreach (var u in urls)
@@ -84,13 +81,10 @@ builder.Services.AddNethereumChainManagement(o =>
     };
 });
 
-// Unified RPC endpoint service
 builder.Services.AddSingleton<IRpcEndpointService, RpcEndpointService>();
 
-// RPC client factory
 builder.Services.AddScoped<IRpcClientFactory, RpcClientFactory>();
 
-// Core wallet account service
 builder.Services.AddSingleton<ICoreWalletAccountService>(sp =>
 {
     var vaultService = sp.GetRequiredService<IWalletVaultService>();
@@ -99,11 +93,9 @@ builder.Services.AddSingleton<ICoreWalletAccountService>(sp =>
     return new CoreWalletAccountService(vault);
 });
 
-// Wallet host provider (replaces removed AddNethereumWalletHosting)
-builder.Services.AddNethereumWalletHostProvider(); // Removed obsolete AddNethereumWalletHosting()
+builder.Services.AddNethereumWalletHostProvider();
 builder.Services.AddScoped<SelectedEthereumHostProviderService>();
 
-// UI configuration
 builder.Services.AddNethereumWalletUIConfiguration(config =>
 {
     config.ApplicationName = "Nethereum";
@@ -121,32 +113,25 @@ builder.Services.AddNethereumWalletUIConfiguration(config =>
     config.WalletConfig.AllowPasswordVisibilityToggle = true;
 });
 
-// Full Wallet UI (MudBlazor + ViewModels + localization etc.)
 builder.Services.AddNethereumWalletUI();
 
-// Theme + network icon provider overrides
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<INetworkIconProvider, DemoNetworkIconProvider>();
 
-// Dashboard navigation
 builder.Services.AddScoped<Nethereum.Wallet.UI.Components.Dashboard.Services.IDashboardNavigationService,
     Nethereum.Wallet.UI.Components.Dashboard.Services.DashboardNavigationService>();
 
-// Authorization
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, Nethereum.Blazor.EthereumAuthenticationStateProvider>();
 
 var app = builder.Build();
 
-// Initialize registries
 app.Services.InitializeAccountTypes();
 app.Services.ConfigureDashboardPluginRegistry();
 
-// Register RPC handlers
 var rpcRegistry = app.Services.GetRequiredService<RpcHandlerRegistry>();
 WalletRpcHandlerRegistration.RegisterAll(rpcRegistry);
 
-// Start pending transaction notifications
 var notificationService =
     app.Services.GetRequiredService<Nethereum.Wallet.UI.Components.Transactions.PendingTransactionNotificationService>();
 

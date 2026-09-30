@@ -51,19 +51,32 @@ In your `_Host.cshtml` or `App.razor`:
 
 The Monaco editor is loaded from a CDN by the interop script.
 
-### 3. Use the Debugger Component
+### 3. Replay a Transaction and Render the Component
+
+The `IEvmDebugService` replays the transaction and produces an `EvmReplayResult`. The `EvmDebugger` component renders that already-built session - it does not accept a transaction hash and does not replay.
 
 ```razor
 @using Nethereum.Blazor.Solidity.Components
+@using Nethereum.Blazor.Solidity.Services
+@inject IEvmDebugService debugService
 
-<EvmDebugger TransactionHash="@txHash"
-             Web3="@web3"
-             ABIDirectory="@abiDir" />
+@if (result != null)
+{
+    <EvmDebugger Session="result.Session"
+                 IsRevert="result.IsRevert"
+                 HasSourceMaps="result.HasSourceMaps"
+                 SourceFiles="result.SourceFiles"
+                 FileContents="result.FileContents" />
+}
 
 @code {
+    private EvmReplayResult result;
     private string txHash = "0xabc...";
-    private Nethereum.Web3.Web3 web3;
-    private string abiDir = "/path/to/abi-output";
+
+    protected override async Task OnInitializedAsync()
+    {
+        result = await debugService.ReplayTransactionAsync(txHash);
+    }
 }
 ```
 
@@ -71,12 +84,15 @@ The Monaco editor is loaded from a CDN by the interop script.
 
 ### EvmDebugger
 
-Main composite component that orchestrates the debugging session. Accepts a transaction hash, replays it, and renders four sub-components in a split layout.
+Main composite component that orchestrates the debugging session. It renders an already-built session across four sub-components in a split layout; replaying a transaction into an `EvmReplayResult` is done by `IEvmDebugService`, whose result is passed into these parameters.
 
 **Parameters:**
-- `TransactionHash` (`string`) - Transaction hash to debug
-- `Web3` (`Nethereum.Web3.Web3`) - Web3 instance for RPC calls
-- `ABIDirectory` (`string`) - Path to directory containing compiled ABI/bytecode output (Forge, Hardhat, etc.)
+- `Session` (`EVMDebuggerSession`, required) - The debugger session to render
+- `IsRevert` (`bool`) - Whether the replayed transaction reverted
+- `HasSourceMaps` (`bool`) - Whether Solidity source maps were matched
+- `SourceFiles` (`List<string>`) - Source file paths for the source panel
+- `FileContents` (`Dictionary<string, string>`) - Source file contents keyed by path
+- `Theme` (`string?`) - Monaco editor theme (defaults to `nethereum-dark`)
 
 ### DebugControlBar
 
@@ -125,7 +141,7 @@ Monaco editor wrapper via JavaScript interop (`solidity-monaco-interop.js`). Pro
 public interface IEvmDebugService
 {
     bool IsAvailable { get; }
-    Task<EvmReplayResult> ReplayTransactionAsync(string transactionHash);
+    Task<EvmReplayResult> ReplayTransactionAsync(string txHash);
 }
 ```
 
@@ -135,7 +151,7 @@ Replays a transaction through the following pipeline:
 
 1. Fetches the transaction and receipt via `eth_getTransactionByHash` / `eth_getTransactionReceipt`
 2. Runs the transaction through `EVMSimulator` to produce a `ProgramResult` with full execution trace
-3. If an `ABIDirectory` is configured, calls `FileSystemABIInfoStorage.FindABIInfoByRuntimeBytecode()` to match deployed bytecode against compiled artifacts
+3. If a `FileSystemABIInfoStorage` is registered, calls its `FindABIInfoByRuntimeBytecode()` to match deployed bytecode against compiled artifacts
 4. When source maps are found, maps trace steps to Solidity source locations and loads source file contents
 5. Falls back to `debug_traceTransaction` (opcode tracer) when EVM simulation is not available
 6. Returns an `EvmReplayResult` containing the `EVMDebuggerSession`, step count, source files, and error information
@@ -159,12 +175,12 @@ public class EvmReplayResult
 
 The debugger automatically discovers Solidity source files when an ABI output directory is provided (e.g., Forge's `out/` or Hardhat's `artifacts/`). The matching process:
 
-1. `FileSystemABIInfoStorage` scans the directory for compiled contract artifacts containing runtime bytecode
+1. `FileSystemABIInfoStorage` scans the directory for `*.json` compiled contract artifacts (Foundry-style `deployedBytecode.object` / `sourceMap`) and for `build-info` files (standard JSON output with `evm.deployedBytecode`)
 2. For each contract in the trace, the deployed bytecode is compared against the stored artifacts
 3. When a match is found, the source map and source file paths from the compilation output are used to map program counter values to source locations
 4. Source files are loaded and displayed in the `DebugSourcePanel`
 
-This works with standard Solidity compiler output formats (Forge, Hardhat, solc --combined-json).
+This works with Foundry artifacts and build-info standard JSON output.
 
 ## Related Packages
 

@@ -2,22 +2,18 @@ using Nethereum.Wallet.UI.Components.NethereumWallet;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests.Controls;
 
-/// <summary>
-/// Direct tests for NethereumWalletViewModel validation without complex dependencies
-/// </summary>
 public class DirectNethereumWalletTests
 {
     [Fact]
     public void CanCreateWallet_WithEmptyPasswords_ShouldBeFalse()
     {
-        // Test the actual CanCreateWallet logic
         var newPassword = "";
         var confirmPassword = "";
 
         var canCreate = !string.IsNullOrWhiteSpace(newPassword) &&
                        !string.IsNullOrWhiteSpace(confirmPassword) &&
                        newPassword == confirmPassword &&
-                       newPassword.Length >= 8; // Assuming min 8 chars
+                       newPassword.Length >= 8;
 
         canCreate.Should().BeFalse();
     }
@@ -25,7 +21,6 @@ public class DirectNethereumWalletTests
     [Fact]
     public void CanCreateWallet_WithMismatchedPasswords_ShouldBeFalse()
     {
-        // Test password mismatch validation
         var newPassword = "Password123!";
         var confirmPassword = "DifferentPassword123!";
 
@@ -40,7 +35,6 @@ public class DirectNethereumWalletTests
     [Fact]
     public void CanCreateWallet_WithShortPassword_ShouldBeFalse()
     {
-        // Test password length validation
         var newPassword = "weak";
         var confirmPassword = "weak";
 
@@ -55,7 +49,6 @@ public class DirectNethereumWalletTests
     [Fact]
     public void CanCreateWallet_WithValidPasswords_ShouldBeTrue()
     {
-        // Test valid password scenario
         var newPassword = "ValidPassword123!";
         var confirmPassword = "ValidPassword123!";
 
@@ -76,7 +69,6 @@ public class DirectNethereumWalletTests
     [InlineData("ValidPassword123!", "ValidPassword123!", "")]
     public void ValidatePasswordInput_ReturnsCorrectErrorMessage(string newPassword, string confirmPassword, string expectedError)
     {
-        // Test the validation logic that would be in the ViewModel
         string errorMessage = "";
 
         if (string.IsNullOrWhiteSpace(newPassword))
@@ -102,7 +94,6 @@ public class DirectNethereumWalletTests
     [Fact]
     public void CanLogin_WithEmptyPassword_ShouldBeFalse()
     {
-        // Test login validation
         var password = "";
         var vaultExists = true;
 
@@ -114,7 +105,6 @@ public class DirectNethereumWalletTests
     [Fact]
     public void CanLogin_WithPasswordAndNoVault_ShouldBeFalse()
     {
-        // Test login when vault doesn't exist
         var password = "SomePassword";
         var vaultExists = false;
 
@@ -126,7 +116,6 @@ public class DirectNethereumWalletTests
     [Fact]
     public void CanLogin_WithPasswordAndVaultExists_ShouldBeTrue()
     {
-        // Test valid login scenario
         var password = "SomePassword";
         var vaultExists = true;
 
@@ -138,14 +127,11 @@ public class DirectNethereumWalletTests
     [Fact]
     public void WalletStates_TransitionCorrectly()
     {
-        // Test the state machine logic
 
-        // Initial state - no vault
         bool vaultExists = false;
         bool isUnlocked = false;
         bool hasAccounts = false;
 
-        // Check initial state logic
         var canCreateWallet = !vaultExists;
         var canLogin = vaultExists && !isUnlocked;
         var showWalletContent = vaultExists && isUnlocked && hasAccounts;
@@ -154,10 +140,9 @@ public class DirectNethereumWalletTests
         canLogin.Should().BeFalse("Should not be able to login when no vault exists");
         showWalletContent.Should().BeFalse("Should not show wallet content initially");
 
-        // After creating vault
         vaultExists = true;
         isUnlocked = true;
-        hasAccounts = false; // No accounts created yet
+        hasAccounts = false;
 
         canCreateWallet = !vaultExists;
         canLogin = vaultExists && !isUnlocked;
@@ -167,7 +152,6 @@ public class DirectNethereumWalletTests
         canLogin.Should().BeFalse("Should not need to login when already unlocked");
         showWalletContent.Should().BeFalse("Should not show content without accounts");
 
-        // After creating accounts
         hasAccounts = true;
 
         showWalletContent = vaultExists && isUnlocked && hasAccounts;

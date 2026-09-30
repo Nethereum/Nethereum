@@ -308,7 +308,7 @@ else
         }
         catch (Exception ex)
         {
-            Response = ex.Message();
+            Response = ex.Message;
         }
     }
 
@@ -412,7 +412,7 @@ web3.Client.OverridingRequestInterceptor = new NethereumWalletConnectInterceptor
 var txHash = await walletConnectService.SendTransactionAsync(new TransactionInput
 {
     To = "0xRecipient",
-    Value = new HexBigInteger(Web3.Web3.Convert.ToWei(0.1m))
+    Value = new HexBigInteger(Web3.Convert.ToWei(0.1m))
 });
 ```
 
@@ -529,6 +529,8 @@ public class NethereumWalletConnectHostProvider : IEthereumHostProvider
     public static NethereumWalletConnectHostProvider Current { get; }
     public string Name { get; } // "WalletConnect"
     public bool Available { get; }
+    public bool MultipleWalletsProvider => false;
+    public bool MultipleWalletSelected { get; private set; }
     public string SelectedAccount { get; }
     public long SelectedNetworkChainId { get; }
     public bool Enabled { get; }

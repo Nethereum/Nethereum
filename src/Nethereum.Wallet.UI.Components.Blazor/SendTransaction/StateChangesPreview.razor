@@ -1,7 +1,10 @@
-@using MudBlazor
+﻿@using MudBlazor
 @using System.Collections.Generic
 @using System.Numerics
 @using Nethereum.ABI.FunctionEncoding
+@using Nethereum.Contracts
+@using Nethereum.Contracts.Standards.EthTransfers
+@using Nethereum.Contracts.Standards.ERC20.ContractDefinition
 @using Nethereum.EVM.Decoding
 @using Nethereum.EVM.StateChanges
 @using Nethereum.Util
@@ -229,7 +232,17 @@
                                                 @(log.Parameters.ConvertToJObject().ToString())
                                             </MudPaper>
                                         }
-                                        @if (!log.IsDecoded && log.OriginalLog?.Topics?.Length > 0)
+                                        @{ var ethTransfer = ReadEthTransfer(log); }
+                                        @if (ethTransfer != null)
+                                        {
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                                @Nethereum.Web3.Web3.Convert.FromWei(ethTransfer.Event.Value) ETH
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace;">
+                                                @FormatAddress(ethTransfer.Event.From) &#8594; @FormatAddress(ethTransfer.Event.To)
+                                            </MudText>
+                                        }
+                                        else if (!log.IsDecoded && log.OriginalLog?.Topics?.Length > 0)
                                         {
                                             <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace; word-break: break-all;">
                                                 @Localizer.GetString(Keys.EventSignature): @(GetTopicDisplay(log.OriginalLog.Topics[0]))
@@ -386,8 +399,13 @@
         }
     }
 
+    private EventLog<TransferEventDTO> ReadEthTransfer(DecodedLog log) =>
+        log.OriginalLog?.DecodeEthTransfer();
+
     private string GetEventDisplayName(DecodedLog log)
     {
+        if (ReadEthTransfer(log) != null) return "ETH Transfer";
+
         var eventName = log.GetEventName();
         if (log.IsDecoded && !string.IsNullOrEmpty(eventName))
             return eventName;

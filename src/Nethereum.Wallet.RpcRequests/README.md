@@ -17,6 +17,9 @@ Nethereum.Wallet.RpcRequests implements EIP-1193 wallet RPC methods with user pr
 - **Signing** - `personal_sign`, `eth_signTypedData_v4`
 - **Transactions** - `eth_sendTransaction`
 - **Permissions** - `wallet_requestPermissions`, `wallet_getPermissions`, `wallet_revokePermissions`
+- **Registered stubs (return -32601 "not implemented")** - `wallet_registerOnboarding`, `wallet_watchAsset`, `eth_decrypt`, `eth_getEncryptionPublicKey`, `web3_clientVersion`, `eth_subscribe`
+
+> `eth_chainId` is handled by `EthChainIdHandler`, which `WalletRpcHandlerRegistration.RegisterAll` registers.
 
 ## Installation
 
@@ -361,15 +364,22 @@ public static void RegisterAll(RpcHandlerRegistry registry)
     registry.Register(new WalletGetPermissionsHandler());
     registry.Register(new WalletRequestPermissionsHandler());
     registry.Register(new WalletRevokePermissionsHandler());
+    registry.Register(new WalletRegisterOnboardingHandler());
+    registry.Register(new WalletWatchAssetHandler());
     registry.Register(new PersonalSignHandler());
     registry.Register(new EthSignTypedDataV4Handler());
     registry.Register(new EthRequestAccountsHandler());
     registry.Register(new EthAccountsHandler());
-    registry.Register(new EthSendTransactionHandler());
     registry.Register(new EthChainIdHandler());
-    // ... additional handlers
+    registry.Register(new EthDecryptHandler());
+    registry.Register(new EthGetEncryptionPublicKeyHandler());
+    registry.Register(new Web3ClientVersionHandler());
+    registry.Register(new EthSubscribeHandler());
+    registry.Register(new EthSendTransactionHandler());
 }
 ```
+
+`WalletRegisterOnboardingHandler`, `WalletWatchAssetHandler`, `EthDecryptHandler`, `EthGetEncryptionPublicKeyHandler`, `Web3ClientVersionHandler` and `EthSubscribeHandler` are registered but are currently not-implemented stubs (they return `-32601`).
 
 **From:** `src/Nethereum.Wallet.RpcRequests/WalletRpcHandlerRegistration.cs:8`
 
@@ -378,27 +388,48 @@ public static void RegisterAll(RpcHandlerRegistry registry)
 Handlers require `IWalletContext` which provides:
 
 ```csharp
-public interface IWalletContext
+public interface IWalletContext : IEthereumHostProvider
 {
-    // Current state
+    // Accounts
+    IReadOnlyList<IWalletAccount> Accounts { get; }
     IWalletAccount? SelectedWalletAccount { get; }
-    DappConnectionContext? SelectedDapp { get; }
-    HexBigInteger? ChainId { get; }
+    Task<IAccount?> GetSelectedAccountAsync();
 
-    // Permission service
+    // Current dApp / permissions
+    DappConnectionContext? SelectedDapp { get; set; }
     IDappPermissionService DappPermissions { get; }
 
-    // Configuration
-    IWalletConfigurationService Configuration { get; }
+    // Hex chain id (derived from SelectedNetworkChainId)
+    HexBigInteger? ChainId { get; }
+
+    // Low-level access (may be null until enabled)
+    Task<IClient?> GetRpcClientAsync();
+    Task<IWeb3> GetWalletWeb3Async();
+
+    // Chain switching via hex chainId (e.g. "0x1")
+    Task<bool> SwitchChainAsync(string chainIdHex);
 
     // User prompt methods
-    Task<string?> EnableProviderAsync();
-    Task<bool> RequestDappPermissionAsync(DappConnectionContext dapp, string account);
-    Task<string?> ShowTransactionDialogAsync(TransactionInput transaction);
+    Task<string?> ShowTransactionDialogAsync(TransactionInput input);
     Task<string?> RequestPersonalSignAsync(SignaturePromptContext context);
     Task<string?> RequestTypedDataSignAsync(TypedDataSignPromptContext context);
+    Task<bool> RequestDappPermissionAsync(DappConnectionContext dappContext, string accountAddress);
     Task<ChainAdditionPromptResult> RequestChainAdditionAsync(ChainAdditionPromptRequest request);
     Task<ChainSwitchPromptResult> RequestChainSwitchAsync(ChainSwitchPromptRequest request);
+
+    // Configuration
+    Task AddChainAsync(ChainFeature chainMetadata);
+    IWalletConfigurationService Configuration { get; }
+
+    // Account collection lifecycle
+    void Initialise(IReadOnlyList<IWalletAccount> accounts, IWalletAccount? selected);
+    Task SetSelectedWalletAccountAsync(IWalletAccount? account);
+    void SetSelectedAccount(string account);
+    Task InitialiseAccountSignerAsync();
+
+    // Note: EnableProviderAsync (Task<string>), SelectedAccount,
+    // SelectedNetworkChainId and provider change events are inherited
+    // from IEthereumHostProvider.
 }
 ```
 
@@ -460,16 +491,16 @@ var handler = new WalletAddEthereumChainHandler();
 
 var addChainParam = new AddEthereumChainParameter
 {
-    ChainId = "0x89", // Polygon
+    ChainId = new HexBigInteger("0x89"), // Polygon
     ChainName = "Polygon Mainnet",
-    RpcUrls = new[] { "https://polygon-rpc.com" },
+    RpcUrls = new List<string> { "https://polygon-rpc.com" },
     NativeCurrency = new NativeCurrency
     {
         Name = "MATIC",
         Symbol = "MATIC",
         Decimals = 18
     },
-    BlockExplorerUrls = new[] { "https://polygonscan.com" }
+    BlockExplorerUrls = new List<string> { "https://polygonscan.com" }
 };
 
 var request = new RpcRequestMessage

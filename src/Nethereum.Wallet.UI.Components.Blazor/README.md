@@ -4,7 +4,7 @@ Production-ready Blazor component library providing complete Ethereum wallet UI 
 
 ## Package Information
 
-- **Target Framework**: .NET 9.0
+- **Target Framework**: .NET 10.0
 - **UI Framework**: Blazor (WebAssembly and Server compatible)
 - **Component Library**: MudBlazor 8.x
 - **Architecture**: MVVM (CommunityToolkit.Mvvm)
@@ -14,8 +14,8 @@ Production-ready Blazor component library providing complete Ethereum wallet UI 
 
 **NuGet Packages:**
 - `CommunityToolkit.Mvvm` 8.4.0 - MVVM infrastructure
-- `Microsoft.AspNetCore.Components` 9.0.1 - Blazor core
-- `Microsoft.AspNetCore.Components.Web` 9.0.1 - Blazor web components
+- `Microsoft.AspNetCore.Components` 10.0.0 - Blazor core
+- `Microsoft.AspNetCore.Components.Web` 10.0.0 - Blazor web components
 - `MudBlazor` 8.* - Material Design UI components
 
 **Project References:**
@@ -49,7 +49,7 @@ builder.Services.AddNethereumWalletUI();
 // Register storage services
 builder.Services.AddSingleton<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddSingleton<IWalletStorageService, LocalStorageWalletStorageService>();
-builder.Services.AddSingleton<IEncryptionStrategy, AesEncryptionStrategy>();
+builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
 
 await builder.Build().RunAsync();
 ```
@@ -67,7 +67,7 @@ builder.Services.AddNethereumWalletUI();
 // Register storage services
 builder.Services.AddScoped<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddScoped<IWalletStorageService, LocalStorageWalletStorageService>();
-builder.Services.AddSingleton<IEncryptionStrategy, AesEncryptionStrategy>();
+builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
 
 var app = builder.Build();
 app.Run();
@@ -118,7 +118,7 @@ The package provides three registration methods in `ServiceCollectionExtensions.
 
 Registers all wallet services with **scoped** lifetime (recommended for most scenarios).
 
-**Location**: `Extensions/ServiceCollectionExtensions.cs:46-142`
+**Location**: `Extensions/ServiceCollectionExtensions.cs:49-148`
 
 **Key Registrations:**
 ```csharp
@@ -160,7 +160,7 @@ services.AddPromptsServices();
 
 Registers wallet services with **singleton** lifetime for application-wide state scenarios.
 
-**Location**: `Extensions/ServiceCollectionExtensions.cs:147-232`
+**Location**: `Extensions/ServiceCollectionExtensions.cs:153-241`
 
 Uses `Transient` for ViewModels and `Singleton` for registries and infrastructure.
 
@@ -170,7 +170,7 @@ Component registries map ViewModels to Razor components dynamically using the `I
 
 #### Registry Initialization
 
-**Location**: `Extensions/ServiceCollectionExtensions.cs:276-318`
+**Location**: `Extensions/ServiceCollectionExtensions.cs:285-330`
 
 ```csharp
 public static void InitializeAccountTypes(this IServiceProvider serviceProvider)
@@ -204,9 +204,9 @@ componentRegistry.Register<PromptsPluginViewModel, PromptsPlugin>();
 
 #### WalletUIBootstrapper
 
-Ensures registries are initialized before component use.
+Ensures registries are initialized before component use, and kicks off a one-time background token-cache preload for mainnet chains.
 
-**Location**: `Services/WalletUIBootstrapper.cs:8-38`
+**Location**: `Services/WalletUIBootstrapper.cs:13-79`
 
 ```csharp
 public sealed class WalletUIBootstrapper
@@ -214,21 +214,66 @@ public sealed class WalletUIBootstrapper
     private readonly IServiceProvider _serviceProvider;
     private readonly IEnumerable<IWalletUIRegistryContributor> _registryContributors;
     private bool _initialized;
+    private static bool _tokenCacheInitialized;
+
+    public WalletUIBootstrapper(
+        IServiceProvider serviceProvider,
+        IEnumerable<IWalletUIRegistryContributor>? registryContributors = null)
+    {
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _registryContributors = registryContributors ?? Array.Empty<IWalletUIRegistryContributor>();
+    }
 
     public void EnsureInitialized()
     {
-        if (_initialized) return;
+        if (_initialized)
+        {
+            return;
+        }
 
-        // Initialize built-in account types
+        // Populate account creation/details registries within the current scope.
         _serviceProvider.InitializeAccountTypes();
-
-        // Apply custom registry contributors (e.g., Trezor hardware wallet)
         foreach (var contributor in _registryContributors)
         {
             contributor.Configure(_serviceProvider);
         }
 
+        // Start background token cache preloading (fire-and-forget)
+        if (!_tokenCacheInitialized)
+        {
+            _tokenCacheInitialized = true;
+            _ = PreloadTokenCacheAsync();
+        }
+
         _initialized = true;
+    }
+
+    private async Task PreloadTokenCacheAsync()
+    {
+        try
+        {
+            var tokenService = _serviceProvider.GetService<ITokenManagementService>();
+            if (tokenService == null) return;
+
+            var chainService = _serviceProvider.GetService<IChainManagementService>();
+            if (chainService != null)
+            {
+                var allChains = await chainService.GetAllChainsAsync();
+                var mainnetChainIds = allChains
+                    .Where(c => !c.IsTestnet)
+                    .Select(c => (long)c.ChainId)
+                    .ToList();
+
+                if (mainnetChainIds.Any())
+                {
+                    await tokenService.InitializeCacheAsync(mainnetChainIds);
+                }
+            }
+        }
+        catch
+        {
+            // Silently ignore cache preload failures - tokens will be loaded on demand
+        }
     }
 }
 ```
@@ -342,9 +387,9 @@ void ShowNotificationWithAction(string message, NotificationSeverity severity, N
 
 ### LocalStorageWalletVaultService
 
-Implements `IWalletVaultService` using browser localStorage for encrypted wallet storage.
+Extends `WalletVaultServiceBase`, backing the encrypted vault with browser localStorage.
 
-**Location**: `Services/LocalStorageWalletVaultService.cs:10-45`
+**Location**: `Services/LocalStorageWalletVaultService.cs:10-44`
 
 **Storage Key**: `Nethereum.Wallet.Vault`
 
@@ -352,22 +397,22 @@ Implements `IWalletVaultService` using browser localStorage for encrypted wallet
 
 ```csharp
 // Check if vault exists in localStorage
-async Task<bool> VaultExistsAsync()
+public override async Task<bool> VaultExistsAsync()
 ```
 
 ```csharp
-// Get encrypted vault data
-async Task<string?> GetEncryptedAsync()
+// Get encrypted vault data (called by WalletVaultServiceBase)
+protected override async Task<string?> GetEncryptedAsync()
 ```
 
 ```csharp
-// Save encrypted vault data
-async Task SaveEncryptedAsync(string encrypted)
+// Save encrypted vault data (called by WalletVaultServiceBase)
+protected override async Task SaveEncryptedAsync(string encrypted)
 ```
 
 ```csharp
-// Delete vault from localStorage
-async Task ResetStorageAsync()
+// Delete vault from localStorage (called by WalletVaultServiceBase)
+protected override async Task ResetStorageAsync()
 ```
 
 **Encryption:**
@@ -442,7 +487,7 @@ public interface IWalletDialogAccessor
 }
 ```
 
-Set by `NethereumWallet.razor:223` on initialization.
+Set by `NethereumWallet.razor:236` on initialization.
 
 ## Main Components
 
@@ -450,7 +495,7 @@ Set by `NethereumWallet.razor:223` on initialization.
 
 Root wallet component managing authentication, vault creation, and dashboard routing.
 
-**Location**: `NethereumWallet/NethereumWallet.razor:1-390`
+**Location**: `NethereumWallet/NethereumWallet.razor:1-456`
 
 **Features:**
 - **Vault Creation**: Password-protected wallet creation with strength indicator
@@ -473,6 +518,7 @@ Root wallet component managing authentication, vault creation, and dashboard rou
 [Parameter] public bool? ShowApplicationName { get; set; }
 [Parameter] public bool? ShowNetworkInHeader { get; set; }
 [Parameter] public bool? ShowAccountDetailsInHeader { get; set; }
+[Parameter] public EventCallback OnWalletReset { get; set; }
 ```
 
 **States:**
@@ -504,7 +550,7 @@ Root wallet component managing authentication, vault creation, and dashboard rou
    - Shown when wallet is unlocked and has accounts
    - Handles logout
 
-**Dispatcher Registration** (Lines 221-223):
+**Dispatcher Registration** (Lines 234-236):
 ```csharp
 WalletBlazorDispatcher.Register(RunOnUiThreadAsync);
 DialogAccessor.DialogService = DialogService;
@@ -516,7 +562,7 @@ Enables background threads (e.g., transaction monitoring) to update UI safely.
 
 Plugin-based dashboard with responsive sidebar navigation and dynamic content area.
 
-**Location**: `Dashboard/WalletDashboard.razor:1-568`
+**Location**: `Dashboard/WalletDashboard.razor:1-591`
 
 **Features:**
 - **Plugin System**: Dynamic plugin registration and rendering
@@ -539,7 +585,7 @@ Plugin-based dashboard with responsive sidebar navigation and dynamic content ar
 **Layout Modes:**
 
 **Desktop Layout** (Lines 27-67):
-- Persistent sidebar (width configurable via `GlobalConfig.SidebarWidth`, default 280px)
+- Persistent sidebar (width configurable via `GlobalConfig.SidebarWidth`, default 200px)
 - Logo and application name in sidebar header
 - Navigation menu with icons
 - Logout button at bottom
@@ -614,6 +660,8 @@ Solves Blazor parameter caching issues by delivering navigation parameters when 
 4. **NetworkManagement** (`network_management`) - Network management
 5. **TokenTransfer** (plugin ID varies) - Send tokens
 6. **PromptsPlugin** (`Prompts`) - DApp interaction prompts
+7. **Holdings** (`HoldingsPluginViewModel`) - Token holdings
+8. **Contacts** (`ContactListPluginViewModel`) - Contact list
 
 **Auto-navigation to Prompts** (Lines 436-462):
 ```csharp
@@ -817,7 +865,7 @@ Transaction approval prompt for DApp-initiated transactions.
 
 ## Localization
 
-Localization is registered in `ServiceCollectionExtensions.cs:234-264`:
+Localization is registered in `ServiceCollectionExtensions.cs:243-273`:
 
 ```csharp
 private static void RegisterWalletUILocalization(IServiceCollection services)
@@ -871,8 +919,8 @@ Global UI configuration (registered as singleton).
 - `ShowLogo` / `ShowApplicationName` - Display toggles
 - `ShowNetworkInHeader` / `ShowAccountDetailsInHeader` - Header display options
 - `DrawerBehavior` - Sidebar behavior (AlwaysShow, AlwaysHidden, Responsive)
-- `ResponsiveBreakpoint` - Pixel width for mobile/desktop switch (default: 960px)
-- `SidebarWidth` - Sidebar width in pixels (default: 280px)
+- `ResponsiveBreakpoint` - Pixel width for mobile/desktop switch (default: 1000px)
+- `SidebarWidth` - Sidebar width in pixels (default: 200px)
 
 ## Extension Methods
 
@@ -884,10 +932,13 @@ Global UI configuration (registered as singleton).
 services.AddNetworkManagement();
 ```
 
-Registers:
-- `NetworkManagementPluginViewModel`
-- `IChainManagementService`
-- `INetworkIconProvider` (default implementation)
+Registers (see `Extensions/NetworkServiceCollectionExtensions.cs:13-40`):
+- `NetworkManagementPluginViewModel` (also exposed as `IDashboardPluginViewModel`)
+- `NetworkListViewModel`, `NetworkDetailsViewModel`, `AddCustomNetworkViewModel`
+- `ChainlistRpcApiService`
+- Network component localizers
+
+The default `INetworkIconProvider` is not registered here; it is registered separately by `AddNethereumWalletUI`/`AddNethereumWalletUIScoped` at `Extensions/ServiceCollectionExtensions.cs:144`.
 
 ### Token Transfer
 
@@ -911,9 +962,9 @@ services.AddTransactionServices();
 ```
 
 Registers:
+- `IPendingTransactionService` (`PendingTransactionService`)
+- `TransactionHistoryViewModel` and its localizer
 - `TransactionMonitoringService` (IHostedService)
-- `ITransactionService`
-- Pending transaction notifications
 
 ### DApp Prompts
 
@@ -924,13 +975,11 @@ services.AddPromptsServices();
 ```
 
 Registers:
-- `PromptsPluginViewModel`
+- `NotificationBadgeViewModel`
+- `PromptsPluginViewModel` (as `IDashboardPluginViewModel`)
 - `DAppTransactionPromptViewModel`
+- `DAppPermissionPromptViewModel`
 - `DAppSignaturePromptViewModel`
-- `DAppChainSwitchPromptViewModel`
-- `DAppChainAdditionPromptViewModel`
-- `IPromptQueueService`
-- `IChainAdditionPromptService`
 
 ## Browser Compatibility
 
@@ -966,11 +1015,11 @@ builder.Services.AddNethereumWalletUI();
 // Register storage services
 builder.Services.AddSingleton<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddSingleton<IWalletStorageService, LocalStorageWalletStorageService>();
-builder.Services.AddSingleton<IEncryptionStrategy, AesEncryptionStrategy>();
+builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
 
 // Configure wallet UI
 builder.Services.AddSingleton<INethereumWalletUIConfiguration>(sp =>
-    new DefaultNethereumWalletUIConfiguration
+    new NethereumWalletUIConfiguration
     {
         ApplicationName = "My DApp Wallet",
         LogoPath = "logo.png",
@@ -1101,15 +1150,15 @@ The Trezor registry contributor automatically registers Trezor account types int
 **Platform Services:**
 - `Services/BlazorWalletDialogService.cs:10-149` - MudBlazor dialogs
 - `Services/BlazorWalletNotificationService.cs:7-138` - Snackbar notifications
-- `Services/LocalStorageWalletVaultService.cs:10-45` - Encrypted vault storage
+- `Services/LocalStorageWalletVaultService.cs:10-44` - Encrypted vault storage
 - `Services/LocalStorageWalletStorageService.cs:18-560` - Settings and data persistence
 - `Services/WalletUIBootstrapper.cs:8-38` - Registry initialization
 - `Services/WalletDialogAccessor.cs:5-14` - Dialog service accessor
 - `Services/MudLoadingService.cs` - Loading indicator service
 
 **Main Components:**
-- `NethereumWallet/NethereumWallet.razor:1-390` - Root wallet component
-- `Dashboard/WalletDashboard.razor:1-568` - Dashboard with plugin system
+- `NethereumWallet/NethereumWallet.razor:1-456` - Root wallet component
+- `Dashboard/WalletDashboard.razor:1-591` - Dashboard with plugin system
 
 **Account Creation:**
 - `WalletAccounts/Mnemonic/MnemonicAccountCreation.razor` - Mnemonic account wizard

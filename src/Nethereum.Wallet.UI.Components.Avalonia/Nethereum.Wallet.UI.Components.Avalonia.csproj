@@ -5,7 +5,7 @@
     <Description>Avalonia host controls and services for Nethereum wallet UI components.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components.Avalonia</AssemblyTitle>
     <VersionPrefix>$(NethereumVersion)</VersionPrefix>
-    <TargetFramework>$(UIFrameworksBlazor)</TargetFramework>
+    <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components.Avalonia</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Avalonia</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;Avalonia;UI</PackageTags>

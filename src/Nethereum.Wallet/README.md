@@ -29,21 +29,32 @@ Install-Package Nethereum.Wallet
 
 ## Dependencies
 
-**Package References:**
+**Project References:**
+- Nethereum.KeyStore
 - Nethereum.Accounts
+- Nethereum.Beaconchain
+- Nethereum.ChainStateVerification
 - Nethereum.Contracts
+- Nethereum.Consensus.LightClient
+- Nethereum.Consensus.Ssz
 - Nethereum.DataServices (for ChainList integration)
+- Nethereum.EVM
 - Nethereum.ENS
 - Nethereum.GnosisSafe
 - Nethereum.JsonRpc.WebSocketClient
 - Nethereum.RPC
 - Nethereum.Signer
+- Nethereum.Signer.Bls
 - Nethereum.UI
 - Nethereum.Web3
+- Nethereum.TokenServices
+
+**Package References:**
+- Nethereum.Signer.Bls.Herumi
 - Microsoft.Extensions.DependencyInjection.Abstractions 9.0.0
 
 **Target Frameworks:**
-- net9.0
+- net6.0; net8.0; net9.0; net10.0
 
 ## Account Types
 
@@ -86,7 +97,7 @@ MnemonicWalletAccount.TypeName; // "mnemonic"
 
 // Create HD wallet from mnemonic
 var mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-var hdWallet = new MinimalHDWallet(mnemonic, passphrase: "");
+var hdWallet = new MinimalHDWallet(mnemonic, password: "");
 
 // Create mnemonic account at index 0
 var account = new MnemonicWalletAccount(
@@ -202,7 +213,7 @@ Derive Ethereum keys using BIP32 with HMACSHA512.
 using Nethereum.Accounts.Bip32;
 
 var mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-var hdWallet = new MinimalHDWallet(mnemonic, passphrase: "");
+var hdWallet = new MinimalHDWallet(mnemonic, password: "");
 
 // Get key at index 0 using default Ethereum path: m/44'/60'/0'/0/0
 var key0 = hdWallet.GetEthereumKey(0);
@@ -645,14 +656,17 @@ using Nethereum.Wallet.Services;
 
 public interface IDappPermissionService
 {
-    Task<bool> CheckPermissionAsync(string origin);
-    Task GrantPermissionAsync(string origin);
-    Task RevokePermissionAsync(string origin);
-    Task<IReadOnlyList<string>> GetPermittedOriginsAsync();
+    Task<bool> IsApprovedAsync(string origin, string accountAddress);
+    Task ApproveAsync(string origin, string accountAddress);
+    Task RevokeAsync(string origin, string accountAddress);
+    Task<IReadOnlyList<DappPermission>> GetPermissionsAsync(string? accountAddress = null);
 }
+
+// Permissions are keyed by (origin, account address):
+public sealed record DappPermission(string Origin, string AccountAddress, long TimestampUtcSeconds);
 ```
 
-**From:** `src/Nethereum.Wallet/Services/IDappPermissionService.cs`
+**From:** `src/Nethereum.Wallet/Services/IDappPermissionService.cs:6`
 
 **Default Implementations:**
 
@@ -662,23 +676,23 @@ public interface IDappPermissionService
 using Nethereum.Wallet.Services;
 
 var permissive = new PermissiveDappPermissionService();
-await permissive.CheckPermissionAsync("https://app.example.com"); // Always true
+await permissive.IsApprovedAsync("https://app.example.com", "0xAddress"); // Always true
 ```
 
-**DefaultDappPermissionService** - Prompts user for permission
+**DefaultDappPermissionService** - Persists approvals via `IWalletStorageService`
 
 ```csharp
 using Nethereum.Wallet.Services;
+using Nethereum.Wallet.Storage;
 
-var permissionService = new DefaultDappPermissionService(
-    storageService,
-    promptService);
+var permissionService = new DefaultDappPermissionService(storageService);
 
-// Checks stored permissions or prompts user
-bool permitted = await permissionService.CheckPermissionAsync("https://app.example.com");
+// Approve, then check stored permissions for an origin/account pair
+await permissionService.ApproveAsync("https://app.example.com", "0xAddress");
+bool permitted = await permissionService.IsApprovedAsync("https://app.example.com", "0xAddress");
 ```
 
-**From:** `src/Nethereum.Wallet/Services/PermissiveDappPermissionService.cs`, `src/Nethereum.Wallet/Services/DefaultDappPermissionService.cs`
+**From:** `src/Nethereum.Wallet/Services/PermissiveDappPermissionService.cs:6`, `src/Nethereum.Wallet/Services/DefaultDappPermissionService.cs:9`
 
 ## Transaction Services
 
@@ -687,49 +701,70 @@ bool permitted = await permissionService.CheckPermissionAsync("https://app.examp
 Track pending transactions.
 
 ```csharp
+using System.Collections.ObjectModel;
+using System.Numerics;
 using Nethereum.Wallet.Services.Transactions;
 
 public interface IPendingTransactionService
 {
-    Task AddPendingTransactionAsync(TransactionInfo transaction);
-    Task<IReadOnlyList<TransactionInfo>> GetPendingTransactionsAsync();
-    Task RemovePendingTransactionAsync(string transactionHash);
+    Task<string> SubmitTransactionAsync(TransactionInfo transaction);
+    Task<string> RetryTransactionAsync(TransactionInfo transaction);
+    Task<ObservableCollection<TransactionInfo>> GetPendingTransactionsAsync(BigInteger chainId);
+    Task<ObservableCollection<TransactionInfo>> GetRecentTransactionsAsync(BigInteger chainId);
 
-    event EventHandler<TransactionEventArgs>? TransactionCompleted;
+    event EventHandler<TransactionSubmittedEventArgs>? TransactionSubmitted;
+    event EventHandler<TransactionStatusChangedEventArgs>? TransactionStatusChanged;
+    event EventHandler<TransactionConfirmedEventArgs>? TransactionConfirmed;
+    event EventHandler<TransactionFailedEventArgs>? TransactionFailed;
+
+    void StartMonitoring();
+    void StopMonitoring();
 }
 ```
 
-**From:** `src/Nethereum.Wallet/Services/Transactions/IPendingTransactionService.cs`
+**From:** `src/Nethereum.Wallet/Services/Transactions/IPendingTransactionService.cs:8`
 
 ### Gas Configuration
 
 Persist gas configuration per chain.
 
 ```csharp
+using System.Numerics;
 using Nethereum.Wallet.Services.Transaction;
 
 public interface IGasConfigurationPersistenceService
 {
-    Task<GasConfiguration?> GetConfigurationAsync(long chainId);
-    Task SaveConfigurationAsync(long chainId, GasConfiguration configuration);
+    Task SaveCustomGasConfigurationAsync(BigInteger chainId, CustomGasConfiguration config);
+    Task<CustomGasConfiguration?> GetCustomGasConfigurationAsync(BigInteger chainId);
+    Task ClearCustomGasConfigurationAsync(BigInteger chainId);
+    Task<bool> GetGasModePreferenceAsync(BigInteger chainId);
+    Task SaveGasModePreferenceAsync(BigInteger chainId, bool preferEip1559);
 }
 ```
 
-**From:** `src/Nethereum.Wallet/Services/Transaction/IGasConfigurationPersistenceService.cs`
+**From:** `src/Nethereum.Wallet/Services/Transaction/IGasConfigurationPersistenceService.cs:7`
 
 ### Transaction Data Decoding
 
 Decode transaction data using 4byte.directory.
 
 ```csharp
+using Nethereum.DataServices.FourByteDirectory;
 using Nethereum.Wallet.Services.Transaction;
 
-var decodingService = new FourByteDataDecodingService();
-var signature = await decodingService.DecodeAsync("0xa9059cbb");
-// Returns function signature if found in 4byte.directory
+// Requires a FourByteDirectoryService (uses its own HttpClient by default)
+var decodingService = new FourByteDataDecodingService(new FourByteDirectoryService());
+
+// transactionData, optional contractAddress, chainId (defaults to 1)
+TransactionDataInfo info = await decodingService.DecodeTransactionDataAsync(
+    "0xa9059cbb000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001");
+
+info.FunctionName;      // e.g. "transfer" if resolved via 4byte.directory
+info.TextSignature;     // e.g. "transfer(address,uint256)"
+info.DecodedParameters; // JSON string of decoded inputs, or null
 ```
 
-**From:** `src/Nethereum.Wallet/Services/Transaction/FourByteDataDecodingService.cs`
+**From:** `src/Nethereum.Wallet/Services/Transaction/FourByteDataDecodingService.cs:12`
 
 ## UI Prompt Services
 
@@ -738,135 +773,165 @@ Abstract interfaces for user interaction (implemented by UI frameworks).
 ### Login Prompt
 
 ```csharp
+using Nethereum.Wallet.UI;
+
 public interface ILoginPromptService
 {
-    Task<string?> PromptForLoginAsync();
-    Task<bool> PromptForPasswordAsync();
+    Task<bool> PromptLoginAsync();
+    Task LogoutAsync();
 }
 ```
 
-**From:** `src/Nethereum.Wallet/UI/ILoginPromptService.cs`
+**From:** `src/Nethereum.Wallet/UI/ILoginPromptService.cs:9`
 
 ### Transaction Prompt
 
 ```csharp
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Wallet.UI;
+
 public interface ITransactionPromptService
 {
-    Task<bool> PromptForTransactionApprovalAsync(TransactionInput transaction);
+    // Returns the transaction hash if approved and sent, or null if cancelled
+    Task<string?> PromptTransactionAsync(TransactionInput input);
 }
 ```
 
-**From:** `src/Nethereum.Wallet/UI/ITransactionPromptService.cs`
+**From:** `src/Nethereum.Wallet/UI/ITransactionPromptService.cs:6`
 
 ### Signature Prompt
 
 ```csharp
+using Nethereum.Wallet.UI;
+
 public interface ISignaturePromptService
 {
-    Task<bool> PromptForSignatureAsync(SignaturePromptContext context);
-    Task<bool> PromptForTypedDataSignatureAsync(TypedDataSignPromptContext context);
+    // Each returns the signature if approved, or null if cancelled
+    Task<string?> PromptSignatureAsync(SignaturePromptContext context);
+    Task<string?> PromptTypedDataSignAsync(TypedDataSignPromptContext context);
 }
 ```
 
-**From:** `src/Nethereum.Wallet/UI/ISignaturePromptService.cs`
+**From:** `src/Nethereum.Wallet/UI/ISignaturePromptService.cs:10`
 
 ### Chain Management Prompts
 
 ```csharp
+using Nethereum.Wallet.UI;
+
 // Chain addition prompt
 public interface IChainAdditionPromptService
 {
-    Task<ChainAdditionPromptResult> PromptForChainAdditionAsync(
-        ChainAdditionPromptRequest request);
+    Task<ChainAdditionPromptResult> RequestAddChainAsync(ChainAdditionPromptRequest request);
 }
 
-// Chain switch prompt
+// Chain switch prompt (returns true if the switch was approved)
 public interface IChainSwitchPromptService
 {
-    Task<ChainSwitchPromptResult> PromptForChainSwitchAsync(
-        ChainSwitchPromptRequest request);
+    Task<bool> RequestSwitchAsync(ChainSwitchPromptRequest request);
 }
 ```
 
-**From:** `src/Nethereum.Wallet/UI/IChainAdditionPromptService.cs`, `src/Nethereum.Wallet/UI/IChainSwitchPromptService.cs`
+**From:** `src/Nethereum.Wallet/UI/IChainAdditionPromptService.cs:5`, `src/Nethereum.Wallet/UI/IChainSwitchPromptService.cs:5`
 
-**NoOp Implementations:** All prompt services have NoOp implementations (e.g., `NoOpChainAdditionPromptService`) for headless scenarios.
+**NoOp Implementations:** Three NoOp prompt implementations exist for headless scenarios: `NoOpChainAdditionPromptService`, `NoOpChainSwitchPromptService`, and `NoOpDappPermissionPromptService`.
 
-**From:** `src/Nethereum.Wallet/UI/NoOpChainAdditionPromptService.cs`
+**From:** `src/Nethereum.Wallet/UI/NoOpChainAdditionPromptService.cs`, `src/Nethereum.Wallet/UI/NoOpChainSwitchPromptService.cs`, `src/Nethereum.Wallet/UI/NoOpDappPermissionPromptService.cs`
 
 ## RPC Handler Registry
 
 Register custom RPC method handlers.
 
+Handlers implement `IRpcMethodHandler` (they are objects, not lambdas):
+
 ```csharp
+using System.Threading.Tasks;
+using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.Wallet.Hosting;
+using Nethereum.Wallet.UI;
+
+public class EthAccountsHandler : IRpcMethodHandler
+{
+    public string MethodName => "eth_accounts";
+
+    public Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, IWalletContext context)
+    {
+        var result = new[] { "0xAddress1", "0xAddress2" };
+        return Task.FromResult(new RpcResponseMessage(request.Id, result));
+    }
+}
 
 var registry = new RpcHandlerRegistry();
 
-// Register custom handler
-registry.RegisterHandler("eth_accounts", async (request) =>
-{
-    return new JsonRpcResponse
-    {
-        Id = request.Id,
-        Result = new[] { "0xAddress1", "0xAddress2" }
-    };
-});
+// Register by explicit method name...
+registry.RegisterHandler("eth_accounts", new EthAccountsHandler());
+
+// ...or register using the handler's own MethodName
+registry.Register(new EthAccountsHandler());
 
 // Get handler
-var handler = registry.GetHandler("eth_accounts");
+IRpcMethodHandler? handler = registry.GetHandler("eth_accounts");
 ```
 
-**From:** `src/Nethereum.Wallet/Hosting/RpcHandlerRegistry.cs`
+**From:** `src/Nethereum.Wallet/Hosting/RpcHandlerRegistry.cs:8`
 
 ## ENS Service
 
 Resolve Ethereum Name Service names.
 
 ```csharp
+using System.Collections.Generic;
 using Nethereum.Wallet.Services;
 
 public interface IEnsService
 {
-    Task<string?> ResolveAddressAsync(string ensName);
-    Task<string?> ResolveNameAsync(string address);
+    // Reverse resolution: address -> ENS name
+    Task<string?> ResolveAddressToNameAsync(string address);
+    // Forward resolution: ENS name -> address
+    Task<string?> ResolveNameToAddressAsync(string ensName);
+    Task<Dictionary<string, string?>> BatchResolveAddressesToNamesAsync(IEnumerable<string> addresses);
+    void ClearCache();
+    string? GetCachedName(string address);
 }
 ```
 
-**From:** `src/Nethereum.Wallet/Services/IEnsService.cs`
+**From:** `src/Nethereum.Wallet/Services/IEnsService.cs:6`
 
 ## Dependency Injection
 
 Register wallet services with Microsoft.Extensions.DependencyInjection.
 
 ```csharp
+using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
 using Nethereum.Wallet;
 using Nethereum.Wallet.Hosting;
+using Nethereum.Wallet.Services;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.Storage;
+using Nethereum.Wallet.UI;
 
 services.AddSingleton<IWalletVaultService, FileWalletVaultService>(sp =>
     new FileWalletVaultService("./vault.json"));
 
-services.AddSingleton<ICoreWalletAccountService, CoreWalletAccountService>();
+services.AddSingleton<ICoreWalletAccountService>(sp =>
+    new CoreWalletAccountService(sp.GetRequiredService<WalletVault>()));
 services.AddSingleton<IWalletConfigurationService, InMemoryWalletConfigurationService>();
 services.AddSingleton<IWalletStorageService, FileWalletStorageService>();
 
 // Chain management with ChainList integration
-services.AddChainManagement(options =>
+services.AddNethereumChainManagement(options =>
 {
-    options.StrategyType = ChainFeatureStrategyType.PreconfiguredEnrich;
-    options.DefaultChainId = 1; // Ethereum Mainnet
+    options.Strategy = ChainFeatureStrategyType.PreconfiguredEnrich;
+    options.DefaultChainIds = new[] { new BigInteger(1) }; // Ethereum Mainnet
 });
 
 services.AddSingleton<RpcHandlerRegistry>();
 services.AddSingleton<NethereumWalletHostProvider>();
 
-// UI prompt services (implement or use NoOp versions)
+// UI prompt services (provide your own implementations; NoOp versions exist
+// only for chain-addition, chain-switch, and dApp-permission prompts)
 services.AddSingleton<ILoginPromptService, LoginPromptService>();
-services.AddSingleton<ITransactionPromptService, NoOpTransactionPromptService>();
-services.AddSingleton<ISignaturePromptService, NoOpSignaturePromptService>();
 services.AddSingleton<IDappPermissionPromptService, NoOpDappPermissionPromptService>();
 services.AddSingleton<IChainAdditionPromptService, NoOpChainAdditionPromptService>();
 services.AddSingleton<IChainSwitchPromptService, NoOpChainSwitchPromptService>();
@@ -888,7 +953,7 @@ using System.Numerics;
 var mnemonic = Bip39.GenerateMnemonic(12);
 
 // 2. Create HD wallet
-var hdWallet = new MinimalHDWallet(mnemonic, passphrase: "");
+var hdWallet = new MinimalHDWallet(mnemonic, password: "");
 
 // 3. Create vault
 var vault = new WalletVault(new DefaultAes256EncryptionStrategy());

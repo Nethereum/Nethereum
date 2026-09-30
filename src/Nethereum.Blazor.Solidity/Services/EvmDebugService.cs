@@ -19,15 +19,22 @@ public class EvmDebugService : IEvmDebugService
     private readonly IABIInfoStorage _abiStorage;
     private readonly FileSystemABIInfoStorage? _fileSystemStorage;
     private readonly ILogger _logger;
+    private readonly Nethereum.EVM.ChainForkResolver _forkResolver;
 
     public bool IsAvailable => _web3 != null;
 
     public EvmDebugService(IWeb3 web3, IABIInfoStorage abiStorage, FileSystemABIInfoStorage? fileSystemStorage = null, ILogger<EvmDebugService>? logger = null)
+        : this(web3, abiStorage, fileSystemStorage, logger, forkResolver: null)
+    {
+    }
+
+    public EvmDebugService(IWeb3 web3, IABIInfoStorage abiStorage, FileSystemABIInfoStorage? fileSystemStorage, ILogger<EvmDebugService>? logger, Nethereum.EVM.ChainForkResolver? forkResolver)
     {
         _web3 = web3;
         _abiStorage = abiStorage;
         _fileSystemStorage = fileSystemStorage;
         _logger = logger ?? (ILogger)NullLogger.Instance;
+        _forkResolver = forkResolver ?? Nethereum.EVM.Precompiles.DefaultChainForkResolver.Default;
     }
 
     public async Task<EvmReplayResult> ReplayTransactionAsync(string txHash)
@@ -142,8 +149,8 @@ public class EvmDebugService : IEvmDebugService
                     Step = step["pc"]?.Value<int>() ?? 0,
                     Instruction = opcode,
                 },
-                GasCost = step["gasCost"]?.Value<ulong>() ?? 0,
-                GasRemaining = step["gas"]?.Value<ulong>() ?? 0,
+                GasCost = step["gasCost"]?.Value<long>() ?? 0,
+                GasRemaining = step["gas"]?.Value<long>() ?? 0,
             };
 
             var stackArray = step["stack"] as JArray;
@@ -232,7 +239,8 @@ public class EvmDebugService : IEvmDebugService
         programContext.GasLimit = (long)block.GasLimit.Value;
 
         var program = new Program(codeBytes, programContext);
-        var evmSimulator = new EVMSimulator();
+        var evmSimulator = new EVMSimulator(_forkResolver.ResolveConfigAt(
+        (long)chainId.Value, (long)txn.BlockNumber.Value, (ulong)block.Timestamp.Value));
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         try

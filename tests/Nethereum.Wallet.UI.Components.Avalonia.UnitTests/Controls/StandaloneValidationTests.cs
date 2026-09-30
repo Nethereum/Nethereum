@@ -1,8 +1,5 @@
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests.Controls;
 
-/// <summary>
-/// Standalone validation tests that don't depend on complex project dependencies
-/// </summary>
 public class StandaloneValidationTests
 {
     [Theory]
@@ -14,11 +11,9 @@ public class StandaloneValidationTests
     [InlineData("ValidPassword123!", "ValidPassword123!", true, "")]
     public void NewVaultValidation_WorksCorrectly(string newPassword, string confirmPassword, bool shouldBeValid, string expectedError)
     {
-        // This tests the exact validation logic that should be in the NethereumWallet component
         string errorMessage = "";
         bool isValid = false;
 
-        // Password validation logic
         if (string.IsNullOrWhiteSpace(newPassword))
         {
             errorMessage = "Password required";
@@ -40,7 +35,6 @@ public class StandaloneValidationTests
             isValid = true;
         }
 
-        // Verify validation results
         isValid.Should().Be(shouldBeValid, $"Validation should return {shouldBeValid} for passwords '{newPassword}'/'{confirmPassword}'");
         errorMessage.Should().Be(expectedError, $"Error message should be '{expectedError}' for passwords '{newPassword}'/'{confirmPassword}'");
     }
@@ -51,7 +45,6 @@ public class StandaloneValidationTests
     [InlineData("ValidPassword", true, "")]
     public void LoginValidation_WorksCorrectly(string password, bool shouldBeValid, string expectedError)
     {
-        // This tests login validation logic
         string errorMessage = "";
         bool isValid = false;
 
@@ -71,30 +64,25 @@ public class StandaloneValidationTests
     [Fact]
     public void VaultCreationFlow_ValidatesCorrectly()
     {
-        // Test the complete vault creation flow validation
 
-        // Step 1: Empty form should not allow creation
         var newPassword = "";
         var confirmPassword = "";
         var canCreate = CanCreateVault(newPassword, confirmPassword);
 
         canCreate.Should().BeFalse("Empty passwords should not allow vault creation");
 
-        // Step 2: Single password should not allow creation
         newPassword = "ValidPassword123!";
         confirmPassword = "";
         canCreate = CanCreateVault(newPassword, confirmPassword);
 
         canCreate.Should().BeFalse("Mismatched passwords should not allow vault creation");
 
-        // Step 3: Matching weak passwords should not allow creation
         newPassword = "weak";
         confirmPassword = "weak";
         canCreate = CanCreateVault(newPassword, confirmPassword);
 
         canCreate.Should().BeFalse("Weak passwords should not allow vault creation");
 
-        // Step 4: Valid matching passwords should allow creation
         newPassword = "ValidPassword123!";
         confirmPassword = "ValidPassword123!";
         canCreate = CanCreateVault(newPassword, confirmPassword);
@@ -105,23 +93,19 @@ public class StandaloneValidationTests
     [Fact]
     public void VaultLoginFlow_ValidatesCorrectly()
     {
-        // Test vault login validation
 
-        // Step 1: No vault exists - can't login
         var vaultExists = false;
         var password = "ValidPassword";
         var canLogin = CanLogin(vaultExists, password);
 
         canLogin.Should().BeFalse("Should not be able to login when no vault exists");
 
-        // Step 2: Vault exists but empty password - can't login
         vaultExists = true;
         password = "";
         canLogin = CanLogin(vaultExists, password);
 
         canLogin.Should().BeFalse("Should not be able to login with empty password");
 
-        // Step 3: Vault exists with password - can login
         vaultExists = true;
         password = "ValidPassword";
         canLogin = CanLogin(vaultExists, password);
@@ -132,9 +116,7 @@ public class StandaloneValidationTests
     [Fact]
     public void WalletStateLogic_WorksCorrectly()
     {
-        // Test the wallet state machine
 
-        // Initial state
         bool vaultExists = false;
         bool isUnlocked = false;
         bool hasAccounts = false;
@@ -145,7 +127,6 @@ public class StandaloneValidationTests
         state.CanLogin.Should().BeFalse("Should not be able to login initially");
         state.ShowWalletContent.Should().BeFalse("Should not show content initially");
 
-        // After creating vault
         vaultExists = true;
         isUnlocked = true;
         hasAccounts = false;
@@ -156,7 +137,6 @@ public class StandaloneValidationTests
         state.CanLogin.Should().BeFalse("Should not need login when unlocked");
         state.ShowWalletContent.Should().BeFalse("Should not show content without accounts");
 
-        // After adding accounts
         hasAccounts = true;
 
         state = GetWalletState(vaultExists, isUnlocked, hasAccounts);
@@ -164,7 +144,6 @@ public class StandaloneValidationTests
         state.ShowWalletContent.Should().BeTrue("Should show content when ready");
     }
 
-    // Helper methods that simulate the logic that should be in NethereumWalletViewModel
 
     private bool CanCreateVault(string newPassword, string confirmPassword)
     {

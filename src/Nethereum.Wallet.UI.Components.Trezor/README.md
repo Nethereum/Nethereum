@@ -10,7 +10,7 @@ dotnet add package Nethereum.Wallet.UI.Components.Trezor
 
 ## Target Framework
 
-- net9.0
+- net10.0
 
 ## Dependencies
 
@@ -18,7 +18,7 @@ dotnet add package Nethereum.Wallet.UI.Components.Trezor
 - Nethereum.Wallet.Trezor - Trezor device communication and account management
 - Nethereum.Wallet.UI.Components - Base UI components and MVVM framework
 
-Source: Nethereum.Wallet.UI.Components.Trezor.csproj:15-18
+Source: Nethereum.Wallet.UI.Components.Trezor.csproj:16-19
 
 ## Overview
 
@@ -645,10 +645,10 @@ Source: ViewModels/TrezorGroupDetailsViewModel.cs:214-217
 All ViewModels support full localization for English (en-US) and Spanish (es-ES).
 
 **Localizer Classes:**
-- TrezorAccountCreationLocalizer - 40+ localization keys
-- TrezorVaultAccountCreationLocalizer - 38+ localization keys
-- TrezorAccountDetailsLocalizer - 30+ localization keys
-- TrezorGroupDetailsLocalizer - 34+ localization keys
+- TrezorAccountCreationLocalizer - 30 localization keys
+- TrezorVaultAccountCreationLocalizer - 28 localization keys
+- TrezorAccountDetailsLocalizer - 19 localization keys
+- TrezorGroupDetailsLocalizer - 24 localization keys
 
 ### Example Localization Keys
 
@@ -755,8 +755,10 @@ services.AddSingleton<IComponentLocalizer<TrezorGroupDetailsViewModel>, TrezorGr
 **Dependencies:**
 ```csharp
 services.AddScoped<TrezorWalletAccountService>();
-services.AddScoped<ITrezorDeviceDiscoveryService, TrezorDeviceDiscoveryService>();
+services.AddScoped<ITrezorDeviceDiscoveryService, YourTrezorDeviceDiscoveryService>();
 ```
+
+`ITrezorDeviceDiscoveryService` (from `Nethereum.Wallet.Trezor`) is the discovery contract these ViewModels depend on. This package does not ship a concrete implementation - the host application supplies its own that talks to the connected Trezor device.
 
 ## Workflow Examples
 

@@ -10,7 +10,7 @@ dotnet add package Nethereum.Wallet.UI.Components.Blazor.Trezor
 
 ## Target Framework
 
-- net9.0
+- net10.0
 
 ## Supported Platform
 
@@ -19,7 +19,7 @@ dotnet add package Nethereum.Wallet.UI.Components.Blazor.Trezor
 ## Dependencies
 
 ### NuGet Packages
-- Microsoft.AspNetCore.Components.Web 9.0.6
+- Microsoft.AspNetCore.Components.Web 10.0.0
 
 ### Nethereum Packages
 - Nethereum.Wallet.UI.Components.Blazor - Base Blazor components and services
@@ -936,11 +936,13 @@ Source: Extensions/ServiceCollectionExtensions.cs:30-35
 
 ```csharp
 // Program.cs or Startup.cs
-builder.Services.AddNethereumWalletBlazorComponents();  // Base Blazor components
-builder.Services.AddTrezorWalletBlazorComponents();     // Trezor Blazor support
+builder.Services.AddNethereumWalletUI();             // Base Blazor components
+builder.Services.AddTrezorWalletBlazorComponents();  // Trezor Blazor support
 
-// Add Trezor device service
-builder.Services.AddScoped<ITrezorDeviceDiscoveryService, TrezorDeviceDiscoveryService>();
+// Trezor device discovery is platform/app specific: no concrete
+// ITrezorDeviceDiscoveryService is shipped by the referenced wallet packages,
+// so supply your own implementation (see the NetDapps sample app for one).
+builder.Services.AddScoped<ITrezorDeviceDiscoveryService, MyTrezorDeviceDiscoveryService>();
 builder.Services.AddScoped<TrezorWalletAccountService>();
 ```
 
@@ -982,7 +984,7 @@ The registry contributor automatically registers all Trezor components when the 
 - **Nethereum.Wallet.UI.Components.Trezor** - Trezor ViewModels and business logic
 - **Nethereum.Wallet.UI.Components.Blazor** - Base Blazor components
 - **Nethereum.Wallet.Trezor** - Trezor device communication
-- **Nethereum.Signer.Trezor.Abstractions** - ITrezorPromptHandler interface
+- **Nethereum.Signer.Trezor** - Trezor signer; ships the `ITrezorPromptHandler` interface (namespace `Nethereum.Signer.Trezor.Abstractions`)
 
 ### See Also
 - **Nethereum.Wallet.UI.Components** - Platform-agnostic MVVM components

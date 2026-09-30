@@ -3,33 +3,27 @@ using Nethereum.Wallet.UI.Components.Core.Configuration;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests.Controls;
 
-/// <summary>
-/// Simple tests for NethereumWallet without complex mocking
-/// </summary>
 public class SimpleNethereumWalletTests
 {
     [Fact]
     public void ViewModel_Properties_InitializeCorrectly()
     {
-        // This tests basic property initialization without mocking complex dependencies
         var config = new WalletSecurityConfiguration
         {
             MinPasswordLength = 8
         };
 
-        // Test that basic properties work
         config.MinPasswordLength.Should().Be(8);
     }
 
     [Theory]
-    [InlineData("", "", false)]  // Both empty
-    [InlineData("password", "", false)]  // Confirm empty
-    [InlineData("", "password", false)]  // New empty
-    [InlineData("password", "different", false)]  // Mismatch
-    [InlineData("password", "password", true)]  // Match
+    [InlineData("", "", false)]
+    [InlineData("password", "", false)]
+    [InlineData("", "password", false)]
+    [InlineData("password", "different", false)]
+    [InlineData("password", "password", true)]
     public void Password_Validation_Logic_Works(string newPassword, string confirmPassword, bool shouldBeValid)
     {
-        // Test the basic password validation logic without ViewModel complexity
         var isValid = !string.IsNullOrWhiteSpace(newPassword) &&
                      !string.IsNullOrWhiteSpace(confirmPassword) &&
                      newPassword == confirmPassword;
@@ -44,7 +38,6 @@ public class SimpleNethereumWalletTests
     [InlineData("", 8, false)]
     public void Password_Length_Validation_Works(string password, int minLength, bool shouldBeValid)
     {
-        // Test password length validation logic
         var isValid = !string.IsNullOrWhiteSpace(password) && password.Length >= minLength;
 
         isValid.Should().Be(shouldBeValid);
@@ -53,12 +46,10 @@ public class SimpleNethereumWalletTests
     [Fact]
     public void Wallet_State_Logic_IsCorrect()
     {
-        // Test basic state logic without complex dependencies
         bool vaultExists = false;
         bool isUnlocked = false;
         bool hasAccounts = false;
 
-        // Initial state
         var canCreateWallet = !vaultExists;
         var canLogin = vaultExists && !isUnlocked;
         var showWalletContent = vaultExists && isUnlocked && hasAccounts;
@@ -67,7 +58,6 @@ public class SimpleNethereumWalletTests
         canLogin.Should().BeFalse();
         showWalletContent.Should().BeFalse();
 
-        // After vault creation
         vaultExists = true;
         isUnlocked = true;
         hasAccounts = true;
@@ -84,7 +74,6 @@ public class SimpleNethereumWalletTests
     [Fact]
     public void Validation_Error_Messages_AreCorrect()
     {
-        // Test that we can generate proper validation error messages
         var passwordRequired = "Password required";
         var passwordMismatch = "Password mismatch";
         var passwordTooShort = "Password too short";

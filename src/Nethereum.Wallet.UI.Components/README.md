@@ -10,21 +10,21 @@ dotnet add package Nethereum.Wallet.UI.Components
 
 ## Target Framework
 
-- net9.0
+- net10.0
 
 ## Dependencies
 
 ### NuGet Packages
 - CommunityToolkit.Mvvm 8.4.0 - MVVM framework
-- Microsoft.AspNetCore.Components.WebAssembly 9.0.0 - Razor component support
-- Microsoft.Extensions.Hosting.Abstractions 9.0.0 - Hosted service abstractions
+- Microsoft.AspNetCore.Components.WebAssembly 10.0.0 - Razor component support
+- Microsoft.Extensions.Hosting.Abstractions 10.0.0 - Hosted service abstractions
 
 ### Nethereum Packages
 - Nethereum.DataServices - Chain data and 4Byte directory services
 - Nethereum.RPC - RPC client functionality
 - Nethereum.Wallet - Core wallet types and services
 
-Source: Nethereum.Wallet.UI.Components.csproj:16-26
+Source: Nethereum.Wallet.UI.Components.csproj:17-26
 
 ## Architecture
 
@@ -41,7 +41,9 @@ public interface IComponentRegistry
     void Register<TViewModel, TComponent>()
         where TViewModel : class
         where TComponent : class;
+    void Register(Type viewModelType, Type componentType);
     Type? GetComponentType<TViewModel>() where TViewModel : class;
+    Type? GetComponentType(Type viewModelType);
     IEnumerable<Type> GetRegisteredViewModelTypes();
 }
 ```
@@ -61,12 +63,13 @@ public interface IAccountCreationRegistry
         where TComponent : class;
     IEnumerable<IAccountCreationViewModel> GetAvailableAccountTypes();
     Type? GetComponentType(IAccountCreationViewModel viewModel);
+    Type? GetComponentType<TViewModel>() where TViewModel : class, IAccountCreationViewModel;
 }
 ```
 Source: WalletAccounts/IAccountCreationRegistry.cs:6-14
 
 Returns ViewModels filtered by `IsVisible` and ordered by `SortOrder`:
-Source: WalletAccounts/AccountCreationRegistry.cs:32-34
+Source: WalletAccounts/AccountCreationRegistry.cs:33-34
 
 **IAccountTypeMetadataRegistry** - Provides account type metadata
 ```csharp
@@ -80,9 +83,6 @@ public interface IAccountTypeMetadataRegistry
 ```
 Source: WalletAccounts/IAccountTypeMetadataRegistry.cs:5-11
 
-Performs case-insensitive TypeName matching.
-Source: WalletAccounts/AccountTypeMetadataRegistry.cs:24-25
-
 #### 3. Dashboard Plugin System
 
 **IDashboardPluginRegistry** - Manages dashboard plugins
@@ -92,12 +92,10 @@ public interface IDashboardPluginRegistry
     IEnumerable<IDashboardPluginViewModel> GetAvailablePlugins();
     IDashboardPluginViewModel? GetPlugin(string pluginId);
     Type? GetComponentType(IDashboardPluginViewModel viewModel);
+    Type? GetComponentType<TViewModel>() where TViewModel : class, IDashboardPluginViewModel;
 }
 ```
 Source: Dashboard/IDashboardPluginRegistry.cs:6-12
-
-Returns plugins filtered by `IsVisible && IsEnabled && IsAvailable()` and ordered by `SortOrder`.
-Source: Dashboard/DashboardPluginRegistry.cs:26
 
 **IDashboardPluginViewModel** interface:
 ```csharp
@@ -113,7 +111,7 @@ public interface IDashboardPluginViewModel
     bool IsAvailable();
 }
 ```
-Source: Dashboard/IDashboardPluginViewModel.cs:5-16
+Source: Dashboard/IDashboardPluginViewModel.cs:5-15
 
 #### 4. Account Details Registry
 
@@ -124,14 +122,14 @@ public interface IAccountDetailsRegistry
     void Register<TViewModel, TComponent>()
         where TViewModel : class, IAccountDetailsViewModel
         where TComponent : class;
+    IEnumerable<IAccountDetailsViewModel> GetAvailableAccountDetailTypes();
+    Type? GetComponentType(IAccountDetailsViewModel viewModel);
+    Type? GetComponentType<TViewModel>() where TViewModel : class, IAccountDetailsViewModel;
     Type? GetViewModelType(IWalletAccount account);
     Type? GetComponentType(Type viewModelType);
 }
 ```
 Source: AccountDetails/IAccountDetailsRegistry.cs:7-17
-
-Iterates ViewModels calling `CanHandle(account)` to find appropriate ViewModel.
-Source: AccountDetails/AccountDetailsRegistry.cs:53-60
 
 #### 5. Group Details Registry
 
@@ -173,17 +171,30 @@ Enables packages like Nethereum.Wallet.UI.Components.Trezor to register their Vi
 
 **MnemonicAccountCreationViewModel** - Create/import HD wallet accounts
 
-Properties:
+Observable Properties (CommunityToolkit.Mvvm source-generated):
 ```csharp
-string Mnemonic { get; set; }              // BIP-39 mnemonic phrase
+string Mnemonic { get; set; }               // BIP-39 mnemonic phrase
 string MnemonicLabel { get; set; }          // User-friendly name
 string MnemonicPassphrase { get; set; }     // Optional BIP-39 passphrase
 bool IsRevealed { get; set; }               // Show/hide mnemonic
 bool IsBackedUp { get; set; }               // User confirmed backup
 bool IsGenerateMode { get; set; }           // true = generate, false = import
-int WordCount { get; set; }                 // 12 or 24 words
+string ErrorMessage { get; set; }
+string ValidationMessage { get; set; }
+string DerivedAddress { get; set; }         // Address derived at index 0
+string FinalAccountName { get; set; }
 ```
-Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:22-50
+Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:22-31
+
+Computed Properties (read-only):
+```csharp
+bool IsValidMnemonic { get; }
+int WordCount { get; }                       // 12 or 24 words
+bool HasValidWordCount { get; }
+string MnemonicStrength { get; }
+bool CanCreateAccount { get; }               // Valid + (backed up when generating)
+```
+Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:49-53
 
 Commands:
 - `GenerateMnemonicAsync()` - Generates 12-word mnemonic
@@ -191,30 +202,41 @@ Commands:
 - `ToggleRevealAsync()` - Show/hide mnemonic
 - `ConfirmBackupAsync()` - Mark as backed up
 - `SwitchToImportModeAsync()` / `SwitchToGenerateModeAsync()` - Toggle mode
+- `CopyMnemonicToClipboardAsync()` / `CopyAddressToClipboardAsync()` - Clipboard helpers
 
-Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:66-147
+Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:65-147, 280-295
 
-Mnemonic Validation:
+Mnemonic Validation (private helper backing `IsValidMnemonic`):
 ```csharp
-public (bool IsValid, string Message) ValidateMnemonic()
+private (bool IsValid, string Message) ValidateMnemonic()
 {
     if (string.IsNullOrWhiteSpace(Mnemonic))
-        return (false, "Mnemonic phrase is required");
+        return (false, "Mnemonic is required");
 
     var words = Mnemonic.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
     if (words.Length != 12 && words.Length != 24)
-        return (false, $"Mnemonic must be 12 or 24 words (found {words.Length})");
+        return (false, $"Mnemonic must be 12 or 24 words, got {words.Length}");
+
+    var invalidWords = new List<string>();
+    foreach (var word in words)
+    {
+        if (!Bip39.WordList.Contains(word.ToLowerInvariant()))
+            invalidWords.Add(word);
+    }
+
+    if (invalidWords.Any())
+        return (false, $"Invalid words: {string.Join(", ", invalidWords)}");
 
     try
     {
-        var hdWallet = new MinimalHDWallet(Mnemonic, MnemonicPassphrase);
-        var account = hdWallet.GetAccount(0);
-        return (true, "Valid mnemonic phrase");
+        var hdWallet = new MinimalHDWallet(Mnemonic, null);
+        var address = hdWallet.GetEthereumAddress(0);
+        return (true, $"Valid {words.Length}-word mnemonic");
     }
     catch
     {
-        return (false, "Invalid mnemonic phrase");
+        return (false, "Invalid mnemonic checksum");
     }
 }
 ```
@@ -224,30 +246,28 @@ Account Creation:
 ```csharp
 public override IWalletAccount CreateAccount(WalletVault vault)
 {
+    if (!CanCreateAccount)
+        throw new InvalidOperationException("Cannot create account: validation failed");
+
+    if (string.IsNullOrWhiteSpace(MnemonicLabel))
+    {
+        var existingAccounts = vault.Accounts.Count;
+        MnemonicLabel = existingAccounts == 0 ? "Main Wallet" : $"Account {existingAccounts + 1}";
+    }
+
+    var mnemonicInfo = new MnemonicInfo(MnemonicLabel, Mnemonic, MnemonicPassphrase);
+    vault.AddMnemonic(mnemonicInfo);
+
     var hdWallet = new MinimalHDWallet(Mnemonic, MnemonicPassphrase);
-    var mnemonicAccount = new MnemonicWalletAccount
-    {
-        MnemonicId = Guid.NewGuid().ToString(),
-        Name = MnemonicLabel,
-        EncryptedMnemonic = vault.EncryptData(Mnemonic),
-        EncryptedPassphrase = string.IsNullOrEmpty(MnemonicPassphrase)
-            ? null
-            : vault.EncryptData(MnemonicPassphrase),
-        CreatedAt = DateTime.UtcNow
-    };
+    var address = hdWallet.GetEthereumAddress(0);
 
-    var account = hdWallet.GetAccount(0);
-    var walletAccount = new MnemonicWalletAccountItem
-    {
-        Id = Guid.NewGuid().ToString(),
-        Name = $"{MnemonicLabel} - Account 1",
-        Address = account.Address,
-        Index = 0,
-        MnemonicId = mnemonicAccount.MnemonicId,
-        // ...
-    };
+    var accountName = !string.IsNullOrWhiteSpace(FinalAccountName)
+        ? FinalAccountName
+        : MnemonicLabel;
 
-    return walletAccount;
+    // MnemonicWalletAccount exposes only a positional constructor:
+    // (string address, string label, int index, string mnemonicId, MinimalHDWallet wallet)
+    return new MnemonicWalletAccount(address, accountName, 0, mnemonicInfo.Id, hdWallet);
 }
 ```
 Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:224-257
@@ -256,127 +276,137 @@ Source: WalletAccounts/Mnemonic/MnemonicAccountCreationViewModel.cs:224-257
 
 Commands:
 - `RemoveAccountAsync()` - Delete account with confirmation
-- `SaveAccountNameAsync()` - Update account name
-- `RevealPrivateKeyAsync(password)` - Show private key with password confirmation
+- `StartEditAccountNameAsync()` / `SaveAccountNameAsync()` / `CancelEditAccountNameAsync()` - Edit account name
+- `RevealPrivateKeyAsync(string password)` - Show private key with password confirmation
+- `CloseRevealedPrivateKey()` - Hide the revealed private key
 
-Source: WalletAccounts/Mnemonic/MnemonicAccountDetailsViewModel.cs:88-254
+Source: WalletAccounts/Mnemonic/MnemonicAccountDetailsViewModel.cs:88-260
 
 Derivation Path:
 ```csharp
 public string GetDerivationPath()
 {
-    var index = GetAccountIndex();
-    return $"m/44'/60'/0'/0/{index}";  // BIP-44 Ethereum path
+    if (Account is MnemonicWalletAccount mnemonicAccount)
+        return $"m/44'/60'/0'/0/{mnemonicAccount.Index}";  // BIP-44 Ethereum path
+    return "";
 }
 ```
 Source: WalletAccounts/Mnemonic/MnemonicAccountDetailsViewModel.cs:262-269
 
-**VaultMnemonicAccountViewModel** - Create account from existing vault mnemonic
+**VaultMnemonicAccountViewModel** - Create account from an existing vault mnemonic
 
 Form Steps:
 ```csharp
 public enum FormStep
 {
-    SelectMnemonic,   // Choose from vault mnemonics
-    Configure,        // Set account index
-    Confirm           // Review and create
+    SelectMnemonic = 0,   // Choose from vault mnemonics
+    Configure = 1,        // Set account index
+    Confirm = 2           // Review and create
 }
 ```
 Source: WalletAccounts/Mnemonic/VaultMnemonicAccountViewModel.cs:28-33
 
-Properties:
+Observable Properties:
 ```csharp
 string SelectedMnemonicId { get; set; }
-int AccountIndex { get; set; }              // Derivation index
-string DerivedAddress { get; set; }         // Preview address
+int AccountIndex { get; set; }                       // Derivation index (default 1)
+string AccountName { get; set; }
+FormStep CurrentStep { get; set; }                   // Wizard step
 List<MnemonicInfo> AvailableMnemonics { get; set; }
+string DerivedAddress { get; set; }                  // Preview address
+bool HasDuplicateAccount { get; set; }
+bool IsLoading { get; set; }
 ```
-Source: WalletAccounts/Mnemonic/VaultMnemonicAccountViewModel.cs:35-40
+Source: WalletAccounts/Mnemonic/VaultMnemonicAccountViewModel.cs:35-44
 
 **MnemonicListViewModel** - Manage vault mnemonics
 
 Commands:
 - `LoadMnemonicsAsync()` - Load all mnemonics from vault
+- `RefreshAsync()` - Reload the list
 - `DeleteMnemonicAsync(MnemonicItemViewModel)` - Delete mnemonic with validation
 
-Source: WalletAccounts/Mnemonic/MnemonicListViewModel.cs:51-148
-
-Validates that no accounts reference the mnemonic before deletion.
-Source: WalletAccounts/Mnemonic/MnemonicListViewModel.cs:113-130
+Source: WalletAccounts/Mnemonic/MnemonicListViewModel.cs:44-103
 
 #### 2. Private Key
 
 **PrivateKeyAccountCreationViewModel** - Import account from private key
 
-Properties:
+Observable Properties:
 ```csharp
 string PrivateKey { get; set; }             // 64 hex characters
 string Label { get; set; }                  // Account name
 bool IsRevealed { get; set; }               // Show/hide private key
+string ErrorMessage { get; set; }
+string ValidationMessage { get; set; }
 string DerivedAddress { get; set; }         // Calculated address
-bool IsValidPrivateKey { get; set; }        // Validation result
-string PrivateKeyFormat { get; set; }       // Format description
 ```
-Source: WalletAccounts/PrivateKey/PrivateKeyAccountCreationViewModel.cs:40-48
+Source: WalletAccounts/PrivateKey/PrivateKeyAccountCreationViewModel.cs:40-45
 
-Validation:
+Computed Properties (read-only):
 ```csharp
-public (bool IsValid, string Message) ValidatePrivateKey()
+bool IsValidPrivateKey { get; }
+string PrivateKeyFormat { get; }            // Format description
+bool CanCreateAccount { get; }
+```
+Source: WalletAccounts/PrivateKey/PrivateKeyAccountCreationViewModel.cs:47-49
+
+Validation (private helper backing `IsValidPrivateKey`):
+```csharp
+private (bool IsValid, string Message) ValidatePrivateKey()
 {
     if (string.IsNullOrWhiteSpace(PrivateKey))
-        return (false, "Private key is required");
+        return (false, _localizer.GetString(Keys.PrivateKeyRequiredError));
 
     var cleanKey = CleanPrivateKey(PrivateKey);
 
-    if (cleanKey.Length != 64)
-        return (false, $"Private key must be 64 hexadecimal characters (found {cleanKey.Length})");
+    if (!Regex.IsMatch(cleanKey, "^[0-9a-fA-F]+$"))
+        return (false, _localizer.GetString(Keys.InvalidHexStringError));
 
-    if (!System.Text.RegularExpressions.Regex.IsMatch(cleanKey, "^[0-9a-fA-F]{64}$"))
-        return (false, "Private key must contain only hexadecimal characters (0-9, a-f, A-F)");
+    // Check length (32 bytes = 64 hex characters)
+    if (cleanKey.Length != 64)
+        return (false, _localizer.GetString(Keys.InvalidLengthError, cleanKey.Length));
 
     if (cleanKey.All(c => c == '0'))
-        return (false, "Private key cannot be all zeros");
+        return (false, _localizer.GetString(Keys.PrivateKeyCannotBeZeroError));
 
     try
     {
-        var key = new EthECKey(cleanKey);
-        DerivedAddress = key.GetPublicAddress();
-        return (true, "Valid private key");
+        var address = new EthECKey(cleanKey).GetPublicAddress();
+        return (true, _localizer.GetString(Keys.ValidPrivateKeySuccess, address));
     }
-    catch
+    catch (Exception ex)
     {
-        return (false, "Invalid private key format");
+        return (false, _localizer.GetString(Keys.InvalidPrivateKeyError, ex.Message));
     }
 }
 ```
 Source: WalletAccounts/PrivateKey/PrivateKeyAccountCreationViewModel.cs:93-120
 
-Cleans input by removing "0x" prefix.
+Cleans input by removing the "0x" prefix.
 Source: WalletAccounts/PrivateKey/PrivateKeyAccountCreationViewModel.cs:122-133
 
 **PrivateKeyAccountDetailsViewModel** - View/manage private key account
 
-Commands:
-- `SaveAccountName()` - Update account name
-- `RevealPrivateKey(password)` - Show private key with password protection
-- `RemoveAccount()` - Delete account
-
-Source: WalletAccounts/PrivateKey/PrivateKeyAccountDetailsViewModel.cs:82-231
+Provides commands to edit the account name, reveal the private key with password protection, and remove the account.
+Source: WalletAccounts/PrivateKey/PrivateKeyAccountDetailsViewModel.cs:81-233
 
 #### 3. View-Only
 
 **ViewOnlyAccountCreationViewModel** - Watch-only account
 
-Properties:
+Observable Properties:
 ```csharp
 string ViewOnlyAddress { get; set; }        // Ethereum address to watch
 string Label { get; set; }                  // Account name
+string ErrorMessage { get; set; }
 ```
-Source: WalletAccounts/ViewOnly/ViewOnlyAccountCreationViewModel.cs:18-19
+Source: WalletAccounts/ViewOnly/ViewOnlyAccountCreationViewModel.cs:28-30
 
-Validation:
+Validation (`CanCreateAccount`):
+- Address must be non-empty
 - Address must start with "0x"
-- Address must be 42 characters (20 bytes)
+- Address must be 42 characters
 
 Source: WalletAccounts/ViewOnly/ViewOnlyAccountCreationViewModel.cs:32-34
 
@@ -386,21 +416,25 @@ Source: WalletAccounts/ViewOnly/ViewOnlyAccountCreationViewModel.cs:46
 **ViewOnlyAccountDetailsViewModel** - Read-only account operations
 
 No private key or signing operations available. Can only view balances and transaction history.
-Source: WalletAccounts/ViewOnly/ViewOnlyAccountDetailsViewModel.cs:14-185
+Source: WalletAccounts/ViewOnly/ViewOnlyAccountDetailsViewModel.cs:59-179
 
 #### 4. Smart Contract (Account Abstraction)
 
-**SmartContractAccountCreationViewModel** - ERC-4337 account abstraction
+**SmartContractAccountCreationViewModel** - Smart contract wallet account
 
-Properties:
+Observable Properties:
 ```csharp
 string Address { get; set; }                // Smart contract address
 string Label { get; set; }                  // Account name
+string ErrorMessage { get; set; }
 ```
-Source: WalletAccounts/SmartContract/SmartContractAccountCreationViewModel.cs:18-19
+Source: WalletAccounts/SmartContract/SmartContractAccountCreationViewModel.cs:28-30
 
-Supports ERC-4337, Safe, and Argent wallet contracts.
-Source: WalletAccounts/SmartContract/SmartContractAccountMetadataViewModel.cs
+Creates a `SmartContractWalletAccount` from the supplied contract address.
+Source: WalletAccounts/SmartContract/SmartContractAccountCreationViewModel.cs:46
+
+**SmartContractAccountMetadataViewModel** provides the display metadata (`TypeName` from `SmartContractWalletAccount.TypeName`, icon `smart_toy`, color theme `warning`).
+Source: WalletAccounts/SmartContract/SmartContractAccountMetadataViewModel.cs:15-23
 
 ### Account Type Extensibility
 
@@ -433,7 +467,7 @@ public interface IAccountTypeMetadata
     bool IsVisible { get; }
 }
 ```
-Source: WalletAccounts/IAccountTypeMetadata.cs:3-13
+Source: WalletAccounts/IAccountTypeMetadata.cs:3-12
 
 **IAccountDetailsViewModel** interface:
 ```csharp
@@ -442,9 +476,14 @@ public interface IAccountDetailsViewModel
     string AccountType { get; }
     bool CanHandle(IWalletAccount account);
     Task InitializeAsync(IWalletAccount account);
+    IWalletAccount? Account { get; }
+    bool IsLoading { get; }
+    string ErrorMessage { get; }
+    string SuccessMessage { get; }
+    void ClearMessages();
 }
 ```
-Source: AccountDetails/IAccountDetailsViewModel.cs
+Source: AccountDetails/IAccountDetailsViewModel.cs:6-16
 
 Custom account types can be added by implementing these interfaces and registering via `IWalletUIRegistryContributor`.
 
@@ -456,7 +495,7 @@ Custom account types can be added by implementing these interfaces and registeri
 
 Dependencies:
 ```csharp
-private readonly IChainManagementService _chainManagement;
+private readonly IChainManagementService _chainManagementService;
 private readonly IRpcEndpointService _rpcEndpointService;
 ```
 Source: Networks/AddCustomNetworkViewModel.cs:14-15
@@ -464,62 +503,89 @@ Source: Networks/AddCustomNetworkViewModel.cs:14-15
 Properties:
 ```csharp
 NetworkConfiguration Network { get; set; }
+bool IsLoading { get; set; }
+string? ErrorMessage { get; set; }
+string? SuccessMessage { get; set; }
 bool IsFormValid { get; }
+Action<BigInteger>? OnNetworkAdded { get; set; }
+Action? OnCancel { get; set; }
 ```
 Source: Networks/AddCustomNetworkViewModel.cs:17-25
 
 Commands:
 ```csharp
-SaveNetworkAsync()                           // Add/update network
-TestRpcEndpointAsync(RpcEndpointInfo)       // Test RPC connectivity
-AddRpcEndpoint()                             // Add RPC URL
-RemoveRpcEndpoint(RpcEndpointInfo)          // Remove RPC URL
-AddBlockExplorer()                           // Add explorer URL
-RemoveBlockExplorer(BlockExplorerInfo)      // Remove explorer URL
+SaveNetworkAsync()                            // Validate and add the custom chain
+Cancel()
+Reset()
+AddRpcEndpoint()
+RemoveRpcEndpoint(RpcEndpointInfo)
+AddBlockExplorer()
+RemoveBlockExplorer(string explorer)
+TestRpcEndpointAsync(RpcEndpointInfo)         // Test RPC connectivity
 ```
-Source: Networks/AddCustomNetworkViewModel.cs:38-141
+Source: Networks/AddCustomNetworkViewModel.cs:37-141
 
-**NetworkConfiguration** model:
+**NetworkConfiguration** model - a validation-aware, observable model (not a plain DTO):
 ```csharp
-public class NetworkConfiguration
+public partial class NetworkConfiguration : LocalizedValidationModel
 {
-    public BigInteger ChainId { get; set; }
-    public string ChainName { get; set; }
-    public string CurrencySymbol { get; set; }
-    public string CurrencyName { get; set; }
-    public int CurrencyDecimals { get; set; }
-    public List<RpcEndpointInfo> RpcEndpoints { get; set; }
-    public List<BlockExplorerInfo> BlockExplorers { get; set; }
-    public bool IsTestnet { get; set; }
-    public string? IconUrl { get; set; }
+    public NetworkConfiguration(IComponentLocalizer localizer) : base(localizer)
+    {
+        RpcEndpoints = new ObservableCollection<RpcEndpointInfo>();
+        BlockExplorers = new ObservableCollection<string>();
+    }
+
+    // Observable properties (CommunityToolkit.Mvvm source-generated)
+    string ChainId { get; set; }             // stored as string; parse via ChainIdValue
+    string NetworkName { get; set; }
+    string CurrencySymbol { get; set; }
+    string CurrencyName { get; set; }
+    int CurrencyDecimals { get; set; }       // default 18
+    bool IsTestnet { get; set; }
+    bool SupportEip155 { get; set; }         // default true
+    bool SupportEip1559 { get; set; }        // default true
+    ObservableCollection<RpcEndpointInfo> RpcEndpoints { get; set; }
+    ObservableCollection<string> BlockExplorers { get; set; }
+    string NewRpcUrl { get; set; }
+    string NewExplorerUrl { get; set; }
+
+    // Computed
+    public bool IsValid => !HasErrors && RpcEndpoints.Any();
+    public BigInteger ChainIdValue => BigInteger.TryParse(ChainId, out var id) ? id : 0;
 }
 ```
-Source: Networks/Models/NetworkConfiguration.cs
+Source: Networks/Models/NetworkConfiguration.cs:14-39
 
 **RpcEndpointInfo** model:
 ```csharp
-public class RpcEndpointInfo
+public partial class RpcEndpointInfo : ObservableObject
 {
-    public string Url { get; set; }
-    public bool IsWebSocket { get; set; }
-    public bool IsEnabled { get; set; }
-    public bool IsHealthy { get; set; }
-    public string? TestResult { get; set; }
-    public bool IsTesting { get; set; }
-    public bool IsCustom { get; set; }
+    public RpcEndpointInfo(string url, bool isWebSocket = false)
+    {
+        Url = url;
+        IsWebSocket = isWebSocket;
+    }
+
+    string Url { get; set; }
+    bool IsWebSocket { get; set; }
+    bool IsEnabled { get; set; }             // default true
+    bool IsHealthy { get; set; }             // default true
+    string? TestResult { get; set; }
+    bool IsTesting { get; set; }
+    bool IsCustom { get; set; }
 
     // Display properties
     public string TypeDisplayName => IsWebSocket ? "WebSocket" : "HTTP";
     public string StatusDisplayName => IsEnabled ? "Active" : "Inactive";
-    public string HealthDisplayName => IsHealthy ? "Healthy" : "Unhealthy";
+    public string HealthDisplayName => IsHealthy ? "Healthy" : (TestResult ?? "Unknown");
 }
 ```
-Source: Networks/Models/RpcEndpointInfo.cs:5-25
+Source: Networks/Models/RpcEndpointInfo.cs:5-24
 
 **NetworkManagementPluginViewModel** - Dashboard plugin for network management
 
 Implements `IDashboardPluginViewModel`.
-Source: Networks/NetworkManagementPluginViewModel.cs:12-36
+Source: Networks/NetworkManagementPluginViewModel.cs
 
 ### Network Provider Service
 
@@ -536,85 +602,115 @@ Source: Abstractions/INetworkProviderService.cs:7-10
 
 ### Native Token Transfer
 
-**TokenNativeTransferModel** - Native cryptocurrency transfer model
+**TokenNativeTransferModel** - Native/ERC-20 token transfer model, a validation-aware observable model.
 
-Validation Attributes:
 ```csharp
-[EthereumAddress]
-public string RecipientAddress { get; set; }
-
-[Required]
-public string Amount { get; set; }
-
-[Hex]
-public string TransactionData { get; set; }
+public partial class TokenNativeTransferModel : LocalizedValidationModel
+{
+    public TokenNativeTransferModel(IComponentLocalizer localizer) : base(localizer) { ... }
+}
 ```
-Source: SendTransaction/Models/TokenNativeTransferModel.cs:28-49
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:26-33
 
-Properties:
+Validation Attributes (declared on the source-generated observable fields):
 ```csharp
+[ObservableProperty]
+[NotifyDataErrorInfo]
+[Required(ErrorMessage = "The field is required")]
+[EthereumAddress(ErrorMessage = "Invalid Ethereum address")]
+[NotifyPropertyChangedFor(nameof(IsValid))]
+private string _recipientAddress = "";
+
+[ObservableProperty]
+[NotifyDataErrorInfo]
+[Required(ErrorMessage = "The field is required")]
+[NotifyPropertyChangedFor(nameof(IsValid))]
+private string _amount = "";
+
+[ObservableProperty]
+[NotifyDataErrorInfo]
+[Hex(ErrorMessage = "Invalid hex value")]
+[NotifyPropertyChangedFor(nameof(IsValid))]
+private string _transactionData = "";
+```
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:37-67
+
+Other Properties:
+```csharp
+string FromAddress { get; set; }
 BigInteger AvailableBalance { get; set; }
 string TokenSymbol { get; set; }            // e.g., "ETH"
 int TokenDecimals { get; set; }             // e.g., 18
+bool ShowAdvancedOptions { get; set; }
+bool IsNativeToken { get; set; }
+string? ContractAddress { get; set; }
+string? TokenLogoUri { get; set; }
+long ChainId { get; set; }
 string Nonce { get; set; }
+decimal AmountValue { get; }                // parsed from Amount
 ```
-Source: SendTransaction/Models/TokenNativeTransferModel.cs:36-49
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:35-73
 
 Methods:
 ```csharp
-BigInteger GetTransferAmountInSmallestUnit()
-{
-    return UnitConversion.Convert.ToWei(decimal.Parse(Amount), TokenDecimals);
-}
+public BigInteger GetTransferAmountInSmallestUnit() =>
+    UnitConversion.Convert.ToWei(AmountValue, TokenDecimals);
 ```
-Source: SendTransaction/Models/TokenNativeTransferModel.cs:53-54
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:75-76
 
 ```csharp
 public string FormattedAvailableBalance
 {
     get
     {
-        if (AvailableBalance == 0) return "0";
+        if (AvailableBalance == BigInteger.Zero)
+            return "0";
 
-        var balance = UnitConversion.Convert.FromWei(AvailableBalance, TokenDecimals);
+        var tokenValue = UnitConversion.Convert.FromWei(AvailableBalance, TokenDecimals);
 
-        // Format based on size
-        if (balance >= 1000000m) return $"{balance / 1000000m:N2}M";
-        if (balance >= 1000m) return $"{balance / 1000m:N2}K";
-        if (balance >= 1m) return $"{balance:N4}";
-        if (balance >= 0.0001m) return $"{balance:N6}";
-        return $"{balance:N8}";
+        if (tokenValue >= 1000)
+            return tokenValue.ToString("N2");
+        else if (tokenValue >= 1)
+            return tokenValue.ToString("F4").TrimEnd('0').TrimEnd('.');
+        else if (tokenValue >= 0.001m)
+            return tokenValue.ToString("F6").TrimEnd('0').TrimEnd('.');
+        else
+            return tokenValue.ToString("F8").TrimEnd('0').TrimEnd('.');
     }
 }
 ```
-Source: SendTransaction/Models/TokenNativeTransferModel.cs:56-74
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:78-96
 
 ```csharp
-public (bool IsValid, string Message) ValidateAmountBalance()
+public bool ValidateAmountBalance()
 {
-    if (!decimal.TryParse(Amount, out var amount))
-        return (false, "Invalid amount format");
+    if (string.IsNullOrWhiteSpace(Amount)) return false;
+    if (!decimal.TryParse(Amount, out var amt) || amt <= 0) return false;
 
-    if (amount <= 0)
-        return (false, "Amount must be greater than zero");
+    if (GetTransferAmountInSmallestUnit() > AvailableBalance)
+    {
+        ClearCustomErrors(nameof(Amount));
+        AddCustomError(Keys.InsufficientBalance, nameof(Amount));
+        return false;
+    }
 
-    var transferAmount = GetTransferAmountInSmallestUnit();
-    if (transferAmount > AvailableBalance)
-        return (false, $"Insufficient balance. Available: {FormattedAvailableBalance} {TokenSymbol}");
-
-    return (true, string.Empty);
+    ClearCustomErrors(nameof(Amount));
+    return true;
 }
 ```
-Source: SendTransaction/Models/TokenNativeTransferModel.cs:153-167
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:175-189
 
 ```csharp
 public void SetMaxAmount()
 {
-    var maxBalance = UnitConversion.Convert.FromWei(AvailableBalance, TokenDecimals);
-    Amount = maxBalance.ToString("F18").TrimEnd('0').TrimEnd('.');
+    if (AvailableBalance > BigInteger.Zero)
+    {
+        var tokenValue = UnitConversion.Convert.FromWei(AvailableBalance, TokenDecimals);
+        Amount = tokenValue.ToString();
+    }
 }
 ```
-Source: SendTransaction/Models/TokenNativeTransferModel.cs:181-188
+Source: SendTransaction/Models/TokenNativeTransferModel.cs:203-210
 
 ### Gas Strategy
 
@@ -640,38 +736,50 @@ public class GasStrategyDisplay
     public BigInteger? MaxFee { get; set; }           // EIP-1559
     public BigInteger? PriorityFee { get; set; }      // EIP-1559
     public BigInteger? GasPrice { get; set; }         // Legacy
+    public bool IsAvailable { get; set; } = true;
 }
 ```
 Source: SendTransaction/Models/GasStrategyDisplay.cs:5-14
 
 **GasMultiplierOption** - Pre-defined gas multipliers:
 ```csharp
-public static GasMultiplierOption Economy = new()
+public class GasMultiplierOption
 {
-    Multiplier = 0.8m,
-    DisplayName = "Economy",
-    Description = "Lower fees, slower confirmation",
-    Icon = "savings"
-};
+    public decimal Multiplier { get; set; }
+    public string DisplayText { get; set; } = "";
+    public string LocalizationKey { get; set; } = "";
+    public string DescriptionKey { get; set; } = "";
+    public bool IsRecommended { get; set; }
 
-public static GasMultiplierOption Standard = new()
-{
-    Multiplier = 1.0m,
-    DisplayName = "Standard",
-    Description = "Recommended for most transactions",
-    Icon = "check_circle",
-    IsRecommended = true
-};
+    public static readonly GasMultiplierOption Economy = new()
+    {
+        Multiplier = 0.8m,
+        DisplayText = "0.8x",
+        LocalizationKey = "Multiplier08",
+        DescriptionKey = "Multiplier08Description"
+    };
 
-public static GasMultiplierOption Priority = new()
-{
-    Multiplier = 1.2m,
-    DisplayName = "Priority",
-    Description = "Higher fees, faster confirmation",
-    Icon = "bolt"
-};
+    public static readonly GasMultiplierOption Standard = new()
+    {
+        Multiplier = 1.0m,
+        DisplayText = "1.0x",
+        LocalizationKey = "Multiplier10",
+        DescriptionKey = "Multiplier10Description",
+        IsRecommended = true
+    };
+
+    public static readonly GasMultiplierOption Priority = new()
+    {
+        Multiplier = 1.2m,
+        DisplayText = "1.2x",
+        LocalizationKey = "Multiplier12",
+        DescriptionKey = "Multiplier12Description"
+    };
+
+    public static readonly GasMultiplierOption[] All = { Economy, Standard, Priority };
+}
 ```
-Source: SendTransaction/Models/GasMultiplierOption.cs:11-34
+Source: SendTransaction/Models/GasMultiplierOption.cs:3-37
 
 ### Transaction Monitoring
 
@@ -681,38 +789,50 @@ Implements `IHostedService`:
 ```csharp
 public class TransactionMonitoringService : IHostedService, IDisposable
 {
-    private readonly IPendingTransactionService _pendingTransactionService;
+    private readonly IServiceProvider _serviceProvider;
+    private IServiceScope? _scope;
+    private IPendingTransactionService? _pendingTransactionService;
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public TransactionMonitoringService(IServiceProvider serviceProvider)
     {
-        await _pendingTransactionService.StartMonitoring();
+        _serviceProvider = serviceProvider;
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        await _pendingTransactionService.StopMonitoring();
+        _scope = _serviceProvider.CreateScope();
+        _pendingTransactionService = _scope.ServiceProvider.GetRequiredService<IPendingTransactionService>();
+        _pendingTransactionService.StartMonitoring();
+        return Task.CompletedTask;
     }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _pendingTransactionService?.StopMonitoring();
+        _scope?.Dispose();
+        return Task.CompletedTask;
+    }
+
+    public void Dispose() => _scope?.Dispose();
 }
 ```
-Source: Transactions/TransactionMonitoringService.cs:10-41
+Source: Transactions/TransactionMonitoringService.cs:10-40
 
 Registered via `AddTransactionServices()` extension.
 Source: Transactions/TransactionServiceCollectionExtensions.cs:19
 
 ### Transaction Steps
 
-**SendTransactionStep** enum:
+**TokenTransferStep** enum:
 ```csharp
-public enum SendTransactionStep
+public enum TokenTransferStep
 {
-    Input,           // Enter recipient and amount
-    Configure,       // Gas configuration
-    Confirm,         // Review transaction
-    Processing,      // Submitting transaction
-    Complete         // Transaction submitted
+    TransactionInput = 0,        // Enter recipient and amount
+    TransactionConfirmation = 1, // Review transaction
+    TransactionStatus = 2        // Track submission status
 }
 ```
-Source: SendTransaction/Models/SendTransactionStep.cs
+Source: SendTransaction/Models/SendTransactionStep.cs:3-8
 
 ## Configuration System
 
@@ -722,13 +842,13 @@ Source: SendTransaction/Models/SendTransactionStep.cs
 
 Properties:
 ```csharp
-string ComponentId { get; set; }                         // Unique ID
-WalletFlowMode FlowMode { get; set; }                   // Simple/Advanced/Custom
+string ComponentId { get; set; }                         // default: Guid
+WalletFlowMode FlowMode { get; set; }                    // Simple/Advanced/Custom
 WalletTextConfiguration Text { get; set; }
 WalletBehaviorConfiguration Behavior { get; set; }
 WalletSecurityConfiguration Security { get; set; }
 ```
-Source: Core/Configuration/BaseWalletConfiguration.cs:5-11
+Source: Core/Configuration/BaseWalletConfiguration.cs:7-11
 
 **WalletFlowMode** enum:
 ```csharp
@@ -807,15 +927,17 @@ public abstract class BaseWalletConfigurationBuilder<TConfiguration, TBuilder>
     where TConfiguration : BaseWalletConfiguration, new()
     where TBuilder : BaseWalletConfigurationBuilder<TConfiguration, TBuilder>
 {
-    public TBuilder UseSimpleFlow() { ... }
-    public TBuilder UseAdvancedFlow() { ... }
-    public TBuilder WithTitle(string title) { ... }
-    public TBuilder EnableWalletReset(bool enable = true) { ... }
-    public TBuilder WithMinPasswordLength(int length) { ... }
-    public TBuilder ConfigureText(Action<WalletTextConfiguration> configure) { ... }
-    public TBuilder ConfigureBehavior(Action<WalletBehaviorConfiguration> configure) { ... }
-    public TBuilder ConfigureSecurity(Action<WalletSecurityConfiguration> configure) { ... }
-    public TConfiguration Build() => _config;
+    public TBuilder UseSimpleFlow();
+    public TBuilder UseAdvancedFlow();
+    public TBuilder UseCustomFlow();
+    public TBuilder WithTitle(string title);
+    public TBuilder WithSubtitle(string subtitle);
+    public TBuilder EnableWalletReset(bool enable = true);
+    public TBuilder WithMinPasswordLength(int length);
+    public TBuilder ConfigureText(Action<WalletTextConfiguration> configure);
+    public TBuilder ConfigureBehavior(Action<WalletBehaviorConfiguration> configure);
+    public TBuilder ConfigureSecurity(Action<WalletSecurityConfiguration> configure);
+    public TConfiguration Build();
 }
 ```
 Source: Core/Configuration/BaseWalletConfiguration.cs:97-168
@@ -824,20 +946,22 @@ Source: Core/Configuration/BaseWalletConfiguration.cs:97-168
 
 **AccountListConfiguration**:
 ```csharp
-public class AccountListConfiguration : BaseWalletConfiguration
+public class AccountListConfiguration : BaseWalletConfiguration, IComponentConfiguration
 {
+    public new string ComponentId { get; set; } = "AccountList";
     public bool ShowBalances { get; set; } = true;
     public bool AllowAccountDeletion { get; set; } = true;
     public bool AllowAccountEditing { get; set; } = true;
     public int AccountsPerPage { get; set; } = 10;
 }
 ```
-Source: AccountList/AccountListConfiguration.cs:5-13
+Source: AccountList/AccountListConfiguration.cs:5-12
 
 **WalletOverviewConfiguration**:
 ```csharp
-public class WalletOverviewConfiguration : BaseWalletConfiguration
+public class WalletOverviewConfiguration : BaseWalletConfiguration, IComponentConfiguration
 {
+    public new string ComponentId { get; set; } = "WalletOverview";
     public bool ShowBalance { get; set; } = true;
     public bool ShowFiatBalance { get; set; } = false;
     public bool ShowQuickActions { get; set; } = true;
@@ -845,21 +969,24 @@ public class WalletOverviewConfiguration : BaseWalletConfiguration
     public int AutoRefreshIntervalSeconds { get; set; } = 30;
 }
 ```
-Source: WalletOverview/WalletOverviewConfiguration.cs:5-14
+Source: WalletOverview/WalletOverviewConfiguration.cs:5-13
 
 **CreateAccountConfiguration**:
 ```csharp
-public class CreateAccountConfiguration : BaseWalletConfiguration
+public class CreateAccountConfiguration : BaseWalletConfiguration, IComponentConfiguration
 {
-    public bool ShowAdvancedOptions { get; set; } = false;
+    public new string ComponentId { get; set; } = "CreateAccount";
+    public bool ShowAccountTypeDescriptions { get; set; } = true;
+    public bool AutoSelectNewAccount { get; set; } = true;
 }
 ```
-Source: CreateAccount/CreateAccountConfiguration.cs:5-11
+Source: CreateAccount/CreateAccountConfiguration.cs:5-10
 
 **NethereumWalletConfiguration**:
 ```csharp
-public class NethereumWalletConfiguration : BaseWalletConfiguration
+public class NethereumWalletConfiguration : BaseWalletConfiguration, IComponentConfiguration
 {
+    public new string ComponentId { get; set; } = "NethereumWallet";
     public bool ShowProgressIndicators { get; set; } = true;
     public bool EnableKeyboardShortcuts { get; set; } = true;
     public int PasswordMinimumStrength { get; set; } = 1;
@@ -867,7 +994,7 @@ public class NethereumWalletConfiguration : BaseWalletConfiguration
     public bool ShowPasswordStrengthIndicator { get; set; } = true;
 }
 ```
-Source: NethereumWallet/NethereumWalletConfiguration.cs:7-15
+Source: NethereumWallet/NethereumWalletConfiguration.cs:7-16
 
 ## Localization System
 
@@ -893,6 +1020,11 @@ public interface IWalletLocalizationService
 
     IComponentLocalizer<T> GetLocalizer<T>();
     void RegisterLocalizer<T>(IComponentLocalizer<T> localizer);
+
+    Task LoadTranslationsAsync(string componentName, string language, string json);
+    bool IsLanguageSupported(string languageCode);
+    void AddLanguageSupport(string languageCode, string defaultCulture);
+    void SetDefaultLanguage(string defaultCulture);
 }
 ```
 Source: Core/Localization/IWalletLocalizationService.cs:8-26
@@ -922,23 +1054,15 @@ public IReadOnlyList<LanguageInfo> AvailableLanguages { get; } = new List<Langua
 ```
 Source: Core/Localization/WalletLocalizationService.cs:20-24
 
-Translation Lookup Algorithm:
-1. Try exact culture match (e.g., "es-ES")
-2. Try language default mapping (e.g., "es" → "es-ES")
-3. Fallback to default language
-4. Return key if not found
-
-Source: Core/Localization/WalletLocalizationService.cs:98-129
-
 ### Storage Providers
 
 **ILocalizationStorageProvider** - Platform abstraction:
 ```csharp
 public interface ILocalizationStorageProvider
 {
-    Task<string?> GetStoredLanguageAsync();
+    Task<string> GetStoredLanguageAsync();
     Task SetStoredLanguageAsync(string languageCode);
-    Task<string?> GetSystemLanguageAsync();
+    Task<string> GetSystemLanguageAsync();
 }
 ```
 Source: Core/Localization/ILocalizationStorageProvider.cs:5-10
@@ -950,72 +1074,105 @@ public class BrowserLocalizationStorageProvider : ILocalizationStorageProvider
     private readonly IJSRuntime _jsRuntime;
     private const string StorageKey = "wallet-ui-language";
 
-    public async Task<string?> GetStoredLanguageAsync()
+    public BrowserLocalizationStorageProvider(IJSRuntime jsRuntime)
     {
-        return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey);
+        _jsRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
+    }
+
+    public async Task<string> GetStoredLanguageAsync()
+    {
+        try { return await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey); }
+        catch { return null; }
     }
 
     public async Task SetStoredLanguageAsync(string languageCode)
     {
-        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, languageCode);
+        try { await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, languageCode); }
+        catch { }
     }
 
-    public async Task<string?> GetSystemLanguageAsync()
+    public async Task<string> GetSystemLanguageAsync()
     {
-        return await _jsRuntime.InvokeAsync<string>("eval", "navigator.language || navigator.userLanguage");
+        try
+        {
+            return await _jsRuntime.InvokeAsync<string>("eval",
+                "navigator.language || navigator.userLanguage || 'en-US'");
+        }
+        catch { return "en-US"; }
     }
 }
 ```
-Source: Core/Localization/BrowserLocalizationStorageProvider.cs:7-51
+Source: Core/Localization/BrowserLocalizationStorageProvider.cs:7-52
 
 **SystemLocalizationStorageProvider** - File-based storage:
 ```csharp
 public class SystemLocalizationStorageProvider : ILocalizationStorageProvider
 {
-    private string GetLanguageFilePath()
+    private readonly string _settingsFilePath;
+
+    public SystemLocalizationStorageProvider(string settingsDirectory = null)
     {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var walletPath = Path.Combine(appDataPath, "NethereumWallet");
-        Directory.CreateDirectory(walletPath);
-        return Path.Combine(walletPath, "language.txt");
+        var dir = settingsDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NethereumWallet");
+
+        Directory.CreateDirectory(dir);
+        _settingsFilePath = Path.Combine(dir, "language.txt");
     }
 
-    public async Task<string?> GetSystemLanguageAsync()
+    public async Task<string> GetStoredLanguageAsync()
     {
-        return CultureInfo.CurrentUICulture.Name;
+        try
+        {
+            if (File.Exists(_settingsFilePath))
+                return await File.ReadAllTextAsync(_settingsFilePath);
+        }
+        catch { }
+        return null;
     }
+
+    public async Task SetStoredLanguageAsync(string languageCode)
+    {
+        try { await File.WriteAllTextAsync(_settingsFilePath, languageCode); }
+        catch { }
+    }
+
+    public Task<string> GetSystemLanguageAsync() =>
+        Task.FromResult(CultureInfo.CurrentUICulture.Name);
 }
 ```
-Source: Core/Localization/SystemLocalizationStorageProvider.cs:8-53
+Source: Core/Localization/SystemLocalizationStorageProvider.cs:8-54
 
 ### Component Localizer
 
 **ComponentLocalizerBase<T>** - Type-safe localization:
 ```csharp
-public abstract class ComponentLocalizerBase<T>
+public abstract class ComponentLocalizerBase<T> : IComponentLocalizer<T>
 {
-    protected readonly IWalletLocalizationService LocalizationService;
+    protected readonly IWalletLocalizationService _globalService;
+    protected readonly string _componentName;
 
-    protected ComponentLocalizerBase(IWalletLocalizationService localizationService)
+    protected ComponentLocalizerBase(IWalletLocalizationService globalService)
     {
-        LocalizationService = localizationService;
+        _globalService = globalService;
+        _componentName = typeof(T).FullName ?? typeof(T).Name;
         RegisterTranslations();
     }
 
     public string GetString(string key)
     {
-        return LocalizationService.GetTranslation(typeof(T).Name, LocalizationService.CurrentLanguage, key);
+        return _globalService.GetTranslation(_componentName, _globalService.CurrentLanguage, key);
     }
 
     public string GetString(string key, params object[] args)
     {
-        return LocalizationService.GetTranslation(typeof(T).Name, LocalizationService.CurrentLanguage, key, args);
+        return _globalService.GetTranslation(_componentName, _globalService.CurrentLanguage, key, args);
     }
 
     protected abstract void RegisterTranslations();
 }
 ```
-Source: Core/Localization/ComponentLocalizerBase.cs:5-28
+Source: Core/Localization/ComponentLocalizerBase.cs:5-27
 
 ## Dashboard Navigation
 
@@ -1023,26 +1180,36 @@ Source: Core/Localization/ComponentLocalizerBase.cs:5-28
 ```csharp
 public interface IDashboardNavigationService
 {
-    event NavigationRequestedHandler? NavigationRequested;
-    string? CurrentPluginId { get; }
-    object? CurrentPluginComponent { get; }
-
     Task NavigateToPluginAsync(string pluginId, Dictionary<string, object>? parameters = null);
     Task NavigateCurrentPluginAsync(Dictionary<string, object> parameters);
     void RegisterActivePlugin(string pluginId, object? pluginComponent);
+    event NavigationRequestedHandler? NavigationRequested;
 }
+
+public delegate Task NavigationRequestedHandler(object sender, DashboardNavigationEventArgs e);
 ```
-Source: Dashboard/Services/IDashboardNavigationService.cs:6-26
+Source: Dashboard/Services/IDashboardNavigationService.cs:6-25
 
 **DashboardNavigationService** implementation:
 ```csharp
 public async Task NavigateToPluginAsync(string pluginId, Dictionary<string, object>? parameters = null)
 {
-    CurrentPluginId = pluginId;
-    NavigationRequested?.Invoke(pluginId, parameters ?? new Dictionary<string, object>());
+    // If navigating to the same plugin and it implements INavigatablePlugin, call directly
+    if (_activePluginId == pluginId &&
+        _activePluginComponent is INavigatablePlugin navigatablePlugin)
+    {
+        await navigatablePlugin.NavigateWithParametersAsync(parameters ?? new Dictionary<string, object>());
+        return;
+    }
+
+    if (NavigationRequested != null)
+    {
+        var args = new DashboardNavigationEventArgs(pluginId, parameters);
+        await NavigationRequested.Invoke(this, args);
+    }
 }
 ```
-Source: Dashboard/Services/DashboardNavigationService.cs:13-30
+Source: Dashboard/Services/DashboardNavigationService.cs:13-28
 
 **INavigatablePlugin** - Plugin parameter handling:
 ```csharp
@@ -1065,7 +1232,7 @@ public interface IPromptOverlayService
     PromptRequest? CurrentPrompt { get; }
     int CurrentIndex { get; }
 
-    Task ShowPromptAsync(PromptRequest request);
+    Task ShowPromptAsync(PromptRequest prompt);
     Task ShowPromptByIdAsync(string promptId);
     Task ShowNextPromptAsync();
     Task ShowPreviousPromptAsync();
@@ -1074,27 +1241,38 @@ public interface IPromptOverlayService
 
     event EventHandler<OverlayStateChangedEventArgs>? OverlayStateChanged;
 }
+
+public class OverlayStateChangedEventArgs : EventArgs
+{
+    public bool IsVisible { get; set; }
+    public PromptRequest? CurrentPrompt { get; set; }
+}
 ```
-Source: Services/IPromptOverlayService.cs:6-27
+Source: Services/IPromptOverlayService.cs:6-26
 
 **PromptOverlayService** implementation:
 
 Dependencies: `IPromptQueueService`
 Source: Services/PromptOverlayService.cs:10
 
-Commands:
 ```csharp
-public async Task ShowPromptAsync(PromptRequest request)
+public async Task ShowPromptAsync(PromptRequest prompt)
 {
-    CurrentPrompt = request;
-    IsOverlayVisible = true;
+    CurrentPrompt = prompt;
+    var prompts = _queueService.PendingPrompts;
+    CurrentIndex = prompts.ToList().IndexOf(prompt);
 
-    if (request.Status == PromptStatus.Pending)
+    if (CurrentPrompt != null)
     {
-        request.Status = PromptStatus.InProgress;
-    }
+        CurrentPrompt.Status = PromptStatus.InProgress;
+        IsOverlayVisible = true;
 
-    OverlayStateChanged?.Invoke(this, new OverlayStateChangedEventArgs(true, CurrentPrompt));
+        OverlayStateChanged?.Invoke(this, new OverlayStateChangedEventArgs
+        {
+            IsVisible = true,
+            CurrentPrompt = CurrentPrompt
+        });
+    }
 }
 ```
 Source: Services/PromptOverlayService.cs:23-40
@@ -1103,11 +1281,13 @@ Source: Services/PromptOverlayService.cs:23-40
 public void HideOverlay()
 {
     IsOverlayVisible = false;
-    var previousPrompt = CurrentPrompt;
     CurrentPrompt = null;
-    CurrentIndex = 0;
 
-    OverlayStateChanged?.Invoke(this, new OverlayStateChangedEventArgs(false, previousPrompt));
+    OverlayStateChanged?.Invoke(this, new OverlayStateChangedEventArgs
+    {
+        IsVisible = false,
+        CurrentPrompt = null
+    });
 }
 ```
 Source: Services/PromptOverlayService.cs:76-86
@@ -1118,7 +1298,11 @@ public void MinimizeOverlay()
     IsOverlayVisible = false;
     // CurrentPrompt remains set
 
-    OverlayStateChanged?.Invoke(this, new OverlayStateChangedEventArgs(false, CurrentPrompt));
+    OverlayStateChanged?.Invoke(this, new OverlayStateChangedEventArgs
+    {
+        IsVisible = false,
+        CurrentPrompt = CurrentPrompt
+    });
 }
 ```
 Source: Services/PromptOverlayService.cs:88-97
@@ -1134,7 +1318,10 @@ public interface IWalletNotificationService
     void ShowError(string message);
     void ShowWarning(string message);
     void ShowInfo(string message);
-    void ShowNotificationWithAction(string message, NotificationSeverity severity, Action action);
+
+    void ShowNotificationWithAction(string message, NotificationSeverity severity, NotificationAction action);
+    void ShowSuccessWithAction(string message, NotificationAction action);
+    void ShowInfoWithAction(string message, NotificationAction action);
 }
 
 public enum NotificationSeverity
@@ -1143,6 +1330,12 @@ public enum NotificationSeverity
     Info,
     Warning,
     Error
+}
+
+public class NotificationAction
+{
+    public string Label { get; set; } = "View";
+    public Action? OnClick { get; set; }
 }
 ```
 Source: Abstractions/GenericInterfaces.cs:8-33
@@ -1153,8 +1346,9 @@ public interface IWalletDialogService
 {
     Task<bool> ShowConfirmationAsync(string title, string message);
     Task ShowMessageAsync(string title, string message);
-    Task<T?> ShowDialogAsync<T>(Dictionary<string, object> parameters);
-    Task<bool> ShowWarningConfirmationAsync(string title, string message, string confirmText = "Confirm");
+    Task<T?> ShowDialogAsync<T>(object? parameters = null) where T : class;
+    Task<bool> ShowWarningConfirmationAsync(string title, string message,
+        string confirmText = "Remove", string cancelText = "Cancel");
     Task ShowErrorAsync(string title, string message);
     Task ShowSuccessAsync(string title, string message);
 }
@@ -1194,40 +1388,59 @@ public static class IdenticonGenerator
 {
     public static string GetIdenticonText(string address)
     {
-        if (string.IsNullOrEmpty(address) || address.Length < 4)
-            return "??";
-        return address.Substring(2, 2).ToUpper();
+        if (string.IsNullOrEmpty(address)) return "?";
+        return address.Length >= 4 ? address.Substring(2, 2).ToUpper() : "??";
     }
 
     public static string GetNetworkIdenticonText(string networkName)
     {
-        if (string.IsNullOrEmpty(networkName))
-            return "??";
+        if (string.IsNullOrEmpty(networkName)) return "?";
 
-        var words = networkName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length >= 2)
-            return $"{words[0][0]}{words[1][0]}".ToUpper();
+        if (networkName.Length >= 3)
+            return networkName.Substring(0, 3).ToUpper();
+        else if (networkName.Length >= 2)
+            return networkName.Substring(0, 2).ToUpper();
+        else
+            return networkName.ToUpper().PadRight(2, '?');
+    }
 
-        return networkName.Length >= 2
-            ? networkName.Substring(0, 2).ToUpper()
-            : networkName.ToUpper();
+    public static string GetTokenIdenticonText(string symbol)
+    {
+        if (string.IsNullOrEmpty(symbol)) return "?";
+
+        if (symbol.Length >= 3)
+            return symbol.Substring(0, 3).ToUpper();
+        else if (symbol.Length >= 2)
+            return symbol.Substring(0, 2).ToUpper();
+        else
+            return symbol.ToUpper();
     }
 
     public static string GetIdenticonStyle(string address)
     {
         if (string.IsNullOrEmpty(address))
-            return "background: #cccccc;";
+            return "background: #ccc;";
 
-        var hash = address.GetHashCode();
-        var hue = Math.Abs(hash % 360);
-        var saturation = 65 + Math.Abs(hash % 20);
-        var lightness = 45 + Math.Abs(hash % 20);
+        var addressBytes = address.ToLowerInvariant().Replace("0x", "");
+        var hash1 = 0;
+        var hash2 = 0;
 
-        return $"background: hsl({hue}, {saturation}%, {lightness}%);";
+        for (int i = 0; i < Math.Min(addressBytes.Length, 8); i++)
+        {
+            hash1 = hash1 * 31 + addressBytes[i];
+            if (i + 8 < addressBytes.Length)
+                hash2 = hash2 * 31 + addressBytes[i + 8];
+        }
+
+        var hue = Math.Abs(hash1) % 360;
+        var saturation = 65 + (Math.Abs(hash2) % 20);
+        var lightness = 45 + (Math.Abs(hash1 >> 8) % 20);
+
+        return $"background: hsl({hue}, {saturation}%, {lightness}%); color: white; font-weight: 600; font-size: 1.1rem;";
     }
 }
 ```
-Source: Utils/IdenticonGenerator.cs:5-47
+Source: Utils/IdenticonGenerator.cs:5-60
 
 ### Network Icon Repository
 
@@ -1264,15 +1477,15 @@ public static IServiceCollection AddTransactionServices(this IServiceCollection 
     services.AddTransient<TransactionHistoryViewModel>();
 
     services.AddSingleton<TransactionHistoryLocalizer>();
-    services.AddSingleton<PendingTransactionServiceLocalizer>();
-    services.AddSingleton<PendingTransactionNotificationLocalizer>();
+    services.AddTransient<IComponentLocalizer<TransactionHistoryViewModel>>(provider =>
+        provider.GetRequiredService<TransactionHistoryLocalizer>());
 
     services.AddHostedService<TransactionMonitoringService>();
 
     return services;
 }
 ```
-Source: Transactions/TransactionServiceCollectionExtensions.cs:10-24
+Source: Transactions/TransactionServiceCollectionExtensions.cs:9-22
 
 ### Token Transfer Services
 
@@ -1280,39 +1493,59 @@ Source: Transactions/TransactionServiceCollectionExtensions.cs:10-24
 ```csharp
 public static IServiceCollection AddTokenTransferServices(this IServiceCollection services)
 {
-    services.AddSingleton<FourByteDirectoryService>();
-    services.AddScoped<ITransactionDataDecodingService, TransactionDataDecodingService>();
+    services.AddTransient<FourByteDirectoryService>();
+    services.AddTransient<FourByteDataDecodingService>();
 
-    services.AddScoped<IGasPriceProvider, DefaultGasPriceProvider>();
-    services.AddScoped<IGasConfigurationPersistenceService, InMemoryGasConfigurationPersistence>();
+    services.AddTransient<IGasPriceProvider, NethereumGasPriceProvider>();
+    services.TryAddSingleton<IGasConfigurationPersistenceService, InMemoryGasConfigurationPersistenceService>();
+
+    services.TryAddSingleton<IABIInfoStorage>(sp => ABIInfoStorageFactory.CreateWithSourcifyOnly());
+
+    services.AddTransient<ITransactionDataDecodingService>(sp =>
+    {
+        var abiStorage = sp.GetRequiredService<IABIInfoStorage>();
+        var fourByteFallback = sp.GetRequiredService<FourByteDataDecodingService>();
+        return new SourcifyDataDecodingService(abiStorage, fourByteFallback);
+    });
+
+    services.AddTransient<IStateChangesPreviewService, StateChangesPreviewService>();
 
     services.AddTransient<TokenNativeTransferModel>();
-    services.AddTransient<TokenERC20TransferModel>();
-    services.AddTransient<TokenERC721TransferModel>();
-    services.AddTransient<TokenERC1155TransferModel>();
-    services.AddTransient<NativeTokenTransferViewModel>();
+    services.AddTransient<TransactionModel>();
 
-    // Localizers
+    services.AddTransient<TransactionViewModel>();
+    services.AddTransient<SendNativeTokenViewModel>();
+    services.AddTransient<TransactionStatusViewModel>();
+
+    services.AddSingleton<SharedValidationLocalizer>();
+    services.AddTransient<IComponentLocalizer>(provider =>
+        provider.GetRequiredService<SharedValidationLocalizer>());
+
+    services.AddSingleton<TransactionLocalizer>();
     services.AddSingleton<SendNativeTokenLocalizer>();
-    services.AddSingleton<SendERC20TokenLocalizer>();
-    services.AddSingleton<SendERC721TokenLocalizer>();
-    services.AddSingleton<SendERC1155TokenLocalizer>();
-    services.AddSingleton<TokenTransferLocalizer>();
-    services.AddSingleton<TransactionInputLocalizer>();
-    services.AddSingleton<TransactionConfirmationLocalizer>();
     services.AddSingleton<TransactionStatusLocalizer>();
+
+    services.AddTransient<IComponentLocalizer<TransactionViewModel>>(provider =>
+        provider.GetRequiredService<TransactionLocalizer>());
+    services.AddTransient<IComponentLocalizer<SendNativeTokenViewModel>>(provider =>
+        provider.GetRequiredService<SendNativeTokenLocalizer>());
+    services.AddTransient<IComponentLocalizer<TransactionStatusViewModel>>(provider =>
+        provider.GetRequiredService<TransactionStatusLocalizer>());
+
+    services.AddScoped<TokenTransferPluginViewModel>();
+    services.AddScoped<IDashboardPluginViewModel, TokenTransferPluginViewModel>();
 
     return services;
 }
 ```
-Source: SendTransaction/TokenTransferServiceCollectionExtensions.cs:14-59
+Source: SendTransaction/TokenTransferServiceCollectionExtensions.cs:17-74
 
 ## Related Packages
 
 ### Platform-Specific UI Packages
 - **Nethereum.Wallet.UI.Components.Blazor** - Blazor components (Razor, CSS)
 - **Nethereum.Wallet.UI.Components.Maui** - MAUI platform integration
-- **Nethereum.Wallet.UI.Components.Avalonia** - Avalonia desktop UI (skipped per user request)
+- **Nethereum.Wallet.UI.Components.Avalonia** - Avalonia desktop UI
 
 ### Hardware Wallet Support
 - **Nethereum.Wallet.UI.Components.Trezor** - Trezor ViewModels (platform-agnostic)

@@ -3,15 +3,11 @@ using FluentAssertions;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests.Controls;
 
-/// <summary>
-/// Basic vault validation tests that don't depend on any complex services
-/// </summary>
 public class BasicVaultValidationTests
 {
     [Fact]
     public void VaultCreation_ValidPasswords_ShouldAllowCreation()
     {
-        // Test the core validation logic for vault creation
         var newPassword = "ValidPassword123!";
         var confirmPassword = "ValidPassword123!";
 
@@ -87,21 +83,16 @@ public class BasicVaultValidationTests
     [Fact]
     public void VaultCreation_StepByStepFlow_ValidatesCorrectly()
     {
-        // Test the complete user flow step by step
 
-        // Step 1: User starts typing new password
         var step1 = ValidateVaultCreation("V", "");
         step1.IsValid.Should().BeFalse("Step 1: Partial password should not allow creation");
 
-        // Step 2: User completes new password but confirm is empty
         var step2 = ValidateVaultCreation("ValidPassword123!", "");
         step2.IsValid.Should().BeFalse("Step 2: Missing confirm password should not allow creation");
 
-        // Step 3: User starts typing confirm password but it doesn't match yet
         var step3 = ValidateVaultCreation("ValidPassword123!", "Valid");
         step3.IsValid.Should().BeFalse("Step 3: Partial confirm password should not allow creation");
 
-        // Step 4: User completes matching passwords
         var step4 = ValidateVaultCreation("ValidPassword123!", "ValidPassword123!");
         step4.IsValid.Should().BeTrue("Step 4: Complete matching passwords should allow creation");
     }
@@ -109,7 +100,6 @@ public class BasicVaultValidationTests
     [Fact]
     public void CanCreateVault_BasicLogic_WorksCorrectly()
     {
-        // Test the basic boolean logic that would be used in CanCreateWallet property
         var testCases = new[]
         {
             new { New = "", Confirm = "", Expected = false },
@@ -128,9 +118,6 @@ public class BasicVaultValidationTests
         }
     }
 
-    /// <summary>
-    /// Core validation logic that simulates what should be in NethereumWalletViewModel
-    /// </summary>
     private ValidationResult ValidateVaultCreation(string newPassword, string confirmPassword)
     {
         if (string.IsNullOrWhiteSpace(newPassword))
@@ -156,9 +143,6 @@ public class BasicVaultValidationTests
         return new ValidationResult(true, "");
     }
 
-    /// <summary>
-    /// Simple boolean logic for CanCreateWallet property
-    /// </summary>
     private bool CanCreateVault(string newPassword, string confirmPassword)
     {
         return !string.IsNullOrWhiteSpace(newPassword) &&

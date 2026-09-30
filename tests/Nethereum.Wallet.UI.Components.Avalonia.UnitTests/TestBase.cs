@@ -15,9 +15,6 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests;
 
-/// <summary>
-/// Base class for Avalonia UI component tests providing headless testing infrastructure
-/// </summary>
 public abstract class TestBase : IDisposable
 {
     private static Application? _staticApp;
@@ -28,7 +25,6 @@ public abstract class TestBase : IDisposable
 
     protected TestBase()
     {
-        // Ensure Avalonia app is initialized only once
         lock (_lockObject)
         {
             if (_staticApp == null)
@@ -37,10 +33,8 @@ public abstract class TestBase : IDisposable
             }
         }
 
-        // Setup service container with required services
         _serviceProvider = BuildServiceProvider();
 
-        // Create a test window on the UI thread
         _window = Dispatcher.UIThread.Invoke(() => new Window
         {
             Width = 800,
@@ -48,63 +42,37 @@ public abstract class TestBase : IDisposable
             Title = "Test Window"
         });
 
-        // Don't show the window to avoid potential hang
-        // Dispatcher.UIThread.Invoke(() => _window.Show());
     }
 
-    /// <summary>
-    /// Gets the service provider for dependency injection
-    /// </summary>
     protected IServiceProvider ServiceProvider => _serviceProvider;
 
-    /// <summary>
-    /// Gets the test window for placing components
-    /// </summary>
     protected Window Window => _window;
 
-    /// <summary>
-    /// Executes an action on the UI thread and waits for it to complete
-    /// </summary>
     protected T RunOnUIThread<T>(Func<T> action)
     {
         return Dispatcher.UIThread.Invoke(action);
     }
 
-    /// <summary>
-    /// Executes an action on the UI thread and waits for it to complete
-    /// </summary>
     protected void RunOnUIThread(Action action)
     {
         Dispatcher.UIThread.Invoke(action);
     }
 
-    /// <summary>
-    /// Executes an async action on the UI thread and waits for it to complete
-    /// </summary>
     protected Task<T> RunOnUIThreadAsync<T>(Func<Task<T>> action)
     {
         return Dispatcher.UIThread.InvokeAsync(action);
     }
 
-    /// <summary>
-    /// Executes an async action on the UI thread and waits for it to complete
-    /// </summary>
     protected Task RunOnUIThreadAsync(Func<Task> action)
     {
         return Dispatcher.UIThread.InvokeAsync(action);
     }
 
-    /// <summary>
-    /// Creates a UserControl of the specified type with dependency injection
-    /// </summary>
     protected T CreateControl<T>() where T : UserControl
     {
         return RunOnUIThread(() => (T)ActivatorUtilities.CreateInstance<T>(_serviceProvider));
     }
 
-    /// <summary>
-    /// Places a control in the test window and returns it
-    /// </summary>
     protected T PlaceInWindow<T>(T control) where T : Control
     {
         RunOnUIThread(() =>
@@ -114,24 +82,16 @@ public abstract class TestBase : IDisposable
         return control;
     }
 
-    /// <summary>
-    /// Waits for the UI to settle (processes all pending operations)
-    /// </summary>
     protected async Task WaitForUIAsync()
     {
         await RunOnUIThreadAsync(async () =>
         {
-            // Process all pending operations
-            await Task.Delay(10); // Small delay to allow pending operations
+            await Task.Delay(10);
         });
     }
 
-    /// <summary>
-    /// Builds the Avalonia application for headless testing
-    /// </summary>
     private static Application BuildAvaloniaApp()
     {
-        // Check if Application is already initialized
         if (Application.Current != null)
         {
             return Application.Current;
@@ -140,25 +100,19 @@ public abstract class TestBase : IDisposable
         var app = AppBuilder.Configure<Application>()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions
             {
-                UseHeadlessDrawing = true  // Change to true for pure headless
+                UseHeadlessDrawing = true
             })
             .SetupWithoutStarting();
 
         return Application.Current ?? new Application();
     }
 
-    /// <summary>
-    /// Builds the service provider with all required dependencies
-    /// </summary>
     private static IServiceProvider BuildServiceProvider()
     {
         var services = new ServiceCollection();
 
-        // Copy service registration from Avalonia Demo
-        // Encryption strategy (desktop)
         services.AddSingleton<Nethereum.Wallet.IEncryptionStrategy, Nethereum.Wallet.DefaultAes256EncryptionStrategy>();
 
-        // File-based Vault (use temporary path for tests)
         services.AddSingleton<Nethereum.Wallet.IWalletVaultService>(sp =>
         {
             var tempDir = System.IO.Path.GetTempPath();
@@ -168,9 +122,7 @@ public abstract class TestBase : IDisposable
             return new Nethereum.Wallet.FileWalletVaultService(filePath, sp.GetRequiredService<Nethereum.Wallet.IEncryptionStrategy>());
         });
 
-        // Minimal configuration for tests - comment out complex services that cause issues
 
-        // Core wallet account service
         services.AddSingleton<Nethereum.Wallet.ICoreWalletAccountService>(sp =>
         {
             var vaultService = sp.GetRequiredService<Nethereum.Wallet.IWalletVaultService>();
@@ -179,11 +131,9 @@ public abstract class TestBase : IDisposable
             return new Nethereum.Wallet.CoreWalletAccountService(vault);
         });
 
-        // Host provider (adds RpcHandlerRegistry)
         services.AddNethereumWalletHostProvider();
         services.AddScoped<Nethereum.UI.SelectedEthereumHostProviderService>();
 
-        // UI configuration
         services.AddNethereumWalletUIConfiguration(config =>
         {
             config.ApplicationName = "Nethereum Tests";
@@ -192,7 +142,6 @@ public abstract class TestBase : IDisposable
             config.WalletConfig.AllowPasswordVisibilityToggle = true;
         });
 
-        // Avalonia wallet UI + notification services
         services.AddNethereumWalletAvaloniaComponents();
         services.AddSingleton<Nethereum.Wallet.UI.Components.Abstractions.IWalletNotificationService,
             Nethereum.Wallet.UI.Components.Avalonia.Services.AvaloniaWalletNotificationService>();
@@ -213,10 +162,8 @@ public abstract class TestBase : IDisposable
             }
             catch
             {
-                // Ignore disposal errors
             }
 
-            // Application doesn't have Dispose method in this version
             _disposed = true;
         }
         GC.SuppressFinalize(this);

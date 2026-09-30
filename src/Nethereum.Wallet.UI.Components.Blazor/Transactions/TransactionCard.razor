@@ -1,4 +1,4 @@
-@using MudBlazor
+﻿@using MudBlazor
 @using Nethereum.Wallet.Services.Transactions
 @using Nethereum.Wallet.UI.Components.Blazor.Shared
 @using Nethereum.Wallet.UI.Components.Core.Localization
@@ -6,6 +6,9 @@
 @using Nethereum.Wallet.Hosting
 @using Nethereum.Web3
 @using Nethereum.RPC.Eth.DTOs
+@using Nethereum.Contracts
+@using Nethereum.Contracts.Standards.EthTransfers
+@using Nethereum.Contracts.Standards.ERC20.ContractDefinition
 @using System.Numerics
 @inject IComponentLocalizer<TransactionHistoryViewModel> Localizer
 @inject NethereumWalletHostProvider WalletHostProvider
@@ -277,6 +280,33 @@
                             }
                         </MudGrid>
                         
+                        @if (EthTransfers.Any())
+                        {
+                            <MudDivider />
+
+                            <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">
+                                ETH Transfers (@EthTransfers.Count)
+                            </MudText>
+
+                            <MudStack Spacing="1">
+                                @foreach (var transfer in EthTransfers)
+                                {
+                                    <MudPaper Elevation="0" Class="pa-2"
+                                              Style="background: var(--mud-palette-primary-hover); border-radius: 4px;">
+                                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                            <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" Color="Color.Primary" />
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                                @Nethereum.Web3.Web3.Convert.FromWei(transfer.Event.Value) ETH
+                                            </MudText>
+                                        </MudStack>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-family: monospace;">
+                                            @FormatHash(transfer.Event.From) &#8594; @FormatHash(transfer.Event.To)
+                                        </MudText>
+                                    </MudPaper>
+                                }
+                            </MudStack>
+                        }
+
                         @if (Transaction.Logs?.Any() == true)
                         {
                             <MudDivider />
@@ -365,6 +395,12 @@
     private bool IsLoadingDetails { get; set; }
     private string? DetailsError { get; set; }
     private bool HasReceipt => !string.IsNullOrEmpty(Transaction.BlockNumber);
+
+    private List<EventLog<TransferEventDTO>> EthTransfers =>
+        Transaction.Logs?
+            .Select(l => EthTransferLogExtensions.DecodeEthTransfer(l.Address, l.Topics, l.Data))
+            .Where(t => t != null)
+            .ToList() ?? new List<EventLog<TransferEventDTO>>();
     
     private async Task ToggleExpansion()
     {

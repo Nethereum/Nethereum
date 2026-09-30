@@ -3,9 +3,6 @@ using Nethereum.Wallet.Blazor.Demo.Utilities;
 
 namespace Nethereum.Wallet.Blazor.Demo.Services;
 
-/// <summary>
-/// Professional theme service with support for multiple brand colors and accessibility
-/// </summary>
 public class ThemeService
 {
     public event Action? ThemeChanged;
@@ -18,9 +15,6 @@ public class ThemeService
     public bool IsDarkMode => _isDarkMode;
     public WalletBrandColor CurrentBrandColor => _currentBrandColor;
     
-    /// <summary>
-    /// Available theme color options for developers to choose from
-    /// </summary>
     public static readonly (WalletBrandColor Color, string DisplayName, string Description)[] AvailableThemes = 
     [
         (WalletBrandColor.Professional, "Professional", "Clean sky blue - trustworthy and professional"),
@@ -37,18 +31,12 @@ public class ThemeService
         _currentTheme = WalletTheme.BaseTheme;
     }
     
-    /// <summary>
-    /// Toggle between light and dark mode
-    /// </summary>
     public void SetDarkMode(bool isDark)
     {
         _isDarkMode = isDark;
         ThemeChanged?.Invoke();
     }
     
-    /// <summary>
-    /// Set theme using string color name (for backward compatibility)
-    /// </summary>
     public void SetThemeColor(string colorName)
     {
         var brandColor = colorName?.ToLowerInvariant() switch
@@ -66,9 +54,6 @@ public class ThemeService
         SetBrandColor(brandColor);
     }
     
-    /// <summary>
-    /// Set theme using brand color enum (recommended)
-    /// </summary>
     public void SetBrandColor(WalletBrandColor brandColor)
     {
         _currentBrandColor = brandColor;
@@ -76,9 +61,6 @@ public class ThemeService
         ThemeChanged?.Invoke();
     }
     
-    /// <summary>
-    /// Reset to default professional theme
-    /// </summary>
     public void ResetToDefault()
     {
         _currentBrandColor = WalletBrandColor.Professional;
@@ -87,9 +69,6 @@ public class ThemeService
         ThemeChanged?.Invoke();
     }
     
-    /// <summary>
-    /// Get theme preview colors for UI selection
-    /// </summary>
     public (string primary, string secondary) GetThemePreview(WalletBrandColor brandColor)
     {
         var theme = WalletTheme.CreateBrandTheme(brandColor);

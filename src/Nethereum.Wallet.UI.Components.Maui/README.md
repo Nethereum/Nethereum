@@ -4,7 +4,7 @@ Cross-platform MAUI integration package providing platform-specific storage impl
 
 ## Package Information
 
-- **Target Frameworks**: net9.0-android, net9.0-ios, net9.0-maccatalyst, net9.0-windows10.0.19041.0
+- **Target Frameworks**: net10.0-android, net10.0-ios, net10.0-maccatalyst, net10.0-windows10.0.19041.0
 - **Platform**: .NET MAUI (Multi-platform App UI)
 - **UI Technology**: Blazor WebView (hybrid web/native)
 - **Package ID**: Nethereum.Wallet.UI.Components.Maui
@@ -20,7 +20,7 @@ Cross-platform MAUI integration package providing platform-specific storage impl
 
 **NuGet Packages:**
 - `Microsoft.AspNetCore.Components.WebView.Maui` - Blazor WebView hosting
-- `Microsoft.Extensions.Logging.Debug` 9.0.0 - Debug logging
+- `Microsoft.Extensions.Logging.Debug` 10.0.0 - Debug logging
 - `Microsoft.Maui.Controls` - MAUI framework
 
 **Project References:**
@@ -380,7 +380,7 @@ Handles BigInteger serialization as strings to prevent precision loss.
 
 Configuration options for MAUI wallet initialization.
 
-**Location**: `Options/MauiWalletComponentOptions.cs:5-10`
+**Location**: `Options/MauiWalletComponentOptions.cs:5-9`
 
 ```csharp
 public class MauiWalletComponentOptions
@@ -946,24 +946,24 @@ html, body {
 
 ```bash
 # Build and deploy to Android emulator
-dotnet build -f net9.0-android
-dotnet run -f net9.0-android
+dotnet build -f net10.0-android
+dotnet run -f net10.0-android
 ```
 
 ### iOS
 
 ```bash
 # Build and deploy to iOS simulator (Mac only)
-dotnet build -f net9.0-ios
-dotnet run -f net9.0-ios
+dotnet build -f net10.0-ios
+dotnet run -f net10.0-ios
 ```
 
 ### Windows
 
 ```bash
 # Build and run on Windows
-dotnet build -f net9.0-windows10.0.19041.0
-dotnet run -f net9.0-windows10.0.19041.0
+dotnet build -f net10.0-windows10.0.19041.0
+dotnet run -f net10.0-windows10.0.19041.0
 ```
 
 ## Troubleshooting
@@ -974,7 +974,7 @@ dotnet run -f net9.0-windows10.0.19041.0
 
 **Solution**: Ensure targeting Windows 10 SDK 10.0.19041.0 or higher:
 ```xml
-<TargetFrameworks>net9.0-windows10.0.19041.0</TargetFrameworks>
+<TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
 ```
 
 ### Blazor WebView Not Loading
@@ -1052,7 +1052,7 @@ No additional permissions required for SecureStorage/Preferences.
 - `Services/MauiPreferencesWalletStorageService.cs:18-441` - Settings and data persistence
 
 **Configuration:**
-- `Options/MauiWalletComponentOptions.cs:5-10` - Configuration options
+- `Options/MauiWalletComponentOptions.cs:5-9` - Configuration options
 
 **Extensions:**
 - `Extensions/MauiAppBuilderExtensions.cs:50-151` - Service registration

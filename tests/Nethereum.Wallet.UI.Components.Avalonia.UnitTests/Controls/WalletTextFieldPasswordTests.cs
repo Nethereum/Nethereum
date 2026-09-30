@@ -7,15 +7,11 @@ using System.Windows.Input;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests.Controls;
 
-/// <summary>
-/// Specialized tests for password reveal functionality and related behaviors
-/// </summary>
 public class WalletTextFieldPasswordTests : TestBase
 {
     [Fact]
     public async Task PasswordReveal_ToggleButton_ChangesIconCorrectly()
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Password,
@@ -26,22 +22,17 @@ public class WalletTextFieldPasswordTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Assert initial state
         field.ComputedActionIcon.Should().Be("visibility");
         field.ComputedPasswordChar.Should().Be('●');
 
-        // Act - Toggle reveal
         await RunOnUIThreadAsync(async () => await field.HandleAdornmentClick());
 
-        // Assert revealed state
         field.IsRevealed.Should().BeTrue();
         field.ComputedActionIcon.Should().Be("visibility_off");
         field.ComputedPasswordChar.Should().Be('\0');
 
-        // Act - Toggle back to hidden
         await RunOnUIThreadAsync(async () => await field.HandleAdornmentClick());
 
-        // Assert hidden state
         field.IsRevealed.Should().BeFalse();
         field.ComputedActionIcon.Should().Be("visibility");
         field.ComputedPasswordChar.Should().Be('●');
@@ -50,7 +41,6 @@ public class WalletTextFieldPasswordTests : TestBase
     [Fact]
     public async Task PrivateKeyField_PasswordReveal_WorksCorrectly()
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.PrivateKey,
@@ -62,14 +52,11 @@ public class WalletTextFieldPasswordTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Assert initial state - private key is masked
         field.ComputedPasswordChar.Should().Be('●');
         field.ComputedActionIcon.Should().Be("visibility");
 
-        // Act - Reveal private key
         await RunOnUIThreadAsync(async () => await field.HandleAdornmentClick());
 
-        // Assert revealed state - private key is visible
         field.IsRevealed.Should().BeTrue();
         field.ComputedPasswordChar.Should().Be('\0');
         field.ComputedActionIcon.Should().Be("visibility_off");
@@ -78,37 +65,32 @@ public class WalletTextFieldPasswordTests : TestBase
     [Fact]
     public void PasswordField_WithoutRevealToggle_DoesNotShowIcon()
     {
-        // Arrange & Act
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Password,
             ShowRevealToggle = false
         });
 
-        // Assert
         field.ComputedActionIcon.Should().BeEmpty();
-        field.ComputedPasswordChar.Should().Be('●'); // Still masked
+        field.ComputedPasswordChar.Should().Be('●');
     }
 
     [Fact]
     public void NonPasswordField_DoesNotMaskCharacters()
     {
-        // Arrange & Act
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Text,
-            ShowRevealToggle = true // Should be ignored for non-password fields
+            ShowRevealToggle = true
         });
 
-        // Assert
-        field.ComputedPasswordChar.Should().Be('\0'); // No masking
-        field.ComputedActionIcon.Should().BeEmpty(); // No reveal button
+        field.ComputedPasswordChar.Should().Be('\0');
+        field.ComputedActionIcon.Should().BeEmpty();
     }
 
     [Fact]
     public async Task CustomRevealCommand_OverridesDefaultBehavior()
     {
-        // Arrange
         var customCommandExecuted = false;
         var customCommand = new TestRevealCommand(() => customCommandExecuted = true);
 
@@ -123,18 +105,15 @@ public class WalletTextFieldPasswordTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Act
         await RunOnUIThreadAsync(async () => await field.HandleAdornmentClick());
 
-        // Assert
         customCommandExecuted.Should().BeTrue();
-        field.IsRevealed.Should().BeFalse(); // Should not change because custom command doesn't modify it
+        field.IsRevealed.Should().BeFalse();
     }
 
     [Fact]
     public async Task PasswordField_IconMapping_CorrectlyMapsToPathData()
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Password,
@@ -145,27 +124,23 @@ public class WalletTextFieldPasswordTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Act - Get the icon and test mapping
         var visibilityIcon = field.ComputedActionIcon;
         var iconData = Nethereum.Wallet.UI.Components.Avalonia.Extensions.IconMappingExtensions
             .ToAvaloniaPathIconData(visibilityIcon);
 
-        // Assert
         visibilityIcon.Should().Be("visibility");
         iconData.Should().NotBeEmpty();
-        iconData.Should().NotBe("M0 0h24v24H0z"); // Should not be the default fallback
+        iconData.Should().NotBe("M0 0h24v24H0z");
 
-        // Act - Toggle and test the other icon
         await RunOnUIThreadAsync(async () => await field.HandleAdornmentClick());
         var visibilityOffIcon = field.ComputedActionIcon;
         var iconOffData = Nethereum.Wallet.UI.Components.Avalonia.Extensions.IconMappingExtensions
             .ToAvaloniaPathIconData(visibilityOffIcon);
 
-        // Assert
         visibilityOffIcon.Should().Be("visibility_off");
         iconOffData.Should().NotBeEmpty();
-        iconOffData.Should().NotBe("M0 0h24v24H0z"); // Should not be the default fallback
-        iconOffData.Should().NotBe(iconData); // Should be different from visibility icon
+        iconOffData.Should().NotBe("M0 0h24v24H0z");
+        iconOffData.Should().NotBe(iconData);
     }
 
     [Theory]
@@ -174,7 +149,6 @@ public class WalletTextFieldPasswordTests : TestBase
     [InlineData("this-is-a-very-long-password-that-should-still-work-correctly")]
     public async Task PasswordReveal_WorksWithDifferentPasswordLengths(string password)
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Password,
@@ -186,13 +160,10 @@ public class WalletTextFieldPasswordTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Assert initial state - password is masked
         field.ComputedPasswordChar.Should().Be('●');
 
-        // Act - Reveal password
         await RunOnUIThreadAsync(async () => await field.HandleAdornmentClick());
 
-        // Assert revealed state - password is visible
         field.IsRevealed.Should().BeTrue();
         field.ComputedPasswordChar.Should().Be('\0');
         field.Value.Should().Be(password);
@@ -201,23 +172,20 @@ public class WalletTextFieldPasswordTests : TestBase
     [Fact]
     public void PasswordChar_Property_OverridesComputedValue()
     {
-        // Arrange & Act
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Password,
-            PasswordChar = '*', // Custom password character
+            PasswordChar = '*',
             IsRevealed = false
         });
 
-        // Assert - Custom password char should be ignored, ComputedPasswordChar takes precedence
-        field.ComputedPasswordChar.Should().Be('●'); // Standard computed value
-        field.PasswordChar.Should().Be('*'); // Property value preserved
+        field.ComputedPasswordChar.Should().Be('●');
+        field.PasswordChar.Should().Be('*');
     }
 
     [Fact]
     public async Task PasswordReveal_PropertyChangedEvents_FiredCorrectly()
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField
         {
             FieldType = WalletTextField.WalletTextFieldType.Password,
@@ -238,17 +206,12 @@ public class WalletTextFieldPasswordTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Act
         RunOnUIThread(() => field.IsRevealed = true);
 
-        // Assert
         propertyChangedEvents.Should().Contain(nameof(field.ComputedPasswordChar));
         propertyChangedEvents.Should().Contain(nameof(field.ComputedActionIcon));
     }
 
-    /// <summary>
-    /// Test command for custom reveal behavior
-    /// </summary>
     private class TestRevealCommand : System.Windows.Input.ICommand
     {
         private readonly Action _executeAction;

@@ -6,6 +6,7 @@ using Nethereum.Wallet.UI.Components.Core.Localization;
 using System.Windows.Input;
 using ReactiveUI;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.Views.Shared
 {

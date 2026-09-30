@@ -8,15 +8,11 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.UnitTests.Controls;
 
-/// <summary>
-/// Tests for two-way binding and ViewModel integration with WalletTextField
-/// </summary>
 public partial class WalletTextFieldBindingTests : TestBase
 {
     [Fact]
     public void ValueChanged_Callback_InvokesWhenValueSet()
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField());
         var callbackValues = new List<string>();
 
@@ -25,7 +21,6 @@ public partial class WalletTextFieldBindingTests : TestBase
             field.ValueChanged = value => callbackValues.Add(value);
         });
 
-        // Act
         RunOnUIThread(() =>
         {
             field.Value = "first";
@@ -33,27 +28,21 @@ public partial class WalletTextFieldBindingTests : TestBase
             field.Value = "";
         });
 
-        // Assert
         callbackValues.Should().BeEquivalentTo(new[] { "first", "second", "" });
     }
 
     [Fact]
     public async Task TwoWayBinding_WithTestViewModel_WorksCorrectly()
     {
-        // Arrange
         var viewModel = new TestViewModel();
         var field = RunOnUIThread(() => new WalletTextField());
 
-        // Set up manual two-way binding simulation
         RunOnUIThread(() =>
         {
-            // Simulate binding from ViewModel to Field
             field.Value = viewModel.TestValue;
 
-            // Simulate binding from Field to ViewModel
             field.ValueChanged = value => viewModel.TestValue = value;
 
-            // Simulate property change notifications from ViewModel
             viewModel.PropertyChanged += (sender, e) =>
             {
                 if (e.PropertyName == nameof(viewModel.TestValue))
@@ -66,28 +55,22 @@ public partial class WalletTextFieldBindingTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Act - Change ViewModel property
         viewModel.TestValue = "from viewmodel";
         await WaitForUIAsync();
 
-        // Assert - Field should reflect ViewModel change
         field.Value.Should().Be("from viewmodel");
 
-        // Act - Change field value (simulating user input)
         RunOnUIThread(() => field.Value = "from field");
 
-        // Assert - ViewModel should reflect field change
         viewModel.TestValue.Should().Be("from field");
     }
 
     [Fact]
     public async Task ValidationIntegration_WithViewModel_UpdatesErrorState()
     {
-        // Arrange
         var viewModel = new TestValidationViewModel();
         var field = RunOnUIThread(() => new WalletTextField());
 
-        // Set up validation binding simulation
         RunOnUIThread(() =>
         {
             field.Value = viewModel.Email;
@@ -95,11 +78,9 @@ public partial class WalletTextFieldBindingTests : TestBase
             field.ValueChanged = value =>
             {
                 viewModel.Email = value;
-                // Simulate validation trigger
                 viewModel.ValidateEmail();
             };
 
-            // Simulate error binding
             viewModel.PropertyChanged += (sender, e) =>
             {
                 if (e.PropertyName == nameof(viewModel.EmailError))
@@ -113,17 +94,13 @@ public partial class WalletTextFieldBindingTests : TestBase
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Act - Set invalid email
         RunOnUIThread(() => field.Value = "invalid-email");
 
-        // Assert - Field should show error
         field.Error.Should().BeTrue();
         field.ErrorText.Should().Be("Please enter a valid email address");
 
-        // Act - Set valid email
         RunOnUIThread(() => field.Value = "valid@example.com");
 
-        // Assert - Field should clear error
         field.Error.Should().BeFalse();
         field.ErrorText.Should().BeEmpty();
     }
@@ -131,7 +108,6 @@ public partial class WalletTextFieldBindingTests : TestBase
     [Fact]
     public async Task MultipleFields_IndependentValidation_WorksCorrectly()
     {
-        // Arrange
         var viewModel = new TestFormViewModel();
         var usernameField = RunOnUIThread(() => new WalletTextField());
         var passwordField = RunOnUIThread(() => new WalletTextField
@@ -139,7 +115,6 @@ public partial class WalletTextFieldBindingTests : TestBase
             FieldType = WalletTextField.WalletTextFieldType.Password
         });
 
-        // Set up binding for username field
         RunOnUIThread(() =>
         {
             usernameField.Value = viewModel.Username;
@@ -159,7 +134,6 @@ public partial class WalletTextFieldBindingTests : TestBase
             };
         });
 
-        // Set up binding for password field
         RunOnUIThread(() =>
         {
             passwordField.Value = viewModel.Password;
@@ -182,48 +156,38 @@ public partial class WalletTextFieldBindingTests : TestBase
         PlaceInWindow(usernameField);
         await WaitForUIAsync();
 
-        // Act - Test username validation
-        RunOnUIThread(() => usernameField.Value = "ab"); // Too short
+        RunOnUIThread(() => usernameField.Value = "ab");
 
-        // Assert - Username field shows error
         usernameField.Error.Should().BeTrue();
         usernameField.ErrorText.Should().Be("Username must be at least 3 characters");
 
-        // Act - Test password validation
-        RunOnUIThread(() => passwordField.Value = "123"); // Too short
+        RunOnUIThread(() => passwordField.Value = "123");
 
-        // Assert - Password field shows error, username error unchanged
         passwordField.Error.Should().BeTrue();
         passwordField.ErrorText.Should().Be("Password must be at least 8 characters");
-        usernameField.Error.Should().BeTrue(); // Should still have error
+        usernameField.Error.Should().BeTrue();
 
-        // Act - Fix username
         RunOnUIThread(() => usernameField.Value = "validuser");
 
-        // Assert - Username error cleared, password error unchanged
         usernameField.Error.Should().BeFalse();
         usernameField.ErrorText.Should().BeEmpty();
-        passwordField.Error.Should().BeTrue(); // Should still have error
+        passwordField.Error.Should().BeTrue();
     }
 
     [Fact]
     public void ValueProperty_HasCorrectDefaultBindingMode()
     {
-        // Assert - The Value property should have TwoWay binding by default
         var valueProperty = WalletTextField.ValueProperty;
-        // Skip DefaultBindingMode test for now due to API differences
         valueProperty.Should().NotBeNull();
     }
 
     [Fact]
     public async Task DynamicPropertyChanges_UpdateFieldCorrectly()
     {
-        // Arrange
         var field = RunOnUIThread(() => new WalletTextField());
         PlaceInWindow(field);
         await WaitForUIAsync();
 
-        // Act & Assert - Test multiple property changes
         RunOnUIThread(() =>
         {
             field.Label = "Initial Label";
@@ -235,7 +199,6 @@ public partial class WalletTextFieldBindingTests : TestBase
         field.Placeholder.Should().Be("Initial Placeholder");
         field.MaxLength.Should().Be(10);
 
-        // Act - Change properties
         RunOnUIThread(() =>
         {
             field.Label = "Updated Label";
@@ -243,24 +206,17 @@ public partial class WalletTextFieldBindingTests : TestBase
             field.MaxLength = 20;
         });
 
-        // Assert - Properties should be updated
         field.Label.Should().Be("Updated Label");
         field.Placeholder.Should().Be("Updated Placeholder");
         field.MaxLength.Should().Be(20);
     }
 
-    /// <summary>
-    /// Simple test ViewModel for two-way binding tests
-    /// </summary>
     public partial class TestViewModel : ObservableObject
     {
         [ObservableProperty]
         private string _testValue = "";
     }
 
-    /// <summary>
-    /// Test ViewModel with validation for email field
-    /// </summary>
     public partial class TestValidationViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -286,9 +242,6 @@ public partial class WalletTextFieldBindingTests : TestBase
         }
     }
 
-    /// <summary>
-    /// Test ViewModel with multiple validated fields
-    /// </summary>
     public partial class TestFormViewModel : ObservableObject
     {
         [ObservableProperty]

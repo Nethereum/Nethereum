@@ -14,6 +14,7 @@ using Nethereum.EVM.Execution;
 using Nethereum.EVM.StateChanges;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RPC.Eth.DTOs;
+using BalanceChange = Nethereum.EVM.StateChanges.BalanceChange;
 using Nethereum.TokenServices.ERC20;
 using Nethereum.Wallet.Services.Network;
 using Nethereum.Wallet.UI;
@@ -46,17 +47,29 @@ namespace Nethereum.Wallet.Services.Transaction
         private readonly IChainManagementService _chainManagementService;
         private readonly IErc20TokenService _tokenService;
         private readonly IABIInfoStorage _abiStorage;
+        private readonly Nethereum.EVM.ChainForkResolver _forkResolver;
 
         public StateChangesPreviewService(
             IRpcClientFactory rpcClientFactory,
             IChainManagementService chainManagementService,
             IErc20TokenService tokenService,
             IABIInfoStorage abiStorage)
+            : this(rpcClientFactory, chainManagementService, tokenService, abiStorage, forkResolver: null)
+        {
+        }
+
+        public StateChangesPreviewService(
+            IRpcClientFactory rpcClientFactory,
+            IChainManagementService chainManagementService,
+            IErc20TokenService tokenService,
+            IABIInfoStorage abiStorage,
+            Nethereum.EVM.ChainForkResolver forkResolver)
         {
             _rpcClientFactory = rpcClientFactory ?? throw new ArgumentNullException(nameof(rpcClientFactory));
             _chainManagementService = chainManagementService ?? throw new ArgumentNullException(nameof(chainManagementService));
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
             _abiStorage = abiStorage ?? throw new ArgumentNullException(nameof(abiStorage));
+            _forkResolver = forkResolver ?? Nethereum.EVM.Precompiles.DefaultChainForkResolver.Default;
         }
 
         public async Task<StateChangesResult> PreviewStateChangesAsync(
@@ -128,7 +141,7 @@ namespace Nethereum.Wallet.Services.Transaction
 
                 var ctx = BuildExecutionContext(callInput, executionStateService, blockNumber, timestamp, baseFee, enableTracing);
 
-                var config = HardforkConfig.Default;
+                var config = _forkResolver.ResolveConfigAt(chainId, (long)blockNumber.Value, (ulong)timestamp);
                 var executor = new TransactionExecutor(config);
                 var execResult = await executor.ExecuteAsync(ctx).ConfigureAwait(false);
 
@@ -357,7 +370,7 @@ namespace Nethereum.Wallet.Services.Transaction
             }
         }
 
-        private void CollectAddressesFromCalls(List<CallInput> calls, HashSet<string> addresses)
+        private void CollectAddressesFromCalls(List<Nethereum.EVM.Types.EvmCallContext> calls, HashSet<string> addresses)
         {
             if (calls == null) return;
             foreach (var call in calls)

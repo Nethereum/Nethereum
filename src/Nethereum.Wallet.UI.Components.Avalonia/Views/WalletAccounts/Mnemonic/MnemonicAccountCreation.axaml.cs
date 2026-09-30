@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic;

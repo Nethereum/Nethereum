@@ -18,6 +18,7 @@ namespace Nethereum.Wallet.RpcRequests
             registry.Register(new EthSignTypedDataV4Handler());
             registry.Register(new EthRequestAccountsHandler());
             registry.Register(new EthAccountsHandler());
+            registry.Register(new EthChainIdHandler());
             registry.Register(new EthDecryptHandler());
             registry.Register(new EthGetEncryptionPublicKeyHandler());
             registry.Register(new Web3ClientVersionHandler());

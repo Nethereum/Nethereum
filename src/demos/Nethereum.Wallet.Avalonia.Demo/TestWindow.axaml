@@ -1,0 +1,103 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shared="clr-namespace:Nethereum.Wallet.UI.Components.Avalonia.Views.Shared;assembly=Nethereum.Wallet.UI.Components.Avalonia"
+        x:Class="Nethereum.Wallet.Avalonia.Demo.TestWindow"
+        Title="Test Binding Window" Width="500" Height="600">
+    <StackPanel Margin="20" Spacing="20">
+        <TextBlock Text="BASIC CONTROLS TEST" FontSize="16" FontWeight="Bold" />
+
+        <!-- Test 1: Basic TextBox -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="1. Basic Avalonia TextBox:" />
+            <TextBox Text="Basic textbox works" />
+        </StackPanel>
+
+        <!-- Test 2: TextBox with password -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="2. Password TextBox:" />
+            <TextBox Text="password" PasswordChar="●" />
+        </StackPanel>
+
+        <!-- Test 3: WalletTextField with hardcoded values -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="3. WalletTextField with hardcoded values:" />
+            <shared:WalletTextField Value="hardcoded value"
+                                    IsEnabled="True"
+                                    Label="Hardcoded Label"
+                                    FieldType="Text" />
+        </StackPanel>
+
+        <!-- Test 10: WalletTextField with ValueChanged callback -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="10. WalletTextField with ValueChanged callback and validation:" />
+            <TextBlock x:Name="CallbackResult" Text="No callback fired yet" Foreground="Blue" />
+            <TextBlock x:Name="ValidationResult" Text="No validation run yet" Foreground="Purple" />
+            <shared:WalletTextField x:Name="TestField"
+                                   Value="test"
+                                   Label="Type here to test validation (min 3 chars)"
+                                   FieldType="Text" />
+            <TextBlock Text="Instructions: Clear the field to test required validation, type 1-2 chars to test length validation, type 3+ chars for valid state"
+                       FontSize="10" Foreground="Gray" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- Test 7: Simplified WalletTextField (fallback) -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="7. Simplified TextBox version:" />
+            <StackPanel>
+                <TextBlock Text="Simple Label" />
+                <TextBox Text="Test input" Watermark="Placeholder" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Test 4: WalletTextField as password -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="4. WalletTextField as password:" />
+            <shared:WalletTextField Value="password123"
+                                   Label="Password Field"
+                                   FieldType="Password"
+                                   ShowRevealToggle="True"
+                                   IsRevealed="True" />
+        </StackPanel>
+
+        <!-- Test 5: WalletTextField with icon -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="5. WalletTextField with action icon:" />
+            <shared:WalletTextField Value="test value"
+                                   Label="Field with Icon"
+                                   FieldType="Text"
+                                   ActionIcon="copy" />
+        </StackPanel>
+
+        <!-- Test 6: Error display -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="6. WalletTextField with error:" />
+            <shared:WalletTextField Value="invalid"
+                                   Label="Field with Error"
+                                   FieldType="Text"
+                                   Error="True"
+                                   ErrorText="This is an error message" />
+        </StackPanel>
+
+        <!-- Test 11: ViewModel Integration Test -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="11. ViewModel Integration Test (Like Real Wallet):" FontWeight="Bold" />
+
+            <shared:WalletTextField x:Name="UsernameField"
+                                   Label="Username"
+                                   FieldType="Text" />
+
+            <shared:WalletTextField x:Name="EmailField"
+                                   Label="Email"
+                                   FieldType="Email" />
+
+            <shared:WalletTextField x:Name="PasswordField"
+                                   Label="Password"
+                                   FieldType="Password" />
+
+            <TextBlock x:Name="FormStatusLabel" Text="Form is invalid" Foreground="Red" />
+            <Button x:Name="SubmitButton" Content="Submit" IsEnabled="False" />
+        </StackPanel>
+
+        <Button Content="Test Button" />
+    </StackPanel>
+</Window>

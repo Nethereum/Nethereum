@@ -45,8 +45,9 @@ Install-Package Nethereum.EIP6963WalletInterop
 - netstandard2.0
 - net472
 - net6.0
-- net7.0
 - net8.0
+- net9.0
+- net10.0
 
 ## Architecture
 
@@ -88,8 +89,8 @@ Install-Package Nethereum.EIP6963WalletInterop
                         │                                          │
                         ▼                                          ▼
             ┌────────────────────────┐              ┌──────────────────────┐
-            │ EIP6963WalletBlazer-   │              │ EIP6963WebglInterop  │
-            │ Interop (Blazor)       │              │ (Unity WebGL)        │
+            │ EIP6963WalletBlazer-   │              │ EIP6963WebglTask-    │
+            │ Interop (Blazor)       │              │ RequestInterop       │
             │                        │              │                      │
             │ Uses IJSRuntime to     │              │ Uses DllImport for   │
             │ call JavaScript        │              │ jslib calls          │
@@ -426,6 +427,7 @@ public async Task<string> SignMessageAsync(string walletUuid, string message)
 
 ```csharp
 using Nethereum.EIP6963WalletInterop;
+using Nethereum.ABI.EIP712;
 using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Signer.EIP712;
 
@@ -495,8 +497,10 @@ public async Task<string> SignTypedDataAsync(string walletUuid)
 ### Example 5: Switching Chains via Wallet
 
 ```csharp
+using System.Collections.Generic;
 using Nethereum.EIP6963WalletInterop;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.RPC.HostWallet;
 using Nethereum.Hex.HexTypes;
 
 public async Task SwitchToPolygonAsync(string walletUuid)
@@ -524,14 +528,14 @@ public async Task SwitchToPolygonAsync(string walletUuid)
             {
                 ChainId = new HexBigInteger(137),
                 ChainName = "Polygon Mainnet",
-                RpcUrls = new[] { "https://polygon-rpc.com" },
+                RpcUrls = new List<string> { "https://polygon-rpc.com" },
                 NativeCurrency = new NativeCurrency
                 {
                     Name = "MATIC",
                     Symbol = "MATIC",
                     Decimals = 18
                 },
-                BlockExplorerUrls = new[] { "https://polygonscan.com" }
+                BlockExplorerUrls = new List<string> { "https://polygonscan.com" }
             });
     }
 }
@@ -803,7 +807,7 @@ Use this for consistent wallet identification across sessions.
 
 ### Platform Implementations
 - **Nethereum.Blazor** - EIP6963WalletBlazorInterop for Blazor applications
-- **Nethereum.Unity.EIP6963** - EIP6963WebglInterop for Unity WebGL builds
+- **Nethereum.Unity.EIP6963** - EIP6963WebglTaskRequestInterop for Unity WebGL builds
 
 ### Dependencies
 - **Nethereum.UI** - IEthereumHostProvider interface and SIWE authentication
