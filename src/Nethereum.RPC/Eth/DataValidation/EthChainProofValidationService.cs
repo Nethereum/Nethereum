@@ -9,6 +9,8 @@ using Nethereum.Hex.HexTypes;
 using System.Numerics;
 using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Merkle.Patricia.ProofVerification;
+using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.RPC.Eth.ChainValidation
 {
@@ -71,10 +73,17 @@ namespace Nethereum.RPC.Eth.ChainValidation
         public async Task<byte[]> GetAndValidateValueFromStorage(string accountAddress, string storageKey, byte[] stateRoot = null, BlockParameter blockParameter = null)
         {
             var accountProof = await GetAndValidateAccountProof(accountAddress, stateRoot, new string[] { storageKey }, blockParameter);
-            var valid = ValidateValueFromStorageProof(accountProof.StorageProof[0], accountProof.StorageHash.HexToByteArray()); 
-            if (valid)
+            var requestedKey = storageKey.HexToByteArray().PadTo32Bytes();
+            var storageProof = accountProof.StorageProof?.FirstOrDefault(p => p?.Key?.HexValue != null
+                && p.Key.HexValue.HexToByteArray().PadTo32Bytes().SequenceEqual(requestedKey));
+            if (storageProof == null || requestedKey.Length != 32) throw new InvalidChainDataException();
+
+            var storageHash = accountProof.StorageHash.HexToByteArray();
+            if (storageHash.All(b => b == 0)) storageHash = DefaultValues.EMPTY_TRIE_HASH;
+
+            if (ValidateValueFromStorageProof(storageProof, storageHash))
             {
-                return accountProof.StorageProof[0].Value;
+                return storageProof.Value;
             }
             throw new InvalidChainDataException();
         }

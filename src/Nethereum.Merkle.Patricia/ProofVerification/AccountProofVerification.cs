@@ -3,6 +3,7 @@ using Nethereum.Util.HashProviders;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using System.Collections.Generic;
+using System.Linq;
 
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Storage;
@@ -19,25 +20,31 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
 
         public bool Verify(byte[] stateRoot, IEnumerable<byte[]> proof, string accountAddress, Account account)
         {
-            var encoded = new AccountEncoder();
-            var accountEncoded = encoded.Encode(account);
+            if (stateRoot == null || accountAddress == null || account == null) return false;
 
-            var sha3Provider = Sha3KeccackHashProvider.Instance;
-            var inMemoryStorage = new InMemoryContentNodeStore();
+            var addressBytes = accountAddress.HexToByteArray();
+            if (addressBytes.Length != 20) return false;
 
-            foreach (var proofItem in proof)
+            var key = Sha3KeccackHashProvider.Instance.ComputeHash(addressBytes);
+            var proofNodes = proof?.ToList() ?? new List<byte[]>();
+
+            if (!PatriciaProofVerifier.TryVerify(stateRoot, key, proofNodes, out var value)) return false;
+
+            if (value == null)
             {
-                inMemoryStorage.Put(sha3Provider.ComputeHash(proofItem), proofItem);
+                return IsAbsentAccount(account);
             }
 
-            var trie = new PatriciaTrie(stateRoot, inMemoryStorage);
-            var value = trie.Get(sha3Provider.ComputeHash(accountAddress.HexToByteArray()));
-            if (trie.Root.GetHash().AreTheSame(stateRoot))
-            {
-                if (accountEncoded.AreTheSame(value)) return true;
-                return false;
-            }
-            return false;
+            return AccountEncoder.Current.Encode(account).AreTheSame(value);
         }
+
+        private static bool IsAbsentAccount(Account account)
+            => account.Nonce.IsZero
+               && account.Balance.IsZero
+               && IsEmptyOrZeroHash(account.CodeHash, DefaultValues.EMPTY_DATA_HASH)
+               && IsEmptyOrZeroHash(account.StateRoot, DefaultValues.EMPTY_TRIE_HASH);
+
+        private static bool IsEmptyOrZeroHash(byte[] hash, byte[] emptyHash)
+            => hash != null && hash.Length == 32 && (hash.AreTheSame(emptyHash) || hash.All(b => b == 0));
     }
 }

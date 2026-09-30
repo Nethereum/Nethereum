@@ -85,7 +85,7 @@ namespace Nethereum.ChainStateVerification
                 throw new InvalidOperationException("RPC node did not return an account proof.");
             }
 
-            var account = _proofVerifier.VerifyAccountProof(header.StateRoot, proof);
+            var account = _proofVerifier.VerifyAccountProof(header.StateRoot, RequestedProofBinding.RequireAccount(proof, address));
 
             if (EnableCaching)
             {
@@ -210,7 +210,7 @@ namespace Nethereum.ChainStateVerification
                 throw new InvalidOperationException("RPC node did not return a storage proof.");
             }
 
-            var account = _proofVerifier.VerifyAccountProof(header.StateRoot, proof);
+            var account = _proofVerifier.VerifyAccountProof(header.StateRoot, RequestedProofBinding.RequireAccount(proof, address));
 
             if (EnableCaching)
             {
@@ -224,7 +224,7 @@ namespace Nethereum.ChainStateVerification
                 throw new InvalidOperationException("RPC proof did not include the requested storage slot.");
             }
 
-            var storageValue = _proofVerifier.VerifyStorageProof(account, storageEntry);
+            var storageValue = _proofVerifier.VerifyStorageProof(account, RequestedProofBinding.RequireSlot(proof, normalizedSlot));
 
             if (EnableCaching)
             {

@@ -394,10 +394,12 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             {
                 From = _fixture.Account.Address,
                 To = to,
-                Value = new HexBigInteger(value),
-                Gas = new HexBigInteger(21000)
+                Value = new HexBigInteger(value)
             };
-            return await _fixture.Web3.Eth.TransactionManager.SendTransactionAndWaitForReceiptAsync(txInput);
+            txInput.Gas = await _fixture.Web3.Eth.TransactionManager.EstimateGasAsync(txInput);
+            var receipt = await _fixture.Web3.Eth.TransactionManager.SendTransactionAndWaitForReceiptAsync(txInput);
+            Assert.False(receipt.HasErrors() == true, $"Transfer of {value} wei to {to} failed in block {receipt.BlockNumber.Value}");
+            return receipt;
         }
     }
 }

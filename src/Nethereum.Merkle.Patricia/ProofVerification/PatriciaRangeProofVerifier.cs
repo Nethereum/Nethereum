@@ -153,7 +153,7 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
             return new RangeProofResult(true, HasRightElement(rebuilt.Root, keys[keys.Count - 1]));
         }
 
-        private static Node ProofToPath(
+        internal static Node ProofToPath(
             byte[] rootHash,
             Node root,
             byte[] keyHex,
@@ -516,7 +516,7 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
         }
 
 
-        private static InMemoryContentNodeStore BuildProofStorage(IList<byte[]> proofNodes, IHashProvider hashProvider)
+        internal static InMemoryContentNodeStore BuildProofStorage(IList<byte[]> proofNodes, IHashProvider hashProvider)
         {
             var s = new InMemoryContentNodeStore();
             for (int i = 0; i < proofNodes.Count; i++)

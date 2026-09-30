@@ -25,6 +25,9 @@ namespace Nethereum.ChainStateVerification
                 throw new InvalidChainDataException("Account proof did not match the provided state root.");
             }
 
+            if (account.CodeHash.All(b => b == 0)) account.CodeHash = DefaultValues.EMPTY_DATA_HASH;
+            if (account.StateRoot.All(b => b == 0)) account.StateRoot = DefaultValues.EMPTY_TRIE_HASH;
+
             return account;
         }
 

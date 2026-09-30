@@ -46,14 +46,14 @@ namespace Nethereum.ChainStateVerification
                 throw new InvalidOperationException("RPC node did not return a storage proof.");
             }
 
-            var account = _proofVerifier.VerifyAccountProof(trustedHeader.StateRoot, proof);
+            var account = _proofVerifier.VerifyAccountProof(trustedHeader.StateRoot, RequestedProofBinding.RequireAccount(proof, address));
             var storageEntry = proof.StorageProof.FirstOrDefault();
             if (storageEntry == null)
             {
                 throw new InvalidOperationException("RPC proof did not include the requested storage slot.");
             }
 
-            return _proofVerifier.VerifyStorageProof(account, storageEntry);
+            return _proofVerifier.VerifyStorageProof(account, RequestedProofBinding.RequireSlot(proof, storageSlotHex.EnsureHexPrefix()));
         }
     }
 }

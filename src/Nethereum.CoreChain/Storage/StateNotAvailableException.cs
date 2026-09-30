@@ -12,5 +12,11 @@ namespace Nethereum.CoreChain.Storage
         {
             StateRoot = stateRoot;
         }
+
+        public StateNotAvailableException(byte[] stateRoot, string message)
+            : base(message)
+        {
+            StateRoot = stateRoot;
+        }
     }
 }

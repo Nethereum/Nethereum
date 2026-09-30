@@ -38,7 +38,7 @@ namespace Nethereum.ChainStateVerification
                 throw new InvalidOperationException("RPC node did not return an account proof.");
             }
 
-            return _proofVerifier.VerifyAccountProof(trustedHeader.StateRoot, proof);
+            return _proofVerifier.VerifyAccountProof(trustedHeader.StateRoot, RequestedProofBinding.RequireAccount(proof, address));
         }
     }
 }

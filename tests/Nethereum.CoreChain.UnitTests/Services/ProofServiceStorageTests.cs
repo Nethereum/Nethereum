@@ -12,6 +12,8 @@ using Nethereum.Util;
 using Xunit;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Merkle.Patricia.Storage;
+using Nethereum.Merkle.Patricia.ProofVerification;
+using Nethereum.RPC.Eth.Mappers;
 
 namespace Nethereum.CoreChain.UnitTests.Services
 {
@@ -152,6 +154,103 @@ namespace Nethereum.CoreChain.UnitTests.Services
             Assert.Single(result.StorageProof);
             Assert.Equal(BigInteger.Zero, result.StorageProof[0].Value.Value);
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Given_AnAddressAbsentFromTheStateTrie_When_ItsProofIsGenerated_Then_TheAccountProofIsTheExclusionPathFromTheStateRoot(bool trieBacked)
+        {
+            const string absentAddress = "0x2222222222222222222222222222222222222222";
+            var (stateStore, trieNodeStore, stateRoot) = await SetupStateWithPersistedTrieNodes();
+            var proofService = new ProofService(stateStore, trieBacked ? trieNodeStore : null);
+
+            var absent = await proofService.GenerateAccountProofAsync(absentAddress, new List<BigInteger>(), stateRoot);
+            var present = await proofService.GenerateAccountProofAsync(AccountAddress, new List<BigInteger>(), stateRoot);
+
+            var absentProof = absent.AccountProofs.Select(p => p.HexToByteArray()).ToList();
+            Assert.NotEmpty(absentProof);
+            Assert.Equal(stateRoot, _sha3.CalculateHash(absentProof[0]));
+            Assert.True(PatriciaProofVerifier.TryVerify(stateRoot, AddressKey(absentAddress), absentProof, out var absentValue));
+            Assert.Null(absentValue);
+            Assert.True(ProofVerification.Current.Account.Verify(
+                stateRoot, absentProof, absentAddress, absent.ToAccount()));
+            var claimed = absent.ToAccount();
+            claimed.Balance = 1;
+            Assert.False(ProofVerification.Current.Account.Verify(stateRoot, absentProof, absentAddress, claimed));
+
+            var presentProof = present.AccountProofs.Select(p => p.HexToByteArray()).ToList();
+            Assert.True(PatriciaProofVerifier.TryVerify(stateRoot, AddressKey(AccountAddress), presentProof, out var presentValue));
+            EvmUInt256 expectedBalance = 1000;
+            Assert.Equal(expectedBalance, AccountEncoder.Current.Decode(presentValue).Balance);
+        }
+
+        [Fact]
+        public async Task Given_AnAccountWithStorage_When_AnUnsetSlotIsProven_Then_TheStorageProofIsTheExclusionPathFromTheStorageHash()
+        {
+            var (stateStore, trieNodeStore, stateRoot) = await SetupStateWithPersistedTrieNodes();
+            var proofService = new ProofService(stateStore, trieNodeStore);
+
+            var result = await proofService.GenerateAccountProofAsync(
+                AccountAddress, new List<BigInteger> { new BigInteger(999), BigInteger.Zero }, stateRoot);
+
+            var storageHash = result.StorageHash.HexToByteArray();
+            var unset = result.StorageProof[0];
+            var unsetProof = unset.Proof.Select(p => p.HexToByteArray()).ToList();
+            Assert.Equal(BigInteger.Zero, unset.Value.Value);
+            Assert.NotEmpty(unsetProof);
+            Assert.Equal(storageHash, _sha3.CalculateHash(unsetProof[0]));
+            Assert.True(PatriciaProofVerifier.TryVerify(storageHash, SlotKey(999), unsetProof, out var unsetValue));
+            Assert.Null(unsetValue);
+            var slot999 = new BigInteger(999).ToByteArray(isUnsigned: true, isBigEndian: true);
+            Assert.True(ProofVerification.Current.Storage.Verify(storageHash, unsetProof, slot999, new byte[] { 0x00 }));
+            Assert.False(ProofVerification.Current.Storage.Verify(storageHash, unsetProof, slot999, new byte[] { 0x01 }));
+
+            var setProof = result.StorageProof[1].Proof.Select(p => p.HexToByteArray()).ToList();
+            Assert.True(PatriciaProofVerifier.TryVerify(storageHash, SlotKey(0), setProof, out var setValue));
+            Assert.Equal(new BigInteger(100), RLP.RLP.Decode(setValue).RLPData.ToBigIntegerFromRLPDecoded());
+        }
+
+        [Fact]
+        public async Task Given_ATrieStoreMissingANodeBelowARetainedRoot_When_AProofIsRequested_Then_StateNotAvailableIsThrownInsteadOfAnEmptyProof()
+        {
+            var (stateStore, trieNodeStore, stateRoot) = await SetupStateWithPersistedTrieNodes();
+            var rootOnly = new InMemoryContentNodeStore();
+            rootOnly.Put(stateRoot, trieNodeStore.Get(stateRoot));
+            var proofService = new ProofService(stateStore, rootOnly);
+
+            var missing = await Assert.ThrowsAsync<StateNotAvailableException>(() =>
+                proofService.GenerateAccountProofAsync(AccountAddress, new List<BigInteger> { BigInteger.Zero }, stateRoot));
+
+            Assert.Equal(stateRoot, missing.StateRoot);
+            Assert.DoesNotContain("is not retained", missing.Message);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Given_AnAddressAbsentFromTheStateTrie_When_ItsProofIsGenerated_Then_CodeHashAndStorageHashAreZero_AsGethReturnsThem(bool trieBacked)
+        {
+            const string absentAddress = "0x2222222222222222222222222222222222222222";
+            var (stateStore, trieNodeStore, stateRoot) = await SetupStateWithPersistedTrieNodes();
+            var proofService = new ProofService(stateStore, trieBacked ? trieNodeStore : null);
+
+            var absent = await proofService.GenerateAccountProofAsync(absentAddress, new List<BigInteger> { BigInteger.One }, stateRoot);
+            var present = await proofService.GenerateAccountProofAsync(AccountAddress, new List<BigInteger>(), stateRoot);
+
+            var zeroHash = new byte[32].ToHex(true);
+            Assert.Equal(zeroHash, absent.CodeHash);
+            Assert.Equal(zeroHash, absent.StorageHash);
+            Assert.Equal(BigInteger.Zero, absent.StorageProof[0].Value.Value);
+            Assert.Empty(absent.StorageProof[0].Proof);
+            Assert.Equal(DefaultValues.EMPTY_DATA_HASH.ToHex(true), present.CodeHash);
+            Assert.NotEqual(zeroHash, present.StorageHash);
+        }
+
+        private byte[] AddressKey(string address)
+            => _sha3.CalculateHash(AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray());
+
+        private byte[] SlotKey(int slot)
+            => _sha3.CalculateHash(new BigInteger(slot).ToBytesForRLPEncoding().PadBytes(32));
 
         private async Task<(InMemoryStateStore, InMemoryContentNodeStore, byte[])> SetupStateWithPersistedTrieNodes()
         {

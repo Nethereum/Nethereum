@@ -10,6 +10,7 @@ using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Signer;
 using Xunit;
 using Nethereum.Merkle.Patricia.ProofVerification;
+using Nethereum.RLP;
 
 namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
 {
@@ -337,19 +338,86 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
             Assert.Equal(BigInteger.Zero, proof.Balance.Value);
             Assert.Equal(BigInteger.Zero, proof.Nonce.Value);
 
-            if (proof.AccountProofs != null && proof.AccountProofs.Count > 0)
-            {
-                var block = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
-                    .SendRequestAsync(BlockParameter.CreateLatest());
-                var stateRoot = block.StateRoot.HexToByteArray();
+            Assert.NotEmpty(proof.AccountProofs);
 
-                var account = proof.ToAccount();
-                var valid = ProofVerification.Current.Account.Verify(
-                    stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
-                    nonExistentAddress, account);
-                Assert.False(valid, "Non-existent account proof should not verify as a real account");
-            }
+            var block = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
+                .SendRequestAsync(BlockParameter.CreateLatest());
+            var stateRoot = block.StateRoot.HexToByteArray();
+
+            var account = proof.ToAccount();
+            var valid = ProofVerification.Current.Account.Verify(
+                stateRoot, proof.AccountProofs.Select(x => x.HexToByteArray()),
+                nonExistentAddress, account);
+            Assert.True(valid, "Non-existent account's proof of absence should verify as the empty account");
         }
+
+        [Fact]
+        public async Task Given_AnAddressThatWasNeverTouched_When_ItsProofIsRequested_Then_TheAccountProofIsAnExclusionPathFromTheHeaderStateRootThatVerifiesAbsence()
+        {
+            var receipt = await SendEthTransferAsync(DevChainHttpFixture.RecipientAddress, OneToken);
+            var atBlock = new BlockParameter(receipt.BlockNumber);
+            const string untouched = "0x5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a";
+            var keccak = new Nethereum.Util.Sha3Keccack();
+
+            var header = await _fixture.Web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(atBlock);
+            var stateRoot = header.StateRoot.HexToByteArray();
+            var absent = await _fixture.Web3.Eth.GetProof.SendRequestAsync(untouched, Array.Empty<string>(), atBlock);
+            var present = await _fixture.Web3.Eth.GetProof.SendRequestAsync(_fixture.Account.Address, Array.Empty<string>(), atBlock);
+
+            Assert.Equal(BigInteger.Zero, absent.Balance.Value);
+            Assert.Equal(BigInteger.Zero, absent.Nonce.Value);
+            Assert.Equal(new byte[32].ToHex(true), absent.CodeHash);
+            Assert.Equal(new byte[32].ToHex(true), absent.StorageHash);
+            var absentProof = absent.AccountProofs.Select(x => x.HexToByteArray()).ToList();
+            Assert.NotEmpty(absentProof);
+            Assert.Equal(stateRoot, keccak.CalculateHash(absentProof[0]));
+            Assert.True(PatriciaProofVerifier.TryVerify(stateRoot, keccak.CalculateHash(untouched.HexToByteArray()), absentProof, out var absentValue));
+            Assert.Null(absentValue);
+            Assert.True(ProofVerification.Current.Account.Verify(stateRoot, absentProof, untouched, absent.ToAccount()));
+            var claimed = absent.ToAccount();
+            claimed.Balance = 1;
+            Assert.False(ProofVerification.Current.Account.Verify(stateRoot, absentProof, untouched, claimed));
+
+            var presentProof = present.AccountProofs.Select(x => x.HexToByteArray()).ToList();
+            Assert.True(PatriciaProofVerifier.TryVerify(stateRoot, keccak.CalculateHash(_fixture.Account.Address.HexToByteArray()), presentProof, out var presentValue));
+            Assert.NotNull(presentValue);
+            Assert.Equal(present.ToAccount().Balance, Nethereum.Model.AccountEncoder.Current.Decode(presentValue).Balance);
+        }
+
+        [Fact]
+        public async Task Given_ADeployedContract_When_AnUnsetSlotIsRequested_Then_TheStorageProofIsAnExclusionPathFromTheStorageHashThatVerifiesZero()
+        {
+            var contractAddress = await DeployAndMintAsync(OneToken * 1000);
+            var keccak = new Nethereum.Util.Sha3Keccack();
+
+            var proof = await _fixture.Web3.Eth.GetProof.SendRequestAsync(
+                contractAddress, new[] { "0x2", "0x7777" }, BlockParameter.CreateLatest());
+
+            var storageHash = proof.StorageHash.HexToByteArray();
+            var set = proof.StorageProof[0];
+            var unset = proof.StorageProof[1];
+            var unsetProof = unset.Proof.Select(x => x.HexToByteArray()).ToList();
+
+            Assert.Equal(BigInteger.Zero, unset.Value.Value);
+            Assert.NotEmpty(unsetProof);
+            Assert.Equal(storageHash, keccak.CalculateHash(unsetProof[0]));
+            Assert.True(PatriciaProofVerifier.TryVerify(storageHash, SlotKey(0x7777), unsetProof, out var unsetValue));
+            Assert.Null(unsetValue);
+            Assert.True(ProofVerification.Current.Storage.Verify(
+                storageHash, unsetProof, "0x7777".HexToByteArray(), unset.Value.HexValue.HexToByteArray()));
+            Assert.False(ProofVerification.Current.Storage.Verify(
+                storageHash, unsetProof, "0x7777".HexToByteArray(), new byte[] { 0x01 }));
+
+            var setProof = set.Proof.Select(x => x.HexToByteArray()).ToList();
+            Assert.True(set.Value.Value > 0);
+            Assert.True(PatriciaProofVerifier.TryVerify(storageHash, SlotKey(0x2), setProof, out var setValue));
+            Assert.NotNull(setValue);
+            Assert.Equal(set.Value.Value, Nethereum.RLP.RLP.Decode(setValue).RLPData.ToBigIntegerFromRLPDecoded());
+        }
+
+        private static byte[] SlotKey(int slot)
+            => new Nethereum.Util.Sha3Keccack().CalculateHash(
+                Nethereum.Util.ByteUtil.PadBytes(new BigInteger(slot).ToByteArray(isUnsigned: true, isBigEndian: true), 32));
 
         private async Task<TransactionReceipt> DeployERC20Async()
         {

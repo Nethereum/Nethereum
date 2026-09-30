@@ -324,7 +324,7 @@ var inclusion = ProofGenerator.GenerateProof(
 Assert.True(ProofVerification.Current.Storage.Verify(storageRoot, inclusion, slot, slotValue));
 ```
 
-Under the hood a verifier loads the proof nodes into an `InMemoryContentNodeStore`, builds a `PatriciaTrie(root, thatStore)`, and re-reads — a proof that reconstructs the authentic root is unforgeable.
+Under the hood a verifier loads the proof nodes into an `InMemoryContentNodeStore` and walks the key's path from the root through them — a proof that reconstructs the authentic root is unforgeable.
 
 ### snap/1 range proofs
 

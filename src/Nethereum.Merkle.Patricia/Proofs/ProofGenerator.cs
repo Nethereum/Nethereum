@@ -1,6 +1,7 @@
 using Nethereum.Documentation;
 using System.Collections.Generic;
 using Nethereum.Util;
+using Nethereum.Model;
 
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Storage;
@@ -70,5 +71,71 @@ namespace Nethereum.Merkle.Patricia.Proofs
 
             return proofNodes;
         }
+
+        public static List<byte[]> GeneratePathProof(PatriciaTrie trie, byte[] key)
+            => GeneratePathProof(trie.Root, key.ConvertToNibbles(), trie.Store);
+
+        public static List<byte[]> GeneratePathProof(Node root, byte[] keyAsNibbles, ITrieNodeStore store)
+        {
+            var proofNodes = new List<byte[]>();
+            var currentNode = root;
+            var remaining = keyAsNibbles;
+
+            while (true)
+            {
+                if (currentNode is HashNode hashNode)
+                {
+                    if (hashNode.InnerNode == null && store != null)
+                    {
+                        hashNode.DecodeInnerNode(store, false);
+                    }
+                    if (hashNode.InnerNode == null || hashNode.InnerNode is EmptyNode)
+                    {
+                        return IsEmptyTrieRoot(hashNode, proofNodes) ? proofNodes : null;
+                    }
+                    currentNode = hashNode.InnerNode;
+                    continue;
+                }
+
+                if (currentNode is EmptyNode || currentNode is null)
+                {
+                    return proofNodes;
+                }
+
+                var encoded = currentNode.GetEncodedData();
+                if (proofNodes.Count == 0 || encoded.Length >= 32)
+                {
+                    proofNodes.Add(encoded);
+                }
+
+                if (currentNode is BranchNode branchNode)
+                {
+                    if (remaining.Length == 0)
+                    {
+                        return proofNodes;
+                    }
+                    currentNode = branchNode.Children[remaining[0]];
+                    remaining = remaining.SliceFrom(1);
+                    continue;
+                }
+
+                if (currentNode is ExtendedNode extendedNode)
+                {
+                    var foundSameNibbles = extendedNode.Nibbles.FindAllTheSameBytesFromTheStart(remaining);
+                    if (foundSameNibbles.Length < extendedNode.Nibbles.Length)
+                    {
+                        return proofNodes;
+                    }
+                    currentNode = extendedNode.InnerNode;
+                    remaining = remaining.SliceFrom(foundSameNibbles.Length);
+                    continue;
+                }
+
+                return proofNodes;
+            }
+        }
+
+        private static bool IsEmptyTrieRoot(HashNode hashNode, List<byte[]> proofNodes)
+            => proofNodes.Count == 0 && hashNode.Hash != null && hashNode.Hash.AreTheSame(DefaultValues.EMPTY_TRIE_HASH);
     }
 }
