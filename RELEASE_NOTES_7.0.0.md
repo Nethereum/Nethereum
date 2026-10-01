@@ -1,34 +1,49 @@
 # Nethereum 7.0.0
 
-Nethereum 7.0 takes the library from an Ethereum client SDK to a full Ethereum node toolkit in .NET. The EVM is rebuilt as one engine that runs in a live node, a transaction simulator and a zkVM guest, and executes every fork from Frontier through Amsterdam (EIP-8037 two-dimensional gas, EIP-8038 repricing, EIP-7928 block access lists, EIP-7708 ETH-transfer logs). On top of it ship a complete node storage-and-execution engine with a RocksDB backend and a geth-compatible freezer, native devp2p networking with snap sync, a trust-minimised beacon light client, and a shared hosting layer that runs a read-only mainnet follower, the AppChain and the DevChain from the same building blocks. The client stack gains the post-Prague / Amsterdam JSON-RPC surface (`eth_config`, `eth_simulateV1`, Engine API DTOs), the Account Abstraction stack gains passkey signers, social recovery and an in-process bundler, X402 moves to protocol v2 with Permit2, Ethereum blocks can be proven inside the Zisk zkVM, and new `Nethereum.DID` packages resolve `did:ethr` identities. The repository moves to `Nethereum.slnx`.
+Nethereum 7.0 evolves Nethereum into a full Ethereum SDK and node toolkit for .NET.
+
+Developers can now work with Ethereum at every level: interact through JSON-RPC, embed the EVM, execute and simulate transactions and blocks, connect directly to Ethereum over DevP2P, verify Ethereum through a beacon light client, follow mainnet, and extend Ethereum with application-specific chains anchored back to L1.
+
+The goal is to make more of Ethereum itself directly usable from .NET — not only the APIs exposed by a remote node, but the execution, networking, verification and chain-building components underneath them.
+
+The EVM is rebuilt as one engine that runs in a live node, a transaction simulator and a zkVM guest, and executes every fork from Frontier through Amsterdam (EIP-8037 two-dimensional gas, EIP-8038 repricing, EIP-7928 block access lists, EIP-7708 ETH-transfer logs). On top of it ship a complete node storage-and-execution engine with a RocksDB backend and a geth-compatible freezer, native devp2p networking with snap sync, a trust-minimised beacon light client, and a shared hosting layer that runs a read-only mainnet follower, the AppChain and the DevChain from the same building blocks. The client stack gains the post-Prague / Amsterdam JSON-RPC surface (`eth_config`, `eth_simulateV1`, Engine API DTOs), the Account Abstraction stack gains passkey signers, social recovery and an in-process bundler, X402 moves to protocol v2 with Permit2, Ethereum blocks can be proven inside the Zisk zkVM, and new `Nethereum.DID` packages resolve `did:ethr` identities. The repository moves to `Nethereum.slnx`.
 
 [Full Changelog](https://github.com/Nethereum/Nethereum/compare/6.1.0...7.0.0)
 
+## Architecture
+
+The diagram shows how the 7.0 packages compose, from the primitives at the bottom to the node hosts and applications at the top. You can use them at any level: the client stack against a remote node, the EVM embedded without a node, or a full node composed from the pieces in between.
+
+```
+ Applications & extensions   Account Abstraction · X402 · DID · MUD · Indexing · Wallet / UI · Unity
+                                       │
+ Client stack                JsonRpc · RPC · Web3 · Contracts · Accounts  ──►  any Ethereum node,
+                                       │                                       including the hosts below
+ Node hosts                  MainnetChain · AppChain · DevChain
+                                       │  composed by
+ Hosting                     ChainNode.Hosting   (storage + mempool + peer serving + sync → one ChainNode)
+                                       │
+          ┌────────────────────────────┼────────────────────────────┐
+ CoreChain                     DevP2P · DevP2P.Sync          Consensus
+ execute · import · produce    RLPx · discovery ·            beacon light client ·
+ follow · JSON-RPC · Engine    snap sync · serving           Clique PoA gate
+ storage: in-memory · CoreChain.RocksDB · Freezer
+          └────────────────────────────┬────────────────────────────┘
+                                       │
+ EVM                         EVM.Core (stateless engine) · EVM.Precompiles · EVM (simulation & debugging) · EVM.Zisk (zkVM guest)
+                                       │
+ Foundations                 Model · RLP · SSZ · Signer · Util · Merkle
+```
+
+* **Foundations** — the block, transaction and wire data model, encodings, hashing, signing and tries every other layer uses.
+* **EVM** — one engine compiled from one source tree: `Nethereum.EVM.Core` runs stateless from a witness, `Nethereum.EVM` hosts it for simulation and debugging over JSON-RPC, and `Nethereum.EVM.Zisk` runs it as a zkVM guest.
+* **CoreChain** — the node engine that executes, validates, produces and follows blocks over the `IChainStoreBundle` storage interfaces, and serves `eth_*` JSON-RPC and the Engine API.
+* **DevP2P** — the wire protocol and the sync engine that fill a CoreChain store from real peers.
+* **Consensus** — what makes a followed chain trustworthy: the beacon light client for mainnet and the Clique gate for proof-of-authority chains.
+* **Hosting** — `Nethereum.ChainNode.Hosting` composes those pieces into one `ChainNode`; the mainnet follower, the AppChain and the DevChain all compose from its building blocks.
+* **Client stack and applications** — the established Web3 client, which talks to any node and which the EVM and CoreChain also use for RPC types and live-state reads, and the application packages built on it.
+
 Each section below summarises one area; the linked note for that area lists the full API-level delta.
-
-## Package versions
-
-Most packages ship as **7.0.0**. The new networking, mainnet-follower and AppChain packages ship as **7.0.0-preview**, so their interfaces may still move before they are declared stable:
-
-* `Nethereum.DevP2P`, `Nethereum.DevP2P.Sync`
-* `Nethereum.MainnetChain`, `Nethereum.MainnetChain.Server`
-* `Nethereum.AppChain`, `Nethereum.AppChain.Sequencer`, `Nethereum.AppChain.Policy`, `Nethereum.AppChain.Anchoring`, `Nethereum.AppChain.Anchoring.Postgres`, `Nethereum.AppChain.Server`, `Nethereum.AppChain.Server.Core`, `Nethereum.AccountAbstraction.AppChain`, `Nethereum.Explorer.Anchoring`
-
-A stable package can depend on a preview one (for example `Nethereum.ChainNode.Hosting` on `Nethereum.DevP2P.Sync`), so restoring it pulls in that preview package.
-
-New packages in 7.0: `Nethereum.EVM.Core`, `Nethereum.EVM.Precompiles`, `Nethereum.DevP2P`, `Nethereum.DevP2P.Sync`, `Nethereum.ChainNode.Hosting`, `Nethereum.MainnetChain`, `Nethereum.MainnetChain.Server`, `Nethereum.Freezer`, `Nethereum.CoreChain.Freezer`, `Nethereum.Zisk.Core`, `Nethereum.WebAuthn` (+ `.Blazor`, `.Windows`), `Nethereum.AccountAbstraction.WebAuthn`, `Nethereum.AccountAbstraction.Bundler.InProcess`, `Nethereum.AppChain.Server.Core`, `Nethereum.Explorer.Anchoring`, `Nethereum.DID`, `Nethereum.DID.EthrDID`.
-
-## Breaking changes
-
-* **Permit2 moved out of `Nethereum.Uniswap`.** The Permit2 service is now `web3.Eth.GetPermit2Service()` in `Nethereum.Contracts.Standards.Permit2`, the EIP-712 message types are in `Nethereum.ABI.EIP712.Permit2`, and `PermitSigner` is in `Nethereum.Signer.EIP712.Permit2`. The 6.1.0 helpers `GetSinglePermitWithSignatureAsync` / `GetBatchPermitWithSignatureAsync` and `SignedPermit2<T>` have no replacement: read the nonce with `Permit2Service.AllowanceQueryAsync` and sign with `PermitSigner.SignPermitSingle` / `SignPermitBatch`.
-* **AppChain networking packages removed.** `Nethereum.AppChain.P2P`, `Nethereum.AppChain.P2P.DotNetty`, `Nethereum.AppChain.P2P.Server` and `Nethereum.AppChain.Sync` are gone; the AppChain now runs on the shared `Nethereum.DevP2P` / `Nethereum.DevP2P.Sync` stack.
-* **`Nethereum.Unity.Metamask` package id.** 6.1.0 published it as `Nethereum.Unity.Metamasky`; update the `PackageReference`.
-* **`VerifiedNodeDataService` implements the EVM `IStateReader`** instead of `INodeDataService`: results are `EvmUInt256`, `GetTransactionCount` became `GetTransactionCountAsync`, and `AccountExistsAsync` was added.
-* **Signing defaults.** `EthECKey.GetPrivateKeyAsBytes()` now always returns the 32-byte scalar (a key with leading zero bytes was returned shorter in 6.1.0). On `net8.0`, `net9.0` and `net10.0`, `EthECKey.SignRecoverable` now defaults to `true`, so recoverable signing and public-key recovery run on NBitcoin.Secp256k1; set it to `false` to return to BouncyCastle.
-* **Stricter decoding.** The legacy transaction decoder rejects a non-canonically encoded (leading-zero) scalar, and `SszMerkleizer.VerifyProof` requires a branch of exactly `depth` elements.
-* **`ITransactionLogView.BlockTimestamp`** is a new interface member; custom implementations must add it.
-* **JSON-RPC server behaviour (CoreChain / DevChain).** `eth_subscribe` refuses any subscription type other than `newHeads` and `logs` with `-32000`.
-* **Client DTOs.** `EthGetUserOperationByHash` returns a `UserOperationByHashResult` wrapper, and `ChainDefaultFeaturesServicesRepository.GetDefaultChainFeature(chainId)` returns `null` for an unknown chain instead of assuming ether.
 
 ## Foundations — Model, Signer, Util, Merkle
 
@@ -178,6 +193,30 @@ Details: [Wallet & UI](https://github.com/Nethereum/Nethereum/blob/7.0.0/release
 * **Verified storage reads use the right slot.** `VerifiedStateService.GetStorageAtAsync(address, BigInteger)` encoded the slot little-endian and zero-trimmed, so mapping and array slots read another slot's value; it now requests the 32-byte big-endian key EIP-1186 defines.
 * **`EnsureHexPrefix` on a string array** now writes the `0x` prefix back onto each element; it previously returned the array unchanged (PR #1122).
 * `Nethereum.Mud` decodes an empty `string` field to `""` instead of `null`.
+
+## Package versions
+
+Most packages ship as **7.0.0**. The new networking, mainnet-follower and AppChain packages ship as **7.0.0-preview**, so their interfaces may still move before they are declared stable:
+
+* `Nethereum.DevP2P`, `Nethereum.DevP2P.Sync`
+* `Nethereum.MainnetChain`, `Nethereum.MainnetChain.Server`
+* `Nethereum.AppChain`, `Nethereum.AppChain.Sequencer`, `Nethereum.AppChain.Policy`, `Nethereum.AppChain.Anchoring`, `Nethereum.AppChain.Anchoring.Postgres`, `Nethereum.AppChain.Server`, `Nethereum.AppChain.Server.Core`, `Nethereum.AccountAbstraction.AppChain`, `Nethereum.Explorer.Anchoring`
+
+A stable package can depend on a preview one (for example `Nethereum.ChainNode.Hosting` on `Nethereum.DevP2P.Sync`), so restoring it pulls in that preview package.
+
+New packages in 7.0: `Nethereum.EVM.Core`, `Nethereum.EVM.Precompiles`, `Nethereum.DevP2P`, `Nethereum.DevP2P.Sync`, `Nethereum.ChainNode.Hosting`, `Nethereum.MainnetChain`, `Nethereum.MainnetChain.Server`, `Nethereum.Freezer`, `Nethereum.CoreChain.Freezer`, `Nethereum.Zisk.Core`, `Nethereum.WebAuthn` (+ `.Blazor`, `.Windows`), `Nethereum.AccountAbstraction.WebAuthn`, `Nethereum.AccountAbstraction.Bundler.InProcess`, `Nethereum.AppChain.Server.Core`, `Nethereum.Explorer.Anchoring`, `Nethereum.DID`, `Nethereum.DID.EthrDID`.
+
+## Breaking changes
+
+* **Permit2 moved out of `Nethereum.Uniswap`.** The Permit2 service is now `web3.Eth.GetPermit2Service()` in `Nethereum.Contracts.Standards.Permit2`, the EIP-712 message types are in `Nethereum.ABI.EIP712.Permit2`, and `PermitSigner` is in `Nethereum.Signer.EIP712.Permit2`. The 6.1.0 helpers `GetSinglePermitWithSignatureAsync` / `GetBatchPermitWithSignatureAsync` and `SignedPermit2<T>` have no replacement: read the nonce with `Permit2Service.AllowanceQueryAsync` and sign with `PermitSigner.SignPermitSingle` / `SignPermitBatch`.
+* **AppChain networking packages removed.** `Nethereum.AppChain.P2P`, `Nethereum.AppChain.P2P.DotNetty`, `Nethereum.AppChain.P2P.Server` and `Nethereum.AppChain.Sync` are gone; the AppChain now runs on the shared `Nethereum.DevP2P` / `Nethereum.DevP2P.Sync` stack.
+* **`Nethereum.Unity.Metamask` package id.** 6.1.0 published it as `Nethereum.Unity.Metamasky`; update the `PackageReference`.
+* **`VerifiedNodeDataService` implements the EVM `IStateReader`** instead of `INodeDataService`: results are `EvmUInt256`, `GetTransactionCount` became `GetTransactionCountAsync`, and `AccountExistsAsync` was added.
+* **Signing defaults.** `EthECKey.GetPrivateKeyAsBytes()` now always returns the 32-byte scalar (a key with leading zero bytes was returned shorter in 6.1.0). On `net8.0`, `net9.0` and `net10.0`, `EthECKey.SignRecoverable` now defaults to `true`, so recoverable signing and public-key recovery run on NBitcoin.Secp256k1; set it to `false` to return to BouncyCastle.
+* **Stricter decoding.** The legacy transaction decoder rejects a non-canonically encoded (leading-zero) scalar, and `SszMerkleizer.VerifyProof` requires a branch of exactly `depth` elements.
+* **`ITransactionLogView.BlockTimestamp`** is a new interface member; custom implementations must add it.
+* **JSON-RPC server behaviour (CoreChain / DevChain).** `eth_subscribe` refuses any subscription type other than `newHeads` and `logs` with `-32000`.
+* **Client DTOs.** `EthGetUserOperationByHash` returns a `UserOperationByHashResult` wrapper, and `ChainDefaultFeaturesServicesRepository.GetDefaultChainFeature(chainId)` returns `null` for an unknown chain instead of assuming ether.
 
 ## Build & Packaging
 
