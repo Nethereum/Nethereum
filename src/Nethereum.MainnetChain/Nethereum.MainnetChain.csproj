@@ -41,7 +41,7 @@
        source mapping): a package reference flows runtimes/<rid>/native/libbls_eth.so
        into the self-contained publish output, which a project reference does not. -->
   <ItemGroup>
-    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="6.5.0" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
   </ItemGroup>
 
 </Project>

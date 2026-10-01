@@ -36,7 +36,7 @@
        runtimes/<rid>/native/libbls_eth.so flows into THIS project's self-contained publish output;
        a transitive project reference does not carry the native asset into publish. -->
   <ItemGroup>
-    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="6.5.0" />
+    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
   </ItemGroup>
 
   <ItemGroup>
