@@ -54,6 +54,7 @@ namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
 
                 var txContext = new TransactionExecutionContext
                 {
+                    Mode = ExecutionMode.Call,
                     Sender = from,
                     To = to,
                     Data = data,
@@ -80,6 +81,7 @@ namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
 
                 result.Success = evmResult.Success;
                 result.GasUsed = evmResult.GasUsed;
+                result.ReturnData = evmResult.ReturnData;
 
                 if (!evmResult.Success)
                 {

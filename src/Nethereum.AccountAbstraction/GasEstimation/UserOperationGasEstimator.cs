@@ -21,6 +21,7 @@ namespace Nethereum.AccountAbstraction.GasEstimation
         public bool Success { get; set; }
         public BigInteger GasUsed { get; set; }
         public string Error { get; set; }
+        public byte[] ReturnData { get; set; }
     }
 
     public class UserOperationGasEstimator
@@ -296,7 +297,7 @@ namespace Nethereum.AccountAbstraction.GasEstimation
                 else if (_evmEstimator != null)
                 {
                     var evmResult = await _evmEstimator.EstimateGasAsync(
-                        _entryPointAddress,
+                        await GetSenderCreatorAsync() ?? _entryPointAddress,
                         factoryAddress,
                         factoryData,
                         BigInteger.Zero,
@@ -317,11 +318,28 @@ namespace Nethereum.AccountAbstraction.GasEstimation
 
         private async Task<string> GetSenderCreatorAsync()
         {
-            if (_senderCreatorAddress == null)
+            if (_senderCreatorAddress != null) return _senderCreatorAddress;
+
+            if (_web3 != null)
             {
                 var entryPointService = new EntryPoint.EntryPointService(_web3.Eth, _entryPointAddress);
                 _senderCreatorAddress = await entryPointService.SenderCreatorQueryAsync();
             }
+            else if (_evmEstimator != null)
+            {
+                var result = await _evmEstimator.EstimateGasAsync(
+                    _bundlerAddress,
+                    _entryPointAddress,
+                    new SenderCreatorFunction().GetCallData(),
+                    BigInteger.Zero,
+                    GasEstimationConstants.MAX_SIMULATION_GAS);
+
+                if (result.Success && result.ReturnData != null && result.ReturnData.Length >= GasEstimationConstants.WORD_SIZE)
+                    _senderCreatorAddress = result.ReturnData
+                        .Skip(GasEstimationConstants.WORD_SIZE - GasEstimationConstants.ADDRESS_SIZE)
+                        .Take(GasEstimationConstants.ADDRESS_SIZE).ToArray().ToHex(true);
+            }
+
             return _senderCreatorAddress;
         }
 
