@@ -78,7 +78,11 @@ namespace Nethereum.AppChain.IntegrationTests
                 {
                     Rpc = new ChainNodeRpcConfig { Port = 8546 },
                     Storage = new ChainNodeStorageConfig { InMemory = true },
-                    Network = new ChainNodeNetworkConfig { Serve = false },
+                    Network = new ChainNodeNetworkConfig
+                    {
+                        Serve = false,
+                        Discovery = new ChainNodeDiscoveryConfig { DisableDiscv4 = true, DisableDiscv5 = true },
+                    },
                     Sync = new ChainNodeSyncConfig { Mode = SyncMode.None },
                     Mempool = new ChainNodeMempoolConfig { EnableTrustedPeerAdmission = true },
                 },

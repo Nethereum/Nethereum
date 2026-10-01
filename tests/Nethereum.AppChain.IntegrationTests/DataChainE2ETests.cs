@@ -210,15 +210,33 @@ namespace Nethereum.AppChain.IntegrationTests
     public class GenesisOptionsE2ETests
     {
         [Fact]
-        public async Task Genesis_WithoutCreate2Factory_DoesNotDeployFactory()
+        public async Task Genesis_WithoutCreate2Factory_BeforeAmsterdam_DoesNotDeployFactory()
         {
             var fixture = new AppChainE2ETestFixture();
             try
             {
-                await fixture.InitializeAsync(deployCreate2Factory: false);
+                await fixture.InitializeAsync(deployCreate2Factory: false, hardfork: "prague");
 
                 var code = await fixture.AppChain!.GetCodeAsync(Create2FactoryGenesisBuilder.CREATE2_FACTORY_ADDRESS);
                 Assert.Null(code);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        }
+
+        [Fact]
+        public async Task Genesis_WithoutCreate2Factory_AtAmsterdam_StillHasTheEip7997FactoryPredeploy()
+        {
+            var fixture = new AppChainE2ETestFixture();
+            try
+            {
+                await fixture.InitializeAsync(deployCreate2Factory: false, hardfork: "amsterdam");
+
+                var code = await fixture.AppChain!.GetCodeAsync(Create2FactoryGenesisBuilder.CREATE2_FACTORY_ADDRESS);
+                Assert.NotNull(code);
+                Assert.NotEmpty(code);
             }
             finally
             {

@@ -43,7 +43,7 @@ namespace Nethereum.AppChain.IntegrationTests
             DatabasePath = Path.Combine(Path.GetTempPath(), $"appchain_e2e_{Guid.NewGuid():N}");
         }
 
-        public async Task InitializeAsync(bool deployCreate2Factory = true)
+        public async Task InitializeAsync(bool deployCreate2Factory = true, string hardfork = null)
         {
             var l1Config = new DevChainConfig
             {
@@ -62,6 +62,8 @@ namespace Nethereum.AppChain.IntegrationTests
             };
             config.Genesis.Owner.PrivateKey = SequencerPrivateKey;
             config.Genesis.DeployCreate2Factory = deployCreate2Factory;
+            if (hardfork != null)
+                config.ForkSchedule = new Nethereum.EVM.ChainForkSchedule { ChainId = 420420, Hardfork = hardfork };
             config.Consensus.Sequencer.Address = SequencerAddress;
             config.Consensus.Sequencer.PrivateKey = SequencerPrivateKey;
             config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;

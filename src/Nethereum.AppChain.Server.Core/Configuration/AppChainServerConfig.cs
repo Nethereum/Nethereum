@@ -56,7 +56,11 @@ namespace Nethereum.AppChain.Server.Configuration
         private static ChainNodeConfig DefaultNode() =>
             new ChainNodeConfig
             {
-                Rpc = new ChainNodeRpcConfig { Port = 8546 },
+                Rpc = new ChainNodeRpcConfig
+                {
+                    Port = 8546,
+                    GasCap = Nethereum.EVM.Gas.GasConstants.BlockGasLimitLargeEnoughToDeployAt(stateGasActive: true),
+                },
                 Storage = new ChainNodeStorageConfig { DataDirectory = "./appchain-data" },
                 Network = new ChainNodeNetworkConfig
                 {

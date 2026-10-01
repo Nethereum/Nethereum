@@ -95,6 +95,14 @@ namespace Nethereum.AppChain.IntegrationTests.E2E.Fixtures
             }
         }
 
+        public async Task FundAsync(string address)
+        {
+            var (_, success, error) = await TrySendTransactionAsync(OperatorAccount, address, Nethereum.Web3.Web3.Convert.ToWei(1));
+            if (!success)
+                throw new InvalidOperationException($"funding {address} from the operator failed: {error}");
+            await Chain!.ProduceBlockAsync();
+        }
+
         public async Task<(string TxHash, bool Success, string? Error)> TrySendTransactionAsync(Account from, string to, BigInteger value)
         {
             try

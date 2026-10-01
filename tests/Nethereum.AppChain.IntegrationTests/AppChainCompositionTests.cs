@@ -82,7 +82,7 @@ namespace Nethereum.AppChain.IntegrationTests
 
                 var transferService = new EtherTransferService(web3.TransactionManager);
                 var transferTask = transferService.TransferEtherAndWaitForReceiptAsync(
-                    "0x2222222222222222222222222222222222222222", 0.01m, gasPriceGwei: 0, gas: 21000);
+                    "0x2222222222222222222222222222222222222222", 0.01m, gasPriceGwei: 0);
 
                 var winner = await Task.WhenAny(transferTask, Task.Delay(TimeSpan.FromSeconds(15)));
 
@@ -120,7 +120,8 @@ namespace Nethereum.AppChain.IntegrationTests
             {
                 Assert.Equal(10_000, composed.AppChain.Config.RpcMaxLogBlockRange);
                 Assert.Equal(10_000, composed.AppChain.Config.RpcMaxLogResults);
-                Assert.Equal((BigInteger)50_000_000, composed.AppChain.Config.RpcGasCap);
+                Assert.Equal((BigInteger)Nethereum.EVM.Gas.GasConstants.BlockGasLimitLargeEnoughToDeployAt(stateGasActive: true),
+                    composed.AppChain.Config.RpcGasCap);
                 return Task.CompletedTask;
             });
         }

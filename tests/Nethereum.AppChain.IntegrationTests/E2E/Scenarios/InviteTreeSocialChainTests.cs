@@ -32,6 +32,7 @@ namespace Nethereum.AppChain.IntegrationTests.E2E.Scenarios
             Assert.True(IsActivated(invitedUser.Address),
                 "User should be activated after invitation");
 
+            await FundAsync(invitedUser.Address);
             var (txHash, txSuccess) = await SendTransactionAsync(
                 invitedUser, rootUser.Address, BigInteger.Zero);
 
@@ -57,6 +58,7 @@ namespace Nethereum.AppChain.IntegrationTests.E2E.Scenarios
             Assert.True(level1Invited, "Level 1 user should be able to invite");
             Assert.True(IsActivated(level2User.Address), "Level 2 user should be activated");
 
+            await FundAsync(level2User.Address);
             var (txHash, txSuccess) = await SendTransactionAsync(
                 level2User, rootUser.Address, BigInteger.Zero);
 
@@ -100,6 +102,7 @@ namespace Nethereum.AppChain.IntegrationTests.E2E.Scenarios
             Assert.False(IsActivated(uninvitedUser.Address),
                 "User should not be activated without invitation");
 
+            await FundAsync(uninvitedUser.Address);
             var (_, success, error) = await TrySendTransactionAsync(
                 uninvitedUser, OperatorAccount.Address, BigInteger.Zero);
 
@@ -151,6 +154,7 @@ namespace Nethereum.AppChain.IntegrationTests.E2E.Scenarios
                 current = next;
             }
 
+            await FundAsync(current.Address);
             var (txHash, success) = await SendTransactionAsync(
                 current, root.Address, BigInteger.Zero);
 

@@ -73,6 +73,7 @@ namespace Nethereum.AppChain.IntegrationTests.E2E.Scenarios
             var recipient = _fixture.OperatorAccount;
             var transferAmount = BigInteger.Zero;
 
+            await _fixture.FundAsync(unknownPlayer.Address);
             var (txHash, success, error) = await _fixture.TrySendTransactionAsync(
                 unknownPlayer, recipient.Address, transferAmount);
 
