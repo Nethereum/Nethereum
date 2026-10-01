@@ -15,5 +15,5 @@ Nethereum 7.0 moves the repository onto the modern XML solution format: a single
 
 ## Version
 
-* `buildConf/Version.props`: `VersionMajor` `6` → `7`, `VersionMinor` `1` → `0`, i.e. **6.1.0 → 7.0.0** (`VersionPatch` stays `0`). The `-preview` NuGet suffix is applied at pack time via `ReleaseSuffix` (both pack scripts pass `/property:ReleaseSuffix`), so the release publishes as `7.0.0-preview` when the runner sets it.
+* `buildConf/Version.props`: `VersionMajor` `6` → `7`, `VersionMinor` `1` → `0`, i.e. **6.1.0 → 7.0.0** (`VersionPatch` stays `0`). Both pack scripts default `ReleaseSuffix` to empty, so packages publish as `7.0.0`; the DevP2P, mainnet-follower and AppChain packages set `<Version>$(NethereumVersionPreview)</Version>` and publish as `7.0.0-preview`.
 * Versioning scheme unchanged: `NugetVersion` derives from `VersionMajor.VersionMinor.VersionPatch` with an optional `ReleaseSuffix`, and `NethereumVersionPreview` appends `-preview`.
