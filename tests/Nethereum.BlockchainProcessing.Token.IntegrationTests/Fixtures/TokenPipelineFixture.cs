@@ -43,18 +43,28 @@ namespace Nethereum.BlockchainProcessing.Token.IntegrationTests.Fixtures
             await ExecuteERC1155TransfersAsync();
         }
 
+        private const long GasLimitAboveTheNextBlocksCheckpointCost = 500_000;
+
+        private static TransactionReceipt EnsureSucceeded(TransactionReceipt receipt)
+        {
+            if (receipt.Status?.Value != 1)
+                throw new InvalidOperationException(
+                    $"fixture transaction {receipt.TransactionHash} failed with status {receipt.Status?.Value}; every token test reads the logs it should have produced");
+            return receipt;
+        }
+
         private async Task DeployContractsAsync()
         {
-            var erc20Receipt = await Web3.Eth.GetContractDeploymentHandler<ERC20Deployment>()
-                .SendRequestAndWaitForReceiptAsync(new ERC20Deployment());
+            var erc20Receipt = EnsureSucceeded(await Web3.Eth.GetContractDeploymentHandler<ERC20Deployment>()
+                .SendRequestAndWaitForReceiptAsync(new ERC20Deployment()));
             ERC20Address = erc20Receipt.ContractAddress;
 
-            var erc721Receipt = await Web3.Eth.GetContractDeploymentHandler<ERC721Deployment>()
-                .SendRequestAndWaitForReceiptAsync(new ERC721Deployment { Name = "TestNFT", Symbol = "TNFT" });
+            var erc721Receipt = EnsureSucceeded(await Web3.Eth.GetContractDeploymentHandler<ERC721Deployment>()
+                .SendRequestAndWaitForReceiptAsync(new ERC721Deployment { Name = "TestNFT", Symbol = "TNFT" }));
             ERC721Address = erc721Receipt.ContractAddress;
 
-            var erc1155Receipt = await Web3.Eth.GetContractDeploymentHandler<ERC1155Deployment>()
-                .SendRequestAndWaitForReceiptAsync(new ERC1155Deployment());
+            var erc1155Receipt = EnsureSucceeded(await Web3.Eth.GetContractDeploymentHandler<ERC1155Deployment>()
+                .SendRequestAndWaitForReceiptAsync(new ERC1155Deployment()));
             ERC1155Address = erc1155Receipt.ContractAddress;
         }
 
@@ -63,14 +73,14 @@ namespace Nethereum.BlockchainProcessing.Token.IntegrationTests.Fixtures
             var mintHandler = Web3.Eth.GetContractTransactionHandler<ERC20MintFunction>();
             var transferHandler = Web3.Eth.GetContractTransactionHandler<ERC20TransferFunction>();
 
-            ERC20MintReceipt = await mintHandler.SendRequestAndWaitForReceiptAsync(ERC20Address,
-                new ERC20MintFunction { To = Address, Amount = BigInteger.Parse("1000000000000000000000") });
+            ERC20MintReceipt = EnsureSucceeded(await mintHandler.SendRequestAndWaitForReceiptAsync(ERC20Address,
+                new ERC20MintFunction { To = Address, Amount = BigInteger.Parse("1000000000000000000000") }));
 
-            await transferHandler.SendRequestAndWaitForReceiptAsync(ERC20Address,
-                new ERC20TransferFunction { To = Address2, Value = BigInteger.Parse("100000000000000000000") });
+            EnsureSucceeded(await transferHandler.SendRequestAndWaitForReceiptAsync(ERC20Address,
+                new ERC20TransferFunction { To = Address2, Value = BigInteger.Parse("100000000000000000000") }));
 
-            await transferHandler.SendRequestAndWaitForReceiptAsync(ERC20Address,
-                new ERC20TransferFunction { To = Address3, Value = BigInteger.Parse("50000000000000000000") });
+            EnsureSucceeded(await transferHandler.SendRequestAndWaitForReceiptAsync(ERC20Address,
+                new ERC20TransferFunction { To = Address3, Value = BigInteger.Parse("50000000000000000000") }));
         }
 
         private async Task ExecuteERC721TransfersAsync()
@@ -78,17 +88,17 @@ namespace Nethereum.BlockchainProcessing.Token.IntegrationTests.Fixtures
             var safeMintHandler = Web3.Eth.GetContractTransactionHandler<SafeMintFunction>();
             var transferFromHandler = Web3.Eth.GetContractTransactionHandler<TransferFromFunction>();
 
-            await safeMintHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
-                new SafeMintFunction { To = Address, Uri = "" });
+            EnsureSucceeded(await safeMintHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
+                new SafeMintFunction { To = Address, Uri = "", Gas = GasLimitAboveTheNextBlocksCheckpointCost }));
 
-            await safeMintHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
-                new SafeMintFunction { To = Address, Uri = "" });
+            EnsureSucceeded(await safeMintHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
+                new SafeMintFunction { To = Address, Uri = "", Gas = GasLimitAboveTheNextBlocksCheckpointCost }));
 
-            await safeMintHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
-                new SafeMintFunction { To = Address2, Uri = "" });
+            EnsureSucceeded(await safeMintHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
+                new SafeMintFunction { To = Address2, Uri = "", Gas = GasLimitAboveTheNextBlocksCheckpointCost }));
 
-            await transferFromHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
-                new TransferFromFunction { From = Address, To = Address2, TokenId = 0 });
+            EnsureSucceeded(await transferFromHandler.SendRequestAndWaitForReceiptAsync(ERC721Address,
+                new TransferFromFunction { From = Address, To = Address2, TokenId = 0, Gas = GasLimitAboveTheNextBlocksCheckpointCost }));
         }
 
         private async Task ExecuteERC1155TransfersAsync()
@@ -96,14 +106,14 @@ namespace Nethereum.BlockchainProcessing.Token.IntegrationTests.Fixtures
             var mintHandler = Web3.Eth.GetContractTransactionHandler<ERC1155Defs.MintFunction>();
             var transferHandler = Web3.Eth.GetContractTransactionHandler<ERC1155Defs.SafeTransferFromFunction>();
 
-            await mintHandler.SendRequestAndWaitForReceiptAsync(ERC1155Address,
-                new ERC1155Defs.MintFunction { Account = Address, Id = 1, Amount = 100, Data = Array.Empty<byte>() });
+            EnsureSucceeded(await mintHandler.SendRequestAndWaitForReceiptAsync(ERC1155Address,
+                new ERC1155Defs.MintFunction { Account = Address, Id = 1, Amount = 100, Data = Array.Empty<byte>() }));
 
-            await mintHandler.SendRequestAndWaitForReceiptAsync(ERC1155Address,
-                new ERC1155Defs.MintFunction { Account = Address, Id = 2, Amount = 50, Data = Array.Empty<byte>() });
+            EnsureSucceeded(await mintHandler.SendRequestAndWaitForReceiptAsync(ERC1155Address,
+                new ERC1155Defs.MintFunction { Account = Address, Id = 2, Amount = 50, Data = Array.Empty<byte>() }));
 
-            await transferHandler.SendRequestAndWaitForReceiptAsync(ERC1155Address,
-                new ERC1155Defs.SafeTransferFromFunction { From = Address, To = Address2, Id = 1, Amount = 30, Data = Array.Empty<byte>() });
+            EnsureSucceeded(await transferHandler.SendRequestAndWaitForReceiptAsync(ERC1155Address,
+                new ERC1155Defs.SafeTransferFromFunction { From = Address, To = Address2, Id = 1, Amount = 30, Data = Array.Empty<byte>() }));
         }
 
         public Task DisposeAsync()
