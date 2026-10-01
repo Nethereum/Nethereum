@@ -75,6 +75,9 @@ namespace Nethereum.EVM.UnitTests.Gas
                 Data = initCode,
                 IsContractCreation = true,
                 AccessList = accessList,
+                TransactionType = accessList != null
+                    ? Nethereum.Model.TransactionType.LegacyEIP2930
+                    : Nethereum.Model.TransactionType.LegacyTransaction,
                 GasLimit = GasLimit,
                 Value = 0,
                 GasPrice = 1,

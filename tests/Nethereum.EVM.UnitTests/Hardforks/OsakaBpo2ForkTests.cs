@@ -102,7 +102,7 @@ namespace Nethereum.EVM.UnitTests.Hardforks
                 typeof(HardforkSpec).GetProperties(BindingFlags.Public | BindingFlags.Instance).Length > 0,
                 "no HardforkSpec properties discovered - the reflection filter no longer matches");
 
-            Assert.Equal(new[] { "IntrinsicGas", "MaxBlobsPerBlock", "Name" }, differing);
+            Assert.Equal(new[] { "IntrinsicGas", "MaxBlobsPerBlock", "Name", "TargetBlobsPerBlock" }, differing);
         }
 
         [Fact]

@@ -26,10 +26,13 @@ namespace Nethereum.EVM.UnitTests
             Assert.True(instructionJump.Instruction == Instruction.JUMPDEST);
             Assert.Equal(192, convertedJumpSelection.Position);
             Assert.Equal(
-@"function getOwner() public view returns(address owner) {
+                WithCrlf(@"function getOwner() public view returns(address owner) {
         return _owner;
-    }", SourceCode.Substring(convertedJumpSelection.Position, convertedJumpSelection.Length));
+    }"),
+                WithCrlf(SourceCode).Substring(convertedJumpSelection.Position, convertedJumpSelection.Length));
         }
+
+        private static string WithCrlf(string text) => text.Replace("\r\n", "\n").Replace("\n", "\r\n");
 
         private const string SourceCode = @"// SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.9.0;

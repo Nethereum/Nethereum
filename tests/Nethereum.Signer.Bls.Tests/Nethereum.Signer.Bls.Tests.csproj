@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
-    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.8.0" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
@@ -15,5 +15,19 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\*.dll">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\linux-x64\native\*.so">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

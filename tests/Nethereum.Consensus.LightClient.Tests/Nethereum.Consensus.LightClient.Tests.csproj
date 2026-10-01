@@ -11,7 +11,7 @@
     <ProjectReference Include="..\..\src\Nethereum.ChainStateVerification\Nethereum.ChainStateVerification.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
-    <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="5.0.0" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
@@ -22,5 +22,19 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\*.dll">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\linux-x64\native\*.so">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

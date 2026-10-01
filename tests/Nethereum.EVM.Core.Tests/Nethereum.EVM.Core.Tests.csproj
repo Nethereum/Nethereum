@@ -57,6 +57,13 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\linux-x64\native\*.so">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\BlockchainTestLoader.cs" Link="BlockchainTests\BlockchainTestLoader.cs" />
     <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\BlockAccessListDiff.cs" Link="BlockchainTests\BlockAccessListDiff.cs" />
