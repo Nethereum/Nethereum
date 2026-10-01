@@ -17,6 +17,13 @@ namespace Nethereum.EVM.UnitTests
         }
 
         [Fact]
+        public void Given_GethsAllZeroStorageHashForAnAbsentAccount_When_Asked_Then_TheAccountHasNoStorage()
+        {
+            Assert.False(RpcNodeDataService.StorageHashIndicatesStorage(
+                "0x0000000000000000000000000000000000000000000000000000000000000000"));
+        }
+
+        [Fact]
         public void Given_AnyOtherStorageRoot_When_Asked_Then_TheAccountHasStorage()
         {
             var populated = "0x" + new string('a', 64);

@@ -53,6 +53,7 @@ namespace Nethereum.EVM.BlockchainState
             {
                 var hash = storageHash.HexToByteArray();
                 if (hash.Length == 0) return false;
+                if (hash.All(b => b == 0)) return false;
                 return !hash.SequenceEqual(Nethereum.Model.DefaultValues.EMPTY_TRIE_HASH);
             }
             catch
