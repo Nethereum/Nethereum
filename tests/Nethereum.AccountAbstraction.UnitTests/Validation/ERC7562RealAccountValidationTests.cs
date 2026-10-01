@@ -1937,10 +1937,10 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
             return "0x" + addressBytes.ToHex();
         }
 
-        private void CommitAccountToStateReader(ExecutionStateService state, string address)
+        private void CommitAccountToStateReader(ExecutionStateService state, EvmAddress evmAddress)
         {
-            if (string.IsNullOrEmpty(address)) return;
-            if (!state.AccountsState.TryGetValue(address.ToLowerInvariant(), out var account)) return;
+            if (!state.AccountsState.TryGetValue(evmAddress, out var account)) return;
+            var address = evmAddress.ToHexLower();
 
             if (account.Code != null && account.Code.Length > 0)
             {

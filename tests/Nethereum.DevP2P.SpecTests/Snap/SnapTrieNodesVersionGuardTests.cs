@@ -92,7 +92,7 @@ namespace Nethereum.DevP2P.SpecTests.Snap
                 Assert.Equal(2, server.SharedCapabilities.Find(c => c.Name == "snap")?.Version);
 
                 var watch = Stopwatch.StartNew();
-                var error = await Assert.ThrowsAsync<InvalidOperationException>(() => RequestTrieNodesAsync(client));
+                var error = await Assert.ThrowsAsync<SnapPeerCapabilityMismatchException>(() => RequestTrieNodesAsync(client));
                 watch.Stop();
 
                 Assert.Contains("snap/2", error.Message);

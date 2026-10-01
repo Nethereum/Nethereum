@@ -9,7 +9,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.P2P;
 using Nethereum.Signer;
 using Xunit;
-using Nethereum.DevP2P.Sync.ForkId;
+using Nethereum.EVM.ForkId;
 using Nethereum.DevP2P.Sync.Peering;
 
 namespace Nethereum.DevP2P.SpecTests.Rlpx
