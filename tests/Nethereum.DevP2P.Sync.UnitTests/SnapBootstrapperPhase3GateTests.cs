@@ -125,11 +125,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
         private static object InvokeBuildGateReport(IChainStoreBundle bundle)
         {
-            var method = typeof(SnapBootstrapper).GetMethod(
-                "BuildStorageCompletenessGateReport",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return method!.Invoke(null, new object[] { bundle })!;
+            return SnapBootstrapper.BuildStorageCompletenessGateReport(bundle);
         }
 
         private sealed class BytecodeScheduler : IFetchRequestScheduler
