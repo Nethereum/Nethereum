@@ -27,7 +27,7 @@ New packages in 7.0: `Nethereum.EVM.Core`, `Nethereum.EVM.Precompiles`, `Nethere
 * **Signing defaults.** `EthECKey.GetPrivateKeyAsBytes()` now always returns the 32-byte scalar (a key with leading zero bytes was returned shorter in 6.1.0). On `net8.0`, `net9.0` and `net10.0`, `EthECKey.SignRecoverable` now defaults to `true`, so recoverable signing and public-key recovery run on NBitcoin.Secp256k1; set it to `false` to return to BouncyCastle.
 * **Stricter decoding.** The legacy transaction decoder rejects a non-canonically encoded (leading-zero) scalar, and `SszMerkleizer.VerifyProof` requires a branch of exactly `depth` elements.
 * **`ITransactionLogView.BlockTimestamp`** is a new interface member; custom implementations must add it.
-* **JSON-RPC server behaviour (CoreChain / DevChain).** `eth_estimateGas` returns the exact minimum (the former 10% headroom is gone), and `eth_subscribe` refuses any subscription type other than `newHeads` and `logs` with `-32000`.
+* **JSON-RPC server behaviour (CoreChain / DevChain).** `eth_subscribe` refuses any subscription type other than `newHeads` and `logs` with `-32000`.
 * **Client DTOs.** `EthGetUserOperationByHash` returns a `UserOperationByHashResult` wrapper, and `ChainDefaultFeaturesServicesRepository.GetDefaultChainFeature(chainId)` returns `null` for an unknown chain instead of assuming ether.
 
 ## Foundations — Model, Signer, Util, Merkle
