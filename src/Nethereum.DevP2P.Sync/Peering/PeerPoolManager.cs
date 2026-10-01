@@ -52,11 +52,11 @@ namespace Nethereum.DevP2P.Sync.Peering
             new ConcurrentDictionary<Guid, DateTime>();
         private readonly Func<DateTime> _utcNow;
 
-        internal static readonly TimeSpan ResponsiveGrace = TimeSpan.FromMinutes(2);
-        internal static readonly TimeSpan NewPeerGrace = TimeSpan.FromSeconds(60);
-        internal static readonly TimeSpan TransportLivenessWindow = TimeSpan.FromSeconds(45);
-        internal const int HardCapAboveTarget = 4;
-        internal const int MinKeptActivePeers = 3;
+        public static readonly TimeSpan ResponsiveGrace = TimeSpan.FromMinutes(2);
+        public static readonly TimeSpan NewPeerGrace = TimeSpan.FromSeconds(60);
+        public static readonly TimeSpan TransportLivenessWindow = TimeSpan.FromSeconds(45);
+        public const int HardCapAboveTarget = 4;
+        public const int MinKeptActivePeers = 3;
 
         private CancellationTokenSource? _lifetime;
         private Task? _dialLoop;
@@ -75,7 +75,7 @@ namespace Nethereum.DevP2P.Sync.Peering
         public IReadOnlyList<IEthPeer> ActivePeersByPreference
             => OrderByPreference(_activeByPoolId.Values, enode => GetScore(enode).ComputedScore);
 
-        internal static IReadOnlyList<IEthPeer> OrderByPreference(
+        public static IReadOnlyList<IEthPeer> OrderByPreference(
             IEnumerable<IEthPeer> peers, Func<string, double> scoreOf)
             => peers
                 .OrderByDescending(p => p.IsTrusted)
@@ -217,14 +217,14 @@ namespace Nethereum.DevP2P.Sync.Peering
         public void ReportSuccess(Guid peerId)
             => _lastSuccessUtc[peerId] = _utcNow();
 
-        internal int GetResponsiveActiveCountForTest() => ResponsiveActiveCount();
+        public int GetResponsiveActiveCountForTest() => ResponsiveActiveCount();
 
-        internal bool ShouldPauseDialingForTest() => ShouldPauseDialing();
+        public bool ShouldPauseDialingForTest() => ShouldPauseDialing();
 
-        internal Task SweepUnresponsivePeersForTestAsync(CancellationToken ct)
+        public Task SweepUnresponsivePeersForTestAsync(CancellationToken ct)
             => SweepUnresponsivePeersAsync(ct);
 
-        internal bool IsBannedForTest(string enode) => _banned.ContainsKey(enode);
+        public bool IsBannedForTest(string enode) => _banned.ContainsKey(enode);
 
         private static bool TryGetNodeId(string enode, out string nodeId)
         {
@@ -241,7 +241,7 @@ namespace Nethereum.DevP2P.Sync.Peering
             }
         }
 
-        internal bool IsTrustedEnode(string enode)
+        public bool IsTrustedEnode(string enode)
             => _trustedNodeIds.Count > 0
             && TryGetNodeId(enode, out var nodeId)
             && _trustedNodeIds.Contains(nodeId);

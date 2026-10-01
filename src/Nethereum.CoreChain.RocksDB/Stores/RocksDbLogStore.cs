@@ -284,13 +284,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return result;
         }
 
-        internal sealed class QueryBloomTerms
+        public sealed class QueryBloomTerms
         {
             public List<LogBloomFilter> AddressBlooms { get; } = new List<LogBloomFilter>();
             public List<List<LogBloomFilter>> TopicPositionBlooms { get; } = new List<List<LogBloomFilter>>();
         }
 
-        internal static QueryBloomTerms BuildQueryBloomTerms(LogFilter filter)
+        public static QueryBloomTerms BuildQueryBloomTerms(LogFilter filter)
         {
             if (filter == null)
                 return null;
@@ -336,7 +336,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return terms;
         }
 
-        internal static bool MatchesQueryBloomTerms(QueryBloomTerms terms, byte[] blockBloom)
+        public static bool MatchesQueryBloomTerms(QueryBloomTerms terms, byte[] blockBloom)
         {
             if (terms == null)
                 return true;

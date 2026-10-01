@@ -12,7 +12,7 @@ using Nethereum.Model.P2P.Snap;
 
 namespace Nethereum.DevP2P.Sync.Scheduling
 {
-    internal enum TimeoutStreakKind
+    public enum TimeoutStreakKind
     {
         Eth,
         Snap
@@ -41,7 +41,7 @@ namespace Nethereum.DevP2P.Sync.Scheduling
 
         private const int TrustedRepeatedTimeoutQuarantineThreshold = 20;
 
-        internal bool RegisterTimeoutForQuarantine(Guid peerId, TimeoutStreakKind kind, bool isTrusted, out int triggeredAtCount)
+        public bool RegisterTimeoutForQuarantine(Guid peerId, TimeoutStreakKind kind, bool isTrusted, out int triggeredAtCount)
         {
             var key = (peerId, kind);
             var count = _consecutiveTimeouts.AddOrUpdate(key, 1, (_, prev) => prev + 1);
@@ -52,7 +52,7 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             return true;
         }
 
-        internal void RegisterSuccessForQuarantine(Guid peerId, TimeoutStreakKind kind)
+        public void RegisterSuccessForQuarantine(Guid peerId, TimeoutStreakKind kind)
         {
             _consecutiveTimeouts.TryRemove((peerId, kind), out _);
             if (kind == TimeoutStreakKind.Snap) _snapQuarantineCycles.TryRemove(peerId, out _);
@@ -66,13 +66,13 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             _ = _pool.DropAsync(peer.Id, "repeated eth timeout", CancellationToken.None);
         }
 
-        internal int GetConsecutiveTimeoutsForTest(Guid peerId, TimeoutStreakKind kind)
+        public int GetConsecutiveTimeoutsForTest(Guid peerId, TimeoutStreakKind kind)
             => _consecutiveTimeouts.TryGetValue((peerId, kind), out var n) ? n : 0;
 
-        internal int GetSnapQuarantineCyclesForTest(Guid peerId)
+        public int GetSnapQuarantineCyclesForTest(Guid peerId)
             => _snapQuarantineCycles.TryGetValue(peerId, out var n) ? n : 0;
 
-        internal TimeSpan GetAdaptiveTimeoutForTest(Guid peerId, bool isTrusted)
+        public TimeSpan GetAdaptiveTimeoutForTest(Guid peerId, bool isTrusted)
             => AdaptiveTimeout(peerId, isTrusted);
 
         public FetchRequestScheduler(
@@ -447,7 +447,7 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             _snapQuarantineCycles.TryRemove(peer.Id, out _);
         }
 
-        internal int GetInFlightCountForTest(Guid peerId)
+        public int GetInFlightCountForTest(Guid peerId)
             => _inFlight.TryGetValue(peerId, out var n) ? n : 0;
 
         private void RecordLatency(Guid id, double ms)
@@ -466,10 +466,10 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             return TimeSpan.FromMilliseconds(ms);
         }
 
-        internal double GetLatencyEmaForTest(Guid peerId)
+        public double GetLatencyEmaForTest(Guid peerId)
             => _latencyEmaMs.TryGetValue(peerId, out var v) ? v : 0;
 
-        internal TimeSpan GetAdaptiveTimeoutForTest(Guid peerId) => AdaptiveTimeout(peerId);
+        public TimeSpan GetAdaptiveTimeoutForTest(Guid peerId) => AdaptiveTimeout(peerId);
 
         private IEthPeer? SelectBestPeer(HashSet<Guid> excluded, Func<IEthPeer, bool>? peerFilter = null)
         {
@@ -531,12 +531,12 @@ namespace Nethereum.DevP2P.Sync.Scheduling
         }
 
         private readonly ConcurrentDictionary<Guid, long> _headerQuarantineUntilTicks = new();
-        internal TimeSpan HeaderBatchQuarantineDuration = TimeSpan.FromMinutes(2);
+        public TimeSpan HeaderBatchQuarantineDuration = TimeSpan.FromMinutes(2);
 
         public void QuarantineHeaderPeer(Guid peerId) =>
             _headerQuarantineUntilTicks[peerId] = DateTime.UtcNow.Add(HeaderBatchQuarantineDuration).Ticks;
 
-        internal bool IsHeaderPeerQuarantined(Guid peerId) =>
+        public bool IsHeaderPeerQuarantined(Guid peerId) =>
             _headerQuarantineUntilTicks.TryGetValue(peerId, out var untilTicks)
             && DateTime.UtcNow.Ticks < untilTicks;
 
@@ -546,7 +546,7 @@ namespace Nethereum.DevP2P.Sync.Scheduling
         private const int SnapQuarantineDropThreshold = 3;
         private const int TrustedSnapQuarantineDropThreshold = 20;
 
-        internal void QuarantineSnapState(IEthPeer peer)
+        public void QuarantineSnapState(IEthPeer peer)
         {
             _snapStateQuarantineUntilTicks[peer.Id] = DateTime.UtcNow
                 .Add(ChooseSnapStateCooldown(peer.PeerLatestBlock, NetworkHeadBlock(), peer.IsTrusted)).Ticks;
@@ -562,7 +562,7 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             _ = _pool.DropAsync(peer.Id, "repeated snap quarantine", CancellationToken.None);
         }
 
-        internal bool IsSnapStateQuarantined(Guid peerId) =>
+        public bool IsSnapStateQuarantined(Guid peerId) =>
             _snapStateQuarantineUntilTicks.TryGetValue(peerId, out var untilTicks)
             && DateTime.UtcNow.Ticks < untilTicks;
 

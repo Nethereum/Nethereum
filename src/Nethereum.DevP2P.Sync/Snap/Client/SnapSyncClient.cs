@@ -55,25 +55,25 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 
         public Action OnPivotRolled { get; set; }
 
-        internal Action<byte[]> OnPhase2CycleFrozen { get; set; }
+        public Action<byte[]> OnPhase2CycleFrozen { get; set; }
 
-        internal Func<IReadOnlyList<SnapSyncAccountTask>, CancellationToken, Task<byte[]>> PivotCatchUp { get; set; }
+        public Func<IReadOnlyList<SnapSyncAccountTask>, CancellationToken, Task<byte[]>> PivotCatchUp { get; set; }
 
         public Func<string> StateWriteBackpressure { get; set; }
 
         private const int SnapAccountRangeRetryDelayMs = 1_000;
-        internal int BytecodeDeadEndNoProgressRounds { get; set; } = 600;
+        public int BytecodeDeadEndNoProgressRounds { get; set; } = 600;
         private const int MaxEmptyDispatchBackoffMs = 30_000;
 
         private const int SnapConsumerIdleDelayMs = 20;
         private const int StorageSubtaskRetryBackoffMs = 100;
-        internal int StateBackpressurePollMs { get; set; } = 5_000;
+        public int StateBackpressurePollMs { get; set; } = 5_000;
 
-        internal TimeSpan StateBackpressureWarnAfter { get; set; } = TimeSpan.FromMinutes(10);
+        public TimeSpan StateBackpressureWarnAfter { get; set; } = TimeSpan.FromMinutes(10);
 
         private long _stateBackpressurePausedSinceMs;
 
-        internal TimeSpan Phase2DrainTimeout { get; set; } = TimeSpan.FromSeconds(30);
+        public TimeSpan Phase2DrainTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         public int RootRefreshIntervalMs { get; set; } = 12_000;
 
@@ -86,9 +86,9 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
         public Task<SyncResult> SyncStateAsync(byte[] targetRoot, CancellationToken ct = default)
             => SyncStateAsync(targetRoot, resumeFrom: null, checkpointSink: null, ct);
 
-        internal ulong CheckpointBytesThreshold { get; set; } = 8UL * 1024 * 1024;
+        public ulong CheckpointBytesThreshold { get; set; } = 8UL * 1024 * 1024;
 
-        internal Action FlushBulkFlatBeforeCheckpoint { get; set; }
+        public Action FlushBulkFlatBeforeCheckpoint { get; set; }
 
         private const int MaxCodeRequestCount = 84;
 
@@ -219,7 +219,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             }
         }
 
-        internal static async Task<Task> WaitForFirstFaultedConsumerAsync(IReadOnlyList<Task> consumers)
+        public static async Task<Task> WaitForFirstFaultedConsumerAsync(IReadOnlyList<Task> consumers)
         {
             var pending = new List<Task>(consumers);
             while (pending.Count > 0)
@@ -232,7 +232,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 
             return null;
         }
-        internal async Task RunPhase2LivenessSupervisorAsync(
+        public async Task RunPhase2LivenessSupervisorAsync(
             SnapTaskSet taskSet,
             ConcurrentDictionary<int, ActiveSnapLeaseInfo> activeAccountRangeLeases,
             Func<long> getProgressSnapshot,
@@ -298,7 +298,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             return TimeSpan.FromMilliseconds(ms);
         }
 
-        internal async Task WaitWhileStateBackpressuredAsync(int consumerIdx, CancellationToken ct)
+        public async Task WaitWhileStateBackpressuredAsync(int consumerIdx, CancellationToken ct)
         {
             var backpressure = StateWriteBackpressure;
             if (backpressure == null) return;
@@ -348,7 +348,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
                     (long)pausedFor.TotalSeconds, pressure);
         }
 
-        internal async Task DrainPhase2AttemptAsync(Task consumersTask, Exception supervisorFailure, CancellationToken outerCt)
+        public async Task DrainPhase2AttemptAsync(Task consumersTask, Exception supervisorFailure, CancellationToken outerCt)
         {
             var drainTask = await Task.WhenAny(consumersTask, Task.Delay(Phase2DrainTimeout, outerCt)).ConfigureAwait(false);
             if (drainTask == consumersTask)

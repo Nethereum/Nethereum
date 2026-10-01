@@ -45,8 +45,8 @@ namespace Nethereum.DevP2P.Sync.FullSync
         public const int InitialReceiptCapacityPerPeer = 32;
         public const int ReceiptCapacityGrowStep = 4;
         private int _receiptCapacity = InitialReceiptCapacityPerPeer;
-        internal int CurrentReceiptCapacity => Volatile.Read(ref _receiptCapacity);
-        internal void SetReceiptCapacityForTest(int cap) => Volatile.Write(ref _receiptCapacity, cap);
+        public int CurrentReceiptCapacity => Volatile.Read(ref _receiptCapacity);
+        public void SetReceiptCapacityForTest(int cap) => Volatile.Write(ref _receiptCapacity, cap);
         public const int HeaderProducerLookaheadBlocks = 4_096;
 
         public const int HeaderProducerInFlight = 4;
@@ -117,13 +117,13 @@ namespace Nethereum.DevP2P.Sync.FullSync
             if (matched > 0) RecordPeerRequestSuccess(peer);
         }
 
-        internal void RecordPeerRequestFailureForTest(IEthPeer peer, string stage, bool wasTimeout)
+        public void RecordPeerRequestFailureForTest(IEthPeer peer, string stage, bool wasTimeout)
             => RecordPeerRequestFailure(peer, stage, wasTimeout);
 
-        internal void RecordPeerRequestSuccessForTest(IEthPeer peer)
+        public void RecordPeerRequestSuccessForTest(IEthPeer peer)
             => RecordPeerRequestSuccess(peer);
 
-        internal void RecordReceiptDeliveryOutcomeForTest(IEthPeer peer, int matched)
+        public void RecordReceiptDeliveryOutcomeForTest(IEthPeer peer, int matched)
             => RecordReceiptDeliveryOutcome(peer, matched);
 
         public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(30);
@@ -206,7 +206,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
         private static readonly TimeSpan DefaultPersistWaitLogInterval = TimeSpan.FromSeconds(30);
         private TimeSpan _persistWaitLogInterval = DefaultPersistWaitLogInterval;
-        internal void SetPersistWaitLogIntervalForTest(TimeSpan interval) => _persistWaitLogInterval = interval;
+        public void SetPersistWaitLogIntervalForTest(TimeSpan interval) => _persistWaitLogInterval = interval;
 
         private static readonly TimeSpan PausePollInterval = TimeSpan.FromSeconds(2);
 
@@ -338,13 +338,13 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
         internal static readonly TimeSpan StageDrainTimeout = TimeSpan.FromSeconds(10);
         private TimeSpan _stageDrainTimeout = StageDrainTimeout;
-        internal void SetStageDrainTimeoutForTest(TimeSpan timeout) => _stageDrainTimeout = timeout;
+        public void SetStageDrainTimeoutForTest(TimeSpan timeout) => _stageDrainTimeout = timeout;
 
         internal static readonly TimeSpan StaleReservationTtl = TimeSpan.FromSeconds(90);
         private TimeSpan _staleReservationTtl = StaleReservationTtl;
         internal void SetStaleReservationTtlForTest(TimeSpan ttl) => _staleReservationTtl = ttl;
 
-        internal async Task DrainStagesOrAbandonAsync(params Task[] stages)
+        public async Task DrainStagesOrAbandonAsync(params Task[] stages)
         {
             var drain = Task.WhenAll(stages);
             using var delayCts = new CancellationTokenSource();
@@ -380,7 +380,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 TaskScheduler.Default);
         }
 
-        internal void AdaptReceiptCapacity(int requested, int served)
+        public void AdaptReceiptCapacity(int requested, int served)
         {
             if (requested <= 0 || served <= 0) return;
             while (true)
@@ -397,7 +397,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
         private const int MaxEmptyHeaderPolls = 3_000;
         private int _maxEmptyHeaderPolls = MaxEmptyHeaderPolls;
-        internal void SetMaxEmptyHeaderPollsForTest(int polls) => _maxEmptyHeaderPolls = polls < 1 ? 1 : polls;
+        public void SetMaxEmptyHeaderPollsForTest(int polls) => _maxEmptyHeaderPolls = polls < 1 ? 1 : polls;
 
         private async Task RunHeaderLoaderAsync(
             BlockTaskQueue queue, ulong startCursor, ulong endBlock, CancellationToken ct)
@@ -928,7 +928,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 await _bundle.Logs.SaveBlockBloomAsync(blockNumber, pb.Bloom).ConfigureAwait(false);
         }
 
-        internal PersistableBlock BuildPersistableBlock(BlockTaskQueue.BlockTask task, BigInteger freezeBoundary)
+        public PersistableBlock BuildPersistableBlock(BlockTaskQueue.BlockTask task, BigInteger freezeBoundary)
         {
             var uncles = task.Body?.Uncles ?? new List<BlockHeader>();
             var withdrawals = task.Body?.Withdrawals;

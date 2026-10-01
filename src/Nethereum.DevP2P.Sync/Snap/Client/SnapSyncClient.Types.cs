@@ -90,7 +90,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             }
         }
 
-        internal sealed class ActiveSnapLeaseInfo
+        public sealed class ActiveSnapLeaseInfo
         {
             public int Consumer { get; }
             public int TaskIndex { get; }
@@ -139,7 +139,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             bool NeedsHeal,
             DeferredStorageReason? Reason);
 
-        internal sealed class AccountWorkerResult
+        public sealed class AccountWorkerResult
         {
             public ulong AccountsSyncedDelta;
             public ulong AccountBytesDelta;

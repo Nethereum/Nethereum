@@ -10,7 +10,7 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.RocksDB.Freezer
 {
-    internal sealed class FreezerBackgroundIndexer
+    public sealed class FreezerBackgroundIndexer
     {
         private readonly Nethereum.Freezer.IFrozenReadSource _freezerAppend;
         private Stores.RocksDbWritePressureMonitor _pressureMonitor;

@@ -43,10 +43,10 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 
         public bool BalHealEnabled { get; init; }
 
-        internal SnapBootstrapper.RollingPivot? RollingPivot { get; init; }
+        public SnapBootstrapper.RollingPivot? RollingPivot { get; init; }
 
-        internal IBlockAccessListPeerSource? BlockAccessListPeers { get; init; }
+        public IBlockAccessListPeerSource? BlockAccessListPeers { get; init; }
 
-        internal IBlockAccessListApplier? BlockAccessListApplier { get; init; }
+        public IBlockAccessListApplier? BlockAccessListApplier { get; init; }
     }
 }

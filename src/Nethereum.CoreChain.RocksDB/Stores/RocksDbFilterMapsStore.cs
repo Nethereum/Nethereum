@@ -26,7 +26,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private bool _dirty;
 
-        internal int ColumnFamilyFlushCount { get; private set; }
+        public int ColumnFamilyFlushCount { get; private set; }
 
         public RocksDbFilterMapsStore(RocksDbManager manager, string columnFamily = null)
         {

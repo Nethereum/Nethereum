@@ -6,7 +6,7 @@ using Nethereum.Model;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
-    internal sealed class PendingFlushFlatOverlay : IPendingFlushFlatOverlay
+    public sealed class PendingFlushFlatOverlay : IPendingFlushFlatOverlay
     {
         private readonly object _gate = new object();
 

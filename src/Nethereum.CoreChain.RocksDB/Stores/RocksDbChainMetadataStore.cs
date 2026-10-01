@@ -116,7 +116,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public bool HasPromotionCursor()
             => _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.PromotionCursor) != null;
 
-        internal void AddPromotionCursorToBatch(WriteBatch batch, ulong block)
+        public void AddPromotionCursorToBatch(WriteBatch batch, ulong block)
         {
             var cf = _rocks.GetColumnFamily(RocksDbManager.CF_METADATA);
             batch.Put(MetaKeys.PromotionCursor, RocksDbManager.Write64BE(block), cf);

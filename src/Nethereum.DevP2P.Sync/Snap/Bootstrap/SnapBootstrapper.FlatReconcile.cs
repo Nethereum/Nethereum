@@ -17,7 +17,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 {
     public static partial class SnapBootstrapper
     {
-        internal sealed class SnapStorageCompletenessGateReport
+        public sealed class SnapStorageCompletenessGateReport
         {
             public int PendingDeferredHealAccounts { get; set; }
             public bool DeferredHealBlobPresent { get; set; }
@@ -40,7 +40,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                    $"unresolved_big={UnresolvedBigAccounts} final_not_deep={FinalRootStorageNotDeepComplete} " +
                    $"damaged={DamagedStorageInventories}";
         }
-        internal static SnapStorageCompletenessGateReport BuildStorageCompletenessGateReport(IChainStoreBundle bundle)
+        public static SnapStorageCompletenessGateReport BuildStorageCompletenessGateReport(IChainStoreBundle bundle)
         {
             if (bundle == null) throw new ArgumentNullException(nameof(bundle));
 
@@ -89,7 +89,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                 "Snap-sync storage completeness gate failed before flat reconcile; refusing to finalize while storage debt remains: " +
                 report);
         }
-        internal static async Task ReconcileAndCertifyFlatAsync(
+        public static async Task ReconcileAndCertifyFlatAsync(
             IFlatStateReconciler flatReconciler, byte[] stateRoot, ulong pivotBlockNumber, bool verify,
             ILogger logger, CancellationToken ct)
         {

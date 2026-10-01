@@ -11,7 +11,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private static readonly byte[] Tombstone = new byte[0];
 
-        internal static byte[] Key(bool isAccount, byte[] owner, byte[] path)
+        public static byte[] Key(bool isAccount, byte[] owner, byte[] path)
         {
             var ownerLen = isAccount ? 0 : (owner?.Length ?? 0);
             var pathLen = path?.Length ?? 0;

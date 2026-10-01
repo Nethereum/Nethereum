@@ -16,7 +16,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 {
     public static partial class SnapBootstrapper
     {
-        internal static Func<CancellationToken, Task<byte[]>> BuildClientPivotRefresher(
+        public static Func<CancellationToken, Task<byte[]>> BuildClientPivotRefresher(
             Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>> pivotRefresher,
             RollingPivot rollingPivot,
             ILogger logger)
@@ -35,7 +35,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                 return rollingPivot.Current.Header.StateRoot;
             };
         }
-        internal static async Task<byte[]> AnchorFreshPivotAtStartAsync(
+        public static async Task<byte[]> AnchorFreshPivotAtStartAsync(
             Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>>? pivotRefresher,
             RollingPivot rollingPivot,
             BlockHeader bootPivot,

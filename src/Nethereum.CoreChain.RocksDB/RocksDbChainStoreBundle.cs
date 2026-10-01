@@ -81,10 +81,10 @@ namespace Nethereum.CoreChain.RocksDB
         private readonly Stores.RocksDbNodeReverseDiffStore _nodeReverseDiffStore;
         private readonly Stores.INodeHistoryFloorPolicy _nodeHistoryFloor;
         private readonly Stores.WindowDirtyLayers _windowLayers;
-        internal Stores.WindowDirtyLayers WindowLayers => _windowLayers;
+        public Stores.WindowDirtyLayers WindowLayers => _windowLayers;
         private readonly Stores.PendingFlushFlatOverlay _pendingFlushFlatOverlay;
         internal Stores.PendingFlushFlatOverlay PendingFlushFlatOverlay => _pendingFlushFlatOverlay;
-        internal RocksDbManager FreezerHistoryRocksForTests => _freezerHistoryRocks;
+        public RocksDbManager FreezerHistoryRocksForTests => _freezerHistoryRocks;
         private long _lastPrunedQuantum;
         private Stores.RocksDbWritePressureMonitor _pressureMonitor;
         private readonly Stores.RocksDbCheckpointManager _checkpointManager;
@@ -225,7 +225,7 @@ namespace Nethereum.CoreChain.RocksDB
         private static bool HasRealRocksDbAt(string dir)
             => File.Exists(Path.Combine(dir, "IDENTITY")) || File.Exists(Path.Combine(dir, "CURRENT"));
 
-        internal static bool ResolveEffectiveSplit(StorageLayout layout, bool requestedSplit) => layout switch
+        public static bool ResolveEffectiveSplit(StorageLayout layout, bool requestedSplit) => layout switch
         {
             StorageLayout.ExistingSingle => false,
             StorageLayout.ExistingSplit => true,
@@ -845,7 +845,7 @@ namespace Nethereum.CoreChain.RocksDB
                 progress?.Invoke("full store compaction complete");
             }, ct);
 
-        internal void FlushStateAtomically(
+        public void FlushStateAtomically(
             FlatStateBatch flat,
             TrieNodeSet nodes,
             ulong block, byte[] hash,
@@ -1082,12 +1082,12 @@ namespace Nethereum.CoreChain.RocksDB
         public (ulong Previous, ulong New) AlignByHashReindexCursorToFreezerHead()
             => _freezerIndexer?.AlignCursorToHead() ?? (0UL, 0UL);
 
-        internal void SetByHashReindexCursorForTests(ulong itemNumber) => _freezerIndexer?.SetByHashReindexCursorForTests(itemNumber);
+        public void SetByHashReindexCursorForTests(ulong itemNumber) => _freezerIndexer?.SetByHashReindexCursorForTests(itemNumber);
 
         public int RenderFilterMapsCatchUp(CancellationToken ct = default, long? headOverride = null)
             => _freezerIndexer?.RenderFilterMaps(ct, headOverride) ?? 0;
 
-        internal void SetPressureMonitorForTests(Stores.RocksDbWritePressureMonitor monitor)
+        public void SetPressureMonitorForTests(Stores.RocksDbWritePressureMonitor monitor)
         {
             _pressureMonitor = monitor;
             _freezerIndexer?.SetPressureMonitorForTests(monitor);

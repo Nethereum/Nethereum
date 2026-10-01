@@ -10,7 +10,7 @@ namespace Nethereum.Freezer
         private readonly SafeFileHandle _handle;
         private long _readOperationCount;
 
-        internal long ReadOperationCount => System.Threading.Volatile.Read(ref _readOperationCount);
+        public long ReadOperationCount => System.Threading.Volatile.Read(ref _readOperationCount);
 
         private FreezerIndex(SafeFileHandle handle)
         {

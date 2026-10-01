@@ -47,10 +47,10 @@ namespace Nethereum.DevP2P.Sync.Snap.Healing
 
         private const int MaxPendingNodes = 1_000_000;
 
-        internal TimeSpan FetchFailureBackoff { get; set; } = TimeSpan.FromMilliseconds(500);
+        public TimeSpan FetchFailureBackoff { get; set; } = TimeSpan.FromMilliseconds(500);
 
         private int _topBranchesHealed;
-        internal TimeSpan NoPeerFailureBackoff { get; set; } = TimeSpan.FromSeconds(2);
+        public TimeSpan NoPeerFailureBackoff { get; set; } = TimeSpan.FromSeconds(2);
 
         private long _prunedChildren;
         private long _requiredAbsent;

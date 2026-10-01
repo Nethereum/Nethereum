@@ -12,9 +12,9 @@ using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.Storage
 {
-    internal enum AccountStorageResolutionStatus { Found, AbsentOrEmpty, Indeterminate }
+    public enum AccountStorageResolutionStatus { Found, AbsentOrEmpty, Indeterminate }
 
-    internal readonly struct AccountStorageResolution
+    public readonly struct AccountStorageResolution
     {
         public AccountStorageResolutionStatus Status { get; }
         public byte[] StorageRoot { get; }
@@ -35,7 +35,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             new AccountStorageResolution(AccountStorageResolutionStatus.Indeterminate, null);
     }
 
-    internal static class DeferredStorageDebtFinalRootResolver
+    public static class DeferredStorageDebtFinalRootResolver
     {
         private const ulong AccountProofResponseBytes = 16_384;
 

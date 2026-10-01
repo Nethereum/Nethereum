@@ -11,7 +11,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
         internal static readonly TimeSpan Phase1StallRetryInitialBackoff = TimeSpan.FromSeconds(2);
         internal static readonly TimeSpan Phase1StallRetryMaxBackoff = TimeSpan.FromSeconds(30);
 
-        internal static async Task<ParallelBlockBackfiller.BackfillResult> RunPhase1BackfillWithStallRetryAsync(
+        public static async Task<ParallelBlockBackfiller.BackfillResult> RunPhase1BackfillWithStallRetryAsync(
             Func<CancellationToken, Task<ParallelBlockBackfiller.BackfillResult>> attempt,
             ILogger logger,
             CancellationToken ct,

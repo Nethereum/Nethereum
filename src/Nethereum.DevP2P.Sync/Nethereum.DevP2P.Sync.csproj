@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Version>$(NethereumVersionPreview)</Version>
     <Description>DevP2P-backed sync over eth/68-71 and snap: peer pool, header and body fetch, snap bootstrap, mempool relay and block push.</Description>
@@ -9,11 +8,6 @@
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="Nethereum.DevP2P.Sync.UnitTests" />
-    <InternalsVisibleTo Include="Nethereum.Sync.Workload.UnitTests" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />

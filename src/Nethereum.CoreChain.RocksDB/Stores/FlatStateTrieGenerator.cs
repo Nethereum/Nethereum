@@ -13,7 +13,7 @@ using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
-    internal sealed class FlatStateTrieGenerator
+    public sealed class FlatStateTrieGenerator
     {
         internal const int DefaultStorageCollapseIntervalSlots = 5_000;
         internal const int DefaultAccountCollapseIntervalAccounts = 50_000;

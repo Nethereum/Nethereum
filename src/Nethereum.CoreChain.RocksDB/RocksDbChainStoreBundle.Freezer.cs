@@ -41,7 +41,7 @@ namespace Nethereum.CoreChain.RocksDB
             return Task.FromResult(_freezerAppendService.AppendFreezeEligiblePrefix(blocks, freezeBoundary, ct));
         }
 
-        internal static ulong ReconcileBodyCursorToFreezerHead(ulong bodyCursor, long freezerItems, System.Numerics.BigInteger freezeBoundary)
+        public static ulong ReconcileBodyCursorToFreezerHead(ulong bodyCursor, long freezerItems, System.Numerics.BigInteger freezeBoundary)
         {
             var withinFrozenBand = freezeBoundary >= 0 && bodyCursor <= freezeBoundary;
             if (freezerItems <= 0)

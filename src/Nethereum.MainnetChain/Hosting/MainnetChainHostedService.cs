@@ -299,7 +299,7 @@ namespace Nethereum.MainnetChain.Hosting
             return node;
         }
 
-        internal static (int MaxLogBlockRange, int MaxLogResults, long GasCap) ResolveRpcCaps(
+        public static (int MaxLogBlockRange, int MaxLogResults, long GasCap) ResolveRpcCaps(
             ChainNodeConfig? mappedConfig, MainnetChainServerConfig config) =>
             (
                 mappedConfig?.Rpc.MaxLogBlockRange ?? config.RpcMaxLogBlockRange,

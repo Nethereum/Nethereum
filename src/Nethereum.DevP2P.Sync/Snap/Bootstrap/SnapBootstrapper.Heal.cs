@@ -19,7 +19,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
         private static readonly TimeSpan RecycleWarnAfter = TimeSpan.FromMinutes(10);
         private static readonly TimeSpan RecycleErrorAfter = TimeSpan.FromHours(1);
         private static readonly TimeSpan RecycleNoProgressBackoff = TimeSpan.FromSeconds(2);
-        internal static bool HasDeferredStorageHealWork(
+        public static bool HasDeferredStorageHealWork(
             IChainMetadataStore metadata,
             System.Collections.Generic.IReadOnlyList<SnapSyncClient.AccountNeedingHeal> discoveredAccounts)
         {
@@ -74,7 +74,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             bundle.Metadata.ClearDeferredHealAccountsBlob();
         }
         private const int DeferredResolveRetargetMaxAttempts = 8;
-        internal static async Task ResolveOpenDebtFinalRootsWithRetargetAsync(
+        public static async Task ResolveOpenDebtFinalRootsWithRetargetAsync(
             IChainStoreBundle bundle,
             IFetchRequestScheduler scheduler,
             RollingPivot rollingPivot,
@@ -197,7 +197,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                     currentTarget.ToHex(), currentSeed.Count);
             }
         }
-        internal static System.Collections.Generic.IReadOnlyList<SnapSyncClient.AccountNeedingHeal> ResolveDeferredHealAccounts(
+        public static System.Collections.Generic.IReadOnlyList<SnapSyncClient.AccountNeedingHeal> ResolveDeferredHealAccounts(
             System.Collections.Generic.IReadOnlyList<SnapSyncClient.AccountNeedingHeal> freshFromException,
             byte[] persistedBlob,
             ILogger logger = null)
@@ -215,7 +215,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             }
             return decoded;
         }
-        internal static Func<bool, CancellationToken, Task<(byte[] Root, ulong Block)?>> BuildHealerPivotRefresher(
+        public static Func<bool, CancellationToken, Task<(byte[] Root, ulong Block)?>> BuildHealerPivotRefresher(
             Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>> pivotRefresher,
             RollingPivot rollingPivot)
         {

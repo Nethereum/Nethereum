@@ -54,7 +54,7 @@ namespace Nethereum.DevP2P.Sync.Peering
         private SyncPeerSession BestPeer() =>
             SelectHeadPeer(_pool.ActivePeers, _trustedPeersOnly) as SyncPeerSession;
 
-        internal static IEthPeer SelectHeadPeer(IEnumerable<IEthPeer> peers, bool trustedPeersOnly)
+        public static IEthPeer SelectHeadPeer(IEnumerable<IEthPeer> peers, bool trustedPeersOnly)
         {
             if (peers == null) return null;
             var candidates = trustedPeersOnly ? peers.Where(peer => peer.IsTrusted) : peers;

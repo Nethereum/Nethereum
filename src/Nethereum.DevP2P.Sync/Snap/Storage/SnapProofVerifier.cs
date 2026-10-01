@@ -6,7 +6,7 @@ using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.Storage
 {
-    internal static class SnapProofVerifier
+    public static class SnapProofVerifier
     {
         internal static Nethereum.Merkle.Patricia.ProofVerification.RangeProofResult VerifyAccountRangeResponse(
             byte[] stateRoot, byte[] origin, AccountRangeMessage resp, out List<byte[]> canonicalValues)
@@ -57,7 +57,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             return VerifyStorageRangeSlots(storageRoot, startingHash, slots, proof);
         }
 
-        internal static bool VerifyBatchStorageResponse(IReadOnlyList<(byte[] Hash, byte[] Root)> dispatched, StorageRangesMessage resp)
+        public static bool VerifyBatchStorageResponse(IReadOnlyList<(byte[] Hash, byte[] Root)> dispatched, StorageRangesMessage resp)
         {
             var slotSets = resp?.Slots;
             var proof = (IList<byte[]>)(resp?.Proof ?? new List<byte[]>());
@@ -81,7 +81,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             return true;
         }
 
-        internal static bool VerifyByteCodesResponse(IReadOnlyList<byte[]> requestedHashes, ByteCodesMessage resp)
+        public static bool VerifyByteCodesResponse(IReadOnlyList<byte[]> requestedHashes, ByteCodesMessage resp)
         {
             if (resp?.Codes == null || resp.Codes.Count == 0) return true;
             if (requestedHashes == null || requestedHashes.Count == 0) return false;

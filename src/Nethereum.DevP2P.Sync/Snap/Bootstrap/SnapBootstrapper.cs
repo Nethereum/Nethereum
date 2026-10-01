@@ -40,9 +40,9 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             public Task StateCompaction { get; init; } = Task.CompletedTask;
         }
 
-        internal sealed record PivotState(BlockHeader Header, byte[] Hash);
+        public sealed record PivotState(BlockHeader Header, byte[] Hash);
 
-        internal sealed class RollingPivot
+        public sealed class RollingPivot
         {
             private PivotState _current;
             public RollingPivot(BlockHeader header, byte[] hash) => _current = new PivotState(header, hash);
@@ -101,7 +101,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                 codeStore: bundle.State);
         }
 
-        internal static bool ShouldBalHeal(IChainActivations activations, BlockHeader header, bool balHealEnabled)
+        public static bool ShouldBalHeal(IChainActivations activations, BlockHeader header, bool balHealEnabled)
             => balHealEnabled
                && activations != null
                && header != null
@@ -277,7 +277,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             return new Phase1Start(backfillTask, backfillCts, phase1FirstCompletion, null);
         }
 
-        internal static readonly TimeSpan BackfillStopTimeout = ParallelBlockBackfiller.StageDrainTimeout + TimeSpan.FromSeconds(5);
+        public static readonly TimeSpan BackfillStopTimeout = ParallelBlockBackfiller.StageDrainTimeout + TimeSpan.FromSeconds(5);
 
         private static async Task AbandonPhase2AndStopBackfillAsync(IBulkFlatStateSink? bulkFlat, Phase1Start phase1, ILogger logger)
         {
@@ -291,7 +291,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             phase1.BackfillCts.Dispose();
         }
 
-        internal static async Task StopBackfillAsync(CancellationTokenSource backfillCts, Task backfill, ILogger logger)
+        public static async Task StopBackfillAsync(CancellationTokenSource backfillCts, Task backfill, ILogger logger)
         {
             try { backfillCts.Cancel(); }
             catch (ObjectDisposedException) { }

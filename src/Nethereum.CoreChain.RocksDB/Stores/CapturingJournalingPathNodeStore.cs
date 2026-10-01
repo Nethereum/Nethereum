@@ -9,7 +9,7 @@ using Nethereum.Util.HashProviders;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
-    internal sealed class CapturingJournalingPathNodeStore :
+    public sealed class CapturingJournalingPathNodeStore :
         ITrieNodeStore, IContractStorageWipeable, IRawNodeReader, ICacheInvalidatable
     {
         private readonly JournalingPathNodeStore _inner;

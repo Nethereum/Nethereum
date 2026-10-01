@@ -24,7 +24,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             if (savedPhase == SnapPhase.Phase2Running) return SnapResumeMode.Phase2;
             return SnapResumeMode.Fresh;
         }
-        internal static bool PivotMoved(SnapSyncState savedState, BlockHeader pivot, byte[] pivotHash) =>
+        public static bool PivotMoved(SnapSyncState savedState, BlockHeader pivot, byte[] pivotHash) =>
             savedState.PivotBlockNumber != (ulong)pivot.BlockNumber
             || !Nethereum.Util.ByteUtil.AreEqual(savedState.PivotBlockHash, pivotHash);
         private static (SnapSyncState ResumeFrom, bool SkipPhase2) RouteResume(

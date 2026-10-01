@@ -56,7 +56,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             }
         }
 
-        internal async Task FillOnceAsync(
+        public async Task FillOnceAsync(
             ParallelBlockBackfiller backfiller, ExecutionHeadBodyFillCursor cursor, CancellationToken ct)
         {
             ulong floor = 0, top = 0;

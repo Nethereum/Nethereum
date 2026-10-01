@@ -33,9 +33,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private static readonly IngestExternalFileOptions MoveFilesIngest = new IngestExternalFileOptions().SetMoveFiles(true);
 
-        internal Action PreIngestHook { get; set; }
+        public Action PreIngestHook { get; set; }
 
-        internal string ScratchDirectory => _scratchDir;
+        public string ScratchDirectory => _scratchDir;
 
         public SnapFlatSstSink(
             RocksDbManager rocks, RocksDbStateStore encoder, string scratchDir,

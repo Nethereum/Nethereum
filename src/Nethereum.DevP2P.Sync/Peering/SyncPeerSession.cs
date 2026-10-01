@@ -341,10 +341,10 @@ namespace Nethereum.DevP2P.Sync.Peering
             return info;
         }
 
-        internal static bool ShouldRejectAsBehind(int ethVersion, ulong peerLatestBlock, ulong minPeerLatestBlock)
+        public static bool ShouldRejectAsBehind(int ethVersion, ulong peerLatestBlock, ulong minPeerLatestBlock)
             => ethVersion >= 69 && peerLatestBlock < minPeerLatestBlock;
 
-        internal static DevP2PConfig BuildDialConfig(TimeSpan timeout, bool advertiseSnap2 = false) => new DevP2PConfig
+        public static DevP2PConfig BuildDialConfig(TimeSpan timeout, bool advertiseSnap2 = false) => new DevP2PConfig
         {
             ClientId = "Nethereum.SyncNode/0.1",
             ConnectTimeoutMs = (int)timeout.TotalMilliseconds,
@@ -527,7 +527,7 @@ namespace Nethereum.DevP2P.Sync.Peering
                 MaxReceipts70ContinuationRounds).ConfigureAwait(false);
         }
 
-        internal static async Task<List<List<Receipt>>> AssembleReceipts70Async(
+        public static async Task<List<List<Receipt>>> AssembleReceipts70Async(
             int hashCount,
             Func<int, ulong, Task<(IReadOnlyList<List<Receipt>> entries, bool lastBlockIncomplete)>> fetchFromPos,
             int maxRounds)

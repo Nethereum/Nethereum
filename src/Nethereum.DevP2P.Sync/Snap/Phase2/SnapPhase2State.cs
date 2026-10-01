@@ -7,7 +7,7 @@ using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.Phase2
 {
-    internal sealed class SnapPhase2State
+    public sealed class SnapPhase2State
     {
         private readonly SnapSyncMetrics _metrics;
 

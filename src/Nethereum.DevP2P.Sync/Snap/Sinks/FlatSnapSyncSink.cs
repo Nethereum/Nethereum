@@ -8,7 +8,7 @@ using Nethereum.Model;
 
 namespace Nethereum.DevP2P.Sync.Snap.Sinks
 {
-    internal sealed class FlatSnapSyncSink : ISnapSyncSink
+    public sealed class FlatSnapSyncSink : ISnapSyncSink
     {
         private readonly IStateStore _codeStore;
         private int _accountCount;
@@ -21,7 +21,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
             _codeStore = codeStore ?? throw new ArgumentNullException(nameof(codeStore));
         }
 
-        internal ISnapFlatStateWriter FlatWriter { get; }
+        public ISnapFlatStateWriter FlatWriter { get; }
 
         public int AccountCount => Volatile.Read(ref _accountCount);
         public int SlotCount => Volatile.Read(ref _slotCount);

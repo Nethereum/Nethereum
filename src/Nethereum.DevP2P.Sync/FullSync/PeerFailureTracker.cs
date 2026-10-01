@@ -5,14 +5,14 @@ using System.Threading;
 
 namespace Nethereum.DevP2P.Sync.FullSync
 {
-    internal enum PeerFailureOutcome
+    public enum PeerFailureOutcome
     {
         Cooldown,
         Bench,
         Dispose
     }
 
-    internal sealed class PeerFailureTracker
+    public sealed class PeerFailureTracker
     {
         private readonly int _dropThreshold;
         private readonly long _cooldownTicks;

@@ -29,14 +29,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             : this(rocks, dataDir, DefaultReader(rocks), DefaultReader(historyRocks ?? rocks),
                    freezerHistoryRocks == null ? null : DefaultReader(freezerHistoryRocks)) { }
 
-        internal RocksDbWritePressureMonitor(string dataDir, Func<string, string, string> readProperty)
+        public RocksDbWritePressureMonitor(string dataDir, Func<string, string, string> readProperty)
             : this(null, dataDir, readProperty, readProperty, null) { }
 
-        internal RocksDbWritePressureMonitor(
+        public RocksDbWritePressureMonitor(
             string dataDir, Func<string, string, string> readProperty, Func<string, string, string> readHistoryProperty)
             : this(null, dataDir, readProperty, readHistoryProperty, null) { }
 
-        internal RocksDbWritePressureMonitor(
+        public RocksDbWritePressureMonitor(
             string dataDir, Func<string, string, string> readProperty, Func<string, string, string> readHistoryProperty,
             Func<string, string, string> readFreezerHistoryProperty)
             : this(null, dataDir, readProperty, readHistoryProperty, readFreezerHistoryProperty) { }

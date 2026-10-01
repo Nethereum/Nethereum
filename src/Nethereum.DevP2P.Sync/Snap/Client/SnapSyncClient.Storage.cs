@@ -16,7 +16,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 {
     public partial class SnapSyncClient
     {
-        internal async Task<bool> FetchPageStorageAsync(
+        public async Task<bool> FetchPageStorageAsync(
             byte[] stateRoot,
             List<(byte[] Hash, byte[] Root)> storageAccounts,
             AccountWorkerResult page,
@@ -353,7 +353,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             }
         }
 
-        internal async Task ProcessStorageSubtaskAsync(
+        public async Task ProcessStorageSubtaskAsync(
             SnapFragment.StorageSubtask frag,
             SnapTaskSet taskSet,
             ITrieNodeStore storageNodeStore,

@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Nethereum.CoreChain.RocksDB.UnitTests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="RocksDB" Version="10.4.2.62149" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="[8.0.0,)" />

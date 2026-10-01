@@ -13,7 +13,7 @@ using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.CatchUp
 {
-    internal sealed class SnapSyncResetRequiredException : InvalidOperationException
+    public sealed class SnapSyncResetRequiredException : InvalidOperationException
     {
         public SnapSyncResetRequiredException(string reason, string message)
             : base(message)
@@ -24,7 +24,7 @@ namespace Nethereum.DevP2P.Sync.Snap.CatchUp
         public string Reason { get; }
     }
 
-    internal sealed class BalCatchUp
+    public sealed class BalCatchUp
     {
         internal const ulong MaxCatchUpBlocks = 90_000;
         internal const ulong WindowBlocks = 512;
@@ -38,7 +38,7 @@ namespace Nethereum.DevP2P.Sync.Snap.CatchUp
         private readonly ILogger _logger;
         private SnapBootstrapper.PivotState _applied;
 
-        internal BalCatchUp(
+        public BalCatchUp(
             IChainStoreBundle bundle,
             SnapBootstrapper.RollingPivot rollingPivot,
             SnapBootstrapper.PivotState applied,
@@ -58,7 +58,7 @@ namespace Nethereum.DevP2P.Sync.Snap.CatchUp
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        internal static BalCatchUp Create(
+        public static BalCatchUp Create(
             IChainStoreBundle bundle, IBlockAccessListPeerSource peers, SnapBootstrapper.RollingPivot rollingPivot,
             SnapBootstrapper.PivotState applied, SnapSyncMetrics metrics, ILogger logger,
             IBlockAccessListApplier applier = null)
@@ -181,7 +181,7 @@ namespace Nethereum.DevP2P.Sync.Snap.CatchUp
             return new SnapSyncResetRequiredException(reason, $"snap.bal_catchup: reset required ({reason}): {detail}.");
         }
 
-        internal static void VerifyGapHeaderChain(
+        public static void VerifyGapHeaderChain(
             BlockHeader oldHeader, BlockHeader newHeader, IReadOnlyList<BlockHeader> headers)
         {
             var parentHash = RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(oldHeader);

@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.ZkProofsVerifier.Circom
 {
-    internal static class SnarkjsVerificationKeyParser
+    public static class SnarkjsVerificationKeyParser
     {
         public static Groth16VerificationKey Parse(string json)
         {

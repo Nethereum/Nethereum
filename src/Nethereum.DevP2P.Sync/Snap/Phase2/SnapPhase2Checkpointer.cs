@@ -4,7 +4,7 @@ using Nethereum.CoreChain.Storage;
 
 namespace Nethereum.DevP2P.Sync.Snap.Phase2
 {
-    internal sealed class SnapPhase2Checkpointer
+    public sealed class SnapPhase2Checkpointer
     {
         private readonly SnapPhase2State _state;
         private readonly SnapTaskSet _taskSet;

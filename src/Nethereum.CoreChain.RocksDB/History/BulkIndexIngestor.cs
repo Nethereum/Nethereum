@@ -151,7 +151,7 @@ namespace Nethereum.CoreChain.RocksDB.History
         private bool NeedsFinalCompaction(ColumnFamilyHandle cf)
             => ExceedsFinalCompactionThreshold(_db.GetProperty("rocksdb.estimate-pending-compaction-bytes", cf));
 
-        internal static bool ExceedsFinalCompactionThreshold(string pendingCompactionBytesProperty)
+        public static bool ExceedsFinalCompactionThreshold(string pendingCompactionBytesProperty)
             => !long.TryParse(pendingCompactionBytesProperty, out var pending)
                || pending > FinishCompactionPendingThresholdBytes;
 

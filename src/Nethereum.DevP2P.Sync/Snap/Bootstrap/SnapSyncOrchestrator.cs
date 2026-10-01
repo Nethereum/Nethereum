@@ -95,7 +95,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
         public static bool CanonicalPivotMeetsResumeFloor(ulong tipBlock, ulong savedPivotFloor)
             => savedPivotFloor == 0 || tipBlock >= savedPivotFloor;
 
-        internal static (bool Escalated, int BackoffCapMs) ComputeRetryEscalation(int attempt)
+        public static (bool Escalated, int BackoffCapMs) ComputeRetryEscalation(int attempt)
         {
             bool escalated = attempt >= SnapAttemptEscalationThreshold;
             int cap = escalated ? SnapAttemptMaxBackoffMsEscalated : SnapAttemptMaxBackoffMs;
@@ -334,7 +334,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
             cts.Dispose();
         }
 
-        internal static Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>> BuildPivotRefresher(
+        public static Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>> BuildPivotRefresher(
             IPeerPool pool, IFetchRequestScheduler scheduler, ICanonicalStateRootSource canonicalTip, ILogger logger,
             SnapBootstrapper.RollingPivot rollingPivot, IChainStoreBundle bundle = null,
             ulong staleDistanceBlocks = PivotStaleDistanceBlocks)

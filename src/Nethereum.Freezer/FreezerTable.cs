@@ -248,7 +248,7 @@ namespace Nethereum.Freezer
 
         public ushort FileNumberOf(long itemNumber) => _index.RangeOf(itemNumber).FileNumber;
 
-        internal long IndexReadOperationCount => (_index as FreezerIndex)?.ReadOperationCount ?? 0;
+        public long IndexReadOperationCount => (_index as FreezerIndex)?.ReadOperationCount ?? 0;
 
         private long FirstItemInFile(ushort fileNumber, long count)
         {

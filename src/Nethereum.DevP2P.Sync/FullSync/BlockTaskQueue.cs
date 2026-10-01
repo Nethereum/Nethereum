@@ -29,8 +29,8 @@ namespace Nethereum.DevP2P.Sync.FullSync
             public TaskStage BodyStage { get; internal set; } = TaskStage.Pending;
             public TaskStage ReceiptStage { get; internal set; } = TaskStage.Pending;
 
-            public BlockBody? Body { get; internal set; }
-            public List<Receipt>? Receipts { get; internal set; }
+            public BlockBody? Body { get; set; }
+            public List<Receipt>? Receipts { get; set; }
 
             public Guid? ReservedByBodyPeer { get; internal set; }
             public Guid? ReservedByReceiptPeer { get; internal set; }
