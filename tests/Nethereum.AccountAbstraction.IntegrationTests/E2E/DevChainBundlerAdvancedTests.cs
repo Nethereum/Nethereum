@@ -342,10 +342,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, accountKey);
 
-            await _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
-            var result = await _fixture.BundlerService.ExecuteBundleAsync();
-
-            Assert.False(result?.Success ?? true, "Operation with insufficient funds should fail during execution");
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(
+                () => _fixture.BundlerService.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress));
+            Assert.Contains("AA21", ex.Message);
         }
 
         [Fact]

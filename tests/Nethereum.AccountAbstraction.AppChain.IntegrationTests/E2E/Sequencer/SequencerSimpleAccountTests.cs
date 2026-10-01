@@ -223,7 +223,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 InitCode = initCode,
                 CallData = Array.Empty<byte>(),
                 CallGasLimit = 50000,
-                VerificationGasLimit = 500000,
+                VerificationGasLimit = 2000000,
                 PreVerificationGas = 50000,
                 MaxFeePerGas = 2000000000,
                 MaxPriorityFeePerGas = 1000000000
@@ -235,7 +235,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             {
                 Ops = new List<Nethereum.AccountAbstraction.Structs.PackedUserOperation> { packedDeployOp },
                 Beneficiary = _bundlerAccount.Address,
-                Gas = 5000000
+                Gas = 10000000
             };
 
             var deployReceipt = await _entryPointService.HandleOpsRequestAndWaitForReceiptAsync(handleOpsFunction);

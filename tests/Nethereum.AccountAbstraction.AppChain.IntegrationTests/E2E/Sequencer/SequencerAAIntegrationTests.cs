@@ -386,7 +386,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 InitCode = initCode,
                 CallData = callData,
                 CallGasLimit = 100000,
-                VerificationGasLimit = 600000,
+                VerificationGasLimit = 1500000,
                 PreVerificationGas = 100000,
                 MaxFeePerGas = 2000000000,
                 MaxPriorityFeePerGas = 1000000000,

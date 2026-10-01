@@ -34,7 +34,7 @@ namespace Nethereum.Mud.IntegrationTests
                 @"(tableid = @p0 AND address = @p1 AND key0 = @p2) AND 
 (tableid = @p3 AND address = @p4 AND key0 = @p5) OR 
 (tableid = @p6 AND address = @p7 AND key0 = @p8) AND 
-(tableid = @p9 AND address = @p10 AND key0 != @p11)".Replace("\r\n", ""),
+(tableid = @p9 AND address = @p10 AND key0 != @p11)".Replace("\r", "").Replace("\n", ""),
                 sql.Sql);
 
             var tableId = predicateBuilder.TableResourceIdEncoded.ToHex(true);
@@ -83,13 +83,14 @@ namespace Nethereum.Mud.IntegrationTests
                                                  ""Name"":""id"",
                                                  ""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",
                                                  ""Address"":""0xABC123"",
-                                                 ""UnionOperator"":""AND""},
-                                                 {""Key"":""key0"",""AbiType"":""uint32"",""HexValue"":""0000000000000000000000000000000000000000000000000000000000000002"",""PropertyName"":""Id"",""Order"":1,""ComparisonOperator"":""="",""Name"":""id"",""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",""Address"":""0xABC123"",""UnionOperator"":""AND""},
-                                                 {""Key"":""key0"",""AbiType"":""uint32"",""HexValue"":""0000000000000000000000000000000000000000000000000000000000000003"",""PropertyName"":""Id"",""Order"":1,""ComparisonOperator"":""="",""Name"":""id"",""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",""Address"":""0xABC123"",""UnionOperator"":""OR""},
-                                                 {""Key"":""key0"",""AbiType"":""uint32"",""HexValue"":""0000000000000000000000000000000000000000000000000000000000000004"",""PropertyName"":""Id"",""Order"":1,""ComparisonOperator"":""!="",""Name"":""id"",""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",""Address"":""0xABC123"",""UnionOperator"":""AND""}],
-                                    ""Groups"":[]}";
+                                                 ""UnionOperator"":""AND"",""IsValueField"":false,""RawValue"":null},
+                                                 {""Key"":""key0"",""AbiType"":""uint32"",""HexValue"":""0000000000000000000000000000000000000000000000000000000000000002"",""PropertyName"":""Id"",""Order"":1,""ComparisonOperator"":""="",""Name"":""id"",""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",""Address"":""0xABC123"",""UnionOperator"":""AND"",""IsValueField"":false,""RawValue"":null},
+                                                 {""Key"":""key0"",""AbiType"":""uint32"",""HexValue"":""0000000000000000000000000000000000000000000000000000000000000003"",""PropertyName"":""Id"",""Order"":1,""ComparisonOperator"":""="",""Name"":""id"",""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",""Address"":""0xABC123"",""UnionOperator"":""OR"",""IsValueField"":false,""RawValue"":null},
+                                                 {""Key"":""key0"",""AbiType"":""uint32"",""HexValue"":""0000000000000000000000000000000000000000000000000000000000000004"",""PropertyName"":""Id"",""Order"":1,""ComparisonOperator"":""!="",""Name"":""id"",""TableId"":""0x746200000000000000000000000000004974656d000000000000000000000000"",""Address"":""0xABC123"",""UnionOperator"":""AND"",""IsValueField"":false,""RawValue"":null}],
+                                    ""Groups"":[],""PageSize"":null,""Page"":null,""OrderByField"":null,""OrderByDescending"":false}";
                 
-            Assert.True(JToken.DeepEquals(JObject.Parse(expectedJson), JObject.Parse(predicateJson)));
+            expectedJson = expectedJson.Replace("0x746200000000000000000000000000004974656d000000000000000000000000", predicateBuilder.TableResourceIdEncoded.ToHex(true));
+            Assert.Equal(JObject.Parse(expectedJson).ToString(Formatting.None), JObject.Parse(predicateJson).ToString(Formatting.None));
         }
     }
 

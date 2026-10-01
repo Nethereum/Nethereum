@@ -59,7 +59,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         }
 
         [Fact]
-        public async Task E2E_InsufficientAccountFunds_ExecutionFails()
+        public async Task E2E_InsufficientAccountFunds_RejectedAtSubmissionWithAA21()
         {
             var salt = (ulong)Random.Shared.NextInt64();
             var ownerKey = new EthECKey(TestAccounts.Account5PrivateKey);
@@ -90,13 +90,9 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var packedOp = await _fixture.EntryPointService.SignAndInitialiseUserOperationAsync(userOp, ownerKey);
 
             using var bundler = _fixture.CreateNewBundlerService();
-            var hash = await bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress);
-            Assert.NotNull(hash);
-
-            var result = await bundler.ExecuteBundleAsync();
-
-            Assert.False(result?.Success ?? true,
-                "Operation with insufficient account funds should fail");
+            var ex = await Assert.ThrowsAsync<BundlerRpcException>(
+                () => bundler.SendUserOperationAsync(packedOp, _fixture.EntryPointService.ContractAddress));
+            Assert.Contains("AA21", ex.Message);
         }
 
         [Fact]

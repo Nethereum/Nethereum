@@ -127,7 +127,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                     }
                 }
 
-                captured.Accounts[kvp.Key] = capturedAccount;
+                captured.Accounts[kvp.Key.ToHexLower()] = capturedAccount;
             }
 
             return captured;
