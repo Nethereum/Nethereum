@@ -140,22 +140,24 @@ namespace Nethereum.AppChain.Policy.Contracts.AppChainPolicy.AppChainPolicy
              return ContractHandler.SendRequestAndWaitForReceiptAsync(inviteFunction, cancellationToken);
         }
 
-        public virtual Task<string> InviteRequestAsync(string invitee, byte[] newWritersRoot, List<byte[]> proofCallerIsWriter)
+        public virtual Task<string> InviteRequestAsync(string invitee, byte[] newWritersRoot, List<byte[]> proofCallerIsWriter, List<byte[]> proofInviteeNotBlacklisted)
         {
             var inviteFunction = new InviteFunction();
                 inviteFunction.Invitee = invitee;
                 inviteFunction.NewWritersRoot = newWritersRoot;
                 inviteFunction.ProofCallerIsWriter = proofCallerIsWriter;
+                inviteFunction.ProofInviteeNotBlacklisted = proofInviteeNotBlacklisted;
             
              return ContractHandler.SendRequestAsync(inviteFunction);
         }
 
-        public virtual Task<TransactionReceipt> InviteRequestAndWaitForReceiptAsync(string invitee, byte[] newWritersRoot, List<byte[]> proofCallerIsWriter, CancellationTokenSource cancellationToken = null)
+        public virtual Task<TransactionReceipt> InviteRequestAndWaitForReceiptAsync(string invitee, byte[] newWritersRoot, List<byte[]> proofCallerIsWriter, List<byte[]> proofInviteeNotBlacklisted, CancellationTokenSource cancellationToken = null)
         {
             var inviteFunction = new InviteFunction();
                 inviteFunction.Invitee = invitee;
                 inviteFunction.NewWritersRoot = newWritersRoot;
                 inviteFunction.ProofCallerIsWriter = proofCallerIsWriter;
+                inviteFunction.ProofInviteeNotBlacklisted = proofInviteeNotBlacklisted;
             
              return ContractHandler.SendRequestAndWaitForReceiptAsync(inviteFunction, cancellationToken);
         }

@@ -570,6 +570,7 @@ public static class ExecutionRequests
     public static byte RequestTypeFor(string predeployAddress);
     public static byte[] Compose(byte requestType, byte[] requestData);
     public static bool CarriesData(byte[] request);
+    public static bool IsValidEngineRequestsList(IReadOnlyList<byte[]> requests);
     public static bool IsActive(HardforkName fork);
     public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests);
     public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests);

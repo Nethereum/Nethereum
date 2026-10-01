@@ -321,6 +321,7 @@ public static class ExecutionRequests
     public static byte RequestTypeFor(string predeployAddress);
     public static byte[] Compose(byte requestType, byte[] requestData);
     public static bool CarriesData(byte[] request);
+    public static bool IsValidEngineRequestsList(IReadOnlyList<byte[]> requests);
     public static bool IsActive(HardforkName fork);
     public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests);
     public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests);
@@ -334,6 +335,7 @@ Each type byte belongs to one predeploy: deposits come from logs of `DepositRequ
 | `byte RequestTypeFor(string predeployAddress)` | maps a predeploy to its type byte; throws `ArgumentOutOfRangeException` for anything else |
 | `byte[] Compose(byte requestType, byte[] requestData)` | `request_type ++ request_data` |
 | `bool CarriesData(byte[] request)` | `request.Length > 1` — an item that is only its type byte is *empty* |
+| `bool IsValidEngineRequestsList(IReadOnlyList<byte[]> requests)` | `false` for a `null` list, for any item without data, or when the type bytes are not strictly ascending — the shape `engine_newPayloadV4`/`V5` require of `executionRequests` |
 | `bool IsActive(HardforkName fork)` | `fork >= HardforkName.Prague` |
 | `byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests)` | the commitment, or `null` before Prague |
 | `byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests)` | `sha256(concat(sha256(request) for each non-empty request))` |

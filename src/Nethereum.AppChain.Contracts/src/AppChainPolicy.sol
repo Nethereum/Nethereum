@@ -137,7 +137,6 @@ contract AppChainPolicy {
     ) external view returns (bool) {
         bool isWriter = _verify(addr, writersRoot, writerProof);
         bool isBanned = blacklistRoot != bytes32(0) &&
-            blacklistProof.length > 0 &&
             _verify(addr, blacklistRoot, blacklistProof);
         return isWriter && !isBanned;
     }

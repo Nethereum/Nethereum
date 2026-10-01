@@ -176,7 +176,8 @@ namespace Nethereum.AppChain.IntegrationTests
             await _policyService!.InviteRequestAndWaitForReceiptAsync(
                 newMember,
                 newWritersRoot,
-                adminWriterProof.ToList());
+                adminWriterProof.ToList(),
+                new List<byte[]>());
 
             var writersRoot = await _policyService.WritersRootQueryAsync();
             Assert.Equal(newWritersRoot, writersRoot);
@@ -193,7 +194,8 @@ namespace Nethereum.AppChain.IntegrationTests
             var receipt = await _policyService!.InviteRequestAndWaitForReceiptAsync(
                 newMember,
                 newWritersRoot,
-                adminWriterProof.ToList());
+                adminWriterProof.ToList(),
+                new List<byte[]>());
 
             var events = receipt.DecodeAllEvents<MemberInvitedEventDTO>();
             Assert.Single(events);
@@ -223,7 +225,29 @@ namespace Nethereum.AppChain.IntegrationTests
                 await nonWriterPolicyService.InviteRequestAndWaitForReceiptAsync(
                     newMember,
                     newWritersRoot,
+                    new List<byte[]>(),
                     new List<byte[]>());
+            });
+        }
+
+        [Fact]
+        public async Task Invite_RejectsABlacklistedInvitee()
+        {
+            var bannedMember = "0x0000000000000000000000000000000000000077";
+            var newBlacklistRoot = _migrationService.ComputeMerkleRoot(new[] { bannedMember });
+            await _policyService!.BanRequestAndWaitForReceiptAsync(bannedMember, newBlacklistRoot, _adminProof.ToList());
+
+            var newWritersRoot = _migrationService.ComputeMerkleRoot(new[] { _adminAddress, _writerAddress, bannedMember });
+            var adminWriterProof = _migrationService.ComputeMerkleProof(_adminAddress, new[] { _adminAddress, _writerAddress });
+            var bannedProof = _migrationService.ComputeMerkleProof(bannedMember, new[] { bannedMember });
+
+            await Assert.ThrowsAsync<SmartContractRevertException>(async () =>
+            {
+                await _policyService.InviteRequestAndWaitForReceiptAsync(
+                    bannedMember,
+                    newWritersRoot,
+                    adminWriterProof.ToList(),
+                    bannedProof.ToList());
             });
         }
 
