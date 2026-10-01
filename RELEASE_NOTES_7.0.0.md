@@ -194,6 +194,11 @@ Details: [Wallet & UI](https://github.com/Nethereum/Nethereum/blob/7.0.0/release
 * **Verified storage reads use the right slot.** `VerifiedStateService.GetStorageAtAsync(address, BigInteger)` encoded the slot little-endian and zero-trimmed, so mapping and array slots read another slot's value; it now requests the 32-byte big-endian key EIP-1186 defines.
 * **`EnsureHexPrefix` on a string array** now writes the `0x` prefix back onto each element; it previously returned the array unchanged (PR #1122).
 * `Nethereum.Mud` decodes an empty `string` field to `""` instead of `null`.
+* **`eth_estimateGas` returns a gas limit the call succeeds with.** A call that checks `gasleft()` or forwards gas under the 63/64 rule (an ERC-4337 `handleOps`, for example) needs more gas available than it uses; when the call fails at the gas it used, CoreChain now searches for the lowest successful limit as go-ethereum does, then applies `ChainConfig.EstimateGasPaddingPercent`.
+* **Simulating a contract creation over RPC against geth works again.** geth answers `eth_getProof` for an absent account with an all-zero `storageHash`; `RpcNodeDataService` read that as existing storage, so every simulated `CREATE`/`CREATE2` saw an EIP-7610 collision and failed.
+* **ERC-4337 gas estimation in EVM mode** simulates in call mode, so the EntryPoint and SenderCreator can be senders, and estimates account deployment from the SenderCreator instead of falling back to a flat 32,000 gas.
+* **MUD on an Amsterdam AppChain.** The AppChain's default RPC gas cap now matches its deploy-sized block gas limit, so `eth_call`/`eth_estimateGas` no longer clamp a MUD World deployment, which costs about 32M gas of EIP-8037 state gas alone.
+* **AppChain policy blacklist.** A blacklist holding a single address now bans it, and `invite` checks the invitee against the blacklist; `InviteFunction` and the `InviteRequest*` overloads take a `proofInviteeNotBlacklisted` proof (preview package).
 
 ## Package versions
 
