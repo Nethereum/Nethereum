@@ -5,6 +5,7 @@ namespace Nethereum.EVM.Execution.TransactionValidation
     public sealed class TransactionValidationRules
     {
         private readonly ITransactionValidationRule[] _rules;
+        public IReadOnlyList<ITransactionValidationRule> Rules => _rules;
 
         public TransactionValidationRules(IReadOnlyList<ITransactionValidationRule> rules)
         {

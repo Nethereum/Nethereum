@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,26 +44,15 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         private static BlockHeader Header(int blockNumber, byte[] stateRoot)
             => new() { BlockNumber = blockNumber, StateRoot = stateRoot };
 
-        private static async Task<object> InvokeReconcileFlatStateAsync(
+        private static Task<SnapBootstrapper.PivotState> InvokeReconcileFlatStateAsync(
             IChainStoreBundle bundle,
             IFetchRequestScheduler scheduler,
             SnapBootstrapper.RollingPivot rollingPivot,
             Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>> pivotRefresher,
             CancellationToken ct)
-        {
-            var method = typeof(SnapBootstrapper).GetMethod(
-                "ReconcileFlatStateAsync", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            var task = (Task)method!.Invoke(null, new object[]
-            {
+            => SnapBootstrapper.ReconcileFlatStateAsync(
                 bundle, scheduler, rollingPivot, pivotRefresher, null,
-                true,
-                true,
-                NullLogger.Instance, ct,
-            })!;
-            await task.ConfigureAwait(false);
-            return task.GetType().GetProperty("Result")!.GetValue(task)!;
-        }
+                finalizeVerify: true, enableFlatReconcile: true, NullLogger.Instance, ct);
 
         private sealed class CountingHealNodeSink : IHealNodeSink
         {

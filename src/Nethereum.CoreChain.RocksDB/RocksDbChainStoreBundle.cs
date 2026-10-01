@@ -69,6 +69,9 @@ namespace Nethereum.CoreChain.RocksDB
         private readonly Freezer.FreezerBackgroundIndexer _freezerIndexer;
         private readonly Freezer.FreezerAppendService _freezerAppendService;
         private readonly Freezer.FreezerPromotionDriver _freezerPromotionDriver;
+        public Stores.RocksDbHotBlockWindowStore HotWindow => _hotWindow;
+        public Stores.RocksDbPromotionService PromotionService => _promotionService;
+        public bool FreezerPromotionEnabled => _freezerPromotionDriver != null;
         private readonly object _freezerAppendLock;
 
         private readonly Nethereum.Model.IBlockEncodingProvider _provider = Nethereum.Model.RlpBlockEncodingProvider.Instance;
@@ -1083,6 +1086,13 @@ namespace Nethereum.CoreChain.RocksDB
             => _freezerIndexer?.AlignCursorToHead() ?? (0UL, 0UL);
 
         public void SetByHashReindexCursorForTests(ulong itemNumber) => _freezerIndexer?.SetByHashReindexCursorForTests(itemNumber);
+
+        public void SetByHashTrailerTaskForTests(Task trailer) => _freezerIndexer?.SetByHashTaskForTests(trailer);
+
+        public void DriveFreezerPromotionForTests() => _freezerPromotionDriver?.Drive();
+
+        public void AppendToFreezerWithoutIndexingForTests(IReadOnlyList<PersistableBlock> blocks)
+            => _freezerAppendService.AppendWithoutIndexingForTests(blocks);
 
         public int RenderFilterMapsCatchUp(CancellationToken ct = default, long? headOverride = null)
             => _freezerIndexer?.RenderFilterMaps(ct, headOverride) ?? 0;

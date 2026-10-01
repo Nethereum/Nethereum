@@ -103,6 +103,15 @@ namespace Nethereum.CoreChain.Storage.InMemory
             }
         }
 
+        public void EvictExpiredFilters()
+        {
+            lock (_lock)
+            {
+                _lastCleanup = DateTime.MinValue;
+                EvictExpiredFiltersLocked();
+            }
+        }
+
         private void EvictExpiredFiltersLocked()
         {
             var now = DateTime.UtcNow;

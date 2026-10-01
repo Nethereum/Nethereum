@@ -6,7 +6,7 @@ namespace Nethereum.EVM.Execution.TransactionValidation.Rules
     {
         private const long AUTH_TUPLE_BYTES = 101;
 
-        private const long EXECUTION_PER_AUTH_BASE_COST =
+        public const long EXECUTION_PER_AUTH_BASE_COST =
             AUTH_TUPLE_BYTES * GasConstants.EIP7976_FLOOR_PER_TOKEN_GAS
             + GasConstants.ECRECOVER_GAS
             + GasConstants.EIP8038_COLD_ACCOUNT_ACCESS

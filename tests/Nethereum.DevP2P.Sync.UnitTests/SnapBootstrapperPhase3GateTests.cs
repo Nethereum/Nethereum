@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,44 +84,16 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Contains("malformed_debts=1", report.ToString());
         }
 
-        private static async Task InvokeFetchMissingBytecodeAsync(BytecodeInventoryBundle bundle, IFetchRequestScheduler scheduler)
-        {
-            var method = typeof(SnapBootstrapper).GetMethod(
-                "FetchMissingBytecodeAsync",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            var task = (Task)method!.Invoke(null, new object[]
-            {
-                bundle,
-                scheduler,
-                null,
-                Hash(0x01),
-                NullLogger.Instance,
-                CancellationToken.None,
-                null,
-            })!;
-            await task.ConfigureAwait(false);
-        }
+        private static Task InvokeFetchMissingBytecodeAsync(BytecodeInventoryBundle bundle, IFetchRequestScheduler scheduler)
+            => SnapBootstrapper.FetchMissingBytecodeAsync(
+                bundle, scheduler, null, Hash(0x01), NullLogger.Instance, CancellationToken.None);
 
-        private static async Task InvokeEnsureBytecodeCompleteAsync(
+        private static Task InvokeEnsureBytecodeCompleteAsync(
             BytecodeInventoryBundle bundle,
             IFetchRequestScheduler scheduler,
             byte[] stateRoot)
-        {
-            var method = typeof(SnapBootstrapper).GetMethod(
-                "EnsureBytecodeCompleteAsync",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            var task = (Task)method!.Invoke(null, new object[]
-            {
-                bundle,
-                scheduler,
-                stateRoot,
-                NullLogger.Instance,
-                CancellationToken.None,
-            })!;
-            await task.ConfigureAwait(false);
-        }
+            => SnapBootstrapper.EnsureBytecodeCompleteAsync(
+                bundle, scheduler, stateRoot, NullLogger.Instance, CancellationToken.None);
         private static object InvokeBuildGateReport(IChainStoreBundle bundle)
         {
             return SnapBootstrapper.BuildStorageCompletenessGateReport(bundle);

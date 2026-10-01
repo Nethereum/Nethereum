@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
 using Xunit;
@@ -104,11 +103,7 @@ namespace Nethereum.Consensus.LightClient.Tests
 
         private static bool InvokeIsFinalityUpdate(LightClientUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "IsFinalityUpdate",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { update });
+            return LightClientService.IsFinalityUpdate(update);
         }
     }
 }

@@ -12,6 +12,7 @@ namespace Nethereum.DevP2P.Sync.Peering
         private readonly ulong _networkId;
         private readonly (ulong[] BlockHeights, ulong[] Timestamps) _forkThresholds;
         private readonly Func<Task<(ulong HeadBlock, ulong HeadTime)>> _ourHead;
+        public Func<Task<(ulong HeadBlock, ulong HeadTime)>> OurHead => _ourHead;
         private readonly ILogger _logger;
         private readonly EthECKey _localKey;
         private readonly bool _advertiseSnap2;

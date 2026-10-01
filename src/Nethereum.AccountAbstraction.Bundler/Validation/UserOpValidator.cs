@@ -192,7 +192,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
         }
 
-        private async Task<BigInteger> GetChainIdAsync()
+        public async Task<BigInteger> GetChainIdAsync()
         {
             if (_config.ChainId.HasValue)
             {
@@ -532,7 +532,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             return service;
         }
 
-        private static string ParseEntryPointError(SmartContractCustomErrorRevertException ex)
+        public static string ParseEntryPointError(SmartContractCustomErrorRevertException ex)
         {
             if (ex.IsCustomErrorFor<FailedOpError>())
             {

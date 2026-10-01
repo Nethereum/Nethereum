@@ -61,6 +61,8 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
 
         internal void SetPressureMonitorForTests(Stores.RocksDbWritePressureMonitor monitor) => _pressureMonitor = monitor;
 
+        internal void SetByHashTaskForTests(Task trailer) => _byHashTask = trailer;
+
         public void IndexFrozenInline(IReadOnlyList<PersistableBlock> blocks, int startIndex, int count)
         {
             if (count <= 0) return;

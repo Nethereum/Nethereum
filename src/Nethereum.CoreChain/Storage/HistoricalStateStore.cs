@@ -13,11 +13,13 @@ namespace Nethereum.CoreChain.Storage
     public class HistoricalStateStore : IStateStore, IHistoricalStateProvider, ISnapFlatStateWriter, IFlatCacheInvalidatable, IStateReadStats
     {
         private readonly IStateStore _inner;
+        public IStateStore Inner => _inner;
 
         public long AccountReads => (_inner as IStateReadStats)?.AccountReads ?? 0;
         public long StorageReads => (_inner as IStateReadStats)?.StorageReads ?? 0;
         private readonly IStateDiffStore _diffStore;
         private readonly HistoricalStateOptions _options;
+        public HistoricalStateOptions Options => _options;
         private BigInteger? _currentBlockNumber;
         private BlockJournal _currentJournal;
         private long _blocksSinceLastPrune;

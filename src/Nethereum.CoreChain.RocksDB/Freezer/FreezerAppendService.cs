@@ -58,6 +58,8 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
             lock (_freezerAppendLock) return op();
         }
 
+        internal void AppendWithoutIndexingForTests(IReadOnlyList<PersistableBlock> blocks) => AppendToFreezer(blocks, blocks.Count);
+
         internal void WithAppendLock(Action op)
         {
             lock (_freezerAppendLock) op();

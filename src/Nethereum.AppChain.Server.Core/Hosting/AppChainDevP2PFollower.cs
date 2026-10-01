@@ -142,7 +142,7 @@ namespace Nethereum.AppChain.Server.Hosting
                     node.BlockSource,
                     () => _bundle,
                     BuildExecutorFactory(),
-                    StrictPolicy(),
+                    StrictPolicy(_config, _loggerFactory),
                     node.Tip,
                     options,
                     ct,
@@ -223,9 +223,9 @@ namespace Nethereum.AppChain.Server.Hosting
                         _loggerFactory.CreateLogger<Consensus.Clique.CliqueConsensusBlockGate>()),
                     _loggerFactory.CreateLogger<ConsensusGatedBlockExecutor>());
 
-        private StrictValidationPolicy StrictPolicy() =>
+        public static StrictValidationPolicy StrictPolicy(AppChainServerConfig config, ILoggerFactory loggerFactory) =>
             ChainNodeFollowerOptionsBuilder.BuildStrictValidationPolicy(
-                _config.Node.Sync, _loggerFactory.CreateLogger<StrictValidationPolicy>());
+                config.Node.Sync, loggerFactory.CreateLogger<StrictValidationPolicy>());
 
 
     }

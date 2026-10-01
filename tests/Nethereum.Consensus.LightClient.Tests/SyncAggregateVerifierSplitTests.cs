@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.Beaconchain.LightClient;
 using Nethereum.Beaconchain.LightClient.Responses;
@@ -159,29 +158,17 @@ namespace Nethereum.Consensus.LightClient.Tests
 
         private static bool InvokeVerifyFullUpdateSyncAggregate(LightClientService service, LightClientUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "VerifyFullUpdateSyncAggregate",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(service, new object[] { update });
+            return service.VerifyFullUpdateSyncAggregate(update);
         }
 
         private static bool InvokeVerifyOptimisticSyncAggregate(LightClientService service, LightClientOptimisticUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "VerifyOptimisticSyncAggregate",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(service, new object[] { update });
+            return service.VerifyOptimisticSyncAggregate(update);
         }
 
         private static bool InvokeVerifyFinalitySyncAggregate(LightClientService service, LightClientFinalityUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "VerifyFinalitySyncAggregate",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(service, new object[] { update });
+            return service.VerifyFinalitySyncAggregate(update);
         }
 
         private sealed class StubLightClientApi : ILightClientApi

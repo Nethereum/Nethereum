@@ -26,6 +26,7 @@ namespace Nethereum.DevP2P.Discv5
 
         private readonly EthECKey _localKey;
         private readonly Discv5SessionManager _sessionManager;
+        public Discv5SessionManager SessionManager => _sessionManager;
         private readonly Discv5RoutingTable _routingTable;
         private readonly Discv5RequestTracker _requestTracker;
         private readonly ConcurrentDictionary<string, Func<byte[], IPEndPoint, byte[]>> _talkHandlers

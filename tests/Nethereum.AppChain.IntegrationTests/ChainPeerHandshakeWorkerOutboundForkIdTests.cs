@@ -2,7 +2,6 @@ using Nethereum.EVM;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -264,10 +263,7 @@ namespace Nethereum.AppChain.IntegrationTests
             var profile = new DefaultChainProfile(NetworkId, genesisHash, ChainForkSchedule.Running((long)NetworkId, HardforkName.Amsterdam), Array.Empty<string>(), bundle: bundle);
             var worker = profile.CreateHandshakeWorker(loggerFactory: null, advertiseSnap2: false);
 
-            var ourHeadField = typeof(ChainPeerHandshakeWorker)
-                .GetField("_ourHead", BindingFlags.NonPublic | BindingFlags.Instance);
-            var ourHead = (Func<Task<(ulong HeadBlock, ulong HeadTime)>>)ourHeadField!.GetValue(worker)!;
-            var viaWorker = await ourHead();
+            var viaWorker = await ((ChainPeerHandshakeWorker)worker).OurHead();
 
             Assert.Equal(directResolve, viaWorker);
 

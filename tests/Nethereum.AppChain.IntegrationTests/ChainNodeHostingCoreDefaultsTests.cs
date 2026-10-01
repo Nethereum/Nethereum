@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -50,15 +49,9 @@ namespace Nethereum.AppChain.IntegrationTests
                 ChainForkSchedule.Running((long)networkId, HardforkName.Amsterdam),
                 Array.Empty<string>(), bundle: bundle);
 
-        private static PeerListenerOptions ListenerOptionsOf(PeerListener listener) =>
-            (PeerListenerOptions)typeof(PeerListener)
-                .GetField("_options", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(listener)!;
+        private static PeerListenerOptions ListenerOptionsOf(PeerListener listener) => listener.Options;
 
-        private static PeerPoolOptions PoolOptionsOf(PeerPoolManager pool) =>
-            (PeerPoolOptions)typeof(PeerPoolManager)
-                .GetField("_options", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(pool)!;
+        private static PeerPoolOptions PoolOptionsOf(PeerPoolManager pool) => pool.Options;
 
         [Fact]
         public async Task Given_DefaultChainNodeSyncConfig_When_ChainNodeSyncStackStarts_Then_BlockSourceIsPlainDevP2PPullOnly()
@@ -293,10 +286,7 @@ namespace Nethereum.AppChain.IntegrationTests
             return worker.Order;
         }
 
-        private static HashSet<string> TrustedDialKeysOf(PeerPoolManager pool) =>
-            (HashSet<string>)typeof(PeerPoolManager)
-                .GetField("_trustedDialKeys", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(pool)!;
+        private static IReadOnlyCollection<string> TrustedDialKeysOf(PeerPoolManager pool) => pool.TrustedDialKeys;
 
         private sealed class BootnodesProfile : IChainProfile
         {

@@ -1,6 +1,5 @@
 using System;
 using System.Numerics;
-using System.Reflection;
 using Nethereum.CoreChain.Models;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
@@ -251,7 +250,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
 
             System.Threading.Thread.Sleep(50);
 
-            ForceCleanupInterval(store);
+            store.EvictExpiredFilters();
 
             var result = store.GetFilter(filterId);
             Assert.Null(result);
@@ -265,7 +264,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
 
             var filterId = store.CreateLogFilter(new LogFilter(), 1);
 
-            ForceCleanupInterval(store);
+            store.EvictExpiredFilters();
 
             var result = store.GetFilter(filterId);
             Assert.NotNull(result);
@@ -285,7 +284,7 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             var freshId = store.CreateLogFilter(new LogFilter(), 2);
 
             store.FilterTtl = TimeSpan.FromMilliseconds(1);
-            ForceCleanupInterval(store);
+            store.EvictExpiredFilters();
 
             store.FilterTtl = TimeSpan.FromMilliseconds(1);
             var expiredResult = store.GetFilter(expiredId);
@@ -295,12 +294,6 @@ namespace Nethereum.CoreChain.UnitTests.Storage
 
             Assert.Null(expiredResult);
             Assert.NotNull(freshResult);
-        }
-
-        private void ForceCleanupInterval(InMemoryFilterStore store)
-        {
-            var field = typeof(InMemoryFilterStore).GetField("_lastCleanup", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(store, DateTime.UtcNow.AddMinutes(-5));
         }
     }
 }

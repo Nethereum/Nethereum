@@ -159,11 +159,6 @@ namespace Nethereum.CoreChain.IntegrationTests
         }
 
         private static Merkle.Binary.BinaryTrie GetTrieFromCalculator(
-            BinaryIncrementalStateRootCalculator calc)
-        {
-            var field = typeof(BinaryIncrementalStateRootCalculator)
-                .GetField("_trie", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            return (Merkle.Binary.BinaryTrie)field.GetValue(calc);
-        }
+            BinaryIncrementalStateRootCalculator calc) => calc.Trie;
     }
 }

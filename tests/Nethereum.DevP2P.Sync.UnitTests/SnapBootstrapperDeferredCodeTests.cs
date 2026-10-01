@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -88,24 +87,10 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
 
-        private static async Task InvokeFetchMissingBytecodeAsync(
+        private static Task InvokeFetchMissingBytecodeAsync(
             IChainStoreBundle bundle, IFetchRequestScheduler scheduler, IReadOnlyList<byte[]> phase2DeferredCode)
-        {
-            var method = typeof(SnapBootstrapper).GetMethod(
-                "FetchMissingBytecodeAsync", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            var task = (Task)method!.Invoke(null, new object[]
-            {
-                bundle,
-                scheduler,
-                null,
-                Hash(0x01),
-                NullLogger.Instance,
-                CancellationToken.None,
-                phase2DeferredCode,
-            })!;
-            await task.ConfigureAwait(false);
-        }
+            => SnapBootstrapper.FetchMissingBytecodeAsync(
+                bundle, scheduler, null, Hash(0x01), NullLogger.Instance, CancellationToken.None, phase2DeferredCode);
 
         private static byte[] Hash(byte value)
         {

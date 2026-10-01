@@ -16,7 +16,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 {
     public static partial class SnapBootstrapper
     {
-        private static async Task EnsureBytecodeCompleteAsync(
+        public static async Task EnsureBytecodeCompleteAsync(
             IChainStoreBundle bundle, IFetchRequestScheduler scheduler, byte[] stateRoot,
             ILogger logger, CancellationToken ct)
         {
@@ -85,7 +85,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 
             logger.LogInformation("snap.bytecode.completeness fetched {Fetched} contract codes", fetched);
         }
-        private static async Task FetchMissingBytecodeAsync(
+        public static async Task FetchMissingBytecodeAsync(
             IChainStoreBundle bundle, IFetchRequestScheduler scheduler, SnapSyncState resumeFrom,
             byte[] pivotStateRoot, ILogger logger, CancellationToken ct,
             System.Collections.Generic.IReadOnlyList<byte[]> phase2DeferredCode = null)

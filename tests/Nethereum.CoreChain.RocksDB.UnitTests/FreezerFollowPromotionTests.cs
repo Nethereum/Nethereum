@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
 using Nethereum.CoreChain.RocksDB;
@@ -76,50 +75,27 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.True(condition(), "the trailer did not converge within the timeout");
         }
 
-        private static object GetPrivateField(RocksDbChainStoreBundle bundle, string name)
-            => typeof(RocksDbChainStoreBundle).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bundle);
-
         private static void SetIndexTrailerTaskForTests(RocksDbChainStoreBundle bundle, Task value)
-        {
-            var indexer = GetPrivateField(bundle, "_freezerIndexer");
-            typeof(Nethereum.CoreChain.RocksDB.Freezer.FreezerBackgroundIndexer)
-                .GetField("_byHashTask", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(indexer, value);
-        }
+            => bundle.SetByHashTrailerTaskForTests(value);
 
         private static RocksDbPromotionService RocksPromotionServiceOf(RocksDbChainStoreBundle bundle)
-            => (RocksDbPromotionService)GetPrivateField(bundle, "_promotionService");
-
-        private static object FreezerPromotionServiceOf(RocksDbChainStoreBundle bundle)
-        {
-            var driver = GetPrivateField(bundle, "_freezerPromotionDriver");
-            if (driver == null) return null;
-            return driver.GetType().GetField("_freezerPromotionService", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(driver);
-        }
+            => bundle.PromotionService;
 
         private static RocksDbHotBlockWindowStore HotWindowOf(RocksDbChainStoreBundle bundle)
-            => (RocksDbHotBlockWindowStore)GetPrivateField(bundle, "_hotWindow");
+            => bundle.HotWindow;
 
         private static void DriveFreezerPromotion(RocksDbChainStoreBundle bundle)
-        {
-            var driver = GetPrivateField(bundle, "_freezerPromotionDriver");
-            driver.GetType().GetMethod("Drive", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(driver, null);
-        }
+            => bundle.DriveFreezerPromotionForTests();
 
         private static void AppendToFreezerWithoutIndexing(RocksDbChainStoreBundle bundle, List<PersistableBlock> blocks)
-        {
-            var appendService = GetPrivateField(bundle, "_freezerAppendService");
-            appendService.GetType()
-                .GetMethod("AppendToFreezer", BindingFlags.NonPublic | BindingFlags.Instance)
-                .Invoke(appendService, new object[] { blocks, blocks.Count });
-        }
+            => bundle.AppendToFreezerWithoutIndexingForTests(blocks);
 
         private static void StampTipHeight(RocksDbManager rocks, long height)
             => rocks.Put(RocksDbManager.CF_METADATA, System.Text.Encoding.UTF8.GetBytes("height"),
                 RocksDbSerializer.BigIntegerToBytes(height));
 
         private static RocksDbManager CoreManagerOf(RocksDbChainStoreBundle bundle)
-            => (RocksDbManager)typeof(RocksDbChainStoreBundle).GetField("_rocks", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bundle);
+            => bundle.Rocks;
 
         private static BigInteger ReadTipHeight(RocksDbManager rocks)
         {
@@ -191,7 +167,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             using var bundle = OpenBundle();
 
             Assert.Null(RocksPromotionServiceOf(bundle));
-            Assert.NotNull(FreezerPromotionServiceOf(bundle));
+            Assert.True(bundle.FreezerPromotionEnabled);
 
             var blocks = MakeChainedBlocks(0, 4);
             foreach (var b in blocks)

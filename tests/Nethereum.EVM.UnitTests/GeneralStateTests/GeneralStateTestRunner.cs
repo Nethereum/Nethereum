@@ -1238,7 +1238,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             };
         }
 
-        private ExecutionStateService SetupPreState(GeneralStateTest test)
+        public ExecutionStateService SetupPreState(GeneralStateTest test)
         {
             var executionState = new ExecutionStateService(new MockNodeDataService(BuildPreStateReader(test)));
 

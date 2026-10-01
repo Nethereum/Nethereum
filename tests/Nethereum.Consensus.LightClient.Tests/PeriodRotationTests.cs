@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Nethereum.Beaconchain.LightClient;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
@@ -325,47 +324,27 @@ namespace Nethereum.Consensus.LightClient.Tests
 
         private static bool InvokeIsNextSyncCommitteeKnown(LightClientState state)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "IsNextSyncCommitteeKnown",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { state });
+            return LightClientService.IsNextSyncCommitteeKnown(state);
         }
 
         private static bool InvokeUpdateHasFinalizedNextSyncCommittee(LightClientService service, LightClientState state, LightClientUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "UpdateHasFinalizedNextSyncCommittee",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(service, new object[] { state, update });
+            return service.UpdateHasFinalizedNextSyncCommittee(state, update);
         }
 
         private static bool InvokeHasValidPeriodWindow(LightClientService service, LightClientState state, LightClientUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "HasValidPeriodWindow",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(service, new object[] { state, update });
+            return service.HasValidPeriodWindow(state, update);
         }
 
         private static bool InvokeSyncCommitteeEquals(SyncCommittee a, SyncCommittee b)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "SyncCommitteeEquals",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { a, b });
+            return LightClientService.SyncCommitteeEquals(a, b);
         }
 
         private static void InvokeApplyLightClientUpdate(LightClientService service, LightClientState state, LightClientUpdate update, bool applyFinality, bool applyOptimistic)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "ApplyLightClientUpdate",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            method!.Invoke(service, new object[] { state, update, applyFinality, applyOptimistic });
+            service.ApplyLightClientUpdate(state, update, applyFinality, applyOptimistic);
         }
 
         private sealed class StubApi : ILightClientApi

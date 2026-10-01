@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.Beaconchain.LightClient;
 using Nethereum.Beaconchain.LightClient.Responses;
@@ -172,27 +171,11 @@ namespace Nethereum.Consensus.LightClient.Tests
             return (service, service.GetState());
         }
 
-        private static LightClientUpdate InvokeSynthesizeFinality(LightClientFinalityUpdate finality)
-        {
-            var method = typeof(LightClientService).GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-                .FirstOrDefault(m =>
-                    m.Name == "SynthesizeUpdate" &&
-                    m.GetParameters().Length == 1 &&
-                    m.GetParameters()[0].ParameterType == typeof(LightClientFinalityUpdate));
-            Assert.NotNull(method);
-            return (LightClientUpdate)method!.Invoke(null, new object[] { finality });
-        }
+        private static LightClientUpdate InvokeSynthesizeFinality(LightClientFinalityUpdate finality) =>
+            LightClientService.SynthesizeUpdate(finality);
 
-        private static LightClientUpdate InvokeSynthesizeOptimistic(LightClientOptimisticUpdate optimistic)
-        {
-            var method = typeof(LightClientService).GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-                .FirstOrDefault(m =>
-                    m.Name == "SynthesizeUpdate" &&
-                    m.GetParameters().Length == 1 &&
-                    m.GetParameters()[0].ParameterType == typeof(LightClientOptimisticUpdate));
-            Assert.NotNull(method);
-            return (LightClientUpdate)method!.Invoke(null, new object[] { optimistic });
-        }
+        private static LightClientUpdate InvokeSynthesizeOptimistic(LightClientOptimisticUpdate optimistic) =>
+            LightClientService.SynthesizeUpdate(optimistic);
 
         private sealed class StubLightClientApi : ILightClientApi
         {

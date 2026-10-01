@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
 using Nethereum.CoreChain.RocksDB;
@@ -59,19 +58,14 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             => RocksDbChainStoreBundle.Open(DataDir, null, false, BulkOptions(), _signer);
 
         private static void DriveFreezerPromotion(RocksDbChainStoreBundle bundle)
-        {
-            var driver = typeof(RocksDbChainStoreBundle)
-                .GetField("_freezerPromotionDriver", BindingFlags.NonPublic | BindingFlags.Instance)
-                .GetValue(bundle);
-            driver.GetType().GetMethod("Drive", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(driver, null);
-        }
+            => bundle.DriveFreezerPromotionForTests();
 
         private static void StampTipHeight(RocksDbManager rocks, long height)
             => rocks.Put(RocksDbManager.CF_METADATA, System.Text.Encoding.UTF8.GetBytes("height"),
                 Nethereum.CoreChain.RocksDB.Serialization.RocksDbSerializer.BigIntegerToBytes(height));
 
         private static RocksDbManager CoreManagerOf(RocksDbChainStoreBundle bundle)
-            => (RocksDbManager)typeof(RocksDbChainStoreBundle).GetField("_rocks", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(bundle);
+            => bundle.Rocks;
 
         [Fact]
         public async Task Given_AFrozenIndexedNode_When_Checkpointed_AndRestored_Then_FrozenBlocksStillResolveByHashAndLogs()

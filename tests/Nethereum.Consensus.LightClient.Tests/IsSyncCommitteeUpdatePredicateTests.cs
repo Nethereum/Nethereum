@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
 using Xunit;
@@ -123,11 +122,7 @@ namespace Nethereum.Consensus.LightClient.Tests
 
         private static bool InvokeIsSyncCommitteeUpdate(LightClientUpdate update)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "IsSyncCommitteeUpdate",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { update });
+            return LightClientService.IsSyncCommitteeUpdate(update);
         }
     }
 }

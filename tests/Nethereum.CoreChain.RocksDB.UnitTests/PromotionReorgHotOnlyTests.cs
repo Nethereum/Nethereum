@@ -106,9 +106,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var journalOptions = new HistoricalStateOptions { MaxHistoryBlocks = 999 };
             var bundle = RocksDbChainStoreBundle.FromManager(manager, dir, journalOptions, ownsManager: false);
 
-            var hot = (RocksDbHotBlockWindowStore)bundle.GetType()
-                .GetField("_hotWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                .GetValue(bundle);
+            var hot = bundle.HotWindow;
             Assert.Equal(999, hot.WindowSize);
         }
 

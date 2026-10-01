@@ -90,29 +90,6 @@ public static class ControlTestExtensions
         return control;
     }
 
-    public static async Task<T> ClickAsync<T>(this T control) where T : Control
-    {
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var clickMethod = control.GetType().GetMethod("OnClick",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (clickMethod != null)
-            {
-                try
-                {
-                    clickMethod.Invoke(control, null);
-                }
-                catch
-                {
-                }
-            }
-        });
-
-        await Task.Delay(10);
-        return control;
-    }
-
     public static T? GetPropertyValue<T>(this Control control, string propertyName)
     {
         return Dispatcher.UIThread.Invoke(() =>

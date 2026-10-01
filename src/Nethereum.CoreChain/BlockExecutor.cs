@@ -1084,7 +1084,7 @@ namespace Nethereum.CoreChain
             return blobTx.BlobVersionedHashes.Count;
         }
 
-        internal static BlockContext BuildBlockContext(
+        public static BlockContext BuildBlockContext(
             BlockHeader header, ChainConfig chainConfig, HardforkName fork, Func<BlockHeader, string>? authorResolver = null)
         {
             var isPostMerge = fork >= HardforkName.Paris;
@@ -1106,7 +1106,7 @@ namespace Nethereum.CoreChain
             };
         }
 
-        internal static BlockContext BuildBlockContext(
+        public static BlockContext BuildBlockContext(
             BlockHeader header, ChainConfig chainConfig, Func<BlockHeader, string>? authorResolver = null)
         {
             return BuildBlockContext(header, chainConfig, Nethereum.EVM.HardforkNames.Parse(chainConfig.Hardfork), authorResolver);

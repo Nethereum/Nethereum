@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
 using Nethereum.CoreChain.RocksDB.Serialization;
@@ -41,14 +40,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         private static RocksDbPromotionService PromotionServiceOf(RocksDbChainStoreBundle bundle)
-            => (RocksDbPromotionService)typeof(RocksDbChainStoreBundle)
-                .GetField("_promotionService", BindingFlags.NonPublic | BindingFlags.Instance)
-                .GetValue(bundle);
+            => bundle.PromotionService;
 
         private static RocksDbHotBlockWindowStore HotWindowOf(RocksDbChainStoreBundle bundle)
-            => (RocksDbHotBlockWindowStore)typeof(RocksDbChainStoreBundle)
-                .GetField("_hotWindow", BindingFlags.NonPublic | BindingFlags.Instance)
-                .GetValue(bundle);
+            => bundle.HotWindow;
 
         [Fact]
         public async Task RpcRead_PromotedBlock_IdenticalToHotBlock()

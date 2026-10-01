@@ -2,7 +2,6 @@ using Nethereum.EVM.BlockchainState;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -35,11 +34,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         private static async Task<ExecutionStateService> InvokeSetupPreStateAsync(GeneralStateTest test)
         {
             var runner = new GeneralStateTestRunner();
-            var method = typeof(GeneralStateTestRunner).GetMethod(
-                "SetupPreState", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            var result = method.Invoke(runner, new object[] { test });
-            return await Task.FromResult((ExecutionStateService)result);
+            return await Task.FromResult(runner.SetupPreState(test));
         }
 
         [Fact]

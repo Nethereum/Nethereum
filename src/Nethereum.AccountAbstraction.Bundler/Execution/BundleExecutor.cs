@@ -385,7 +385,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Execution
             };
         }
 
-        private static Exception TranslateEntryPointRevert(SmartContractCustomErrorRevertException ex)
+        public static Exception TranslateEntryPointRevert(SmartContractCustomErrorRevertException ex)
         {
             if (ex.IsCustomErrorFor<FailedOpError>())
             {

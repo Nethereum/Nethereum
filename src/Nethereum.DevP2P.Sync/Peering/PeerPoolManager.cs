@@ -19,11 +19,13 @@ namespace Nethereum.DevP2P.Sync.Peering
     {
         private readonly IPeerHandshakeWorker _handshake;
         private readonly PeerPoolOptions _options;
+        public PeerPoolOptions Options => _options;
         private readonly string[] _bootnodes;
         private readonly ILogger<PeerPoolManager> _logger;
         private readonly PersistentPeerCache? _peerCache;
         private readonly DialScheduler? _dialScheduler;
         private readonly HashSet<string> _trustedDialKeys;
+        public IReadOnlyCollection<string> TrustedDialKeys => _trustedDialKeys;
         private readonly HashSet<string> _trustedNodeIds;
 
         private readonly SubnetTracker? _subnetTracker;

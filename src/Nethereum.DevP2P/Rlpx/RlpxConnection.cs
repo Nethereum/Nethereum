@@ -45,7 +45,7 @@ namespace Nethereum.DevP2P.Rlpx
         public event EventHandler Disconnected;
 
         private int _disconnectedRaised;
-        private void MarkDisconnected()
+        public void MarkDisconnected()
         {
             IsConnected = false;
             if (Interlocked.Exchange(ref _disconnectedRaised, 1) != 0) return;
@@ -427,6 +427,7 @@ namespace Nethereum.DevP2P.Rlpx
         }
 
         private bool _disposed;
+        public bool IsDisposed => _disposed;
         public void Dispose()
         {
             if (_disposed) return;

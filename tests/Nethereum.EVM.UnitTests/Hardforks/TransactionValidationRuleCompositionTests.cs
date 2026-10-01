@@ -67,10 +67,8 @@ Amsterdam: SupportedTransactionTypeRule.UpToSetCode, Eip4844BlobValidationRule.I
             var amsterdamAuth = RulesOf(nameof(TransactionValidationRuleSets.Amsterdam))
                 .Single(r => r.GetType().Name.Contains("AuthList"));
 
-            var costField = amsterdamAuth.GetType()
-                .GetField("EXECUTION_PER_AUTH_BASE_COST", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(costField);
-            Assert.Equal(7_816L, (long)costField.GetValue(null));
+            Assert.IsType<Eip2780AuthListValidationRule>(amsterdamAuth);
+            Assert.Equal(7_816L, Eip2780AuthListValidationRule.EXECUTION_PER_AUTH_BASE_COST);
         }
 
         [Fact]
@@ -112,12 +110,7 @@ Amsterdam: SupportedTransactionTypeRule.UpToSetCode, Eip4844BlobValidationRule.I
                 .GetField(forkFieldName, BindingFlags.Public | BindingFlags.Static);
             Assert.NotNull(field);
 
-            var ruleSet = field.GetValue(null);
-            var rulesField = typeof(TransactionValidationRules)
-                .GetField("_rules", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(rulesField);
-
-            return (ITransactionValidationRule[])rulesField.GetValue(ruleSet);
+            return ((TransactionValidationRules)field.GetValue(null)).Rules;
         }
 
         private static string Label(ITransactionValidationRule rule)

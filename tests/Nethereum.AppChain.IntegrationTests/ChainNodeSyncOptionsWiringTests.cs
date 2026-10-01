@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.AppChain.Server.Configuration;
@@ -148,32 +147,15 @@ namespace Nethereum.AppChain.IntegrationTests
             Assert.Null(defaultSnapOptions.HeaderSweepOverride);
         }
 
-        private static AppChainDevP2PFollower UninitializedFollowerWithConfig(AppChainServerConfig config)
-        {
-            var follower = (AppChainDevP2PFollower)RuntimeHelpers.GetUninitializedObject(typeof(AppChainDevP2PFollower));
-            var followerType = typeof(AppChainDevP2PFollower);
-
-            followerType.GetField("_config", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(follower, config);
-            followerType.GetField("_loggerFactory", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .SetValue(follower, NullLoggerFactory.Instance);
-
-            return follower;
-        }
-
-        private static StrictValidationPolicy InvokeStrictPolicy(AppChainDevP2PFollower follower)
-        {
-            var method = typeof(AppChainDevP2PFollower).GetMethod("StrictPolicy", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            return (StrictValidationPolicy)method.Invoke(follower, null)!;
-        }
+        private static StrictValidationPolicy StrictPolicyOf(AppChainServerConfig config) =>
+            AppChainDevP2PFollower.StrictPolicy(config, NullLoggerFactory.Instance);
 
         [Fact]
         public void Given_TheRealAppChainDevP2PFollower_When_ConfigSetsContinueOnMismatchTrue_Then_ItsStrictPolicyContinuesPastADivergence()
         {
             var config = new AppChainServerConfig();
             config.Node.Sync.ContinueOnMismatch = true;
-            var follower = UninitializedFollowerWithConfig(config);
-
-            var policy = InvokeStrictPolicy(follower);
+            var policy = StrictPolicyOf(config);
             var verdict = new DivergenceVerdict(DivergenceOutcome.EvmBug, new byte[32], new byte[32], "peer", "test");
 
             Assert.Equal(ValidationAction.Continue, policy.OnVerdict(verdict, 1));
@@ -183,9 +165,7 @@ namespace Nethereum.AppChain.IntegrationTests
         public void Given_TheRealAppChainDevP2PFollower_When_ConfigLeavesContinueOnMismatchAtItsDefault_Then_ItsStrictPolicyHaltsFatallyOnAnEvmBugVerdict()
         {
             var config = new AppChainServerConfig();
-            var follower = UninitializedFollowerWithConfig(config);
-
-            var policy = InvokeStrictPolicy(follower);
+            var policy = StrictPolicyOf(config);
             var verdict = new DivergenceVerdict(DivergenceOutcome.EvmBug, new byte[32], new byte[32], "peer", "test");
 
             Assert.Equal(ValidationAction.Fatal, policy.OnVerdict(verdict, 1));

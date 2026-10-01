@@ -17,9 +17,12 @@ namespace Nethereum.CoreChain.State
     public sealed class TrieFallbackStateStore : IStateStore
     {
         private readonly IStateStore _inner;
+        public IStateStore Inner => _inner;
         private readonly INodeBlobStore _trieStorage;
+        public INodeBlobStore TrieStorage => _trieStorage;
         private readonly ITrieNodeStore _nodeStore;
         private readonly Func<byte[]> _stateRootProvider;
+        public Func<byte[]> StateRootProvider => _stateRootProvider;
         private readonly bool _backfill;
         private readonly IHashProvider _hashProvider;
 

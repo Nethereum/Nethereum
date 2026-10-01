@@ -134,7 +134,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                 "snap.flat.verify PASSED in {Elapsed}: flat state ghost-free — accounts={Accounts} slots={Slots} diffs=0",
                 verifySw.Elapsed, verifyResult.AccountsScanned, verifyResult.SlotsScanned);
         }
-        private static async Task<PivotState> ReconcileFlatStateAsync(
+        public static async Task<PivotState> ReconcileFlatStateAsync(
             IChainStoreBundle bundle, IFetchRequestScheduler scheduler, RollingPivot rollingPivot,
             Func<bool, CancellationToken, Task<(BlockHeader Header, byte[] Hash)?>>? pivotRefresher,
             SnapSyncMetrics? metrics, bool finalizeVerify, bool enableFlatReconcile, ILogger logger, CancellationToken ct)

@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Reflection;
 using Nethereum.CoreChain.RocksDB;
 using Nethereum.Merkle.Patricia.Storage;
 using RocksDbSharp;
@@ -36,16 +35,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public void RealRocksDbException_WriteStallIsTransient_CorruptionIsNot()
-        {
-            var stall = MakeRocksDbException(LiveWriteStallMessage);
-            var corruption = MakeRocksDbException("Corruption: block checksum mismatch");
-
-            Assert.True(RocksDbManager.IsTransientFlushStall(stall.Message));
-            Assert.False(RocksDbManager.IsTransientFlushStall(corruption.Message));
-        }
-
-        [Fact]
         public void Flush_OnHealthyDatabase_DoesNotThrow()
         {
             var dbPath = Path.Combine(Path.GetTempPath(), $"rocksdb_flush_stall_{Guid.NewGuid():N}");
@@ -62,21 +51,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                     try { Directory.Delete(dbPath, true); } catch { }
                 }
             }
-        }
-
-        private static RocksDbException MakeRocksDbException(string message)
-        {
-            var ctor = typeof(RocksDbException).GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null, types: new[] { typeof(IntPtr) }, modifiers: null);
-            Assert.NotNull(ctor);
-            var ex = (RocksDbException)ctor.Invoke(new object[] { IntPtr.Zero });
-
-            var field = typeof(RocksDbException).GetField("_message",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(field);
-            field.SetValue(ex, message);
-            return ex;
         }
     }
 }

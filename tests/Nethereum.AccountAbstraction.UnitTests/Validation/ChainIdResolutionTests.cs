@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.Bundler.Validation;
@@ -43,13 +42,8 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
             return new UserOpValidator(new Web3.Web3(client), config);
         }
 
-        private static Task<BigInteger> InvokeGetChainId(UserOpValidator validator)
-        {
-            var method = typeof(UserOpValidator).GetMethod(
-                "GetChainIdAsync", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (Task<BigInteger>)method!.Invoke(validator, null)!;
-        }
+        private static Task<BigInteger> InvokeGetChainId(UserOpValidator validator) =>
+            validator.GetChainIdAsync();
 
         private sealed class StubClient : ClientBase
         {

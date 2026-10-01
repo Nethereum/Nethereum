@@ -55,6 +55,11 @@ namespace Nethereum.CoreChain.Storage.InMemory
             JournalEnabled = journalEnabled;
         }
 
+        public InMemoryChainStoreBundle WithBlocks(IBlockStore blocks) =>
+            new InMemoryChainStoreBundle(
+                State, TrieNodes, blocks, Transactions, Uncles, Withdrawals, BlockAccessLists,
+                Receipts, Logs, Metadata, Diffs, JournalEnabled);
+
         public static InMemoryChainStoreBundle Open(HistoricalStateOptions journalOptions = null)
         {
             var blocks = new InMemoryBlockStore();

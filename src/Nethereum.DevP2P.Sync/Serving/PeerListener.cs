@@ -17,6 +17,7 @@ namespace Nethereum.DevP2P.Sync.Serving
         private readonly EthECKey _localKey;
         private readonly IChainStoreBundle _bundle;
         private readonly PeerListenerOptions _options;
+        public PeerListenerOptions Options => _options;
         private readonly Eth68StatusMessage _statusTemplate;
         private readonly ISnapRequestHandler _snapHandler;
         private readonly ILogger<PeerListener> _logger;

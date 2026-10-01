@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Reflection;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.ABI.Model;
 using Nethereum.AccountAbstraction.Bundler.Execution;
@@ -35,18 +34,12 @@ namespace Nethereum.AccountAbstraction.UnitTests.Validation
 
         private static string InvokeParseEntryPointError(SmartContractCustomErrorRevertException ex)
         {
-            var method = typeof(UserOpValidator).GetMethod(
-                "ParseEntryPointError", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (string)method!.Invoke(null, new object[] { ex })!;
+            return UserOpValidator.ParseEntryPointError(ex);
         }
 
         private static Exception InvokeTranslateEntryPointRevert(SmartContractCustomErrorRevertException ex)
         {
-            var method = typeof(BundleExecutor).GetMethod(
-                "TranslateEntryPointRevert", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (Exception)method!.Invoke(null, new object[] { ex })!;
+            return BundleExecutor.TranslateEntryPointRevert(ex);
         }
 
         [Fact]

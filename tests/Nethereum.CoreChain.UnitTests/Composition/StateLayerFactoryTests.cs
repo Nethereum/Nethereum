@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Composition;
 using Nethereum.CoreChain.State;
@@ -13,13 +12,6 @@ namespace Nethereum.CoreChain.UnitTests.Composition
 {
     public class StateLayerFactoryTests
     {
-        private static T GetPrivateField<T>(object instance, string fieldName)
-        {
-            var field = instance.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(field);
-            return (T)field.GetValue(instance);
-        }
-
         [Fact]
         public void StateLayer_InMemory_builds_HistoricalOverInMemory()
         {
@@ -28,7 +20,7 @@ namespace Nethereum.CoreChain.UnitTests.Composition
             var store = stateLayer.Stores.HistoricalInMemory();
 
             var historical = Assert.IsType<HistoricalStateStore>(store);
-            var inner = GetPrivateField<IStateStore>(historical, "_inner");
+            var inner = historical.Inner;
             Assert.IsType<InMemoryStateStore>(inner);
         }
 
@@ -43,7 +35,7 @@ namespace Nethereum.CoreChain.UnitTests.Composition
             var store = stateLayer.Stores.HistoricalInMemory(rawState, diffStore, HistoricalStateOptions.Default);
 
             var historical = Assert.IsType<HistoricalStateStore>(store);
-            Assert.Same(rawState, GetPrivateField<IStateStore>(historical, "_inner"));
+            Assert.Same(rawState, historical.Inner);
 
             await historical.SaveAccountAsync(address, new Account { Balance = 100 });
             historical.SetCurrentBlockNumber(1);
@@ -80,9 +72,9 @@ namespace Nethereum.CoreChain.UnitTests.Composition
             var store = stateLayer.Stores.SnapSync(rawFlat, nodeBlobStore, rootFn);
 
             var fallback = Assert.IsType<TrieFallbackStateStore>(store);
-            Assert.Same(rawFlat, GetPrivateField<IStateStore>(fallback, "_inner"));
-            Assert.Same(nodeBlobStore, GetPrivateField<INodeBlobStore>(fallback, "_trieStorage"));
-            Assert.Same(rootFn, GetPrivateField<Func<byte[]>>(fallback, "_stateRootProvider"));
+            Assert.Same(rawFlat, fallback.Inner);
+            Assert.Same(nodeBlobStore, fallback.TrieStorage);
+            Assert.Same(rootFn, fallback.StateRootProvider);
         }
 
         [Fact]
@@ -94,7 +86,7 @@ namespace Nethereum.CoreChain.UnitTests.Composition
             var store = stateLayer.Stores.WitnessCapture(liveStore);
 
             var readOnly = Assert.IsType<ReadOnlyStateStoreWrapper>(store);
-            Assert.Same(liveStore, GetPrivateField<IStateStore>(readOnly, "_inner"));
+            Assert.Same(liveStore, readOnly.Inner);
         }
 
         [Fact]
@@ -107,7 +99,7 @@ namespace Nethereum.CoreChain.UnitTests.Composition
             var store = stateLayer.Stores.WitnessCapture(liveStore, historicalAdapter);
 
             var readOnly = Assert.IsType<ReadOnlyStateStoreWrapper>(store);
-            Assert.Same(historicalAdapter, GetPrivateField<IStateStore>(readOnly, "_inner"));
+            Assert.Same(historicalAdapter, readOnly.Inner);
         }
     }
 }

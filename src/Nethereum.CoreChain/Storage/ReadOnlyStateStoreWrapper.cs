@@ -9,6 +9,7 @@ namespace Nethereum.CoreChain.Storage
     public sealed class ReadOnlyStateStoreWrapper : IStateStore
     {
         private readonly IStateStore _inner;
+        public IStateStore Inner => _inner;
         private readonly StateOverlay _overlay = new();
 
         public ReadOnlyStateStoreWrapper(IStateStore inner)

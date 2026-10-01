@@ -219,10 +219,6 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
             => GetSessionManager(listener).SessionCount;
 
         private static Discv5SessionManager GetSessionManager(Discv5Listener listener)
-        {
-            var smField = typeof(Discv5Listener).GetField("_sessionManager",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            return (Discv5SessionManager)smField.GetValue(listener);
-        }
+            => listener.SessionManager;
     }
 }

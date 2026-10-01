@@ -1,6 +1,5 @@
 using System;
 using System.Numerics;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ChainNode.Hosting;
@@ -49,11 +48,7 @@ namespace Nethereum.MainnetChain.UnitTests
 
             var worker = profile.CreateHandshakeWorker(loggerFactory: null, advertiseSnap2: false);
 
-            Assert.IsType<MainnetPeerHandshakeWorker>(worker);
-
-            var ourHeadProvider = (Func<Task<(ulong HeadBlock, ulong HeadTime)>>)typeof(MainnetPeerHandshakeWorker)
-                .GetField("_ourHeadProvider", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(worker)!;
+            var ourHeadProvider = Assert.IsType<MainnetPeerHandshakeWorker>(worker).OurHeadProvider;
 
             var expected = await ChainHeadResolver.ResolveOurHeadAsync(bundle);
             var actual = await ourHeadProvider();

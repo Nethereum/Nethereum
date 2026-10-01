@@ -180,7 +180,7 @@ namespace Nethereum.Consensus.LightClient
             return applied;
         }
 
-        internal static LightClientUpdate SynthesizeUpdate(LightClientFinalityUpdate finality)
+        public static LightClientUpdate SynthesizeUpdate(LightClientFinalityUpdate finality)
         {
             if (finality == null) return null;
 
@@ -204,7 +204,7 @@ namespace Nethereum.Consensus.LightClient
             };
         }
 
-        internal static LightClientUpdate SynthesizeUpdate(LightClientOptimisticUpdate optimistic)
+        public static LightClientUpdate SynthesizeUpdate(LightClientOptimisticUpdate optimistic)
         {
             if (optimistic == null) return null;
 
@@ -436,7 +436,7 @@ namespace Nethereum.Consensus.LightClient
             return attestedAdvances || introducesNextCommittee || update.AttestedHeader.Beacon.Slot >= state.FinalizedSlot;
         }
 
-        private void ApplyLightClientUpdate(
+        public void ApplyLightClientUpdate(
             LightClientState state,
             LightClientUpdate update,
             bool applyFinality,
@@ -503,7 +503,7 @@ namespace Nethereum.Consensus.LightClient
             }
         }
 
-        internal static bool IsNextSyncCommitteeKnown(LightClientState state)
+        public static bool IsNextSyncCommitteeKnown(LightClientState state)
         {
             var nsc = state?.NextSyncCommittee;
             if (nsc == null) return false;
@@ -530,7 +530,7 @@ namespace Nethereum.Consensus.LightClient
             return false;
         }
 
-        internal bool UpdateHasFinalizedNextSyncCommittee(LightClientState state, LightClientUpdate update)
+        public bool UpdateHasFinalizedNextSyncCommittee(LightClientState state, LightClientUpdate update)
         {
             if (IsNextSyncCommitteeKnown(state)) return false;
             if (!IsSyncCommitteeUpdate(update)) return false;
@@ -543,7 +543,7 @@ namespace Nethereum.Consensus.LightClient
             return finalizedPeriod == attestedPeriod;
         }
 
-        private bool HasValidPeriodWindow(LightClientState state, LightClientUpdate update)
+        public bool HasValidPeriodWindow(LightClientState state, LightClientUpdate update)
         {
             var storePeriod = ComputePeriod(state.FinalizedSlot);
             var updateSignaturePeriod = ComputePeriod(update.SignatureSlot);
@@ -557,7 +557,7 @@ namespace Nethereum.Consensus.LightClient
             return updateSignaturePeriod == storePeriod;
         }
 
-        internal static bool SyncCommitteeEquals(SyncCommittee a, SyncCommittee b)
+        public static bool SyncCommitteeEquals(SyncCommittee a, SyncCommittee b)
         {
             if (ReferenceEquals(a, b)) return true;
             if (a == null || b == null) return false;
@@ -577,7 +577,7 @@ namespace Nethereum.Consensus.LightClient
             return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(rootA, rootB);
         }
 
-        internal static bool IsSyncCommitteeUpdate(LightClientUpdate update)
+        public static bool IsSyncCommitteeUpdate(LightClientUpdate update)
         {
             if (update?.NextSyncCommitteeBranch == null || update.NextSyncCommitteeBranch.Count == 0)
             {
@@ -603,7 +603,7 @@ namespace Nethereum.Consensus.LightClient
             return false;
         }
 
-        private static bool VerifyNextSyncCommitteeBranch(
+        public static bool VerifyNextSyncCommitteeBranch(
             LightClientHeader attestedHeader,
             SyncCommittee nextSyncCommittee,
             IList<byte[]> nextSyncCommitteeBranch)
@@ -636,14 +636,14 @@ namespace Nethereum.Consensus.LightClient
                 attestedHeader.Beacon.StateRoot);
         }
 
-        internal static bool HasBaselineParticipation(SyncAggregate aggregate)
+        public static bool HasBaselineParticipation(SyncAggregate aggregate)
         {
             if (aggregate?.SyncCommitteeBits == null) return false;
             EnsureCommitteeBitsLength(aggregate.SyncCommitteeBits);
             return CountParticipants(aggregate.SyncCommitteeBits) >= LightClientForkSpec.MinSyncCommitteeParticipants;
         }
 
-        internal static bool HasSupermajorityParticipation(SyncAggregate aggregate)
+        public static bool HasSupermajorityParticipation(SyncAggregate aggregate)
         {
             if (aggregate?.SyncCommitteeBits == null) return false;
             EnsureCommitteeBitsLength(aggregate.SyncCommitteeBits);
@@ -651,7 +651,7 @@ namespace Nethereum.Consensus.LightClient
             return CountParticipants(aggregate.SyncCommitteeBits) * 3 >= bitsLength * 2;
         }
 
-        internal static bool IsFinalityUpdate(LightClientUpdate update)
+        public static bool IsFinalityUpdate(LightClientUpdate update)
         {
             if (update?.FinalityBranch == null || update.FinalityBranch.Count == 0)
             {
@@ -702,7 +702,7 @@ namespace Nethereum.Consensus.LightClient
             return VerifyFullUpdateSyncAggregate(update);
         }
 
-        private bool VerifyFullUpdateSyncAggregate(LightClientUpdate update)
+        public bool VerifyFullUpdateSyncAggregate(LightClientUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
                 update?.SyncAggregate == null ||
@@ -728,7 +728,7 @@ namespace Nethereum.Consensus.LightClient
                 update.SignatureSlot);
         }
 
-        private bool VerifyOptimisticSyncAggregate(LightClientOptimisticUpdate update)
+        public bool VerifyOptimisticSyncAggregate(LightClientOptimisticUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
                 update?.SyncAggregate == null ||
@@ -749,7 +749,7 @@ namespace Nethereum.Consensus.LightClient
                 update.SignatureSlot);
         }
 
-        private bool VerifyFinalitySyncAggregate(LightClientFinalityUpdate update)
+        public bool VerifyFinalitySyncAggregate(LightClientFinalityUpdate update)
         {
             if (_state?.CurrentSyncCommittee == null ||
                 update?.SyncAggregate == null ||
@@ -853,7 +853,7 @@ namespace Nethereum.Consensus.LightClient
             return participants;
         }
 
-        private byte[] ComputeSyncCommitteeDomain(ulong signatureSlot)
+        public byte[] ComputeSyncCommitteeDomain(ulong signatureSlot)
         {
             var forkVersionSlot = signatureSlot == 0UL ? 0UL : signatureSlot - 1UL;
             var forkVersion = _config.ChainSpec.GetForkVersionAtSlot(forkVersionSlot);
@@ -869,7 +869,7 @@ namespace Nethereum.Consensus.LightClient
             return domain;
         }
 
-        private static byte[] ComputeForkDataRoot(byte[] forkVersion, byte[] genesisValidatorsRoot)
+        public static byte[] ComputeForkDataRoot(byte[] forkVersion, byte[] genesisValidatorsRoot)
         {
             if (forkVersion == null) throw new ArgumentNullException(nameof(forkVersion));
             if (genesisValidatorsRoot == null) throw new ArgumentNullException(nameof(genesisValidatorsRoot));
@@ -889,7 +889,7 @@ namespace Nethereum.Consensus.LightClient
             return SszMerkleizer.Merkleize(fieldRoots);
         }
 
-        private static byte[] ComputeSigningRoot(byte[] objectRoot, byte[] domain)
+        public static byte[] ComputeSigningRoot(byte[] objectRoot, byte[] domain)
         {
             if (objectRoot == null) throw new ArgumentNullException(nameof(objectRoot));
             if (domain == null) throw new ArgumentNullException(nameof(domain));

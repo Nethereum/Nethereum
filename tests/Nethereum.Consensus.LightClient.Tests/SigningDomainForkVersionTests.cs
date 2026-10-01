@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
 using Xunit;
@@ -121,54 +120,48 @@ namespace Nethereum.Consensus.LightClient.Tests
         [Trait("Category", "ConsensusSpec")]
         public void Given_WrongLengthForkVersion_When_ComputeForkDataRoot_Then_ThrowsInvalidOperationException()
         {
-            var ex = Assert.Throws<TargetInvocationException>(() =>
+            Assert.Throws<InvalidOperationException>(() =>
                 InvokeComputeForkDataRoot(new byte[3], new byte[Nethereum.Consensus.Ssz.SszBasicTypes.RootLength]));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
         }
 
         [Fact]
         [Trait("Category", "ConsensusSpec")]
         public void Given_WrongLengthGenesisValidatorsRoot_When_ComputeForkDataRoot_Then_ThrowsInvalidOperationException()
         {
-            var ex = Assert.Throws<TargetInvocationException>(() =>
+            Assert.Throws<InvalidOperationException>(() =>
                 InvokeComputeForkDataRoot(new byte[4], new byte[16]));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
         }
 
         [Fact]
         [Trait("Category", "ConsensusSpec")]
         public void Given_NullForkVersion_When_ComputeForkDataRoot_Then_ThrowsArgumentNullException()
         {
-            var ex = Assert.Throws<TargetInvocationException>(() =>
+            Assert.Throws<ArgumentNullException>(() =>
                 InvokeComputeForkDataRoot(null, new byte[Nethereum.Consensus.Ssz.SszBasicTypes.RootLength]));
-            Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
 
         [Fact]
         [Trait("Category", "ConsensusSpec")]
         public void Given_WrongLengthDomain_When_ComputeSigningRoot_Then_ThrowsInvalidOperationException()
         {
-            var ex = Assert.Throws<TargetInvocationException>(() =>
+            Assert.Throws<InvalidOperationException>(() =>
                 InvokeComputeSigningRoot(new byte[Nethereum.Consensus.Ssz.SszBasicTypes.RootLength], new byte[16]));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
         }
 
         [Fact]
         [Trait("Category", "ConsensusSpec")]
         public void Given_WrongLengthObjectRoot_When_ComputeSigningRoot_Then_ThrowsInvalidOperationException()
         {
-            var ex = Assert.Throws<TargetInvocationException>(() =>
+            Assert.Throws<InvalidOperationException>(() =>
                 InvokeComputeSigningRoot(new byte[16], new byte[32]));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
         }
 
         [Fact]
         [Trait("Category", "ConsensusSpec")]
         public void Given_NullObjectRoot_When_ComputeSigningRoot_Then_ThrowsArgumentNullException()
         {
-            var ex = Assert.Throws<TargetInvocationException>(() =>
+            Assert.Throws<ArgumentNullException>(() =>
                 InvokeComputeSigningRoot(null, new byte[32]));
-            Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
 
         private static LightClientConfig CreateConfig()
@@ -186,26 +179,17 @@ namespace Nethereum.Consensus.LightClient.Tests
         private static byte[] InvokeComputeSyncCommitteeDomain(LightClientConfig config, ulong signatureSlot)
         {
             var service = new LightClientService(new NullLightClientApi(), new NullBls(), config, new InMemoryLightClientStore());
-            var method = typeof(LightClientService).GetMethod(
-                "ComputeSyncCommitteeDomain", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(method);
-            return (byte[])method.Invoke(service, new object[] { signatureSlot });
+            return service.ComputeSyncCommitteeDomain(signatureSlot);
         }
 
         private static byte[] InvokeComputeForkDataRoot(byte[] forkVersion, byte[] genesisValidatorsRoot)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "ComputeForkDataRoot", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (byte[])method.Invoke(null, new object[] { forkVersion, genesisValidatorsRoot });
+            return LightClientService.ComputeForkDataRoot(forkVersion, genesisValidatorsRoot);
         }
 
         private static byte[] InvokeComputeSigningRoot(byte[] objectRoot, byte[] domain)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "ComputeSigningRoot", BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (byte[])method.Invoke(null, new object[] { objectRoot, domain });
+            return LightClientService.ComputeSigningRoot(objectRoot, domain);
         }
 
         private sealed class NullLightClientApi : Nethereum.Beaconchain.LightClient.ILightClientApi

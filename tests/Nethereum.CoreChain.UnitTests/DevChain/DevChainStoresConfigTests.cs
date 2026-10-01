@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Composition;
 using Nethereum.CoreChain.Storage;
@@ -13,21 +12,15 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
 {
     public class DevChainStoresConfigTests
     {
-        private static readonly FieldInfo OptionsField =
-            typeof(HistoricalStateStore).GetField("_options", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        private static readonly FieldInfo InnerField =
-            typeof(HistoricalStateStore).GetField("_inner", BindingFlags.NonPublic | BindingFlags.Instance);
-
         [Fact]
         public void DevChainInMemory_ReturnsHistoricalStateStoreOverInMemory_WithDevChainDefaultOptions()
         {
             var store = new StateLayer().Stores.DevChainInMemory();
 
             var historical = Assert.IsType<HistoricalStateStore>(store);
-            Assert.IsType<InMemoryStateStore>(InnerField.GetValue(historical));
+            Assert.IsType<InMemoryStateStore>(historical.Inner);
 
-            var options = Assert.IsType<HistoricalStateOptions>(OptionsField.GetValue(historical));
+            var options = Assert.IsType<HistoricalStateOptions>(historical.Options);
             Assert.Equal(HistoricalStateOptions.DevChainDefault.MaxHistoryBlocks, options.MaxHistoryBlocks);
             Assert.Equal(HistoricalStateOptions.DevChainDefault.PruningIntervalBlocks, options.PruningIntervalBlocks);
             Assert.Equal(HistoricalStateOptions.DevChainDefault.EnablePruning, options.EnablePruning);
@@ -42,9 +35,9 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
             var store = new StateLayer().Stores.DevChainSqlite(manager);
 
             var historical = Assert.IsType<HistoricalStateStore>(store);
-            Assert.IsType<SqliteStateStore>(InnerField.GetValue(historical));
+            Assert.IsType<SqliteStateStore>(historical.Inner);
 
-            var options = Assert.IsType<HistoricalStateOptions>(OptionsField.GetValue(historical));
+            var options = Assert.IsType<HistoricalStateOptions>(historical.Options);
             Assert.Equal(HistoricalStateOptions.DevChainDefault.MaxHistoryBlocks, options.MaxHistoryBlocks);
             Assert.Equal(HistoricalStateOptions.DevChainDefault.PruningIntervalBlocks, options.PruningIntervalBlocks);
 

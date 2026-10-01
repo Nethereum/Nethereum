@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
 using Xunit;
@@ -63,8 +62,7 @@ namespace Nethereum.Consensus.LightClient.Tests
                 SyncCommitteeSignature = new byte[SszBasicTypes.SignatureLength]
             };
 
-            var ex = Assert.Throws<TargetInvocationException>(() => InvokeHasBaselineParticipation(aggregate));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
+            Assert.Throws<InvalidOperationException>(() => InvokeHasBaselineParticipation(aggregate));
         }
 
         [Fact]
@@ -76,8 +74,7 @@ namespace Nethereum.Consensus.LightClient.Tests
                 SyncCommitteeSignature = new byte[SszBasicTypes.SignatureLength]
             };
 
-            var ex = Assert.Throws<TargetInvocationException>(() => InvokeHasSupermajorityParticipation(aggregate));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
+            Assert.Throws<InvalidOperationException>(() => InvokeHasSupermajorityParticipation(aggregate));
         }
 
         [Fact]
@@ -108,20 +105,12 @@ namespace Nethereum.Consensus.LightClient.Tests
 
         private static bool InvokeHasBaselineParticipation(SyncAggregate aggregate)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "HasBaselineParticipation",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { aggregate });
+            return LightClientService.HasBaselineParticipation(aggregate);
         }
 
         private static bool InvokeHasSupermajorityParticipation(SyncAggregate aggregate)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "HasSupermajorityParticipation",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { aggregate });
+            return LightClientService.HasSupermajorityParticipation(aggregate);
         }
     }
 }

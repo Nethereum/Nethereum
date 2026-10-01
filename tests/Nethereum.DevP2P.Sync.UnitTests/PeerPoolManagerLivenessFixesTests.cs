@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.DevP2P.Rlpx;
@@ -204,13 +203,8 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Equal(atLeast, pool.ActivePeers.Count);
         }
 
-        private static readonly FieldInfo DisposedField =
-            typeof(RlpxConnection).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly MethodInfo MarkDisconnectedMethod =
-            typeof(RlpxConnection).GetMethod("MarkDisconnected", BindingFlags.NonPublic | BindingFlags.Instance)!;
-
-        private static bool IsDisposed(RlpxConnection conn) => (bool)DisposedField.GetValue(conn)!;
-        private static void InvokeMarkDisconnected(RlpxConnection conn) => MarkDisconnectedMethod.Invoke(conn, null);
+        private static bool IsDisposed(RlpxConnection conn) => conn.IsDisposed;
+        private static void InvokeMarkDisconnected(RlpxConnection conn) => conn.MarkDisconnected();
 
         private sealed class MutableClock
         {

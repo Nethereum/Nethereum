@@ -14,6 +14,7 @@ namespace Nethereum.DevP2P.Sync.Peering
         private readonly ILogger _logger;
         private readonly EthECKey _localKey;
         private readonly Func<Task<(ulong HeadBlock, ulong HeadTime)>> _ourHeadProvider;
+        public Func<Task<(ulong HeadBlock, ulong HeadTime)>> OurHeadProvider => _ourHeadProvider;
 
         /// <param name="localKey">Node identity reused for every dial this worker makes. Null
         /// falls back to a fresh ephemeral key per dial (the old behavior) — callers that need a

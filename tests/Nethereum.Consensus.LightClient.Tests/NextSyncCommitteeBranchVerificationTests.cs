@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using Nethereum.Consensus.LightClient;
 using Nethereum.Consensus.Ssz;
@@ -104,11 +103,7 @@ namespace Nethereum.Consensus.LightClient.Tests
 
         private static bool InvokeVerifyNextSyncCommitteeBranch(LightClientHeader attestedHeader, SyncCommittee committee, IList<byte[]> branch)
         {
-            var method = typeof(LightClientService).GetMethod(
-                "VerifyNextSyncCommitteeBranch",
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(method);
-            return (bool)method!.Invoke(null, new object[] { attestedHeader, committee, branch });
+            return LightClientService.VerifyNextSyncCommitteeBranch(attestedHeader, committee, branch);
         }
 
         internal static SyncCommittee CreateCommittee(byte seed)

@@ -458,9 +458,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
         private static void SeedPersistedMissingCode(RocksDbChainStoreBundle bundle, byte[] codeHash)
         {
-            var rocksField = typeof(RocksDbChainStoreBundle).GetField("_rocks", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.NotNull(rocksField);
-            var rocks = (RocksDbManager)rocksField!.GetValue(bundle)!;
+            var rocks = bundle.Rocks;
             rocks.Put(RocksDbManager.CF_METADATA, System.Text.Encoding.ASCII.GetBytes("flatrepair:missingcode"), codeHash);
         }
     }

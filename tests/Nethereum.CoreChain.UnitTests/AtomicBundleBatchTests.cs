@@ -235,12 +235,11 @@ namespace Nethereum.CoreChain.UnitTests
         [Fact]
         public async Task DataPhasePartialApply_CursorStaysBehind_OnCommitFault()
         {
-            using var bundle = InMemoryChainStoreBundle.Open();
-            bundle.Metadata.SetLastFetchedHeader(200);
+            using var source = InMemoryChainStoreBundle.Open();
+            source.Metadata.SetLastFetchedHeader(200);
 
             var faultingHash = Hash(203);
-            var faultingBlocks = new ThirdHeaderThrowsBlockStore(bundle.Blocks, faultingHash);
-            ReplaceProperty(bundle, nameof(bundle.Blocks), faultingBlocks);
+            var bundle = source.WithBlocks(new ThirdHeaderThrowsBlockStore(source.Blocks, faultingHash));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -254,17 +253,6 @@ namespace Nethereum.CoreChain.UnitTests
             });
 
             Assert.Equal(200UL, bundle.Metadata.GetLastFetchedHeader());
-        }
-
-        private static void ReplaceProperty(object target, string propertyName, object newValue)
-        {
-            var type = target.GetType();
-            var backing = type.GetField($"<{propertyName}>k__BackingField",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (backing == null)
-                throw new InvalidOperationException(
-                    $"Could not find backing field for {propertyName} on {type.FullName}.");
-            backing.SetValue(target, newValue);
         }
 
         private sealed class ThirdHeaderThrowsBlockStore : IBlockStore

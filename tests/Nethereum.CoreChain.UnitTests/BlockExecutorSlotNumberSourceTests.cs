@@ -1,4 +1,3 @@
-using System.Reflection;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Forks;
 using Nethereum.Model;
@@ -8,14 +7,8 @@ namespace Nethereum.CoreChain.UnitTests
 {
     public class BlockExecutorSlotNumberSourceTests
     {
-        private static BlockContext InvokeBuildBlockContext(BlockHeader header, ChainConfig chainConfig)
-        {
-            var method = typeof(BlockExecutor).GetMethod(
-                "BuildBlockContext", BindingFlags.NonPublic | BindingFlags.Static, null,
-                new[] { typeof(BlockHeader), typeof(ChainConfig), typeof(System.Func<BlockHeader, string>) }, null);
-            Assert.NotNull(method);
-            return (BlockContext)method.Invoke(null, new object[] { header, chainConfig, null });
-        }
+        private static BlockContext InvokeBuildBlockContext(BlockHeader header, ChainConfig chainConfig) =>
+            BlockExecutor.BuildBlockContext(header, chainConfig);
 
         private static BlockHeader HeaderWithSlotNumber(ulong slotNumber) => new BlockHeader
         {
