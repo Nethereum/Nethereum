@@ -2,7 +2,7 @@
 
 Nethereum 7.0 evolves Nethereum into a full Ethereum SDK and node toolkit for .NET.
 
-Developers can now work with Ethereum at every level: interact through JSON-RPC, embed the EVM, execute and simulate transactions and blocks, connect directly to Ethereum over DevP2P, verify Ethereum through a beacon light client, follow mainnet, and extend Ethereum with application-specific chains anchored back to L1.
+Developers can now work with Ethereum at every level: interact through JSON-RPC, embed the EVM, execute and simulate transactions and blocks, connect directly to Ethereum over DevP2P, verify Ethereum through a beacon light client, follow mainnet, and, in the future, extend Ethereum with application-specific chains that remain anchored to Ethereum through L1 or L2s.
 
 The goal is to make more of Ethereum itself directly usable from .NET — not only the APIs exposed by a remote node, but the execution, networking, verification and chain-building components underneath them.
 
@@ -15,7 +15,8 @@ The EVM is rebuilt as one engine that runs in a live node, a transaction simulat
 The diagram shows how the 7.0 packages compose, from the primitives at the bottom to the node hosts and applications at the top. You can use them at any level: the client stack against a remote node, the EVM embedded without a node, or a full node composed from the pieces in between.
 
 ```
- Applications & extensions   Account Abstraction · X402 · DID · MUD · Indexing · Wallet / UI · Unity
+ Applications & extensions   Account Abstraction · X402 · ENS · SIWE · DID · Uniswap · Circles · MUD
+                             Indexing · Explorer · Solidity debugger · Wallet / UI · Unity
                                        │
  Client stack                JsonRpc · RPC · Web3 · Contracts · Accounts  ──►  any Ethereum node,
                                        │                                       including the hosts below
