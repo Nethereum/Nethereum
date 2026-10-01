@@ -28,7 +28,10 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
 
         private static string StampOfAProcessThatHasExited()
         {
-            using var exited = Process.Start(new ProcessStartInfo("cmd.exe", "/c exit")
+            var shortLived = OperatingSystem.IsWindows()
+                ? new ProcessStartInfo("cmd.exe", "/c exit")
+                : new ProcessStartInfo("/bin/sh", "-c exit");
+            using var exited = Process.Start(new ProcessStartInfo(shortLived.FileName, shortLived.Arguments)
             {
                 CreateNoWindow = true,
                 UseShellExecute = false

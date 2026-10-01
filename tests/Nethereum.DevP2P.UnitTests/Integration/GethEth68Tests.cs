@@ -12,16 +12,20 @@ namespace Nethereum.DevP2P.UnitTests.Integration
     [Trait("Category", "Integration")]
     public class GethEth68Tests
     {
-        private string GetEnode() =>
-            Environment.GetEnvironmentVariable("GETH_ENODE")
-            ?? throw new SkipException("Set GETH_ENODE to run integration tests");
+        private static string GetEnode()
+        {
+            var enode = Environment.GetEnvironmentVariable("GETH_ENODE");
+            Skip.If(enode == null, "Set GETH_ENODE to run integration tests");
+            return enode;
+        }
 
         private string GetRpcUrl() =>
             Environment.GetEnvironmentVariable("GETH_RPC_URL") ?? "http://127.0.0.1:8545";
 
-        [Fact]
+        [SkippableFact]
         public async Task ExchangeStatus_WithGeth()
         {
+            var enode = GetEnode();
             var web3 = new Nethereum.Web3.Web3(GetRpcUrl());
             var genesis = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber
                 .SendRequestAsync(BlockParameter.CreateEarliest());
@@ -29,7 +33,6 @@ namespace Nethereum.DevP2P.UnitTests.Integration
             var netVersion = await web3.Net.Version.SendRequestAsync();
             var networkId = ulong.Parse(netVersion);
 
-            var enode = GetEnode();
             var connector = new StaticPeerConnector();
             var conn = await connector.ConnectAsync(enode);
             var ethOffset = conn.GetCapabilityOffset("eth");
@@ -59,9 +62,10 @@ namespace Nethereum.DevP2P.UnitTests.Integration
             await conn.DisconnectAsync();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task GetBlockHeaders_FromGeth()
         {
+            var enode = GetEnode();
             var web3 = new Nethereum.Web3.Web3(GetRpcUrl());
             var genesis = await web3.Eth.Blocks.GetBlockWithTransactionsByNumber
                 .SendRequestAsync(BlockParameter.CreateEarliest());
@@ -69,7 +73,6 @@ namespace Nethereum.DevP2P.UnitTests.Integration
             var netVersion = await web3.Net.Version.SendRequestAsync();
             var networkId = ulong.Parse(netVersion);
 
-            var enode = GetEnode();
             var connector = new StaticPeerConnector();
             var conn = await connector.ConnectAsync(enode);
             var ethOffset = conn.GetCapabilityOffset("eth");

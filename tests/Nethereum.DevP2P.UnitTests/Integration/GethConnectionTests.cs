@@ -8,11 +8,14 @@ namespace Nethereum.DevP2P.UnitTests.Integration
     [Trait("Category", "Integration")]
     public class GethConnectionTests
     {
-        private string GetEnode() =>
-            Environment.GetEnvironmentVariable("GETH_ENODE")
-            ?? throw new SkipException("Set GETH_ENODE to run integration tests");
+        private static string GetEnode()
+        {
+            var enode = Environment.GetEnvironmentVariable("GETH_ENODE");
+            Skip.If(enode == null, "Set GETH_ENODE to run integration tests");
+            return enode;
+        }
 
-        [Fact]
+        [SkippableFact]
         public async Task ConnectToGeth_ExchangeHello()
         {
             var enode = GetEnode();
@@ -28,7 +31,7 @@ namespace Nethereum.DevP2P.UnitTests.Integration
             await conn.DisconnectAsync();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task ConnectToGeth_SharedEth68()
         {
             var enode = GetEnode();
@@ -41,10 +44,5 @@ namespace Nethereum.DevP2P.UnitTests.Integration
 
             await conn.DisconnectAsync();
         }
-    }
-
-    public class SkipException : Exception
-    {
-        public SkipException(string message) : base(message) { }
     }
 }
