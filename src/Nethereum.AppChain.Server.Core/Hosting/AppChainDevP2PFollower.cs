@@ -72,15 +72,29 @@ namespace Nethereum.AppChain.Server.Hosting
             var peer = await WaitForSnapPeerAsync(node, ct).ConfigureAwait(false);
             if (peer == null) return;
 
-            var pivot = await ResolvePivotAsync(peer, ct).ConfigureAwait(false);
-            if (pivot == null) return;
+            if (SnapBootstrapHasAPivotToResolve(peer))
+            {
+                var pivot = await ResolvePivotAsync(peer, ct).ConfigureAwait(false);
+                if (pivot == null) return;
 
-            await SnapBootstrapAsync(node, pivot, ct).ConfigureAwait(false);
+                await SnapBootstrapAsync(node, pivot, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                LogSnapBootstrapSkipped(peer);
+            }
 
             await ForwardExecuteAsync(node, ct).ConfigureAwait(false);
         }
 
+        private static bool SnapBootstrapHasAPivotToResolve(SyncPeerSession peer) =>
+            peer.PeerLatestBlock > SnapSyncOrchestrator.PivotTrailDistance;
 
+        private void LogSnapBootstrapSkipped(SyncPeerSession peer) =>
+            _logger.LogInformation(
+                "DevP2P snap bootstrap: skipped, peer tip {PeerLatestBlock} is within the pivot trail distance " +
+                "{PivotTrailDistance} of genesis — nothing to snap-sync, forward-executing from genesis instead",
+                peer.PeerLatestBlock, SnapSyncOrchestrator.PivotTrailDistance);
 
         private async Task<SyncPeerSession> WaitForSnapPeerAsync(ChainNodeSyncStack node, CancellationToken ct)
         {
