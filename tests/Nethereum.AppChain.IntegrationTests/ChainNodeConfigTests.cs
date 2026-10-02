@@ -106,6 +106,41 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        public void Given_TwoInMemoryNodesWithNoConfiguredNodeKey_When_TheirNodeKeysAreResolved_Then_EachHasItsOwnIdentity()
+        {
+            var first = new ChainNodeConfig();
+            first.Storage.InMemory = true;
+            var second = new ChainNodeConfig();
+            second.Storage.InMemory = true;
+
+            Assert.NotEqual(
+                first.ResolveNodeKey().GetPubKeyNoPrefix().ToHex(),
+                second.ResolveNodeKey().GetPubKeyNoPrefix().ToHex());
+        }
+
+        [Fact]
+        public void Given_AnInMemoryNodeWithNoConfiguredNodeKey_When_ItsNodeKeyIsResolvedTwice_Then_ItKeepsOneIdentity()
+        {
+            var config = new ChainNodeConfig();
+            config.Storage.InMemory = true;
+
+            Assert.Equal(
+                config.ResolveNodeKey().GetPubKeyNoPrefix().ToHex(),
+                config.ResolveNodeKey().GetPubKeyNoPrefix().ToHex());
+        }
+
+        [Fact]
+        public void Given_AnInMemoryNodeWithAConfiguredNodeKey_When_ItsNodeKeyIsResolved_Then_TheConfiguredKeyIsUsed()
+        {
+            var key = EthECKey.GenerateKey();
+            var config = new ChainNodeConfig();
+            config.Storage.InMemory = true;
+            config.Network.NodeKeyHex = key.GetPrivateKey();
+
+            Assert.Equal(key.GetPubKeyNoPrefix().ToHex(), config.ResolveNodeKey().GetPubKeyNoPrefix().ToHex());
+        }
+
+        [Fact]
         public void Given_AProducerWithNoFollowPeer_When_AskedIfItFollows_Then_ItDoesNot()
         {
             Assert.False(new ChainNodeConfig().FollowsAPeer);

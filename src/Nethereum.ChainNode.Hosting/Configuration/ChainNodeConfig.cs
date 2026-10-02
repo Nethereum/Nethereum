@@ -20,8 +20,18 @@ namespace Nethereum.ChainNode.Hosting.Configuration
 
         public ChainNodeMempoolConfig Mempool { get; set; } = new ChainNodeMempoolConfig();
 
-        public EthECKey ResolveNodeKey(Action<string>? log = null) =>
-            Network.ResolveNodeKey(Storage.DataDirectory, log);
+        public EthECKey ResolveNodeKey(Action<string>? log = null)
+        {
+            if (Storage.InMemory
+                && string.IsNullOrEmpty(Network.NodeKeyHex)
+                && string.IsNullOrWhiteSpace(Network.NodeKeyFile))
+            {
+                Network.NodeKeyHex = EthECKey.GenerateKey().GetPrivateKey();
+                log?.Invoke("In-memory node: generated an ephemeral node key");
+            }
+
+            return Network.ResolveNodeKey(Storage.DataDirectory, log);
+        }
 
         public PersistentPeerCache OpenPeerCache(Action<string>? log = null) =>
             Network.OpenPeerCache(Storage.DataDirectory, log);
