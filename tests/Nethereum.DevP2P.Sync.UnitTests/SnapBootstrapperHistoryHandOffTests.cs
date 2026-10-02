@@ -50,6 +50,9 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             public int MaxLiveRequests => Volatile.Read(ref _maxLive);
 
+            public TaskCompletionSource FirstRequestIssued { get; } =
+                new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
             public Task<List<BlockHeader>> FetchHeadersAsync(ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
                 => BlockUntilCancelledAsync<List<BlockHeader>>(ct);
 
@@ -79,6 +82,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 var live = Interlocked.Increment(ref _live);
                 int max;
                 while (live > (max = Volatile.Read(ref _maxLive)) && Interlocked.CompareExchange(ref _maxLive, live, max) != max) { }
+                FirstRequestIssued.TrySetResult();
                 try
                 {
                     await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
@@ -88,6 +92,48 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 {
                     Interlocked.Decrement(ref _live);
                 }
+            }
+        }
+
+        private sealed class SnapPeerThatAnswersOnceHistoryIsInFlight : ISnapPeer
+        {
+            private readonly ISnapPeer _inner;
+            private readonly Task _historyInFlight;
+
+            public SnapPeerThatAnswersOnceHistoryIsInFlight(ISnapPeer inner, Task historyInFlight)
+            {
+                _inner = inner;
+                _historyInFlight = historyInFlight;
+            }
+
+            private async Task WaitForHistoryAsync(CancellationToken ct)
+            {
+                try { await _historyInFlight.WaitAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(false); }
+                catch (TimeoutException) { }
+            }
+
+            public async Task<AccountRangeMessage> GetAccountRangeAsync(GetAccountRangeMessage request, CancellationToken ct = default)
+            {
+                await WaitForHistoryAsync(ct).ConfigureAwait(false);
+                return await _inner.GetAccountRangeAsync(request, ct).ConfigureAwait(false);
+            }
+
+            public async Task<StorageRangesMessage> GetStorageRangesAsync(GetStorageRangesMessage request, CancellationToken ct = default)
+            {
+                await WaitForHistoryAsync(ct).ConfigureAwait(false);
+                return await _inner.GetStorageRangesAsync(request, ct).ConfigureAwait(false);
+            }
+
+            public async Task<ByteCodesMessage> GetByteCodesAsync(GetByteCodesMessage request, CancellationToken ct = default)
+            {
+                await WaitForHistoryAsync(ct).ConfigureAwait(false);
+                return await _inner.GetByteCodesAsync(request, ct).ConfigureAwait(false);
+            }
+
+            public async Task<TrieNodesMessage> GetTrieNodesAsync(GetTrieNodesMessage request, CancellationToken ct = default)
+            {
+                await WaitForHistoryAsync(ct).ConfigureAwait(false);
+                return await _inner.GetTrieNodesAsync(request, ct).ConfigureAwait(false);
             }
         }
 
@@ -116,7 +162,9 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var pivotHash = Sha3Keccack.Current.CalculateHash(new byte[] { 0x40 });
             var bundle = InMemoryChainStoreBundle.Open();
             var scheduler = new BlockingHistoryScheduler();
-            var peer = new InProcessSnapPeer(new PatriciaSnapRequestHandler(store, new NullBytecodeStore()));
+            var peer = new SnapPeerThatAnswersOnceHistoryIsInFlight(
+                new InProcessSnapPeer(new PatriciaSnapRequestHandler(store, new NullBytecodeStore())),
+                scheduler.FirstRequestIssued.Task);
 
             using var testCts = new CancellationTokenSource();
             var run = SnapBootstrapper.RunAsync(
