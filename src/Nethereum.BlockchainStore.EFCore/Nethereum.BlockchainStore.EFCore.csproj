@@ -37,7 +37,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Update="Newtonsoft.Json" Version="[13.0.1, 14)" />
 	</ItemGroup>
 
 	<ItemGroup>
