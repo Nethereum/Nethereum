@@ -104,13 +104,21 @@ namespace Nethereum.DevP2P.Sync.Peering
             _logger = logger ?? NullLogger<PeerPoolManager>.Instance;
             _peerCache = peerCache;
             _dialScheduler = dialScheduler;
-            _trustedDialKeys = new HashSet<string>(
-                trustedDialKeys ?? Array.Empty<string>(),
-                StringComparer.OrdinalIgnoreCase);
+            _trustedDialKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             _trustedNodeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var key in _trustedDialKeys)
+            foreach (var key in trustedDialKeys ?? Array.Empty<string>())
+            {
+                if (string.IsNullOrWhiteSpace(key)) continue;
                 if (TryGetNodeId(key, out var nodeId))
+                {
+                    _trustedDialKeys.Add(key);
                     _trustedNodeIds.Add(nodeId);
+                }
+                else
+                {
+                    _logger.LogWarning("trusted peer keeper: malformed trusted enode, never dialed: {Enode}", key);
+                }
+            }
             _utcNow = utcNow ?? (() => DateTime.UtcNow);
 
             if (_options.MaxPeersPerIPv4Subnet > 0 || _options.MaxPeersPerIPv6Subnet > 0)

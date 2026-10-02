@@ -45,9 +45,9 @@ namespace Nethereum.MainnetChain.Configuration
                 Serve = true,
                 ListenPort = config.ListenPort,
                 NodeKeyFile = config.NodeKeyFile,
-                TrustedPeers = config.TrustedPeer == null
+                TrustedPeers = string.IsNullOrWhiteSpace(config.TrustedPeer)
                     ? Array.Empty<string>()
-                    : new[] { config.TrustedPeer },
+                    : config.TrustedPeer.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
                 TargetPeerCount = config.TargetPeers,
                 MirrorRemoteStatus = true,
                 ClientId = "Nethereum/mainnet-server",

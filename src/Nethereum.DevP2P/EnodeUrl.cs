@@ -51,6 +51,9 @@ namespace Nethereum.DevP2P
                 throw new ArgumentException("Invalid enode URL: missing port", nameof(enode));
 
             var host = hostPort.Substring(0, colonIndex);
+            if (host.IndexOfAny(InvalidHostCharacters) >= 0)
+                throw new ArgumentException("Invalid enode URL: host contains a character no host can hold", nameof(enode));
+
             var portTail = hostPort.Substring(colonIndex + 1);
             var queryIndex = portTail.IndexOf('?');
             var portStr = queryIndex >= 0 ? portTail.Substring(0, queryIndex) : portTail;
@@ -103,6 +106,8 @@ namespace Nethereum.DevP2P
                 return false;
             }
         }
+
+        private static readonly char[] InvalidHostCharacters = { ',', '@', '/', ' ', '\t', '\r', '\n' };
 
         private static bool TryParseUint16(string s, out int value)
         {

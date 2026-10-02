@@ -72,6 +72,24 @@ namespace Nethereum.DevP2P.UnitTests.Discv4
         }
 
         [Fact]
+        public void Given_TwoEnodesJoinedByAComma_When_ParsedAsOneEnode_Then_ItIsRejected()
+        {
+            var joined = $"enode://{PubKeyHex}@127.0.0.1:30307,enode://{PubKeyHex}@112.154.155.200:20001";
+
+            Assert.False(EnodeUrl.TryParse(joined, out _));
+            Assert.Throws<System.ArgumentException>(() => EnodeUrl.Parse(joined));
+        }
+
+        [Fact]
+        public void Given_ADnsHostname_When_Parsed_Then_ItIsStillAccepted()
+        {
+            var parsed = EnodeUrl.Parse($"enode://{PubKeyHex}@localhost:30303");
+
+            Assert.Equal("localhost", parsed.Host);
+            Assert.Equal(30303, parsed.Port);
+        }
+
+        [Fact]
         public void Parse_WrongCaseDiscportKey_Ignored()
         {
             var enode = $"enode://{PubKeyHex}@10.3.58.6:30303?DISCPORT=30301";

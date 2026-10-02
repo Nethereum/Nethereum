@@ -320,11 +320,6 @@ namespace Nethereum.MainnetChain.Hosting
                 "Transaction submission ENABLED — eth_sendRawTransaction admits to the local mempool, serves GetPooledTransactions, and announces to peers.");
         }
 
-        private static string[] ParseTrustedPeers(string? csv)
-            => string.IsNullOrWhiteSpace(csv)
-                ? Array.Empty<string>()
-                : csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
         internal static HistoricalStateOptions? BuildJournalOptions(int journalBlocks)
         {
             if (journalBlocks < 0) return null;
@@ -488,7 +483,7 @@ namespace Nethereum.MainnetChain.Hosting
 
         private void EnqueueTrustedPeer()
         {
-            var trustedPeers = ParseTrustedPeers(_config.TrustedPeer);
+            var trustedPeers = _chainNodeConfig!.Network.TrustedPeers ?? Array.Empty<string>();
             if (trustedPeers.Length > 0)
             {
                 foreach (var peer in trustedPeers)
