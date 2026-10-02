@@ -93,6 +93,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                 Difficulty = Nethereum.Util.EvmUInt256.One,
                 BlockNumber = 0,
                 GasLimit = (long)_chainConfig.BlockGasLimit,
+                BaseFee = (Nethereum.Util.EvmUInt256)_chainConfig.BaseFee,
                 GasUsed = 0,
                 Timestamp = 1700000000,
                 ExtraData = Array.Empty<byte>(),
