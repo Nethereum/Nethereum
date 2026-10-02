@@ -74,7 +74,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 var l1Tx = TransactionFactory.CreateTransaction(
                     _signer.SignTransaction(_pk.HexToByteArray(), (BigInteger)1337,
                         "0x2222222222222222222222222222222222222222",
-                        0, l1Nonce++, 1_000_000_000, 100_000,
+                        0, l1Nonce++, 1_000_000_000, 1_000_000,
                         result.EncodedPayload.ToHex()));
                 var l1Result = await l1.SendTransactionAsync(l1Tx);
                 await l1.MineBlockAsync();

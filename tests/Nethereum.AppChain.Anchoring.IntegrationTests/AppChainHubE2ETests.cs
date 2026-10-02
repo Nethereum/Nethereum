@@ -110,7 +110,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
         {
             var tx = TransactionFactory.CreateTransaction(
                 _signer.SignTransaction(_pk.HexToByteArray(), chainId,
-                    contract, value, nonce, 1_000_000_000, 2_000_000,
+                    contract, value, nonce, 1_000_000_000, 10_000_000,
                     calldata.ToHex()));
             await node.SendTransactionAsync(tx);
             await node.MineBlockAsync();

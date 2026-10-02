@@ -85,7 +85,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
             for (int b = 0; b < blocks; b++)
             {
                 var txHex = signer.SignTransaction(pkBytes, (System.Numerics.BigInteger)31337,
-                    $"0x{(b + 1):x40}", 1000, n++, 1_000_000_000, 21_000, "");
+                    $"0x{(b + 0x1000):x40}", 1000, n++, 1_000_000_000, 21_000, "");
                 await l2.SendTransactionAsync(Nethereum.Model.TransactionFactory.CreateTransaction(txHex));
                 await l2.MineBlockAsync();
             }

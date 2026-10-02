@@ -85,7 +85,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 var l1Tx = TransactionFactory.CreateTransaction(
                     _signer.SignTransaction(_pk.HexToByteArray(), l1ChainId,
                         "0x2222222222222222222222222222222222222222",
-                        0, l1Nonce++, 1_000_000_000, 100_000,
+                        0, l1Nonce++, 1_000_000_000, 1_000_000,
                         pubResult.EncodedPayload.ToHex()));
 
                 var l1Result = await l1.SendTransactionAsync(l1Tx);
@@ -132,6 +132,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 CreateNoWindow = true
             };
             psi.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Production";
+            psi.EnvironmentVariables["BlockProver__Enabled"] = "true";
             var process = Process.Start(psi);
 
             try
@@ -262,7 +263,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 var l1Tx = TransactionFactory.CreateTransaction(
                     _signer.SignTransaction(_pk.HexToByteArray(), l1ChainId,
                         "0x2222222222222222222222222222222222222222",
-                        0, l1Nonce++, 1_000_000_000, 100_000,
+                        0, l1Nonce++, 1_000_000_000, 1_000_000,
                         result.EncodedPayload.ToHex()));
                 await l1.SendTransactionAsync(l1Tx);
                 await l1.MineBlockAsync();
@@ -301,7 +302,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 var l1Tx = TransactionFactory.CreateTransaction(
                     _signer.SignTransaction(_pk.HexToByteArray(), l1ChainId,
                         "0x2222222222222222222222222222222222222222",
-                        0, l1Nonce++, 1_000_000_000, 100_000,
+                        0, l1Nonce++, 1_000_000_000, 1_000_000,
                         result.EncodedPayload.ToHex()));
                 await l1.SendTransactionAsync(l1Tx);
                 await l1.MineBlockAsync();

@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Accounts\Nethereum.Accounts.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.BlockProver.Server\Nethereum.BlockProver.Server.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <ItemGroup>
