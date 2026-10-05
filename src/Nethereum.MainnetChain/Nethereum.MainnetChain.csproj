@@ -34,7 +34,6 @@
     <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
     <ProjectReference Include="..\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj" />
     <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
-    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
   <!-- Herumi referenced as a NuGet package (from ./nativeartifacts via nuget.config

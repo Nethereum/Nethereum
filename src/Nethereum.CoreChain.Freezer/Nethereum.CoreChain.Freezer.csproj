@@ -17,7 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Freezer\Nethereum.Freezer.csproj" />
     <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
-    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
 </Project>

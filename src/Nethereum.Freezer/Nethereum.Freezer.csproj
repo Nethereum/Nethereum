@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
-    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+    <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
 
 </Project>

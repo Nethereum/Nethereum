@@ -24,7 +24,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
-    <ProjectReference Include="..\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\Nethereum.Freezer\Nethereum.Freezer.csproj" />
     <ProjectReference Include="..\Nethereum.CoreChain.Freezer\Nethereum.CoreChain.Freezer.csproj" />
   </ItemGroup>
