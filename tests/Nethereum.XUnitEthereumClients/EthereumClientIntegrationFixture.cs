@@ -301,7 +301,7 @@ namespace Nethereum.XUnitEthereumClients
                 DeleteData();
 
                 var psi = new ProcessStartInfo(_exePath,
-                    @" --dev --nodiscover --http --datadir=devChain --keystore devChain/keystore --dev.period 1 --http.corsdomain ""*"" --ws --http.api ""eth,web3,net,admin,debug"" --http.addr ""0.0.0.0"" --password ""pass.txt"" --verbosity 0 console")
+                    @" --dev --nodiscover --http --datadir=devChain --keystore devChain/keystore --dev.period 1 --dev.gaslimit 60000000 --http.corsdomain ""*"" --ws --http.api ""eth,web3,net,admin,debug"" --http.addr ""0.0.0.0"" --password ""pass.txt"" --verbosity 0 console")
                 {
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal,

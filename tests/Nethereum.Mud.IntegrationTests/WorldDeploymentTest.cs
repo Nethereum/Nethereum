@@ -72,8 +72,8 @@ namespace Nethereum.Mud.IntegrationTests
             Assert.True(resultsSystems.ToList().Count > 0);
 
             var registrationSystemService = new RegistrationSystemService(web3, worldAddress);
-            var nameSpaceReceipt = registrationSystemService.RegisterNamespaceRequestAndWaitForReceiptAsync(
-                ResourceEncoder.EncodeNamespace(String.Empty));
+            await registrationSystemService.RegisterNamespaceRequestAndWaitForReceiptAsync(
+                ResourceEncoder.EncodeNamespace(new ItemTableRecord().Namespace));
 
 
             var counterSchemaEncoded = new CounterTableRecord().GetSchemaEncoded();
@@ -118,7 +118,7 @@ namespace Nethereum.Mud.IntegrationTests
             Assert.Equal("value", field.Name);
 
             var itemTableResource = itemTableSchema.Keys.GetTableIdResource();
-            Assert.True(itemTableResource.IsRoot());
+            Assert.Equal(new ItemTableRecord().Namespace, itemTableResource.Namespace);
             var itemFields = itemTableSchema.Values.GetValueSchemaFields().ToList();
             var itemKeys = itemTableSchema.Values.GetKeySchemaFields().ToList();
 
@@ -222,7 +222,9 @@ namespace Nethereum.Mud.IntegrationTests
 
             var mudTest = new MudTestNamespace(web3, worldAddress);
             //note this may need a wait
-            await mudTest.RegisterNamespaceRequestAndWaitForReceiptAsync();  
+            await mudTest.RegisterNamespaceRequestAndWaitForReceiptAsync();
+            await new RegistrationSystemService(web3, worldAddress).RegisterNamespaceRequestAndWaitForReceiptAsync(
+                ResourceEncoder.EncodeNamespace(new ItemTableRecord().Namespace));
             //note this may need a wait
             var receipt =  await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
          
@@ -240,7 +242,7 @@ namespace Nethereum.Mud.IntegrationTests
             Assert.Equal("value", field.Name);
 
             var itemTableResource = itemTableSchema.Keys.GetTableIdResource();
-            Assert.True(itemTableResource.IsRoot());
+            Assert.Equal(new ItemTableRecord().Namespace, itemTableResource.Namespace);
             var itemFields = itemTableSchema.Values.GetValueSchemaFields().ToList();
             var itemKeys = itemTableSchema.Values.GetKeySchemaFields().ToList();
 
@@ -278,7 +280,7 @@ namespace Nethereum.Mud.IntegrationTests
             
             try
             {
-                var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAsync(addressDeployer, salt);
+                var deployAllResult = await mudTest.Systems.DeployAllCreate2ContractSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
                 var registerAllReceipt = await mudTest.Systems.BatchRegisterAllSystemsRequestAndWaitForReceiptAsync(addressDeployer, salt);
 
                 await mudTest.Systems.IncrementSystemService.IncrementRequestAndWaitForReceiptAsync();
@@ -334,6 +336,8 @@ namespace Nethereum.Mud.IntegrationTests
             var mudTest = new MudTestNamespace(web3, worldAddress);
             //note this may need a wait
             await mudTest.RegisterNamespaceRequestAndWaitForReceiptAsync();
+            await new RegistrationSystemService(web3, worldAddress).RegisterNamespaceRequestAndWaitForReceiptAsync(
+                ResourceEncoder.EncodeNamespace(new ItemTableRecord().Namespace));
             var receipt = await mudTest.Tables.BatchRegisterAllTablesRequestAndWaitForReceiptAsync();
 
 
@@ -361,6 +365,7 @@ namespace Nethereum.Mud.IntegrationTests
            Assert.Equal(3, counterRecord.Values.Value);
 
            
+            await web3.Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(TestAccounts.Account1Address, 1m);
             var web3AnotherUser = TestAccounts.GetAccount1Web3();
             var mudTestAnotherUser = new MudTestNamespace(web3AnotherUser, worldAddress);
 
