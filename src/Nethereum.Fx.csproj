@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Generic.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\buildConf\Version.props" />
@@ -96,7 +96,7 @@
     <PackageReference Include="ADRaffy.ENSNormalize" Version="0.1.5" />
     <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
     <PackageReference Include="NBitcoin" Version="7.0.6" />
-    <PackageReference Include="Newtonsoft.Json" Version="[11.0.2,14)" />
+    <PackageReference Include="Newtonsoft.Json" Version="[13.0.1, 14)" />
     <PackageReference Include="System.Reactive" Version="4.1.3" />
   </ItemGroup>
 

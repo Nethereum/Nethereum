@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="[13.0.1, 14)" />
     <PackageReference Include="Nethereum.BlockchainStorage.Processors.Postgres" Version="NETHEREUM_VERSION" />
     <PackageReference Include="Nethereum.BlockchainStorage.Token.Postgres" Version="NETHEREUM_VERSION" />
     <PackageReference Include="Nethereum.Mud.Repositories.Postgres" Version="NETHEREUM_VERSION" />
