@@ -125,7 +125,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
             var psi = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"run --no-build --project \"{serverPath}\" --urls http://localhost:{port}",
+                Arguments = $"run --no-build -c {BuildConfigurationOfThisTestRun()} --project \"{serverPath}\" --urls http://localhost:{port}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -341,6 +341,10 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
             }
             throw new TimeoutException($"Server at {url} did not start within {timeoutSeconds}s");
         }
+
+        private static string BuildConfigurationOfThisTestRun() =>
+            new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory.TrimEnd(
+                System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar)).Parent!.Name;
 
         private static string FindProject(string projectName)
         {
