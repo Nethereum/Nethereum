@@ -29,7 +29,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                 batch.Add(message);
             }
             return batch
-                .OrderBy(m => m.SourceChainId)
+                .OrderBy(m => m.TargetChainId)
                 .ThenBy(m => m.MessageId)
                 .ToList();
         }

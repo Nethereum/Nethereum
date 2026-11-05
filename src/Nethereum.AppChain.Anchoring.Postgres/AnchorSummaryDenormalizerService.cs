@@ -11,6 +11,7 @@ using Nethereum.AppChain.Anchoring.Postgres.Repositories;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Summary denormalizer")]
     public class AnchorSummaryDenormalizerService
     {
         private readonly AnchorIndexDbContext _context;

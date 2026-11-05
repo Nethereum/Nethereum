@@ -270,12 +270,8 @@ namespace Nethereum.AppChain.Sequencer.Builder
 
         private (IBlockStore, ITransactionStore, IReceiptStore, ILogStore, IStateStore, ITrieNodeStore?) CreateInMemoryStores()
         {
-            var blockStore = new InMemoryBlockStore();
-            var transactionStore = new InMemoryTransactionStore(blockStore);
-            var receiptStore = new InMemoryReceiptStore();
-            var logStore = new InMemoryLogStore();
-            var stateStore = new InMemoryStateStore();
-            return (blockStore, transactionStore, receiptStore, logStore, stateStore, null);
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.DevChainDefault);
+            return (bundle.Blocks, bundle.Transactions, bundle.Receipts, bundle.Logs, bundle.State, bundle.TrieNodes);
         }
 
         private GenesisOptions CreateGenesisOptions()

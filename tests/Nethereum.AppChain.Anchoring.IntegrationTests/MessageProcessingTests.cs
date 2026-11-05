@@ -404,7 +404,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
         }
 
         [Fact]
-        public async Task MessageProcessor_ProcessBatch_CreatesResults()
+        public async Task Given_NoMessageExecutor_When_ABatchIsProcessed_Then_EveryMessageIsRecordedAsNotExecuted()
         {
             var accumulator = new MessageMerkleAccumulator();
             var processor = new MessageProcessor(accumulator);
@@ -418,10 +418,11 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
             var result = await processor.ProcessBatchAsync(messages);
 
             Assert.Equal(2, result.ProcessedCount);
-            Assert.Equal(0, result.FailedCount);
+            Assert.Equal(2, result.FailedCount);
             Assert.Equal(2, result.Results.Count);
-            Assert.True(result.Results[0].Success);
-            Assert.True(result.Results[1].Success);
+            Assert.False(result.Results[0].Success);
+            Assert.False(result.Results[1].Success);
+            Assert.Equal(new byte[32], result.Results[0].AppChainTxHash);
             Assert.Equal(2, accumulator.GetLeafCount(1));
             Assert.Equal((ulong)2, accumulator.GetLastProcessedMessageId(1));
         }

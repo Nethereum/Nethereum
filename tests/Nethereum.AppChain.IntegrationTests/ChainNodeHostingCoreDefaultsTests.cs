@@ -66,33 +66,7 @@ namespace Nethereum.AppChain.IntegrationTests
             var stack = await ChainNodeSyncStack.StartAsync(profile, bundle, config, loggerFactory: null);
             try
             {
-                Assert.False(config.Sync.EnablePushedBlocks);
                 Assert.IsType<DevP2PBlockSource>(stack.BlockSource);
-                Assert.Null(stack.PushedBlocks);
-            }
-            finally
-            {
-                await stack.DisposeAsync();
-                await bundle.DisposeAsync();
-            }
-        }
-
-        [Fact]
-        public async Task Given_EnablePushedBlocksTrue_When_ChainNodeSyncStackStarts_Then_BlockSourceIsCatchUpThenFollow()
-        {
-            var genesisHash = Make32(0x12);
-            var bundle = await GenesisBundleAsync(genesisHash);
-            var profile = ProfileFor(990102, genesisHash, bundle);
-
-            var config = new ChainNodeConfig();
-            config.Storage.InMemory = true;
-            config.Sync.EnablePushedBlocks = true;
-
-            var stack = await ChainNodeSyncStack.StartAsync(profile, bundle, config, loggerFactory: null);
-            try
-            {
-                Assert.IsType<CatchUpThenFollowBlockSource>(stack.BlockSource);
-                Assert.NotNull(stack.PushedBlocks);
             }
             finally
             {
@@ -165,11 +139,10 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
-        public void Given_AppChainServerConfigDefaultNode_When_Composed_Then_PushAndTrustedAdmissionAndFlooringAreAllTrue()
+        public void Given_AppChainServerConfigDefaultNode_When_Composed_Then_TrustedAdmissionAndFlooringAreBothTrue()
         {
             var config = new AppChainServerConfig();
 
-            Assert.True(config.Node.Sync.EnablePushedBlocks);
             Assert.True(config.Node.Sync.FloorTargetPeerCountByDialPool);
             Assert.True(config.Node.Mempool.EnableTrustedPeerAdmission);
         }
@@ -446,115 +419,61 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
-        public async Task Given_ADevP2PPeersListWithOneMalformedEnode_When_TheNodeStarts_Then_AWarningIsLoggedNamingTheBadEntry()
+        public async Task Given_AChainProfileWithAMalformedBootnode_When_TheSyncStackStarts_Then_StartupIsRefusedNamingTheBootnodeAndNothingIsDialled()
         {
+            const string malformedBootnode = "enode://not-a-real-pubkey@127.0.0.1:30702";
             var genesisHash = Make32(0x70);
             var bundle = await GenesisBundleAsync(genesisHash);
-
-            var validPeer = $"enode://{EthECKey.GenerateKey().GetPubKeyNoPrefix().ToHex()}@127.0.0.1:30701";
-            const string malformedPeer = "enode://not-a-real-pubkey@127.0.0.1:30702";
-
             var worker = new RecordingHandshakeWorker();
-            var profile = new RecordingProfile(990701, genesisHash, worker);
+            var wellFormedBootnode = $"enode://{EthECKey.GenerateKey().GetPubKeyNoPrefix().ToHex()}@127.0.0.1:30701";
+            var profile = new BootnodesProfile(990701, genesisHash, new[] { wellFormedBootnode, malformedBootnode }, worker);
 
             var config = new ChainNodeConfig();
             config.Storage.InMemory = true;
-            config.Network.TrustedPeers = new[] { validPeer, malformedPeer };
-            config.Network.MaxConcurrentDials = 2;
-            config.Network.DialBudgetPerSecond = 0;
 
-            var loggerFactory = new RecordingLoggerFactory();
-
-            var stack = await ChainNodeSyncStack.StartAsync(profile, bundle, config, loggerFactory: loggerFactory);
             try
             {
-                Assert.Contains(loggerFactory.Warnings, w => w.Contains(malformedPeer));
+                var refusal = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => ChainNodeSyncStack.StartAsync(profile, bundle, config, loggerFactory: null));
+
+                Assert.Contains($"chain profile bootnodes = '{malformedBootnode}'", refusal.Message);
+                Assert.Empty(worker.Order);
             }
             finally
             {
-                await stack.DisposeAsync();
                 await bundle.DisposeAsync();
             }
         }
 
         [Fact]
-        public async Task Given_ADevP2PPeersListWithOneMalformedEnode_When_TheNodeStarts_Then_TheOtherValidEnodesAreStillDialled()
+        public async Task Given_OnlyWellFormedConfiguredEnodes_When_TheSyncStackStarts_Then_ItStartsAndDialsEachOfThem()
         {
             var genesisHash = Make32(0x71);
             var bundle = await GenesisBundleAsync(genesisHash);
-
-            var validPeer = $"enode://{EthECKey.GenerateKey().GetPubKeyNoPrefix().ToHex()}@127.0.0.1:30711";
-            const string malformedPeer = "enode://not-a-real-pubkey@127.0.0.1:30712";
-
+            var follow = $"enode://{EthECKey.GenerateKey().GetPubKeyNoPrefix().ToHex()}@127.0.0.1:30710";
+            var trusted = $"enode://{EthECKey.GenerateKey().GetPubKeyNoPrefix().ToHex()}@127.0.0.1:30711";
             var worker = new RecordingHandshakeWorker();
             var profile = new RecordingProfile(990702, genesisHash, worker);
 
             var config = new ChainNodeConfig();
             config.Storage.InMemory = true;
-            config.Network.TrustedPeers = new[] { validPeer, malformedPeer };
+            config.Sync.FollowPeerEnode = follow;
+            config.Network.TrustedPeers = new[] { trusted };
             config.Network.MaxConcurrentDials = 2;
             config.Network.DialBudgetPerSecond = 0;
 
-            var loggerFactory = new RecordingLoggerFactory();
-
-            var stack = await ChainNodeSyncStack.StartAsync(profile, bundle, config, loggerFactory: loggerFactory);
+            var stack = await ChainNodeSyncStack.StartAsync(profile, bundle, config, loggerFactory: null);
             try
             {
-                var dialed = await WaitForAllDialsAsync(worker, new[] { validPeer, malformedPeer }, TimeSpan.FromSeconds(10));
+                var dialed = await WaitForAllDialsAsync(worker, new[] { follow, trusted }, TimeSpan.FromSeconds(10));
 
-                Assert.Contains(validPeer, dialed);
-                Assert.Contains(malformedPeer, dialed);
+                Assert.Contains(follow, dialed);
+                Assert.Contains(trusted, dialed);
             }
             finally
             {
                 await stack.DisposeAsync();
                 await bundle.DisposeAsync();
-            }
-        }
-
-        private sealed class RecordingLoggerFactory : ILoggerFactory
-        {
-            public readonly ConcurrentQueue<string> Warnings = new();
-
-            public ILogger CreateLogger(string categoryName) => new RecordingLogger(Warnings);
-
-            public void AddProvider(ILoggerProvider provider)
-            {
-            }
-
-            public void Dispose()
-            {
-            }
-        }
-
-        private sealed class RecordingLogger : ILogger
-        {
-            private readonly ConcurrentQueue<string> _warnings;
-
-            public RecordingLogger(ConcurrentQueue<string> warnings)
-            {
-                _warnings = warnings;
-            }
-
-            public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                LogLevel logLevel, EventId eventId, TState state, Exception exception,
-                Func<TState, Exception, string> formatter)
-            {
-                if (logLevel == LogLevel.Warning)
-                    _warnings.Enqueue(formatter(state, exception));
-            }
-
-            private sealed class NullScope : IDisposable
-            {
-                public static readonly NullScope Instance = new();
-
-                public void Dispose()
-                {
-                }
             }
         }
     }

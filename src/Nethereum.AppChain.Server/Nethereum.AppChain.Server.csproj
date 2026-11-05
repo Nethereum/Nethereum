@@ -14,6 +14,7 @@
     <Version>$(NethereumVersionPreview)</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackAsTool>true</PackAsTool>
+    <IsPackable>true</IsPackable>
     <ToolCommandName>nethereum-appchain</ToolCommandName>
 
     <!-- AOT Compilation -->
@@ -38,6 +39,33 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.AppChain.Server.Core\Nethereum.AppChain.Server.Core.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM.Precompiles.Bls\Nethereum.EVM.Precompiles.Bls.csproj" />
+    <ProjectReference Include="..\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
+    <ProjectReference Include="..\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Include="..\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\*.dll">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <None Include="..\Nethereum.Signer.Bls.Herumi\runtimes\linux-x64\native\*.so">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

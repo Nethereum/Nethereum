@@ -14,6 +14,7 @@ using Nethereum.Model;
 
 namespace Nethereum.AppChain.Server
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainComposedNode")]
     public sealed class AppChainComposedNode : IAsyncDisposable
     {
         public required Nethereum.ChainNode.Hosting.ChainNode ChainNode { get; init; }
@@ -74,6 +75,7 @@ namespace Nethereum.AppChain.Server
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainMetricsBundle")]
     public sealed class AppChainMetricsBundle
     {
         public required BlockProductionMetrics BlockProduction { get; init; }
@@ -111,6 +113,7 @@ namespace Nethereum.AppChain.Server
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainMessagingComposition")]
     public sealed class AppChainMessagingComposition
     {
         public AppChainMessagingComposition(

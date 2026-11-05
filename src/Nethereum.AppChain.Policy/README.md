@@ -17,7 +17,7 @@ The package supports writer/admin authorisation using merkle tree proofs (gas-ef
 - **Epoch-Based Updates**: Atomic policy updates tied to epoch numbers
 - **Policy Sync Worker**: Background service syncs policy changes from L1
 - **Calldata & Gas Limits**: Configurable per-transaction calldata size and per-block gas limits
-- **Blacklist Support**: Separate merkle tree for blacklisted addresses
+- **Blacklist Support**: Separate merkle tree for blacklisted addresses; a blacklist holding one address bans it, and `AppChainPolicy.invite` checks the invitee against the blacklist (`InviteRequestAsync(invitee, newWritersRoot, proofCallerIsWriter, proofInviteeNotBlacklisted)`)
 
 ## Installation
 

@@ -152,6 +152,99 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        public async Task Given_ALeaseHandoverWhereBothNodesSealBlocksCarryingTransactions_When_TheSiblingImportsAndThenSeals_Then_EveryHeaderRootEqualsTheFullRecomputeAndTheNodesAgree()
+        {
+            var scenario = await HaTwoNodeScenario.StartAsync();
+            await using var _ = scenario;
+
+            await scenario.A.Sequencer.ProduceBlockAsync();
+            await scenario.A.Sequencer.SubmitTransactionAsync(SignedTransfer(scenario.ChainId, scenario.GenesisOwnerKey, nonce: 0));
+            await scenario.A.Sequencer.ProduceBlockAsync();
+
+            var heightAfterA = await scenario.A.Bundle.Blocks.GetHeightAsync();
+            Assert.Equal(new BigInteger(3), heightAfterA);
+            Assert.True(await WaitUntilAsync(
+                async () => await scenario.B.Bundle.Blocks.GetHeightAsync() >= heightAfterA, ImportTimeout),
+                "B never imported A's blocks");
+
+            scenario.Arbiter.ForceRevoke(scenario.ANodeId);
+            Assert.True(await WaitUntilAsync(async () =>
+            {
+                await scenario.BAuthority.PollOnceAsync();
+                return scenario.BAuthority.CurrentProducer() == scenario.BNodeId;
+            }, TimeSpan.FromSeconds(10)), "B never acquired the lease");
+
+            await scenario.B.Sequencer.SubmitTransactionAsync(SignedTransfer(scenario.ChainId, scenario.GenesisOwnerKey, nonce: 1));
+
+            for (var number = 1; number <= 4; number++)
+            {
+                var onB = await scenario.B.Bundle.Blocks.GetByNumberAsync(number);
+                Assert.NotNull(onB);
+            }
+
+            var headOfB = await scenario.B.Bundle.Blocks.GetByNumberAsync(4);
+            var fullOnB = await new IncrementalStateRootCalculator(scenario.B.Bundle.State).ComputeFullStateRootAsync();
+            Assert.Equal(fullOnB.ToHex(), headOfB.StateRoot.ToHex());
+
+            for (var number = 1; number <= 3; number++)
+            {
+                var hashOnA = await scenario.A.Bundle.Blocks.GetHashByNumberAsync(number);
+                var hashOnB = await scenario.B.Bundle.Blocks.GetHashByNumberAsync(number);
+                Assert.Equal(hashOnA.ToHex(), hashOnB.ToHex());
+            }
+        }
+
+        [Fact]
+        public async Task Given_ALeaseThatMovesFromAToBAndBackToAWithTransactionsOnEachSide_When_EachNodeImportsTheOthersBlocksAndThenSeals_Then_EveryHeightAgreesAndTheHeadRootEqualsTheFullRecomputeOnBothNodes()
+        {
+            var scenario = await HaTwoNodeScenario.StartAsync(bImports: true, aImports: true);
+            await using var _ = scenario;
+
+            await scenario.A.Sequencer.SubmitTransactionAsync(SignedTransfer(scenario.ChainId, scenario.GenesisOwnerKey, nonce: 0));
+            await AssertBothAgreeAtAsync(scenario, 1);
+
+            scenario.Arbiter.ForceRevoke(scenario.ANodeId);
+            Assert.True(await WaitUntilAsync(async () =>
+            {
+                await scenario.BAuthority.PollOnceAsync();
+                return scenario.BAuthority.CurrentProducer() == scenario.BNodeId;
+            }, ImportTimeout), "B never acquired the lease");
+
+            await scenario.B.Sequencer.SubmitTransactionAsync(SignedTransfer(scenario.ChainId, scenario.GenesisOwnerKey, nonce: 1));
+            await AssertBothAgreeAtAsync(scenario, 2);
+
+            scenario.Arbiter.ForceRevoke(scenario.BNodeId);
+            Assert.True(await WaitUntilAsync(async () =>
+            {
+                await scenario.AAuthority.PollOnceAsync();
+                return scenario.AAuthority.CurrentProducer() == scenario.ANodeId;
+            }, ImportTimeout), "A never took the lease back");
+
+            await scenario.A.Sequencer.SubmitTransactionAsync(SignedTransfer(scenario.ChainId, scenario.GenesisOwnerKey, nonce: 2));
+            await AssertBothAgreeAtAsync(scenario, 3);
+        }
+
+        private static async Task AssertBothAgreeAtAsync(HaTwoNodeScenario scenario, int height)
+        {
+            Assert.True(await WaitUntilAsync(async () =>
+            {
+                var a = await scenario.A.Bundle.Blocks.GetHashByNumberAsync(height);
+                var b = await scenario.B.Bundle.Blocks.GetHashByNumberAsync(height);
+                return a != null && b != null && a.ToHex() == b.ToHex();
+            }, ImportTimeout), $"the nodes never agreed on block {height}");
+
+            foreach (var node in new[] { scenario.A, scenario.B })
+            {
+                var head = await node.Bundle.Blocks.GetByNumberAsync(height);
+                var full = await new IncrementalStateRootCalculator(node.Bundle.State).ComputeFullStateRootAsync();
+                Assert.Equal(full.ToHex(), head.StateRoot.ToHex());
+                var receipts = await node.Bundle.Receipts.GetByBlockNumberAsync(height);
+                Assert.NotEmpty(receipts);
+                Assert.All(receipts, r => Assert.True(r.HasSucceeded, $"a transfer in block {height} reverted"));
+            }
+        }
+
+        [Fact]
         public async Task NonVacuityTwin_DoubleSeal_Given_TheGateIsBypassed_When_TheFormerHolderSealsAfterHandoff_Then_ItWronglySucceeds()
         {
             var scenario = await HaTwoNodeScenario.StartAsync();
@@ -340,18 +433,35 @@ namespace Nethereum.AppChain.IntegrationTests
             }
         }
 
+        private static Nethereum.Model.ISignedTransaction SignedTransfer(BigInteger chainId, EthECKey sender, int nonce)
+        {
+            var tx = new Nethereum.Model.Transaction1559(
+                chainId: chainId, nonce: nonce, maxPriorityFeePerGas: BigInteger.Zero, maxFeePerGas: new BigInteger(1000000000),
+                gasLimit: new BigInteger(1000000), receiverAddress: "0x000000000000000000000000000000000000dEaD",
+                amount: BigInteger.One, data: null, accessList: null);
+            var signature = sender.SignAndCalculateYParityV(tx.RawHash);
+            tx.SetSignature(new Nethereum.Model.Signature { R = signature.R, S = signature.S, V = signature.V });
+            return tx;
+        }
+
         private sealed class HaTwoNodeScenario : IAsyncDisposable
         {
             private HaTwoNodeScenario(
                 ComposedAppChainNode a, ComposedAppChainNode b, InMemorySequencerArbiter arbiter,
-                string aNodeId, string bNodeId)
+                string aNodeId, string bNodeId, BigInteger chainId, EthECKey genesisOwnerKey)
             {
+                ChainId = chainId;
+                GenesisOwnerKey = genesisOwnerKey;
                 A = a;
                 B = b;
                 Arbiter = arbiter;
                 ANodeId = aNodeId;
                 BNodeId = bNodeId;
             }
+
+            public BigInteger ChainId { get; }
+
+            public EthECKey GenesisOwnerKey { get; }
 
             public ComposedAppChainNode A { get; }
 
@@ -367,7 +477,7 @@ namespace Nethereum.AppChain.IntegrationTests
 
             public ArbiterBackedProducerAuthority BAuthority => (ArbiterBackedProducerAuthority)B.ProducerAuthority!;
 
-            public static async Task<HaTwoNodeScenario> StartAsync(bool bImports = true)
+            public static async Task<HaTwoNodeScenario> StartAsync(bool bImports = true, bool aImports = false)
             {
                 var chainId = new BigInteger(420420_700 + Environment.TickCount % 1000);
                 var genesisOwnerKey = EthECKey.GenerateKey();
@@ -379,6 +489,7 @@ namespace Nethereum.AppChain.IntegrationTests
                 var aPort = ports[0];
                 var bPort = ports[1];
                 var aEnode = EnodeOf(aNodeKey, aPort);
+                var bEnode = EnodeOf(bNodeKey, bPort);
 
                 const string aNodeId = "A";
                 const string bNodeId = "B";
@@ -390,7 +501,7 @@ namespace Nethereum.AppChain.IntegrationTests
 
                 var aConfig = BuildConfig(
                     chainId, genesisOwnerKey, sequencerKey, hasSigningKey: true,
-                    aNodeKey, aPort, trustedPeers: Array.Empty<string>());
+                    aNodeKey, aPort, trustedPeers: aImports ? new[] { bEnode } : Array.Empty<string>());
                 aConfig.Consensus.NodeIdentity = aNodeId;
                 aConfig.Consensus.ProducerAuthorityOverride = aAuthority;
 
@@ -409,7 +520,7 @@ namespace Nethereum.AppChain.IntegrationTests
 
                 await aAuthority.PollOnceAsync();
 
-                return new HaTwoNodeScenario(a, b, arbiter, aNodeId, bNodeId);
+                return new HaTwoNodeScenario(a, b, arbiter, aNodeId, bNodeId, chainId, genesisOwnerKey);
             }
 
             public async ValueTask DisposeAsync()

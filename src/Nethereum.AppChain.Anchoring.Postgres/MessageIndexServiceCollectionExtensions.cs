@@ -6,6 +6,7 @@ using Nethereum.AppChain.Anchoring.Messaging;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Message index registration")]
     public static class MessageIndexServiceCollectionExtensions
     {
         public static IServiceCollection AddMessageIndexPostgresProcessing(

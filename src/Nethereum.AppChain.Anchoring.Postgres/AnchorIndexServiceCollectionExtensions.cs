@@ -8,6 +8,7 @@ using Nethereum.AppChain.Anchoring.Postgres.Repositories;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Anchor index registration")]
     public static class AnchorIndexServiceCollectionExtensions
     {
         public static IServiceCollection AddAnchorIndexPostgresStorage(

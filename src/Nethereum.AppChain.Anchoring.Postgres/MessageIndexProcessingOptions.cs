@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Message index options")]
     public sealed class MessageIndexProcessingOptions
     {
         public string RpcUrl { get; set; } = "";
@@ -60,6 +61,7 @@ namespace Nethereum.AppChain.Anchoring.Postgres
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Source chain option")]
     public sealed class SourceChainOption
     {
         public ulong ChainId { get; set; }

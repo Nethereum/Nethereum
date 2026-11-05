@@ -10,6 +10,7 @@ using Nethereum.AppChain.Server.Configuration;
 using Nethereum.ChainNode.Hosting.Configuration;
 using Nethereum.Signer;
 using Xunit;
+using Nethereum.Documentation;
 
 namespace Nethereum.AppChain.IntegrationTests
 {
@@ -17,6 +18,7 @@ namespace Nethereum.AppChain.IntegrationTests
     public class AppChainEphemeralDevKeyTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Compose with generated ephemeral dev keys", Order = 1)]
         public async Task Given_NoIdentityFlagsAtAll_When_AppChainComposes_Then_ItGeneratesEphemeralKeysAndLogsDevMode()
         {
             var config = BareConfig();

@@ -13,6 +13,8 @@ namespace Nethereum.AppChain.Anchoring.Messaging
     {
         private readonly ConcurrentDictionary<ulong, LeanIncrementalMerkleTree<byte[]>> _chainTrees = new();
         private readonly ConcurrentDictionary<ulong, ulong> _lastProcessedIds = new();
+        private readonly ConcurrentDictionary<ulong, ulong> _lastProcessedIdsByTarget = new();
+        private readonly object _appendLock = new object();
         private readonly ConcurrentDictionary<ulong, object> _chainLocks = new();
         private readonly IHashProvider _hashProvider;
         private readonly IByteArrayConvertor<byte[]> _byteArrayConvertor;
@@ -23,40 +25,50 @@ namespace Nethereum.AppChain.Anchoring.Messaging
             _byteArrayConvertor = new ByteArrayToByteArrayConvertor();
         }
 
-        public int AppendLeaf(ulong sourceChainId, MessageLeaf leaf)
+        public int AppendLeaf(ulong sourceChainId, MessageLeaf leaf) =>
+            AppendLeaf(sourceChainId, sourceChainId, leaf);
+
+        public int AppendLeaf(ulong sourceChainId, ulong targetChainId, MessageLeaf leaf)
         {
             if (leaf == null) throw new ArgumentNullException(nameof(leaf));
             if (leaf.AppChainTxHash == null || leaf.AppChainTxHash.Length == 0)
                 throw new ArgumentException("Leaf must have a non-empty AppChainTxHash", nameof(leaf));
 
-            var lockObj = _chainLocks.GetOrAdd(sourceChainId, _ => new object());
-
-            lock (lockObj)
+            lock (_appendLock)
             {
-                _lastProcessedIds.TryGetValue(sourceChainId, out var lastId);
+                _lastProcessedIdsByTarget.TryGetValue(targetChainId, out var lastId);
                 if (leaf.MessageId != lastId + 1 && lastId != 0)
                 {
                     if (leaf.MessageId <= lastId)
                         throw new InvalidOperationException(
-                            $"Duplicate or out-of-order message: chain={sourceChainId} messageId={leaf.MessageId} lastProcessed={lastId}");
+                            $"Duplicate or out-of-order message: chain={targetChainId} messageId={leaf.MessageId} lastProcessed={lastId}");
                     throw new InvalidOperationException(
-                        $"Non-contiguous message ID: chain={sourceChainId} messageId={leaf.MessageId} expected={lastId + 1}");
+                        $"Non-contiguous message ID: chain={targetChainId} messageId={leaf.MessageId} expected={lastId + 1}");
                 }
 
-                var tree = _chainTrees.GetOrAdd(sourceChainId, _ =>
-                    new LeanIncrementalMerkleTree<byte[]>(
-                        _hashProvider,
-                        _byteArrayConvertor,
-                        PairingConcatType.Sorted));
-
-                int leafIndex = tree.Size;
-                var encodedData = leaf.GetEncodedData();
-                tree.InsertLeaf(encodedData);
-
-                _lastProcessedIds[sourceChainId] = leaf.MessageId;
-
-                return leafIndex;
+                var lockObj = _chainLocks.GetOrAdd(sourceChainId, _ => new object());
+                lock (lockObj)
+                {
+                    return Append(sourceChainId, targetChainId, leaf);
+                }
             }
+        }
+
+        private int Append(ulong sourceChainId, ulong targetChainId, MessageLeaf leaf)
+        {
+            var tree = _chainTrees.GetOrAdd(sourceChainId, _ =>
+                new LeanIncrementalMerkleTree<byte[]>(
+                    _hashProvider,
+                    _byteArrayConvertor,
+                    PairingConcatType.Sorted));
+
+            int leafIndex = tree.Size;
+            tree.InsertLeaf(leaf.GetEncodedData());
+
+            _lastProcessedIds[sourceChainId] = leaf.MessageId;
+            _lastProcessedIdsByTarget[targetChainId] = leaf.MessageId;
+
+            return leafIndex;
         }
 
         public byte[] GetRoot(ulong sourceChainId)

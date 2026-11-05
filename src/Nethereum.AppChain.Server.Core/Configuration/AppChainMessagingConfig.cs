@@ -2,6 +2,7 @@ using System;
 
 namespace Nethereum.AppChain.Server.Configuration
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainMessagingConfig")]
     public sealed class AppChainMessagingConfig
     {
         public bool Enabled { get; set; }

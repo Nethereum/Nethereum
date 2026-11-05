@@ -63,13 +63,14 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                     }
                     else
                     {
+                        _logger?.LogWarning(
+                            "Message {MessageId} from chain {SourceChainId} is recorded as not executed: no message executor is configured",
+                            message.MessageId, message.SourceChainId);
                         execResult = new MessageExecutionResult
                         {
-                            TxHash = Sha3Keccack.Current.CalculateHash(
-                                System.Text.Encoding.UTF8.GetBytes(
-                                    $"{message.SourceChainId}:{message.MessageId}")),
-                            Success = true,
-                            GasUsed = 21000
+                            TxHash = new byte[32],
+                            Success = false,
+                            GasUsed = 0
                         };
                     }
 
@@ -86,7 +87,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
                         DataHash = dataHash
                     };
 
-                    int leafIndex = _accumulator.AppendLeaf(message.SourceChainId, leaf);
+                    int leafIndex = _accumulator.AppendLeaf(message.SourceChainId, message.TargetChainId, leaf);
 
                     if (_resultStore != null)
                     {

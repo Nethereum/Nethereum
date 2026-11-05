@@ -1,5 +1,6 @@
 namespace Nethereum.AppChain.Anchoring.Postgres.Entities
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Block proof record")]
     public class BlockProofRecord
     {
         public long Id { get; set; }

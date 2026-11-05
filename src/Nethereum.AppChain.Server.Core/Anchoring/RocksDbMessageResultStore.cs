@@ -7,6 +7,7 @@ using Nethereum.CoreChain.RocksDB;
 
 namespace Nethereum.AppChain.Server.Anchoring
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "RocksDbMessageResultStore")]
     public class RocksDbMessageResultStore : IMessageResultStore
     {
         private readonly RocksDbManager _manager;

@@ -30,8 +30,10 @@ Solidity smart contracts for the Nethereum AppChain anchoring and messaging syst
 | `CalldataStarkVerifier.sol` | Combined calldata + STARK hash verification. |
 | `PipelinePayloadVerifier.sol` | Validates multi-section encoded pipeline payloads (headers + proofs + DA reference). |
 | `MockProofVerifier.sol` | Test verifier that validates proof format without cryptography — returns `false` on malformed input (requires a 256-byte proof, at least 6 public inputs, non-zero commitment, non-zero chain identity, and correct batch block ordering). Does not verify the elliptic-curve pairing. |
-| `ZiskVerifierAdapter.sol` | Adapter wrapping the ZisK zkVM SNARK verifier (`IZiskVerifier`) to the `IVerifier` interface. |
-| `IZiskVerifier.sol` | ZisK-specific SNARK verifier interface (`verifySnarkProof`), the zkVM's native verifier bridged to `IVerifier` by `ZiskVerifierAdapter`. |
+| `ZiskVerifierAdapter.sol` | Adapter wrapping the ZisK zkVM SNARK verifier (`IZiskVerifier`) to the `IVerifier` interface. It accepts a proof only when the first eight Zisk public values (32-bit words, each held in a 64-bit public) hold `keccak256(abi.encodePacked(publicInputs))`; a proof of the guest's generic outputs does not carry that commitment and is rejected by the adapter (it still verifies through `ZiskVerifier.verifySnarkProof`). |
+| `IZiskVerifier.sol` | ZisK-specific SNARK verifier interface (`verifySnarkProof(bytes32 programVK, bytes32 rootCVadcopFinal, bytes publicValues, bytes proofBytes)`), the zkVM's native verifier bridged to `IVerifier` by `ZiskVerifierAdapter`. |
+| `ZiskVerifier.sol` | Zisk 1.3.1-alpha PLONK verifier (copied from Zisk's `zisk-contracts`): implements `IZiskVerifier` over `PlonkVerifier`. `getRootCVadcopFinal()` returns the root a leaf proof is wrapped under; `verifySnarkProof` reverts with `InvalidProof` on a bad proof. The generated C# service is `Nethereum.AppChain.Anchoring.ZiskVerifier.ZiskVerifierService`. |
+| `PlonkVerifier.sol` | The snarkJS-generated PLONK verifier for the Zisk final circuit that `ZiskVerifier` inherits. |
 
 ## Proof System Registry
 

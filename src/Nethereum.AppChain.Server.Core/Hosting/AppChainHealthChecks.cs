@@ -8,6 +8,7 @@ using Nethereum.DevP2P.Sync.Abstractions;
 
 namespace Nethereum.AppChain.Server.Hosting
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "SequencerHealthCheck")]
     public class SequencerHealthCheck : IHealthCheck
     {
         private readonly ISequencer? _sequencer;
@@ -55,6 +56,7 @@ namespace Nethereum.AppChain.Server.Hosting
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "SyncHealthCheck")]
     public class SyncHealthCheck : IHealthCheck
     {
         private readonly IPeerPool? _peers;

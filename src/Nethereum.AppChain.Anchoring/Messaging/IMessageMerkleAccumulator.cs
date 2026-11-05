@@ -6,6 +6,7 @@ namespace Nethereum.AppChain.Anchoring.Messaging
     public interface IMessageMerkleAccumulator
     {
         int AppendLeaf(ulong sourceChainId, MessageLeaf leaf);
+        int AppendLeaf(ulong sourceChainId, ulong targetChainId, MessageLeaf leaf);
         byte[] GetRoot(ulong sourceChainId);
         MerkleProof GenerateProof(ulong sourceChainId, int leafIndex);
         int GetLeafCount(ulong sourceChainId);

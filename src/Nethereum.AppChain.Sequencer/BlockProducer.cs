@@ -19,6 +19,7 @@ namespace Nethereum.AppChain.Sequencer
         private readonly CoreChain.BlockProducer _coreBlockProducer;
         private readonly AppChainConfig _config;
         private readonly IBlockProductionStrategy? _strategy;
+        private readonly AppChainBlockProductionStrategy _defaultStrategy;
 
         public BlockProducer(
             IAppChain appChain,
@@ -37,21 +38,23 @@ namespace Nethereum.AppChain.Sequencer
             _appChain = appChain;
             _config = appChain.Config;
             _strategy = strategy;
-            var trieNodeStore = appChain.TrieNodes ?? new InMemoryContentNodeStore();
-            var resolvedCalculator = stateRootCalculator
-                ?? new IncrementalStateRootCalculator(appChain.State, trieNodeStore);
-
-            var activations = _config.ResolveActivations();
-            var engine = new BlockExecutor(
-                appChain.State,
-                appChain.Blocks,
-                activations,
+            _defaultStrategy = new AppChainBlockProductionStrategy(_config);
+            var trieNodeStore = appChain.TrieNodes;
+            var core = ExecutionStackFactory.BuildExecutor(
+                appChain.State, appChain.Blocks, trieNodeStore, trieNodeStore, uncles: null,
+                _config.ResolveActivations(),
                 chainConfigFactory: _ => _config,
                 hardforkConfigFactory: _config.ConfigForFork,
-                stateRootCalculator: resolvedCalculator,
-                rewardPolicy: NoRewardPolicy.Instance,
-                trieNodeStore: trieNodeStore,
-                authorResolver: strategy != null ? strategy.ResolveFeeRecipient : null);
+                options: new ExecutionStackOptions
+                {
+                    RewardPolicy = NoRewardPolicy.Instance,
+                    AuthorResolver = strategy != null ? strategy.ResolveFeeRecipient : null,
+                    StateRootCalculatorFactory = stateRootCalculator != null
+                        ? (Func<IStateStore, ITrieNodeStore, CoreChain.IIncrementalStateRootCalculator>)((_, _) => stateRootCalculator)
+                        : null
+                });
+            var engine = core.Executor;
+            var resolvedCalculator = core.Calculator;
 
             _coreBlockProducer = new CoreChain.BlockProducer(
                 engine,
@@ -62,7 +65,7 @@ namespace Nethereum.AppChain.Sequencer
                 appChain.State,
                 trieNodeStore,
                 resolvedCalculator,
-                orderingPolicy: MempoolNonceOrderingPolicy.Instance,
+                orderingPolicy: null,
                 blockHashProvider: blockHashProvider,
                 blockEncodingProvider: blockEncodingProvider,
                 blockRootsProvider: blockRootsProvider,
@@ -70,6 +73,49 @@ namespace Nethereum.AppChain.Sequencer
                 nodeCommitBlockContext: null,
                 blockAccessListStore: blockAccessListStore,
                 hardforkConfigFactory: _config.ConfigForFork);
+        }
+
+        public BlockProducer(
+            IAppChain appChain,
+            BlockExecutor engine,
+            CoreChain.IIncrementalStateRootCalculator stateRootCalculator,
+            ITrieNodeStore trieNodeStore,
+            IBlockProductionStrategy? strategy = null,
+            IBlockHashProvider? blockHashProvider = null,
+            IBlockEncodingProvider? blockEncodingProvider = null,
+            IBlockRootsProvider? blockRootsProvider = null,
+            IWithdrawalStore? withdrawalStore = null,
+            IBlockAccessListStore? blockAccessListStore = null,
+            BlockCommit? commit = null)
+        {
+            if (appChain == null) throw new ArgumentNullException(nameof(appChain));
+            if (engine == null) throw new ArgumentNullException(nameof(engine));
+            if (stateRootCalculator == null) throw new ArgumentNullException(nameof(stateRootCalculator));
+            if (trieNodeStore == null) throw new ArgumentNullException(nameof(trieNodeStore));
+
+            _appChain = appChain;
+            _config = appChain.Config;
+            _strategy = strategy;
+            _defaultStrategy = new AppChainBlockProductionStrategy(_config);
+
+            _coreBlockProducer = new CoreChain.BlockProducer(
+                engine,
+                appChain.Blocks,
+                appChain.Transactions,
+                appChain.Receipts,
+                appChain.Logs,
+                appChain.State,
+                trieNodeStore,
+                stateRootCalculator,
+                orderingPolicy: null,
+                blockHashProvider: blockHashProvider,
+                blockEncodingProvider: blockEncodingProvider,
+                blockRootsProvider: blockRootsProvider,
+                withdrawalStore: withdrawalStore,
+                nodeCommitBlockContext: null,
+                blockAccessListStore: blockAccessListStore,
+                hardforkConfigFactory: _config.ConfigForFork,
+                commit: commit);
         }
 
         /// <summary>
@@ -93,7 +139,7 @@ namespace Nethereum.AppChain.Sequencer
 
             var options = _strategy != null
                 ? _strategy.PrepareBlockOptions(nextBlockNumber, parentHeader)
-                : CreateDefaultBlockProductionOptions();
+                : _defaultStrategy.PrepareBlockOptions(nextBlockNumber, parentHeader);
 
             // EIP-7843. The sequencer is this chain's consensus layer, so it supplies the
             // slot as it supplies every other block field. Set after the options are built
@@ -116,20 +162,6 @@ namespace Nethereum.AppChain.Sequencer
             }
 
             return result;
-        }
-
-        private BlockProductionOptions CreateDefaultBlockProductionOptions()
-        {
-            return new BlockProductionOptions
-            {
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                Coinbase = _config.Coinbase,
-                BaseFee = _config.BaseFee,
-                BlockGasLimit = _config.BlockGasLimit,
-                ChainId = _config.ChainId,
-                Difficulty = 0,
-                ExtraData = System.Text.Encoding.UTF8.GetBytes($"AppChain:{_config.AppChainName}")
-            };
         }
     }
 }

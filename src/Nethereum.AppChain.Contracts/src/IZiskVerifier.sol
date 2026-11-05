@@ -1,17 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.20;
 
-/// @title IZiskVerifier — Zisk zkVM native verifier interface
-/// @notice From Zisk provingKeySnark. Verifies SNARK proofs with program-specific VK.
-/// @dev This is Zisk's native interface. Use ZiskVerifierAdapter to bridge to IVerifier.
+/// @title Zisk Verifier Interface
+/// @author SilentSig
+/// @notice This contract is the interface for the Zisk Verifier.
+/// @dev `verifySnarkProof` is the only ZisK-binding entry point. The deployed
+/// `ZiskVerifier` also carries `verifyProof`, the inherited raw PLONK verifier -- public
+/// because its assembly reads arguments at fixed calldata offsets -- which proves only
+/// that some proof satisfies some digest, with no ZisK statement attached. Note the names
+/// invert the usual convention: the raw one is the shorter.
 interface IZiskVerifier {
-    /// @param programVK Verification key for the RISC-V program (4 x uint64)
-    /// @param rootCVadcopFinal VADCOP final root commitment (4 x uint64)
-    /// @param publicValues Encoded public values (68 values: 4 rom_root + 64 inputs)
-    /// @param proofBytes The SNARK proof bytes
+    /// @notice Verifies a proof with given public values and vkey.
+    /// @dev Both keys MUST be constants of the calling contract, never values taken
+    /// from the submitted proof, or verification is self-keyed and authenticates
+    /// nothing. For an aggregated proof both are the recurser's verkey, and pinning
+    /// them together is what extends that recurser's leaf allow-list over the whole
+    /// fold tree.
+    /// @param programVK The identity committed by the proof: the ROM root of the
+    /// RISC-V program for a plain proof, the recursion domain for an aggregated one.
+    /// @param rootCVadcopFinal The recursion root the proof was wrapped under:
+    /// `ZiskVerifier.getRootCVadcopFinal()` for a leaf, the recurser's own verkey for
+    /// an aggregate. It is not fixed by the verifier because those differ.
+    /// @param publicValues The public values encoded as bytes.
+    /// @param proofBytes The proof of the program execution the Zisk zkVM encoded as bytes.
     function verifySnarkProof(
-        uint64[4] calldata programVK,
-        uint64[4] calldata rootCVadcopFinal,
+        bytes32 programVK,
+        bytes32 rootCVadcopFinal,
         bytes calldata publicValues,
         bytes calldata proofBytes
     ) external view;

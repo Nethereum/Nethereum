@@ -212,9 +212,11 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 var challengerPM = _fixture.CreateProofManagerServiceAs(_fixture.ChallengerWeb3);
                 var reqFn = new RequestBlockProofFunction { ChainId = chainId, BlockNumber = 3 };
                 reqFn.AmountToSend = bond;
-                await challengerPM.RequestBlockProofRequestAndWaitForReceiptAsync(reqFn);
+                var requestReceipt = await challengerPM.RequestBlockProofRequestAndWaitForReceiptAsync(reqFn);
+                var requestBlock = await _fixture.L1Node.GetBlockByNumberAsync(requestReceipt.BlockNumber.Value);
+                var windowElapsed = requestBlock.Timestamp + 86401 - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-                _fixture.L1Node.DevConfig.AddTimeOffset(86401);
+                _fixture.L1Node.DevConfig.AddTimeOffset(windowElapsed);
                 await _fixture.L1Node.MineBlockAsync();
 
                 try
@@ -231,7 +233,7 @@ namespace Nethereum.AppChain.Anchoring.IntegrationTests
                 }
                 finally
                 {
-                    _fixture.L1Node.DevConfig.AddTimeOffset(-86401);
+                    _fixture.L1Node.DevConfig.AddTimeOffset(-windowElapsed);
                 }
             }
             finally { l2.Dispose(); }

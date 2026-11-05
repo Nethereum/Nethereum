@@ -1,5 +1,6 @@
 namespace Nethereum.AppChain.Anchoring.Postgres.Entities
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Chain summary")]
     public class ChainAnchoringSummary
     {
         public long ChainId { get; set; }

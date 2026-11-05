@@ -24,6 +24,7 @@ using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.AppChain.Server.Hosting
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "Server hosting extensions")]
     public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddAppChainServer(

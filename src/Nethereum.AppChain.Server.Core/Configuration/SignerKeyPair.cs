@@ -2,6 +2,7 @@ using Nethereum.Signer;
 
 namespace Nethereum.AppChain.Server.Configuration
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "SignerKeyPair")]
     public sealed class SignerKeyPair
     {
         public string? PrivateKey { get; set; }

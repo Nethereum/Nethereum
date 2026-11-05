@@ -39,7 +39,7 @@ namespace Nethereum.AppChain
             _receiptStore = receiptStore ?? throw new ArgumentNullException(nameof(receiptStore));
             _logStore = logStore ?? throw new ArgumentNullException(nameof(logStore));
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-            _trieNodeStore = trieNodeStore;
+            _trieNodeStore = trieNodeStore ?? new InMemoryContentNodeStore();
         }
 
         public AppChainConfig Config => _config;

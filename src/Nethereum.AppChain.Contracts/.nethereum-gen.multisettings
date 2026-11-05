@@ -89,5 +89,18 @@
                 "generatorType": "ContractDefinition"
             }
         ]
+    },
+    {
+        "paths": [
+            "out/ZiskVerifier.sol/ZiskVerifier.json"
+        ],
+        "generatorConfigs": [
+            {
+                "baseNamespace": "Nethereum.AppChain.Anchoring",
+                "basePath": "../Nethereum.AppChain.Anchoring/ZiskVerifier",
+                "codeGenLang": 0,
+                "generatorType": "ContractDefinition"
+            }
+        ]
     }
 ]

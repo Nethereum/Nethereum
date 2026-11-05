@@ -14,6 +14,7 @@ using Nethereum.RPC.TransactionManagers;
 using Nethereum.Signer;
 using Nethereum.Web3.Accounts;
 using Xunit;
+using Nethereum.Documentation;
 
 namespace Nethereum.AppChain.IntegrationTests
 {
@@ -21,6 +22,7 @@ namespace Nethereum.AppChain.IntegrationTests
     public class AppChainCompositionTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Compose an AppChain node in process", Order = 1)]
         public Task Given_TheProductionAppChainComposition_When_ATestComposesANode_Then_ItGetsTheSameObjectsRunAsyncBuilds() =>
             ComposeAndRunAsync(IsolatedConfig(), composed =>
             {

@@ -86,7 +86,7 @@ Always returns true. For testing only.
 
 ### ZiskVerifierAdapter
 
-Adapts the ZisK zkVM Groth16 verifier (`IZiskVerifier`) to the standard `IVerifier` interface.
+Adapts the ZisK zkVM PLONK verifier (`IZiskVerifier`) to the standard `IVerifier` interface. `verify(proof, publicInputs)` takes `proof` as `[uint32 big-endian proof length][proofBytes][publicValues]` and requires the first eight Zisk public values to hold `keccak256(abi.encodePacked(publicInputs))`, so only a proof of a guest run that was given those anchor inputs is accepted.
 
 ## SNARK Public Inputs
 

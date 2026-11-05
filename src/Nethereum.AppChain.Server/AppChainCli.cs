@@ -26,6 +26,9 @@ namespace Nethereum.AppChain.Server
         public Option<string> DbPath { get; } = new Option<string>(new[] { "--db-path", "--data-dir" }, () => "./appchain-data", "Database path");
         public Option<bool> InMemory { get; } = new Option<bool>("--in-memory", () => false, "Use in-memory storage");
         public Option<string?> L1Rpc { get; } = new Option<string?>("--l1-rpc", "L1 RPC URL for anchoring");
+        public Option<string?> RpcModules { get; } = new Option<string?>("--rpc-modules", "Comma-separated JSON-RPC modules to serve (default eth,net,web3; also txpool, debug, admin)");
+        public Option<string?> RpcVhosts { get; } = new Option<string?>("--rpc-vhosts", "Comma-separated Host header names the RPC listener accepts besides localhost and the bind address (\"*\" accepts any)");
+        public Option<string?> WsOrigins { get; } = new Option<string?>("--ws-origins", "Comma-separated browser Origins allowed to open /ws (\"*\" accepts any; none by default)");
         public Option<string?> AnchorContract { get; } = new Option<string?>("--anchor-contract", "Anchor contract address on L1");
         public Option<string> ConsensusMode { get; } = new Option<string>("--consensus", () => "single-sequencer", "Consensus mode: single-sequencer or clique");
         public Option<bool> EnableDevP2PServe { get; } = new Option<bool>("--enable-devp2p-serve", () => false, "Serve eth/snap over RLPx DevP2P (lets snap-sync followers cold-sync from this node)");
@@ -63,6 +66,9 @@ namespace Nethereum.AppChain.Server
             yield return DbPath;
             yield return InMemory;
             yield return L1Rpc;
+            yield return RpcModules;
+            yield return RpcVhosts;
+            yield return WsOrigins;
             yield return AnchorContract;
             yield return ConsensusMode;
             yield return EnableDevP2PServe;
@@ -128,7 +134,7 @@ namespace Nethereum.AppChain.Server
 
             Apply(options.EnableDevP2PServe, v => config.Node.Network.Serve = v);
             Apply(options.DevP2PServePort, v => config.Node.Network.ListenPort = v);
-            Apply(options.DevP2PPeers, v => config.Node.Network.TrustedPeers = v ?? Array.Empty<string>());
+            Apply(options.DevP2PPeers, v => config.Node.Network.TrustedPeers = ChainNodeNetworkConfig.SplitEnodeList(v));
             Apply(options.NodeKeyHex, v => config.Node.Network.NodeKeyHex = v);
             Apply(options.NodeKeyFile, v => config.Node.Network.NodeKeyFile = v);
 
@@ -148,6 +154,9 @@ namespace Nethereum.AppChain.Server
             Apply(options.CliqueEpoch, v => config.Consensus.Clique.EpochLength = v);
 
             Apply(options.L1Rpc, v => config.Anchoring.L1RpcUrl = v);
+            Apply(options.RpcModules, v => config.Node.Rpc.Modules = v ?? Nethereum.CoreChain.Rpc.RpcModuleSet.DefaultModules);
+            Apply(options.RpcVhosts, v => config.Node.Rpc.AllowedHosts = v ?? string.Empty);
+            Apply(options.WsOrigins, v => config.Node.Rpc.AllowedOrigins = v ?? string.Empty);
             Apply(options.AnchorContract, v => config.Anchoring.ContractAddress = v);
 
             Apply(options.EnableMessaging, v => config.Messaging.Enabled = v);

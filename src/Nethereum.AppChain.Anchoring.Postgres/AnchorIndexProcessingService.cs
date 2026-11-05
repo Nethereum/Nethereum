@@ -14,6 +14,7 @@ using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Anchor indexer")]
     public class AnchorIndexProcessingService
     {
         private readonly AnchorIndexDbContext _context;

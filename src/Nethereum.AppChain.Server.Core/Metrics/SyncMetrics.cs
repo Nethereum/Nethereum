@@ -6,6 +6,7 @@ using System.Threading;
 
 namespace Nethereum.AppChain.Server.Metrics
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "SyncMetrics")]
     public class SyncMetrics : IDisposable
     {
         private readonly string _chainId;

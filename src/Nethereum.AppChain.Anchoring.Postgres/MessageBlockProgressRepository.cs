@@ -8,6 +8,7 @@ using Nethereum.BlockchainProcessing.ProgressRepositories;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Message block progress repository")]
     public class MessageBlockProgressRepository : IBlockProgressRepository
     {
         private readonly MessageIndexDbContext _context;

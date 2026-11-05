@@ -35,4 +35,13 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
+    <Compile Include="..\Shared\ZiskHost.cs" Link="Shared\ZiskHost.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Fixtures\zisk_*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

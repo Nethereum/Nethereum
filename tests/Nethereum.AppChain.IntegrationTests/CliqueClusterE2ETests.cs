@@ -121,7 +121,7 @@ namespace Nethereum.AppChain.IntegrationTests
             Assert.NotEqual(meshedHash.ToHex(), isolatedHash.ToHex());
         }
 
-        [Fact(Skip = "Re-verified after landing DifficultyForkChoice/PushedBlockSource wiring (2026-09-17): the fork-choice/reorg gap (R1) this skip used to cite is closed, but the cluster still times out at 'cluster only reached height 2 while importing block 3' — a separate, still-open gap in deterministic on-demand block propagation across nodes. See docs/internal/appchain-clique-signer-rotation.md.")]
+        [Fact]
         public async Task Given_ThreeOfFourSignersVoteToAuthorizeASpareSigner_When_QuorumIsReached_Then_TheSpareJoinsAndSealsWithoutAFork()
         {
             await using var cluster = await CliqueCluster.StartWithASpareSignerAsync(size: 4, signingCount: 3, onDemand: true);
@@ -177,7 +177,7 @@ namespace Nethereum.AppChain.IntegrationTests
             Assert.Equal(spareAddress.ToLowerInvariant(), cluster.Nodes[0].Engine.RecoverSigner(spareHeader));
         }
 
-        [Fact(Skip = "Re-verified after landing DifficultyForkChoice/PushedBlockSource wiring (2026-09-17): the fork-choice/reorg gap (R1) this skip used to cite is closed, but the cluster still times out at 'cluster only reached height 2 while importing block 3' — a separate, still-open gap in deterministic on-demand block propagation across nodes. See docs/internal/appchain-clique-signer-rotation.md.")]
+        [Fact]
         public async Task Given_TwoOfThreeSignersVoteToDeauthorizeASibling_When_QuorumIsReached_Then_TheRemovedSignersNextBlockIsRejectedByEveryGate()
         {
             await using var cluster = await CliqueCluster.StartMeshedAsync(size: 3, onDemand: true);
@@ -230,6 +230,8 @@ namespace Nethereum.AppChain.IntegrationTests
             var nextHeight = (long)parentHeight + 1;
             var parentHash = await survivorForGate.Bundle.Blocks.GetHashByNumberAsync(parentHeight);
 
+            var parentHeader = await survivorForGate.Bundle.Blocks.GetByNumberAsync(parentHeight);
+
             var rejectedHeader = new BlockHeader
             {
                 BlockNumber = nextHeight,
@@ -238,7 +240,7 @@ namespace Nethereum.AppChain.IntegrationTests
                 MixHash = new byte[32],
                 Nonce = CliqueEngine.NONCE_DROP,
                 ExtraData = target.Engine.PrepareExtraData(nextHeight),
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                Timestamp = target.Engine.NextBlockTimestamp(parentHeader)
             };
             target.Engine.InsertSignature(rejectedHeader.ExtraData, target.Engine.SignBlock(rejectedHeader));
 
@@ -530,6 +532,8 @@ namespace Nethereum.AppChain.IntegrationTests
                     appChainConfig, cliqueEngine, loggerFactory.CreateLogger<CliqueBlockProductionStrategy>(),
                     proposalStore);
 
+                var chainWriteGate = new Nethereum.CoreChain.Sync.AsyncGate();
+                var core = new AppChainExecutionCore(appChainConfig, bundle, cliqueEngine, loggerFactory);
                 var sequencerConfig = new SequencerConfig
                 {
                     SequencerAddress = config.Consensus.Sequencer.Address!,
@@ -547,21 +551,22 @@ namespace Nethereum.AppChain.IntegrationTests
                     blockProductionStrategy: cliqueStrategy,
                     logger: loggerFactory.CreateLogger<Nethereum.AppChain.Sequencer.Sequencer>(),
                     nodeId: $"Node-{config.Consensus.Clique.Signer.Address}",
-                    stateRootCalculator: new IncrementalStateRootCalculator(bundle.State, bundle.TrieNodes),
-                    blockAccessListStore: bundle.BlockAccessLists);
+                    blockProducer: new Nethereum.AppChain.Sequencer.BlockProducer(
+                        appChain, core.Executor, core.StateRoot, bundle.TrieNodes,
+                        strategy: cliqueStrategy, blockAccessListStore: bundle.BlockAccessLists),
+                    chainWriteGate: chainWriteGate,
+                    commitHead: bundle.Metadata.Commit);
 
-                if (chainNode.Listener != null && chainNode.Mempool != null)
+                if (chainNode.BlockRangeAnnouncer != null)
                 {
-                    var blockPublisher = new DevP2PProducedBlockPublisher(
-                        chainNode.Mempool.BroadcastPool,
-                        bundle.Transactions,
-                        loggerFactory.CreateLogger<DevP2PProducedBlockPublisher>());
-                    sequencer.BlockProduced += blockPublisher.OnBlockProduced;
+                    var announcer = chainNode.BlockRangeAnnouncer;
+                    announcer.AnnounceInterval = 1;
+                    sequencer.BlockProduced += (_, _) => announcer.Signal();
                 }
 
                 var followerLifetime = CancellationTokenSource.CreateLinkedTokenSource(parentCt);
                 var followerTask = Task.Run(() => RunForwardExecuteImportLoopAsync(
-                    config, chainNode, cliqueEngine, loggerFactory, followerLifetime.Token));
+                    config, chainNode, core, loggerFactory, chainWriteGate, followerLifetime.Token));
 
                 return new CliqueSignerNode(chainNode, sequencer, followerLifetime, followerTask, proposalStore, cliqueEngine)
                 {
@@ -571,62 +576,30 @@ namespace Nethereum.AppChain.IntegrationTests
 
             private static async Task RunForwardExecuteImportLoopAsync(
                 AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode chainNode,
-                CliqueEngine cliqueEngine, ILoggerFactory loggerFactory, CancellationToken ct)
+                AppChainExecutionCore core, ILoggerFactory loggerFactory, Nethereum.CoreChain.Sync.AsyncGate chainWriteGate,
+                CancellationToken ct)
             {
                 var sync = chainNode.Sync;
                 if (sync == null) return;
 
                 var logger = loggerFactory.CreateLogger("Nethereum.AppChain.IntegrationTests.CliqueForwardExecuteFollower");
                 var bundle = chainNode.Bundle;
-                var activations = new FixedChainActivations(HardforkNames.Parse("prague"));
-                var chainConfig = new ChainConfig
-                {
-                    ChainId = config.ChainId,
-                    BaseFee = BigInteger.Zero,
-                    Coinbase = config.Consensus.Sequencer.Address ?? ""
-                };
-                var hardforkConfig = chainConfig.GetHardforkConfig();
-
-                Nethereum.CoreChain.Sync.IBlockExecutor ExecutorFactory(IChainStoreBundle b)
-                {
-                    var inner = new BlockImporter(
-                        new BlockExecutor(
-                            b.State, b.Blocks, activations,
-                            chainConfigFactory: _ => chainConfig,
-                            hardforkConfigFactory: _ => hardforkConfig,
-                            stateRootCalculator: new IncrementalStateRootCalculator(
-                                b.State, b.StateTrieNodes,
-                                emitTombstones: !ReferenceEquals(b.StateTrieNodes, b.TrieNodes)),
-                            rewardPolicy: NoRewardPolicy.Instance,
-                            trieNodeStore: b.TrieNodes,
-                            logger: loggerFactory.CreateLogger<BlockExecutor>(),
-                            authorResolver: h => cliqueEngine.RecoverSigner(h) ?? h.Coinbase),
-                        b.Blocks, b.State, b.Transactions, b.Receipts, b.Logs,
-                        uncleStore: b.Uncles,
-                        logger: loggerFactory.CreateLogger<BlockImporter>(),
-                        nodeCommitBlockContext: null, atomicFlush: null, flushCadence: null,
-                        blockAccessListStore: b.BlockAccessLists);
-
-                    return new ConsensusGatedBlockExecutor(
-                        inner,
-                        new CliqueConsensusBlockGate(cliqueEngine, b.Blocks, loggerFactory.CreateLogger<CliqueConsensusBlockGate>()),
-                        loggerFactory.CreateLogger<ConsensusGatedBlockExecutor>());
-                }
-
                 var startBlock = bundle.Metadata.GetLastBlock() + 1;
                 var policy = new StrictValidationPolicy(
                     continueOnMismatch: false, anchorEvery: 0, logger: loggerFactory.CreateLogger<StrictValidationPolicy>());
 
                 try
                 {
-                    IChainForkChoice forkChoice = new DifficultyForkChoice(bundle.Blocks);
+                    IChainForkChoice forkChoice = new DifficultyForkChoice(core.SideChain.Blocks);
+                    core.SideChain.UseForkChoice(forkChoice);
                     await new FollowerService(forkChoice).RunAsync(
-                        sync.BlockSource,
+                        new Nethereum.DevP2P.Sync.FullSync.FollowingBlockSource(
+                            sync.BlockSource, sync.Pool, number => bundle.Blocks.GetHashByNumberAsync((System.Numerics.BigInteger)number)),
                         () => bundle,
-                        ExecutorFactory,
+                        _ => core.CreateImporter(),
                         policy,
                         sync.Tip,
-                        new FollowerOptions(StartBlock: startBlock, CheckpointEvery: 0, AnchorEvery: 0),
+                        new FollowerOptions(StartBlock: startBlock, CheckpointEvery: 0, AnchorEvery: 0) { ChainWriteGate = chainWriteGate, AfterRewindAsync = core.ChainRewrittenAsync },
                         ct,
                         logger).ConfigureAwait(false);
                 }

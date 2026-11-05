@@ -61,6 +61,24 @@ namespace Nethereum.AppChain.UnitTests
         }
 
         [Fact]
+        public async Task Given_an_AppChain_constructed_without_a_trie_node_store_When_it_is_initialised_Then_the_genesis_root_is_walkable_from_its_TrieNodes()
+        {
+            var blocks = new InMemoryBlockStore();
+            var state = new InMemoryStateStore();
+            var appChain = new AppChain(
+                PragueConfig(), blocks, new InMemoryTransactionStore(blocks),
+                new InMemoryReceiptStore(), new InMemoryLogStore(), state);
+
+            await appChain.InitializeAsync();
+
+            var genesisRoot = (await blocks.GetByNumberAsync(0)).StateRoot;
+            Assert.NotNull(appChain.TrieNodes);
+            var trie = PatriciaTrie.LoadFromStorage(genesisRoot, appChain.TrieNodes);
+            foreach (var address in (await state.GetAllAccountsAsync()).Keys)
+                Assert.NotEmpty(trie.Get(HashedAddressKey(address)));
+        }
+
+        [Fact]
         public async Task Given_AGenesisAccountWithNonEmptyStorage_When_ItIsBuilt_Then_ItsAccountRecordsThatStorageRoot()
         {
             var g = new Genesis();

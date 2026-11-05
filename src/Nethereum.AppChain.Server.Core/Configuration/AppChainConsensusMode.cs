@@ -2,6 +2,7 @@ using System;
 
 namespace Nethereum.AppChain.Server.Configuration
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainConsensusMode")]
     public enum AppChainConsensusMode
     {
         SingleSequencer,
@@ -9,6 +10,7 @@ namespace Nethereum.AppChain.Server.Configuration
         Clique,
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainConsensusModeParser")]
     public static class AppChainConsensusModeParser
     {
         public const string SingleSequencerName = "single-sequencer";

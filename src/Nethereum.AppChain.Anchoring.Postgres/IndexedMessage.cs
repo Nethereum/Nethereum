@@ -2,6 +2,7 @@ using System;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Indexed message")]
     public class IndexedMessage
     {
         public long Id { get; set; }

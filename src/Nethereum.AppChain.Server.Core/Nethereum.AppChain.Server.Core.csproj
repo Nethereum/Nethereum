@@ -9,6 +9,7 @@
     <RootNamespace>Nethereum.AppChain.Server</RootNamespace>
     <AssemblyName>Nethereum.AppChain.Server.Core</AssemblyName>
     <PackageId>Nethereum.AppChain.Server.Core</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum AppChain Server core — the reusable composition (storage, chain, sequencer, sync, DevP2P serve) consumed by the AppChain.Server CLI and Aspire hosts.</Description>
     <AssemblyTitle>Nethereum.AppChain.Server.Core</AssemblyTitle>
     <Version>$(NethereumVersionPreview)</Version>
@@ -31,7 +32,18 @@
     <ProjectReference Include="..\Nethereum.Consensus.Clique\Nethereum.Consensus.Clique.csproj" />
     <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
     <ProjectReference Include="..\Nethereum.ChainNode.Hosting\Nethereum.ChainNode.Hosting.csproj" />
-    <ProjectReference Include="..\..\aspire\shared\Nethereum.Aspire.ServiceDefaults\Nethereum.Aspire.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

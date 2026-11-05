@@ -20,7 +20,7 @@ Run it with no arguments:
 nethereum-appchain
 ```
 
-With no genesis owner, sequencer, or Clique signer identity supplied, the server generates ephemeral keys in memory, logs `AppChain dev mode: generated ephemeral keys (NOT for production)`, and starts producing blocks straight away — single-sequencer consensus, RocksDB storage under `./appchain-data`, JSON-RPC on `http://127.0.0.1:8546`. This is the fastest way to get an AppChain running locally; the generated keys are lost on restart, so it is not for anything you need to come back to (`AppChainComposition.ApplyEphemeralDevKeys`, `src/Nethereum.AppChain.Server.Core/AppChainComposition.cs:136-142`, gated by `AppChainServerConfig.IsFullyUnconfigured`, `src/Nethereum.AppChain.Server.Core/Configuration/AppChainServerConfig.cs:42-45`).
+With no genesis owner, sequencer, or Clique signer identity supplied, the server generates ephemeral keys in memory, logs `AppChain dev mode: generated ephemeral keys (NOT for production)`, and starts producing blocks straight away — single-sequencer consensus, RocksDB storage under `./appchain-data`, JSON-RPC on `http://127.0.0.1:8546`. This is the fastest way to get an AppChain running locally; the generated keys are lost on restart, so it is not for anything you need to come back to (`AppChainComposition.ApplyEphemeralDevKeys`, gated by `AppChainServerConfig.IsFullyUnconfigured`).
 
 For anything persistent, supply your own keys:
 
@@ -48,7 +48,7 @@ nethereum-appchain \
   --follow-peer enode://PRODUCER_PUBKEY@sequencer:30403
 ```
 
-Follower mode requires **both** `--genesis-owner-address` and `--sequencer-address` — the server needs to know who it's trusting before it will import a single block (`AppChainServerConfigValidator.ValidateOperatorKeys`, `src/Nethereum.AppChain.Server.Core/Configuration/AppChainServerConfigValidator.cs:46-61`).
+Follower mode requires **both** `--genesis-owner-address` and `--sequencer-address` — the server needs to know who it's trusting before it will import a single block (`AppChainServerConfigValidator.ValidateOperatorKeys`).
 
 ### Clique multi-validator
 
@@ -73,13 +73,13 @@ nethereum-appchain \
   --devp2p-peers enode://VALIDATOR1_PUBKEY@127.0.0.1:30403
 ```
 
-Clique consensus additionally requires `--signer-key` (unless following), at least one `--initial-signers` entry, and at least one DevP2P peer to reach — each is enforced at startup with a specific error, not a silent no-op (`AppChainServerConfigValidator.ValidateClique`, `src/Nethereum.AppChain.Server.Core/Configuration/AppChainServerConfigValidator.cs:67-81`).
+Clique consensus additionally requires `--signer-key` (unless following), at least one `--initial-signers` entry, and at least one DevP2P peer to reach — each is enforced at startup with a specific error, not a silent no-op (`AppChainServerConfigValidator.ValidateClique`).
 
 ## HTTP endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/` | JSON-RPC 2.0 (all `eth_*`, `web3_*`, `net_*`, plus `admin_*`) |
+| POST | `/` | JSON-RPC 2.0 (`eth_*`, `web3_*`, `net_*`; `txpool_*`, `debug_*` and `admin_*` only with `--rpc-modules`) |
 | WS | `/ws` | WebSocket JSON-RPC (`eth_subscribe`, `eth_unsubscribe`) |
 | GET | `/health` | Health check |
 | GET | `/status` | Chain ID, block number, RPC URL, consensus mode, sequencer status |
@@ -90,11 +90,11 @@ Clique consensus additionally requires `--signer-key` (unless following), at lea
 | GET | `/finality` | Finality tracker status |
 | GET | `/finality/{blockNumber}` | Block finality status |
 
-(`AppChainServerRunner.MapEndpoints`, `src/Nethereum.AppChain.Server.Core/AppChainServerRunner.cs:365-457`; `LiveBlockEndpoints.MapLiveBlockEndpoints`, `src/Nethereum.AppChain.Server.Core/Endpoints/LiveBlockEndpoints.cs:19`.)
+(`AppChainServerRunner.MapEndpoints`; `LiveBlockEndpoints.MapLiveBlockEndpoints`.)
 
 ## CLI options
 
-Every option below is defined in `AppChainCliOptions` (`src/Nethereum.AppChain.Server/AppChainCli.cs:12-86`) — `Program.cs` just wires it up. This is the full set the tool understands today.
+Every option below is defined in `AppChainCliOptions` — `Program.cs` just wires it up. This is the full set the tool understands today.
 
 ### Server / RPC
 
@@ -105,6 +105,9 @@ Every option below is defined in `AppChainCliOptions` (`src/Nethereum.AppChain.S
 | `--chain-id` | `420420` | Chain ID |
 | `--name` | `AppChain` | Chain name |
 | `--otlp-endpoint` | | OpenTelemetry OTLP endpoint URL (falls back to `OTEL_EXPORTER_OTLP_ENDPOINT` env var) |
+| `--rpc-modules` | `eth,net,web3` | Comma-separated JSON-RPC modules to serve; `txpool`, `debug` and `admin` are opt-in, an unknown name is refused |
+| `--rpc-vhosts` | (empty) | Comma-separated `Host` header names the RPC listener accepts besides `localhost`, IP addresses and the bind address (`*` accepts any) |
+| `--ws-origins` | (empty) | Comma-separated browser origins allowed to open `/ws` (`*` accepts any; none by default) |
 
 ### Genesis & keys
 
@@ -138,7 +141,7 @@ Leave all four unset and the server generates ephemeral keys itself — see [Get
 | `--consensus` | `single-sequencer` | Consensus mode: `single-sequencer` or `clique` |
 | `--enable-devp2p-serve` | `false` | Serve eth/snap over RLPx DevP2P (lets snap-sync followers cold-sync from this node) |
 | `--devp2p-serve-port` (alias `--listen-port`) | `30403` | DevP2P eth/snap serve listen port |
-| `--devp2p-peers` (alias `--trusted-peer`) | (empty) | Peer enodes to dial and trust (replaces `--sync-peers` and `--bootstrap-nodes`) |
+| `--devp2p-peers` (alias `--trusted-peer`) | (empty) | Peer enodes to dial and trust (replaces `--sync-peers` and `--bootstrap-nodes`); a comma-separated list is split into entries, and a malformed enode refuses the start |
 | `--node-key-hex` | | Hex-encoded DevP2P node identity private key (pins a stable enode across restarts) |
 | `--node-key-file` | | Persisted DevP2P node identity key file (default: `<db-path>/nodekey`, created on first run) |
 | `--follow-peer` | | Enode of the node to follow; syncs from it over DevP2P instead of producing blocks |

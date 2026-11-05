@@ -4,6 +4,7 @@ using Nethereum.AppChain.Anchoring.Postgres.Entities;
 
 namespace Nethereum.AppChain.Anchoring.Postgres.Repositories
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Anchor record repository")]
     public interface IAnchorRecordRepository
     {
         Task UpsertAsync(AnchorRecord record);
@@ -13,6 +14,7 @@ namespace Nethereum.AppChain.Anchoring.Postgres.Repositories
         Task<int> GetCountByChainAsync(long chainId);
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Chain registration repository")]
     public interface IChainRegistrationRepository
     {
         Task UpsertAsync(ChainRegistration registration);
@@ -20,6 +22,7 @@ namespace Nethereum.AppChain.Anchoring.Postgres.Repositories
         Task<IReadOnlyList<ChainRegistration>> GetAllAsync();
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Block proof repository")]
     public interface IBlockProofRecordRepository
     {
         Task UpsertAsync(BlockProofRecord record);
@@ -27,6 +30,7 @@ namespace Nethereum.AppChain.Anchoring.Postgres.Repositories
         Task<bool> IsBlockProvenAsync(long chainId, long blockNumber);
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Chain summary repository")]
     public interface IChainAnchoringSummaryRepository
     {
         Task UpsertAsync(ChainAnchoringSummary summary);

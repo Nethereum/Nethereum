@@ -4,6 +4,7 @@ using Nethereum.ChainNode.Hosting.Configuration;
 
 namespace Nethereum.AppChain.Server.Configuration
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainServerConfigValidator")]
     public static class AppChainServerConfigValidator
     {
         public static void Validate(AppChainServerConfig config)
@@ -15,6 +16,8 @@ namespace Nethereum.AppChain.Server.Configuration
             ValidateBlockProduction(config);
             ValidateOperatorKeys(config);
             ValidateDiscovery(config);
+            ChainNodeProducerValidator.Validate(config.Node.Producer, "AppChain:Node:Producer");
+            ChainNodeEnodeValidator.RefuseMalformed(config.Node, "AppChain:Node");
 
             if (config.Consensus.Mode == AppChainConsensusMode.Clique)
                 ValidateClique(config);
@@ -58,6 +61,14 @@ namespace Nethereum.AppChain.Server.Configuration
                 "Genesis owner private key is required for sequencer mode (--genesis-owner-key)");
             RequireCanSign(config.Consensus.Sequencer,
                 "Sequencer private key is required for sequencer mode (--sequencer-key)");
+
+            if (config.Consensus.Mode == AppChainConsensusMode.SingleSequencer && config.Consensus.Sequencer.IsIdentified
+                && !string.Equals(
+                    config.Consensus.Sequencer.Address,
+                    new Nethereum.Signer.EthECKey(config.Consensus.Sequencer.PrivateKey).GetPublicAddress(),
+                    StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    "Sequencer address does not belong to the sequencer private key: followers verify every block against that address");
         }
 
 

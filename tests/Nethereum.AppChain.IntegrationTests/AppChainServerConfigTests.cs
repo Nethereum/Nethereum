@@ -3,6 +3,7 @@ using Nethereum.AppChain.Server.Configuration;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Xunit;
+using Nethereum.Documentation;
 
 namespace Nethereum.AppChain.IntegrationTests
 {
@@ -17,6 +18,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Derive every role's address from its private key", Order = 1)]
         public void Given_OnlyPrivateKeys_When_AddressesAreDerived_Then_EveryRoleIsIdentified()
         {
             var config = Sequencer();
@@ -41,6 +43,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Validate a sequencer configuration", Order = 2)]
         public void Given_ASequencerWithKeys_When_ItIsValidated_Then_ItIsAccepted()
         {
             Sequencer().Validate();
@@ -53,6 +56,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Validate a follower configuration", Order = 3)]
         public void Given_AFollowerWithAddressesOnly_When_ItIsValidated_Then_ItIsAccepted()
         {
             var config = new AppChainServerConfig();
@@ -86,6 +90,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Validate a Clique signer configuration", Order = 4)]
         public void Given_CliqueReachingSiblingsOverDevP2P_When_ItIsValidated_Then_ItIsAccepted()
         {
             var config = Sequencer();
@@ -140,6 +145,15 @@ namespace Nethereum.AppChain.IntegrationTests
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Validate());
             Assert.Contains("discv4/discv5 peer discovery is not supported on this node type (AppChain)", ex.Message);
+        }
+
+        [Fact]
+        public void Given_TheDefaultNodeConfig_When_DiscoveryIsRead_Then_Discv5IsOff()
+        {
+            var config = new AppChainServerConfig();
+
+            Assert.True(config.Node.Network.Discovery.DisableDiscv5);
+            Assert.Equal(0, config.Node.Network.Discovery.Discv5Port);
         }
 
         [Fact]

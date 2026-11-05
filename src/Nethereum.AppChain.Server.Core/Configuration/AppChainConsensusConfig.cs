@@ -3,6 +3,7 @@ using Nethereum.AppChain.Sequencer.ProducerAuthority;
 
 namespace Nethereum.AppChain.Server.Configuration
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainConsensusConfig")]
     public sealed class AppChainConsensusConfig
     {
         public AppChainConsensusMode Mode { get; set; } = AppChainConsensusMode.SingleSequencer;
@@ -24,5 +25,16 @@ namespace Nethereum.AppChain.Server.Configuration
         public IProducerAuthority? ProducerAuthorityOverride { get; set; }
 
         public AppChainCliqueConfig Clique { get; set; } = new AppChainCliqueConfig();
+
+        public AppChainCliqueConfig ResolveClique() =>
+            Mode == AppChainConsensusMode.Clique
+                ? Clique
+                : new AppChainCliqueConfig
+                {
+                    Signer = Sequencer,
+                    InitialSigners = Sequencer.Address == null ? System.Array.Empty<string>() : new[] { Sequencer.Address },
+                    PeriodSeconds = 0,
+                    EpochLength = Clique.EpochLength
+                };
     }
 }

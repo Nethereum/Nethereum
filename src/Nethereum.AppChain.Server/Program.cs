@@ -15,6 +15,7 @@ namespace Nethereum.AppChain.Server
             {
                 var layeredConfiguration = AppChainCli.BuildLayeredConfiguration(args);
                 var config = AppChainCli.BuildConfig(context.ParseResult, options, layeredConfiguration);
+                config.Registry = AppChainPrecompileBackends.Build();
 
                 try
                 {

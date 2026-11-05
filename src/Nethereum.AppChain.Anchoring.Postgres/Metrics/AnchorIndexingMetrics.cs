@@ -5,6 +5,7 @@ using System.Threading;
 
 namespace Nethereum.AppChain.Anchoring.Postgres.Metrics
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Indexing metrics")]
     public class AnchorIndexingMetrics : IDisposable
     {
         private readonly Meter _meter;

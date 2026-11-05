@@ -21,6 +21,7 @@ namespace Nethereum.AppChain.IntegrationTests
             typeof(AppChainCli),
             typeof(DevChainCli),
             typeof(Microsoft.Extensions.Hosting.Extensions),
+            typeof(Nethereum.AppChain.Server.Metrics.AppChainPrometheusMetricsExtensions),
         };
 
         private static readonly HashSet<Type> SubConfigTypes = new HashSet<Type>
@@ -33,6 +34,7 @@ namespace Nethereum.AppChain.IntegrationTests
             typeof(ChainNodeRpcConfig),
             typeof(ChainNodeMaintenanceConfig),
             typeof(ChainNodeMempoolConfig),
+            typeof(ChainNodeProducerConfig),
         };
 
         private static IEnumerable<string> WalkLeafPropertyPaths(Type type, string prefix)
@@ -216,29 +218,50 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
-        public void Given_StorageFlushCadenceBlocksIsMarkedNotYetWired_When_BuildStorageOptionsRuns_Then_ItIsProvablyNotPresentOnTheResultingOptions()
+        public void Given_StorageFlushCadenceBlocks_When_TheDescriptorIsRead_Then_ItIsLiveOnEveryNodeKindThroughTheSharedCadenceRule()
         {
             var field = ChainNodeConfigSurface.All.Single(f => f.Path == "Storage.FlushCadenceBlocks");
-            Assert.IsType<ChainNodeFieldLiveness.NotYetWired>(field.LivenessOn(ChainNodeKind.AppChain));
-            Assert.IsType<ChainNodeFieldLiveness.NotYetWired>(field.LivenessOn(ChainNodeKind.DevChain));
 
-            var optionsType = typeof(Nethereum.CoreChain.RocksDB.RocksDbStorageOptions);
-            Assert.Null(optionsType.GetProperty("FlushCadenceBlocks"));
+            foreach (var kind in new[] { ChainNodeKind.AppChain, ChainNodeKind.DevChain })
+            {
+                var live = Assert.IsType<ChainNodeFieldLiveness.Live>(field.LivenessOn(kind));
+                Assert.Equal("Nethereum.CoreChain.FlushCadences", live.ConsumerTypeName);
+                Assert.Equal("ForBlocks", live.ConsumerMemberName);
+            }
         }
 
         [Fact]
-        public void Given_StorageFlushCadenceBlocksIsUnwiredOnBothNodeKinds_When_HelpAdvancedIsRendered_Then_ItIsHiddenFromBoth()
+        public void Given_StoragePrefetchWorkers_When_TheDescriptorIsRead_Then_ItIsDeclaredWithDefaultZeroAndMarkedNotYetWiredOnTheOtherNodeKinds()
         {
-            var field = ChainNodeConfigSurface.All.Single(f => f.Path == "Storage.FlushCadenceBlocks");
-            Assert.True(field.Hidden);
+            var field = ChainNodeConfigSurface.All.Single(f => f.Path == "Storage.PrefetchWorkers");
 
+            Assert.Equal("0", field.DefaultLiteral);
+            Assert.Equal(0, new ChainNodeStorageConfig().PrefetchWorkers);
+            foreach (var kind in new[] { ChainNodeKind.AppChain, ChainNodeKind.DevChain })
+                Assert.IsType<ChainNodeFieldLiveness.NotYetWired>(field.LivenessOn(kind));
+        }
+
+        [Fact]
+        public void Given_StorageStateRootWorkers_When_TheDescriptorIsRead_Then_ItIsDeclaredWithTheDefaultOfFourAndMarkedNotYetWiredOnTheOtherNodeKinds()
+        {
+            var field = ChainNodeConfigSurface.All.Single(f => f.Path == "Storage.StateRootWorkers");
+
+            Assert.Equal("4", field.DefaultLiteral);
+            Assert.Equal(4, new ChainNodeStorageConfig().StateRootWorkers);
+            foreach (var kind in new[] { ChainNodeKind.AppChain, ChainNodeKind.DevChain })
+                Assert.IsType<ChainNodeFieldLiveness.NotYetWired>(field.LivenessOn(kind));
+        }
+
+        [Fact]
+        public void Given_StorageFlushCadenceBlocksIsLive_When_HelpAdvancedIsRendered_Then_BothNodeKindsListIt()
+        {
             var appChainWriter = new StringWriter();
             ChainNodeConfigSurface.RenderAdvancedHelp(appChainWriter, "AppChain", ChainNodeKind.AppChain);
-            Assert.DoesNotContain("FlushCadenceBlocks", appChainWriter.ToString());
+            Assert.Contains("FlushCadenceBlocks", appChainWriter.ToString());
 
             var devChainWriter = new StringWriter();
             ChainNodeConfigSurface.RenderAdvancedHelp(devChainWriter, "DevChain", ChainNodeKind.DevChain);
-            Assert.DoesNotContain("FlushCadenceBlocks", devChainWriter.ToString());
+            Assert.Contains("FlushCadenceBlocks", devChainWriter.ToString());
         }
     }
 }

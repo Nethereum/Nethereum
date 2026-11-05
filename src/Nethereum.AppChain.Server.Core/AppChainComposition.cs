@@ -24,6 +24,7 @@ using Nethereum.AppChain.Sequencer.ProducerAuthority;
 
 namespace Nethereum.AppChain.Server
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainComposition")]
     public static class AppChainComposition
     {
         public static async Task<AppChainComposedNode> ComposeAsync(
@@ -39,11 +40,7 @@ namespace Nethereum.AppChain.Server
 
             EthECKey.SignRecoverable = true;
 
-            var appChainConfig = AppChainConfig.CreateWithName(config.ChainName, config.ChainId);
-            appChainConfig.ForkSchedule = config.ForkSchedule;
-            appChainConfig.SequencerAddress = config.Consensus.Sequencer.Address;
-            if (config.BaseFee.HasValue) appChainConfig.BaseFee = config.BaseFee.Value;
-            config.Node.Rpc.ApplyTo(appChainConfig);
+            var appChainConfig = AppChainExecutionCore.ChainConfigFor(config);
 
             Nethereum.EVM.ChainActivationsRegistry.Instance.Register(
                 (long)config.ChainId, config.ForkSchedule.ResolveActivations());
@@ -67,15 +64,25 @@ namespace Nethereum.AppChain.Server
                 bundle.Logs, bundle.State, bundle.TrieNodes);
 
             var sequencerConfig = produces ? BuildSequencerConfig(config) : null;
-            var sharedStateRootCalculator = new IncrementalStateRootCalculator(bundle.State, bundle.TrieNodes);
+            var cliqueEngine = BuildCliqueEngine(config, loggerFactory, bundle);
+            var core = new AppChainExecutionCore(
+                appChainConfig, bundle, cliqueEngine, loggerFactory, AppChainExecutionCore.FlushCadenceFor(config));
+            var chainWriteGate = produces && imports ? new AsyncGate() : null;
             var metrics = AppChainMetricsBundle.Create(config);
 
             var messaging = await ComposeMessagingAsync(config, chainNode, metrics, loggerFactory, logger);
 
-            var (sequencer, cliqueEngine, cliqueStrategy, producerAuthority, producerAuthorityNodeId, forkChoice) =
+            var (sequencer, cliqueStrategy, producerAuthority, producerAuthorityNodeId, forkChoice) =
                 ComposeConsensus(
-                    config, appChain, chainNode, sequencerConfig, sharedStateRootCalculator, metrics,
-                    messaging.Queue, messaging.Processor, bundle, loggerFactory, logger);
+                    config, appChain, chainNode, sequencerConfig, core, metrics,
+                    messaging.Queue, messaging.Processor, bundle, loggerFactory, logger, chainWriteGate);
+
+            if (core.CliqueGate != null)
+            {
+                await core.CliqueGate.RestoreHeadSnapshotAsync(ct);
+            }
+
+            AnnounceEveryBlock(chainNode, sequencer);
 
             if (imports)
             {
@@ -86,7 +93,7 @@ namespace Nethereum.AppChain.Server
                         loggerFactory.CreateLogger<Nethereum.DevP2P.Sync.Mempool.MempoolReorgReconciler>())
                     : null;
                 _ = Task.Run(() => AppChainDevP2PFollower.RunAsync(
-                    config, chainNode, loggerFactory, CancellationToken.None, cliqueEngine, forkChoice, mempoolReconciler));
+                    config, chainNode, loggerFactory, CancellationToken.None, core, chainWriteGate, forkChoice, mempoolReconciler));
             }
 
             var node = new AppChainNode(
@@ -106,8 +113,6 @@ namespace Nethereum.AppChain.Server
                 ? await DeployMudWorldAsync(config, node, logger)
                 : null;
 
-            WireProducedBlockPublisher(chainNode, sequencer, loggerFactory);
-
             return new AppChainComposedNode
             {
                 ChainNode = chainNode,
@@ -117,7 +122,7 @@ namespace Nethereum.AppChain.Server
                 Sequencer = sequencer,
                 CliqueEngine = cliqueEngine,
                 CliqueStrategy = cliqueStrategy,
-                StateRootCalculator = sharedStateRootCalculator,
+                StateRootCalculator = core.StateRoot,
                 FinalityTracker = new InMemoryFinalityTracker(),
                 MessageResultStore = messaging.ResultStore,
                 MessageAccumulator = messaging.Accumulator,
@@ -165,7 +170,7 @@ namespace Nethereum.AppChain.Server
                 : new InMemoryMessageResultStore();
             var messageAccumulator = new MessageMerkleAccumulator();
 
-            var rebuildCount = await messageAccumulator.RebuildFromStoreAsync(messageResultStore);
+            var rebuildCount = await messageAccumulator.RebuildFromStoreAsync(messageResultStore, (ulong)config.ChainId);
             if (rebuildCount > 0)
             {
                 logger.LogInformation(
@@ -178,7 +183,8 @@ namespace Nethereum.AppChain.Server
             {
                 messageQueue = new MessageQueue();
                 messageProcessor = new MessageProcessor(
-                    messageAccumulator, messageResultStore, logger: loggerFactory.CreateLogger<MessageProcessor>());
+                    messageAccumulator, messageResultStore,
+                    logger: loggerFactory.CreateLogger<MessageProcessor>());
                 logger.LogInformation(
                     "Cross-chain messaging enabled (poll interval: {Ms}ms)", config.Messaging.PollIntervalMs);
             }
@@ -186,7 +192,7 @@ namespace Nethereum.AppChain.Server
             return new AppChainMessagingComposition(messageResultStore, messageAccumulator, messageQueue, messageProcessor);
         }
 
-        private static (ISequencer? Sequencer, CliqueEngine? CliqueEngine, CliqueBlockProductionStrategy? CliqueStrategy,
+        private static (ISequencer? Sequencer, CliqueBlockProductionStrategy? CliqueStrategy,
             Nethereum.AppChain.Sequencer.ProducerAuthority.IProducerAuthority? ProducerAuthority, string? ProducerAuthorityNodeId,
             IChainForkChoice? ForkChoice)
             ComposeConsensus(
@@ -194,114 +200,113 @@ namespace Nethereum.AppChain.Server
                 Nethereum.AppChain.AppChain appChain,
                 Nethereum.ChainNode.Hosting.ChainNode chainNode,
                 SequencerConfig? sequencerConfig,
-                IncrementalStateRootCalculator stateRootCalculator,
-                AppChainMetricsBundle metrics,
-                IMessageQueue? messageQueue,
-                IMessageProcessor? messageProcessor,
-                IChainStoreBundle bundle,
-                ILoggerFactory loggerFactory,
-                ILogger logger)
-        {
-            var produces = config.ProducesBlocks;
-
-            if (config.Consensus.Mode == AppChainConsensusMode.Clique)
-            {
-                var (cliqueSequencer, cliqueEngine, cliqueStrategy) = ComposeCliqueConsensus(
-                    config, appChain, chainNode, sequencerConfig, stateRootCalculator, metrics,
-                    messageQueue, messageProcessor, bundle, loggerFactory, logger, produces);
-                IChainForkChoice cliqueForkChoice = new DifficultyForkChoice(bundle.Blocks);
-                return (cliqueSequencer, cliqueEngine, cliqueStrategy, null, null, cliqueForkChoice);
-            }
-
-            if (!produces) return (null, null, null, null, null, null);
-
-            var (producerAuthorityStrategy, producerAuthority, producerAuthorityNodeId) =
-                BuildProducerAuthorityStrategy(config, loggerFactory);
-            var nodeId = $"Node-{config.Consensus.Sequencer.Address?.Substring(0, 10)}";
-            var singleSequencer = new Nethereum.AppChain.Sequencer.Sequencer(
-                appChain,
-                sequencerConfig!,
-                txPool: chainNode.Mempool?.TxPool,
-                blockProductionStrategy: producerAuthorityStrategy,
-                messageQueue: messageQueue,
-                messageProcessor: messageProcessor,
-                logger: loggerFactory.CreateLogger<Nethereum.AppChain.Sequencer.Sequencer>(),
-                nodeId: nodeId,
-                stateRootCalculator: stateRootCalculator,
-                blockAccessListStore: bundle?.BlockAccessLists);
-
-            var sequencer = new InstrumentedSequencer(
-                singleSequencer, metrics.BlockProduction, metrics.TxPool, metrics.Sequencer);
-
-            IChainForkChoice? singleSequencerForkChoice = producerAuthority is ArbiterBackedProducerAuthority arbiterBacked
-                ? new LeaseAuthorityForkChoice(arbiterBacked.Arbiter, bundle.Blocks)
-                : null;
-
-            return (sequencer, null, null, producerAuthority, producerAuthorityNodeId, singleSequencerForkChoice);
-        }
-
-        private static (ISequencer? Sequencer, CliqueEngine? CliqueEngine, CliqueBlockProductionStrategy? CliqueStrategy)
-            ComposeCliqueConsensus(
-                AppChainServerConfig config,
-                Nethereum.AppChain.AppChain appChain,
-                Nethereum.ChainNode.Hosting.ChainNode chainNode,
-                SequencerConfig? sequencerConfig,
-                IncrementalStateRootCalculator stateRootCalculator,
+                AppChainExecutionCore core,
                 AppChainMetricsBundle metrics,
                 IMessageQueue? messageQueue,
                 IMessageProcessor? messageProcessor,
                 IChainStoreBundle bundle,
                 ILoggerFactory loggerFactory,
                 ILogger logger,
-                bool produces)
+                AsyncGate? chainWriteGate)
         {
-            var cliqueConfig = new CliqueConfig
-            {
-                BlockPeriodSeconds = config.Consensus.Clique.PeriodSeconds,
-                EpochLength = config.Consensus.Clique.EpochLength,
-                InitialSigners = config.Consensus.Clique.InitialSigners.ToList(),
-                LocalSignerAddress = config.Consensus.Clique.Signer.Address!,
-                LocalSignerPrivateKey = config.Consensus.Clique.Signer.PrivateKey,
-                AllowEmptyBlocks = config.Consensus.AllowEmptyBlocks,
-                EnableVoting = true,
-                WiggleTimeMs = 500
-            };
+            var produces = config.ProducesBlocks;
 
-            var cliqueEngine = new CliqueEngine(cliqueConfig, loggerFactory.CreateLogger<CliqueEngine>());
-            cliqueEngine.ApplyGenesisSigners(config.Consensus.Clique.InitialSigners.ToList());
+            var (sequencer, cliqueStrategy, producerAuthority, producerAuthorityNodeId) = ComposeCliqueConsensus(
+                config, appChain, chainNode, sequencerConfig, core, metrics,
+                messageQueue, messageProcessor, bundle, loggerFactory, logger, produces, chainWriteGate);
+
+            IChainForkChoice forkChoice = producerAuthority is ArbiterBackedProducerAuthority arbiterBacked
+                ? new LeaseAuthorityForkChoice(arbiterBacked.Arbiter, core.SideChain.Blocks)
+                : new DifficultyForkChoice(core.SideChain.Blocks);
+
+            return (sequencer, cliqueStrategy, producerAuthority, producerAuthorityNodeId, forkChoice);
+        }
+
+        private static (ISequencer? Sequencer, CliqueBlockProductionStrategy CliqueStrategy,
+            Nethereum.AppChain.Sequencer.ProducerAuthority.IProducerAuthority? ProducerAuthority, string? ProducerAuthorityNodeId)
+            ComposeCliqueConsensus(
+                AppChainServerConfig config,
+                Nethereum.AppChain.AppChain appChain,
+                Nethereum.ChainNode.Hosting.ChainNode chainNode,
+                SequencerConfig? sequencerConfig,
+                AppChainExecutionCore core,
+                AppChainMetricsBundle metrics,
+                IMessageQueue? messageQueue,
+                IMessageProcessor? messageProcessor,
+                IChainStoreBundle bundle,
+                ILoggerFactory loggerFactory,
+                ILogger logger,
+                bool produces,
+                AsyncGate? chainWriteGate)
+        {
+            var cliqueEngine = core.Clique!;
 
             var cliqueProposalStore = new InMemoryCliqueProposalStore();
             var cliqueStrategy = new CliqueBlockProductionStrategy(
                 appChain.Config, cliqueEngine, loggerFactory.CreateLogger<CliqueBlockProductionStrategy>(),
                 cliqueProposalStore);
 
+            var (authorityStrategy, producerAuthority, producerAuthorityNodeId) =
+                BuildProducerAuthorityStrategy(config, cliqueStrategy, loggerFactory);
+            Nethereum.CoreChain.Consensus.IBlockProductionStrategy strategy = authorityStrategy ?? cliqueStrategy;
+            var clique = config.Consensus.ResolveClique();
+
             ISequencer? sequencer = null;
             if (produces)
             {
-                var nodeId = $"Node-{config.Consensus.Clique.Signer.Address?.Substring(0, 10)}";
+                var nodeId = $"Node-{clique.Signer.Address?.Substring(0, 10)}";
+                var cliqueProducer = new Nethereum.AppChain.Sequencer.BlockProducer(
+                    appChain, core.Executor, core.StateRoot, bundle.TrieNodes,
+                    strategy: strategy, blockAccessListStore: bundle.BlockAccessLists,
+                    commit: core.Commit);
                 var cliqueSequencer = new Nethereum.AppChain.Sequencer.Sequencer(
                     appChain,
                     sequencerConfig!,
                     txPool: chainNode.Mempool?.TxPool,
-                    blockProductionStrategy: cliqueStrategy,
+                    blockProductionStrategy: strategy,
                     messageQueue: messageQueue,
                     messageProcessor: messageProcessor,
                     logger: loggerFactory.CreateLogger<Nethereum.AppChain.Sequencer.Sequencer>(),
                     nodeId: nodeId,
-                    stateRootCalculator: stateRootCalculator,
-                    blockAccessListStore: bundle?.BlockAccessLists);
+                    blockProducer: cliqueProducer,
+                    chainWriteGate: chainWriteGate,
+                    commitHead: chainWriteGate != null ? bundle.Metadata.Commit : null);
                 sequencer = new InstrumentedSequencer(
                     cliqueSequencer, metrics.BlockProduction, metrics.TxPool, metrics.Sequencer);
             }
 
             logger.LogInformation(
-                "Clique consensus initialized with {Count} initial signers", config.Consensus.Clique.InitialSigners.Length);
-            foreach (var signer in config.Consensus.Clique.InitialSigners)
+                "Clique consensus initialized with {Count} initial signers", clique.InitialSigners.Length);
+            foreach (var signer in clique.InitialSigners)
             {
                 logger.LogInformation("  Signer: {Address}", signer);
             }
 
-            return (sequencer, cliqueEngine, cliqueStrategy);
+            return (sequencer, cliqueStrategy, producerAuthority, producerAuthorityNodeId);
+        }
+
+        private static CliqueEngine BuildCliqueEngine(AppChainServerConfig config, ILoggerFactory loggerFactory, IChainStoreBundle bundle)
+        {
+            var clique = config.Consensus.ResolveClique();
+            var cliqueConfig = new CliqueConfig
+            {
+                BlockPeriodSeconds = clique.PeriodSeconds,
+                EpochLength = clique.EpochLength,
+                InitialSigners = clique.InitialSigners.ToList(),
+                LocalSignerAddress = clique.Signer.Address!,
+                LocalSignerPrivateKey = clique.Signer.PrivateKey,
+                AllowEmptyBlocks = config.Consensus.AllowEmptyBlocks,
+                EnableVoting = config.Consensus.Mode == AppChainConsensusMode.Clique,
+                WiggleTimeMs = 500
+            };
+
+            var snapshotStore = bundle is Nethereum.CoreChain.RocksDB.RocksDbChainStoreBundle rocksBundle
+                ? new RocksDbCliqueSnapshotStore(rocksBundle.Rocks)
+                : null;
+            var engine = new CliqueEngine(cliqueConfig, loggerFactory.CreateLogger<CliqueEngine>(), snapshotStore);
+            engine.ApplyGenesisSigners(clique.InitialSigners.ToList());
+
+            return engine;
         }
 
         private static async Task<MudGenesisResult> DeployMudWorldAsync(
@@ -312,21 +317,21 @@ namespace Nethereum.AppChain.Server
             return await mudDeployer.DeployMudWorldAsync(node, config.Genesis.Owner.PrivateKey!, config.Mud.WorldSalt);
         }
 
-        private static void WireProducedBlockPublisher(
-            Nethereum.ChainNode.Hosting.ChainNode chainNode, ISequencer? sequencer, ILoggerFactory loggerFactory)
-        {
-            if (chainNode.Listener == null || sequencer == null || chainNode.Mempool == null) return;
+        private const int AppChainBlockRangeAnnounceInterval = 1;
 
-            var blockPublisher = new DevP2PProducedBlockPublisher(
-                chainNode.Mempool.BroadcastPool,
-                chainNode.Bundle.Transactions,
-                loggerFactory.CreateLogger<DevP2PProducedBlockPublisher>());
-            sequencer.BlockProduced += blockPublisher.OnBlockProduced;
+        private static void AnnounceEveryBlock(Nethereum.ChainNode.Hosting.ChainNode chainNode, ISequencer? sequencer)
+        {
+            var announcer = chainNode.BlockRangeAnnouncer;
+            if (announcer == null) return;
+
+            announcer.AnnounceInterval = AppChainBlockRangeAnnounceInterval;
+            if (sequencer != null) sequencer.BlockProduced += (_, _) => announcer.Signal();
         }
 
         private static (Nethereum.CoreChain.Consensus.IBlockProductionStrategy? Strategy,
             Nethereum.AppChain.Sequencer.ProducerAuthority.IProducerAuthority? Authority, string? NodeId)
-            BuildProducerAuthorityStrategy(AppChainServerConfig config, ILoggerFactory loggerFactory)
+            BuildProducerAuthorityStrategy(
+                AppChainServerConfig config, Nethereum.CoreChain.Consensus.IBlockProductionStrategy inner, ILoggerFactory loggerFactory)
         {
             var overrideAuthority = config.Consensus.ProducerAuthorityOverride;
             var path = config.Consensus.ProducerAuthorityFile;
@@ -343,8 +348,7 @@ namespace Nethereum.AppChain.Server
             var strategy = new Nethereum.AppChain.Sequencer.ProducerAuthority.ProducerAuthorityBlockProductionStrategy(
                 authority,
                 identity!,
-                new Nethereum.CoreChain.Consensus.DefaultBlockProductionStrategy(
-                    new Nethereum.CoreChain.ChainConfig { ChainId = config.ChainId }),
+                inner,
                 loggerFactory.CreateLogger<
                     Nethereum.AppChain.Sequencer.ProducerAuthority.ProducerAuthorityBlockProductionStrategy>());
 

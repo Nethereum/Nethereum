@@ -26,6 +26,7 @@ namespace Nethereum.AppChain.Sequencer
         private readonly IBlockProducer _blockProducer;
         private readonly IPolicyEnforcer _policyEnforcer;
         private readonly ITransactionVerificationAndRecovery _txVerifier;
+        private readonly TransactionAdmissionRules _admissionRules;
         private readonly IBlockProductionStrategy? _blockProductionStrategy;
         private readonly IMessageQueue? _messageQueue;
         private readonly IMessageProcessor? _messageProcessor;
@@ -37,6 +38,8 @@ namespace Nethereum.AppChain.Sequencer
         private bool _running;
         private int _consecutiveFailures;
         private readonly SemaphoreSlim _submitLock = new SemaphoreSlim(1, 1);
+        private readonly Nethereum.CoreChain.Sync.AsyncGate? _chainWriteGate;
+        private readonly Action<ulong, byte[]>? _commitHead;
 
         public SequencerConfig Config => _sequencerConfig;
         public IAppChain AppChain => _appChain;
@@ -59,10 +62,34 @@ namespace Nethereum.AppChain.Sequencer
             string? nodeId = null,
             CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null,
             IBlockAccessListStore? blockAccessListStore = null)
+            : this(appChain, config, (Nethereum.CoreChain.Sync.AsyncGate?)null, null, txPool, blockProducer, policyEnforcer,
+                blockProductionStrategy, messageQueue, messageProcessor, logger, nodeId, stateRootCalculator,
+                blockAccessListStore)
         {
+        }
+
+        public Sequencer(
+            IAppChain appChain,
+            SequencerConfig config,
+            Nethereum.CoreChain.Sync.AsyncGate? chainWriteGate,
+            Action<ulong, byte[]>? commitHead,
+            CoreChain.ITxPool? txPool = null,
+            IBlockProducer? blockProducer = null,
+            IPolicyEnforcer? policyEnforcer = null,
+            IBlockProductionStrategy? blockProductionStrategy = null,
+            IMessageQueue? messageQueue = null,
+            IMessageProcessor? messageProcessor = null,
+            ILogger<Sequencer>? logger = null,
+            string? nodeId = null,
+            CoreChain.IIncrementalStateRootCalculator? stateRootCalculator = null,
+            IBlockAccessListStore? blockAccessListStore = null)
+        {
+            _chainWriteGate = chainWriteGate;
+            _commitHead = commitHead;
             _appChain = appChain ?? throw new ArgumentNullException(nameof(appChain));
             _sequencerConfig = config ?? throw new ArgumentNullException(nameof(config));
             _txVerifier = new TransactionVerificationAndRecoveryImp();
+            _admissionRules = new TransactionAdmissionRules(appChain.Config.ChainId, (long)appChain.Config.BlockGasLimit);
             _blockProductionStrategy = blockProductionStrategy;
             _messageQueue = messageQueue;
             _messageProcessor = messageProcessor;
@@ -140,6 +167,12 @@ namespace Nethereum.AppChain.Sequencer
 
         public async Task<byte[]> SubmitTransactionAsync(ISignedTransaction transaction)
         {
+            var refusal = _admissionRules.FirstRefusal(transaction);
+            if (refusal != null)
+            {
+                throw new InvalidOperationException($"Transaction rejected: {refusal}");
+            }
+
             var validation = await _policyEnforcer.ValidateTransactionAsync(transaction);
             if (!validation.IsValid)
             {
@@ -243,6 +276,22 @@ namespace Nethereum.AppChain.Sequencer
 
         public async Task<byte[]> ProduceBlockAsync()
         {
+            if (_chainWriteGate == null)
+                return await ProduceBlockUnderGateAsync();
+
+            await _chainWriteGate.WaitAsync();
+            try
+            {
+                return await ProduceBlockUnderGateAsync();
+            }
+            finally
+            {
+                _chainWriteGate.Release();
+            }
+        }
+
+        private async Task<byte[]> ProduceBlockUnderGateAsync()
+        {
             var sw = Stopwatch.StartNew();
 
             List<MessageInfo>? pendingMessages = null;
@@ -278,6 +327,19 @@ namespace Nethereum.AppChain.Sequencer
                 }
                 throw;
             }
+
+            foreach (var dropped in result.DroppedTransactions)
+            {
+                _logger?.LogWarning("[{NodeId}] Dropped transaction {TxHash} from block production: {Reason}",
+                    _nodeId, dropped.Transaction.Hash.ToHex(true), dropped.Reason);
+            }
+
+            foreach (var deferred in result.DeferredTransactions)
+            {
+                try { await _txPool.AddAsync(deferred); } catch { }
+            }
+
+            _commitHead?.Invoke((ulong)result.Header.BlockNumber, result.BlockHash);
 
             if (_messageProcessor != null && pendingMessages != null && pendingMessages.Count > 0)
             {

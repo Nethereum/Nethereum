@@ -5,6 +5,7 @@ using Nethereum.CoreChain.Metrics;
 
 namespace Nethereum.AppChain.Server.Metrics
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "MetricsCollector")]
     public class MetricsCollector : BackgroundService
     {
         private readonly BlockProductionMetrics _blockProduction;

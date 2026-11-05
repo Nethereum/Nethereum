@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 namespace Nethereum.AppChain.Anchoring.Postgres
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "appchain-anchoring-postgres", "Anchor index options")]
     public sealed class AnchorIndexProcessingOptions
     {
         public string RpcUrl { get; set; } = "http://localhost:8545";

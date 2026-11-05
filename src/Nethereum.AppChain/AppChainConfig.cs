@@ -19,6 +19,8 @@ namespace Nethereum.AppChain
             set => _blockGasLimit = value;
         }
 
+        public override bool FeeFreeBaseFee => BaseFee.IsZero;
+
         public static AppChainConfig Default => new AppChainConfig
         {
             ChainId = 420420,

@@ -12,6 +12,7 @@ using Nethereum.CoreChain.Forks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Sync;
 using Nethereum.CoreChain.Validation;
+using Nethereum.DevP2P.Sync.FullSync;
 using Nethereum.DevP2P.Sync.Peering;
 using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 using Nethereum.EVM;
@@ -19,31 +20,59 @@ using Nethereum.EVM.Precompiles;
 
 namespace Nethereum.AppChain.Server.Hosting
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainDevP2PFollower")]
     public sealed class AppChainDevP2PFollower
     {
         private static readonly TimeSpan PeerWaitTimeout = TimeSpan.FromMinutes(2);
         private static readonly TimeSpan PeerPollInterval = TimeSpan.FromMilliseconds(250);
 
         private readonly AppChainServerConfig _config;
-        private readonly Nethereum.EVM.IChainActivations _activations;
         private readonly Nethereum.ChainNode.Hosting.ChainNode _node;
         private readonly IChainStoreBundle _bundle;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
-        private readonly Consensus.Clique.CliqueEngine? _clique;
         private readonly IChainForkChoice? _forkChoice;
         private readonly IMempoolReorgReconciler? _mempoolReconciler;
+        private readonly AsyncGate? _chainWriteGate;
+        private readonly AppChainExecutionCore _core;
 
         public AppChainDevP2PFollower(
             AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode node, ILoggerFactory loggerFactory,
             Consensus.Clique.CliqueEngine? clique = null,
             IChainForkChoice? forkChoice = null,
             IMempoolReorgReconciler? mempoolReconciler = null)
+            : this(config, node, loggerFactory, (AsyncGate?)null, clique, forkChoice, mempoolReconciler)
         {
+        }
+
+        public AppChainDevP2PFollower(
+            AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode node, ILoggerFactory loggerFactory,
+            AsyncGate? chainWriteGate,
+            Consensus.Clique.CliqueEngine? clique = null,
+            IChainForkChoice? forkChoice = null,
+            IMempoolReorgReconciler? mempoolReconciler = null)
+            : this(
+                config, node, loggerFactory,
+                new AppChainExecutionCore(
+                    AppChainExecutionCore.ChainConfigFor(config ?? throw new ArgumentNullException(nameof(config))),
+                    (node ?? throw new ArgumentNullException(nameof(node))).Bundle, clique, loggerFactory,
+                    AppChainExecutionCore.FlushCadenceFor(config)),
+                chainWriteGate, forkChoice, mempoolReconciler)
+        {
+        }
+
+        public AppChainDevP2PFollower(
+            AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode node, ILoggerFactory loggerFactory,
+            AppChainExecutionCore core,
+            AsyncGate? chainWriteGate,
+            IChainForkChoice? forkChoice = null,
+            IMempoolReorgReconciler? mempoolReconciler = null)
+        {
+            _core = core ?? throw new ArgumentNullException(nameof(core));
+            if (forkChoice != null && _core.SideChain.ForkChoice == null) _core.SideChain.UseForkChoice(forkChoice);
+            _chainWriteGate = chainWriteGate;
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _activations = Nethereum.EVM.ChainRules.ForConsensus(_config.ForkSchedule);
-            _clique = clique;
             _forkChoice = forkChoice;
             _mempoolReconciler = mempoolReconciler;
             _node = node ?? throw new ArgumentNullException(nameof(node));
@@ -55,10 +84,28 @@ namespace Nethereum.AppChain.Server.Hosting
         public static Task RunAsync(
             AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode node,
             ILoggerFactory loggerFactory, CancellationToken ct,
+            AppChainExecutionCore core,
+            AsyncGate? chainWriteGate,
+            IChainForkChoice? forkChoice = null,
+            IMempoolReorgReconciler? mempoolReconciler = null) =>
+            new AppChainDevP2PFollower(config, node, loggerFactory, core, chainWriteGate, forkChoice, mempoolReconciler).RunAsync(ct);
+
+        public static Task RunAsync(
+            AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode node,
+            ILoggerFactory loggerFactory, CancellationToken ct,
             Consensus.Clique.CliqueEngine? clique = null,
             IChainForkChoice? forkChoice = null,
             IMempoolReorgReconciler? mempoolReconciler = null) =>
             new AppChainDevP2PFollower(config, node, loggerFactory, clique, forkChoice, mempoolReconciler).RunAsync(ct);
+
+        public static Task RunAsync(
+            AppChainServerConfig config, Nethereum.ChainNode.Hosting.ChainNode node,
+            ILoggerFactory loggerFactory, CancellationToken ct,
+            AsyncGate? chainWriteGate,
+            Consensus.Clique.CliqueEngine? clique = null,
+            IChainForkChoice? forkChoice = null,
+            IMempoolReorgReconciler? mempoolReconciler = null) =>
+            new AppChainDevP2PFollower(config, node, loggerFactory, chainWriteGate, clique, forkChoice, mempoolReconciler).RunAsync(ct);
 
         public async Task RunAsync(CancellationToken ct)
         {
@@ -132,7 +179,7 @@ namespace Nethereum.AppChain.Server.Hosting
             ChainNodeSyncStack node, ICanonicalStateRootSource pivot, CancellationToken ct)
         {
             var snap = await SnapSyncOrchestrator.RunAsync(
-                _bundle, node.Pool, node.Scheduler, pivot, _activations, _logger,
+                _bundle, node.Pool, node.Scheduler, pivot, _core.Activations, _logger,
                 ChainNodeSnapBootstrapOptionsBuilder.Build(_config.Node.Sync), ct).ConfigureAwait(false);
 
             _logger.LogInformation("DevP2P snap bootstrap: ran={Ran} reason={Reason}", snap.Ran, snap.SkipReason);
@@ -142,7 +189,12 @@ namespace Nethereum.AppChain.Server.Hosting
         {
             var bounds = ChainNodeFollowerOptionsBuilder.Resolve(
                 _config.Node.Sync, _bundle.Metadata.GetSnapSyncState(), _bundle.Metadata.GetLastBlock());
-            var options = ChainNodeFollowerOptionsBuilder.BuildFollowerOptions(bounds, _config.Node.Sync);
+            var options = ChainNodeFollowerOptionsBuilder.BuildFollowerOptions(bounds, _config.Node.Sync)
+                with
+                {
+                    ChainWriteGate = _chainWriteGate,
+                    AfterRewindAsync = _core.ChainRewrittenAsync
+                };
 
             _logger.LogInformation(
                 "DevP2P follower forward-executing from block {Start} (reason={Reason})",
@@ -153,7 +205,9 @@ namespace Nethereum.AppChain.Server.Hosting
             try
             {
                 var result = await new FollowerService(_forkChoice, _mempoolReconciler).RunAsync(
-                    node.BlockSource,
+                    new FollowingBlockSource(
+                        node.BlockSource, node.Pool, number => _bundle.Blocks.GetHashByNumberAsync((BigInteger)number),
+                        node.Scheduler, options.MaxReorgDepth),
                     () => _bundle,
                     BuildExecutorFactory(),
                     StrictPolicy(_config, _loggerFactory),
@@ -184,7 +238,7 @@ namespace Nethereum.AppChain.Server.Hosting
             if (!_config.Node.Sync.ReceiptBackfill) return Task.CompletedTask;
 
             var backfill = new Nethereum.DevP2P.Sync.FullSync.ReceiptBackfillService(
-                _bundle, node.Scheduler, logger: _logger);
+                _bundle, node.Scheduler, node.Pool, logger: _logger);
             _logger.LogInformation(
                 "DevP2P receipt-backfill scrub: enabled (cursor={Cursor})",
                 _bundle.Metadata.GetReceiptBackfillCursor());
@@ -192,50 +246,7 @@ namespace Nethereum.AppChain.Server.Hosting
         }
 
 
-        private Func<IChainStoreBundle, IBlockExecutor> BuildExecutorFactory()
-        {
-            var activations = _activations;
-
-            return bundle => Gated(bundle, new BlockImporter(
-                new BlockExecutor(
-                    bundle.State, bundle.Blocks, activations,
-                    chainConfigFactory: fork =>
-                    {
-                        var forkChainConfig = new ChainConfig
-                        {
-                            ChainId = _config.ChainId,
-                            BaseFee = BigInteger.Zero,
-                            Coinbase = _config.Consensus.Sequencer.Address ?? "",
-                            Hardfork = fork.ToString().ToLowerInvariant()
-                        };
-                        _config.Node.Rpc.ApplyTo(forkChainConfig);
-                        return forkChainConfig;
-                    },
-                    hardforkConfigFactory: fork => DefaultMainnetHardforkRegistry.Instance.Get(fork),
-                    stateRootCalculator: new IncrementalStateRootCalculator(
-                        bundle.State, bundle.StateTrieNodes,
-                        emitTombstones: !ReferenceEquals(bundle.StateTrieNodes, bundle.TrieNodes)),
-                    rewardPolicy: NoRewardPolicy.Instance,
-                    trieNodeStore: bundle.TrieNodes,
-                    logger: _loggerFactory.CreateLogger<BlockExecutor>(),
-                    authorResolver: _clique != null ? h => _clique.RecoverSigner(h) ?? h.Coinbase : null),
-                bundle.Blocks, bundle.State, bundle.Transactions, bundle.Receipts, bundle.Logs,
-                uncleStore: bundle.Uncles,
-                logger: _loggerFactory.CreateLogger<BlockImporter>(),
-                nodeCommitBlockContext: null, atomicFlush: null, flushCadence: null,
-                blockAccessListStore: bundle.BlockAccessLists,
-                withdrawalStore: bundle.Withdrawals));
-        }
-
-        private IBlockExecutor Gated(IChainStoreBundle bundle, IBlockExecutor inner) =>
-            _clique == null
-                ? inner
-                : new ConsensusGatedBlockExecutor(
-                    inner,
-                    new Consensus.Clique.CliqueConsensusBlockGate(
-                        _clique, bundle.Blocks,
-                        _loggerFactory.CreateLogger<Consensus.Clique.CliqueConsensusBlockGate>()),
-                    _loggerFactory.CreateLogger<ConsensusGatedBlockExecutor>());
+        private Func<IChainStoreBundle, IBlockExecutor> BuildExecutorFactory() => _ => _core.CreateImporter();
 
         public static StrictValidationPolicy StrictPolicy(AppChainServerConfig config, ILoggerFactory loggerFactory) =>
             ChainNodeFollowerOptionsBuilder.BuildStrictValidationPolicy(

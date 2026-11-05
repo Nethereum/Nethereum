@@ -225,6 +225,20 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        public void Given_TheTrustedPeerAliasCarryingACommaSeparatedList_When_ConfigIsParsed_Then_EachEnodeIsItsOwnTrimmedTrustedPeer()
+        {
+            var config = AppChainCli.ParseConfig(new[]
+            {
+                "--trusted-peer", "enode://eeee@127.0.0.1:30405, enode://ffff@127.0.0.1:30406 ,",
+                "--trusted-peer", "enode://0000@127.0.0.1:30407"
+            });
+
+            Assert.Equal(
+                new[] { "enode://eeee@127.0.0.1:30405", "enode://ffff@127.0.0.1:30406", "enode://0000@127.0.0.1:30407" },
+                config.Node.Network.TrustedPeers);
+        }
+
+        [Fact]
         public void Given_TheDevP2PServePortFlag_When_ConfigIsParsed_Then_ItSetsTheListenPort()
         {
             var config = AppChainCli.ParseConfig(new[] { "--devp2p-serve-port", "40500" });

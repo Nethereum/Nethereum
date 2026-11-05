@@ -9,6 +9,7 @@ using Nethereum.AppChain.Server.Hosting;
 using Nethereum.CoreChain;
 using Nethereum.Model;
 using Xunit;
+using Nethereum.Documentation;
 
 namespace Nethereum.AppChain.IntegrationTests
 {
@@ -39,6 +40,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Sequencer health check in follower mode", Order = 1)]
         public async Task Given_NoSequencerAtAll_When_HealthIsChecked_Then_ItIsHealthyFollowerMode()
         {
             var check = new SequencerHealthCheck(sequencer: null);
@@ -59,6 +61,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Sequencer health check against a producer authority", Order = 2)]
         public async Task Given_TheProducerAuthorityNamesThisNode_When_HealthIsChecked_Then_ItIsHealthy()
         {
             var check = new SequencerHealthCheck(new StubSequencer(), new StaticAuthority("A"), "A");

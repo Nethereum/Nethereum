@@ -1,11 +1,13 @@
 using Nethereum.AppChain.Server;
 using Xunit;
+using Nethereum.Documentation;
 
 namespace Nethereum.AppChain.IntegrationTests
 {
     public class HubSourceChainEntryParsingTests
     {
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Parse a pipe-delimited hub source chain entry", Order = 1)]
         public void Given_AHubSourceChainEntryWithAPipeDelimiter_When_ParseHubSourceChainEntryRuns_Then_ItSplitsChainIdRpcUrlAndHubAddress()
         {
             var parsed = AppChainServerRunner.ParseHubSourceChainEntry("11155111|https://sepolia.example.org|0x1234567890123456789012345678901234567890");
@@ -17,6 +19,7 @@ namespace Nethereum.AppChain.IntegrationTests
         }
 
         [Fact]
+        [NethereumDocExample(DocSection.ChainInfrastructure, "appchain-server-core", "Parse a colon-delimited hub source chain entry", Order = 2)]
         public void Given_AColonDelimitedEntryWithAnEmbeddedSchemeSeparator_When_ParseHubSourceChainEntryRuns_Then_ItSplitsChainIdRpcUrlAndHubAddress()
         {
             var parsed = AppChainServerRunner.ParseHubSourceChainEntry("11155111:https://sepolia.example.org:0x1234567890123456789012345678901234567890");

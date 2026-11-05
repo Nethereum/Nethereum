@@ -3,6 +3,7 @@ using Nethereum.ChainNode.Hosting.Configuration;
 
 namespace Nethereum.AppChain.Server.Configuration
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainServerConfig")]
     public class AppChainServerConfig
     {
         public const string DefaultAppChainHardfork = "amsterdam";
@@ -14,9 +15,11 @@ namespace Nethereum.AppChain.Server.Configuration
 
         public string ChainName { get; set; } = "AppChain";
 
-        public BigInteger? BaseFee { get; set; }
+        public Nethereum.EVM.HardforkRegistry? Registry { get; set; }
 
         public string? OtlpEndpoint { get; set; }
+
+        public long MaxRequestBodySize { get; set; } = 10 * 1024 * 1024;
 
         public ChainNodeConfig Node { get; set; } = DefaultNode();
 
@@ -35,9 +38,7 @@ namespace Nethereum.AppChain.Server.Configuration
 
         public bool ImportsBlocks => Node.Sync.Mode != SyncMode.None;
 
-        public bool ProducesBlocks => Consensus.Mode == AppChainConsensusMode.Clique
-            ? Consensus.Clique.Signer.CanSign
-            : Consensus.Sequencer.CanSign;
+        public bool ProducesBlocks => Consensus.ResolveClique().Signer.CanSign;
 
         public bool IsFullyUnconfigured =>
             !Genesis.Owner.IsIdentified && !Genesis.Owner.CanSign
@@ -70,7 +71,6 @@ namespace Nethereum.AppChain.Server.Configuration
                 },
                 Sync = new ChainNodeSyncConfig
                 {
-                    EnablePushedBlocks = true,
                     FloorTargetPeerCountByDialPool = true,
                     CheckpointEvery = 0,
                 },

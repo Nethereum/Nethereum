@@ -54,11 +54,11 @@ namespace Nethereum.AppChain.IntegrationTests
             try
             {
                 var madeProgress = await WaitUntilAsync(
-                    () => importer.Bundle.Metadata.GetLastBlock() >= 1,
+                    () => ImporterHoldsABlockSealedBy(importer, sealerKey),
                     ProgressTimeout);
 
                 Assert.True(madeProgress,
-                    $"the production follower never executed a block from its sibling; lastBlock={importer.Bundle.Metadata.GetLastBlock()}. " +
+                    $"the production follower never imported a block sealed by its sibling; lastBlock={importer.Bundle.Metadata.GetLastBlock()}. " +
                     "A same-genesis cluster's peer tip never exceeds the pivot trail distance, so if the follower is still " +
                     "trying to resolve a snap pivot before forward-executing, it stalls forever.");
 
@@ -130,6 +130,19 @@ namespace Nethereum.AppChain.IntegrationTests
             {
                 await producer.DisposeAsync();
             }
+        }
+
+        private static bool ImporterHoldsABlockSealedBy(AppChainComposedNode importer, EthECKey sealerKey)
+        {
+            var last = importer.Bundle.Metadata.GetLastBlock();
+            for (ulong n = 1; n <= last; n++)
+            {
+                var header = importer.Bundle.Blocks.GetByNumberAsync(n).GetAwaiter().GetResult();
+                if (header != null && string.Equals(
+                        importer.CliqueEngine!.RecoverSigner(header), sealerKey.GetPublicAddress(), StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         private static ulong SnapSyncOrchestratorPivotTrailDistance() =>

@@ -21,6 +21,7 @@ using Nethereum.AppChain.Server.Anchoring;
 using Nethereum.AppChain.Server.Configuration;
 using Nethereum.ChainNode.Hosting;
 using Nethereum.ChainNode.Hosting.Configuration;
+using Nethereum.ChainNode.Hosting.Rpc;
 using Nethereum.AppChain.Server.Endpoints;
 using Nethereum.AppChain.Server.Hosting;
 using Nethereum.AppChain.Anchoring.Metrics;
@@ -46,9 +47,12 @@ using Nethereum.DevP2P.Sync.Serving;
 
 namespace Nethereum.AppChain.Server
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainServerRunner")]
     public static class AppChainServerRunner
     {
-        public static async Task RunAsync(AppChainServerConfig config)
+        public static Task RunAsync(AppChainServerConfig config) => RunAsync(config, CancellationToken.None);
+
+        public static async Task RunAsync(AppChainServerConfig config, CancellationToken cancellationToken)
         {
             using var loggerFactory = BuildLoggerFactory();
 
@@ -79,7 +83,7 @@ namespace Nethereum.AppChain.Server
             var rpc = WireRpc(app, config, composed, logger);
             MapEndpoints(app, config, composed, rpc);
 
-            await RunUntilShutdownAsync(app, config, composed, logger);
+            await RunUntilShutdownAsync(app, config, composed, logger, cancellationToken);
 
             if (composed.ChainNode.Listener != null)
                 await composed.ChainNode.Listener.DisposeAsync();
@@ -328,9 +332,10 @@ namespace Nethereum.AppChain.Server
             };
 
             var rpcRegistry = new RpcHandlerRegistry();
-            rpcRegistry.AddStandardHandlers();
+            var rpcModules = config.Node.Rpc.ToModuleSet();
+            rpcRegistry.AddStandardHandlers(rpcModules);
             rpcRegistry.AddMessageProofHandlers();
-            rpcRegistry.AddAdminHandlers();
+            if (rpcModules.Contains(RpcModuleSet.Admin)) rpcRegistry.AddAdminHandlers();
 
             var rpcServices = app.Services;
             var rpcContext = new RpcContext(composed.Node, (long)config.ChainId, rpcServices);
@@ -341,22 +346,20 @@ namespace Nethereum.AppChain.Server
             var rpcDispatcher = new InstrumentedRpcDispatcher(rpcRegistry, rpcContext, composed.Metrics.Rpc, logger, serializerOptions);
 
             var subscriptionManager = new SubscriptionManager();
-            var wsHandler = new WebSocketRpcHandler(subscriptionManager, rpcRegistry, rpcContext, serializerOptions);
+            var wsHandler = new WebSocketRpcHandler(subscriptionManager, rpcDispatcher, serializerOptions)
+            {
+                SubscriptionsEnabled = rpcModules.Contains(RpcModuleSet.Eth),
+                LogQueryLimit = composed.Node.Config.RpcLogQueryLimit
+            };
 
             if (composed.Sequencer != null)
             {
-                composed.Sequencer.BlockProduced += async (sender, result) =>
-                {
-                    try
-                    {
-                        var blockLogs = await composed.Bundle.Logs.GetLogsByBlockNumberAsync(result.Header.BlockNumber);
-                        await wsHandler.BroadcastBlockAsync(result.Header, result.BlockHash, blockLogs);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Failed to broadcast WebSocket notifications for block {BlockNumber}", result.Header.BlockNumber);
-                    }
-                };
+                var broadcaster = new SubscriptionBroadcaster(
+                    wsHandler,
+                    header => composed.Bundle.Logs.GetLogsByBlockNumberAsync(header.BlockNumber),
+                    (header, ex) => logger.LogWarning(ex, "Failed to broadcast WebSocket notifications for block {BlockNumber}", header.BlockNumber));
+                app.Lifetime.ApplicationStopping.Register(broadcaster.Dispose);
+                composed.Sequencer.BlockProduced += (sender, result) => broadcaster.Enqueue(result.Header, result.BlockHash);
             }
 
             return new AppChainRpcWiring(serializerOptions, rpcDispatcher, wsHandler);
@@ -364,48 +367,13 @@ namespace Nethereum.AppChain.Server
 
         private static void MapEndpoints(WebApplication app, AppChainServerConfig config, AppChainComposedNode composed, AppChainRpcWiring rpc)
         {
-            app.MapPost("/", async (HttpContext httpContext) =>
-            {
-                using var reader = new StreamReader(httpContext.Request.Body);
-                var body = await reader.ReadToEndAsync();
+            var httpOptions = config.Node.Rpc.ToHttpOptions();
+            httpOptions.MaxRequestBodySize = config.MaxRequestBodySize;
+            var rpcLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Nethereum.AppChain.Rpc");
 
-                JsonRpcRequest? jsonRequest;
-                try
-                {
-                    jsonRequest = JsonSerializer.Deserialize<JsonRpcRequest>(body, rpc.SerializerOptions);
-                }
-                catch
-                {
-                    httpContext.Response.StatusCode = 400;
-                    httpContext.Response.ContentType = "application/json";
-                    await httpContext.Response.WriteAsync("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"Parse error\"}}");
-                    return;
-                }
+            app.MapRpcHttpEndpoint(rpc.Dispatcher, rpc.SerializerOptions, httpOptions, rpcLogger);
 
-                if (jsonRequest == null || string.IsNullOrEmpty(jsonRequest.Method))
-                {
-                    httpContext.Response.StatusCode = 400;
-                    httpContext.Response.ContentType = "application/json";
-                    await httpContext.Response.WriteAsync("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"Invalid Request\"}}");
-                    return;
-                }
-
-                var request = new RpcRequestMessage(jsonRequest.Id, jsonRequest.Method);
-                if (jsonRequest.Params.HasValue)
-                {
-                    request.RawParameters = jsonRequest.Params.Value;
-                }
-                var response = await rpc.Dispatcher.DispatchAsync(request);
-
-                var jsonResponse = response.ToJsonRpcResponse();
-
-                var responseJson = JsonSerializer.Serialize(jsonResponse, rpc.SerializerOptions);
-
-                httpContext.Response.ContentType = "application/json";
-                await httpContext.Response.WriteAsync(responseJson);
-            });
-
-            app.MapWebSocketEndpoint(rpc.WebSocketHandler);
+            app.MapWebSocketEndpoint(rpc.WebSocketHandler, httpOptions);
 
             app.MapHealthChecks("/health");
 
@@ -456,7 +424,7 @@ namespace Nethereum.AppChain.Server
             });
         }
 
-        private static async Task RunUntilShutdownAsync(WebApplication app, AppChainServerConfig config, AppChainComposedNode composed, ILogger logger)
+        private static async Task RunUntilShutdownAsync(WebApplication app, AppChainServerConfig config, AppChainComposedNode composed, ILogger logger, CancellationToken cancellationToken)
         {
             logger.LogInformation("Starting HTTP server at {Url}", config.RpcUrl);
             PrintReadyBanner(config, composed.MudResult, logger);
@@ -464,9 +432,13 @@ namespace Nethereum.AppChain.Server
             app.MapPrometheusMetrics(config.Node.Rpc.Host, config.Node.Rpc.Port, config.Node.Rpc.MetricsPort);
 
             if (config.Node.Rpc.MetricsPort > 0 || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")))
-                await app.RunAsync();
+                await app.RunAsync(cancellationToken);
             else
-                await app.RunAsync($"http://{config.Node.Rpc.Host}:{config.Node.Rpc.Port}");
+            {
+                app.Urls.Clear();
+                app.Urls.Add($"http://{config.Node.Rpc.Host}:{config.Node.Rpc.Port}");
+                await app.RunAsync(cancellationToken);
+            }
         }
 
         private sealed class AppChainRpcWiring
@@ -531,6 +503,7 @@ namespace Nethereum.AppChain.Server
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainStatus")]
     public class AppChainStatus
     {
         public long ChainId { get; set; }
@@ -546,12 +519,14 @@ namespace Nethereum.AppChain.Server
         public AnchoringStatus? Anchoring { get; set; }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AccountsStatus")]
     public class AccountsStatus
     {
         public string GenesisOwner { get; set; } = "";
         public string Sequencer { get; set; } = "";
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "ContractsStatus")]
     public class ContractsStatus
     {
         public string Create2Factory { get; set; } = "";
@@ -564,6 +539,7 @@ namespace Nethereum.AppChain.Server
         public string RegistrationSystem { get; set; } = "";
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AnchoringStatus")]
     public class AnchoringStatus
     {
         public bool Enabled { get; set; }

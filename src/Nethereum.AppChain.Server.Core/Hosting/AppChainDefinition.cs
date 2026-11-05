@@ -10,6 +10,7 @@ using Nethereum.Signer;
 
 namespace Nethereum.AppChain.Server.Hosting
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "appchain-server-core", "AppChainDefinition")]
     public sealed class AppChainDefinition : IChainDefinition
     {
         private readonly AppChainServerConfig _config;

@@ -52,11 +52,12 @@ var onDemandConfig = SequencerConfig.OnDemand;      // Immediate production
 
 Every submitted transaction passes through validation before entering the pool:
 
-1. **Policy enforcement** - Check sender authorization and transaction size limits
-2. **Sender recovery** - Recover sender address from ECDSA signature
-3. **Nonce checking** - Verify nonce matches expected next nonce
-4. **Balance validation** - Ensure sender has sufficient funds for value + gas
-5. **Intrinsic gas calculation** - Verify gas limit covers minimum execution cost
+1. **Admission rule** - `TransactionAdmissionRules.FirstRefusal`, the rule JSON-RPC submission and peer relay share: blob count and blob transaction size, the size cap, signature, chain id, the block gas limit and the fee cap against the priority fee. A refused transaction throws `InvalidOperationException` (`Transaction rejected: <reason>`)
+2. **Policy enforcement** - Check sender authorization and transaction size limits
+3. **Sender recovery** - Recover sender address from ECDSA signature
+4. **Nonce checking** - Verify nonce matches expected next nonce
+5. **Balance validation** - Ensure sender has sufficient funds for value + gas
+6. **Intrinsic gas calculation** - Verify gas limit covers minimum execution cost
 
 ### Policy Enforcement
 
@@ -166,6 +167,22 @@ public class Sequencer : ISequencer, IAsyncDisposable
         IIncrementalStateRootCalculator? stateRootCalculator = null,
         IBlockAccessListStore? blockAccessListStore = null);
 
+    public Sequencer(
+        IAppChain appChain,
+        SequencerConfig config,
+        AsyncGate? chainWriteGate,
+        Action<ulong, byte[]>? commitHead,
+        ITxPool? txPool = null,
+        IBlockProducer? blockProducer = null,
+        IPolicyEnforcer? policyEnforcer = null,
+        IBlockProductionStrategy? blockProductionStrategy = null,
+        IMessageQueue? messageQueue = null,
+        IMessageProcessor? messageProcessor = null,
+        ILogger<Sequencer>? logger = null,
+        string? nodeId = null,
+        IIncrementalStateRootCalculator? stateRootCalculator = null,
+        IBlockAccessListStore? blockAccessListStore = null);
+
     public SequencerConfig Config { get; }
     public IAppChain AppChain { get; }
     public ITxPool TxPool { get; }
@@ -183,6 +200,25 @@ public class Sequencer : ISequencer, IAsyncDisposable
     public event EventHandler<BlockProductionResult>? BlockProduced;
 }
 ```
+
+The second constructor takes a chain write gate (`Nethereum.CoreChain.Sync.AsyncGate`): block production runs under the gate, so a node that also imports blocks serialises production and import, and `commitHead` receives the block number and hash of every block produced. A transaction that did not fit a block is returned to the pool; one that cannot fit any block, or whose execution faulted, is dropped and logged.
+
+### BlockProducer and AppChainBlockProductionStrategy
+
+`BlockProducer` builds its executor through the shared execution stack and has a constructor that takes a prebuilt `BlockExecutor`, state-root calculator and trie node store, so a node can use one execution core for production and import. `AppChainBlockProductionStrategy` is the default block options of the producer and of a lease-gated producer:
+
+```csharp
+public class AppChainBlockProductionStrategy : IBlockProductionStrategy
+{
+    public AppChainBlockProductionStrategy(AppChainConfig config)
+    public bool CanProduceBlock(long blockNumber)
+    public Task<TimeSpan> GetSigningDelayAsync(long blockNumber, CancellationToken cancellationToken = default)
+    public BlockProductionOptions PrepareBlockOptions(long blockNumber, BlockHeader? parentHeader)
+    public Task FinalizeBlockAsync(BlockHeader header, byte[] blockHash, BlockProductionResult result)
+}
+```
+
+A block is stamped `max(clock, parent.Timestamp + 1)`, its gas limit moves one bound step per block toward `AppChainConfig.BlockGasLimit` within the parent bound, and its extra data is `AppChain:<name>` cut to 32 bytes.
 
 ### SequencerConfig
 

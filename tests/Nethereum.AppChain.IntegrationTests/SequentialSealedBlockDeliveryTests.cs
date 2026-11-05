@@ -232,7 +232,7 @@ namespace Nethereum.AppChain.IntegrationTests
                         };
                     }
 
-                    var pushesReceived = new ConcurrentBag<(int Node, ulong Height, string FromEnode, DateTime AtUtc)>();
+                    var announcementsReceived = new ConcurrentBag<(int Node, ulong Height, string FromEnode, DateTime AtUtc)>();
                     for (var i = 0; i < size; i++)
                     {
                         var nodeIndex = i;
@@ -240,10 +240,10 @@ namespace Nethereum.AppChain.IntegrationTests
                         if (pool == null) continue;
 
                         void WireSession(SyncPeerSession session) =>
-                            session.NewBlockReceived += (_, msg) =>
-                                pushesReceived.Add((
+                            session.HeadAdvanced += (_, announced) =>
+                                announcementsReceived.Add((
                                     nodeIndex,
-                                    (ulong)msg.Header.BlockNumber,
+                                    announced.PeerLatestBlock,
                                     session.PeerEnode,
                                     DateTime.UtcNow));
 
@@ -292,10 +292,8 @@ namespace Nethereum.AppChain.IntegrationTests
                                 : (-1, -1);
                             var nodeSyncPeersNow = nodes[n].ChainNode.Sync?.Pool?.ActivePeers?.Count ?? -1;
                             var nodeBroadcastPeersNow = nodes[n].ChainNode.Mempool?.BroadcastPool?.Count ?? -1;
-                            var nodePendingCount = nodes[n].ChainNode.Sync?.PushedBlocks?.PendingCount ?? -1;
-                            var nodeCaughtUp = (nodes[n].ChainNode.Sync?.BlockSource as CatchUpThenFollowBlockSource)?.CaughtUp;
-                            var nodePushesSoFar = pushesReceived.Count(p => p.Node == n);
-                            var nodePushesThisHeight = pushesReceived.Where(p => p.Node == n && p.Height == height)
+                            var nodeAnnouncementsSoFar = announcementsReceived.Count(p => p.Node == n);
+                            var nodeAnnouncementsThisHeight = announcementsReceived.Where(p => p.Node == n && p.Height == height)
                                 .Select(p => p.FromEnode).ToList();
 
                             log.Add(
@@ -303,8 +301,7 @@ namespace Nethereum.AppChain.IntegrationTests
                                 $"producerPeersAtSeal(sync={sealSyncPeers},broadcast={sealBroadcastPeers}) " +
                                 $"observer=node{n} reached={reached} matches={matches} nodeHeightNow={nodeHeight} " +
                                 $"nodePeersNow(sync={nodeSyncPeersNow},broadcast={nodeBroadcastPeersNow}) " +
-                                $"pendingCount={nodePendingCount} caughtUp={nodeCaughtUp} " +
-                                $"pushesReceivedSoFar={nodePushesSoFar} pushesAtThisHeight=[{string.Join(",", nodePushesThisHeight)}]");
+                                $"announcementsReceivedSoFar={nodeAnnouncementsSoFar} announcementsAtThisHeight=[{string.Join(",", nodeAnnouncementsThisHeight)}]");
                         }
                     }
 
@@ -312,15 +309,15 @@ namespace Nethereum.AppChain.IntegrationTests
                     foreach (var line in log) _output.WriteLine(line);
 
                     _output.WriteLine("");
-                    _output.WriteLine("Raw push-received log (node, height, fromEnode, atUtc):");
-                    foreach (var p in pushesReceived.OrderBy(p => p.AtUtc))
+                    _output.WriteLine("Raw head-announcement log (node, height, fromEnode, atUtc):");
+                    foreach (var p in announcementsReceived.OrderBy(p => p.AtUtc))
                         _output.WriteLine($"node{p.Node} height={p.Height} from={p.FromEnode} at={p.AtUtc:O}");
 
                     _output.WriteLine("");
                     for (var n = 0; n < size; n++)
                     {
-                        var heights = pushesReceived.Where(p => p.Node == n).Select(p => p.Height).OrderBy(h => h).ToList();
-                        _output.WriteLine($"node{n} total pushes received={heights.Count} heights=[{string.Join(",", heights)}]");
+                        var heights = announcementsReceived.Where(p => p.Node == n).Select(p => p.Height).OrderBy(h => h).ToList();
+                        _output.WriteLine($"node{n} total head announcements received={heights.Count} heights=[{string.Join(",", heights)}]");
                     }
 
                     var missed = new List<string>();

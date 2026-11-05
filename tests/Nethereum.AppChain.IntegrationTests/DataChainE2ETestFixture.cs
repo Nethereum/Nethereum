@@ -32,7 +32,7 @@ namespace Nethereum.AppChain.IntegrationTests
         public AppChainCore? AppChain => _composed?.AppChain;
         public ISequencer? Sequencer => _composed?.Sequencer;
 
-        public string SequencerAddress { get; } = "0x12345678901234567890123456789012345678aa";
+        public string SequencerAddress => new EthECKey(SequencerPrivateKey).GetPublicAddress();
         public string SequencerPrivateKey { get; } = "0x12345678901234567890123456789012345678901234567890123456789012ab";
 
         private AppChainComposedNode? _composed;
@@ -64,7 +64,6 @@ namespace Nethereum.AppChain.IntegrationTests
             config.Genesis.DeployCreate2Factory = deployCreate2Factory;
             if (hardfork != null)
                 config.ForkSchedule = new Nethereum.EVM.ChainForkSchedule { ChainId = 420420, Hardfork = hardfork };
-            config.Consensus.Sequencer.Address = SequencerAddress;
             config.Consensus.Sequencer.PrivateKey = SequencerPrivateKey;
             config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
             config.Consensus.BlockTimeMs = 0;
