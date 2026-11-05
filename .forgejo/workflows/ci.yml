@@ -1,0 +1,123 @@
+name: tests
+
+on:
+  push:
+    branches: [aa-professional-refactor, master]
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "build, unit, full, Zisk (the nethereum-zisk image), or another opt-in category"
+        default: full
+
+env:
+  LANE: ${{ github.event.inputs.lane || (github.event_name == 'schedule' && 'full') || 'build' }}
+  RUN_NUMBER: ${{ github.run_number }}
+
+jobs:
+  build:
+    if: github.event_name == 'push' || github.event.inputs.lane == 'build'
+    runs-on: nethereum-ci
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        run: |
+          docker ps -q --filter label=nethereum-ci | xargs -r docker rm -f
+          [ -d .git ] || git init -q .
+          git fetch -q --depth 1 "${{ github.server_url }}/${{ github.repository }}.git" "${{ github.sha }}"
+          git checkout -q --force FETCH_HEAD
+          git clean -q -ffdx -e /external/
+          mkdir -p "$HOME/ci-cache/nuget" "$HOME/ci-results/$RUN_NUMBER"
+      - name: Image
+        run: docker build -q -t nethereum-ci:latest ci/
+      - name: Build
+        run: >
+          docker run --rm --label nethereum-ci --user "$(id -u):$(id -g)" --cpus 20 --memory 100g -v "$PWD:/src"
+          -v "$HOME/ci-cache/nuget:/home/ci/.nuget/packages" -v "$HOME/ci-results/$RUN_NUMBER:/results" nethereum-ci:latest
+          ci/run-tests.sh build --results /results/build
+      - name: Results
+        if: always()
+        run: |
+          echo "Full logs on the runner host: $HOME/ci-results/$RUN_NUMBER/build"
+          cat "$HOME/ci-results/$RUN_NUMBER/build/summary.txt"
+
+  tests:
+    if: github.event_name != 'push' && github.event.inputs.lane != 'build' && github.event.inputs.lane != 'Zisk'
+    name: tests (${{ matrix.area }})
+    runs-on: nethereum-ci
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        area: [evm, eest, corechain, appchain, devp2p, aa, zk, rest]
+    steps:
+      - name: Checkout
+        run: |
+          docker ps -q --filter label=nethereum-ci | xargs -r docker rm -f
+          [ -d .git ] || git init -q .
+          git fetch -q --depth 1 "${{ github.server_url }}/${{ github.repository }}.git" "${{ github.sha }}"
+          git checkout -q --force FETCH_HEAD
+          git clean -q -ffdx -e /external/
+          mkdir -p "$HOME/ci-cache/nuget" "$HOME/ci-cache/external" "$HOME/ci-results/$RUN_NUMBER"
+      - name: Image
+        run: docker build -q -t nethereum-ci:latest ci/
+      - name: Externals
+        run: >
+          docker run --rm --label nethereum-ci --user "$(id -u):$(id -g)" -v "$PWD:/src" -v "$HOME/ci-cache/nuget:/home/ci/.nuget/packages"
+          -v "$HOME/ci-cache/external:/src/external" nethereum-ci:latest
+          dotnet run ci/fetch-externals.cs
+      - name: Tests
+        run: >
+          docker run --rm --label nethereum-ci --user "$(id -u):$(id -g)" --cpus 20 --memory 100g --shm-size 2g -v "$PWD:/src"
+          -v "$HOME/ci-cache/nuget:/home/ci/.nuget/packages" -v "$HOME/ci-cache/external:/src/external"
+          -v "$HOME/ci-results/$RUN_NUMBER:/results" nethereum-ci:latest
+          ci/run-tests.sh "$LANE" --area ${{ matrix.area }} --results /results/${{ matrix.area }}
+      - name: Results
+        if: always()
+        run: |
+          echo "Full logs on the runner host: $HOME/ci-results/$RUN_NUMBER/${{ matrix.area }}"
+          cat "$HOME/ci-results/$RUN_NUMBER/${{ matrix.area }}/summary.txt"
+
+  zisk:
+    if: github.event.inputs.lane == 'Zisk'
+    runs-on: nethereum-ci
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        run: |
+          docker ps -q --filter label=nethereum-ci | xargs -r docker rm -f
+          [ -d .git ] || git init -q .
+          git fetch -q --depth 1 "${{ github.server_url }}/${{ github.repository }}.git" "${{ github.sha }}"
+          git checkout -q --force FETCH_HEAD
+          git clean -q -ffdx -e /external/
+          mkdir -p "$HOME/ci-cache/nuget" "$HOME/ci-cache/external" "$HOME/ci-results/$RUN_NUMBER"
+      - name: Images
+        run: |
+          docker image inspect nethereum/bflat-riscv64:zisk-1.3.1 >/dev/null 2>&1 || {
+            rm -rf "$HOME/ci-cache/bflat-riscv64"
+            git clone -q --depth 1 --branch zisk-1.3.1 http://192.168.1.52:3002/Nethereum/bflat-riscv64.git "$HOME/ci-cache/bflat-riscv64"
+            docker build -q -t nethereum/bflat-riscv64:zisk-1.3.1 "$HOME/ci-cache/bflat-riscv64"
+          }
+          docker build -q -f ci/Dockerfile.zisk -t nethereum-zisk:latest zisk/scripts
+      - name: Externals
+        run: >
+          docker run --rm --label nethereum-ci --user "$(id -u):$(id -g)" -v "$PWD:/src" -v "$HOME/ci-cache/nuget:/home/ci/.nuget/packages"
+          -v "$HOME/ci-cache/external:/src/external" nethereum-zisk:latest
+          dotnet run ci/fetch-externals.cs
+      - name: Guest
+        run: >
+          docker run --rm --label nethereum-ci --user "$(id -u):$(id -g)" --cpus 8 -v "$PWD:/src" nethereum-zisk:latest
+          bash zisk/scripts/build.sh
+      - name: Tests
+        run: >
+          docker run --rm --label nethereum-ci --user "$(id -u):$(id -g)" --cpus 8 --memory 64g -v "$PWD:/src"
+          -v "$HOME/ci-cache/nuget:/home/ci/.nuget/packages" -v "$HOME/ci-cache/external:/src/external"
+          -v "$HOME/ci-results/$RUN_NUMBER:/results" nethereum-zisk:latest
+          ci/run-tests.sh Zisk --only Nethereum.EVM.Core.Tests --only Nethereum.EVM.UnitTests --only Nethereum.CoreChain.IntegrationTests --only Nethereum.AppChain.Anchoring.IntegrationTests
+          --results /results/zisk
+      - name: Results
+        if: always()
+        run: |
+          echo "Full logs on the runner host: $HOME/ci-results/$RUN_NUMBER/zisk"
+          cat "$HOME/ci-results/$RUN_NUMBER/zisk/summary.txt"

@@ -365,6 +365,42 @@ cd Nethereum.AppChain.Server.Core
 CALL :restorepack
 cd..
 
+cd Nethereum.AppChain.Anchoring
+CALL :restorepack
+cd..
+
+cd Nethereum.AppChain.Anchoring.Postgres
+CALL :restorepack
+cd..
+
+cd Nethereum.AppChain.Policy
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.AppChain
+CALL :restorepack
+cd..
+
+cd Nethereum.Consensus.Clique
+CALL :restorepack
+cd..
+
+cd Nethereum.AppChain.Server
+CALL :restorepack
+cd..
+
+cd Nethereum.AccountAbstraction.SimpleAccount
+CALL :restorepack
+cd..
+
+cd Nethereum.ABI.ABIInfoSqliteStorage
+CALL :restorepack
+cd..
+
+cd Nethereum.Wallet.UI.Components.Avalonia
+CALL :restorepack
+cd..
+
 cd Nethereum.BlockchainStorage.Processors
 CALL :restorepack
 cd..
@@ -406,6 +442,10 @@ CALL :restorepack
 cd..
 
 cd Nethereum.CoreChain.RocksDB
+CALL :restorepack
+cd..
+
+cd Nethereum.EngineApi.Hosting
 CALL :restorepack
 cd..
 

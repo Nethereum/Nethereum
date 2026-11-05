@@ -4,7 +4,7 @@
 	<PropertyGroup>
 		<Description>Nethereum.Uniswap to interact with Uniswap V2, V3 and V4 contracts, including Universal Router and Permit2</Description>
 		<AssemblyTitle>Nethereum.Uniswap</AssemblyTitle>
-		<VersionPrefix>$(NethereumVersion)</VersionPrefix>
+		<Version>$(NethereumVersion)</Version>
 		<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
 		<AssemblyName>Nethereum.Uniswap</AssemblyName>
 		<PackageId>Nethereum.Uniswap</PackageId>
