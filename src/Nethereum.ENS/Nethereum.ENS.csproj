@@ -3,10 +3,11 @@
   <PropertyGroup>
     <Description>Nethereum.ENS Ethereum Name service library with old ENS interfaces not included in Nethereum.Contracts.Standards.ENS, if in doubt use Nethereum.Contracts</Description>
     <AssemblyTitle>Nethereum.ENS</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(ENSFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.ENS</AssemblyName>
     <PackageId>Nethereum.ENS</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +29,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="BaseRegistrarImplementation\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

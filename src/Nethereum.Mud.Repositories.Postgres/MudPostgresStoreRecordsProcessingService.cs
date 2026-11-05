@@ -47,7 +47,7 @@ namespace Nethereum.Mud.Repositories.Postgres
             await ChainStateValidationService
                 .EnsureChainIdMatchesAsync(web3.Eth, repositoryFactory, cancellationToken)
                 .ConfigureAwait(false);
-            IBlockProgressRepository progressRepository = new BlockProgressRepository<MudPostgresStoreRecordsDbContext>(Context);
+            IBlockProgressRepository progressRepository = new BlockProgressRepository<MudPostgresStoreRecordsDbContext>(Context, cancellationToken);
             var chainStateRepo = repositoryFactory.CreateChainStateRepository();
             var mudRepository = new MudPostgresStoreRecordsTableRepository(Context);
             var storeEventsLogProcessingService = new StoreEventsLogProcessingService(web3, Address);

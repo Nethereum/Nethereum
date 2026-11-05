@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -17,6 +18,7 @@ namespace Nethereum.Siwe
         private readonly ISessionStorage _sessionStorage;
         private readonly IEthereumUserService _ethereumUserService;
         private readonly Web3.Web3 _web3;
+        private BigInteger? _nodeChainId;
 
         public SiweMessageService(ISessionStorage sessionStorage, 
             IEthereumUserService ethereumUserService = null,
@@ -53,10 +55,21 @@ namespace Nethereum.Siwe
         {
             var builtMessage = SiweMessageStringBuilder.BuildMessage(siweMessage);
             var messageSigner = new EthereumMessageSigner();
-            var accountRecovered = messageSigner.EncodeUTF8AndEcRecover(builtMessage, signature);
-            if (accountRecovered.IsTheSameAddress(siweMessage.Address)) return true;
+            if (IsEoaSignatureLength(signature))
+            {
+                try
+                {
+                    var accountRecovered = messageSigner.EncodeUTF8AndEcRecover(builtMessage, signature);
+                    if (accountRecovered.IsTheSameAddress(siweMessage.Address)) return true;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
             if (_web3 != null)
             {
+                if (!await IsNodeOnMessageChain(siweMessage).ConfigureAwait(false)) return false;
                 if (_web3.Eth.SignatureValidationPredeployContractERC6492.IsERC6492Signature(signature))
                 {
                     var service = _web3.Eth.SignatureValidationPredeployContractERC6492;
@@ -77,12 +90,50 @@ namespace Nethereum.Siwe
             return false;
         }
 
+        private static bool IsEoaSignatureLength(string signature)
+        {
+            try
+            {
+                return signature.HexToByteArray().Length == 65;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private async Task<bool> IsNodeOnMessageChain(SiweMessage siweMessage)
+        {
+            if (!BigInteger.TryParse(siweMessage.ChainId, out var messageChainId)) return false;
+            if (_nodeChainId == null)
+            {
+                var chainId = await _web3.Eth.ChainId.SendRequestAsync().ConfigureAwait(false);
+                _nodeChainId = chainId.Value;
+            }
+
+            return _nodeChainId == messageChainId;
+        }
+
        
         public virtual async Task<bool> IsValidMessage(SiweMessage siweMessage, string signature)
         {
-            return HasMessageDateStartedAndNotExpired(siweMessage) &&
-                   IsMessageTheSameAsSessionStored(siweMessage)
-                   && await IsMessageSignatureValid(siweMessage, signature).ConfigureAwait(false);
+            if (!(HasMessageDateStartedAndNotExpired(siweMessage) &&
+                  IsMessageTheSameAsSessionStored(siweMessage)
+                  && await IsMessageSignatureValid(siweMessage, signature).ConfigureAwait(false)))
+            {
+                return false;
+            }
+
+            try
+            {
+                _sessionStorage.Remove(siweMessage.Nonce);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public virtual Task<bool> IsUserAddressRegistered(SiweMessage siweMessage)

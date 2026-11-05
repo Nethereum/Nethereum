@@ -3,6 +3,7 @@
     /// <summary>
     /// List of default text records from ENS docs <see href="https://docs.ens.domains/ens-improvement-proposals/ensip-5-text-records"/> 
     /// </summary>
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "TextDataKey")]
     public enum TextDataKey
     {
         email,

@@ -62,6 +62,7 @@ namespace Nethereum.ENS
         }
 
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "PublicResolverService.AddrQueryAsync")]
         public Task<string> AddrQueryAsync(byte[] node, BlockParameter blockParameter = null)
         {
             var addrFunction = new AddrFunction();
@@ -133,6 +134,7 @@ namespace Nethereum.ENS
         }
 
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "PublicResolverService.ContenthashQueryAsync")]
         public Task<byte[]> ContenthashQueryAsync(byte[] node, BlockParameter blockParameter = null)
         {
             var contenthashFunction = new ContenthashFunction();
@@ -178,6 +180,7 @@ namespace Nethereum.ENS
         }
 
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "PublicResolverService.InterfaceImplementerQueryAsync")]
         public Task<string> InterfaceImplementerQueryAsync(byte[] node, byte[] interfaceID, BlockParameter blockParameter = null)
         {
             var interfaceImplementerFunction = new InterfaceImplementerFunction();
@@ -293,6 +296,7 @@ namespace Nethereum.ENS
             return ContractHandler.SendRequestAsync(setAddrFunction);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "PublicResolverService.SetAddrRequestAndWaitForReceiptAsync")]
         public Task<TransactionReceipt> SetAddrRequestAndWaitForReceiptAsync(byte[] node, string a, CancellationTokenSource cancellationToken = null)
         {
             var setAddrFunction = new SetAddrFunction2();
@@ -496,6 +500,7 @@ namespace Nethereum.ENS
             return ContractHandler.SendRequestAsync(setTextFunction);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "PublicResolverService.SetTextRequestAndWaitForReceiptAsync")]
         public Task<TransactionReceipt> SetTextRequestAndWaitForReceiptAsync(byte[] node, string key, string value, CancellationTokenSource cancellationToken = null)
         {
             var setTextFunction = new SetTextFunction();
@@ -526,6 +531,7 @@ namespace Nethereum.ENS
         }
 
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "PublicResolverService.TextQueryAsync")]
         public Task<string> TextQueryAsync(byte[] node, string key, BlockParameter blockParameter = null)
         {
             var textFunction = new TextFunction();

@@ -29,55 +29,78 @@ using MyProject.Contracts.MyWorld.Tables;
 
 namespace Nethereum.Mud.IntegrationTests
 {
-    //This tests are using a vanilla world contract (using vanilla template) deployed to anvil
-    //and this configuration
-    //is used for the tests
-    /*
-      export default defineWorld({
-           tables: {
-             Counter: {
-               schema: {
-                 value: "uint32",
-               },
-               key: [],
-             },
-             Item:{
-               schema:{
-                 id:"uint32",
-                 price:"uint32",
-                 name:"string",
-                 description:"string",
-                 owner:"string",
-               },
-               key:["id"]
-             }
-           },
-         });
-     */
-    public class WorldServiceTests
+    [Collection(EthereumClientIntegrationFixture.ETHEREUM_CLIENT_COLLECTION_DEFAULT)]
+    public class WorldServiceTests : IAsyncLifetime
     {
-        public const string WorldAddress = "0x29d8d3f29d98ff51bba2ad34f6ab888303783a36";
-        public const string WorldUrl = "http://localhost:8545";
-        //using default anvil private key
-        public const string OwnerPK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        public const string UserPK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-        public const string UserAccount = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+        private static readonly string FactorySalt = Sha3Keccack.Current.CalculateHash(nameof(WorldServiceTests));
+
+        private readonly EthereumClientIntegrationFixture _ethereumClientIntegrationFixture;
+        private readonly Nethereum.Web3.Accounts.Account _user = new Nethereum.Web3.Accounts.Account(
+            Nethereum.Signer.EthECKey.GenerateKey().GetPrivateKey(), EthereumClientIntegrationFixture.ChainId);
+
+        private string WorldAddress { get; set; }
+        private string UserAccount => _user.Address;
+
+        public WorldServiceTests(EthereumClientIntegrationFixture ethereumClientIntegrationFixture)
+        {
+            _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
+        }
+
+        public async Task InitializeAsync()
+        {
+            var web3 = GetWeb3();
+            var create2Service = web3.Eth.Create2DeterministicDeploymentProxyService;
+            var proxyDeployment = await create2Service.GenerateEIP155DeterministicDeploymentUsingPreconfiguredSignatureAsync();
+            var deployerProxy = await create2Service.DeployProxyAndGetContractAddressAsync(proxyDeployment);
+
+            var worldFactoryDeployService = new WorldFactoryDeployService();
+            var factoryAddresses = await worldFactoryDeployService.DeployWorldFactoryContractAndSystemDependenciesAsync(web3, deployerProxy, FactorySalt);
+            var worldSalt = Sha3Keccack.Current.CalculateHash(Guid.NewGuid().ToString());
+            WorldAddress = (await worldFactoryDeployService.DeployWorldAsync(web3, worldSalt, factoryAddresses)).NewContract;
+
+            var registration = new RegistrationSystemService(web3, WorldAddress);
+            await registration.RegisterNamespaceRequestAndWaitForReceiptAsync(
+                ResourceEncoder.EncodeNamespace(new ItemTableRecord().Namespace));
+            await registration.RegisterTableRequestAndWaitForReceiptAsync(new CounterTableRecord().GetSchemaEncoded().ToRegisterTableFunction());
+            await registration.RegisterTableRequestAndWaitForReceiptAsync(new ItemTableRecord().GetSchemaEncoded().ToRegisterTableFunction());
+
+            var incrementSystemDeployment = new IncrementSystemDeployment();
+            var incrementSystemAddress = create2Service.CalculateCreate2Address(incrementSystemDeployment, deployerProxy, FactorySalt);
+            await create2Service.DeployContractRequestAndWaitForReceiptAsync(incrementSystemDeployment, deployerProxy, FactorySalt);
+            var incrementSystemId = ResourceEncoder.EncodeRootSystem("Increment");
+            await registration.RegisterSystemRequestAndWaitForReceiptAsync(incrementSystemId, incrementSystemAddress, true);
+            foreach (var function in new IncrementSystemService(web3, WorldAddress).GetAllFunctionABIs())
+            {
+                await registration.RegisterRootFunctionSelectorRequestAndWaitForReceiptAsync(new RegisterRootFunctionSelectorFunction
+                {
+                    SystemId = incrementSystemId,
+                    SystemFunctionSignature = function.Signature,
+                    WorldFunctionSignature = function.Signature
+                });
+            }
+
+            var world = GetWorldService();
+            await world.ContractHandler.SendRequestAndWaitForReceiptAsync(new IncrementFunction());
+            await world.ContractHandler.SendRequestAndWaitForReceiptAsync(new IncrementFunction());
+
+            await web3.Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(UserAccount, 1m);
+        }
+
+        public Task DisposeAsync() => Task.CompletedTask;
 
         public WorldService GetWorldService()
         {
-            var web3 = new Nethereum.Web3.Web3(new Nethereum.Web3.Accounts.Account(OwnerPK), WorldUrl);
-            return new WorldService(web3, WorldAddress);
+            return new WorldService(GetWeb3(), WorldAddress);
         }
 
         public IWeb3 GetWeb3()
         {
-            return new Nethereum.Web3.Web3(new Nethereum.Web3.Accounts.Account(OwnerPK), WorldUrl);
-        }   
+            return _ethereumClientIntegrationFixture.GetWeb3();
+        }
 
         public WorldService GetUserWorldService()
         {
-            var web3 = new Nethereum.Web3.Web3(new Nethereum.Web3.Accounts.Account(UserPK), WorldUrl);
-            return new WorldService(web3, WorldAddress);
+            return new WorldService(new Nethereum.Web3.Web3(_user, _ethereumClientIntegrationFixture.GetClient()), WorldAddress);
         }
 
         [Fact]
@@ -249,6 +272,14 @@ namespace Nethereum.Mud.IntegrationTests
         [Fact]
         public async Task ShouldGetSetRecordsFromLogs()
         {
+            var worldService = GetWorldService();
+            foreach (var value in new[] { 10, 20 })
+            {
+                var counter = new CounterTableRecord();
+                counter.Values.Value = value;
+                await worldService.SetRecordRequestAndWaitForReceiptAsync(counter);
+            }
+
             var web3 = GetWeb3();
             var storeLogProcessingService = new StoreEventsLogProcessingService(web3, WorldAddress);
             var setRecords = await storeLogProcessingService.GetAllSetRecordForTable( "Counter", null, null, CancellationToken.None);
@@ -259,7 +290,7 @@ namespace Nethereum.Mud.IntegrationTests
 
             var counterTable1 = new CounterTableRecord();
             counterTable1.DecodeValues(setRecords[1].Event.StaticData, setRecords[1].Event.EncodedLengths, setRecords[1].Event.DynamicData);
-            Assert.True(counterTable0.Values.Value > 0);
+            Assert.True(counterTable1.Values.Value > 0);
 
             foreach (var setRecord in setRecords)
             {
@@ -366,7 +397,7 @@ namespace Nethereum.Mud.IntegrationTests
 
                 if(recordTableId.Name == "Item")
                 {
-                    Assert.True(recordTableId.IsRoot());
+                    Assert.Equal(new ItemTableRecord().Namespace, recordTableId.Namespace);
                     var fields = result.Values.GetValueSchemaFields().ToList();
                    
                     Assert.Equal("uint32", fields[0].Type);

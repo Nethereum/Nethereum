@@ -17,6 +17,40 @@ namespace Nethereum.Mud.Repositories.Postgres
 
         }
 
+        public async Task<PagedBlockNumberResult<StoredRecord>> GetCompletedRecordsAsync(int pageSize, BigInteger startingBlockNumber, long lastProcessedRowId)
+        {
+            if (pageSize < 1) pageSize = 10;
+
+            var progress = await Context.BlockProgress
+                .AsNoTracking()
+                .OrderByDescending(b => b.RowIndex)
+                .FirstOrDefaultAsync();
+
+            var records = new List<StoredRecord>();
+            if (progress != null)
+            {
+                var completedBlock = new BigInteger(progress.LastBlockProcessed);
+                records = await Context.StoredRecords
+                    .AsNoTracking()
+                    .Where(r => r.BlockNumber != null && r.BlockNumber <= completedBlock &&
+                        (r.BlockNumber > startingBlockNumber ||
+                        (r.BlockNumber == startingBlockNumber && r.RowId > lastProcessedRowId)))
+                    .OrderBy(r => r.BlockNumber)
+                    .ThenBy(r => r.RowId)
+                    .Take(pageSize)
+                    .ToListAsync();
+            }
+
+            return new PagedBlockNumberResult<StoredRecord>
+            {
+                Records = records,
+                TotalRecords = records.Count,
+                PageSize = pageSize,
+                LastBlockNumber = records.LastOrDefault()?.BlockNumber,
+                LastRowId = records.LastOrDefault()?.RowId
+            };
+        }
+
         public override async Task<StoredRecord> GetRecordAsync(string tableIdHex, string keyHex)
         {
             var tableIdBytes = tableIdHex.HexToByteArray();
@@ -75,7 +109,8 @@ namespace Nethereum.Mud.Repositories.Postgres
         public override async Task DeleteRecordAsync(byte[] tableId, List<byte[]> key, string address = null, BigInteger? blockNumber = null, int? logIndex = null)
         {
             var fullKey = MergeKeysTo32ByteEachElement(key);
-            var storedRecord = await Context.StoredRecords.FirstOrDefaultAsync(r => r.TableIdBytes == tableId && r.KeyBytes == fullKey);
+            var addressBytes = address.HexToByteArray();
+            var storedRecord = await Context.StoredRecords.FirstOrDefaultAsync(r => r.AddressBytes == addressBytes && r.TableIdBytes == tableId && r.KeyBytes == fullKey);
             if (storedRecord != null)
             {
                 storedRecord.IsDeleted = true;
@@ -92,7 +127,8 @@ namespace Nethereum.Mud.Repositories.Postgres
         protected override async Task<StoredRecord> CreateOrUpdateRecordAsync(byte[] tableId, List<byte[]> key, string address, BigInteger? blockNumber, int? logIndex)
         {
             byte[] fullKey = MergeKeysTo32ByteEachElement(key);
-            var storedRecord = await Context.StoredRecords.FirstOrDefaultAsync(r => r.TableIdBytes == tableId && r.KeyBytes == fullKey);
+            var addressBytes = address.HexToByteArray();
+            var storedRecord = await Context.StoredRecords.FirstOrDefaultAsync(r => r.AddressBytes == addressBytes && r.TableIdBytes == tableId && r.KeyBytes == fullKey);
 
             if (storedRecord == null)
             {

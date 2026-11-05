@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>did:ethr method implementation using ERC-1056 EthereumDIDRegistry for Decentralized Identifiers</Description>
     <AssemblyTitle>Nethereum.DID.EthrDID</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.DID.EthrDID</AssemblyName>
     <PackageId>Nethereum.DID.EthrDID</PackageId>

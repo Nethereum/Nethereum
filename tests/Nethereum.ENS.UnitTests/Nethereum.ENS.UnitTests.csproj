@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-     <ProjectReference Include="..\Nethereum.ENS\Nethereum.ENS.csproj" />
+     <ProjectReference Include="..\..\src\Nethereum.ENS\Nethereum.ENS.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
      <ProjectReference Include="..\..\src\Nethereum.Contracts\Nethereum.Contracts.csproj" />
   </ItemGroup>
 

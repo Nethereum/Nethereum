@@ -25,7 +25,8 @@ namespace Nethereum.ENS.UnitTests
             Assert.Equal("foo.eth", ensUtil.Normalise("foo.eth"));
             //normalise international domain
             //with crylic 'o' 
-            Assert.Equal("xn--f-1tba.eth", ensUtil.Normalise("fоо.eth"));
+            var rejected = Assert.Throws<ADRaffy.ENSNormalize.InvalidLabelException>(() => ensUtil.Normalise("fоо.eth"));
+            Assert.Contains("illegal mixture", rejected.Message);
 
         }
     }

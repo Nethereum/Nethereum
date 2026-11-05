@@ -9,6 +9,7 @@ using Nethereum.RPC.Eth.DTOs;
 namespace Nethereum.ENS
 {
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "EthTLSService")]
     public class EthTLSService
     {
         public EthTLSService(Web3.Web3 web3, string ensRegistryAddress = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")

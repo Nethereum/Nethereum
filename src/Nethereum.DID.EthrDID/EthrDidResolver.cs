@@ -33,8 +33,10 @@ namespace Nethereum.DID.EthrDID
             var owner = await service.IdentityOwnerQueryAsync(address).ConfigureAwait(false);
 
             var events = await CollectEventsAsync(service, address).ConfigureAwait(false);
+            var latest = await _web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber
+                .SendRequestAsync(Nethereum.RPC.Eth.DTOs.BlockParameter.CreateLatest()).ConfigureAwait(false);
 
-            return BuildDocument(did, address, owner, events);
+            return BuildDocument(did, address, owner, events, latest.Timestamp.Value);
         }
 
         private async Task<List<DIDEvent>> CollectEventsAsync(EthereumDIDRegistryService service, string address)
@@ -68,21 +70,21 @@ namespace Nethereum.DID.EthrDID
 
                 foreach (var log in ownerLogs)
                 {
-                    events.Add(new DIDEvent { EventType = DIDEventType.OwnerChanged, OwnerChanged = log.Event });
+                    events.Add(new DIDEvent { EventType = DIDEventType.OwnerChanged, OwnerChanged = log.Event, BlockNumber = log.Log.BlockNumber.Value, LogIndex = log.Log.LogIndex.Value });
                     if (log.Event.PreviousChange > previousChange)
                         previousChange = log.Event.PreviousChange;
                 }
 
                 foreach (var log in delegateLogs)
                 {
-                    events.Add(new DIDEvent { EventType = DIDEventType.DelegateChanged, DelegateChanged = log.Event });
+                    events.Add(new DIDEvent { EventType = DIDEventType.DelegateChanged, DelegateChanged = log.Event, BlockNumber = log.Log.BlockNumber.Value, LogIndex = log.Log.LogIndex.Value });
                     if (log.Event.PreviousChange > previousChange)
                         previousChange = log.Event.PreviousChange;
                 }
 
                 foreach (var log in attributeLogs)
                 {
-                    events.Add(new DIDEvent { EventType = DIDEventType.AttributeChanged, AttributeChanged = log.Event });
+                    events.Add(new DIDEvent { EventType = DIDEventType.AttributeChanged, AttributeChanged = log.Event, BlockNumber = log.Log.BlockNumber.Value, LogIndex = log.Log.LogIndex.Value });
                     if (log.Event.PreviousChange > previousChange)
                         previousChange = log.Event.PreviousChange;
                 }
@@ -90,10 +92,10 @@ namespace Nethereum.DID.EthrDID
                 lastBlock = previousChange;
             }
 
-            return events;
+            return events.OrderBy(e => e.BlockNumber).ThenBy(e => e.LogIndex).ToList();
         }
 
-        private DidDocument BuildDocument(string did, string address, string owner, List<DIDEvent> events)
+        private DidDocument BuildDocument(string did, string address, string owner, List<DIDEvent> events, BigInteger now)
         {
             var doc = new DidDocument
             {
@@ -129,7 +131,32 @@ namespace Nethereum.DID.EthrDID
             int delegateCount = 0;
             int serviceCount = 0;
 
+            var active = new List<KeyValuePair<string, DIDEvent>>();
             foreach (var evt in events)
+            {
+                string key;
+                BigInteger validTo;
+                if (evt.EventType == DIDEventType.DelegateChanged)
+                {
+                    key = "delegate|" + evt.DelegateChanged.DelegateType.ToHex() + "|" + evt.DelegateChanged.Delegate.ToLowerInvariant();
+                    validTo = evt.DelegateChanged.ValidTo;
+                }
+                else if (evt.EventType == DIDEventType.AttributeChanged)
+                {
+                    key = "attribute|" + evt.AttributeChanged.Name.ToHex() + "|" + evt.AttributeChanged.Value.ToHex();
+                    validTo = evt.AttributeChanged.ValidTo;
+                }
+                else
+                {
+                    continue;
+                }
+
+                active.RemoveAll(entry => entry.Key == key);
+                if (validTo > now)
+                    active.Add(new KeyValuePair<string, DIDEvent>(key, evt));
+            }
+
+            foreach (var evt in active.Select(entry => entry.Value))
             {
                 switch (evt.EventType)
                 {
@@ -217,17 +244,6 @@ namespace Nethereum.DID.EthrDID
                         }
                         break;
 
-                    case DIDEventType.OwnerChanged:
-                        var ownerEvt = evt.OwnerChanged;
-                        doc.Controller = new List<string> { "did:ethr:" + ownerEvt.Owner.ToLower() };
-                        doc.VerificationMethod[0] = new VerificationMethod
-                        {
-                            Id = controllerId,
-                            Type = DidConstants.EcdsaSecp256k1RecoveryMethod2020,
-                            Controller = did,
-                            BlockchainAccountId = "eip155:1:" + ownerEvt.Owner.ToLower()
-                        };
-                        break;
                 }
             }
 
@@ -290,6 +306,8 @@ namespace Nethereum.DID.EthrDID
             public DIDOwnerChangedEventDTO OwnerChanged { get; set; }
             public DIDDelegateChangedEventDTO DelegateChanged { get; set; }
             public DIDAttributeChangedEventDTO AttributeChanged { get; set; }
+            public BigInteger BlockNumber { get; set; }
+            public BigInteger LogIndex { get; set; }
         }
 
         private enum DIDEventType

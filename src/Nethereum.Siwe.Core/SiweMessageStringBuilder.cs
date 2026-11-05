@@ -19,16 +19,22 @@ namespace Nethereum.Siwe.Core
         public const string RESOURCES = "\nResources:";
         public const string RESOURCE = "\n- {0}";
 
+        private static string RejectLineBreaks(string name, string value)
+        {
+            if (value != null && value.IndexOfAny(new[] { '\r', '\n' }) >= 0)
+                throw new ArgumentException(name + " cannot contain CR or LF");
+            return value;
+        }
+
         private static string GetDomain(SiweMessage message)
         {
             if (string.IsNullOrEmpty(message.Domain)) throw new ArgumentException("Domain cannot be null or empty");
+            RejectLineBreaks("Domain", message.Domain);
             return string.Format(DOMAIN, message.Domain);
         }
 
         private static string GetAddress(SiweMessage message)
         {
-            //should this be a checksum address?
-            //if (message.Address.IsEthereumChecksumAddress())
             if(message.Address.IsEthereumChecksumAddress())
             {
                 return string.Format(ADDRESS, message.Address);
@@ -41,6 +47,7 @@ namespace Nethereum.Siwe.Core
         {
             if (!string.IsNullOrEmpty(message.Statement))
             {
+                RejectLineBreaks("Statement", message.Statement);
                 return string.Format(STATEMENT, message.Statement);
             }
             
@@ -49,7 +56,7 @@ namespace Nethereum.Siwe.Core
 
         private static string GetUriLine(SiweMessage message)
         {
-            return string.Format(URI_LINE, message.Uri);
+            return string.Format(URI_LINE, RejectLineBreaks("Uri", message.Uri));
         }
 
         private static string GetVersion(SiweMessage message)
@@ -102,6 +109,7 @@ namespace Nethereum.Siwe.Core
         {
             if (!string.IsNullOrEmpty(message.RequestId))
             {
+                RejectLineBreaks("Request ID", message.RequestId);
                 return string.Format(REQUEST_ID, message.RequestId);
             }
 
@@ -115,7 +123,7 @@ namespace Nethereum.Siwe.Core
                 var returnString = RESOURCES;
                 foreach (var resource in message.Resources)
                 {
-                    returnString += string.Format(RESOURCE, resource);
+                    returnString += string.Format(RESOURCE, RejectLineBreaks("Resource", resource));
                 }
 
                 return returnString;

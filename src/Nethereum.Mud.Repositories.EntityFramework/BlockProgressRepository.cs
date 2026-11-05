@@ -3,6 +3,7 @@ using Nethereum.BlockchainProcessing.BlockStorage.Entities;
 using Nethereum.BlockchainProcessing.ProgressRepositories;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nethereum.Mud.Repositories.EntityFramework
@@ -10,17 +11,23 @@ namespace Nethereum.Mud.Repositories.EntityFramework
     public class BlockProgressRepository<TDbContext> : IBlockProgressRepository where TDbContext : DbContext, IMudStoreRecordsDbSets
     {
         private readonly TDbContext context;
+        private readonly CancellationToken cancellationToken;
 
-        public BlockProgressRepository(TDbContext context)
+        public BlockProgressRepository(TDbContext context) : this(context, default)
+        {
+        }
+
+        public BlockProgressRepository(TDbContext context, CancellationToken cancellationToken)
         {
             this.context = context;
+            this.cancellationToken = cancellationToken;
         }
 
         public async Task<BigInteger?> GetLastBlockNumberProcessedAsync()
         {
             var existing = await context.BlockProgress
                 .OrderByDescending(b => b.RowIndex)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             return existing == null ? (BigInteger?)null : new BigInteger(existing.LastBlockProcessed);
         }
 
@@ -29,7 +36,7 @@ namespace Nethereum.Mud.Repositories.EntityFramework
             var value = (long)blockNumber;
             var existing = await context.BlockProgress
                 .OrderByDescending(b => b.RowIndex)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
             if (existing != null)
             {
@@ -43,7 +50,7 @@ namespace Nethereum.Mud.Repositories.EntityFramework
                 context.BlockProgress.Add(blockRange);
             }
 
-            await context.SaveChangesAsync().ConfigureAwait(false);
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

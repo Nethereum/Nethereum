@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum.Siwe.Core Core library to support Siwe (Sign in with Ethereum)</Description>
     <AssemblyTitle>Nethereum.Siwe.Core</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Siwe.Core</AssemblyName>
     <PackageId>Nethereum.Siwe.Core</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Siwe</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Siwe</PackageTags>
 	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
@@ -96,4 +97,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

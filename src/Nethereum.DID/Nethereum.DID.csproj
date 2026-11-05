@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>W3C Decentralized Identifiers (DID) Core specification models, DID URL parser, and document serialization</Description>
     <AssemblyTitle>Nethereum.DID</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.DID</AssemblyName>
     <PackageId>Nethereum.DID</PackageId>

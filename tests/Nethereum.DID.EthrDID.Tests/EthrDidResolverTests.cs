@@ -232,6 +232,41 @@ namespace Nethereum.DID.EthrDID.Tests
             Assert.Equal(doc.VerificationMethod.Count, reparsed.VerificationMethod.Count);
         }
 
+        [Fact]
+        public async Task Given_OwnershipChangedTwice_When_Resolved_Then_TheControllerIsTheCurrentOwner()
+        {
+            var did = "did:ethr:" + _address;
+            var second = new Account("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
+            var third = "0x6666666666666666666666666666666666666666";
+            await _web3.Eth.GetEtherTransferService().TransferEtherAndWaitForReceiptAsync(second.Address, 1m);
+
+            await _service.ChangeOwnerRequestAndWaitForReceiptAsync(_address, _address, second.Address);
+            var secondService = new EthereumDIDRegistryService(_node.CreateWeb3(second), _service.ContractHandler.ContractAddress);
+            await secondService.ChangeOwnerRequestAndWaitForReceiptAsync(_address, second.Address, third);
+
+            var doc = await _resolver.ResolveAsync(did);
+
+            Assert.Equal(new[] { "did:ethr:" + third }, doc.Controller);
+            Assert.Contains(third, doc.VerificationMethod[0].BlockchainAccountId.ToLower());
+        }
+
+        [Fact]
+        public async Task Given_ARevokedDelegate_When_Resolved_Then_ItIsNotAVerificationMethod()
+        {
+            var did = "did:ethr:" + _address;
+            var delegateAddress = "0x7777777777777777777777777777777777777777";
+            var delegateType = PadRight(Encoding.UTF8.GetBytes("veriKey"), 32);
+
+            await _service.AddDelegateRequestAndWaitForReceiptAsync(
+                _address, delegateType, delegateAddress, new BigInteger(86400));
+            await _service.RevokeDelegateRequestAndWaitForReceiptAsync(_address, delegateType, delegateAddress);
+
+            var doc = await _resolver.ResolveAsync(did);
+
+            Assert.DoesNotContain(doc.VerificationMethod,
+                vm => vm.BlockchainAccountId != null && vm.BlockchainAccountId.ToLower().Contains(delegateAddress));
+        }
+
         private static byte[] PadRight(byte[] bytes, int totalLength)
         {
             if (bytes.Length >= totalLength) return bytes;

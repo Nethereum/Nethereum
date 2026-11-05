@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Nethereum.BlockchainProcessing.Metrics;
 using Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser;
 using Npgsql;
 
@@ -24,7 +26,11 @@ namespace Nethereum.Mud.Repositories.Postgres
             ConfigureMudOptions(services, configuration);
 
             services.AddTransient<MudPostgresStoreRecordsProcessingService>();
-            services.AddHostedService<MudPostgresProcessingHostedService>();
+            services.AddHostedService(sp => new MudPostgresProcessingHostedService(
+                sp.GetRequiredService<ILogger<MudPostgresProcessingHostedService>>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<IOptions<MudPostgresProcessingOptions>>(),
+                sp.GetService<ILogProcessingObserver>()));
 
             return services;
         }
@@ -39,7 +45,10 @@ namespace Nethereum.Mud.Repositories.Postgres
             services.AddTransient<MudPostgresStoreRecordsTableRepository>();
             services.AddTransient(_ => new NpgsqlConnection(resolvedConnectionString));
             services.AddTransient<MudPostgresNormaliserProcessingService>();
-            services.AddHostedService<MudPostgresNormaliserBackgroundService>();
+            services.AddHostedService(sp => new MudPostgresNormaliserBackgroundService(
+                sp.GetRequiredService<ILogger<MudPostgresNormaliserBackgroundService>>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<IOptions<MudPostgresProcessingOptions>>()));
 
             return services;
         }

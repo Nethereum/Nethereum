@@ -86,7 +86,7 @@ var service = new SiweMessageService(
 | Method | Description |
 |---|---|
 | `BuildMessageToSign(SiweMessage)` | Assigns a new nonce, stores the session, and returns the canonical string for signing |
-| `IsValidMessage(SiweMessage, string)` | Full validation: signature + dates + session match |
+| `IsValidMessage(SiweMessage, string)` | Full validation: signature + dates + session match; consumes the nonce, so a second submission of the same message fails |
 | `IsMessageSignatureValid(SiweMessage, string)` | Validates signature only (EOA via `EthereumMessageSigner`, or ERC-1271/ERC-6492 for smart wallets) |
 | `HasMessageDateStartedAndNotExpired(SiweMessage)` | Checks `NotBefore` and `ExpirationTime` against current UTC time |
 | `IsMessageTheSameAsSessionStored(SiweMessage)` | Verifies the message matches the session stored under its nonce |
@@ -116,7 +116,7 @@ public interface ISessionStorage
 }
 ```
 
-The default `InMemorySessionNonceStorage` uses a `ConcurrentDictionary<string, SiweMessage>` keyed by nonce.
+The default `InMemorySessionNonceStorage` uses a `ConcurrentDictionary` keyed by nonce. Entries expire at the message Expiration Time, or after `InMemorySessionNonceStorage.DefaultSessionLifetime` (1 hour, configurable through the `InMemorySessionNonceStorage(TimeSpan)` constructor) when the message has none; expired entries are pruned when a new one is added, at most once per minute (or once per session lifetime when that is shorter).
 
 ## User Validation
 

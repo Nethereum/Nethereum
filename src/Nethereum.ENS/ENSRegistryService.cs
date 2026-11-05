@@ -26,6 +26,7 @@ namespace Nethereum.ENS
             return web3.Eth.GetContractDeploymentHandler<ENSRegistryDeployment>().SendRequestAsync(eNSRegistryDeployment);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "ENSRegistryService deploy")]
         public static async Task<ENSRegistryService> DeployContractAndGetServiceAsync(Nethereum.Web3.Web3 web3, ENSRegistryDeployment eNSRegistryDeployment, CancellationTokenSource cancellationTokenSource = null)
         {
             var receipt = await DeployContractAndWaitForReceiptAsync(web3, eNSRegistryDeployment, cancellationTokenSource).ConfigureAwait(false);
@@ -48,6 +49,7 @@ namespace Nethereum.ENS
         }
 
         
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "ENSRegistryService.ResolverQueryAsync")]
         public Task<string> ResolverQueryAsync(byte[] node, BlockParameter blockParameter = null)
         {
             var resolverFunction = new ResolverFunction();
@@ -62,6 +64,7 @@ namespace Nethereum.ENS
         }
 
         
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "ENSRegistryService.OwnerQueryAsync")]
         public Task<string> OwnerQueryAsync(byte[] node, BlockParameter blockParameter = null)
         {
             var ownerFunction = new OwnerFunction();
@@ -70,11 +73,13 @@ namespace Nethereum.ENS
             return ContractHandler.QueryAsync<OwnerFunction, string>(ownerFunction, blockParameter);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "ENSRegistryService.SetSubnodeOwnerRequestAsync")]
         public Task<string> SetSubnodeOwnerRequestAsync(SetSubnodeOwnerFunction setSubnodeOwnerFunction)
         {
              return ContractHandler.SendRequestAsync(setSubnodeOwnerFunction);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "ENSRegistryService.SetSubnodeOwnerRequestAndWaitForReceiptAsync")]
         public Task<TransactionReceipt> SetSubnodeOwnerRequestAndWaitForReceiptAsync(SetSubnodeOwnerFunction setSubnodeOwnerFunction, CancellationTokenSource cancellationToken = null)
         {
              return ContractHandler.SendRequestAndWaitForReceiptAsync(setSubnodeOwnerFunction, cancellationToken);

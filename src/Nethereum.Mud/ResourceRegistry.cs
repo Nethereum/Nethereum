@@ -6,53 +6,47 @@ namespace Nethereum.Mud
     public class ResourceRegistry
     {
         public static Dictionary<Type, IResource> ResourceIds = new Dictionary<Type, IResource>();
+        private static readonly object ResourceGate = new object();
 
         public static void RegisterResource<TResource>() where TResource : IResource, new()
         {
-            if (!ResourceIds.ContainsKey(typeof(TResource)))
-            {
-                ResourceIds[typeof(TResource)] = new TResource();
-            }
+            GetResource<TResource>();
         }
 
         public static byte[] GetResourceEncoded(Type resourceType)
         {
-            if (!ResourceIds.ContainsKey(resourceType))
-            {
-                ResourceIds[resourceType] = ((IResource)Activator.CreateInstance(resourceType));
-            }
-
-            return ResourceIds[resourceType].ResourceIdEncoded;
+            return GetResource(resourceType).ResourceIdEncoded;
         }
 
         public static byte[] GetResourceEncoded<TResource>() where TResource : IResource, new()
         {
-            if(!ResourceIds.ContainsKey(typeof(TResource)))
-            {
-                ResourceIds[typeof(TResource)] = new TResource();
-            }
-
-            return ResourceIds[typeof(TResource)].ResourceIdEncoded;
+            return GetResource<TResource>().ResourceIdEncoded;
         }
 
         public static IResource GetResource(Type resourceType)
         {
-            if (!ResourceIds.ContainsKey(resourceType))
+            lock (ResourceGate)
             {
-                ResourceIds[resourceType] = ((IResource)Activator.CreateInstance(resourceType));
+                if (!ResourceIds.TryGetValue(resourceType, out var resource))
+                {
+                    resource = (IResource)Activator.CreateInstance(resourceType);
+                    ResourceIds[resourceType] = resource;
+                }
+                return resource;
             }
-
-            return ResourceIds[resourceType];
         }
 
         public static TResource GetResource<TResource>() where TResource : IResource, new()
         {
-            if (!ResourceIds.ContainsKey(typeof(TResource)))
+            lock (ResourceGate)
             {
-                ResourceIds[typeof(TResource)] = new TResource();
+                if (!ResourceIds.TryGetValue(typeof(TResource), out var resource))
+                {
+                    resource = new TResource();
+                    ResourceIds[typeof(TResource)] = resource;
+                }
+                return (TResource)resource;
             }
-
-            return (TResource)ResourceIds[typeof(TResource)];
         }   
         
     }

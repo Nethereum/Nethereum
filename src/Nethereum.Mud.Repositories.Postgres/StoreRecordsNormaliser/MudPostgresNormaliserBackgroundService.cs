@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,7 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
     {
         private readonly ILogger<MudPostgresNormaliserBackgroundService> _logger;
         private readonly MudPostgresNormaliserProcessingService _processor;
+        private readonly IServiceScopeFactory _scopes;
         private readonly MudPostgresProcessingOptions _options;
 
         public MudPostgresNormaliserBackgroundService(
@@ -21,6 +23,17 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
         {
             _logger = logger;
             _processor = processor;
+            _options = options.Value;
+        }
+
+        [ActivatorUtilitiesConstructor]
+        public MudPostgresNormaliserBackgroundService(
+            ILogger<MudPostgresNormaliserBackgroundService> logger,
+            IServiceScopeFactory scopes,
+            IOptions<MudPostgresProcessingOptions> options)
+        {
+            _logger = logger;
+            _scopes = scopes;
             _options = options.Value;
         }
 
@@ -38,18 +51,28 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
                 return;
             }
 
-            _processor.Address = _options.Address;
-            _processor.RpcUrl = _options.RpcUrl;
-
             _logger.LogInformation("MUD normaliser background service starting for {Address}", _options.Address);
 
             await RetryRunner.RunWithExponentialBackoffAsync(
-                ct => _processor.ExecuteAsync(ct),
+                RunAttemptAsync,
                 stoppingToken,
                 (ex, attempt, delay) =>
                     _logger.LogError(ex, "MUD normaliser failed (attempt {Attempt}), retrying in {Delay}s", attempt, delay));
 
             _logger.LogInformation("MUD normaliser background service finished");
+        }
+
+        private async Task RunAttemptAsync(CancellationToken cancellationToken)
+        {
+            using var scope = _scopes?.CreateScope();
+            var processor = scope == null
+                ? _processor
+                : scope.ServiceProvider.GetRequiredService<MudPostgresNormaliserProcessingService>();
+
+            processor.Address = _options.Address;
+            processor.RpcUrl = _options.RpcUrl;
+
+            await processor.ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

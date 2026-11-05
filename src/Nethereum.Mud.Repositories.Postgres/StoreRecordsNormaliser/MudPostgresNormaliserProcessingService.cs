@@ -57,7 +57,7 @@ namespace Nethereum.Mud.Repositories.Postgres.StoreRecordsNormaliser
                 {
                     // Fetch records based on BlockNumber and RowId
                     var records = await _mudPostgresStoreRecordsTableRepository
-                        .GetStoredRecordsGreaterThanBlockNumberAsync(PageSize, startingBlockNumber, lastProcessedRowId);
+                        .GetCompletedRecordsAsync(PageSize, startingBlockNumber, lastProcessedRowId);
 
                     if (records != null && records.Records != null && records.Records.Count > 0)
                     {

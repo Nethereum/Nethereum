@@ -13,7 +13,7 @@
 	<PropertyGroup>
 		<AssemblyName>Nethereum.Mud.Repositories.Postgres</AssemblyName>
 		<PackageId>Nethereum.Mud.Repositories.Postgres</PackageId>
-		<PackageTags>Netherum;Ethereum;Blockchain;Mud;Postgres</PackageTags>
+		<PackageTags>Nethereum;Ethereum;Blockchain;Mud;Postgres</PackageTags>
 		<LangVersion>Latest</LangVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
@@ -36,7 +36,7 @@
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
 		<PackageReference Include="EFCore.NamingConventions" Version="10.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" PrivateAssets="all" />
-		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />

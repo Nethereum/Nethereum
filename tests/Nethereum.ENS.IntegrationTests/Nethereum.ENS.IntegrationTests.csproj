@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\src\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ENS\Nethereum.ENS.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Geth\Nethereum.Geth.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />

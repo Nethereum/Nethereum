@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Nethereum.ABI.ABIDeserialisation;
 using Nethereum.ABI.EIP712;
 using Nethereum.ABI.FunctionEncoding;
@@ -11,6 +12,7 @@ using Nethereum.GnosisSafe.ContractDefinition;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Signer.EIP712;
+using Nethereum.Testing;
 using Nethereum.Util;
 using Nethereum.Documentation;
 using Nethereum.XUnitEthereumClients;
@@ -30,12 +32,13 @@ namespace Nethereum.GnosisSafe.IntegrationTests
             
             
             [Fact]
+            [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DeFi, "gnosis-safe", "EIP-712 Safe transaction encoding", Order = 3)]
-        public async void ShouldBeAbleToEncodeTheSameAsTheSmartContract()
+        public async Task ShouldBeAbleToEncodeTheSameAsTheSmartContract()
         {
-            var web3 = _ethereumClientIntegrationFixture.GetInfuraWeb3(InfuraNetwork.Rinkeby);
-            var gnosisSafeAddress = "0xa9C09412C1d93DAc6eE9254A51E97454588D3B88";
-            var chainId = (int)Chain.Rinkeby;
+            var web3 = new Web3.Web3(TestEnvironment.Service("MainnetRpcUrl"));
+            var gnosisSafeAddress = "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552";
+            var chainId = (int)Chain.MainNet;
             var service = new GnosisSafeService(web3, gnosisSafeAddress);
             var param = new EncodeTransactionDataFunction
             {
@@ -75,8 +78,12 @@ namespace Nethereum.GnosisSafe.IntegrationTests
             var contractABI = ABIDeserialiserFactory.DeserialiseContractABI(abi);
             var function = contractABI.Functions.Where(f => f.Name == "createSplit").FirstOrDefault();
             var functionBuilder = new FunctionBuilder("", function);
-            var decoded = functionBuilder.DecodeInput(json).ConvertToJObject().ToString();
+            var data = Newtonsoft.Json.Linq.JObject.Parse(json)["data"].ToString();
+            var decoded = functionBuilder.DecodeInput(data);
 
+            Assert.NotNull(decoded);
+            Assert.Equal(3, decoded.Count);
+            Assert.Equal("0x2cf5869eac6d7809dcf867c0e5cae1e9c5648e70", ((string)decoded[1].Result).ToLowerInvariant());
         }
 
         [Fact]

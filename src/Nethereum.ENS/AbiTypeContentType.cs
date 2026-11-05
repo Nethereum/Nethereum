@@ -1,5 +1,6 @@
 ﻿namespace Nethereum.ENS
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "ens-contract-services", "AbiTypeContentType")]
     public enum AbiTypeContentType
     {
         JSON = 1,
