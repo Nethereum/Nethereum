@@ -43,7 +43,7 @@ namespace Nethereum.DevChain.Configuration
 
         public bool EngineApiEnabled { get; set; } = false;
         public string? EngineJwtSecretPath { get; set; }
-        public int EnginePort { get; set; } = Nethereum.DevChain.Hosting.EngineApiServerConfig.DefaultPort;
+        public int EnginePort { get; set; } = Nethereum.EngineApi.Hosting.EngineApiServerConfig.DefaultPort;
         public string? EngineBindAddress { get; set; }
 
         public int ChainId
@@ -60,8 +60,8 @@ namespace Nethereum.DevChain.Configuration
 
         public long BlockGasLimit
         {
-            get => (long)Chain.BlockGasLimit;
-            set => Chain.BlockGasLimit = value;
+            get => Node.Producer.BlockGasLimit ?? (long)Chain.BlockGasLimit;
+            set => Node.Producer.BlockGasLimit = value;
         }
 
         public bool AutoMine
@@ -113,6 +113,7 @@ namespace Nethereum.DevChain.Configuration
             Chain.ForkUrl = Fork?.Url;
             Chain.ForkBlockNumber = Fork?.BlockNumber;
             Node.Rpc.ApplyTo(Chain);
+            Node.Producer.ApplyTo(Chain);
 
             return Chain;
         }

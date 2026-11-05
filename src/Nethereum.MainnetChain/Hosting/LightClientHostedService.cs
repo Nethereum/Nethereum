@@ -50,6 +50,38 @@ namespace Nethereum.MainnetChain.Hosting
                 }
             }
 
+            _service.CatchUpProgress += LogCatchUp;
+            try
+            {
+                await RunAsync(stoppingToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _service.CatchUpProgress -= LogCatchUp;
+            }
+        }
+
+        private void LogCatchUp(LightClientCatchUpProgress progress)
+        {
+            switch (progress.Stage)
+            {
+                case LightClientCatchUpStage.PeriodApplied:
+                    _logger.LogInformation("lc.catchup period={Period}/{Target}", progress.StorePeriod, progress.TargetPeriod);
+                    break;
+                case LightClientCatchUpStage.Completed:
+                    _logger.LogInformation("lc.catchup completed period={Period}/{Target}", progress.StorePeriod, progress.TargetPeriod);
+                    break;
+                case LightClientCatchUpStage.Rebootstrapped:
+                    _logger.LogWarning("lc.catchup rebootstrapped period={Period}/{Target} reason={Reason}", progress.StorePeriod, progress.TargetPeriod, progress.Reason);
+                    break;
+                default:
+                    _logger.LogWarning("lc.catchup {Stage} period={Period}/{Target} reason={Reason}", progress.Stage, progress.StorePeriod, progress.TargetPeriod, progress.Reason);
+                    break;
+            }
+        }
+
+        private async Task RunAsync(CancellationToken stoppingToken)
+        {
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -72,6 +104,18 @@ namespace Nethereum.MainnetChain.Hosting
                 try
                 {
                     await _service.UpdateAsync(stoppingToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "lc.update.range poll failed; continuing with finality and optimistic updates.");
+                }
+
+                try
+                {
                     var finApplied = await _service.UpdateFinalityAsync(stoppingToken).ConfigureAwait(false);
                     if (!finApplied)
                         _logger.LogInformation("lc.update.finality not_applied reason={Reason}", _service.LastRejectReason);

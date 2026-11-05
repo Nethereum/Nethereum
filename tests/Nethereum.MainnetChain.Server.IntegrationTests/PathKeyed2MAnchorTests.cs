@@ -7,18 +7,22 @@ using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Validation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.MainnetChain.Server.IntegrationTests
 {
     [Collection("PathKeyed2MDb")]
+    [Trait("Requires", "Externals")]
     public class PathKeyed2MAnchorTests
     {
-        [Fact]
+        [SkippableFact]
+        [Trait("Category", "LargeFixture")]
         public async Task StoredForkBoundaryRoots_MatchPinnedMainnetCheckpoints()
         {
-            var dir = Environment.GetEnvironmentVariable("NETHEREUM_PATHKEYED_2M_DB");
-            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
-                return;
+            Skip.IfNot(TestEnvironment.HasExternalPath("PathKeyed2MDb"),
+                "ExternalPaths:PathKeyed2MDb is empty or missing; set it in "
+                + TestEnvironment.LocalSettingsRelativePath + " to a path-keyed 2M RocksDB.");
+            var dir = TestEnvironment.ExternalPath("PathKeyed2MDb");
 
             using var bundle = RocksDbChainStoreBundle.Open(
                 dir,

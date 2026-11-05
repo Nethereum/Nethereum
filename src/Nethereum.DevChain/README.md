@@ -10,7 +10,7 @@ Nethereum.DevChain provides a complete local blockchain environment:
 - **SQLite Storage** - Default lightweight storage with auto-cleanup (no native dependencies)
 - **State Management** - Patricia trie-based state with snapshot/revert
 - **Extended RPC** - Development, debug, and Anvil-compatible APIs
-- **Transaction Tracing** - Geth-compatible debug_traceTransaction and debug_traceCall
+- **Transaction Tracing** - `debug_traceTransaction` and `debug_traceCall`
 - **Forking** - Fork from live Ethereum networks
 
 ## Installation
@@ -27,6 +27,7 @@ dotnet add package Nethereum.DevChain
 - Nethereum.JsonRpc.RpcClient - JSON-RPC client
 - Nethereum.Web3 - Web3 and Accounts
 - Nethereum.ChainNode.Hosting - Shared node-composition and hosting layer
+- Nethereum.EngineApi.Hosting - JWT-authenticated Engine API host
 - Microsoft.Data.Sqlite - SQLite storage provider
 - Microsoft.Extensions.Hosting.Abstractions - IHostedService support
 - Microsoft.AspNetCore.App (FrameworkReference) - ASP.NET Core web extensions
@@ -118,6 +119,7 @@ public class DevChainConfig : ChainConfig
     }
 
     public bool AutoMine { get; set; } = true;
+    public bool PredeploySystemContracts { get; set; } = true;   // false: genesis keeps only what it declares (no EIP-4788/2935 predeploys)
     public long BlockTime { get; set; } = 0;           // 0 = instant
     public int MaxTransactionsPerBlock { get; set; } = 100;
     public BigInteger BaseFee { get; set; } = 1_000_000_000; // 1 gwei
@@ -337,6 +339,13 @@ registry.AddAnvilAliases();      // Anvil compatibility
 | `hardhat_impersonateAccount` | Record an address as impersonated (registered only via `AddDevChainServer`, not `AddDevHandlers`; no signing support) |
 | `hardhat_stopImpersonatingAccount` | Stop impersonating (registered only via `AddDevChainServer`) |
 
+### Testing Methods
+
+| Method | Description |
+|--------|-------------|
+| `testing_buildBlockV1` | Build a block on the current head from payload attributes and return it as a `getPayload` response, without persisting it or moving the head. The given transactions are kept in order and all must apply (else `-32000`); a `null` list takes the pool. `parentHash` must be the current head |
+| `testing_commitBlockV1` | Build a block the same way, insert it, make it the canonical head and return its hash. An unapplicable transaction is an error and the head stays; a `null` list takes the pool and drains it |
+
 ### Debug Methods
 
 | Method | Description |
@@ -429,5 +438,4 @@ var pastBalance = await node.GetBalanceAsync(address, blockNumber: 5);
 ## Additional Resources
 
 - [Ethereum JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/)
-- [Geth Debug API](https://geth.ethereum.org/docs/interacting-with-geth/rpc/ns-debug)
 - [Nethereum Documentation](http://docs.nethereum.com)

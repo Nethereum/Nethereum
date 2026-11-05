@@ -24,7 +24,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             get
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "SELECT COUNT(*) FROM binary_trie_nodes";
                 return Convert.ToInt32(cmd.ExecuteScalar());
             }
@@ -39,7 +39,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (key == null) return null;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT node_data FROM binary_trie_nodes WHERE node_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", key);
             return cmd.ExecuteScalar() as byte[];
@@ -49,12 +49,12 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (key == null) return;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM binary_trie_nodes WHERE node_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", key);
             cmd.ExecuteNonQuery();
 
-            using var cmd2 = _manager.Connection.CreateCommand();
+            using var cmd2 = _manager.CreateCommand();
             cmd2.CommandText = "DELETE FROM binary_trie_addr_stems WHERE node_hash = @hash";
             cmd2.Parameters.AddWithValue("@hash", key);
             cmd2.ExecuteNonQuery();
@@ -66,7 +66,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (hash == null) return;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = @"INSERT OR REPLACE INTO binary_trie_nodes
                 (node_hash, node_data, depth, node_type, block_number, stem)
                 VALUES (@hash, @data, @depth, @type, @block, @stem)";
@@ -85,7 +85,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (address == null || stemNodeHash == null) return;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "INSERT OR IGNORE INTO binary_trie_addr_stems (address, node_hash) VALUES (@addr, @hash)";
             cmd.Parameters.AddWithValue("@addr", address);
             cmd.Parameters.AddWithValue("@hash", stemNodeHash);
@@ -96,7 +96,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var result = new List<NodeEntry>();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT node_hash, node_data, depth, node_type, block_number, stem FROM binary_trie_nodes WHERE depth BETWEEN @min AND @max";
             cmd.Parameters.AddWithValue("@min", minDepth);
             cmd.Parameters.AddWithValue("@max", maxDepth);
@@ -115,7 +115,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             var result = new List<NodeEntry>();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = @"SELECT n.node_hash, n.node_data, n.depth, n.node_type, n.block_number, n.stem
                 FROM binary_trie_addr_stems s
                 INNER JOIN binary_trie_nodes n ON s.node_hash = n.node_hash
@@ -134,7 +134,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new List<NodeEntry>();
             foreach (var hash in _dirtyHashes.Keys)
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "SELECT node_hash, node_data, depth, node_type, block_number, stem FROM binary_trie_nodes WHERE node_hash = @hash";
                 cmd.Parameters.AddWithValue("@hash", hash);
 

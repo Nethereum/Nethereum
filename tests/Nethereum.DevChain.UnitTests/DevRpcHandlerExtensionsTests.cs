@@ -10,7 +10,7 @@ namespace Nethereum.DevChain.UnitTests
     public class DevRpcHandlerExtensionsTests
     {
         [Fact]
-        public void CreateDevChainRegistry_RegistersThePriorAddDevChainServerSurfacePlusDebugSetHead()
+        public void CreateDevChainRegistry_RegistersThePriorAddDevChainServerSurfacePlusDebugSetHeadAndTheTestingBlockBuilders()
         {
             var expected = new RpcHandlerRegistry();
             expected.AddStandardHandlers();
@@ -33,7 +33,7 @@ namespace Nethereum.DevChain.UnitTests
 
             var expectedMethodNames = expected.GetAllMethodNames()
                 .Select(n => n.ToLowerInvariant())
-                .Concat(new[] { "debug_sethead" })
+                .Concat(new[] { "debug_sethead", "testing_buildblockv1", "testing_commitblockv1" })
                 .OrderBy(n => n)
                 .ToArray();
 

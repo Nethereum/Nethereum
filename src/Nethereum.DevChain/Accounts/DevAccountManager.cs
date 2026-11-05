@@ -20,7 +20,7 @@ namespace Nethereum.DevChain.Accounts
         public DevAccountManager(DevChainServerConfig config)
         {
             _wallet = new MinimalHDWallet(config.Mnemonic);
-            _chainId = config.ChainId;
+            _chainId = config.Chain.ChainId;
 
             var initialBalance = config.GetAccountBalance();
 

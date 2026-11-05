@@ -23,7 +23,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (txHash == null) return Task.FromResult<Receipt>(null);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT receipt_data FROM receipts WHERE tx_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", txHash.ToHex());
 
@@ -37,7 +37,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (txHash == null) return Task.FromResult<ReceiptInfo>(null);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT receipt_data, block_hash, block_number, tx_index, gas_used, contract_address, effective_gas_price FROM receipts WHERE tx_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", txHash.ToHex());
 
@@ -67,7 +67,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new List<Receipt>();
             if (blockHash == null) return Task.FromResult(result);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT receipt_data FROM receipts WHERE block_hash = @hash ORDER BY tx_index";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
 
@@ -86,7 +86,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var result = new List<Receipt>();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT receipt_data FROM receipts WHERE block_number = @num ORDER BY tx_index";
             cmd.Parameters.AddWithValue("@num", (long)blockNumber);
 
@@ -107,7 +107,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             var receiptData = _provider.EncodeReceipt(receipt);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = @"INSERT OR REPLACE INTO receipts
                 (tx_hash, receipt_data, block_hash, block_number, tx_index, gas_used, contract_address, effective_gas_price)
                 VALUES (@txHash, @receiptData, @blockHash, @blockNumber, @txIndex, @gasUsed, @contractAddress, @effectiveGasPrice)";
@@ -126,7 +126,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM receipts WHERE block_number = @num";
             cmd.Parameters.AddWithValue("@num", (long)blockNumber);
             cmd.ExecuteNonQuery();

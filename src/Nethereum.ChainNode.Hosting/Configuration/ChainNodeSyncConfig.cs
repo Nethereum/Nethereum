@@ -8,8 +8,6 @@ namespace Nethereum.ChainNode.Hosting.Configuration
 
         public bool TrustedPeersOnlyTip { get; set; }
 
-        public bool EnablePushedBlocks { get; set; }
-
         public bool FloorTargetPeerCountByDialPool { get; set; }
 
         public int HeaderBatchSize { get; set; } = 192;
@@ -43,7 +41,11 @@ namespace Nethereum.ChainNode.Hosting.Configuration
         public bool SnapBootstrap
         {
             get => Mode == SyncMode.Snap;
-            set => Mode = value ? SyncMode.Snap : SyncMode.ForwardExecute;
+            set
+            {
+                if (value) Mode = SyncMode.Snap;
+                else if (Mode == SyncMode.Snap) Mode = SyncMode.ForwardExecute;
+            }
         }
     }
 }

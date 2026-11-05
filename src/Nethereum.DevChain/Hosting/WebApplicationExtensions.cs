@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -7,11 +6,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nethereum.ChainNode.Hosting.Configuration;
+using Nethereum.ChainNode.Hosting.Rpc;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.CoreChain.Storage;
 using Nethereum.DevChain.Accounts;
 using Nethereum.DevChain.Configuration;
-using Nethereum.JsonRpc.Client.RpcMessages;
+using Nethereum.EngineApi.Hosting;
 
 namespace Nethereum.DevChain.Hosting
 {
@@ -33,12 +34,6 @@ namespace Nethereum.DevChain.Hosting
                     sp.GetService<ILoggerFactory>()?.CreateLogger<DevChainHostedService>())
                 { AlreadyStarted = true });
 
-            return builder;
-        }
-
-        public static WebApplicationBuilder AddEngineApiServer(this WebApplicationBuilder builder, EngineApiServerConfig config)
-        {
-            builder.Services.AddEngineApiServer(config);
             return builder;
         }
 
@@ -69,90 +64,9 @@ namespace Nethereum.DevChain.Hosting
 
             app.UseCors();
 
-            app.MapPost("/", async (HttpContext httpContext) =>
-            {
-                try
-                {
-                    using var reader = new StreamReader(httpContext.Request.Body);
-                    var json = await reader.ReadToEndAsync();
-
-                    if (string.IsNullOrWhiteSpace(json))
-                    {
-                        httpContext.Response.StatusCode = 400;
-                        await httpContext.Response.WriteAsync("{\"error\":\"Empty request body\"}");
-                        return;
-                    }
-
-                    httpContext.Response.ContentType = "application/json";
-
-                    if (json.TrimStart().StartsWith('['))
-                    {
-                        var requests = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequestArray);
-                        if (requests != null)
-                        {
-                            logger.LogInformation("batch[{Count}]: {Methods}",
-                                requests.Length,
-                                string.Join(", ", requests.Select(r => r.Method)));
-
-                            var rpcRequests = requests.Select(ToRpcRequestMessage).ToArray();
-                            var responses = await dispatcher.DispatchBatchAsync(rpcRequests);
-                            var jsonResponses = responses.Select(r => r.ToJsonRpcResponse()).ToArray();
-                            await httpContext.Response.WriteAsync(
-                                JsonSerializer.Serialize(jsonResponses, CoreChainJsonContext.Default.JsonRpcResponseArray));
-                            return;
-                        }
-                    }
-
-                    var request = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequest);
-                    if (request == null)
-                    {
-                        httpContext.Response.StatusCode = 400;
-                        await httpContext.Response.WriteAsync("{\"error\":\"Invalid JSON-RPC request\"}");
-                        return;
-                    }
-
-                    logger.LogInformation("{Method}", request.Method);
-
-                    var rpcRequest = ToRpcRequestMessage(request);
-                    var response = await dispatcher.DispatchAsync(rpcRequest);
-                    var jsonResponse = response.ToJsonRpcResponse();
-
-                    if (jsonResponse.Error != null)
-                    {
-                        logger.LogWarning("{Method} -> error {Code}: {Message}",
-                            request.Method, jsonResponse.Error.Code, jsonResponse.Error.Message);
-                    }
-
-                    await httpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-                }
-                catch (JsonException ex)
-                {
-                    logger.LogError(ex, "JSON parse error");
-                    httpContext.Response.StatusCode = 400;
-                    httpContext.Response.ContentType = "application/json";
-                    var errorResponse = new JsonRpcResponse
-                    {
-                        Id = null,
-                        Error = new JsonRpcError { Code = -32700, Message = "Parse error" }
-                    };
-                    await httpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Internal error");
-                    httpContext.Response.StatusCode = 500;
-                    httpContext.Response.ContentType = "application/json";
-                    var errorResponse = new JsonRpcResponse
-                    {
-                        Id = null,
-                        Error = new JsonRpcError { Code = -32603, Message = "Internal error" }
-                    };
-                    await httpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-                }
-            });
+            var httpOptions = serverConfig.Node.Rpc.ToHttpOptions();
+            if (httpOptions.AllowedHosts.Count == 0) httpOptions.AllowedHosts.Add(RpcHostPolicy.Wildcard);
+            app.MapRpcHttpEndpoint(dispatcher, JsonRpcEnvelope.CreateSerializerOptions(), httpOptions, logger);
 
             app.MapGet("/", () => Results.Ok(new { status = "ok", service = "Nethereum.DevChain" }));
 
@@ -184,107 +98,5 @@ namespace Nethereum.DevChain.Hosting
 
             return app;
         }
-
-        public static WebApplication MapEngineApiEndpoints(this WebApplication app)
-        {
-            var engineConfig = app.Services.GetRequiredService<EngineApiServerConfig>();
-            var engineHost = app.Services.GetRequiredService<EngineApiHost>();
-            var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Nethereum.DevChain.EngineApi");
-
-            app.Urls.Add($"http://{engineConfig.BindAddress}:{engineConfig.Port}");
-
-            app.Use(async (httpContext, next) =>
-            {
-                if (httpContext.Connection.LocalPort != engineConfig.Port)
-                {
-                    await next();
-                    return;
-                }
-
-                if (!engineHost.Validator.TryValidate(httpContext.Request.Headers["Authorization"].ToString(), out var authError))
-                {
-                    logger.LogWarning("Engine API request rejected: {Reason}", authError);
-                    httpContext.Response.StatusCode = 401;
-                    httpContext.Response.ContentType = "application/json";
-                    await httpContext.Response.WriteAsync("{\"error\":\"unauthorized\"}");
-                    return;
-                }
-
-                if (!HttpMethods.IsPost(httpContext.Request.Method))
-                {
-                    httpContext.Response.StatusCode = 404;
-                    return;
-                }
-
-                httpContext.Response.ContentType = "application/json";
-
-                try
-                {
-                    using var reader = new StreamReader(httpContext.Request.Body);
-                    var json = await reader.ReadToEndAsync();
-
-                    if (string.IsNullOrWhiteSpace(json))
-                    {
-                        httpContext.Response.StatusCode = 400;
-                        await httpContext.Response.WriteAsync("{\"error\":\"Empty request body\"}");
-                        return;
-                    }
-
-                    var request = JsonSerializer.Deserialize(json, CoreChainJsonContext.Default.JsonRpcRequest);
-                    if (request == null)
-                    {
-                        httpContext.Response.StatusCode = 400;
-                        await httpContext.Response.WriteAsync("{\"error\":\"Invalid JSON-RPC request\"}");
-                        return;
-                    }
-
-                    logger.LogInformation("{Method}", request.Method);
-
-                    var rpcRequest = ToRpcRequestMessage(request);
-                    var response = await engineHost.Dispatcher.DispatchAsync(rpcRequest);
-                    var jsonResponse = response.ToJsonRpcResponse();
-
-                    await httpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(jsonResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-                }
-                catch (JsonException)
-                {
-                    httpContext.Response.StatusCode = 400;
-                    var errorResponse = new JsonRpcResponse
-                    {
-                        Id = null,
-                        Error = new JsonRpcError { Code = -32700, Message = "Parse error" }
-                    };
-                    await httpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Internal error");
-                    httpContext.Response.StatusCode = 500;
-                    var errorResponse = new JsonRpcResponse
-                    {
-                        Id = null,
-                        Error = new JsonRpcError { Code = -32603, Message = "Internal error" }
-                    };
-                    await httpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(errorResponse, CoreChainJsonContext.Default.JsonRpcResponse));
-                }
-            });
-
-            return app;
-        }
-
-        private static RpcRequestMessage ToRpcRequestMessage(JsonRpcRequest request)
-        {
-            return new RpcRequestMessage
-            {
-                Id = request.Id,
-                Method = request.Method,
-                JsonRpcVersion = request.Jsonrpc,
-                RawParameters = request.Params.HasValue ? request.Params.Value : null
-            };
-        }
-
     }
 }

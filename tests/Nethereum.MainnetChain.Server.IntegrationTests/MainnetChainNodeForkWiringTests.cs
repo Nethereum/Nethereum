@@ -68,11 +68,14 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             Assert.Same(MainnetChainActivations.Instance, config.Activations);
 
             Assert.Equal(
-                HardforkName.OsakaBpo2,
-                config.ResolveHardforkAt(24_179_383, MainnetChainActivations.OsakaBpo2Timestamp.Value));
+                HardforkName.Osaka,
+                config.ResolveHardforkAt(24_179_383, MainnetBlobSchedule.Bpo2Timestamp));
             Assert.NotEqual(
                 HardforkNames.Parse(config.Hardfork),
-                config.ResolveHardforkAt(24_179_383, MainnetChainActivations.OsakaBpo2Timestamp.Value));
+                config.ResolveHardforkAt(24_179_383, MainnetBlobSchedule.Bpo2Timestamp));
+            Assert.Equal(
+                MainnetBlobSchedule.Bpo2.Max,
+                config.GetHardforkConfigAt(24_179_383, MainnetBlobSchedule.Bpo2Timestamp).MaxBlobsPerBlock);
         }
 
         [Fact]

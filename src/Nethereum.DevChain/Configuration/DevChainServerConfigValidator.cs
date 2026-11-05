@@ -10,6 +10,8 @@ namespace Nethereum.DevChain.Configuration
             if (config == null) throw new ArgumentNullException(nameof(config));
 
             ChainNodeDiscoveryValidator.RefuseIfRequested(config.Node.Network, "DevChain");
+            ChainNodeProducerValidator.Validate(config.Node.Producer, "DevChain:Node:Producer");
+            ChainNodeEnodeValidator.RefuseMalformed(config.Node, "DevChain:Node");
         }
     }
 }

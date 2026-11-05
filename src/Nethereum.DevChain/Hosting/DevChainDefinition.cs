@@ -31,10 +31,10 @@ namespace Nethereum.DevChain.Hosting
 
             if (genesisHash == null)
                 throw new InvalidOperationException(
-                    $"DevChain '{_config.ChainId}' has no genesis block; a node cannot assert an identity without one.");
+                    $"DevChain '{_config.Chain.ChainId}' has no genesis block; a node cannot assert an identity without one.");
 
             return new DefaultChainProfile(
-                (ulong)_config.ChainId,
+                (ulong)_config.Chain.ChainId,
                 genesisHash,
                 _config.Chain.ForkSchedule,
                 _config.Node.ResolveDialEnodes(),

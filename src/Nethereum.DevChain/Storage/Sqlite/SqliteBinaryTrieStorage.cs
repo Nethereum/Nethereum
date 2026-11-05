@@ -16,7 +16,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (key == null) return;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "INSERT OR REPLACE INTO binary_trie_nodes (node_hash, node_data) VALUES (@hash, @data)";
             cmd.Parameters.AddWithValue("@hash", key);
             cmd.Parameters.AddWithValue("@data", (object)value ?? System.DBNull.Value);
@@ -27,7 +27,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (key == null) return null;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT node_data FROM binary_trie_nodes WHERE node_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", key);
 
@@ -38,7 +38,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (key == null) return;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM binary_trie_nodes WHERE node_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", key);
             cmd.ExecuteNonQuery();

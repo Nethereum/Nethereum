@@ -43,6 +43,8 @@ namespace Nethereum.ChainNode.Hosting
 
         public PeerListener Listener { get; private set; }
 
+        public BlockRangeAnnouncer BlockRangeAnnouncer { get; private set; }
+
         public ChainNodeSyncStack Sync { get; private set; }
 
         public bool DisposedCleanly { get; private set; }
@@ -78,6 +80,12 @@ namespace Nethereum.ChainNode.Hosting
             Listener = await ChainNodeServeListener.StartAsync(
                 Profile, Bundle, Config, Mempool, callbacks, _loggerFactory, ct).ConfigureAwait(false);
 
+            BlockRangeAnnouncer = new BlockRangeAnnouncer(
+                Mempool.BroadcastPool,
+                () => ChainHeadResolver.ResolveBlockRangeAsync(Bundle),
+                logger: _loggerFactory.CreateLogger<BlockRangeAnnouncer>());
+            await BlockRangeAnnouncer.StartAsync().ConfigureAwait(false);
+
             return Listener;
         }
 
@@ -111,6 +119,7 @@ namespace Nethereum.ChainNode.Hosting
         {
             var clean = await DisposeStepAsync(() => { Mempool?.Dispose(); return default; }, "mempool").ConfigureAwait(false);
             if (Sync != null) clean &= await DisposeStepAsync(() => Sync.DisposeAsync(), "sync").ConfigureAwait(false);
+            if (BlockRangeAnnouncer != null) clean &= await DisposeStepAsync(() => BlockRangeAnnouncer.DisposeAsync(), "block-range").ConfigureAwait(false);
             if (Listener != null) clean &= await DisposeStepAsync(() => Listener.DisposeAsync(), "listener").ConfigureAwait(false);
             if (Bundle is IAtomicBlockFlush flush)
                 clean &= await DisposeStepAsync(() => new ValueTask(flush.DrainAsync()), "drain").ConfigureAwait(false);

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.ChainNode.Hosting;
 using Nethereum.Consensus.LightClient;
+using Nethereum.CoreChain.Genesis;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Validation;
 using Nethereum.DevP2P.Sync.Peering;
@@ -18,15 +19,25 @@ namespace Nethereum.MainnetChain.Hosting
     {
         private readonly EthECKey _localKey;
         private readonly ITrustedHeaderProvider _trustedHeaderProvider;
+        private readonly StandardGenesisDocument _genesis;
 
-        public MainnetChainDefinition(EthECKey localKey = null, ITrustedHeaderProvider trustedHeaderProvider = null)
+        public MainnetChainDefinition(
+            EthECKey localKey = null, ITrustedHeaderProvider trustedHeaderProvider = null, StandardGenesisDocument genesis = null)
         {
             _localKey = localKey;
             _trustedHeaderProvider = trustedHeaderProvider;
+            _genesis = genesis;
         }
 
         public async Task EnsureGenesisAsync(IChainStoreBundle bundle, CancellationToken ct)
         {
+            if (_genesis != null)
+            {
+                await GenesisInitializer.EnsureAsync(
+                    bundle, _genesis, MainnetChainNodeFactory.BuildChainConfig(_genesis)).ConfigureAwait(false);
+                return;
+            }
+
             if (!bundle.Metadata.IsGenesisLoaded())
             {
                 await MainnetGenesisLoader.PopulateAsync(bundle.State).ConfigureAwait(false);
@@ -66,7 +77,7 @@ namespace Nethereum.MainnetChain.Hosting
             var checkpoints = new MainnetKnownCheckpoints();
             if (_trustedHeaderProvider == null) return checkpoints;
 
-            var lightClient = new LightClientCanonicalSource(_trustedHeaderProvider, useOptimistic: true);
+            var lightClient = new TrustedHeaderCanonicalSource(_trustedHeaderProvider, useOptimistic: true);
             return new CompositeCanonicalStateRootSource(checkpoints, lightClient);
         }
     }

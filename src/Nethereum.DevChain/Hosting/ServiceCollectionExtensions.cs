@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,6 +16,7 @@ using Nethereum.DevChain.Composition;
 using Nethereum.DevChain.Configuration;
 using Nethereum.DevChain.Rpc;
 using Nethereum.DevChain.Storage.Sqlite;
+using Nethereum.EngineApi.Hosting;
 using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevChain.Hosting
@@ -23,6 +25,8 @@ namespace Nethereum.DevChain.Hosting
     {
         public static IServiceCollection AddDevChainServer(this IServiceCollection services, DevChainServerConfig config)
         {
+            ChainNodeEnodeValidator.RefuseMalformed(config.Node, "DevChain:Node");
+
             if (config.EngineApiEnabled)
             {
                 config.AutoMine = false;
@@ -86,7 +90,8 @@ namespace Nethereum.DevChain.Hosting
                     provider.GetRequiredService<IFilterStore>(),
                     bundle.TrieNodes,
                     blobStore: null,
-                    bundle.BlockAccessLists);
+                    bundle.BlockAccessLists,
+                    bundle.Uncles);
             });
 
             services.AddSingleton<DevAccountManager>();
@@ -96,7 +101,7 @@ namespace Nethereum.DevChain.Hosting
             services.AddSingleton<RpcContext>(provider =>
             {
                 var node = provider.GetRequiredService<DevChainNode>();
-                return new RpcContext(node, config.ChainId, provider);
+                return new RpcContext(node, config.Chain.ChainId, provider);
             });
 
             services.AddSingleton<RpcDispatcher>(provider =>
@@ -110,64 +115,36 @@ namespace Nethereum.DevChain.Hosting
 
             if (config.EngineApiEnabled)
             {
-                services.AddEngineApiServer(new EngineApiServerConfig
-                {
-                    JwtSecretPath = config.EngineJwtSecretPath ?? Path.Combine(config.DataDir, EngineApiServerConfig.DefaultJwtSecretFileName),
-                    Port = config.EnginePort,
-                    BindAddress = config.EngineBindAddress ?? "127.0.0.1"
-                });
+                services.AddEngineApiServer(
+                    new EngineApiServerConfig
+                    {
+                        JwtSecretPath = config.EngineJwtSecretPath ?? Path.Combine(config.DataDir, EngineApiServerConfig.DefaultJwtSecretFileName),
+                        Port = config.EnginePort,
+                        BindAddress = config.EngineBindAddress ?? "127.0.0.1"
+                    },
+                    CreateEngineService,
+                    config.Verbose);
             }
 
             return services;
         }
 
-        public static IServiceCollection AddEngineApiServer(this IServiceCollection services, EngineApiServerConfig config)
+        public static BlockImporter CreateEngineImporter(
+            DevChainNode node, IChainStoreBundle bundle, IFlushCadence flushCadence = null) =>
+            ExecutionStackFactory.CreateImporter(
+                bundle, node.BlockManager.Engine,
+                new ExecutionStackOptions { SideChain = new SideChainOptions(), FlushCadence = flushCadence });
+
+        private static IEngineApiService CreateEngineService(IServiceProvider provider)
         {
-            services.AddSingleton(config);
+            var node = provider.GetRequiredService<DevChainNode>();
+            var bundle = provider.GetRequiredService<IChainStoreBundle>();
+            var importer = CreateEngineImporter(
+                node, bundle,
+                FlushCadences.ForBlocks(provider.GetRequiredService<DevChainServerConfig>().Node.Storage.FlushCadenceBlocks));
 
-            services.AddSingleton<IEngineApiService>(provider =>
-            {
-                var node = provider.GetRequiredService<DevChainNode>();
-                var bundle = provider.GetRequiredService<IChainStoreBundle>();
-                var importer = new BlockImporter(
-                    node.BlockManager.Engine,
-                    node.Blocks,
-                    node.State,
-                    node.Transactions,
-                    node.Receipts,
-                    node.Logs,
-                    uncleStore: bundle.Uncles,
-                    logger: null,
-                    nodeCommitBlockContext: null,
-                    atomicFlush: null,
-                    flushCadence: null,
-                    blockAccessListStore: bundle.BlockAccessLists,
-                    withdrawalStore: bundle.Withdrawals);
-                var forkChoice = new DifficultyForkChoice(node.Blocks);
-                var payloadBuildRegistry = new PayloadBuildRegistry();
-
-                return new EngineApiService(
-                    node.Blocks, importer, node.BlockManager.BlockProducer, forkChoice, payloadBuildRegistry, node.Config);
-            });
-
-            services.AddSingleton(provider =>
-                new EngineJwtValidator(EngineJwtSecret.LoadOrCreate(config.JwtSecretPath)));
-
-            services.AddSingleton(provider =>
-            {
-                var registry = new RpcHandlerRegistry();
-                registry.AddEngineHandlers();
-
-                var devChainConfig = provider.GetRequiredService<DevChainServerConfig>();
-                var rpcContext = provider.GetRequiredService<RpcContext>();
-                var logger = devChainConfig.Verbose ? provider.GetRequiredService<ILogger<RpcDispatcher>>() : null;
-                var dispatcher = new RpcDispatcher(registry, rpcContext, logger);
-                var validator = provider.GetRequiredService<EngineJwtValidator>();
-
-                return new EngineApiHost(registry, dispatcher, validator);
-            });
-
-            return services;
+            return new EngineApiService(
+                node.Blocks, importer, node.BlockManager.BlockProducer, forkChoice: null, new PayloadBuildRegistry(), node.Config);
         }
     }
 }

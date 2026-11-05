@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Nethereum.MainnetChain.Configuration
 {
     public static class MainnetChainCliArgs
@@ -5,6 +8,8 @@ namespace Nethereum.MainnetChain.Configuration
         public static void Apply(MainnetChainServerConfig config, string[] args)
         {
             if (config is null || args is null) return;
+
+            args = SplitAssignments(args);
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -78,8 +83,26 @@ namespace Nethereum.MainnetChain.Configuration
                     case "--allow-unverified-consensus":
                         config.AllowUnverifiedConsensus = true;
                         break;
+                    case "--engine":
+                        config.Engine.Enabled = true;
+                        break;
+                    case "--genesis":
+                        { var g = Next(); if (g != null) config.GenesisPath = g; }
+                        break;
+                    case "--engine-port":
+                        if (int.TryParse(Next(), out var enginePort)) config.Engine.Port = enginePort;
+                        break;
+                    case "--engine-jwt-secret":
+                        { var j = Next(); if (j != null) config.Engine.JwtSecretPath = j; }
+                        break;
                     case "--flush-cadence":
                         if (int.TryParse(Next(), out var fc)) config.FlushCadenceBlocks = fc;
+                        break;
+                    case "--state-root-workers":
+                        if (int.TryParse(Next(), out var srw)) config.StateRootWorkers = srw;
+                        break;
+                    case "--prefetch-workers":
+                        if (int.TryParse(Next(), out var pw)) config.PrefetchWorkers = pw;
                         break;
                     case "--checkpoint-every":
                         if (ulong.TryParse(Next(), out var ce)) config.CheckpointEvery = ce;
@@ -87,11 +110,39 @@ namespace Nethereum.MainnetChain.Configuration
                     case "--cache-size":
                         if (TryParseByteSize(Next(), out var cacheBytes)) config.BlockCacheSize = cacheBytes;
                         break;
+                    case "--rocksdb-statistics":
+                        config.EnableRocksDbStatistics = true;
+                        break;
+                    case "--replay-blocks":
+                        if (ulong.TryParse(Next(), out var rb)) config.ReplayBlocks = rb;
+                        break;
+                    case "--replay-report":
+                        { var r = Next(); if (r != null) config.ReplayReport = r; }
+                        break;
                     case "--history-backfill":
                         if (TryParseHistoryBackfillMode(Next(), out var mode)) config.HistoryBackfill = mode;
                         break;
                 }
             }
+        }
+
+        private static string[] SplitAssignments(string[] args)
+        {
+            var expanded = new List<string>(args.Length);
+            foreach (var arg in args)
+            {
+                var separator = arg.StartsWith("--", StringComparison.Ordinal) ? arg.IndexOf('=') : -1;
+                if (separator > 2)
+                {
+                    expanded.Add(arg.Substring(0, separator));
+                    expanded.Add(arg.Substring(separator + 1));
+                }
+                else
+                {
+                    expanded.Add(arg);
+                }
+            }
+            return expanded.ToArray();
         }
 
         private static bool TryParseHistoryBackfillMode(string s, out HistoryBackfillMode mode)

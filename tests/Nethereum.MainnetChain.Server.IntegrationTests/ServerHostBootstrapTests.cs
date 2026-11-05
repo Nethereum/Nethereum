@@ -76,5 +76,6 @@ public class ServerHostBootstrapTests
 
     private static bool DescribesImplementationType(ServiceDescriptor sd, Type expected)
         => sd.ImplementationType == expected
-           || sd.ImplementationInstance?.GetType() == expected;
+           || sd.ImplementationInstance?.GetType() == expected
+           || sd.ImplementationFactory?.Method.ReturnType == expected;
 }

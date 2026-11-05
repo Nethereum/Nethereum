@@ -35,7 +35,10 @@ namespace Nethereum.MainnetChain.UnitTests
                 TrieNodeHistoryBlocks = 256,
                 TrieNodeHistoryIndex = false,
                 BlockCacheSize = 4096,
+                EnableRocksDbStatistics = true,
                 FlushCadenceBlocks = 7,
+                PrefetchWorkers = 3,
+                StateRootWorkers = 5,
                 BulkSync = true,
                 SplitHistoryStore = true,
                 HotWindowBlocks = 512,
@@ -72,6 +75,7 @@ namespace Nethereum.MainnetChain.UnitTests
             Assert.Equal(source.TrieNodeHistoryBlocks, node.Storage.TrieNodeHistoryBlocks);
             Assert.Equal(source.TrieNodeHistoryIndex, node.Storage.TrieNodeHistoryIndex);
             Assert.Equal(source.BlockCacheSize, node.Storage.BlockCacheSize);
+            Assert.Equal(source.EnableRocksDbStatistics, node.Storage.EnableRocksDbStatistics);
             Assert.Equal(source.SplitHistoryStore, node.Storage.SplitHistoryStore);
             Assert.Equal(source.HotWindowBlocks, node.Storage.HotWindowBlocks);
             Assert.Equal(source.EnableLogIndex, node.Storage.EnableLogIndex);
@@ -81,6 +85,8 @@ namespace Nethereum.MainnetChain.UnitTests
             Assert.Equal(source.BackgroundFreezeIndexing, node.Storage.BackgroundFreezeIndexing);
             Assert.Equal(source.FreezerBackgroundDegreeOfParallelism, node.Storage.FreezerBackgroundDegreeOfParallelism);
             Assert.Equal(source.FlushCadenceBlocks, node.Storage.FlushCadenceBlocks);
+            Assert.Equal(source.PrefetchWorkers, node.Storage.PrefetchWorkers);
+            Assert.Equal(source.StateRootWorkers, node.Storage.StateRootWorkers);
 
             Assert.Equal(source.ListenPort, node.Network.ListenPort);
             Assert.Equal(new[] { source.TrustedPeer }, node.Network.TrustedPeers);
@@ -126,7 +132,11 @@ namespace Nethereum.MainnetChain.UnitTests
             Assert.True(node.Storage.BackgroundFreezeIndexing);
             Assert.Equal(7, node.Storage.FreezerBackgroundDegreeOfParallelism);
             Assert.Equal(4096, node.Storage.BlockCacheSize);
+            Assert.True(node.Storage.EnableRocksDbStatistics);
+            Assert.True(Nethereum.ChainNode.Hosting.ChainNodeStorage.BuildStorageOptions(node.Storage).EnableStatistics);
             Assert.Equal(7, node.Storage.FlushCadenceBlocks);
+            Assert.Equal(3, node.Storage.PrefetchWorkers);
+            Assert.Equal(5, node.Storage.StateRootWorkers);
             Assert.True(node.Storage.EnableLogIndex);
         }
 
@@ -140,7 +150,7 @@ namespace Nethereum.MainnetChain.UnitTests
             Assert.Equal("/var/nethereum/nodekey", node.Network.NodeKeyFile);
             Assert.Equal(new[] { "enode://ab@10.0.0.2:30303" }, node.Network.TrustedPeers);
             Assert.Equal(21, node.Network.TargetPeerCount);
-            Assert.True(node.Network.MirrorRemoteStatus);
+            Assert.False(node.Network.MirrorRemoteStatus);
             Assert.True(node.Network.Discovery.DisableDiscv4);
             Assert.Equal(30312, node.Network.Discovery.Discv4Port);
             Assert.True(node.Network.Discovery.DisableDiscv5);

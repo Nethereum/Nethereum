@@ -35,7 +35,7 @@ namespace Nethereum.DevChain
         /// <returns>A Web3 instance connected to the DevChain.</returns>
         public static IWeb3 CreateWeb3(this DevChainNode node, string privateKey, IServiceProvider serviceProvider = null)
         {
-            var chainId = (int)node.Config.ChainId;
+            var chainId = node.Config.ChainId;
             var account = new Account(privateKey, chainId);
             return CreateWeb3(node, account, serviceProvider);
         }

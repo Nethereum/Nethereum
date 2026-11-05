@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
+using System.Data;
 using System.IO;
+using System.Threading;
 using Microsoft.Data.Sqlite;
 
 namespace Nethereum.DevChain.Storage.Sqlite
@@ -117,7 +119,8 @@ namespace Nethereum.DevChain.Storage.Sqlite
         private readonly string _connectionString;
         private readonly bool _deleteOnDispose;
         private readonly string _ownedTempDir;
-        private readonly ConcurrentDictionary<int, SqliteConnection> _connections = new();
+        private readonly object _gate = new();
+        private readonly SqliteConnection _connection;
         private bool _disposed;
 
         public SqliteStorageManager(string dbPath = null, bool deleteOnDispose = true)
@@ -141,10 +144,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
             _dbPath = dbPath;
             _connectionString = $"Data Source={_dbPath}";
 
-            var primary = CreateNewConnection();
-            _connections[Environment.CurrentManagedThreadId] = primary;
+            _connection = CreateNewConnection();
 
-            using var cmd = primary.CreateCommand();
+            using var cmd = CreateCommand();
             cmd.CommandText = @"
                 CREATE TABLE IF NOT EXISTS blocks (
                     block_hash TEXT PRIMARY KEY,
@@ -252,14 +254,72 @@ namespace Nethereum.DevChain.Storage.Sqlite
             cmd.ExecuteNonQuery();
         }
 
-        public SqliteConnection Connection => GetOrCreateConnection();
+        [Obsolete("Use CreateCommand(); direct use of the shared connection bypasses serialization")]
+        public SqliteConnection Connection => _connection;
 
         public string DbPath => _dbPath;
 
-        private SqliteConnection GetOrCreateConnection()
+        public SqliteCommand CreateCommand()
         {
-            var threadId = Environment.CurrentManagedThreadId;
-            return _connections.GetOrAdd(threadId, _ => CreateNewConnection());
+            lock (_gate)
+            {
+                return new SerializedCommand(_gate) { Connection = _connection };
+            }
+        }
+
+        private sealed class SerializedCommand : SqliteCommand
+        {
+            private readonly object _gate;
+            private int _held;
+
+            public SerializedCommand(object gate)
+            {
+                _gate = gate;
+            }
+
+            private void Enter()
+            {
+                Monitor.Enter(_gate);
+                _held++;
+            }
+
+            public override int ExecuteNonQuery()
+            {
+                Enter();
+                return base.ExecuteNonQuery();
+            }
+
+            public override object ExecuteScalar()
+            {
+                Enter();
+                return base.ExecuteScalar();
+            }
+
+            public override SqliteDataReader ExecuteReader()
+            {
+                Enter();
+                return base.ExecuteReader();
+            }
+
+            public override SqliteDataReader ExecuteReader(CommandBehavior behavior)
+            {
+                Enter();
+                return base.ExecuteReader(behavior);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                lock (_gate)
+                {
+                    base.Dispose(disposing);
+                }
+
+                while (_held > 0)
+                {
+                    _held--;
+                    Monitor.Exit(_gate);
+                }
+            }
         }
 
         private SqliteConnection CreateNewConnection()
@@ -284,12 +344,11 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             if (disposing)
             {
-                foreach (var kvp in _connections)
+                lock (_gate)
                 {
-                    kvp.Value?.Close();
-                    kvp.Value?.Dispose();
+                    _connection.Close();
+                    _connection.Dispose();
                 }
-                _connections.Clear();
 
                 if (_deleteOnDispose)
                 {

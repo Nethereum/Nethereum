@@ -18,7 +18,7 @@ namespace Nethereum.ChainNode.Hosting
     {
         public Action<TransactionsMessage>? TrustedTransactionsReceived { get; set; }
 
-        public Action<NewBlockMessage>? NewBlockReceived { get; set; }
+        public Action<BlockRangeUpdateMessage>? BlockRangeUpdateReceived { get; set; }
 
         public Action<NewPooledTransactionHashesMessage>? PooledTransactionHashesReceived { get; set; }
 
@@ -45,12 +45,10 @@ namespace Nethereum.ChainNode.Hosting
             callbacks ??= new ChainNodeServeCallbacks();
             loggerFactory ??= NullLoggerFactory.Instance;
 
-            WarnOnMalformedTrustedEnodes(config, loggerFactory.CreateLogger(typeof(ChainNodeServeListener)));
-
             var listener = new PeerListener(
                 config.ResolveNodeKey(),
                 bundle,
-                BuildListenerOptions(config, mempool, callbacks),
+                BuildListenerOptions(profile, config, mempool, callbacks),
                 statusTemplate: await BuildStatusTemplateAsync(profile, bundle).ConfigureAwait(false),
                 snapHandler: BuildSnapHandler(bundle, config),
                 logger: loggerFactory.CreateLogger<PeerListener>());
@@ -64,18 +62,12 @@ namespace Nethereum.ChainNode.Hosting
             return listener;
         }
 
-        private static void WarnOnMalformedTrustedEnodes(ChainNodeConfig config, ILogger logger)
-        {
-            config.ResolveTrustedNodeIds(out var malformedEnodes);
-            foreach (var enode in malformedEnodes)
-                logger.LogWarning(
-                    "Malformed enode in configuration (dropped from the trusted-peer set): {Enode}", enode);
-        }
-
         private static PeerListenerOptions BuildListenerOptions(
-            ChainNodeConfig config, ChainNodeMempool mempool, ChainNodeServeCallbacks callbacks) =>
+            IChainProfile profile, ChainNodeConfig config, ChainNodeMempool mempool, ChainNodeServeCallbacks callbacks) =>
             new PeerListenerOptions
             {
+                ForkBlockNumbers = profile.ForkThresholds.BlockHeights ?? Array.Empty<ulong>(),
+                ForkTimestamps = profile.ForkThresholds.Timestamps ?? Array.Empty<ulong>(),
                 ListenPort = config.Network.ListenPort,
                 BindAddress = config.Network.BindAddress,
                 MaxInboundPeers = config.Network.MaxInboundPeers,
@@ -94,7 +86,7 @@ namespace Nethereum.ChainNode.Hosting
                 OnTrustedTransactionsReceivedFrom = callbacks.TrustedTransactionsReceived != null
                     ? null
                     : (config.Mempool.EnableTrustedPeerAdmission ? mempool?.TrustedAdmissionFrom : null),
-                OnNewBlockReceived = callbacks.NewBlockReceived,
+                OnBlockRangeUpdateReceived = callbacks.BlockRangeUpdateReceived,
                 OnPooledTransactionHashesReceived = callbacks.PooledTransactionHashesReceived,
                 OnTransactionsReceived = callbacks.TransactionsReceived,
                 OnInboundPeerAdded = callbacks.InboundPeerAdded,

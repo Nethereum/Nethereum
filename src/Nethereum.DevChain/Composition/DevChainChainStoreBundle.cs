@@ -142,7 +142,9 @@ namespace Nethereum.DevChain.Composition
             Metadata.ClearSnapSyncState();
             Metadata.ClearDeferredHealAccountsBlob();
             Metadata.ClearDeferredHealCodeBlob();
+#pragma warning disable CS0618
             Metadata.ClearAllDeferredStorageDebts();
+#pragma warning restore CS0618
             return Task.CompletedTask;
         }
 

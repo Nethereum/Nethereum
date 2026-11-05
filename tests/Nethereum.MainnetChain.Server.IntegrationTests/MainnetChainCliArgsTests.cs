@@ -16,6 +16,24 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
         }
 
         [Fact]
+        public void PrefetchWorkersFlag_SetsPrefetchWorkers()
+        {
+            var config = new MainnetChainServerConfig();
+            Assert.Equal(0, config.PrefetchWorkers);
+            MainnetChainCliArgs.Apply(config, new[] { "--prefetch-workers", "4" });
+            Assert.Equal(4, config.PrefetchWorkers);
+        }
+
+        [Fact]
+        public void StateRootWorkersFlag_SetsStateRootWorkersAndDefaultsToFour()
+        {
+            var config = new MainnetChainServerConfig();
+            Assert.Equal(4, config.StateRootWorkers);
+            MainnetChainCliArgs.Apply(config, new[] { "--state-root-workers", "1" });
+            Assert.Equal(1, config.StateRootWorkers);
+        }
+
+        [Fact]
         public void CheckpointEveryFlag_SetsCheckpointEvery()
         {
             var config = new MainnetChainServerConfig();
@@ -29,6 +47,15 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             var config = new MainnetChainServerConfig();
             MainnetChainCliArgs.Apply(config, new[] { "--cache-size", "4G" });
             Assert.Equal(4294967296L, config.BlockCacheSize);
+        }
+
+        [Fact]
+        public void RocksDbStatisticsFlag_EnablesRocksDbStatistics()
+        {
+            var config = new MainnetChainServerConfig();
+            Assert.False(config.EnableRocksDbStatistics);
+            MainnetChainCliArgs.Apply(config, new[] { "--rocksdb-statistics" });
+            Assert.True(config.EnableRocksDbStatistics);
         }
 
         [Theory]
@@ -93,6 +120,15 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
         }
 
         [Fact]
+        public void ReplayFlags_BindBlocksAndReportPath()
+        {
+            var config = new MainnetChainServerConfig();
+            MainnetChainCliArgs.Apply(config, new[] { "--replay-blocks", "1000", "--replay-report", "out/replay.json" });
+            Assert.Equal(1000UL, config.ReplayBlocks);
+            Assert.Equal("out/replay.json", config.ReplayReport);
+        }
+
+        [Fact]
         public void RawConfigurationBinding_StillBindsAdvancedProperties()
         {
             var config = new MainnetChainServerConfig();
@@ -100,6 +136,8 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["MainnetChain:FlushCadenceBlocks"] = "24",
+                    ["MainnetChain:PrefetchWorkers"] = "5",
+                    ["MainnetChain:StateRootWorkers"] = "6",
                     ["MainnetChain:BlockCacheSize"] = "2048"
                 })
                 .Build();
@@ -107,6 +145,8 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             configuration.GetSection("MainnetChain").Bind(config);
 
             Assert.Equal(24, config.FlushCadenceBlocks);
+            Assert.Equal(5, config.PrefetchWorkers);
+            Assert.Equal(6, config.StateRootWorkers);
             Assert.Equal(2048L, config.BlockCacheSize);
         }
     }

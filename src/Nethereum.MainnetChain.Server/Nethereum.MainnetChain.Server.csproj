@@ -9,6 +9,7 @@
     <RootNamespace>Nethereum.MainnetChain.Server</RootNamespace>
 
     <InvariantGlobalization>true</InvariantGlobalization>
+    <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
     <EnableRequestDelegateGenerator>false</EnableRequestDelegateGenerator>
 
     <PackAsTool>true</PackAsTool>
@@ -53,6 +54,14 @@
   <ItemGroup>
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.12.0-beta.1" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

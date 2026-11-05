@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Nethereum.DevChain.Hosting
+namespace Nethereum.EngineApi.Hosting
 {
     public sealed class EngineJwtValidator
     {
@@ -101,8 +101,9 @@ namespace Nethereum.DevChain.Hosting
             try
             {
                 using var document = JsonDocument.Parse(headerBytes);
-                if (!document.RootElement.TryGetProperty("alg", out var algElement))
-                    return false;
+                if (document.RootElement.ValueKind != JsonValueKind.Object) return false;
+                if (!document.RootElement.TryGetProperty("alg", out var algElement)) return false;
+                if (algElement.ValueKind != JsonValueKind.String) return false;
 
                 alg = algElement.GetString();
                 return alg != null;
@@ -119,8 +120,9 @@ namespace Nethereum.DevChain.Hosting
             try
             {
                 using var document = JsonDocument.Parse(payloadBytes);
-                if (!document.RootElement.TryGetProperty("iat", out var iatElement))
-                    return false;
+                if (document.RootElement.ValueKind != JsonValueKind.Object) return false;
+                if (!document.RootElement.TryGetProperty("iat", out var iatElement)) return false;
+                if (iatElement.ValueKind != JsonValueKind.Number) return false;
 
                 return iatElement.TryGetInt64(out iat);
             }

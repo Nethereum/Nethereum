@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum MainnetChain - read-only mainnet follower + serving library: composes FollowerChainNode (CoreChain) + DevP2P sync orchestration + optional beacon LightClient consensus gate + eth_/net_/web3_ JSON-RPC. Hostable from a CLI, Aspire, or tests via AddMainnetChainServer / MapMainnetChainEndpoints.</Description>
     <AssemblyTitle>Nethereum.MainnetChain</AssemblyTitle>
     <Version>$(NethereumVersionPreview)</Version>
@@ -33,6 +34,7 @@
     <ProjectReference Include="..\Nethereum.DevP2P\Nethereum.DevP2P.csproj" />
     <ProjectReference Include="..\Nethereum.DevP2P.Sync\Nethereum.DevP2P.Sync.csproj" />
     <ProjectReference Include="..\Nethereum.Consensus.LightClient\Nethereum.Consensus.LightClient.csproj" />
+    <ProjectReference Include="..\Nethereum.EngineApi.Hosting\Nethereum.EngineApi.Hosting.csproj" />
     <ProjectReference Include="..\Nethereum.Model\Nethereum.Model.csproj" />
   </ItemGroup>
 
@@ -41,6 +43,18 @@
        into the self-contained publish output, which a project reference does not. -->
   <ItemGroup>
     <PackageReference Include="Nethereum.Signer.Bls.Herumi" Version="$(NethereumVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

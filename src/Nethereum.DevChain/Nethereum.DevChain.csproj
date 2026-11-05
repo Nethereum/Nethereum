@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Nethereum.JsonRpc.RpcClient\Nethereum.JsonRpc.RpcClient.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
     <ProjectReference Include="..\Nethereum.ChainNode.Hosting\Nethereum.ChainNode.Hosting.csproj" />
+    <ProjectReference Include="..\Nethereum.EngineApi.Hosting\Nethereum.EngineApi.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup>

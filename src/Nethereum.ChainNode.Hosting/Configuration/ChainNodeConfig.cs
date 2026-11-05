@@ -20,6 +20,8 @@ namespace Nethereum.ChainNode.Hosting.Configuration
 
         public ChainNodeMempoolConfig Mempool { get; set; } = new ChainNodeMempoolConfig();
 
+        public ChainNodeProducerConfig Producer { get; set; } = new ChainNodeProducerConfig();
+
         public EthECKey ResolveNodeKey(Action<string>? log = null)
         {
             if (Storage.InMemory

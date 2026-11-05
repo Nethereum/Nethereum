@@ -51,6 +51,11 @@ namespace Nethereum.MainnetChain.Hosting
             if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             if (string.IsNullOrWhiteSpace(config.DataDir))
                 throw new ArgumentException("DataDir is required for the production composition.", nameof(config));
+            if (ChainNodeMaintenanceRunner.AnyRequested(config.ToChainNodeConfig().Maintenance))
+                throw new InvalidOperationException(
+                    "A maintenance flag (WipeState / CompactAll / RebuildStateFromFlat / VerifyFlat) is set. Maintenance is a " +
+                    $"one-shot that runs and exits: call {nameof(RunMaintenanceAsync)} instead of composing the syncing node, " +
+                    "then clear the flag before the next start.");
 
             var runtime = await MainnetNodeRuntime.CreateAsync(config, loggerFactory).ConfigureAwait(false);
             services.AddSingleton(runtime);
@@ -61,6 +66,18 @@ namespace Nethereum.MainnetChain.Hosting
             services.AddSingleton<IChainStoreBundle>(sp =>
                 sp.GetRequiredService<MainnetNodeRuntime>().Bundle);
 
+            if (config.EngineOnly)
+                services.AddSingleton<IBlockSource>(_ => new LocalReplayBlockSource(new List<BlockBundle>()));
+            else
+                AddPeerSyncServices(services, config);
+
+            services.AddHostedService(sp => sp.GetRequiredService<MainnetNodeRuntime>());
+
+            return services;
+        }
+
+        private static void AddPeerSyncServices(IServiceCollection services, MainnetChainServerConfig config)
+        {
             services.AddSingleton<IBlockSource>(sp =>
                 sp.GetRequiredService<MainnetNodeRuntime>().BlockSource);
 
@@ -162,45 +179,110 @@ namespace Nethereum.MainnetChain.Hosting
                     resolver.FindAsync(divergedBlock, floorBlock, ct);
             });
 
-            services.AddSingleton<BodyRepairDelegate>(sp =>
+            services.AddSingleton<TipBandBodyFollowService>(sp =>
             {
                 var runtime = sp.GetRequiredService<MainnetNodeRuntime>();
-                var repairer = new BodyRepairer(
+                return new TipBandBodyFollowService(
                     runtime.Scheduler,
-                    sp.GetRequiredService<ILoggerFactory>().CreateLogger<BodyRepairer>());
-                return (fromBlock, toBlock, bundle, ct) => repairer.RepairAsync(fromBlock, toBlock, bundle, ct);
+                    runtime.Pool,
+                    runtime.Bundle,
+                    MainnetChainActivations.Instance,
+                    sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainnetChainHostedService>());
             });
 
-            services.AddHostedService(sp => sp.GetRequiredService<MainnetNodeRuntime>());
+            services.AddSingleton<BodyRepairDelegate>(sp =>
+            {
+                var tipBand = sp.GetRequiredService<TipBandBodyFollowService>();
+                return (fromBlock, toBlock, bundle, ct) => tipBand.RequeueAndWaitAsync(fromBlock, ct);
+            });
+        }
 
-            return services;
+        [NethereumDocExample(DocSection.ChainInfrastructure, "mainnet-follower", "Run a one-shot maintenance operation and report its exit code")]
+        public static async Task<int> RunMaintenanceAsync(
+            MainnetChainServerConfig config, ILogger logger, CancellationToken ct = default)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (string.IsNullOrWhiteSpace(config.DataDir))
+                throw new ArgumentException("DataDir is required to run maintenance.", nameof(config));
+
+            logger ??= NullLogger.Instance;
+            var nodeConfig = config.ToChainNodeConfig();
+            var verifyOnly = nodeConfig.Maintenance.VerifyFlat;
+            var recoveryGate = new BootRecoveryGate(logger);
+            try
+            {
+                if (verifyOnly && recoveryGate.HasPendingRestore(config.DataDir!))
+                    return RefuseVerifyUntilBootRecovery(logger, "a checkpoint restore is pending");
+                await using var storage = verifyOnly
+                    ? ChainNodeStorage.Open(nodeConfig, logger, new TransactionVerificationAndRecoveryImp())
+                    : await OpenAndRecoverAsync(config, nodeConfig, recoveryGate, logger).ConfigureAwait(false);
+                var bundle = (RocksDbChainStoreBundle)storage.Bundle;
+                if (verifyOnly && await CommittedHeadIsTornAsync(bundle).ConfigureAwait(false))
+                    return RefuseVerifyUntilBootRecovery(logger, "the committed head's state root does not resolve in the trie (torn head)");
+
+                return await ChainNodeMaintenanceRunner.RunAndReportExitCodeAsync(
+                    bundle, nodeConfig.Maintenance, logger, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Maintenance: could not open or boot-recover the store at {DataDir}; exiting with a non-zero code.",
+                    config.DataDir);
+                return 1;
+            }
+        }
+
+        internal static async Task<ChainNodeStorage> OpenAndRecoverAsync(
+            MainnetChainServerConfig config, ChainNodeConfig nodeConfig, BootRecoveryGate recoveryGate, ILogger logger)
+        {
+            recoveryGate.ApplyPendingRestore(
+                config.DataDir!,
+                config.UseFreezerHistory ? config.FreezerHistoryDirectory : null,
+                config.PromotionEnabled);
+
+            var storage = ChainNodeStorage.Open(nodeConfig, logger, new TransactionVerificationAndRecoveryImp());
+            try
+            {
+                recoveryGate.EnsureConsistentOrEscalate((RocksDbChainStoreBundle)storage.Bundle, config.DataDir!);
+                return storage;
+            }
+            catch
+            {
+                await storage.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
+        }
+
+        private static int RefuseVerifyUntilBootRecovery(ILogger logger, string reason)
+        {
+            logger.LogError(
+                "Maintenance: VerifyFlat refused — store needs boot recovery ({Reason}): start the node normally or run " +
+                "--rebuild-state-from-flat. VerifyFlat is write-free and does not repair; nothing was written.",
+                reason);
+            return 1;
+        }
+
+        private static async Task<bool> CommittedHeadIsTornAsync(RocksDbChainStoreBundle bundle)
+        {
+            var head = bundle.Metadata.GetLastBlock();
+            if (head == 0) return false;
+            var header = await bundle.Blocks.GetByNumberAsync(head).ConfigureAwait(false);
+            return header?.StateRoot == null || !bundle.StateTrieNodes.ContainsKey(header.StateRoot);
         }
 
         public static RocksDbStorageOptions BuildStorageOptions(MainnetChainServerConfig config)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
-            return new RocksDbStorageOptions
-            {
-                PathKeyedState = config.PathKeyedState,
-                TrieNodeHistoryBlocks = config.TrieNodeHistoryBlocks,
-                TrieNodeHistoryIndex = config.TrieNodeHistoryIndex,
-                BlockCacheSize = config.BlockCacheSize,
-                SplitHistoryStore = config.SplitHistoryStore,
-                HotWindowBlocks = config.HotWindowBlocks,
-                EnableLogIndex = config.EnableLogIndex,
-                PromotionEnabled = config.PromotionEnabled,
-                UseFreezerHistory = config.UseFreezerHistory,
-                FreezerHistoryDirectory = config.FreezerHistoryDirectory,
-                BackgroundFreezeIndexing = config.BackgroundFreezeIndexing,
-                FreezerBackgroundDegreeOfParallelism = config.FreezerBackgroundDegreeOfParallelism,
-            };
+            var options = ChainNodeStorage.BuildStorageOptions(MainnetChainNodeConfigFactory.MapStorage(config));
+            options.DatabasePath = new RocksDbStorageOptions().DatabasePath;
+            return options;
         }
 
         public static void AlignByHashReindexCursorToFreezerHead(MainnetChainServerConfig config, ILogger logger)
         {
             var storageOptions = BuildStorageOptions(config);
             storageOptions.SkipBootReconcile = true;
-            var journalOptions = MainnetNodeRuntime.BuildJournalOptions(config.JournalBlocks);
+            var journalOptions = ChainNodeStorage.BuildJournalOptions(config.JournalBlocks);
             using var bundle = RocksDbChainStoreBundle.Open(
                 config.DataDir!, journalOptions, bulkSync: config.BulkSync, storageOptions: storageOptions,
                 signer: new TransactionVerificationAndRecoveryImp());
@@ -213,17 +295,18 @@ namespace Nethereum.MainnetChain.Hosting
                     "The background trailer will start caught up and re-scan nothing.", previous, updated);
         }
 
+        public static IValidationPolicy BuildValidationPolicy(
+            MainnetChainServerConfig config, ILogger<StrictValidationPolicy>? logger)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            return new StrictValidationPolicy(config.ContinueOnMismatch, anchorEvery: 0, logger: logger);
+        }
+
         public static IFlushCadence? BuildFlushCadence(MainnetChainServerConfig config)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
-            if (config.FlushCadenceBlocks < 1)
-                throw new ArgumentException(
-                    $"FlushCadenceBlocks must be >= 1 (got {config.FlushCadenceBlocks}).",
-                    nameof(config));
-
-            return config.FlushCadenceBlocks > 1
-                ? new FixedIntervalFlushCadence((ulong)config.FlushCadenceBlocks)
-                : null;
+            return FlushCadences.ForBlocks(
+                MainnetChainNodeConfigFactory.MapStorage(config).FlushCadenceBlocks, nameof(config));
         }
     }
 
@@ -279,6 +362,10 @@ namespace Nethereum.MainnetChain.Hosting
         private async Task InitAsync(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+            _chainNodeConfig = _config.ToChainNodeConfig();
+            ChainNodeEnodeValidator.RefuseMalformed(_chainNodeConfig.Network.TrustedPeers
+                .Select(enode => new KeyValuePair<string, string>("MainnetChain:TrustedPeer", enode)));
+
             Nethereum.CoreChain.RocksDB.Stores.RocksDbCheckpointManager.CompleteInterruptedRestore(_config.DataDir!);
             System.IO.Directory.CreateDirectory(_config.DataDir!);
             _recoveryGate.ApplyPendingRestore(
@@ -286,12 +373,11 @@ namespace Nethereum.MainnetChain.Hosting
                 _config.UseFreezerHistory ? _config.FreezerHistoryDirectory : null,
                 _config.PromotionEnabled);
 
-            _chainNodeConfig = _config.ToChainNodeConfig();
             _nodeKey = _chainNodeConfig.ResolveNodeKey(msg => _logger.LogInformation("{Msg}", msg));
 
             _runtimeCts = new CancellationTokenSource();
             _node = await MainnetChainNode.ComposeAsync(
-                new MainnetChainDefinition(_nodeKey),
+                new MainnetChainDefinition(_nodeKey, genesis: _config.LoadGenesis()),
                 _chainNodeConfig,
                 _loggerFactory,
                 _runtimeCts.Token,
@@ -304,11 +390,15 @@ namespace Nethereum.MainnetChain.Hosting
 
             _recoveryGate.EnsureConsistentOrEscalate((RocksDbChainStoreBundle)_node.Bundle, _config.DataDir!);
 
-            await _node.StartSyncAsync(
-                _runtimeCts.Token,
-                minPeerLatestBlockFactory: b => Task.FromResult(b.Metadata.GetLastBlock() + 1))
-                .ConfigureAwait(false);
-            _logger.LogInformation("PeerPool started (target_peers={Target}).", _config.TargetPeers);
+            if (!_config.EngineOnly)
+            {
+                await _node.StartSyncAsync(
+                    _runtimeCts.Token,
+                    minPeerLatestBlockFactory: b => Task.FromResult(b.Metadata.GetLastBlock() + 1))
+                    .ConfigureAwait(false);
+                _logger.LogInformation("PeerPool started (target_peers={Target}).", _config.TargetPeers);
+                LogTrustedPeers();
+            }
 
             if (_config.EnableTxSubmission) WireTransactionSubmission();
         }
@@ -320,20 +410,10 @@ namespace Nethereum.MainnetChain.Hosting
                 "Transaction submission ENABLED — eth_sendRawTransaction admits to the local mempool, serves GetPooledTransactions, and announces to peers.");
         }
 
-        internal static HistoricalStateOptions? BuildJournalOptions(int journalBlocks)
-        {
-            if (journalBlocks < 0) return null;
-            if (journalBlocks == 0) return HistoricalStateOptions.FullArchive;
-            return new HistoricalStateOptions
-            {
-                MaxHistoryBlocks = journalBlocks,
-                EnablePruning = true,
-                PruningIntervalBlocks = Math.Max(64, journalBlocks / 16),
-            };
-        }
-
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            if (_config.EngineOnly) return;
+
             var ct = _runtimeCts!.Token;
             cancellationToken.Register(() =>
             {
@@ -345,7 +425,6 @@ namespace Nethereum.MainnetChain.Hosting
             await StartInboundServingAsync(ct).ConfigureAwait(false);
             await StartDiscv5DiscoveryAsync(ct).ConfigureAwait(false);
             StartDiscv4Discovery(ct);
-            EnqueueTrustedPeer();
         }
 
         private void StartDiscv4Discovery(CancellationToken ct)
@@ -437,7 +516,7 @@ namespace Nethereum.MainnetChain.Hosting
                 var enrForkId = Eip2124ForkIdCalculator.NewId(
                     enrGenesisHash, MainnetChainSchedule.ForkIdentity.BlockHeights, MainnetChainSchedule.ForkIdentity.Timestamps,
                     enrHeadBlock, enrHeadTime);
-                localEnr.Pairs["eth"] = EnrForkIdEntry.Encode(enrForkId.Hash, enrForkId.Next);
+                localEnr.SetListValue("eth", EnrForkIdEntry.Encode(enrForkId.Hash, enrForkId.Next));
 
                 EnrRecordSigner.Sign(localEnr, discv5Key);
                 _discv5.LocalEnrEncoded = EnrRecordEncoder.EncodeRecord(localEnr);
@@ -481,13 +560,11 @@ namespace Nethereum.MainnetChain.Hosting
             }
         }
 
-        private void EnqueueTrustedPeer()
+        private void LogTrustedPeers()
         {
             var trustedPeers = _chainNodeConfig!.Network.TrustedPeers ?? Array.Empty<string>();
             if (trustedPeers.Length > 0)
             {
-                foreach (var peer in trustedPeers)
-                    _node!.Sync.Pool.EnqueueCandidate(peer);
                 _logger.LogInformation(
                     "Snap-sync trusted peers enqueued: {Count} ({First}...)",
                     trustedPeers.Length,

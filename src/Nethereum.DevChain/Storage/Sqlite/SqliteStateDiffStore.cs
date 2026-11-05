@@ -35,7 +35,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             {
                 if (_initialized) return;
 
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS state_diff_accounts (
                         address TEXT NOT NULL,
@@ -78,7 +78,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private void ExecuteSql(string sql)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
         }
@@ -107,7 +107,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                             ? _accountLayout.EncodeAccount(entry.PreValue)
                             : null;
 
-                        using var cmd = _manager.Connection.CreateCommand();
+                        using var cmd = _manager.CreateCommand();
                         cmd.CommandText = "INSERT OR REPLACE INTO state_diff_accounts (address, block_number, account_data, address_inline) VALUES (@addr, @block, @data, @inline)";
                         cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                         cmd.Parameters.AddWithValue("@block", (long)diff.BlockNumber);
@@ -125,7 +125,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                         if (slotBytes.Length != 32)
                             throw new ArgumentException($"StorageDiffEntry.SlotKey must be 32 bytes, got {slotBytes.Length}");
 
-                        using var cmd = _manager.Connection.CreateCommand();
+                        using var cmd = _manager.CreateCommand();
                         cmd.CommandText = "INSERT OR REPLACE INTO state_diff_storage (address, slot, block_number, value, address_inline) VALUES (@addr, @slot, @block, @val, @inline)";
                         cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                         cmd.Parameters.AddWithValue("@slot", slotBytes);
@@ -136,7 +136,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     }
 
                     {
-                        using var cmd = _manager.Connection.CreateCommand();
+                        using var cmd = _manager.CreateCommand();
                         cmd.CommandText = "INSERT OR IGNORE INTO state_diff_block_index (block_number) VALUES (@block)";
                         cmd.Parameters.AddWithValue("@block", (long)diff.BlockNumber);
                         cmd.ExecuteNonQuery();
@@ -163,7 +163,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "SELECT account_data FROM state_diff_accounts WHERE address = @addr AND block_number >= @block ORDER BY block_number ASC LIMIT 1";
                 cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                 cmd.Parameters.AddWithValue("@block", (long)searchFrom);
@@ -191,7 +191,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             lock (_lock)
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "SELECT value FROM state_diff_storage WHERE address = @addr AND slot = @slot AND block_number >= @block ORDER BY block_number ASC LIMIT 1";
                 cmd.Parameters.AddWithValue("@addr", normalizedAddress);
                 cmd.Parameters.AddWithValue("@slot", slotBytes);
@@ -217,7 +217,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             {
                 BlockStateDiff diff = null;
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "SELECT account_data, address_inline FROM state_diff_accounts WHERE block_number = @block";
                     cmd.Parameters.AddWithValue("@block", (long)blockNumber);
@@ -236,7 +236,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     }
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "SELECT slot, value, address_inline FROM state_diff_storage WHERE block_number = @block";
                     cmd.Parameters.AddWithValue("@block", (long)blockNumber);
@@ -376,7 +376,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private BigInteger? GetMetaValue(string key)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT value FROM state_diff_meta WHERE key = @key";
             cmd.Parameters.AddWithValue("@key", key);
 
@@ -391,7 +391,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (value.HasValue)
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "INSERT OR REPLACE INTO state_diff_meta (key, value) VALUES (@key, @val)";
                 cmd.Parameters.AddWithValue("@key", key);
                 cmd.Parameters.AddWithValue("@val", value.Value);
@@ -399,7 +399,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             }
             else
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "DELETE FROM state_diff_meta WHERE key = @key";
                 cmd.Parameters.AddWithValue("@key", key);
                 cmd.ExecuteNonQuery();
@@ -408,7 +408,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private long? ExecuteScalarLong(string sql)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
 
             var result = cmd.ExecuteScalar();
@@ -420,7 +420,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private void ExecuteNonQuerySimple(string sql, params (string Name, object Value)[] parameters)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
             foreach (var (name, value) in parameters)
                 cmd.Parameters.AddWithValue(name, value);

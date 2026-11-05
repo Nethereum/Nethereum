@@ -23,7 +23,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (txHash == null) return Task.FromResult<ISignedTransaction>(null);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT tx_data FROM transactions WHERE tx_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", txHash.ToHex());
 
@@ -39,7 +39,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new List<ISignedTransaction>();
             if (blockHash == null) return Task.FromResult(result);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT tx_data FROM transactions WHERE block_hash = @hash ORDER BY tx_index";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
 
@@ -59,7 +59,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new List<byte[]>();
             if (blockHash == null) return Task.FromResult(result);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT tx_hash FROM transactions WHERE block_hash = @hash ORDER BY tx_index";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
 
@@ -77,7 +77,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var result = new List<ISignedTransaction>();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT tx_data FROM transactions WHERE block_number = @num ORDER BY tx_index";
             cmd.Parameters.AddWithValue("@num", (long)blockNumber);
 
@@ -100,7 +100,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var txBytes = _provider.EncodeTransaction(tx);
             var blockHashHex = blockHash.ToHex();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = @"INSERT OR REPLACE INTO transactions (tx_hash, tx_data, block_hash, block_number, tx_index)
                                 VALUES (@txHash, @txData, @blockHash, @blockNumber, @txIndex)";
             cmd.Parameters.AddWithValue("@txHash", txHash);
@@ -117,7 +117,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (txHash == null) return Task.FromResult<TransactionLocation>(null);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT block_hash, block_number, tx_index FROM transactions WHERE tx_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", txHash.ToHex());
 
@@ -134,7 +134,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM transactions WHERE block_number = @num";
             cmd.Parameters.AddWithValue("@num", (long)blockNumber);
             cmd.ExecuteNonQuery();

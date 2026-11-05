@@ -1,0 +1,118 @@
+# Chain Hosting — Nethereum 7.1
+
+Nethereum 7.1 hosts the mainnet follower, DevChain and AppChain behind one shared JSON-RPC endpoint and one set of configuration rules, and gives the follower a second way to be driven. `Nethereum.ChainNode.Hosting` now owns the `POST /` endpoint all three hosts map, with a Host allow-list, a content-type check, body and response limits and per-module gating, plus a shared `Producer` section (block gas limit and base fee) and a start-up refusal for a malformed configured enode. The Engine API host moves out of DevChain into the new `Nethereum.EngineApi.Hosting` package, with a validated 32-byte JWT secret that is created owner-only on Unix. `Nethereum.MainnetChain` can run under a consensus client (`--engine`), or engine-only on a custom genesis with `debug_setHead`; it checks every inbound peer's `Status` against its own chain; it runs maintenance as one-shots that exit, exits `1` on a fatal follower or store failure, and re-executes stored blocks with `--replay-blocks` to measure each stage. `Nethereum.DevChain` adds `testing_buildBlockV1` and `testing_commitBlockV1`, a switch for the genesis system-contract predeploys, and strictly increasing block timestamps.
+
+## Nethereum.ChainNode.Hosting — One RPC endpoint, one Producer section
+
+AppChain, DevChain and the mainnet follower now map the same endpoint instead of three copies.
+
+* `RpcHttpEndpoint.MapRpcHttpEndpoint(this WebApplication app, IRpcDispatcher dispatcher, JsonSerializerOptions serializerOptions, RpcHttpOptions options, ILogger? logger)` maps `POST /`. It answers `403` (`invalid host specified`) when the `Host` header fails the host policy, `413` when the body exceeds `RpcHttpOptions.MaxRequestBodySize` (10 MiB), and `415` unless the content type is `application/json`, `application/json-rpc` or `application/jsonrequest`. The body goes through the CoreChain `JsonRpcEnvelope`, which caps a batch response at `RpcHttpOptions.MaxResponseSize` (25,000,000 bytes)
+* `RpcHttpOptions` (`MaxRequestBodySize`, `MaxResponseSize`, `BindHost`, `AllowedHosts`, `AllowedOrigins`, `HostPolicy`, `OriginPolicy`), `RpcHostPolicy(IEnumerable<string>? allowedHosts, string? bindHost)` with `IsAllowed(string? hostHeader)`, `Localhost` and `Wildcard`, and `RpcOriginPolicy(IEnumerable<string>? allowedOrigins)` with `IsAllowed(string? originHeader)` and `Wildcard`. The host policy accepts a missing header, any IP literal, `localhost`, the bind host and the listed names (`*` = any); the origin policy accepts a request with no `Origin` header and otherwise only a listed origin, matched by scheme, host and port
+* `ChainNodeRpcConfig.Modules` (default `eth,net,web3`; add `txpool` or `debug`; `admin` is accepted as a name), `AllowedHosts` and `AllowedOrigins` (both empty by default), with `ChainNodeRpcConfigExtensions.ToModuleSet`, `ToHttpOptions` and `SplitList`. An unknown module name throws `ArgumentException`. AppChain and the mainnet follower serve only the listed modules; DevChain keeps its full development method set and, when `AllowedHosts` is empty, allows any `Host`
+* `ChainNodeProducerConfig` (`BlockGasLimit`, `BaseFee`, both nullable) on `ChainNodeConfig.Producer`, `ChainNodeProducerConfigExtensions.ApplyTo(this ChainNodeProducerConfig producer, ChainConfig target)` (copies only the values that are set) and `ChainNodeProducerValidator.Validate(ChainNodeProducerConfig producer, string sectionPath)` (a gas limit that is set must be positive). AppChain and DevChain share the section; `DevChainServerConfig.BlockGasLimit` forwards onto it
+* `ChainNodeStorageConfig.EnableRocksDbStatistics`, `PrefetchWorkers` (default 0) and `StateRootWorkers` (default 4); `FlushCadenceBlocks` is now live on every node kind. `PrefetchWorkers` and `StateRootWorkers` are passed only by the mainnet follower and are marked `NotYetWired` for AppChain and DevChain in `ChainNodeConfigSurface`
+* The `Nethereum.ChainNode.Hosting` package now references `Microsoft.AspNetCore.App`
+
+## Nethereum.ChainNode.Hosting — Configured enodes, head announcements and defaults
+
+* `ChainNodeEnodeValidator.RefuseMalformed(ChainNodeConfig node, string configPath)` and `RefuseMalformed(IEnumerable<KeyValuePair<string, string>> enodesByConfigKey)` throw `InvalidOperationException` naming every malformed entry and its configuration key (for example `DevChain:Node:Network:TrustedPeers:1`). A malformed enode in `Sync.FollowPeerEnode`, `Network.TrustedPeers` or `Network.TrustedBootnodes` now refuses the start before storage, the node key or genesis is touched; a malformed bootnode of the chain profile refuses the start when the sync stack starts. 7.0 only logged a warning that the peer would never connect. `ChainNodeNetworkConfig.SplitEnodeList(string?)` and `SplitEnodeList(IEnumerable<string>?)` split a comma-separated list into trimmed entries
+* `ChainNode.BlockRangeAnnouncer` is started by `StartServingAsync` and announces the head to every eth/69+ peer as it moves (`ChainHeadResolver.ResolveBlockRangeAsync(IChainStoreBundle)`); `ChainNodeServeCallbacks.BlockRangeUpdateReceived` receives a peer's announcement. The inbound listener is given the profile's fork block numbers and timestamps so the peer's fork id can be checked
+* Defaults: `ChainNodeNetworkConfig.HandshakeTimeoutMs` 5000 (was 10000), `IdleTimeout` 30 s (was 2 minutes), `ChainNodeStorageConfig.BackgroundFreezeIndexing` and `MainnetChainServerConfig.BackgroundFreezeIndexing` `true` (were `false`)
+* `ChainNodeSyncConfig.SnapBootstrap = false` leaves a bound `Mode` alone unless it is `Snap` (7.0 forced `ForwardExecute`)
+* `ChainNodeMaintenanceRunner` wipes state through `ISnapBootstrapStateReset` and logs `state.wipe` progress
+
+## Nethereum.EngineApi.Hosting — The Engine API host
+
+The JWT-authenticated Engine API endpoint is its own package, shared by DevChain and the mainnet follower.
+
+* `EngineApiHostingExtensions.AddEngineApiServer(this IServiceCollection services, EngineApiServerConfig config, Func<IServiceProvider, IEngineApiService> engineFactory, bool verbose = false)` (and a `WebApplicationBuilder` overload) registers the config, the engine service, an `EngineJwtValidator` and an `EngineApiHost`; `MapEngineApiEndpoints(this WebApplication app)` serves it on `http://{BindAddress}:{Port}` only. A missing or invalid token gets `401`, a non-POST gets `404`
+* `EngineApiServerConfig` (`Port` 8551, `BindAddress` `127.0.0.1`, `JwtSecretPath` `./jwt.hex`), `EngineApiHost` (`Registry`, `Dispatcher`, `Validator`), `EngineJwtSecret` (`SecretLengthBytes` 32, `LoadOrCreate(string path)`) and `EngineJwtValidator` (`TryValidate(string authorizationHeaderValue, out string error)`)
+* The secret file must hold exactly 32 bytes as hex, with an optional `0x` prefix, as consensus clients write it; an empty, short or non-hex file throws `InvalidDataException`, so an empty key can no longer validate any token. A missing file is created through a temporary file and a move, and on Unix it is readable and writable by its owner only
+* The validator accepts only `HS256`, a matching signature and an `iat` within 60 seconds. A token whose header or claims are valid JSON of the wrong shape is refused with `false`, so the caller answers `401` (it used to throw and answer `500`).
+
+## Nethereum.MainnetChain — Engine API mode and custom genesis
+
+A consensus client can now drive the follower, and the follower can run a chain of its own.
+
+* `MainnetChainServerConfig.Engine` (`EngineConfigSection`: `Enabled`, `Port` 8551, `JwtSecretPath` defaulting to `<DataDir>/jwt.hex`, `BindAddress` `127.0.0.1`), the flags `--engine`, `--engine-port` and `--engine-jwt-secret`, and `MainnetEngineComposition.AddMainnetEngine(this IServiceCollection services, MainnetChainServerConfig config)`, which `AddMainnetChainServer` calls when the Engine API is enabled. `MapMainnetChainEndpoints` maps the Engine endpoint on its own port
+* `EngineForkchoiceHeaders` (`ITrustedHeaderProvider` and `IEngineForkchoiceSink`; `Publish(EngineForkchoiceHead head, EngineForkchoiceHead finalized)`, `GetLatestOptimistic()`, `GetLatestFinalized()`, `GetBlockHash(ulong)`) feeds the canonical tip from `forkchoiceUpdated`: the head is the optimistic tip and the finalized block the finalized tip; both throw before the first update, so nothing executes until a consensus client has spoken. `Engine.Enabled` together with a beacon endpoint is refused (`ConsensusStartupGuard.EngineWithLightClientMessage`; `Decision.EngineDriven` and `Decision.RefuseEngineWithLightClient`)
+* A `forkchoiceUpdated` head or finalized hash the node does not hold is looked up in the `newPayload` stash, then fetched from peers by hash; a peer's reply is used only when its header hashes to the requested hash, so a peer can no longer publish a forged header as the sync target
+* `newPayloadV3`, `V4` and `V5` compare `expectedBlobVersionedHashes` with the payload's blob transactions in order: a missing list is `-32602`, a mismatch is `INVALID`. A payload with a transaction that does not decode is `INVALID` instead of `-32603`
+* The `newPayload` stash keeps at most 128 blocks and an estimated 256 MiB of retained transaction data (`EnginePayloadStashOptions`), evicting the oldest first and always keeping the newest block, so a consensus client cannot make it retain unbounded transaction data
+* `--genesis <path>` (`MainnetChainServerConfig.GenesisPath`, `LoadGenesis()`) builds the chain config from a standard genesis file (`MainnetChainNodeFactory.BuildChainConfig(StandardGenesisDocument? genesis = null)`; chain id, fork schedule, blob schedule and deposit contract come from the file). It needs `--engine`; without it startup is refused (`ConsensusStartupGuard.GenesisWithoutEngineMessage`, `Decision.RefuseGenesisWithoutEngine`). `MainnetChainDefinition` takes the genesis as a third constructor argument
+* With a genesis and the Engine API (`MainnetChainServerConfig.EngineOnly`) the node composes no peer pool, scheduler, header follow, snap bootstrap, history backfill, discovery, light client or progress reporter, and serves no inbound peers. The first start writes the genesis allocation to the path-keyed RocksDB store, persists the genesis state root and makes the genesis block the head; a data directory that holds a different genesis is refused; a genesis that declares no system contracts gets the same predeploys as DevChain
+* `DebugSetHeadHandler` registers `debug_setHead` for an engine-only node when `RpcModules` includes `debug`: it rewinds to a block number through the reorg path the Engine API uses and refuses a block above the head
+* Flags also accept the `--name=value` form
+
+## Nethereum.MainnetChain — Peer checks, RPC exposure and trusted peers
+
+* The follower no longer mirrors a peer's `Status` back. `MainnetChainNodeConfigFactory` stopped setting `MirrorRemoteStatus`, so the inbound listener validates each peer's `Status` through `EthStatusValidator` (network id, eth version, genesis and EIP-2124 fork id) and refuses a peer on another chain before registering or serving it. 7.0 copied the peer's `Status`, so a peer of any network or genesis stayed connected
+* The JSON-RPC port serves the modules in `MainnetChainServerConfig.RpcModules` (default `eth,net,web3`; `debug` and `txpool` are opt-in; `admin` is an accepted module name that registers no method on this server), answers `403` to a `Host` that is not `localhost`, the bind host, an IP address or in `RpcAllowedHosts`, and sends no CORS headers unless `RpcCorsOrigins` lists the origin (or `*`). The `eth_getBlockByNumber` finality override is registered only when the `eth` module is on. Callers of `debug_setHead` must pass `--MainnetChain:RpcModules=eth,net,web3,debug`
+* `--trusted-peer` is read with `ChainNodeNetworkConfig.SplitEnodeList`, the sync stack alone enqueues each enode, and a malformed entry refuses the start, naming `MainnetChain:TrustedPeer`
+* The light client built for an operator-configured beacon endpoint sets `LightClientConfig.AllowBeaconRebootstrap`
+* `TrustedHeaderCanonicalSource` replaces `LightClientCanonicalSource`: it reads any `ITrustedHeaderProvider` and names itself `<provider name>(optimistic)` or `(finalized)`
+
+## Nethereum.MainnetChain — Maintenance, replay and failure handling
+
+* The maintenance flags (`--wipe-state`, `--compact-all`, `--rebuild-state-from-flat`, `--verify-flat`) are one-shots: `MainnetNodeComposition.RunMaintenanceAsync(MainnetChainServerConfig config, ILogger logger, CancellationToken ct = default)` applies a pending checkpoint restore, opens and boot-recovers the store, runs `ChainNodeMaintenanceRunner` and returns its exit code before any peer, discovery or hosted service starts. `--wipe-state` now exits after wiping and logs `state.wipe` progress; the next start re-runs the state sync. `--verify-flat` stays write-free and returns `1` with a boot-recovery message when a restore is pending or the head's state root does not resolve. `AddMainnetNodeAsync` throws `InvalidOperationException` when a maintenance flag is set
+* `--replay-blocks <N>` and `--replay-report <path>` (`MainnetChainServerConfig.ReplayBlocks`, `ReplayReport`; `MainnetReplayRunner.RunAsync`) re-execute the next N stored blocks through the production composition and verify every state root, never fetching from the network. The exit code is `0` when every root matched. `ReplayReport` carries per-block wall time, allocation, GC counts, RSS and execution stages (`ReplayBlockRecord`), medians and p90 (`ReplaySummary`), a per-flush-window table and RocksDB cache deltas (`ReplayCacheReport`)
+* `EnableRocksDbStatistics` (`--rocksdb-statistics`) collects RocksDB statistics; `RocksDbCacheStatsReporter` logs `rocksdb.cache.stats` every 100 blocks
+* `PrefetchWorkers` (`--prefetch-workers`) and `StateRootWorkers` (`--state-root-workers`) are passed to `MainnetChainNodeFactory`, whose constructors gained `prefetchWorkers`, `stateRootWorkers` and `genesis` parameters; a `StateRootWorkers` below 1 is refused
+* An unhandled follower exception is logged at Critical and the process exits `1`. A RocksDB write failure that is not transient, read through `IStoreFaultSource` every 5 seconds, stops the node the same way. `MainnetChainHostedService` waits for every background job it launched, on return, failure and cancellation, before the store is disposed. Its constructor that takes `IHostApplicationLifetime` is `[Obsolete]`; the host creates it through `ActivatorUtilities`
+
+## Nethereum.MainnetChain.Server — Logging and host
+
+* `--Logging:LogLevel:<Category>=<Level>` overrides now win over the server's defaults (`Nethereum` at Information, Debug with `-v`; everything else Warning), and every logger factory binds the `Logging` section (`ServerLogging.DefaultLevels(bool verbose)`, `ServerLogging.Configure`)
+* The server and the host no longer watch their configuration files for changes
+* With `--engine` the process listens on the Engine port as well as the JSON-RPC port; the host shutdown timeout is infinite so a stop waits for the block being written
+* The server sets `GarbageCollectionAdaptationMode` 0
+
+## Nethereum.DevChain — Testing methods, predeploy switch and chain ids
+
+* `testing_buildBlockV1` (`TestingBuildBlockV1Handler`) builds a block on the current head from payload attributes and returns it as a `getPayload` response without persisting it. The given transactions are kept in order and must all apply (else `-32000`), a `null` list takes the pool, and `parentHash` must be the current head. `testing_commitBlockV1` (`TestingCommitBlockV1Handler`, `DevChainNode.CommitBlockAsync`, `BlockManager.CommitBlockAsync`) builds the same way, inserts the block, makes it the canonical head and returns its hash; an unapplicable transaction is an error and the head stays. Both are registered by `AddDevHandlers`
+* `DevChainConfig.PredeploySystemContracts` (default `true`): `false` leaves the EIP-4788 and EIP-2935 contracts out of genesis unless the genesis declares them
+* Mined blocks are stamped `max(clock, parent.Timestamp + 1)`, so two blocks mined in one second no longer share a timestamp; an explicit next-block timestamp is still honoured
+* A chain id above `Int32.MaxValue` composes: `DevChainDefinition`, the RPC context, `DevAccountManager`, `GenerateAndFundAccounts` and `CreateWeb3` read the full-width chain id
+* From Osaka, the block producer stops adding transactions once their RLP would come within 1,000,000 bytes of the 8,388,608-byte block limit (EIP-7934); the cut transactions stay pending
+* `SqliteStorageManager.CreateCommand()` returns a command serialized on the manager's single shared connection; `SqliteStorageManager.Connection` is `[Obsolete]` in its favour
+* `ServiceCollectionExtensions.CreateEngineImporter(DevChainNode node, IChainStoreBundle bundle, IFlushCadence flushCadence = null)` builds the Engine API importer with side-chain support; the `DevChainNode` and `BlockManager` constructors gained overloads taking an `IUncleStore`. `AddDevChainServer` refuses a malformed configured enode before storage opens, and `DevChainServerConfigValidator` refuses a `Producer` gas limit that is not positive
+
+## Bug Fixes
+
+* A peer on another network or genesis stayed connected to the mainnet follower because it mirrored the peer's `Status`; the listener now validates it
+* `newPayloadV3` to `V5` ignored `expectedBlobVersionedHashes`; a mismatch is now `INVALID`
+* An empty or short JWT secret file validated any token and a `0x`-prefixed file was refused; the file now holds exactly 32 bytes of hex with an optional prefix
+* A JWT header or claims of the wrong JSON shape threw and answered an unauthenticated `500`; it is refused with `401`
+* `SnapBootstrap = false` overwrote a bound sync mode
+* `--wipe-state` carried on into sync and logged nothing while it wiped; it now exits after the wipe with `state.wipe` progress
+* The follower failure that a host log filter hid, and a RocksDB corruption that left a node stalled for hours, now exit `1` at Critical
+* Standard `--Logging:LogLevel:*` overrides had no effect on the server loggers
+* Two DevChain blocks mined within one second shared a timestamp, which a follower refuses
+* A DevChain genesis with a chain id above `Int32.MaxValue` threw `OverflowException` at start
+* A DevChain block could pass the 8 MiB block limit
+* The mainnet, DevChain and AppChain hosts each carried their own JSON-RPC endpoint, and only one had been hardened; the shared endpoint is the outcome of the node JSON-RPC security audit (see Core Chain and Storage)
+* `--trusted-peer` with a comma-separated list was handed to the peer pool as one joined string, so a trusted peer that dropped was never dialled again (4,444 attempts over 18 hours on a mainnet node)
+* With `--engine`, the server listened only on the JSON-RPC port: running the app with one URL cleared the Engine API endpoint the composition had added
+* The first `newPayload` of every fresh engine node was answered `SYNCING`; a payload that extends the executed head is executed and answered `VALID` before any `forkchoiceUpdated`
+* The MainnetChain server started an inotify file watcher for each configuration file it loaded; it no longer watches its configuration files
+* DevChain's SQLite storage kept one connection per thread, so after an await a `RELEASE` or `ROLLBACK TO` ran on a connection without the savepoint, a second writer hit "database is locked", and the parallel storage-root phase could read pre-block values and compute a wrong storage root; one serialised connection now carries every command
+* Each in-memory node in one process shared a node key; every node gets its own ephemeral key
+
+## Breaking Changes
+
+* Moved: the Engine API host left `Nethereum.DevChain.Hosting`. `EngineApiHost`, `EngineApiServerConfig`, `EngineJwtSecret` and `EngineJwtValidator` are in `Nethereum.EngineApi.Hosting` (new package); `ServiceCollectionExtensions.AddEngineApiServer(IServiceCollection, EngineApiServerConfig)`, `WebApplicationBuilder` `AddEngineApiServer(EngineApiServerConfig)` and `WebApplicationExtensions.MapEngineApiEndpoints` are replaced by `EngineApiHostingExtensions.AddEngineApiServer(config, engineFactory, verbose)` and `MapEngineApiEndpoints`, which take the `IEngineApiService` factory. Reference `Nethereum.EngineApi.Hosting` and change the namespace
+* Removed: `ChainNodeSyncConfig.EnablePushedBlocks` and `ChainNodeSyncStack.PushedBlocks`; blocks propagate by announcing the head and pulling, so there is nothing to enable
+* Changed: `ChainNodeServeCallbacks.NewBlockReceived` (`Action<NewBlockMessage>`) is `BlockRangeUpdateReceived` (`Action<BlockRangeUpdateMessage>`)
+* Removed: `LightClientCanonicalSource`; use `TrustedHeaderCanonicalSource` (same constructor, `ITrustedHeaderProvider provider, bool useOptimistic = false, ILogger logger = null`)
+* Signature: `MainnetChainDefinition(EthECKey localKey = null, ITrustedHeaderProvider trustedHeaderProvider = null)` gained an optional `StandardGenesisDocument genesis`. Source stays compatible; a caller built against 7.0 must be recompiled
+* Signature: `EffectiveStartBlockResolver.BuildOptions(EffectiveBounds bounds, MainnetChainServerConfig config, AsyncGate? writeGate = null)` gained the optional `writeGate` parameter. Source stays compatible; a caller built against 7.0 must be recompiled
+* Removed: the `NETHEREUM_WIPE_SNAP_STATE` environment hook and the in-host `WipeState`, `CompactAll`, `RebuildStateFromFlat` and `VerifyFlat` paths of `MainnetChainHostedService`; set the flag and the server runs it once and exits
+* Obsolete, not removed: `MainnetChainServerConfig.SnapEnableFlatReconcile` and `SnapFinalizeVerify` (ignored: the flat state is always certified), the `MainnetChainHostedService` constructor taking `IHostApplicationLifetime`, and `SqliteStorageManager.Connection`, which now returns the single shared connection (7.0 returned a per-thread connection); use the new `SqliteStorageManager.CreateCommand()`
+* Behaviour: `--wipe-state` exits after the wipe instead of continuing into sync; `ChainNodeNetworkConfig.HandshakeTimeoutMs` 5000 and `IdleTimeout` 30 s (were 10000 and 2 minutes) and `ChainNodeStorageConfig.BackgroundFreezeIndexing` / `MainnetChainServerConfig.BackgroundFreezeIndexing` `true` (were `false`); set them explicitly to keep the 7.0 values
+* Behaviour: a malformed configured enode refuses the start instead of logging a warning; the mainnet RPC port no longer serves `debug_*` or `txpool_*` and sends no `Access-Control-Allow-Origin: *` (add the modules with `RpcModules` and origins with `RpcCorsOrigins`)
+
+## Build & Packaging
+
+* `Nethereum.EngineApi.Hosting` is new and takes `<Version>` from `$(NethereumVersion)`: it ships stable. It packs its README and is signed with the shared key. `Nethereum.DevChain` and `Nethereum.MainnetChain` reference it
+* `Nethereum.ChainNode.Hosting` sets `AssemblyTitle`, `AssemblyName` and `PackageId` explicitly, packs its README, is signed with the shared key and references `Microsoft.AspNetCore.App`. `Nethereum.MainnetChain` packs its README and is signed; `Nethereum.MainnetChain.Server` and `Nethereum.DevChain.Server` are signed, and `Nethereum.MainnetChain.Server` sets `GarbageCollectionAdaptationMode` 0
+* READMEs: `Nethereum.ChainNode.Hosting` gains the RPC endpoint, Producer, configured-enode and head-announcement text; `Nethereum.EngineApi.Hosting` is new; `Nethereum.MainnetChain` and `Nethereum.MainnetChain.Server` gain the Engine API mode, custom genesis, replay and exposure text; the two DevChain READMEs gain the `testing_*` methods and `Nethereum.DevChain` the `PredeploySystemContracts` setting

@@ -125,6 +125,23 @@ namespace Nethereum.DevChain
             ITrieNodeStore trieNodeStore,
             IBlobStore blobStore,
             IBlockAccessListStore blockAccessListStore)
+            : this(config, blockStore, transactionStore, receiptStore, logStore, stateStore,
+                   filterStore, trieNodeStore, blobStore, blockAccessListStore, uncleStore: null)
+        {
+        }
+
+        public DevChainNode(
+            DevChainConfig config,
+            IBlockStore blockStore,
+            ITransactionStore transactionStore,
+            IReceiptStore receiptStore,
+            ILogStore logStore,
+            IStateStore stateStore,
+            IFilterStore filterStore,
+            ITrieNodeStore trieNodeStore,
+            IBlobStore blobStore,
+            IBlockAccessListStore blockAccessListStore,
+            IUncleStore uncleStore)
             : base(
                 blockStore,
                 transactionStore,
@@ -138,7 +155,7 @@ namespace Nethereum.DevChain
                 CreateNodeDataService(stateStore, blockStore, config),
                 trieNodeStore,
                 blobStore,
-                uncleStore: null,
+                uncleStore: uncleStore,
                 hardforkConfig: (config ?? DevChainConfig.Default).GetHardforkConfig())
         {
             _config = config ?? DevChainConfig.Default;
@@ -153,7 +170,8 @@ namespace Nethereum.DevChain
                 _txVerifier,
                 _config,
                 trieNodeStore,
-                BlockAccessLists);
+                BlockAccessLists,
+                uncleStore);
         }
 
         private static readonly ITransactionVerificationAndRecovery SharedTxVerifier = new TransactionVerificationAndRecoveryImp();
@@ -388,7 +406,7 @@ namespace Nethereum.DevChain
         public Account[] GenerateAndFundAccounts(int count)
         {
             var accounts = new Account[count];
-            var chainId = (int)_config.ChainId;
+            var chainId = _config.ChainId;
             for (int i = 0; i < count; i++)
             {
                 var key = EthECKey.GenerateKey();
@@ -513,6 +531,17 @@ namespace Nethereum.DevChain
         {
             EnsureInitialized();
             return await _blockManager.MineBlockAsync(parentBeaconBlockRoot);
+        }
+
+        public async Task<BlockProductionResult> CommitBlockAsync(
+            byte[] parentHash, IReadOnlyList<ISignedTransaction> transactions, bool fromMempool, BlockProductionOptions options)
+        {
+            EnsureInitialized();
+            await BuildBlockOnHeadAsync(parentHash, transactions, fromMempool, options);
+            var committed = await _blockManager.CommitBlockAsync(transactions, fromMempool, options);
+            await FlushPendingBlobsAsync();
+            await CaptureWitnessAndProveAsync();
+            return committed;
         }
 
         public async Task<byte[]> MineBlockWithTransactionAsync(ISignedTransaction tx)
@@ -782,6 +811,9 @@ namespace Nethereum.DevChain
         {
             return _blockManager.GetPendingTransactionCount();
         }
+
+        protected override CoreChain.IRewardPolicy SimulationRewardPolicy =>
+            _config.RewardPolicy ?? CoreChain.NoRewardPolicy.Instance;
 
         public override Task<List<ISignedTransaction>> GetPendingTransactionsAsync()
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain.RocksDB;
@@ -125,26 +126,21 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             Assert.True(result.BytecodeCount >= 1);
             Assert.Equal(1_000_000UL, bundle.Metadata.GetLastBlock());
 
-            var fallback = new TrieFallbackStateStore(
-                bundle.State,
-                (INodeBlobStore)bundle.TrieNodes,
-                () => pivotStateRoot);
-
-            var fetchedA = await fallback.GetAccountAsync(AddrA);
+            var fetchedA = await bundle.State.GetAccountAsync(AddrA);
             Assert.NotNull(fetchedA);
             Assert.Equal((BigInteger)1, (BigInteger)fetchedA.Nonce);
             Assert.Equal((BigInteger)1_000_000UL, (BigInteger)fetchedA.Balance);
 
-            var fetchedB = await fallback.GetAccountAsync(AddrB);
+            var fetchedB = await bundle.State.GetAccountAsync(AddrB);
             Assert.NotNull(fetchedB);
             Assert.Equal((BigInteger)7, (BigInteger)fetchedB.Nonce);
             Assert.Equal((BigInteger)5_000UL, (BigInteger)fetchedB.Balance);
             Assert.Equal(codeHash, fetchedB.CodeHash);
 
-            var slot0 = await fallback.GetStorageAsync(AddrB, BigInteger.Zero);
+            var slot0 = await bundle.State.GetStorageAsync(AddrB, BigInteger.Zero);
             Assert.Equal(new byte[] { 0xAA }, slot0);
 
-            var slot1 = await fallback.GetStorageAsync(AddrB, BigInteger.One);
+            var slot1 = await bundle.State.GetStorageAsync(AddrB, BigInteger.One);
             Assert.Equal(new byte[] { 0xBB, 0xCC }, slot1);
 
             var fetchedCode = await bundle.State.GetCodeAsync(codeHash);
@@ -179,6 +175,78 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
 
             Assert.False(result.Ran);
             Assert.Contains("existing state", result.SkipReason);
+        }
+
+        [Fact]
+        public async Task Given_ALiveJournalAndACommitThatIsInterrupted_When_ThePivotCommits_Then_TheJournalIsAlreadyDiscardedAndNothingIsCommitted()
+        {
+            var (peer, pivotHeader, pivotHash) = BuildSingleAccountServer();
+            using var bundle = RocksDbChainStoreBundle.Open(_dbPath);
+            await bundle.Blocks.SaveAsync(pivotHeader, pivotHash);
+            using var cts = new CancellationTokenSource();
+            var logger = new CallbackLogger(message =>
+            {
+                if (!message.StartsWith("snap.flat.reconcile done", StringComparison.Ordinal)) return;
+                SeedJournal(bundle);
+                cts.Cancel();
+            });
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => SnapBootstrapper.RunAsync(bundle, peer, pivotHeader, pivotHash, logger, ct: cts.Token));
+
+            Assert.Equal(0UL, bundle.Metadata.GetLastBlock());
+            Assert.Equal(0, JournalKeyCount(bundle));
+        }
+
+        private static void SeedJournal(RocksDbChainStoreBundle bundle)
+        {
+            bundle.Rocks.Put(RocksDbManager.CF_FLAT_GENERATION, new byte[] { 0x01 }, new byte[32]);
+            bundle.Rocks.Put(RocksDbManager.CF_FLAT_GENERATION, new byte[] { 0x02, 0x07 }, Array.Empty<byte>());
+        }
+
+        private static int JournalKeyCount(RocksDbChainStoreBundle bundle)
+        {
+            var count = 0;
+            using var it = bundle.Rocks.CreateIterator(RocksDbManager.CF_FLAT_GENERATION);
+            for (it.SeekToFirst(); it.Valid(); it.Next()) count++;
+            return count;
+        }
+
+        private static (InProcessSnapPeer Peer, BlockHeader Pivot, byte[] PivotHash) BuildSingleAccountServer()
+        {
+            var serverTrie = new InMemoryContentNodeStore();
+            var stateTrie = new PatriciaTrie(serverTrie);
+            var account = new Account { Nonce = 1, Balance = 1_000_000UL,
+                CodeHash = DefaultValues.EMPTY_DATA_HASH, StateRoot = DefaultValues.EMPTY_TRIE_HASH };
+            stateTrie.Put(HashAddress(AddrA), new AccountEncoder().Encode(account));
+            stateTrie.SaveDirtyNodesToStorage();
+            var pivotHeader = new BlockHeader
+            {
+                BlockNumber = 1_000_000,
+                StateRoot = stateTrie.Root.GetHash(),
+                ParentHash = new byte[32],
+                TransactionsHash = new byte[32],
+                ReceiptHash = new byte[32],
+                UnclesHash = new byte[32],
+                ExtraData = Array.Empty<byte>(),
+                LogsBloom = new byte[256],
+                Coinbase = "0x0000000000000000000000000000000000000000",
+                MixHash = new byte[32],
+                Nonce = new byte[8]
+            };
+            var peer = new InProcessSnapPeer(new PatriciaSnapRequestHandler(serverTrie, new InlineBytecodeStore(new Dictionary<string, byte[]>())));
+            return (peer, pivotHeader, Sha3Keccack.Current.CalculateHash(new byte[] { 0xCA, 0xFE }));
+        }
+
+        private sealed class CallbackLogger : Microsoft.Extensions.Logging.ILogger
+        {
+            private readonly Action<string> _onMessage;
+            public CallbackLogger(Action<string> onMessage) { _onMessage = onMessage; }
+            public IDisposable BeginScope<TState>(TState state) where TState : notnull => null;
+            public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+            public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId,
+                TState state, Exception exception, Func<TState, Exception, string> formatter)
+                => _onMessage(formatter(state, exception));
         }
 
         private static byte[] HashAddress(string address)

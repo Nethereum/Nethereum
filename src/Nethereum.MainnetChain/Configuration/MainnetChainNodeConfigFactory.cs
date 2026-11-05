@@ -19,7 +19,7 @@ namespace Nethereum.MainnetChain.Configuration
             };
         }
 
-        private static ChainNodeStorageConfig MapStorage(MainnetChainServerConfig config) =>
+        internal static ChainNodeStorageConfig MapStorage(MainnetChainServerConfig config) =>
             new ChainNodeStorageConfig
             {
                 DataDirectory = config.DataDir ?? "./chain-data",
@@ -35,21 +35,21 @@ namespace Nethereum.MainnetChain.Configuration
                 BackgroundFreezeIndexing = config.BackgroundFreezeIndexing,
                 FreezerBackgroundDegreeOfParallelism = config.FreezerBackgroundDegreeOfParallelism,
                 BlockCacheSize = config.BlockCacheSize,
+                EnableRocksDbStatistics = config.EnableRocksDbStatistics,
                 FlushCadenceBlocks = config.FlushCadenceBlocks,
+                PrefetchWorkers = config.PrefetchWorkers,
+                StateRootWorkers = config.StateRootWorkers,
                 EnableLogIndex = config.EnableLogIndex,
             };
 
         private static ChainNodeNetworkConfig MapNetwork(MainnetChainServerConfig config) =>
             new ChainNodeNetworkConfig
             {
-                Serve = true,
+                Serve = !config.EngineOnly,
                 ListenPort = config.ListenPort,
                 NodeKeyFile = config.NodeKeyFile,
-                TrustedPeers = string.IsNullOrWhiteSpace(config.TrustedPeer)
-                    ? Array.Empty<string>()
-                    : config.TrustedPeer.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                TrustedPeers = ChainNodeNetworkConfig.SplitEnodeList(config.TrustedPeer),
                 TargetPeerCount = config.TargetPeers,
-                MirrorRemoteStatus = true,
                 ClientId = "Nethereum/mainnet-server",
                 Discovery = new ChainNodeDiscoveryConfig
                 {
@@ -63,7 +63,7 @@ namespace Nethereum.MainnetChain.Configuration
         private static ChainNodeSyncConfig MapSync(MainnetChainServerConfig config) =>
             new ChainNodeSyncConfig
             {
-                Mode = config.SnapBootstrap ? SyncMode.Snap : SyncMode.ForwardExecute,
+                Mode = config.EngineOnly ? SyncMode.None : config.SnapBootstrap ? SyncMode.Snap : SyncMode.ForwardExecute,
                 HeaderBatchSize = config.HeadersBatch,
                 BodyBatchSize = config.BodiesBatch,
                 BulkSync = config.BulkSync,
@@ -92,6 +92,8 @@ namespace Nethereum.MainnetChain.Configuration
                 MaxLogBlockRange = config.RpcMaxLogBlockRange,
                 MaxLogResults = config.RpcMaxLogResults,
                 GasCap = config.RpcGasCap,
+                Modules = config.RpcModules,
+                AllowedHosts = config.RpcAllowedHosts,
             };
 
         private static ChainNodeMaintenanceConfig MapMaintenance(MainnetChainServerConfig config) =>

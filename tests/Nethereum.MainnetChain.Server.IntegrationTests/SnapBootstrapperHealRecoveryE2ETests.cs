@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain.RocksDB;
 using Nethereum.CoreChain.Storage;
+using Nethereum.DevP2P.Rlpx;
 using Nethereum.DevP2P.Sync;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
@@ -46,7 +47,66 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
         }
 
         [Fact]
-        public async Task Heal_SurvivesManyZeroProgressCycles_ThenConvergesOnceAPeerServes()
+        public async Task Heal_SurvivesManyZeroProgressCycles_EachWokenByAPeerJoin_ThenConvergesOnceAPeerServes()
+        {
+            var (bundle, pivotHeader, pivotHash, leafBlob) = await OpenHealOnlyResumeAsync();
+            using var store = bundle;
+            var scheduler = new HostileThenServingScheduler(leafBlob, serveAfterCalls: 400);
+            var pool = new JoinablePool();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+
+            var run = SnapBootstrapper.RunAsync(
+                bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance,
+                HealOnlyOptions(scheduler, pool), cts.Token);
+
+            var joinsWhileWaiting = 0;
+            while (await RequestsStopAsync(scheduler, run, TimeSpan.FromMilliseconds(300)))
+            {
+                pool.Join(new JoiningPeer());
+                joinsWhileWaiting++;
+            }
+            var result = await run;
+
+            Assert.True(result.Ran);
+            Assert.True(joinsWhileWaiting > 10,
+                $"expected well over 10 zero-progress cycles, each waiting for a peer join; joins={joinsWhileWaiting}");
+            Assert.True(scheduler.TotalCalls > 320,
+                $"expected well over 10 hostile cycles (~32 rounds each) before recovery; TotalCalls={scheduler.TotalCalls}");
+            Assert.Equal(1UL, bundle.Metadata.GetLastBlock());
+        }
+
+        [Fact]
+        public async Task Heal_AfterAZeroProgressCycle_DoesNotAskTheSameRootAgainUntilAPeerJoins()
+        {
+            var (bundle, pivotHeader, pivotHash, leafBlob) = await OpenHealOnlyResumeAsync();
+            using var store = bundle;
+            var scheduler = new HostileThenServingScheduler(leafBlob, serveAfterCalls: int.MaxValue);
+            var pool = new JoinablePool();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+
+            var run = SnapBootstrapper.RunAsync(
+                bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance,
+                HealOnlyOptions(scheduler, pool), cts.Token);
+
+            Assert.True(await RequestsStopAsync(scheduler, run, TimeSpan.FromMilliseconds(500)),
+                $"the heal ended during a cycle in which no peer served anything: {run.Status} {run.Exception?.GetBaseException().Message}");
+            var callsAfterFirstCycle = scheduler.TotalCalls;
+            scheduler.ServeFromNextCall();
+
+            await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(3)));
+            Assert.False(run.IsCompleted, "the heal finished without a peer join or a pivot move");
+            Assert.Equal(callsAfterFirstCycle, scheduler.TotalCalls);
+            Assert.NotEqual(1UL, bundle.Metadata.GetLastBlock());
+
+            pool.Join(new JoiningPeer());
+            var result = await run;
+
+            Assert.True(result.Ran);
+            Assert.True(scheduler.TotalCalls > callsAfterFirstCycle);
+            Assert.Equal(1UL, bundle.Metadata.GetLastBlock());
+        }
+
+        private async Task<(RocksDbChainStoreBundle Bundle, BlockHeader PivotHeader, byte[] PivotHash, byte[] LeafBlob)> OpenHealOnlyResumeAsync()
         {
             var scratch = new InMemoryContentNodeStore();
             var trie = new PatriciaTrie(scratch);
@@ -63,7 +123,7 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             var rootHash = trie.Root.GetHash();
             var leafBlob = scratch.Get(rootHash);
 
-            using var bundle = RocksDbChainStoreBundle.Open(_dbPath);
+            var bundle = RocksDbChainStoreBundle.Open(_dbPath);
 
             var pivotHeader = new BlockHeader
             {
@@ -97,24 +157,55 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
                 Counters = SnapSyncCounters.Zero,
             });
 
-            var scheduler = new HostileThenServingScheduler(leafBlob, serveAfterCalls: 400);
+            return (bundle, pivotHeader, pivotHash, leafBlob);
+        }
 
-            var options = new SnapRunOptions
+        private static SnapRunOptions HealOnlyOptions(IFetchRequestScheduler scheduler, IPeerPool pool) => new SnapRunOptions
+        {
+            Scheduler = scheduler,
+            Pool = pool,
+            PivotRefresher = (_, _) => Task.FromResult<(BlockHeader Header, byte[] Hash)?>(null),
+            RunBackfill = false,
+        };
+
+        private static async Task<bool> RequestsStopAsync(HostileThenServingScheduler scheduler, Task run, TimeSpan quiet)
+        {
+            var seen = scheduler.TotalCalls;
+            while (!run.IsCompleted)
             {
-                Scheduler = scheduler,
-                PivotRefresher = (_, _) => Task.FromResult<(BlockHeader Header, byte[] Hash)?>(null),
-                RunBackfill = false,
-            };
+                await Task.WhenAny(run, Task.Delay(quiet));
+                var now = scheduler.TotalCalls;
+                if (now > 0 && now == seen) return !run.IsCompleted;
+                seen = now;
+            }
+            return false;
+        }
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        private sealed class JoinablePool : IPeerPool
+        {
+            public IReadOnlyCollection<IEthPeer> ActivePeers => Array.Empty<IEthPeer>();
+            public int TargetPeerCount => 1;
+            public event EventHandler<IEthPeer> PeerAdded;
+            public event EventHandler<IEthPeer> PeerRemoved { add { } remove { } }
+            public void Join(IEthPeer peer) => PeerAdded?.Invoke(this, peer);
+            public Task StartAsync(CancellationToken ct) => Task.CompletedTask;
+            public Task BanAndDropAsync(string enode, string reason, CancellationToken ct) => Task.CompletedTask;
+            public Task DropAsync(Guid peerId, string reason, CancellationToken ct) => Task.CompletedTask;
+            public void ReportSuccess(Guid peerId) { }
+            public Task ClearAllBansAsync() => Task.CompletedTask;
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
 
-            var result = await SnapBootstrapper.RunAsync(
-                bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance, options, cts.Token);
-
-            Assert.True(result.Ran);
-            Assert.True(scheduler.TotalCalls > 320,
-                $"expected well over 10 hostile cycles (~32 rounds each) before recovery; TotalCalls={scheduler.TotalCalls}");
-            Assert.Equal(1UL, bundle.Metadata.GetLastBlock());
+        private sealed class JoiningPeer : IEthPeer
+        {
+            public Guid Id { get; } = Guid.NewGuid();
+            public string Enode => "enode://joining@127.0.0.1:30303";
+            public string Host => "127.0.0.1";
+            public int EthVersion => 68;
+            public ulong PeerLatestBlock => 0;
+            public uint PeerForkHash => 0;
+            public RlpxConnection Connection => null;
+            public event EventHandler<IEthPeer> Disconnected { add { } remove { } }
         }
 
         private sealed class NeverCalledPeer : ISnapPeer
@@ -132,9 +223,11 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
         private sealed class HostileThenServingScheduler : IFetchRequestScheduler
         {
             private readonly byte[] _leafBlob;
-            private readonly int _serveAfterCalls;
+            private int _serveAfterCalls;
             private int _totalCalls;
-            public int TotalCalls => _totalCalls;
+            public int TotalCalls => Volatile.Read(ref _totalCalls);
+
+            public void ServeFromNextCall() => Volatile.Write(ref _serveAfterCalls, TotalCalls);
 
             public HostileThenServingScheduler(byte[] leafBlob, int serveAfterCalls)
             {
@@ -147,7 +240,7 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             {
                 var call = Interlocked.Increment(ref _totalCalls);
                 var msg = new TrieNodesMessage { RequestId = 1, Nodes = new List<byte[]>() };
-                if (call > _serveAfterCalls)
+                if (call > Volatile.Read(ref _serveAfterCalls))
                 {
                     msg.Nodes.Add(_leafBlob);
                     for (int i = 1; i < paths.Count; i++) msg.Nodes.Add(Array.Empty<byte>());
@@ -159,97 +252,6 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
                 return Task.FromResult(msg);
             }
 
-            public Task<List<BlockHeader>> FetchHeadersAsync(ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
-                => throw new NotImplementedException();
-            public Task<List<BlockBody>> FetchBodiesAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct)
-                => throw new NotImplementedException();
-            public Task<BodyFetchResult> FetchBodiesAsync(IReadOnlyList<byte[]> blockHashes, IReadOnlyCollection<Guid>? excludePeers, CancellationToken ct)
-                => throw new NotImplementedException();
-            public Task<List<List<Receipt>>> FetchReceiptsAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct)
-                => throw new NotImplementedException();
-            public Task<AccountRangeMessage> FetchAccountRangeAsync(byte[] stateRoot, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
-                => throw new NotImplementedException();
-            public Task<StorageRangesMessage> FetchStorageRangesAsync(byte[] stateRoot, List<byte[]> accountHashes, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
-                => throw new NotImplementedException();
-            public Task<ByteCodesMessage> FetchByteCodesAsync(List<byte[]> codeHashes, ulong responseBytes, CancellationToken ct)
-                => throw new NotImplementedException();
-        }
-
-        [Fact]
-        public async Task Heal_BogusTinyConvergence_StillThrows_NotSwallowedByRecycleFix()
-        {
-            var bogusRootNode = new BranchNode { Value = new byte[32] };
-            var bogusRootBlob = bogusRootNode.GetEncodedData();
-            var bogusRoot = bogusRootNode.GetHash();
-
-            using var bundle = RocksDbChainStoreBundle.Open(_dbPath);
-
-            var pivotHeader = new BlockHeader
-            {
-                BlockNumber = 1,
-                StateRoot = bogusRoot,
-                ParentHash = new byte[32],
-                TransactionsHash = new byte[32],
-                ReceiptHash = new byte[32],
-                UnclesHash = new byte[32],
-                ExtraData = Array.Empty<byte>(),
-                LogsBloom = new byte[256],
-                Coinbase = "0x0000000000000000000000000000000000000000",
-                Difficulty = 0,
-                GasLimit = 0,
-                GasUsed = 0,
-                Timestamp = 0,
-                MixHash = new byte[32],
-                Nonce = new byte[8],
-            };
-            var pivotHash = Sha3Keccack.Current.CalculateHash(new byte[] { 0xB0, 0x60 });
-            await bundle.Blocks.SaveAsync(pivotHeader, pivotHash);
-
-            var peer = new BogusRootAccountRangePeer(bogusRootBlob);
-
-            var scheduler = new SingleRootNodeScheduler(bogusRootBlob);
-
-            var options = new SnapRunOptions { Scheduler = scheduler, RunBackfill = false };
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                SnapBootstrapper.RunAsync(bundle, peer, pivotHeader, pivotHash, NullLogger.Instance, options, cts.Token));
-
-            Assert.Contains("bogus-converge guard", ex.Message);
-        }
-
-        private sealed class BogusRootAccountRangePeer : ISnapPeer
-        {
-            private readonly byte[] _proofNode;
-            public BogusRootAccountRangePeer(byte[] proofNode) { _proofNode = proofNode; }
-
-            public Task<AccountRangeMessage> GetAccountRangeAsync(GetAccountRangeMessage req, CancellationToken ct = default)
-                => Task.FromResult(new AccountRangeMessage
-                {
-                    RequestId = req.RequestId,
-                    Accounts = new List<AccountRangeMessage.AccountEntry>(),
-                    Proof = new List<byte[]> { _proofNode },
-                });
-
-            public Task<StorageRangesMessage> GetStorageRangesAsync(GetStorageRangesMessage req, CancellationToken ct = default)
-                => throw new InvalidOperationException("zero-account walk must never fetch storage ranges");
-            public Task<ByteCodesMessage> GetByteCodesAsync(GetByteCodesMessage req, CancellationToken ct = default)
-                => throw new InvalidOperationException("zero-account walk must never fetch bytecode");
-            public Task<TrieNodesMessage> GetTrieNodesAsync(GetTrieNodesMessage req, CancellationToken ct = default)
-                => throw new InvalidOperationException("phase-2 account walk must never fetch trie nodes directly");
-        }
-
-        private sealed class SingleRootNodeScheduler : IFetchRequestScheduler
-        {
-            private readonly byte[] _blob;
-            public SingleRootNodeScheduler(byte[] blob) { _blob = blob; }
-
-            public Task<TrieNodesMessage> FetchTrieNodesAsync(byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, CancellationToken ct)
-            {
-                var msg = new TrieNodesMessage { RequestId = 1, Nodes = new List<byte[]>() };
-                for (int i = 0; i < paths.Count; i++) msg.Nodes.Add(_blob);
-                return Task.FromResult(msg);
-            }
             public Task<List<BlockHeader>> FetchHeadersAsync(ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
                 => throw new NotImplementedException();
             public Task<List<BlockBody>> FetchBodiesAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct)

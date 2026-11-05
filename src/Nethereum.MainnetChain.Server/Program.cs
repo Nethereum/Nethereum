@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
+using Nethereum.ChainNode.Hosting;
 using Nethereum.MainnetChain.Configuration;
 using Nethereum.MainnetChain.Hosting;
 using Nethereum.MainnetChain.Server;
@@ -27,7 +27,7 @@ if (args.Any(a => a == "--help-advanced"))
 if (args.Any(a => a == "--alloc-profile"))
     Nethereum.MainnetChain.Server.AllocationProfiler.Start();
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(Nethereum.CoreChain.Hosting.HostArguments.WithoutConfigReload(args));
 
 builder.AddServiceDefaults();
 
@@ -39,6 +39,7 @@ config.SnapBootstrap = true;
 builder.Configuration.GetSection("MainnetChain").Bind(config);
 
 MainnetChainCliArgs.Apply(config, args);
+builder.Configuration.Sources.Insert(0, ServerLogging.DefaultLevels(config.Verbose));
 
 if (string.IsNullOrWhiteSpace(config.DataDir))
     config.DataDir = "./mainnet-data";
@@ -51,18 +52,38 @@ if (args.Any(a => a == "--align-byhash-cursor"))
     return;
 }
 
-if (!config.VerifyFlat)
+if (ChainNodeMaintenanceRunner.AnyRequested(config.ToChainNodeConfig().Maintenance))
 {
-    switch (ConsensusStartupGuard.Evaluate(config))
-    {
-        case ConsensusStartupGuard.Decision.RefuseNoBeacon:
-            Console.Error.WriteLine(ConsensusStartupGuard.RefusalMessage);
-            Environment.ExitCode = 1;
-            return;
-        case ConsensusStartupGuard.Decision.UnverifiedAllowed:
-            Console.Error.WriteLine(ConsensusStartupGuard.UnverifiedWarning);
-            break;
-    }
+    using var maintenanceLoggerFactory = LoggerFactory.Create(ConfigureNethereumLogging);
+    Environment.ExitCode = await MainnetNodeComposition.RunMaintenanceAsync(
+        config, maintenanceLoggerFactory.CreateLogger("Nethereum.MainnetChain.Maintenance"));
+    return;
+}
+
+if (config.ReplayBlocks > 0)
+{
+    using var replayLoggerFactory = LoggerFactory.Create(ConfigureNethereumLogging);
+    Environment.ExitCode = await Nethereum.MainnetChain.Replay.MainnetReplayRunner.RunAsync(config, replayLoggerFactory);
+    return;
+}
+
+switch (ConsensusStartupGuard.Evaluate(config))
+{
+    case ConsensusStartupGuard.Decision.RefuseNoBeacon:
+        Console.Error.WriteLine(ConsensusStartupGuard.RefusalMessage);
+        Environment.ExitCode = 1;
+        return;
+    case ConsensusStartupGuard.Decision.UnverifiedAllowed:
+        Console.Error.WriteLine(ConsensusStartupGuard.UnverifiedWarning);
+        break;
+    case ConsensusStartupGuard.Decision.RefuseEngineWithLightClient:
+        Console.Error.WriteLine(ConsensusStartupGuard.EngineWithLightClientMessage);
+        Environment.ExitCode = 1;
+        return;
+    case ConsensusStartupGuard.Decision.RefuseGenesisWithoutEngine:
+        Console.Error.WriteLine(ConsensusStartupGuard.GenesisWithoutEngineMessage);
+        Environment.ExitCode = 1;
+        return;
 }
 
 using (var bannerLoggerFactory = LoggerFactory.Create(ConfigureNethereumLogging))
@@ -70,12 +91,13 @@ using (var bannerLoggerFactory = LoggerFactory.Create(ConfigureNethereumLogging)
     bannerLoggerFactory.CreateLogger("Nethereum.MainnetChain").LogInformation(
         "MainnetChain: snap sync starting — data_dir={DataDir} snap={Snap} beacon={Beacon} metrics={Metrics}",
         config.DataDir,
-        config.SnapBootstrap ? "on" : "off",
+        config.SnapBootstrap && !config.EngineOnly ? "on" : "off",
         string.IsNullOrWhiteSpace(config.LightClient?.BeaconEndpoint) ? "unverified" : "set",
         config.MetricsPort > 0 ? $":{config.MetricsPort}" : "off");
 }
 
 builder.AddMainnetChainServer(config);
+builder.Services.Configure<HostOptions>(o => o.ShutdownTimeout = Timeout.InfiniteTimeSpan);
 
 if (config.MetricsPort > 0)
 {
@@ -87,6 +109,8 @@ if (config.MetricsPort > 0)
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
 ConfigureNethereumLogging(builder.Logging);
+
+var started = false;
 
 try
 {
@@ -102,7 +126,11 @@ try
 
     var hostManagesUrls = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS"));
 
-    app.Lifetime.ApplicationStarted.Register(() => PrintReadyBanner(config, $"http://{config.Host}:{config.Port}"));
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        started = true;
+        PrintReadyBanner(config, $"http://{config.Host}:{config.Port}");
+    });
 
     if (config.MetricsPort > 0)
     {
@@ -121,34 +149,28 @@ try
     }
     else
     {
-        app.Run($"http://{config.Host}:{config.Port}");
+        app.Urls.Add($"http://{config.Host}:{config.Port}");
+        app.Run();
     }
 }
-catch (Exception ex) when (StartupFailureMessage(ex, config) is string friendly)
+catch (Exception ex) when (!started && StartupFailureMessage(ex, config) is string friendly)
 {
     Console.Error.WriteLine();
     Console.Error.WriteLine(friendly);
     Environment.ExitCode = 1;
 }
 
-void ConfigureNethereumLogging(ILoggingBuilder lb)
-{
-    lb.AddConsole(o => o.FormatterName = CompactConsoleFormatter.FormatterName);
-    lb.AddConsoleFormatter<CompactConsoleFormatter, ConsoleFormatterOptions>();
-    lb.SetMinimumLevel(LogLevel.Warning);
-    lb.AddFilter("Nethereum", config.Verbose ? LogLevel.Debug : LogLevel.Information);
-    lb.AddFilter("Microsoft.Extensions.Hosting.Internal.Host", LogLevel.None);
-}
+void ConfigureNethereumLogging(ILoggingBuilder lb) => ServerLogging.Configure(lb, builder.Configuration);
 
 static void PrintReadyBanner(MainnetChainServerConfig config, string rpcUrl)
 {
     Console.WriteLine();
     Console.WriteLine("═══════════════════════════════════════════════════════════════════════════");
     Console.WriteLine($"  MainnetChain ready — listening at {rpcUrl}");
-    Console.WriteLine($"  Chain:      Ethereum Mainnet");
+    Console.WriteLine($"  Chain:      {(config.EngineOnly ? $"custom genesis {config.GenesisPath}" : "Ethereum Mainnet")}");
     Console.WriteLine($"  Data dir:   {config.DataDir ?? "<in-memory>"}");
-    Console.WriteLine($"  Sync mode:  {(config.SnapBootstrap ? "snap" : "full")}");
-    Console.WriteLine($"  Consensus:  {(string.IsNullOrWhiteSpace(config.LightClient?.BeaconEndpoint) ? "unverified (no beacon)" : $"verified (beacon {config.LightClient!.BeaconEndpoint})")}");
+    Console.WriteLine($"  Sync mode:  {(config.EngineOnly ? "engine only (no peers)" : config.SnapBootstrap ? "snap" : "full")}");
+    Console.WriteLine($"  Consensus:  {(config.Engine.Enabled ? $"engine API (port {config.Engine.Port})" : string.IsNullOrWhiteSpace(config.LightClient?.BeaconEndpoint) ? "unverified (no beacon)" : $"verified (beacon {config.LightClient!.BeaconEndpoint})")}");
     Console.WriteLine("═══════════════════════════════════════════════════════════════════════════");
     Console.WriteLine();
 }
@@ -204,9 +226,13 @@ static void PrintHelp()
     Console.WriteLine("CONSENSUS:");
     Console.WriteLine("      --beacon <URL>         Beacon REST endpoint (enables the light-client gate)");
     Console.WriteLine("      --allow-unverified-consensus  Start WITHOUT a beacon (no consensus verification; NOT recommended for mainnet)");
+    Console.WriteLine("      --engine               Serve the Engine API so a consensus client (Lighthouse) drives the follower; excludes --beacon");
+    Console.WriteLine("      --genesis <PATH>       Custom chain: a geth-format genesis.json (chain id, fork schedule, alloc). Needs --engine; runs with no peers, no snap and no light client, and serves debug_setHead when --MainnetChain:RpcModules includes debug");
+    Console.WriteLine("      --engine-port <PORT>   Engine API port (default: 8551)");
+    Console.WriteLine("      --engine-jwt-secret <PATH>  JWT secret file shared with the consensus client (default: <data-dir>/jwt.hex, created if missing)");
     Console.WriteLine();
     Console.WriteLine("MAINTENANCE:");
-    Console.WriteLine("      --wipe-state           One-shot: clear state and re-run the state sync, keeping the block archive");
+    Console.WriteLine("      --wipe-state           One-shot: clear state, keeping the block archive, then exit; the next start re-runs the state sync");
     Console.WriteLine("      --rebuild-state-from-flat  One-shot: rebuild stale storage-trie nodes from flat state, then verify");
     Console.WriteLine("      --verify-flat          One-shot: write-free flat/trie verify at the committed head, logs the full breakdown, then stops");
     Console.WriteLine("      --verify-flat-sample <N>  With --verify-flat: verify only the first N accounts per shard (0 = full walk, default)");
@@ -214,8 +240,10 @@ static void PrintHelp()
     Console.WriteLine();
     Console.WriteLine("TUNING (common advanced):");
     Console.WriteLine("      --flush-cadence <N>    Persist state every N blocks (default 1 = every block)");
+    Console.WriteLine("      --prefetch-workers <N> Dedicated threads that prefetch each block's transactions into the RocksDB caches (default 0 = off)");
     Console.WriteLine("      --checkpoint-every <N> Checkpoint cadence in blocks (default 50000)");
     Console.WriteLine("      --cache-size <SIZE>    RocksDB block cache size, e.g. 4G / 512M (default 1G)");
+    Console.WriteLine("      --rocksdb-statistics   Collect RocksDB statistics and log block-cache counters every 100 blocks");
     Console.WriteLine();
     Console.WriteLine("Settings can also come from appsettings.json (MainnetChain section) or MainnetChain__ env vars.");
     Console.WriteLine("Run with --help-advanced to list all expert MainnetChain:* settings.");
@@ -240,7 +268,10 @@ static void PrintAdvancedHelp()
     Console.WriteLine("      --MainnetChain:TrieNodeHistoryBlocks <int>           Trie-node history retention window   (default: 128)");
     Console.WriteLine("      --MainnetChain:TrieNodeHistoryIndex <bool>           Key-major index over the node history   (default: true)");
     Console.WriteLine("      --MainnetChain:BlockCacheSize <long>                 RocksDB shared block cache, in bytes   (default: 1073741824)");
+    Console.WriteLine("      --MainnetChain:EnableRocksDbStatistics <bool>        RocksDB statistics + cache counters log (default: false)");
     Console.WriteLine("      --MainnetChain:FlushCadenceBlocks <int>              Persist state every N blocks   (default: 1)");
+    Console.WriteLine("      --MainnetChain:PrefetchWorkers <int>                 Dedicated threads that prefetch each block's transactions into the RocksDB caches   (default: 0 = off)");
+    Console.WriteLine("      --MainnetChain:StateRootWorkers <int>                Dedicated threads that update storage tries in parallel while computing each block's state root   (default: 4; 1 = sequential)");
     Console.WriteLine("      --MainnetChain:BulkSync <bool>                       WAL-off bulk-save backfill path   (default: false)");
     Console.WriteLine("      --MainnetChain:SplitHistoryStore <bool>              Split storage into core/history physical DBs   (default: false)");
     Console.WriteLine("      --MainnetChain:HotWindowBlocks <int>                 Core self-sufficiency rolling hot-window size, in blocks (SplitHistoryStore only)   (default: 128)");
@@ -259,6 +290,11 @@ static void PrintAdvancedHelp()
     Console.WriteLine("      --MainnetChain:RpcMaxLogBlockRange <int>             eth_getLogs/eth_getFilterLogs max block range, 0=uncapped   (default: 10000)");
     Console.WriteLine("      --MainnetChain:RpcMaxLogResults <int>                eth_getLogs/eth_getFilterLogs max result count, 0=uncapped   (default: 10000)");
     Console.WriteLine("      --MainnetChain:RpcGasCap <long>                      eth_call/estimateGas/traceCall gas cap, 0=uncapped   (default: 50000000)");
+    Console.WriteLine("      --MainnetChain:RpcModules <string>                   JSON-RPC modules served (eth, net and web3 always; add txpool, debug)   (default: eth,net,web3)");
+    Console.WriteLine("      --MainnetChain:RpcAllowedHosts <string>              Host header names accepted besides localhost and the bind address, comma separated, \"*\" = any   (default: unset)");
+    Console.WriteLine("      --MainnetChain:RpcCorsOrigins <string>               Browser origins sent CORS headers, comma separated, \"*\" = any   (default: unset = no CORS headers)");
+    Console.WriteLine("      --replay-blocks <ulong>                              One-shot performance gate: re-execute the N blocks after the executed head from the stored bodies through the production composition, verify every root, write the report, exit 0 (all roots matched) or 1   (default: 0 = off)");
+    Console.WriteLine("      --replay-report <path>                               JSON report written by --replay-blocks   (default: unset = summary logged only)");
     Console.WriteLine();
     Console.WriteLine("Run with --help for the everyday flags.");
 }

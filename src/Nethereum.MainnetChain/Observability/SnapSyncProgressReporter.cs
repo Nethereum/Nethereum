@@ -276,14 +276,14 @@ namespace Nethereum.MainnetChain.Observability
             }
         }
 
-        private static LightClientCanonicalSource? FindLightClient(ICanonicalStateRootSource? source)
+        private static TrustedHeaderCanonicalSource? FindLightClient(ICanonicalStateRootSource? source)
         {
-            if (source is LightClientCanonicalSource direct) return direct;
+            if (source is TrustedHeaderCanonicalSource direct) return direct;
             if (source is CompositeCanonicalStateRootSource composite)
             {
                 foreach (var inner in composite.Sources)
                 {
-                    if (inner is LightClientCanonicalSource match) return match;
+                    if (inner is TrustedHeaderCanonicalSource match) return match;
                 }
             }
             return null;
@@ -469,7 +469,7 @@ namespace Nethereum.MainnetChain.Observability
 
         private void EmitCompleteProgress(ulong lastBlock, ulong headerTip, double tickSeconds)
         {
-            var behind = headerTip > lastBlock ? headerTip - lastBlock : 0;
+            var behind = Nethereum.CoreChain.Storage.HeaderSubchains.BlocksBehind(lastBlock, headerTip);
             if (tickSeconds > 0 && lastBlock >= _lastCatchupBlock)
             {
                 var catchupRate = (lastBlock - _lastCatchupBlock) / tickSeconds;
@@ -483,8 +483,9 @@ namespace Nethereum.MainnetChain.Observability
             _metrics.SetCatchup((long)lastBlock, (long)behind);
 
             _logger.LogInformation(
-                "Syncing: block execution catch-up        synced={Synced} executed={Executed:N0} tip={Tip:N0} behind={Behind:N0} rate={Rate:F1} blk/s eta={Eta}",
-                FmtPct(ProgressPercent(lastBlock, headerTip)), lastBlock, headerTip, behind, _catchupEmaPerSec, FmtEta(etaSec));
+                "Syncing: block execution catch-up        synced={Synced} executed={Executed:N0} tip={Tip:N0} behind={Behind:N0} rate={Rate:F1} blk/s eta={Eta} background={Background}",
+                FmtPct(ProgressPercent(lastBlock, headerTip)), lastBlock, headerTip, behind, _catchupEmaPerSec, FmtEta(etaSec),
+                (_bundle as IBackfillPauseControl)?.ShouldYieldToExecution() == true ? "yielding" : "running");
         }
 
         private void EmitHeadersLine(ulong headerTip, ulong lastHeader, long etaSec)

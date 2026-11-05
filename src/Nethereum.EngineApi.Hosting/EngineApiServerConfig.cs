@@ -1,4 +1,4 @@
-namespace Nethereum.DevChain.Hosting
+namespace Nethereum.EngineApi.Hosting
 {
     public class EngineApiServerConfig
     {

@@ -27,7 +27,13 @@ namespace Nethereum.MainnetChain.Configuration
 
         public long BlockCacheSize { get; set; } = 1024L * 1024 * 1024;
 
+        public bool EnableRocksDbStatistics { get; set; }
+
         public int FlushCadenceBlocks { get; set; } = 1;
+
+        public int PrefetchWorkers { get; set; }
+
+        public int StateRootWorkers { get; set; } = Nethereum.CoreChain.ExecutionStackOptions.DefaultStateRootWorkers;
 
         public bool BulkSync { get; set; }
 
@@ -43,7 +49,7 @@ namespace Nethereum.MainnetChain.Configuration
 
         public string? FreezerHistoryDirectory { get; set; }
 
-        public bool BackgroundFreezeIndexing { get; set; } = false;
+        public bool BackgroundFreezeIndexing { get; set; } = true;
 
         public int FreezerBackgroundDegreeOfParallelism { get; set; } = 0;
 
@@ -64,9 +70,11 @@ namespace Nethereum.MainnetChain.Configuration
 
         public int? SnapLargeContractConcurrency { get; set; }
 
-        public bool SnapFinalizeVerify { get; set; } = true;
-
+        [Obsolete("No longer used: the flat state is always certified; the value is ignored.")]
         public bool SnapEnableFlatReconcile { get; set; } = true;
+
+        [Obsolete("No longer used: the flat state is certified by a single generation run at finalize.")]
+        public bool SnapFinalizeVerify { get; set; } = true;
 
         public bool BackwardSkeletonPhase1 { get; set; } = true;
 
@@ -87,5 +95,15 @@ namespace Nethereum.MainnetChain.Configuration
         public int RpcMaxLogResults { get; set; } = 10_000;
 
         public long RpcGasCap { get; set; } = 50_000_000;
+
+        public string RpcModules { get; set; } = Nethereum.CoreChain.Rpc.RpcModuleSet.DefaultModules;
+
+        public string RpcAllowedHosts { get; set; } = string.Empty;
+
+        public string RpcCorsOrigins { get; set; } = string.Empty;
+
+        public ulong ReplayBlocks { get; set; }
+
+        public string? ReplayReport { get; set; }
     }
 }

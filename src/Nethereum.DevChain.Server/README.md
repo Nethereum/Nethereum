@@ -7,7 +7,7 @@ A local Ethereum development node with JSON-RPC server. Similar to Hardhat Netwo
 - HTTP JSON-RPC server on configurable port
 - Pre-funded accounts from HD wallet (default mnemonic compatible with Hardhat/Anvil)
 - Instant transaction mining (auto-mine) or configurable block intervals
-- Full EVM execution up to Amsterdam hardfork with Geth-compatible tracing
+- Full EVM execution up to Amsterdam hardfork with transaction tracing
 - SQLite storage by default with auto-cleanup on exit
 - State forking from live networks
 - Hardhat and Anvil-compatible RPC methods
@@ -114,7 +114,7 @@ SQLite uses WAL journal mode for good read/write concurrency. In SQLite and Rock
 | |\  |  __/ |_| | | |  __/ | |  __/ |_| | | | | | |
 |_| \_|\___|\__|_| |_|\___|_|  \___|\__,_|_| |_| |_|
 
-              DevChain Server v7.0.0
+              DevChain Server v7.1.0
 
   RPC:        http://127.0.0.1:8545
   Chain ID:   31337
@@ -237,6 +237,13 @@ Create `appsettings.json` in the working directory:
 | `evm_revert` | Revert to snapshot |
 | `evm_increaseTime` | Advance block time |
 | `evm_setNextBlockTimestamp` | Set next block timestamp |
+
+### Testing
+
+| Method | Description |
+|--------|-------------|
+| `testing_buildBlockV1` | Build a block on the current head from payload attributes and return it as a `getPayload` response, without persisting it or moving the head. The given transactions are kept in order and all must apply (else `-32000`); a `null` list takes the pool. `parentHash` must be the current head |
+| `testing_commitBlockV1` | Build a block the same way, insert it, make it the canonical head and return its hash. An unapplicable transaction is an error and the head stays; a `null` list takes the pool and drains it |
 
 ### Account Management
 
@@ -421,7 +428,7 @@ Each account is funded with 10,000 ETH by default. The mnemonic and derivation p
 Nethereum DevChain implements the standard feature set expected from Ethereum development nodes (Hardhat Network, Anvil, etc.):
 
 - Fork support from live networks
-- Transaction tracing (Geth-compatible debug APIs)
+- Transaction tracing (`debug_traceTransaction`, `debug_traceCall`)
 - Account impersonation registration (no signing support)
 - State snapshots and revert
 - `evm_*` and `hardhat_*` RPC methods
@@ -491,7 +498,7 @@ await app.MapDevChainEndpointsAsync();
 - **Nethereum.DevChain** - Core development chain library
 - **Nethereum.CoreChain** - Blockchain infrastructure and storage interfaces
 - **Nethereum.EVM** - EVM simulator
-- **Nethereum.Geth** - Geth-compatible APIs
+- **Nethereum.Geth** - typed clients for the admin, debug and miner RPC namespaces
 
 ## Additional Resources
 

@@ -24,7 +24,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (hash == null) return Task.FromResult<BlockHeader>(null);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT header_data FROM blocks WHERE block_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", hash.ToHex());
 
@@ -36,7 +36,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         public Task<BlockHeader> GetByNumberAsync(BigInteger number)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT b.header_data FROM blocks b INNER JOIN block_numbers bn ON b.block_hash = bn.block_hash WHERE bn.block_number = @num";
             cmd.Parameters.AddWithValue("@num", (long)number);
 
@@ -57,7 +57,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private long GetHeightInternal()
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT value FROM metadata WHERE key = 'height'";
             var result = cmd.ExecuteScalar();
             if (result == null || result is System.DBNull) return -1;
@@ -78,7 +78,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             try
             {
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "INSERT OR REPLACE INTO blocks (block_hash, header_data) VALUES (@hash, @data)";
                     cmd.Parameters.AddWithValue("@hash", hashHex);
@@ -86,7 +86,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "INSERT OR REPLACE INTO block_numbers (block_number, block_hash) VALUES (@num, @hash)";
                     cmd.Parameters.AddWithValue("@num", blockNum);
@@ -98,7 +98,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 if (blockNum > currentHeight)
                 {
                     var heightBytes = header.BlockNumber.ToBigEndian();
-                    using var cmd = _manager.Connection.CreateCommand();
+                    using var cmd = _manager.CreateCommand();
                     cmd.CommandText = "INSERT OR REPLACE INTO metadata (key, value) VALUES ('height', @val)";
                     cmd.Parameters.AddWithValue("@val", heightBytes);
                     cmd.ExecuteNonQuery();
@@ -120,7 +120,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (hash == null) return Task.FromResult(false);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT 1 FROM blocks WHERE block_hash = @hash LIMIT 1";
             cmd.Parameters.AddWithValue("@hash", hash.ToHex());
 
@@ -129,7 +129,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         public Task<byte[]> GetHashByNumberAsync(BigInteger number)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT block_hash FROM block_numbers WHERE block_number = @num";
             cmd.Parameters.AddWithValue("@num", (long)number);
 
@@ -152,7 +152,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             try
             {
                 string oldHashHex;
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "SELECT block_hash FROM block_numbers WHERE block_number = @num";
                     cmd.Parameters.AddWithValue("@num", blockNum);
@@ -166,7 +166,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 }
 
                 byte[] headerData;
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "SELECT header_data FROM blocks WHERE block_hash = @hash";
                     cmd.Parameters.AddWithValue("@hash", oldHashHex);
@@ -179,14 +179,14 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     return Task.CompletedTask;
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM blocks WHERE block_hash = @hash";
                     cmd.Parameters.AddWithValue("@hash", oldHashHex);
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "INSERT OR REPLACE INTO blocks (block_hash, header_data) VALUES (@hash, @data)";
                     cmd.Parameters.AddWithValue("@hash", newHashHex);
@@ -194,7 +194,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "UPDATE block_numbers SET block_hash = @hash WHERE block_number = @num";
                     cmd.Parameters.AddWithValue("@hash", newHashHex);
@@ -224,7 +224,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             try
             {
                 string hashHex;
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "SELECT block_hash FROM block_numbers WHERE block_number = @num";
                     cmd.Parameters.AddWithValue("@num", blockNum);
@@ -233,7 +233,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
                 if (hashHex != null)
                 {
-                    using (var cmd = _manager.Connection.CreateCommand())
+                    using (var cmd = _manager.CreateCommand())
                     {
                         cmd.CommandText = "DELETE FROM blocks WHERE block_hash = @hash";
                         cmd.Parameters.AddWithValue("@hash", hashHex);
@@ -241,7 +241,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     }
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM block_numbers WHERE block_number = @num";
                     cmd.Parameters.AddWithValue("@num", blockNum);
@@ -253,7 +253,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 {
                     var newHeight = blockNum - 1;
                     var heightBytes = ((BigInteger)newHeight).ToByteArray(isUnsigned: true, isBigEndian: true);
-                    using var cmd = _manager.Connection.CreateCommand();
+                    using var cmd = _manager.CreateCommand();
                     cmd.CommandText = "INSERT OR REPLACE INTO metadata (key, value) VALUES ('height', @val)";
                     cmd.Parameters.AddWithValue("@val", heightBytes);
                     cmd.ExecuteNonQuery();
@@ -275,7 +275,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private void ExecuteSql(string sql)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
         }

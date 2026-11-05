@@ -26,7 +26,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (blockHash == null || blockAccessListRlp == null) return Task.CompletedTask;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "INSERT OR REPLACE INTO block_access_lists (block_hash, bal_data) VALUES (@hash, @data)";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
             cmd.Parameters.AddWithValue("@data", blockAccessListRlp);
@@ -39,7 +39,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (blockHash == null) return Task.FromResult<byte[]>(null);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT bal_data FROM block_access_lists WHERE block_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
 
@@ -57,7 +57,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (blockHash == null) return Task.CompletedTask;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM block_access_lists WHERE block_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
             cmd.ExecuteNonQuery();

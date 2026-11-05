@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.ChainNode.Hosting.Configuration;
-using Nethereum.DevP2P;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Sync;
 using Nethereum.CoreChain.Validation;
@@ -27,7 +26,7 @@ namespace Nethereum.ChainNode.Hosting
 
         private ChainNodeSyncStack(
             PeerPoolManager pool, IFetchRequestScheduler scheduler, IBlockSource blockSource,
-            ICanonicalStateRootSource tip, PushedBlockSource? pushedBlocks, ILogger logger)
+            ICanonicalStateRootSource tip, ILogger logger)
         {
             _pool = pool;
             _logger = logger;
@@ -35,7 +34,6 @@ namespace Nethereum.ChainNode.Hosting
             Scheduler = scheduler;
             BlockSource = blockSource;
             Tip = tip;
-            PushedBlocks = pushedBlocks;
         }
 
         public PeerPoolManager Pool { get; }
@@ -45,8 +43,6 @@ namespace Nethereum.ChainNode.Hosting
         public IBlockSource BlockSource { get; }
 
         public ICanonicalStateRootSource Tip { get; }
-
-        public PushedBlockSource? PushedBlocks { get; }
 
         public static async Task<ChainNodeSyncStack> StartAsync(
             IChainProfile profile,
@@ -63,7 +59,11 @@ namespace Nethereum.ChainNode.Hosting
             config ??= new ChainNodeConfig();
             loggerFactory ??= NullLoggerFactory.Instance;
 
-            var dialTargets = DialTargets(profile, config, loggerFactory.CreateLogger<ChainNodeSyncStack>());
+            ChainNodeEnodeValidator.RefuseMalformed(
+                (profile.Bootnodes ?? (IReadOnlyList<string>)Array.Empty<string>())
+                    .Select(bootnode => new KeyValuePair<string, string>("chain profile bootnodes", bootnode)));
+
+            var dialTargets = DialTargets(profile, config);
             var minPeerLatestBlock = minPeerLatestBlockFactory != null
                 ? await minPeerLatestBlockFactory(bundle).ConfigureAwait(false)
                 : config.Sync.MinPeerLatestBlock;
@@ -72,26 +72,12 @@ namespace Nethereum.ChainNode.Hosting
                 profile, config, dialTargets, minPeerLatestBlock, peerCache, loggerFactory, ct).ConfigureAwait(false);
             var scheduler = BuildScheduler(pool, config, loggerFactory);
 
-            IBlockSource blockSource;
-            PushedBlockSource? pushed = null;
-            if (config.Sync.EnablePushedBlocks)
-            {
-                pushed = BuildPushSource(pool, bundle, loggerFactory);
-                blockSource = new CatchUpThenFollowBlockSource(
-                    BuildPullSource(pool, scheduler, bundle, config, loggerFactory), pushed);
-            }
-            else
-            {
-                blockSource = BuildPullSource(pool, scheduler, bundle, config, loggerFactory);
-            }
-
             return new ChainNodeSyncStack(
                 pool,
                 scheduler,
-                blockSource,
+                BuildPullSource(pool, scheduler, bundle, config, loggerFactory),
                 tipFactory?.Invoke(pool)
                     ?? new PeerHeadCanonicalSource(pool, trustedPeersOnly: config.Sync.TrustedPeersOnlyTip),
-                pushed,
                 loggerFactory.CreateLogger<ChainNodeSyncStack>());
         }
 
@@ -112,26 +98,12 @@ namespace Nethereum.ChainNode.Hosting
             }
         }
 
-        private static IReadOnlyList<string> DialTargets(IChainProfile profile, ChainNodeConfig config, ILogger logger)
-        {
-            var candidates = config.ResolveDialEnodes()
+        private static IReadOnlyList<string> DialTargets(IChainProfile profile, ChainNodeConfig config) =>
+            config.ResolveDialEnodes()
                 .Concat(profile.Bootnodes ?? (IReadOnlyList<string>)Array.Empty<string>())
                 .Where(enode => !string.IsNullOrWhiteSpace(enode))
                 .Distinct()
                 .ToList();
-
-            WarnOnMalformedEnodes(candidates, logger);
-
-            return candidates;
-        }
-
-        private static void WarnOnMalformedEnodes(IEnumerable<string> enodes, ILogger logger)
-        {
-            foreach (var enode in enodes)
-                if (!EnodeUrl.TryParse(enode, out _))
-                    logger.LogWarning(
-                        "Malformed enode in configuration (this peer will never connect): {Enode}", enode);
-        }
 
         private static IReadOnlyList<string> TrustedDialTargets(ChainNodeConfig config) =>
             config.ResolveDialEnodes()
@@ -189,34 +161,6 @@ namespace Nethereum.ChainNode.Hosting
             number == 0
                 ? null
                 : await bundle.Blocks.GetHashByNumberAsync((BigInteger)(number - 1)).ConfigureAwait(false);
-
-        private static async Task<ulong> CommittedHeightOf(IChainStoreBundle bundle)
-        {
-            var height = await bundle.Blocks.GetHeightAsync().ConfigureAwait(false);
-            return (ulong)(System.Numerics.BigInteger)height;
-        }
-
-        private static PushedBlockSource BuildPushSource(
-            PeerPoolManager pool, IChainStoreBundle bundle, ILoggerFactory loggerFactory)
-        {
-            var pushed = new PushedBlockSource(
-                logger: loggerFactory.CreateLogger<PushedBlockSource>(),
-                committedHeight: () => CommittedHeightOf(bundle));
-
-            foreach (var peer in pool.ActivePeers.OfType<SyncPeerSession>())
-                Forward(peer, pushed);
-
-            pool.PeerAdded += (_, added) =>
-            {
-                if (added is SyncPeerSession session) Forward(session, pushed);
-            };
-
-            return pushed;
-        }
-
-        private static void Forward(SyncPeerSession peer, PushedBlockSource pushed) =>
-            peer.NewBlockReceived += (_, message) =>
-                pushed.OnNewBlock(message, peer.Connection.RemoteNodeId?.ToHex());
 
         public async ValueTask DisposeAsync()
         {

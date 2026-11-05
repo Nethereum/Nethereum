@@ -38,7 +38,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             if (_cache.TryGetValue(key, out var cached))
                 return cached;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT node_data FROM trie_nodes WHERE node_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", key);
 
@@ -56,7 +56,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             _cache.TryRemove(key, out _);
             _dirty.TryRemove(key, out _);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM trie_nodes WHERE node_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", key);
             cmd.ExecuteNonQuery();
@@ -69,7 +69,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             if (_cache.ContainsKey(key))
                 return true;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT 1 FROM trie_nodes WHERE node_hash = @hash LIMIT 1";
             cmd.Parameters.AddWithValue("@hash", key);
 
@@ -92,7 +92,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 {
                     if (_cache.TryGetValue(key, out var value))
                     {
-                        using var cmd = _manager.Connection.CreateCommand();
+                        using var cmd = _manager.CreateCommand();
                         cmd.CommandText = "INSERT OR REPLACE INTO trie_nodes (node_hash, node_data) VALUES (@hash, @data)";
                         cmd.Parameters.AddWithValue("@hash", key);
                         cmd.Parameters.AddWithValue("@data", (object)value ?? System.DBNull.Value);
@@ -112,7 +112,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private void ExecuteSql(string sql)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
         }
@@ -122,7 +122,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             _cache.Clear();
             _dirty.Clear();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM trie_nodes";
             cmd.ExecuteNonQuery();
         }

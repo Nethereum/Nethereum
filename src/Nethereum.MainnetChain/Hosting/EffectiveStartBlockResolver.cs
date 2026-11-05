@@ -53,12 +53,16 @@ namespace Nethereum.MainnetChain.Hosting
 
         public static FollowerOptions BuildOptions(
             EffectiveBounds bounds,
-            MainnetChainServerConfig config)
+            MainnetChainServerConfig config,
+            AsyncGate? writeGate = null)
             => new FollowerOptions(
                 StartBlock: bounds.StartBlock,
                 CheckpointEvery: config.CheckpointEvery,
                 AnchorEvery: 0UL,
                 EndBlock: bounds.EndBlock,
-                KeepLatestCheckpoints: config.KeepLatestCheckpoints);
+                KeepLatestCheckpoints: config.KeepLatestCheckpoints)
+            {
+                ChainWriteGate = writeGate
+            };
     }
 }

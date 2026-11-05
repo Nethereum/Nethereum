@@ -48,6 +48,7 @@ namespace Nethereum.ChainNode.Hosting.Configuration
         private const string ChainNodeStorage = "Nethereum.ChainNode.Hosting.ChainNodeStorage";
         private const string ChainNodeStorageConfigOpen = "Open";
         private const string ChainNodeStorageBuildOptions = "BuildStorageOptions";
+        private const string FlushCadencesType = "Nethereum.CoreChain.FlushCadences";
         private const string ChainNode = "Nethereum.ChainNode.Hosting.ChainNode";
         private const string ChainNodeConfigType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeConfig";
         private const string ChainNodeNetworkConfigType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeNetworkConfig";
@@ -57,9 +58,11 @@ namespace Nethereum.ChainNode.Hosting.Configuration
         private const string ChainNodeMempool = "Nethereum.ChainNode.Hosting.ChainNodeMempool";
         private const string ChainNodeMempoolConfigType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeMempoolConfig";
         private const string ChainNodeMaintenanceRunner = "Nethereum.ChainNode.Hosting.ChainNodeMaintenanceRunner";
+        private const string ChainNodeProducerConfigExtensionsType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeProducerConfigExtensions";
         private const string ChainNodeRpcConfigExtensionsType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeRpcConfigExtensions";
         private const string AppChainServerRunner = "Nethereum.AppChain.Server.AppChainServerRunner";
         private const string PrometheusExtensions = "Microsoft.Extensions.Hosting.Extensions";
+        private const string AppChainPrometheusExtensions = "Nethereum.AppChain.Server.Metrics.AppChainPrometheusMetricsExtensions";
         private const string ChainNodeFollowerOptionsBuilderType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeFollowerOptionsBuilder";
         private const string ChainNodeSnapBootstrapOptionsBuilderType = "Nethereum.ChainNode.Hosting.Configuration.ChainNodeSnapBootstrapOptionsBuilder";
         private const string AppChainDevP2PFollowerType = "Nethereum.AppChain.Server.Hosting.AppChainDevP2PFollower";
@@ -81,6 +84,16 @@ namespace Nethereum.ChainNode.Hosting.Configuration
             "Same as the Sync catch-up fields: DevChain never runs a snap-bootstrap/follower loop today " +
             "(DevChainComposition.cs:45-48). AppChain's follower honours this field via " +
             "ChainNodeSnapBootstrapOptionsBuilder.Build (AppChainDevP2PFollower.cs).");
+
+        private static ChainNodeFieldLiveness StatePrefetchNotYetWired() => NotYetWired(
+            "The state prefetcher is composed only on the mainnet follower (MainnetChain:PrefetchWorkers, RocksDB-backed " +
+            "state). AppChain and DevChain reach the same ExecutionStackFactory but do not pass the setting, and DevChain's " +
+            "in-memory stores are not safe for concurrent reads.");
+
+        private static ChainNodeFieldLiveness StateRootWorkersNotYetWired() => NotYetWired(
+            "State-root workers are composed only on the mainnet follower (MainnetChain:StateRootWorkers). AppChain and " +
+            "DevChain reach the same ExecutionStackFactory but do not pass the setting, so they run with the " +
+            "ExecutionStackOptions default (4).");
 
         private static List<ChainNodeConfigField> BuildAll()
         {
@@ -104,14 +117,31 @@ namespace Nethereum.ChainNode.Hosting.Configuration
                 kind => kind == ChainNodeKind.AppChain
                     ? Live(AppChainServerRunner, "RunAsync")
                     : Live(DevChainServerConfigType, "Port"));
-            AddLive("RPC", "Rpc.MetricsPort", "int", "Expose Prometheus /metrics on this port, 0=off", "0", false,
-                PrometheusExtensions, "AddPrometheusMetrics");
+            Add("RPC", "Rpc.MetricsPort", "int", "Expose Prometheus /metrics on this port, 0=off", "0", hasFriendlyFlag: false, hidden: false,
+                kind => kind == ChainNodeKind.AppChain
+                    ? Live(AppChainPrometheusExtensions, "AddPrometheusMetrics")
+                    : Live(PrometheusExtensions, "AddPrometheusMetrics"));
             AddLive("RPC", "Rpc.MaxLogBlockRange", "int", "eth_getLogs/eth_getFilterLogs max block range, 0=uncapped", "10000", false,
                 ChainNodeRpcConfigExtensionsType, "ApplyTo");
             AddLive("RPC", "Rpc.MaxLogResults", "int", "eth_getLogs/eth_getFilterLogs max result count, 0=uncapped", "10000", false,
                 ChainNodeRpcConfigExtensionsType, "ApplyTo");
             AddLive("RPC", "Rpc.GasCap", "long", "eth_call/estimateGas/traceCall gas cap, 0=uncapped", "50000000", false,
                 ChainNodeRpcConfigExtensionsType, "ApplyTo");
+            Add("RPC", "Rpc.Modules", "string",
+                "JSON-RPC modules served: eth, net and web3 always; add txpool, debug, admin", "eth,net,web3",
+                hasFriendlyFlag: false, hidden: false,
+                kind => kind == ChainNodeKind.AppChain
+                    ? Live(ChainNodeRpcConfigExtensionsType, "ToModuleSet")
+                    : Disabled("DevChain is a development chain and always serves its full development method set."));
+            AddLive("RPC", "Rpc.AllowedHosts", "string",
+                "Host header names the RPC listener accepts besides localhost and the bind address, '*' = any", "", false,
+                ChainNodeRpcConfigExtensionsType, "ToHttpOptions");
+            Add("RPC", "Rpc.AllowedOrigins", "string",
+                "Browser Origins allowed to open the WebSocket, '*' = any; none by default", "",
+                hasFriendlyFlag: false, hidden: false,
+                kind => kind == ChainNodeKind.AppChain
+                    ? Live(ChainNodeRpcConfigExtensionsType, "ToHttpOptions")
+                    : Disabled("DevChain serves no WebSocket endpoint."));
 
             AddLive("STORAGE", "Storage.DataDirectory", "string", "Database path", "./chain-data", true, ChainNodeStorage, ChainNodeStorageConfigOpen);
             AddLive("STORAGE", "Storage.InMemory", "bool", "Use in-memory storage", "false", true, ChainNodeStorage, ChainNodeStorageConfigOpen);
@@ -124,14 +154,15 @@ namespace Nethereum.ChainNode.Hosting.Configuration
             AddLive("STORAGE", "Storage.PromotionEnabled", "bool", "Promote cold history into the hot window on demand", "false", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
             AddLive("STORAGE", "Storage.UseFreezerHistory", "bool", "Route bulk history into the append-only geth-format freezer", "false", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
             AddLive("STORAGE", "Storage.FreezerHistoryDirectory", "string", "Directory for the freezer archive", "unset", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
-            AddLive("STORAGE", "Storage.BackgroundFreezeIndexing", "bool", "Build the freezer index on a background thread", "false", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
+            AddLive("STORAGE", "Storage.BackgroundFreezeIndexing", "bool", "Build the freezer index on a background thread", "true", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
             AddLive("STORAGE", "Storage.FreezerBackgroundDegreeOfParallelism", "int", "Degree of parallelism for the background freezer index", "0", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
             AddLive("STORAGE", "Storage.BlockCacheSize", "long", "RocksDB shared block cache, in bytes", "1073741824", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
-            Add("STORAGE", "Storage.FlushCadenceBlocks", "int", "Persist state every N blocks", "1", hasFriendlyFlag: false, hidden: true,
-                Both(NotYetWired(
-                    "Declared on the shared ChainNodeStorageConfig, but ChainNodeStorage.BuildStorageOptions never reads it " +
-                    "(RocksDbStorageOptions has no FlushCadenceBlocks field). Only mainnet's separate flat FlushCadenceBlocks " +
-                    "field (MainnetChainServerConfig, consumed at MainnetNodeComposition.cs:219-225) is wired.")));
+            AddLive("STORAGE", "Storage.EnableRocksDbStatistics", "bool", "Collect RocksDB statistics and log block-cache hit/miss counters", "false", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
+            AddLive("STORAGE", "Storage.FlushCadenceBlocks", "int", "Persist state every N blocks", "1", false, FlushCadencesType, "ForBlocks");
+            Add("STORAGE", "Storage.PrefetchWorkers", "int", "Dedicated threads that prefetch each block's transactions into the state caches, 0=off", "0", hasFriendlyFlag: false, hidden: false,
+                Both(StatePrefetchNotYetWired()));
+            Add("STORAGE", "Storage.StateRootWorkers", "int", "Dedicated threads that update storage tries in parallel when computing a block's state root, 1=sequential", "4", hasFriendlyFlag: false, hidden: false,
+                Both(StateRootWorkersNotYetWired()));
             AddLive("STORAGE", "Storage.EnableLogIndex", "bool", "Build/serve getLogs from the legacy CF_LOGS index instead of the bloom-scan L1", "false", false, ChainNodeStorage, ChainNodeStorageBuildOptions);
 
             AddLive("NETWORK", "Network.Serve", "bool", "Serve eth/snap over RLPx DevP2P", "true", true, ChainNode, "StartServingAsync");
@@ -149,8 +180,8 @@ namespace Nethereum.ChainNode.Hosting.Configuration
             AddLive("NETWORK", "Network.MaxConcurrentDials", "int", "Concurrent outbound dial limit", "10", false, ChainNodeSyncStack, "StartPoolAsync");
             AddLive("NETWORK", "Network.MaxInboundPeers", "int", "Inbound peer cap", "25", false, ChainNodeServeListener, "BuildListenerOptions");
             AddLive("NETWORK", "Network.MaxInboundPerIP", "int", "Inbound peer cap per IP", "9", false, ChainNodeServeListener, "BuildListenerOptions");
-            AddLive("NETWORK", "Network.HandshakeTimeoutMs", "int", "RLPx handshake timeout", "10000", false, ChainNodeServeListener, "BuildListenerOptions");
-            AddLive("NETWORK", "Network.IdleTimeout", "timespan", "Peer idle disconnect timeout", "00:02:00", false, ChainNodeServeListener, "BuildListenerOptions");
+            AddLive("NETWORK", "Network.HandshakeTimeoutMs", "int", "RLPx handshake timeout", "5000", false, ChainNodeServeListener, "BuildListenerOptions");
+            AddLive("NETWORK", "Network.IdleTimeout", "timespan", "Peer idle disconnect timeout", "00:00:30", false, ChainNodeServeListener, "BuildListenerOptions");
             AddLive("NETWORK", "Network.MirrorRemoteStatus", "bool", "Mirror the remote peer's eth/status instead of serving this node's own", "false", false, ChainNodeServeListener, "BuildListenerOptions");
             AddLive("NETWORK", "Network.ClientId", "string", "DevP2P client identifier string", "Nethereum", false, ChainNodeServeListener, "BuildListenerOptions");
             Add("NETWORK", "Network.Discovery.DisableDiscv4", "bool", "NOT SUPPORTED on this node type (curated mesh instead) — refused at startup unless true", "true", false, hidden: false, Both(DiscoveryDisabled()));
@@ -161,7 +192,6 @@ namespace Nethereum.ChainNode.Hosting.Configuration
             AddLive("SYNC", "Sync.Mode", "SyncMode", "None|ForwardExecute|Snap", "ForwardExecute", false, ChainNode, "StartSyncAsync");
             AddLive("SYNC", "Sync.FollowPeerEnode", "string", "Enode of the node to follow; syncs from it over DevP2P instead of producing blocks", "unset", true, ChainNodeConfigType, "FollowsAPeer");
             AddLive("SYNC", "Sync.TrustedPeersOnlyTip", "bool", "Only accept tip announcements from trusted peers", "false", false, ChainNodeSyncStack, "StartAsync");
-            AddLive("SYNC", "Sync.EnablePushedBlocks", "bool", "Accept blocks pushed by peers, not just pulled", "false", false, ChainNodeSyncStack, "StartAsync");
             AddLive("SYNC", "Sync.FloorTargetPeerCountByDialPool", "bool", "Floor the target peer count by the configured dial pool", "false", false, ChainNodeSyncStack, "StartPoolAsync");
             AddLive("SYNC", "Sync.HeaderBatchSize", "int", "Header fetch batch size", "192", false, ChainNodeSyncStack, "BuildPullSource");
             AddLive("SYNC", "Sync.BodyBatchSize", "int", "Body fetch batch size", "64", false, ChainNodeSyncStack, "BuildPullSource");
@@ -218,7 +248,7 @@ namespace Nethereum.ChainNode.Hosting.Configuration
             AddLive("SYNC", "Sync.Snap.SoftResponseLimit", "int", "Soft cap on snap response payload size", "unset", false, ChainNodeServeListener, "BuildSnapHandler");
 
             AddLive("MAINTENANCE", "Maintenance.Verbose", "bool", "Verbose maintenance logging", "false", false, ChainNodeMaintenanceRunner, "RunRequestedOpsAsync");
-            AddLive("MAINTENANCE", "Maintenance.WipeState", "bool", "One-shot: clear state and re-run the state sync, keeping the block archive", "false", false, ChainNodeMaintenanceRunner, "RunRequestedOpsAsync");
+            AddLive("MAINTENANCE", "Maintenance.WipeState", "bool", "One-shot: clear state, keeping the block archive, then exit; the next start re-runs the state sync", "false", false, ChainNodeMaintenanceRunner, "RunRequestedOpsAsync");
             AddLive("MAINTENANCE", "Maintenance.CompactAll", "bool", "One-shot: force a full RocksDB compaction on startup", "false", false, ChainNodeMaintenanceRunner, "RunRequestedOpsAsync");
             AddLive("MAINTENANCE", "Maintenance.RebuildStateFromFlat", "bool", "One-shot: rebuild stale storage-trie nodes from flat state, then verify", "false", false, ChainNodeMaintenanceRunner, "RunRequestedOpsAsync");
             AddLive("MAINTENANCE", "Maintenance.VerifyFlat", "bool", "One-shot: write-free flat/trie verify at the committed head, then stop", "false", false, ChainNodeMaintenanceRunner, "RunRequestedOpsAsync");
@@ -229,6 +259,9 @@ namespace Nethereum.ChainNode.Hosting.Configuration
             AddLive("MEMPOOL", "Mempool.Retention", "MempoolRetention", "Full|... transaction retention policy", "Full", false, ChainNodeMempool, "Create");
             AddLive("MEMPOOL", "Mempool.Relay", "MempoolRelay", "Ours|... transaction relay policy", "Ours", false, ChainNodeMempool, "Create");
             AddLive("MEMPOOL", "Mempool.EnableTrustedPeerAdmission", "bool", "Admit transactions relayed by trusted peers", "true", false, ChainNodeServeListener, "BuildListenerOptions");
+
+            AddLive("PRODUCER", "Producer.BlockGasLimit", "long", "Block gas limit of blocks this node produces; positive. Producer nodes only (AppChain, DevChain); rejected on a mainnet follower", "the fork's large-enough-to-deploy limit", false, ChainNodeProducerConfigExtensionsType, "ApplyTo");
+            AddLive("PRODUCER", "Producer.BaseFee", "ulong", "Base fee of blocks this node produces. Producer nodes only (AppChain, DevChain); rejected on a mainnet follower", "1000000000", false, ChainNodeProducerConfigExtensionsType, "ApplyTo");
 
             return fields;
         }

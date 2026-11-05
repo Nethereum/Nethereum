@@ -116,6 +116,22 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
         }
 
         [Fact]
+        public void Given_AMainnetConfig_When_BuildStorageOptionsRuns_Then_DatabasePathIsStillTheRocksDbDefault()
+        {
+            var config = new MainnetChainServerConfig { DataDir = "./x" };
+
+            var opts = MainnetNodeComposition.BuildStorageOptions(config);
+
+            Assert.Equal(new RocksDbStorageOptions().DatabasePath, opts.DatabasePath);
+        }
+
+        [Fact]
+        public void Given_ANullConfig_When_BuildStorageOptionsRuns_Then_ArgumentNullExceptionIsThrown()
+        {
+            Assert.Throws<ArgumentNullException>(() => MainnetNodeComposition.BuildStorageOptions(null!));
+        }
+
+        [Fact]
         public async Task Given_AMainnetFreezerBackgroundDegreeOfParallelism_When_OpenedThroughTheSharedHost_Then_ItReachesTheOpenedRocksDbManager()
         {
             var dataDir = Path.Combine(Path.GetTempPath(), $"mainnet-parallelism_{Guid.NewGuid():N}");

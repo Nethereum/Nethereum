@@ -25,21 +25,26 @@ using Nethereum.DevP2P.Sync.Snap.Sinks;
 using Nethereum.DevP2P.Sync.Snap.Peers;
 using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 using Nethereum.Documentation;
+using Nethereum.Testing;
 
 namespace Nethereum.MainnetChain.Server.IntegrationTests
 {
     [Collection("PathKeyed2MDb")]
+    [Trait("Requires", "Externals")]
     public class PathKeyed2MServeBatteryTests
     {
         private readonly ITestOutputHelper _out;
         public PathKeyed2MServeBatteryTests(ITestOutputHelper o) => _out = o;
 
-        [Fact]
+        [SkippableFact]
+        [Trait("Category", "LargeFixture")]
         [NethereumDocExample(DocSection.ChainInfrastructure, "state-serving", "Serve snap AccountRange, StorageRanges and TrieNodes verified against stored roots")]
         public async Task Serve_SnapPrimitives_VerifyAgainstStoredRoots_AtTip_InWindow_AndFloor()
         {
-            var dir = Environment.GetEnvironmentVariable("NETHEREUM_PATHKEYED_2M_DB");
-            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+            Skip.IfNot(TestEnvironment.HasExternalPath("PathKeyed2MDb"),
+                "ExternalPaths:PathKeyed2MDb is empty or missing; set it in "
+                + TestEnvironment.LocalSettingsRelativePath + " to a path-keyed 2M RocksDB.");
+            var dir = TestEnvironment.ExternalPath("PathKeyed2MDb");
 
             using var bundle = RocksDbChainStoreBundle.Open(
                 dir,

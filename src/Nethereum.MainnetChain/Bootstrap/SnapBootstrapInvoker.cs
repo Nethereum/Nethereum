@@ -31,32 +31,14 @@ namespace Nethereum.MainnetChain.Bootstrap
                 return new SnapBootstrapper.Result { Ran = false, SkipReason = "SnapBootstrap config flag is false" };
             }
 
-            (ulong From, ulong To)? headerSweepOverride =
-                config.HeadersFrom.HasValue ? (config.HeadersFrom.Value, config.HeadersTo) : null;
-            if (headerSweepOverride.HasValue)
-                logger.LogWarning(
-                    "snap.bootstrap header sweep OVERRIDE active: From={From} To={To} (cursor bypassed)",
-                    headerSweepOverride.Value.From, headerSweepOverride.Value.To);
+            var headerSweepOverride = HeaderSweepOverrideOf(config, logger);
 
             try
             {
                 var syncNode = new SyncNode(bundle, MainnetChainActivations.Instance, logger, pool, scheduler);
                 return await syncNode.RunSnapBootstrapAsync(
                     canonicalTip,
-                    new SnapSyncOrchestratorOptions
-                    {
-                        UseBackwardSkeleton = config.BackwardSkeletonPhase1,
-                        Metrics = metrics,
-                        HeaderSweepOverride = headerSweepOverride,
-                        BackfillOnly = config.SnapPhase1Only,
-                        RunHistoryBackfill = config.RunHistoryBackfillDuringStateSync,
-                        Phase1First = config.SnapPhase1First,
-                        AccountConcurrency = config.SnapAccountConcurrency,
-                        LargeContractConcurrency = config.SnapLargeContractConcurrency,
-                        FinalizeVerify = config.SnapFinalizeVerify,
-                        EnableFlatReconcile = config.SnapEnableFlatReconcile,
-                        HeaderFollow = headerFollow,
-                    },
+                    BuildOptions(config, metrics, headerSweepOverride, headerFollow),
                     ct).ConfigureAwait(false);
             }
             finally
@@ -68,5 +50,32 @@ namespace Nethereum.MainnetChain.Bootstrap
                 }
             }
         }
+
+        private static (ulong From, ulong To)? HeaderSweepOverrideOf(MainnetChainServerConfig config, ILogger logger)
+        {
+            (ulong From, ulong To)? headerSweepOverride =
+                config.HeadersFrom.HasValue ? (config.HeadersFrom.Value, config.HeadersTo) : null;
+            if (headerSweepOverride.HasValue)
+                logger.LogWarning(
+                    "snap.bootstrap header sweep OVERRIDE active: From={From} To={To} (cursor bypassed)",
+                    headerSweepOverride.Value.From, headerSweepOverride.Value.To);
+            return headerSweepOverride;
+        }
+
+        private static SnapSyncOrchestratorOptions BuildOptions(
+            MainnetChainServerConfig config, SnapSyncMetrics? metrics, (ulong From, ulong To)? headerSweepOverride,
+            Nethereum.CoreChain.Sync.HeaderFollowService? headerFollow)
+            => new SnapSyncOrchestratorOptions
+            {
+                UseBackwardSkeleton = config.BackwardSkeletonPhase1,
+                Metrics = metrics,
+                HeaderSweepOverride = headerSweepOverride,
+                BackfillOnly = config.SnapPhase1Only,
+                RunHistoryBackfill = config.RunHistoryBackfillDuringStateSync,
+                Phase1First = config.SnapPhase1First,
+                AccountConcurrency = config.SnapAccountConcurrency,
+                LargeContractConcurrency = config.SnapLargeContractConcurrency,
+                HeaderFollow = headerFollow,
+            };
     }
 }

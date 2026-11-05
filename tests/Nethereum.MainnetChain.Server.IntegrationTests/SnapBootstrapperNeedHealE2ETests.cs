@@ -33,13 +33,13 @@ using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 
 namespace Nethereum.MainnetChain.Server.IntegrationTests
 {
-    public class SnapBootstrapperDeferredDebtHealE2ETests : IDisposable
+    public class SnapBootstrapperNeedHealE2ETests : IDisposable
     {
         private readonly string _dbPath;
         private static readonly Sha3Keccack Keccak = new();
         private static readonly IHashProvider Hp = new Sha3KeccackHashProvider();
 
-        public SnapBootstrapperDeferredDebtHealE2ETests()
+        public SnapBootstrapperNeedHealE2ETests()
         {
             _dbPath = Path.Combine(Path.GetTempPath(), $"rocksdb_deferredheal_{Guid.NewGuid():N}");
         }
@@ -267,28 +267,20 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
                 Counters = SnapSyncCounters.Zero,
             });
 
-        private static DeferredStorageDebt OpenDebt(byte[] accountHash, byte[] storageRoot, byte[] stateRoot, DeferredStorageReason reason)
-            => new DeferredStorageDebt
-            {
-                AccountHash = accountHash,
-                DiscoveredStorageRoot = storageRoot,
-                FetchStateRoot = stateRoot,
-                FetchPivotBlock = 1UL,
-                Reason = reason,
-                Status = StorageCompleteness.DeferredBigAccount,
-            };
+        private static void SeedNeedHeal(RocksDbChainStoreBundle bundle, byte[] accountHash, byte[] storageRoot)
+            => bundle.Metadata.SaveDeferredHealAccountsBlob(NeedsHealAccountsCodec.Encode(
+                new[] { new SnapSyncClient.AccountNeedingHeal(accountHash, storageRoot) }));
 
-        private static SnapRunOptions HealOnlyOptions(HandlerBackedScheduler scheduler, bool enableFlatReconcile = false)
+        private static SnapRunOptions HealOnlyOptions(HandlerBackedScheduler scheduler)
             => new SnapRunOptions
             {
                 Scheduler = scheduler,
                 PivotRefresher = (_, _) => Task.FromResult<(BlockHeader Header, byte[] Hash)?>(null),
                 RunBackfill = false,
-                EnableFlatReconcile = enableFlatReconcile,
             };
 
         [Fact]
-        public async Task Given_AnOpenDebtWithNoLocalStorage_When_Phase3HealRuns_Then_TheSeededHealBuildsTheWholeTrieAndFlatWithoutStorageRanges()
+        public async Task Given_ANeedHealAccountWithNoLocalStorage_When_Phase3HealRuns_Then_TheSeededHealBuildsTheWholeTrieAndFlatWithoutStorageRanges()
         {
             var (server, stateRoot, accountHash, decoyAccountHash, storageRoot, slots) = BuildWhaleServerState(slotCount: 250);
             var scheduler = new HandlerBackedScheduler(new PatriciaSnapRequestHandler(server, new NullBytecodes(), softResponseLimit: 400));
@@ -301,14 +293,14 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             var pivotHash = Keccak.CalculateHash(new byte[] { 0xFE, 0xED, 0x01 });
             await bundle.Blocks.SaveAsync(pivotHeader, pivotHash);
             SavePhase3State(bundle, pivotHash, stateRoot, Array.Empty<SnapSyncAccountTask>());
-            bundle.Metadata.UpsertDeferredStorageDebt(OpenDebt(accountHash, storageRoot, stateRoot, DeferredStorageReason.BigAccountSubrangeFailed));
+            SeedNeedHeal(bundle, accountHash, storageRoot);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
             var result = await SnapBootstrapper.RunAsync(
                 bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance, HealOnlyOptions(scheduler), cts.Token);
 
             Assert.True(result.Ran);
-            Assert.Equal(0UL, bundle.Metadata.CountOpenDeferredStorageDebts());
+            Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
             Assert.Equal(0, scheduler.StorageRangeCalls);
             Assert.True(scheduler.TrieNodeCalls > 0, "the seeded heal must have fetched the storage trie nodes");
             AssertTrieHoldsExactly(bundle, accountHash, storageRoot, slots);
@@ -316,7 +308,7 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
         }
 
         [Fact]
-        public async Task Given_DebtWithStorageAlreadyPresent_When_Phase3HealRuns_Then_NothingIsRefetched()
+        public async Task Given_ANeedHealAccountWithStorageAlreadyPresent_When_Phase3HealRuns_Then_NothingIsRefetched()
         {
             var (server, stateRoot, accountHash, _, storageRoot, slots) = BuildWhaleServerState(slotCount: 60);
             var scheduler = new HandlerBackedScheduler(new PatriciaSnapRequestHandler(server, new NullBytecodes()));
@@ -342,14 +334,14 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
                     SubTasks = new Dictionary<byte[], IReadOnlyList<SnapSyncStorageSubTask>>(),
                 },
             });
-            bundle.Metadata.UpsertDeferredStorageDebt(OpenDebt(accountHash, storageRoot, stateRoot, DeferredStorageReason.BigAccountSubrangeFailed));
+            SeedNeedHeal(bundle, accountHash, storageRoot);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             var result = await SnapBootstrapper.RunAsync(
                 bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance, HealOnlyOptions(scheduler), cts.Token);
 
             Assert.True(result.Ran);
-            Assert.Equal(0UL, bundle.Metadata.CountOpenDeferredStorageDebts());
+            Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
             Assert.Equal(0, scheduler.StorageRangeCalls);
             AssertTrieHoldsExactly(bundle, accountHash, storageRoot, slots);
         }
@@ -372,21 +364,21 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             var pivotHash = Keccak.CalculateHash(new byte[] { 0xFE, 0xED, 0x03 });
             await bundle.Blocks.SaveAsync(pivotHeader, pivotHash);
             SavePhase3State(bundle, pivotHash, stateRoot, Array.Empty<SnapSyncAccountTask>());
-            bundle.Metadata.UpsertDeferredStorageDebt(OpenDebt(accountHash, storageRoot, stateRoot, DeferredStorageReason.BigAccountSubrangeFailed));
+            SeedNeedHeal(bundle, accountHash, storageRoot);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
             var result = await SnapBootstrapper.RunAsync(
                 bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance, HealOnlyOptions(scheduler), cts.Token);
 
             Assert.True(result.Ran);
-            Assert.Equal(0UL, bundle.Metadata.CountOpenDeferredStorageDebts());
+            Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
             Assert.Equal(0, scheduler.StorageRangeCalls);
             Assert.True(scheduler.TrieNodeCalls > 0, "the seeded heal must have fetched the missing storage trie nodes");
             AssertTrieHoldsExactly(bundle, accountHash, storageRoot, slots);
         }
 
         [Fact]
-        public async Task Given_AnOpenBigAccountChunkedDebtForAMixedRootPartialWhale_When_Phase3HealRunsWithFlatReconcile_Then_TheTrieIsTheExactFinalRootAndFlatHoldsExactlyTheFinalSlots()
+        public async Task Given_ANeedHealAccountForAMixedRootPartialWhale_When_Phase3HealRunsWithFlatReconcile_Then_TheTrieIsTheExactFinalRootAndFlatHoldsExactlyTheFinalSlots()
         {
             var (server, stateRoot, accountHash, _, storageRoot, slots) = BuildWhaleServerState(slotCount: 250);
             var scheduler = new HandlerBackedScheduler(new PatriciaSnapRequestHandler(server, new NullBytecodes(), softResponseLimit: 400));
@@ -415,21 +407,33 @@ namespace Nethereum.MainnetChain.Server.IntegrationTests
             var pivotHash = Keccak.CalculateHash(new byte[] { 0xFE, 0xED, 0x04 });
             await bundle.Blocks.SaveAsync(pivotHeader, pivotHash);
             SavePhase3State(bundle, pivotHash, stateRoot, Array.Empty<SnapSyncAccountTask>());
-            bundle.Metadata.UpsertDeferredStorageDebt(OpenDebt(accountHash, storageRoot, stateRoot, DeferredStorageReason.BigAccountChunked));
+            SeedNeedHeal(bundle, accountHash, storageRoot);
 
+            var messages = new System.Collections.Concurrent.ConcurrentQueue<string>();
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
             var result = await SnapBootstrapper.RunAsync(
-                bundle, new NeverCalledPeer(), pivotHeader, pivotHash, NullLogger.Instance,
-                HealOnlyOptions(scheduler, enableFlatReconcile: true), cts.Token);
+                bundle, new NeverCalledPeer(), pivotHeader, pivotHash, new CallbackLogger(messages.Enqueue),
+                HealOnlyOptions(scheduler), cts.Token);
 
             Assert.True(result.Ran);
-            Assert.Equal(0UL, bundle.Metadata.CountOpenDeferredStorageDebts());
+            Assert.DoesNotContain(messages, m => m.Contains("cause=deferred_debt", StringComparison.Ordinal));
+            Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
             Assert.Equal(0, scheduler.StorageRangeCalls);
             AssertTrieHoldsExactly(bundle, accountHash, storageRoot, slots);
 
             var flat = ReadFlatStorage(bundle, accountHash);
             Assert.False(flat.ContainsKey(deletedSinceOlderRoot.ToHex()), "the slot deleted since the older root must not survive in flat");
             Assert.Equal(ExpectedFlatStorage(slots), flat);
+        }
+
+        private sealed class CallbackLogger : Microsoft.Extensions.Logging.ILogger
+        {
+            private readonly Action<string> _onMessage;
+            public CallbackLogger(Action<string> onMessage) { _onMessage = onMessage; }
+            public IDisposable BeginScope<TState>(TState state) where TState : notnull => null!;
+            public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+            public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+                => _onMessage(formatter(state, exception));
         }
     }
 }

@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System.Threading;
 using Nethereum.CoreChain;
 
@@ -24,6 +25,8 @@ namespace Nethereum.DevChain
         public Nethereum.CoreChain.IRewardPolicy RewardPolicy { get; set; }
 
         public bool AutoMine { get; set; } = true;
+        [NethereumDocExample(DocSection.InProcessNode, "devchain", "Skip the genesis system-contract predeploys")]
+        public bool PredeploySystemContracts { get; set; } = true;
         public int MaxTransactionsPerBlock { get; set; } = 100;
         public long BlockTime { get; set; } = 0;
 

@@ -55,9 +55,13 @@ namespace Nethereum.ChainNode.Hosting
             logger?.LogWarning(
                 "WipeState set — wiping state / trie / state-history CFs and SnapSyncState metadata; " +
                 "receipts, logs and Phase 1 cursors are preserved.");
-            await bundle.ResetSnapBootstrapStateAsync(ct).ConfigureAwait(false);
+            if (bundle is ISnapBootstrapStateReset reportingReset)
+                await reportingReset.ResetSnapBootstrapStateAsync(
+                    msg => logger?.LogInformation("state.wipe {Progress}", msg), ct).ConfigureAwait(false);
+            else
+                await bundle.ResetSnapBootstrapStateAsync(ct).ConfigureAwait(false);
             logger?.LogWarning(
-                "Snap-bootstrap state wipe complete; Phase 1 archive untouched. Snap bootstrap will re-stream from a fresh pivot.");
+                "State wipe complete; Phase 1 archive untouched. The next start re-runs the state sync from a fresh pivot.");
         }
 
         private static async Task RunCompactAllIfRequestedAsync(
@@ -70,7 +74,7 @@ namespace Nethereum.ChainNode.Hosting
                     "CompactAll requested but the active storage backend does not implement IStateCompaction " +
                     "(compaction only applies to a RocksDB-backed store). Remove the flag or switch to RocksDB storage.");
 
-            logger?.LogWarning("CompactAll set — running a full store compaction before sync; this can take a while.");
+            logger?.LogWarning("CompactAll set — running a full store compaction; this can take a while.");
             await compaction.CompactAllAsync(
                 msg => logger?.LogInformation("compact.all {Progress}", msg), ct).ConfigureAwait(false);
             logger?.LogWarning("CompactAll complete.");

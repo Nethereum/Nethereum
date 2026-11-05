@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Nethereum.MainnetChain.Server.IntegrationTests;
 
-public class LightClientCanonicalSourceTests
+public class TrustedHeaderCanonicalSourceTests
 {
     private static readonly byte[] BlockHashSample = MakeHash(0xAA);
     private static readonly byte[] StateRootSample = MakeHash(0xBB);
@@ -29,7 +29,7 @@ public class LightClientCanonicalSourceTests
                 StateRoot = StateRootSample,
             },
         };
-        var source = new LightClientCanonicalSource(provider);
+        var source = new TrustedHeaderCanonicalSource(provider);
 
         var tip = await source.GetLatestAsync(CancellationToken.None);
 
@@ -46,7 +46,7 @@ public class LightClientCanonicalSourceTests
         {
             ThrowOnFinalized = true,
         };
-        var source = new LightClientCanonicalSource(provider);
+        var source = new TrustedHeaderCanonicalSource(provider);
 
         var tip = await source.GetLatestAsync(CancellationToken.None);
 
@@ -67,7 +67,7 @@ public class LightClientCanonicalSourceTests
                 StateRoot = optimisticRoot,
             },
         };
-        var source = new LightClientCanonicalSource(provider, useOptimistic: true);
+        var source = new TrustedHeaderCanonicalSource(provider, useOptimistic: true);
 
         var tip = await source.GetLatestAsync(CancellationToken.None);
 
@@ -88,7 +88,7 @@ public class LightClientCanonicalSourceTests
                 StateRoot = StateRootSample,
             },
         };
-        var source = new LightClientCanonicalSource(provider);
+        var source = new TrustedHeaderCanonicalSource(provider);
 
         var (root, hash) = await source.GetCanonicalAsync(BlockNumberSample, CancellationToken.None);
 
@@ -108,7 +108,7 @@ public class LightClientCanonicalSourceTests
                 StateRoot = StateRootSample,
             },
         };
-        var source = new LightClientCanonicalSource(provider);
+        var source = new TrustedHeaderCanonicalSource(provider);
 
         var (root, hash) = await source.GetCanonicalAsync(BlockNumberSample - 1, CancellationToken.None);
 
@@ -120,7 +120,7 @@ public class LightClientCanonicalSourceTests
     public async Task GetCanonicalAsync_ReturnsNull_WhenLightClientHasNoState()
     {
         var provider = new FakeTrustedHeaderProvider { ThrowOnFinalized = true };
-        var source = new LightClientCanonicalSource(provider);
+        var source = new TrustedHeaderCanonicalSource(provider);
 
         var (root, hash) = await source.GetCanonicalAsync(BlockNumberSample, CancellationToken.None);
 
@@ -131,8 +131,8 @@ public class LightClientCanonicalSourceTests
     [Fact]
     public void Name_IncludesFinalizedOrOptimisticLabel()
     {
-        var finalizedSource = new LightClientCanonicalSource(new FakeTrustedHeaderProvider());
-        var optimisticSource = new LightClientCanonicalSource(new FakeTrustedHeaderProvider(), useOptimistic: true);
+        var finalizedSource = new TrustedHeaderCanonicalSource(new FakeTrustedHeaderProvider());
+        var optimisticSource = new TrustedHeaderCanonicalSource(new FakeTrustedHeaderProvider(), useOptimistic: true);
 
         Assert.Contains("finalized", finalizedSource.Name);
         Assert.Contains("optimistic", optimisticSource.Name);
@@ -141,7 +141,7 @@ public class LightClientCanonicalSourceTests
     [Fact]
     public void Constructor_ThrowsOnNullProvider()
     {
-        Assert.Throws<ArgumentNullException>(() => new LightClientCanonicalSource(null!));
+        Assert.Throws<ArgumentNullException>(() => new TrustedHeaderCanonicalSource(null!));
     }
 
     [Fact]
@@ -170,7 +170,25 @@ public class LightClientCanonicalSourceTests
 
         var canonical = sp.GetRequiredService<ICanonicalStateRootSource>();
         Assert.IsType<CompositeCanonicalStateRootSource>(canonical);
-        Assert.Contains("LightClient", canonical.Name);
+        Assert.Contains(((ITrustedHeaderProvider)provider).Name, canonical.Name);
+    }
+
+    [Fact]
+    public void AddMainnetChainServer_WithOperatorConfiguredBeaconEndpoint_LightClientMayRebootstrapFromThatBeaconAgainstTheMainnetWallClock()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddMainnetChainServer(new MainnetChainServerConfig
+        {
+            LightClient = new LightClientConfigSection { BeaconEndpoint = "http://test" },
+        });
+
+        using var sp = services.BuildServiceProvider();
+        var lightClientConfig = sp.GetRequiredService<LightClientConfig>();
+
+        Assert.True(lightClientConfig.AllowBeaconRebootstrap);
+        Assert.Equal(LightClientNetworks.MainnetGenesisTime, lightClientConfig.GenesisTime);
     }
 
     [Fact]

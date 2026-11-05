@@ -1,3 +1,5 @@
+using Nethereum.CoreChain.Genesis;
+
 namespace Nethereum.MainnetChain.Configuration
 {
     public partial class MainnetChainServerConfig
@@ -31,6 +33,31 @@ namespace Nethereum.MainnetChain.Configuration
         public bool EnableTxSubmission { get; set; } = false;
 
         public LightClientConfigSection? LightClient { get; set; }
+
+        public EngineConfigSection Engine { get; set; } = new EngineConfigSection();
+
+        public string? GenesisPath { get; set; }
+
+        public bool EngineOnly => Engine.Enabled && !string.IsNullOrWhiteSpace(GenesisPath);
+
+        private StandardGenesisDocument? _genesis;
+
+        public StandardGenesisDocument? LoadGenesis() =>
+            string.IsNullOrWhiteSpace(GenesisPath) ? null : _genesis ??= StandardGenesisLoader.LoadFromFile(GenesisPath);
+    }
+
+    public class EngineConfigSection
+    {
+        public const int DefaultPort = 8551;
+        public const string DefaultJwtSecretFileName = "jwt.hex";
+
+        public bool Enabled { get; set; }
+
+        public int Port { get; set; } = DefaultPort;
+
+        public string? JwtSecretPath { get; set; }
+
+        public string BindAddress { get; set; } = "127.0.0.1";
     }
 
     public class LightClientConfigSection

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using Nethereum.DevP2P;
 using Nethereum.DevP2P.NodeDb;
@@ -40,9 +41,9 @@ namespace Nethereum.ChainNode.Hosting.Configuration
 
         public int MaxInboundPerIP { get; set; } = 9;
 
-        public int HandshakeTimeoutMs { get; set; } = 10_000;
+        public int HandshakeTimeoutMs { get; set; } = 5_000;
 
-        public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
+        public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         public bool MirrorRemoteStatus { get; set; }
 
@@ -63,6 +64,14 @@ namespace Nethereum.ChainNode.Hosting.Configuration
 
         public PersistentPeerCache OpenPeerCache(string dataDirectory, Action<string>? log = null) =>
             new PersistentPeerCache(Path.Combine(dataDirectory ?? ".", "peer-cache.json"), log ?? (_ => { }));
+
+        public static string[] SplitEnodeList(string? commaSeparated) =>
+            string.IsNullOrWhiteSpace(commaSeparated)
+                ? Array.Empty<string>()
+                : commaSeparated.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        public static string[] SplitEnodeList(IEnumerable<string>? commaSeparatedValues) =>
+            (commaSeparatedValues ?? Array.Empty<string>()).SelectMany(SplitEnodeList).ToArray();
 
         public static string[] NodeIdsOf(IEnumerable<string> enodes) => NodeIdsOf(enodes, out _);
 

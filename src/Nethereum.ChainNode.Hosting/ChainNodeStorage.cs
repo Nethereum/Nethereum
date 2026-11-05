@@ -45,6 +45,7 @@ namespace Nethereum.ChainNode.Hosting
                 TrieNodeHistoryBlocks = storage.TrieNodeHistoryBlocks,
                 TrieNodeHistoryIndex = storage.TrieNodeHistoryIndex,
                 BlockCacheSize = storage.BlockCacheSize,
+                EnableStatistics = storage.EnableRocksDbStatistics,
                 SplitHistoryStore = storage.SplitHistoryStore,
                 HotWindowBlocks = storage.HotWindowBlocks,
                 EnableLogIndex = storage.EnableLogIndex,
@@ -73,7 +74,8 @@ namespace Nethereum.ChainNode.Hosting
             logger?.LogInformation("Storage: in-memory");
 
             return new ChainNodeStorage(
-                InMemoryChainStoreBundle.Open(BuildJournalOptions(config.Storage.JournalBlocks)),
+                InMemoryChainStoreBundle.Open(
+                    BuildJournalOptions(config.Storage.JournalBlocks) ?? HistoricalStateOptions.CurrentBlockOnly),
                 manager: null);
         }
 

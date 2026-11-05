@@ -52,7 +52,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private Account GetAccountInternal(string normalizedAddress)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = _accountLayout.HasExternalCodeHash
                 ? "SELECT account_data, code_hash FROM accounts WHERE address = @addr"
                 : "SELECT account_data FROM accounts WHERE address = @addr";
@@ -77,7 +77,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var data = _accountLayout.EncodeAccount(account);
             var inline = InlineAddressBytes(address);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             if (_accountLayout.HasExternalCodeHash)
             {
                 cmd.CommandText = "INSERT OR REPLACE INTO accounts (address, account_data, code_hash, address_inline) VALUES (@addr, @data, @ch, @inline)";
@@ -104,7 +104,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var normalized = NormalizeAddress(address);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT 1 FROM accounts WHERE address = @addr LIMIT 1";
             cmd.Parameters.AddWithValue("@addr", normalized);
 
@@ -115,12 +115,12 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var normalized = NormalizeAddress(address);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM accounts WHERE address = @addr";
             cmd.Parameters.AddWithValue("@addr", normalized);
             cmd.ExecuteNonQuery();
 
-            using var cmd2 = _manager.Connection.CreateCommand();
+            using var cmd2 = _manager.CreateCommand();
             cmd2.CommandText = "DELETE FROM account_storage WHERE address = @addr";
             cmd2.Parameters.AddWithValue("@addr", normalized);
             cmd2.ExecuteNonQuery();
@@ -138,7 +138,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new Dictionary<string, Account>();
             var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = hasExtCodeHash
                 ? "SELECT account_data, code_hash, address_inline FROM accounts"
                 : "SELECT account_data, address_inline FROM accounts";
@@ -171,8 +171,15 @@ namespace Nethereum.DevChain.Storage.Sqlite
         public async System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<string, Account>> StreamAccountsAsync()
 #pragma warning restore CS1998
         {
+            foreach (var entry in ReadAllAccounts())
+                yield return entry;
+        }
+
+        private System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, Account>> ReadAllAccounts()
+        {
+            var accounts = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, Account>>();
             var hasExtCodeHash = _accountLayout.HasExternalCodeHash;
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = hasExtCodeHash
                 ? "SELECT account_data, code_hash, address_inline FROM accounts"
                 : "SELECT account_data, address_inline FROM accounts";
@@ -194,8 +201,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 }
                 if (inline == null) continue;
                 var addr = "0x" + inline.ToHex();
-                yield return new System.Collections.Generic.KeyValuePair<string, Account>(addr, account);
+                accounts.Add(new System.Collections.Generic.KeyValuePair<string, Account>(addr, account));
             }
+            return accounts;
         }
 
         public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
@@ -203,7 +211,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var normalized = NormalizeAddress(address);
             var slotBytes = SlotToBytes(slot);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT value FROM account_storage WHERE address = @addr AND slot = @slot";
             cmd.Parameters.AddWithValue("@addr", normalized);
             cmd.Parameters.AddWithValue("@slot", slotBytes);
@@ -218,9 +226,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
                 throw new System.ArgumentException("slotKeccak must be 32 bytes", nameof(slotKeccak));
             var normalized = NormalizeAddress(address);
 
-            if (value == null || IsAllZero(value))
+            if (value == null || ByteUtil.IsZero(value))
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "DELETE FROM account_storage WHERE address = @addr AND slot = @slot";
                 cmd.Parameters.AddWithValue("@addr", normalized);
                 cmd.Parameters.AddWithValue("@slot", slotKeccak);
@@ -228,7 +236,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             }
             else
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "INSERT OR REPLACE INTO account_storage (address, slot, value) VALUES (@addr, @slot, @val)";
                 cmd.Parameters.AddWithValue("@addr", normalized);
                 cmd.Parameters.AddWithValue("@slot", slotKeccak);
@@ -244,9 +252,9 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var normalized = NormalizeAddress(address);
             var slotBytes = SlotToBytes(slot);
 
-            if (value == null || IsAllZero(value))
+            if (value == null || ByteUtil.IsZero(value))
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "DELETE FROM account_storage WHERE address = @addr AND slot = @slot";
                 cmd.Parameters.AddWithValue("@addr", normalized);
                 cmd.Parameters.AddWithValue("@slot", slotBytes);
@@ -254,7 +262,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             }
             else
             {
-                using var cmd = _manager.Connection.CreateCommand();
+                using var cmd = _manager.CreateCommand();
                 cmd.CommandText = "INSERT OR REPLACE INTO account_storage (address, slot, value) VALUES (@addr, @slot, @val)";
                 cmd.Parameters.AddWithValue("@addr", normalized);
                 cmd.Parameters.AddWithValue("@slot", slotBytes);
@@ -282,7 +290,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var normalized = NormalizeAddress(address);
             var result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT slot, value FROM account_storage WHERE address = @addr";
             cmd.Parameters.AddWithValue("@addr", normalized);
 
@@ -301,7 +309,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var normalized = NormalizeAddress(address);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "DELETE FROM account_storage WHERE address = @addr";
             cmd.Parameters.AddWithValue("@addr", normalized);
             cmd.ExecuteNonQuery();
@@ -320,7 +328,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             var hashHex = codeHash.ToHex();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT code FROM code WHERE code_hash = @hash";
             cmd.Parameters.AddWithValue("@hash", hashHex);
 
@@ -334,7 +342,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             var hashHex = codeHash.ToHex();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "INSERT OR REPLACE INTO code (code_hash, code) VALUES (@hash, @code)";
             cmd.Parameters.AddWithValue("@hash", hashHex);
             cmd.Parameters.AddWithValue("@code", (object)code ?? DBNull.Value);
@@ -437,25 +445,14 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private void ExecuteSql(string sql)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
         }
 
-        // Yellow Paper §4.1 storage-trie path: keys are keccak(padded slot bytes).
-        // Matches the snap/1 wire shape natively.
         private static byte[] SlotToBytes(BigInteger slot)
         {
             return Nethereum.CoreChain.Storage.StateKeys.StorageSlotKey(slot);
-        }
-
-        private static bool IsAllZero(byte[] value)
-        {
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (value[i] != 0) return false;
-            }
-            return true;
         }
     }
 }

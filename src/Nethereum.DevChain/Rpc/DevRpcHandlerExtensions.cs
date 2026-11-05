@@ -24,6 +24,8 @@ namespace Nethereum.DevChain.Rpc
         public static RpcHandlerRegistry AddDevHandlers(this RpcHandlerRegistry registry)
         {
             registry.Register(new EvmMineHandler());
+            registry.Register(new TestingBuildBlockV1Handler());
+            registry.Register(new TestingCommitBlockV1Handler());
             registry.Register(new EvmSnapshotHandler());
             registry.Register(new EvmRevertHandler());
             registry.Register(new DebugSetHeadHandler());

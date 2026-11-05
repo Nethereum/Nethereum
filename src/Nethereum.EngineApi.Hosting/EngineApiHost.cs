@@ -1,6 +1,6 @@
 using Nethereum.CoreChain.Rpc;
 
-namespace Nethereum.DevChain.Hosting
+namespace Nethereum.EngineApi.Hosting
 {
     public sealed class EngineApiHost
     {

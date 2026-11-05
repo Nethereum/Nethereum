@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net.Http;
 using System.Numerics;
 using Microsoft.AspNetCore.Builder;
@@ -6,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Nethereum.Beaconchain;
+using Nethereum.ChainNode.Hosting.Configuration;
+using Nethereum.ChainNode.Hosting.Rpc;
 using Nethereum.Consensus.LightClient;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Rpc;
@@ -41,10 +44,7 @@ namespace Nethereum.MainnetChain.Hosting
             services.AddSingleton(config);
 
             services.TryAddSingleton<IValidationPolicy>(sp =>
-                new StrictValidationPolicy(
-                    config.ContinueOnMismatch,
-                    anchorEvery: 0,
-                    logger: sp.GetService<ILogger<StrictValidationPolicy>>()));
+                MainnetNodeComposition.BuildValidationPolicy(config, sp.GetService<ILogger<StrictValidationPolicy>>()));
             services.TryAddSingleton<FollowerOptions>(_ => new FollowerOptions(
                 StartBlock: config.StartBlock,
                 CheckpointEvery: config.CheckpointEvery,
@@ -53,6 +53,10 @@ namespace Nethereum.MainnetChain.Hosting
                 KeepLatestCheckpoints: config.KeepLatestCheckpoints));
 
             var lightClientEnabled = !string.IsNullOrWhiteSpace(config.LightClient?.BeaconEndpoint);
+            if (config.Engine.Enabled && lightClientEnabled)
+                throw new InvalidOperationException(ConsensusStartupGuard.EngineWithLightClientMessage);
+            if (!string.IsNullOrWhiteSpace(config.GenesisPath) && !config.Engine.Enabled)
+                throw new InvalidOperationException(ConsensusStartupGuard.GenesisWithoutEngineMessage);
             if (lightClientEnabled)
             {
                 if (!string.IsNullOrWhiteSpace(config.DataDir))
@@ -82,6 +86,7 @@ namespace Nethereum.MainnetChain.Hosting
                 services.TryAddSingleton<LightClientConfig>(_ =>
                 {
                     var lcc = LightClientNetworks.CreateConfig(1);
+                    lcc.AllowBeaconRebootstrap = true;
                     if (!string.IsNullOrWhiteSpace(config.LightClient!.WeakSubjectivityRoot))
                         lcc.WeakSubjectivityRoot = Hex.HexConvertors.Extensions.HexByteConvertorExtensions
                             .HexToByteArray(config.LightClient.WeakSubjectivityRoot);
@@ -109,6 +114,11 @@ namespace Nethereum.MainnetChain.Hosting
                 services.TryAddSingleton<IFinalityCursorProvider, LatestOnlyFinalityCursorProvider>();
             }
 
+            if (config.Engine.Enabled)
+            {
+                services.AddMainnetEngine(config);
+            }
+
             services.TryAddSingleton<ICanonicalStateRootSource>(sp =>
             {
                 var checkpoints = new MainnetKnownCheckpoints();
@@ -116,10 +126,10 @@ namespace Nethereum.MainnetChain.Hosting
                 {
                     return checkpoints;
                 }
-                var lightClient = new LightClientCanonicalSource(
+                var lightClient = new TrustedHeaderCanonicalSource(
                     sp.GetRequiredService<ITrustedHeaderProvider>(),
                     useOptimistic: true,
-                    logger: sp.GetService<ILoggerFactory>()?.CreateLogger<LightClientCanonicalSource>());
+                    logger: sp.GetService<ILoggerFactory>()?.CreateLogger<TrustedHeaderCanonicalSource>());
                 return new CompositeCanonicalStateRootSource(checkpoints, lightClient);
             });
 
@@ -128,7 +138,10 @@ namespace Nethereum.MainnetChain.Hosting
                     sp.GetRequiredService<IConsensusBlockGate>(),
                     sp.GetRequiredService<ILoggerFactory>(),
                     follower: sp.GetService<IFollowerService>(),
-                    flushCadence: MainnetNodeComposition.BuildFlushCadence(sp.GetRequiredService<MainnetChainServerConfig>())));
+                    flushCadence: MainnetNodeComposition.BuildFlushCadence(sp.GetRequiredService<MainnetChainServerConfig>()),
+                    prefetchWorkers: sp.GetRequiredService<MainnetChainServerConfig>().PrefetchWorkers,
+                    stateRootWorkers: sp.GetRequiredService<MainnetChainServerConfig>().StateRootWorkers,
+                    genesis: sp.GetRequiredService<MainnetChainServerConfig>().LoadGenesis()));
 
             services.TryAddSingleton<IFollowerService>(sp =>
             {
@@ -143,16 +156,28 @@ namespace Nethereum.MainnetChain.Hosting
 
             services.TryAddSingleton<SnapSyncMetrics>(_ => new SnapSyncMetrics("Nethereum"));
 
-            services.AddHostedService<SnapSyncProgressReporter>();
+            if (!config.EngineOnly)
+                services.AddHostedService<SnapSyncProgressReporter>();
 
-            services.AddHostedService<MainnetChainHostedService>();
+            if (config.EnableRocksDbStatistics)
+                services.AddHostedService<RocksDbCacheStatsReporter>();
+
+            services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MainnetChainHostedService>(sp));
 
             services.AddSingleton<RpcHandlerRegistry>(sp =>
             {
                 var registry = new RpcHandlerRegistry();
-                registry.AddStandardHandlers();
-                registry.Override(new FinalityLabelledEthGetBlockByNumberHandler());
+                var modules = RpcModuleSet.Parse(config.RpcModules);
+                registry.AddStandardHandlers(modules);
+                if (modules.Contains(RpcModuleSet.Eth)) registry.Override(new FinalityLabelledEthGetBlockByNumberHandler());
+                if (config.EngineOnly && modules.Contains(RpcModuleSet.Debug)) registry.Register(new DebugSetHeadHandler());
                 return registry;
+            });
+
+            services.TryAddSingleton(_ => new RpcHttpOptions
+            {
+                BindHost = config.Host,
+                AllowedHosts = ChainNodeRpcConfigExtensions.SplitList(config.RpcAllowedHosts)
             });
 
             services.AddSingleton<RpcContext>(sp =>
@@ -160,7 +185,7 @@ namespace Nethereum.MainnetChain.Hosting
                 var accessor = sp.GetRequiredService<MainnetChainNodeAccessor>();
                 return new RpcContext(
                     () => accessor.Node,
-                    (BigInteger)Nethereum.EVM.MainnetGenesisConstants.ChainId,
+                    MainnetChainNodeFactory.BuildChainConfig(config.LoadGenesis()).ChainId,
                     sp);
             });
 
@@ -193,8 +218,15 @@ namespace Nethereum.MainnetChain.Hosting
             MainnetChainServerConfig config)
         {
             builder.Services.AddMainnetChainServer(config);
+            var corsOrigins = ChainNodeRpcConfigExtensions.SplitList(config.RpcCorsOrigins).ToArray();
             builder.Services.AddCors(options =>
-                options.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+                options.AddDefaultPolicy(p =>
+                {
+                    if (corsOrigins.Length == 0) return;
+                    if (corsOrigins.Contains("*")) p.AllowAnyOrigin();
+                    else p.WithOrigins(corsOrigins);
+                    p.AllowAnyHeader().AllowAnyMethod();
+                }));
             return builder;
         }
     }

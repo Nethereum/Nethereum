@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Forks;
+using Nethereum.CoreChain.Genesis;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -23,7 +24,6 @@ namespace Nethereum.DevChain
     public class BlockManager : IDisposable, IAsyncDisposable
     {
         private const int MaxExecutionResultsCache = 10000;
-        private static readonly byte[] EMPTY_LIST_HASH = new Sha3Keccack().CalculateHash(RLP.RLP.EncodeList());
 
         private readonly IBlockStore _blockStore;
         private readonly IStateStore _stateStore;
@@ -81,6 +81,23 @@ namespace Nethereum.DevChain
             DevChainConfig config,
             ITrieNodeStore trieNodeStore,
             IBlockAccessListStore blockAccessListStore)
+            : this(blockStore, transactionStore, receiptStore, logStore, stateStore,
+                   transactionProcessor, txVerifier, config, trieNodeStore, blockAccessListStore, uncleStore: null)
+        {
+        }
+
+        public BlockManager(
+            IBlockStore blockStore,
+            ITransactionStore transactionStore,
+            IReceiptStore receiptStore,
+            ILogStore logStore,
+            IStateStore stateStore,
+            CoreChain.TransactionProcessor transactionProcessor,
+            ITransactionVerificationAndRecovery txVerifier,
+            DevChainConfig config,
+            ITrieNodeStore trieNodeStore,
+            IBlockAccessListStore blockAccessListStore,
+            IUncleStore uncleStore)
         {
             _blockStore = blockStore;
             _stateStore = stateStore;
@@ -88,21 +105,21 @@ namespace Nethereum.DevChain
             _config = config;
             _trieNodeStore = trieNodeStore ?? new InMemoryContentNodeStore();
 
-            StateRootCalculator = config.StateTree == StateTreeType.Binary
-                ? config.CreateBinaryIncrementalStateRootCalculator(stateStore)
-                : new IncrementalStateRootCalculator(stateStore, _trieNodeStore);
-            var stateRootCalc = StateRootCalculator;
-
             var activations = _config.ResolveActivations();
-            var engine = new BlockExecutor(
-                stateStore,
-                blockStore,
+            var core = ExecutionStackFactory.BuildExecutor(
+                stateStore, blockStore, _trieNodeStore, _trieNodeStore, uncleStore,
                 activations,
                 chainConfigFactory: _ => config,
                 hardforkConfigFactory: config.ConfigForFork,
-                stateRootCalculator: stateRootCalc,
-                rewardPolicy: config.RewardPolicy ?? NoRewardPolicy.Instance,
-                trieNodeStore: _trieNodeStore);
+                options: new ExecutionStackOptions
+                {
+                    RewardPolicy = config.RewardPolicy ?? NoRewardPolicy.Instance,
+                    StateRootCalculatorFactory = config.CreateIncrementalStateRootCalculatorForStateTree,
+                    TransactionVerifier = txVerifier
+                });
+            StateRootCalculator = core.Calculator;
+            var stateRootCalc = core.Calculator;
+            var engine = core.Executor;
             _engine = engine;
 
             // EIP-7928 / AMS-7928-06. DevChain is deliberately Amsterdam-capable -- the fork is
@@ -205,35 +222,13 @@ namespace Nethereum.DevChain
             // DevChain pins a fork in config, so genesis is where they have to
             // come from; without them BLOCKHASH at Prague+ reads an empty
             // history contract and silently answers zero.
-            await SystemContractPredeploys.ApplyGenesisAllocationAsync(
-                _stateStore, _config.PinnedFork);
+            if (_config.PredeploySystemContracts)
+                await SystemContractPredeploys.ApplyGenesisAllocationAsync(
+                    _stateStore, _config.PinnedFork);
 
             var stateRoot = await StateRootCalculator.ComputeStateRootAsync();
 
-            var genesisHeader = new BlockHeader
-            {
-                ParentHash = new byte[32],
-                UnclesHash = EMPTY_LIST_HASH,
-                Coinbase = _config.Coinbase,
-                StateRoot = stateRoot,
-                TransactionsHash = DefaultValues.EMPTY_TRIE_HASH,
-                ReceiptHash = DefaultValues.EMPTY_TRIE_HASH,
-                LogsBloom = new byte[256],
-                Difficulty = _config.GenesisDifficulty ?? 0,
-                BlockNumber = 0,
-                GasLimit = (long)_config.BlockGasLimit,
-                GasUsed = 0,
-                Timestamp = _config.GenesisTimestamp,
-                ExtraData = _config.GenesisExtraData ?? new byte[0],
-                MixHash = _config.GenesisMixHash ?? new byte[32],
-                Nonce = _config.GenesisNonce ?? new byte[8],
-                BaseFee = _config.BaseFee,
-                ExcessBlobGas = _config.GenesisExcessBlobGas,
-                BlobGasUsed = _config.GenesisBlobGasUsed,
-                SlotNumber = (ulong?)_config.GenesisSlotNumber
-            };
-
-            GenesisHeaderFields.Apply(genesisHeader, _config.PinnedFork);
+            var genesisHeader = GenesisHeaderBuilder.Build(_config, _config.PinnedFork, stateRoot);
 
             var genesisHash = CoreChain.BlockHashCalculator.ForFork(genesisHeader, _config.PinnedFork);
             await _blockStore.SaveAsync(genesisHeader, genesisHash);
@@ -295,6 +290,13 @@ namespace Nethereum.DevChain
             }
         }
 
+        private async Task<long> NextBlockTimestampAsync()
+        {
+            var clock = DateTime.UtcNow.ToUnixTimestamp() + _config.TimeOffset;
+            var parent = await _blockStore.GetLatestAsync();
+            return parent == null ? clock : Math.Max(clock, parent.Timestamp + 1);
+        }
+
         private async Task<byte[]> MineBlockInternalAsync(byte[] parentBeaconBlockRoot)
         {
             List<ISignedTransaction> transactions;
@@ -308,7 +310,7 @@ namespace Nethereum.DevChain
 
             var blockContext = _pendingBlockContext;
             var overrides = _config.ConsumeNextBlockOverrides();
-            var timestamp = overrides.Timestamp ?? (DateTime.UtcNow.ToUnixTimestamp() + _config.TimeOffset);
+            var timestamp = overrides.Timestamp ?? await NextBlockTimestampAsync();
             var baseFee = overrides.BaseFee ?? _config.BaseFee;
             var prevRandao = overrides.PrevRandao ?? blockContext.PrevRandao;
             var coinbase = overrides.Coinbase ?? _config.Coinbase;
@@ -341,6 +343,51 @@ namespace Nethereum.DevChain
 
             var result = await _blockProducer.ProduceBlockAsync(transactions, options);
 
+            await RecordProducedBlockAsync(result);
+
+            return result.BlockHash;
+        }
+
+        public async Task<BlockProductionResult> CommitBlockAsync(
+            IReadOnlyList<ISignedTransaction> transactions, bool fromMempool, BlockProductionOptions options)
+        {
+            await _mineLock.WaitAsync();
+            try
+            {
+                options.SlotNumber ??= CarriesAmsterdamHeaderFieldsAt((long)_pendingBlockContext.BlockNumber, (ulong)options.Timestamp)
+                    ? (ulong)_pendingBlockContext.BlockNumber : (ulong?)null;
+                options.CaptureWitness = CaptureWitness;
+                var result = await _blockProducer.ProduceBlockAsync(transactions.ToList(), options);
+                if (fromMempool)
+                {
+                    lock (_pendingLock)
+                    {
+                        _pendingTransactionsList = new List<ISignedTransaction>();
+                        _pendingHashes = new HashSet<string>();
+                        _pendingNonces = new Dictionary<string, BigInteger>(StringComparer.OrdinalIgnoreCase);
+                    }
+                }
+                else
+                {
+                    var included = new HashSet<string>(result.IncludedTransactions.Select(t => t.Hash.ToHex(true)));
+                    lock (_pendingLock)
+                    {
+                        _pendingTransactionsList = _pendingTransactionsList.Where(t => !included.Contains(t.Hash.ToHex(true))).ToList();
+                        _pendingHashes = new HashSet<string>(_pendingHashes.Where(h => !included.Contains(h)));
+                    }
+                }
+                await RecordProducedBlockAsync(result);
+                return result;
+            }
+            finally
+            {
+                _mineLock.Release();
+            }
+        }
+
+        private async Task RecordProducedBlockAsync(BlockProductionResult result)
+        {
+
             if (_lastExecutionResults.Count > MaxExecutionResultsCache)
             {
                 var toRemove = _lastExecutionResults.Keys.Take(_lastExecutionResults.Count - MaxExecutionResultsCache / 2).ToList();
@@ -367,11 +414,23 @@ namespace Nethereum.DevChain
                 };
             }
 
+            foreach (var dropped in result.DroppedTransactions)
+            {
+                _lastExecutionResults[dropped.Transaction.Hash.ToHex(true)] = new TransactionExecutionResult
+                {
+                    Transaction = dropped.Transaction,
+                    TransactionHash = dropped.Transaction.Hash,
+                    Success = false,
+                    RevertReason = dropped.Reason
+                };
+            }
+
             LastBlockProductionResult = result;
+            foreach (var deferred in result.DeferredTransactions)
+                AddPendingTransaction(deferred);
             await InitializePendingBlockAsync();
 
-            return result.BlockHash;
-        } // end MineBlockInternalAsync
+        }
 
         public BlockProductionResult LastBlockProductionResult { get; private set; }
 

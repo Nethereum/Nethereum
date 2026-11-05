@@ -9,7 +9,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.MainnetChain.Bootstrap
 {
-    public sealed class LightClientCanonicalSource : ICanonicalStateRootSource
+    public sealed class TrustedHeaderCanonicalSource : ICanonicalStateRootSource
     {
         private readonly ITrustedHeaderProvider _provider;
         private readonly bool _useOptimistic;
@@ -17,14 +17,14 @@ namespace Nethereum.MainnetChain.Bootstrap
         private long _lastSuccessfulTipUnixTicks;
         private long _lastReportedTipBlockSigned;
 
-        public LightClientCanonicalSource(ITrustedHeaderProvider provider, bool useOptimistic = false, ILogger logger = null)
+        public TrustedHeaderCanonicalSource(ITrustedHeaderProvider provider, bool useOptimistic = false, ILogger logger = null)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _useOptimistic = useOptimistic;
             _logger = logger ?? NullLogger.Instance;
         }
 
-        public string Name => _useOptimistic ? "LightClient(optimistic)" : "LightClient(finalized)";
+        public string Name => _provider.Name + (_useOptimistic ? "(optimistic)" : "(finalized)");
 
         public DateTimeOffset LastSuccessfulTipAt
         {

@@ -42,7 +42,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
                     var filteredLog = FilteredLog.FromLog(log, blockHash, blockNumber, txHash, txIndex, i);
                     var logData = SerializeFilteredLog(filteredLog);
 
-                    using var cmd = _manager.Connection.CreateCommand();
+                    using var cmd = _manager.CreateCommand();
                     cmd.CommandText = @"INSERT INTO logs (log_data, address, block_hash, block_number, tx_hash, tx_index, log_index)
                                         VALUES (@logData, @address, @blockHash, @blockNumber, @txHash, @txIndex, @logIndex)";
                     cmd.Parameters.AddWithValue("@logData", logData);
@@ -80,7 +80,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             if (bloom == null || bloom.Length != 256) return Task.CompletedTask;
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "INSERT OR REPLACE INTO block_blooms (block_number, bloom) VALUES (@num, @bloom)";
             cmd.Parameters.AddWithValue("@num", (long)blockNumber);
             cmd.Parameters.AddWithValue("@bloom", bloom);
@@ -131,7 +131,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             sb.Append(" ORDER BY block_number, tx_index, log_index");
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sb.ToString();
             foreach (var p in parameters) cmd.Parameters.Add(p);
 
@@ -154,7 +154,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new List<FilteredLog>();
             if (txHash == null) return Task.FromResult(result);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT log_data FROM logs WHERE tx_hash = @hash ORDER BY log_index";
             cmd.Parameters.AddWithValue("@hash", txHash.ToHex());
 
@@ -174,7 +174,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
             var result = new List<FilteredLog>();
             if (blockHash == null) return Task.FromResult(result);
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT log_data FROM logs WHERE block_hash = @hash ORDER BY tx_index, log_index";
             cmd.Parameters.AddWithValue("@hash", blockHash.ToHex());
 
@@ -193,7 +193,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
         {
             var result = new List<FilteredLog>();
 
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = "SELECT log_data FROM logs WHERE block_number = @num ORDER BY tx_index, log_index";
             cmd.Parameters.AddWithValue("@num", (long)blockNumber);
 
@@ -215,14 +215,14 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
             try
             {
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM logs WHERE block_number = @num";
                     cmd.Parameters.AddWithValue("@num", (long)blockNumber);
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = _manager.Connection.CreateCommand())
+                using (var cmd = _manager.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM block_blooms WHERE block_number = @num";
                     cmd.Parameters.AddWithValue("@num", (long)blockNumber);
@@ -245,7 +245,7 @@ namespace Nethereum.DevChain.Storage.Sqlite
 
         private void ExecuteSql(string sql)
         {
-            using var cmd = _manager.Connection.CreateCommand();
+            using var cmd = _manager.CreateCommand();
             cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nethereum.ChainNode.Hosting.Configuration;
@@ -9,7 +10,6 @@ using Nethereum.CoreChain.RocksDB;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Sync;
 using Nethereum.CoreChain.Validation;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.DevP2P.Sync;
 using Nethereum.DevP2P.Sync.Metrics;
 using Nethereum.EVM;
@@ -37,13 +37,39 @@ namespace Nethereum.MainnetChain.Hosting
         private readonly MainnetChainNodeAccessor _nodeAccessor;
         private readonly SnapSyncMetrics? _metrics;
         private readonly HeaderFollowService? _headerFollow;
-        private readonly IHostApplicationLifetime? _lifetime;
+        private readonly TipBandBodyFollowService? _tipBand;
+        private readonly AsyncGate? _writeGate;
         private FollowerRunResult? _lastResult;
+        private volatile InvalidOperationException? _storeFatal;
+
+        private static readonly TimeSpan StoreFaultPollInterval = TimeSpan.FromSeconds(5);
 
         public const string RestoreRequestFileName = BootRecoveryGate.RestoreRequestFileName;
 
         private readonly BootRecoveryGate _recoveryGate;
 
+        [Obsolete("The host application lifetime is no longer used.")]
+        public MainnetChainHostedService(
+            MainnetChainNodeFactory nodeFactory,
+            IChainStoreBundle bundle,
+            IBlockSource source,
+            IValidationPolicy policy,
+            MainnetChainServerConfig config,
+            ILogger<MainnetChainHostedService> logger,
+            MainnetChainNodeAccessor nodeAccessor,
+            ICanonicalStateRootSource? canonical,
+            IPeerPool? pool,
+            IFetchRequestScheduler? scheduler,
+            SnapSyncMetrics? metrics,
+            HeaderFollowService? headerFollow,
+            IHostApplicationLifetime? lifetime,
+            ITransactionSubmissionService? txSubmission = null,
+            ChainNodeConfig? mappedConfig = null)
+            : this(nodeFactory, bundle, source, policy, config, logger, nodeAccessor, canonical, pool, scheduler, metrics, headerFollow, txSubmission, mappedConfig)
+        {
+        }
+
+        [ActivatorUtilitiesConstructor]
         public MainnetChainHostedService(
             MainnetChainNodeFactory nodeFactory,
             IChainStoreBundle bundle,
@@ -57,9 +83,10 @@ namespace Nethereum.MainnetChain.Hosting
             IFetchRequestScheduler? scheduler = null,
             SnapSyncMetrics? metrics = null,
             HeaderFollowService? headerFollow = null,
-            IHostApplicationLifetime? lifetime = null,
             ITransactionSubmissionService? txSubmission = null,
-            ChainNodeConfig? mappedConfig = null)
+            ChainNodeConfig? mappedConfig = null,
+            TipBandBodyFollowService? tipBand = null,
+            AsyncGate? writeGate = null)
         {
             _nodeFactory = nodeFactory ?? throw new ArgumentNullException(nameof(nodeFactory));
             _bundle = bundle ?? throw new ArgumentNullException(nameof(bundle));
@@ -74,9 +101,10 @@ namespace Nethereum.MainnetChain.Hosting
             _scheduler = scheduler;
             _metrics = metrics;
             _headerFollow = headerFollow;
-            _lifetime = lifetime;
             _txSubmission = txSubmission;
             _mappedConfig = mappedConfig;
+            _tipBand = tipBand;
+            _writeGate = writeGate;
         }
 
         public FollowerRunResult? LastResult => _lastResult;
@@ -91,193 +119,135 @@ namespace Nethereum.MainnetChain.Hosting
 
             try
             {
-                if (_config.VerifyFlat)
-                {
-                    await RunVerifyFlatAsync(stoppingToken).ConfigureAwait(false);
-                    _lifetime?.StopApplication();
-                    return;
-                }
-
-                await WipeSnapBootstrapStateIfRequestedAsync(stoppingToken).ConfigureAwait(false);
-
-                await RunCompactAllIfRequestedAsync(stoppingToken).ConfigureAwait(false);
-
-                await RunRebuildStateFromFlatIfRequestedAsync(stoppingToken).ConfigureAwait(false);
-
-                await CompactStateAtBootIfPressuredAsync(stoppingToken).ConfigureAwait(false);
-
-                Task headerFollowTask = LaunchHeaderFollowJob(stoppingToken);
-
-                var node = BuildFollowerNode();
-                _nodeAccessor.Set(node);
-
-                var snapResult = await SnapBootstrapInvoker.RunIfConfiguredAsync(
-                    _bundle, _pool, _scheduler, _config, _logger, stoppingToken, _canonical, _metrics,
-                    headerFollow: _headerFollow).ConfigureAwait(false);
-                if (!snapResult.Ran && !string.IsNullOrEmpty(snapResult.SkipReason))
-                {
-                    _logger.LogInformation("Snap-bootstrap: not run — {Reason}.", snapResult.SkipReason);
-                }
-
-                var historyBackfillTask = snapResult.HistoryBackfill ?? Task.CompletedTask;
-                if (!historyBackfillTask.IsCompleted)
-                    _logger.LogInformation("History backfill: draining pre-pivot archive in background (cursor={Cursor})",
-                        _bundle.Metadata.GetLastFetchedBody());
-
-                if (_headerFollow == null)
-                {
-                    if (!historyBackfillTask.IsCompleted)
-                    {
-                        _logger.LogInformation("History backfill: draining inline (legacy mode has no background archive owner)");
-                        await historyBackfillTask.ConfigureAwait(false);
-                    }
-                    var lastBlock = _bundle.Metadata.GetLastBlock();
-                    var bodyCursor = _bundle.Metadata.GetLastFetchedBody();
-                    if (lastBlock > 0 && bodyCursor < lastBlock)
-                        _logger.LogWarning(
-                            "Pre-pivot archive incomplete (bodies at {Cursor} of {Pivot}) and legacy mode has no background owner — " +
-                            "bodies in that range stay missing until a body follower runs or the node is restarted with the Headers job enabled.",
-                            bodyCursor, lastBlock);
-                }
-
-                Task tipBandFollowTask = LaunchTipBandBodyFollow(stoppingToken);
-
-                Task receiptBackfillTask = LaunchReceiptBackfillScrub(stoppingToken);
-
-                Task historyBackfillFollowerTask = LaunchHistoryBackfill(stoppingToken);
-
-                LaunchFreezeIndexing();
-
-                await RunSupervisedFollowerLoopAsync(node, stoppingToken).ConfigureAwait(false);
-
-                await DrainBackgroundJobsAsync(
-                    historyBackfillTask, snapResult, receiptBackfillTask, tipBandFollowTask, headerFollowTask,
-                    historyBackfillFollowerTask, stoppingToken)
-                    .ConfigureAwait(false);
+                await RunFollowerStackAsync(stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("MainnetChain follower cancelled.");
             }
-        }
-
-        private async Task RunVerifyFlatAsync(CancellationToken stoppingToken)
-        {
-            var headBlock = _bundle.Metadata.GetLastBlock();
-            if (headBlock == 0)
+            catch (Exception) when (_storeFatal != null)
             {
-                _logger.LogWarning("VerifyFlat set but no committed state (LastBlock=0) — nothing to verify; stopping.");
-                return;
+            }
+            catch (Exception ex)
+            {
+                ReportFatal(ex);
+                throw;
             }
 
-            var headHeader = await _bundle.Blocks.GetByNumberAsync(headBlock).ConfigureAwait(false);
-            if (headHeader?.StateRoot == null || headHeader.StateRoot.Length != 32)
-                throw new InvalidOperationException(
-                    $"VerifyFlat: committed head {headBlock} has no header state root in the store — cannot verify. Aborting.");
-            var expectedRoot = headHeader.StateRoot;
-
-            if (!_bundle.StateTrieNodes.ContainsKey(expectedRoot))
-                throw new InvalidOperationException(
-                    $"VerifyFlat: the committed head {headBlock} account root 0x{expectedRoot.ToHex()} " +
-                    "is not present in the trie store — nothing to verify flat against. Refusing.");
-
-            if (_bundle is not IFlatStateReconciler reconciler)
-                throw new InvalidOperationException(
-                    "VerifyFlat: the store does not expose IFlatStateReconciler — cannot verify flat against trie.");
-
-            var sampleCap = _config.VerifyFlatSampleAccountsPerShard;
-            _logger.LogWarning(
-                "VerifyFlat set — write-free verify of FLAT against the canonical TRIE at committed head {Head} " +
-                "(0x{Root}); sample={Sample}. One-shot diagnostic; the host stops after this pass.",
-                headBlock, expectedRoot.ToHex(), sampleCap > 0 ? sampleCap.ToString() : "full");
-            var verifySw = System.Diagnostics.Stopwatch.StartNew();
-            var verify = await reconciler.VerifyFlatStateAsync(
-                    expectedRoot,
-                    msg => _logger.LogInformation("state.verify {Progress} elapsed={Elapsed}", msg, verifySw.Elapsed),
-                    stoppingToken,
-                    sampleCap)
-                .ConfigureAwait(false);
-            _logger.LogWarning(
-                "VerifyFlat done in {Elapsed} at head {Head} (0x{Root}): " +
-                "accounts scanned={AccountsScanned} patched={AccountsPatched} added={AccountsAdded} ghosts={AccountGhosts}; " +
-                "slots scanned={SlotsScanned} patched={SlotsPatched} added={SlotsAdded} ghosts={SlotGhosts}; " +
-                "total={Total}; sample={Sample}.",
-                verifySw.Elapsed, headBlock, expectedRoot.ToHex(),
-                verify.AccountsScanned, verify.AccountsPatched, verify.AccountsAdded, verify.GhostAccountsDeleted,
-                verify.SlotsScanned, verify.SlotsPatched, verify.SlotsAdded, verify.GhostSlotsDeleted,
-                verify.TotalRepairs, sampleCap > 0 ? sampleCap.ToString() : "full");
+            if (_storeFatal != null) throw _storeFatal;
         }
 
-        private async Task RunCompactAllIfRequestedAsync(CancellationToken stoppingToken)
+        private async Task RunFollowerStackAsync(CancellationToken stoppingToken)
         {
-            if (_config.CompactAll && _bundle is IStateCompaction fullCompaction)
+            await CompactStateAtBootIfPressuredAsync(stoppingToken).ConfigureAwait(false);
+
+            using var jobsCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+            using var watchCts = CancellationTokenSource.CreateLinkedTokenSource(jobsCts.Token);
+            var jobs = new BackgroundJobs();
+            var followerReturned = false;
+            FollowerChainNode? node = null;
+            try
             {
-                _logger.LogWarning("CompactAll set — running a full store compaction before sync; this can take a while.");
-                await fullCompaction.CompactAllAsync(
-                    msg => _logger.LogInformation("compact.all {Progress}", msg), stoppingToken).ConfigureAwait(false);
-                _logger.LogWarning("CompactAll complete.");
+                jobs.HeaderFollow = LaunchHeaderFollowJob(jobsCts.Token);
+                jobs.StoreFaultWatch = LaunchStoreFaultWatch(jobsCts, watchCts.Token);
+
+                node = BuildFollowerNode();
+                _nodeAccessor.Set(node);
+
+                await BootstrapAndLaunchJobsAsync(jobs, jobsCts.Token).ConfigureAwait(false);
+
+                await RunSupervisedFollowerLoopAsync(node, jobsCts.Token).ConfigureAwait(false);
+                followerReturned = true;
+            }
+            finally
+            {
+                (_bundle as IBackfillPauseControl)?.SetYieldToExecution(false);
+                if (!followerReturned) jobsCts.Cancel();
+                watchCts.Cancel();
+                await DrainBackgroundJobsAsync(jobs, jobsCts.Token).ConfigureAwait(false);
+                node?.ReleaseExecutionResources();
             }
         }
 
-        private async Task RunRebuildStateFromFlatIfRequestedAsync(CancellationToken stoppingToken)
+        private async Task BootstrapAndLaunchJobsAsync(BackgroundJobs jobs, CancellationToken jobsToken)
         {
-            if (_config.RebuildStateFromFlat)
+            if (_config.EngineOnly) return;
+
+            var snapResult = await SnapBootstrapInvoker.RunIfConfiguredAsync(
+                _bundle, _pool, _scheduler, _config, _logger, jobsToken, _canonical, _metrics,
+                headerFollow: _headerFollow).ConfigureAwait(false);
+            if (!snapResult.Ran && !string.IsNullOrEmpty(snapResult.SkipReason))
             {
-                var headBlock = _bundle.Metadata.GetLastBlock();
-                if (headBlock == 0)
-                {
-                    _logger.LogWarning("RebuildStateFromFlat set but no committed state (LastBlock=0) — nothing to repair; skipping.");
-                }
-                else
-                {
-                    var headHeader = await _bundle.Blocks.GetByNumberAsync(headBlock).ConfigureAwait(false);
-                    if (headHeader?.StateRoot == null || headHeader.StateRoot.Length != 32)
-                        throw new InvalidOperationException(
-                            $"RebuildStateFromFlat: committed head {headBlock} has no header state root in the store — cannot verify the repair. Aborting.");
-                    var expectedRoot = headHeader.StateRoot;
-
-                    if (!_bundle.StateTrieNodes.ContainsKey(expectedRoot))
-                        throw new InvalidOperationException(
-                            $"RebuildStateFromFlat: the committed head {headBlock} account root 0x{expectedRoot.ToHex()} " +
-                            "is not present in the trie store — nothing to reconcile flat against. Did you also set " +
-                            "WipeState? Run a state resync instead. Refusing.");
-
-                    if (_bundle is not IFlatStateReconciler reconciler)
-                        throw new InvalidOperationException(
-                            "RebuildStateFromFlat: the store does not expose IFlatStateReconciler — cannot reconcile flat to trie.");
-
-                    _logger.LogWarning(
-                        "RebuildStateFromFlat set — reconciling FLAT to the canonical TRIE at committed head {Head} " +
-                        "(0x{Root}); the trie is the source of truth. One-shot full-state pass; clear the flag after.",
-                        headBlock, expectedRoot.ToHex());
-                    var reconcileSw = System.Diagnostics.Stopwatch.StartNew();
-                    var reconcile = await reconciler.ReconcileFlatStateAsync(
-                            expectedRoot,
-                            msg => _logger.LogInformation("state.reconcile {Progress} elapsed={Elapsed}", msg, reconcileSw.Elapsed),
-                            stoppingToken)
-                        .ConfigureAwait(false);
-                    _logger.LogWarning(
-                        "RebuildStateFromFlat reconcile done in {Elapsed}: accounts patched={AP} added={AA} ghosts={AG}, " +
-                        "slots patched={SP} added={SA} ghosts={SG}.",
-                        reconcileSw.Elapsed, reconcile.AccountsPatched, reconcile.AccountsAdded, reconcile.GhostAccountsDeleted,
-                        reconcile.SlotsPatched, reconcile.SlotsAdded, reconcile.GhostSlotsDeleted);
-
-                    var verifySw = System.Diagnostics.Stopwatch.StartNew();
-                    var verify = await reconciler.VerifyFlatStateAsync(
-                            expectedRoot,
-                            msg => _logger.LogInformation("state.reconcile.verify {Progress} elapsed={Elapsed}", msg, verifySw.Elapsed),
-                            stoppingToken)
-                        .ConfigureAwait(false);
-                    if (verify.TotalRepairs != 0)
-                        throw new InvalidOperationException(
-                            $"RebuildStateFromFlat: post-reconcile verify still found {verify.TotalRepairs} flat/trie diffs at head " +
-                            $"{headBlock} (0x{expectedRoot.ToHex()}) — refusing to go live.");
-                    _logger.LogWarning(
-                        "RebuildStateFromFlat VERIFIED in {Elapsed}: flat == trie at head {Head} (0x{Root}), zero diffs. " +
-                        "Clear the flag before the next restart.",
-                        verifySw.Elapsed, headBlock, expectedRoot.ToHex());
-                }
+                _logger.LogInformation("Snap-bootstrap: not run — {Reason}.", snapResult.SkipReason);
             }
+
+            jobs.SnapHistory = snapResult.HistoryBackfill ?? Task.CompletedTask;
+            jobs.StateCompaction = snapResult.StateCompaction ?? Task.CompletedTask;
+            if (!jobs.SnapHistory.IsCompleted)
+                _logger.LogInformation("History backfill: draining pre-pivot archive in background (cursor={Cursor})",
+                    _bundle.Metadata.GetLastFetchedBody());
+
+            if (_headerFollow == null)
+                await DrainHistoryInlineWithoutHeaderFollowAsync(jobs.SnapHistory).ConfigureAwait(false);
+            else
+                (_bundle as IBackfillPauseControl)?.SetYieldToExecution(true);
+
+            jobs.TipBand = LaunchTipBandBodyFollow(jobsToken);
+            jobs.ReceiptScrub = LaunchReceiptBackfillScrub(jobsToken);
+            jobs.HistoryFollower = LaunchHistoryBackfill(jobsToken);
+            LaunchFreezeIndexing();
+        }
+
+        private async Task DrainHistoryInlineWithoutHeaderFollowAsync(Task historyBackfillTask)
+        {
+            if (!historyBackfillTask.IsCompleted)
+            {
+                _logger.LogInformation("History backfill: draining inline (legacy mode has no background archive owner)");
+                await historyBackfillTask.ConfigureAwait(false);
+            }
+            var lastBlock = _bundle.Metadata.GetLastBlock();
+            var bodyCursor = _bundle.Metadata.GetLastFetchedBody();
+            if (lastBlock > 0 && bodyCursor < lastBlock)
+                _logger.LogWarning(
+                    "Pre-pivot archive incomplete (bodies at {Cursor} of {Pivot}) and legacy mode has no background owner — " +
+                    "bodies in that range stay missing until a body follower runs or the node is restarted with the Headers job enabled.",
+                    bodyCursor, lastBlock);
+        }
+
+        private void ReportFatal(Exception ex)
+        {
+            try
+            {
+                Environment.ExitCode = 1;
+                string lastBlock;
+                try { lastBlock = _bundle.Metadata.GetLastBlock().ToString(); }
+                catch { lastBlock = "unknown"; }
+                _logger.LogCritical(ex,
+                    "follower.fatal MainnetChain follower stopped by an unhandled {ExceptionType}: {Message} — the host stops and the process exits with code 1 so the supervisor restarts it (last executed block {LastBlock})",
+                    ex.GetType().Name, ex.Message, lastBlock);
+            }
+            catch
+            {
+            }
+        }
+
+        private sealed class BackgroundJobs
+        {
+            public Task HeaderFollow = Task.CompletedTask;
+            public Task SnapHistory = Task.CompletedTask;
+            public Task StateCompaction = Task.CompletedTask;
+            public Task TipBand = Task.CompletedTask;
+            public Task ReceiptScrub = Task.CompletedTask;
+            public Task HistoryFollower = Task.CompletedTask;
+            public Task StoreFaultWatch = Task.CompletedTask;
+        }
+
+        private FollowerOptions FollowerOptionsFor(EffectiveStartBlockResolver.EffectiveBounds bounds)
+        {
+            var options = EffectiveStartBlockResolver.BuildOptions(bounds, _config, _writeGate);
+            return _headerFollow != null || _config.EngineOnly
+                ? options with { ExternalHeaderFollow = true }
+                : options;
         }
 
         private FollowerChainNode BuildFollowerNode()
@@ -286,9 +256,7 @@ namespace Nethereum.MainnetChain.Hosting
                 _bundle.Metadata.GetSnapSyncState(),
                 _bundle.Metadata.GetLastBlock(),
                 _config);
-            var options = EffectiveStartBlockResolver.BuildOptions(bounds, _config);
-            if (_headerFollow != null)
-                options = options with { ExternalHeaderFollow = true };
+            var options = FollowerOptionsFor(bounds);
             var node = _nodeFactory.Build(_bundle, _source, _policy, options, _canonical);
             var rpcCaps = ResolveRpcCaps(_mappedConfig, _config);
             node.ChainConfig.RpcMaxLogBlockRange = rpcCaps.MaxLogBlockRange;
@@ -336,9 +304,7 @@ namespace Nethereum.MainnetChain.Hosting
                         bounds.EndBlock?.ToString() ?? "<unbounded>");
                 }
 
-                var options = EffectiveStartBlockResolver.BuildOptions(bounds, _config);
-                if (_headerFollow != null)
-                    options = options with { ExternalHeaderFollow = true };
+                var options = FollowerOptionsFor(bounds);
 
                 _lastResult = await node.RunAsync(options, stoppingToken, _logger).ConfigureAwait(false);
                 _logger.LogInformation(
@@ -420,16 +386,6 @@ namespace Nethereum.MainnetChain.Hosting
             }
         }
 
-        private async Task WipeSnapBootstrapStateIfRequestedAsync(CancellationToken stoppingToken)
-        {
-            if (_config.WipeState || string.Equals(Environment.GetEnvironmentVariable("NETHEREUM_WIPE_SNAP_STATE"), "1", StringComparison.Ordinal))
-            {
-                _logger.LogWarning("WipeState set — wiping state / trie / state-history CFs and SnapSyncState metadata; receipts, logs and Phase 1 cursors are preserved.");
-                await _bundle.ResetSnapBootstrapStateAsync(stoppingToken).ConfigureAwait(false);
-                _logger.LogWarning("Snap-bootstrap state wipe complete; Phase 1 archive untouched. Snap bootstrap will re-stream from a fresh pivot.");
-            }
-        }
-
         private async Task CompactStateAtBootIfPressuredAsync(CancellationToken stoppingToken)
         {
             if (_bundle is IStateCompaction bootCompaction
@@ -480,12 +436,33 @@ namespace Nethereum.MainnetChain.Hosting
             return headerFollowTask;
         }
 
+        private Task LaunchStoreFaultWatch(CancellationTokenSource jobsCts, CancellationToken token)
+        {
+            if (_bundle is not IStoreFaultSource faultSource) return Task.CompletedTask;
+            return Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    var fault = faultSource.FatalStoreFault;
+                    if (fault != null)
+                    {
+                        _storeFatal = new InvalidOperationException($"store.fatal {fault}");
+                        ReportFatal(_storeFatal);
+                        jobsCts.Cancel();
+                        return;
+                    }
+                    try { await Task.Delay(StoreFaultPollInterval, token).ConfigureAwait(false); }
+                    catch (OperationCanceledException) { return; }
+                }
+            }, token);
+        }
+
         private Task LaunchTipBandBodyFollow(CancellationToken stoppingToken)
         {
             Task tipBandFollowTask = Task.CompletedTask;
             if (_headerFollow != null && _scheduler != null && _pool != null)
             {
-                var tipBandFollow = new TipBandBodyFollowService(
+                var tipBandFollow = _tipBand ?? new TipBandBodyFollowService(
                     _scheduler, _pool, _bundle, MainnetChainActivations.Instance, _logger);
                 tipBandFollowTask = Task.Run(
                     () => tipBandFollow.RunAsync(stoppingToken), stoppingToken);
@@ -498,11 +475,12 @@ namespace Nethereum.MainnetChain.Hosting
         private Task LaunchReceiptBackfillScrub(CancellationToken stoppingToken)
         {
             Task receiptBackfillTask = Task.CompletedTask;
-            if (_config.ReceiptBackfill && _scheduler != null)
+            if (_config.ReceiptBackfill && _scheduler != null && _pool != null)
             {
                 var backfill = new ReceiptBackfillService(
                     _bundle,
                     _scheduler,
+                    _pool,
                     logger: _logger);
                 receiptBackfillTask = Task.Run(
                     () => backfill.RunAsync(stoppingToken), stoppingToken);
@@ -568,33 +546,29 @@ namespace Nethereum.MainnetChain.Hosting
             }, stoppingToken);
         }
 
-        private async Task DrainBackgroundJobsAsync(
-            Task historyBackfillTask,
-            SnapBootstrapper.Result snapResult,
-            Task receiptBackfillTask,
-            Task tipBandFollowTask,
-            Task headerFollowTask,
-            Task historyBackfillFollowerTask,
-            CancellationToken stoppingToken)
+        private async Task DrainBackgroundJobsAsync(BackgroundJobs jobs, CancellationToken jobsToken)
         {
-            try { await historyBackfillTask.ConfigureAwait(false); }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            try { await jobs.SnapHistory.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
             catch (Exception ex) { _logger.LogWarning(ex, "History backfill exited with error"); }
-            try { await historyBackfillFollowerTask.ConfigureAwait(false); }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            try { await jobs.HistoryFollower.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
             catch (Exception ex) { _logger.LogWarning(ex, "History backfill (after-state-sync) exited with error"); }
-            try { await (snapResult.StateCompaction ?? Task.CompletedTask).ConfigureAwait(false); }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            try { await jobs.StateCompaction.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
             catch (Exception ex) { _logger.LogWarning(ex, "Background state compaction exited with error"); }
-            try { await receiptBackfillTask.ConfigureAwait(false); }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            try { await jobs.ReceiptScrub.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
             catch (Exception ex) { _logger.LogWarning(ex, "Receipt-backfill scrub exited with error"); }
-            try { await tipBandFollowTask.ConfigureAwait(false); }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            try { await jobs.TipBand.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
             catch (Exception ex) { _logger.LogWarning(ex, "Tip-band body follow exited with error"); }
-            try { await headerFollowTask.ConfigureAwait(false); }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            try { await jobs.HeaderFollow.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
             catch (Exception ex) { _logger.LogWarning(ex, "Headers job exited with error"); }
+            try { await jobs.StoreFaultWatch.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (jobsToken.IsCancellationRequested) { }
+            catch (Exception ex) { _logger.LogWarning(ex, "Store fault watch exited with error"); }
         }
     }
 }
