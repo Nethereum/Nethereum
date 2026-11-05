@@ -7,7 +7,7 @@
     <TargetFrameworks>$(UnityFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Unity.Metamask</AssemblyName>
     <PackageId>Nethereum.Unity.Metamask</PackageId>
-    <PackageTags>Netherum;Unity3d;Unity;Metamask;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageTags>Nethereum;Unity3d;Unity;Metamask;Ethereum;Blockchain;Crypto 2.0</PackageTags>
 	  <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>

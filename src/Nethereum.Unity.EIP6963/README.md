@@ -243,6 +243,10 @@ EIP6963_InitEIP6963: function () {
             window.dispatchEvent(new Event("eip6963:requestProvider"));
         },
 
+        isAvailable: function () {
+            return this.ethereumProviders.length > 0;
+        },
+
         getAvailableWallets: function () {
             return this.ethereumProviders.map(provider => ({
                 name: provider.info.name,
@@ -287,7 +291,7 @@ EIP6963_GetAvailableWallets: function () {
 }
 ```
 
-**From:** `src/Nethereum.Unity.EIP6963/NethereumEIP6963.jslib:115`
+**From:** `src/Nethereum.Unity.EIP6963/NethereumEIP6963.jslib:119`
 
 **Select Wallet:**
 
@@ -298,7 +302,7 @@ EIP6963_SelectWallet: function (walletUuid) {
 }
 ```
 
-**From:** `src/Nethereum.Unity.EIP6963/NethereumEIP6963.jslib:139`
+**From:** `src/Nethereum.Unity.EIP6963/NethereumEIP6963.jslib:143`
 
 **RPC Request with Selected Wallet:**
 
@@ -342,7 +346,7 @@ EIP6963_RequestRpcClientCallback: async function (callback, message) {
 }
 ```
 
-**From:** `src/Nethereum.Unity.EIP6963/NethereumEIP6963.jslib:180`
+**From:** `src/Nethereum.Unity.EIP6963/NethereumEIP6963.jslib:184`
 
 ## Wallet Metadata Structure
 

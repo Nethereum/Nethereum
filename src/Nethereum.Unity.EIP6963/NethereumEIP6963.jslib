@@ -23,6 +23,10 @@
                 window.dispatchEvent(new Event("eip6963:requestProvider"));
             },
 
+            isAvailable: function () {
+                return this.ethereumProviders.length > 0;
+            },
+
             getAvailableWallets: function () {
                 return this.ethereumProviders.map(provider => ({
                     name: provider.info.name,

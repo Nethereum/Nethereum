@@ -7,7 +7,7 @@
     <TargetFrameworks>$(UnityFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Unity</AssemblyName>
     <PackageId>Nethereum.Unity</PackageId>
-    <PackageTags>Netherum;Unity3d;Unity;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageTags>Nethereum;Unity3d;Unity;Ethereum;Blockchain;Crypto 2.0</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
