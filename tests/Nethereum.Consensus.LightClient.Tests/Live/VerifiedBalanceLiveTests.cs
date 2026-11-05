@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.Consensus.LightClient.Tests.Live
 {
+    [Trait("Category", "LiveNetwork")]
     [Collection("LiveTests")]
     public class VerifiedBalanceLiveTests
     {

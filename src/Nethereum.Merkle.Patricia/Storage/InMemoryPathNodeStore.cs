@@ -1,30 +1,18 @@
 using System;
 using System.Collections.Generic;
 using Nethereum.Util;
-using Nethereum.Util.HashProviders;
 
 using Nethereum.Merkle.Patricia.Nodes;
+using Nethereum.Merkle.Patricia.ProofVerification;
 namespace Nethereum.Merkle.Patricia.Storage
 {
-    using ProofVerification = Nethereum.Merkle.Patricia.ProofVerification.ProofVerification;
     public class InMemoryPathNodeStore : ITrieNodeStore
     {
         private readonly Dictionary<byte[], byte[]> _storage = new Dictionary<byte[], byte[]>(new ByteArrayComparer());
-        private readonly IHashProvider _hashProvider = Sha3KeccackHashProvider.Instance;
 
         public int Count => _storage.Count;
 
-        private static byte[] Key(Node node) => Key(node.Owner, node.Path);
-
-        private static byte[] Key(byte[] owner, byte[] path)
-        {
-            path = path ?? new byte[0];
-            if (owner == null || owner.Length == 0) return path;
-            var key = new byte[owner.Length + path.Length];
-            Buffer.BlockCopy(owner, 0, key, 0, owner.Length);
-            if (path.Length > 0) Buffer.BlockCopy(path, 0, key, owner.Length, path.Length);
-            return key;
-        }
+        private static byte[] Key(Node node) => TrieTracer.Key(node.Owner, node.Path);
 
         public void Commit(TrieNodeSet nodes)
         {
@@ -38,7 +26,7 @@ namespace Nethereum.Merkle.Patricia.Storage
             foreach (var d in nodes.Deletes)
             {
                 if (d.PrevBlob != null && d.PrevBlob.Length < 32) continue;
-                _storage.Remove(Key(d.Owner, d.Path));
+                _storage.Remove(TrieTracer.Key(d.Owner, d.Path));
             }
         }
 
@@ -46,9 +34,7 @@ namespace Nethereum.Merkle.Patricia.Storage
         {
             if (reference == null) return null;
             if (!_storage.TryGetValue(Key(reference), out var blob) || blob == null) return null;
-            if (!ProofVerification.Current.TrieNode.Verify(reference.GetHash(), blob, _hashProvider))
-                throw new InvalidOperationException(
-                    "Path-keyed trie node hash mismatch: stored blob does not match the parent-referenced hash (tampered or corrupt).");
+            TrieNodeVerification.RequireAuthentic(reference, blob);
             return blob;
         }
 
@@ -58,9 +44,8 @@ namespace Nethereum.Merkle.Patricia.Storage
         public bool ContainsKey(byte[] stateRoot)
         {
             if (stateRoot == null || stateRoot.Length != 32) return false;
-            if (!_storage.TryGetValue(Key(null, new byte[0]), out var blob) || blob == null || blob.Length == 0)
-                return false;
-            return ByteUtil.AreEqual(_hashProvider.ComputeHash(blob), stateRoot);
+            return _storage.TryGetValue(TrieTracer.Key(null, null), out var blob)
+                && TrieNodeVerification.RootBlobHashesTo(blob, stateRoot);
         }
 
         public void Flush() { }

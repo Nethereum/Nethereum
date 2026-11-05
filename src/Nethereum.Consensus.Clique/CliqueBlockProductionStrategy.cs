@@ -51,12 +51,13 @@ namespace Nethereum.Consensus.Clique
 
             return new BlockProductionOptions
             {
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Timestamp = _cliqueEngine.NextBlockTimestamp(parentHeader),
                 Coinbase = vote.Target,
                 Difficulty = difficulty,
                 ExtraData = extraData,
                 BlockGasLimit = _chainConfig.BlockGasLimit,
                 BaseFee = _chainConfig.BaseFee,
+                FeeFreeBaseFee = _chainConfig.FeeFreeBaseFee,
                 ChainId = _chainConfig.ChainId,
                 Nonce = vote.Nonce,
                 ApplyConsensusSeal = SealWithThisSigner

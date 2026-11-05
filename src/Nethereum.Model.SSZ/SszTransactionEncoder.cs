@@ -387,6 +387,8 @@ namespace Nethereum.Model.SSZ
 
             var reader = new SszReader(data);
             var firstOffset = reader.ReadUInt32();
+            if (firstOffset < 4 || firstOffset > data.Length)
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
             var count = (int)firstOffset / 4;
             var offsets = new uint[count];
             offsets[0] = firstOffset;
@@ -447,11 +449,15 @@ namespace Nethereum.Model.SSZ
             selector = data[0];
             var payloadLength = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(1, 4));
             var payloadStart = 1 + 4;
+            if ((long)payloadStart + payloadLength + 4 > data.Length)
+                throw new ArgumentException("SSZ transaction payload length exceeds the record.", nameof(data));
             payload = new byte[payloadLength];
             Buffer.BlockCopy(data, payloadStart, payload, 0, (int)payloadLength);
 
             var sigLengthOffset = payloadStart + (int)payloadLength;
             var sigLength = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(sigLengthOffset, 4));
+            if ((long)sigLengthOffset + 4 + sigLength > data.Length)
+                throw new ArgumentException("SSZ transaction signature length exceeds the record.", nameof(data));
             signatureBytes = new byte[sigLength];
             if (sigLength > 0)
                 Buffer.BlockCopy(data, sigLengthOffset + 4, signatureBytes, 0, (int)sigLength);

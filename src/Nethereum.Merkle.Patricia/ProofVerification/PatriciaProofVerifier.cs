@@ -14,9 +14,9 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
             if (rootHash.AreTheSame(DefaultValues.EMPTY_TRIE_HASH)) return true;
             if (proof == null || proof.Count == 0) return false;
 
-            var proofDb = PatriciaRangeProofVerifier.BuildProofStorage(proof, Sha3KeccackHashProvider.Instance);
             try
             {
+                var proofDb = PatriciaRangeProofVerifier.BuildProofStorage(proof, Sha3KeccackHashProvider.Instance);
                 PatriciaRangeProofVerifier.ProofToPath(
                     rootHash, null, PatriciaRangeProofVerifier.KeyBytesToHex(key), proofDb, allowNonExistent: true, out value);
                 return true;

@@ -32,6 +32,7 @@ namespace Nethereum.Model.SSZ.Tests
             var original = new BlockHeader
             {
                 ParentHash = Bytes32(0x11),
+                UnclesHash = Bytes32(0x99),
                 Coinbase = "0x0000000000000000000000000000000000000042",
                 StateRoot = Bytes32(0x22),
                 TransactionsHash = Bytes32(0x33),
@@ -41,7 +42,9 @@ namespace Nethereum.Model.SSZ.Tests
                 GasUsed = 21_000,
                 Timestamp = 1_700_000_000,
                 ExtraData = new byte[] { 0xAB, 0xCD },
+                LogsBloom = new byte[256],
                 MixHash = Bytes32(0x55),
+                Nonce = new byte[8],
                 BaseFee = new EvmUInt256(7UL),
                 WithdrawalsRoot = Bytes32(0x66),
                 ParentBeaconBlockRoot = Bytes32(0x77),

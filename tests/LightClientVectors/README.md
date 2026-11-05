@@ -7,6 +7,7 @@ Light client verification requires deterministic fixtures. Use the following sou
   - `pip install -r tests/LightClientVectors/ssz/requirements.txt`
   - `pip install -e ../py-ssz` (from the repo root, so the adjacent `py-ssz` project is available as a package)
 - `ssz/consensus-spec-tests/**` – canonical SSZ fixtures copied from the sibling `consensus-spec-tests` repo (`tests/mainnet/<fork>/ssz_static`). Copy only the types we depend on (BeaconBlockHeader, ExecutionPayloadHeader, SyncCommittee, SyncAggregate, LightClientBootstrap/Update, etc.) to limit repository size.
+- `generate_py_ssz_vectors.py` is the only Python script in the repository: it generates the vectors with the independent Python reference SSZ implementation, runs offline, and its outputs are committed. Third-party suites we run (bundler-spec-tests via uv and pdm, see `ci/externals.json`) bring their own Python, which is why the CI image still installs it.
 - `proofs/` – `eth_getProof` JSON blobs captured from devnets or mainnet to drive Patricia verification.
 - `traces/` – archived execution traces (JSON) used to compare `IVerifiedEvmExecutor` vs `eth_call`.
 

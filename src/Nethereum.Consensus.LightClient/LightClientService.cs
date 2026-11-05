@@ -14,12 +14,16 @@ namespace Nethereum.Consensus.LightClient
     public class LightClientService
     {
         public static readonly byte[] DomainSyncCommittee = { 0x07, 0x00, 0x00, 0x00 };
+        public const ulong MaxRequestLightClientUpdates = 128;
+        public const long MaximumGossipClockDisparityMilliseconds = 500;
 
         private readonly ILightClientApi _apiClient;
         private readonly IBls _bls;
         private readonly LightClientConfig _config;
         private readonly ILightClientStore _store;
         private LightClientState? _state;
+        private string _staleWeakSubjectivityRoot;
+        private string _lastRefusal;
 
         public LightClientService(
             ILightClientApi apiClient,
@@ -40,32 +44,54 @@ namespace Nethereum.Consensus.LightClient
             _state = await _store.LoadAsync().ConfigureAwait(false);
             if (_state != null)
             {
-                try
-                {
-                    await UpdateAsync(cancellationToken).ConfigureAwait(false);
-                    await UpdateFinalityAsync(cancellationToken).ConfigureAwait(false);
-                    await UpdateOptimisticAsync(cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) { throw; }
-                catch
-                {
-                }
+                await ResumeStepAsync(UpdateAsync, cancellationToken).ConfigureAwait(false);
+                await ResumeStepAsync(UpdateFinalityAsync, cancellationToken).ConfigureAwait(false);
+                await ResumeStepAsync(UpdateOptimisticAsync, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
+            _state = await BootstrapStateAsync().ConfigureAwait(false);
+            await _store.SaveAsync(_state).ConfigureAwait(false);
+        }
+
+        private static async Task ResumeStepAsync(Func<CancellationToken, Task<bool>> step, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await step(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch
+            {
+            }
+        }
+
+        private async Task<LightClientState> BootstrapStateAsync()
+        {
             var bootstrapRoot = _config.WeakSubjectivityRoot;
             if (IsEmptyRoot(bootstrapRoot))
             {
-                var finalityResponse = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
-                var finalityUpdate = LightClientResponseMapper.ToDomain(finalityResponse);
-                bootstrapRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
+                bootstrapRoot = await BeaconFinalizedRootAsync().ConfigureAwait(false);
             }
+
+            return await BootstrapFromRootAsync(bootstrapRoot).ConfigureAwait(false);
+        }
+
+        private async Task<byte[]> BeaconFinalizedRootAsync()
+        {
+            var finalityResponse = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
+            var finalityUpdate = LightClientResponseMapper.ToDomain(finalityResponse);
+            return finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
+        }
+
+        private async Task<LightClientState> BootstrapFromRootAsync(byte[] bootstrapRoot)
+        {
             var blockRootHex = bootstrapRoot.ToHex(true);
             var response = await _apiClient.GetBootstrapAsync(blockRootHex).ConfigureAwait(false);
             var bootstrap = LightClientResponseMapper.ToDomain(response);
             ValidateBootstrap(bootstrap, bootstrapRoot);
 
-            _state = new LightClientState
+            var state = new LightClientState
             {
                 FinalizedHeader = bootstrap.Header.Beacon,
                 FinalizedExecutionPayload = bootstrap.Header.Execution,
@@ -73,18 +99,22 @@ namespace Nethereum.Consensus.LightClient
                 NextSyncCommittee = new SyncCommittee(),
                 FinalizedSlot = bootstrap.Header.Beacon.Slot,
                 CurrentPeriod = ComputePeriod(bootstrap.Header.Beacon.Slot),
-                LastUpdated = DateTimeOffset.UtcNow
+                LastUpdated = DateTimeOffset.UtcNow,
+                OptimisticHeader = bootstrap.Header.Beacon,
+                OptimisticExecutionPayload = bootstrap.Header.Execution,
+                OptimisticSlot = bootstrap.Header.Beacon.Slot,
+                OptimisticLastUpdated = DateTimeOffset.UtcNow
             };
 
             if (bootstrap.Header.Execution != null)
             {
-                _state.SetBlockHash(
+                state.SetBlockHash(
                     bootstrap.Header.Execution.BlockNumber,
                     bootstrap.Header.Execution.BlockHash,
                     BlockHashFinality.Finalized);
             }
 
-            await _store.SaveAsync(_state).ConfigureAwait(false);
+            return state;
         }
 
         private static bool IsEmptyRoot(byte[] root)
@@ -142,15 +172,7 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            var synthesized = SynthesizeUpdate(optimistic);
-            var applied = TryApplyUpdate(_state, synthesized);
-            if (applied)
-            {
-                _state.LastUpdated = DateTimeOffset.UtcNow;
-                await _store.SaveAsync(_state).ConfigureAwait(false);
-            }
-
-            return applied;
+            return await ApplyLatestUpdateAsync(SynthesizeUpdate(optimistic), cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<bool> UpdateFinalityAsync(CancellationToken cancellationToken = default)
@@ -169,8 +191,19 @@ namespace Nethereum.Consensus.LightClient
                 return false;
             }
 
-            var synthesized = SynthesizeUpdate(finality);
-            var applied = TryApplyUpdate(_state, synthesized);
+            return await ApplyLatestUpdateAsync(SynthesizeUpdate(finality), cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task<bool> ApplyLatestUpdateAsync(LightClientUpdate update, CancellationToken cancellationToken)
+        {
+            var applied = TryApplyUpdate(_state, update);
+            if (!applied
+                && update.SignatureSlot <= CurrentSlot()
+                && await CatchUpToSignaturePeriodAsync(update.SignatureSlot, cancellationToken).ConfigureAwait(false))
+            {
+                applied = TryApplyUpdate(_state, update);
+            }
+
             if (applied)
             {
                 _state.LastUpdated = DateTimeOffset.UtcNow;
@@ -178,6 +211,195 @@ namespace Nethereum.Consensus.LightClient
             }
 
             return applied;
+        }
+
+        private async Task<bool> CatchUpToSignaturePeriodAsync(ulong signatureSlot, CancellationToken cancellationToken)
+        {
+            var targetPeriod = ComputePeriod(signatureSlot);
+            var initialPeriod = ComputePeriod(_state.FinalizedSlot);
+            if (targetPeriod <= initialPeriod + 1)
+            {
+                return false;
+            }
+
+            if (targetPeriod - initialPeriod > _config.MaxCatchUpPeriods)
+            {
+                return await RebootstrapAsync(targetPeriod,
+                    $"gap_exceeds_max gap={targetPeriod - initialPeriod} max={_config.MaxCatchUpPeriods}").ConfigureAwait(false);
+            }
+
+            var advanced = false;
+            while (ComputePeriod(_state.FinalizedSlot) + 1 < targetPeriod)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var startPeriod = ComputePeriod(_state.FinalizedSlot);
+                var count = Math.Min(MaxRequestLightClientUpdates, targetPeriod - startPeriod);
+
+                IReadOnlyList<LightClientUpdate> updates;
+                try
+                {
+                    var responses = await _apiClient.GetUpdatesAsync(startPeriod, count).ConfigureAwait(false);
+                    updates = LightClientResponseMapper.ToDomain(responses);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    return await RebootstrapAsync(targetPeriod,
+                        $"range_request_failed start_period={startPeriod} count={count} error={ex.Message}").ConfigureAwait(false) || advanced;
+                }
+
+                var nextPeriodPresent = false;
+                string nextPeriodRejectReason = null;
+                foreach (var update in updates
+                             .Where(u => u.AttestedHeader?.Beacon != null)
+                             .Where(u => ComputePeriod(u.AttestedHeader.Beacon.Slot) >= startPeriod
+                                         && ComputePeriod(u.AttestedHeader.Beacon.Slot) < startPeriod + count)
+                             .OrderBy(u => u.AttestedHeader.Beacon.Slot))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var updatePeriod = ComputePeriod(update.AttestedHeader.Beacon.Slot);
+                    var periodBefore = ComputePeriod(_state.FinalizedSlot);
+                    var updateApplied = TryApplyUpdate(_state, update);
+                    if (updatePeriod == periodBefore + 1)
+                    {
+                        nextPeriodPresent = true;
+                        nextPeriodRejectReason = updateApplied ? null : LastRejectReason;
+                    }
+
+                    if (updateApplied && ComputePeriod(_state.FinalizedSlot) > periodBefore)
+                    {
+                        advanced = true;
+                        ReportCatchUp(LightClientCatchUpStage.PeriodApplied, targetPeriod, null);
+                    }
+                }
+
+                if (ComputePeriod(_state.FinalizedSlot) == startPeriod)
+                {
+                    if (nextPeriodPresent && IsNextSyncCommitteeKnown(_state))
+                    {
+                        ReportCatchUp(LightClientCatchUpStage.UpdateRejected, targetPeriod,
+                            $"period={startPeriod + 1} reason={nextPeriodRejectReason ?? "no_period_advance"}");
+                        break;
+                    }
+
+                    return await RebootstrapAsync(targetPeriod,
+                        $"range_unavailable period={startPeriod + 1}").ConfigureAwait(false) || advanced;
+                }
+            }
+
+            if (advanced)
+            {
+                _state.LastUpdated = DateTimeOffset.UtcNow;
+                await _store.SaveAsync(_state).ConfigureAwait(false);
+                ReportCatchUp(LightClientCatchUpStage.Completed, targetPeriod, null);
+            }
+
+            return advanced;
+        }
+
+        private async Task<bool> RebootstrapAsync(ulong targetPeriod, string reason)
+        {
+            var weakSubjectivityRoot = _config.WeakSubjectivityRoot;
+            if (!IsEmptyRoot(weakSubjectivityRoot))
+            {
+                var rootHex = weakSubjectivityRoot.ToHex(true);
+                if (rootHex != _staleWeakSubjectivityRoot)
+                {
+                    var outcome = await TryAdoptBootstrapAsync(weakSubjectivityRoot, targetPeriod, reason + " source=weak_subjectivity_root").ConfigureAwait(false);
+                    if (outcome == BootstrapOutcome.Adopted) return true;
+                    if (outcome == BootstrapOutcome.NotNewer) _staleWeakSubjectivityRoot = rootHex;
+                }
+            }
+
+            if (!_config.AllowBeaconRebootstrap)
+            {
+                ReportRefusalOnce("beacon_rebootstrap_disabled", targetPeriod,
+                    $"{reason} beacon_rebootstrap_disabled keeping_verified_head");
+                return false;
+            }
+
+            byte[] beaconRoot;
+            try
+            {
+                beaconRoot = await BeaconFinalizedRootAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                ReportCatchUp(LightClientCatchUpStage.RebootstrapFailed, targetPeriod, $"{reason} source=beacon_finalized_root error={ex.Message}");
+                return false;
+            }
+
+            return await TryAdoptBootstrapAsync(beaconRoot, targetPeriod, reason + " source=beacon_finalized_root").ConfigureAwait(false) == BootstrapOutcome.Adopted;
+        }
+
+        private enum BootstrapOutcome
+        {
+            Adopted,
+            NotNewer,
+            Rejected
+        }
+
+        private async Task<BootstrapOutcome> TryAdoptBootstrapAsync(byte[] root, ulong targetPeriod, string reason)
+        {
+            LightClientState bootstrapped;
+            try
+            {
+                bootstrapped = await BootstrapFromRootAsync(root).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                ReportCatchUp(LightClientCatchUpStage.RebootstrapFailed, targetPeriod, $"{reason} bootstrap_error={ex.Message}");
+                return BootstrapOutcome.Rejected;
+            }
+
+            var currentSlot = CurrentSlot();
+            if (bootstrapped.FinalizedSlot > currentSlot)
+            {
+                ReportCatchUp(LightClientCatchUpStage.RebootstrapFailed, targetPeriod,
+                    $"{reason} bootstrap_from_future bootstrap_slot={bootstrapped.FinalizedSlot} current_slot={currentSlot}");
+                return BootstrapOutcome.Rejected;
+            }
+
+            if (bootstrapped.FinalizedSlot <= _state.FinalizedSlot)
+            {
+                ReportCatchUp(LightClientCatchUpStage.RebootstrapFailed, targetPeriod,
+                    $"{reason} bootstrap_not_newer bootstrap_slot={bootstrapped.FinalizedSlot} store_slot={_state.FinalizedSlot}");
+                return BootstrapOutcome.NotNewer;
+            }
+
+            var previousPeriod = ComputePeriod(_state.FinalizedSlot);
+            _state = bootstrapped;
+            await _store.SaveAsync(_state).ConfigureAwait(false);
+            ReportCatchUp(LightClientCatchUpStage.Rebootstrapped, targetPeriod, $"{reason} previous_period={previousPeriod}");
+            return BootstrapOutcome.Adopted;
+        }
+
+        private void ReportRefusalOnce(string kind, ulong targetPeriod, string reason)
+        {
+            var key = $"{_state.FinalizedSlot}:{kind}";
+            if (key == _lastRefusal) return;
+            _lastRefusal = key;
+            ReportCatchUp(LightClientCatchUpStage.RebootstrapFailed, targetPeriod, reason);
+        }
+
+        private ulong CurrentSlot()
+        {
+            var now = (_config.Clock ?? (() => DateTimeOffset.UtcNow))();
+            var elapsedMilliseconds = now.ToUnixTimeMilliseconds() + MaximumGossipClockDisparityMilliseconds
+                                      - ((long)_config.GenesisTime * 1000L);
+            if (elapsedMilliseconds <= 0) return 0;
+            var slotMilliseconds = (long)_config.ChainSpec.SecondsPerSlot * 1000L;
+            if (slotMilliseconds <= 0) return ulong.MaxValue;
+            return (ulong)(elapsedMilliseconds / slotMilliseconds);
+        }
+
+        private void ReportCatchUp(LightClientCatchUpStage stage, ulong targetPeriod, string reason)
+        {
+            CatchUpProgress?.Invoke(new LightClientCatchUpProgress(
+                stage, ComputePeriod(_state.FinalizedSlot), targetPeriod, reason));
         }
 
         public static LightClientUpdate SynthesizeUpdate(LightClientFinalityUpdate finality)
@@ -321,6 +543,8 @@ namespace Nethereum.Consensus.LightClient
 
         public string LastRejectReason { get; private set; }
 
+        public event Action<LightClientCatchUpProgress> CatchUpProgress;
+
         private bool Reject(string reason)
         {
             LastRejectReason = reason;
@@ -333,6 +557,12 @@ namespace Nethereum.Consensus.LightClient
             if (update == null) return Reject("null_update");
             if (update.AttestedHeader?.Beacon == null) return Reject("no_attested_beacon");
             if (update.SyncAggregate == null) return Reject("no_sync_aggregate");
+
+            var currentSlot = CurrentSlot();
+            if (update.SignatureSlot > currentSlot)
+            {
+                return Reject($"future_signature_slot signature_slot={update.SignatureSlot} current_slot={currentSlot}");
+            }
 
             var hasFinality = IsFinalityUpdate(update);
             var hasSyncCommittee = IsSyncCommitteeUpdate(update);
@@ -402,7 +632,11 @@ namespace Nethereum.Consensus.LightClient
             var updateHasFinalizedNsc = UpdateHasFinalizedNextSyncCommittee(state, update);
 
             var willApplyFinality = hasSupermajority && (finalityAdvances || updateHasFinalizedNsc);
-            var willApplyOptimistic = update.AttestedHeader.Beacon.Slot > state.OptimisticSlot;
+            var participants = CountParticipants(update.SyncAggregate.SyncCommitteeBits);
+            state.CurrentMaxActiveParticipants = Math.Max(state.CurrentMaxActiveParticipants, participants);
+            var safetyThreshold = Math.Max(state.PreviousMaxActiveParticipants, state.CurrentMaxActiveParticipants) / 2;
+            var willApplyOptimistic = participants > safetyThreshold
+                                      && update.AttestedHeader.Beacon.Slot > state.OptimisticSlot;
 
             if (!willApplyFinality && !willApplyOptimistic)
             {
@@ -459,10 +693,12 @@ namespace Nethereum.Consensus.LightClient
                 {
                     state.CurrentSyncCommittee = state.NextSyncCommittee;
                     state.NextSyncCommittee = carriesNextCommittee ? update.NextSyncCommittee : new SyncCommittee();
+                    state.PreviousMaxActiveParticipants = state.CurrentMaxActiveParticipants;
+                    state.CurrentMaxActiveParticipants = 0;
                 }
             }
 
-            if (applyFinality)
+            if (applyFinality && update.FinalizedHeader?.Beacon != null && update.FinalizedHeader.Beacon.Slot > state.FinalizedSlot)
             {
                 state.FinalizedHeader = update.FinalizedHeader!.Beacon;
                 state.FinalizedExecutionPayload = update.FinalizedHeader.Execution;
@@ -939,9 +1175,6 @@ namespace Nethereum.Consensus.LightClient
             if (attestedHeader?.Beacon == null || finalizedHeader?.Beacon == null || finalityBranch == null)
                 return false;
 
-            // Branch length/depth/gindex depend on the active fork at the finalized header's slot.
-            // EIP-7251 (Electra) reshaped BeaconState so the merkle path to FINALIZED_CHECKPOINT.root
-            // is longer (depth 7 vs 6) and rooted at a different generalised index (169 vs 105).
             var fork = finalizedHeader.Fork;
             var depth = LightClientForkSpec.FinalityBranchDepth(fork);
             var index = LightClientForkSpec.FinalityBranchIndex(fork);

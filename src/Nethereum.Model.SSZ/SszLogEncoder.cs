@@ -55,7 +55,7 @@ namespace Nethereum.Model.SSZ
 
             // Read topics
             var topicCount = (int)reader.ReadUInt32();
-            var topics = new List<byte[]>(topicCount);
+            var topics = new List<byte[]>(Math.Max(0, Math.Min(topicCount, reader.Remaining / TopicLength)));
             for (var i = 0; i < topicCount; i++)
                 topics.Add(reader.ReadFixedBytes(TopicLength));
 

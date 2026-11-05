@@ -38,6 +38,14 @@ namespace Nethereum.Consensus.LightClient
 
         public ulong WeakSubjectivityPeriod { get; set; } = 256 * 32;
 
+        public ulong MaxCatchUpPeriods { get; set; } = 16;
+
+        public bool AllowBeaconRebootstrap { get; set; }
+
+        public ulong GenesisTime { get; set; } = LightClientNetworks.MainnetGenesisTime;
+
+        public Func<DateTimeOffset> Clock { get; set; } = () => DateTimeOffset.UtcNow;
+
         public ChainSpec ChainSpec { get; set; } = ChainSpec.Mainnet;
     }
 }

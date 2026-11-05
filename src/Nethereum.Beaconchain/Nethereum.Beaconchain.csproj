@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum.Beaconchain - Ethereum Beacon Chain REST API client library for light client, state, and validator endpoints.</Description>
     <AssemblyTitle>Nethereum.Beaconchain</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <AssemblyName>Nethereum.Beaconchain</AssemblyName>
@@ -24,4 +25,8 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

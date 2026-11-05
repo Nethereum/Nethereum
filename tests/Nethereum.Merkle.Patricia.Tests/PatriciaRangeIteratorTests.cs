@@ -218,6 +218,57 @@ namespace Nethereum.Merkle.Patricia.Tests
             }
         }
 
+        private sealed class PathDroppingStore : ITrieNodeStore
+        {
+            private readonly ITrieNodeStore _inner;
+            private readonly byte[] _droppedPath;
+
+            public PathDroppingStore(ITrieNodeStore inner, byte[] droppedPath)
+            {
+                _inner = inner;
+                _droppedPath = droppedPath;
+            }
+
+            public byte[] Get(Nodes.Node reference)
+                => reference.Path != null && reference.Path.AsSpan().SequenceEqual(_droppedPath) ? null : _inner.Get(reference);
+
+            public bool Contains(Nodes.Node reference) => _inner.Contains(reference);
+            public bool ContainsKey(byte[] stateRoot) => _inner.ContainsKey(stateRoot);
+            public void Commit(TrieNodeSet nodes) => _inner.Commit(nodes);
+            public void Flush() => _inner.Flush();
+            public void Clear() => _inner.Clear();
+        }
+
+        [Fact]
+        public void Given_AStoreThatReturnsNullForAHashNode_When_ItsInnerNodeIsDecoded_Then_MissingTrieNodeExceptionNamesThePathAndHash()
+        {
+            var (_, storage, _) = BuildTrie(64);
+            var dropped = new byte[] { 0x3 };
+            var reference = new Nodes.HashNode { Hash = FilledHash(0xAB), Path = dropped };
+
+            var thrown = Assert.Throws<MissingTrieNodeException>(
+                () => reference.DecodeInnerNode(new PathDroppingStore(storage, dropped), false));
+
+            Assert.Equal(dropped, thrown.Path);
+            Assert.Equal(FilledHash(0xAB), thrown.Hash);
+            Assert.Null(reference.InnerNode);
+        }
+
+        [Fact]
+        public void Given_AStoreThatReturnsNullForOneInteriorNode_When_TheRangeIsWalked_Then_MissingTrieNodeExceptionIsThrownInsteadOfSkippingTheSubtree()
+        {
+            var (trie, storage, expected) = BuildTrie(64);
+            const int droppedNibble = 0x3;
+            Assert.True(expected.Count(e => e.keyHash[0] >> 4 == droppedNibble) >= 2);
+            var lossy = new PathDroppingStore(storage, new byte[] { droppedNibble });
+            var freshTrie = PatriciaTrie.LoadFromStorage(trie.Root.GetHash(), (ITrieNodeStore)lossy);
+
+            var thrown = Assert.Throws<MissingTrieNodeException>(
+                () => PatriciaRangeIterator.EnumerateRange(freshTrie.Root, lossy, new byte[32]).ToList());
+
+            Assert.Equal(new byte[] { droppedNibble }, thrown.Path);
+        }
+
         private static byte[] FilledHash(byte b)
         {
             var h = new byte[32];

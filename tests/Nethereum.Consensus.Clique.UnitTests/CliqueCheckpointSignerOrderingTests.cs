@@ -108,7 +108,7 @@ namespace Nethereum.Consensus.Clique.UnitTests
         {
             var engine = new CliqueEngine(new CliqueConfig
             {
-                InitialSigners = new List<string> { KeyA.GetPublicAddress() },
+                InitialSigners = new List<string> { KeyA.GetPublicAddress(), KeyB.GetPublicAddress(), KeyC.GetPublicAddress() },
                 LocalSignerAddress = KeyA.GetPublicAddress(),
                 BlockPeriodSeconds = 1,
                 EpochLength = 3
@@ -157,12 +157,12 @@ namespace Nethereum.Consensus.Clique.UnitTests
                 InitialSigners = new List<string> { KeyA.GetPublicAddress(), KeyB.GetPublicAddress(), KeyC.GetPublicAddress() },
                 LocalSignerAddress = KeyA.GetPublicAddress(),
                 BlockPeriodSeconds = 1,
-                EpochLength = 3
+                EpochLength = 1
             });
 
             var sortedExtraData = EncodeCheckpointExtraData(new[] { KeyC, KeyB, KeyA });
-            var difficulty = engine.GetDifficulty(3, KeyA.GetPublicAddress());
-            var header = BuildCheckpointHeader(KeyA, 3, difficulty, sortedExtraData);
+            var difficulty = engine.GetDifficulty(1, KeyA.GetPublicAddress());
+            var header = BuildCheckpointHeader(KeyA, 1, difficulty, sortedExtraData);
 
             var verdict = engine.ValidateBlockInternal(header, null);
 

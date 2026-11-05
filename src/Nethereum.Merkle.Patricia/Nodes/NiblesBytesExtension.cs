@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Nethereum.Util;
 
 
 
@@ -50,19 +51,7 @@ namespace Nethereum.Merkle.Patricia.Nodes
             return matched.ToArray();
         }
 
-        public static bool AreTheSame(this byte[] a, byte[] b)
-        {
-            if (a == null && b == null) return true;
-            if (a == null || b == null) return false;
-
-            if (a.Length != b.Length)
-                return false;
-
-            for (int i = 0; i < a.Length; i++)
-                if (a[i] != b[i])
-                    return false;
-            return true;
-        }
+        public static bool AreTheSame(this byte[] a, byte[] b) => ByteUtil.AreEqual(a, b);
 
         public static bool AreAllTheSameAsTheStartOf(this byte[] a, byte[] b)
         {

@@ -38,20 +38,18 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
         public bool VerifyEntry(byte[] root, byte[] keyHash, byte[] expectedValue, IList<byte[]> proof)
         {
             if (proof == null || proof.Count == 0) return false;
-            var hashProvider = Sha3KeccackHashProvider.Instance;
-            var storage = new InMemoryContentNodeStore();
-            foreach (var node in proof) storage.Put(hashProvider.ComputeHash(node), node);
+            try
+            {
+                var hashProvider = Sha3KeccackHashProvider.Instance;
+                var storage = new InMemoryContentNodeStore();
+                foreach (var node in proof) storage.Put(hashProvider.ComputeHash(node), node);
 
-            var trie = new PatriciaTrie(root, storage);
-            byte[] found;
-            try { found = trie.Get(keyHash); }
+                var trie = new PatriciaTrie(root, storage);
+                var found = trie.Get(keyHash);
+                if (found == null) return false;
+                return ByteUtil.AreEqual(found, expectedValue);
+            }
             catch { return false; }
-
-            if (found == null) return false;
-            if (expectedValue.Length != found.Length) return false;
-            for (int i = 0; i < found.Length; i++)
-                if (found[i] != expectedValue[i]) return false;
-            return true;
         }
 
         public RangeProofResult Verify(
@@ -65,61 +63,97 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
             if (firstKey == null) throw new ArgumentNullException(nameof(firstKey));
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (values == null) throw new ArgumentNullException(nameof(values));
-            if (keys.Count != values.Count) return RangeProofResult.Invalid;
 
+            try
+            {
+                return VerifyChecked(rootHash, firstKey, keys, values, proofNodes);
+            }
+            catch
+            {
+                return RangeProofResult.Invalid;
+            }
+        }
+
+        private static RangeProofResult VerifyChecked(
+            byte[] rootHash,
+            byte[] firstKey,
+            IList<byte[]> keys,
+            IList<byte[]> values,
+            IList<byte[]> proofNodes)
+        {
+            if (keys.Count != values.Count) return RangeProofResult.Invalid;
+            if (!EntriesAreAscendingAndNonEmpty(keys, values)) return RangeProofResult.Invalid;
+
+            if (proofNodes == null || proofNodes.Count == 0)
+                return VerifyCompleteRange(rootHash, keys, values);
+
+            var proofDb = BuildProofStorage(proofNodes, Sha3KeccackHashProvider.Instance);
+
+            if (keys.Count == 0)
+                return VerifyEmptyRange(rootHash, firstKey, proofDb);
+
+            var lastKey = keys[keys.Count - 1];
+            if (keys.Count == 1 && ByteUtil.AreEqual(firstKey, lastKey))
+                return VerifySingleEntry(rootHash, firstKey, keys, values, proofDb);
+
+            return VerifyBoundedRange(rootHash, firstKey, lastKey, keys, values, proofDb);
+        }
+
+        private static bool EntriesAreAscendingAndNonEmpty(IList<byte[]> keys, IList<byte[]> values)
+        {
             for (int i = 0; i < keys.Count; i++)
             {
                 if (i < keys.Count - 1)
                 {
-                    if (CompareBytes(keys[i], keys[i + 1]) >= 0) return RangeProofResult.Invalid;
-                    if (HasPrefix(keys[i + 1], keys[i])) return RangeProofResult.Invalid;
+                    if (ByteArrayComparer.Current.Compare(keys[i], keys[i + 1]) >= 0) return false;
+                    if (ByteUtil.StartsWith(keys[i + 1], keys[i])) return false;
                 }
-                if (values[i] == null || values[i].Length == 0) return RangeProofResult.Invalid;
+                if (values[i] == null || values[i].Length == 0) return false;
             }
+            return true;
+        }
 
-            var hashProvider = Sha3KeccackHashProvider.Instance;
+        private static RangeProofResult VerifyCompleteRange(byte[] rootHash, IList<byte[]> keys, IList<byte[]> values)
+        {
+            var fresh = new PatriciaTrie();
+            for (int i = 0; i < keys.Count; i++) fresh.Put(keys[i], values[i]);
+            var have = fresh.Root.GetHash();
+            if (!ByteUtil.AreEqual(have, rootHash)) return RangeProofResult.Invalid;
+            return new RangeProofResult(true, false);
+        }
 
-            if (proofNodes == null || proofNodes.Count == 0)
+        private static RangeProofResult VerifyEmptyRange(byte[] rootHash, byte[] firstKey, INodeBlobStore proofDb)
+        {
+            Node root;
+            byte[] val;
+            try
             {
-                var fresh = new PatriciaTrie();
-                for (int i = 0; i < keys.Count; i++) fresh.Put(keys[i], values[i]);
-                var have = fresh.Root.GetHash();
-                if (!BytesEqual(have, rootHash)) return RangeProofResult.Invalid;
-                return new RangeProofResult(true, false);
+                root = ProofToPath(rootHash, null, KeyBytesToHex(firstKey), proofDb, allowNonExistent: true, out val);
             }
+            catch { return RangeProofResult.Invalid; }
+            if (val != null || HasRightElement(root, firstKey)) return RangeProofResult.Invalid;
+            return new RangeProofResult(true, false);
+        }
 
-            var proofDb = BuildProofStorage(proofNodes, hashProvider);
-
-            if (keys.Count == 0)
+        private static RangeProofResult VerifySingleEntry(
+            byte[] rootHash, byte[] firstKey, IList<byte[]> keys, IList<byte[]> values, INodeBlobStore proofDb)
+        {
+            Node root;
+            byte[] val;
+            try
             {
-                Node root;
-                byte[] val;
-                try
-                {
-                    root = ProofToPath(rootHash, null, KeyBytesToHex(firstKey), proofDb, allowNonExistent: true, out val);
-                }
-                catch { return RangeProofResult.Invalid; }
-                if (val != null || HasRightElement(root, firstKey)) return RangeProofResult.Invalid;
-                return new RangeProofResult(true, false);
+                root = ProofToPath(rootHash, null, KeyBytesToHex(firstKey), proofDb, allowNonExistent: false, out val);
             }
+            catch { return RangeProofResult.Invalid; }
+            if (!ByteUtil.AreEqual(firstKey, keys[0])) return RangeProofResult.Invalid;
+            if (val == null || !ByteUtil.AreEqual(val, values[0])) return RangeProofResult.Invalid;
+            return new RangeProofResult(true, HasRightElement(root, firstKey));
+        }
 
-            var lastKey = keys[keys.Count - 1];
-
-            if (keys.Count == 1 && BytesEqual(firstKey, lastKey))
-            {
-                Node root;
-                byte[] val;
-                try
-                {
-                    root = ProofToPath(rootHash, null, KeyBytesToHex(firstKey), proofDb, allowNonExistent: false, out val);
-                }
-                catch { return RangeProofResult.Invalid; }
-                if (!BytesEqual(firstKey, keys[0])) return RangeProofResult.Invalid;
-                if (val == null || !BytesEqual(val, values[0])) return RangeProofResult.Invalid;
-                return new RangeProofResult(true, HasRightElement(root, firstKey));
-            }
-
-            if (CompareBytes(firstKey, lastKey) >= 0) return RangeProofResult.Invalid;
+        private static RangeProofResult VerifyBoundedRange(
+            byte[] rootHash, byte[] firstKey, byte[] lastKey, IList<byte[]> keys, IList<byte[]> values, INodeBlobStore proofDb)
+        {
+            if (ByteArrayComparer.Current.Compare(firstKey, lastKey) >= 0) return RangeProofResult.Invalid;
             if (firstKey.Length != lastKey.Length) return RangeProofResult.Invalid;
 
             Node leftRoot;
@@ -149,7 +183,7 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
             var rebuilt = new PatriciaTrie(rebuildRoot);
             for (int i = 0; i < keys.Count; i++) rebuilt.Put(keys[i], values[i]);
             var computed = rebuilt.Root.GetHash();
-            if (!BytesEqual(computed, rootHash)) return RangeProofResult.Invalid;
+            if (!ByteUtil.AreEqual(computed, rootHash)) return RangeProofResult.Invalid;
             return new RangeProofResult(true, HasRightElement(rebuilt.Root, keys[keys.Count - 1]));
         }
 
@@ -575,33 +609,6 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
             if (aLen < bLen) return -1;
             if (aLen > bLen) return 1;
             return 0;
-        }
-
-        private static int CompareBytes(byte[] a, byte[] b)
-        {
-            int len = Math.Min(a.Length, b.Length);
-            for (int i = 0; i < len; i++)
-            {
-                if (a[i] < b[i]) return -1;
-                if (a[i] > b[i]) return 1;
-            }
-            return a.Length.CompareTo(b.Length);
-        }
-
-        private static bool BytesEqual(byte[] a, byte[] b)
-        {
-            if (ReferenceEquals(a, b)) return true;
-            if (a == null || b == null) return false;
-            if (a.Length != b.Length) return false;
-            for (int i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
-            return true;
-        }
-
-        private static bool HasPrefix(byte[] s, byte[] prefix)
-        {
-            if (prefix.Length > s.Length) return false;
-            for (int i = 0; i < prefix.Length; i++) if (s[i] != prefix[i]) return false;
-            return true;
         }
 
         private static void ForceDirty(Node node)

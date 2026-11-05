@@ -22,6 +22,19 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
         {
             if (stateRoot == null || accountAddress == null || account == null) return false;
 
+            try
+            {
+                return VerifyChecked(stateRoot, proof, accountAddress, account);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool VerifyChecked(byte[] stateRoot, IEnumerable<byte[]> proof, string accountAddress, Account account)
+        {
+
             var addressBytes = accountAddress.HexToByteArray();
             if (addressBytes.Length != 20) return false;
 

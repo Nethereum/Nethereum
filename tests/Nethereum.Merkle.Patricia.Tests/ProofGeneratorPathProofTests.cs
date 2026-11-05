@@ -132,16 +132,14 @@ namespace Nethereum.Merkle.Patricia.Tests
         }
 
         [Fact]
-        public void Given_ANodeOnThePathMissingFromTheStore_When_ThePathProofIsGenerated_Then_ItIsNull()
+        public void Given_ANodeOnThePathMissingFromTheStore_When_ThePathProofIsGenerated_Then_MissingTrieNodeExceptionIsThrown()
         {
             var (trie, store, root) = Build();
             var rootOnly = new InMemoryContentNodeStore();
             rootOnly.Put(root, trie.Root.GetEncodedData());
 
-            var proof = ProofGenerator.GeneratePathProof(
-                PatriciaTrie.LoadFromStorage(root, rootOnly), AbsentAtEmptyBranchSlot);
-
-            Assert.Null(proof);
+            Assert.Throws<MissingTrieNodeException>(() => ProofGenerator.GeneratePathProof(
+                PatriciaTrie.LoadFromStorage(root, rootOnly), AbsentAtEmptyBranchSlot));
         }
 
         [Fact]

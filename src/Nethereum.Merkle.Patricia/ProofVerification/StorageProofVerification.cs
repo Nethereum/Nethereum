@@ -21,6 +21,19 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
         {
             if (stateRoot == null || key == null || key.Length > 32) return false;
 
+            try
+            {
+                return VerifyChecked(stateRoot, proof, key, value);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool VerifyChecked(byte[] stateRoot, IList<byte[]> proof, byte[] key, byte[] value)
+        {
+
             var sha3Provider = Sha3KeccackHashProvider.Instance;
             var keyEncoded = AccountStorage.EncodeKeyForStorage(key, sha3Provider);
 

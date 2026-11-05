@@ -620,31 +620,25 @@ namespace Nethereum.Merkle.Patricia
         }
 
 
-        public void SaveNodesToStorage()
+        public bool ClearExtensionSpansOnSave { get; set; }
+
+        public void SaveNodesToStorage() => Save(dirtyOnly: false);
+
+        public void SaveDirtyNodesToStorage() => Save(dirtyOnly: true);
+
+        private void Save(bool dirtyOnly)
         {
             if (_store == null) return;
-            var collected = new System.Collections.Generic.List<Node>();
+            var collected = new List<Node>();
             var set = new TrieNodeSet();
-            CollectNodes(Root, _owner, new byte[0], set, dirtyOnly: false, collected);
-            FoldRemovalsIntoDeletes(set, commitTracer: false);
+            CollectNodes(Root, _owner, new byte[0], set, dirtyOnly, collected);
+            FoldRemovalsIntoDeletes(set);
             _store.Commit(set);
             foreach (var n in collected) n.ClearNeedsPersist();
             Tracer?.Reset();
         }
 
-        public void SaveDirtyNodesToStorage()
-        {
-            if (_store == null) return;
-            var collected = new System.Collections.Generic.List<Node>();
-            var set = new TrieNodeSet();
-            CollectNodes(Root, _owner, new byte[0], set, dirtyOnly: true, collected);
-            FoldRemovalsIntoDeletes(set, commitTracer: false);
-            _store.Commit(set);
-            foreach (var n in collected) n.ClearNeedsPersist();
-            Tracer?.Reset();
-        }
-
-        private void FoldRemovalsIntoDeletes(TrieNodeSet set, bool commitTracer = true)
+        private void FoldRemovalsIntoDeletes(TrieNodeSet set)
         {
             if (Tracer == null) return;
             var inserted = new HashSet<byte[]>(new ByteArrayComparer());
@@ -659,7 +653,6 @@ namespace Nethereum.Merkle.Patricia
                 if (!inserted.Contains(TrieTracer.Key(d.Owner, d.Path)))
                     set.AddDelete(d.Owner, d.Path, d.PrevBlob);
             }
-            if (commitTracer) Tracer.Reset();
         }
 
         public void SaveDirtyNodesToStorageAndCollapse()
@@ -669,8 +662,7 @@ namespace Nethereum.Merkle.Patricia
             CollapseChildrenToHash(Root);
         }
 
-        private void CollectNodes(Node node, byte[] owner, byte[] path, TrieNodeSet set, bool dirtyOnly,
-            System.Collections.Generic.List<Node> collected = null)
+        private void CollectNodes(Node node, byte[] owner, byte[] path, TrieNodeSet set, bool dirtyOnly, List<Node> collected)
         {
             if (node == null || node is EmptyNode) return;
 
@@ -686,7 +678,7 @@ namespace Nethereum.Merkle.Patricia
             node.Owner = owner;
             node.Path = path;
             set.Add(node);
-            if (collected != null) collected.Add(node); else node.ClearNeedsPersist();
+            collected.Add(node);
 
             if (node is BranchNode branchNode)
             {
@@ -695,9 +687,25 @@ namespace Nethereum.Merkle.Patricia
             }
             else if (node is ExtendedNode extendedNode)
             {
+                if (ClearExtensionSpansOnSave) DeleteStoredNodesInsideSpan(extendedNode, owner, path, set);
                 CollectNodes(extendedNode.InnerNode, owner, path.ConcatArrays(extendedNode.Nibbles), set, dirtyOnly, collected);
             }
         }
+
+        private void DeleteStoredNodesInsideSpan(ExtendedNode extension, byte[] owner, byte[] path, TrieNodeSet set)
+        {
+            if (!(_store is IRawNodeReader rawReader) || !IsStoredStandalone(extension.InnerNode)) return;
+            for (int spanned = 1; spanned < extension.Nibbles.Length; spanned++)
+            {
+                var spannedPath = path.ConcatArrays(extension.Nibbles.Slice(0, spanned));
+                var storedBlob = rawReader.TryGetRawNode(owner ?? new byte[0], spannedPath);
+                if (IsStoredStandaloneBlob(storedBlob)) set.AddDelete(owner, spannedPath, storedBlob);
+            }
+        }
+
+        private static bool IsStoredStandalone(Node node) => node is HashNode || IsStoredStandaloneBlob(node.GetEncodedData());
+
+        private static bool IsStoredStandaloneBlob(byte[] blob) => blob != null && blob.Length >= 32;
 
         private static void CollapseChildrenToHash(Node node)
         {

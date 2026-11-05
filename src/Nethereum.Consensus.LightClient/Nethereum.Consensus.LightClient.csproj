@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Beacon light client orchestration (bootstrap, updates, trusted execution headers).</Description>
     <AssemblyTitle>Nethereum.Consensus.LightClient</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <AssemblyName>Nethereum.Consensus.LightClient</AssemblyName>
     <PackageId>Nethereum.Consensus.LightClient</PackageId>

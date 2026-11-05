@@ -42,8 +42,10 @@ namespace Nethereum.Model.SSZ
             var storageKeysOffset = reader.ReadUInt32();
 
             // Remaining bytes are storage keys (each 32 bytes)
-            var remaining = data.Length - (int)storageKeysOffset;
-            var keyCount = remaining / StorageKeyLength;
+            var remaining = data.Length - (long)storageKeysOffset;
+            if (remaining < 0)
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
+            var keyCount = (int)(remaining / StorageKeyLength);
             var keys = new List<byte[]>(keyCount);
             for (var i = 0; i < keyCount; i++)
                 keys.Add(reader.ReadFixedBytes(StorageKeyLength));
@@ -94,6 +96,8 @@ namespace Nethereum.Model.SSZ
             // Read offsets to determine item boundaries
             var reader = new SszReader(data);
             var firstOffset = reader.ReadUInt32();
+            if (firstOffset < 4 || firstOffset > data.Length)
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
             var itemCount = (int)firstOffset / 4;
 
             var offsets = new uint[itemCount];

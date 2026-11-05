@@ -40,6 +40,9 @@ namespace Nethereum.Consensus.LightClient
         public ulong OptimisticSlot { get; set; }
         public DateTimeOffset OptimisticLastUpdated { get; set; } = DateTimeOffset.MinValue;
 
+        public int PreviousMaxActiveParticipants { get; set; }
+        public int CurrentMaxActiveParticipants { get; set; }
+
         public Dictionary<ulong, ProvenancedBlockHash> BlockHashHistory { get; set; }
             = new Dictionary<ulong, ProvenancedBlockHash>();
 

@@ -210,7 +210,7 @@ Singleton: `SszTransactionEncoder.Current`
 | `DecodeTransaction7702Payload(data, signature?)` | Decode EIP-7702 payload |
 | `EncodeTransaction(selector, payloadData, signatureBytes)` | Wrap in CompatibleUnion container |
 | `EncodeAuthorisationList(auths)` | Encode EIP-7702 authorization list |
-| `DecodeAuthorisationList(data)` | Decode authorization list |
+| `DecodeAuthorisationList(data)` | Decode authorization list; a first offset below 4 or past the data throws `InvalidOperationException` |
 | `PackSignatureBytes(r, s, v)` | Pack signature components into SSZ format |
 
 **Hash Tree Roots:**
@@ -281,7 +281,7 @@ Singleton: `SszAccessListEncoder.Current`
 | `EncodeAccessTuple(AccessListItem)` | Encode single access list entry |
 | `DecodeAccessTuple(data)` | Decode single entry |
 | `EncodeAccessList(List<AccessListItem>)` | Encode full access list |
-| `DecodeAccessList(data)` | Decode full list |
+| `DecodeAccessList(data)` | Decode full list; a first offset below 4 or past the data throws `InvalidOperationException` |
 | `HashTreeRootAccessTuple(item)` | Root for single entry |
 | `HashTreeRootAccessList(list)` | Root for full list |
 

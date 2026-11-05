@@ -22,10 +22,7 @@ namespace Nethereum.Merkle.Patricia.Proofs
 
             if (currentNode is HashNode hashNode)
             {
-                if (hashNode.InnerNode == null && store != null)
-                {
-                    hashNode.DecodeInnerNode(store, false);
-                }
+                PatriciaPathWalker.ResolveInner(hashNode, store);
                 if (hashNode.InnerNode != null)
                 {
                     return GenerateProof(hashNode.InnerNode, keyAsNibbles, store, proofNodes);
@@ -37,39 +34,54 @@ namespace Nethereum.Merkle.Patricia.Proofs
 
             if (currentNode is LeafNode leafNode)
             {
-                var foundSameNibbles = leafNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
-                if (foundSameNibbles.Length != leafNode.Nibbles.Length || foundSameNibbles.Length != keyAsNibbles.Length)
+                return ProveLeaf(leafNode, keyAsNibbles, proofNodes);
+            }
+
+            if (currentNode is BranchNode branchNode)
+            {
+                return ProveBranch(branchNode, keyAsNibbles, store, proofNodes);
+            }
+
+            if (currentNode is ExtendedNode extendedNode)
+            {
+                return ProveExtension(extendedNode, keyAsNibbles, store, proofNodes);
+            }
+
+            return proofNodes;
+        }
+
+        private static List<byte[]> ProveLeaf(LeafNode leafNode, byte[] keyAsNibbles, List<byte[]> proofNodes)
+        {
+            var foundSameNibbles = leafNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
+            if (foundSameNibbles.Length != leafNode.Nibbles.Length || foundSameNibbles.Length != keyAsNibbles.Length)
+            {
+                return null;
+            }
+            return proofNodes;
+        }
+
+        private static List<byte[]> ProveBranch(BranchNode branchNode, byte[] keyAsNibbles, ITrieNodeStore store, List<byte[]> proofNodes)
+        {
+            if (keyAsNibbles.Length == 0)
+            {
+                if (branchNode.Value == null)
                 {
                     return null;
                 }
                 return proofNodes;
             }
+            return GenerateProof(branchNode.Children[keyAsNibbles[0]], keyAsNibbles.SliceFrom(1), store, proofNodes);
+        }
 
-            if (currentNode is BranchNode branchNode)
+        private static List<byte[]> ProveExtension(ExtendedNode extendedNode, byte[] keyAsNibbles, ITrieNodeStore store, List<byte[]> proofNodes)
+        {
+            var foundSameNibbles = extendedNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
+            if (foundSameNibbles.Length < extendedNode.Nibbles.Length)
             {
-               if(keyAsNibbles.Length == 0)
-               {
-                    if(branchNode.Value == null)
-                    {
-                        return null;
-                    }
-                    return proofNodes;
-                }
-                return GenerateProof(branchNode.Children[keyAsNibbles[0]], keyAsNibbles.SliceFrom(1), store, proofNodes);
+                return null;
             }
 
-            if (currentNode is ExtendedNode extendedNode)
-            {
-                var foundSameNibbles = extendedNode.Nibbles.FindAllTheSameBytesFromTheStart(keyAsNibbles);
-                if(foundSameNibbles.Length < extendedNode.Nibbles.Length)
-                {
-                    return null;
-                }
-
-                return GenerateProof(extendedNode.InnerNode, keyAsNibbles.SliceFrom(foundSameNibbles.Length), store, proofNodes);
-            }
-
-            return proofNodes;
+            return GenerateProof(extendedNode.InnerNode, keyAsNibbles.SliceFrom(foundSameNibbles.Length), store, proofNodes);
         }
 
         public static List<byte[]> GeneratePathProof(PatriciaTrie trie, byte[] key)
@@ -85,10 +97,7 @@ namespace Nethereum.Merkle.Patricia.Proofs
             {
                 if (currentNode is HashNode hashNode)
                 {
-                    if (hashNode.InnerNode == null && store != null)
-                    {
-                        hashNode.DecodeInnerNode(store, false);
-                    }
+                    PatriciaPathWalker.ResolveInner(hashNode, store);
                     if (hashNode.InnerNode == null || hashNode.InnerNode is EmptyNode)
                     {
                         return IsEmptyTrieRoot(hashNode, proofNodes) ? proofNodes : null;
@@ -108,31 +117,39 @@ namespace Nethereum.Merkle.Patricia.Proofs
                     proofNodes.Add(encoded);
                 }
 
-                if (currentNode is BranchNode branchNode)
+                if (!TryDescend(ref currentNode, ref remaining))
                 {
-                    if (remaining.Length == 0)
-                    {
-                        return proofNodes;
-                    }
-                    currentNode = branchNode.Children[remaining[0]];
-                    remaining = remaining.SliceFrom(1);
-                    continue;
+                    return proofNodes;
                 }
-
-                if (currentNode is ExtendedNode extendedNode)
-                {
-                    var foundSameNibbles = extendedNode.Nibbles.FindAllTheSameBytesFromTheStart(remaining);
-                    if (foundSameNibbles.Length < extendedNode.Nibbles.Length)
-                    {
-                        return proofNodes;
-                    }
-                    currentNode = extendedNode.InnerNode;
-                    remaining = remaining.SliceFrom(foundSameNibbles.Length);
-                    continue;
-                }
-
-                return proofNodes;
             }
+        }
+
+        private static bool TryDescend(ref Node currentNode, ref byte[] remaining)
+        {
+            if (currentNode is BranchNode branchNode)
+            {
+                if (remaining.Length == 0)
+                {
+                    return false;
+                }
+                currentNode = branchNode.Children[remaining[0]];
+                remaining = remaining.SliceFrom(1);
+                return true;
+            }
+
+            if (currentNode is ExtendedNode extendedNode)
+            {
+                var foundSameNibbles = extendedNode.Nibbles.FindAllTheSameBytesFromTheStart(remaining);
+                if (foundSameNibbles.Length < extendedNode.Nibbles.Length)
+                {
+                    return false;
+                }
+                currentNode = extendedNode.InnerNode;
+                remaining = remaining.SliceFrom(foundSameNibbles.Length);
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsEmptyTrieRoot(HashNode hashNode, List<byte[]> proofNodes)

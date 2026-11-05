@@ -161,7 +161,7 @@ namespace Nethereum.Model.SSZ
             var authoritiesSlice = data.Slice((int)authoritiesOffset);
             var authoritiesReader = new SszReader(authoritiesSlice);
             var count = (int)authoritiesReader.ReadUInt32();
-            authorities = new List<string>(count);
+            authorities = new List<string>(Math.Max(0, Math.Min(count, authoritiesReader.Remaining / AddressLength)));
             for (var i = 0; i < count; i++)
                 authorities.Add("0x" + authoritiesReader.ReadFixedBytes(AddressLength).ToHex());
         }
@@ -248,7 +248,7 @@ namespace Nethereum.Model.SSZ
         private List<Log> ReadLogList(ref SszReader reader)
         {
             var count = (int)reader.ReadUInt32();
-            var logs = new List<Log>(count);
+            var logs = new List<Log>(Math.Max(0, Math.Min(count, reader.Remaining / 4)));
             var logEncoder = SszLogEncoder.Current;
             for (var i = 0; i < count; i++)
             {

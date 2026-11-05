@@ -140,6 +140,10 @@ namespace Nethereum.Consensus.Ssz
 
         public static List<byte[]> ReadBytesVector(this ref SszReader reader, int elementCount, int elementLength)
         {
+            if (elementCount < 0) throw new ArgumentOutOfRangeException(nameof(elementCount));
+            if (elementLength < 0) throw new ArgumentOutOfRangeException(nameof(elementLength));
+            if ((long)elementCount * Math.Max(elementLength, 1) > reader.Remaining)
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
             var list = new List<byte[]>(elementCount);
             for (var i = 0; i < elementCount; i++)
             {
@@ -165,6 +169,9 @@ namespace Nethereum.Consensus.Ssz
 
         public static List<byte[]> ReadFixedRootVector(this ref SszReader reader, int expectedCount)
         {
+            if (expectedCount < 0) throw new ArgumentOutOfRangeException(nameof(expectedCount));
+            if ((long)expectedCount * RootLength > reader.Remaining)
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
             var branch = new List<byte[]>(expectedCount);
             for (var i = 0; i < expectedCount; i++)
             {

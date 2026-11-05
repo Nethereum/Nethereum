@@ -6,6 +6,7 @@ namespace Nethereum.Consensus.Clique
     {
         public long BlockNumber { get; set; }
         public byte[] BlockHash { get; set; } = Array.Empty<byte>();
+        public long Timestamp { get; set; }
         public List<string> Signers { get; set; } = new();
         public Dictionary<string, CliqueVote> Votes { get; set; } = new();
         public Dictionary<string, int> VoteTally { get; set; } = new();
@@ -60,6 +61,7 @@ namespace Nethereum.Consensus.Clique
             return new CliqueSnapshot
             {
                 BlockNumber = BlockNumber,
+                Timestamp = Timestamp,
                 BlockHash = (byte[])BlockHash.Clone(),
                 Signers = new List<string>(Signers),
                 Votes = new Dictionary<string, CliqueVote>(Votes),

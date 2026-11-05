@@ -422,7 +422,7 @@ namespace Nethereum.Consensus.LightClient.Tests
             private static LightClientHeader CreateHeader(ulong slot, ulong blockNumber) =>
                 CreateHeader(slot, blockNumber, Enumerable.Repeat((byte)0x02, SszBasicTypes.RootLength).ToArray(), ConsensusFork.Electra);
 
-            private static LightClientHeader CreateHeader(ulong slot, ulong blockNumber, byte[] stateRoot, ConsensusFork fork)
+            public static LightClientHeader CreateHeader(ulong slot, ulong blockNumber, byte[] stateRoot, ConsensusFork fork)
             {
                 var execution = new ExecutionPayloadHeader
                 {
@@ -574,7 +574,7 @@ namespace Nethereum.Consensus.LightClient.Tests
                 };
             }
 
-            private static byte[] HashPair(byte[] left, byte[] right)
+            public static byte[] HashPair(byte[] left, byte[] right)
             {
                 using var sha = System.Security.Cryptography.SHA256.Create();
                 var combined = new byte[left.Length + right.Length];

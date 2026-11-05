@@ -733,6 +733,8 @@ public static class SszBasicTypes
 }
 ```
 
+`SszBasicTypes` also carries the `SszReader` extensions `ReadBytesVector(this ref SszReader reader, int elementCount, int elementLength)` and `ReadFixedRootVector(this ref SszReader reader, int expectedCount)`. Both reject a negative count or length with `ArgumentOutOfRangeException` and a count that needs more bytes than `reader.Remaining` with `InvalidOperationException`, before allocating the list.
+
 ### SszContainerEncoding (internal)
 
 Internal helper for combining fixed and dynamic SSZ sections. Used internally by container `Encode()` methods.

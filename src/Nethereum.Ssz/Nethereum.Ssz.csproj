@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Minimal SSZ primitives (reader/writer/merkleizer) shared by consensus components.</Description>
     <AssemblyTitle>Nethereum.Ssz</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <AssemblyName>Nethereum.Ssz</AssemblyName>

@@ -18,6 +18,18 @@ namespace Nethereum.Merkle.Patricia.ProofVerification
 
         public bool Verify(string transactionsRoot, List<IndexedSignedTransaction> transactions)
         {
+            try
+            {
+                return VerifyChecked(transactionsRoot, transactions);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool VerifyChecked(string transactionsRoot, List<IndexedSignedTransaction> transactions)
+        {
             var trie = new PatriciaTrie();
 
             foreach (var transaction in transactions)

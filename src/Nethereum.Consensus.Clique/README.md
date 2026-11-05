@@ -15,9 +15,12 @@ The engine handles signer authorization, turn-based block scheduling, ECDSA bloc
 - **EIP-225 Compliant**: Full implementation of the Clique PoA specification
 - **Turn-Based Scheduling**: In-turn and out-of-turn block production with configurable delays
 - **Dynamic Validator Voting**: Add or remove signers via majority consensus without chain restarts
-- **Epoch Snapshots**: Periodic signer list commitments in block headers for fast sync
+- **Epoch Snapshots**: Periodic signer list commitments in block headers for fast sync, checked against the snapshot when a checkpoint block is validated
+- **Per-Parent Snapshots**: Every block is validated against the snapshot of its own parent, keyed by block hash, so a fork is judged on its own signer set
+- **Block Period Enforced**: A block is refused when its timestamp is earlier than the parent's plus `BlockPeriodSeconds`
+- **Restart Recovery**: Snapshots are saved every `CliqueEngine.SnapshotInterval` blocks through an `ICliqueSnapshotStore`, and the head snapshot is rebuilt after a restart
 - **Pluggable Architecture**: Implements `IConsensusEngine` and `IBlockProductionStrategy` for seamless CoreChain integration
-- **Thread-Safe State**: Lock-based snapshot management with in-memory caching
+- **Thread-Safe State**: Lock-based snapshot management with in-memory caching of the 100 snapshots with the highest block numbers
 
 ## Installation
 
@@ -38,7 +41,7 @@ dotnet add package Nethereum.Consensus.Clique
 
 ### In-Turn vs Out-of-Turn
 
-Clique assigns each authorized signer a slot based on `blockNumber % totalSigners`. The signer whose turn it is produces with difficulty 2 (in-turn) and zero delay. All other signers produce with difficulty 1 (out-of-turn) and wait a randomized delay (`WiggleTimeMs` + random jitter) to give the in-turn signer priority.
+Clique assigns each authorized signer a slot based on `blockNumber % totalSigners`. The signer whose turn it is produces with difficulty 2 (in-turn) and waits only until the parent's timestamp plus `BlockPeriodSeconds` has passed. All other signers produce with difficulty 1 (out-of-turn) and wait that same time plus a randomized delay (`WiggleTimeMs` + random jitter) to give the in-turn signer priority. A signer that sealed one of the last `signers / 2 + 1` blocks cannot produce (`CanProduceBlock` is `false`) until enough other signers have sealed.
 
 ```csharp
 // Difficulty constants
@@ -56,7 +59,7 @@ Block headers encode consensus data in the `ExtraData` field:
 
 ### Snapshot State
 
-`CliqueSnapshot` captures the consensus state at a specific block: the authorized signer set, active votes, and vote tallies. Snapshots are cached (100 most recent) and cloned for thread safety. At epoch boundaries, all pending votes are cleared and the full signer list is committed to `ExtraData`.
+`CliqueSnapshot` captures the consensus state at a specific block: the authorized signer set, active votes, vote tallies and the block's `Timestamp`. Snapshots are cached by block hash (the 100 with the highest block numbers) and cloned for thread safety. At epoch boundaries, all pending votes are cleared and the full signer list is committed to `ExtraData`; a checkpoint block whose listed signers differ from the snapshot is refused.
 
 ### Voting Mechanism
 
@@ -148,23 +151,52 @@ else
 }
 ```
 
+### Example 3b: What Validation Refuses
+
+`ValidateBlockInternal(header, parent)` returns `CliqueValidationResult.Fail` when:
+
+- the supplied `parent` is not the parent of `header` (wrong parent hash or block number): `Unknown ancestor`;
+- `header.Timestamp` is earlier than `parent.Timestamp + BlockPeriodSeconds`: `Invalid timestamp`;
+- there is no snapshot for the parent: `Unknown ancestor`;
+- the signer is not in the parent's snapshot, or signed within the recent-signers limit, or the difficulty does not match the signer's turn in that snapshot;
+- a checkpoint block lists signers other than the snapshot's.
+
+```csharp
+var tooEarly = engine.ValidateBlockInternal(header, parent);
+Console.WriteLine(tooEarly.Error);
+```
+
 ### Example 4: Block Production Strategy Integration
 
 ```csharp
 // Check if this node can produce the next block
 if (strategy.CanProduceBlock(nextBlockNumber))
 {
-    // Get signing delay (zero for in-turn, random for out-of-turn)
+    // Get signing delay (time until parent timestamp + period for in-turn, plus a random wiggle for out-of-turn)
     var delay = await strategy.GetSigningDelayAsync(nextBlockNumber);
     await Task.Delay(delay);
 
-    // Prepare block options with difficulty and extra data
+    // Prepare block options with timestamp (never earlier than parent + period), difficulty and extra data
     var options = strategy.PrepareBlockOptions(nextBlockNumber, parentHeader);
 
     // After block execution, finalize (sign + apply state)
     await strategy.FinalizeBlockAsync(header, blockHash, result);
 }
 ```
+
+### Example 5: Persist Snapshots and Recover After a Restart
+
+```csharp
+var store = new InMemoryCliqueSnapshotStore();
+var engine = new CliqueEngine(config, logger, store);
+
+var gate = new CliqueConsensusBlockGate(engine, blockStore, logger);
+await gate.RestoreHeadSnapshotAsync(ct);
+
+bool known = engine.HasSnapshot(blockHash);
+```
+
+`ApplyBlock` saves a snapshot to the store whenever the block number is a multiple of `CliqueEngine.SnapshotInterval` (1024). `RestoreHeadSnapshotAsync` reads the head of the block store and rebuilds its snapshot, starting from the nearest persisted or checkpoint snapshot instead of walking from genesis; at genesis it adopts the genesis signers. Before it validates a block the gate also rebuilds any missing parent snapshot from the block store.
 
 ## API Reference
 
@@ -176,7 +208,9 @@ Central consensus engine implementing `IConsensusEngine`.
 public class CliqueEngine : IConsensusEngine, IDisposable
 {
     // Initialization
+    public const int SnapshotInterval = 1024;
     public CliqueEngine(CliqueConfig config, ILogger<CliqueEngine>? logger = null);
+    public CliqueEngine(CliqueConfig config, ILogger<CliqueEngine>? logger, ICliqueSnapshotStore? snapshotStore);
     public void ApplyGenesisSigners(IEnumerable<string> signers);
 
     // Consensus queries
@@ -184,8 +218,11 @@ public class CliqueEngine : IConsensusEngine, IDisposable
     public BigInteger GetDifficulty(long blockNumber, string signerAddress);
     public bool CanProduceBlock(long blockNumber);
     public Task<TimeSpan> GetSigningDelayAsync(long blockNumber, CancellationToken cancellationToken = default);
+    public long NextBlockTimestamp(BlockHeader? parent);
+    public bool HasSnapshot(byte[] blockHash);
 
     // Block signing and validation
+    public string AuthorOf(BlockHeader header);
     public byte[] SignBlock(BlockHeader header);
     public string? RecoverSigner(BlockHeader header);
     public bool ValidateBlock(BlockHeader header, BlockHeader? parent);
@@ -196,6 +233,40 @@ public class CliqueEngine : IConsensusEngine, IDisposable
     public byte[] PrepareExtraData(long blockNumber, object? vote = null);
 }
 ```
+
+`CanProduceBlock(blockNumber)` is `false` when no signer key is configured, when the local signer is outside the signer set, or when it sealed one of the last blocks within the recent-signers limit. `GetSigningDelayAsync` returns the time until the head snapshot's timestamp plus `BlockPeriodSeconds` for an in-turn signer, and that plus `WiggleTimeMs` and a random 0 to `WiggleTimeMs` for an out-of-turn signer. `NextBlockTimestamp(parent)` is the larger of the parent's timestamp plus `BlockPeriodSeconds` and the current Unix time (the current time when `parent` is `null`). `AuthorOf(header)` returns the local signer address when `header.ExtraData` is `null` or shorter than 97 bytes (`EXTRA_VANITY` + `EXTRA_SEAL`) or when its final 65 seal bytes are all zero, otherwise the signer recovered from the seal, or `header.Coinbase` when recovery from the seal fails. `HasSnapshot(blockHash)` checks the in-memory cache and then the `ICliqueSnapshotStore`.
+
+### CliqueConsensusBlockGate
+
+Validates each block against its parent's snapshot before it is executed and keeps the snapshots in step with the block store.
+
+```csharp
+public sealed class CliqueConsensusBlockGate : IConsensusBlockGate
+{
+    public CliqueConsensusBlockGate(CliqueEngine engine, IBlockStore blocks, ILogger? logger = null);
+    public Task RestoreHeadSnapshotAsync(CancellationToken ct);
+}
+```
+
+### ICliqueSnapshotStore and CliqueSnapshotCodec
+
+```csharp
+public interface ICliqueSnapshotStore
+{
+    void Save(CliqueSnapshot snapshot);
+    CliqueSnapshot? Load(byte[] blockHash);
+}
+
+public sealed class InMemoryCliqueSnapshotStore : ICliqueSnapshotStore { }
+
+public static class CliqueSnapshotCodec
+{
+    public static byte[] Encode(CliqueSnapshot snapshot);
+    public static CliqueSnapshot? Decode(byte[] encoded);
+}
+```
+
+`CliqueSnapshotCodec.Decode` returns `null` for a truncated or corrupt buffer instead of throwing. `Load` must return the snapshot saved for exactly that block hash; the engine ignores a snapshot whose `BlockHash` differs.
 
 ### CliqueBlockProductionStrategy
 
@@ -237,6 +308,7 @@ Key properties:
 Point-in-time consensus state (mutable; `Clone()` produces an independent copy for thread safety).
 
 Key properties:
+- `BlockNumber`, `BlockHash`, `Timestamp` - The block the snapshot describes
 - `Signers` - Ordered list of authorized signer addresses
 - `Votes` - Active voting intents
 - `VoteTally` - Aggregated vote counts

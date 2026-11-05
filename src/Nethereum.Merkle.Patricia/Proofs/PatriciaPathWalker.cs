@@ -1,4 +1,5 @@
 using System;
+using Nethereum.Documentation;
 
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Storage;
@@ -24,27 +25,26 @@ namespace Nethereum.Merkle.Patricia.Proofs
             return nibbles;
         }
 
-        public static byte[] NibblesToCompact(byte[] nibbles)
+        public static byte[] NibblesToCompact(byte[] nibbles) => NibblesToCompact(nibbles, false);
+
+        [NethereumDocExample(DocSection.ChainInfrastructure, "compact-encoding", "Hex-prefix encode a nibble path as extension or leaf")]
+        public static byte[] NibblesToCompact(byte[] nibbles, bool leaf)
         {
-            if (nibbles == null || nibbles.Length == 0) return new byte[] { 0x00 };
-            bool isOdd = (nibbles.Length & 1) != 0;
-            int outLen = 1 + (isOdd ? (nibbles.Length - 1) / 2 : nibbles.Length / 2);
-            var compact = new byte[outLen];
-            int srcStart;
-            if (isOdd)
-            {
-                compact[0] = (byte)(0x10 | (nibbles[0] & 0x0f));
-                srcStart = 1;
-            }
-            else
-            {
-                compact[0] = 0x00;
-                srcStart = 0;
-            }
-            int dst = 1;
-            for (int i = srcStart; i < nibbles.Length; i += 2)
-                compact[dst++] = (byte)((nibbles[i] << 4) | (nibbles[i + 1] & 0x0f));
+            var length = nibbles == null ? 0 : nibbles.Length;
+            var isOdd = (length & 1) != 0;
+            var compact = new byte[1 + length / 2];
+            compact[0] = (byte)((leaf ? 0x20 : 0x00) | (isOdd ? 0x10 : 0x00));
+            var src = 0;
+            if (isOdd) compact[0] |= (byte)(nibbles[src++] & 0x0f);
+            for (var dst = 1; dst < compact.Length; dst++, src += 2)
+                compact[dst] = (byte)((nibbles[src] << 4) | (nibbles[src + 1] & 0x0f));
             return compact;
+        }
+
+        internal static void ResolveInner(HashNode hash, ITrieNodeStore store)
+        {
+            if (hash.InnerNode == null && store != null)
+                hash.DecodeInnerNode(store, false);
         }
 
         public static byte[] WalkPath(Node root, ITrieNodeStore store, byte[] pathNibbles)
@@ -57,8 +57,7 @@ namespace Nethereum.Merkle.Patricia.Proofs
         {
             if (node is HashNode hash)
             {
-                if (hash.InnerNode == null && store != null)
-                    hash.DecodeInnerNode(store, false);
+                ResolveInner(hash, store);
                 if (hash.InnerNode == null) return new byte[0];
                 node = hash.InnerNode;
             }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Sync;
+using Nethereum.Documentation;
 using Nethereum.Model;
 
 namespace Nethereum.Consensus.Clique
@@ -18,6 +19,8 @@ namespace Nethereum.Consensus.Clique
     {
         private readonly CliqueEngine _engine;
         private readonly IBlockStore _blocks;
+        private const int ImmutabilityThreshold = 90000;
+
         private readonly ILogger? _logger;
 
         public CliqueConsensusBlockGate(CliqueEngine engine, IBlockStore blocks, ILogger? logger = null)
@@ -55,8 +58,72 @@ namespace Nethereum.Consensus.Clique
 
         private async Task<CliqueValidationResult> VerdictForAsync(BlockHeader header, CancellationToken ct)
         {
+            await RebuildMissingSnapshotsAsync(header, ct).ConfigureAwait(false);
             var parent = await ParentOfAsync(header, ct).ConfigureAwait(false);
             return _engine.ValidateBlockInternal(header, parent);
+        }
+
+        [NethereumDocExample(DocSection.Consensus, "clique", "Restore the head snapshot after a restart")]
+        public async Task RestoreHeadSnapshotAsync(CancellationToken ct)
+        {
+            var head = await _blocks.GetLatestAsync().ConfigureAwait(false);
+            if (head == null || (long)head.BlockNumber == 0)
+            {
+                _engine.AdoptGenesisHead();
+                return;
+            }
+
+            var hash = await _blocks.GetHashByNumberAsync(head.BlockNumber).ConfigureAwait(false);
+            if (hash == null) return;
+
+            await RebuildSnapshotAsync(head, hash, ct).ConfigureAwait(false);
+            _engine.AdoptHead(hash);
+        }
+
+        private async Task RebuildMissingSnapshotsAsync(BlockHeader header, CancellationToken ct)
+        {
+            if ((long)header.BlockNumber <= 1 || header.ParentHash == null) return;
+
+            var parent = await ParentOfAsync(header, ct).ConfigureAwait(false);
+            if (parent == null) return;
+
+            await RebuildSnapshotAsync(parent, header.ParentHash, ct).ConfigureAwait(false);
+        }
+
+        private async Task RebuildSnapshotAsync(BlockHeader tip, byte[] tipHash, CancellationToken ct)
+        {
+            var missing = new Stack<(BlockHeader Header, byte[] Hash)>();
+            var cursor = tip;
+            var cursorHash = tipHash;
+
+            while (!_engine.HasSnapshot(cursorHash))
+            {
+                ct.ThrowIfCancellationRequested();
+                var number = (long)cursor.BlockNumber;
+                var parent = number > 1 ? await ParentOfAsync(cursor, ct).ConfigureAwait(false) : null;
+
+                if (number > 1 && number % _engine.Config.EpochLength == 0
+                    && (parent == null || missing.Count > ImmutabilityThreshold))
+                {
+                    _engine.RecordCheckpoint(cursor, cursorHash);
+                    break;
+                }
+
+                missing.Push((cursor, cursorHash));
+                if (number <= 1) break;
+                if (parent == null) return;
+
+                cursorHash = cursor.ParentHash!;
+                cursor = parent;
+            }
+
+            while (missing.Count > 0)
+            {
+                var (ancestor, hash) = missing.Pop();
+                var signer = _engine.RecoverSigner(ancestor);
+                if (signer == null) return;
+                _engine.RecordBlock(ancestor, signer, hash);
+            }
         }
 
         private async Task<BlockHeader?> ParentOfAsync(BlockHeader header, CancellationToken ct)

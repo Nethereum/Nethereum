@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Light client SSZ container implementations for beacon/consensus types.</Description>
     <AssemblyTitle>Nethereum.Consensus.Ssz</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <AssemblyName>Nethereum.Consensus.Ssz</AssemblyName>

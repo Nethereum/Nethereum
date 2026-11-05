@@ -42,8 +42,7 @@ namespace Nethereum.Merkle.Patricia.Proofs
         {
             if (node is HashNode hash)
             {
-                if (hash.InnerNode == null && store != null)
-                    hash.DecodeInnerNode(store, false);
+                PatriciaPathWalker.ResolveInner(hash, store);
                 if (hash.InnerNode == null) return;
                 node = hash.InnerNode;
             }

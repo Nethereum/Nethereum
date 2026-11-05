@@ -1,6 +1,8 @@
 using System.Numerics;
 using Microsoft.Extensions.Logging;
+using Nethereum.CoreChain;
 using Nethereum.CoreChain.Consensus;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Signer;
@@ -14,10 +16,13 @@ namespace Nethereum.Consensus.Clique
         private readonly ILogger<CliqueEngine>? _logger;
         private readonly EthECKey? _signerKey;
         private readonly string _signerAddress;
-        private readonly Dictionary<long, CliqueSnapshot> _snapshots = new();
+        private readonly Dictionary<string, CliqueSnapshot> _snapshots = new();
         private readonly object _snapshotLock = new();
+        private readonly ICliqueSnapshotStore? _snapshotStore;
+        private CliqueSnapshot _genesisSnapshot;
         private CliqueSnapshot _currentSnapshot;
 
+        public const int SnapshotInterval = 1024;
         public const int DIFF_IN_TURN = 2;
         public const int DIFF_OUT_OF_TURN = 1;
         public const int EXTRA_VANITY = 32;
@@ -34,7 +39,13 @@ namespace Nethereum.Consensus.Clique
         public event EventHandler<BlockProducedEventArgs>? BlockProduced;
 
         public CliqueEngine(CliqueConfig config, ILogger<CliqueEngine>? logger = null)
+            : this(config, logger, null)
         {
+        }
+
+        public CliqueEngine(CliqueConfig config, ILogger<CliqueEngine>? logger, ICliqueSnapshotStore? snapshotStore)
+        {
+            _snapshotStore = snapshotStore;
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger;
 
@@ -53,6 +64,7 @@ namespace Nethereum.Consensus.Clique
                 BlockNumber = 0,
                 Signers = CliqueSnapshot.NormalizedAndSorted(config.InitialSigners)
             };
+            _genesisSnapshot = _currentSnapshot;
         }
 
         public void ApplyGenesisSigners(IEnumerable<string> signers)
@@ -64,23 +76,56 @@ namespace Nethereum.Consensus.Clique
                     BlockNumber = 0,
                     Signers = CliqueSnapshot.NormalizedAndSorted(signers)
                 };
-                _snapshots[0] = _currentSnapshot.Clone();
+                _genesisSnapshot = _currentSnapshot;
+                _snapshots.Clear();
             }
+        }
+
+        [NethereumDocExample(DocSection.Consensus, "clique", "Ask whether a snapshot exists for a block hash")]
+        public bool HasSnapshot(byte[] blockHash)
+        {
+            lock (_snapshotLock)
+            {
+                if (_snapshots.ContainsKey(blockHash.ToHex()))
+                    return true;
+
+                var persisted = _snapshotStore?.Load(blockHash);
+                if (persisted == null || !ByteUtil.AreEqual(persisted.BlockHash, blockHash))
+                    return false;
+
+                Store(persisted);
+                return true;
+            }
+        }
+
+        private CliqueSnapshot? SnapshotOfParent(BlockHeader header)
+        {
+            if ((long)header.BlockNumber == 0)
+                return null;
+
+            if (header.ParentHash != null && _snapshots.TryGetValue(header.ParentHash.ToHex(), out var known))
+                return known;
+
+            return (long)header.BlockNumber == 1 ? _genesisSnapshot : null;
+        }
+
+        private static bool IsInTurn(CliqueSnapshot snapshot, long blockNumber, string signerAddress)
+        {
+            if (snapshot.TotalSigners == 0)
+                return false;
+
+            var signerIndex = snapshot.SignerIndex(signerAddress.ToLowerInvariant());
+            if (signerIndex < 0)
+                return false;
+
+            return (int)(blockNumber % snapshot.TotalSigners) == signerIndex;
         }
 
         public bool IsInTurn(long blockNumber, string signerAddress)
         {
             lock (_snapshotLock)
             {
-                if (_currentSnapshot.TotalSigners == 0)
-                    return false;
-
-                var signerIndex = _currentSnapshot.SignerIndex(signerAddress.ToLowerInvariant());
-                if (signerIndex < 0)
-                    return false;
-
-                var turn = (int)(blockNumber % _currentSnapshot.TotalSigners);
-                return turn == signerIndex;
+                return IsInTurn(_currentSnapshot, blockNumber, signerAddress);
             }
         }
 
@@ -114,24 +159,78 @@ namespace Nethereum.Consensus.Clique
                     return false;
                 }
 
+                var limit = _config.CalculateRecentSignersLimit(_currentSnapshot.TotalSigners);
+                if (_currentSnapshot.SignedWithinLimit(_signerAddress, blockNumber, limit))
+                {
+                    _logger?.LogDebug("CanProduceBlock: Signer {Address} signed recently, must wait for others before block {Number}",
+                        _signerAddress, blockNumber);
+                    return false;
+                }
+
                 return true;
             }
         }
 
         public async Task<TimeSpan> GetSigningDelayAsync(long blockNumber, CancellationToken cancellationToken = default)
         {
-            var inTurn = IsInTurn(blockNumber, _signerAddress);
+            var untilPeriodElapsed = TimeUntilEarliestNextBlock();
 
-            if (inTurn)
+            if (IsInTurn(blockNumber, _signerAddress))
             {
-                return TimeSpan.Zero;
+                return untilPeriodElapsed;
             }
             else
             {
                 var random = new Random();
                 var wiggle = random.Next(0, _config.WiggleTimeMs);
-                return TimeSpan.FromMilliseconds(_config.WiggleTimeMs + wiggle);
+                return untilPeriodElapsed + TimeSpan.FromMilliseconds(_config.WiggleTimeMs + wiggle);
             }
+        }
+
+        [NethereumDocExample(DocSection.Consensus, "clique", "The earliest timestamp a produced block may carry")]
+        public long NextBlockTimestamp(BlockHeader? parent)
+        {
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            return parent == null ? now : Math.Max((long)parent.Timestamp + _config.BlockPeriodSeconds, now);
+        }
+
+        private TimeSpan TimeUntilEarliestNextBlock()
+        {
+            long headTimestamp;
+            lock (_snapshotLock)
+            {
+                headTimestamp = _currentSnapshot.Timestamp;
+            }
+
+            if (headTimestamp == 0)
+                return TimeSpan.Zero;
+
+            var earliest = DateTimeOffset.FromUnixTimeSeconds(headTimestamp + _config.BlockPeriodSeconds);
+            var wait = earliest - DateTimeOffset.UtcNow;
+            return wait > TimeSpan.Zero ? wait : TimeSpan.Zero;
+        }
+
+        [NethereumDocExample(DocSection.Consensus, "clique", "Recover the signer that authored a block")]
+        public string AuthorOf(BlockHeader header)
+        {
+            if (header.ExtraData == null || header.ExtraData.Length < EXTRA_VANITY + EXTRA_SEAL)
+                return _signerAddress;
+
+            var sealStart = header.ExtraData.Length - EXTRA_SEAL;
+            var sealed_ = false;
+            for (var i = sealStart; i < header.ExtraData.Length; i++)
+                if (header.ExtraData[i] != 0) { sealed_ = true; break; }
+
+            return sealed_ ? RecoverSigner(header) ?? header.Coinbase : _signerAddress;
+        }
+
+        private static bool IsParentOf(BlockHeader parent, BlockHeader header)
+        {
+            if ((long)parent.BlockNumber + 1 != (long)header.BlockNumber)
+                return false;
+
+            return header.ParentHash != null
+                && ByteUtil.AreEqual(BlockHashCalculator.ForHeader(parent), header.ParentHash);
         }
 
         public byte[] SignBlock(BlockHeader header)
@@ -196,6 +295,14 @@ namespace Nethereum.Consensus.Clique
             if ((BigInteger)header.Difficulty != DIFF_IN_TURN && (BigInteger)header.Difficulty != DIFF_OUT_OF_TURN)
                 return CliqueValidationResult.Fail("Invalid difficulty");
 
+            if (parent != null && !IsParentOf(parent, header))
+                return CliqueValidationResult.Fail(
+                    $"Unknown ancestor: the supplied parent is not the parent of block {header.BlockNumber}");
+
+            if (parent != null && (long)parent.Timestamp + _config.BlockPeriodSeconds > (long)header.Timestamp)
+                return CliqueValidationResult.Fail(
+                    $"Invalid timestamp: block {header.BlockNumber} at {header.Timestamp} is earlier than parent {parent.Timestamp} plus period {_config.BlockPeriodSeconds}");
+
             string? signer;
             try
             {
@@ -211,15 +318,23 @@ namespace Nethereum.Consensus.Clique
 
             lock (_snapshotLock)
             {
-                if (!_currentSnapshot.IsAuthorized(signer))
+                var snapshot = SnapshotOfParent(header);
+                if (snapshot == null)
+                    return CliqueValidationResult.Fail($"Unknown ancestor: no snapshot for the parent of block {header.BlockNumber}");
+
+                if (!snapshot.IsAuthorized(signer))
                     return CliqueValidationResult.Fail($"Unauthorized signer: {signer}");
 
-                var recentSignersLimit = _config.CalculateRecentSignersLimit(_currentSnapshot.TotalSigners);
-                if (_currentSnapshot.SignedWithinLimit(signer, (long)header.BlockNumber, recentSignersLimit))
+                var recentSignersLimit = _config.CalculateRecentSignersLimit(snapshot.TotalSigners);
+                if (snapshot.SignedWithinLimit(signer, (long)header.BlockNumber, recentSignersLimit))
                     return CliqueValidationResult.Fail(
                         $"Signer {signer} signed recently: only one block out of every {recentSignersLimit} may be signed by the same signer");
 
-                var expectedDifficulty = GetDifficulty((long)header.BlockNumber, signer);
+                if (IsCheckpointBlock((long)header.BlockNumber)
+                    && !CheckpointMatches(snapshot, DecodeCheckpointSigners(header.ExtraData)))
+                    return CliqueValidationResult.Fail("Checkpoint signer list does not match the snapshot signers");
+
+                var expectedDifficulty = IsInTurn(snapshot, (long)header.BlockNumber, signer) ? DIFF_IN_TURN : DIFF_OUT_OF_TURN;
                 if ((BigInteger)header.Difficulty != expectedDifficulty)
                     return CliqueValidationResult.Fail($"Wrong difficulty: expected {expectedDifficulty}");
             }
@@ -231,57 +346,110 @@ namespace Nethereum.Consensus.Clique
         {
             lock (_snapshotLock)
             {
-                var newSnapshot = _currentSnapshot.Clone();
-                newSnapshot.BlockNumber = (long)header.BlockNumber;
-                newSnapshot.BlockHash = blockHash ?? BlockHeaderEncoder.Current.EncodeCliqueSigHeaderAndHash(header);
+                _currentSnapshot = RecordSnapshot(header, signer, blockHash);
+            }
+        }
 
-                if ((long)header.BlockNumber % _config.EpochLength == 0)
-                {
-                    newSnapshot.Votes.Clear();
-                    newSnapshot.VoteTally.Clear();
+        internal void RecordBlock(BlockHeader header, string signer, byte[] blockHash)
+        {
+            lock (_snapshotLock)
+            {
+                RecordSnapshot(header, signer, blockHash);
+            }
+        }
 
-                    var checkpointSigners = DecodeCheckpointSigners(header.ExtraData);
-                    if (checkpointSigners != null)
-                        newSnapshot.Signers = CliqueSnapshot.NormalizedAndSorted(checkpointSigners);
-                }
-                else if (_config.EnableVoting && header.Nonce != null && header.Nonce.Length == 8)
+        internal void RecordCheckpoint(BlockHeader header, byte[] blockHash)
+        {
+            var signers = DecodeCheckpointSigners(header.ExtraData);
+            if (signers == null)
+                return;
+
+            lock (_snapshotLock)
+            {
+                var snapshot = new CliqueSnapshot
                 {
-                    var nonceValue = BitConverter.ToUInt64(header.Nonce, 0);
-                    if (nonceValue == 0xFFFFFFFFFFFFFFFF || nonceValue == 0)
+                    BlockNumber = (long)header.BlockNumber,
+                    Timestamp = (long)header.Timestamp,
+                    BlockHash = blockHash,
+                    Signers = CliqueSnapshot.NormalizedAndSorted(signers)
+                };
+                Store(snapshot);
+            }
+        }
+
+        internal void AdoptGenesisHead()
+        {
+            lock (_snapshotLock)
+            {
+                _currentSnapshot = _genesisSnapshot.Clone();
+            }
+        }
+
+        internal void AdoptHead(byte[] blockHash)
+        {
+            lock (_snapshotLock)
+            {
+                if (_snapshots.TryGetValue(blockHash.ToHex(), out var snapshot))
+                    _currentSnapshot = snapshot.Clone();
+            }
+        }
+
+        private void Store(CliqueSnapshot snapshot)
+        {
+            _snapshots[snapshot.BlockHash.ToHex()] = snapshot.Clone();
+
+            while (_snapshots.Count > 100)
+            {
+                var oldest = _snapshots.OrderBy(kv => kv.Value.BlockNumber).First().Key;
+                _snapshots.Remove(oldest);
+            }
+        }
+
+        private CliqueSnapshot RecordSnapshot(BlockHeader header, string signer, byte[]? blockHash)
+        {
+            var newSnapshot = (SnapshotOfParent(header) ?? _currentSnapshot).Clone();
+            newSnapshot.BlockNumber = (long)header.BlockNumber;
+            newSnapshot.Timestamp = (long)header.Timestamp;
+            newSnapshot.BlockHash = blockHash ?? new Sha3Keccack().CalculateHash(BlockHeaderEncoder.Current.Encode(header));
+
+            if ((long)header.BlockNumber % _config.EpochLength == 0)
+            {
+                newSnapshot.Votes.Clear();
+                newSnapshot.VoteTally.Clear();
+            }
+            else if (_config.EnableVoting && header.Nonce != null && header.Nonce.Length == 8)
+            {
+                var nonceValue = BitConverter.ToUInt64(header.Nonce, 0);
+                if (nonceValue == 0xFFFFFFFFFFFFFFFF || nonceValue == 0)
+                {
+                    var authorize = nonceValue == 0xFFFFFFFFFFFFFFFF;
+                    var coinbase = string.IsNullOrEmpty(header.Coinbase)
+                        ? ""
+                        : AddressUtil.Current.ConvertToValid20ByteAddressLowerCase(header.Coinbase);
+
+                    if (!string.IsNullOrEmpty(coinbase) && coinbase != "0x0000000000000000000000000000000000000000")
                     {
-                        var authorize = nonceValue == 0xFFFFFFFFFFFFFFFF;
-                        var coinbase = string.IsNullOrEmpty(header.Coinbase)
-                            ? ""
-                            : AddressUtil.Current.ConvertToValid20ByteAddressLowerCase(header.Coinbase);
-
-                        if (!string.IsNullOrEmpty(coinbase) && coinbase != "0x0000000000000000000000000000000000000000")
+                        var voteKey = $"{signer}:{coinbase}";
+                        newSnapshot.Votes[voteKey] = new CliqueVote
                         {
-                            var voteKey = $"{signer}:{coinbase}";
-                            newSnapshot.Votes[voteKey] = new CliqueVote
-                            {
-                                Signer = signer,
-                                Target = coinbase.ToLowerInvariant(),
-                                Authorize = authorize,
-                                BlockNumber = (long)header.BlockNumber
-                            };
+                            Signer = signer,
+                            Target = coinbase.ToLowerInvariant(),
+                            Authorize = authorize,
+                            BlockNumber = (long)header.BlockNumber
+                        };
 
-                            UpdateVoteTally(newSnapshot);
-                        }
+                        UpdateVoteTally(newSnapshot);
                     }
                 }
-
-                var recentSignersLimit = _config.CalculateRecentSignersLimit(newSnapshot.TotalSigners);
-                newSnapshot.RecordSigner((long)header.BlockNumber, signer, recentSignersLimit);
-
-                _currentSnapshot = newSnapshot;
-                _snapshots[(long)header.BlockNumber] = newSnapshot.Clone();
-
-                while (_snapshots.Count > 100)
-                {
-                    var oldest = _snapshots.Keys.Min();
-                    _snapshots.Remove(oldest);
-                }
             }
+
+            var recentSignersLimit = _config.CalculateRecentSignersLimit(newSnapshot.TotalSigners);
+            newSnapshot.RecordSigner((long)header.BlockNumber, signer, recentSignersLimit);
+
+            Store(newSnapshot);
+            if (newSnapshot.BlockNumber % SnapshotInterval == 0)
+                _snapshotStore?.Save(newSnapshot);
+            return newSnapshot;
         }
 
         private void UpdateVoteTally(CliqueSnapshot snapshot)
@@ -341,6 +509,12 @@ namespace Nethereum.Consensus.Clique
                 signers.Add("0x" + BitConverter.ToString(signerBytes).Replace("-", "").ToLowerInvariant());
             }
             return signers;
+        }
+
+        private static bool CheckpointMatches(CliqueSnapshot snapshot, List<string>? listed)
+        {
+            var listedSigners = listed ?? new List<string>();
+            return listedSigners.SequenceEqual(snapshot.Signers, StringComparer.OrdinalIgnoreCase);
         }
 
         private static bool IsAscendingByteOrder(List<string> signers)

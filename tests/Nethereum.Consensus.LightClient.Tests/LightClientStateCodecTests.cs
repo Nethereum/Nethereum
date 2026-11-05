@@ -139,5 +139,37 @@ namespace Nethereum.Consensus.LightClient.Tests
 
             Assert.True(LightClientStateCodec.TryDecode(good, out _));
         }
+
+        [Fact]
+        public void Given_BlobWrittenBeforeParticipantCounters_When_Decoded_Then_CountersTakeSpecInitialValues()
+        {
+            var state = PopulatedState();
+            state.PreviousMaxActiveParticipants = 400;
+            state.CurrentMaxActiveParticipants = 500;
+            var current = LightClientStateCodec.Encode(state);
+            Assert.True(LightClientStateCodec.TryDecode(current, out var roundTrip));
+            Assert.Equal(400, roundTrip.PreviousMaxActiveParticipants);
+            Assert.Equal(500, roundTrip.CurrentMaxActiveParticipants);
+
+            var payloadLength = BitConverter.ToInt32(current, 5) - 8;
+            var payload = current.Skip(9).Take(payloadLength).ToArray();
+            uint crc = 0xFFFFFFFF;
+            foreach (var b in payload)
+            {
+                crc ^= b;
+                for (int i = 0; i < 8; i++) crc = (crc >> 1) ^ (0xEDB88320 & (uint)(-(int)(crc & 1)));
+            }
+            var old = current.Take(5)
+                .Concat(BitConverter.GetBytes(payloadLength))
+                .Concat(payload)
+                .Concat(BitConverter.GetBytes(~crc))
+                .ToArray();
+
+            Assert.True(LightClientStateCodec.TryDecode(old, out var decoded));
+            Assert.Equal(0, decoded.PreviousMaxActiveParticipants);
+            Assert.Equal(0, decoded.CurrentMaxActiveParticipants);
+            Assert.Equal(state.FinalizedSlot, decoded.FinalizedSlot);
+            Assert.Equal(state.OptimisticSlot, decoded.OptimisticSlot);
+        }
     }
 }

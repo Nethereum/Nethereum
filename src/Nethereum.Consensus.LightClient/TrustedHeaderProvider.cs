@@ -7,6 +7,8 @@ namespace Nethereum.Consensus.LightClient
     {
         private readonly LightClientService _lightClient;
 
+        public string Name => "LightClient";
+
         public TimeSpan FinalizedStalenessThreshold { get; set; } = TimeSpan.FromMinutes(30);
         public TimeSpan OptimisticStalenessThreshold { get; set; } = TimeSpan.FromMinutes(5);
         public bool ThrowOnStaleHeader { get; set; } = false;
@@ -26,7 +28,7 @@ namespace Nethereum.Consensus.LightClient
             }
 
             var header = MapToHeader(state.FinalizedExecutionPayload);
-            ValidateStaleness(header, state.LastUpdated, FinalizedStalenessThreshold, "Finalized");
+            ValidateStaleness(header, FinalizedStalenessThreshold, "Finalized");
             return header;
         }
 
@@ -41,10 +43,7 @@ namespace Nethereum.Consensus.LightClient
             }
 
             var header = MapToHeader(execution);
-            var lastUpdated = state.OptimisticExecutionPayload != null
-                ? state.OptimisticLastUpdated
-                : state.LastUpdated;
-            ValidateStaleness(header, lastUpdated, OptimisticStalenessThreshold, "Optimistic");
+            ValidateStaleness(header, OptimisticStalenessThreshold, "Optimistic");
             return header;
         }
 
@@ -54,9 +53,9 @@ namespace Nethereum.Consensus.LightClient
             return state.GetBlockHash(blockNumber);
         }
 
-        private void ValidateStaleness(TrustedExecutionHeader header, DateTimeOffset lastUpdated, TimeSpan threshold, string headerType)
+        private void ValidateStaleness(TrustedExecutionHeader header, TimeSpan threshold, string headerType)
         {
-            var age = DateTimeOffset.UtcNow - lastUpdated;
+            var age = DateTimeOffset.UtcNow - header.Timestamp;
 
             if (age > threshold)
             {

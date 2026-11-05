@@ -15,6 +15,8 @@ namespace Nethereum.Ssz
             _offset = 0;
         }
 
+        public int Remaining => _data.Length - _offset;
+
         public bool ReadBoolean()
         {
             return ReadByte() != 0;
@@ -78,6 +80,10 @@ namespace Nethereum.Ssz
         {
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
             if (elementReader == null) throw new ArgumentNullException(nameof(elementReader));
+            if (count > reader.Remaining)
+            {
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
+            }
 
             var result = new T[count];
             for (var i = 0; i < count; i++)
@@ -90,6 +96,13 @@ namespace Nethereum.Ssz
 
         public byte[][] ReadVector(int elementCount, int elementSize)
         {
+            if (elementCount < 0) throw new ArgumentOutOfRangeException(nameof(elementCount));
+            if (elementSize < 0) throw new ArgumentOutOfRangeException(nameof(elementSize));
+            if ((long)elementCount * Math.Max(elementSize, 1) > Remaining)
+            {
+                throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
+            }
+
             var result = new byte[elementCount][];
             for (var i = 0; i < elementCount; i++)
             {
@@ -114,7 +127,7 @@ namespace Nethereum.Ssz
 
         private void EnsureRemaining(int count)
         {
-            if (_offset + count > _data.Length)
+            if (count < 0 || count > _data.Length - _offset)
             {
                 throw new InvalidOperationException("Attempted to read past the end of the SSZ buffer.");
             }

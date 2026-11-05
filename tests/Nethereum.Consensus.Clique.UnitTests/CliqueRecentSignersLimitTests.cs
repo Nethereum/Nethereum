@@ -30,12 +30,15 @@ namespace Nethereum.Consensus.Clique.UnitTests
             EpochLength = 30000
         });
 
-        private static BlockHeader BuildSealedHeader(EthECKey signer, long number, BigInteger difficulty)
+        private static byte[] HashOf(BlockHeader header) =>
+            new Sha3Keccack().CalculateHash(BlockHeaderEncoder.Current.Encode(header));
+
+        private static BlockHeader BuildSealedHeader(EthECKey signer, long number, BigInteger difficulty, BlockHeader? parent = null)
         {
             var header = new BlockHeader
             {
                 BlockNumber = number,
-                ParentHash = new byte[32],
+                ParentHash = parent == null ? new byte[32] : HashOf(parent),
                 Difficulty = (EvmUInt256)difficulty,
                 MixHash = new byte[32],
                 Nonce = new byte[8],
@@ -56,9 +59,9 @@ namespace Nethereum.Consensus.Clique.UnitTests
 
             var header1 = BuildSealedHeader(KeyA, 1, engine.GetDifficulty(1, KeyA.GetPublicAddress()));
             Assert.True(engine.ValidateBlock(header1, null));
-            engine.ApplyBlock(header1, KeyA.GetPublicAddress());
+            engine.ApplyBlock(header1, KeyA.GetPublicAddress(), HashOf(header1));
 
-            var header2 = BuildSealedHeader(KeyA, 2, engine.GetDifficulty(2, KeyA.GetPublicAddress()));
+            var header2 = BuildSealedHeader(KeyA, 2, engine.GetDifficulty(2, KeyA.GetPublicAddress()), header1);
             var verdict = engine.ValidateBlockInternal(header2, header1);
 
             Assert.False(verdict.IsValid);
@@ -71,12 +74,12 @@ namespace Nethereum.Consensus.Clique.UnitTests
             var engine = EngineWithSigners(KeyA, KeyB, KeyC);
 
             var header1 = BuildSealedHeader(KeyA, 1, engine.GetDifficulty(1, KeyA.GetPublicAddress()));
-            engine.ApplyBlock(header1, KeyA.GetPublicAddress());
+            engine.ApplyBlock(header1, KeyA.GetPublicAddress(), HashOf(header1));
 
-            var header2 = BuildSealedHeader(KeyB, 2, engine.GetDifficulty(2, KeyB.GetPublicAddress()));
-            engine.ApplyBlock(header2, KeyB.GetPublicAddress());
+            var header2 = BuildSealedHeader(KeyB, 2, engine.GetDifficulty(2, KeyB.GetPublicAddress()), header1);
+            engine.ApplyBlock(header2, KeyB.GetPublicAddress(), HashOf(header2));
 
-            var header3 = BuildSealedHeader(KeyA, 3, engine.GetDifficulty(3, KeyA.GetPublicAddress()));
+            var header3 = BuildSealedHeader(KeyA, 3, engine.GetDifficulty(3, KeyA.GetPublicAddress()), header2);
             var verdict = engine.ValidateBlockInternal(header3, header2);
 
             Assert.True(verdict.IsValid, verdict.Error);
@@ -90,11 +93,11 @@ namespace Nethereum.Consensus.Clique.UnitTests
 
             for (long number = 1; number <= 5; number++)
             {
-                var header = BuildSealedHeader(KeyA, number, engine.GetDifficulty(number, KeyA.GetPublicAddress()));
+                var header = BuildSealedHeader(KeyA, number, engine.GetDifficulty(number, KeyA.GetPublicAddress()), parent);
                 var verdict = engine.ValidateBlockInternal(header, parent);
 
                 Assert.True(verdict.IsValid, verdict.Error);
-                engine.ApplyBlock(header, KeyA.GetPublicAddress());
+                engine.ApplyBlock(header, KeyA.GetPublicAddress(), HashOf(header));
                 parent = header;
             }
         }
@@ -107,14 +110,20 @@ namespace Nethereum.Consensus.Clique.UnitTests
             var engine = EngineWithSigners(KeyA, KeyB, KeyC, keyD, keyE);
 
             var header1 = BuildSealedHeader(KeyA, 1, engine.GetDifficulty(1, KeyA.GetPublicAddress()));
-            engine.ApplyBlock(header1, KeyA.GetPublicAddress());
+            engine.ApplyBlock(header1, KeyA.GetPublicAddress(), HashOf(header1));
 
-            var header3 = BuildSealedHeader(KeyA, 3, engine.GetDifficulty(3, KeyA.GetPublicAddress()));
-            var tooSoon = engine.ValidateBlockInternal(header3, header1);
+            var header2 = BuildSealedHeader(KeyB, 2, engine.GetDifficulty(2, KeyB.GetPublicAddress()), header1);
+            engine.ApplyBlock(header2, KeyB.GetPublicAddress(), HashOf(header2));
+
+            var tooSoon = engine.ValidateBlockInternal(
+                BuildSealedHeader(KeyA, 3, engine.GetDifficulty(3, KeyA.GetPublicAddress()), header2), header2);
             Assert.False(tooSoon.IsValid);
 
-            var header4 = BuildSealedHeader(KeyA, 4, engine.GetDifficulty(4, KeyA.GetPublicAddress()));
-            var farEnough = engine.ValidateBlockInternal(header4, header1);
+            var header3 = BuildSealedHeader(KeyC, 3, engine.GetDifficulty(3, KeyC.GetPublicAddress()), header2);
+            engine.ApplyBlock(header3, KeyC.GetPublicAddress(), HashOf(header3));
+
+            var header4 = BuildSealedHeader(KeyA, 4, engine.GetDifficulty(4, KeyA.GetPublicAddress()), header3);
+            var farEnough = engine.ValidateBlockInternal(header4, header3);
             Assert.True(farEnough.IsValid, farEnough.Error);
         }
     }

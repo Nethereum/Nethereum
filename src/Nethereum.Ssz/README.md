@@ -424,6 +424,9 @@ SszReader(ReadOnlySpan<byte> data)  // Creates reader over byte span (ref struct
 
 **Utility:**
 - `byte[] ReadRemaining()`: Read all remaining bytes
+- `int Remaining`: Number of bytes not yet read
+
+**Bounds:** a read past the end of the buffer throws `InvalidOperationException`. `ReadList<T>` throws `InvalidOperationException` when `count` is larger than `Remaining`, and `ReadVector` throws `ArgumentOutOfRangeException` for a negative `elementCount` or `elementSize` and `InvalidOperationException` when `elementCount * Math.Max(elementSize, 1)` is larger than `Remaining` (a zero `elementSize` counts as 1), so a declared count cannot allocate more than the buffer can hold.
 
 ### SszMerkleizer
 

@@ -39,6 +39,8 @@ namespace Nethereum.Consensus.LightClient
                     w.Write((byte)kv.Value.Finality);
                     WriteBytes(w, kv.Value.BlockHash);
                 }
+                w.Write(state.PreviousMaxActiveParticipants);
+                w.Write(state.CurrentMaxActiveParticipants);
                 payload = ms.ToArray();
             }
 
@@ -96,6 +98,12 @@ namespace Nethereum.Consensus.LightClient
                     var finality = (BlockHashFinality)pr.ReadByte();
                     var hash = ReadBytes(pr);
                     s.BlockHashHistory[block] = new ProvenancedBlockHash(hash, finality);
+                }
+
+                if (pms.Position < pms.Length)
+                {
+                    s.PreviousMaxActiveParticipants = pr.ReadInt32();
+                    s.CurrentMaxActiveParticipants = pr.ReadInt32();
                 }
 
                 state = s;

@@ -229,7 +229,48 @@ var wrongRef = new HashNode { Hash = new byte[32], Owner = victim.Owner, Path = 
 Assert.Throws<InvalidOperationException>(() => ((ITrieNodeStore)pathStore).Get(wrongRef));
 ```
 
-A content store cannot be lied to — the key *is* the hash. A path store can, so it re-hashes the blob on every read and throws when the blob does not match the hash the caller asked for. The same check is exposed directly as `ProofVerification.Current.TrieNode.Verify(expectedHash, blob, hashProvider)`.
+A content store cannot be lied to — the key *is* the hash. A path store can, so it re-hashes the blob on every read and throws when the blob does not match the hash the caller asked for. The same check is exposed directly as `ProofVerification.Current.TrieNode.Verify(expectedHash, blob, hashProvider)`, and a store implementation reuses it through two static helpers on `TrieNodeVerification`:
+
+*From `TrieOperationsDocExampleTests.TrieNodeVerification_RequireAuthenticAndRootBlobHashesTo` (use case `key-path-storage`).*
+
+```csharp
+TrieNodeVerification.RequireAuthentic(reference, blob);
+bool isRoot = TrieNodeVerification.RootBlobHashesTo(blob, stateRoot);
+```
+
+`RequireAuthentic(Node reference, byte[] blob)` throws `InvalidOperationException` when the blob does not hash to `reference.GetHash()` (a null or empty blob passes). `RootBlobHashesTo(byte[] blob, byte[] stateRoot)` is `false` unless `stateRoot` is 32 bytes, the blob is non-empty and its Keccak-256 equals `stateRoot`.
+
+### A missing node is an exception, not an empty subtree
+
+*From `TrieOperationsDocExampleTests.MissingTrieNode_IsThrownForAHashReferenceTheStoreCannotResolve` (use case `missing-trie-node`).*
+
+```csharp
+var trie = PatriciaTrie.LoadFromStorage(root, rootOnlyStore);
+try { trie.Get(key); }
+catch (MissingTrieNodeException missing)
+{
+    byte[] hash = missing.Hash;
+    byte[] owner = missing.Owner;
+    byte[] path = missing.Path;
+}
+```
+
+`NodeDecoder.Decode` throws `MissingTrieNodeException(byte[] owner, byte[] path, byte[] hash)` when the store has no blob for a `HashNode`, unless that hash is the empty-trie root (then it is an `EmptyNode`). `Owner` is empty rather than null for the account trie. Earlier builds read a missing node as an empty subtree. The exception propagates from every public method that resolves a `HashNode` through the store: `NodeRlpDecoder.Decode(HashNode, ITrieNodeStore, bool)`, `HashNode.DecodeInnerNode`, `PatriciaTrie.Get`, `GetFromHashNode`, `Put` and `Delete`, `PatriciaPathWalker.WalkPath`, `ProofGenerator.GenerateProof` and `GeneratePathProof`, `PatriciaRangeProofGenerator.GenerateProof` and `PatriciaRangeIterator.EnumerateRange`, and `NodeDecoder.DecodeFromRlpData` / `NodeRlpDecoder.DecodeFromRlpData` when `decodeHashNodes` is true.
+
+### Hash a sorted key stream without building the trie
+
+*From `TrieOperationsDocExampleTests.StackTrie_HashesASortedStreamToThePatriciaRoot` (use case `stack-trie`).*
+
+```csharp
+var stack = new StackTrie(prefixNibbles: null, onNode: (path, blob) => store.Add(path, blob));
+foreach (var (key, value) in sortedRows)
+    stack.Update(key, value);
+
+byte[] root = stack.Hash();
+byte[] reference = stack.Reference();
+```
+
+`StackTrie(byte[] prefixNibbles = null, NodeEmitted onNode = null)` hashes 32-byte keys supplied in strictly ascending order and keeps only the open path in memory. `Update(byte[] key, byte[] value)` throws `ArgumentException` for a key that is not 32 bytes, not ascending or outside the prefix, and for an empty value, and `InvalidOperationException` after `Hash()` or `Reference()` has run. `Hash()` is the Keccak-256 root and equals the `PatriciaTrie` root over the same rows; `Reference()` is the parent's reference to the subtree, the 32-byte hash or, for a node whose encoding is shorter than 32 bytes, the encoding itself (the empty-trie root when no key was added). `NodeEmitted` is `delegate void NodeEmitted(byte[] path, byte[] blob)`; it is called with the node's nibble path (the prefix nibbles included) and its RLP encoding for each node whose encoding is 32 bytes or longer. `prefixNibbles` (at most 64 nibbles, each 0 to 15) hashes the subtree under that prefix.
 
 ### Bounded memory on large builds — save and collapse
 
@@ -279,6 +320,14 @@ All verifiers hang off the `ProofVerification.Current` front door — `Account`,
 | `IRangeProofVerifier` | `RangeProofResult Verify(byte[] rootHash, byte[] firstKey, IList<byte[]> keys, IList<byte[]> values, IList<byte[]> proofNodes)` and `bool VerifyEntry(byte[] root, byte[] keyHash, byte[] expectedValue, IList<byte[]> proof)` |
 | `ITransactionProofVerifier` | `bool Verify(string transactionsRoot, List<IndexedSignedTransaction> transactions)` |
 | `ITrieNodeVerifier` | `bool Verify(byte[] expectedHash, byte[] blob, IHashProvider hashProvider)` |
+
+A malformed proof is a `false` result, never an exception: the account, storage, range and transaction verifiers and `ProofVerification.Current.Range.VerifyEntry` catch decoding failures (an empty compact key, an undecodable node) and return `false` (`RangeProofResult.Invalid` for `Verify`).
+
+*From `TrieOperationsDocExampleTests.Verifiers_ReturnFalseForMalformedProofs` (use case `proof-verification`).*
+
+```csharp
+var accepted = ProofVerification.Current.Range.VerifyEntry(root, keyHash, expectedValue, new List<byte[]> { new byte[] { 0xC0 } });
+```
 
 Each concrete verifier also exposes its own `Current` singleton, and `ProofVerification` has a constructor taking all five so you can substitute one. The concrete class names do **not** follow one pattern — the range verifier is `PatriciaRangeProofVerifier`, not a `RangeProofVerification`:
 
@@ -394,7 +443,17 @@ public class NodeDecoder
 
 A 32-byte child becomes a `HashNode` carrying `{Hash, Owner, Path}`; a shorter child is decoded inline.
 
-`PatriciaPathWalker` exposes the nibble/compact conversions the trie uses — `CompactToNibbles(byte[] compact)`, `NibblesToCompact(byte[] nibbles)`, `WalkPath(Node root, ITrieNodeStore store, byte[] pathNibbles)`.
+`PatriciaPathWalker` exposes the nibble/compact conversions the trie uses — `CompactToNibbles(byte[] compact)`, `NibblesToCompact(byte[] nibbles)`, `NibblesToCompact(byte[] nibbles, bool leaf)`, `WalkPath(Node root, ITrieNodeStore store, byte[] pathNibbles)`.
+
+*From `TrieOperationsDocExampleTests.NibblesToCompact_SetsTheLeafAndOddFlags` (use case `compact-encoding`).*
+
+```csharp
+var nibbles = new byte[] { 1, 2, 3 };
+byte[] extension = PatriciaPathWalker.NibblesToCompact(nibbles, leaf: false);
+byte[] leaf = PatriciaPathWalker.NibblesToCompact(nibbles, leaf: true);
+```
+
+`extension` is `0x1123` and `leaf` is `0x3123`: `leaf` sets the `0x20` flag and an odd length sets `0x10`. `NibblesToCompact(nibbles)` is `leaf: false`, and a null or empty path gives `0x00` (`0x20` for a leaf).
 
 ## PatriciaTrie surface (reference)
 
@@ -403,10 +462,11 @@ A 32-byte child becomes a `HashNode` carrying `{Hash, Owner, Path}`; a shorter c
 | Constructors | `()` (empty trie, Keccak), `(IHashProvider)`, `(byte[] hashRoot)`, `(Node root)`, `(ITrieNodeStore store)`, `(byte[] hashRoot, ITrieNodeStore store)`, `(Node root, ITrieNodeStore store)`, `(ITrieNodeStore store, byte[] owner)`, `(byte[] hashRoot, ITrieNodeStore store, byte[] owner)`, `(Node root, ITrieNodeStore store, byte[] owner)` — each with an extra `IHashProvider` overload |
 | `LoadFromStorage` | `(byte[] rootHash, ITrieNodeStore store[, byte[] owner][, IHashProvider])` |
 | `ReattachFromRawRoot` | `(IRawNodeReader rawReader, ITrieNodeStore store, byte[] owner[, IHashProvider])` |
-| Properties | `Root`, `Store`, `HashProvider`, `Tracer` |
+| Properties | `Root`, `Store`, `HashProvider`, `Tracer`, `ClearExtensionSpansOnSave` |
 | Reads | `Get(byte[] key)` |
 | Writes | `Put(byte[] key, byte[] value)`, `Delete(byte[] key)` |
 | Commits | `SaveNodesToStorage()`, `SaveDirtyNodesToStorage()`, `SaveDirtyNodesToStorageAndCollapse()` |
+| `ClearExtensionSpansOnSave` | when `true` and the store is an `IRawNodeReader`, a commit also deletes the stored standalone nodes (32 bytes or longer) at the paths an extension node now spans |
 
 ## Related packages
 

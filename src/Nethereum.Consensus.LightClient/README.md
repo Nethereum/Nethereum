@@ -21,12 +21,14 @@ Nethereum.Consensus.LightClient implements the Ethereum light client sync protoc
 - Finalized and optimistic header tracking
 - Automatic sync committee rotation across periods
 - Block hash history (last 256 blocks)
-- Staleness detection with configurable thresholds
+- Staleness detection with configurable thresholds, measured from the execution header's own timestamp
+- Period-by-period catch-up when the store is more than one sync committee period behind, with an opt-in re-bootstrap
+- Wall-clock check: an update signed in a slot that has not happened yet is rejected
 - Persistent state storage abstraction
 
 **Security Model:**
 - Requires trusted weak subjectivity checkpoint to bootstrap
-- Verifies 512-validator sync committee signatures (baseline participation floor for updates; 2/3 supermajority participation required for finality updates)
+- Verifies 512-validator sync committee signatures (baseline participation floor for updates; 2/3 supermajority participation required for finality updates; an optimistic head only advances when participation is above half of the larger of the previous and current period's highest observed participation)
 - Tracks both finalized (2/3 finality) and optimistic (latest) headers
 - Uses BLS12-381 signature aggregation for efficient verification
 
@@ -34,12 +36,12 @@ Nethereum.Consensus.LightClient implements the Ethereum light client sync protoc
 
 ### LightClientService
 
-Main orchestrator for light client synchronization (LightClientService.cs:14-1151). Exposes the sync-committee domain type constant `public static readonly byte[] DomainSyncCommittee` (LightClientService.cs:23) and `public string LastRejectReason { get; private set; }` (LightClientService.cs:366), which records why the most recent update was rejected.
+Main orchestrator for light client synchronization (LightClientService.cs:14-1192). Exposes the sync-committee domain type constant `public static readonly byte[] DomainSyncCommittee` (LightClientService.cs:16), the limits `public const ulong MaxRequestLightClientUpdates = 128` (the most periods requested in one range call) and `public const long MaximumGossipClockDisparityMilliseconds = 500` (the clock tolerance of the signature-slot check), `public string LastRejectReason { get; private set; }` (LightClientService.cs:544), which records why the most recent update was rejected, and `public event Action<LightClientCatchUpProgress> CatchUpProgress`, raised while the store catches up.
 
 **Initialization:**
 
 ```csharp
-// LightClientService.cs:43-115 (code verbatim; inline comments condensed)
+// LightClientService.cs:40-118 (abridged: ResumeStepAsync and BeaconFinalizedRootAsync omitted; inline comments condensed)
 public async Task InitializeAsync(CancellationToken cancellationToken = default)
 {
     cancellationToken.ThrowIfCancellationRequested();
@@ -49,35 +51,37 @@ public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         // Resumed from persistence: refresh to the current head using the resumed
         // committees. A transient light-client failure keeps the persisted head.
-        try
-        {
-            await UpdateAsync(cancellationToken).ConfigureAwait(false);
-            await UpdateFinalityAsync(cancellationToken).ConfigureAwait(false);
-            await UpdateOptimisticAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) { throw; }
-        catch
-        {
-            // Light client unreachable on resume — serve the persisted verified head.
-        }
+        await ResumeStepAsync(UpdateAsync, cancellationToken).ConfigureAwait(false);
+        await ResumeStepAsync(UpdateFinalityAsync, cancellationToken).ConfigureAwait(false);
+        await ResumeStepAsync(UpdateOptimisticAsync, cancellationToken).ConfigureAwait(false);
         return;
     }
 
+    _state = await BootstrapStateAsync().ConfigureAwait(false);
+    await _store.SaveAsync(_state).ConfigureAwait(false);
+}
+
+private async Task<LightClientState> BootstrapStateAsync()
+{
     // Use the configured weak-subjectivity root, or derive it fresh from the
     // beacon node's latest finality update when none is configured.
     var bootstrapRoot = _config.WeakSubjectivityRoot;
     if (IsEmptyRoot(bootstrapRoot))
     {
-        var finalityResponse = await _apiClient.GetFinalityUpdateAsync().ConfigureAwait(false);
-        var finalityUpdate = LightClientResponseMapper.ToDomain(finalityResponse);
-        bootstrapRoot = finalityUpdate.FinalizedHeader.Beacon.HashTreeRoot();
+        bootstrapRoot = await BeaconFinalizedRootAsync().ConfigureAwait(false);
     }
+
+    return await BootstrapFromRootAsync(bootstrapRoot).ConfigureAwait(false);
+}
+
+private async Task<LightClientState> BootstrapFromRootAsync(byte[] bootstrapRoot)
+{
     var blockRootHex = bootstrapRoot.ToHex(true);
     var response = await _apiClient.GetBootstrapAsync(blockRootHex).ConfigureAwait(false);
     var bootstrap = LightClientResponseMapper.ToDomain(response);
     ValidateBootstrap(bootstrap, bootstrapRoot);
 
-    _state = new LightClientState
+    var state = new LightClientState
     {
         FinalizedHeader = bootstrap.Header.Beacon,
         FinalizedExecutionPayload = bootstrap.Header.Execution,
@@ -85,33 +89,69 @@ public async Task InitializeAsync(CancellationToken cancellationToken = default)
         NextSyncCommittee = new SyncCommittee(),
         FinalizedSlot = bootstrap.Header.Beacon.Slot,
         CurrentPeriod = ComputePeriod(bootstrap.Header.Beacon.Slot),
-        LastUpdated = DateTimeOffset.UtcNow
+        LastUpdated = DateTimeOffset.UtcNow,
+        OptimisticHeader = bootstrap.Header.Beacon,
+        OptimisticExecutionPayload = bootstrap.Header.Execution,
+        OptimisticSlot = bootstrap.Header.Beacon.Slot,
+        OptimisticLastUpdated = DateTimeOffset.UtcNow
     };
 
     if (bootstrap.Header.Execution != null)
     {
-        _state.SetBlockHash(
+        state.SetBlockHash(
             bootstrap.Header.Execution.BlockNumber,
             bootstrap.Header.Execution.BlockHash,
             BlockHashFinality.Finalized);
     }
 
-    await _store.SaveAsync(_state).ConfigureAwait(false);
+    return state;
 }
 ```
 
 **Update Methods:**
 
 1. **UpdateAsync** - Process finalized updates with sync committee rotation
-2. **UpdateFinalityAsync** - Update finalized header only
-3. **UpdateOptimisticAsync** - Update optimistic (latest) header
+2. **UpdateFinalityAsync** - Update finalized header; when the update is more than one sync committee period ahead of the store, first catch up period by period
+3. **UpdateOptimisticAsync** - Update optimistic (latest) header, with the same catch-up
+
+A bootstrap also sets the optimistic head to the bootstrap header. An update whose `SignatureSlot` is later than the slot the wall clock allows (`GenesisTime`, `ChainSpec.SecondsPerSlot` and `Clock`, plus `MaximumGossipClockDisparityMilliseconds`) is rejected with `LastRejectReason` starting `future_signature_slot`. An update only moves the optimistic head when more than half of the larger of `PreviousMaxActiveParticipants` and `CurrentMaxActiveParticipants` signed it.
+
+**Catch-up and re-bootstrap:**
+
+When a finality or optimistic update is signed in a period more than one ahead of the store's finalized period, the service requests `GetUpdatesAsync(startPeriod, count)` (at most `MaxRequestLightClientUpdates` periods per call), applies the updates in period order, and then applies the head update. If the gap is larger than `LightClientConfig.MaxCatchUpPeriods`, the range request fails, or the range lacks the next period, it re-bootstraps instead: first from a configured `WeakSubjectivityRoot` that is newer than the store, then, only when `LightClientConfig.AllowBeaconRebootstrap` is `true`, from the beacon node's latest finalized root. A bootstrap that is not newer than the store, or whose slot is ahead of the wall clock, is refused, and with `AllowBeaconRebootstrap` left `false` the verified head is kept. Progress is reported once per stage through `CatchUpProgress`:
+
+*Backed by the tagged `LightClientPeriodCatchUpTests` (use case `light-client`): catch-up through every missed period, beacon re-bootstrap when allowed, the verified head kept when it is not, and the future-slot rejection.*
+
+```csharp
+public enum LightClientCatchUpStage
+{
+    PeriodApplied,
+    Completed,
+    UpdateRejected,
+    Rebootstrapped,
+    RebootstrapFailed
+}
+
+public sealed class LightClientCatchUpProgress
+{
+    public LightClientCatchUpProgress(LightClientCatchUpStage stage, ulong storePeriod, ulong targetPeriod, string reason);
+
+    public LightClientCatchUpStage Stage { get; }
+    public ulong StorePeriod { get; }
+    public ulong TargetPeriod { get; }
+    public string Reason { get; }
+}
+
+lightClient.CatchUpProgress += progress =>
+    Console.WriteLine($"{progress.Stage}: period {progress.StorePeriod} of {progress.TargetPeriod} {progress.Reason}");
+```
 
 **BLS Signature Verification:**
 
-An update's sync aggregate is verified by `VerifyFullUpdateSyncAggregate` (LightClientService.cs:847-871), which enforces the baseline participation floor (and the supermajority quorum for finality updates) before delegating to `VerifyAggregateSignature`. That method selects the committee for the signature slot's period, derives the domain via `ComputeSyncCommitteeDomain(ulong signatureSlot)`, and verifies the BLS aggregate:
+An update's sync aggregate is verified by `VerifyFullUpdateSyncAggregate` (LightClientService.cs:941-965), which enforces the baseline participation floor (and the supermajority quorum for finality updates) before delegating to `VerifyAggregateSignature`. That method selects the committee for the signature slot's period, derives the domain via `ComputeSyncCommitteeDomain(ulong signatureSlot)`, and verifies the BLS aggregate:
 
 ```csharp
-// LightClientService.cs:936-972
+// LightClientService.cs:1014-1045
 private bool VerifyAggregateSignature(byte[] bits, byte[] signature, BeaconBlockHeader attestedHeader, ulong signatureSlot)
 {
     if (bits == null || signature == null || attestedHeader == null)
@@ -154,7 +194,7 @@ private bool VerifyAggregateSignature(byte[] bits, byte[] signature, BeaconBlock
 **Participant Selection:**
 
 ```csharp
-// LightClientService.cs:985-1017
+// LightClientService.cs:1058-1090
 private List<byte[]> SelectParticipantPubKeys(SyncCommittee committee, byte[] bits)
 {
     var pubKeys = committee?.PubKeys;
@@ -192,10 +232,10 @@ private List<byte[]> SelectParticipantPubKeys(SyncCommittee committee, byte[] bi
 
 ### LightClientState
 
-Tracks finalized and optimistic consensus state (LightClientState.cs:33-126). Block hashes are stored with provenance (optimistic vs finalized) so a finalized entry cannot be overwritten by a conflicting optimistic write.
+Tracks finalized and optimistic consensus state (LightClientState.cs:25-121). Block hashes are stored with provenance (optimistic vs finalized) so a finalized entry cannot be overwritten by a conflicting optimistic write.
 
 ```csharp
-// LightClientState.cs:15-52
+// LightClientState.cs:7-47
 public enum BlockHashFinality
 {
     Optimistic = 0,
@@ -232,6 +272,9 @@ public class LightClientState
     public ulong OptimisticSlot { get; set; }
     public DateTimeOffset OptimisticLastUpdated { get; set; } = DateTimeOffset.MinValue;
 
+    public int PreviousMaxActiveParticipants { get; set; }
+    public int CurrentMaxActiveParticipants { get; set; }
+
     public Dictionary<ulong, ProvenancedBlockHash> BlockHashHistory { get; set; }
         = new Dictionary<ulong, ProvenancedBlockHash>();
     // ...
@@ -241,7 +284,7 @@ public class LightClientState
 **Block Hash Management:**
 
 ```csharp
-// LightClientState.cs:54-97
+// LightClientState.cs:49-92
 public void SetBlockHash(ulong blockNumber, byte[] blockHash, BlockHashFinality finality)
 {
     if (blockHash == null || blockHash.Length != 32) return;
@@ -290,10 +333,10 @@ public byte[]? GetFinalizedBlockHash(ulong blockNumber)
 
 ### LightClientConfig
 
-Configuration for light client initialization (LightClientConfig.cs:6-54). `GenesisValidatorsRoot` and `WeakSubjectivityRoot` are validating properties: each is backed by a 32-byte field (default `new byte[32]`) and the setter throws unless the assigned value is exactly 32 bytes. There is **no** `CurrentForkVersion` or `SlotsPerEpoch` on this type — fork versions and slots-per-epoch come from `ChainSpec` (defaulting to `ChainSpec.Mainnet`).
+Configuration for light client initialization (LightClientConfig.cs:6-50). `GenesisValidatorsRoot` and `WeakSubjectivityRoot` are validating properties: each is backed by a 32-byte field (default `new byte[32]`) and the setter throws unless the assigned value is exactly 32 bytes. There is **no** `CurrentForkVersion` or `SlotsPerEpoch` on this type — fork versions and slots-per-epoch come from `ChainSpec` (defaulting to `ChainSpec.Mainnet`).
 
 ```csharp
-// LightClientConfig.cs:6-54
+// LightClientConfig.cs:6-50
 public class LightClientConfig
 {
     private byte[] _genesisValidatorsRoot = new byte[SszBasicTypes.RootLength]; // 32 bytes
@@ -317,21 +360,33 @@ public class LightClientConfig
 
     public ulong WeakSubjectivityPeriod { get; set; } = 256 * 32;
 
+    public ulong MaxCatchUpPeriods { get; set; } = 16;
+
+    public bool AllowBeaconRebootstrap { get; set; }
+
+    public ulong GenesisTime { get; set; } = LightClientNetworks.MainnetGenesisTime;
+
+    public Func<DateTimeOffset> Clock { get; set; } = () => DateTimeOffset.UtcNow;
+
     public ChainSpec ChainSpec { get; set; } = ChainSpec.Mainnet;
 }
 ```
+
+`MaxCatchUpPeriods` is the largest store-to-head gap, in sync committee periods, that is walked through range requests before the service re-bootstraps. `AllowBeaconRebootstrap` permits re-bootstrapping from the beacon node's own finalized root (off by default, so a beacon node alone cannot move a verified store). `GenesisTime` (Unix seconds, mainnet by default; `LightClientNetworks.CreateConfig` sets it per network) and `Clock` (the wall clock, replaceable in tests) define the current slot used to reject updates signed in the future.
 
 `ChainSpec` (in `Nethereum.Consensus.Ssz`) carries the fork-activation schedule and exposes `SlotsPerEpoch`, `SecondsPerSlot`, `GetForkAtSlot(ulong)` and `GetForkVersionAtSlot(ulong)`. The prebuilt `ChainSpec.Mainnet` maps each mainnet fork to its version (e.g. Electra = `0x05000000`, Fulu = `0x06000000`); the light client selects the correct fork version by slot internally, so applications normally leave `ChainSpec` at its default.
 
 ### TrustedHeaderProvider
 
-Provides trusted execution headers with staleness detection (TrustedHeaderProvider.cs:6-103).
+Provides trusted execution headers with staleness detection (TrustedHeaderProvider.cs:6-101). A header is stale when `DateTimeOffset.UtcNow - header.Timestamp`, the age of the execution block itself, exceeds the threshold. `Name` is `"LightClient"`; `ITrustedHeaderProvider.Name` is a default interface member that returns the implementing type's name, so existing implementations compile unchanged.
 
 ```csharp
-// TrustedHeaderProvider.cs:6-31
+// TrustedHeaderProvider.cs:6-33
 public class TrustedHeaderProvider : ITrustedHeaderProvider
 {
     private readonly LightClientService _lightClient;
+
+    public string Name => "LightClient";
 
     public TimeSpan FinalizedStalenessThreshold { get; set; } = TimeSpan.FromMinutes(30);
     public TimeSpan OptimisticStalenessThreshold { get; set; } = TimeSpan.FromMinutes(5);
@@ -352,7 +407,7 @@ public class TrustedHeaderProvider : ITrustedHeaderProvider
         }
 
         var header = MapToHeader(state.FinalizedExecutionPayload);
-        ValidateStaleness(header, state.LastUpdated, FinalizedStalenessThreshold, "Finalized");
+        ValidateStaleness(header, FinalizedStalenessThreshold, "Finalized");
         return header;
     }
 }
@@ -361,11 +416,10 @@ public class TrustedHeaderProvider : ITrustedHeaderProvider
 **Staleness Validation:**
 
 ```csharp
-// TrustedHeaderProvider.cs:57-73
-private void ValidateStaleness(TrustedExecutionHeader header, DateTimeOffset lastUpdated,
-    TimeSpan threshold, string headerType)
+// TrustedHeaderProvider.cs:56-72
+private void ValidateStaleness(TrustedExecutionHeader header, TimeSpan threshold, string headerType)
 {
-    var age = DateTimeOffset.UtcNow - lastUpdated;
+    var age = DateTimeOffset.UtcNow - header.Timestamp;
 
     if (age > threshold)
     {
@@ -431,28 +485,35 @@ public class TrustedExecutionHeader
 
 ### LightClientStateCodec
 
-Purpose-built binary serializer for `LightClientState` (LightClientStateCodec.cs:8-178). `LightClientState` holds SSZ containers (`BeaconBlockHeader`, `ExecutionPayloadHeader`, `SyncCommittee`) and a `Dictionary<ulong, ProvenancedBlockHash>` whose value is a `readonly struct`, so it does not round-trip through generic reflection-based serializers. Use this codec for persistence instead. The frame is `Magic("LCST") + Version + payloadLength + payload + CRC32(payload)`; each SSZ container is encoded fork-aware via its own `Encode`/`Decode`, and `TryDecode` returns `false` (never throws) on a truncated, corrupt, or CRC-mismatched buffer.
+Purpose-built binary serializer for `LightClientState` (LightClientStateCodec.cs:8-183). `LightClientState` holds SSZ containers (`BeaconBlockHeader`, `ExecutionPayloadHeader`, `SyncCommittee`) and a `Dictionary<ulong, ProvenancedBlockHash>` whose value is a `readonly struct`, so it does not round-trip through generic reflection-based serializers. Use this codec for persistence instead. The frame is `Magic("LCST") + Version + payloadLength + payload + CRC32(payload)`; each SSZ container is encoded fork-aware via its own `Encode`/`Decode`, and `TryDecode` returns `false` (never throws) on a truncated, corrupt, or CRC-mismatched buffer. The payload ends with `PreviousMaxActiveParticipants` and `CurrentMaxActiveParticipants` (two `int` values); a frame written before they existed decodes with both set to `0`.
 
 ```csharp
-// LightClientStateCodec.cs:13, 57
+// LightClientStateCodec.cs:13, 59
 public static byte[] Encode(LightClientState state);
 public static bool TryDecode(byte[] bytes, out LightClientState state);
 ```
 
 ### LightClientNetworks
 
-Canonical per-network light-client constants (LightClientNetworks.cs:14-54). The `genesis_validators_root` is an immutable chain parameter fixed at genesis (it is part of the BLS signing domain, not a trust anchor), so it is baked in per network. The time-sensitive weak-subjectivity checkpoint root is deliberately **not** here — supply it out-of-band or let the client derive it from a trusted beacon endpoint.
+Canonical per-network light-client constants (LightClientNetworks.cs:7-60). The `genesis_validators_root` is an immutable chain parameter fixed at genesis (it is part of the BLS signing domain, not a trust anchor), so it is baked in per network, together with the genesis time that anchors the wall-clock slot check. The time-sensitive weak-subjectivity checkpoint root is deliberately **not** here — supply it out-of-band or let the client derive it from a trusted beacon endpoint.
 
 ```csharp
-// LightClientNetworks.cs:16-42
+// LightClientNetworks.cs:9-59
 public const string MainnetGenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95";
 public const string SepoliaGenesisValidatorsRoot = "0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078";
 public const string HoleskyGenesisValidatorsRoot = "0x9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1";
 
+public const ulong MainnetGenesisTime = 1606824023;
+public const ulong SepoliaGenesisTime = 1655733600;
+public const ulong HoleskyGenesisTime = 1695902400;
+
+// chainId: 1 mainnet, 11155111 sepolia, 17000 holesky. False for unknown chains.
+public static bool TryGetGenesisTime(BigInteger chainId, out ulong genesisTime);
+
 // chainId: 1 mainnet, 11155111 sepolia, 17000 holesky. False for unknown chains.
 public static bool TryGetGenesisValidatorsRoot(BigInteger chainId, out byte[] root);
 
-// Builds a LightClientConfig with SecondsPerSlot = 12 and the network's genesis
+// Builds a LightClientConfig with SecondsPerSlot = 12 and the network's genesis time and genesis
 // validators root (and the weak-subjectivity root when supplied).
 public static LightClientConfig CreateConfig(BigInteger chainId, byte[] weakSubjectivityRoot = null);
 ```
@@ -470,7 +531,7 @@ using Nethereum.Signer.Bls;
 using Nethereum.Signer.Bls.Herumi;
 using Nethereum.Hex.HexConvertors.Extensions;
 
-// Source: LightClientLiveIntegrationTests.cs:76-112
+// Source: LightClientLiveIntegrationTests.cs:77-115
 
 // Get recent finalized checkpoint from beacon node
 var beaconClient = new BeaconApiClient("https://ethereum-beacon-api.publicnode.com");
@@ -621,7 +682,7 @@ using Nethereum.Signer.Bls.Herumi;
 // Nethereum.RPC packages, which are NOT dependencies of Nethereum.Consensus.LightClient
 // (Nethereum.ChainStateVerification depends on this package, not the other way around).
 
-// Source: LightClientLiveIntegrationTests.cs:115-162
+// Source: LightClientLiveIntegrationTests.cs:117-165
 
 // Initialize light client (see Example 1)
 var beaconClient = new BeaconApiClient("https://ethereum-beacon-api.publicnode.com");
@@ -680,7 +741,7 @@ Console.WriteLine($"Optimistic balance: {optimisticBalance} wei");
 
 **Note**: VerifiedStateService validates all data against merkle proofs from the light client's trusted state root. This provides trustless verification without requiring a full node.
 
-**Archive Node Requirement**: State proof verification requires an archive node or a node with sufficient historical state. Standard pruned nodes may return errors like "missing trie node" or "old data not available due to pruning" for older blocks (LightClientLiveIntegrationTests.cs:369-372). Use recent finalized blocks or an archive node endpoint for historical queries.
+**Archive Node Requirement**: State proof verification requires an archive node or a node with sufficient historical state. Standard pruned nodes may return errors like "missing trie node" or "old data not available due to pruning" for older blocks (LightClientLiveIntegrationTests.cs:372-375). Use recent finalized blocks or an archive node endpoint for historical queries.
 
 ### Example 6: Retrieve Block Hashes
 
@@ -1000,7 +1061,7 @@ Light client maintains last 256 execution block hashes:
 - Verify responses across providers
 
 **Staleness Attacks:**
-- Detect with TrustedHeaderProvider staleness thresholds
+- Detect with TrustedHeaderProvider staleness thresholds (measured from the execution header's timestamp, so a store that stops advancing becomes stale even if it was saved recently)
 - Configure appropriate update intervals
 
 ### Best Practices

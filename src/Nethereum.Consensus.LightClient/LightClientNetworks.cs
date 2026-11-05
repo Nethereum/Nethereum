@@ -1,4 +1,5 @@
 using System.Numerics;
+using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 
 namespace Nethereum.Consensus.LightClient
@@ -8,6 +9,20 @@ namespace Nethereum.Consensus.LightClient
         public const string MainnetGenesisValidatorsRoot = "0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95";
         public const string SepoliaGenesisValidatorsRoot = "0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078";
         public const string HoleskyGenesisValidatorsRoot = "0x9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1";
+        public const ulong MainnetGenesisTime = 1606824023;
+        public const ulong SepoliaGenesisTime = 1655733600;
+        public const ulong HoleskyGenesisTime = 1695902400;
+
+        [NethereumDocExample(DocSection.Consensus, "light-client", "The genesis time of a known network")]
+        public static bool TryGetGenesisTime(BigInteger chainId, out ulong genesisTime)
+        {
+            genesisTime =
+                chainId == 1 ? MainnetGenesisTime :
+                chainId == 11155111 ? SepoliaGenesisTime :
+                chainId == 17000 ? HoleskyGenesisTime :
+                0;
+            return genesisTime != 0;
+        }
 
         public static bool TryGetGenesisValidatorsRoot(BigInteger chainId, out byte[] root)
         {
@@ -33,6 +48,9 @@ namespace Nethereum.Consensus.LightClient
 
             if (TryGetGenesisValidatorsRoot(chainId, out var gvr))
                 config.GenesisValidatorsRoot = gvr;
+
+            if (TryGetGenesisTime(chainId, out var genesisTime))
+                config.GenesisTime = genesisTime;
 
             if (weakSubjectivityRoot != null)
                 config.WeakSubjectivityRoot = weakSubjectivityRoot;
