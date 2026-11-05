@@ -1,3 +1,4 @@
+using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution.Precompiles.CryptoBackends;
 using Nethereum.Zisk.Core;
 
@@ -17,7 +18,7 @@ namespace Nethereum.EVM.Zisk.Backends
                 expBytes, (nuint)expBytes.Length,
                 modulus, (nuint)modulus.Length,
                 result);
-            if (status != 0) throw new System.ArgumentException($"MODEXP failed (status {status})");
+            if (status != 0) throw new EvmHostException($"MODEXP backend failed (status {status})");
             return result;
         }
     }

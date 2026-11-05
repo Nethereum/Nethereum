@@ -45,21 +45,12 @@ namespace Nethereum.ZkProofsVerifier.Circom
 
         private static ECPoint ParseG1Stj(JsonElement arr)
         {
-            var x = new BigInteger(arr[0].GetString());
-            var y = new BigInteger(arr[1].GetString());
-            return BN128Curve.Curve.CreatePoint(x, y);
+            return Groth16PointValidator.CreateG1(arr[0].GetString(), arr[1].GetString());
         }
 
         private static TwistPoint ParseG2Stj(JsonElement arr)
         {
-            var xC0 = new BigInteger(arr[0][0].GetString());
-            var xC1 = new BigInteger(arr[0][1].GetString());
-            var yC0 = new BigInteger(arr[1][0].GetString());
-            var yC1 = new BigInteger(arr[1][1].GetString());
-
-            var x = new Fp2(xC1, xC0);
-            var y = new Fp2(yC1, yC0);
-            return TwistPoint.FromAffine(x, y);
+            return Groth16PointValidator.CreateG2(arr[0][0].GetString(), arr[0][1].GetString(), arr[1][0].GetString(), arr[1][1].GetString());
         }
 #else
         private static Groth16Proof ParseWithNewtonsoft(string json)
@@ -79,21 +70,12 @@ namespace Nethereum.ZkProofsVerifier.Circom
 
         private static ECPoint ParseG1Newtonsoft(JArray arr)
         {
-            var x = new BigInteger((string)arr[0]);
-            var y = new BigInteger((string)arr[1]);
-            return BN128Curve.Curve.CreatePoint(x, y);
+            return Groth16PointValidator.CreateG1((string)arr[0], (string)arr[1]);
         }
 
         private static TwistPoint ParseG2Newtonsoft(JArray arr)
         {
-            var xC0 = new BigInteger((string)((JArray)arr[0])[0]);
-            var xC1 = new BigInteger((string)((JArray)arr[0])[1]);
-            var yC0 = new BigInteger((string)((JArray)arr[1])[0]);
-            var yC1 = new BigInteger((string)((JArray)arr[1])[1]);
-
-            var x = new Fp2(xC1, xC0);
-            var y = new Fp2(yC1, yC0);
-            return TwistPoint.FromAffine(x, y);
+            return Groth16PointValidator.CreateG2((string)((JArray)arr[0])[0], (string)((JArray)arr[0])[1], (string)((JArray)arr[1])[0], (string)((JArray)arr[1])[1]);
         }
 #endif
     }

@@ -1,3 +1,4 @@
+using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution.Precompiles.CryptoBackends;
 using Nethereum.Zisk.Core;
 
@@ -12,7 +13,7 @@ namespace Nethereum.EVM.Zisk.Backends
             var data = input ?? new byte[0];
             var output = new byte[32];
             uint status = ZiskCrypto.zkvm_sha256(data, (nuint)data.Length, output);
-            if (status != 0) throw new System.ArgumentException($"SHA256 failed (status {status})");
+            if (status != 0) throw new EvmHostException($"SHA256 backend failed (status {status})");
             return output;
         }
     }

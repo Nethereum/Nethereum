@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace Nethereum.Zisk.Core
 {
     /// <summary>
-    /// Writes results to Zisk's output registers at 0xA0010000.
+    /// Writes results to Zisk's output registers at 0xA0410000.
     ///
     /// Zisk provides 64 output slots (uint32 each). These become the
     /// public outputs of the ZK proof — values that anyone can read

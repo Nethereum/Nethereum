@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum ZkProofs - Generic ZK proof generation interfaces and models for snarkjs/Groth16 circuits</Description>
     <AssemblyTitle>Nethereum.ZkProofs</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
@@ -26,6 +27,14 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Nethereum.ZkProofsVerifier\Circom\FieldElementText.cs" Link="FieldElementText.cs" />
   </ItemGroup>
 
 </Project>

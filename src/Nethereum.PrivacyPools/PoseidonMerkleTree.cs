@@ -40,7 +40,7 @@ namespace Nethereum.PrivacyPools
 
         public void InsertCommitment(BigInteger commitmentHash)
         {
-            var bytes = BigIntegerToBytes32(commitmentHash);
+            var bytes = FieldElementToBytes32(commitmentHash);
             _tree.InsertLeaf(bytes);
         }
 
@@ -49,7 +49,7 @@ namespace Nethereum.PrivacyPools
             var bytesList = new List<byte[]>();
             foreach (var hash in commitmentHashes)
             {
-                bytesList.Add(BigIntegerToBytes32(hash));
+                bytesList.Add(FieldElementToBytes32(hash));
             }
             _tree.InsertMany(bytesList);
         }
@@ -61,12 +61,20 @@ namespace Nethereum.PrivacyPools
 
         public bool VerifyInclusionProof(MerkleProof proof, BigInteger commitmentHash)
         {
-            var bytes = BigIntegerToBytes32(commitmentHash);
-            return _tree.VerifyProof(proof, bytes, _tree.Root);
+            return VerifyInclusionProof(proof, commitmentHash, _tree.Root);
         }
 
         public bool VerifyInclusionProof(MerkleProof proof, BigInteger commitmentHash, byte[] root)
         {
+            if (proof == null || proof.ProofNodes == null || proof.PathIndices == null || root == null)
+                return false;
+            if (commitmentHash.Sign < 0 || commitmentHash >= FieldModulus || !IsFieldElementBytes(root))
+                return false;
+            foreach (var node in proof.ProofNodes)
+            {
+                if (node == null || !IsFieldElementBytes(node))
+                    return false;
+            }
             var bytes = BigIntegerToBytes32(commitmentHash);
             return _tree.VerifyProof(proof, bytes, root);
         }
@@ -114,21 +122,33 @@ namespace Nethereum.PrivacyPools
             _tree = imported;
         }
 
+        private static readonly BigInteger FieldModulus =
+            BigInteger.Parse("21888242871839275222246405745257275088548364400416034343698204186575808495617");
+
+        private static bool IsFieldElementBytes(byte[] value)
+        {
+            return value.Length <= 32 && new BigInteger(value, isUnsigned: true, isBigEndian: true) < FieldModulus;
+        }
+
+        private static byte[] FieldElementToBytes32(BigInteger value)
+        {
+            if (value >= FieldModulus)
+                throw new ArgumentException("Value is not a BN254 scalar field element", nameof(value));
+            return BigIntegerToBytes32(value);
+        }
+
         private static byte[] BigIntegerToBytes32(BigInteger value)
         {
+            if (value.Sign < 0)
+                throw new ArgumentOutOfRangeException(nameof(value), "Value must not be negative");
             var bytes = value.ToByteArray(isUnsigned: true, isBigEndian: true);
             if (bytes.Length == 32)
                 return bytes;
 
             var padded = new byte[32];
             if (bytes.Length > 32)
-            {
-                Array.Copy(bytes, bytes.Length - 32, padded, 0, 32);
-            }
-            else
-            {
-                Array.Copy(bytes, 0, padded, 32 - bytes.Length, bytes.Length);
-            }
+                throw new ArgumentOutOfRangeException(nameof(value), "Value does not fit in 32 bytes");
+            Array.Copy(bytes, 0, padded, 32 - bytes.Length, bytes.Length);
             return padded;
         }
     }

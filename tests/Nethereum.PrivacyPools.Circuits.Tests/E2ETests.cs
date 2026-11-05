@@ -38,6 +38,7 @@ using Nethereum.PrivacyPools.PoseidonT3;
 using Nethereum.PrivacyPools.PoseidonT3.ContractDefinition;
 using Nethereum.PrivacyPools.PoseidonT4;
 using Nethereum.PrivacyPools.PoseidonT4.ContractDefinition;
+using Nethereum.Testing;
 
 namespace Nethereum.PrivacyPools.Circuits.Tests
 {
@@ -50,44 +51,23 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
         private const string OWNER_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
         private const string NATIVE_ASSET = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
         private const string GETH_RPC_URL = "http://127.0.0.1:18545";
-        private static readonly string GETH_PATH = FindGethExe();
 
         private DevChainNode? _node;
         private Process? _gethProcess;
         private string? _gethDataDir;
         private IWeb3 _web3 = null!;
         private Account _account = null!;
-        private bool _useGeth;
 
         public PrivacyPoolsE2ETests(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        private static string FindGethExe()
-        {
-            var dir = AppDomain.CurrentDomain.BaseDirectory;
-            while (dir != null)
-            {
-                var candidate = Path.Combine(dir, "testchain", "clique", "geth.exe");
-                if (File.Exists(candidate)) return candidate;
-                dir = Path.GetDirectoryName(dir);
-            }
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "testchain", "clique", "geth.exe");
-        }
-
-        private static bool ShouldUseGeth()
-        {
-            var envVar = Environment.GetEnvironmentVariable("PRIVACY_POOLS_USE_GETH");
-            return string.Equals(envVar, "true", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(envVar, "1", StringComparison.OrdinalIgnoreCase);
-        }
+        protected virtual bool UseGeth => false;
 
         public async Task InitializeAsync()
         {
-            _useGeth = ShouldUseGeth();
-
-            if (_useGeth)
+            if (UseGeth)
             {
                 await StartGethDevAsync();
             }
@@ -120,9 +100,9 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
 
         private async Task StartGethDevAsync()
         {
-            var gethExe = GETH_PATH;
+            var gethExe = TestEnvironment.Tool("Geth");
             if (!File.Exists(gethExe))
-                throw new FileNotFoundException($"geth.exe not found at {gethExe}");
+                throw new FileNotFoundException($"Tools:Geth not found at {gethExe}; run dotnet run ci/fetch-externals.cs or set Tools:Geth in {TestEnvironment.LocalSettingsRelativePath}.");
 
             _gethDataDir = Path.Combine(Path.GetTempPath(), $"geth-privacypools-{Guid.NewGuid():N}");
             Directory.CreateDirectory(_gethDataDir);
@@ -857,6 +837,17 @@ namespace Nethereum.PrivacyPools.Circuits.Tests
                 padded[i] = siblings[i];
             return padded;
         }
+    }
+
+    [Trait("Category", "ExternalNode")]
+    [Trait("Requires", "Externals")]
+    public class PrivacyPoolsE2EGethTests : PrivacyPoolsE2ETests
+    {
+        public PrivacyPoolsE2EGethTests(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        protected override bool UseGeth => true;
     }
 
     [Nethereum.ABI.FunctionEncoding.Attributes.FunctionOutput]

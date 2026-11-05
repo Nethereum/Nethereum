@@ -12,6 +12,7 @@ using Nethereum.PrivacyPools.PrivacyPoolBase;
 using Nethereum.PrivacyPools.PrivacyPoolSimple;
 using Nethereum.PrivacyPools.PrivacyPoolSimple.ContractDefinition;
 using Nethereum.PrivacyPools.Processing;
+using Nethereum.Testing;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
@@ -27,6 +28,7 @@ using PoolWithdrawnEvent = Nethereum.PrivacyPools.PrivacyPoolBase.WithdrawnEvent
 
 namespace Nethereum.PrivacyPools.CrossSdk.Tests
 {
+    [Trait("Requires", "Externals")]
     public class CrossSdkTests : IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;
@@ -597,9 +599,9 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
 
         private async Task StartGethDevAsync()
         {
-            var gethExe = FindGethExe();
+            var gethExe = TestEnvironment.Tool("Geth");
             if (!File.Exists(gethExe))
-                throw new FileNotFoundException($"geth.exe not found at {gethExe}");
+                throw new FileNotFoundException($"Tools:Geth not found at {gethExe}; run dotnet run ci/fetch-externals.cs or set Tools:Geth in {TestEnvironment.LocalSettingsRelativePath}.");
 
             _gethDataDir = Path.Combine(Path.GetTempPath(), $"geth-crosssdk-{Guid.NewGuid():N}");
             Directory.CreateDirectory(_gethDataDir);
@@ -701,18 +703,6 @@ namespace Nethereum.PrivacyPools.CrossSdk.Tests
             }
             throw new DirectoryNotFoundException(
                 "Could not find scripts directory with node_modules. Run 'npm install' in tests/Nethereum.PrivacyPools.CrossSdk.Tests/scripts/");
-        }
-
-        private static string FindGethExe()
-        {
-            var dir = AppDomain.CurrentDomain.BaseDirectory;
-            while (dir != null)
-            {
-                var candidate = Path.Combine(dir, "testchain", "clique", "geth.exe");
-                if (File.Exists(candidate)) return candidate;
-                dir = Path.GetDirectoryName(dir);
-            }
-            return "geth";
         }
 
         private static BigInteger[] PadSiblings(BigInteger[] siblings, int targetLength)

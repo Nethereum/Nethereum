@@ -32,10 +32,10 @@ namespace Nethereum.Zisk.Core
         public static extern uint zkvm_bn254_g1_mul(byte[] point, byte[] scalar, byte[] result);
 
         [DllImport("__Internal")]
-        public static extern byte bn254_pairing_check_c(byte[] pairs, nuint num_pairs);
+        public static extern unsafe uint zkvm_bn254_pairing(byte[] pairs, nuint num_pairs, bool* verified);
 
         [DllImport("__Internal")]
-        public static extern byte bls12_381_pairing_check_c(byte[] pairs, nuint num_pairs);
+        public static extern unsafe uint zkvm_bls12_pairing(byte[] pairs, nuint num_pairs, bool* verified);
 
         [DllImport("__Internal")]
         public static extern uint zkvm_blake2f(
@@ -68,6 +68,6 @@ namespace Nethereum.Zisk.Core
             byte[] msg, byte[] sig, byte[] pk, bool* verified);
 
         [DllImport("__Internal")]
-        public static extern unsafe void poseidon2_c(ulong* state);
+        public static extern unsafe void syscall_poseidon2(ulong* state);
     }
 }

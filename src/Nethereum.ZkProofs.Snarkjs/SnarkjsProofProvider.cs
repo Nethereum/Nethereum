@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.ZkProofs.Snarkjs
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.Protocols, "snarkjs-proof-provider", "SnarkjsProofProvider")]
     public class SnarkjsProofProvider : IZkProofProvider
     {
         private readonly ISnarkjsBackend _backend;

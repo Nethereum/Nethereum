@@ -26,18 +26,24 @@ C# onto Zisk's execution environment:
   commitments. Typical slots: result flag, gas used, block hash,
   state root, transactions root, receipts root.
 - **`ZiskMemoryMap`** — fixed memory-region constants (input, ROM, RAM,
-  UART and output-register bases) matching the Zisk ELF layout.
+  UART and output-register bases) matching the Zisk 1.1+ ELF layout,
+  which puts a 4 MB stack and the system registers at the base of RAM:
+  `UartAddress` is `0xA0400200` and `OutputBase` is `0xA0410000`.
 - **`ZiskBinaryReader`** / **`ZiskBinaryWriter`** — AOT-safe readers
   / writers over byte spans, replacing `System.IO.BinaryReader` in the
   trimmed guest build.
 - **`ZiskCrypto`** — P/Invoke surface for Zisk's `zkvm_*` accelerator
   API (keccak, sha256, ecrecover, modexp, bn254, bls12-381, blake2f,
   kzg, secp256r1, poseidon2). These map to CSR hardware instructions
-  inside the zkVM for near-zero proving cost.
+  inside the zkVM for near-zero proving cost. Every accelerator returns a
+  `zkvm_status` (`0` is success); the pairing checks return their result
+  through a `bool*`: `zkvm_bn254_pairing(byte[] pairs, nuint num_pairs, bool* verified)`
+  and `zkvm_bls12_pairing(byte[] pairs, nuint num_pairs, bool* verified)`.
+  The Poseidon2 permutation is `syscall_poseidon2(ulong* state)`.
 - **`ZiskKeccakHashProvider`** / **`ZiskSha256HashProvider`** — `IHashProvider`
   wrappers over the native keccak and sha256 accelerators.
 - **`ZiskPoseidonHashProvider`** — `IHashProvider` wrapping the Poseidon2
-  accelerator (the native `poseidon2_c` entry point) for Goldilocks-field
+  accelerator (the native `syscall_poseidon2` entry point) for Goldilocks-field
   binary trie state roots.
   Width=16, rate=12, capacity=4, XOR-based sponge, 32-byte digest.
 - **`Ripemd160`** — managed implementation used as a fallback when the
@@ -70,9 +76,9 @@ against `libziskos.a`. The build orchestration lives in
 [`zisk/`](https://github.com/Nethereum/Nethereum/blob/master/zisk/README.md) at the repo root:
 
 ```bash
-bash zisk/scripts/setup-host.sh   # first-time setup (image + Zisk host tools)
-bash zisk/scripts/build.sh        # source mode
-bash zisk/scripts/build.sh --dll  # DLL mode
+bash zisk/scripts/build-libziskos.sh  # libziskos.a from the Zisk release tag
+bash zisk/scripts/build.sh            # source mode
+bash zisk/scripts/build.sh --dll      # DLL mode
 ```
 
 See [`zisk/README.md`](https://github.com/Nethereum/Nethereum/blob/master/zisk/README.md) for the full build,

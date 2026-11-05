@@ -18,11 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Update="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nethereum.ZkProofs.RapidSnark" Version="6.1.0" />
+    <ProjectReference Include="..\..\src\Nethereum.ZkProofs.RapidSnark\Nethereum.ZkProofs.RapidSnark.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.PrivacyPools.Circuits\Nethereum.PrivacyPools.Circuits.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.PrivacyPools\Nethereum.PrivacyPools.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ZkProofs.Snarkjs\Nethereum.ZkProofs.Snarkjs.csproj" />
@@ -31,4 +31,21 @@
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.ZkProofs.RapidSnark\runtimes\win-x64\native\*.dll;..\..\src\Nethereum.CircomWitnessCalc\runtimes\win-x64\native\*.dll">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <None Include="..\..\src\Nethereum.ZkProofs.RapidSnark\runtimes\linux-x64\native\*.so;..\..\src\Nethereum.CircomWitnessCalc\runtimes\linux-x64\native\*.so">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

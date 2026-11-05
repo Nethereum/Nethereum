@@ -88,8 +88,8 @@ Pre-built native binaries included (from [Nethereum/rapidsnark CI](https://githu
 | Platform | Architecture | File | Size |
 |----------|-------------|------|------|
 | Windows | x64 | `rapidsnark.dll` | 3.9 MB |
-| Linux | x64 | `librapidsnark.so` | 970 KB |
-| Linux | arm64 | `librapidsnark.so` | 780 KB |
+| Linux | x64 | `librapidsnark.so` | 2.8 MB |
+| Linux | arm64 | `librapidsnark.so` | 2.6 MB |
 | macOS | x64 | `librapidsnark.dylib` | 684 KB |
 | macOS | arm64 (Apple Silicon) | `librapidsnark.dylib` | 620 KB |
 | Android | arm64 | `librapidsnark.so` | 2.2 MB |
@@ -116,11 +116,18 @@ gh run download <run-id> -R Nethereum/rapidsnark
 
 # Copy to package runtimes
 cp rapidsnark-windows-x86_64/lib/librapidsnark.dll  runtimes/win-x64/native/rapidsnark.dll
-cp rapidsnark-linux-x86_64/lib/librapidsnark.so     runtimes/linux-x64/native/
-cp rapidsnark-linux-arm64/lib/librapidsnark.so       runtimes/linux-arm64/native/
 cp rapidsnark-macOS-arm64/lib/librapidsnark.dylib    runtimes/osx-arm64/native/
 cp rapidsnark-macOS-x86_64/lib/librapidsnark.dylib   runtimes/osx-x64/native/
 cp rapidsnark-Android/lib/librapidsnark.so            runtimes/android-arm64/native/
+```
+
+The Linux libraries are not taken from CI: they are built from rapidsnark v0.0.8 in an Ubuntu 20.04 container with a static libstdc++ and libgcc, so they load on glibc 2.14 (x64) and 2.17 (arm64) and later (Debian 12, Ubuntu 22.04, RHEL 9):
+
+From the repository root:
+
+```bash
+bash scripts/build-rapidsnark-linux.sh x64
+bash scripts/build-rapidsnark-linux.sh arm64
 ```
 
 ## Building from Source

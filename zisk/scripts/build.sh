@@ -8,29 +8,47 @@
 #   --source (default): bflat compiles all .cs files directly
 #   --dll             : dotnet build → bflat links pre-built Nethereum.EVM.Zisk.dll
 #
-# Requires: Docker image `nethereum/bflat-riscv64` built from the Nethereum/bflat-riscv64 fork's
-#           `nethereum` branch (which already bakes the TSS reduction and calloc fix into rhp.o,
-#           plus the signal_patch and patch_elf tools). Build once with:
-#               git clone -b nethereum https://github.com/Nethereum/bflat-riscv64.git
-#               cd bflat-riscv64 && docker build -t nethereum/bflat-riscv64 .
+# Requires: Docker image `nethereum/bflat-riscv64:zisk-1.3.1` built from the `zisk-1.3.1` branch of
+#           the Nethereum/bflat-riscv64 fork (Zisk 1.3.1 memory map, ziskos entry through main,
+#           TSS reduction and calloc fix in rhp.o, patch_elf). Build once with:
+#               git clone -b zisk-1.3.1 http://192.168.1.52:3002/Nethereum/bflat-riscv64.git
+#               cd bflat-riscv64 && docker build -t nethereum/bflat-riscv64:zisk-1.3.1 .
+#           and libziskos.a from `bash zisk/scripts/build-libziskos.sh`.
 #
 # Override the image:          ZISK_IMAGE=<image-name>
-# Use a host-built libziskos:  LIBZISKOS_DIR=<host-path>   (mounted at /libziskos)
+# Use another libziskos:       LIBZISKOS_DIR=<host-path>   (mounted at /libziskos; default zisk/.libziskos)
 # =============================================================================
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NETHEREUM="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT_DIR="zisk/output"
-IMAGE="${ZISK_IMAGE:-nethereum/bflat-riscv64}"
+IMAGE="${ZISK_IMAGE:-nethereum/bflat-riscv64:zisk-1.3.1}"
+LIBZISKOS_DIR="${LIBZISKOS_DIR:-$NETHEREUM/zisk/.libziskos}"
+
+IN_TOOLCHAIN=false
+command -v bflat >/dev/null 2>&1 && IN_TOOLCHAIN=true
 
 EXTLIB_FLAG=""
 LIBZISKOS_MOUNT=""
 if [ -n "${LIBZISKOS_DIR:-}" ] && [ -f "$LIBZISKOS_DIR/libziskos.bflat.manifest" ]; then
-    EXTLIB_FLAG="--extlib /libziskos/libziskos.bflat.manifest"
-    LIBZISKOS_MOUNT="-v $LIBZISKOS_DIR:/libziskos"
-    echo "Using host libziskos: $LIBZISKOS_DIR"
+    if $IN_TOOLCHAIN; then
+        EXTLIB_FLAG="--extlib $LIBZISKOS_DIR/libziskos.bflat.manifest"
+    else
+        EXTLIB_FLAG="--extlib /libziskos/libziskos.bflat.manifest"
+        LIBZISKOS_MOUNT="-v $LIBZISKOS_DIR:/libziskos"
+    fi
+    echo "Using libziskos: $LIBZISKOS_DIR"
 fi
+
+toolchain_run() {
+    if $IN_TOOLCHAIN; then
+        [ "$NETHEREUM" = "/src" ] || { echo "Inside the toolchain image the repository must be mounted at /src" >&2; exit 1; }
+        bash -c "$1"
+    else
+        MSYS_NO_PATHCONV=1 docker run --rm --cpus="${ZISK_CPUS:-8}" --entrypoint="" -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c "$1"
+    fi
+}
 MODE="source"
 OUTPUT_NAME=""
 
@@ -60,7 +78,7 @@ if [ "$MODE" = "dll" ]; then
   echo "Note: DLL mode produces ~25% larger ELF than source mode due to cross-assembly"
   echo "boundary (bflat ILC cannot inline/devirt across DLL refs). Use source mode for"
   echo "production builds; DLL mode is kept for faster iteration."
-  MSYS_NO_PATHCONV=1 docker run --rm --entrypoint="" -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c '
+  toolchain_run '
     set -e
     bflat build /src/src/Nethereum.EVM.Zisk/Stub.cs \
       --os linux --arch riscv64 --libc zisk \
@@ -79,91 +97,10 @@ else
 echo ""
 echo "=== Step 1: Compile C# → RISC-V64 ==="
 
-MSYS_NO_PATHCONV=1 docker run --rm --entrypoint="" -v "$NETHEREUM:/src" $LIBZISKOS_MOUNT "$IMAGE" bash -c '
+toolchain_run '
 set -e
-SRC=""
-
-# Zisk.Core
-for f in $(find /src/src/Nethereum.Zisk.Core -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" 2>/dev/null); do SRC="$SRC $f"; done
-
-# EVM-Zisk bridge
-for f in /src/src/Nethereum.EVM.Zisk/Zisk/*.cs; do [ -f "$f" ] && SRC="$SRC $f"; done
-for f in $(find /src/src/Nethereum.EVM.Zisk/Zisk/Backends -name "*.cs" 2>/dev/null); do SRC="$SRC $f"; done
-
-# Util (minimal — no BigDecimal, no LINQ)
-for util in EvmUInt256 EvmInt256 AddressUtil AddressExtensions ContractUtils Sha3Keccack ByteUtil EvmUInt256RLPExtensions; do
-    [ -f "/src/src/Nethereum.Util/${util}.cs" ] && SRC="$SRC /src/src/Nethereum.Util/${util}.cs"
-done
-SRC="$SRC /src/src/Nethereum.Util/Keccak/KeccakDigest.cs"
-SRC="$SRC /src/src/Nethereum.Util/HashProviders/IHashProvider.cs"
-SRC="$SRC /src/src/Nethereum.Util/HashProviders/Sha3KeccackHashProvider.cs"
-SRC="$SRC /src/src/Nethereum.Util/HashProviders/Sha256HashProvider.cs"
-# PoseidonPairHashProvider excluded — depends on PoseidonHasher which pulls BigInteger
-SRC="$SRC /src/src/Nethereum.Util/HashProviders/PoseidonHashProvider.cs"
-SRC="$SRC /src/src/Nethereum.Util/Poseidon/IPoseidonFieldOps.cs"
-SRC="$SRC /src/src/Nethereum.Util/Poseidon/PoseidonCore.cs"
-SRC="$SRC /src/src/Nethereum.Util/Poseidon/EvmUInt256PoseidonField.cs"
-SRC="$SRC /src/src/Nethereum.Util/PoseidonEvmHasher.cs"
-SRC="$SRC /src/src/Nethereum.Util/PoseidonPrecomputedConstants.cs"
-SRC="$SRC /src/src/Nethereum.Util/PoseidonPrecomputedPresets.cs"
-SRC="$SRC /src/src/Nethereum.Util/PoseidonParameterPreset.cs"
-
-# Merkle Binary (EIP-7864 binary trie — all source)
-for f in $(find /src/src/Nethereum.Merkle.Binary -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -name "PLAN.md" 2>/dev/null); do SRC="$SRC $f"; done
-
-# Hex
-SRC="$SRC /src/src/Nethereum.Hex/HexConvertors/Extensions/HexByteConvertorExtensions.cs"
-
-# EVM.Core (all)
-for f in $(find /src/src/Nethereum.EVM.Core -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*"); do SRC="$SRC $f"; done
-
-# Merkle Patricia (no proof verification)
-for f in $(find /src/src/Nethereum.Merkle.Patricia -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -name "*ProofVerification*.cs" 2>/dev/null); do SRC="$SRC $f"; done
-
-# CoreChain (state root calculators)
-for cc in PatriciaStateRootCalculator PatriciaMerkleTreeBuilder PatriciaBlockRootCalculator BinaryStateRootCalculator; do
-    [ -f "/src/src/Nethereum.CoreChain/${cc}.cs" ] && SRC="$SRC /src/src/Nethereum.CoreChain/${cc}.cs"
-done
-
-# Model types
-for model in \
-    AccessListItem IBlockEncodingProvider RlpBlockEncodingProvider \
-    Authorisation7702Signed Signature ISignature DefaultValues \
-    Account AccountEncoder Receipt ReceiptEncoder Log LogEncoder LogBloomFilter \
-    BlockHeader BlockHeaderEncoder \
-    TransactionFactory TransactionType TransactionTypeEncoder \
-    ISignedTransaction ITransactionTypeDecoder \
-    SignedTransaction SignedTypeTransaction SignedLegacyTransaction \
-    SignedTransactionBase SignedTransactionExtensions SignatureExtensions \
-    VRecoveryAndChainCalculations \
-    LegacyTransaction LegacyTransactionChainId \
-    Transaction1559 Transaction1559Encoder \
-    Transaction2930 Transaction2930Encoder \
-    Transaction7702 Transaction7702Encoder \
-    Transaction4844 Transaction4844Encoder \
-    IBlobKzgProvider \
-    RLPSignedDataHashBuilder RLPSignedDataDecoder SignedData \
-    AccessListRLPEncoderDecoder AuthorisationListRLPEncoderDecoder \
-    Authorisation7702RLPEncoderAndHasher RLPSignedDataEncoder
-do
-    [ -f "/src/src/Nethereum.Model/${model}.cs" ] && SRC="$SRC /src/src/Nethereum.Model/${model}.cs"
-done
-
-# RLP (all)
-for f in $(find /src/src/Nethereum.RLP -name "*.cs" -not -path "*/obj/*" -not -path "*/bin/*" -not -path "*/Properties/*" 2>/dev/null); do SRC="$SRC $f"; done
-
-# BLS12-381 EIP-2537 precompiles (Prague+) — 7 handlers + interface + registry/config extensions
-SRC="$SRC /src/src/Nethereum.Signer.Bls/IBls12381Operations.cs"
-for f in $(find /src/src/Nethereum.EVM.Precompiles.Bls/Handlers -name "*.cs" 2>/dev/null); do SRC="$SRC $f"; done
-SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Bls/PrecompileRegistryBlsExtensions.cs"
-SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Bls/HardforkConfigBlsExtensions.cs"
-
-# KZG EIP-4844 precompile (Cancun+) — handler + interface only.
-# CkzgOperations.cs / HardforkConfigKzgExtensions.cs / PrecompileRegistryKzgExtensions.cs
-# are intentionally omitted: they pull in BCL IO and embedded trusted-setup loading
-# which do not belong in the zkVM guest.
-SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Kzg/IKzgOperations.cs"
-SRC="$SRC /src/src/Nethereum.EVM.Precompiles.Kzg/Handlers/KzgPointEvaluationPrecompile.cs"
+SRC=$(cd /src && DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet msbuild src/Nethereum.EVM.Zisk/Nethereum.EVM.Zisk.csproj -getItem:Compile -nologo \
+    | python3 -c "import json,sys; print(\" \".join(i[\"FullPath\"] for i in json.load(sys.stdin)[\"Items\"][\"Compile\"]))")
 
 echo "[BUILD] Compiling $(echo $SRC | wc -w) source files..."
 
@@ -172,7 +109,7 @@ bflat build $SRC \
     --no-globalization --no-pthread --no-stacktrace-data \
     --no-exception-messages \
     -Os --no-pie \
-    -d EVM_SYNC \
+    -d EVM_SYNC -d EVM_ZISK \
     '"$EXTLIB_FLAG"' \
     -o /src/'"$OUTPUT_DIR"'/'"$OUTPUT_NAME"'_raw
 '
@@ -192,11 +129,9 @@ echo ""
 echo "============================================="
 echo "  BUILD COMPLETE: $OUTPUT_DIR/${OUTPUT_NAME}_elf"
 echo "============================================="
-# Convert Windows path to WSL path for convenience
-WSL_PATH=$(echo "$NETHEREUM" | sed 's|^/c/|/mnt/c/|;s|^C:/|/mnt/c/|;s|^/\([a-zA-Z]\)/|/mnt/\L\1/|')
 echo ""
 echo "Run in emulator:"
-echo "  wsl -d Ubuntu -- ~/.zisk/bin/ziskemu -e ${WSL_PATH}/$OUTPUT_DIR/${OUTPUT_NAME}_elf --legacy-inputs <witness.bin> -n 500000000"
+echo "  ziskemu -e $OUTPUT_DIR/${OUTPUT_NAME}_elf --legacy-inputs <witness.bin> -n 500000000"
 echo ""
 echo "Generate proof:"
-echo "  wsl -d Ubuntu -- ~/.zisk/bin/cargo-zisk prove -e ${WSL_PATH}/$OUTPUT_DIR/${OUTPUT_NAME}_elf -i <witness.bin> -l -m"
+echo "  cargo-zisk prove -e $OUTPUT_DIR/${OUTPUT_NAME}_elf -i <witness.bin> --gpu"

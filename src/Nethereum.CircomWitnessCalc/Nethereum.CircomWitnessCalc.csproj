@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum CircomWitnessCalc - Native circom witness generation via iden3/circom-witnesscalc (P/Invoke)</Description>
     <AssemblyTitle>Nethereum.CircomWitnessCalc</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <AssemblyName>Nethereum.CircomWitnessCalc</AssemblyName>
     <PackageId>Nethereum.CircomWitnessCalc</PackageId>

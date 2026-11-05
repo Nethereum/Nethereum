@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace Nethereum.Zisk.Core
 {
     /// <summary>
-    /// Debug logging via Zisk's UART at 0xA0000200.
+    /// Debug logging via Zisk's UART at 0xA0400200.
     ///
     /// Writes single bytes to the UART address. In ziskemu, this output
     /// appears on the host console. In proving mode, UART writes are

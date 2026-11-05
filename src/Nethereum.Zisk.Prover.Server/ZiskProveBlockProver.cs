@@ -4,7 +4,10 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using Nethereum.CoreChain.Proving;
+using Nethereum.EVM.Witness;
+using Nethereum.Util;
 
 namespace Nethereum.Zisk.Prover.Server
 {
@@ -16,6 +19,7 @@ namespace Nethereum.Zisk.Prover.Server
         private readonly string _provingKeySnarkPath;
         private readonly bool _convertPathsForWsl;
         private readonly bool _useWsl;
+        private readonly bool _useGpu;
         private readonly byte[] _elfHash;
         private readonly int _timeoutMs;
         private readonly ILogger _logger;
@@ -30,7 +34,8 @@ namespace Nethereum.Zisk.Prover.Server
             bool useWsl = false,
             int timeoutMs = 1800000,
             ILogger logger = null,
-            Dictionary<string, string> environmentVariables = null)
+            Dictionary<string, string> environmentVariables = null,
+            bool useGpu = false)
         {
             _elfPath = elfPath ?? throw new ArgumentNullException(nameof(elfPath));
             if (!File.Exists(_elfPath))
@@ -40,6 +45,7 @@ namespace Nethereum.Zisk.Prover.Server
             _provingKeySnarkPath = provingKeySnarkPath;
             _convertPathsForWsl = convertPathsForWsl;
             _useWsl = useWsl;
+            _useGpu = useGpu;
             _timeoutMs = timeoutMs;
             _logger = logger;
             _environmentVariables = environmentVariables ?? new Dictionary<string, string>();
@@ -76,7 +82,7 @@ namespace Nethereum.Zisk.Prover.Server
                 var sw = Stopwatch.StartNew();
 
                 var starkResult = RunCommand(
-                    $"prove -e {elfCmd} -i {witnessCmd} -l -n -o {proofCmd}",
+                    $"prove -e {elfCmd} -i {witnessCmd} -o {proofCmd}{GpuFlag}",
                     _timeoutMs);
 
                 sw.Stop();
@@ -128,7 +134,7 @@ namespace Nethereum.Zisk.Prover.Server
                     var snarkSw = Stopwatch.StartNew();
                     var snarkOutputFile = Path.Combine(_outputDir, $"snark_block_{blockNumber}");
                     var snarkResult = RunCommand(
-                        $"wrap-proof -p {proofCmd} --plonk -o {ResolvePath(snarkOutputFile)}",
+                        $"wrap -p {proofCmd} --plonk -o {ResolvePath(snarkOutputFile)}{GpuFlag}",
                         _timeoutMs);
                     snarkSw.Stop();
 
@@ -171,6 +177,21 @@ namespace Nethereum.Zisk.Prover.Server
             {
                 try { File.Delete(witnessFile); } catch { }
             }
+        }
+
+        private string GpuFlag => _useGpu ? " --gpu" : string.Empty;
+
+        public Task<BlockProofResult> ProveBlockForAnchorAsync(
+            byte[] witnessBytes, IReadOnlyList<System.Numerics.BigInteger> anchorPublicInputs,
+            byte[] preStateRoot, byte[] postStateRoot, long blockNumber)
+        {
+            if (anchorPublicInputs == null) throw new ArgumentNullException(nameof(anchorPublicInputs));
+
+            var witness = BinaryBlockWitness.Deserialize(witnessBytes);
+            witness.AnchorInputs = AnchorBinding.Encode(
+                anchorPublicInputs.Select(EvmUInt256BigIntegerExtensions.FromBigInteger).ToList());
+
+            return ProveBlockAsync(BinaryBlockWitness.Serialize(witness), preStateRoot, postStateRoot, blockNumber);
         }
 
         private string WriteStandardInput(byte[] witnessBytes, long blockNumber)

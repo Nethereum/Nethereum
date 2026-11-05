@@ -14,13 +14,18 @@ namespace Nethereum.PrivacyPools
         public BigInteger MasterSecret { get; }
 
         public PrivacyPoolAccount(string mnemonic, string password = "")
-            : this(mnemonic, password, useLegacyDerivation: false)
+            : this(mnemonic, password, false, true)
         {
         }
 
-        private PrivacyPoolAccount(string mnemonic, string password, bool useLegacyDerivation)
+        public PrivacyPoolAccount(string mnemonic, string password, bool validateMnemonic)
+            : this(mnemonic, password, false, validateMnemonic)
         {
-            var wallet = new MinimalHDWallet(mnemonic, password);
+        }
+
+        private PrivacyPoolAccount(string mnemonic, string password, bool useLegacyDerivation, bool validateMnemonic)
+        {
+            var wallet = new MinimalHDWallet(mnemonic, password, validateMnemonic);
 
             var key1Bytes = wallet.GetKeyFromPath("m/44'/60'/0'/0/0").GetPrivateKeyAsBytes();
             var key2Bytes = wallet.GetKeyFromPath("m/44'/60'/1'/0/0").GetPrivateKeyAsBytes();
@@ -34,7 +39,12 @@ namespace Nethereum.PrivacyPools
 
         public static PrivacyPoolAccount CreateLegacy(string mnemonic, string password = "")
         {
-            return new PrivacyPoolAccount(mnemonic, password, useLegacyDerivation: true);
+            return new PrivacyPoolAccount(mnemonic, password, true, true);
+        }
+
+        public static PrivacyPoolAccount CreateLegacy(string mnemonic, string password, bool validateMnemonic)
+        {
+            return new PrivacyPoolAccount(mnemonic, password, true, validateMnemonic);
         }
 
         public PrivacyPoolAccount(BigInteger masterNullifier, BigInteger masterSecret)

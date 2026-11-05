@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
     <TargetFramework>net10.0</TargetFramework>
-    <DefineConstants>EVM_SYNC</DefineConstants>
+    <DefineConstants>EVM_SYNC;EVM_ZISK</DefineConstants>
     <LangVersion>12.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -26,6 +27,7 @@
   <!-- BLS12-381 EIP-2537 precompile handlers + interface (Prague+) -->
   <ItemGroup>
     <Compile Include="..\Nethereum.Signer.Bls\IBls12381Operations.cs" Link="Bls\IBls12381Operations.cs" />
+    <Compile Include="..\Nethereum.Signer.Bls\IBls12381OutcomeOperations.cs" Link="Bls\IBls12381OutcomeOperations.cs" />
     <Compile Include="..\Nethereum.EVM.Precompiles.Bls\Handlers\*.cs" Link="Bls\Handlers\%(Filename).cs" />
     <Compile Include="..\Nethereum.EVM.Precompiles.Bls\PrecompileRegistryBlsExtensions.cs" Link="Bls\PrecompileRegistryBlsExtensions.cs" />
     <Compile Include="..\Nethereum.EVM.Precompiles.Bls\HardforkConfigBlsExtensions.cs" Link="Bls\HardforkConfigBlsExtensions.cs" />
@@ -45,6 +47,7 @@
   <ItemGroup>
     <Compile Include="..\Nethereum.Util\NethereumDocExampleAttribute.cs" Link="Util\NethereumDocExampleAttribute.cs" />
     <Compile Include="..\Nethereum.Util\EvmUInt256.cs" Link="Util\EvmUInt256.cs" />
+    <Compile Include="..\Nethereum.Util\EvmUInt256.Division.cs" Link="Util\EvmUInt256.Division.cs" />
     <Compile Include="..\Nethereum.Util\EvmInt256.cs" Link="Util\EvmInt256.cs" />
     <Compile Include="..\Nethereum.Util\EvmAddress.cs" Link="Util\EvmAddress.cs" />
     <Compile Include="..\Nethereum.Util\AddressUtil.cs" Link="Util\AddressUtil.cs" />
@@ -80,7 +83,7 @@
   <!-- Merkle Patricia Trie (LINQ-free) -->
   <ItemGroup>
     <Compile Include="..\Nethereum.Merkle.Patricia\**\*.cs" Link="Merkle\%(RecursiveDir)%(Filename).cs"
-             Exclude="..\Nethereum.Merkle.Patricia\obj\**;..\Nethereum.Merkle.Patricia\bin\**;..\Nethereum.Merkle.Patricia\**\*ProofVerification*.cs;..\Nethereum.Merkle.Patricia\Storage\InMemoryPathNodeStore.cs" />
+             Exclude="..\Nethereum.Merkle.Patricia\obj\**;..\Nethereum.Merkle.Patricia\bin\**;..\Nethereum.Merkle.Patricia\**\*ProofVerification*.cs;..\Nethereum.Merkle.Patricia\ProofVerification\TrieNodeVerification.cs;..\Nethereum.Merkle.Patricia\Storage\InMemoryPathNodeStore.cs" />
   </ItemGroup>
 
   <!-- Merkle Binary Trie (EIP-7864) -->
@@ -95,6 +98,7 @@
     <Compile Include="..\Nethereum.CoreChain\PatriciaMerkleTreeBuilder.cs" Link="CoreChain\PatriciaMerkleTreeBuilder.cs" />
     <Compile Include="..\Nethereum.CoreChain\PatriciaBlockRootCalculator.cs" Link="CoreChain\PatriciaBlockRootCalculator.cs" />
     <Compile Include="..\Nethereum.CoreChain\BinaryStateRootCalculator.cs" Link="CoreChain\BinaryStateRootCalculator.cs" />
+    <Compile Include="..\Nethereum.CoreChain\StateRootAccountRules.cs" Link="CoreChain\StateRootAccountRules.cs" />
   </ItemGroup>
 
   <!-- Model types (transaction decoders, receipts, block header for block proofs) -->
@@ -113,6 +117,7 @@
     <Compile Include="..\Nethereum.Model\AccountEncoder.cs" Link="Model\AccountEncoder.cs" />
     <Compile Include="..\Nethereum.Model\Receipt.cs" Link="Model\Receipt.cs" />
     <Compile Include="..\Nethereum.Model\ReceiptEncoder.cs" Link="Model\ReceiptEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\ReceiptRlpDecoder.cs" Link="Model\ReceiptRlpDecoder.cs" />
     <Compile Include="..\Nethereum.Model\Log.cs" Link="Model\Log.cs" />
     <Compile Include="..\Nethereum.Model\LogEncoder.cs" Link="Model\LogEncoder.cs" />
     <Compile Include="..\Nethereum.Model\LogBloomFilter.cs" Link="Model\LogBloomFilter.cs" />
@@ -122,6 +127,9 @@
     <Compile Include="..\Nethereum.Model\BlockAccessListRLPEncoder.cs" Link="Model\BlockAccessListRLPEncoder.cs" />
     <Compile Include="..\Nethereum.Model\Codecs\*.cs" Link="Model\Codecs\%(Filename).cs" />
     <Compile Include="..\Nethereum.Model\TransactionFactory.cs" Link="Model\TransactionFactory.cs" />
+    <Compile Include="..\Nethereum.Model\TransactionRlpDecoder.cs" Link="Model\TransactionRlpDecoder.cs" />
+    <Compile Include="..\Nethereum.Model\BlobEncoder.cs" Link="Model\BlobEncoder.cs" />
+    <Compile Include="..\Nethereum.Model\TransactionDecodingExceptions.cs" Link="Model\TransactionDecodingExceptions.cs" />
     <Compile Include="..\Nethereum.Model\TransactionType.cs" Link="Model\TransactionType.cs" />
     <Compile Include="..\Nethereum.Model\TransactionTypeEncoder.cs" Link="Model\TransactionTypeEncoder.cs" />
     <Compile Include="..\Nethereum.Model\ISignedTransaction.cs" Link="Model\ISignedTransaction.cs" />

@@ -10,26 +10,26 @@ C# source (Nethereum.EVM.Core, Nethereum.EVM.Zisk, Nethereum.Zisk.Core)
     ▼
 bflat-riscv64 (NativeAOT → RISC-V cross-compiler, in Docker)
     │
-    └── Links libziskos.a (our build from Zisk upstream + poseidon2_c trampoline)
-        ├── Rust `_c` functions: keccak256_c, sha256_c, secp256k1_ecdsa_address_recover_c,
-        │   bn254_pairing_check_c, bls12_381_*, verify_kzg_proof_c, modexp_bytes_c,
-        │   secp256r1_ecdsa_verify_c, blake2b_compress_c
+    └── Links libziskos.a (Zisk 1.3.1-alpha make libziskos)
+        ├── zkvm_* accelerators: zkvm_keccak256, zkvm_sha256, zkvm_secp256k1_ecrecover,
+        │   zkvm_bn254_*, zkvm_bls12_*, zkvm_kzg_point_eval, zkvm_modexp,
+        │   zkvm_secp256r1_verify, zkvm_blake2f
         ├── Raw syscall wrappers: syscall_keccak_f, syscall_sha256_f, syscall_poseidon2,
         │   syscall_secp256k1_*, syscall_bn254_*, syscall_bls12_381_*, syscall_secp256r1_*
         ├── DMA operations: __wrap_memcpy, __wrap_memset, __wrap_memmove, __wrap_memcmp
-        └── Our trampoline: poseidon2_c (1-line C alias baked in by build-libziskos.sh)
+        └── Guest entry: _start calls main, with an allocator private to the library
     │
     ▼
 RISC-V 64-bit ELF (static, no OS, rv64ima without FP)
     │
     ▼
-patch_elf + signal_patch (Zisk ELF compatibility post-processing)
+patch_elf (Zisk ELF compatibility post-processing)
     │
     ▼
 ziskemu (emulator — fast, no proof)         cargo-zisk prove (STARK proof)
 ```
 
-We build `libziskos.a` directly from `0xPolygonHermez/zisk` upstream so we stay in sync with current CSR assignments and can add our own `poseidon2_c` trampoline for binary-trie state roots.
+`libziskos.a` is Zisk's own isolated staticlib (`make libziskos`), built from the release tag. The guest targets Zisk 1.3.1-alpha.
 
 ## How Zisk Precompiles Work
 
@@ -38,6 +38,8 @@ Zisk provides hardware-accelerated cryptographic operations via **CSR (Control S
 There are two categories of CSR instructions:
 
 ### Regular precompiles (0x800–0x812, 0x817–0x819)
+
+`libziskos.a` also exports `syscall_poseidon1`, `syscall_blake3f`, `syscall_blake2sf` and `syscall_babyjubjub_add`, which the guest does not call.
 
 Single RISC-V instruction: `csrs <CSR>, a0` where `a0` holds the parameter pointer.
 The transpiler handles these as atomic operations — no pattern matching on surrounding instructions.
@@ -75,195 +77,49 @@ Multi-instruction patterns: `csrs <CSR>, reg` followed by `addi` or `add`. The Z
 |-----|--------|---------|
 | 0x813 | `__wrap_memcpy` | `csrs 0x813, src; add x0, dst, count` |
 | 0x814 | `__wrap_memcmp` | `csrs 0x814, src; add dst, dst, count` |
-| 0x815 | `dma_inputcpy` | `csrs 0x815, dst; addi rd, dst, count` |
+| 0x815 | `dma_inputcpy` (Zisk op, not exported) | `csrs 0x815, dst; addi rd, dst, count` |
 | 0x816 | `__wrap_memset` | `csrs 0x816, dst; addi x0, count, fill_byte` |
 
-The DMA symbols come from Zisk's `ziskos` crate (patched to `__wrap_*` names — see Patch 6 below).
+The DMA symbols come from Zisk's `ziskos` crate (renamed to `__wrap_*` by `build-libziskos.sh`).
 
 ### Ethereum precompile → CSR mapping
 
-Each Ethereum precompile is orchestrated by a Rust `_c` function inside `libziskos.a`, which in turn issues sequences of CSR calls:
+Each Ethereum precompile is orchestrated by a `zkvm_*` function exported by `libziskos.a`, which in turn issues sequences of CSR calls:
 
-| EVM Address | Precompile | Rust function (`libziskos.a`) | CSR calls used |
+| EVM Address | Precompile | Export (`libziskos.a`) | CSR calls used |
 |-------------|-----------|-------------------|----------------|
-| 0x01 | ECRECOVER | `secp256k1_ecdsa_address_recover_c` | secp256k1_add/dbl, arith256_mod, keccakf |
-| 0x02 | SHA-256 | `sha256_c` | sha256_f |
+| 0x01 | ECRECOVER | `zkvm_secp256k1_ecrecover` | secp256k1_add/dbl, arith256_mod, keccakf |
+| 0x02 | SHA-256 | `zkvm_sha256` | sha256_f |
 | 0x03 | RIPEMD-160 | managed C# fallback | (none — pure software) |
 | 0x04 | IDENTITY | managed C# | (none) |
-| 0x05 | MODEXP | `modexp_bytes_c` | arith256_mod |
-| 0x06 | BN254 ADD | `bn254_g1_add_c` | bn254_curve_add |
-| 0x07 | BN254 MUL | `bn254_g1_mul_c` | bn254_curve_add/dbl |
-| 0x08 | BN254 PAIRING | `bn254_pairing_check_c` | bn254_curve_add/dbl, bn254_complex_add/sub/mul, arith256_mod |
-| 0x09 | BLAKE2F | `blake2b_compress_c` | blake2b_round |
-| 0x0A | KZG | `verify_kzg_proof_c` | bls12_381_* |
-| 0x0B–0x12 | BLS12-381 | `bls12_381_g1_add_c`, `_msm_c`, `_g2_*`, `_pairing_check_c`, `_fp_to_g1_c`, `_fp2_to_g2_c` | bls12_381_curve_add/dbl, bls12_381_complex_add/sub/mul, arith384_mod |
-| 0x100 | P256VERIFY | `secp256r1_ecdsa_verify_c` | secp256r1_add/dbl, arith256_mod |
+| 0x05 | MODEXP | `zkvm_modexp` | arith256_mod |
+| 0x06 | BN254 ADD | `zkvm_bn254_g1_add` | bn254_curve_add |
+| 0x07 | BN254 MUL | `zkvm_bn254_g1_mul` | bn254_curve_add/dbl |
+| 0x08 | BN254 PAIRING | `zkvm_bn254_pairing` | bn254_curve_add/dbl, bn254_complex_add/sub/mul, arith256_mod |
+| 0x09 | BLAKE2F | `zkvm_blake2f` | blake2b_round |
+| 0x0A | KZG | `zkvm_kzg_point_eval` | bls12_381_* |
+| 0x0B–0x12 | BLS12-381 | `zkvm_bls12_g1_add`, `zkvm_bls12_g1_msm`, `zkvm_bls12_g2_add`, `zkvm_bls12_g2_msm`, `zkvm_bls12_pairing`, `zkvm_bls12_map_fp_to_g1`, `zkvm_bls12_map_fp2_to_g2` | bls12_381_curve_add/dbl, bls12_381_complex_add/sub/mul, arith384_mod |
+| 0x100 | P256VERIFY | `zkvm_secp256r1_verify` | secp256r1_add/dbl, arith256_mod |
 
-All `_c` functions are `extern "C"` Rust functions compiled into `libziskos.a`. They handle encoding/decoding, validation, and algorithm orchestration (sponge construction, scalar multiplication, Miller loops, etc.), delegating primitive field/curve operations to CSR instructions.
+All `zkvm_*` functions are `extern "C"` Rust functions compiled into `libziskos.a`. They handle encoding/decoding, validation, and algorithm orchestration (sponge construction, scalar multiplication, Miller loops, etc.), delegating primitive field/curve operations to CSR instructions.
 
 ## Building `libziskos.a` — `zisk/scripts/build-libziskos.sh`
 
-`libziskos.a` contains Zisk's compiled Rust guest runtime — all crypto orchestration, CSR wrappers, memory management, DMA operations — plus our `poseidon2_c` trampoline. The script runs entirely inside a Docker `rust:latest` container so no host Rust toolchain is required. Works on Windows (MSYS/Git Bash) and Linux.
+`libziskos.a` contains Zisk's compiled Rust guest runtime: the `zkvm_*` accelerators, the `read_input` / `write_output` IO functions, the DMA memory routines and the guest entry (`_start`, which calls `main`). Zisk builds it itself with `make libziskos`, with fat LTO and an allocator that is private to the library, so none of the earlier source patches are needed.
 
 ```bash
-bash zisk/scripts/build-libziskos.sh [zisk-git-ref]   # default ref: main
+bash zisk/scripts/build-libziskos.sh [zisk-git-ref]   # default ref: v1.3.1-alpha
 ```
 
-Output: `zisk/.libziskos/libziskos.a` + `libziskos.bflat.manifest`.
-
-### Step 0 — Container setup
-
-Inside `rust:latest`:
-
-- `apt-get install gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu python3`
-- `rustup toolchain install nightly`
-- `rustup component add rust-src --toolchain nightly` (needed for `-Z build-std`)
-
-### Step 1 — Clone Zisk upstream
-
-```bash
-git clone --depth 1 --branch "$ZISK_REF" https://github.com/0xPolygonHermez/zisk.git
-```
-
-The known-good commit is pinned in the script as `ZISK_COMMIT_KNOWN` for reference; the script always records whatever commit it cloned into the output manifest.
-
-### Step 2 — Apply seven patches
-
-The Zisk `ziskos/entrypoint` crate is designed as a standalone zkVM runtime. To co-exist with bflat/NativeAOT (which provides its own `_start`, allocator, and `memcpy`), we need:
-
-#### Patch 1 — Static library output
-
-`ziskos/entrypoint/Cargo.toml` gets a `[lib] crate-type = ["staticlib", "rlib"]` section so `cargo build` produces `libziskos.a` instead of an executable.
-
-#### Patch 2 — `no_entrypoint` feature flag
-
-Add `no_entrypoint = []` to the `[features]` section. We'll compile with `--features no_entrypoint`.
-
-#### Patch 3 — Guard `_start` and `_zisk_main`
-
-Prefix both functions in `ziskos/entrypoint/src/lib.rs` with `#[cfg(not(feature = "no_entrypoint"))]` so they don't collide with bflat's own entrypoint.
-
-#### Patch 4 — `sys_panic` stub
-
-Append to `lib.rs`:
-
-```rust
-#[no_mangle]
-extern "C" fn sys_panic(_msg_ptr: *const u8, _msg_len: usize) -> ! {
-    loop {}
-}
-```
-
-Zisk's own panic handler conflicts with bflat's; this stub satisfies Rust's abort panic strategy with a trivial spin loop.
-
-#### Patch 5 — Replace bump allocator
-
-In `ziskos/entrypoint/src/alloc/alloc.rs`, swap the inline bump allocator for a malloc wrapper that routes to bflat's allocator:
-
-```rust
-#[inline(never)]
-pub unsafe fn inline_bump_alloc_aligned(bytes: usize, _align: usize) -> *mut u8 {
-    extern "C" {
-        fn __wrap___libc_malloc_impl(n: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    }
-    unsafe { __wrap___libc_malloc_impl(bytes as core::ffi::c_ulong) as *mut u8 }
-}
-```
-
-This ensures both the Rust guest runtime and the .NET NativeAOT runtime share a single heap managed by bflat.
-
-#### Patch 6 — Wrap DMA symbols
-
-Rename four symbols in `ziskos/entrypoint/src/dma/{memcpy,memset,memmove,memcmp}.s`:
-
-```
-memcpy  → __wrap_memcpy
-memset  → __wrap_memset
-memmove → __wrap_memmove
-memcmp  → __wrap_memcmp
-```
-
-bflat's linker is invoked with `--wrap memcpy --wrap memset --wrap memmove --wrap memcmp`. The linker redirects all `memcpy` calls from user code (including .NET's own codegen) to `__wrap_memcpy` inside `libziskos.a` — which issues the `csrs 0x813` DMA instruction. The original `memcpy` symbol becomes `__real_memcpy` if anything needs the raw C implementation (nothing in our build does).
-
-This is the mechanism that lets us accelerate every `memcpy` in the final ELF (including those the .NET runtime emits for large struct copies) using Zisk's DMA CSR.
-
-#### Patch 7 — Skip native C++ build for zkvm target
-
-Zisk's `lib-c` crate has a `build.rs` that compiles x86 NASM for the host prover. On our zkvm target this is irrelevant and unbuildable — patch it to early-return:
-
-```rust
-if env::var("CARGO_CFG_TARGET_OS").unwrap_or_default() == "zkvm" {
-    println!("cargo:rustc-cfg=feature=\"no_lib_link\"");
-    return;
-}
-```
-
-### Step 3 — RISC-V target spec
-
-The script writes `riscv64imad-zisk-zkvm-elf.json` with the exact target Zisk expects:
-
-```json
-{
-  "llvm-target": "riscv64",
-  "arch": "riscv64",
-  "os": "zkvm",
-  "vendor": "zisk",
-  "features": "+m,+a,+d",
-  "panic-strategy": "abort",
-  "relocation-model": "static",
-  "code-model": "medium",
-  "disable-redzone": true,
-  ...
-}
-```
-
-Key points: `os=zkvm` / `vendor=zisk` is what Patch 7 pattern-matches, `panic-strategy=abort` matches our `sys_panic` stub, `code-model=medium` keeps text+data addressable by 32-bit offsets, `disable-redzone` avoids stack-below-sp tricks (Zisk has a fixed stack).
-
-### Step 4 — Build the Rust crate
-
-```bash
-cargo +nightly build --release \
-    --target /tmp/zisk/riscv64imad-zisk-zkvm-elf.json \
-    -Z build-std=std,panic_abort \
-    -Z json-target-spec \
-    --features no_entrypoint
-```
-
-`-Z build-std=std,panic_abort` rebuilds `std` from source for our custom target (nightly-only). `--features no_entrypoint` activates Patches 2 and 3.
-
-Output: `/tmp/zisk/target/riscv64imad-zisk-zkvm-elf/release/libziskos.a`.
-
-### Step 5 — Add our `poseidon2_c` trampoline
-
-Zisk upstream exports `syscall_poseidon2` (the raw Goldilocks permutation wrapper around CSR 0x812) but NOT a high-level `*_c` symbol for it. We need one so `ZiskPoseidonHashProvider` can call it via the same `[DllImport("__Internal")]` pattern as every other Rust `_c` function.
-
-The script compiles a two-line C file inline and appends the resulting object directly into `libziskos.a`:
-
-```c
-/* /tmp/extras.c (written as a heredoc inside build-libziskos.sh) */
-extern void syscall_poseidon2(unsigned long *state);
-void poseidon2_c(unsigned long *state) { syscall_poseidon2(state); }
-```
-
-```bash
-riscv64-linux-gnu-gcc -c -march=rv64ima -mabi=lp64 -O2 -fno-builtin /tmp/extras.c -o /tmp/extras.o
-riscv64-linux-gnu-ar r "$BUILT" /tmp/extras.o
-riscv64-linux-gnu-ranlib "$BUILT"
-```
-
-The `ar r` appends the object into the existing archive, so `libziskos.a` now exports `poseidon2_c` alongside all the other `_c` functions. No separate `.a`, no additional `--extlib` flag needed at EVM build time.
-
-### Step 6 — Copy output + manifest
-
-The script copies `libziskos.a` to `zisk/.libziskos/` and generates `libziskos.bflat.manifest`:
+The script needs `rustup`, the Zisk Rust toolchain (`cargo-zisk toolchain install`), `git` and `make`. It clones the release tag, runs `make libziskos`, renames the four DMA routines `memcpy`, `memset`, `memmove` and `memcmp` to `__wrap_*` so bflat can link them in place of musl's through the manifest's `wrap_symbols`, and writes `zisk/.libziskos/libziskos.a` and `libziskos.bflat.manifest`:
 
 ```json
 {
   "name": "libziskos",
   "package_version": "1.0.0",
-  "zisk_ref": "main",
+  "zisk_ref": "v1.3.1-alpha",
   "zisk_commit": "<sha>",
-  "source": "Zisk upstream + Nethereum poseidon2_c",
+  "source": "Zisk upstream make libziskos",
   "builds": [{
     "arch": "riscv64",
     "os": "linux",
@@ -274,63 +130,38 @@ The script copies `libziskos.a` to `zisk/.libziskos/` and generates `libziskos.b
 }
 ```
 
-The `wrap_symbols` array is read by bflat at link time and converted into `--wrap <sym>` linker flags — this is what activates Patch 6 routing at the final link stage.
-
-### Step 7 — Verify symbols
-
-```bash
-riscv64-linux-gnu-nm libziskos.a | grep " T " | grep -E \
-    "keccak256_c|sha256_c|poseidon2_c|bn254_pairing|secp256r1_ecdsa|blake2b_compress"
-```
-
-All six symbols must appear — if any is missing, the EVM link will fail with an unresolved-symbol error.
+The build image (`ci/Dockerfile.zisk`) runs this script and ships the result in `/opt/libziskos`.
 
 ## Nethereum Native Bindings — `Nethereum.Zisk.Core.ZiskCrypto`
 
-Every Rust `_c` function in `libziskos.a` is exposed to C# as a `[DllImport("__Internal")]` method. The `__Internal` library name tells NativeAOT to resolve the symbol statically from whatever `.a` files were linked — no runtime dynamic loading.
+Each accelerator the guest uses is exposed to C# as a `[DllImport("__Internal")]` method. The `__Internal` library name tells NativeAOT to resolve the symbol statically from whatever `.a` files were linked — no runtime dynamic loading. The signatures follow the zkvm-standards C header (`zkvm_accelerators.h`): each returns a `zkvm_status` (`0` is success) and the checks return their result through a `bool*`.
 
 ```csharp
 public static class ZiskCrypto
 {
-    [DllImport("__Internal")]
-    public static extern void keccak256_c(byte[] input, nuint input_len, byte[] output);
-
-    [DllImport("__Internal")]
-    public static extern void sha256_c(byte[] input, nuint input_len, byte[] output);
-
-    [DllImport("__Internal")]
-    public static extern byte secp256k1_ecdsa_address_recover_c(
-        byte[] sig, byte recid, byte[] msg, byte[] output);
-
-    [DllImport("__Internal")]
-    public static extern nuint modexp_bytes_c(
-        byte[] base_ptr, nuint base_len,
-        byte[] exp_ptr, nuint exp_len,
-        byte[] modulus_ptr, nuint modulus_len,
-        byte[] result_ptr);
-
-    [DllImport("__Internal")] public static extern byte bn254_g1_add_c(byte[] p1, byte[] p2, byte[] ret);
-    [DllImport("__Internal")] public static extern byte bn254_g1_mul_c(byte[] point, byte[] scalar, byte[] ret);
-    [DllImport("__Internal")] public static extern byte bn254_pairing_check_c(byte[] pairs, nuint num_pairs);
-
-    [DllImport("__Internal")]
-    public static extern void blake2b_compress_c(
-        uint rounds, ulong[] state, ulong[] message, ulong[] offset, byte final_block);
-
-    [DllImport("__Internal")] public static extern byte verify_kzg_proof_c(byte[] z, byte[] y, byte[] commitment, byte[] proof);
-    [DllImport("__Internal")] public static extern byte bls12_381_g1_add_c(byte[] ret, byte[] a, byte[] b);
-    [DllImport("__Internal")] public static extern byte bls12_381_g1_msm_c(byte[] ret, byte[] pairs, nuint num_pairs);
-    [DllImport("__Internal")] public static extern byte bls12_381_g2_add_c(byte[] ret, byte[] a, byte[] b);
-    [DllImport("__Internal")] public static extern byte bls12_381_g2_msm_c(byte[] ret, byte[] pairs, nuint num_pairs);
-    [DllImport("__Internal")] public static extern byte bls12_381_pairing_check_c(byte[] pairs, nuint num_pairs);
-    [DllImport("__Internal")] public static extern byte bls12_381_fp_to_g1_c(byte[] ret, byte[] fp);
-    [DllImport("__Internal")] public static extern byte bls12_381_fp2_to_g2_c(byte[] ret, byte[] fp2);
-
-    [DllImport("__Internal")] public static extern unsafe void poseidon2_c(ulong* state);
+    public static extern uint zkvm_keccak256(byte[] data, nuint len, byte[] output);
+    public static extern uint zkvm_sha256(byte[] data, nuint len, byte[] output);
+    public static extern uint zkvm_ripemd160(byte[] data, nuint len, byte[] output);
+    public static extern uint zkvm_secp256k1_ecrecover(byte[] msg, byte[] sig, byte recid, byte[] output);
+    public static extern uint zkvm_modexp(byte[] base_ptr, nuint base_len, byte[] exp_ptr, nuint exp_len, byte[] modulus_ptr, nuint mod_len, byte[] output);
+    public static extern uint zkvm_bn254_g1_add(byte[] p1, byte[] p2, byte[] result);
+    public static extern uint zkvm_bn254_g1_mul(byte[] point, byte[] scalar, byte[] result);
+    public static extern unsafe uint zkvm_bn254_pairing(byte[] pairs, nuint num_pairs, bool* verified);
+    public static extern unsafe uint zkvm_bls12_pairing(byte[] pairs, nuint num_pairs, bool* verified);
+    public static extern uint zkvm_blake2f(uint rounds, ulong[] h, ulong[] m, ulong[] t, byte f);
+    public static extern unsafe uint zkvm_kzg_point_eval(byte[] commitment, byte[] z, byte[] y, byte[] proof, bool* verified);
+    public static extern uint zkvm_bls12_g1_add(byte[] p1, byte[] p2, byte[] result);
+    public static extern uint zkvm_bls12_g1_msm(byte[] pairs, nuint num_pairs, byte[] result);
+    public static extern uint zkvm_bls12_g2_add(byte[] p1, byte[] p2, byte[] result);
+    public static extern uint zkvm_bls12_g2_msm(byte[] pairs, nuint num_pairs, byte[] result);
+    public static extern uint zkvm_bls12_map_fp_to_g1(byte[] fp, byte[] result);
+    public static extern uint zkvm_bls12_map_fp2_to_g2(byte[] fp2, byte[] result);
+    public static extern unsafe uint zkvm_secp256r1_verify(byte[] msg, byte[] sig, byte[] pk, bool* verified);
+    public static extern unsafe void syscall_poseidon2(ulong* state);
 }
 ```
 
-At runtime each call goes C# → NativeAOT P/Invoke thunk → statically-linked symbol in `libziskos.a` → CSR instruction(s) → prover intercept.
+(Each declaration carries `[DllImport("__Internal")]` in the source.) At runtime each call goes C# → NativeAOT P/Invoke thunk → statically-linked symbol in `libziskos.a` → CSR instruction(s) → prover intercept. `syscall_poseidon2` is the raw Goldilocks permutation that Zisk exports directly.
 
 ## Hash provider implementations (C#)
 
@@ -338,11 +169,11 @@ For the EIP-7864 binary state trie, we need `IHashProvider` implementations that
 
 | Provider | Rust function called | Sponge / schedule handling |
 |----------|----------------------|----------------------------|
-| `ZiskKeccakHashProvider` | `keccak256_c` → CSR 0x800 | Rust handles padding + sponge |
-| `ZiskSha256HashProvider` | `sha256_c` → CSR 0x805 | Rust handles schedule + padding |
-| `ZiskPoseidonHashProvider` | `poseidon2_c` → CSR 0x812 | C# sponge: width 16, rate 8, digest 4 × u64 |
+| `ZiskKeccakHashProvider` | `zkvm_keccak256` → CSR 0x800 | Rust handles padding + sponge |
+| `ZiskSha256HashProvider` | `zkvm_sha256` → CSR 0x805 | Rust handles schedule + padding |
+| `ZiskPoseidonHashProvider` | `syscall_poseidon2` → CSR 0x812 | C# sponge: width 16, rate 12, digest 4 × u64 |
 
-Keccak and SHA-256 delegate entirely to the Rust `_c` functions which handle padding, sponge / message-schedule, and CSR calls. Poseidon2 is different: Zisk only exports the raw permutation, so `ZiskPoseidonHashProvider` does the Goldilocks sponge construction itself in C# (absorb 8 × u64 from input into state, call `poseidon2_c(state)` to permute, squeeze 4 × u64 from state for the digest).
+Keccak and SHA-256 delegate entirely to the Rust `zkvm_*` functions which handle padding, sponge / message-schedule, and CSR calls. Poseidon2 is different: Zisk only exports the raw permutation, so `ZiskPoseidonHashProvider` does the Goldilocks sponge construction itself in C# (absorb up to 12 × u64 from input into state, call `syscall_poseidon2(state)` to permute, squeeze 4 × u64 from state for the digest).
 
 `ZiskBinaryWitness.cs` routes the hash function at witness-read time:
 
@@ -350,15 +181,17 @@ Keccak and SHA-256 delegate entirely to the Rust `_c` functions which handle pad
 Witness features.HashFunction →
     Blake3    → Blake3HashProvider (managed, no CSR)
     Poseidon  → ZiskPoseidonHashProvider (C# sponge + CSR 0x812)
-    Sha256    → ZiskSha256HashProvider  (CSR 0x805 via Rust sha256_c)
-    Keccak    → ZiskKeccakHashProvider  (CSR 0x800 via Rust keccak256_c)
+    Sha256    → ZiskSha256HashProvider  (CSR 0x805 via zkvm_sha256)
+    Keccak    → ZiskKeccakHashProvider  (CSR 0x800 via zkvm_keccak256)
 ```
 
 ## Building the EVM ELF — `zisk/scripts/build.sh`
 
 ```bash
-LIBZISKOS_DIR="$(pwd)/zisk/.libziskos" bash zisk/scripts/build.sh
+bash zisk/scripts/build.sh
 ```
+
+The script compiles inside the bflat toolchain. On a host with Docker it starts the `nethereum/bflat-riscv64:zisk-1.3.1` image (`ZISK_IMAGE` overrides it, `ZISK_CPUS` limits it, default 8); inside the `nethereum-zisk` image (`ci/Dockerfile.zisk`, repository mounted at `/src`) it runs the toolchain directly. It reads `libziskos.a` from `zisk/.libziskos` (`LIBZISKOS_DIR` overrides it).
 
 Two modes:
 
@@ -369,18 +202,7 @@ Two modes:
 
 ### What source-mode compiles
 
-The script hand-picks only what the EVM needs (avoiding LINQ, `System.Runtime.Numerics`, Newtonsoft, etc.):
-
-- **`Nethereum.Zisk.Core`** — whole project (ZiskIO, ZiskInput, ZiskCrypto, hash providers)
-- **`Nethereum.EVM.Zisk`** — `Zisk/*.cs` + `Zisk/Backends/**/*.cs` (witness reader, precompile backends, state root resolver)
-- **`Nethereum.Util`** — `EvmUInt256`, `EvmInt256`, `AddressUtil`, `AddressExtensions`, `ContractUtils`, `Sha3Keccack`, `ByteUtil`, `EvmUInt256RLPExtensions`, `KeccakDigest`, hash provider interfaces, Poseidon core + presets + params
-- **`Nethereum.Merkle.Binary`** — whole project (EIP-7864 binary trie, state-root calculator)
-- **`Nethereum.Hex`** — `HexByteConvertorExtensions`
-- **`Nethereum.EVM.Core`** — whole project
-- **`Nethereum.Merkle.Patricia`** — whole project except `*ProofVerification*`
-- **`Nethereum.CoreChain`** — `PatriciaStateRootCalculator`, `PatriciaMerkleTreeBuilder`, `PatriciaBlockRootCalculator`, `BinaryStateRootCalculator`
-- **`Nethereum.Model`** — selected files (signed transaction types, access list, authorisation, RLP encoders)
-- **`Nethereum.RLP`** — whole project
+The source list is the `Compile` items of `src/Nethereum.EVM.Zisk/Nethereum.EVM.Zisk.csproj` (`dotnet msbuild -getItem:Compile`), so the project file is the single list of what the guest contains: `Nethereum.Zisk.Core`, the `Nethereum.EVM.Zisk` bridge, the minimal `Nethereum.Util` and `Nethereum.Hex` files, `Nethereum.EVM.Core`, `Nethereum.Merkle.Patricia` (without proof verification), `Nethereum.Merkle.Binary`, the four state-root calculators of `Nethereum.CoreChain`, the selected `Nethereum.Model` files, `Nethereum.RLP`, and the BLS12-381 and KZG precompile handlers. After changing `Nethereum.EVM.Core`, run `dotnet build src/Nethereum.EVM.Zisk`: it is the only build that sees a dependency the guest does not link.
 
 ### Step 1 — `bflat build`
 
@@ -390,85 +212,76 @@ bflat build $SRC \
     --no-globalization --no-pthread --no-stacktrace-data \
     --no-exception-messages \
     -Os --no-pie \
-    -d EVM_SYNC \
-    --extlib /libziskos/libziskos.bflat.manifest \
-    -o /src/zisk/output/nethereum_evm_raw
+    -d EVM_SYNC -d EVM_ZISK \
+    --extlib <libziskos>/libziskos.bflat.manifest \
+    -o zisk/output/nethereum_evm_raw
 ```
 
-- `--libc zisk` — use Zisk's libc shims (provided by the bflat Docker image)
+- `--libc zisk` — use Zisk's libc shims (provided by the bflat image); the fork's linker script lays the image out for Zisk 1.3.1 (ROM at `0x80000000`, RAM from `0xA0430000`, stack top `0xA0400000`)
 - `--no-globalization --no-pthread --no-stacktrace-data --no-exception-messages` — drop runtime features that pull in too much code
 - `-Os --no-pie` — optimise for size, position-dependent (zkVM is static)
 - `-d EVM_SYNC` — enable the sync EVM engine (the async one pulls in `System.Threading.Tasks` which is huge)
-- `--extlib` — the libziskos manifest we built in `build-libziskos.sh`; bflat reads it to locate the static lib AND the `wrap_symbols` array
+- `-d EVM_ZISK` — build for the guest: no `ConditionalWeakTable` code-analysis cache, whose dependent handles return null under the zero-GC runtime
+- `--extlib` — the libziskos manifest; bflat reads it to locate the static lib AND the `wrap_symbols` array
+- the fork links with `--wrap=main`: Zisk's `_start` calls `main`, which becomes the bflat bootstrap (`__libc_start_main`)
 
 ### Step 2 — `patch_elf`
 
+bflat runs `patch_elf` itself after linking and writes `nethereum_evm_raw.patched`, which the script renames to `nethereum_evm_elf`:
+
 ```
-patch_elf nethereum_evm_raw nethereum_evm_elf \
-    --fix-init-array --fix-tdata --remove-eh --split-code-data
+patch_elf nethereum_evm_raw nethereum_evm_raw.patched \
+    --fix-init-array --fix-tdata --remove-eh --trim-bss
 ```
 
 - `--fix-init-array` — rewrites `.init_array` so .NET static constructors run in correct order
 - `--fix-tdata` — normalises thread-local data (Zisk is single-threaded but TLS section layout must be sane)
 - `--remove-eh` — strips `.eh_frame` and `.dotnet_eh` (no exception unwinding in Zisk)
-- `--split-code-data` — separates `.text` from `.rodata` so Zisk's ROM/RAM split works
+- `--trim-bss` — removes the `.bss` section header
 
-### Step 3 — `signal_patch`
+## The `nethereum-zisk` image — `ci/Dockerfile.zisk`
 
+One image carries everything the Zisk lane needs: the .NET SDK, the bflat toolchain, `libziskos.a`, `ziskemu`, `cargo-zisk` (the GPU build, which also proves on the CPU when `--gpu` is left out), `snarkjs` 0.7.6 (needed by `cargo-zisk verify` for a PLONK proof) and the runtime libraries they load.
+
+```bash
+docker build --cpu-period 100000 --cpu-quota 800000 -f ci/Dockerfile.zisk -t nethereum-zisk zisk/scripts
 ```
-signal_patch nethereum_evm_elf
+
+It needs the `nethereum/bflat-riscv64:zisk-1.3.1` image first (`ARG BFLAT_IMAGE`). The proving key is not in the image: it is 17 GB and grows to about 72 GB once its constant trees are generated. Install it on the host with `ziskup --provingkey` and mount it:
+
+```bash
+docker run --rm --gpus all -v ~/.zisk/provingKey:/opt/zisk/provingKey nethereum-zisk \
+    cargo-zisk prove --gpu -e zisk/output/nethereum_evm_elf -i witness_standard.bin -o proof
 ```
 
-Binary-patches the first instructions of `__block_app_sigs`, `__reset_app_sigs`, etc. to `ret` (0x00008067) so .NET's signal-handler setup becomes a no-op. Zisk has no signals.
-
-## Host-side tooling — `zisk/scripts/setup-host.sh`
-
-One-shot installer for a clean Ubuntu/WSL2 host. Steps:
-
-1. **System deps** — `libomp5-14 libomp-dev gcc-riscv64-linux-gnu libicu-dev` + optional `libomp.so.5` symlink
-2. **.NET 10 SDK** — `dotnet-install.sh` to `/usr/lib/dotnet` if not already present
-3. **Rust** — rustup via the official installer (needed only for `build-libziskos.sh` if run outside Docker; Docker path doesn't need host Rust)
-4. **Zisk** — downloads `ziskup` to `~/.zisk/bin`, runs `ziskup --nokey` (emulator + prover, no proving key download)
-5. **Verify** — reports installed versions of .NET, Rust, cargo-zisk, RISC-V gcc
-6. **Clone `Nethereum/bflat-riscv64`** into `~/tools/` (nethereum branch)
-7. **Build the bflat Docker image** — `docker build -t nethereum/bflat-riscv64 .` from the cloned repo
-
-After this, the host is ready to run `build-libziskos.sh` and `build.sh`.
+`--gpus all` needs the NVIDIA container toolkit on the host. Proving on the GPU needs more video memory than a 12 GB or 16 GB card has (see Proving notes).
 
 ## Prerequisites
 
-- **Docker** (Desktop on Windows/macOS, or daemon on Linux)
-- **.NET 10 SDK** (only for `--dll` build mode)
-- **Zisk emulator + prover** (installed via `setup-host.sh`) — only needed to run/prove the binary, not to build it
-
-No host-side RISC-V toolchain or Rust toolchain is needed — everything that compiles RISC-V runs in Docker.
+- **Docker**
+- **A proving key** from `ziskup --provingkey` — only needed to prove, not to build or emulate
 
 ## Quick Start
 
-### 1. Build the Docker image
+### 1. Build the images
 
 ```bash
-git clone --branch nethereum https://github.com/Nethereum/bflat-riscv64.git ../bflat-riscv64
-cd ../bflat-riscv64 && docker build -t nethereum/bflat-riscv64 .
+git clone --branch zisk-1.3.1 https://github.com/Nethereum/bflat-riscv64.git ../bflat-riscv64
+cd ../bflat-riscv64 && docker build -t nethereum/bflat-riscv64:zisk-1.3.1 .
+cd - && docker build -f ci/Dockerfile.zisk -t nethereum-zisk zisk/scripts
 ```
 
-Or use the setup script: `bash zisk/scripts/setup-host.sh`.
+### 2. Build libziskos.a from Zisk (only outside the image)
 
-### 2. Build libziskos.a from Zisk upstream (one-time)
-
-```bash
-bash zisk/scripts/build-libziskos.sh main
-```
-
-Clones Zisk, applies seven patches, compiles the Rust crate for RISC-V, adds our `poseidon2_c` trampoline, and outputs `zisk/.libziskos/libziskos.a`.
+`nethereum-zisk` already carries `libziskos.a` in `/opt/libziskos`. To build it on a host with the Zisk toolchain: `bash zisk/scripts/build-libziskos.sh` writes `zisk/.libziskos/`.
 
 ### 3. Compile the EVM to a Zisk-ready ELF
 
 ```bash
-LIBZISKOS_DIR="$(pwd)/zisk/.libziskos" bash zisk/scripts/build.sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" nethereum-zisk bash zisk/scripts/build.sh
 ```
 
-Output: `zisk/output/nethereum_evm_elf` (~5 MB).
+Output: `zisk/output/nethereum_evm_elf` (~5.8 MB).
 
 ### 4. Generate a witness
 
@@ -481,142 +294,96 @@ Produces `zisk/output/test_sstore.bin` — a serialised `BinaryBlockWitness` wit
 ### 5. Run in the emulator
 
 ```bash
-# WSL on Windows:
-wsl -d Ubuntu -- ~/.zisk/bin/ziskemu -e /mnt/c/.../zisk/output/nethereum_evm_elf \
-    --legacy-inputs /mnt/c/.../zisk/output/test_sstore.bin -n 500000000
-
-# Linux:
 ziskemu -e zisk/output/nethereum_evm_elf --legacy-inputs zisk/output/test_sstore.bin -n 500000000
 ```
 
-Expected output:
+Expected output ends with the guest's block roots and gas:
 
 ```
 BIN:reading
 BIN:block txs=1 accounts=2
 BIN:exec
 BIN:executed ok=1 fail=0
-BIN:state_root=0x2fc84afa1e66eaef44a179f33c5a2bbacfa458bdc97b12cd7c3c29750dd8142d
+BIN:state_root=0x...
 BIN:OK gas=43106
 ```
 
-### 6. Run precompile tests
+### 6. Run the Zisk test lane
 
 ```bash
-dotnet test tests/Nethereum.EVM.Core.Tests --filter "ZiskEmu_stPreCompiledContracts"
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src" nethereum-zisk ci/run-tests.sh Zisk
 ```
 
 ## Environment overrides
 
 - `ZISK_IMAGE=<name>` — use a different bflat Docker image
-- `LIBZISKOS_DIR=<host-path>` — directory containing `libziskos.bflat.manifest` (typically `zisk/.libziskos/` after running `build-libziskos.sh`)
+- `ZISK_CPUS=<n>` — CPUs given to the build container (default 8)
+- `LIBZISKOS_DIR=<path>` — directory containing `libziskos.bflat.manifest` (default `zisk/.libziskos/`, `/opt/libziskos` in the image)
 
 ## Common pitfalls when upgrading
 
 ### `LIBZISKOS_DIR` must point at a libziskos that exports every `ZiskCrypto.cs` symbol
 
-`libziskos.a` is our own build (via `build-libziskos.sh`), but its contents come from Zisk upstream Rust. When `ZiskCrypto.cs` adds a `[DllImport("__Internal")]` for a new precompile symbol (e.g. `zkvm_secp256r1_verify`, `zkvm_bls12_*`), the symbol must exist in the `libziskos.a` we link against.
+`ZiskCrypto.cs` binds symbols that `libziskos.a` exports. When a binding is added or the Zisk tag changes, rebuild `libziskos.a` (`bash zisk/scripts/build-libziskos.sh <ref>`), otherwise the link fails with `lld: error: undefined symbol: ...`.
 
-The bflat Docker image bundles a bootstrapping libziskos used only if `LIBZISKOS_DIR` is unset. That bundle is whatever was current when the image was built — it goes stale as soon as we wire new symbols. Symptoms when stale:
+### Never call the BCL from the guest
 
-```
-lld: error: undefined symbol: zkvm_bls12_g2_add
-lld: error: undefined symbol: zkvm_secp256r1_verify
-lld: error: undefined symbol: poseidon2_c
-```
+The guest has no OpenSSL and no OS. Code in `Nethereum.EVM.Core` that reaches `System.Security.Cryptography` links, then jumps to a null function pointer when it runs (`CryptoNative_EvpSha256` in the trace). Hash through the hardfork's precompile backends, as `ExecutionRequests` does for the EIP-7685 requests hash.
 
-Always pass `LIBZISKOS_DIR="$(pwd)/zisk/.libziskos"` and rebuild it (`bash zisk/scripts/build-libziskos.sh <ref>`) when you wire new precompile bindings or bump the Zisk source ref.
+### The test runners read the ELF from `ExternalPaths:ZiskOutput`
 
-### ELF build output ≠ test runner read path
+`tests/Nethereum.XUnitEthereumClients/appsettings.test.json` sets `ExternalPaths:ZiskOutput` to `zisk/output`, which is where `build.sh` writes. The `ZiskEmu_*` tests do not run against an old ELF unless you copy one there.
 
-| Path | Used by |
-|------|---------|
-| `zisk/output/nethereum_evm_elf` | Where `build.sh` writes |
-| `scripts/zisk-output/nethereum_evm_elf` | Where `ZiskStateTestRunner.FindElfPath()` reads |
+### The bflat source set is the csproj
 
-After every `build.sh`, copy: `cp zisk/output/nethereum_evm_elf scripts/zisk-output/nethereum_evm_elf` — otherwise emulator tests run yesterday's bytecode against today's expectations.
+`build.sh` compiles the `Compile` items of `Nethereum.EVM.Zisk.csproj`. A file outside that project does not reach the guest; add it to the project and `dotnet build src/Nethereum.EVM.Zisk` shows what else it needs.
 
-### bflat source set is hand-curated — changes outside it don't affect the ELF
+### Headless hosts
 
-`build.sh` lists exactly which `.cs` files get compiled into the guest ELF. Anything outside this list is invisible to the proof pipeline. The non-obvious exclusions:
-
-- `Nethereum.CoreChain/BlockExecutor.cs`, `TransactionProcessor.cs`, `BlockContext.cs`, `IncrementalStateRootCalculator.cs` — **NOT** in scope (only 4 specific state-root calculators are pulled)
-- `Nethereum.EVM.Precompiles.Kzg/KzgAwareMainnetHardforkRegistry.cs` — NOT in scope (intentional: pulls BCL IO + embedded trusted-setup loading)
-- Of `Nethereum.Model/`, only the ~40 files explicitly listed (not `P2P/`, not `Network/`)
-
-If your change feels like it should be exercised by ZiskEmu tests but isn't, check whether the file is in the `SRC=` list of `build.sh`.
-
-### `ziskup --nokey` pulls v0.16.1, not the latest tag
-
-Upstream's "latest" GitHub Release pointer is stale relative to tagged commits. To get a specific version, download directly:
-
-```bash
-curl -sL -o zisk-v0.18.0.tar.gz \
-  https://github.com/0xPolygonHermez/zisk/releases/download/v0.18.0/cargo_zisk_linux_amd64.tar.gz
-```
-
-### v0.18.0+ splits binaries into CPU and GPU variants
-
-v0.18.0 ships `cargo-zisk-cpu` and `cargo-zisk-gpu` instead of a unified `cargo-zisk`. Same for `zisk-worker`. On headless servers without a GPU, symlink the CPU variants:
-
-```bash
-cd ~/.zisk/bin
-ln -sf cargo-zisk-cpu cargo-zisk
-ln -sf zisk-worker-cpu zisk-worker
-```
-
-### `build-libziskos.sh` Patch 1 silently skips for Zisk v0.18.0+
-
-v0.18.0 ships `ziskos/entrypoint/Cargo.toml` with a pre-existing `[lib]\ncrate-type = ["rlib"]`. The script's guard `if ! grep -q "^\[lib\]"` matches this and skips the staticlib add, so cargo only emits `.rlib` and the build fails later with `ERROR: libziskos.a not found`. Until the patch is updated to merge into an existing `crate-type` line, either:
-
-- Pin to a pre-v0.18.0 ref: `bash zisk/scripts/build-libziskos.sh pre-develop-0.17.1`
-- Or edit `ziskos/entrypoint/Cargo.toml` in your clone to add `"staticlib"` before re-running
+Set `HWLOC_COMPONENTS=-gl` (the image does) so OpenMPI does not probe X11.
 
 ## Directory layout
 
 ```
 zisk/
 ├── README.md                 # This file
-├── .libziskos/               # Self-built from Zisk upstream (gitignored)
-│   ├── libziskos.a           # Rust crypto + syscalls + DMA + our poseidon2_c
+├── .libziskos/               # Built by build-libziskos.sh (gitignored)
+│   ├── libziskos.a           # Zisk's isolated staticlib with the DMA routines renamed to __wrap_*
 │   ├── libziskos.bflat.manifest
 │   └── runtimes/linux-riscv64/native/libziskos.a
 ├── scripts/
 │   ├── build.sh              # EVM → ELF build (source + DLL modes)
-│   ├── build-libziskos.sh    # Build libziskos.a from Zisk upstream in Docker
-│   ├── prepare-input.py      # Build a Zisk input file from raw data chunks
+│   ├── build-libziskos.sh    # Build libziskos.a from the Zisk release tag
 │   ├── analyze-elf.sh        # Diagnostic: dump text symbol sizes
-│   ├── analyze-sections.sh   # Diagnostic: section sizes + flags
-│   └── setup-host.sh         # Host-side install (system deps, .NET, Rust, Zisk, bflat image)
-├── test-artifacts/           # Pre-built EVM binary, witnesses, and verified proofs
-│   ├── evm_lazy_nocookie     # RISC-V ELF (5.6MB)
-│   ├── witness_*_standard.bin # 4 witness variants (standard input format)
-│   └── proofs/               # 4 verified STARK proofs (329KB each)
+│   └── analyze-sections.sh   # Diagnostic: section sizes + flags
+├── test-artifacts/           # Guest ELF, witnesses and STARK proofs regenerated with Zisk 1.3.1-alpha
 └── output/                   # ELF + witness artefacts (gitignored)
 ```
 
 ## Validated test results
 
-| Witness | State Root | Status |
-|---------|-----------|--------|
-| Patricia + Keccak | `0x2fc84afa1e66eaef44a179f33c5a2bbacfa458bdc97b12cd7c3c29750dd8142d` | BIN:OK |
-| Binary + Blake3 | `0x937dca986d82499f329a7277aa4ab5f80657e8d3674ba49066d95f8e26039f5b` | BIN:OK |
-| Binary + Poseidon2 | `0x8501b6a2d153c13a57271324a15bf888c129ed4b5e3e08b23b2ef7d7e8d557a9` | BIN:OK |
-| stPreCompiledContracts (identity, modexp) | state roots match managed .NET | PASSED |
-| stPreCompiledContracts2 (ecrecover, sha256, ripemd, bn254) | state roots match managed .NET | PASSED |
+Each row is the guest's output for the SSTORE block of `BinaryTrieWitnessExecutionTests`, compared with the host execution of the same witness by the `*_GuestOutputsMatchHost` tests:
 
-State roots are cross-validated: the ziskemu output matches the managed .NET EVM using `PatriciaStateRootCalculator` / `BinaryStateRootCalculator` with managed hash providers.
+| State tree | State root | Block hash |
+|---------|-----------|-----------|
+| Patricia + Keccak | `0x1461e627a8cb9074cb9a7c0ed38d1c49af19aaf31b9b485eaa74444660e7dc88` | `0x85230f180e0e64f42d0172e2dce096efd8ab58346f9e3d49ae0091514b4a1797` |
+| Binary + Blake3 | `0x5f9b415dd4032fcac485453daf4e2ccd415d3f20574094c58329fe6b66b4aeb8` | `0x3c9324c269bc1f78b6d42e4772f7ec2d92d417982efc6f71fdb443d9ccaf57d9` |
+| Binary + Poseidon2 | `0x98f27cabfd72400aa9c064c68fb66e00de59ca0e3b586bc63b0ff5ac05712070` | `0x3421f169cc0cd1b7f637dc4972828d0ead8ea1b76fe485852c2a3b54dcb8aad9` |
+
+All three report `BIN:OK gas=43106`. The Patricia and Poseidon values are the ones pinned by `Patricia_AllOutputsMatchZisk` and `BinaryPoseidon_AllOutputsMatchZisk`. A block at or after Prague must carry the EIP-7002, EIP-7251 and builder request predeploys, otherwise the guest stops at the system call that finds no code; the earlier roots did not include them.
+
+The `Category=Zisk` lane (EVM.Core.Tests, EVM.UnitTests, CoreChain.IntegrationTests) passes except `ZiskEmu_Prague_Eip2537_Bls12_381`, whose 24 `invalid` cases stop the guest (a precompile rejects bad input by throwing and the guest cannot catch).
 
 ## What the `Nethereum/bflat-riscv64` fork adds
 
-The `nethereum` branch of [Nethereum/bflat-riscv64](https://github.com/Nethereum/bflat-riscv64/tree/nethereum) carries patches on top of the upstream bflat compiler:
+The `zisk-1.3.1` branch of [Nethereum/bflat-riscv64](https://github.com/Nethereum/bflat-riscv64/tree/zisk-1.3.1) carries patches on top of the upstream bflat compiler:
 
 | Patch | File | Why |
 |-------|------|-----|
-| TSS reduction | `src/bflat/modules/rhp/module.c` — `TSS_MAX_TYPEMANAGERS 1024→32`, `TSS_MAX_SLOTS 4096→256` | Default values bloat `.bss` to 33.8 MB, exceeding Zisk's 32 MB ROM limit. Reduced to 320 KB. |
+| Zisk 1.3.1 memory map | `src/bflat/modules/zkvm_zisk/script.ld` | ROM 128 MB at `0x80000000`, RAM from `0xA0430000` (after the 4 MB stack, system registers and output area), `_init_stack_top` at `0xA0400000`, and `.init_array` and `.fini_array` in ROM with the `__init_array_*` and `__fini_array_*` bounds that the ziskos entry reads. |
+| Entry through `main` | `src/bflat/modules/zkvm_zisk/module.S`, `src/bflat/BuildCommand.cs` | Zisk's `_start` calls `main`; the fork links `--wrap=main` so `__wrap_main` starts the bflat runtime. |
+| TSS reduction | `src/bflat/modules/rhp/module.c` — `TSS_MAX_TYPEMANAGERS 1024→32`, `TSS_MAX_SLOTS 4096→256` | Default values bloat `.bss` to about 33.5 MB. Reduced to 64 KB. |
 | `calloc` → `malloc` + `memset` | same file — all `__wrap_Rhp*` allocators | `pal.o` wraps `malloc` via `--wrap` but not `calloc`; the default `calloc` path produces unresolved `__real_calloc` in a Zisk build. |
-| `signal_patch` | `docker/signal_patch.sh` | Binary-patches signal setup functions to `ret` so the Zisk ELF doesn't invoke unsupported syscalls. |
-| Entrypoint dispatch | `docker/entrypoint.sh` | Exposes `bflat`, `patch_elf`, `signal_patch` as top-level Docker commands. |
 
 ## Related source projects
 
@@ -635,16 +402,10 @@ After a successful build:
 # 1. EH sections removed
 riscv64-linux-gnu-readelf -S zisk/output/nethereum_evm_elf | grep -E "eh_frame|dotnet_eh"
 
-# 2. BSS size sane (~2 MB, not ~35 MB)
-riscv64-linux-gnu-size -A zisk/output/nethereum_evm_elf | grep '\.bss'
-
-# 3. No System.Runtime.Numerics (BigInteger library not pulled in)
+# 2. No System.Runtime.Numerics (BigInteger library not pulled in)
 riscv64-linux-gnu-nm zisk/output/nethereum_evm_elf | grep System_Runtime_Numerics
 
-# 4. Signal functions patched (first instruction: ret / 00008067)
-riscv64-linux-gnu-objdump -d zisk/output/nethereum_evm_elf | grep -A1 "<__block_app_sigs>:"
-
-# 5. Emulator runs
+# 3. Emulator runs
 ziskemu -e zisk/output/nethereum_evm_elf --legacy-inputs zisk/output/test_sstore.bin -n 500000000
 ```
 
@@ -682,278 +443,77 @@ with open('witness_standard.bin', 'wb') as f: f.write(header + data)
 
 Or in C#: `ZiskBinaryWriter.ToStandardInputFormat()` wraps native bytes in standard format.
 
-Auto-detection in the RISC-V binary (`ZiskInput.Read()`): checks byte at offset 16 — if zero → standard, if non-zero → legacy. This works when the tool passes data correctly, but **the tool must frame it properly**.
+Auto-detection in the RISC-V binary (`ZiskInput.Read()`): reads the u64 at offset 16 — if zero → legacy, if non-zero → standard. This works when the tool passes data correctly, but **the tool must frame it properly**.
 
-- `ziskemu --legacy-inputs file.bin` → reads file, prepends legacy header, maps to memory
-- `cargo-zisk prove -i file.bin` → reads file AS-IS, maps to memory (file must already be in standard format)
-- **WSL2 users**: Zisk's prover needs ≥28 GB allocated to the WSL VM. Add to `%USERPROFILE%\.wslconfig`:
-  ```ini
-  [wsl2]
-  memory=28GB
-  swap=8GB
-  ```
-  Then `wsl --shutdown` to apply.
+## SNARK (PLONK) proof and Solidity verification
 
-## Zisk constraint fixes (Nethereum/zisk fork)
-
-NativeAOT-compiled ELFs trigger several Zisk constraint violations that don't appear with standard Rust/Go programs. We maintain a fork at [Nethereum/zisk](https://github.com/Nethereum/zisk/tree/fix/nativeaot-constraints) with the following fixes.
-
-### Bug #1 — `get_read_value` double shift in `mem_helpers.rs`
-
-**File:** `state-machines/mem-common/src/mem_helpers.rs` line 146
-
-The cross-word-boundary read value computation had an extra `>> offset`:
-
-```rust
-// BEFORE (wrong):
-value |= read_values[1] << (64 - offset) >> offset;
-// AFTER (correct):
-value |= read_values[1] << (64 - offset);
-```
-
-This caused ~104 MemAlign constraint violations for any program with unaligned 8-byte reads crossing a word boundary.
-
-### Bug #2 — Read-before-write in MemAlign `TwoWrites` path
-
-**File:** `state-machines/mem/src/mem_align_sm.rs`
-
-The TwoWrites path read values from `first_write_row.get_reg(i)` and `second_write_row.get_reg(i)` before those rows were populated. Fixed by computing values directly from `value_first_write` and `value_second_write` using `Self::get_byte()`.
-
-### Bug #3 — Overlapping section merge in `elf_extraction.rs`
-
-**File:** `core/src/elf_extraction.rs`
-
-When `patch_elf --split-code-data` creates a `.text_overlay` section, LIEF (the ELF library used by `patch_elf`) pads it past its declared size, overlapping into `.rodata`. The `merge_adjacent_ro_sections` function had no overlap handling — it would merge overlapping sections, corrupting rodata bytes. Fixed by truncating the first section at the overlap point:
-
-```rust
-} else if current_end > section.addr {
-    let overlap = (current_end - section.addr) as usize;
-    let new_len = current.data.len().saturating_sub(overlap);
-    current.data.truncate(new_len);
-    if !current.data.is_empty() { merged.push(current); }
-    current = section;
-}
-```
-
-This fixed 447/451 RomData constraint violations.
-
-### Bug #5 — `is_full_aligned` checking 4-byte instead of 8-byte alignment
-
-**File:** `core/src/mem.rs` (3 locations)
-
-The alignment check used `0x03` (4-byte mask) instead of `0x07` (8-byte mask):
-
-```rust
-// BEFORE (wrong):
-((addr & 0x03) == 0) && (width == 8)
-// AFTER (correct):
-((addr & 0x07) == 0) && (width == 8)
-```
-
-An 8-byte read at address `0xAFFF1B04` passed the 4-byte alignment check but actually crossed a word boundary, causing 18/160 `read_same_addr` Mem SM violations.
-
-### Cookie NOP — `__security_cookie` write
-
-**Problem:** NativeAOT's `RhInitialize` writes a non-deterministic stack canary (`__security_cookie`) to `.rodata` at startup. This value differs between emulator runs and prover runs, causing 1 RomData constraint violation.
-
-**Fix:** Binary-patch the `sd a0, 0(s1)` instruction that writes the cookie to a NOP (`0x00000013`). The cookie address varies per binary — find it via disassembly:
+A STARK proof (VADCOP final) is wrapped into a PLONK proof that a Solidity contract verifies.
 
 ```bash
-riscv64-linux-gnu-objdump -d binary | grep -B20 'minipal_lowres_ticks' | grep 'sd.*a0.*s1'
+ziskup setup_snark                                  # PLONK proving key into ~/.zisk/provingKeySnark
+bash zisk/scripts/wrap-plonk.sh proof proof_plonk   # cargo-zisk wrap --plonk in the nethereum-zisk image, then cargo-zisk verify
+cargo-zisk-dev export-solidity-calldata -p proof_plonk -o fixture.json
 ```
 
-Pattern: `addi s1, aX, <cookie_offset>` → `call minipal_lowres_ticks` → `sd a0, 0(s1)` ← NOP this last instruction.
+`export-solidity-calldata` writes the four arguments of `verifySnarkProof`: `programVK`, `rootCVadcopFinal`, `publicValues` and `proofBytes` (24 uint256 words). `cargo-zisk verify -p proof_plonk` checks the PLONK proof off-chain; it needs `snarkjs` on the `PATH` and stops with `Failed to execute snarkjs` without it.
 
-### Float library rebuild
+**Measured 2026-10-10, STARK proof of `witness_eth_transfer_noroot` (4,877,459 steps with the ELF of that date; the committed ELF takes 2,898,761, see `test-artifacts/README.md`) on 10 CPUs, wrap on 12 CPUs:**
 
-**Problem:** Zisk's prebuilt `ziskfloat.elf` (110,208 bytes) has a bus accounting bug that causes the Global constraint to fail for ALL programs.
+| | |
+|---|---|
+| `ziskup setup_snark` | 21.9 GB download, 25 GB on disk, in addition to the 72 GB STARK key |
+| `cargo-zisk wrap --plonk` | 6 m 43 s for the generic proof, 10 m 26 s for the anchor proof |
+| Memory | `MemAvailable` fell from 118 GB to 31 GB during the wrap (about 87 GB) |
+| Proof file | 2,912 bytes; `proofBytes` is 768 bytes, `publicValues` 512 bytes |
+| `cargo-zisk verify` | `PLONK proof was verified` |
+| `verifySnarkProof` on the DevChain | `eth_estimateGas` 340,871 |
 
-**Fix:** Rebuild from source: `cd lib-float/c && make`. Produces 112,120 bytes with correct bus accounting. Must be done on every fresh Zisk checkout.
+The wrap needs the `final.so` of the SNARK key to be loaded with an executable stack; run it in the `nethereum-zisk` image (Ubuntu 24.04). On the Ubuntu host with a newer glibc the run stopped with `cannot enable executable stack as shared object requires`.
 
-### Bug #5 — Hardcoded `bytes=8` in cross-word-boundary sub-word bus payload
+The verifier contract is `src/Nethereum.AppChain.Contracts/src/ZiskVerifier.sol`, generated for the 1.3.1-alpha PLONK key (`VERSION()` returns `v1.3.1-alpha`). `Given_TheRealPlonkProof_When_VerifySnarkProofIsCalled_Then_ItDoesNotRevert` in `tests/Nethereum.AppChain.Anchoring.IntegrationTests/ZiskVerifierTests.cs` deploys it to the in-process DevChain and calls it with the committed fixture `Fixtures/zisk_plonk_fixture.json`; a changed proof word, a changed public value, another `programVK` and another `rootCVadcopFinal` each revert with `InvalidProof`. Those tests need no prover (`Category=ZiskVerifier`). `ZiskProofToolingTests` (`Category=Zisk`) re-verifies the committed STARK and PLONK proofs with `cargo-zisk` and re-exports the fixture from `zisk/test-artifacts/proofs/plonk_eth_transfer_noroot`.
 
-**File:** `emulator/src/emu.rs` (2 locations: read path line 847, write path line 1281)
+### Two proof calls from one guest
 
-In `source_b_mem_reads_consume_databus()`, the `SRC_IND` double_not_aligned paths hardcoded `8` in the bus payload width field instead of using `instruction.ind_width`. Sub-word operations (LW/LH/LB) at addresses where `offset + width > 8` (crossing an 8-byte word boundary) emitted `bytes=8` on the bus, but Main PIL emits assumes with the actual width (4, 2, 1). MemAlign processed these as width=8 TwoReads, so its bus entries never matched Main's sub-word assumes.
+| | Generic proof | Anchor proof |
+|---|---|---|
+| Witness | `BinaryBlockWitness` as before | the same witness with bit `0x01` of the second flags byte set and `AnchorInputs` appended after the accounts |
+| Public values | slots 0-55 as listed in `zisk/test-artifacts/README.md` | slots 0-7 hold `keccak256(AnchorInputs)`, slots 8-63 are the generic slots shifted by 8 |
+| Verified by | `ZiskVerifier.verifySnarkProof` | `ZiskVerifierAdapter.verify(proof, anchorInputs)` (and `ZiskVerifier.verifySnarkProof`) |
 
-```rust
-// BEFORE (wrong):
-let payload = MemHelpers::mem_load(address as u32, ..., 8, [raw_data_1, raw_data_2]);
-// AFTER (correct):
-let payload = MemHelpers::mem_load(address as u32, ..., instruction.ind_width as u8, [raw_data_1, raw_data_2]);
-```
+A witness without `AnchorInputs` serialises to the same bytes as before and the guest writes the same output registers: for four generic witnesses the output files of the earlier and the current ELF were compared byte for byte and are identical.
 
-**Diagnosis:** `cargo-zisk verify-constraints -d` reports `opids do not match [10]` (MEMORY_ID). Full debug mode shows unmatched assumes at `bytes=4` and unmatched proves at `bytes=8` with identical addresses and steps.
+`AnchorInputs` is the byte string the anchor contract hashes: `ZiskVerifierAdapter.verify` computes `keccak256(abi.encodePacked(publicInputs))` over the `uint256[]` it is given (`src/Nethereum.AppChain.Contracts/src/ZiskVerifierAdapter.sol`, `inputsCommitment`), that is each word as 32 big-endian bytes, concatenated. `AnchorBinding.Encode(IReadOnlyList<EvmUInt256>)` builds it and `AnchorBinding.Commitment` hashes it. For `AppChainAnchor` the words are the 11 values of `_buildBatchPublicInputs`. The guest hashes whatever bytes it is given; it does not check them against the block it executed.
 
-**Impact:** This was the root cause of the previously reported multi-instance global constraint failure. It was never a multi-instance issue — it was a bus accounting bug that only manifested when programs did enough sub-word unaligned memory access (which correlated with higher step counts).
+Each Zisk public is a 64-bit value that holds one 32-bit output register, so 32 bytes of commitment take eight publics and the adapter rebuilds the hash from the first four bytes of each of the first eight 8-byte groups of `publicValues` (the last four bytes of each group must be zero). The guest writes the hash with the same big-endian word order it uses for every other hash output.
+
+To prove for an anchor from C#, set `BlockWitnessData.AnchorInputs` before `BinaryBlockWitness.Serialize`, or call `ZiskProveBlockProver.ProveBlockForAnchorAsync(witnessBytes, anchorPublicInputs, preStateRoot, postStateRoot, blockNumber)`, which attaches the inputs to an existing witness. `ZiskProveBlockProver.ProveBlockAsync` is unchanged.
+
+The first wrap with a freshly installed SNARK key writes a constant tree into `provingKeySnark`, so that directory must be mounted writable (`wrap-plonk.sh` does); with a read-only mount the wrap stops while loading the recursive setup, on a failed file write.
+
+A production integration holds `programVK` and `rootCVadcopFinal` as constants of its own contract; `export-solidity-calldata` reads them from the proof only for fixtures.
 
 ## Proving end-to-end
 
-With all 5 fixes applied (our Zisk fork at `Nethereum/zisk` branch `fix/nativeaot-constraints` + cookie NOP + float rebuild):
+Zisk 1.3.1-alpha proves and verifies the ELF exactly as `build.sh` writes it: stock Zisk release binaries, no fork, no security-cookie patch and no `ziskfloat` rebuild.
 
 ```bash
 export HWLOC_COMPONENTS=-gl
 
-# 1. Verify all constraints pass (fast check, no proof generated)
-cargo-zisk verify-constraints \
-    -e zisk/test-artifacts/evm_lazy_nocookie \
-    -i zisk/test-artifacts/witness_eth_transfer_noroot_standard.bin -l -d
+# 1. Execute only
+cargo-zisk execute -e zisk/output/nethereum_evm_elf -i witness_standard.bin
 
-# 2. Generate STARK + VADCOP proof
-cargo-zisk prove \
-    -e zisk/test-artifacts/evm_lazy_nocookie \
-    -i zisk/test-artifacts/witness_eth_transfer_noroot_standard.bin -l -n \
-    -o evm_proof
+# 2. STARK proof, verified after generation
+cargo-zisk prove -e zisk/output/nethereum_evm_elf -i witness_standard.bin -o proof -y
 
-# 3. Verify proof
-cargo-zisk verify -p evm_proof
+# 3. Verify later
+cargo-zisk verify -p proof
 
-# Or verify the pre-built proofs (no proving key needed):
-cargo-zisk verify -p zisk/test-artifacts/proofs/proof_eth_transfer_noroot
+# 4. PLONK wrap (needs the SNARK key from `ziskup setup_snark`, see SNARK and Solidity verification)
+cargo-zisk wrap -p proof --plonk -o proof_plonk
 ```
 
-**Test results (2026-05-06, 12-core server, 128GB RAM):**
+`cargo-zisk execute` and `prove` run the program on several threads and the guest's `BIN:` lines arrive interleaved; read the roots from `ziskemu` or from the proof's public outputs.
 
-| Witness | Steps | Main instances | Prove time | Proof size | Verify time |
-|---------|-------|---------------|------------|------------|-------------|
-| ETH transfer (no root) | 3,963,526 | 1 | 225s | 329KB | 187ms |
-| SSTORE (no root) | 5,267,838 | 2 | 255s | 329KB | 187ms |
-| ETH transfer (patricia) | 6,593,834 | 2 | 257s | 329KB | 187ms |
-| SSTORE (patricia) | 8,044,287 | 2 | 255s | 329KB | 187ms |
+**Measured 2026-10-09 on a 24-thread Linux host, `cargo-zisk prove -m` pinned to 8 cores, CPU proving:** the CREATE2 call block (`CREATE2_CallData_0_0_0`, 5,083,581 steps) proved and verified in 13 m 55 s; the first prove after installing the key also generates the constant trees (about 10 minutes, 55 GB on disk).
 
-Pre-built proofs and witnesses are in `zisk/test-artifacts/`.
-
-**Phase breakdown (ETH transfer, 3.96M steps):**
-
-| Phase | Time | Notes |
-|-------|------|-------|
-| Execution | ~0.6s | 3.96M steps, 12 air instances |
-| Contributions | ~30s | Witness polynomial computation |
-| Inner STARK proofs | ~189s | Per-air FRI proofs |
-| VADCOP aggregation | ~5s | Recursive proof composition |
-| **Total** | **~225s** | **329KB proof file** |
-
-## Generating a provingKey from source
-
-The official `ziskup` installs a pre-built provingKey. To generate one yourself (e.g. for a newer Zisk version before official keys are published), follow these steps.
-
-### Prerequisites
-
-```bash
-# 1. pil2-compiler (JavaScript PIL → protobuf compiler)
-git clone https://github.com/0xPolygonHermez/pil2-compiler /tmp/pil2-compiler
-cd /tmp/pil2-compiler && npm install
-
-# 2. pil2-proofman-js (provingKey generator)
-git clone https://github.com/0xPolygonHermez/pil2-proofman /tmp/pil2-proofman-js
-cd /tmp/pil2-proofman-js && npm install
-
-# 2b. Fix missing PIL standard library for recursive setup
-# The stark-recurser npm package is missing std PIL files needed by circom2pil.
-# Copy them from the Rust proofman checkout (created when building Zisk):
-STD_PIL=$(find ~/.cargo/git/checkouts/pil2-proofman-* -path "*/pil2-components/lib/std/pil" | head -1)
-cp $STD_PIL/*.pil /tmp/pil2-proofman-js/node_modules/stark-recurser/src/circom2pil/pil/
-
-# 3. Zisk source (contains PIL definitions)
-git clone https://github.com/0xPolygonHermez/zisk /tmp/zisk
-cd /tmp/zisk
-```
-
-### Step 1: Compile PIL (with fixed-to-file optimization)
-
-The PIL compiler converts `.pil` files into a protobuf `pilout.bin`. Without optimization it needs 115+ GB of RAM because it embeds all fixed columns in the protobuf. The `-f` flag writes fixed columns to separate files instead, reducing memory to ~8 GB.
-
-```bash
-cd /tmp/zisk
-
-# Find the proofman PIL include path (matches Cargo.lock commit)
-PROOFMAN_PIL=$(find ~/.cargo/git/checkouts/pil2-proofman-* -path "*/pil2-components/lib/std/pil" | head -1)
-
-# Compile — the key flags are:
-#   -f <dir>           Write fixed columns to separate files (CRITICAL for memory)
-#   -O no-proto-fixed-data   Skip embedding fixed data in protobuf
-mkdir -p /tmp/pil_fixed_out
-node --max-old-space-size=32000 /tmp/pil2-compiler/src/pil.js \
-    pil/zisk.pil \
-    -I $PROOFMAN_PIL,pil,state-machines,precompiles \
-    -o /tmp/pilout_nofixed.bin \
-    -n zisk \
-    -f /tmp/pil_fixed_out \
-    -O no-proto-fixed-data
-```
-
-**Expected:** ~4 minutes, ~8 GB RAM, produces `pilout_nofixed.bin` (4.3 MB) + fixed files in `/tmp/pil_fixed_out/` (~3.2 GB total).
-
-**Without `-f`:** The compiler tries to hold all fixed columns in V8 heap. At column ~309 of ~320, it OOMs at 115+ GB. The `-f` flag is the fix — it streams each column to disk immediately.
-
-### Step 2: Generate provingKey (basic + recursive)
-
-```bash
-# stdPath = circom standard library for recursive proofs
-STD_PATH=/tmp/pil2-proofman-js/node_modules/stark-recurser/src/pil2circom/circuits.gl
-
-# The key flags are:
-#   -r                  Enable recursive/aggregation setup (compressor + vadcop)
-#   -t <stdPath>        Circom standard library path (required with -r)
-#   -u <fixedPath>      Point to fixed column files from Step 1
-#   --stack-size=65536  Prevent stack overflow in calculateExpDeg recursion
-node --max-old-space-size=64000 --stack-size=65536 \
-    /tmp/pil2-proofman-js/src/main_setup.js \
-    -a /tmp/pilout_nofixed.bin \
-    -b /tmp/new_proving_key \
-    -u /tmp/pil_fixed_out \
-    -r \
-    -t $STD_PATH
-```
-
-**Without `-r`:** Only generates basic per-air STARK setup. The prover will panic looking for `compressor/compressor.starkinfo.json` and `vadcop_final/vadcop_final.verkey.bin`. You MUST use `-r` for a usable provingKey.
-
-**Expected output:** `/tmp/new_proving_key/provingKey/` containing:
-- `pilout.globalConstraints.bin` + `.json` — global constraint formulas
-- `pilout.globalInfo.json` — air metadata and sizes
-- `zisk/Zisk/airs/<AirName>/air/` — per-air STARK keys
-- `zisk/Zisk/airs/<AirName>/compressor/` — per-air compressor circuits
-- `zisk/Zisk/airs/<AirName>/recursive1/` + `recursive2/` — recursive proof circuits
-- `zisk/vadcop_final/` — VADCOP aggregation circuit
-- `zisk/vadcop_final_compressed/` — compressed final circuit
-
-### Step 3: Install the provingKey
-
-```bash
-# Back up existing key
-cp -r ~/.zisk/provingKey ~/.zisk/provingKey.bak
-
-# Install new key
-rm -rf ~/.zisk/provingKey
-cp -r /tmp/new_proving_key/provingKey ~/.zisk/provingKey
-
-# Regenerate constant trees (one-time, done automatically on first prove)
-HWLOC_COMPONENTS=-gl cargo-zisk check-setup -a
-```
-
-### Key generation timeline
-
-| Phase | Time | Memory | Notes |
-|-------|------|--------|-------|
-| PIL compile | ~4 min | ~8 GB | With `-f` flag |
-| Basic setup (35 airs) | ~2 min | ~1 GB | Per-air STARK keys |
-| Recursive setup (compressor + circom) | ~30-60 min | ~4 GB | Circom compilation per air |
-| First prove (const tree regen) | ~2 min | ~6 GB | One-time on first use |
-
-### Proving cost profile (v16 binary, 12-core CPU, May 2026)
-
-Base cost is **293.6M (constant)** — ELF initialization, NativeAOT runtime bootstrap, static constructors. This is independent of what the transaction does.
-
-| Scenario | Steps | Base % | Main % | Opcodes % | Precompiles % | Memory % | Prove Time |
-|----------|-------|--------|--------|-----------|---------------|----------|------------|
-| eth_transfer (noroot) | 3.47M | 48.0% | 38.5% | 7.8% | 0.0% | 5.6% | 227s |
-| sstore (noroot) | 4.77M | 40.0% | 44.3% | 9.0% | 0.0% | 6.7% | 256s |
-| sstore (patricia root) | 7.55M | 29.7% | 51.9% | 10.5% | 0.0% | 7.9% | 257s |
-| sstore (poseidon2 root) | 7.79M | 29.1% | 52.5% | 10.5% | 0.01% | 7.9% | 283s |
-| ecrecover | 8.08M | 28.3% | 52.9% | 10.7% | 0.07% | 8.1% | 312s |
-| bn128 pairing | 8.13M | 28.2% | 53.0% | 10.7% | 0.00% | 8.1% | 282s |
-| multi_tx_mixed (3tx) | 12.87M | 19.9% | 59.3% | 12.2% | 0.0% | 8.6% | 340s |
-
-Poseidon2 CSR cost: **66K** (0.01%) — hardware-accelerated, effectively free.
-ECRECOVER CSR cost: **690K** (0.07%) — secp256k1 curve math via CSR.
-BN128 pairing CSR cost: **5.7K** (0.00%) — heavy computation is in Main (Rust orchestration).
+**GPU memory:** `cargo-zisk prove --gpu` refuses to start with `Not enough GPU memory to run the proof` on an RTX 5060 Ti (15.3 GB free) and on an RTX 3060 (11.5 GB free). The prover reports a maximum prover buffer of 19.49 GB plus a 1.5 GB reserve, so it needs about 21 GB free on every GPU it uses; `-m` does not change that. With several GPUs it takes the smallest one.

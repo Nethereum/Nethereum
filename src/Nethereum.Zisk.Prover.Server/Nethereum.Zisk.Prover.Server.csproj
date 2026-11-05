@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
     <AssemblyName>Nethereum.Zisk.Prover.Server</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>

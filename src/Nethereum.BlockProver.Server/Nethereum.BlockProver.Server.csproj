@@ -5,6 +5,7 @@
     <AssemblyTitle>Nethereum.BlockProver.Server</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
     <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
     <TargetFramework>$(ServerFrameworks)</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Nethereum.BlockProver.Server</AssemblyName>

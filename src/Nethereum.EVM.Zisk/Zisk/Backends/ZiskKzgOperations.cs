@@ -54,7 +54,7 @@ namespace Nethereum.EVM.Zisk.Backends
 
             var hash = new byte[32];
             uint shaStatus = ZiskCrypto.zkvm_sha256(commitment, (nuint)commitment.Length, hash);
-            if (shaStatus != 0) throw new ArgumentException($"SHA256 for versioned hash failed (status {shaStatus})");
+            if (shaStatus != 0) throw new Nethereum.EVM.BlockchainState.EvmHostException($"SHA256 for versioned hash failed (status {shaStatus})");
             hash[0] = VersionedHashVersionKzg;
             return hash;
         }

@@ -13,7 +13,7 @@ Zisk's output channel.
 The guest pipeline:
 
 1. **Input** — `ZiskInput.Read()` returns the witness byte stream
-   (serialised `BinaryBlockWitness` v3).
+   (serialised `BinaryBlockWitness` v4).
 2. **Deserialise** — `BinaryBlockWitness.Deserialize(bytes)` produces
    a `BlockWitnessData` whose `Features.Fork` drives registry lookup.
 3. **Registry** — the guest builds its own registry with
@@ -35,6 +35,10 @@ The guest pipeline:
    (8 slots), transactions root (8 slots), receipts root (8 slots),
    transaction count, pre-state root (8 slots), block number
    (2 × 32-bit), chain id (2 × 32-bit), and parent hash (8 slots).
+   When the witness carries `AnchorInputs`, the guest first writes
+   `keccak256(AnchorInputs)` to slots 0-7 (`AnchorBinding.CommitmentSlots`)
+   and every field above moves up by eight slots; a witness without
+   anchor inputs keeps the layout above starting at slot 0.
    `ZiskIO.Write` / `ZiskIO.WriteLong` and the private `WriteHex`
    helper log human-readable diagnostics to the emulator stream.
 
@@ -64,10 +68,10 @@ The first seven rows below are those fields; `ZiskBls12381Operations` and
 | `ZiskSha256Backend` | `zkvm_sha256` | sha256_f (0x805) |
 | `ZiskRipemd160Backend` | Managed `Ripemd160` (no native CSR) | — |
 | `ZiskModExpBackend` | `zkvm_modexp` | arith256_mod |
-| `ZiskBn128Backend` | `zkvm_bn254_g1_add`, `zkvm_bn254_g1_mul`, `bn254_pairing_check_c` | bn254_curve_add/dbl, bn254_complex_* |
+| `ZiskBn128Backend` | `zkvm_bn254_g1_add`, `zkvm_bn254_g1_mul`, `zkvm_bn254_pairing` | bn254_curve_add/dbl, bn254_complex_* |
 | `ZiskBlake2fBackend` | `zkvm_blake2f` | blake2b_round (0x819) |
 | `ZiskP256VerifyBackend` | `zkvm_secp256r1_verify` | secp256r1_add/dbl |
-| `ZiskBls12381Operations` | `zkvm_bls12_g1_add/msm`, `zkvm_bls12_g2_add/msm`, `bls12_381_pairing_check_c`, `zkvm_bls12_map_fp_to_g1/fp2_to_g2` | bls12_381_curve_add/dbl, bls12_381_complex_* |
+| `ZiskBls12381Operations` | `zkvm_bls12_g1_add/msm`, `zkvm_bls12_g2_add/msm`, `zkvm_bls12_pairing`, `zkvm_bls12_map_fp_to_g1/fp2_to_g2` | bls12_381_curve_add/dbl, bls12_381_complex_* |
 | `ZiskKzgOperations` | `zkvm_kzg_point_eval`, `zkvm_sha256` (versioned hash) | BLS12-381 CSRs + sha256_f |
 
 > `ZiskBls12381Operations` and `ZiskKzgOperations` are **not** fields of the
@@ -76,9 +80,11 @@ The first seven rows below are those fields; `ZiskBls12381Operations` and
 > the registry when the fork's precompile set declares KZG point-evaluation (0x0A)
 > or BLS (0x0B) — there is no `ZiskPrecompileBackends.Instance.Bls12381`/`.Kzg` field.
 
-BN254 pairing and BLS12-381 pairing use direct `_check_c` exports
-instead of the `zkvm_*` wrappers, which have an allocator bug in
-libziskos 0.17.1 (`Vec::with_capacity` crashes in the Zisk memory model).
+BN254 pairing and BLS12-381 pairing call `zkvm_bn254_pairing` and
+`zkvm_bls12_pairing`. A non-zero status (an input that is not a valid
+point) is returned as `false` from the backend's `Try*` operation, and the
+handler's `TryExecute` reports a failed precompile call; the guest has no
+exception handling, so nothing on the precompile input path throws.
 
 ## State Tree Selection
 
@@ -101,7 +107,7 @@ validated to produce identical state roots.
 
 `ZiskBinaryWitness.Main` is the entry point the Zisk ELF links
 against. It reads the witness, validates the version byte (must equal
-`BinaryBlockWitness.VERSION` = 3), resolves the fork's rules, executes
+`BinaryBlockWitness.VERSION` = 4; any other version stops the run with output code 3), resolves the fork's rules, executes
 the block, and writes the output slots.
 
 Only forks this guest has rules AND witness fields for are accepted:
@@ -122,9 +128,11 @@ field short. Accepting it requires extending the format first.
 ## Build Pipeline
 
 The build orchestration lives in [`zisk/`](https://github.com/Nethereum/Nethereum/blob/master/zisk/README.md) at
-the repo root. It uses the `nethereum/bflat-riscv64` Docker image
-built from the [Nethereum/bflat-riscv64 fork on the `nethereum`
-branch](https://github.com/Nethereum/bflat-riscv64/tree/nethereum).
+the repo root. It uses the `nethereum/bflat-riscv64:zisk-1.3.1` Docker image
+built from the [Nethereum/bflat-riscv64 fork on the `zisk-1.3.1`
+branch](https://github.com/Nethereum/bflat-riscv64/tree/zisk-1.3.1), or
+the `nethereum-zisk` image (`ci/Dockerfile.zisk`), which carries that
+toolchain together with `ziskemu` and `cargo-zisk`.
 
 Two modes:
 
@@ -135,11 +143,10 @@ Two modes:
   first and `bflat` links against it. ~25% larger ELF but faster
   iteration when only the guest entry changes.
 
-First-time setup (clones the fork, builds the image, installs Zisk on
-the host):
+First-time setup, after building `nethereum/bflat-riscv64:zisk-1.3.1` from the fork (the image builds `libziskos.a` itself):
 
 ```bash
-bash zisk/scripts/setup-host.sh
+docker build -f ci/Dockerfile.zisk -t nethereum-zisk zisk/scripts
 ```
 
 Build:
@@ -157,9 +164,9 @@ ziskemu -e zisk/output/nethereum_evm_elf \
     -n 500000000
 ```
 
-See [`zisk/README.md`](https://github.com/Nethereum/Nethereum/blob/master/zisk/README.md) for proving flow,
-verification checklist, and environment overrides (`ZISK_IMAGE`,
-`LIBZISKOS_DIR`).
+See [`zisk/README.md`](https://github.com/Nethereum/Nethereum/blob/master/zisk/README.md) for the STARK proving
+flow, the PLONK wrap and the Solidity `ZiskVerifier`, the verification
+checklist, and environment overrides (`ZISK_IMAGE`, `LIBZISKOS_DIR`).
 
 ## See Also
 

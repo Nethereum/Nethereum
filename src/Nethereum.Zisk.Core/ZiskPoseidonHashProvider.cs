@@ -11,7 +11,7 @@ namespace Nethereum.Zisk.Core
 
         [DllImport("__Internal")]
         [SuppressGCTransition]
-        private static extern unsafe void poseidon2_c(ulong* state);
+        private static extern unsafe void syscall_poseidon2(ulong* state);
 
         public byte[] ComputeHash(byte[] data)
         {
@@ -31,7 +31,7 @@ namespace Nethereum.Zisk.Core
             int idx = 0;
             if (a != null) idx = AbsorbBytes(state, a, aOff, 32, idx);
             if (b != null) idx = AbsorbBytes(state, b, bOff, 32, idx);
-            poseidon2_c(state);
+            syscall_poseidon2(state);
             return ExtractDigest(state);
         }
 
@@ -54,13 +54,13 @@ namespace Nethereum.Zisk.Core
                 rateIndex++;
                 if (rateIndex == RATE)
                 {
-                    poseidon2_c(state);
+                    syscall_poseidon2(state);
                     rateIndex = 0;
                 }
             }
 
             if (rateIndex > 0)
-                poseidon2_c(state);
+                syscall_poseidon2(state);
 
             return ExtractDigest(state);
         }

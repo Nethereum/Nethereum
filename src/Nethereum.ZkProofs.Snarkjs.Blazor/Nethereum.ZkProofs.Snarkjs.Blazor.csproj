@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum ZkProofs Snarkjs Blazor - Browser-based snarkjs proof generation via JS interop</Description>
     <AssemblyTitle>Nethereum.ZkProofs.Snarkjs.Blazor</AssemblyTitle>
     <Version>$(NethereumVersion)</Version>
@@ -26,6 +27,10 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

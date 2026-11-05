@@ -1,10 +1,11 @@
 using System;
 using System.Numerics;
 using System.Text;
+using Nethereum.ZkProofsVerifier.Circom;
 #if NET6_0_OR_GREATER
 using System.Text.Json;
 #else
-using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 #endif
 
 namespace Nethereum.ZkProofs
@@ -32,6 +33,8 @@ namespace Nethereum.ZkProofs
             };
         }
 
+        public const int MaxPublicSignals = 1024;
+
         public static BigInteger[] ParsePublicSignals(string publicSignalsJson)
         {
             if (string.IsNullOrEmpty(publicSignalsJson))
@@ -47,31 +50,42 @@ namespace Nethereum.ZkProofs
 #if NET6_0_OR_GREATER
         private static BigInteger[] ParsePublicSignalsStj(string json)
         {
-            var strings = JsonSerializer.Deserialize<string[]>(json)
-                ?? throw new InvalidOperationException("Failed to parse public signals JSON");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Array)
+                throw new InvalidOperationException("Failed to parse public signals JSON");
 
-            var signals = new BigInteger[strings.Length];
-            for (int i = 0; i < strings.Length; i++)
+            var count = root.GetArrayLength();
+            if (count > MaxPublicSignals)
+                throw new FormatException("Public signals array is longer than " + MaxPublicSignals + " elements");
+
+            var signals = new BigInteger[count];
+            for (int i = 0; i < count; i++)
             {
-                signals[i] = BigInteger.Parse(strings[i]);
+                signals[i] = ParseSignal(root[i].GetString());
             }
             return signals;
         }
 #else
         private static BigInteger[] ParsePublicSignalsNewtonsoft(string json)
         {
-            var strings = JsonConvert.DeserializeObject<string[]>(json);
-            if (strings == null)
-                throw new InvalidOperationException("Failed to parse public signals JSON");
+            var array = JArray.Parse(json);
+            if (array.Count > MaxPublicSignals)
+                throw new FormatException("Public signals array is longer than " + MaxPublicSignals + " elements");
 
-            var signals = new BigInteger[strings.Length];
-            for (int i = 0; i < strings.Length; i++)
+            var signals = new BigInteger[array.Count];
+            for (int i = 0; i < array.Count; i++)
             {
-                signals[i] = BigInteger.Parse(strings[i]);
+                signals[i] = ParseSignal((string)array[i]);
             }
             return signals;
         }
 #endif
+
+        private static BigInteger ParseSignal(string text)
+        {
+            return BigInteger.Parse(FieldElementText.RequireBoundedDecimal(text), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+        }
 
         public byte[] GetProofBytesOrFromJson()
         {

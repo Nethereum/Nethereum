@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <Description>Nethereum Zisk Core - managed runtime bindings for the Zisk zkVM: witness I/O, byte-span serialisation and accelerated crypto for guest programs</Description>
+    <AssemblyTitle>Nethereum.Zisk.Core</AssemblyTitle>
+    <AssemblyName>Nethereum.Zisk.Core</AssemblyName>
+    <PackageId>Nethereum.Zisk.Core</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Version>$(NethereumVersion)</Version>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>12.0</LangVersion>
@@ -9,4 +14,16 @@
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 </Project>

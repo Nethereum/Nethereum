@@ -4,7 +4,7 @@ using Nethereum.Zisk.Core;
 
 namespace Nethereum.EVM.Zisk.Backends
 {
-    public sealed class ZiskBls12381Operations : IBls12381Operations
+    public sealed class ZiskBls12381Operations : IBls12381Operations, IBls12381OutcomeOperations
     {
         public static readonly ZiskBls12381Operations Instance = new ZiskBls12381Operations();
 
@@ -24,133 +24,154 @@ namespace Nethereum.EVM.Zisk.Backends
         private const int RawPairingPair = RawG1 + RawG2;
 
         public byte[] G1Add(byte[] p1, byte[] p2)
-        {
-            var a = StripG1(p1, "G1ADD p1");
-            var b = StripG1(p2, "G1ADD p2");
-            var rawRet = new byte[RawG1];
-            uint status = ZiskCrypto.zkvm_bls12_g1_add(a, b, rawRet);
-            if (status != 0)
-                throw new ArgumentException($"BLS12-381 G1ADD failed (status {status})");
-            return PadG1(rawRet);
-        }
+            => TryG1Add(p1, p2, out var result) ? result : throw new ArgumentException("BLS12-381 G1ADD: invalid input");
 
         public byte[] G1Mul(byte[] point, byte[] scalar)
             => throw new NotImplementedException(
                 "ZiskBls12381Operations.G1Mul is not available.");
 
         public byte[] G1Msm(byte[][] points, byte[][] scalars)
-        {
-            if (points == null || scalars == null || points.Length != scalars.Length || points.Length == 0)
-                throw new ArgumentException("BLS12-381 G1MSM: points and scalars must be non-empty and equal length");
-
-            int k = points.Length;
-            var pairs = new byte[k * RawG1MsmPair];
-            for (int i = 0; i < k; i++)
-            {
-                var rawPoint = StripG1(points[i], $"G1MSM point[{i}]");
-                Array.Copy(rawPoint, 0, pairs, i * RawG1MsmPair, RawG1);
-                if (scalars[i] == null || scalars[i].Length != Scalar)
-                    throw new ArgumentException($"BLS12-381 G1MSM: scalar[{i}] must be {Scalar} bytes");
-                Array.Copy(scalars[i], 0, pairs, i * RawG1MsmPair + RawG1, Scalar);
-            }
-
-            var rawRet = new byte[RawG1];
-            uint status = ZiskCrypto.zkvm_bls12_g1_msm(pairs, (nuint)k, rawRet);
-            if (status != 0)
-                throw new ArgumentException($"BLS12-381 G1MSM failed (status {status})");
-            return PadG1(rawRet);
-        }
+            => TryG1Msm(points, scalars, out var result) ? result : throw new ArgumentException("BLS12-381 G1MSM: invalid input");
 
         public byte[] G2Add(byte[] p1, byte[] p2)
-        {
-            var a = StripG2(p1, "G2ADD p1");
-            var b = StripG2(p2, "G2ADD p2");
-            var rawRet = new byte[RawG2];
-            uint status = ZiskCrypto.zkvm_bls12_g2_add(a, b, rawRet);
-            if (status != 0)
-                throw new ArgumentException($"BLS12-381 G2ADD failed (status {status})");
-            return PadG2(rawRet);
-        }
+            => TryG2Add(p1, p2, out var result) ? result : throw new ArgumentException("BLS12-381 G2ADD: invalid input");
 
         public byte[] G2Mul(byte[] point, byte[] scalar)
             => throw new NotImplementedException(
                 "ZiskBls12381Operations.G2Mul is not available.");
 
         public byte[] G2Msm(byte[][] points, byte[][] scalars)
+            => TryG2Msm(points, scalars, out var result) ? result : throw new ArgumentException("BLS12-381 G2MSM: invalid input");
+
+        public bool Pairing(byte[][] g1Points, byte[][] g2Points)
+            => TryPairing(g1Points, g2Points, out var pairs) ? pairs : throw new ArgumentException("BLS12-381 PAIRING: invalid input");
+
+        public byte[] MapFpToG1(byte[] fp)
+            => TryMapFpToG1(fp, out var result) ? result : throw new ArgumentException("BLS12-381 MAP_FP_TO_G1: invalid input");
+
+        public byte[] MapFp2ToG2(byte[] fp2)
+            => TryMapFp2ToG2(fp2, out var result) ? result : throw new ArgumentException("BLS12-381 MAP_FP2_TO_G2: invalid input");
+
+        public bool TryG1Add(byte[] p1, byte[] p2, out byte[] result)
         {
-            if (points == null || scalars == null || points.Length != scalars.Length || points.Length == 0)
-                throw new ArgumentException("BLS12-381 G2MSM: points and scalars must be non-empty and equal length");
+            result = null;
+            if (!TryStripG1(p1, out var a) || !TryStripG1(p2, out var b)) return false;
+            var rawRet = new byte[RawG1];
+            if (ZiskCrypto.zkvm_bls12_g1_add(a, b, rawRet) != 0) return false;
+            result = PadG1(rawRet);
+            return true;
+        }
+
+        public bool TryG1Msm(byte[][] points, byte[][] scalars, out byte[] result)
+        {
+            result = null;
+            if (points == null || scalars == null || points.Length != scalars.Length || points.Length == 0) return false;
+
+            int k = points.Length;
+            var pairs = new byte[k * RawG1MsmPair];
+            for (int i = 0; i < k; i++)
+            {
+                if (!TryStripG1(points[i], out var rawPoint)) return false;
+                Array.Copy(rawPoint, 0, pairs, i * RawG1MsmPair, RawG1);
+                if (scalars[i] == null || scalars[i].Length != Scalar) return false;
+                Array.Copy(scalars[i], 0, pairs, i * RawG1MsmPair + RawG1, Scalar);
+            }
+
+            var rawRet = new byte[RawG1];
+            if (ZiskCrypto.zkvm_bls12_g1_msm(pairs, (nuint)k, rawRet) != 0) return false;
+            result = PadG1(rawRet);
+            return true;
+        }
+
+        public bool TryG2Add(byte[] p1, byte[] p2, out byte[] result)
+        {
+            result = null;
+            if (!TryStripG2(p1, out var a) || !TryStripG2(p2, out var b)) return false;
+            var rawRet = new byte[RawG2];
+            if (ZiskCrypto.zkvm_bls12_g2_add(a, b, rawRet) != 0) return false;
+            result = PadG2(rawRet);
+            return true;
+        }
+
+        public bool TryG2Msm(byte[][] points, byte[][] scalars, out byte[] result)
+        {
+            result = null;
+            if (points == null || scalars == null || points.Length != scalars.Length || points.Length == 0) return false;
 
             int k = points.Length;
             var pairs = new byte[k * RawG2MsmPair];
             for (int i = 0; i < k; i++)
             {
-                var rawPoint = StripG2(points[i], $"G2MSM point[{i}]");
+                if (!TryStripG2(points[i], out var rawPoint)) return false;
                 Array.Copy(rawPoint, 0, pairs, i * RawG2MsmPair, RawG2);
-                if (scalars[i] == null || scalars[i].Length != Scalar)
-                    throw new ArgumentException($"BLS12-381 G2MSM: scalar[{i}] must be {Scalar} bytes");
+                if (scalars[i] == null || scalars[i].Length != Scalar) return false;
                 Array.Copy(scalars[i], 0, pairs, i * RawG2MsmPair + RawG2, Scalar);
             }
 
             var rawRet = new byte[RawG2];
-            uint status = ZiskCrypto.zkvm_bls12_g2_msm(pairs, (nuint)k, rawRet);
-            if (status != 0)
-                throw new ArgumentException($"BLS12-381 G2MSM failed (status {status})");
-            return PadG2(rawRet);
+            if (ZiskCrypto.zkvm_bls12_g2_msm(pairs, (nuint)k, rawRet) != 0) return false;
+            result = PadG2(rawRet);
+            return true;
         }
 
-        public bool Pairing(byte[][] g1Points, byte[][] g2Points)
+        public bool TryPairing(byte[][] g1Points, byte[][] g2Points, out bool pairs)
         {
-            if (g1Points == null || g2Points == null || g1Points.Length != g2Points.Length || g1Points.Length == 0)
-                throw new ArgumentException("BLS12-381 pairing: g1/g2 arrays must be non-empty and equal length");
+            pairs = false;
+            if (g1Points == null || g2Points == null || g1Points.Length != g2Points.Length || g1Points.Length == 0) return false;
 
             int k = g1Points.Length;
-            var pairs = new byte[k * RawPairingPair];
+            var raw = new byte[k * RawPairingPair];
             for (int i = 0; i < k; i++)
             {
-                var rawG1 = StripG1(g1Points[i], $"pairing g1[{i}]");
-                Array.Copy(rawG1, 0, pairs, i * RawPairingPair, RawG1);
-                var rawG2 = StripG2(g2Points[i], $"pairing g2[{i}]");
-                Array.Copy(rawG2, 0, pairs, i * RawPairingPair + RawG1, RawG2);
+                if (!TryStripG1(g1Points[i], out var rawG1)) return false;
+                Array.Copy(rawG1, 0, raw, i * RawPairingPair, RawG1);
+                if (!TryStripG2(g2Points[i], out var rawG2)) return false;
+                Array.Copy(rawG2, 0, raw, i * RawPairingPair + RawG1, RawG2);
             }
 
-            byte result = ZiskCrypto.bls12_381_pairing_check_c(pairs, (nuint)k);
-            return result == 0;
+            bool verified = false;
+            uint status;
+            unsafe { status = ZiskCrypto.zkvm_bls12_pairing(raw, (nuint)k, &verified); }
+            if (status != 0) return false;
+            pairs = verified;
+            return true;
         }
 
-        public byte[] MapFpToG1(byte[] fp)
+        public bool TryMapFpToG1(byte[] fp, out byte[] result)
         {
-            var rawFp = StripFp(fp, 0, "MAP_FP_TO_G1");
+            result = null;
+            if (fp == null || fp.Length != EipFp) return false;
+            var rawFp = new byte[RawFp];
+            if (!TryStripFpInto(fp, 0, rawFp, 0)) return false;
             var rawRet = new byte[RawG1];
-            uint status = ZiskCrypto.zkvm_bls12_map_fp_to_g1(rawFp, rawRet);
-            if (status != 0)
-                throw new ArgumentException($"BLS12-381 MAP_FP_TO_G1 failed (status {status})");
-            return PadG1(rawRet);
+            if (ZiskCrypto.zkvm_bls12_map_fp_to_g1(rawFp, rawRet) != 0) return false;
+            result = PadG1(rawRet);
+            return true;
         }
 
-        public byte[] MapFp2ToG2(byte[] fp2)
+        public bool TryMapFp2ToG2(byte[] fp2, out byte[] result)
         {
-            if (fp2 == null || fp2.Length != EipFp2)
-                throw new ArgumentException($"BLS12-381 MAP_FP2_TO_G2: input must be {EipFp2} bytes");
+            result = null;
+            if (fp2 == null || fp2.Length != EipFp2) return false;
             var rawFp2 = new byte[RawFp2];
-            StripFpInto(fp2, 0, rawFp2, 0, "MAP_FP2_TO_G2 c0");
-            StripFpInto(fp2, EipFp, rawFp2, RawFp, "MAP_FP2_TO_G2 c1");
+            if (!TryStripFpInto(fp2, 0, rawFp2, 0)) return false;
+            if (!TryStripFpInto(fp2, EipFp, rawFp2, RawFp)) return false;
 
             var rawRet = new byte[RawG2];
-            uint status = ZiskCrypto.zkvm_bls12_map_fp2_to_g2(rawFp2, rawRet);
-            if (status != 0)
-                throw new ArgumentException($"BLS12-381 MAP_FP2_TO_G2 failed (status {status})");
-            return PadG2(rawRet);
+            if (ZiskCrypto.zkvm_bls12_map_fp2_to_g2(rawFp2, rawRet) != 0) return false;
+            result = PadG2(rawRet);
+            return true;
         }
 
-        private static byte[] StripG1(byte[] eipG1, string where)
+        private static bool TryStripG1(byte[] eipG1, out byte[] raw)
         {
-            if (eipG1 == null || eipG1.Length != EipG1)
-                throw new ArgumentException($"BLS12-381 {where}: point must be {EipG1} bytes");
-            var raw = new byte[RawG1];
-            StripFpInto(eipG1, 0, raw, 0, where + " x");
-            StripFpInto(eipG1, EipFp, raw, RawFp, where + " y");
-            return raw;
+            raw = null;
+            if (eipG1 == null || eipG1.Length != EipG1) return false;
+            var stripped = new byte[RawG1];
+            if (!TryStripFpInto(eipG1, 0, stripped, 0)) return false;
+            if (!TryStripFpInto(eipG1, EipFp, stripped, RawFp)) return false;
+            raw = stripped;
+            return true;
         }
 
         private static byte[] PadG1(byte[] rawG1)
@@ -161,16 +182,17 @@ namespace Nethereum.EVM.Zisk.Backends
             return padded;
         }
 
-        private static byte[] StripG2(byte[] eipG2, string where)
+        private static bool TryStripG2(byte[] eipG2, out byte[] raw)
         {
-            if (eipG2 == null || eipG2.Length != EipG2)
-                throw new ArgumentException($"BLS12-381 {where}: point must be {EipG2} bytes");
-            var raw = new byte[RawG2];
-            StripFpInto(eipG2, 0 * EipFp, raw, 0 * RawFp, where + " x.c0");
-            StripFpInto(eipG2, 1 * EipFp, raw, 1 * RawFp, where + " x.c1");
-            StripFpInto(eipG2, 2 * EipFp, raw, 2 * RawFp, where + " y.c0");
-            StripFpInto(eipG2, 3 * EipFp, raw, 3 * RawFp, where + " y.c1");
-            return raw;
+            raw = null;
+            if (eipG2 == null || eipG2.Length != EipG2) return false;
+            var stripped = new byte[RawG2];
+            for (int limb = 0; limb < 4; limb++)
+            {
+                if (!TryStripFpInto(eipG2, limb * EipFp, stripped, limb * RawFp)) return false;
+            }
+            raw = stripped;
+            return true;
         }
 
         private static byte[] PadG2(byte[] rawG2)
@@ -183,23 +205,15 @@ namespace Nethereum.EVM.Zisk.Backends
             return padded;
         }
 
-        private static byte[] StripFp(byte[] eipFp, int offset, string where)
+        private static bool TryStripFpInto(byte[] src, int srcOff, byte[] dst, int dstOff)
         {
-            if (eipFp == null || eipFp.Length - offset < EipFp)
-                throw new ArgumentException($"BLS12-381 {where}: Fp must be {EipFp} bytes");
-            var raw = new byte[RawFp];
-            StripFpInto(eipFp, offset, raw, 0, where);
-            return raw;
-        }
-
-        private static void StripFpInto(byte[] src, int srcOff, byte[] dst, int dstOff, string where)
-        {
+            if (src == null || src.Length - srcOff < EipFp) return false;
             for (int i = 0; i < 16; i++)
             {
-                if (src[srcOff + i] != 0)
-                    throw new ArgumentException($"BLS12-381 {where}: invalid Fp encoding (non-zero padding byte at index {i})");
+                if (src[srcOff + i] != 0) return false;
             }
             Array.Copy(src, srcOff + 16, dst, dstOff, RawFp);
+            return true;
         }
 
         private static void PadFpInto(byte[] rawSrc, int srcOff, byte[] paddedDst, int dstOff)

@@ -36,23 +36,28 @@ namespace Nethereum.ZkProofs.Groth16
 
             var pA = new List<BigInteger>
             {
-                BigInteger.Parse(proof.PiA[0]),
-                BigInteger.Parse(proof.PiA[1])
+                ParseFieldElement(proof.PiA[0]),
+                ParseFieldElement(proof.PiA[1])
             };
 
             var pB = new List<List<BigInteger>>
             {
-                new List<BigInteger> { BigInteger.Parse(proof.PiB[0][1]), BigInteger.Parse(proof.PiB[0][0]) },
-                new List<BigInteger> { BigInteger.Parse(proof.PiB[1][1]), BigInteger.Parse(proof.PiB[1][0]) }
+                new List<BigInteger> { ParseFieldElement(proof.PiB[0][1]), ParseFieldElement(proof.PiB[0][0]) },
+                new List<BigInteger> { ParseFieldElement(proof.PiB[1][1]), ParseFieldElement(proof.PiB[1][0]) }
             };
 
             var pC = new List<BigInteger>
             {
-                BigInteger.Parse(proof.PiC[0]),
-                BigInteger.Parse(proof.PiC[1])
+                ParseFieldElement(proof.PiC[0]),
+                ParseFieldElement(proof.PiC[1])
             };
 
             return (pA, pB, pC);
+        }
+
+        private static BigInteger ParseFieldElement(string text)
+        {
+            return BigInteger.Parse(Nethereum.ZkProofsVerifier.Circom.FieldElementText.RequireBoundedDecimal(text), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
         }
 
         public static ZkProofResult BuildResult(string proofJson, string publicJson)

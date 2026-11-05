@@ -1,3 +1,4 @@
+using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution.Precompiles.CryptoBackends;
 using Nethereum.Zisk.Core;
 
@@ -12,7 +13,7 @@ namespace Nethereum.EVM.Zisk.Backends
             var offset = new ulong[] { t0, t1 };
             byte f = (byte)(finalBlock ? 1 : 0);
             uint status = ZiskCrypto.zkvm_blake2f(rounds, h, m, offset, f);
-            if (status != 0) throw new System.ArgumentException($"BLAKE2F compression failed (status {status})");
+            if (status != 0) throw new EvmHostException($"BLAKE2F backend failed (status {status})");
         }
     }
 }

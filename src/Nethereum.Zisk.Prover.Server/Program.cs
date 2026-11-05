@@ -13,6 +13,7 @@ var proverArgs = builder.Configuration.GetValue<string>("ProverArgs")
 var convertPathsForWsl = builder.Configuration.GetValue<bool>("ConvertPathsForWsl");
 var provingKeySnarkPath = builder.Configuration.GetValue<string>("ProvingKeySnarkPath");
 var useWsl = builder.Configuration.GetValue<bool>("UseWsl");
+var useGpu = builder.Configuration.GetValue<bool>("UseGpu");
 var timeoutMs = builder.Configuration.GetValue<int?>("TimeoutMs") ?? 1800000;
 
 var loggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Information));
@@ -39,7 +40,8 @@ try
             environmentVariables: new Dictionary<string, string>
             {
                 ["HWLOC_COMPONENTS"] = "-gl"
-            }),
+            },
+            useGpu: useGpu),
         _ => new MockBlockProver()
     };
 }

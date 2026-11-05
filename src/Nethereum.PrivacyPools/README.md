@@ -22,6 +22,8 @@ var pp = PrivacyPool.FromDeployment(web3, deployment, account, legacyAccount);
 // constructing PrivacyPool directly from the mnemonic.
 ```
 
+The mnemonic must be a valid BIP-39 English mnemonic or `ArgumentException` is thrown. To re-create an account from a stored non-standard mnemonic use `new PrivacyPoolAccount(mnemonic, password, validateMnemonic: false)` or `PrivacyPoolAccount.CreateLegacy(mnemonic, password, validateMnemonic: false)`.
+
 <!-- Verified: AccountTests.Legacy_CreateAccount_FromMnemonic_DerivesMasterKeys -->
 <!-- Verified: AccountTests.Safe_CreateAccount_FromMnemonic_DerivesMasterKeys -->
 

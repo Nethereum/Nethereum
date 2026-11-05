@@ -11,6 +11,16 @@ namespace Nethereum.ZkProofsVerifier.Groth16
     {
         public ZkVerificationResult Verify(Groth16Proof proof, Groth16VerificationKey vk, BigInteger[] publicInputs)
         {
+            return Check(proof, vk, publicInputs, true);
+        }
+
+        internal ZkVerificationResult VerifyParsed(Groth16Proof proof, Groth16VerificationKey vk, BigInteger[] publicInputs)
+        {
+            return Check(proof, vk, publicInputs, false);
+        }
+
+        private static ZkVerificationResult Check(Groth16Proof proof, Groth16VerificationKey vk, BigInteger[] publicInputs, bool validatePoints)
+        {
             if (proof == null)
                 return ZkVerificationResult.Invalid("Proof is null");
             if (vk == null)
@@ -25,6 +35,19 @@ namespace Nethereum.ZkProofsVerifier.Groth16
             if (publicInputs.Length != expectedInputs)
                 return ZkVerificationResult.Invalid(
                     string.Format("Expected {0} public inputs but got {1}", expectedInputs, publicInputs.Length));
+
+            for (int i = 0; i < publicInputs.Length; i++)
+            {
+                if (publicInputs[i] == null || publicInputs[i].SignValue < 0 || publicInputs[i].CompareTo(BN128Constants.Order) >= 0)
+                    return ZkVerificationResult.Invalid(string.Format("Public input {0} is not a canonical scalar field element", i));
+            }
+
+            if (validatePoints)
+            {
+                var pointError = Circom.Groth16PointValidator.ValidateProof(proof);
+                if (pointError != null)
+                    return ZkVerificationResult.Invalid(pointError);
+            }
 
             try
             {

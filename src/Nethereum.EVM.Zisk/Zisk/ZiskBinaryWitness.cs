@@ -69,19 +69,28 @@ namespace Nethereum.EVM.Zisk
             ZiskIO.Write("BIN:executed ok="); ZiskIO.WriteLong(result.TxResults.Count - txFailed);
             ZiskIO.Write(" fail="); ZiskIO.WriteLong(txFailed); ZiskIO.Write('\n');
 
-            ZiskIO.SetOutput(0, txFailed == 0 ? 0u : 1u);
-            WriteGas(result.CumulativeGasUsed);
-            WriteBytes32ToSlots(3, result.BlockHash ?? new byte[32]);
-            WriteBytes32ToSlots(11, result.StateRoot ?? new byte[32]);
-            WriteBytes32ToSlots(19, result.TransactionsRoot ?? new byte[32]);
-            WriteBytes32ToSlots(27, result.ReceiptsRoot ?? new byte[32]);
-            ZiskIO.SetOutput(35, (uint)result.TxResults.Count);
-            WriteBytes32ToSlots(36, block.PreStateRoot ?? new byte[32]);
-            ZiskIO.SetOutput(44, (uint)(block.BlockNumber & 0xFFFFFFFF));
-            ZiskIO.SetOutput(45, (uint)(block.BlockNumber >> 32));
-            ZiskIO.SetOutput(46, (uint)(block.ChainId & 0xFFFFFFFF));
-            ZiskIO.SetOutput(47, (uint)(block.ChainId >> 32));
-            WriteBytes32ToSlots(48, block.ParentHash ?? new byte[32]);
+            int slot = 0;
+            if (block.AnchorInputs != null)
+            {
+                var commitment = new ZiskKeccakHashProvider().ComputeHash(block.AnchorInputs);
+                WriteBytes32ToSlots(0, commitment);
+                ZiskIO.Write("BIN:anchor_commitment="); WriteHex(commitment); ZiskIO.Write('\n');
+                slot = AnchorBinding.CommitmentSlots;
+            }
+
+            ZiskIO.SetOutput(slot, txFailed == 0 ? 0u : 1u);
+            WriteGas(slot + 1, result.CumulativeGasUsed);
+            WriteBytes32ToSlots(slot + 3, result.BlockHash ?? new byte[32]);
+            WriteBytes32ToSlots(slot + 11, result.StateRoot ?? new byte[32]);
+            WriteBytes32ToSlots(slot + 19, result.TransactionsRoot ?? new byte[32]);
+            WriteBytes32ToSlots(slot + 27, result.ReceiptsRoot ?? new byte[32]);
+            ZiskIO.SetOutput(slot + 35, (uint)result.TxResults.Count);
+            WriteBytes32ToSlots(slot + 36, block.PreStateRoot ?? new byte[32]);
+            ZiskIO.SetOutput(slot + 44, (uint)(block.BlockNumber & 0xFFFFFFFF));
+            ZiskIO.SetOutput(slot + 45, (uint)(block.BlockNumber >> 32));
+            ZiskIO.SetOutput(slot + 46, (uint)(block.ChainId & 0xFFFFFFFF));
+            ZiskIO.SetOutput(slot + 47, (uint)(block.ChainId >> 32));
+            WriteBytes32ToSlots(slot + 48, block.ParentHash ?? new byte[32]);
 
             ZiskIO.Write("BIN:block_hash=");
             WriteHex(result.BlockHash ?? new byte[32]); ZiskIO.Write('\n');
@@ -92,10 +101,10 @@ namespace Nethereum.EVM.Zisk
             return 0;
         }
 
-        static void WriteGas(long gas)
+        static void WriteGas(int firstSlot, long gas)
         {
-            ZiskIO.SetOutput(1, (uint)(gas & 0xFFFFFFFF));
-            ZiskIO.SetOutput(2, (uint)((gas >> 32) & 0xFFFFFFFF));
+            ZiskIO.SetOutput(firstSlot, (uint)(gas & 0xFFFFFFFF));
+            ZiskIO.SetOutput(firstSlot + 1, (uint)((gas >> 32) & 0xFFFFFFFF));
         }
 
         static void WriteBytes32ToSlots(int startSlot, byte[] data)

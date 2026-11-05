@@ -6,8 +6,8 @@ namespace Nethereum.Zisk.Core
     public static unsafe class ZiskIO
     {
         private static readonly byte* Input = (byte*)0x4000_0000UL;
-        private static readonly uint* Output = (uint*)0xa001_0000UL;
-        private static readonly byte* Uart = (byte*)0xa000_0200UL;
+        private static readonly uint* Output = (uint*)0xa041_0000UL;
+        private static readonly byte* Uart = (byte*)0xa040_0200UL;
 
         private static ulong _inputPosition = sizeof(ulong);
 
