@@ -17,6 +17,7 @@ using FreezerCore = Nethereum.Freezer.Freezer;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerHistoryWriteTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"freezerhist_{Guid.NewGuid():N}");

@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Nethereum.Merkle.Binary;
@@ -196,21 +197,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var buf = new byte[totalLen];
             int off = 0;
 
-            buf[off++] = (byte)(depth >> 24);
-            buf[off++] = (byte)(depth >> 16);
-            buf[off++] = (byte)(depth >> 8);
-            buf[off++] = (byte)depth;
+            BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(off, 4), depth);
+            off += 4;
 
             buf[off++] = nodeType;
 
-            buf[off++] = (byte)(blockNumber >> 56);
-            buf[off++] = (byte)(blockNumber >> 48);
-            buf[off++] = (byte)(blockNumber >> 40);
-            buf[off++] = (byte)(blockNumber >> 32);
-            buf[off++] = (byte)(blockNumber >> 24);
-            buf[off++] = (byte)(blockNumber >> 16);
-            buf[off++] = (byte)(blockNumber >> 8);
-            buf[off++] = (byte)blockNumber;
+            BinaryPrimitives.WriteInt64BigEndian(buf.AsSpan(off, 8), blockNumber);
+            off += 8;
 
             buf[off++] = (byte)hasStem;
             if (hasStem == 1 && stem != null)
@@ -231,13 +224,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 return new NodeEntry { Hash = hash, Encoded = raw };
 
             int off = 0;
-            int depth = (raw[off] << 24) | (raw[off + 1] << 16) | (raw[off + 2] << 8) | raw[off + 3];
+            int depth = BinaryPrimitives.ReadInt32BigEndian(raw.AsSpan(off, 4));
             off += 4;
             byte nodeType = raw[off++];
-            long blockNumber =
-                ((long)raw[off] << 56) | ((long)raw[off + 1] << 48) | ((long)raw[off + 2] << 40) |
-                ((long)raw[off + 3] << 32) | ((long)raw[off + 4] << 24) | ((long)raw[off + 5] << 16) |
-                ((long)raw[off + 6] << 8) | raw[off + 7];
+            long blockNumber = BinaryPrimitives.ReadInt64BigEndian(raw.AsSpan(off, 8));
             off += 8;
             byte hasStem = raw[off++];
             byte[] stem = null;

@@ -48,7 +48,7 @@ namespace Nethereum.CoreChain.Models
                 bool matchesAny = false;
                 foreach (var filterTopic in topicFilter)
                 {
-                    if (ByteArraysEqual(filterTopic, logTopic))
+                    if (ByteUtil.AreEqual(filterTopic, logTopic))
                     {
                         matchesAny = true;
                         break;
@@ -66,18 +66,6 @@ namespace Nethereum.CoreChain.Models
                 return false;
             if (ToBlock.HasValue && blockNumber > ToBlock.Value)
                 return false;
-            return true;
-        }
-
-        private static bool ByteArraysEqual(byte[] a, byte[] b)
-        {
-            if (a == null && b == null) return true;
-            if (a == null || b == null) return false;
-            if (a.Length != b.Length) return false;
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i]) return false;
-            }
             return true;
         }
     }

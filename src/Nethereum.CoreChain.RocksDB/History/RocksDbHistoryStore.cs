@@ -49,16 +49,12 @@ namespace Nethereum.CoreChain.RocksDB.History
 
         public TxLocation? FindTransaction(byte[] txHash)
         {
-            var loc = _db.Get(txHash, _txHashIndex);
-            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
-            return new TxLocation(HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc));
+            return HistoryKeys.TryReadTxLocation(_db.Get(txHash, _txHashIndex));
         }
 
         public ulong? FindBlock(byte[] blockHash)
         {
-            var num = _db.Get(blockHash, _blockHashIndex);
-            if (num == null || num.Length < HistoryKeys.BlockKeyLength) return null;
-            return HistoryKeys.ReadBlockNumber(num);
+            return HistoryKeys.TryReadBlockNumber(_db.Get(blockHash, _blockHashIndex));
         }
 
         public byte[] GetHeader(ulong blockNumber) => _db.Get(HistoryKeys.BlockKey(blockNumber), _blockHeader);
@@ -70,22 +66,14 @@ namespace Nethereum.CoreChain.RocksDB.History
         {
             var result = new List<byte[]>();
             using var it = _db.NewIterator(_txBody);
-            for (it.Seek(HistoryKeys.TxKey(blockNumber, 0)); it.Valid(); it.Next())
-            {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != blockNumber) break;
-                result.Add(it.Value());
-            }
+            HistoryRows.ScanBlock(it, blockNumber, result.Add);
             return result;
         }
 
         public ulong? GetTip()
         {
             using var it = _db.NewIterator(_blockHeader);
-            it.SeekToLast();
-            if (!it.Valid()) return null;
-            var key = it.Key();
-            if (key.Length < HistoryKeys.BlockKeyLength) return null;
-            return HistoryKeys.ReadBlockNumber(key);
+            return HistoryRows.Tip(it);
         }
 
         public void HandleReorg(ulong revertToBlock)

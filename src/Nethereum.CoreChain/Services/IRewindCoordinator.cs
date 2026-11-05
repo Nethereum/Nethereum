@@ -11,6 +11,19 @@ namespace Nethereum.CoreChain.Services
             ulong targetBlock,
             RewindPolicy policy,
             CancellationToken ct = default);
+
+        Task<RewindResult> RewindToAsync(
+            ulong targetBlock,
+            RewindPolicy policy,
+            RewindScope scope,
+            CancellationToken ct = default)
+            => RewindToAsync(targetBlock, policy, ct);
+    }
+    [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "RewindScope - whether a rewind also truncates the chain data")]
+    public enum RewindScope
+    {
+        ExecutionAndChain,
+        ExecutionOnly,
     }
 
     [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "RewindPolicy - which rewind paths the coordinator may use")]

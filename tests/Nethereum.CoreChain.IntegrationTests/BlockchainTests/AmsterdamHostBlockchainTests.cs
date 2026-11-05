@@ -4,6 +4,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
+    [Trait("Requires", "Externals")]
     public class AmsterdamHostBlockchainTests
     {
         private readonly HostBlockchainTestRunner _runner;

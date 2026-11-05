@@ -47,8 +47,21 @@ namespace Nethereum.CoreChain.Storage
         Task RevertSnapshotAsync(IStateSnapshot snapshot);
 
         Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync();
+        async Task<IReadOnlyCollection<EvmAddress>> GetDirtyAccountsAsync() => EvmAddressesOf(await GetDirtyAccountAddressesAsync().ConfigureAwait(false));
+
         Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address);
+        Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(EvmAddress address) => GetDirtyStorageSlotsAsync(address.ToHexLower());
+
         Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync();
+        async Task<IReadOnlyCollection<EvmAddress>> GetStorageClearedAccountsAsync() => EvmAddressesOf(await GetStorageClearedAddressesAsync().ConfigureAwait(false));
+
         Task ClearDirtyTrackingAsync();
+
+        private static IReadOnlyCollection<EvmAddress> EvmAddressesOf(IReadOnlyCollection<string> addresses)
+        {
+            var converted = new List<EvmAddress>(addresses.Count);
+            foreach (var address in addresses) converted.Add(EvmAddress.FromHex(address));
+            return converted;
+        }
     }
 }

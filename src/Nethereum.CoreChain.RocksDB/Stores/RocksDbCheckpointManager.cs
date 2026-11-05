@@ -82,6 +82,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             _freezerItemsReader = freezerItemsReader ?? throw new ArgumentNullException(nameof(freezerItemsReader));
         }
 
+        internal static void SweepStagingDirectories(params string[] archiveDirs)
+        {
+            foreach (var dir in archiveDirs)
+            {
+                var archive = Path.Combine(dir, CheckpointArchiveDirName);
+                if (!Directory.Exists(archive)) continue;
+                foreach (var staging in Directory.GetDirectories(archive, "*.staging.*"))
+                    TryDeleteDirectory(staging);
+            }
+        }
+
         private bool IsSplit => _historyRocks != null;
         private bool IsFreezer => _freezerHistoryRocks != null;
 
@@ -118,9 +129,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
             catch
             {
-                try { Directory.Delete(ResolveCheckpointSnapshotPath(blockNumber), recursive: true); } catch { }
-                if (IsSplit) { try { Directory.Delete(ResolveHistoryCheckpointSnapshotPath(blockNumber), recursive: true); } catch { } }
-                if (IsFreezer) { try { Directory.Delete(ResolveFreezerHistoryCheckpointSnapshotPath(blockNumber), recursive: true); } catch { } }
+                TryDeleteDirectory(ResolveCheckpointSnapshotPath(blockNumber));
+                if (IsSplit) TryDeleteDirectory(ResolveHistoryCheckpointSnapshotPath(blockNumber));
+                if (IsFreezer) TryDeleteDirectory(ResolveFreezerHistoryCheckpointSnapshotPath(blockNumber));
                 throw;
             }
 
@@ -142,7 +153,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 if (SnapshotIdentityMatches(snapshotDir, stateRoot, blockHash))
                     return false;
 
-                try { Directory.Delete(snapshotDir, recursive: true); } catch { }
+                TryDeleteDirectory(snapshotDir);
             }
 
             Directory.CreateDirectory(archiveDir);
@@ -157,10 +168,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
             catch
             {
-                if (Directory.Exists(snapshotStaging))
-                {
-                    try { Directory.Delete(snapshotStaging, recursive: true); } catch { }
-                }
+                TryDeleteDirectory(snapshotStaging);
                 throw;
             }
         }
@@ -269,25 +277,16 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             _metadata.DeleteCheckpoint(blockNumber);
             var snapshotDir = ResolveCheckpointSnapshotPath(blockNumber);
-            if (Directory.Exists(snapshotDir))
-            {
-                try { Directory.Delete(snapshotDir, recursive: true); } catch { }
-            }
+            TryDeleteDirectory(snapshotDir);
             if (IsSplit)
             {
                 var historySnapshotDir = ResolveHistoryCheckpointSnapshotPath(blockNumber);
-                if (Directory.Exists(historySnapshotDir))
-                {
-                    try { Directory.Delete(historySnapshotDir, recursive: true); } catch { }
-                }
+                TryDeleteDirectory(historySnapshotDir);
             }
             if (IsFreezer)
             {
                 var freezerHistorySnapshotDir = ResolveFreezerHistoryCheckpointSnapshotPath(blockNumber);
-                if (Directory.Exists(freezerHistorySnapshotDir))
-                {
-                    try { Directory.Delete(freezerHistorySnapshotDir, recursive: true); } catch { }
-                }
+                TryDeleteDirectory(freezerHistorySnapshotDir);
             }
             return Task.CompletedTask;
         }
@@ -487,29 +486,37 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             if (Directory.Exists(newDir) && IsReadyMarker(readyInNew))
             {
-                try
-                {
-                    InstallStagedReplacement(targetDir, newDir, oldDir, readyInTarget, preserveSet);
-                }
-                catch
-                {
-                    if (!Directory.Exists(targetDir) && Directory.Exists(oldDir))
-                    {
-                        try { Directory.Move(oldDir, targetDir); } catch { }
-                    }
-                    if (Directory.Exists(newDir)) { try { Directory.Delete(newDir, recursive: true); } catch { } }
-                }
+                TryInstallStagedReplacement(targetDir, newDir, oldDir, readyInTarget, preserveSet);
                 return;
             }
-            if (Directory.Exists(newDir))
-            {
-                try { Directory.Delete(newDir, recursive: true); } catch { }
-            }
+            TryDeleteDirectory(newDir);
+            SettleInstalledOrAbandonedRestore(targetDir, oldDir, readyInTarget, preserveSet);
+        }
 
+        private static void TryInstallStagedReplacement(
+            string targetDir, string newDir, string oldDir, string readyInTarget, HashSet<string> preserveSet)
+        {
+            try
+            {
+                InstallStagedReplacement(targetDir, newDir, oldDir, readyInTarget, preserveSet);
+            }
+            catch
+            {
+                if (!Directory.Exists(targetDir) && Directory.Exists(oldDir))
+                {
+                    try { Directory.Move(oldDir, targetDir); } catch { }
+                }
+                TryDeleteDirectory(newDir);
+            }
+        }
+
+        private static void SettleInstalledOrAbandonedRestore(
+            string targetDir, string oldDir, string readyInTarget, HashSet<string> preserveSet)
+        {
             if (IsReadyMarker(readyInTarget))
             {
                 FoldPreservedSubdirs(oldDir, targetDir, preserveSet);
-                if (Directory.Exists(oldDir)) { try { Directory.Delete(oldDir, recursive: true); } catch { } }
+                TryDeleteDirectory(oldDir);
                 TryDeleteFile(readyInTarget);
             }
             else if (Directory.Exists(oldDir))
@@ -517,7 +524,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 if (Directory.Exists(targetDir))
                 {
                     FoldPreservedSubdirs(oldDir, targetDir, preserveSet);
-                    try { Directory.Delete(oldDir, recursive: true); } catch { }
+                    TryDeleteDirectory(oldDir);
                 }
                 else
                 {
@@ -537,6 +544,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
         }
 
+        private static void TryDeleteDirectory(string path)
+        {
+            try { Directory.Delete(path, recursive: true); } catch { }
+        }
+
         private static void TryDeleteFile(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { }
@@ -552,8 +564,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var probeInside = Path.Combine(targetDir, ".nethereum-volume-probe");
             var probeSibling = TrimDirSeparators(targetDir) + ".nethereum-volume-probe";
-            try { if (Directory.Exists(probeInside)) Directory.Delete(probeInside, recursive: true); } catch { }
-            try { if (Directory.Exists(probeSibling)) Directory.Delete(probeSibling, recursive: true); } catch { }
+            TryDeleteDirectory(probeInside);
+            TryDeleteDirectory(probeSibling);
             Directory.CreateDirectory(probeInside);
             try
             {
@@ -561,13 +573,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
             catch (Exception ex)
             {
-                try { if (Directory.Exists(probeInside)) Directory.Delete(probeInside, recursive: true); } catch { }
+                TryDeleteDirectory(probeInside);
                 throw new InvalidOperationException(
                     $"Atomic checkpoint restore needs its staging directories (siblings of '{targetDir}') on the same " +
                     $"volume as the data, but they are not — the data dir appears to be its own mount point. Place the " +
                     $"chain data in a SUBDIRECTORY of its volume so the restore staging can share the volume.", ex);
             }
-            try { if (Directory.Exists(probeSibling)) Directory.Delete(probeSibling, recursive: true); } catch { }
+            TryDeleteDirectory(probeSibling);
         }
 
         public Task ExportDatabaseAsync(string outputPath, CancellationToken ct = default)

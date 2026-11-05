@@ -4,6 +4,8 @@ namespace Nethereum.CoreChain.Storage
 {
     public static class HeaderSubchains
     {
+        public static ulong BlocksBehind(ulong head, ulong tip) => tip > head ? tip - head : 0;
+
         public static ulong TrustedTip(HeaderSyncState state)
             => state.Subchains.Count > 0 ? state.Subchains[0].Head : 0;
 

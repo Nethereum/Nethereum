@@ -39,10 +39,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private ReceiptInfo InfoByHash(byte[] txHash)
         {
-            byte[] loc;
-            using (var lease = _manager.Lease()) loc = lease.Database.Get(txHash, _txHashIndex);
-            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
-            return InfoAt(HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc));
+            byte[] raw;
+            using (var lease = _manager.Lease()) raw = lease.Database.Get(txHash, _txHashIndex);
+            var loc = HistoryKeys.TryReadTxLocation(raw);
+            return loc.HasValue ? InfoAt(loc.Value.BlockNumber, loc.Value.TxIndex) : null;
         }
 
         public Task<Receipt> GetByTxHashAsync(byte[] txHash)
@@ -57,12 +57,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var n = (ulong)blockNumber;
             using var lease = _manager.Lease();
             using var it = lease.Database.NewIterator(_receiptBody);
-            for (it.Seek(HistoryKeys.TxKey(n, 0)); it.Valid(); it.Next())
+            HistoryRows.ScanBlock(it, n, row =>
             {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != n) break;
-                var info = _serializer.DeserializeReceiptInfoWith(it.Value());
+                var info = _serializer.DeserializeReceiptInfoWith(row);
                 if (info != null) result.Add(info.Receipt);
-            }
+            });
             return Task.FromResult(result);
         }
 

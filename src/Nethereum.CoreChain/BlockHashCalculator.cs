@@ -19,5 +19,8 @@ namespace Nethereum.CoreChain
 
         public static byte[] ForHeader(BlockHeader header)
             => RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(header);
+
+        public static bool HashesTo(BlockHeader header, byte[] expectedHash)
+            => header != null && expectedHash != null && ByteUtil.AreEqual(ForHeader(header), expectedHash);
     }
 }

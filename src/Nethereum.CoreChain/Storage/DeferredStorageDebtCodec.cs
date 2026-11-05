@@ -4,6 +4,7 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage
 {
+    [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
     public static class DeferredStorageDebtCodec
     {
         public const byte CurrentSchemaVersion = 1;

@@ -22,14 +22,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             byte[] raw;
             using (var lease = _manager.Lease())
                 raw = blockHash == null ? null : lease.Database.Get(blockHash, _blockHashIndex);
-            if (raw == null || raw.Length < HistoryKeys.BlockKeyLength)
-            {
-                number = 0;
-                return false;
-            }
-
-            number = (long)HistoryKeys.ReadBlockNumber(raw);
-            return true;
+            var read = HistoryKeys.TryReadBlockNumber(raw);
+            number = read.HasValue ? (long)read.Value : 0;
+            return read.HasValue;
         }
 
         public bool TryGetTxLocation(byte[] txHash, out long blockNumber, out int txIndex)
@@ -37,16 +32,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             byte[] raw;
             using (var lease = _manager.Lease())
                 raw = txHash == null ? null : lease.Database.Get(txHash, _txHashIndex);
-            if (raw == null || raw.Length < HistoryKeys.TxKeyLength)
-            {
-                blockNumber = 0;
-                txIndex = 0;
-                return false;
-            }
-
-            blockNumber = (long)HistoryKeys.ReadBlockNumber(raw);
-            txIndex = (int)HistoryKeys.ReadTxIndex(raw);
-            return true;
+            var read = HistoryKeys.TryReadTxLocation(raw);
+            blockNumber = read.HasValue ? (long)read.Value.BlockNumber : 0;
+            txIndex = read.HasValue ? (int)read.Value.TxIndex : 0;
+            return read.HasValue;
         }
 
         public void PutBlockHash(byte[] hash, long number)

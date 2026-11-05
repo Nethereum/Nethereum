@@ -27,16 +27,9 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
                 AutoMine = false
             };
 
-            var node = DevChainNode.CreateInMemory(config);
-            await node.StartAsync();
-
-            var importer = new BlockImporter(
-                node.BlockManager.Engine,
-                node.Blocks,
-                node.State,
-                node.Transactions,
-                node.Receipts,
-                node.Logs);
+            var harness = await Nethereum.CoreChain.UnitTests.Import.SideChainHarness.CreateAsync(config: config);
+            var node = harness.Node;
+            var importer = harness.Importer;
 
             var forkChoice = new DifficultyForkChoice(node.Blocks);
             var registry = new PayloadBuildRegistry();
@@ -108,6 +101,36 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
 
             var newHead = await node.Blocks.GetLatestAsync();
             Assert.Equal(head.BlockNumber.ToBigInteger() + 1, newHead.BlockNumber.ToBigInteger());
+        }
+
+        [Fact]
+        public async Task Given_AttributesWithAWithdrawal_When_ThePayloadIsBuiltAndReturnedByGetPayload_Then_ItCarriesTheWithdrawalAndValidates()
+        {
+            var (node, engine) = await CreateNodeAsync();
+
+            var head = await node.Blocks.GetLatestAsync();
+            var headHash = await node.Blocks.GetHashByNumberAsync(head.BlockNumber.ToBigInteger());
+            var attrs = NextAttributes(head.Timestamp + 1);
+            attrs.Withdrawals.Add(new Nethereum.RPC.Eth.DTOs.Withdrawal
+            {
+                Index = new HexBigInteger(7),
+                ValidatorIndex = new HexBigInteger(42),
+                Address = FeeRecipient,
+                Amount = new HexBigInteger(1_000_000)
+            });
+
+            var fcuResult = await engine.ForkchoiceUpdatedAsync(StateFor(HashHex(headHash)), attrs);
+            var payload = await engine.GetPayloadAsync(fcuResult.PayloadId);
+
+            var withdrawal = Assert.Single(payload.Withdrawals);
+            Assert.Equal(7, (int)withdrawal.Index.Value);
+            Assert.Equal(42, (int)withdrawal.ValidatorIndex.Value);
+            Assert.Equal(FeeRecipient.ToLowerInvariant(), withdrawal.Address.ToLowerInvariant());
+            Assert.Equal(1_000_000, (int)withdrawal.Amount.Value);
+
+            var status = await engine.NewPayloadAsync(payload, attrs.ParentBeaconBlockRoot);
+
+            Assert.Equal(EnginePayloadStatus.Valid, status.Status);
         }
 
         [Fact]

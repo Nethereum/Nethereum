@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Storage.History;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
@@ -50,50 +51,23 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task SaveBlockDiffAsync(BlockStateDiff diff)
         {
-            var blockBytes = BlockNumberToBytes(diff.BlockNumber);
+            var blockBytes = HistoryKeys.BlockKey((ulong)diff.BlockNumber);
             using var batch = _manager.CreateWriteBatch();
-            var cfAccounts = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS);
-            var cfStorage = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_STORAGE);
-            var cfIndex = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
             var cfMeta = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_META);
 
-            var seekKey = new byte[9];
-            Buffer.BlockCopy(blockBytes, 0, seekKey, 0, 8);
-            seekKey[8] = 0x00;
-            using (var it = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX))
-            {
-                it.Seek(seekKey);
-                while (it.Valid())
-                {
-                    var indexKey = it.Key();
-                    if (indexKey.Length < 9) { it.Next(); continue; }
-                    bool samePrefix = true;
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if (indexKey[i] != blockBytes[i]) { samePrefix = false; break; }
-                    }
-                    if (!samePrefix) break;
+            StageBlockRowDeletes(batch, blockBytes);
+            StageAccountDiffs(batch, diff, blockBytes);
+            StageStorageDiffs(batch, diff, blockBytes);
 
-                    var type = indexKey[8];
-                    if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
-                    {
-                        var addr = new byte[AddressKeyLength];
-                        Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
-                        batch.Delete(BuildAccountDataKey(addr, blockBytes), cfAccounts);
-                    }
-                    else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
-                    {
-                        var addr = new byte[AddressKeyLength];
-                        Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
-                        var slot = new byte[32];
-                        Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
-                        batch.Delete(BuildStorageDataKey(addr, slot, blockBytes), cfStorage);
-                    }
-                    batch.Delete((byte[])indexKey.Clone(), cfIndex);
-                    it.Next();
-                }
-            }
+            UpdateMetaBounds(batch, cfMeta, diff.BlockNumber);
+            _manager.Write(batch);
+            return Task.CompletedTask;
+        }
 
+        private void StageAccountDiffs(WriteBatch batch, BlockStateDiff diff, byte[] blockBytes)
+        {
+            var cfAccounts = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS);
+            var cfIndex = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
             foreach (var entry in diff.AccountDiffs)
             {
                 var keccakKey = StateKeys.AccountKey(entry.Address);
@@ -106,7 +80,12 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var indexKey = BuildAccountIndexKey(blockBytes, keccakKey);
                 batch.Put(indexKey, EMPTY_VALUE, cfIndex);
             }
+        }
 
+        private void StageStorageDiffs(WriteBatch batch, BlockStateDiff diff, byte[] blockBytes)
+        {
+            var cfStorage = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_STORAGE);
+            var cfIndex = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
             foreach (var entry in diff.StorageDiffs)
             {
                 var keccakKey = StateKeys.AccountKey(entry.Address);
@@ -122,17 +101,27 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var indexKey = BuildStorageIndexKey(blockBytes, keccakKey, slotBytes);
                 batch.Put(indexKey, EMPTY_VALUE, cfIndex);
             }
+        }
 
-            UpdateMetaBounds(batch, cfMeta, diff.BlockNumber);
-            _manager.Write(batch);
-            return Task.CompletedTask;
+        private void StageBlockRowDeletes(WriteBatch batch, byte[] blockBytes)
+        {
+            var cfIndex = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
+            foreach (var indexKey in IndexKeysOfBlock(blockBytes))
+                StageIndexRowDelete(batch, cfIndex, indexKey, blockBytes);
+        }
+
+        private void StageIndexRowDelete(WriteBatch batch, ColumnFamilyHandle cfIndex, byte[] indexKey, byte[] blockBytes)
+        {
+            var row = DataRowOf(indexKey, blockBytes);
+            if (row.HasValue) batch.Delete(row.Value.DataKey, _manager.GetColumnFamily(row.Value.Cf));
+            batch.Delete(indexKey, cfIndex);
         }
 
         public Task<(bool Found, Account PreValue)> GetFirstAccountPreValueAfterBlockAsync(string address, BigInteger blockNumber)
         {
             var addressBytes = StateKeys.AccountKey(address);
             var searchFromBlock = blockNumber + 1;
-            var seekKey = BuildAccountDataKey(addressBytes, BlockNumberToBytes(searchFromBlock));
+            var seekKey = BuildAccountDataKey(addressBytes, HistoryKeys.BlockKey((ulong)searchFromBlock));
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS);
             iterator.Seek(seekKey);
@@ -140,7 +129,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (key.Length == AccountDataKeyLength && KeyStartsWithAddress(key, addressBytes))
+                if (key.Length == AccountDataKeyLength && ByteUtil.StartsWith(key, addressBytes))
                 {
                     var value = Unwrap(iterator.Value());
                     var body = StripInlineAddress(value);
@@ -160,7 +149,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var addressBytes = StateKeys.AccountKey(address);
             var slotBytes = SlotToBytes(slot);
             var searchFromBlock = blockNumber + 1;
-            var seekKey = BuildStorageDataKey(addressBytes, slotBytes, BlockNumberToBytes(searchFromBlock));
+            var seekKey = BuildStorageDataKey(addressBytes, slotBytes, HistoryKeys.BlockKey((ulong)searchFromBlock));
 
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_STORAGE);
             iterator.Seek(seekKey);
@@ -168,7 +157,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (key.Length == StorageDataKeyLength && KeyStartsWithAddressAndSlot(key, addressBytes, slotBytes))
+                if (key.Length == StorageDataKeyLength && ByteUtil.StartsWith(key, ByteUtil.Merge(addressBytes, slotBytes)))
                 {
                     var value = Unwrap(iterator.Value());
                     var body = StripInlineAddress(value);
@@ -184,144 +173,85 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task<BlockStateDiff> GetBlockDiffAsync(BigInteger blockNumber)
         {
-            var blockBytes = BlockNumberToBytes(blockNumber);
-            var seekKey = new byte[9];
-            Buffer.BlockCopy(blockBytes, 0, seekKey, 0, 8);
-            seekKey[8] = 0x00;
-
+            var blockBytes = HistoryKeys.BlockKey((ulong)blockNumber);
             var diff = new BlockStateDiff { BlockNumber = blockNumber };
-            bool found = false;
+            var indexKeys = IndexKeysOfBlock(blockBytes);
 
-            using var it = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
-            it.Seek(seekKey);
-            while (it.Valid())
+            foreach (var indexKey in indexKeys)
             {
-                var indexKey = it.Key();
-                if (indexKey.Length < 9) { it.Next(); continue; }
-                bool samePrefix = true;
-                for (int i = 0; i < 8; i++)
-                {
-                    if (indexKey[i] != blockBytes[i]) { samePrefix = false; break; }
-                }
-                if (!samePrefix) break;
-
-                found = true;
                 var type = indexKey[8];
                 if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
-                {
-                    var addr = new byte[AddressKeyLength];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
-                    var dataKey = BuildAccountDataKey(addr, blockBytes);
-                    var raw = Unwrap(_manager.Get(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS, dataKey));
-                    Account pre;
-                    byte[] inlineAddress;
-                    if (raw == null)
-                    {
-                        pre = null;
-                        inlineAddress = null;
-                    }
-                    else
-                    {
-                        inlineAddress = ReadInlineAddress(raw);
-                        var body = StripInlineAddress(raw);
-                        if (body.Length == 1 && body[0] == SENTINEL_NOT_EXIST[0])
-                            pre = null;
-                        else
-                            pre = _accountLayout.DecodeAccount(body);
-                    }
-                    diff.AccountDiffs.Add(new AccountDiffEntry
-                    {
-                        Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
-                        PreValue = pre
-                    });
-                }
+                    diff.AccountDiffs.Add(ReadAccountDiff(AddressOf(indexKey), blockBytes));
                 else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
-                {
-                    var addr = new byte[AddressKeyLength];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
-                    var slot = new byte[32];
-                    Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
-                    var dataKey = BuildStorageDataKey(addr, slot, blockBytes);
-                    var raw = Unwrap(_manager.Get(RocksDbManager.CF_STATE_HISTORY_STORAGE, dataKey));
-                    byte[] inlineAddress;
-                    byte[] body;
-                    if (raw == null)
-                    {
-                        inlineAddress = null;
-                        body = EMPTY_VALUE;
-                    }
-                    else
-                    {
-                        inlineAddress = ReadInlineAddress(raw);
-                        body = StripInlineAddress(raw);
-                    }
-                    diff.StorageDiffs.Add(new StorageDiffEntry
-                    {
-                        Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
-                        SlotKey = slot,
-                        PreValue = body
-                    });
-                }
-                it.Next();
+                    diff.StorageDiffs.Add(ReadStorageDiff(AddressOf(indexKey), SlotOf(indexKey), blockBytes));
             }
 
-            return Task.FromResult(found ? diff : null);
+            return Task.FromResult(indexKeys.Count > 0 ? diff : null);
+        }
+
+        private AccountDiffEntry ReadAccountDiff(byte[] addr, byte[] blockBytes)
+        {
+            var dataKey = BuildAccountDataKey(addr, blockBytes);
+            var raw = Unwrap(_manager.Get(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS, dataKey));
+            Account pre;
+            byte[] inlineAddress;
+            if (raw == null)
+            {
+                pre = null;
+                inlineAddress = null;
+            }
+            else
+            {
+                inlineAddress = ReadInlineAddress(raw);
+                var body = StripInlineAddress(raw);
+                if (body.Length == 1 && body[0] == SENTINEL_NOT_EXIST[0])
+                    pre = null;
+                else
+                    pre = _accountLayout.DecodeAccount(body);
+            }
+            return new AccountDiffEntry
+            {
+                Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
+                PreValue = pre
+            };
+        }
+
+        private StorageDiffEntry ReadStorageDiff(byte[] addr, byte[] slot, byte[] blockBytes)
+        {
+            var dataKey = BuildStorageDataKey(addr, slot, blockBytes);
+            var raw = Unwrap(_manager.Get(RocksDbManager.CF_STATE_HISTORY_STORAGE, dataKey));
+            byte[] inlineAddress;
+            byte[] body;
+            if (raw == null)
+            {
+                inlineAddress = null;
+                body = EMPTY_VALUE;
+            }
+            else
+            {
+                inlineAddress = ReadInlineAddress(raw);
+                body = StripInlineAddress(raw);
+            }
+            return new StorageDiffEntry
+            {
+                Address = inlineAddress != null ? "0x" + inlineAddress.ToHex() : null,
+                SlotKey = slot,
+                PreValue = body
+            };
         }
 
         public Task DeleteBlockDiffAsync(BigInteger blockNumber)
         {
-            var blockBytes = BlockNumberToBytes(blockNumber);
+            var blockBytes = HistoryKeys.BlockKey((ulong)blockNumber);
             using var batch = _manager.CreateWriteBatch();
-            var cfAccounts = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS);
-            var cfStorage = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_STORAGE);
-            var cfIndex = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
-
-            var seekKey = new byte[9];
-            Buffer.BlockCopy(blockBytes, 0, seekKey, 0, 8);
-            seekKey[8] = 0x00;
-
-            using var it = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
-            it.Seek(seekKey);
-            while (it.Valid())
-            {
-                var indexKey = it.Key();
-                if (indexKey.Length < 9) { it.Next(); continue; }
-                bool samePrefix = true;
-                for (int i = 0; i < 8; i++)
-                {
-                    if (indexKey[i] != blockBytes[i]) { samePrefix = false; break; }
-                }
-                if (!samePrefix) break;
-
-                var type = indexKey[8];
-                if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
-                {
-                    var addr = new byte[AddressKeyLength];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
-                    batch.Delete(BuildAccountDataKey(addr, blockBytes), cfAccounts);
-                }
-                else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
-                {
-                    var addr = new byte[AddressKeyLength];
-                    Buffer.BlockCopy(indexKey, 9, addr, 0, AddressKeyLength);
-                    var slot = new byte[32];
-                    Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
-                    batch.Delete(BuildStorageDataKey(addr, slot, blockBytes), cfStorage);
-                }
-                batch.Delete((byte[])indexKey.Clone(), cfIndex);
-                it.Next();
-            }
-
+            StageBlockRowDeletes(batch, blockBytes);
             _manager.Write(batch);
             return Task.CompletedTask;
         }
 
         public Task DeleteDiffsAboveBlockAsync(BigInteger blockNumber)
         {
-            var startBlockBytes = BlockNumberToBytes(blockNumber + 1);
-            var startKey = new byte[startBlockBytes.Length + 1];
-            Buffer.BlockCopy(startBlockBytes, 0, startKey, 0, startBlockBytes.Length);
-            startKey[startBlockBytes.Length] = 0x00;
+            var startKey = IndexSeekKey(HistoryKeys.BlockKey((ulong)(blockNumber + 1)));
 
             DeleteDiffsViaIndex(startKey, forward: true);
             UpdateMetaAfterDelete();
@@ -330,10 +260,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task DeleteDiffsBelowBlockAsync(BigInteger blockNumber)
         {
-            var endBlockBytes = BlockNumberToBytes(blockNumber);
-            var endKey = new byte[endBlockBytes.Length + 1];
-            Buffer.BlockCopy(endBlockBytes, 0, endKey, 0, endBlockBytes.Length);
-            endKey[endBlockBytes.Length] = 0x00;
+            var endKey = IndexSeekKey(HistoryKeys.BlockKey((ulong)blockNumber));
 
             DeleteDiffsViaIndex(null, forward: true, endKey: endKey);
             UpdateMetaAfterDelete();
@@ -344,14 +271,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var value = _manager.Get(RocksDbManager.CF_STATE_HISTORY_META, META_KEY_OLDEST);
             if (value == null) return Task.FromResult<BigInteger?>(null);
-            return Task.FromResult<BigInteger?>(BytesToBlockNumber(value));
+            return Task.FromResult<BigInteger?>(new BigInteger(HistoryKeys.ReadBlockNumber(value)));
         }
 
         public Task<BigInteger?> GetNewestDiffBlockAsync()
         {
             var value = _manager.Get(RocksDbManager.CF_STATE_HISTORY_META, META_KEY_NEWEST);
             if (value == null) return Task.FromResult<BigInteger?>(null);
-            return Task.FromResult<BigInteger?>(BytesToBlockNumber(value));
+            return Task.FromResult<BigInteger?>(new BigInteger(HistoryKeys.ReadBlockNumber(value)));
         }
 
         #region Key Building
@@ -392,29 +319,35 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return key;
         }
 
-        private static bool KeyStartsWithAddress(byte[] key, byte[] addressKey)
+        private List<byte[]> IndexKeysOfBlock(byte[] blockBytes)
         {
-            if (key.Length < AddressKeyLength) return false;
-            for (int i = 0; i < AddressKeyLength; i++)
+            var keys = new List<byte[]>();
+            using var it = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
+            for (it.Seek(IndexSeekKey(blockBytes)); it.Valid(); it.Next())
             {
-                if (key[i] != addressKey[i]) return false;
+                var indexKey = it.Key();
+                if (indexKey.Length < 9) continue;
+                if (!ByteUtil.StartsWith(indexKey, blockBytes)) break;
+                keys.Add(indexKey);
             }
-            return true;
+            return keys;
         }
 
-        private static bool KeyStartsWithAddressAndSlot(byte[] key, byte[] addressKey, byte[] slot32)
+        private static byte[] IndexSeekKey(byte[] blockBytes) => ByteUtil.Merge(blockBytes, new byte[] { 0x00 });
+
+        private static (byte[] DataKey, string Cf)? DataRowOf(byte[] indexKey, byte[] blockBytes)
         {
-            if (key.Length < AddressKeyLength + 32) return false;
-            for (int i = 0; i < AddressKeyLength; i++)
-            {
-                if (key[i] != addressKey[i]) return false;
-            }
-            for (int i = 0; i < 32; i++)
-            {
-                if (key[AddressKeyLength + i] != slot32[i]) return false;
-            }
-            return true;
+            var type = indexKey[8];
+            if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
+                return (BuildAccountDataKey(AddressOf(indexKey), blockBytes), RocksDbManager.CF_STATE_HISTORY_ACCOUNTS);
+            if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
+                return (BuildStorageDataKey(AddressOf(indexKey), SlotOf(indexKey), blockBytes), RocksDbManager.CF_STATE_HISTORY_STORAGE);
+            return null;
         }
+
+        private static byte[] AddressOf(byte[] indexKey) => indexKey.AsSpan(9, AddressKeyLength).ToArray();
+
+        private static byte[] SlotOf(byte[] indexKey) => indexKey.AsSpan(9 + AddressKeyLength, 32).ToArray();
 
         private static byte[] ConcatInline(byte[] inlineAddress, byte[] body)
         {
@@ -446,20 +379,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         #region Serialization Helpers
 
-        private static byte[] BlockNumberToBytes(BigInteger blockNumber)
-        {
-            var bytes = blockNumber.ToByteArray(isUnsigned: true, isBigEndian: true);
-            if (bytes.Length >= 8) return bytes;
-            var padded = new byte[8];
-            Buffer.BlockCopy(bytes, 0, padded, 8 - bytes.Length, bytes.Length);
-            return padded;
-        }
-
-        private static BigInteger BytesToBlockNumber(byte[] bytes)
-        {
-            return new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
-        }
-
         private static byte[] SlotToBytes(BigInteger slot)
         {
             return StateKeys.StorageSlotKey(slot);
@@ -476,13 +395,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private void DeleteDiffsViaIndex(byte[] seekKey, bool forward, byte[] endKey = null)
         {
-            var cfAccounts = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_ACCOUNTS);
-            var cfStorage = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_STORAGE);
             var cfIndex = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
-
-            var keysToDelete = new List<(byte[] Key, ColumnFamilyHandle Cf)>();
-            var indexKeysToDelete = new List<byte[]>();
-
+            using var batch = _manager.CreateWriteBatch();
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
 
             if (seekKey != null)
@@ -494,63 +408,31 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             {
                 var indexKey = iterator.Key();
 
-                if (endKey != null && CompareBytes(indexKey, endKey) >= 0)
+                if (endKey != null && ByteArrayComparer.Current.Compare(indexKey, endKey) >= 0)
                     break;
 
                 if (indexKey.Length >= 9)
-                {
-                    var blockBytes = new byte[8];
-                    Buffer.BlockCopy(indexKey, 0, blockBytes, 0, 8);
-                    var type = indexKey[8];
-
-                    if (type == TYPE_ACCOUNT && indexKey.Length == AccountIndexKeyLength)
-                    {
-                        var address = new byte[AddressKeyLength];
-                        Buffer.BlockCopy(indexKey, 9, address, 0, AddressKeyLength);
-                        var dataKey = BuildAccountDataKey(address, blockBytes);
-                        keysToDelete.Add((dataKey, cfAccounts));
-                    }
-                    else if (type == TYPE_STORAGE && indexKey.Length == StorageIndexKeyLength)
-                    {
-                        var address = new byte[AddressKeyLength];
-                        Buffer.BlockCopy(indexKey, 9, address, 0, AddressKeyLength);
-                        var slot = new byte[32];
-                        Buffer.BlockCopy(indexKey, 9 + AddressKeyLength, slot, 0, 32);
-                        var dataKey = BuildStorageDataKey(address, slot, blockBytes);
-                        keysToDelete.Add((dataKey, cfStorage));
-                    }
-
-                    indexKeysToDelete.Add((byte[])indexKey.Clone());
-                }
+                    StageIndexRowDelete(batch, cfIndex, indexKey, HistoryKeys.BlockKey(HistoryKeys.ReadBlockNumber(indexKey)));
 
                 iterator.Next();
             }
 
-            if (keysToDelete.Count == 0 && indexKeysToDelete.Count == 0)
+            if (batch.Count() == 0)
                 return;
 
-            using var batch = _manager.CreateWriteBatch();
-            foreach (var (key, cf) in keysToDelete)
-            {
-                batch.Delete(key, cf);
-            }
-            foreach (var key in indexKeysToDelete)
-            {
-                batch.Delete(key, cfIndex);
-            }
             _manager.Write(batch);
         }
 
         private void UpdateMetaBounds(WriteBatch batch, ColumnFamilyHandle cfMeta, BigInteger blockNumber)
         {
-            var blockBytes = BlockNumberToBytes(blockNumber);
+            var blockBytes = HistoryKeys.BlockKey((ulong)blockNumber);
             var currentOldest = _manager.Get(RocksDbManager.CF_STATE_HISTORY_META, META_KEY_OLDEST);
             var currentNewest = _manager.Get(RocksDbManager.CF_STATE_HISTORY_META, META_KEY_NEWEST);
 
-            if (currentOldest == null || BytesToBlockNumber(currentOldest) > blockNumber)
+            if (currentOldest == null || HistoryKeys.ReadBlockNumber(currentOldest) > blockNumber)
                 batch.Put(META_KEY_OLDEST, blockBytes, cfMeta);
 
-            if (currentNewest == null || BytesToBlockNumber(currentNewest) < blockNumber)
+            if (currentNewest == null || HistoryKeys.ReadBlockNumber(currentNewest) < blockNumber)
                 batch.Put(META_KEY_NEWEST, blockBytes, cfMeta);
         }
 
@@ -558,58 +440,32 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_HISTORY_BLOCK_INDEX);
             iterator.SeekToFirst();
-
-            BigInteger? oldest = null;
-            BigInteger? newest = null;
-
-            if (iterator.Valid())
-            {
-                var key = iterator.Key();
-                if (key.Length >= 8)
-                {
-                    var blockBytes = new byte[8];
-                    Buffer.BlockCopy(key, 0, blockBytes, 0, 8);
-                    oldest = BytesToBlockNumber(blockBytes);
-                }
-            }
+            var oldest = BlockOfCurrentRow(iterator);
 
             iterator.SeekToLast();
-            if (iterator.Valid())
-            {
-                var key = iterator.Key();
-                if (key.Length >= 8)
-                {
-                    var blockBytes = new byte[8];
-                    Buffer.BlockCopy(key, 0, blockBytes, 0, 8);
-                    newest = BytesToBlockNumber(blockBytes);
-                }
-            }
+            var newest = BlockOfCurrentRow(iterator);
 
             using var batch = _manager.CreateWriteBatch();
             var cfMeta = _manager.GetColumnFamily(RocksDbManager.CF_STATE_HISTORY_META);
 
             if (oldest.HasValue)
-                batch.Put(META_KEY_OLDEST, BlockNumberToBytes(oldest.Value), cfMeta);
+                batch.Put(META_KEY_OLDEST, HistoryKeys.BlockKey((ulong)oldest.Value), cfMeta);
             else
                 batch.Delete(META_KEY_OLDEST, cfMeta);
 
             if (newest.HasValue)
-                batch.Put(META_KEY_NEWEST, BlockNumberToBytes(newest.Value), cfMeta);
+                batch.Put(META_KEY_NEWEST, HistoryKeys.BlockKey((ulong)newest.Value), cfMeta);
             else
                 batch.Delete(META_KEY_NEWEST, cfMeta);
 
             _manager.Write(batch);
         }
 
-        private static int CompareBytes(byte[] a, byte[] b)
+        private static BigInteger? BlockOfCurrentRow(Iterator iterator)
         {
-            var minLen = Math.Min(a.Length, b.Length);
-            for (int i = 0; i < minLen; i++)
-            {
-                if (a[i] < b[i]) return -1;
-                if (a[i] > b[i]) return 1;
-            }
-            return a.Length.CompareTo(b.Length);
+            if (!iterator.Valid()) return null;
+            var number = HistoryKeys.TryReadBlockNumber(iterator.Key());
+            return number.HasValue ? new BigInteger(number.Value) : (BigInteger?)null;
         }
 
         #endregion

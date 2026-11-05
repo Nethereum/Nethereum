@@ -16,11 +16,11 @@ namespace Nethereum.CoreChain
                 return new CallResult { Success = true, ReturnData = Array.Empty<byte>(), GasUsed = 0 };
             }
 
-            return await EstimateCreationAsync(
+            return await WithinRpcEvmDeadlineAsync(async () => await EstimateCreationAsync(
                 initCode,
                 await GetBlockContextForCallAsync(),
                 _nodeDataService,
-                from, value, gasLimit);
+                from, value, gasLimit));
         }
 
         public virtual async Task<CallResult> EstimateContractCreationGasAsync(byte[] initCode, BigInteger blockNumber,
@@ -31,11 +31,14 @@ namespace Nethereum.CoreChain
                 return new CallResult { Success = true, ReturnData = Array.Empty<byte>(), GasUsed = 0 };
             }
 
-            var dataService = await GetNodeDataServiceAtBlockAsync(blockNumber);
-            var blockContext = await GetBlockContextAtBlockAsync(blockNumber);
+            return await WithinRpcEvmDeadlineAsync(async () =>
+            {
+                var dataService = await GetNodeDataServiceAtBlockAsync(blockNumber);
+                var blockContext = await GetBlockContextAtBlockAsync(blockNumber);
 
-            return await EstimateCreationAsync(
-                initCode, blockContext, dataService, from, value, gasLimit);
+                return await EstimateCreationAsync(
+                    initCode, blockContext, dataService, from, value, gasLimit);
+            });
         }
 
         private async Task<CallResult> EstimateCreationAsync(

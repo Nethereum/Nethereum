@@ -32,6 +32,7 @@ using Nethereum.Documentation;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Requires", "Externals")]
     public class HistoricalGetProofE2ETests : IDisposable
     {
         private const string TargetAddr = "0x0000000000000000000000000000000000000001";

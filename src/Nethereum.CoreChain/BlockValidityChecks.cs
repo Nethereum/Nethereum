@@ -24,7 +24,25 @@ namespace Nethereum.CoreChain
         RequestsHash,
         InvalidTransaction,
         GasLimitBound,
-        WithdrawalsRoot
+        WithdrawalsRoot,
+        BlockRlpSize,
+        UnknownParent,
+        BlockNumber,
+        Timestamp,
+        FutureBlock,
+        ExtraDataSize,
+        DaoExtraData,
+        GasLimitTooBig,
+        Difficulty,
+        Nonce,
+        UnclesHash,
+        Uncles,
+        TransactionsRoot,
+        WithdrawalsRootPresence,
+        ParentBeaconRootPresence,
+        BlockAccessListHashPresence,
+        SlotNumberPresence,
+        ParentNotHead
     }
 
     [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "IBlockValidityChecks — the per-check flags a block execution reports")]
@@ -60,6 +78,42 @@ namespace Nethereum.CoreChain
         bool GasLimitBoundViolated { get; }
 
         bool WithdrawalsRootMismatch { get; }
+
+        bool BlockRlpSizeExceeded => false;
+
+        bool UnknownParent => false;
+
+        bool BlockNumberMismatch => false;
+
+        bool TimestampNotAfterParent => false;
+
+        bool FutureBlock => false;
+
+        bool ExtraDataTooLong => false;
+
+        bool DaoExtraDataMismatch => false;
+
+        bool GasLimitTooBig => false;
+
+        bool DifficultyMismatch => false;
+
+        bool NonceInvalid => false;
+
+        bool UnclesHashMismatch => false;
+
+        bool UnclesInvalid => false;
+
+        bool TransactionsRootMismatch => false;
+
+        bool WithdrawalsRootPresenceMismatch => false;
+
+        bool ParentBeaconRootPresenceMismatch => false;
+
+        bool BlockAccessListHashPresenceMismatch => false;
+
+        bool SlotNumberPresenceMismatch => false;
+
+        bool ParentNotHead => false;
     }
 
     public static class BlockValidityChecks
@@ -82,7 +136,25 @@ namespace Nethereum.CoreChain
             (BlockValidityCheck.RequestsHash, "requestsHash", c => c.RequestsHashMismatch),
             (BlockValidityCheck.InvalidTransaction, "invalidTransaction", c => c.ContainsInvalidTransaction),
             (BlockValidityCheck.GasLimitBound, "gasLimitBound", c => c.GasLimitBoundViolated),
-            (BlockValidityCheck.WithdrawalsRoot, "withdrawalsRoot", c => c.WithdrawalsRootMismatch)
+            (BlockValidityCheck.WithdrawalsRoot, "withdrawalsRoot", c => c.WithdrawalsRootMismatch),
+            (BlockValidityCheck.BlockRlpSize, "blockRlpSize", c => c.BlockRlpSizeExceeded),
+            (BlockValidityCheck.UnknownParent, "unknownParent", c => c.UnknownParent),
+            (BlockValidityCheck.BlockNumber, "blockNumber", c => c.BlockNumberMismatch),
+            (BlockValidityCheck.Timestamp, "timestamp", c => c.TimestampNotAfterParent),
+            (BlockValidityCheck.FutureBlock, "futureBlock", c => c.FutureBlock),
+            (BlockValidityCheck.ExtraDataSize, "extraDataSize", c => c.ExtraDataTooLong),
+            (BlockValidityCheck.DaoExtraData, "daoExtraData", c => c.DaoExtraDataMismatch),
+            (BlockValidityCheck.GasLimitTooBig, "gasLimitTooBig", c => c.GasLimitTooBig),
+            (BlockValidityCheck.Difficulty, "difficulty", c => c.DifficultyMismatch),
+            (BlockValidityCheck.Nonce, "nonce", c => c.NonceInvalid),
+            (BlockValidityCheck.UnclesHash, "unclesHash", c => c.UnclesHashMismatch),
+            (BlockValidityCheck.Uncles, "uncles", c => c.UnclesInvalid),
+            (BlockValidityCheck.TransactionsRoot, "transactionsRoot", c => c.TransactionsRootMismatch),
+            (BlockValidityCheck.WithdrawalsRootPresence, "withdrawalsRootPresence", c => c.WithdrawalsRootPresenceMismatch),
+            (BlockValidityCheck.ParentBeaconRootPresence, "parentBeaconRootPresence", c => c.ParentBeaconRootPresenceMismatch),
+            (BlockValidityCheck.BlockAccessListHashPresence, "blockAccessListHashPresence", c => c.BlockAccessListHashPresenceMismatch),
+            (BlockValidityCheck.SlotNumberPresence, "slotNumberPresence", c => c.SlotNumberPresenceMismatch),
+            (BlockValidityCheck.ParentNotHead, "parentNotHead", c => c.ParentNotHead)
         };
 
         public static string Identifier(this BlockValidityCheck check)

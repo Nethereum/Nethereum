@@ -1,6 +1,4 @@
-using System.Linq;
 using System.Threading.Tasks;
-using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Nethereum.RPC;
@@ -24,27 +22,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 return Success(request.Id, null);
             }
 
-            var txStore = context.Node.Transactions;
-            var signedTxs = await txStore.GetByBlockHashAsync(blockHash);
-            var withdrawals = await WithdrawalsLoader.LoadAsync(context, blockHeader, blockHash);
-            var uncles = await UnclesLoader.LoadAsync(context, blockHash);
-            var blockSize = BlockHeaderExtensions.CalculateFullBlockSize(blockHeader, signedTxs, uncles, withdrawals);
-
-            if (includeTransactions)
-            {
-                var transactions = signedTxs?
-                    .Select((tx, index) => TransactionRpcBuilder.Build(tx, blockHash, blockHeader.BlockNumber, index, blockHeader))
-                    .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions, blockSize, withdrawals, uncles));
-            }
-            else
-            {
-                var txHashes = signedTxs?
-                    .Select(tx => tx.Hash?.ToHex(true))
-                    .Where(h => h != null)
-                    .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes, blockSize, withdrawals, uncles));
-            }
+            return Success(request.Id, await BlockRpcResponseBuilder.BuildAsync(context, blockHeader, blockHash, includeTransactions));
         }
     }
 }

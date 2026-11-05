@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
 using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Util;
@@ -11,92 +13,145 @@ namespace Nethereum.CoreChain.Storage
 {
     internal sealed class StateOverlay
     {
-        private readonly ConcurrentDictionary<string, Account> _accounts = new();
-        private readonly ConcurrentDictionary<string, byte> _deletedAccounts = new();
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte[]>> _storage = new();
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _deletedSlots = new();
-        private readonly ConcurrentDictionary<string, byte> _clearedStorage = new();
-        private readonly ConcurrentDictionary<string, byte[]> _code = new();
-        private readonly ConcurrentDictionary<string, string> _addressByAccountHash = new();
+        private readonly ConcurrentDictionary<EvmAddress, Account> _accounts = new();
+        private readonly ConcurrentDictionary<EvmAddress, byte> _deletedAccounts = new();
+        private readonly ConcurrentDictionary<EvmAddress, ConcurrentDictionary<BigInteger, byte[]>> _storage = new();
+        private readonly ConcurrentDictionary<EvmAddress, ConcurrentDictionary<BigInteger, byte>> _deletedSlots = new();
+        private readonly ConcurrentDictionary<EvmAddress, byte> _clearedStorage = new();
+        private readonly ConcurrentDictionary<byte[], byte[]> _code = new(ByteArrayComparer.Current);
 
-        private readonly ConcurrentDictionary<string, byte> _dirtyAccounts = new();
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> _dirtyStorageSlots = new();
-        private readonly ConcurrentDictionary<string, byte> _storageClearedAddresses = new();
+        private readonly ConcurrentDictionary<EvmAddress, byte> _dirtyAccounts = new();
+        private readonly ConcurrentDictionary<EvmAddress, ConcurrentDictionary<BigInteger, byte>> _dirtyStorageSlots = new();
+        private readonly ConcurrentDictionary<EvmAddress, byte> _storageClearedAddresses = new();
+        private readonly ConcurrentDictionary<EvmAddress, byte> _absentInBase = new();
 
+        private readonly object _journalGate = new();
+        private readonly List<UndoEntry> _journal = new();
+        private readonly Stack<OverlaySnapshot> _openSnapshots = new();
+        private OverlaySnapshot _committedOutermost;
+        private int _openSnapshotCount;
+        private int _journaling;
         private int _nextSnapshotId;
+        private volatile IDirtyKeyObserver _observer;
 
-        public static string Normalize(string address) => StateKeys.AccountKeyHex(address);
+        public bool TryAttachObserver(IDirtyKeyObserver observer)
+            => Interlocked.CompareExchange(ref _observer, observer, null) == null;
 
-        public static string OriginalAddress(string address)
-            => AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
+        public void DetachObserver(IDirtyKeyObserver observer)
+            => Interlocked.CompareExchange(ref _observer, null, observer);
 
+        private const int KeyBytes = 64;
 
-        public bool TryGetAccount(string key, out Account account)
+        public static byte[] CodeKey(byte[] codeHash) => codeHash ?? Array.Empty<byte>();
+
+        public async Task<bool> AccountExistsAsync(IStateStore inner, EvmAddress address)
         {
-            if (_accounts.TryGetValue(key, out var stored)) { account = stored.Clone(); return true; }
-            if (_deletedAccounts.ContainsKey(key)) { account = null; return true; }
+            var resolved = AccountExists(address);
+            if (resolved.HasValue) return resolved.Value;
+            var exists = await inner.AccountExistsAsync(address).ConfigureAwait(false);
+            if (!exists) NoteAbsentInBase(address);
+            return exists;
+        }
+
+        public void NoteAbsentInBase(EvmAddress address) => _absentInBase.TryAdd(address, 0);
+
+        public bool IsAbsentInBase(EvmAddress address) => _absentInBase.ContainsKey(address);
+
+        public async Task<Dictionary<string, Account>> MergeAllAccountsAsync(IStateStore inner)
+        {
+            var merged = await inner.GetAllAccountsAsync().ConfigureAwait(false);
+            foreach (var kv in _accounts)
+                merged[kv.Key.ToHexLower()] = kv.Value.Clone();
+            foreach (var deleted in _deletedAccounts.Keys)
+                merged.Remove(deleted.ToHexLower());
+            return merged;
+        }
+
+        public async IAsyncEnumerable<KeyValuePair<string, Account>> StreamMergedAccountsAsync(IStateStore inner)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in _accounts)
+            {
+                var original = kv.Key.ToHexLower();
+                seen.Add(original);
+                yield return new KeyValuePair<string, Account>(original, kv.Value.Clone());
+            }
+            await foreach (var kv in inner.StreamAccountsAsync().ConfigureAwait(false))
+            {
+                if (seen.Contains(kv.Key)) continue;
+                if (IsAccountDeleted(EvmAddress.FromHex(kv.Key))) continue;
+                yield return kv;
+            }
+        }
+
+        public async Task<Dictionary<byte[], byte[]>> MergeAllStorageAsync(IStateStore inner, EvmAddress address)
+        {
+            Dictionary<byte[], byte[]> result;
+            if (IsStorageCleared(address) || IsAbsentInBase(address))
+            {
+                result = new Dictionary<byte[], byte[]>(ByteArrayComparer.Current);
+            }
+            else
+            {
+                result = await inner.GetAllStorageAsync(address).ConfigureAwait(false);
+                foreach (var slot in DeletedStorageSlots(address))
+                    result.Remove(StateKeys.StorageSlotKey(slot));
+            }
+            foreach (var kv in StorageEntries(address))
+                result[StateKeys.StorageSlotKey(kv.Key)] = kv.Value;
+            return result;
+        }
+
+
+        public bool TryGetAccount(EvmAddress address, out Account account)
+        {
+            if (_accounts.TryGetValue(address, out var stored)) { account = stored.Clone(); return true; }
+            if (_deletedAccounts.ContainsKey(address)) { account = null; return true; }
             account = null;
             return false;
         }
 
-        public void SaveAccount(string key, string original, Account account)
+        public void SaveAccount(EvmAddress address, Account account)
         {
-            _accounts[key] = account;
-            _addressByAccountHash[key] = original;
-            _deletedAccounts.TryRemove(key, out _);
-            _dirtyAccounts.TryAdd(original, 0);
+            Set(_accounts, address, account.Clone());
+            Remove(_deletedAccounts, address);
+            MarkAccountDirty(address);
         }
 
-        public bool? AccountExists(string key)
+        public bool? AccountExists(EvmAddress address)
         {
-            if (_accounts.ContainsKey(key)) return true;
-            if (_deletedAccounts.ContainsKey(key)) return false;
+            if (_accounts.ContainsKey(address)) return true;
+            if (_deletedAccounts.ContainsKey(address)) return false;
             return null;
         }
 
-        public void DeleteAccount(string key, string original)
+        public void DeleteAccount(EvmAddress address)
         {
-            _accounts.TryRemove(key, out _);
-            _addressByAccountHash[key] = original;
-            _deletedAccounts.TryAdd(key, 0);
-            _storage.TryRemove(key, out _);
-            _deletedSlots.TryRemove(key, out _);
-            _clearedStorage.TryAdd(key, 0);
-            _dirtyAccounts.TryAdd(original, 0);
-            _storageClearedAddresses.TryAdd(original, 0);
+            Remove(_accounts, address);
+            Mark(_deletedAccounts, address);
+            Remove(_storage, address);
+            Remove(_deletedSlots, address);
+            Mark(_clearedStorage, address);
+            MarkAccountDirty(address);
+            Mark(_storageClearedAddresses, address);
         }
 
-        public IEnumerable<KeyValuePair<string, Account>> LiveAccountsByOriginalAddress()
+        public bool IsAccountDeleted(EvmAddress address) => _deletedAccounts.ContainsKey(address);
+
+
+        public bool TryGetStorage(EvmAddress address, BigInteger slot, out byte[] value)
         {
-            foreach (var kv in _accounts)
-            {
-                var addr = _addressByAccountHash.TryGetValue(kv.Key, out var original) ? original : kv.Key;
-                yield return new KeyValuePair<string, Account>(addr, kv.Value.Clone());
-            }
-        }
-
-        public IEnumerable<string> DeletedOriginalAddresses()
-        {
-            foreach (var deletedKey in _deletedAccounts.Keys)
-                yield return _addressByAccountHash.TryGetValue(deletedKey, out var original) ? original : deletedKey;
-        }
-
-        public bool IsAccountDeletedByKey(string key) => _deletedAccounts.ContainsKey(key);
-
-
-        public bool TryGetStorage(string key, BigInteger slot, out byte[] value)
-        {
-            if (_storage.TryGetValue(key, out var slots) && slots.TryGetValue(slot, out var v))
+            if (_storage.TryGetValue(address, out var slots) && slots.TryGetValue(slot, out var v))
             {
                 value = v;
                 return true;
             }
-            if (_clearedStorage.ContainsKey(key))
+            if (_clearedStorage.ContainsKey(address))
             {
                 value = null;
                 return true;
             }
-            if (_deletedSlots.TryGetValue(key, out var deleted) && deleted.ContainsKey(slot))
+            if (_deletedSlots.TryGetValue(address, out var deleted) && deleted.ContainsKey(slot))
             {
                 value = null;
                 return true;
@@ -105,48 +160,44 @@ namespace Nethereum.CoreChain.Storage
             return false;
         }
 
-        public void SaveStorage(string key, string original, BigInteger slot, byte[] value)
+        public void SaveStorage(EvmAddress address, BigInteger slot, byte[] value)
         {
-            _addressByAccountHash[key] = original;
-            var slots = _storage.GetOrAdd(key, _ => new ConcurrentDictionary<BigInteger, byte[]>());
-            if (value == null || IsAllZero(value))
+            var slots = SlotsOf(_storage, address);
+            MarkAccountDirty(address);
+            var dirtySlots = SlotsOf(_dirtyStorageSlots, address);
+            if (value == null || ByteUtil.IsZero(value))
             {
-                slots.TryRemove(slot, out _);
-                var deleted = _deletedSlots.GetOrAdd(key, _ => new ConcurrentDictionary<BigInteger, byte>());
-                deleted.TryAdd(slot, 0);
+                Remove(slots, slot);
+                Mark(SlotsOf(_deletedSlots, address), slot);
             }
             else
             {
-                slots[slot] = value.TrimZeroBytes();
-                if (_deletedSlots.TryGetValue(key, out var deleted))
-                    deleted.TryRemove(slot, out _);
+                Set(slots, slot, value.TrimZeroBytes());
+                if (_deletedSlots.TryGetValue(address, out var deleted))
+                    Remove(deleted, slot);
             }
-            _dirtyAccounts.TryAdd(original, 0);
-            var dirty = _dirtyStorageSlots.GetOrAdd(original, _ => new ConcurrentDictionary<BigInteger, byte>());
-            dirty.TryAdd(slot, 0);
+            if (Mark(dirtySlots, slot)) _observer?.OnStorageSlotDirty(address, slot);
         }
 
-        public bool IsStorageCleared(string key) => _clearedStorage.ContainsKey(key);
+        public bool IsStorageCleared(EvmAddress address) => _clearedStorage.ContainsKey(address);
 
         public long ApproxBytes()
         {
             long total = 0;
 
             foreach (var kv in _accounts)
-                total += kv.Key.Length + AccountBytes(kv.Value);
-            foreach (var key in _deletedAccounts.Keys)
-                total += key.Length;
+                total += KeyBytes + AccountBytes(kv.Value);
+            total += _deletedAccounts.Count * (long)KeyBytes;
 
             foreach (var kv in _storage)
                 foreach (var slot in kv.Value)
-                    total += kv.Key.Length + 32 + (slot.Value?.Length ?? 0);
+                    total += KeyBytes + 32 + (slot.Value?.Length ?? 0);
             foreach (var kv in _deletedSlots)
-                total += kv.Key.Length + kv.Value.Count * 32;
-            foreach (var key in _clearedStorage.Keys)
-                total += key.Length;
+                total += KeyBytes + kv.Value.Count * 32;
+            total += _clearedStorage.Count * (long)KeyBytes;
 
             foreach (var kv in _code)
-                total += kv.Key.Length + (kv.Value?.Length ?? 0);
+                total += KeyBytes + (kv.Value?.Length ?? 0);
 
             return total;
         }
@@ -159,237 +210,255 @@ namespace Nethereum.CoreChain.Storage
                 + (account.CodeHash?.Length ?? 0);
         }
 
-        public IEnumerable<KeyValuePair<BigInteger, byte[]>> StorageEntries(string key)
+        public IEnumerable<KeyValuePair<BigInteger, byte[]>> StorageEntries(EvmAddress address)
         {
-            if (_storage.TryGetValue(key, out var slots))
+            if (_storage.TryGetValue(address, out var slots))
                 foreach (var kv in slots) yield return kv;
         }
 
-        public IEnumerable<BigInteger> DeletedStorageSlots(string key)
+        public IEnumerable<BigInteger> DeletedStorageSlots(EvmAddress address)
         {
-            if (_deletedSlots.TryGetValue(key, out var deleted))
+            if (_deletedSlots.TryGetValue(address, out var deleted))
                 foreach (var slot in deleted.Keys) yield return slot;
         }
 
-        public void ClearStorage(string key, string original)
+        public void ClearStorage(EvmAddress address)
         {
-            _addressByAccountHash[key] = original;
-            _storage.TryRemove(key, out _);
-            _deletedSlots.TryRemove(key, out _);
-            _clearedStorage.TryAdd(key, 0);
-            _dirtyAccounts.TryAdd(original, 0);
-            _storageClearedAddresses.TryAdd(original, 0);
+            Remove(_storage, address);
+            Remove(_deletedSlots, address);
+            Mark(_clearedStorage, address);
+            MarkAccountDirty(address);
+            Mark(_storageClearedAddresses, address);
         }
 
 
-        public bool TryGetCode(string hex, out byte[] code) => _code.TryGetValue(hex, out code);
+        public bool TryGetCode(byte[] codeHash, out byte[] code) => _code.TryGetValue(CodeKey(codeHash), out code);
 
-        public void SaveCode(string hex, byte[] code) => _code[hex] = code;
+        public void SaveCode(byte[] codeHash, byte[] code) => Set(_code, CodeKey(codeHash), code);
 
 
-        public IEnumerable<string> DeletedAccountOriginalAddresses()
-        {
-            foreach (var key in _deletedAccounts.Keys)
-                yield return _addressByAccountHash.TryGetValue(key, out var original) ? original : key;
-        }
+        public IEnumerable<EvmAddress> DeletedAccountAddresses() => _deletedAccounts.Keys.Where(a => !IsAbsentInBase(a));
 
-        public IEnumerable<string> ClearedStorageOriginalAddresses()
-        {
-            foreach (var key in _clearedStorage.Keys)
-                yield return _addressByAccountHash.TryGetValue(key, out var original) ? original : key;
-        }
+        public IEnumerable<EvmAddress> ClearedStorageAddresses() => _clearedStorage.Keys.Where(a => !IsAbsentInBase(a));
 
-        public IEnumerable<(string OriginalAddress, BigInteger Slot, byte[] Value)> BufferedNonZeroStorage()
+        public IEnumerable<(EvmAddress Address, BigInteger Slot, byte[] Value)> BufferedNonZeroStorage()
         {
             foreach (var kv in _storage)
-            {
-                var original = _addressByAccountHash.TryGetValue(kv.Key, out var o) ? o : kv.Key;
                 foreach (var slot in kv.Value)
-                    yield return (original, slot.Key, slot.Value);
-            }
+                    yield return (kv.Key, slot.Key, slot.Value);
         }
 
-        public IEnumerable<(string OriginalAddress, BigInteger Slot)> IndividuallyDeletedSlotsNotCleared()
+        public IEnumerable<(EvmAddress Address, BigInteger Slot)> IndividuallyDeletedSlotsNotCleared()
         {
             foreach (var kv in _deletedSlots)
             {
                 if (_clearedStorage.ContainsKey(kv.Key)) continue;
-                var original = _addressByAccountHash.TryGetValue(kv.Key, out var o) ? o : kv.Key;
                 foreach (var slot in kv.Value.Keys)
-                    yield return (original, slot);
+                    yield return (kv.Key, slot);
             }
         }
 
-        public IEnumerable<(string OriginalAddress, Account Account)> BufferedAccounts()
+        public IEnumerable<(EvmAddress Address, Account Account)> BufferedAccounts()
         {
             foreach (var kv in _accounts)
-            {
-                var original = _addressByAccountHash.TryGetValue(kv.Key, out var o) ? o : kv.Key;
-                yield return (original, kv.Value.Clone());
-            }
+                yield return (kv.Key, kv.Value.Clone());
         }
 
         public IEnumerable<(byte[] CodeHash, byte[] Code)> BufferedCode()
         {
             foreach (var kv in _code)
-                yield return (kv.Key.Length == 0 ? Array.Empty<byte>() : Convert.FromHexString(kv.Key), kv.Value);
+                yield return (kv.Key, kv.Value);
         }
 
         public void ClearWrites()
         {
+            RetireJournalForClear(nameof(ClearWrites));
             _accounts.Clear();
             _deletedAccounts.Clear();
             _storage.Clear();
             _deletedSlots.Clear();
             _clearedStorage.Clear();
             _code.Clear();
-            _addressByAccountHash.Clear();
+            _absentInBase.Clear();
         }
 
 
-        public IReadOnlyCollection<string> DirtyAccountAddresses() => _dirtyAccounts.Keys.ToList();
+        public IReadOnlyCollection<EvmAddress> DirtyAccountAddresses() => _dirtyAccounts.Keys.ToList();
 
-        public IReadOnlyCollection<BigInteger> DirtyStorageSlots(string originalAddress)
-            => _dirtyStorageSlots.TryGetValue(originalAddress, out var slots)
+        public IReadOnlyCollection<BigInteger> DirtyStorageSlots(EvmAddress address)
+            => _dirtyStorageSlots.TryGetValue(address, out var slots)
                 ? slots.Keys.ToList()
                 : Array.Empty<BigInteger>();
 
-        public IReadOnlyCollection<string> StorageClearedAddresses() => _storageClearedAddresses.Keys.ToList();
+        public IReadOnlyCollection<EvmAddress> StorageClearedAddresses() => _storageClearedAddresses.Keys.ToList();
 
         public void ClearDirtyTracking()
         {
+            RetireJournalForClear(nameof(ClearDirtyTracking));
             _dirtyAccounts.Clear();
             _dirtyStorageSlots.Clear();
             _storageClearedAddresses.Clear();
         }
 
-        private static bool IsAllZero(byte[] v)
-        {
-            for (int i = 0; i < v.Length; i++) if (v[i] != 0) return false;
-            return true;
-        }
-
-
-        public void RestoreSnapshot(IStateSnapshot snapshot)
-        {
-            if (snapshot is OverlaySnapshot s) s.Restore();
-        }
 
         public IStateSnapshot CreateSnapshot()
         {
-            var id = System.Threading.Interlocked.Increment(ref _nextSnapshotId);
-            return new OverlaySnapshot(
-                id,
-                this,
-                new Dictionary<string, Account>(_accounts),
-                new HashSet<string>(_deletedAccounts.Keys),
-                CloneStorage(_storage),
-                CloneSlotSet(_deletedSlots),
-                new HashSet<string>(_clearedStorage.Keys),
-                new Dictionary<string, byte[]>(_code),
-                new HashSet<string>(_dirtyAccounts.Keys),
-                CloneSlotSet(_dirtyStorageSlots),
-                new HashSet<string>(_storageClearedAddresses.Keys),
-                new Dictionary<string, string>(_addressByAccountHash));
+            lock (_journalGate)
+            {
+                if (_openSnapshots.Count == 0) DiscardCommittedJournal();
+                var snapshot = new OverlaySnapshot(Interlocked.Increment(ref _nextSnapshotId), _journal.Count);
+                _openSnapshots.Push(snapshot);
+                PublishJournalState();
+                return snapshot;
+            }
         }
 
-        private static Dictionary<string, Dictionary<BigInteger, byte[]>> CloneStorage(
-            ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte[]>> src)
+        public void CommitSnapshot(IStateSnapshot snapshot)
         {
-            var dst = new Dictionary<string, Dictionary<BigInteger, byte[]>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kv in src) dst[kv.Key] = new Dictionary<BigInteger, byte[]>(kv.Value);
-            return dst;
+            lock (_journalGate)
+            {
+                if (!CloseThrough(snapshot)) return;
+                if (_openSnapshots.Count == 0) _committedOutermost = (OverlaySnapshot)snapshot;
+                PublishJournalState();
+            }
         }
 
-        private static Dictionary<string, HashSet<BigInteger>> CloneSlotSet(
-            ConcurrentDictionary<string, ConcurrentDictionary<BigInteger, byte>> src)
+        public void RestoreSnapshot(IStateSnapshot snapshot)
         {
-            var dst = new Dictionary<string, HashSet<BigInteger>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kv in src) dst[kv.Key] = new HashSet<BigInteger>(kv.Value.Keys);
-            return dst;
+            if (snapshot is not OverlaySnapshot target) return;
+            lock (_journalGate)
+            {
+                if (!target.IsOpen && !ReferenceEquals(target, _committedOutermost))
+                    throw new InvalidOperationException("State snapshot " + target.SnapshotId + " is closed and its journal is gone.");
+                CloseThrough(target);
+                for (var i = _journal.Count - 1; i >= target.JournalPosition; i--)
+                    _journal[i].Undo();
+                _journal.RemoveRange(target.JournalPosition, _journal.Count - target.JournalPosition);
+                if (_openSnapshots.Count == 0) DiscardCommittedJournal();
+                PublishJournalState();
+            }
+        }
+
+        private bool CloseThrough(IStateSnapshot snapshot)
+        {
+            if (snapshot is not OverlaySnapshot target || !target.IsOpen) return false;
+            OverlaySnapshot closed;
+            do
+            {
+                closed = _openSnapshots.Pop();
+                closed.IsOpen = false;
+            }
+            while (!ReferenceEquals(closed, target));
+            return true;
+        }
+
+        private void DiscardCommittedJournal()
+        {
+            _journal.Clear();
+            _committedOutermost = null;
+            PublishJournalState();
+        }
+
+        private void EndCommittedJournalOnFirstWrite()
+        {
+            if (Volatile.Read(ref _journaling) == 0 || Volatile.Read(ref _openSnapshotCount) != 0) return;
+            lock (_journalGate)
+                if (_openSnapshots.Count == 0 && _committedOutermost != null)
+                    DiscardCommittedJournal();
+        }
+
+        private void PublishJournalState()
+        {
+            Volatile.Write(ref _openSnapshotCount, _openSnapshots.Count);
+            Volatile.Write(ref _journaling, _openSnapshots.Count > 0 || _committedOutermost != null ? 1 : 0);
+        }
+
+        private void RetireJournalForClear(string operation)
+        {
+            if (Volatile.Read(ref _openSnapshotCount) > 0)
+                throw new InvalidOperationException(operation + " is not allowed while a state snapshot is open.");
+            lock (_journalGate)
+                DiscardCommittedJournal();
+        }
+
+        private void Set<TKey, TValue>(ConcurrentDictionary<TKey, TValue> map, TKey key, TValue value)
+        {
+            Journal(map, key);
+            map[key] = value;
+        }
+
+        private void Remove<TKey, TValue>(ConcurrentDictionary<TKey, TValue> map, TKey key)
+        {
+            Journal(map, key);
+            map.TryRemove(key, out _);
+        }
+
+        private bool Mark<TKey>(ConcurrentDictionary<TKey, byte> set, TKey key)
+        {
+            Journal(set, key);
+            return set.TryAdd(key, 0);
+        }
+
+        private void MarkAccountDirty(EvmAddress address)
+        {
+            if (Mark(_dirtyAccounts, address)) _observer?.OnAccountDirty(address);
+        }
+
+        private ConcurrentDictionary<BigInteger, TValue> SlotsOf<TValue>(
+            ConcurrentDictionary<EvmAddress, ConcurrentDictionary<BigInteger, TValue>> slotsByAddress, EvmAddress key)
+        {
+            Journal(slotsByAddress, key);
+            return slotsByAddress.GetOrAdd(key, _ => new ConcurrentDictionary<BigInteger, TValue>());
+        }
+
+        private void Journal<TKey, TValue>(ConcurrentDictionary<TKey, TValue> map, TKey key)
+        {
+            EndCommittedJournalOnFirstWrite();
+            if (Volatile.Read(ref _journaling) == 0) return;
+            var existed = map.TryGetValue(key, out var prior);
+            lock (_journalGate)
+                _journal.Add(new MapEntryRestore<TKey, TValue>(map, key, existed, prior));
+        }
+
+        private abstract class UndoEntry
+        {
+            public abstract void Undo();
+        }
+
+        private sealed class MapEntryRestore<TKey, TValue> : UndoEntry
+        {
+            private readonly ConcurrentDictionary<TKey, TValue> _map;
+            private readonly TKey _key;
+            private readonly bool _existed;
+            private readonly TValue _prior;
+
+            public MapEntryRestore(ConcurrentDictionary<TKey, TValue> map, TKey key, bool existed, TValue prior)
+            {
+                _map = map;
+                _key = key;
+                _existed = existed;
+                _prior = prior;
+            }
+
+            public override void Undo()
+            {
+                if (_existed) _map[_key] = _prior;
+                else _map.TryRemove(_key, out _);
+            }
         }
 
         private sealed class OverlaySnapshot : IStateSnapshot
         {
-            private readonly StateOverlay _owner;
-            private readonly Dictionary<string, Account> _accounts;
-            private readonly HashSet<string> _deletedAccounts;
-            private readonly Dictionary<string, Dictionary<BigInteger, byte[]>> _storage;
-            private readonly Dictionary<string, HashSet<BigInteger>> _deletedSlots;
-            private readonly HashSet<string> _clearedStorage;
-            private readonly Dictionary<string, byte[]> _code;
-            private readonly HashSet<string> _dirtyAccounts;
-            private readonly Dictionary<string, HashSet<BigInteger>> _dirtyStorageSlots;
-            private readonly HashSet<string> _storageClearedAddresses;
-            private readonly Dictionary<string, string> _addressByAccountHash;
-
-            public int SnapshotId { get; }
-
-            public OverlaySnapshot(
-                int id,
-                StateOverlay owner,
-                Dictionary<string, Account> accounts,
-                HashSet<string> deletedAccounts,
-                Dictionary<string, Dictionary<BigInteger, byte[]>> storage,
-                Dictionary<string, HashSet<BigInteger>> deletedSlots,
-                HashSet<string> clearedStorage,
-                Dictionary<string, byte[]> code,
-                HashSet<string> dirtyAccounts,
-                Dictionary<string, HashSet<BigInteger>> dirtyStorageSlots,
-                HashSet<string> storageClearedAddresses,
-                Dictionary<string, string> addressByAccountHash)
+            public OverlaySnapshot(int id, int journalPosition)
             {
                 SnapshotId = id;
-                _owner = owner;
-                _accounts = accounts;
-                _deletedAccounts = deletedAccounts;
-                _storage = storage;
-                _deletedSlots = deletedSlots;
-                _clearedStorage = clearedStorage;
-                _code = code;
-                _dirtyAccounts = dirtyAccounts;
-                _dirtyStorageSlots = dirtyStorageSlots;
-                _storageClearedAddresses = storageClearedAddresses;
-                _addressByAccountHash = addressByAccountHash;
+                JournalPosition = journalPosition;
+                IsOpen = true;
             }
 
-            public void Restore()
-            {
-                _owner._accounts.Clear();
-                foreach (var kv in _accounts) _owner._accounts[kv.Key] = kv.Value;
-                _owner._deletedAccounts.Clear();
-                foreach (var k in _deletedAccounts) _owner._deletedAccounts.TryAdd(k, 0);
-                _owner._storage.Clear();
-                foreach (var kv in _storage)
-                {
-                    var slots = new ConcurrentDictionary<BigInteger, byte[]>(kv.Value);
-                    _owner._storage[kv.Key] = slots;
-                }
-                _owner._deletedSlots.Clear();
-                foreach (var kv in _deletedSlots)
-                {
-                    var deleted = new ConcurrentDictionary<BigInteger, byte>();
-                    foreach (var s in kv.Value) deleted.TryAdd(s, 0);
-                    _owner._deletedSlots[kv.Key] = deleted;
-                }
-                _owner._clearedStorage.Clear();
-                foreach (var k in _clearedStorage) _owner._clearedStorage.TryAdd(k, 0);
-                _owner._code.Clear();
-                foreach (var kv in _code) _owner._code[kv.Key] = kv.Value;
-                _owner._dirtyAccounts.Clear();
-                foreach (var k in _dirtyAccounts) _owner._dirtyAccounts.TryAdd(k, 0);
-                _owner._dirtyStorageSlots.Clear();
-                foreach (var kv in _dirtyStorageSlots)
-                {
-                    var dirty = new ConcurrentDictionary<BigInteger, byte>();
-                    foreach (var s in kv.Value) dirty.TryAdd(s, 0);
-                    _owner._dirtyStorageSlots[kv.Key] = dirty;
-                }
-                _owner._storageClearedAddresses.Clear();
-                foreach (var k in _storageClearedAddresses) _owner._storageClearedAddresses.TryAdd(k, 0);
-                _owner._addressByAccountHash.Clear();
-                foreach (var kv in _addressByAccountHash) _owner._addressByAccountHash[kv.Key] = kv.Value;
-            }
+            public int SnapshotId { get; }
+            public int JournalPosition { get; }
+            public bool IsOpen { get; set; }
 
             public void SetAccount(string address, Account account) { }
             public void SetStorage(string address, BigInteger slot, byte[] value) { }

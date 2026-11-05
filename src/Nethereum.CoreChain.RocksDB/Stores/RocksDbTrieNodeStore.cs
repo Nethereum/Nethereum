@@ -48,19 +48,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public void Clear()
         {
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_TRIE_NODES);
-            iterator.SeekToFirst();
-
-            using var batch = _manager.CreateWriteBatch();
-            var cf = _manager.GetColumnFamily(RocksDbManager.CF_TRIE_NODES);
-
-            while (iterator.Valid())
-            {
-                batch.Delete(iterator.Key(), cf);
-                iterator.Next();
-            }
-
-            _manager.Write(batch);
+            RocksDbPathTrieNodeStore.WipeCf(_manager, RocksDbManager.CF_TRIE_NODES);
         }
 
         public void Commit(TrieNodeSet nodes)
@@ -79,33 +67,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public bool Contains(Node reference)
             => reference != null && _manager.KeyExists(RocksDbManager.CF_TRIE_NODES, reference.GetHash());
 
+        [Obsolete("The hash-keyed store has no per-owner storage; use RocksDbPathTrieNodeStore.DeleteRange.")]
         public void DeleteRange(byte[] owner)
         {
-            if (owner == null || owner.Length == 0) return;
-
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_TRIE_STORAGE);
-            using var batch = _manager.CreateWriteBatch();
-            var cf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_TRIE_STORAGE);
-
-            iterator.Seek(owner);
-            while (iterator.Valid())
-            {
-                var key = iterator.Key();
-                if (!ByteUtil.StartsWith(key, owner)) break;
-                batch.Delete(key, cf);
-                iterator.Next();
-            }
-
-            _manager.Write(batch);
-        }
-
-        internal static byte[] StorageKey(byte[] owner, byte[] path)
-        {
-            var pathLen = path?.Length ?? 0;
-            var key = new byte[owner.Length + pathLen];
-            Buffer.BlockCopy(owner, 0, key, 0, owner.Length);
-            if (pathLen > 0) Buffer.BlockCopy(path, 0, key, owner.Length, pathLen);
-            return key;
+            new RocksDbPathTrieNodeStore(_manager).DeleteRange(owner);
         }
     }
 }

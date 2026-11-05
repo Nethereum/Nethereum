@@ -21,7 +21,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             if (blockHash == null) return Task.CompletedTask;
             if (withdrawals == null) return Task.CompletedTask;
-            _withdrawalsByBlockHash[ToHex(blockHash)] = withdrawals.Count == 0
+            _withdrawalsByBlockHash[blockHash?.ToHex()] = withdrawals.Count == 0
                 ? new List<Withdrawal>()
                 : withdrawals;
             return Task.CompletedTask;
@@ -30,7 +30,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public Task<IList<Withdrawal>> GetByBlockHashAsync(byte[] blockHash)
         {
             if (blockHash == null) return Task.FromResult<IList<Withdrawal>>(null);
-            if (_withdrawalsByBlockHash.TryGetValue(ToHex(blockHash), out var withdrawals))
+            if (_withdrawalsByBlockHash.TryGetValue(blockHash?.ToHex(), out var withdrawals))
                 return Task.FromResult<IList<Withdrawal>>(withdrawals);
             return Task.FromResult<IList<Withdrawal>>(null);
         }
@@ -46,7 +46,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public Task DeleteByBlockHashAsync(byte[] blockHash)
         {
             if (blockHash == null) return Task.CompletedTask;
-            _withdrawalsByBlockHash.TryRemove(ToHex(blockHash), out _);
+            _withdrawalsByBlockHash.TryRemove(blockHash?.ToHex(), out _);
             return Task.CompletedTask;
         }
 
@@ -56,7 +56,5 @@ namespace Nethereum.CoreChain.Storage.InMemory
             var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber).ConfigureAwait(false);
             if (blockHash != null) await DeleteByBlockHashAsync(blockHash).ConfigureAwait(false);
         }
-
-        private static string ToHex(byte[] bytes) => bytes == null ? null : bytes.ToHex();
     }
 }

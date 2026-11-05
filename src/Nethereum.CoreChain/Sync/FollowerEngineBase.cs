@@ -9,10 +9,10 @@ namespace Nethereum.CoreChain.Sync
 {
     internal abstract class FollowerEngineBase
     {
-        protected static bool IsCursorOwnedByStagedFlush(IChainStoreBundle bundle, ulong blockNumber)
+        internal static bool IsCursorOwnedByStagedFlush(IChainStoreBundle bundle, ulong blockNumber)
             => bundle is IAtomicBlockFlush atomicFlush && atomicFlush.BlockOwnedByStagedFlush(blockNumber);
 
-        protected static async Task CommitCursorIfBehindAsync(IChainStoreBundle bundle, ulong blockNumber, byte[] headerHash)
+        internal static async Task CommitCursorIfBehindAsync(IChainStoreBundle bundle, ulong blockNumber, byte[] headerHash)
         {
             if (IsCursorOwnedByStagedFlush(bundle, blockNumber)) return;
             if (bundle is IAtomicBlockFlush atomicFlush)
@@ -40,7 +40,7 @@ namespace Nethereum.CoreChain.Sync
             }
         }
 
-        protected async Task CommitMatchedBlockAsync(
+        internal static async Task CommitMatchedBlockAsync(
             IChainStoreBundle bundle, ulong blockNumber, byte[] headerHash, BlockBundle blockBundle,
             byte[] computedStateRoot, FollowerOptions options, ILogger logger, CancellationToken ct)
         {

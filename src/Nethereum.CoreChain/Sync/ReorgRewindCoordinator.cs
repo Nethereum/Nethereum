@@ -30,8 +30,87 @@ namespace Nethereum.CoreChain.Sync
             public FollowerRunResult Terminal { get; }
         }
 
+        internal static async Task SeedExecutedHashesAsync(
+            IChainStoreBundle bundle, ulong head, byte[] headHash, ulong depth)
+        {
+            if (headHash == null || head == 0) return;
+            if (bundle.Metadata.GetExecutedHash(head) == null) bundle.Metadata.SaveExecutedHash(head, headHash);
+
+            var lowest = head > depth ? head - depth : 0UL;
+            for (var n = head - 1; n >= lowest; n--)
+            {
+                if (bundle.Metadata.GetExecutedHash(n) == null)
+                {
+                    var canonical = await bundle.Blocks.GetHashByNumberAsync(new BigInteger(n)).ConfigureAwait(false);
+                    if (canonical != null) bundle.Metadata.SaveExecutedHash(n, canonical);
+                }
+                if (n == 0) break;
+            }
+        }
+
+        internal readonly struct AncestorRewindOutcome
+        {
+            public AncestorRewindOutcome(RewindResult rewind, FollowerRunResult terminal)
+            {
+                Rewind = rewind;
+                Terminal = terminal;
+            }
+            public RewindResult Rewind { get; }
+            public FollowerRunResult Terminal { get; }
+        }
+
+        internal static async Task<AncestorRewindOutcome> RewindToAncestorAsync(
+            IChainStoreBundle bundle,
+            IBlockExecutor executor,
+            ulong ancestor,
+            RewindScope scope,
+            ulong lastCommittedBlock,
+            ulong blocksExecuted,
+            ulong rootMismatches,
+            ILogger logger,
+            CancellationToken ct)
+        {
+            var coordinator = new RewindCoordinator(bundle);
+            RewindToAncestorResult result;
+            try
+            {
+                result = executor is IRewindableExecutor rewindable
+                    ? await rewindable.RewindToAncestorAsync(coordinator, ancestor, scope, ct).ConfigureAwait(false)
+                    : await AncestorRewind.RunAsync(coordinator, ancestor, scope, null, logger, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "reorg.rewind_failed ancestor={Ancestor}", ancestor);
+                return new AncestorRewindOutcome(null, Terminal(
+                    FollowerExitReason.FatalVerdict, lastCommittedBlock, blocksExecuted, rootMismatches,
+                    $"rewind to ancestor {ancestor:N0} threw {ex.GetType().Name}: {ex.Message}"));
+            }
+
+            if (result.Rewound) return new AncestorRewindOutcome(result.Rewind, null);
+
+            if (result.Rewind.Outcome == RewindOutcome.SnapshotUsed)
+                return new AncestorRewindOutcome(result.Rewind, new FollowerRunResult(
+                    FollowerExitReason.SnapshotRestoreRequested,
+                    lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 1,
+                    SnapshotRestoreTarget: result.Rewind.RestoredCheckpoint,
+                    Detail: result.Rewind.Detail));
+
+            return new AncestorRewindOutcome(result.Rewind, Terminal(
+                FollowerExitReason.RewindUnavailable, lastCommittedBlock, blocksExecuted, rootMismatches,
+                $"rewind to ancestor {ancestor:N0} unavailable: {result.Rewind.Detail}"));
+        }
+
+        private static FollowerRunResult Terminal(
+            FollowerExitReason reason, ulong lastCommittedBlock, ulong blocksExecuted, ulong rootMismatches, string detail)
+            => new FollowerRunResult(
+                reason, lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
+                SnapshotRestoreTarget: null, Detail: detail);
+
         internal static async Task<ForwardRewindOutcome?> TryRewindOnExternalReorgAsync(
             IChainStoreBundle bundle,
+            IBlockExecutor executor,
+            FollowerOptions options,
             ulong lastCommittedBlock,
             byte[] lastCommittedHash,
             ulong blocksExecuted,
@@ -46,81 +125,34 @@ namespace Nethereum.CoreChain.Sync
             }
 
             logger.LogWarning(
-                "snap.tip.external_reorg committed={Block} — canonical store re-laid beneath the committed head; rewinding to a proven checkpoint",
+                "snap.tip.external_reorg committed={Block} - canonical store re-laid beneath the committed head; rewinding to the common ancestor",
                 lastCommittedBlock);
 
-            var target = await FindNewestCheckpointMatchingCanonicalStoreAsync(bundle, lastCommittedBlock)
+            var depth = System.Math.Min(options.MaxReorgDepth, ExecutedHashRetention.Blocks);
+            var ancestor = await FindCommonAncestorAsync(bundle, lastCommittedBlock, lastCommittedHash, depth).ConfigureAwait(false)
+                           ?? await DisasterRecoveryTargetAsync(bundle, lastCommittedBlock, depth, logger).ConfigureAwait(false);
+            var scope = options.ExternalHeaderFollow ? RewindScope.ExecutionOnly : RewindScope.ExecutionAndChain;
+
+            var outcome = await RewindToAncestorAsync(
+                bundle, executor, ancestor, scope, lastCommittedBlock, blocksExecuted, rootMismatches, logger, ct)
                 .ConfigureAwait(false);
-            if (target == null)
-            {
-                return NoProvenCheckpointFatal(lastCommittedBlock, blocksExecuted, rootMismatches);
-            }
-
-            var coordinator = new RewindCoordinator(bundle);
-            RewindResult rewindResult;
-            try
-            {
-                rewindResult = await coordinator
-                    .RewindToAsync(target.Value, RewindPolicy.JournalFirstThenSnapshot, ct)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-            catch (Exception ex)
-            {
-                logger.LogError(ex,
-                    "snap.tip.external_reorg_rewind_failed target={Target}", target);
+            if (outcome.Terminal != null)
                 return new ForwardRewindOutcome(
-                    bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                    new FollowerRunResult(
-                        FollowerExitReason.FatalVerdict,
-                        lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
-                        SnapshotRestoreTarget: null,
-                        Detail: $"external-reorg rewind threw {ex.GetType().Name}: {ex.Message}"));
-            }
+                    bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(), outcome.Terminal);
 
-            return ApplyExternalReorgRewindResult(
-                bundle, rewindResult, target.Value, lastCommittedBlock, blocksExecuted, rootMismatches, logger);
+            var newHead = bundle.Metadata.GetLastBlock();
+            logger.LogInformation(
+                "snap.tip.external_reorg_rewound new_head={Head} undone={Undone} via={Via}",
+                newHead, outcome.Rewind.UndoneCount, outcome.Rewind.Outcome);
+            return new ForwardRewindOutcome(newHead, bundle.Metadata.GetLastBlockHash(), terminal: null);
         }
 
-        internal static async Task<ForwardRewindOutcome> TryRewindToForkChoiceAncestorAsync(
-            IChainStoreBundle bundle,
-            ulong commonAncestor,
-            ulong lastCommittedBlock,
-            ulong blocksExecuted,
-            ulong rootMismatches,
-            CancellationToken ct,
-            ILogger logger)
-        {
-            logger.LogWarning(
-                "sync.fork_choice.adopt_incoming committed={Block} ancestor={Ancestor} — a heavier/authoritative " +
-                "competing branch was chosen; rewinding to the common ancestor",
-                lastCommittedBlock, commonAncestor);
-
-            var coordinator = new RewindCoordinator(bundle);
-            RewindResult rewindResult;
-            try
-            {
-                rewindResult = await coordinator
-                    .RewindToAsync(commonAncestor, RewindPolicy.JournalFirstThenSnapshot, ct)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-            catch (Exception ex)
-            {
-                logger.LogError(ex,
-                    "sync.fork_choice.rewind_failed target={Target}", commonAncestor);
-                return new ForwardRewindOutcome(
-                    bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                    new FollowerRunResult(
-                        FollowerExitReason.FatalVerdict,
-                        lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
-                        SnapshotRestoreTarget: null,
-                        Detail: $"fork-choice rewind to {commonAncestor:N0} threw {ex.GetType().Name}: {ex.Message}"));
-            }
-
-            return ApplyExternalReorgRewindResult(
-                bundle, rewindResult, commonAncestor, lastCommittedBlock, blocksExecuted, rootMismatches, logger);
-        }
+        private static ForwardRewindOutcome FatalOutcome(
+            ulong lastCommittedBlock, ulong blocksExecuted, ulong rootMismatches,
+            FollowerExitReason reason, string detail)
+            => new ForwardRewindOutcome(
+                lastCommittedBlock, null,
+                Terminal(reason, lastCommittedBlock, blocksExecuted, rootMismatches, detail));
 
         private static async Task<bool> CommittedHeadWasRelaidBeneathAsync(
             IChainStoreBundle bundle, ulong lastCommittedBlock, byte[] lastCommittedHash)
@@ -135,217 +167,32 @@ namespace Nethereum.CoreChain.Sync
             return true;
         }
 
-        private static async Task<ulong?> FindNewestCheckpointMatchingCanonicalStoreAsync(
-            IChainStoreBundle bundle, ulong lastCommittedBlock)
+        internal static async Task<ulong?> FindCommonAncestorAsync(
+            IChainStoreBundle bundle, ulong lastCommittedBlock, byte[] lastCommittedHash, ulong depth)
         {
-            ulong? target = null;
-            var checkpointBlocks = new List<ulong>(bundle.Metadata.ListCheckpointBlockNumbers());
-            checkpointBlocks.Sort();
-            for (int i = checkpointBlocks.Count - 1; i >= 0; i--)
+            var lowest = lastCommittedBlock > depth ? lastCommittedBlock - depth : 0UL;
+            for (var n = lastCommittedBlock; ; n--)
             {
-                var cpBlock = checkpointBlocks[i];
-                if (cpBlock > lastCommittedBlock) continue;
-                var cp = bundle.Metadata.GetCheckpoint(cpBlock);
-                if (cp == null || cp.Value.BlockHash == null) continue;
-                var storedAtCp = await bundle.Blocks
-                    .GetHashByNumberAsync(new BigInteger(cpBlock))
-                    .ConfigureAwait(false);
-                if (storedAtCp != null && ByteUtil.AreEqual(storedAtCp, cp.Value.BlockHash))
+                if (n == 0) return 0UL;
+                var executedHash = n == lastCommittedBlock ? lastCommittedHash : bundle.Metadata.GetExecutedHash(n);
+                if (executedHash != null)
                 {
-                    target = cpBlock;
-                    break;
+                    var canonicalHash = await bundle.Blocks.GetHashByNumberAsync(new BigInteger(n)).ConfigureAwait(false);
+                    if (canonicalHash != null && ByteUtil.AreEqual(canonicalHash, executedHash)) return n;
                 }
+                if (n == lowest) return null;
             }
-            return target;
         }
 
-        private static ForwardRewindOutcome NoProvenCheckpointFatal(
-            ulong lastCommittedBlock, ulong blocksExecuted, ulong rootMismatches)
-            => new ForwardRewindOutcome(
-                lastCommittedBlock, null,
-                new FollowerRunResult(
-                    FollowerExitReason.FatalVerdict,
-                    lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
-                    SnapshotRestoreTarget: null,
-                    Detail: $"reorg re-laid the canonical store beneath the committed head {lastCommittedBlock:N0} " +
-                            "and no retained checkpoint matches the repaired chain — manual rewind required"));
-
-        private static ForwardRewindOutcome ApplyExternalReorgRewindResult(
-            IChainStoreBundle bundle,
-            RewindResult rewindResult,
-            ulong target,
-            ulong lastCommittedBlock,
-            ulong blocksExecuted,
-            ulong rootMismatches,
-            ILogger logger)
+        private static Task<ulong> DisasterRecoveryTargetAsync(
+            IChainStoreBundle bundle, ulong lastCommittedBlock, ulong depth, ILogger logger)
         {
-            switch (rewindResult.Outcome)
-            {
-                case RewindOutcome.JournalUsed:
-                case RewindOutcome.NodeHistoryUsed:
-                    bundle.Metadata.DeleteCheckpointsAbove(target);
-                    var newHead = bundle.Metadata.GetLastBlock();
-                    var newHeadHash = bundle.Metadata.GetLastBlockHash();
-                    logger.LogInformation(
-                        "snap.tip.external_reorg_rewound new_head={Head} undone={Undone} via={Via}",
-                        newHead, rewindResult.UndoneCount, rewindResult.Outcome);
-                    return new ForwardRewindOutcome(newHead, newHeadHash, terminal: null);
-
-                case RewindOutcome.SnapshotUsed:
-                    return new ForwardRewindOutcome(
-                        bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                        new FollowerRunResult(
-                            FollowerExitReason.SnapshotRestoreRequested,
-                            lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 1,
-                            SnapshotRestoreTarget: rewindResult.RestoredCheckpoint,
-                            Detail: rewindResult.Detail));
-
-                default:
-                    return new ForwardRewindOutcome(
-                        bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                        new FollowerRunResult(
-                            FollowerExitReason.RewindUnavailable,
-                            lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
-                            SnapshotRestoreTarget: null,
-                            Detail: $"external reorg at committed head {lastCommittedBlock:N0}: rewind unavailable: {rewindResult.Detail}"));
-            }
+            var target = lastCommittedBlock > depth ? lastCommittedBlock - depth : 0UL;
+            logger.LogError(
+                "reorg.disaster_recovery committed={Committed} - no executed-hash record reaches a common ancestor within {Depth} blocks; falling back to the newest checkpoint at or below {Target}",
+                lastCommittedBlock, depth, target);
+            return Task.FromResult(target);
         }
-
-        internal static async Task<ForwardRewindOutcome> TryRewindOnRootMismatchAsync(
-            IChainStoreBundle bundle,
-            ulong lastCommittedBlock,
-            ulong divergedBlock,
-            FollowerOptions options,
-            AncestorResolverDelegate ancestorResolver,
-            ILogger logger,
-            CancellationToken ct)
-        {
-            if (lastCommittedBlock == 0)
-            {
-                return NoRewindTargetAboveGenesisFatal(lastCommittedBlock, divergedBlock);
-            }
-
-            ulong singleStepTarget = lastCommittedBlock > 0 ? lastCommittedBlock - 1 : 0;
-            ulong target = await ResolveAncestorRewindTargetAsync(
-                    singleStepTarget, lastCommittedBlock, divergedBlock, options, ancestorResolver, logger, ct)
-                .ConfigureAwait(false);
-
-            logger.LogWarning(
-                "snap.tip.root_mismatch block={Block}; attempting rewind to {Target}",
-                divergedBlock, target);
-
-            var coordinator = new RewindCoordinator(bundle);
-            RewindResult rewindResult;
-            try
-            {
-                rewindResult = await coordinator
-                    .RewindToAsync(target, RewindPolicy.JournalFirstThenSnapshot, ct)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-            catch (Exception ex)
-            {
-                logger.LogError(ex,
-                    "snap.tip.rewind_failed block={Block} target={Target}",
-                    divergedBlock, target);
-                return new ForwardRewindOutcome(
-                    bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                    new FollowerRunResult(
-                        FollowerExitReason.FatalVerdict,
-                        lastCommittedBlock, BlocksExecuted: 0, RootMismatches: 0, RewindCyclesUsed: 0,
-                        SnapshotRestoreTarget: null,
-                        Detail: $"tip-driven forward exec: rewind threw {ex.GetType().Name}: {ex.Message}"));
-            }
-
-            return ApplyRootMismatchRewindResult(bundle, rewindResult, lastCommittedBlock, divergedBlock, logger);
-        }
-
-        private static ForwardRewindOutcome NoRewindTargetAboveGenesisFatal(
-            ulong lastCommittedBlock, ulong divergedBlock)
-            => new ForwardRewindOutcome(
-                lastCommittedBlock, null,
-                new FollowerRunResult(
-                    FollowerExitReason.FatalVerdict,
-                    lastCommittedBlock, BlocksExecuted: 0, RootMismatches: 0, RewindCyclesUsed: 0,
-                    SnapshotRestoreTarget: null,
-                    Detail: $"tip-driven forward exec: state-root mismatch at block {divergedBlock:N0}; no rewind target above genesis"));
-
-        private static async Task<ulong> ResolveAncestorRewindTargetAsync(
-            ulong target,
-            ulong lastCommittedBlock,
-            ulong divergedBlock,
-            FollowerOptions options,
-            AncestorResolverDelegate ancestorResolver,
-            ILogger logger,
-            CancellationToken ct)
-        {
-            if (ancestorResolver != null && lastCommittedBlock > 0)
-            {
-                ulong floor = lastCommittedBlock > options.MaxReorgDepth
-                    ? lastCommittedBlock - options.MaxReorgDepth
-                    : 0UL;
-                try
-                {
-                    var ancestor = await ancestorResolver(divergedBlock, floor, ct).ConfigureAwait(false);
-                    if (ancestor < lastCommittedBlock)
-                    {
-                        target = ancestor;
-                        logger.LogWarning(
-                            "snap.tip.root_mismatch block={Block}; ancestor_resolver target={Target} (floor={Floor})",
-                            divergedBlock, target, floor);
-                    }
-                }
-                catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex,
-                        "snap.tip.ancestor_resolver_failed block={Block}; falling back to single-step rewind",
-                        divergedBlock);
-                }
-            }
-            return target;
-        }
-
-        private static ForwardRewindOutcome ApplyRootMismatchRewindResult(
-            IChainStoreBundle bundle,
-            RewindResult rewindResult,
-            ulong lastCommittedBlock,
-            ulong divergedBlock,
-            ILogger logger)
-        {
-            switch (rewindResult.Outcome)
-            {
-                case RewindOutcome.JournalUsed:
-                case RewindOutcome.NodeHistoryUsed:
-                    var newHead = bundle.Metadata.GetLastBlock();
-                    var newHeadHash = bundle.Metadata.GetLastBlockHash();
-                    logger.LogInformation(
-                        "snap.tip.rewound new_head={Head} undone={Undone} via={Via}",
-                        newHead, rewindResult.UndoneCount, rewindResult.Outcome);
-                    return new ForwardRewindOutcome(newHead, newHeadHash, terminal: null);
-
-                case RewindOutcome.SnapshotUsed:
-                    return new ForwardRewindOutcome(
-                        bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                        new FollowerRunResult(
-                            FollowerExitReason.SnapshotRestoreRequested,
-                            lastCommittedBlock, BlocksExecuted: 0, RootMismatches: 0, RewindCyclesUsed: 1,
-                            SnapshotRestoreTarget: rewindResult.RestoredCheckpoint,
-                            Detail: rewindResult.Detail));
-
-                case RewindOutcome.NoOp:
-                case RewindOutcome.NoPathAvailable:
-                default:
-                    return new ForwardRewindOutcome(
-                        bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
-                        new FollowerRunResult(
-                            FollowerExitReason.RewindUnavailable,
-                            lastCommittedBlock, BlocksExecuted: 0, RootMismatches: 0, RewindCyclesUsed: 0,
-                            SnapshotRestoreTarget: null,
-                            Detail: $"tip-driven forward exec: rewind unavailable at block {divergedBlock:N0}: {rewindResult.Detail}"));
-            }
-        }
-
 
         internal static async Task<RewindLoopOutcome> ValidatingRewindAsync(
             IChainStoreBundle bundle,
@@ -356,8 +203,13 @@ namespace Nethereum.CoreChain.Sync
             ulong blocksExecuted,
             ulong rootMismatches,
             ulong rewindCyclesUsed,
-            CancellationToken ct)
+            CancellationToken ct,
+            AncestorResolverDelegate ancestorResolver = null,
+            ulong divergedBlock = 0UL,
+            ILogger logger = null,
+            RewindScope scope = RewindScope.ExecutionAndChain)
         {
+            logger ??= NullLogger.Instance;
             var coordinator = new RewindCoordinator(bundle);
             ulong currentHead = lastCommittedBlock;
             byte[] currentHash = lastCommittedHash;
@@ -397,8 +249,12 @@ namespace Nethereum.CoreChain.Sync
                 }
 
                 ulong rewindTarget = currentHead > 0 ? currentHead - 1 : 0;
+                if (fallBackToSingleShot)
+                    rewindTarget = await ResolveAncestorRewindTargetAsync(
+                        rewindTarget, currentHead, divergedBlock, options, ancestorResolver, logger, ct)
+                        .ConfigureAwait(false);
                 var rewindResult = await coordinator.RewindToAsync(
-                    rewindTarget, RewindPolicy.JournalFirstThenSnapshot, ct).ConfigureAwait(false);
+                    rewindTarget, RewindPolicy.JournalFirstThenSnapshot, scope, ct).ConfigureAwait(false);
 
                 switch (rewindResult.Outcome)
                 {
@@ -435,6 +291,41 @@ namespace Nethereum.CoreChain.Sync
                                 Detail: rewindResult.Detail));
                 }
             }
+        }
+
+        private static async Task<ulong> ResolveAncestorRewindTargetAsync(
+            ulong target,
+            ulong lastCommittedBlock,
+            ulong divergedBlock,
+            FollowerOptions options,
+            AncestorResolverDelegate ancestorResolver,
+            ILogger logger,
+            CancellationToken ct)
+        {
+            if (ancestorResolver == null || lastCommittedBlock == 0) return target;
+
+            ulong floor = lastCommittedBlock > options.MaxReorgDepth
+                ? lastCommittedBlock - options.MaxReorgDepth
+                : 0UL;
+            try
+            {
+                var ancestor = await ancestorResolver(divergedBlock, floor, ct).ConfigureAwait(false);
+                if (ancestor < lastCommittedBlock)
+                {
+                    target = ancestor;
+                    logger.LogWarning(
+                        "snap.tip.root_mismatch block={Block}; ancestor_resolver target={Target} (floor={Floor})",
+                        divergedBlock, target, floor);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "snap.tip.ancestor_resolver_failed block={Block}; falling back to single-step rewind",
+                    divergedBlock);
+            }
+            return target;
         }
 
         internal static FollowerRunResult BuildMaxRewindFatal(

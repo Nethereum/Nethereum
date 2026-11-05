@@ -110,19 +110,19 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             {
                 if (_promotionCursor != null)
                 {
-                    var hotLoc = _manager.Get(RocksDbManager.CF_HOT_BLOCK_HASH_INDEX, blockHash, readOptions);
-                    if (hotLoc != null && hotLoc.Length >= HistoryKeys.BlockKeyLength)
+                    var hotNumber = HistoryKeys.TryReadBlockNumber(_manager.Get(RocksDbManager.CF_HOT_BLOCK_HASH_INDEX, blockHash, readOptions));
+                    if (hotNumber.HasValue)
                     {
-                        result.AddRange(ReadBlockLogs(RocksDbManager.CF_HOT_RECEIPT_BODY, HistoryKeys.ReadBlockNumber(hotLoc), readOptions));
+                        result.AddRange(ReadBlockLogs(RocksDbManager.CF_HOT_RECEIPT_BODY, hotNumber.Value, readOptions));
                         SortByTxThenLog(result);
                         return Task.FromResult(result);
                     }
                 }
 
-                var numBytes = _manager.Get(HistoryColumnFamilies.BlockHashIndex, blockHash, readOptions);
-                if (numBytes == null || numBytes.Length < HistoryKeys.BlockKeyLength) return Task.FromResult(result);
+                var number = HistoryKeys.TryReadBlockNumber(_manager.Get(HistoryColumnFamilies.BlockHashIndex, blockHash, readOptions));
+                if (!number.HasValue) return Task.FromResult(result);
 
-                result.AddRange(ReadBlockLogs(HistoryColumnFamilies.ReceiptBody, HistoryKeys.ReadBlockNumber(numBytes), readOptions));
+                result.AddRange(ReadBlockLogs(HistoryColumnFamilies.ReceiptBody, number.Value, readOptions));
                 SortByTxThenLog(result);
                 return Task.FromResult(result);
             }
@@ -164,7 +164,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom) => Task.CompletedTask;
 
-        public Task DeleteByBlockNumberAsync(BigInteger blockNumber) => Task.CompletedTask;
+        public Task DeleteByBlockNumberAsync(BigInteger blockNumber) => LogsAreDerivedFromReceiptRowsAndTheHeaderBloomSoTheReceiptStoreOwnsTheirDeletion();
+
+        private static Task LogsAreDerivedFromReceiptRowsAndTheHeaderBloomSoTheReceiptStoreOwnsTheirDeletion() => Task.CompletedTask;
 
 
         private BigInteger HotCursorOrTop(BigInteger top, ReadOptions readOptions)
@@ -197,12 +199,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var result = new List<FilteredLog>();
             using var it = _manager.CreateIterator(receiptCf, readOptions);
-            for (it.Seek(HistoryKeys.TxKey(blockNumber, 0)); it.Valid(); it.Next())
-            {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != blockNumber) break;
-                var info = _serializer.DeserializeReceiptInfoWith(it.Value());
-                AppendReceiptLogs(info, result);
-            }
+            HistoryRows.ScanBlock(it, blockNumber, row => AppendReceiptLogs(_serializer.DeserializeReceiptInfoWith(row), result));
             BlockWideLogIndex.Assign(result);
             return result;
         }
@@ -217,9 +214,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private ReceiptInfo ReadReceiptInfoByTxHash(string txHashIndexCf, string receiptBodyCf, byte[] txHash, ReadOptions readOptions)
         {
-            var loc = _manager.Get(txHashIndexCf, txHash, readOptions);
-            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
-            var bytes = _manager.Get(receiptBodyCf, HistoryKeys.TxKey(HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc)), readOptions);
+            var loc = HistoryKeys.TryReadTxLocation(_manager.Get(txHashIndexCf, txHash, readOptions));
+            if (loc == null) return null;
+            var bytes = _manager.Get(receiptBodyCf, HistoryKeys.TxKey(loc.Value.BlockNumber, loc.Value.TxIndex), readOptions);
             return bytes == null ? null : _serializer.DeserializeReceiptInfoWith(bytes);
         }
 
@@ -234,14 +231,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (_promotionCursor != null)
             {
                 using var hotIt = _manager.CreateIterator(RocksDbManager.CF_HOT_BLOCK_META, readOptions);
-                hotIt.SeekToLast();
-                if (hotIt.Valid()) return (BigInteger)HistoryKeys.ReadBlockNumber(hotIt.Key());
+                var hotTip = HistoryRows.Tip(hotIt);
+                if (hotTip.HasValue) return (BigInteger)hotTip.Value;
             }
 
             using var it = _manager.CreateIterator(HistoryColumnFamilies.BlockMeta, readOptions);
-            it.SeekToLast();
-            if (!it.Valid()) return null;
-            return (BigInteger)HistoryKeys.ReadBlockNumber(it.Key());
+            var tip = HistoryRows.Tip(it);
+            return tip.HasValue ? (BigInteger?)tip.Value : null;
         }
     }
 }

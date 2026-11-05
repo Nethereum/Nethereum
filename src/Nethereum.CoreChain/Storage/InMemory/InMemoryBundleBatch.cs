@@ -101,7 +101,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public void UpsertDeferredStorageDebt(DeferredStorageDebt debt)
         {
             EnsureOpen();
-            _ops.Add(() => { _bundle.Metadata.UpsertDeferredStorageDebt(debt); return Task.CompletedTask; });
+            _ = debt;
         }
 
         public void SaveDeferredHealCodeBlob(byte[] blob)

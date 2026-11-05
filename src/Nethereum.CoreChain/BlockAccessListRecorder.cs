@@ -62,13 +62,15 @@ namespace Nethereum.CoreChain
     /// same unit can end up recorded while a later one in the same unit
     /// faults.</para>
     /// </summary>
-    public sealed class BlockAccessListRecorder : IStateAccessRecorder
+    public sealed class BlockAccessListRecorder : IAddressAccessRecorder
     {
         private readonly BlockAccessListBuilder _builder = new BlockAccessListBuilder();
         private readonly IStateStore _stateStore;
 
-        private readonly List<string> _pendingAccountReads = new List<string>();
-        private readonly List<(string Address, EvmUInt256 Slot)> _pendingStorageReads = new List<(string, EvmUInt256)>();
+        private readonly List<EvmAddress> _pendingAccountReads = new List<EvmAddress>();
+        private readonly HashSet<EvmAddress> _pendingAccountReadSet = new HashSet<EvmAddress>();
+        private readonly List<(EvmAddress Address, EvmUInt256 Slot)> _pendingStorageReads = new List<(EvmAddress, EvmUInt256)>();
+        private readonly HashSet<(EvmAddress Address, EvmUInt256 Slot)> _pendingStorageReadSet = new HashSet<(EvmAddress, EvmUInt256)>();
 
         private sealed class AccountBasis
         {
@@ -90,26 +92,42 @@ namespace Nethereum.CoreChain
         public void BeginUnit(ulong blockAccessIndex)
         {
             _builder.BlockAccessIndex = blockAccessIndex;
-            _pendingAccountReads.Clear();
-            _pendingStorageReads.Clear();
+            ClearPendingReads();
         }
 
         public void RecordAccountRead(string address)
         {
             if (string.IsNullOrEmpty(address)) return;
-            _pendingAccountReads.Add(address);
+            RecordAccountRead(EvmAddress.FromHex(address));
+        }
+
+        public void RecordAccountRead(EvmAddress address)
+        {
+            if (_pendingAccountReadSet.Add(address)) _pendingAccountReads.Add(address);
         }
 
         public void RecordStorageRead(string address, EvmUInt256 key)
         {
             if (string.IsNullOrEmpty(address)) return;
-            _pendingStorageReads.Add((address, key));
+            RecordStorageRead(EvmAddress.FromHex(address), key);
+        }
+
+        public void RecordStorageRead(EvmAddress address, EvmUInt256 key)
+        {
+            if (_pendingStorageReadSet.Add((address, key))) _pendingStorageReads.Add((address, key));
         }
 
         public void DiscardUnit()
         {
+            ClearPendingReads();
+        }
+
+        private void ClearPendingReads()
+        {
             _pendingAccountReads.Clear();
+            _pendingAccountReadSet.Clear();
             _pendingStorageReads.Clear();
+            _pendingStorageReadSet.Clear();
         }
 
         public void TouchAccount(string address)
@@ -262,11 +280,10 @@ namespace Nethereum.CoreChain
         public void FlushPendingReads()
         {
             foreach (var address in _pendingAccountReads)
-                _builder.EnsureAccount(address);
+                _builder.EnsureAccount(address.ToHexLower());
             foreach (var (address, slot) in _pendingStorageReads)
-                _builder.AddStorageRead(address, slot);
-            _pendingAccountReads.Clear();
-            _pendingStorageReads.Clear();
+                _builder.AddStorageRead(address.ToHexLower(), slot);
+            ClearPendingReads();
         }
 
         public List<AccountChanges> Build() => _builder.Build();

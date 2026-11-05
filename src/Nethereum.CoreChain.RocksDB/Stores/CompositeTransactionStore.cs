@@ -26,22 +26,31 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public async Task<List<ISignedTransaction>> GetByBlockNumberAsync(BigInteger blockNumber)
         {
             var n = (ulong)blockNumber;
-            if (_hot.ContainsBlock(n)) return _hot.GetTransactionsForBlock(n);
-            return await _history.GetByBlockNumberAsync(blockNumber).ConfigureAwait(false);
+            return await HotThenHistory.ReadAsync(
+                _hot.ContainsBlock(n),
+                () => Task.FromResult(_hot.GetTransactionsForBlock(n)),
+                HotThenHistory.NotEmpty,
+                () => _history.GetByBlockNumberAsync(blockNumber)).ConfigureAwait(false);
         }
 
         public async Task<List<ISignedTransaction>> GetByBlockHashAsync(byte[] blockHash)
         {
             var n = _hot.TryGetBlockNumberByHash(blockHash);
-            if (n.HasValue) return _hot.GetTransactionsForBlock(n.Value);
-            return await _history.GetByBlockHashAsync(blockHash).ConfigureAwait(false);
+            return await HotThenHistory.ReadAsync(
+                n.HasValue,
+                () => Task.FromResult(_hot.GetTransactionsForBlock(n.Value)),
+                HotThenHistory.NotEmpty,
+                () => _history.GetByBlockHashAsync(blockHash)).ConfigureAwait(false);
         }
 
         public async Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash)
         {
             var n = _hot.TryGetBlockNumberByHash(blockHash);
-            if (n.HasValue) return _hot.GetTransactionHashesForBlock(n.Value);
-            return await _history.GetHashesByBlockHashAsync(blockHash).ConfigureAwait(false);
+            return await HotThenHistory.ReadAsync(
+                n.HasValue,
+                () => Task.FromResult(_hot.GetTransactionHashesForBlock(n.Value)),
+                HotThenHistory.NotEmpty,
+                () => _history.GetHashesByBlockHashAsync(blockHash)).ConfigureAwait(false);
         }
 
         public async Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber)
@@ -82,6 +91,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 };
             }
             return await _history.GetLocationAsync(txHash).ConfigureAwait(false);
+        }
+
+        public async Task DeleteLookupsByBlockNumberAsync(BigInteger blockNumber)
+        {
+            if (_writeThroughHistory)
+                await _history.DeleteLookupsByBlockNumberAsync(blockNumber).ConfigureAwait(false);
+            _hot.DeleteBlockTransactionLookups((ulong)blockNumber);
         }
 
         public async Task DeleteByBlockNumberAsync(BigInteger blockNumber)

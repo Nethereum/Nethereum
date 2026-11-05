@@ -1,16 +1,18 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Proving;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests
 {
+    [Trait("Requires", "Externals")]
+    [Trait("Category", "Zisk")]
     public class ZiskProverServerTests
     {
 #if DEBUG
@@ -98,26 +100,11 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task ShouldProveViaZiskEmuEmulateMode()
         {
-            var witnessDir = FindWitnessDir();
-            if (witnessDir == null)
-            {
-                _output.WriteLine("SKIP: no cached witnesses at /tmp/zisk-witnesses/ — run ZiskSyncTests first");
-                return;
-            }
+            var witnessFile = Path.Combine(TestEnvironment.RepoRoot, "zisk", "test-artifacts", "witness_eth_transfer_noroot_standard.bin");
+            Assert.True(File.Exists(witnessFile), $"witness not found at {witnessFile}");
 
-            var witnessFile = Directory.GetFiles(witnessDir, "add11_0_0_0.bin").FirstOrDefault();
-            if (witnessFile == null)
-            {
-                _output.WriteLine("SKIP: add11_0_0_0.bin not found in witness cache");
-                return;
-            }
-
-            var elfPath = FindElfPath();
-            if (elfPath == null)
-            {
-                _output.WriteLine("SKIP: ELF not found at zisk/output/nethereum_evm_elf");
-                return;
-            }
+            var elfPath = Path.Combine(TestEnvironment.RequireExternalPath("ZiskOutput"), "nethereum_evm_elf");
+            Assert.True(File.Exists(elfPath), $"ELF not found at {elfPath}; regenerate it into ExternalPaths:ZiskOutput");
 
             var port = 15100 + new Random().Next(900);
             var serverPath = FindServerProject();
@@ -135,9 +122,17 @@ namespace Nethereum.CoreChain.IntegrationTests
             };
             psi.EnvironmentVariables["ProverMode"] = "Emulate";
             psi.EnvironmentVariables["ElfPath"] = elfPath;
-            psi.EnvironmentVariables["ProverCommand"] = "wsl";
-            psi.EnvironmentVariables["ProverArgs"] = "-d Ubuntu -- /home/juan/.zisk/bin/ziskemu -e {elf} --legacy-inputs {witness} -n 100000000";
-            psi.EnvironmentVariables["ConvertPathsForWsl"] = "true";
+            if (OperatingSystem.IsWindows())
+            {
+                psi.EnvironmentVariables["ProverCommand"] = "wsl";
+                psi.EnvironmentVariables["ProverArgs"] = $"-d Ubuntu -- {TestEnvironment.Tool("Ziskemu")} -e {{elf}} --legacy-inputs {{witness}} -n 100000000";
+                psi.EnvironmentVariables["ConvertPathsForWsl"] = "true";
+            }
+            else
+            {
+                psi.EnvironmentVariables["ProverCommand"] = TestEnvironment.Tool("Ziskemu");
+                psi.EnvironmentVariables["ProverArgs"] = "-e {elf} --legacy-inputs {witness} -n 100000000";
+            }
             psi.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Production";
             var process = Process.Start(psi);
 
@@ -146,8 +141,8 @@ namespace Nethereum.CoreChain.IntegrationTests
                 await WaitForServerAsync($"http://localhost:{port}", 30);
 
                 var rawFile = File.ReadAllBytes(witnessFile);
-                var innerWitness = new byte[rawFile.Length - 16];
-                Array.Copy(rawFile, 16, innerWitness, 0, innerWitness.Length);
+                var innerWitness = new byte[BitConverter.ToInt64(rawFile, 16)];
+                Array.Copy(rawFile, 24, innerWitness, 0, innerWitness.Length);
 
                 var client = new HttpBlockProverClient($"http://localhost:{port}");
                 var result = await client.ProveBlockAsync(innerWitness, null, null, 1);
@@ -169,25 +164,6 @@ namespace Nethereum.CoreChain.IntegrationTests
                 try { process?.Kill(true); } catch { }
                 process?.Dispose();
             }
-        }
-
-        private static string FindWitnessDir()
-        {
-            var tempPath = Path.GetTempPath();
-            var dir = Path.Combine(tempPath, "zisk-witnesses");
-            return Directory.Exists(dir) ? dir : null;
-        }
-
-        private static string FindElfPath()
-        {
-            var dir = AppDomain.CurrentDomain.BaseDirectory;
-            while (dir != null)
-            {
-                var candidate = Path.Combine(dir, "zisk", "output", "nethereum_evm_elf");
-                if (File.Exists(candidate)) return candidate;
-                dir = Path.GetDirectoryName(dir);
-            }
-            return null;
         }
 
         private static string FindServerProject()

@@ -3,16 +3,29 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage
 {
-    public sealed class BufferedFlatStateStore : IStateStore, IStateWriteBuffer, ISnapFlatStateWriter, IFlatCacheInvalidatable, IStateReadStats
+    public sealed class BufferedFlatStateStore : IStateStore, IStateWriteBuffer, ISnapFlatStateWriter, IFlatCacheInvalidatable, IStateReadStats, IStateReadMeterHost, IDirtyKeySource, IAddressHashCache, IBaseAbsenceSource
     {
         private readonly IStateStore _inner;
         private readonly StateOverlay _overlay = new();
         private readonly FlatStateCache _cache;
         private readonly IPendingFlushFlatOverlay _pendingFlush;
         private bool _buffering;
+        private volatile StateReadMeter _meter;
+
+        public bool TryAttachReadMeter(StateReadMeter meter)
+        {
+            _meter = meter;
+            return true;
+        }
+
+        public void DetachReadMeter(StateReadMeter meter)
+        {
+            if (ReferenceEquals(_meter, meter)) _meter = null;
+        }
 
         private long _accountReads;
         private long _storageReads;
@@ -26,6 +39,10 @@ namespace Nethereum.CoreChain.Storage
             _pendingFlush = pendingFlush;
         }
 
+
+        public bool TryAttachDirtyKeyObserver(IDirtyKeyObserver observer) => _overlay.TryAttachObserver(observer);
+
+        public void DetachDirtyKeyObserver(IDirtyKeyObserver observer) => _overlay.DetachObserver(observer);
 
         private ISnapFlatStateWriter InnerFlatWriter
             => _inner as ISnapFlatStateWriter
@@ -47,127 +64,145 @@ namespace Nethereum.CoreChain.Storage
         public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
             => _inner.SaveStorageByKeccakAsync(address, slotKeccak, value);
 
+        public Task SaveStorageByKeccakAsync(EvmAddress address, byte[] slotKeccak, byte[] value)
+            => _inner.SaveStorageByKeccakAsync(address, slotKeccak, value);
 
-        public async Task<Account> GetAccountAsync(string address)
+        public bool TryGetAddressHash(EvmAddress address, out byte[] hash)
         {
-            System.Threading.Interlocked.Increment(ref _accountReads);
-            var key = StateOverlay.Normalize(address);
-            if (_overlay.TryGetAccount(key, out var account)) return account;
-            if (_pendingFlush != null && _pendingFlush.TryGetAccount(address, out var pending, out var pendingDeleted))
-                return pendingDeleted ? null : pending;
-            if (_cache != null && _cache.TryGetAccount(address, out var cached))
-                return ReferenceEquals(cached, FlatStateCache.AccountTombstone) ? null : cached;
-            return await _inner.GetAccountAsync(address).ConfigureAwait(false);
+            if (_inner is IAddressHashCache cache) return cache.TryGetAddressHash(address, out hash);
+            hash = null;
+            return false;
         }
 
-        public Task SaveAccountAsync(string address, Account account)
-        {
-            if (!_buffering) return _inner.SaveAccountAsync(address, account);
-            _overlay.SaveAccount(StateOverlay.Normalize(address), StateOverlay.OriginalAddress(address), account);
-            return Task.CompletedTask;
-        }
+        public void SetAddressHash(EvmAddress address, byte[] hash) => (_inner as IAddressHashCache)?.SetAddressHash(address, hash);
 
-        public async Task<bool> AccountExistsAsync(string address)
-        {
-            var resolved = _overlay.AccountExists(StateOverlay.Normalize(address));
-            if (resolved.HasValue) return resolved.Value;
-            return await _inner.AccountExistsAsync(address).ConfigureAwait(false);
-        }
+        public void ClearAddressHashCache() => (_inner as IAddressHashCache)?.ClearAddressHashCache();
 
-        public Task DeleteAccountAsync(string address)
-        {
-            if (!_buffering) return _inner.DeleteAccountAsync(address);
-            _overlay.DeleteAccount(StateOverlay.Normalize(address), StateOverlay.OriginalAddress(address));
-            return Task.CompletedTask;
-        }
 
-        public async Task<Dictionary<string, Account>> GetAllAccountsAsync()
-        {
-            var merged = await _inner.GetAllAccountsAsync().ConfigureAwait(false);
-            foreach (var kv in _overlay.LiveAccountsByOriginalAddress())
-                merged[kv.Key] = kv.Value;
-            foreach (var deletedOriginal in _overlay.DeletedOriginalAddresses())
-                merged.Remove(deletedOriginal);
-            return merged;
-        }
+        public Task<Account> GetAccountAsync(string address) => GetAccountAsync(EvmAddress.FromHex(address));
 
-        public async IAsyncEnumerable<KeyValuePair<string, Account>> StreamAccountsAsync()
+        public async Task<Account> GetAccountAsync(EvmAddress address)
         {
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kv in _overlay.LiveAccountsByOriginalAddress())
-            {
-                seen.Add(kv.Key);
-                yield return kv;
-            }
-            await foreach (var kv in _inner.StreamAccountsAsync().ConfigureAwait(false))
-            {
-                if (seen.Contains(kv.Key)) continue;
-                if (_overlay.IsAccountDeletedByKey(StateOverlay.Normalize(kv.Key))) continue;
-                yield return kv;
-            }
-        }
-
-        public async Task<byte[]> GetStorageAsync(string address, BigInteger slot)
-        {
-            System.Threading.Interlocked.Increment(ref _storageReads);
-            var key = StateOverlay.Normalize(address);
-            if (_overlay.TryGetStorage(key, slot, out var value)) return value;
-            if (_pendingFlush != null && _pendingFlush.TryGetStorage(address, slot, out var pending, out var pendingCleared))
-                return pendingCleared ? null : pending;
-            if (_cache != null && _cache.TryGetStorage(address, slot, out var cached))
-                return ReferenceEquals(cached, FlatStateCache.Tombstone) ? null : cached;
-            return await _inner.GetStorageAsync(address, slot).ConfigureAwait(false);
-        }
-
-        public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
-        {
-            if (!_buffering) return _inner.SaveStorageAsync(address, slot, value);
-            _overlay.SaveStorage(StateOverlay.Normalize(address), StateOverlay.OriginalAddress(address), slot, value);
-            return Task.CompletedTask;
-        }
-
-        public async Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
-        {
-            var key = StateOverlay.Normalize(address);
-            Dictionary<byte[], byte[]> result;
-            if (_overlay.IsStorageCleared(key))
-            {
-                result = new Dictionary<byte[], byte[]>(Nethereum.Util.ByteArrayComparer.Current);
-            }
+            var meter = _meter;
+            var start = meter == null ? 0L : System.Diagnostics.Stopwatch.GetTimestamp();
+            if (!StateReadMeter.ReadsSuppressed) System.Threading.Interlocked.Increment(ref _accountReads);
+            Account result;
+            if (_overlay.TryGetAccount(address, out var account)) result = account;
+            else if (_pendingFlush != null && _pendingFlush.TryGetAccount(address, out var pending, out var pendingDeleted))
+                result = pendingDeleted ? null : pending;
+            else if (_cache != null && _cache.TryGetAccount(address, out var cached))
+                result = ReferenceEquals(cached, FlatStateCache.AccountTombstone) ? null : cached;
             else
             {
-                result = await _inner.GetAllStorageAsync(address).ConfigureAwait(false);
-                foreach (var slot in _overlay.DeletedStorageSlots(key))
-                    result.Remove(StateKeys.StorageSlotKey(slot));
+                result = await _inner.GetAccountAsync(address).ConfigureAwait(false);
+                if (result == null && _buffering) _overlay.NoteAbsentInBase(address);
             }
-            foreach (var kv in _overlay.StorageEntries(key))
-                result[StateKeys.StorageSlotKey(kv.Key)] = kv.Value;
+            meter?.AddAccountRead(System.Diagnostics.Stopwatch.GetTimestamp() - start, address);
             return result;
         }
 
-        public Task ClearStorageAsync(string address)
+        public bool WasAbsentInBase(EvmAddress address) => _buffering && _overlay.IsAbsentInBase(address);
+
+        public Task SaveAccountAsync(string address, Account account) => SaveAccountAsync(EvmAddress.FromHex(address), account);
+
+        public Task SaveAccountAsync(EvmAddress address, Account account)
+        {
+            if (!_buffering) return _inner.SaveAccountAsync(address, account);
+            _overlay.SaveAccount(address, account);
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> AccountExistsAsync(string address) => AccountExistsAsync(EvmAddress.FromHex(address));
+
+        public async Task<bool> AccountExistsAsync(EvmAddress address)
+        {
+            var meter = _meter;
+            if (meter == null) return await _overlay.AccountExistsAsync(_inner, address).ConfigureAwait(false);
+            var start = System.Diagnostics.Stopwatch.GetTimestamp();
+            var exists = await _overlay.AccountExistsAsync(_inner, address).ConfigureAwait(false);
+            meter.AddAccountRead(System.Diagnostics.Stopwatch.GetTimestamp() - start, address);
+            return exists;
+        }
+
+        public Task DeleteAccountAsync(string address) => DeleteAccountAsync(EvmAddress.FromHex(address));
+
+        public Task DeleteAccountAsync(EvmAddress address)
+        {
+            if (!_buffering) return _inner.DeleteAccountAsync(address);
+            _overlay.DeleteAccount(address);
+            return Task.CompletedTask;
+        }
+
+        public Task<Dictionary<string, Account>> GetAllAccountsAsync()
+            => _overlay.MergeAllAccountsAsync(_inner);
+
+        public IAsyncEnumerable<KeyValuePair<string, Account>> StreamAccountsAsync()
+            => _overlay.StreamMergedAccountsAsync(_inner);
+
+        public Task<byte[]> GetStorageAsync(string address, BigInteger slot) => GetStorageAsync(EvmAddress.FromHex(address), slot);
+
+        public async Task<byte[]> GetStorageAsync(EvmAddress address, BigInteger slot)
+        {
+            var meter = _meter;
+            var start = meter == null ? 0L : System.Diagnostics.Stopwatch.GetTimestamp();
+            if (!StateReadMeter.ReadsSuppressed) System.Threading.Interlocked.Increment(ref _storageReads);
+            byte[] result;
+            if (_overlay.TryGetStorage(address, slot, out var value)) result = value;
+            else if (_pendingFlush != null && _pendingFlush.TryGetStorage(address, slot, out var pending, out var pendingCleared))
+                result = pendingCleared ? null : pending;
+            else if (_cache != null && _cache.TryGetStorage(address, slot, out var cached))
+                result = ReferenceEquals(cached, FlatStateCache.Tombstone) ? null : cached;
+            else
+                result = await _inner.GetStorageAsync(address, slot).ConfigureAwait(false);
+            meter?.AddStorageRead(System.Diagnostics.Stopwatch.GetTimestamp() - start, address, slot);
+            return result;
+        }
+
+        public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
+            => SaveStorageAsync(EvmAddress.FromHex(address), slot, value);
+
+        public Task SaveStorageAsync(EvmAddress address, BigInteger slot, byte[] value)
+        {
+            if (!_buffering) return _inner.SaveStorageAsync(address, slot, value);
+            _overlay.SaveStorage(address, slot, value);
+            return Task.CompletedTask;
+        }
+
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address) => GetAllStorageAsync(EvmAddress.FromHex(address));
+
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(EvmAddress address)
+            => _overlay.MergeAllStorageAsync(_inner, address);
+
+        public Task ClearStorageAsync(string address) => ClearStorageAsync(EvmAddress.FromHex(address));
+
+        public Task ClearStorageAsync(EvmAddress address)
         {
             if (!_buffering) return _inner.ClearStorageAsync(address);
-            _overlay.ClearStorage(StateOverlay.Normalize(address), StateOverlay.OriginalAddress(address));
+            _overlay.ClearStorage(address);
             return Task.CompletedTask;
         }
 
         public async Task<byte[]> GetCodeAsync(byte[] codeHash)
         {
-            var hex = codeHash == null ? "" : Convert.ToHexString(codeHash);
-            if (_overlay.TryGetCode(hex, out var c)) return c;
-            if (_pendingFlush != null && _pendingFlush.TryGetCode(codeHash, out var pending))
-                return pending;
-            if (_cache != null && codeHash != null && codeHash.Length == 32 && _cache.TryGetCode(codeHash, out var cached))
-                return cached;
-            return await _inner.GetCodeAsync(codeHash).ConfigureAwait(false);
+            var meter = _meter;
+            var start = meter == null ? 0L : System.Diagnostics.Stopwatch.GetTimestamp();
+            byte[] result;
+            if (_overlay.TryGetCode(codeHash, out var c)) result = c;
+            else if (_pendingFlush != null && _pendingFlush.TryGetCode(codeHash, out var pending))
+                result = pending;
+            else if (_cache != null && codeHash != null && codeHash.Length == 32 && _cache.TryGetCode(codeHash, out var cached))
+                result = cached;
+            else
+                result = await _inner.GetCodeAsync(codeHash).ConfigureAwait(false);
+            meter?.AddCodeRead(System.Diagnostics.Stopwatch.GetTimestamp() - start, codeHash, result);
+            return result;
         }
 
         public Task SaveCodeAsync(byte[] codeHash, byte[] code)
         {
+            _meter?.AddCodeWrite(code);
             if (!_buffering) return _inner.SaveCodeAsync(codeHash, code);
-            var hex = codeHash == null ? "" : Convert.ToHexString(codeHash);
-            _overlay.SaveCode(hex, code);
+            _overlay.SaveCode(codeHash, code);
             return Task.CompletedTask;
         }
 
@@ -177,6 +212,7 @@ namespace Nethereum.CoreChain.Storage
 
         public Task CommitSnapshotAsync(IStateSnapshot snapshot)
         {
+            _overlay.CommitSnapshot(snapshot);
             return Task.CompletedTask;
         }
 
@@ -188,24 +224,45 @@ namespace Nethereum.CoreChain.Storage
 
         public Task<IReadOnlyCollection<string>> GetDirtyAccountAddressesAsync()
             => _buffering
-                ? Task.FromResult(_overlay.DirtyAccountAddresses())
+                ? Task.FromResult<IReadOnlyCollection<string>>(HexOf(_overlay.DirtyAccountAddresses()))
                 : _inner.GetDirtyAccountAddressesAsync();
 
-        public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
+        public Task<IReadOnlyCollection<EvmAddress>> GetDirtyAccountsAsync()
             => _buffering
-                ? Task.FromResult(_overlay.DirtyStorageSlots(StateOverlay.OriginalAddress(address)))
+                ? Task.FromResult(_overlay.DirtyAccountAddresses())
+                : _inner.GetDirtyAccountsAsync();
+
+        public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
+            => GetDirtyStorageSlotsAsync(EvmAddress.FromHex(address));
+
+        public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(EvmAddress address)
+            => _buffering
+                ? Task.FromResult(_overlay.DirtyStorageSlots(address))
                 : _inner.GetDirtyStorageSlotsAsync(address);
 
         public Task<IReadOnlyCollection<string>> GetStorageClearedAddressesAsync()
             => _buffering
-                ? Task.FromResult(_overlay.StorageClearedAddresses())
+                ? Task.FromResult<IReadOnlyCollection<string>>(HexOf(_overlay.StorageClearedAddresses()))
                 : _inner.GetStorageClearedAddressesAsync();
+
+        public Task<IReadOnlyCollection<EvmAddress>> GetStorageClearedAccountsAsync()
+            => _buffering
+                ? Task.FromResult(_overlay.StorageClearedAddresses())
+                : _inner.GetStorageClearedAccountsAsync();
 
         public Task ClearDirtyTrackingAsync()
         {
             if (!_buffering) return _inner.ClearDirtyTrackingAsync();
             _overlay.ClearDirtyTracking();
+            ClearAddressHashCache();
             return Task.CompletedTask;
+        }
+
+        private static List<string> HexOf(IReadOnlyCollection<EvmAddress> addresses)
+        {
+            var hex = new List<string>(addresses.Count);
+            foreach (var address in addresses) hex.Add(address.ToHexLower());
+            return hex;
         }
 
 
@@ -217,7 +274,7 @@ namespace Nethereum.CoreChain.Storage
 
             if (_inner is IFlatStateBatchWriter batchWriter)
             {
-                var batch = new FlatStateBatch(deletedAccounts, clearedStorage, nonZeroStorage, deletedSlots, accounts, code);
+                var batch = FlatStateBatch.FromAddresses(deletedAccounts, clearedStorage, nonZeroStorage, deletedSlots, accounts, code);
 
                 if (!batch.IsEmpty)
                     await batchWriter.ApplyBatchAsync(batch).ConfigureAwait(false);
@@ -253,25 +310,25 @@ namespace Nethereum.CoreChain.Storage
         public Task<FlatStateBatch> CaptureBufferAsync()
         {
             var (deletedAccounts, clearedStorage, nonZeroStorage, deletedSlots, accounts, code) = MaterializeCategories();
-            var batch = new FlatStateBatch(deletedAccounts, clearedStorage, nonZeroStorage, deletedSlots, accounts, code);
+            var batch = FlatStateBatch.FromAddresses(deletedAccounts, clearedStorage, nonZeroStorage, deletedSlots, accounts, code);
 
             _overlay.ClearWrites();
             _buffering = false;
             return Task.FromResult(batch);
         }
 
-        private (List<string> DeletedAccounts, List<string> ClearedStorage,
-            List<(string Address, BigInteger Slot, byte[] Value)> NonZeroStorage,
-            List<(string Address, BigInteger Slot)> DeletedSlots,
-            List<(string Address, Account Account)> Accounts,
+        private (List<EvmAddress> DeletedAccounts, List<EvmAddress> ClearedStorage,
+            List<(EvmAddress Address, BigInteger Slot, byte[] Value)> NonZeroStorage,
+            List<(EvmAddress Address, BigInteger Slot)> DeletedSlots,
+            List<(EvmAddress Address, Account Account)> Accounts,
             List<(byte[] CodeHash, byte[] Code)> Code) MaterializeCategories()
         {
             return (
-                ToList(_overlay.DeletedAccountOriginalAddresses()),
-                ToList(_overlay.ClearedStorageOriginalAddresses()),
+                ToList(_overlay.DeletedAccountAddresses()),
+                ToList(_overlay.ClearedStorageAddresses()),
                 ToList(_overlay.BufferedNonZeroStorage()),
                 ToList(_overlay.IndividuallyDeletedSlotsNotCleared()),
-                CloneAccounts(_overlay.BufferedAccounts()),
+                ToList(_overlay.BufferedAccounts()),
                 ToList(_overlay.BufferedCode()));
         }
 
@@ -282,20 +339,12 @@ namespace Nethereum.CoreChain.Storage
             return list;
         }
 
-        private static List<(string Address, Account Account)> CloneAccounts(
-            IEnumerable<(string OriginalAddress, Account Account)> source)
-        {
-            var list = new List<(string, Account)>();
-            foreach (var item in source) list.Add((item.OriginalAddress, item.Account.Clone()));
-            return list;
-        }
-
         private void PublishToCache(
-            List<string> deletedAccounts,
-            List<string> clearedStorage,
-            List<(string Address, BigInteger Slot, byte[] Value)> nonZeroStorage,
-            List<(string Address, BigInteger Slot)> deletedSlots,
-            List<(string Address, Account Account)> accounts,
+            List<EvmAddress> deletedAccounts,
+            List<EvmAddress> clearedStorage,
+            List<(EvmAddress Address, BigInteger Slot, byte[] Value)> nonZeroStorage,
+            List<(EvmAddress Address, BigInteger Slot)> deletedSlots,
+            List<(EvmAddress Address, Account Account)> accounts,
             List<(byte[] CodeHash, byte[] Code)> code)
         {
             foreach (var address in deletedAccounts)

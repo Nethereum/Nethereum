@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
+    [Trait("Requires", "Externals")]
     public class HostRejectionReasonTests
     {
         private const string GasFloorFixture =
@@ -56,7 +57,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
         private async Task<FixtureRun> RunFixtureDemanding(string expectException)
         {
-            var fixture = Path.Combine(AmsterdamFixtureCorpus.Root ?? "", GasFloorFixture);
+            var fixture = Path.Combine(AmsterdamFixtureCorpus.Root, GasFloorFixture);
             Assert.True(File.Exists(fixture),
                 $"The Amsterdam corpus fixture this test is built on is missing: {fixture}");
 

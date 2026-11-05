@@ -78,7 +78,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Snap
         }
 
         [Fact]
-        public async Task RocksDbSink_StorageRootMismatch_ThrowsBeforeAffectingFinalRoot()
+        public async Task Given_ACompletedStorageTrieWhoseRootDiffersFromTheExpected_When_TheScopeEnds_Then_ItCompletesAndKeepsTheSlotForTheHealToReconcile()
         {
             var sink = new TrieSnapSyncSink(_trieNodes, _state);
             var addrHash = Sha3Keccack.Current.CalculateHash(new byte[20]);
@@ -90,9 +90,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Snap
                 RLP.RLP.EncodeElement(new byte[] { 0x42 }),
                 default);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => scope.EndAsync(default).AsTask());
-            Assert.Null(_manager.Get(RocksDbManager.CF_STATE_STORAGE, FlatStorageKey(addrHash, slotHash)));
+            var ended = await Record.ExceptionAsync(() => scope.EndAsync(default).AsTask());
+
+            Assert.Null(ended);
+            Assert.Equal(new byte[] { 0x42 }, _manager.Get(RocksDbManager.CF_STATE_STORAGE, FlatStorageKey(addrHash, slotHash)));
         }
 
         [Fact]

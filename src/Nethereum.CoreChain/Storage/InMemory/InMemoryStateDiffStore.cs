@@ -22,17 +22,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
-                if (_blockIndex.TryGetValue(diff.BlockNumber, out var oldEntries))
-                {
-                    foreach (var entry in oldEntries)
-                    {
-                        if (entry.Type == DiffType.Account)
-                            _accountDiffs.Remove((entry.Address, diff.BlockNumber));
-                        else
-                            _storageDiffs.Remove((entry.Address, entry.SlotHex, diff.BlockNumber));
-                    }
-                    _blockIndex.Remove(diff.BlockNumber);
-                }
+                RemoveBlockDiffs(diff.BlockNumber);
 
                 var indexEntries = new List<BlockIndexEntry>();
 
@@ -133,18 +123,8 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
-                if (_blockIndex.TryGetValue(blockNumber, out var entries))
-                {
-                    foreach (var entry in entries)
-                    {
-                        if (entry.Type == DiffType.Account)
-                            _accountDiffs.Remove((entry.Address, blockNumber));
-                        else
-                            _storageDiffs.Remove((entry.Address, entry.SlotHex, blockNumber));
-                    }
-                    _blockIndex.Remove(blockNumber);
+                if (RemoveBlockDiffs(blockNumber))
                     UpdateBounds();
-                }
             }
             return Task.CompletedTask;
         }
@@ -155,19 +135,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
             {
                 var blocksToRemove = _blockIndex.Keys.Where(b => b > blockNumber).ToList();
                 foreach (var block in blocksToRemove)
-                {
-                    if (_blockIndex.TryGetValue(block, out var entries))
-                    {
-                        foreach (var entry in entries)
-                        {
-                            if (entry.Type == DiffType.Account)
-                                _accountDiffs.Remove((entry.Address, block));
-                            else
-                                _storageDiffs.Remove((entry.Address, entry.SlotHex, block));
-                        }
-                    }
-                    _blockIndex.Remove(block);
-                }
+                    RemoveBlockDiffs(block);
 
                 UpdateBounds();
             }
@@ -181,19 +149,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
             {
                 var blocksToRemove = _blockIndex.Keys.Where(b => b < blockNumber).ToList();
                 foreach (var block in blocksToRemove)
-                {
-                    if (_blockIndex.TryGetValue(block, out var entries))
-                    {
-                        foreach (var entry in entries)
-                        {
-                            if (entry.Type == DiffType.Account)
-                                _accountDiffs.Remove((entry.Address, block));
-                            else
-                                _storageDiffs.Remove((entry.Address, entry.SlotHex, block));
-                        }
-                    }
-                    _blockIndex.Remove(block);
-                }
+                    RemoveBlockDiffs(block);
 
                 UpdateBounds();
             }
@@ -215,6 +171,22 @@ namespace Nethereum.CoreChain.Storage.InMemory
             {
                 return Task.FromResult(_newestBlock);
             }
+        }
+
+        private bool RemoveBlockDiffs(BigInteger block)
+        {
+            if (!_blockIndex.TryGetValue(block, out var entries))
+                return false;
+
+            foreach (var entry in entries)
+            {
+                if (entry.Type == DiffType.Account)
+                    _accountDiffs.Remove((entry.Address, block));
+                else
+                    _storageDiffs.Remove((entry.Address, entry.SlotHex, block));
+            }
+            _blockIndex.Remove(block);
+            return true;
         }
 
         private void UpdateBounds()

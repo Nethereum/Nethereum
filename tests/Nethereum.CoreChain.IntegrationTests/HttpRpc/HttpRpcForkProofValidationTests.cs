@@ -13,6 +13,7 @@ using Nethereum.Merkle.Patricia.ProofVerification;
 namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
 {
     [Trait("Category", "Fork")]
+    [Trait("Category", "MainnetFork")]
     public class HttpRpcForkProofValidationTests : IClassFixture<DevChainForkHttpFixture>
     {
         private readonly DevChainForkHttpFixture _fixture;
@@ -28,8 +29,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_USDC_AccountProofVerifies()
         {
-            if (!_fixture.IsAvailable) return;
-
             await CallContractAsync(DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
 
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
@@ -62,8 +61,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_USDC_StorageProofVerifies()
         {
-            if (!_fixture.IsAvailable) return;
-
             var totalSupplyResult = await CallContractAsync(
                 DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
 
@@ -92,8 +89,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_USDC_BalanceOfKnownHolder()
         {
-            if (!_fixture.IsAvailable) return;
-
             var testAddress = DevChainForkHttpFixture.Address;
 
             var balanceOfData = BalanceOfSelector +
@@ -129,8 +124,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_MultipleForkAccounts_AllVerify()
         {
-            if (!_fixture.IsAvailable) return;
-
             var contracts = new[]
             {
                 DevChainForkHttpFixture.UsdcAddress,
@@ -169,8 +162,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task ForkProof_ProofValidationService_WorksWithForkedState()
         {
-            if (!_fixture.IsAvailable) return;
-
             await CallContractAsync(DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
@@ -187,8 +178,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task CrossValidation_USDC_CodeHashMatchesMainnet()
         {
-            if (!_fixture.IsAvailable) return;
-
             await CallContractAsync(DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
             await SendEthTransferAsync(DevChainForkHttpFixture.Address, 1);
 
@@ -235,8 +224,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task CrossValidation_MultipleContracts_CodeHashesMatch()
         {
-            if (!_fixture.IsAvailable) return;
-
             var contracts = new[]
             {
                 DevChainForkHttpFixture.UsdcAddress,
@@ -268,8 +255,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task CrossValidation_USDC_TotalSupplyMatchesMainnet()
         {
-            if (!_fixture.IsAvailable) return;
-
             var forkTotalSupply = await CallContractAsync(
                 DevChainForkHttpFixture.UsdcAddress, TotalSupplySelector);
 
@@ -299,8 +284,6 @@ namespace Nethereum.CoreChain.IntegrationTests.HttpRpc
         [Fact]
         public async Task CrossValidation_MainnetProof_VerifiesIndependently()
         {
-            if (!_fixture.IsAvailable) return;
-
             var blockNumber = await _fixture.MainnetWeb3!.Eth.Blocks.GetBlockNumber.SendRequestAsync();
             var blockParam = new BlockParameter(blockNumber);
 

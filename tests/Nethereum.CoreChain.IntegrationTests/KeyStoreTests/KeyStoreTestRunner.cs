@@ -4,16 +4,17 @@ using Nethereum.KeyStore;
 using Nethereum.Util;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.KeyStoreTests
 {
+    [Trait("Requires", "Externals")]
     public class KeyStoreTestRunner
     {
         private readonly ITestOutputHelper _output;
 
-        private static readonly string TestPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "KeyStoreTests");
+        private static string TestPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "KeyStoreTests");
 
         public KeyStoreTestRunner(ITestOutputHelper output)
         {
@@ -46,9 +47,7 @@ namespace Nethereum.CoreChain.IntegrationTests.KeyStoreTests
 
         public static IEnumerable<object[]> GetKeyStoreTests()
         {
-            var filePath = Path.Combine(
-                AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "external", "ethereum-tests", "KeyStoreTests", "basic_tests.json");
+            var filePath = Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "KeyStoreTests", "basic_tests.json");
 
             if (!File.Exists(filePath))
                 yield break;

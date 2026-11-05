@@ -12,7 +12,11 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Engine
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
             var payload = GetParam<ExecutionPayloadV3>(request, 0);
+            var expectedBlobVersionedHashes = GetParam<string[]>(request, 1);
             var parentBeaconBlockRoot = GetParam<string>(request, 2);
+
+            var blobRejection = EnginePayloadDecoder.CheckBlobVersionedHashes(payload, expectedBlobVersionedHashes);
+            if (blobRejection != null) return Success(request.Id, blobRejection);
 
             var engine = context.GetRequiredService<IEngineApiService>();
             var status = await engine.NewPayloadAsync(payload, parentBeaconBlockRoot);

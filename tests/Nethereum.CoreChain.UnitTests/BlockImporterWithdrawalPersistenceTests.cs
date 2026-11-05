@@ -26,7 +26,7 @@ namespace Nethereum.CoreChain.UnitTests
                     Coinbase = BlockPipelineHarness.SenderAddress,
                     BaseFee = 0,
                     BlockGasLimit = 30_000_000,
-                    Difficulty = 1,
+                    Difficulty = 0,
                     ChainId = BlockPipelineHarness.ChainId,
                     Withdrawals = withdrawals
                 });

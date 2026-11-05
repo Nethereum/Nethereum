@@ -37,5 +37,17 @@ namespace Nethereum.CoreChain.Storage.History
                 throw new ArgumentException($"tx key must be at least {TxKeyLength} bytes", nameof(key));
             return BinaryPrimitives.ReadUInt32BigEndian(key.Slice(8, 4));
         }
+
+        public static ulong? TryReadBlockNumber(byte[] raw)
+        {
+            if (raw == null || raw.Length < BlockKeyLength) return null;
+            return ReadBlockNumber(raw);
+        }
+
+        public static TxLocation? TryReadTxLocation(byte[] raw)
+        {
+            if (raw == null || raw.Length < TxKeyLength) return null;
+            return new TxLocation(ReadBlockNumber(raw), ReadTxIndex(raw));
+        }
     }
 }

@@ -18,6 +18,7 @@ namespace Nethereum.CoreChain.RocksDB
     {
         public void CheckpointBulk()
         {
+            _freezerAppendService?.CommitPending();
             _bulkSave?.Checkpoint();
             _freezerIndexer?.CheckpointIngest();
         }

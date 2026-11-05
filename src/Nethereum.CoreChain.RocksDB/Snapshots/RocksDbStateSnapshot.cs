@@ -58,7 +58,7 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
 
         public void SetCode(byte[] codeHash, byte[] code)
         {
-            var hashHex = ToHex(codeHash);
+            var hashHex = codeHash?.ToHex();
             _pendingCode[hashHex] = code;
         }
 
@@ -91,6 +91,11 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         public void TrackAccountModification(string address)
         {
             _modifiedAddresses.Add(NormalizeAddress(address));
+        }
+
+        public void TrackAccountModification(EvmAddress address)
+        {
+            _modifiedAddresses.Add(StateKeys.AccountKeyHex(address));
         }
 
         public void TrackStorageModification(byte[] storageKey)
@@ -130,7 +135,5 @@ namespace Nethereum.CoreChain.RocksDB.Snapshots
         {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
-
-        private static string ToHex(byte[] bytes) => bytes?.ToHex();
     }
 }

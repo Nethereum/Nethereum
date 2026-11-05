@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Nethereum.CoreChain.RocksDB;
 using Nethereum.CoreChain.RocksDB.Stores;
+using Nethereum.CoreChain.Storage;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Nodes.Rlp;
@@ -151,6 +152,129 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             Assert.True(sink.HasNode(false, null, new byte[] { 0x02, 0x03 }, hash),
                 "existence checks must observe the write buffer within a round");
+        }
+
+        [Fact]
+        public void Given_AStoredNode_When_ADeleteOnlyFlushIsTheSinksFirstWrite_Then_ProbeReportsAbsentAndTheFlushDoesNotThrow()
+        {
+            var pathStore = new RocksDbPathTrieNodeStore(_mgr);
+            var path = new byte[] { 0x03, 0x07 };
+            var (blob, hash) = Node(0x31);
+            var writer = new PathHealNodeSink(pathStore, _mgr);
+            writer.PutNode(false, null, path, hash, blob);
+            writer.Flush();
+
+            var sink = new PathHealNodeSink(pathStore, _mgr);
+            sink.DeleteNode(false, null, path);
+            Assert.Equal(HealNodePresence.Absent, sink.Probe(false, null, path, hash));
+            sink.Flush();
+
+            Assert.Equal(HealNodePresence.Absent, sink.Probe(false, null, path, hash));
+            Assert.Equal(HealNodePresence.Absent, new PathHealNodeSink(pathStore, _mgr).Probe(false, null, path, hash));
+            Assert.Null(pathStore.TryGetRawNode(Array.Empty<byte>(), path));
+        }
+
+        [Fact]
+        public void Given_ADeleteThenAPutAtTheSamePath_When_Flushed_Then_TheNewNodeIsStored()
+        {
+            var pathStore = new RocksDbPathTrieNodeStore(_mgr);
+            var owner = Hash32(0x41);
+            var path = new byte[] { 0x0B };
+            var (oldBlob, oldHash) = Node(0x42);
+            var (newBlob, newHash) = Node(0x43);
+            var writer = new PathHealNodeSink(pathStore, _mgr);
+            writer.PutNode(true, owner, path, oldHash, oldBlob);
+            writer.Flush();
+
+            var sink = new PathHealNodeSink(pathStore, _mgr);
+            sink.DeleteNode(true, owner, path);
+            sink.PutNode(true, owner, path, newHash, newBlob);
+            sink.Flush();
+
+            Assert.Equal(HealNodePresence.Match, new PathHealNodeSink(pathStore, _mgr).Probe(true, owner, path, newHash));
+            Assert.Equal(newBlob, pathStore.TryGetRawNode(owner, path));
+        }
+
+        [Fact]
+        public void Given_APutThenADeleteAtTheSamePath_When_Flushed_Then_ThePathIsEmpty()
+        {
+            var pathStore = new RocksDbPathTrieNodeStore(_mgr);
+            var owner = Hash32(0x51);
+            var path = new byte[] { 0x04 };
+            var (oldBlob, oldHash) = Node(0x52);
+            var (newBlob, newHash) = Node(0x53);
+            var writer = new PathHealNodeSink(pathStore, _mgr);
+            writer.PutNode(true, owner, path, oldHash, oldBlob);
+            writer.Flush();
+
+            var sink = new PathHealNodeSink(pathStore, _mgr);
+            sink.PutNode(true, owner, path, newHash, newBlob);
+            sink.DeleteNode(true, owner, path);
+            sink.Flush();
+
+            var reader = new PathHealNodeSink(pathStore, _mgr);
+            Assert.Equal(HealNodePresence.Absent, reader.Probe(true, owner, path, newHash));
+            Assert.Equal(HealNodePresence.Absent, reader.Probe(true, owner, path, oldHash));
+            Assert.Null(pathStore.TryGetRawNode(owner, path));
+        }
+
+        [Fact]
+        public void Given_NoNodeAtAPath_When_DeleteNodeIsCalled_Then_ANodeLaterPutThereByAnotherWriterSurvivesTheFlush()
+        {
+            var pathStore = new RocksDbPathTrieNodeStore(_mgr);
+            var owner = Hash32(0x61);
+            var path = new byte[] { 0x02, 0x0E };
+            var (blob, hash) = Node(0x62);
+            var (otherBlob, otherHash) = Node(0x63);
+
+            var sink = new PathHealNodeSink(pathStore, _mgr);
+            sink.DeleteNode(true, owner, path);
+            sink.PutNode(true, owner, new byte[] { 0x09 }, otherHash, otherBlob);
+
+            var otherWriter = new PathHealNodeSink(pathStore, _mgr);
+            otherWriter.PutNode(true, owner, path, hash, blob);
+            otherWriter.Flush();
+
+            sink.Flush();
+
+            Assert.Equal(HealNodePresence.Match, new PathHealNodeSink(pathStore, _mgr).Probe(true, owner, path, hash));
+            Assert.Equal(blob, pathStore.TryGetRawNode(owner, path));
+        }
+
+        [Fact]
+        public void Given_TheSameNibblePathUnderTheAccountTrieOwnerAAndOwnerB_When_DeleteNodeForOwnerAIsFlushed_Then_OnlyOwnerAsNodeIsGone()
+        {
+            var pathStore = new RocksDbPathTrieNodeStore(_mgr);
+            var ownerA = Hash32(0x71);
+            var ownerB = Hash32(0x72);
+            var path = new byte[] { 0x05, 0x01 };
+            var (accountBlob, accountHash) = Node(0x73);
+            var (blobA, hashA) = Node(0x74);
+            var (blobB, hashB) = Node(0x75);
+            var writer = new PathHealNodeSink(pathStore, _mgr);
+            writer.PutNode(false, null, path, accountHash, accountBlob);
+            writer.PutNode(true, ownerA, path, hashA, blobA);
+            writer.PutNode(true, ownerB, path, hashB, blobB);
+            writer.Flush();
+
+            var sink = new PathHealNodeSink(pathStore, _mgr);
+            sink.DeleteNode(true, ownerA, path);
+            sink.Flush();
+
+            var reader = new PathHealNodeSink(pathStore, _mgr);
+            Assert.Equal(HealNodePresence.Absent, reader.Probe(true, ownerA, path, hashA));
+            Assert.Equal(HealNodePresence.Match, reader.Probe(true, ownerB, path, hashB));
+            Assert.Equal(HealNodePresence.Match, reader.Probe(false, null, path, accountHash));
+            Assert.Null(pathStore.TryGetRawNode(ownerA, path));
+            Assert.Equal(blobB, pathStore.TryGetRawNode(ownerB, path));
+            Assert.Equal(accountBlob, pathStore.TryGetRawNode(Array.Empty<byte>(), path));
+        }
+
+        private static (byte[] Blob, byte[] Hash) Node(byte fill)
+        {
+            var blob = new byte[36];
+            for (int i = 0; i < blob.Length; i++) blob[i] = fill;
+            return (blob, Sha3Keccack.Current.CalculateHash(blob));
         }
 
         private static byte[] Hash32(byte first)

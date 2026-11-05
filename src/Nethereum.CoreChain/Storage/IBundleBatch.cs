@@ -38,6 +38,7 @@ namespace Nethereum.CoreChain.Storage
 
         void SaveSnapSyncState(SnapSyncState state);
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         void UpsertDeferredStorageDebt(DeferredStorageDebt debt);
 
         void SaveDeferredHealCodeBlob(byte[] blob);

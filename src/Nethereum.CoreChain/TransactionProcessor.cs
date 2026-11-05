@@ -66,14 +66,15 @@ namespace Nethereum.CoreChain
 
             try
             {
-                var senderAddress = cachedSenderAddress ?? _txVerifier.GetSenderAddress(signedTx);
+                var senderAddress = cachedSenderAddress ?? TryRecoverSender(signedTx);
                 if (string.IsNullOrEmpty(senderAddress))
                     return RefuseUnrecoverableSender(result);
 
                 result.EffectiveGasPrice = (BigInteger)signedTx.GetEffectiveGasPrice(blockContext.BaseFee);
 
                 var transactionNonce = signedTx.GetNonce();
-                var senderAccount = await _stateStore.GetAccountAsync(senderAddress);
+                var sender = EvmAddress.FromHex(senderAddress);
+                var senderAccount = await _stateStore.GetAccountAsync(sender);
                 var expectedNonce = senderAccount?.Nonce ?? EvmUInt256.Zero;
                 if (expectedNonce != transactionNonce)
                     return SkipForNonceMismatch(result, transactionNonce, expectedNonce, cumulativeGasUsed);
@@ -83,7 +84,7 @@ namespace Nethereum.CoreChain
                 try
                 {
                     var executionState = await OpenExecutionStateAsync(
-                        senderAddress, stateReader, balRecorder, blockAccessIndex);
+                        sender, stateReader, balRecorder, blockAccessIndex);
 
                     var ctx = TransactionContextFactory.From(signedTx, senderAddress, blockContext, executionState);
                     if (blockGasCapacity != null) ctx.BlockGasCapacity = blockGasCapacity;
@@ -158,14 +159,19 @@ namespace Nethereum.CoreChain
 
             try
             {
+                simulateOptions.CancellationToken.ThrowIfCancellationRequested();
+
                 var executionState = await OpenExecutionStateAsync(
-                    from, stateReader, balRecorder, (ulong)(txIndex + 1));
+                    EvmAddress.FromHex(from), stateReader, balRecorder, (ulong)(txIndex + 1));
+                executionState.CancellationToken = simulateOptions.CancellationToken;
 
                 var isContractCreation = Nethereum.Model.SignedTransactionExtensions.IsContractCreationRecipient(call.To);
                 var ctx = BuildSimulateExecutionContext(
                     call, simulateOptions.TraceTransfers, simulateOptions.Validation, from, isContractCreation,
-                    call.Gas.Value, blockContext, executionState, simulateOptions.PrecompileRelocations);
+                    call.Gas.Value, blockContext, executionState, simulateOptions.PrecompileRelocations,
+                    simulateOptions.BlobBaseFee);
                 if (blockGasCapacity != null) ctx.BlockGasCapacity = blockGasCapacity;
+                ctx.LogIndexCounter = simulateOptions.LogIndexCounter;
 
                 if (simulateOptions.Validation)
                 {
@@ -191,9 +197,15 @@ namespace Nethereum.CoreChain
                 await SettleTransactionAsync(snapshot, executionState, balRecorder, evmResult, ctx.To);
 
                 RecordExecutionOutcome(result, evmResult, entry.Tx, cumulativeGasUsed, traceEnabled: false);
+                RecordSimulateLogIndexes(result, evmResult);
                 ExcludeSimulateTransferLogsFromReceipt(result);
             }
             catch (Exception ex) when (Nethereum.EVM.BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
+            {
+                await DiscardUnitOfWorkAsync(snapshot, balRecorder);
+                throw;
+            }
+            catch (OperationCanceledException)
             {
                 await DiscardUnitOfWorkAsync(snapshot, balRecorder);
                 throw;
@@ -233,10 +245,18 @@ namespace Nethereum.CoreChain
         private static TransactionExecutionContext BuildSimulateExecutionContext(
             TransactionInput call, bool traceTransfers, bool validation, string from, bool isContractCreation,
             BigInteger callGasLimit, BlockContext blockContext, ExecutionStateService executionStateService,
-            System.Collections.Generic.IReadOnlyDictionary<string, int> precompileRelocations)
+            System.Collections.Generic.IReadOnlyDictionary<string, int> precompileRelocations,
+            EvmUInt256? blobBaseFeeOverride)
         {
+            var carriesBlobs = call.BlobVersionedHashes != null && call.BlobVersionedHashes.Count > 0;
             return new TransactionExecutionContext
             {
+                IsType3Transaction = carriesBlobs,
+                TransactionType = carriesBlobs ? Nethereum.Model.TransactionType.Blob : Nethereum.Model.TransactionType.LegacyTransaction,
+                BlobVersionedHashes = carriesBlobs ? call.BlobVersionedHashes : null,
+                MaxFeePerBlobGas = call.MaxFeePerBlobGas != null ? (EvmUInt256)call.MaxFeePerBlobGas.Value : EvmUInt256.Zero,
+                BlobBaseFeeOverride = blobBaseFeeOverride,
+                ExcessBlobGas = (ulong)blockContext.ExcessBlobGas,
                 Mode = ExecutionMode.Call,
                 Sender = from,
                 To = isContractCreation ? null : call.To,
@@ -281,6 +301,10 @@ namespace Nethereum.CoreChain
         {
             var effectiveMaxFee = ctx.IsEip1559 ? ctx.MaxFeePerGas : ctx.GasPrice;
 
+            var senderNonce = await ResolveExpectedNonceAsync(from, executionStateService, expectedNonces);
+            if (senderNonce >= ulong.MaxValue)
+                return ("nonce has max value", TransactionError.NonceIsMax);
+
             if (effectiveMaxFee < (EvmUInt256)blockContext.BaseFee)
                 return ("max fee per gas less than block base fee", TransactionError.InsufficientMaxFeePerGas);
 
@@ -308,10 +332,24 @@ namespace Nethereum.CoreChain
             return await executionStateService.GetNonceAsync(from);
         }
 
+        private string TryRecoverSender(ISignedTransaction signedTx)
+        {
+            try
+            {
+                return _txVerifier.GetSenderAddress(signedTx);
+            }
+            catch (Exception ex) when (!Nethereum.EVM.BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
+            {
+                return null;
+            }
+        }
+
         private static TransactionExecutionResult RefuseUnrecoverableSender(TransactionExecutionResult result)
         {
+            result.Skipped = true;
             result.Success = false;
             result.RevertReason = "Invalid signature: cannot recover sender address";
+            result.ErrorCode = TransactionError.InvalidSignature;
             return result;
         }
 
@@ -345,7 +383,7 @@ namespace Nethereum.CoreChain
         }
 
         private async Task<ExecutionStateService> OpenExecutionStateAsync(
-            string senderAddress,
+            EvmAddress senderAddress,
             IStateReader stateReader,
             BlockAccessListRecorder? balRecorder,
             ulong blockAccessIndex)
@@ -359,7 +397,7 @@ namespace Nethereum.CoreChain
                 executionState.AccessRecorder = balRecorder;
             }
 
-            var senderBalance = await nodeDataService.GetBalanceAsync(senderAddress);
+            var senderBalance = await nodeDataService.GetBalanceAsync(senderAddress.ToByteArray());
             executionState.SetInitialChainBalance(senderAddress, senderBalance);
 
             return executionState;
@@ -372,36 +410,6 @@ namespace Nethereum.CoreChain
             balRecorder?.DiscardUnit();
         }
 
-        /// <summary>
-        /// Runs one EIP-7928 recording step (any of <c>BlockAccessListRecorder</c>'s
-        /// Prepare*/Record* methods) and forces any fault it raises through the host-fault path.
-        /// Every call site that drives the recorder — the per-transaction loop, the EIP-7685
-        /// request system calls, the EIP-4788/2935 pre-transaction system calls, and withdrawal
-        /// crediting — routes through this, so the guarantee is uniform rather than true only
-        /// where a reviewer happened to look.
-        ///
-        /// <para>The specific danger this closes is narrower at some call sites than others.
-        /// <see cref="ExecuteTransactionAsync"/>'s generic catch converts ANY exception into a
-        /// forfeit-all-gas reverted receipt — without this wrapper, a fault here (a transient
-        /// state-store read failure, or the recorder's own malformed-nonce guard) would record a
-        /// transaction whose EVM execution actually SUCCEEDED as reverted. The other call sites
-        /// (system calls, withdrawals) have no such absorbing catch — a raw fault there already
-        /// propagates to <c>BlockExecutor.ExecuteAsync</c>'s outer catch and halts the block
-        /// loudly regardless. Wrapping them anyway buys the second half of the contract: the
-        /// exception that halts the block is phase-labelled and classified as a host fault
-        /// instead of an untyped one, which is the difference between fast and slow triage when a
-        /// node halts on a store read that nobody expected to fail. The access list is a record OF
-        /// execution; it must never be able to change what execution did, and a fault while
-        /// recording it should never look like anything other than exactly what it is.</para>
-        ///
-        /// <para>A fault that is already classified as a host/system fault
-        /// (<see cref="EvmHostException"/>, cancellation, OOM) is rethrown unchanged — it already takes
-        /// the right path through <see cref="EvmHostException.IsHostOrSystemFault"/> at the call site's
-        /// catch clauses. Anything else derives an <see cref="EvmHostException"/> from it, exactly the
-        /// case that exception type's own doc comment describes ("a wired state backend's own IO
-        /// exceptions can derive from this to opt into the same treatment") — this does not widen that
-        /// filter, it makes an existing fault visible to it.</para>
-        /// </summary>
         internal static async Task RunBalRecordingAsync(Func<Task> recordingStep, string phase)
         {
             try
@@ -452,6 +460,19 @@ namespace Nethereum.CoreChain
             result.ExecutionGasUsed = (long)gasLimit;
 
             ConstructReceipt(result, signedTx, succeeded: false, bloom: new byte[256], logs: new List<Log>());
+        }
+
+        private static void RecordSimulateLogIndexes(TransactionExecutionResult result, Nethereum.EVM.TransactionExecutionResult evmResult)
+        {
+            if (!evmResult.Success || evmResult.Logs == null) return;
+
+            var indexes = new List<long>(evmResult.Logs.Count);
+            foreach (var log in evmResult.Logs)
+            {
+                if (log.LogIndex == null) return;
+                indexes.Add((long)log.LogIndex.Value);
+            }
+            result.LogIndexes = indexes;
         }
 
         private void ExcludeSimulateTransferLogsFromReceipt(TransactionExecutionResult result)
@@ -610,7 +631,8 @@ namespace Nethereum.CoreChain
 
             try
             {
-                var executionState = await OpenSystemCallStateAsync(stateReader, balRecorder, blockAccessIndex);
+                var executionState = await OpenExecutionStateAsync(
+                    EvmAddress.FromHex(Forks.Eip7685Constants.SystemAddress), stateReader, balRecorder, blockAccessIndex);
 
                 var targetCode = await executionState.GetCodeAsync(targetAddress);
                 if (SystemCallExecution.IsAbsent(targetCode))
@@ -633,27 +655,6 @@ namespace Nethereum.CoreChain
                 balRecorder?.DiscardUnit();
                 throw;
             }
-        }
-
-        private async Task<ExecutionStateService> OpenSystemCallStateAsync(
-            IStateReader stateReader,
-            BlockAccessListRecorder? balRecorder,
-            ulong blockAccessIndex)
-        {
-            IStateReader nodeDataService = stateReader ?? new StateStoreNodeDataService(_stateStore, _blockStore);
-            var executionState = new ExecutionStateService(nodeDataService);
-
-            if (balRecorder != null)
-            {
-                balRecorder.BeginUnit(blockAccessIndex);
-                executionState.AccessRecorder = balRecorder;
-            }
-
-            var senderAddress = Forks.Eip7685Constants.SystemAddress;
-            executionState.SetInitialChainBalance(
-                senderAddress, await nodeDataService.GetBalanceAsync(senderAddress));
-
-            return executionState;
         }
 
         private static TransactionExecutionContext BuildSystemCallContext(

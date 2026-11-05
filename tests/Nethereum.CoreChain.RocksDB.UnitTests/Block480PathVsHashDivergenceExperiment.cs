@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class Block480PathVsHashDivergenceExperiment : IDisposable
     {
         private readonly ITestOutputHelper _out;

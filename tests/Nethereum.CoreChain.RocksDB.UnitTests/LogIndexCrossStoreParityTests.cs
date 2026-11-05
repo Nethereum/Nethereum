@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class LogIndexCrossStoreParityTests : IDisposable
     {
         private readonly RocksDbTestFixture _fixture;

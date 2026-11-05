@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class PromotionReorgHotOnlyTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"promotionreorg_{Guid.NewGuid():N}");
@@ -92,6 +93,48 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             var result = await coordinator.RewindToAsync(targetBlock: 7, RewindPolicy.JournalFirstThenSnapshot).ConfigureAwait(false);
             Assert.Equal(RewindOutcome.NoPathAvailable, result.Outcome);
+        }
+
+        [Fact]
+        public async Task Given_ThePromotionCursorIsAboveHeadMinusMaxHistory_When_ARewindTargetsBelowTheCursor_Then_ItIsRefusedWithThePromotionFloorMessage()
+        {
+            var dir = Path.Combine(_root, "rewind-below-cursor");
+            Directory.CreateDirectory(dir);
+            using var manager = new RocksDbManager(new RocksDbStorageOptions { DatabasePath = dir, PromotionEnabled = true });
+            var journalOptions = new HistoricalStateOptions { MaxHistoryBlocks = 3 };
+            var bundle = RocksDbChainStoreBundle.FromManager(manager, dir, journalOptions, ownsManager: false);
+            bundle.Metadata.Commit(10, Fill32(10));
+            SetPromotionCursor(manager, bundle, 9);
+
+            var coordinator = new RewindCoordinator(bundle);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => coordinator.RewindToAsync(targetBlock: 8, RewindPolicy.JournalFirstThenSnapshot)).ConfigureAwait(false);
+            Assert.Contains("promotion floor", ex.Message);
+        }
+
+        [Fact]
+        public async Task Given_ThePromotionCursorIsAboveHeadMinusMaxHistory_When_ARewindTargetsTheCursor_Then_ItIsNotRefused()
+        {
+            var dir = Path.Combine(_root, "rewind-at-cursor");
+            Directory.CreateDirectory(dir);
+            using var manager = new RocksDbManager(new RocksDbStorageOptions { DatabasePath = dir, PromotionEnabled = true });
+            var journalOptions = new HistoricalStateOptions { MaxHistoryBlocks = 3 };
+            var bundle = RocksDbChainStoreBundle.FromManager(manager, dir, journalOptions, ownsManager: false);
+            bundle.Metadata.Commit(10, Fill32(10));
+            SetPromotionCursor(manager, bundle, 9);
+
+            var coordinator = new RewindCoordinator(bundle);
+
+            var result = await coordinator.RewindToAsync(targetBlock: 9, RewindPolicy.JournalFirstThenSnapshot).ConfigureAwait(false);
+            Assert.Equal(RewindOutcome.NoPathAvailable, result.Outcome);
+        }
+
+        private static void SetPromotionCursor(RocksDbManager manager, RocksDbChainStoreBundle bundle, ulong cursor)
+        {
+            using var batch = manager.CreateWriteBatch();
+            ((RocksDbChainMetadataStore)bundle.Metadata).AddPromotionCursorToBatch(batch, cursor);
+            manager.Write(batch);
         }
 
         [Fact]

@@ -18,6 +18,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Category", "Performance")]
     public class RocksDbPerformanceTests : IDisposable
     {
         private readonly ITestOutputHelper _output;

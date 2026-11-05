@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class PathKeyedFollowNoOrphanTests : IDisposable
     {
         private readonly string _pathDir;

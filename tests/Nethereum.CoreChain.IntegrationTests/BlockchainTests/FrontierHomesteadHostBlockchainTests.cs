@@ -4,6 +4,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
+    [Trait("Requires", "Externals")]
     public class FrontierHomesteadHostBlockchainTests
     {
         private readonly HostBlockchainTestRunner _runner;
@@ -17,14 +18,14 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
         [Trait("Category", "FrontierHomesteadHostBlockchainTests")]
         public async Task Frontier_validation_test_transaction()
         {
-            await _runner.RunCategoryAsync(FrontierValidationFixtureCorpus.Path, "Frontier");
+            await _runner.RunCategoryAsync(FrontierValidationFixtureCorpus.For("Frontier"), "Frontier");
         }
 
         [Fact]
         [Trait("Category", "FrontierHomesteadHostBlockchainTests")]
         public async Task Homestead_validation_test_transaction()
         {
-            await _runner.RunCategoryAsync(FrontierValidationFixtureCorpus.Path, "Homestead");
+            await _runner.RunCategoryAsync(FrontierValidationFixtureCorpus.For("Homestead"), "Homestead");
         }
     }
 }

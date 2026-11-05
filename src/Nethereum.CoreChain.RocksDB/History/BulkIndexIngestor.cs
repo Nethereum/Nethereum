@@ -2,17 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.RocksDB.Stores;
+using Nethereum.Util;
 using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB.History
 {
     public sealed class BulkIndexIngestor
     {
-        private static readonly IngestExternalFileOptions DefaultIngest = new IngestExternalFileOptions();
-
         public const int DefaultCheckpointMaxPendingEntries = 2_000_000;
 
         public const long PerEntryResidentOverheadBytesEstimate = 68;
@@ -22,6 +21,7 @@ namespace Nethereum.CoreChain.RocksDB.History
         public const int ParallelSortThreshold = 200_000;
 
         private readonly RocksDb _db;
+        private readonly RocksDbManager _manager;
         private readonly string _scratchDir;
         private readonly Action<ulong> _progressCommit;
         private readonly int _checkpointIntervalBlocks;
@@ -78,6 +78,26 @@ namespace Nethereum.CoreChain.RocksDB.History
             for (var i = 0; i < compactionColumnFamilies.Count; i++)
                 _compactionCfs[i] = Cf(compactionColumnFamilies[i]);
         }
+
+        internal BulkIndexIngestor(
+            RocksDbManager manager, string scratchDir, IReadOnlyList<string> compactionColumnFamilies,
+            Action<ulong> progressCommit,
+            int checkpointIntervalBlocks, int checkpointIntervalSeconds,
+            int maxPendingEntries = DefaultCheckpointMaxPendingEntries,
+            Action<string> stepLog = null,
+            long maxPendingBytes = long.MaxValue,
+            long? maxResidentBytes = null,
+            bool forceCheckpointOnFirstAccumulate = true,
+            int sortDegreeOfParallelism = 0)
+            : this(
+                (manager ?? throw new ArgumentNullException(nameof(manager))).Database, scratchDir, compactionColumnFamilies,
+                progressCommit, checkpointIntervalBlocks, checkpointIntervalSeconds, maxPendingEntries, stepLog,
+                maxPendingBytes, maxResidentBytes, forceCheckpointOnFirstAccumulate, sortDegreeOfParallelism)
+        {
+            _manager = manager;
+        }
+
+        private IDisposable Lease() => _manager == null ? null : (IDisposable)_manager.Lease();
 
         public bool HasPendingWindow { get { lock (_writerGate) return _pendingBlocks > 0; } }
 
@@ -137,19 +157,28 @@ namespace Nethereum.CoreChain.RocksDB.History
 
         public const long FinishCompactionPendingThresholdBytes = 4L * 1024 * 1024 * 1024;
 
-        public void Finish()
+        public void Finish() => Finish(default);
+
+        internal void Finish(CancellationToken ct)
         {
             lock (_writerGate)
             {
                 if (_pendingBlocks > 0) CheckpointCore();
                 foreach (var cf in _compactionCfs)
-                    if (NeedsFinalCompaction(cf))
-                        RocksDbManager.CompactRangeCfParallel(_db, cf, Environment.ProcessorCount);
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (!NeedsFinalCompaction(cf)) continue;
+                    using var lease = Lease();
+                    RocksDbManager.CompactRangeCfParallel(_db, cf, Environment.ProcessorCount, ct);
+                }
             }
         }
 
         private bool NeedsFinalCompaction(ColumnFamilyHandle cf)
-            => ExceedsFinalCompactionThreshold(_db.GetProperty("rocksdb.estimate-pending-compaction-bytes", cf));
+        {
+            using var lease = Lease();
+            return ExceedsFinalCompactionThreshold(_db.GetProperty("rocksdb.estimate-pending-compaction-bytes", cf));
+        }
 
         public static bool ExceedsFinalCompactionThreshold(string pendingCompactionBytesProperty)
             => !long.TryParse(pendingCompactionBytesProperty, out var pending)
@@ -166,80 +195,69 @@ namespace Nethereum.CoreChain.RocksDB.History
         {
             if (entries.Count == 0) return;
 
-            long runSerializedBytes = 0;
-            long sstRunsForCf = 0;
-            if (_stepLog != null)
-            {
-                for (var i = 0; i < entries.Count; i++)
-                    runSerializedBytes += entries[i].Key.Length + entries[i].Value.Length;
-                _sstRunsByCf.TryGetValue(cfName, out sstRunsForCf);
-                sstRunsForCf++;
-                _sstRunsByCf[cfName] = sstRunsForCf;
-            }
+            var (runSerializedBytes, sstRunsForCf) = RecordRun(entries, cfName);
 
             var sortSw = _stepLog == null ? null : Stopwatch.StartNew();
-            var partitions = entries.Count >= ParallelSortThreshold && _sortDegreeOfParallelism > 1
-                ? BuildSortPartitions(entries.Count, _sortDegreeOfParallelism)
-                : null;
-            if (partitions == null)
-            {
-                entries.Sort((x, y) => CompareBytes(x.Key, y.Key));
-            }
-            else
-            {
-                Parallel.For(0, partitions.Length, i =>
-                {
-                    var part = partitions[i];
-                    CollectionsMarshal.AsSpan(entries).Slice(part.Start, part.Length)
-                        .Sort((a, b) => CompareBytes(a.Key, b.Key));
-                });
-            }
+            var sorted = SortEntries(entries);
             sortSw?.Stop();
 
             var path = Path.Combine(_scratchDir, $"ingest_{Interlocked.Increment(ref _sstCounter)}.sst");
             var writeSw = _stepLog == null ? null : Stopwatch.StartNew();
-            long sstBytes = 0;
-            using (var writer = new SstFileWriter(new EnvOptions(), RocksProfiles.IndexSstOptions()))
-            {
-                writer.Open(path);
-                if (partitions == null)
-                {
-                    byte[] prev = null;
-                    foreach (var kv in entries)
-                    {
-                        if (prev != null && CompareBytes(prev, kv.Key) == 0) continue;
-                        writer.Put(kv.Key, kv.Value);
-                        prev = kv.Key;
-                    }
-                }
-                else
-                {
-                    MergeSortedPartitionsIntoWriter(entries, partitions, writer);
-                }
-                writer.Finish();
-            }
+            SstIngest.Write(path, sorted);
             writeSw?.Stop();
+            long sstBytes = 0;
             if (_stepLog != null) { try { sstBytes = new FileInfo(path).Length; } catch { } }
 
             var ingestSw = _stepLog == null ? null : Stopwatch.StartNew();
-            try
-            {
-                _db.IngestExternalFiles(new[] { path }, DefaultIngest, cf);
-            }
-            finally
-            {
-                try { File.Delete(path); } catch { }
-            }
+            using (Lease())
+                SstIngest.IngestAndDelete(_db, cf, path);
             ingestSw?.Stop();
 
             if (_stepLog != null)
+                LogRun(cfName, cf, entries.Count, sstBytes, sortSw, writeSw, ingestSw, runSerializedBytes, sstRunsForCf);
+        }
+
+        private (long RunSerializedBytes, long SstRunsForCf) RecordRun(
+            List<KeyValuePair<byte[], byte[]>> entries, string cfName)
+        {
+            if (_stepLog == null) return (0, 0);
+            long runSerializedBytes = 0;
+            for (var i = 0; i < entries.Count; i++)
+                runSerializedBytes += entries[i].Key.Length + entries[i].Value.Length;
+            _sstRunsByCf.TryGetValue(cfName, out var sstRunsForCf);
+            sstRunsForCf++;
+            _sstRunsByCf[cfName] = sstRunsForCf;
+            return (runSerializedBytes, sstRunsForCf);
+        }
+
+        private IEnumerable<(byte[] Key, byte[] Value, int Seq)> SortEntries(List<KeyValuePair<byte[], byte[]>> entries)
+        {
+            var rows = SstIngest.Sequence(entries);
+            if (entries.Count < ParallelSortThreshold || _sortDegreeOfParallelism <= 1)
             {
-                var pending = _db.GetProperty("rocksdb.estimate-pending-compaction-bytes", cf);
-                _stepLog(
-                    $"run cf={cfName} entries={entries.Count} sst={sstBytes / (1024.0 * 1024.0):F1}MB " +
-                    $"sort={sortSw.ElapsedMilliseconds}ms write={writeSw.ElapsedMilliseconds}ms ingest={ingestSw.ElapsedMilliseconds}ms " +
-                    $"pending_compaction={ToGb(pending):F2}GB run_serialized_bytes={runSerializedBytes} sst_runs_cf={sstRunsForCf}");
+                Array.Sort(rows, SstIngest.RowComparer.Instance);
+                return rows;
             }
+            var partitions = BuildSortPartitions(rows.Length, _sortDegreeOfParallelism);
+            Parallel.For(0, partitions.Length, i =>
+            {
+                var part = partitions[i];
+                rows.AsSpan(part.Start, part.Length).Sort(SstIngest.RowComparer.Instance);
+            });
+            return MergeSortedPartitions(rows, partitions);
+        }
+
+        private void LogRun(
+            string cfName, ColumnFamilyHandle cf, int entryCount, long sstBytes,
+            Stopwatch sortSw, Stopwatch writeSw, Stopwatch ingestSw, long runSerializedBytes, long sstRunsForCf)
+        {
+            string pending;
+            using (Lease())
+                pending = _db.GetProperty("rocksdb.estimate-pending-compaction-bytes", cf);
+            _stepLog(
+                $"run cf={cfName} entries={entryCount} sst={sstBytes / (1024.0 * 1024.0):F1}MB " +
+                $"sort={sortSw.ElapsedMilliseconds}ms write={writeSw.ElapsedMilliseconds}ms ingest={ingestSw.ElapsedMilliseconds}ms " +
+                $"pending_compaction={ToGb(pending):F2}GB run_serialized_bytes={runSerializedBytes} sst_runs_cf={sstRunsForCf}");
         }
 
         private static (int Start, int Length)[] BuildSortPartitions(int count, int degreeOfParallelism)
@@ -258,31 +276,39 @@ namespace Nethereum.CoreChain.RocksDB.History
             return bounds;
         }
 
-        private static void MergeSortedPartitionsIntoWriter(
-            List<KeyValuePair<byte[], byte[]>> entries, (int Start, int Length)[] partitions, SstFileWriter writer)
+        private static IEnumerable<(byte[] Key, byte[] Value, int Seq)> MergeSortedPartitions(
+            (byte[] Key, byte[] Value, int Seq)[] rows, (int Start, int Length)[] partitions)
         {
             var cursors = new int[partitions.Length];
             var ends = new int[partitions.Length];
-            var heap = new PriorityQueue<int, byte[]>(Comparer<byte[]>.Create(CompareBytes));
+            var heap = new PriorityQueue<int, int>(new RowIndexComparer(rows));
             for (var i = 0; i < partitions.Length; i++)
             {
                 cursors[i] = partitions[i].Start;
                 ends[i] = partitions[i].Start + partitions[i].Length;
-                if (cursors[i] < ends[i]) heap.Enqueue(i, entries[cursors[i]].Key);
+                if (cursors[i] < ends[i]) heap.Enqueue(i, cursors[i]);
             }
 
-            byte[] prev = null;
             while (heap.Count > 0)
             {
                 var i = heap.Dequeue();
-                var kv = entries[cursors[i]];
-                cursors[i]++;
-                if (prev == null || CompareBytes(prev, kv.Key) != 0)
-                {
-                    writer.Put(kv.Key, kv.Value);
-                    prev = kv.Key;
-                }
-                if (cursors[i] < ends[i]) heap.Enqueue(i, entries[cursors[i]].Key);
+                yield return rows[cursors[i]++];
+                if (cursors[i] < ends[i]) heap.Enqueue(i, cursors[i]);
+            }
+        }
+
+        private sealed class RowIndexComparer : IComparer<int>
+        {
+            private readonly (byte[] Key, byte[] Value, int Seq)[] _rows;
+
+            internal RowIndexComparer((byte[] Key, byte[] Value, int Seq)[] rows) => _rows = rows;
+
+            public int Compare(int a, int b)
+            {
+                ref var left = ref _rows[a];
+                ref var right = ref _rows[b];
+                var c = ByteArrayComparer.Current.Compare(left.Key, right.Key);
+                return c != 0 ? c : left.Seq.CompareTo(right.Seq);
             }
         }
 
@@ -290,13 +316,6 @@ namespace Nethereum.CoreChain.RocksDB.History
 
         private ColumnFamilyHandle Cf(string name)
             => _cfByName.TryGetValue(name, out var h) ? h : (_cfByName[name] = _db.GetColumnFamily(name));
-
-        private static int CompareBytes(byte[] a, byte[] b)
-        {
-            int len = Math.Min(a.Length, b.Length);
-            for (int k = 0; k < len; k++) { int d = a[k].CompareTo(b[k]); if (d != 0) return d; }
-            return a.Length.CompareTo(b.Length);
-        }
 
         private sealed class ContiguousFrontierTracker
         {

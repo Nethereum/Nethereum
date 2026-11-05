@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.Storage
 {
+    [Trait("Requires", "Externals")]
     public class AtomicBlockFlushByteIdentityTests : IDisposable
     {
         private readonly string _dir;
@@ -88,8 +89,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Storage
         [Fact]
         public async Task AtomicFlushWired_ProducesByteIdenticalFlatCfsAndCursors_VsAtomicFlushNull_IncludingAMismatchBlock()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             var dirA = SubDir("no-atomic-flush");
             var dirB = SubDir("atomic-flush");
 
@@ -99,8 +98,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Storage
             var bundleA = RocksDbChainStoreBundle.FromManager(mgrA, dirA, journalOptions: HistoricalStateOptions.Default, ownsManager: false);
             var bundleB = RocksDbChainStoreBundle.FromManager(mgrB, dirB, journalOptions: HistoricalStateOptions.Default, ownsManager: false);
 
-            await HiveTestdataFixture.PopulateGenesisAsync(bundleA.State);
-            await HiveTestdataFixture.PopulateGenesisAsync(bundleB.State);
+            await HiveTestdataFixture.PopulateGenesisAsync(bundleA);
+            await HiveTestdataFixture.PopulateGenesisAsync(bundleB);
 
             var importerA = BuildImporter(bundleA, atomicFlush: null);
             var importerB = BuildImporter(bundleB, atomicFlush: (IAtomicBlockFlush)bundleB);

@@ -7,6 +7,8 @@ namespace Nethereum.Freezer
 {
     public sealed class FreezerIndex : IFreezerIndex
     {
+        private const int ScanChunkEntries = 1024 * 1024 / FreezerIndexEntry.Size;
+
         private readonly SafeFileHandle _handle;
         private long _readOperationCount;
 
@@ -88,6 +90,38 @@ namespace Nethereum.Freezer
         internal static bool ItemCrossedIntoNewFile(FreezerIndexEntry current, FreezerIndexEntry next)
         {
             return current.FileNumber != next.FileNumber;
+        }
+
+        public long? FirstItemBreakingSequence()
+        {
+            var entryCount = Count + 1;
+            var buffer = new byte[ScanChunkEntries * FreezerIndexEntry.Size];
+            var previous = default(FreezerIndexEntry);
+
+            for (var firstEntry = 0L; firstEntry < entryCount; firstEntry += ScanChunkEntries)
+            {
+                var entriesInChunk = (int)Math.Min(ScanChunkEntries, entryCount - firstEntry);
+                ReadExact(buffer.AsSpan(0, entriesInChunk * FreezerIndexEntry.Size), firstEntry * FreezerIndexEntry.Size);
+
+                for (var i = 0; i < entriesInChunk; i++)
+                {
+                    var current = FreezerIndexEntry.ReadFrom(buffer.AsSpan(i * FreezerIndexEntry.Size, FreezerIndexEntry.Size));
+                    var entryNumber = firstEntry + i;
+                    if (entryNumber > 0 && !IsValidSuccessor(previous, current))
+                        return entryNumber;
+                    previous = current;
+                }
+            }
+
+            return null;
+        }
+
+        internal static bool IsValidSuccessor(FreezerIndexEntry previous, FreezerIndexEntry current)
+        {
+            if (current.FileNumber == previous.FileNumber)
+                return current.Offset >= previous.Offset;
+
+            return current.FileNumber == previous.FileNumber + 1;
         }
 
         public void Append(FreezerIndexEntry entry)

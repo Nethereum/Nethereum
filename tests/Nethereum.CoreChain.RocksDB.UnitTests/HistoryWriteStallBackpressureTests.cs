@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class HistoryWriteStallBackpressureTests
     {
         private sealed class FakeProps

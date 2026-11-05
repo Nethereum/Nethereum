@@ -16,7 +16,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<BlockHeader> GetByHashAsync(byte[] hash)
         {
-            var hashHex = ToHex(hash);
+            var hashHex = hash?.ToHex();
             _blocksByHash.TryGetValue(hashHex, out var header);
             return Task.FromResult(header);
         }
@@ -46,7 +46,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task SaveAsync(BlockHeader header, byte[] blockHash)
         {
-            var hashHex = ToHex(blockHash);
+            var hashHex = blockHash?.ToHex();
             _blocksByHash[hashHex] = header;
             _hashByNumber[header.BlockNumber] = hashHex;
 
@@ -63,7 +63,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<bool> ExistsAsync(byte[] hash)
         {
-            var hashHex = ToHex(hash);
+            var hashHex = hash?.ToHex();
             return Task.FromResult(_blocksByHash.ContainsKey(hashHex));
         }
 
@@ -82,7 +82,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
                 if (!_hashByNumber.TryGetValue(blockNumber, out var oldHashHex))
                     return Task.CompletedTask;
 
-                var newHashHex = ToHex(newHash);
+                var newHashHex = newHash?.ToHex();
 
                 if (_blocksByHash.TryRemove(oldHashHex, out var header))
                 {
@@ -119,8 +119,6 @@ namespace Nethereum.CoreChain.Storage.InMemory
             _hashByNumber.Clear();
             Interlocked.Exchange(ref _latestBlockNumber, -1);
         }
-
-        private static string ToHex(byte[] bytes) => bytes?.ToHex();
 
         private static byte[] FromHex(string hex) => hex?.HexToByteArray();
     }

@@ -12,7 +12,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
             var address = GetParam<string>(request, 0);
-            var blockTag = GetOptionalParam<string>(request, 1, "latest");
+            var blockTag = GetOptionalBlockParam(request, 1, "latest");
 
             var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
             var balance = await context.Node.GetBalanceAsync(address, blockNumber);

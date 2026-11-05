@@ -20,6 +20,8 @@ namespace Nethereum.CoreChain.Storage
 
         void PutNode(bool isStorage, byte[] accountHash, byte[] nibblePath, byte[] expectedHash, byte[] blob);
 
+        void DeleteNode(bool isStorage, byte[] accountHash, byte[] nibblePath) { }
+
         void WipeStorage(byte[] accountHash);
 
         void ForceWipeStorage(byte[] accountHash) => WipeStorage(accountHash);
@@ -46,6 +48,8 @@ namespace Nethereum.CoreChain.Storage
 
         public void PutNode(bool isStorage, byte[] accountHash, byte[] nibblePath, byte[] expectedHash, byte[] blob)
             => _store.Put(expectedHash, blob);
+
+        public void DeleteNode(bool isStorage, byte[] accountHash, byte[] nibblePath) { }
 
         public void WipeStorage(byte[] accountHash) { }
 

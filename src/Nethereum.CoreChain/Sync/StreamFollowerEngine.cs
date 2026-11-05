@@ -59,15 +59,21 @@ namespace Nethereum.CoreChain.Sync
             try
             {
                 int consecutiveSourceFailures = 0;
+                bool firstStream = true;
+                int competingRestarts = 0;
                 while (true)
                 {
                     ct.ThrowIfCancellationRequested();
                     bool restartLoop = false;
+                    bool gapRestart = false;
+                    DivergenceSignal engineChainBreak = null;
 
                     IAsyncEnumerable<BlockBundle> stream;
                     try
                     {
-                        stream = source.StreamAsync(currentStart, ct);
+                        var from = firstStream ? await StreamStartAsync(bundle, options, currentStart).ConfigureAwait(false) : currentStart;
+                        firstStream = false;
+                        stream = source.StreamAsync(from, ct);
                     }
                     catch (Exception ex) when (!ct.IsCancellationRequested)
                     {
@@ -115,33 +121,85 @@ namespace Nethereum.CoreChain.Sync
                             var header = blockBundle.Header;
                             var blockNumber = (ulong)header.BlockNumber;
 
-                            var result = await ArmAndExecuteBlockAsync(bundle, executor, blockNumber, blockBundle, ct).ConfigureAwait(false);
-
-                            var step = result.RootMatches
-                                ? await HandleMatchedBlockAsync(
-                                    bundle, canonical, policy, executorFactory, options, result, blockBundle, blockNumber,
-                                    lastCommittedBlock, lastCommittedHash, currentStart,
-                                    blocksExecuted, rootMismatches, consecutiveDivergences, rewindCyclesUsed, executor,
-                                    ct, logger).ConfigureAwait(false)
-                                : await HandleStateRootMismatchAsync(
-                                    source, bundle, canonical, policy, executorFactory, options, result, blockNumber,
-                                    lastCommittedBlock, lastCommittedHash, currentStart,
-                                    blocksExecuted, rootMismatches, consecutiveDivergences, rewindCyclesUsed, executor,
-                                    ct).ConfigureAwait(false);
-
-                            lastCommittedBlock = step.LastCommittedBlock;
-                            lastCommittedHash = step.LastCommittedHash;
-                            currentStart = step.CurrentStart;
-                            blocksExecuted = step.BlocksExecuted;
-                            rootMismatches = step.RootMismatches;
-                            consecutiveDivergences = step.ConsecutiveDivergences;
-                            rewindCyclesUsed = step.RewindCyclesUsed;
-                            executor = step.Executor;
-                            if (step.Terminal is FollowerRunResult stepTerminal) return stepTerminal;
-                            if (step.Signal == BlockStepSignal.RestartOuterLoop)
+                            var gate = options.ChainWriteGate;
+                            if (gate != null) await gate.WaitAsync(ct).ConfigureAwait(false);
+                            try
                             {
-                                restartLoop = true;
-                                break;
+                                if (gate != null)
+                                {
+                                    var relation = await RelateToCommittedHeadAsync(bundle, blockBundle).ConfigureAwait(false);
+                                    lastCommittedBlock = relation.HeadNumber;
+                                    lastCommittedHash = relation.HeadHash;
+                                    currentStart = relation.HeadNumber + 1;
+                                    if (relation.Relation == HeadRelation.AlreadyHeld) continue;
+                                    if (relation.Relation == HeadRelation.Gap)
+                                    {
+                                        restartLoop = true;
+                                        gapRestart = true;
+                                        break;
+                                    }
+                                    if (relation.Relation == HeadRelation.Competes)
+                                    {
+                                        engineChainBreak = CompetingBlockSignal(blockBundle, relation.HeadHash, "stream-follower");
+                                        break;
+                                    }
+                                }
+
+                                var result = await ArmAndExecuteBlockAsync(bundle, executor, blockNumber, blockBundle, ct).ConfigureAwait(false);
+
+                                if (result.Disposition == BlockImportDisposition.StoredAsSide
+                                    || result.Disposition == BlockImportDisposition.AlreadySide)
+                                {
+                                    continue;
+                                }
+
+                                if (result.Reorganisation is { } adoptedReorganisation)
+                                {
+                                    var adopted = await ApplyReorganisationAsync(
+                                        bundle, executor, mempoolReconciler, adoptedReorganisation,
+                                        new List<Model.ISignedTransaction>(blockBundle.Transactions),
+                                        lastCommittedBlock, lastCommittedHash, rewindCyclesUsed, ct, logger).ConfigureAwait(false);
+                                    rewindCyclesUsed = adopted.RewindCyclesUsed;
+                                    lastCommittedBlock = adopted.LastCommittedBlock;
+                                    lastCommittedHash = adopted.LastCommittedHash;
+                                    currentStart = adopted.CurrentStart;
+                                    await RunAfterRewindAsync(options, ct).ConfigureAwait(false);
+                                    restartLoop = true;
+                                    break;
+                                }
+
+                                var step = result.RootMatches
+                                    ? await HandleMatchedBlockAsync(
+                                        bundle, canonical, policy, executorFactory, options, result, blockBundle, blockNumber,
+                                        lastCommittedBlock, lastCommittedHash, currentStart,
+                                        blocksExecuted, rootMismatches, consecutiveDivergences, rewindCyclesUsed, executor,
+                                        ct, logger).ConfigureAwait(false)
+                                    : await HandleStateRootMismatchAsync(
+                                        source, bundle, canonical, policy, executorFactory, options, result, blockNumber,
+                                        lastCommittedBlock, lastCommittedHash, currentStart,
+                                        blocksExecuted, rootMismatches, consecutiveDivergences, rewindCyclesUsed, executor,
+                                        ct).ConfigureAwait(false);
+
+                                lastCommittedBlock = step.LastCommittedBlock;
+                                lastCommittedHash = step.LastCommittedHash;
+                                currentStart = step.CurrentStart;
+                                blocksExecuted = step.BlocksExecuted;
+                                if (step.Terminal == null) competingRestarts = 0;
+                                rootMismatches = step.RootMismatches;
+                                consecutiveDivergences = step.ConsecutiveDivergences;
+                                rewindCyclesUsed = step.RewindCyclesUsed;
+                                executor = step.Executor;
+                                if (step.Terminal is FollowerRunResult stepTerminal) return stepTerminal;
+                                if (step.Signal == BlockStepSignal.RestartOuterLoop)
+                                {
+                                    await RunAfterRewindAsync(options, ct).ConfigureAwait(false);
+                                    restartLoop = true;
+                                    break;
+                                }
+                            }
+                            finally
+                            {
+                                gate?.Release();
                             }
                         }
                     }
@@ -150,36 +208,65 @@ namespace Nethereum.CoreChain.Sync
                         await enumerator.DisposeAsync().ConfigureAwait(false);
                     }
 
+                    if (gapRestart) await CompetingBlockBackoffAsync(++competingRestarts, ct).ConfigureAwait(false);
+
                     if (!restartLoop)
                     {
-                        var chainBreak = await HandleChainBreakAsync(
-                            source, bundle, canonical, executorFactory, policy, options,
-                            forkChoice, mempoolReconciler,
-                            lastCommittedBlock, lastCommittedHash,
-                            blocksExecuted, rootMismatches, rewindCyclesUsed,
-                            ct, logger).ConfigureAwait(false);
-
-                        if (chainBreak is RewindApplication cbRewind)
+                        var breakGate = options.ChainWriteGate;
+                        var backOff = false;
+                        if (breakGate != null) await breakGate.WaitAsync(ct).ConfigureAwait(false);
+                        try
                         {
-                            if (cbRewind.ResumeWithoutRewind)
+                            if (breakGate != null)
                             {
-                                restartLoop = true;
+                                var head = await CommittedHeadAsync(bundle).ConfigureAwait(false);
+                                lastCommittedBlock = head.Number;
+                                lastCommittedHash = head.Hash;
+                                currentStart = head.Number + 1;
                             }
-                            else
-                            {
-                                rewindCyclesUsed = cbRewind.RewindCyclesUsed;
-                                lastCommittedBlock = cbRewind.LastCommittedBlock;
-                                lastCommittedHash = cbRewind.LastCommittedHash;
-                                if (cbRewind.Terminal is FollowerRunResult cbTerminal)
-                                {
-                                    return cbTerminal;
-                                }
 
-                                executor = cbRewind.Executor;
-                                currentStart = cbRewind.CurrentStart;
+                            var chainBreak = await HandleChainBreakAsync(
+                                source, engineChainBreak, bundle, canonical, executorFactory, policy, options,
+                                forkChoice, executor, mempoolReconciler,
+                                lastCommittedBlock, lastCommittedHash,
+                                blocksExecuted, rootMismatches, rewindCyclesUsed,
+                                ct, logger).ConfigureAwait(false);
+
+                            if (chainBreak is RewindApplication cbRewind)
+                            {
+                                if (cbRewind.ResumeWithoutRewind)
+                                {
+                                    restartLoop = true;
+                                    backOff = breakGate != null;
+                                }
+                                else
+                                {
+                                    rewindCyclesUsed = cbRewind.RewindCyclesUsed;
+                                    lastCommittedBlock = cbRewind.LastCommittedBlock;
+                                    lastCommittedHash = cbRewind.LastCommittedHash;
+                                    if (cbRewind.Terminal is FollowerRunResult cbTerminal)
+                                    {
+                                        return cbTerminal;
+                                    }
+
+                                    executor = cbRewind.Executor;
+                                    currentStart = cbRewind.CurrentStart;
+                                    restartLoop = true;
+                                    await RunAfterRewindAsync(options, ct).ConfigureAwait(false);
+                                }
+                            }
+                            else if (engineChainBreak != null)
+                            {
                                 restartLoop = true;
+                                backOff = true;
                             }
                         }
+                        finally
+                        {
+                            breakGate?.Release();
+                        }
+
+                        if (backOff) await CompetingBlockBackoffAsync(++competingRestarts, ct).ConfigureAwait(false);
                     }
 
                     if (!restartLoop) break;
@@ -202,6 +289,20 @@ namespace Nethereum.CoreChain.Sync
                 await CommitCursorAtRunExitAsync(bundle, lastCommittedBlock, lastCommittedHash, logger)
                     .ConfigureAwait(false);
             }
+        }
+
+        private static readonly TimeSpan CompetingBlockBackoffStart = TimeSpan.FromMilliseconds(250);
+
+        private static Task RunAfterRewindAsync(FollowerOptions options, CancellationToken ct)
+            => options.AfterRewindAsync == null ? Task.CompletedTask : options.AfterRewindAsync(ct);
+
+        private static Task CompetingBlockBackoffAsync(int consecutiveRestarts, CancellationToken ct)
+        {
+            var delay = TimeSpan.FromMilliseconds(
+                Math.Min(
+                    CompetingBlockBackoffStart.TotalMilliseconds * Math.Pow(2, Math.Min(consecutiveRestarts - 1, 5)),
+                    SourceRetryBackoff.TotalMilliseconds));
+            return Task.Delay(delay, ct);
         }
 
         private static async Task<(int Failures, bool BudgetExceeded)> RegisterSourceFailureAsync(
@@ -395,10 +496,11 @@ namespace Nethereum.CoreChain.Sync
                 };
             }
 
-            var verdict = await DiagnoseMismatchVerdictAsync(canonical, blockNumber, result, ct).ConfigureAwait(false);
+            var verdict = NameTheRefusal(
+                await DiagnoseMismatchVerdictAsync(canonical, blockNumber, result, ct).ConfigureAwait(false), result);
 
             var action = policy.OnVerdict(verdict, blockNumber);
-            await source.ReportBadBundleAsync(blockNumber, BadBundleReason.StateRootMismatch, ct)
+            await source.ReportBadBundleAsync(blockNumber, BadBundleReasonFor(result), ct)
                 .ConfigureAwait(false);
 
             switch (action)
@@ -508,14 +610,77 @@ namespace Nethereum.CoreChain.Sync
             };
         }
 
+        private static async Task<ulong> StreamStartAsync(IChainStoreBundle bundle, FollowerOptions options, ulong currentStart)
+        {
+            if (options.ChainWriteGate == null) return currentStart;
+
+            var head = await CommittedHeadAsync(bundle).ConfigureAwait(false);
+            return Math.Min(currentStart, Math.Max(head.Number, 1UL));
+        }
+
+        private enum HeadRelation { Extends, AlreadyHeld, Competes, Gap }
+
+        private readonly struct CommittedHead
+        {
+            public CommittedHead(ulong number, byte[] hash)
+            {
+                Number = number;
+                Hash = hash;
+            }
+
+            public ulong Number { get; }
+            public byte[] Hash { get; }
+        }
+
+        private static async Task<CommittedHead> CommittedHeadAsync(IChainStoreBundle bundle)
+        {
+            var number = bundle.Metadata.GetLastBlock();
+            var hash = bundle.Metadata.GetLastBlockHash();
+            if (hash == null || hash.Length == 0)
+                hash = await bundle.Blocks.GetHashByNumberAsync(new System.Numerics.BigInteger(number)).ConfigureAwait(false);
+            return new CommittedHead(number, hash);
+        }
+
+        private static async Task<(HeadRelation Relation, ulong HeadNumber, byte[] HeadHash)> RelateToCommittedHeadAsync(
+            IChainStoreBundle bundle, BlockBundle incoming)
+        {
+            var head = await CommittedHeadAsync(bundle).ConfigureAwait(false);
+            var number = (ulong)incoming.Header.BlockNumber;
+
+            if (number > head.Number + 1)
+                return (HeadRelation.Gap, head.Number, head.Hash);
+
+            if (number == head.Number + 1)
+                return (ByteUtil.AreEqual(incoming.Header.ParentHash, head.Hash) ? HeadRelation.Extends : HeadRelation.Competes,
+                    head.Number, head.Hash);
+
+            var ours = await bundle.Blocks.GetHashByNumberAsync(new System.Numerics.BigInteger(number)).ConfigureAwait(false);
+            return (ours != null && ByteUtil.AreEqual(ours, incoming.HeaderHash) ? HeadRelation.AlreadyHeld : HeadRelation.Competes,
+                head.Number, head.Hash);
+        }
+
+        private static DivergenceSignal CompetingBlockSignal(BlockBundle incoming, byte[] ourHeadHash, string sourceName)
+            => new DivergenceSignal(
+                AtBlock: (ulong)incoming.Header.BlockNumber,
+                PeerParentHash: incoming.Header.ParentHash,
+                OurParentHash: ourHeadHash,
+                QuorumPeerCount: 1,
+                SourceName: sourceName,
+                IncomingHeader: incoming.Header,
+                IncomingHash: incoming.HeaderHash,
+                SourcePeerNodeId: null,
+                IncomingTransactions: new List<Model.ISignedTransaction>(incoming.Transactions));
+
         private async Task<RewindApplication?> HandleChainBreakAsync(
             IBlockSource source,
+            DivergenceSignal engineChainBreak,
             IChainStoreBundle bundle,
             ICanonicalStateRootSource canonical,
             Func<IChainStoreBundle, IBlockExecutor> executorFactory,
             IValidationPolicy policy,
             FollowerOptions options,
             IChainForkChoice forkChoice,
+            IBlockExecutor executor,
             IMempoolReorgReconciler mempoolReconciler,
             ulong lastCommittedBlock,
             byte[] lastCommittedHash,
@@ -525,33 +690,20 @@ namespace Nethereum.CoreChain.Sync
             CancellationToken ct,
             ILogger logger)
         {
-            if (source.LastChainBreak is not { } cb)
+            if ((engineChainBreak ?? source.LastChainBreak) is not { } cb)
             {
                 return null;
             }
 
             if (forkChoice != null && cb.IncomingHeader != null)
             {
-                var forkVerdict = await forkChoice
-                    .ShouldAdoptAsync(cb.IncomingHeader, cb.IncomingHash, cb.SourcePeerNodeId, ct)
-                    .ConfigureAwait(false);
-
-                if (forkVerdict.Outcome == ForkChoiceOutcome.AdoptIncoming)
-                {
-                    return await ApplyForkChoiceAdoptionAsync(
-                        bundle, executorFactory, mempoolReconciler, cb, forkVerdict.CommonAncestor,
-                        lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches, rewindCyclesUsed,
-                        ct, logger).ConfigureAwait(false);
-                }
-
-                if (forkVerdict.Outcome == ForkChoiceOutcome.KeepLocal)
-                {
-                    return new RewindApplication { ResumeWithoutRewind = true };
-                }
+                var competing = await HandCompetingBlockToExecutorAsync(
+                    bundle, executor, mempoolReconciler, cb, lastCommittedBlock, lastCommittedHash,
+                    rewindCyclesUsed, ct, logger).ConfigureAwait(false);
+                if (competing != null) return competing;
 
                 logger.LogInformation(
-                    "sync.fork_choice.undecidable block={Block} reason={Reason}; falling back to policy",
-                    cb.AtBlock, forkVerdict.Reason);
+                    "sync.fork_choice.undecidable block={Block}; falling back to policy", cb.AtBlock);
             }
 
             var cbVerdict = BuildChainBreakVerdict(cb);
@@ -581,48 +733,76 @@ namespace Nethereum.CoreChain.Sync
             return null;
         }
 
-        private async Task<RewindApplication> ApplyForkChoiceAdoptionAsync(
+        private async Task<RewindApplication?> HandCompetingBlockToExecutorAsync(
             IChainStoreBundle bundle,
-            Func<IChainStoreBundle, IBlockExecutor> executorFactory,
+            IBlockExecutor executor,
             IMempoolReorgReconciler mempoolReconciler,
             DivergenceSignal cb,
-            ulong commonAncestor,
             ulong lastCommittedBlock,
             byte[] lastCommittedHash,
-            ulong blocksExecuted,
-            ulong rootMismatches,
             ulong rewindCyclesUsed,
             CancellationToken ct,
             ILogger logger)
         {
+            var result = await executor.ProcessBlockAsync(
+                cb.IncomingHeader,
+                new List<Model.ISignedTransaction>(cb.IncomingTransactions),
+                new List<Model.BlockHeader>(),
+                new List<Model.Withdrawal>(),
+                ct).ConfigureAwait(false);
+
+            if (result.Disposition == BlockImportDisposition.StoredAsSide
+                || result.Disposition == BlockImportDisposition.AlreadySide
+                || result.Disposition == BlockImportDisposition.AlreadyCanonical)
+            {
+                return new RewindApplication { ResumeWithoutRewind = true };
+            }
+
+            if (result.Reorganisation is not { } reorganisation) return null;
+
+            return await ApplyReorganisationAsync(
+                bundle, executor, mempoolReconciler, reorganisation, cb.IncomingTransactions,
+                lastCommittedBlock, lastCommittedHash, rewindCyclesUsed, ct, logger).ConfigureAwait(false);
+        }
+
+        private static async Task<RewindApplication> ApplyReorganisationAsync(
+            IChainStoreBundle bundle,
+            IBlockExecutor executor,
+            IMempoolReorgReconciler mempoolReconciler,
+            ChainReorganisation reorganisation,
+            IReadOnlyList<Model.ISignedTransaction> winningTransactions,
+            ulong lastCommittedBlock,
+            byte[] lastCommittedHash,
+            ulong rewindCyclesUsed,
+            CancellationToken ct,
+            ILogger logger)
+        {
+            var latest = await bundle.Blocks.GetLatestAsync().ConfigureAwait(false);
+            var latestNumber = (ulong)latest.BlockNumber;
+            var head = new CommittedHead(
+                latestNumber,
+                await bundle.Blocks.GetHashByNumberAsync(new System.Numerics.BigInteger(latestNumber)).ConfigureAwait(false));
+            bundle.Metadata.Commit(head.Number, head.Hash);
+            logger.LogWarning(
+                "sync.fork_choice.adopted ancestor={Ancestor} dropped={Dropped} added={Added} head={Head}",
+                reorganisation.CommonAncestor, reorganisation.DroppedBlockHashes.Count,
+                reorganisation.AddedBlockHashes.Count, head.Number);
+
             if (mempoolReconciler != null)
             {
                 await mempoolReconciler.ReconcileAsync(
-                    bundle, commonAncestor, lastCommittedBlock, cb.IncomingTransactions, ct).ConfigureAwait(false);
-            }
-
-            var outcome = await ReorgRewindCoordinator.TryRewindToForkChoiceAncestorAsync(
-                bundle, commonAncestor, lastCommittedBlock, blocksExecuted, rootMismatches,
-                ct, logger).ConfigureAwait(false);
-
-            if (outcome.Terminal is FollowerRunResult terminal)
-            {
-                return new RewindApplication
-                {
-                    Terminal = terminal,
-                    RewindCyclesUsed = rewindCyclesUsed + 1,
-                    LastCommittedBlock = outcome.NewHead,
-                    LastCommittedHash = outcome.NewHeadHash ?? lastCommittedHash,
-                };
+                    bundle, reorganisation.CommonAncestor, lastCommittedBlock,
+                    reorganisation.DroppedTransactions ?? new List<Model.ISignedTransaction>(),
+                    winningTransactions, ct).ConfigureAwait(false);
             }
 
             return new RewindApplication
             {
                 RewindCyclesUsed = rewindCyclesUsed + 1,
-                LastCommittedBlock = outcome.NewHead,
-                LastCommittedHash = outcome.NewHeadHash ?? lastCommittedHash,
-                Executor = executorFactory(bundle),
-                CurrentStart = outcome.NewHead + 1,
+                LastCommittedBlock = head.Number,
+                LastCommittedHash = head.Hash ?? lastCommittedHash,
+                Executor = executor,
+                CurrentStart = head.Number + 1,
             };
         }
 
@@ -809,6 +989,24 @@ namespace Nethereum.CoreChain.Sync
                         lastCommittedBlock, anchorVerdict.Detail);
                     break;
             }
+        }
+
+        private static bool IsInvalidAsAuthored(BlockImporterResult result)
+            => result.ContainsInvalidTransaction || RefusedBeforeExecution(result);
+
+        private static bool RefusedBeforeExecution(BlockImporterResult result)
+            => result.ComputedStateRoot == null && result.FailedValidityChecks.Count > 0;
+
+        private static DivergenceVerdict NameTheRefusal(DivergenceVerdict verdict, BlockImporterResult result)
+            => IsInvalidAsAuthored(result)
+                ? verdict with { Detail = $"{verdict.Detail} The block was refused: {result.DescribeRejection()}" }
+                : verdict;
+
+        private static BadBundleReason BadBundleReasonFor(BlockImporterResult result)
+        {
+            if (result.ContainsInvalidTransaction) return BadBundleReason.TxValidationFailed;
+            if (RefusedBeforeExecution(result)) return BadBundleReason.InvalidBlock;
+            return BadBundleReason.StateRootMismatch;
         }
 
         private async Task<DivergenceVerdict> DiagnoseMismatchVerdictAsync(

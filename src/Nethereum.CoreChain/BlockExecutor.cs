@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Composition;
 using Nethereum.CoreChain.Forks;
+using Nethereum.CoreChain.Prefetch;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.EVM;
@@ -27,6 +29,10 @@ namespace Nethereum.CoreChain
         private readonly IStateStore _stateStore;
         private readonly IBlockStore _blockStore;
         private readonly IChainActivations _activations;
+
+        public IChainActivations Activations => _activations;
+
+        public IIncrementalStateRootCalculator StateRootCalculator => _stateRootCalculator;
         private readonly Func<HardforkName, ChainConfig> _chainConfigFactory;
         private readonly Func<HardforkName, HardforkConfig> _hardforkConfigFactory;
         private readonly IIncrementalStateRootCalculator _stateRootCalculator;
@@ -35,6 +41,11 @@ namespace Nethereum.CoreChain
         private readonly ILogger<BlockExecutor>? _logger;
         private readonly Nethereum.Model.IBlockRootsProvider _blockRootsProvider;
         private readonly Func<BlockHeader, string>? _authorResolver;
+        private readonly BlockValidationOptions _validation;
+        private readonly BlockBodyValidator _bodyValidator;
+        private readonly SenderRecoveryStep _senderRecovery;
+
+        internal ITransactionVerificationAndRecovery SenderVerifier => _senderRecovery.Verifier;
 
         public BlockExecutor(
             IStateStore stateStore,
@@ -48,6 +59,25 @@ namespace Nethereum.CoreChain
             ILogger<BlockExecutor>? logger = null,
             Nethereum.Model.IBlockRootsProvider? blockRootsProvider = null,
             Func<BlockHeader, string>? authorResolver = null)
+            : this(stateStore, blockStore, activations, chainConfigFactory, hardforkConfigFactory,
+                   stateRootCalculator, rewardPolicy, trieNodeStore, logger, blockRootsProvider,
+                   authorResolver, new BlockValidationOptions())
+        {
+        }
+
+        public BlockExecutor(
+            IStateStore stateStore,
+            IBlockStore blockStore,
+            IChainActivations activations,
+            Func<HardforkName, ChainConfig> chainConfigFactory,
+            Func<HardforkName, HardforkConfig> hardforkConfigFactory,
+            IIncrementalStateRootCalculator stateRootCalculator,
+            IRewardPolicy rewardPolicy,
+            ITrieNodeStore trieNodeStore,
+            ILogger<BlockExecutor>? logger,
+            Nethereum.Model.IBlockRootsProvider? blockRootsProvider,
+            Func<BlockHeader, string>? authorResolver,
+            BlockValidationOptions validation)
         {
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
@@ -60,6 +90,10 @@ namespace Nethereum.CoreChain
             _logger = logger;
             _blockRootsProvider = blockRootsProvider ?? PatriciaBlockRootsProvider.Instance;
             _authorResolver = authorResolver;
+            _validation = validation ?? throw new ArgumentNullException(nameof(validation));
+            _senderRecovery = new SenderRecoveryStep(validation.TransactionVerifier);
+            _bodyValidator = new BlockBodyValidator(
+                blockStore, validation.UncleStore, activations, hardforkConfigFactory, _blockRootsProvider);
         }
 
         public async Task<BlockExecutionResult> ExecuteAsync(
@@ -78,6 +112,9 @@ namespace Nethereum.CoreChain
             var simulating = options.Role == BlockExecutionRole.Simulating;
 
             IStateStore stateForBlock = SelectStateStoreForBlock(options);
+            var statsCollector = !simulating && !options.ReadOnly
+                ? BlockStatsCollector.TryAttach(stateForBlock)
+                : null;
 
             ulong blockNumber = (ulong)header.BlockNumber;
             ulong timestamp = (ulong)header.Timestamp;
@@ -86,46 +123,18 @@ namespace Nethereum.CoreChain
             var carriesBlockAccessList = HeaderCarriesBlockAccessList(fork);
             var balRecorder = carriesBlockAccessList ? new BlockAccessListRecorder(stateForBlock) : null;
 
-            if (validating)
-            {
-                var blobFieldFormatRefusal = RefuseHeaderWithIncorrectBlobFieldFormat(header, fork);
-                if (blobFieldFormatRefusal != null) return blobFieldFormatRefusal;
-            }
-
-            var gasCapacityRefusal = RefuseHeaderThatDeclaresMoreGasThanItAllows(header, fork);
-            if (gasCapacityRefusal != null) return gasCapacityRefusal;
-
-            var maxBlobsPerBlock = _hardforkConfigFactory(fork).MaxBlobsPerBlock;
-            var blobGasCapacityRefusal =
-                RefuseHeaderThatDeclaresMoreBlobGasThanTheForkAllows(header, fork, maxBlobsPerBlock);
-            if (blobGasCapacityRefusal != null) return blobGasCapacityRefusal;
+            var blockHardforkConfig = _hardforkConfigFactory(fork).AtBlock(_activations, (long)blockNumber, timestamp);
 
             BlockHeader? parentHeader = await ResolveParentHeaderAsync(header).ConfigureAwait(false);
             byte[]? preStateRoot = parentHeader?.StateRoot;
 
-            var gasLimitRefusal = RefuseHeaderWithInvalidGasLimit(header, fork);
-            if (gasLimitRefusal != null) return gasLimitRefusal;
-
-            if (parentHeader != null && !simulating)
+            if (validating)
             {
-                if (validating)
-                {
-                    var parentBoundRefusal = RefuseHeaderOutsideParentGasLimitBound(header, parentHeader, fork);
-                    if (parentBoundRefusal != null) return parentBoundRefusal;
-                }
+                var headerRefusal = RefuseInvalidHeader(header, parentHeader, fork, blockHardforkConfig);
+                if (headerRefusal != null) return headerRefusal;
 
-                if (HeaderCarriesBaseFee(fork))
-                {
-                    var baseFeeRefusal = RefuseHeaderWithIncorrectBaseFee(header, parentHeader, fork);
-                    if (baseFeeRefusal != null) return baseFeeRefusal;
-                }
-
-                if (HeaderCarriesBlobFields(fork))
-                {
-                    var excessBlobGasRefusal =
-                        RefuseHeaderWithIncorrectExcessBlobGas(header, parentHeader, fork, _hardforkConfigFactory(fork));
-                    if (excessBlobGasRefusal != null) return excessBlobGasRefusal;
-                }
+                var bodyRefusal = await RefuseInvalidBodyAsync(header, txs, uncles, withdrawals, fork).ConfigureAwait(false);
+                if (bodyRefusal != null) return bodyRefusal;
             }
 
             var accumulated = new BlockAccumulation(txs.Count);
@@ -137,11 +146,13 @@ namespace Nethereum.CoreChain
                 witnessRecorder = ArmWitnessRecorder(options, stateForBlock);
 
                 var chainConfig = _chainConfigFactory(fork);
-                var hardforkConfig = _hardforkConfigFactory(fork);
-                var txVerifier = new Nethereum.Signer.TransactionVerificationAndRecoveryImp();
-                var txProcessor = new TransactionProcessor(stateForBlock, _blockStore, chainConfig, txVerifier, hardforkConfig,
+                var hardforkConfig = statsCollector?.ObservePrecompiles(blockHardforkConfig) ?? blockHardforkConfig;
+                var senders = BeginSenderRecovery(txs, options, simulating);
+                var txProcessor = new TransactionProcessor(stateForBlock, _blockStore, chainConfig, _senderRecovery.Verifier, hardforkConfig,
                     eip158EmptyAccountPruning: fork >= HardforkName.SpuriousDragon);
                 var blockContext = BuildBlockContext(header, chainConfig, fork, _authorResolver);
+
+                statsCollector?.BeginExecution(_stateRootCalculator);
 
                 await ApplyPreTransactionSystemCallsAsync(
                     stateForBlock, txProcessor, blockContext, header, fork, blockNumber, options, witnessRecorder, balRecorder, ct).ConfigureAwait(false);
@@ -151,64 +162,31 @@ namespace Nethereum.CoreChain
                     await WarmStartStateRootCalculatorFromParentAsync(preStateRoot).ConfigureAwait(false);
                 }
 
-                IStateReader? stateReaderForExecution = witnessRecorder;
-
-                var cost = ExecutionCostBaseline.CaptureAndStartExecutionTimer(_stateStore);
-                for (int i = 0; i < txs.Count; i++)
+                StartTriePathPrefetch(options, stateForBlock, hardforkConfig, simulating, preStateRoot);
+                ExecutionCostBaseline cost;
+                try
                 {
-                    ct.ThrowIfCancellationRequested();
-                    var entry = txs[i];
-                    if (simulating)
-                    {
-                        var runningNonce = await ResolveSimulateRunningNonceAsync(stateForBlock, entry).ConfigureAwait(false);
-                        entry = ResolveSimulateEntry(
-                            entry, chainConfig.RpcGasCap, header.GasLimit,
-                            (long)accumulated.CumulativeGasUsed, options.SimulateGlobalGasUsedBefore,
-                            blockContext.ChainId, runningNonce);
-                    }
-                    var txResult = await ExecuteTransactionAtIndexAsync(
-                        txProcessor, entry, blockContext, i, accumulated.CumulativeGasUsed,
-                        stateReaderForExecution, options, balRecorder, accumulated.Capacity).ConfigureAwait(false);
-
-                    await StampIntermediatePostStateRootWhenRequiredAsync(
-                        txResult, hardforkConfig, options).ConfigureAwait(false);
-
-                    accumulated.Add(entry.Tx, txResult, validating,
-                        hardforkConfig.IntrinsicGasRules.StateGasActive);
+                    var run = new BlockRun(
+                        header, txs, uncles, withdrawals, options, stateForBlock, fork, hardforkConfig, chainConfig,
+                        txProcessor, blockContext, witnessRecorder, balRecorder, accumulated, outcome, senders);
+                    cost = await ExecuteTransactionsAndPostStepsAsync(run, ct).ConfigureAwait(false);
                 }
-
-                outcome.BlockBloom = accumulated.BlockBloom;
-
-                var postExecutionIndex = (ulong)(txs.Count + 1);
-
-                var executionRequests = await CollectExecutionRequestsAsync(
-                    txProcessor, fork, blockContext, witnessRecorder, balRecorder, postExecutionIndex,
-                    accumulated.Logs).ConfigureAwait(false);
-                outcome.ComputedRequestsHash = executionRequests.Commitment();
-                outcome.ExecutionRequests = executionRequests.NonEmptyRequests();
-
-                (outcome.WithdrawalsCredited, outcome.MinerRewardCredited) = await ApplyWithdrawalsAndRewardsAsync(
-                    header, withdrawals, uncles, stateForBlock, fork, ct, balRecorder, postExecutionIndex).ConfigureAwait(false);
-
-                if (balRecorder != null)
+                finally
                 {
-                    (outcome.BlockAccessList, outcome.BlockAccessListGasLimitExceeded) =
-                        BuildBlockAccessListAndApplyItsSizeRule(balRecorder, header);
+                    options.Prefetch?.EndTriePathsBeforeRoot();
                 }
-
-                outcome.BlockAccessListMalformed = DeclaredBlockAccessListIsMalformed(options, txs.Count);
 
                 if (!options.ReadOnly || simulating)
                 {
                     outcome.Settlement = await SettlePostStateAndDecideCommitAsync(
                         header, accumulated.Receipts, outcome.BlockBloom, accumulated.Capacity, outcome.BlockAccessList, carriesBlockAccessList,
                         validating, simulating, accumulated.ContainsInvalidTransaction, outcome.BlockAccessListGasLimitExceeded,
-                        txs.Count, accumulated.CumulativeGasUsed, cost)
+                        txs.Count, accumulated.CumulativeGasUsed, cost, statsCollector)
                         .ConfigureAwait(false);
                 }
 
-                outcome.WitnessBytes = BuildBlockWitness(options, witnessRecorder, txs, header, chainConfig, fork,
-                    withdrawals, options.ParentBeaconBlockRoot ?? header.ParentBeaconBlockRoot, preStateRoot);
+                outcome.WitnessBytes = BlockWitnessBuilder.BuildBlockWitness(options, witnessRecorder, txs, header, chainConfig, fork,
+                    _activations.BlobParametersAt((long)blockNumber, timestamp), withdrawals, options.ParentBeaconBlockRoot ?? header.ParentBeaconBlockRoot, preStateRoot);
             }
             catch (OperationCanceledException)
             {
@@ -220,8 +198,129 @@ namespace Nethereum.CoreChain
                 outcome.ErrorMessage = ex.Message;
                 _logger?.LogError(ex, "Block execution failed at block {BlockNumber}", header.BlockNumber);
             }
+            finally
+            {
+                statsCollector?.Detach();
+            }
 
             return BuildExecutionResult(outcome, accumulated, header, fork, preStateRoot, withdrawals, validating);
+        }
+
+        private async Task<ExecutionCostBaseline> ExecuteTransactionsAndPostStepsAsync(BlockRun run, CancellationToken ct)
+        {
+            var txs = run.Transactions;
+            var options = run.Options;
+            var accumulated = run.Accumulated;
+            var outcome = run.Outcome;
+            var validating = options.Role == BlockExecutionRole.Validating;
+            var simulating = options.Role == BlockExecutionRole.Simulating;
+
+            var cost = ExecutionCostBaseline.CaptureAndStartExecutionTimer(_stateStore);
+            if (run.Senders != null) await run.Senders.Completed.ConfigureAwait(false);
+            for (int i = 0; i < txs.Count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var entry = txs[i];
+                if (!simulating) entry = WithRecoveredSender(entry, i, run.Senders);
+                if (simulating)
+                {
+                    var runningNonce = await SimulateEntryResolver.ResolveSimulateRunningNonceAsync(run.StateForBlock, entry).ConfigureAwait(false);
+                    entry = SimulateEntryResolver.ResolveSimulateEntry(
+                        entry, run.ChainConfig.RpcGasCap, run.Header.GasLimit,
+                        (long)accumulated.CumulativeGasUsed, options.SimulateGlobalGasUsedBefore,
+                        run.BlockContext.ChainId, runningNonce);
+                }
+                outcome.ExecutingTransactionIndex = i;
+                var txResult = await ExecuteTransactionAtIndexAsync(
+                    run.TxProcessor, entry, run.BlockContext, i, accumulated.CumulativeGasUsed,
+                    run.WitnessRecorder, options, run.BalRecorder, accumulated.Capacity).ConfigureAwait(false);
+                outcome.ExecutingTransactionIndex = -1;
+
+                await StampIntermediatePostStateRootWhenRequiredAsync(
+                    txResult, run.HardforkConfig, options).ConfigureAwait(false);
+
+                accumulated.Add(entry.Tx, txResult, validating,
+                    run.HardforkConfig.IntrinsicGasRules.StateGasActive);
+            }
+
+            outcome.BlockBloom = accumulated.BlockBloom;
+
+            var postExecutionIndex = (ulong)(txs.Count + 1);
+
+            var executionRequests = await CollectExecutionRequestsAsync(
+                run.TxProcessor, run.Fork, run.BlockContext, run.WitnessRecorder, run.BalRecorder, postExecutionIndex,
+                accumulated.Logs).ConfigureAwait(false);
+            outcome.ComputedRequestsHash = executionRequests.Commitment();
+            outcome.ExecutionRequests = executionRequests.NonEmptyRequests();
+
+            (outcome.WithdrawalsCredited, outcome.MinerRewardCredited) = await ApplyWithdrawalsAndRewardsAsync(
+                run.Header, run.Withdrawals, run.Uncles, run.StateForBlock, run.Fork, ct, run.BalRecorder, postExecutionIndex).ConfigureAwait(false);
+
+            if (run.BalRecorder != null)
+            {
+                (outcome.BlockAccessList, outcome.BlockAccessListGasLimitExceeded) =
+                    BuildBlockAccessListAndApplyItsSizeRule(run.BalRecorder, run.Header);
+            }
+
+            outcome.BlockAccessListMalformed = DeclaredBlockAccessListIsMalformed(options, txs.Count);
+
+            return cost;
+        }
+
+        private sealed class BlockRun
+        {
+            public BlockRun(
+                BlockHeader header,
+                IReadOnlyList<TxEntry> transactions,
+                IList<BlockHeader>? uncles,
+                IList<WithdrawalEntry>? withdrawals,
+                BlockExecutionOptions options,
+                IStateStore stateForBlock,
+                HardforkName fork,
+                HardforkConfig hardforkConfig,
+                ChainConfig chainConfig,
+                TransactionProcessor txProcessor,
+                BlockContext blockContext,
+                WitnessRecordingStateReader? witnessRecorder,
+                BlockAccessListRecorder? balRecorder,
+                BlockAccumulation accumulated,
+                BlockExecutionAccumulator outcome,
+                RecoveredSenders? senders)
+            {
+                Header = header;
+                Transactions = transactions;
+                Uncles = uncles;
+                Withdrawals = withdrawals;
+                Options = options;
+                StateForBlock = stateForBlock;
+                Fork = fork;
+                HardforkConfig = hardforkConfig;
+                ChainConfig = chainConfig;
+                TxProcessor = txProcessor;
+                BlockContext = blockContext;
+                WitnessRecorder = witnessRecorder;
+                BalRecorder = balRecorder;
+                Accumulated = accumulated;
+                Outcome = outcome;
+                Senders = senders;
+            }
+
+            public BlockHeader Header { get; }
+            public IReadOnlyList<TxEntry> Transactions { get; }
+            public IList<BlockHeader>? Uncles { get; }
+            public IList<WithdrawalEntry>? Withdrawals { get; }
+            public BlockExecutionOptions Options { get; }
+            public IStateStore StateForBlock { get; }
+            public HardforkName Fork { get; }
+            public HardforkConfig HardforkConfig { get; }
+            public ChainConfig ChainConfig { get; }
+            public TransactionProcessor TxProcessor { get; }
+            public BlockContext BlockContext { get; }
+            public WitnessRecordingStateReader? WitnessRecorder { get; }
+            public BlockAccessListRecorder? BalRecorder { get; }
+            public BlockAccumulation Accumulated { get; }
+            public BlockExecutionAccumulator Outcome { get; }
+            public RecoveredSenders? Senders { get; }
         }
 
         private sealed class BlockExecutionAccumulator
@@ -238,6 +337,7 @@ namespace Nethereum.CoreChain
             public byte[]? WitnessBytes;
             public Exception? Exception;
             public string? ErrorMessage;
+            public int ExecutingTransactionIndex = -1;
         }
 
         private BlockExecutionResult BuildExecutionResult(
@@ -258,8 +358,7 @@ namespace Nethereum.CoreChain
                 BlockBloom = outcome.BlockBloom,
                 ComputedRequestsHash = outcome.ComputedRequestsHash,
                 ExecutionRequests = outcome.ExecutionRequests,
-                RequestsHashMismatch = RequestsHashDoesNotMatchTheHeader(header, outcome.ComputedRequestsHash),
-                WithdrawalsRootMismatch = WithdrawalsRootDoesNotMatchTheHeader(header, withdrawals, validating),
+                RequestsHashMismatch = HeaderCommitments.RequestsHashDoesNotMatchTheHeader(header, outcome.ComputedRequestsHash),
                 WitnessBytes = outcome.WitnessBytes,
                 MinerRewardCredited = outcome.MinerRewardCredited,
                 WithdrawalsCredited = outcome.WithdrawalsCredited,
@@ -272,12 +371,14 @@ namespace Nethereum.CoreChain
                 GasUsedMismatch = outcome.Settlement?.GasUsedMismatch ?? false,
                 BlobGasUsedMismatch = outcome.Settlement?.BlobGasUsedMismatch ?? false,
                 BlockAccessListHashMismatch = outcome.Settlement?.BlockAccessListHashMismatch ?? false,
+                Stats = outcome.Settlement?.Stats,
                 BlockAccessListGasLimitExceeded = outcome.BlockAccessListGasLimitExceeded,
                 BlockAccessListMalformed = outcome.BlockAccessListMalformed,
                 ContainsInvalidTransaction = accumulated.ContainsInvalidTransaction,
                 BlockAccessList = outcome.BlockAccessList,
                 Exception = outcome.Exception,
-                ErrorMessage = outcome.ErrorMessage
+                ErrorMessage = outcome.ErrorMessage,
+                FailedTransactionIndex = outcome.Exception == null ? -1 : outcome.ExecutingTransactionIndex
             };
 
         /// <summary>
@@ -295,6 +396,15 @@ namespace Nethereum.CoreChain
                 .IsWellFormed;
         }
 
+        private void StartTriePathPrefetch(
+            BlockExecutionOptions options, IStateStore stateForBlock, HardforkConfig hardforkConfig, bool simulating,
+            byte[]? preStateRoot)
+        {
+            if (options.Prefetch == null || simulating || options.ReadOnly) return;
+            if (hardforkConfig.ReceiptConstruction.RequiresIntermediatePostStateRoot) return;
+            options.Prefetch.StartTriePaths(stateForBlock, preStateRoot, _stateRootCalculator);
+        }
+
         private IStateStore SelectStateStoreForBlock(BlockExecutionOptions options) =>
             options.Role == BlockExecutionRole.Simulating
                 ? _stateStore
@@ -305,142 +415,106 @@ namespace Nethereum.CoreChain
         private static bool HeaderCarriesBlockAccessList(HardforkName fork) =>
             Model.Codecs.BlockHeaderCodecs.ForFork(fork).CarriesBlockAccessList;
 
-        private static bool HeaderCarriesBlobFields(HardforkName fork) =>
-            Model.Codecs.BlockHeaderCodecs.ForFork(fork).CarriesBlobFieldsAndBeaconRoot;
-
-        private static bool HeaderCarriesBaseFee(HardforkName fork) =>
-            Model.Codecs.BlockHeaderCodecs.ForFork(fork).CarriesBaseFee;
-
-        private const long GasLimitMinimum = 5000;
-
-        private const long GasLimitBoundDivisor = 1024;
-
-        private const long ElasticityMultiplier = 2;
-
-        private static BlockExecutionResult? RefuseHeaderWithInvalidGasLimit(
-            BlockHeader header, HardforkName fork)
-            => header.GasLimit < GasLimitMinimum ? GasLimitBoundRefusal(fork) : null;
-
-        private static BlockExecutionResult? RefuseHeaderOutsideParentGasLimitBound(
-            BlockHeader header, BlockHeader parent, HardforkName fork)
+        private BlockExecutionResult? RefuseInvalidHeader(
+            BlockHeader header, BlockHeader? parentHeader, HardforkName fork, HardforkConfig hardforkConfig)
         {
-            var parentGasLimit = new System.Numerics.BigInteger(unchecked((ulong)parent.GasLimit));
-            if (parentGasLimit.IsZero) return null;
+            if (parentHeader == null)
+                return header.BlockNumber.IsZero ? null : Refusal(fork, BlockValidityCheck.UnknownParent);
 
-            if (parent.BaseFee == null && header.BaseFee != null)
-                parentGasLimit *= ElasticityMultiplier;
-
-            var headerGasLimit = new System.Numerics.BigInteger(unchecked((ulong)header.GasLimit));
-            var difference = System.Numerics.BigInteger.Abs(headerGasLimit - parentGasLimit);
-            return difference < parentGasLimit / GasLimitBoundDivisor ? null : GasLimitBoundRefusal(fork);
+            var timestamp = unchecked((ulong)header.Timestamp);
+            var verdict = HeaderValidator.Validate(
+                header, parentHeader, fork, hardforkConfig, SealRulesFor(fork),
+                _validation.UnixClock?.Invoke(),
+                HeaderValidator.RequiresDaoExtraData(_activations, (long)(ulong)header.BlockNumber, timestamp),
+                feeFreeBaseFee: _validation.FeeFreeBaseFee);
+            return verdict is BlockValidityCheck failed ? Refusal(fork, failed) : null;
         }
 
-        private static BlockExecutionResult GasLimitBoundRefusal(HardforkName fork) => new BlockExecutionResult
-        {
-            Fork = fork,
-            PreStateRoot = null,
-            PostStateRoot = null,
-            Receipts = Array.Empty<TransactionExecutionResult>(),
-            Logs = Array.Empty<Log>(),
-            GasLimitBoundViolated = true,
-            GasUsed = 0
-        };
+        private SealRules SealRulesFor(HardforkName fork) =>
+            _validation.SealedByClique ? SealRules.Clique
+            : fork >= HardforkName.Paris ? SealRules.ProofOfStake
+            : SealRules.Ethash;
 
-        private static BlockExecutionResult? RefuseHeaderThatDeclaresMoreGasThanItAllows(
-            BlockHeader header, HardforkName fork)
-        {
-            if (header.GasUsed > header.GasLimit)
-            {
-                return new BlockExecutionResult
-                {
-                    Fork = fork,
-                    PreStateRoot = null,
-                    PostStateRoot = null,
-                    Receipts = Array.Empty<TransactionExecutionResult>(),
-                    Logs = Array.Empty<Log>(),
-                    GasCapacityExceeded = true,
-                    GasUsed = 0
-                };
-            }
-            return null;
-        }
-
-        private static BlockExecutionResult? RefuseHeaderThatDeclaresMoreBlobGasThanTheForkAllows(
-            BlockHeader header, HardforkName fork, int maxBlobsPerBlock)
-        {
-            if (header.BlobGasUsed is long declaredBlobGasUsed
-                && declaredBlobGasUsed > (long)maxBlobsPerBlock * BlobGasCalculator.GAS_PER_BLOB)
-            {
-                return new BlockExecutionResult
-                {
-                    Fork = fork,
-                    PreStateRoot = null,
-                    PostStateRoot = null,
-                    Receipts = Array.Empty<TransactionExecutionResult>(),
-                    Logs = Array.Empty<Log>(),
-                    BlobGasCapacityExceeded = true,
-                    GasUsed = 0
-                };
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// EIP-4844 §Header extension: "The current header encoding is extended with two new
-        /// 64-bit unsigned integer fields: `blob_gas_used` ... `excess_blob_gas`."
-        /// </summary>
-        private static BlockExecutionResult? RefuseHeaderWithIncorrectBlobFieldFormat(
-            BlockHeader header, HardforkName fork)
-        {
-            var expectsBlobFields = HeaderCarriesBlobFields(fork);
-            var blobGasUsedMatchesFormat = header.BlobGasUsed.HasValue == expectsBlobFields;
-            var excessBlobGasMatchesFormat = header.ExcessBlobGas.HasValue == expectsBlobFields;
-
-            if (blobGasUsedMatchesFormat && excessBlobGasMatchesFormat) return null;
-
-            return new BlockExecutionResult
+        private static BlockExecutionResult Refusal(HardforkName fork, BlockValidityCheck failed) =>
+            new BlockExecutionResult
             {
                 Fork = fork,
                 PreStateRoot = null,
                 PostStateRoot = null,
                 Receipts = Array.Empty<TransactionExecutionResult>(),
                 Logs = Array.Empty<Log>(),
-                BlobFieldFormatMismatch = true,
-                GasUsed = 0
+                GasUsed = 0,
+                UnknownParent = failed == BlockValidityCheck.UnknownParent,
+                BlockNumberMismatch = failed == BlockValidityCheck.BlockNumber,
+                TimestampNotAfterParent = failed == BlockValidityCheck.Timestamp,
+                FutureBlock = failed == BlockValidityCheck.FutureBlock,
+                ExtraDataTooLong = failed == BlockValidityCheck.ExtraDataSize,
+                DaoExtraDataMismatch = failed == BlockValidityCheck.DaoExtraData,
+                GasLimitTooBig = failed == BlockValidityCheck.GasLimitTooBig,
+                DifficultyMismatch = failed == BlockValidityCheck.Difficulty,
+                NonceInvalid = failed == BlockValidityCheck.Nonce,
+                UnclesHashMismatch = failed == BlockValidityCheck.UnclesHash,
+                UnclesInvalid = failed == BlockValidityCheck.Uncles,
+                WithdrawalsRootMismatch = failed == BlockValidityCheck.WithdrawalsRoot,
+                TransactionsRootMismatch = failed == BlockValidityCheck.TransactionsRoot,
+                WithdrawalsRootPresenceMismatch = failed == BlockValidityCheck.WithdrawalsRootPresence,
+                ParentBeaconRootPresenceMismatch = failed == BlockValidityCheck.ParentBeaconRootPresence,
+                BlockAccessListHashPresenceMismatch = failed == BlockValidityCheck.BlockAccessListHashPresence,
+                SlotNumberPresenceMismatch = failed == BlockValidityCheck.SlotNumberPresence,
+                GasCapacityExceeded = failed == BlockValidityCheck.GasCapacity,
+                BlobGasCapacityExceeded = failed == BlockValidityCheck.BlobGasCapacity,
+                BlobFieldFormatMismatch = failed == BlockValidityCheck.BlobFieldFormat,
+                BaseFeeMismatch = failed == BlockValidityCheck.BaseFee,
+                ExcessBlobGasMismatch = failed == BlockValidityCheck.ExcessBlobGas,
+                GasLimitBoundViolated = failed == BlockValidityCheck.GasLimitBound,
+                BlockRlpSizeExceeded = failed == BlockValidityCheck.BlockRlpSize
             };
-        }
 
-        /// <summary>
-        /// EIP-4844: "each block's <c>header.excess_blob_gas</c> ... must be validated ...
-        /// Clients should reject blocks where this field ... is incorrect with respect to
-        /// the parent block" - calc_excess_blob_gas(parent) per
-        /// <see cref="BlobGasCalculator.CalculateExcessBlobGas"/>. A parent that predates the
-        /// blob fork (no declared excess/used) contributes 0 to the recurrence, matching the
-        /// genesis-of-the-blob-fork case.
-        /// </summary>
-        private static BlockExecutionResult? RefuseHeaderWithIncorrectExcessBlobGas(
-            BlockHeader header, BlockHeader? parentHeader, HardforkName fork, HardforkConfig hardforkConfig)
+        public async Task<BlockExecutionResult?> ValidateStructureAsync(
+            BlockHeader header, IReadOnlyList<TxEntry> txs, IList<BlockHeader>? uncles,
+            IList<WithdrawalEntry>? withdrawals, IBlockStore blocks)
         {
-            ulong expectedExcessBlobGas = ExpectedExcessBlobGas(parentHeader, hardforkConfig);
-            ulong declaredExcessBlobGas = header.ExcessBlobGas is long declared ? unchecked((ulong)declared) : 0UL;
+            if (header == null) throw new ArgumentNullException(nameof(header));
+            if (txs == null) throw new ArgumentNullException(nameof(txs));
+            if (blocks == null) throw new ArgumentNullException(nameof(blocks));
 
-            if (declaredExcessBlobGas != expectedExcessBlobGas)
-            {
-                return new BlockExecutionResult
-                {
-                    Fork = fork,
-                    PreStateRoot = null,
-                    PostStateRoot = null,
-                    Receipts = Array.Empty<TransactionExecutionResult>(),
-                    Logs = Array.Empty<Log>(),
-                    ExcessBlobGasMismatch = true,
-                    GasUsed = 0
-                };
-            }
-            return null;
+            ulong blockNumber = (ulong)header.BlockNumber;
+            ulong timestamp = (ulong)header.Timestamp;
+            var fork = _activations.ResolveAt((long)blockNumber, timestamp);
+            var hardforkConfig = _hardforkConfigFactory(fork).AtBlock(_activations, (long)blockNumber, timestamp);
+
+            BlockHeader? parentHeader = header.ParentHash == null || header.ParentHash.Length == 0
+                ? null
+                : await blocks.GetByHashAsync(header.ParentHash).ConfigureAwait(false);
+
+            var headerRefusal = RefuseInvalidHeader(header, parentHeader, fork, hardforkConfig);
+            if (headerRefusal != null) return headerRefusal;
+
+            var bodyValidator = new BlockBodyValidator(
+                blocks, _validation.UncleStore, _activations, _hardforkConfigFactory, _blockRootsProvider);
+            return await RefuseInvalidBodyAsync(header, txs, uncles, withdrawals, fork, bodyValidator).ConfigureAwait(false);
         }
 
-        internal static ulong ExpectedExcessBlobGas(BlockHeader? parentHeader, HardforkConfig hardforkConfig)
+        private Task<BlockExecutionResult?> RefuseInvalidBodyAsync(
+            BlockHeader header, IReadOnlyList<TxEntry> txs, IList<BlockHeader>? uncles,
+            IList<WithdrawalEntry>? withdrawals, HardforkName fork) =>
+            RefuseInvalidBodyAsync(header, txs, uncles, withdrawals, fork, _bodyValidator);
+
+        private async Task<BlockExecutionResult?> RefuseInvalidBodyAsync(
+            BlockHeader header, IReadOnlyList<TxEntry> txs, IList<BlockHeader>? uncles,
+            IList<WithdrawalEntry>? withdrawals, HardforkName fork, BlockBodyValidator bodyValidator)
+        {
+            var transactions = new List<ISignedTransaction>(txs.Count);
+            foreach (var entry in txs) transactions.Add(entry.Tx);
+
+            var verdict = await bodyValidator.ValidateAsync(
+                header, transactions, uncles,
+                withdrawals == null ? null : ToModelWithdrawals(withdrawals),
+                fork, SealRulesFor(fork), _validation.UnixClock?.Invoke()).ConfigureAwait(false);
+            return verdict is BlockValidityCheck failed ? Refusal(fork, failed) : null;
+        }
+
+        public static ulong ExpectedExcessBlobGas(BlockHeader? parentHeader, HardforkConfig hardforkConfig)
         {
             ulong parentExcessBlobGas = parentHeader?.ExcessBlobGas is long parentExcess
                 ? unchecked((ulong)parentExcess)
@@ -463,36 +537,6 @@ namespace Nethereum.CoreChain
                 parentExcessBlobGas, parentBlobGasUsed, targetBlobGasPerBlock, reservePrice);
         }
 
-        /// <summary>
-        /// EIP-1559 §validate_block: "check if the base fee is correct" -
-        /// <c>expected_base_fee_per_gas</c> is computed from the parent per
-        /// <see cref="Model.BaseFeeCalculator.CalculateExpectedBaseFeePerGas"/> and the block
-        /// is invalid if it declares anything else. A parent that predates London (no
-        /// declared base fee) contributes INITIAL_BASE_FEE to the calculation, matching the
-        /// EIP's own fork-block case.
-        /// </summary>
-        private static BlockExecutionResult? RefuseHeaderWithIncorrectBaseFee(
-            BlockHeader header, BlockHeader? parentHeader, HardforkName fork)
-        {
-            var expectedBaseFee = Model.BaseFeeCalculator.CalculateExpectedBaseFeePerGas(
-                parentHeader?.BaseFee, parentHeader?.GasLimit ?? 0, parentHeader?.GasUsed ?? 0);
-
-            if (header.BaseFee is not EvmUInt256 declaredBaseFee || declaredBaseFee != expectedBaseFee)
-            {
-                return new BlockExecutionResult
-                {
-                    Fork = fork,
-                    PreStateRoot = null,
-                    PostStateRoot = null,
-                    Receipts = Array.Empty<TransactionExecutionResult>(),
-                    Logs = Array.Empty<Log>(),
-                    BaseFeeMismatch = true,
-                    GasUsed = 0
-                };
-            }
-            return null;
-        }
-
         private WitnessRecordingStateReader? ArmWitnessRecorder(
             BlockExecutionOptions options, IStateStore stateForBlock) =>
             options.CaptureWitness
@@ -504,6 +548,27 @@ namespace Nethereum.CoreChain
 
         private Task<byte[]> WarmStartStateRootCalculatorFromParentAsync(byte[]? preStateRoot) =>
             _stateRootCalculator.ComputeStateRootWithoutPersistAsync(preStateRoot);
+
+        private RecoveredSenders? BeginSenderRecovery(IReadOnlyList<TxEntry> txs, BlockExecutionOptions options, bool simulating)
+        {
+            if (simulating) return null;
+            return options.Prefetch?.Senders ?? _senderRecovery.Begin(TransactionsWithoutSender(txs));
+        }
+
+        private static ISignedTransaction?[] TransactionsWithoutSender(IReadOnlyList<TxEntry> txs)
+        {
+            var needing = new ISignedTransaction?[txs.Count];
+            for (var i = 0; i < needing.Length; i++)
+                if (txs[i].CachedSender == null) needing[i] = txs[i].Tx;
+            return needing;
+        }
+
+        private static TxEntry WithRecoveredSender(TxEntry entry, int index, RecoveredSenders? senders)
+        {
+            if (entry.CachedSender != null || senders == null) return entry;
+            var sender = senders.TryGetSender(index, entry.Tx);
+            return sender == null ? entry : new TxEntry(entry.Tx, sender, entry.SimulateCall);
+        }
 
         private static Task<TransactionExecutionResult> ExecuteTransactionAtIndexAsync(
             TransactionProcessor txProcessor,
@@ -536,67 +601,6 @@ namespace Nethereum.CoreChain
                     balRecorder: balRecorder,
                     blockAccessIndex: (ulong)(index + 1),
                     blockGasCapacity: capacity);
-
-        private static async Task<EvmUInt256> ResolveSimulateRunningNonceAsync(IStateStore stateForBlock, TxEntry entry)
-        {
-            if (entry.SimulateCall == null || entry.SimulateCall.Nonce != null)
-                return EvmUInt256.Zero;
-
-            var account = await stateForBlock.GetAccountAsync(entry.CachedSender ?? AddressUtil.ZERO_ADDRESS).ConfigureAwait(false);
-            return account?.Nonce ?? EvmUInt256.Zero;
-        }
-
-        private static TxEntry ResolveSimulateEntry(
-            TxEntry entry, BigInteger rpcGasCap, long blockGasLimit, long blockGasUsedSoFar,
-            BigInteger globalGasUsedBefore, BigInteger chainId, EvmUInt256 runningNonce)
-        {
-            if (entry.SimulateCall == null)
-                return entry;
-
-            var needsGas = entry.SimulateCall.Gas == null;
-            var needsNonce = entry.SimulateCall.Nonce == null;
-            if (!needsGas && !needsNonce)
-                return entry;
-
-            var blockRemaining = blockGasLimit - blockGasUsedSoFar;
-            var pooledGas = rpcGasCap > 0
-                ? BigInteger.Min(blockRemaining, rpcGasCap - (globalGasUsedBefore + blockGasUsedSoFar))
-                : blockRemaining;
-            var gas = entry.SimulateCall.Gas != null
-                ? entry.SimulateCall.Gas.Value
-                : BigInteger.Max(0, pooledGas);
-            var nonce = entry.SimulateCall.Nonce ?? new HexBigInteger((BigInteger)runningNonce);
-
-            var resolvedCall = new Nethereum.RPC.Eth.DTOs.TransactionInput
-            {
-                From = entry.SimulateCall.From,
-                To = entry.SimulateCall.To,
-                Data = entry.SimulateCall.Data,
-                Value = entry.SimulateCall.Value,
-                Gas = new HexBigInteger(gas),
-                GasPrice = entry.SimulateCall.GasPrice,
-                MaxFeePerGas = entry.SimulateCall.MaxFeePerGas,
-                MaxPriorityFeePerGas = entry.SimulateCall.MaxPriorityFeePerGas,
-                Nonce = nonce
-            };
-
-            var tx = BuildSyntheticSimulateTransaction(resolvedCall, chainId);
-            return new TxEntry(tx, entry.CachedSender, resolvedCall);
-        }
-
-        internal static ISignedTransaction BuildSyntheticSimulateTransaction(Nethereum.RPC.Eth.DTOs.TransactionInput call, BigInteger chainId)
-        {
-            return new Transaction1559(
-                chainId: (EvmUInt256)chainId,
-                nonce: call.Nonce != null ? (EvmUInt256)call.Nonce.Value : EvmUInt256.Zero,
-                maxPriorityFeePerGas: call.MaxPriorityFeePerGas != null ? (EvmUInt256)call.MaxPriorityFeePerGas.Value : EvmUInt256.Zero,
-                maxFeePerGas: call.MaxFeePerGas != null ? (EvmUInt256)call.MaxFeePerGas.Value : EvmUInt256.Zero,
-                gasLimit: call.Gas != null ? (EvmUInt256)call.Gas.Value : EvmUInt256.Zero,
-                receiverAddress: call.To ?? string.Empty,
-                amount: call.Value != null ? (EvmUInt256)call.Value.Value : EvmUInt256.Zero,
-                data: call.Data ?? "0x",
-                accessList: null);
-        }
 
         private async Task StampIntermediatePostStateRootWhenRequiredAsync(
             TransactionExecutionResult txResult, HardforkConfig hardforkConfig, BlockExecutionOptions options)
@@ -673,7 +677,8 @@ namespace Nethereum.CoreChain
                 bool logsBloomMismatch,
                 bool gasUsedMismatch,
                 bool blobGasUsedMismatch,
-                bool blockAccessListHashMismatch)
+                bool blockAccessListHashMismatch,
+                BlockExecutionStats? stats = null)
             {
                 PostStateRoot = postStateRoot;
                 StateRootMismatch = stateRootMismatch;
@@ -682,7 +687,15 @@ namespace Nethereum.CoreChain
                 GasUsedMismatch = gasUsedMismatch;
                 BlobGasUsedMismatch = blobGasUsedMismatch;
                 BlockAccessListHashMismatch = blockAccessListHashMismatch;
+                Stats = stats;
             }
+
+            public BlockExecutionStats? Stats { get; }
+
+            public BlockSettlementOutcome WithStats(BlockExecutionStats? stats) =>
+                new BlockSettlementOutcome(
+                    PostStateRoot, StateRootMismatch, ReceiptsRootMismatch, LogsBloomMismatch,
+                    GasUsedMismatch, BlobGasUsedMismatch, BlockAccessListHashMismatch, stats);
 
             public byte[]? PostStateRoot { get; }
             public bool StateRootMismatch { get; }
@@ -706,9 +719,11 @@ namespace Nethereum.CoreChain
             bool blockAccessListGasLimitExceeded,
             int txCount,
             BigInteger cumulativeGasUsed,
-            ExecutionCostBaseline cost)
+            ExecutionCostBaseline cost,
+            BlockStatsCollector? statsCollector)
         {
             cost.ExecutionTimer.Stop();
+            statsCollector?.EndExecution();
             var swRoot = System.Diagnostics.Stopwatch.StartNew();
             var postStateRoot = await _stateRootCalculator
                 .ComputeStateRootWithoutPersistAsync(null).ConfigureAwait(false);
@@ -724,8 +739,8 @@ namespace Nethereum.CoreChain
             bool blockAccessListHashMismatch = false;
             if (validating)
             {
-                var commitments = CompareHeaderCommitments(
-                    header, receipts, blockBloom, capacity, blockAccessList, carriesBlockAccessList);
+                var commitments = HeaderCommitments.CompareHeaderCommitments(
+                    _blockRootsProvider, header, receipts, blockBloom, capacity, blockAccessList, carriesBlockAccessList);
 
                 receiptsRootMismatch = commitments.ReceiptsRootMismatch;
                 logsBloomMismatch = commitments.LogsBloomMismatch;
@@ -740,6 +755,7 @@ namespace Nethereum.CoreChain
 
             var blockIsRefused =
                 BlockIsRefused(outcome, blockAccessListGasLimitExceeded, containsInvalidTransaction);
+            statsCollector?.EndValidation();
             var swPersist = System.Diagnostics.Stopwatch.StartNew();
             if (simulating || blockIsRefused)
                 _stateRootCalculator.DiscardPendingState();
@@ -747,14 +763,14 @@ namespace Nethereum.CoreChain
                 await _stateRootCalculator.PersistPendingStateAsync().ConfigureAwait(false);
             swPersist.Stop();
             _logger?.LogInformation(
-                "block.exec.timing block={BlockNumber} txs={TxCount} gas={Gas} exec_ms={ExecMs} root_ms={RootMs} persist_ms={PersistMs} gc1={Gc1} gc2={Gc2} alloc_mb={AllocMb} acct_reads={AcctReads} slot_reads={SlotReads}",
+                "block.exec.timing block={BlockNumber} txs={TxCount} gas={Gas} exec_ms={ExecMs:F3} root_ms={RootMs:F3} persist_ms={PersistMs:F3} gc1={Gc1} gc2={Gc2} alloc_mb={AllocMb} acct_reads={AcctReads} slot_reads={SlotReads}",
                 header.BlockNumber, txCount, (long)cumulativeGasUsed,
-                cost.ExecutionTimer.ElapsedMilliseconds, swRoot.ElapsedMilliseconds, swPersist.ElapsedMilliseconds,
+                cost.ExecutionTimer.Elapsed.TotalMilliseconds, swRoot.Elapsed.TotalMilliseconds, swPersist.Elapsed.TotalMilliseconds,
                 cost.Gc1Collections, cost.Gc2Collections, cost.AllocatedMegabytes,
                 cost.AccountReads,
                 cost.StorageReads);
 
-            return outcome;
+            return outcome.WithStats(statsCollector?.Complete(_stateRootCalculator, txCount, (long)cumulativeGasUsed));
         }
 
         private static bool BlockIsRefused(
@@ -766,71 +782,6 @@ namespace Nethereum.CoreChain
             || outcome.BlobGasUsedMismatch || outcome.BlockAccessListHashMismatch
             || blockAccessListGasLimitExceeded
             || containsInvalidTransaction;
-
-        private readonly struct HeaderCommitmentComparison
-        {
-            public HeaderCommitmentComparison(
-                bool receiptsRootMismatch,
-                bool logsBloomMismatch,
-                bool gasUsedMismatch,
-                bool blobGasUsedMismatch,
-                bool blockAccessListHashMismatch)
-            {
-                ReceiptsRootMismatch = receiptsRootMismatch;
-                LogsBloomMismatch = logsBloomMismatch;
-                GasUsedMismatch = gasUsedMismatch;
-                BlobGasUsedMismatch = blobGasUsedMismatch;
-                BlockAccessListHashMismatch = blockAccessListHashMismatch;
-            }
-
-            public bool ReceiptsRootMismatch { get; }
-            public bool LogsBloomMismatch { get; }
-            public bool GasUsedMismatch { get; }
-            public bool BlobGasUsedMismatch { get; }
-
-            public bool BlockAccessListHashMismatch { get; }
-        }
-
-        private HeaderCommitmentComparison CompareHeaderCommitments(
-            BlockHeader header,
-            List<TransactionExecutionResult> receipts,
-            byte[]? blockBloom,
-            Nethereum.EVM.Gas.BlockGasCapacity capacity,
-            List<AccountChanges>? blockAccessList,
-            bool carriesBlockAccessList)
-        {
-            var computedReceiptsRoot = _blockRootsProvider.CalculateReceiptsRoot(TrieMemberReceipts(receipts));
-
-            var computedBlobGasUsed = (long)capacity.BlobCount * BlobGasCalculator.GAS_PER_BLOB;
-
-            var computedBlockAccessListHash = carriesBlockAccessList && blockAccessList != null
-                ? BlockAccessListRLPEncoder.Current.Hash(blockAccessList)
-                : null;
-
-            return new HeaderCommitmentComparison(
-                receiptsRootMismatch: header.ReceiptHash != null
-                    && !ByteUtil.AreEqual(computedReceiptsRoot, header.ReceiptHash),
-                logsBloomMismatch: header.LogsBloom != null
-                    && !ByteUtil.AreEqual(blockBloom ?? new byte[256], header.LogsBloom),
-                gasUsedMismatch: capacity.HeaderGasUsed != header.GasUsed,
-                blobGasUsedMismatch: header.BlobGasUsed is long declaredBlobGasUsed
-                    && computedBlobGasUsed != declaredBlobGasUsed,
-                blockAccessListHashMismatch: carriesBlockAccessList
-                    && (computedBlockAccessListHash == null
-                        || header.BlockAccessListHash == null
-                        || !ByteUtil.AreEqual(computedBlockAccessListHash, header.BlockAccessListHash)));
-        }
-
-        private static List<Receipt> TrieMemberReceipts(List<TransactionExecutionResult> receipts)
-        {
-            var members = new List<Receipt>(receipts.Count);
-            foreach (var executed in receipts)
-            {
-                if (executed.Skipped) continue;
-                if (executed.Receipt != null) members.Add(executed.Receipt);
-            }
-            return members;
-        }
 
         private async Task ApplyPreTransactionSystemCallsAsync(
             IStateStore stateForBlock,
@@ -878,14 +829,6 @@ namespace Nethereum.CoreChain
             }
         }
 
-        private bool WithdrawalsRootDoesNotMatchTheHeader(
-            BlockHeader header, IList<WithdrawalEntry>? withdrawals, bool validating)
-        {
-            if (!validating || header.WithdrawalsRoot == null) return false;
-            var computed = _blockRootsProvider.CalculateWithdrawalsRoot(ToModelWithdrawals(withdrawals));
-            return !ByteUtil.AreEqual(computed, header.WithdrawalsRoot);
-        }
-
         private static List<Withdrawal> ToModelWithdrawals(IList<WithdrawalEntry>? withdrawals)
         {
             var result = new List<Withdrawal>(withdrawals?.Count ?? 0);
@@ -899,18 +842,6 @@ namespace Nethereum.CoreChain
                         AmountInGwei = (ulong)w.AmountGwei
                     });
             return result;
-        }
-
-        private static bool RequestsHashDoesNotMatchTheHeader(BlockHeader header, byte[]? computed)
-        {
-            if (computed == null || header.RequestsHash == null) return false;
-            if (header.RequestsHash.Length != computed.Length) return true;
-
-            for (var i = 0; i < computed.Length; i++)
-                if (header.RequestsHash[i] != computed[i])
-                    return true;
-
-            return false;
         }
 
         private static byte[] PadTo32(byte[] data)
@@ -992,84 +923,6 @@ namespace Nethereum.CoreChain
             return (withdrawalsCredited, minerRewardCredited);
         }
 
-        private static byte[]? BuildBlockWitness(
-            BlockExecutionOptions options,
-            WitnessRecordingStateReader? witnessRecorder,
-            IReadOnlyList<TxEntry> txs,
-            BlockHeader header,
-            ChainConfig chainConfig,
-            HardforkName fork,
-            IList<WithdrawalEntry>? withdrawals,
-            byte[]? parentBeaconBlockRoot,
-            byte[]? preStateRoot)
-        {
-            if (!(options.CaptureWitness && witnessRecorder != null))
-                return null;
-
-            var witnessTxs = new List<BlockWitnessTransaction>(txs.Count);
-            foreach (var entry in txs)
-            {
-                witnessTxs.Add(new BlockWitnessTransaction
-                {
-                    From = entry.CachedSender ?? "",
-                    RlpEncoded = entry.Tx.GetRLPEncoded(),
-
-                    AuthorisationAuthorities = entry.Tx.RecoverAuthorities()
-                });
-            }
-
-            var witnessData = new BlockWitnessData
-            {
-                BlockNumber = (long)header.BlockNumber,
-                Timestamp = header.Timestamp,
-                BaseFee = (long)(header.BaseFee ?? 0),
-                BlockGasLimit = header.GasLimit,
-                ChainId = (long)chainConfig.ChainId,
-                Coinbase = header.Coinbase,
-                Difficulty = header.MixHash ?? new byte[32],
-                PreStateRoot = preStateRoot,
-                ParentHash = header.ParentHash ?? new byte[32],
-                ExtraData = header.ExtraData ?? Array.Empty<byte>(),
-                MixHash = header.MixHash ?? new byte[32],
-                Nonce = header.Nonce ?? new byte[8],
-                ComputePostStateRoot = true,
-
-                ParentBeaconBlockRoot = parentBeaconBlockRoot,
-                BlobGasUsed = header.BlobGasUsed.HasValue ? (long)header.BlobGasUsed.Value : (long?)null,
-                ExcessBlobGas = header.ExcessBlobGas.HasValue ? (long)header.ExcessBlobGas.Value : (long?)null,
-                RequestsHash = header.RequestsHash,
-                SlotNumber = header.SlotNumber,
-                Withdrawals = ToWitnessWithdrawals(withdrawals),
-
-                Features = new BlockFeatureConfig
-                {
-                    Fork = fork
-                },
-                Transactions = witnessTxs,
-                Accounts = witnessRecorder.GetWitnessAccounts()
-            };
-
-            return BinaryBlockWitness.Serialize(witnessData);
-        }
-
-        private static List<BlockWithdrawal>? ToWitnessWithdrawals(IList<WithdrawalEntry>? withdrawals)
-        {
-            if (withdrawals == null) return null;
-
-            var result = new List<BlockWithdrawal>(withdrawals.Count);
-            foreach (var w in withdrawals)
-            {
-                result.Add(new BlockWithdrawal
-                {
-                    Index = w.Index,
-                    ValidatorIndex = w.ValidatorIndex,
-                    Address = w.Address,
-                    AmountInGwei = (ulong)w.AmountGwei
-                });
-            }
-            return result;
-        }
-
         private async Task<BlockHeader?> ResolveParentHeaderAsync(BlockHeader header)
         {
             if (header == null || header.ParentHash == null || header.ParentHash.Length == 0)
@@ -1097,7 +950,7 @@ namespace Nethereum.CoreChain
                 Timestamp = (long)header.Timestamp,
                 Coinbase = authorResolver?.Invoke(header) ?? header.Coinbase,
                 GasLimit = header.GasLimit,
-                BaseFee = header.BaseFee ?? chainConfig.BaseFee,
+                BaseFee = fork < HardforkName.London ? 0 : header.BaseFee ?? chainConfig.BaseFee,
                 Difficulty = evmDifficulty,
                 PrevRandao = header.MixHash,
                 ChainId = chainConfig.ChainId,

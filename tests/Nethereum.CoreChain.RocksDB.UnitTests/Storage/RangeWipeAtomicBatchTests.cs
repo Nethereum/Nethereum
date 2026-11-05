@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
@@ -158,6 +159,49 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Storage
 
             var loaded = PatriciaTrie.LoadFromStorage(storage2.Root.GetHash(), bundle.StateTrieNodes, owner);
             Assert.Equal(V(99), loaded.Get(K(0)));
+        }
+
+        [Fact]
+        public async Task RecordAndDeleteRange_Journals_Same_Rows_As_AddRangeWipeToBatch_Without_Window()
+        {
+            var dir = SubDir("record-and-delete");
+            using var mgr = new RocksDbManager(PathKeyedOptions(dir));
+            var bundle = RocksDbChainStoreBundle.FromManager(mgr, dir, ownsManager: false);
+            var owner = _keccak.CalculateHash(new byte[] { 0x73 });
+            var neighbour = _keccak.CalculateHash(new byte[] { 0x74 });
+
+            bundle.NodeCommitBlockSource.Arm(1);
+            foreach (var o in new[] { owner, neighbour })
+            {
+                var storage = new PatriciaTrie(bundle.StateTrieNodes, o, _hp) { Tracer = new TrieTracer() };
+                for (int i = 0; i < 12; i++) storage.Put(K(i), V(i + 1));
+                storage.SaveDirtyNodesToStorage();
+            }
+            bundle.NodeCommitBlockSource.Clear();
+            await ((IAtomicBlockFlush)bundle).FlushBlockAsync(null, 1, Hash32(1)).ConfigureAwait(false);
+            await ((IAtomicBlockFlush)bundle).DrainAsync();
+
+            var before = DumpCf(mgr, RocksDbManager.CF_STATE_TRIE_STORAGE);
+            var ownerRows = before.Where(kv => kv.Key.StartsWith(Convert.ToHexString(owner))).ToList();
+            var historyBefore = DumpCf(mgr, RocksDbManager.CF_NODE_HISTORY).Count;
+            Assert.NotEmpty(ownerRows);
+
+            var journal = new RocksDbNodeReverseDiffStore(mgr, buildKeyMajorIndex: true);
+            var pathStore = new RocksDbPathTrieNodeStore(mgr);
+            journal.RecordAndDeleteRange(2, pathStore, owner);
+
+            var after = DumpCf(mgr, RocksDbManager.CF_STATE_TRIE_STORAGE);
+            var history = DumpCf(mgr, RocksDbManager.CF_NODE_HISTORY);
+            var index = DumpCf(mgr, RocksDbManager.CF_NODE_HISTORY_INDEX);
+            Assert.Equal(before.Count - ownerRows.Count, after.Count);
+            Assert.DoesNotContain(after.Keys, k => k.StartsWith(Convert.ToHexString(owner)));
+            Assert.Equal(historyBefore + ownerRows.Count, history.Count);
+            var journalled = history.Values.Select(Convert.ToHexString).ToHashSet();
+            Assert.All(ownerRows, kv => Assert.Contains(Convert.ToHexString(kv.Value), journalled));
+            Assert.True(index.Count >= ownerRows.Count);
+
+            journal.RecordAndDeleteRange(2, pathStore, owner);
+            Assert.Equal(history.Count, DumpCf(mgr, RocksDbManager.CF_NODE_HISTORY).Count);
         }
     }
 }

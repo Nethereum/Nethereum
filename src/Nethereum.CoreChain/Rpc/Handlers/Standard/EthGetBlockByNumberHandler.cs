@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -18,6 +17,11 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
 
+            if (IsAboveExecutedHead(context, blockNumber))
+            {
+                return Success(request.Id, null);
+            }
+
             var blockHeader = await context.Node.GetBlockByNumberAsync(blockNumber);
             if (blockHeader == null)
             {
@@ -26,27 +30,15 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
             var blockHash = await context.Node.GetBlockHashByNumberAsync(blockNumber);
 
-            var txStore = context.Node.Transactions;
-            var signedTxs = await txStore.GetByBlockHashAsync(blockHash);
-            var withdrawals = await WithdrawalsLoader.LoadAsync(context, blockHeader, blockHash);
-            var uncles = await UnclesLoader.LoadAsync(context, blockHash);
-            var blockSize = BlockHeaderExtensions.CalculateFullBlockSize(blockHeader, signedTxs, uncles, withdrawals);
+            return Success(request.Id, await BlockRpcResponseBuilder.BuildAsync(context, blockHeader, blockHash, includeTransactions));
+        }
 
-            if (includeTransactions)
-            {
-                var transactions = signedTxs?
-                    .Select((tx, index) => TransactionRpcBuilder.Build(tx, blockHash, blockNumber, index, blockHeader))
-                    .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactions(blockHash, transactions, blockSize, withdrawals, uncles));
-            }
-            else
-            {
-                var txHashes = signedTxs?
-                    .Select(tx => tx.Hash?.ToHex(true))
-                    .Where(h => h != null)
-                    .ToArray();
-                return Success(request.Id, blockHeader.ToBlockWithTransactionHashes(blockHash, txHashes, blockSize, withdrawals, uncles));
-            }
+        internal static bool IsAboveExecutedHead(RpcContext context, System.Numerics.BigInteger blockNumber)
+        {
+            var bundle = context.Services != null ? context.GetService<IChainStoreBundle>() : null;
+            if (!(bundle is IAtomicBlockFlush)) return false;
+            var executedHead = bundle.Metadata.GetLastBlock();
+            return executedHead > 0 && blockNumber > executedHead;
         }
     }
 }

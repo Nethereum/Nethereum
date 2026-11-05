@@ -19,7 +19,6 @@ namespace Nethereum.CoreChain.Storage.InMemory
         private ulong _latestCheckpoint;
         private SnapSyncState _snapSyncState;
         private HeaderSyncState _headerSyncState;
-        private readonly Dictionary<string, DeferredStorageDebt> _deferredStorageDebts = new();
 
         public ulong GetLastBlock() { lock (_lock) return _lastBlock; }
         public byte[] GetLastBlockHash() { lock (_lock) return _lastBlockHash; }
@@ -41,14 +40,32 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public ulong GetReceiptBackfillCursor() { lock (_lock) return _receiptBackfillCursor; }
         public void SetReceiptBackfillCursor(ulong blockNumber) { lock (_lock) _receiptBackfillCursor = blockNumber; }
 
+        private readonly Dictionary<ulong, byte[]> _executedHashes = new();
+
         public void Commit(ulong lastBlock, byte[] lastBlockHash)
         {
             lock (_lock)
             {
                 _lastBlock = lastBlock;
                 if (lastBlockHash != null && lastBlockHash.Length == 32)
+                {
                     _lastBlockHash = lastBlockHash;
+                    _executedHashes[lastBlock] = lastBlockHash;
+                    if (lastBlock > ExecutedHashRetention.Blocks + 1)
+                        _executedHashes.Remove(lastBlock - ExecutedHashRetention.Blocks - 1);
+                }
             }
+        }
+
+        public void SaveExecutedHash(ulong blockNumber, byte[] blockHash)
+        {
+            if (blockHash == null || blockHash.Length != 32) return;
+            lock (_lock) _executedHashes[blockNumber] = blockHash;
+        }
+
+        public byte[] GetExecutedHash(ulong blockNumber)
+        {
+            lock (_lock) return _executedHashes.TryGetValue(blockNumber, out var hash) ? hash : null;
         }
 
         private ulong _durableStateBlock;
@@ -92,20 +109,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public ChainCheckpoint? GetNearestCheckpointAtOrBefore(ulong upToBlock)
         {
-            lock (_lock)
-            {
-                ulong best = 0;
-                bool found = false;
-                foreach (var bn in _checkpoints.Keys)
-                {
-                    if (bn <= upToBlock && (!found || bn > best))
-                    {
-                        best = bn;
-                        found = true;
-                    }
-                }
-                return found ? _checkpoints[best] : (ChainCheckpoint?)null;
-            }
+            lock (_lock) return GetNearestCheckpointAtOrBeforeUnlocked(upToBlock);
         }
 
         public ChainCheckpoint RewindToCheckpointAtOrBefore(ulong targetBlock)
@@ -186,10 +190,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             lock (_lock)
             {
-                _lastBlock = 0;
-                _lastBlockHash = null;
-                _durableStateBlock = 0;
-                _durableStateHash = null;
+                ClearCommittedHead();
                 _lastFetchedHeader = 0;
                 _lastFetchedBody = 0;
                 _genesisLoaded = false;
@@ -280,60 +281,19 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public void UpsertDeferredStorageDebt(DeferredStorageDebt debt)
         {
-            DeferredStorageDebt.Validate(debt);
-            lock (_lock)
-            {
-                _deferredStorageDebts[DeferredStorageDebtKey(debt.AccountHash, debt.DiscoveredStorageRoot)] = debt.Clone();
-            }
         }
 
         public IReadOnlyList<DeferredStorageDebt> ListOpenDeferredStorageDebts(int max = int.MaxValue)
-        {
-            if (max <= 0) return Array.Empty<DeferredStorageDebt>();
-            lock (_lock)
-            {
-                var result = new List<DeferredStorageDebt>();
-                foreach (var debt in _deferredStorageDebts.Values)
-                {
-                    if (!debt.IsOpen) continue;
-                    result.Add(debt.Clone());
-                    if (result.Count >= max) break;
-                }
-                return result;
-            }
-        }
+            => Array.Empty<DeferredStorageDebt>();
 
-        public ulong CountOpenDeferredStorageDebts()
-        {
-            lock (_lock)
-            {
-                ulong count = 0;
-                foreach (var debt in _deferredStorageDebts.Values)
-                    if (debt.IsOpen) count++;
-                return count;
-            }
-        }
+        public ulong CountOpenDeferredStorageDebts() => 0;
 
         public void ClearDeferredStorageDebt(byte[] accountHash, byte[] discoveredStorageRoot)
         {
-            lock (_lock)
-            {
-                _deferredStorageDebts.Remove(DeferredStorageDebtKey(accountHash, discoveredStorageRoot));
-            }
         }
 
         public void ClearAllDeferredStorageDebts()
         {
-            lock (_lock)
-            {
-                _deferredStorageDebts.Clear();
-            }
-        }
-        private static string DeferredStorageDebtKey(byte[] accountHash, byte[] discoveredStorageRoot)
-        {
-            if (accountHash == null || accountHash.Length != 32) throw new ArgumentException("accountHash must be 32 bytes", nameof(accountHash));
-            if (discoveredStorageRoot == null || discoveredStorageRoot.Length != 32) throw new ArgumentException("discoveredStorageRoot must be 32 bytes", nameof(discoveredStorageRoot));
-            return ByteUtil.Merge(accountHash, discoveredStorageRoot).ToHex();
         }
     }
 }

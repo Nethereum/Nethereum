@@ -15,6 +15,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class RocksDbSplitHistoryStoreTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"splitstore_{Guid.NewGuid():N}");

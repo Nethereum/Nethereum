@@ -47,6 +47,7 @@ namespace Nethereum.CoreChain.Rpc
                 if (index >= array.Length)
                     throw RpcException.InvalidParams($"Missing parameter at index {index}");
 
+                RequireValue<T>(array[index] == null || array[index] is JsonElement { ValueKind: JsonValueKind.Null }, index);
                 return RpcValueConverter.FromObject<T>(array[index]);
             }
 
@@ -58,10 +59,17 @@ namespace Nethereum.CoreChain.Rpc
                 if (index >= jsonElement.GetArrayLength())
                     throw RpcException.InvalidParams($"Missing parameter at index {index}");
 
+                RequireValue<T>(jsonElement[index].ValueKind == JsonValueKind.Null, index);
                 return RpcValueConverter.FromJsonElement<T>(jsonElement[index]);
             }
 
             throw RpcException.InvalidParams("Parameters must be an array");
+        }
+
+        private static void RequireValue<T>(bool isNull, int index)
+        {
+            if (isNull && Nullable.GetUnderlyingType(typeof(T)) == null)
+                throw RpcException.InvalidParams($"missing value for required argument {index}");
         }
 
         protected static T GetOptionalParam<T>(RpcRequestMessage request, int index, T defaultValue = default(T))
@@ -95,6 +103,33 @@ namespace Nethereum.CoreChain.Rpc
             }
 
             return defaultValue;
+        }
+
+        protected static T ParseClientInput<T>(Func<T> parse)
+        {
+            try
+            {
+                return parse();
+            }
+            catch (Exception ex) when (
+                ex is FormatException
+                || ex is InvalidOperationException
+                || ex is ArgumentException
+                || ex is OverflowException
+                || ex is InvalidCastException
+                || ex is System.Text.Json.JsonException
+                || ex is Newtonsoft.Json.JsonException)
+            {
+                throw RpcException.InvalidParams("invalid params");
+            }
+        }
+
+        protected static JsonElement RequireObject(JsonElement element, string name)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                throw RpcException.InvalidParams($"invalid {name}: expected an object");
+
+            return element;
         }
 
         protected static int GetParamCount(RpcRequestMessage request)
@@ -150,6 +185,30 @@ namespace Nethereum.CoreChain.Rpc
         protected static Task<BigInteger> ResolveBlockNumberAsync(string blockTag, RpcContext context)
             => BlockTagResolver.ResolveAsync(blockTag, context);
 
+        protected static string GetOptionalBlockParam(RpcRequestMessage request, int index, string defaultValue)
+        {
+            if (index >= GetParamCount(request))
+                return defaultValue;
+
+            var element = GetJsonElement(request, index);
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Null:
+                case JsonValueKind.Undefined:
+                    return defaultValue;
+                case JsonValueKind.String:
+                    return element.GetRpcString();
+                case JsonValueKind.Object:
+                    if (element.TryGetProperty("blockHash", out var hash) && hash.ValueKind == JsonValueKind.String)
+                        return hash.GetRpcString();
+                    if (element.TryGetProperty("blockNumber", out var number) && number.ValueKind == JsonValueKind.String)
+                        return number.GetRpcString();
+                    throw RpcException.InvalidParams("invalid block parameter object: expected blockHash or blockNumber");
+                default:
+                    throw RpcException.InvalidParams("invalid block parameter");
+            }
+        }
+
         protected static long ParseHexOrDecimalLong(RpcRequestMessage request, int index)
         {
             var rawParams = request.RawParameters;
@@ -169,11 +228,15 @@ namespace Nethereum.CoreChain.Rpc
                 return 0;
 
             if (element.ValueKind == JsonValueKind.Number)
-                return element.GetInt64();
+            {
+                if (!element.TryGetInt64(out var number))
+                    throw RpcException.InvalidParams("numeric value exceeds the valid range");
+                return number;
+            }
 
             if (element.ValueKind == JsonValueKind.String)
             {
-                var str = element.GetString();
+                var str = element.GetRpcString();
                 if (string.IsNullOrEmpty(str))
                     return 0;
 

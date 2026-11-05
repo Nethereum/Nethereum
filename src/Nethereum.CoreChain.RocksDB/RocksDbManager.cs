@@ -1,9 +1,11 @@
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using Nethereum.CoreChain.RocksDB.History;
+using Nethereum.CoreChain.Storage.History;
 using RocksDbSharp;
 
 namespace Nethereum.CoreChain.RocksDB
@@ -28,6 +30,7 @@ namespace Nethereum.CoreChain.RocksDB
         public const string CF_TRIE_NODES = "trie_nodes";
         public const string CF_STATE_TRIE_ACCOUNT = "state_trie_account";
         public const string CF_STATE_TRIE_STORAGE = "state_trie_storage";
+        public const string CF_FLAT_GENERATION = "flat_generation";
         public const string CF_NODE_HISTORY = "node_band_log";
         public const string CF_NODE_HISTORY_INDEX = "node_history_index";
         public const string CF_STATE_ROOT_INDEX = "state_root_index";
@@ -57,7 +60,7 @@ namespace Nethereum.CoreChain.RocksDB
         public static readonly IReadOnlyList<string> StateTrieCfs = new[]
         {
             CF_STATE_ACCOUNTS, CF_STATE_STORAGE, CF_STATE_CODE,
-            CF_TRIE_NODES, CF_STATE_TRIE_ACCOUNT, CF_STATE_TRIE_STORAGE,
+            CF_TRIE_NODES, CF_STATE_TRIE_ACCOUNT, CF_STATE_TRIE_STORAGE, CF_FLAT_GENERATION,
         };
         public static readonly IReadOnlyList<string> BinaryTrieCfs = new[]
         {
@@ -92,6 +95,7 @@ namespace Nethereum.CoreChain.RocksDB
         private readonly RocksDbStorageOptions _options;
         private readonly CatalogueScope _scope;
         private Cache _sharedCache;
+        private DbOptions _dbOptions;
 
         public RocksDbStorageOptions Options => _options;
 
@@ -118,6 +122,7 @@ namespace Nethereum.CoreChain.RocksDB
             _columnFamilies = new Dictionary<string, ColumnFamilyHandle>();
 
             var dbOptions = CreateDbOptions();
+            _dbOptions = dbOptions;
             try
             {
                 var sharedCache = Cache.CreateLru((ulong)_options.BlockCacheSize);
@@ -177,6 +182,27 @@ namespace Nethereum.CoreChain.RocksDB
             }
         }
 
+        public bool StatisticsEnabled => _options.EnableStatistics;
+
+        [NethereumDocExample(DocSection.ChainInfrastructure, "corechain-rocksdb", "RocksDbManager.ReadCacheStats - the block-cache hits and misses of an open database")]
+        public RocksDbCacheStats ReadCacheStats()
+        {
+            if (!_options.EnableStatistics)
+                throw new InvalidOperationException("RocksDB statistics are not enabled; set RocksDbOptions.EnableStatistics.");
+
+            EnterLiveDatabase();
+            try
+            {
+                return RocksDbCacheStats.Parse(
+                    _dbOptions.GetStatisticsString(),
+                    _database.GetProperty("rocksdb.block-cache-usage", _columnFamilies[OpenColumnFamilyNames[0]]));
+            }
+            finally
+            {
+                LeaveLiveDatabase();
+            }
+        }
+
         public bool HasColumnFamily(string name) => _columnFamilies.ContainsKey(name);
 
         public RocksDb Database => _database;
@@ -215,19 +241,9 @@ namespace Nethereum.CoreChain.RocksDB
             return new WriteBatch();
         }
 
-        public static byte[] Write64BE(ulong v)
-        {
-            var b = new byte[8];
-            for (int i = 7; i >= 0; i--) { b[i] = (byte)(v & 0xff); v >>= 8; }
-            return b;
-        }
+        public static byte[] Write64BE(ulong v) => HistoryKeys.BlockKey(v);
 
-        public static ulong Read64BE(byte[] b)
-        {
-            ulong v = 0;
-            for (int i = 0; i < 8; i++) v = (v << 8) | b[i];
-            return v;
-        }
+        public static ulong Read64BE(byte[] b) => HistoryKeys.ReadBlockNumber(b);
 
         public Snapshot CreateSnapshot()
         {
@@ -251,6 +267,17 @@ namespace Nethereum.CoreChain.RocksDB
         public long DeleteCallCount => System.Threading.Interlocked.Read(ref _deleteCallCount);
         public long NativeCommitCount => WriteCallCount + PutCallCount + DeleteCallCount;
 
+        private string _fatalWriteFault;
+
+        internal string FatalWriteFault => Volatile.Read(ref _fatalWriteFault);
+
+        private void RecordFatalWriteFault(RocksDbException ex)
+            => System.Threading.Interlocked.CompareExchange(
+                ref _fatalWriteFault, $"{_options.DatabasePath}: {ex.Message}", null);
+
+        internal static bool IsTransientWriteFailure(Exception ex)
+            => ex is RocksDbException rex && IsTransientFlushStall(rex.Message);
+
         private void EnterLiveDatabase()
         {
             _writeDisposeGate.EnterReadLock();
@@ -270,6 +297,36 @@ namespace Nethereum.CoreChain.RocksDB
             {
                 System.Threading.Interlocked.Increment(ref _writeCallCount);
                 _database.Write(batch, writeOptions);
+            }
+            catch (RocksDbException ex) when (!IsTransientWriteFailure(ex))
+            {
+                RecordFatalWriteFault(ex);
+                throw;
+            }
+            finally
+            {
+                LeaveLiveDatabase();
+            }
+        }
+
+        private static readonly byte[] WriteProbeKey = System.Text.Encoding.ASCII.GetBytes("write-probe");
+
+        internal string TryProbeWrite()
+        {
+            EnterLiveDatabase();
+            try
+            {
+                _database.Put(WriteProbeKey, WriteProbeKey);
+                return null;
+            }
+            catch (RocksDbException ex) when (IsTransientWriteFailure(ex))
+            {
+                return null;
+            }
+            catch (RocksDbException ex)
+            {
+                RecordFatalWriteFault(ex);
+                return ex.Message;
             }
             finally
             {
@@ -300,6 +357,11 @@ namespace Nethereum.CoreChain.RocksDB
             {
                 _database.Put(key, value, cf, writeOptions);
             }
+            catch (RocksDbException ex) when (!IsTransientWriteFailure(ex))
+            {
+                RecordFatalWriteFault(ex);
+                throw;
+            }
             finally
             {
                 LeaveLiveDatabase();
@@ -314,6 +376,11 @@ namespace Nethereum.CoreChain.RocksDB
             try
             {
                 _database.Remove(key, cf, writeOptions);
+            }
+            catch (RocksDbException ex) when (!IsTransientWriteFailure(ex))
+            {
+                RecordFatalWriteFault(ex);
+                throw;
             }
             finally
             {
@@ -352,11 +419,36 @@ namespace Nethereum.CoreChain.RocksDB
         public void WipeColumnFamily(string columnFamily)
         {
             var cfOptions = BuildColumnFamilyOptions(columnFamily);
+            DeleteAllFilesInColumnFamily(columnFamily);
             EnterLiveDatabase();
             try
             {
                 _database.DropColumnFamily(columnFamily);
                 _columnFamilies[columnFamily] = _database.CreateColumnFamily(cfOptions, columnFamily);
+            }
+            finally
+            {
+                LeaveLiveDatabase();
+            }
+        }
+
+        private void DeleteAllFilesInColumnFamily(string columnFamily)
+        {
+            DeleteFilesInFullRange(columnFamily);
+            CompactColumnFamilyParallel(columnFamily, DefaultCompactionSubcompactions);
+            DeleteFilesInFullRange(columnFamily);
+        }
+
+        private void DeleteFilesInFullRange(string columnFamily)
+        {
+            EnterLiveDatabase();
+            try
+            {
+                Native.Instance.rocksdb_delete_file_in_range_cf(
+                    _database.Handle, GetColumnFamily(columnFamily).Handle,
+                    IntPtr.Zero, UIntPtr.Zero, IntPtr.Zero, UIntPtr.Zero, out var error);
+                if (error != IntPtr.Zero)
+                    throw new RocksDbException(error);
             }
             finally
             {
@@ -431,13 +523,54 @@ namespace Nethereum.CoreChain.RocksDB
         public void CompactColumnFamily(string columnFamily)
             => CompactColumnFamilyParallel(columnFamily, DefaultCompactionSubcompactions);
 
-        public void CompactColumnFamilyParallel(string columnFamily, int subcompactions)
+        internal void CompactKeyRange(string columnFamily, byte[] start, byte[] limit)
         {
             lock (_compactionGate)
             {
                 if (_disposed) return;
-                CompactRangeCfParallel(_database, GetColumnFamily(columnFamily), subcompactions);
+                _database.CompactRange(start, limit, GetColumnFamily(columnFamily));
             }
+        }
+
+        public void CompactColumnFamilyParallel(string columnFamily, int subcompactions)
+            => CompactColumnFamilyParallel(columnFamily, subcompactions, default);
+
+        internal void CompactColumnFamilyParallel(string columnFamily, int subcompactions, System.Threading.CancellationToken ct)
+        {
+            lock (_compactionGate)
+            {
+                if (_disposed) return;
+                CompactRangeCfParallel(_database, GetColumnFamily(columnFamily), subcompactions, ct);
+            }
+        }
+
+        internal static void CompactRangeCfParallel(
+            RocksDb database, ColumnFamilyHandle cf, int subcompactions, System.Threading.CancellationToken ct)
+        {
+            var paused = 0;
+            using var registration = ct.Register(() =>
+            {
+                System.Threading.Volatile.Write(ref paused, 1);
+                try { Native.Instance.rocksdb_disable_manual_compaction(database.Handle); }
+                catch (EntryPointNotFoundException) { System.Threading.Volatile.Write(ref paused, 0); }
+            });
+            var aborted = false;
+            try
+            {
+                CompactRangeCfParallel(database, cf, subcompactions);
+            }
+            catch (RocksDbException) when (ct.IsCancellationRequested && System.Threading.Volatile.Read(ref paused) == 1)
+            {
+                aborted = true;
+            }
+            finally
+            {
+                registration.Dispose();
+                if (System.Threading.Volatile.Read(ref paused) == 1)
+                    Native.Instance.rocksdb_enable_manual_compaction(database.Handle);
+            }
+            if (aborted || System.Threading.Volatile.Read(ref paused) == 1)
+                throw new OperationCanceledException(ct);
         }
 
         internal static void CompactRangeCfParallel(RocksDb database, ColumnFamilyHandle cf, int subcompactions)
@@ -533,7 +666,6 @@ namespace Nethereum.CoreChain.RocksDB
                     }
                 }
             }
-            if (disposing) _writeDisposeGate.Dispose();
         }
     }
 }

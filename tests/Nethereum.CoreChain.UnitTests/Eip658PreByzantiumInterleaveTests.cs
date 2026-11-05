@@ -45,9 +45,9 @@ namespace Nethereum.CoreChain.UnitTests
 
         private static List<ISignedTransaction> ThreeTransfers() => new()
         {
-            BlockPipelineHarness.Transfer(0),
-            BlockPipelineHarness.Transfer(1),
-            BlockPipelineHarness.Transfer(2),
+            BlockPipelineHarness.UnprotectedTransfer(0),
+            BlockPipelineHarness.UnprotectedTransfer(1),
+            BlockPipelineHarness.UnprotectedTransfer(2),
         };
 
         private static BlockProductionOptions Options() => new()

@@ -68,9 +68,12 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var block = await _fixture.Node.GetLatestBlockAsync();
             Assert.NotNull(block);
 
+            var parent = await _fixture.Node.GetBlockByNumberAsync(block.BlockNumber - 1);
+
             var timestamp = (long)block.Timestamp;
+            var latestPermitted = Math.Max(afterMine + 1, (long)parent.Timestamp + 1);
             Assert.True(timestamp >= beforeMine - 1, $"Timestamp {timestamp} is before expected {beforeMine}");
-            Assert.True(timestamp <= afterMine + 1, $"Timestamp {timestamp} is after expected {afterMine}");
+            Assert.True(timestamp <= latestPermitted, $"Timestamp {timestamp} is after expected {latestPermitted}");
         }
 
         [Fact]

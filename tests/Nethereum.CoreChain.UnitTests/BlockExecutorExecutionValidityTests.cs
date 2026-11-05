@@ -59,6 +59,7 @@ namespace Nethereum.CoreChain.UnitTests
                 .ApplyGenesisAllocationAsync(stateStore, Nethereum.EVM.HardforkName.Prague);
             await SeedSenderAsync(stateStore);
             var blockStore = new InMemoryBlockStore();
+            await ShapedHeaders.SaveGenesisAsync(blockStore, Nethereum.EVM.HardforkName.Prague, 30_000_000);
             var config = BuildChainConfig();
             var trieNodeStore = new InMemoryContentNodeStore();
             var stateRootCalculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
@@ -76,7 +77,7 @@ namespace Nethereum.CoreChain.UnitTests
                 Coinbase = SenderAddress,
                 BaseFee = 0,
                 BlockGasLimit = 30_000_000,
-                Difficulty = 1,
+                Difficulty = 0,
                 ChainId = ChainId
             });
 
@@ -90,6 +91,7 @@ namespace Nethereum.CoreChain.UnitTests
                 .ApplyGenesisAllocationAsync(stateStore, Nethereum.EVM.HardforkName.Prague);
             await SeedSenderAsync(stateStore);
             var blockStore = new InMemoryBlockStore();
+            await ShapedHeaders.SaveGenesisAsync(blockStore, Nethereum.EVM.HardforkName.Prague, 30_000_000);
             var config = BuildChainConfig();
             var trieNodeStore = new InMemoryContentNodeStore();
             var stateRootCalculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);

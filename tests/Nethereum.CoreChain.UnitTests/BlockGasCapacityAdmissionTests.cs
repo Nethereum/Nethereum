@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Forks;
@@ -37,6 +38,7 @@ namespace Nethereum.CoreChain.UnitTests
             await stateStore.SaveAccountAsync(RecipientAddress, new Account { Balance = 1, Nonce = 0 });
 
             var blockStore = new InMemoryBlockStore();
+            var genesisHash = await ShapedHeaders.SaveGenesisAsync(blockStore, fork, blockGasLimit);
             var config = new ChainConfig
             {
                 ChainId = ChainId,
@@ -57,17 +59,11 @@ namespace Nethereum.CoreChain.UnitTests
                 rewardPolicy: NoRewardPolicy.Instance,
                 trieNodeStore: trieNodeStore);
 
-            var header = new BlockHeader
-            {
-                BlockNumber = 1,
-                Timestamp = 1_700_000_000,
-                GasLimit = blockGasLimit,
-                BaseFee = 0,
-                BlobGasUsed = 0,
-                ExcessBlobGas = 0,
-                Coinbase = CoinbaseAddress,
-                ParentHash = new byte[32]
-            };
+            var header = ShapedHeaders.Create(fork, 1, 1_700_000_000, blockGasLimit, 0, 0);
+            header.Coinbase = CoinbaseAddress;
+            header.ParentHash = genesisHash;
+            header.TransactionsHash = PatriciaBlockRootsProvider.Instance.CalculateTransactionsRoot(
+                txs.Select(entry => entry.Tx).ToList());
 
             var result = await engine.ExecuteAsync(
                 header, txs, uncles: null, withdrawals: null,

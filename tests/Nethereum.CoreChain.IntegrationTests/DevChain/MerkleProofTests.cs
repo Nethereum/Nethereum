@@ -310,9 +310,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
             var proof = ProofGenerator.GenerateProof(trie, key);
 
             var verifyTrie = new PatriciaTrie(corruptedRoot, ProofToStore(proof));
-            var verified = verifyTrie.Get(key);
-
-            Assert.Null(verified);
+            Assert.Throws<MissingTrieNodeException>(() => verifyTrie.Get(key));
         }
 
         [Fact]

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Nethereum.Freezer
@@ -363,28 +364,25 @@ namespace Nethereum.Freezer
 
         private void RepairIndexSelfConsistency(bool throwOnDefect)
         {
-            for (var item = 1L; item <= _index.Count; item++)
+            var items = _index.Count;
+            var clock = Stopwatch.StartNew();
+            var defect = _index.FirstItemBreakingSequence();
+            clock.Stop();
+
+            if (defect == null)
             {
-                var previous = _index.EntryAt(item - 1);
-                var current = _index.EntryAt(item);
-                if (IsValidSuccessor(previous, current))
-                    continue;
-
-                if (throwOnDefect)
-                    throw new FreezerValidationException(
-                        $"freezer index '{Name}' has a monotonicity violation at item {item - 1}");
-
-                _index.TruncateToItems(item - 1);
+                Console.Error.WriteLine(
+                    $"[Nethereum.Freezer] verified index of table '{Name}' items={items} elapsed={clock.Elapsed}");
                 return;
             }
-        }
 
-        private static bool IsValidSuccessor(FreezerIndexEntry previous, FreezerIndexEntry current)
-        {
-            if (current.FileNumber == previous.FileNumber)
-                return current.Offset >= previous.Offset;
+            if (throwOnDefect)
+                throw new FreezerValidationException(
+                    $"freezer index '{Name}' has a monotonicity violation at item {defect.Value - 1}");
 
-            return current.FileNumber == previous.FileNumber + 1;
+            _index.TruncateToItems(defect.Value - 1);
+            Console.Error.WriteLine(
+                $"[Nethereum.Freezer] verified index of table '{Name}' items={items} truncated to {defect.Value - 1} elapsed={clock.Elapsed}");
         }
 
         private long ReconcileIndexAgainstFlushOffset(long flushOffset, bool throwOnDefect)

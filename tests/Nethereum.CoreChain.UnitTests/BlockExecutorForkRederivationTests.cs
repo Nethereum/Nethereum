@@ -16,7 +16,7 @@ namespace Nethereum.CoreChain.UnitTests
     {
         private const string PrivateKey = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
         private const string SenderAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-        private const string RecordDifficultyContractAddress = "0x000000000000000000000000000000DeaDBeef";
+        private const string RecordDifficultyContractAddress = "0x00000000000000000000000000000000DeaDBeef";
         private const long BlockGasLimit = 30_000_000;
 
         private static readonly BigInteger ChainId = 1337;

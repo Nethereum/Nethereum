@@ -10,13 +10,25 @@ namespace Nethereum.CoreChain.Storage
 
         public System.Collections.Generic.IReadOnlyList<(byte[] AccountHash, byte[] StorageRoot)> Subtrees { get; }
 
+        public System.Collections.Generic.IReadOnlyList<(byte[] Owner, byte[] Path)> MissingNodes { get; }
+
         public FlatReconcileUnresolvableNodeException(
             string message,
             System.Collections.Generic.IReadOnlyList<(byte[] AccountHash, byte[] StorageRoot)> subtrees,
             Exception inner)
+            : this(message, subtrees, null, inner)
+        {
+        }
+
+        public FlatReconcileUnresolvableNodeException(
+            string message,
+            System.Collections.Generic.IReadOnlyList<(byte[] AccountHash, byte[] StorageRoot)> subtrees,
+            System.Collections.Generic.IReadOnlyList<(byte[] Owner, byte[] Path)> missingNodes,
+            Exception inner)
             : base(message, inner)
         {
             Subtrees = subtrees ?? System.Array.Empty<(byte[], byte[])>();
+            MissingNodes = missingNodes ?? System.Array.Empty<(byte[], byte[])>();
         }
     }
 
@@ -35,6 +47,8 @@ namespace Nethereum.CoreChain.Storage
         System.Collections.Generic.IReadOnlyList<byte[]> GetPersistedMissingCode();
 
         void ClearPersistedMissingCode();
+
+        void DiscardCertifyJournal() { }
     }
 
     public sealed class FlatStateReconcileResult
@@ -63,6 +77,10 @@ namespace Nethereum.CoreChain.Storage
         public long SlotsAdded { get; }
         public long AccountsPatched { get; }
         public long SlotsPatched { get; }
+        public long RangesWalked { get; init; }
+        public long LeavesWalked { get; init; }
+        public long TrieNodesMissing { get; init; }
+        public long TrieNodesDiffering { get; init; }
 
         public long TotalRepairs =>
             GhostAccountsDeleted + GhostSlotsDeleted + AccountsAdded + SlotsAdded + AccountsPatched + SlotsPatched;

@@ -1,7 +1,9 @@
+#pragma warning disable CS0618
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Nethereum.CoreChain.Storage;
+using Nethereum.CoreChain.Storage.History;
 using Nethereum.Util;
 using RocksDbSharp;
 
@@ -24,7 +26,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public ulong GetLastBlock()
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.LastBlock);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public byte[] GetLastBlockHash()
@@ -33,7 +35,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public ulong GetLastFetchedHeader()
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.LastFetchedHeader);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public void SetLastFetchedHeader(ulong blockNumber)
@@ -42,7 +44,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public ulong GetLastFetchedBody()
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.LastFetchedBody);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public void SetLastFetchedBody(ulong blockNumber)
@@ -60,7 +62,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public ulong GetReceiptBackfillCursor()
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.ReceiptBackfillCursor);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public void SetReceiptBackfillCursor(ulong blockNumber)
@@ -68,18 +70,16 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public void Commit(ulong lastBlock, byte[] lastBlockHash)
         {
-            var cf = _rocks.GetColumnFamily(RocksDbManager.CF_METADATA);
             using var batch = _rocks.CreateWriteBatch();
-            batch.Put(MetaKeys.LastBlock, RocksDbManager.Write64BE(lastBlock), cf);
-            if (lastBlockHash != null && lastBlockHash.Length == 32)
-                batch.Put(MetaKeys.LastBlockHash, lastBlockHash, cf);
+            var staged = AddExecutedHeadToBatch(batch, lastBlock, lastBlockHash);
             _rocks.Write(batch);
+            ReleaseExecuted(staged);
         }
 
         public ulong GetDurableStateBlock()
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.DurableStateBlock);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public void CommitDurableState(ulong block, byte[] hash)
@@ -97,20 +97,99 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 batch.Put(MetaKeys.DurableStateHash, hash, cf);
         }
 
-        internal void AddExecutedHeadToBatch(WriteBatch batch, ulong block, byte[] hash)
+        internal static ulong ReadCursor(byte[] raw)
+            => raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+
+        internal List<KeyValuePair<ulong, byte[]>> AddExecutedHeadToBatch(WriteBatch batch, ulong block, byte[] hash)
+        {
+            var snapshot = SnapshotExecutedUpTo(block);
+            StageExecuted(batch, snapshot, block, hash);
+            return snapshot;
+        }
+
+        private void StageExecuted(WriteBatch batch, List<KeyValuePair<ulong, byte[]>> entries, ulong block, byte[] hash)
         {
             var cf = _rocks.GetColumnFamily(RocksDbManager.CF_METADATA);
+            foreach (var executed in entries)
+            {
+                batch.Put(MetaKeys.ExecutedHash(executed.Key), executed.Value, cf);
+                if (executed.Key > ExecutedHashRetention.Blocks + 1)
+                    batch.Delete(MetaKeys.ExecutedHash(executed.Key - ExecutedHashRetention.Blocks - 1), cf);
+            }
+            AddExecutedHeadToBatch(batch, cf, block, hash);
+        }
+
+        internal void ReleaseExecuted(List<KeyValuePair<ulong, byte[]>> written)
+        {
+            if (written == null || written.Count == 0) return;
+            lock (_pendingExecutedGate)
+            {
+                foreach (var entry in written)
+                {
+                    if (_pendingExecuted.TryGetValue(entry.Key, out var current) && ReferenceEquals(current, entry.Value))
+                        _pendingExecuted.Remove(entry.Key);
+                }
+            }
+        }
+
+        internal static void AddExecutedHeadToBatch(WriteBatch batch, ColumnFamilyHandle cf, ulong block, byte[] hash)
+        {
             batch.Put(MetaKeys.LastBlock, RocksDbManager.Write64BE(block), cf);
             if (hash != null && hash.Length == 32)
+            {
                 batch.Put(MetaKeys.LastBlockHash, hash, cf);
+                batch.Put(MetaKeys.ExecutedHash(block), hash, cf);
+                if (block > ExecutedHashRetention.Blocks + 1)
+                    batch.Delete(MetaKeys.ExecutedHash(block - ExecutedHashRetention.Blocks - 1), cf);
+            }
         }
+
+        private readonly object _pendingExecutedGate = new object();
+        private readonly SortedDictionary<ulong, byte[]> _pendingExecuted = new SortedDictionary<ulong, byte[]>();
+
+        public void SaveExecutedHash(ulong blockNumber, byte[] blockHash)
+        {
+            if (blockHash == null || blockHash.Length != 32) return;
+            lock (_pendingExecutedGate)
+            {
+                _pendingExecuted[blockNumber] = blockHash;
+                while (_pendingExecuted.Count > 2 * (int)ExecutedHashRetention.Blocks)
+                {
+                    ulong oldest = 0;
+                    foreach (var key in _pendingExecuted.Keys) { oldest = key; break; }
+                    _pendingExecuted.Remove(oldest);
+                }
+            }
+        }
+
+        public byte[] GetExecutedHash(ulong blockNumber)
+        {
+            lock (_pendingExecutedGate)
+                if (_pendingExecuted.TryGetValue(blockNumber, out var pending)) return pending;
+            return _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.ExecutedHash(blockNumber));
+        }
+
+        private List<KeyValuePair<ulong, byte[]>> SnapshotExecutedUpTo(ulong block)
+        {
+            var snapshot = new List<KeyValuePair<ulong, byte[]>>();
+            lock (_pendingExecutedGate)
+            {
+                foreach (var entry in _pendingExecuted)
+                {
+                    if (entry.Key > block) break;
+                    snapshot.Add(entry);
+                }
+            }
+            return snapshot;
+        }
+
 
         public ulong GetPromotionCursor() => GetPromotionCursor(null);
 
         public ulong GetPromotionCursor(RocksDbSharp.ReadOptions readOptions)
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.PromotionCursor, readOptions);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public bool HasPromotionCursor()
@@ -150,7 +229,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public ulong GetLatestCheckpoint()
         {
             var raw = _rocks.Get(RocksDbManager.CF_METADATA, MetaKeys.CheckpointLatest);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return ReadCursor(raw);
         }
 
         public ChainCheckpoint? GetCheckpoint(ulong blockNumber)
@@ -159,8 +238,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (raw == null || raw.Length != 72) return null;
             var sr = new byte[32]; Buffer.BlockCopy(raw, 0, sr, 0, 32);
             var bh = new byte[32]; Buffer.BlockCopy(raw, 32, bh, 0, 32);
-            var ts = new byte[8];  Buffer.BlockCopy(raw, 64, ts, 0, 8);
-            return new ChainCheckpoint(blockNumber, sr, bh, RocksDbManager.Read64BE(ts));
+            return new ChainCheckpoint(blockNumber, sr, bh, HistoryKeys.ReadBlockNumber(raw.AsSpan(64, 8)));
         }
 
         public ChainCheckpoint? GetNearestCheckpointAtOrBefore(ulong upToBlock)
@@ -177,8 +255,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (raw == null || raw.Length != 72) return null;
             var sr = new byte[32]; Buffer.BlockCopy(raw, 0, sr, 0, 32);
             var bh = new byte[32]; Buffer.BlockCopy(raw, 32, bh, 0, 32);
-            var ts = new byte[8];  Buffer.BlockCopy(raw, 64, ts, 0, 8);
-            return new ChainCheckpoint(blockNumber, sr, bh, RocksDbManager.Read64BE(ts));
+            return new ChainCheckpoint(blockNumber, sr, bh, HistoryKeys.ReadBlockNumber(raw.AsSpan(64, 8)));
         }
 
         public ChainCheckpoint RewindToCheckpointAtOrBefore(ulong targetBlock)
@@ -205,7 +282,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var result = new System.Collections.Generic.List<ulong>();
             using var it = _rocks.CreateIterator(RocksDbManager.CF_METADATA);
-            var prefix = System.Text.Encoding.ASCII.GetBytes("cp_");
+            var prefix = MetaKeys.CheckpointPrefix;
             it.Seek(prefix);
             while (it.Valid())
             {
@@ -299,15 +376,27 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (state == null) throw new ArgumentNullException(nameof(state));
             var blob = _snapSyncEncoder.Encode(state);
             var cf = _rocks.GetColumnFamily(RocksDbManager.CF_METADATA);
-            using var batch = _rocks.CreateWriteBatch();
-            batch.Put(MetaKeys.SnapSyncState, blob, cf);
-            _rocks.Write(batch);
+            using (var batch = _rocks.CreateWriteBatch())
+            {
+                batch.Put(MetaKeys.SnapSyncState, blob, cf);
+                _rocks.Write(batch);
+            }
         }
 
         public void ClearSnapSyncState()
         {
-            _rocks.Delete(RocksDbManager.CF_METADATA, MetaKeys.SnapSyncState);
+            using (var batch = _rocks.CreateWriteBatch())
+            {
+                batch.Delete(MetaKeys.SnapSyncState, _rocks.GetColumnFamily(RocksDbManager.CF_METADATA));
+                CertifyJournal.DeleteAll(batch, _rocks.GetColumnFamily(RocksDbManager.CF_FLAT_GENERATION));
+                _rocks.Write(batch);
+            }
+            CompactGenerationJournal();
         }
+
+        private void CompactGenerationJournal()
+            => _rocks.CompactKeyRange(
+                RocksDbManager.CF_FLAT_GENERATION, CertifyJournal.JournalKeysStart, CertifyJournal.JournalKeysEnd);
 
         public void ClearCommittedHead()
         {
@@ -393,15 +482,12 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             _rocks.Delete(RocksDbManager.CF_METADATA, MetaKeys.DeferredHealCode);
         }
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public void UpsertDeferredStorageDebt(DeferredStorageDebt debt)
         {
-            DeferredStorageDebt.Validate(debt);
-            _rocks.Put(
-                RocksDbManager.CF_METADATA,
-                DeferredStorageDebtKey(debt.AccountHash, debt.DiscoveredStorageRoot),
-                DeferredStorageDebtCodec.Encode(debt));
         }
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public IReadOnlyList<DeferredStorageDebt> ListOpenDeferredStorageDebts(int max = int.MaxValue)
         {
             if (max <= 0) return Array.Empty<DeferredStorageDebt>();
@@ -411,7 +497,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (it.Valid())
             {
                 var key = it.Key();
-                if (!HasDeferredStorageDebtPrefix(key)) break;
+                if (!ByteUtil.StartsWith(key, MetaKeys.DeferredStorageDebtPrefix)) break;
 
                 try
                 {
@@ -431,6 +517,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return result;
         }
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public ulong CountOpenDeferredStorageDebts()
         {
             ulong count = 0;
@@ -439,7 +526,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (it.Valid())
             {
                 var key = it.Key();
-                if (!HasDeferredStorageDebtPrefix(key)) break;
+                if (!ByteUtil.StartsWith(key, MetaKeys.DeferredStorageDebtPrefix)) break;
 
                 try
                 {
@@ -455,11 +542,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return count;
         }
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public void ClearDeferredStorageDebt(byte[] accountHash, byte[] discoveredStorageRoot)
         {
             _rocks.Delete(RocksDbManager.CF_METADATA, DeferredStorageDebtKey(accountHash, discoveredStorageRoot));
         }
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public void ClearAllDeferredStorageDebts()
         {
             var keys = new List<byte[]>();
@@ -469,7 +558,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 while (it.Valid())
                 {
                     var key = it.Key();
-                    if (!HasDeferredStorageDebtPrefix(key)) break;
+                    if (!ByteUtil.StartsWith(key, MetaKeys.DeferredStorageDebtPrefix)) break;
                     keys.Add(key);
                     it.Next();
                 }
@@ -481,13 +570,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private static bool HasCheckpointPrefix(byte[] key)
             => key != null && key.Length == 3 + 16 && key[0] == (byte)'c' && key[1] == (byte)'p' && key[2] == (byte)'_';
 
-        private static bool HasDeferredStorageDebtPrefix(byte[] key)
-        {
-            if (key == null || key.Length < MetaKeys.DeferredStorageDebtPrefix.Length) return false;
-            for (int i = 0; i < MetaKeys.DeferredStorageDebtPrefix.Length; i++)
-                if (key[i] != MetaKeys.DeferredStorageDebtPrefix[i]) return false;
-            return true;
-        }
         private static ulong ParseCheckpointKey(byte[] key)
         {
             ulong v = 0;
@@ -506,7 +588,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         private static byte[] CheckpointKey(ulong blockNumber)
-            => System.Text.Encoding.ASCII.GetBytes("cp_" + blockNumber.ToString("X16"));
+            => ByteUtil.Merge(MetaKeys.CheckpointPrefix, System.Text.Encoding.ASCII.GetBytes(blockNumber.ToString("X16")));
 
         public static byte[] DeferredStorageDebtKey(byte[] accountHash, byte[] discoveredStorageRoot)
         {
@@ -532,6 +614,16 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             public static readonly byte[] DeferredHealAccounts = System.Text.Encoding.ASCII.GetBytes("deferred_heal_accounts");
             public static readonly byte[] DeferredHealCode = System.Text.Encoding.ASCII.GetBytes("deferred_heal_code");
             public static readonly byte[] DeferredStorageDebtPrefix = Encoding.ASCII.GetBytes("dsd_");
+            internal static readonly byte[] CheckpointPrefix = Encoding.ASCII.GetBytes("cp_");
+            private static readonly byte[] ExecutedHashPrefix = Encoding.ASCII.GetBytes("exec_hash_");
+
+            internal static byte[] ExecutedHash(ulong block)
+            {
+                var key = new byte[ExecutedHashPrefix.Length + 8];
+                Buffer.BlockCopy(ExecutedHashPrefix, 0, key, 0, ExecutedHashPrefix.Length);
+                Buffer.BlockCopy(RocksDbManager.Write64BE(block), 0, key, ExecutedHashPrefix.Length, 8);
+                return key;
+            }
         }
     }
 }

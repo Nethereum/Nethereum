@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.Tracing;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.JsonRpc.Client.RpcMessages;
 
@@ -12,23 +13,15 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
+            var (blockHash, tracer, config) = ParseClientInput(() => ParseRequest(request));
+            if (blockHash == null)
+                return Error(request.Id, -32602, "Invalid block hash");
+
             try
             {
-                var blockHashHex = GetParam<string>(request, 0);
-                if (string.IsNullOrEmpty(blockHashHex))
-                    return Error(request.Id, -32602, "Invalid block hash");
-
-                var blockHash = blockHashHex.HexToByteArray();
-
-                string tracer = null;
-                JsonElement optionsElement = default;
-                if (GetParamCount(request) >= 2)
-                {
-                    optionsElement = GetJsonElement(request, 1);
-                    if (optionsElement.ValueKind == JsonValueKind.Object &&
-                        optionsElement.TryGetProperty("tracer", out var tracerProp))
-                        tracer = tracerProp.GetString();
-                }
+                var header = await context.Node.GetBlockByHashAsync(blockHash);
+                if (header != null && header.BlockNumber.IsZero)
+                    return Error(request.Id, -32000, "genesis is not traceable");
 
                 switch (tracer)
                 {
@@ -37,9 +30,6 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                         return Success(request.Id, callResult);
 
                     default:
-                        var config = optionsElement.ValueKind == JsonValueKind.Object
-                            ? DebugTraceConfigParser.ParseOpcodeConfig(optionsElement)
-                            : null;
                         var result = await context.Node.TraceBlockByHashAsync(blockHash, config);
                         return Success(request.Id, result);
                 }
@@ -48,14 +38,28 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             {
                 return Error(request.Id, -32000, ex.Message);
             }
-            catch (RpcException ex)
+        }
+
+        private static (byte[] BlockHash, string Tracer, OpcodeTraceConfig Config) ParseRequest(RpcRequestMessage request)
+        {
+            var blockHashHex = GetParam<string>(request, 0);
+            var blockHash = string.IsNullOrEmpty(blockHashHex) ? null : blockHashHex.HexToByteArray();
+
+            string tracer = null;
+            OpcodeTraceConfig config = null;
+            if (GetParamCount(request) >= 2)
             {
-                return Error(request.Id, ex.Code, ex.Message);
+                var optionsElement = GetJsonElement(request, 1);
+                if (optionsElement.ValueKind == JsonValueKind.Object)
+                {
+                    if (optionsElement.TryGetProperty("tracer", out var tracerProp))
+                        tracer = tracerProp.GetOptionalRpcString("tracer");
+                    if (tracer != "callTracer" && tracer != "prestateTracer")
+                        config = DebugTraceConfigParser.ParseOpcodeConfig(optionsElement);
+                }
             }
-            catch (Exception ex)
-            {
-                return Error(request.Id, -32603, ex.Message);
-            }
+
+            return (blockHash, tracer, config);
         }
     }
 }

@@ -20,6 +20,8 @@ namespace Nethereum.CoreChain
         public string ContractAddress { get; set; }
         public byte[] ReturnData { get; set; }
         public List<Log> Logs { get; set; } = new List<Log>();
+
+        public List<long> LogIndexes { get; set; }
         public Receipt Receipt { get; set; }
         public string RevertReason { get; set; }
 

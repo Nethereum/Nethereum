@@ -28,9 +28,12 @@
     <ProjectReference Include="..\Nethereum.CoreChain.Freezer\Nethereum.CoreChain.Freezer.csproj" />
   </ItemGroup>
 
-  <!-- Strong naming disabled for this project because RocksDB dependency is not strong-named -->
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
 
 </Project>

@@ -10,7 +10,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     public sealed class RocksDbFilterMapsStore : IFilterMapsStore
     {
         private static readonly WriteOptions WalOffOptions = new WriteOptions().DisableWal(1);
-        private static readonly IngestExternalFileOptions DefaultIngest = new IngestExternalFileOptions();
 
         private const int FlushEveryEpochs = 4;
 
@@ -177,15 +176,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (_bulkBatch == null) return false;
 
             var key = FilterMapsSchema.BaseRowKey(mapRowIndex);
-            if (value == null || value.Length == 0)
-            {
-                _bulkBatch.Delete(key, _cfHandle);
-                _bulkBatchOps++;
-            }
-            else
-            {
-                _pendingBaseRowGroups.Add(new KeyValuePair<byte[], byte[]>(key, value));
-            }
+            var staged = value == null || value.Length == 0 ? null : value;
+            _pendingBaseRowGroups.Add(new KeyValuePair<byte[], byte[]>(key, staged));
             _dirty = true;
             return true;
         }
@@ -217,34 +209,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             try
             {
-                _pendingBaseRowGroups.Sort((a, b) => CompareKeys(a.Key, b.Key));
-
                 var scratchDir = Path.Combine(_manager.Options.DatabasePath, "fm-sst-scratch");
                 Directory.CreateDirectory(scratchDir);
                 var path = Path.Combine(scratchDir, $"fm_base_{Interlocked.Increment(ref _sstCounter)}.sst");
 
-                using (var writer = new SstFileWriter(new EnvOptions(), RocksProfiles.IndexSstOptions()))
-                {
-                    writer.Open(path);
-                    byte[] prev = null;
-                    foreach (var kv in _pendingBaseRowGroups)
-                    {
-                        if (prev != null && CompareKeys(prev, kv.Key) == 0) continue;
-                        writer.Put(kv.Key, kv.Value);
-                        prev = kv.Key;
-                    }
-                    writer.Finish();
-                }
+                SstIngest.Write(path, SstIngest.SortLastWins(_pendingBaseRowGroups));
 
-                try
-                {
-                    using var lease = _manager.Lease();
-                    lease.Database.IngestExternalFiles(new[] { path }, DefaultIngest, _cfHandle);
-                }
-                finally
-                {
-                    try { File.Delete(path); } catch { }
-                }
+                using var lease = _manager.Lease();
+                SstIngest.IngestAndDelete(lease.Database, _cfHandle, path);
             }
             finally
             {
@@ -271,17 +243,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 RocksDbSharp.Native.Instance.rocksdb_flush_cf(lease.Database.Handle, flushOptions.Handle, _cfHandle.Handle);
             ColumnFamilyFlushCount++;
             _dirty = false;
-        }
-
-        private static int CompareKeys(byte[] a, byte[] b)
-        {
-            var len = a.Length < b.Length ? a.Length : b.Length;
-            for (var i = 0; i < len; i++)
-            {
-                var d = a[i].CompareTo(b[i]);
-                if (d != 0) return d;
-            }
-            return a.Length.CompareTo(b.Length);
         }
     }
 }

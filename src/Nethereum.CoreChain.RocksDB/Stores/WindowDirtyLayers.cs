@@ -217,7 +217,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     foreach (var kv in layers[i])
                     {
                         var key = kv.Key;
-                        if (!StartsWithPrefix(key, prefix)) continue;
+                        if (!ByteUtil.StartsWith(key, prefix)) continue;
                         var path = new byte[key.Length - prefix.Length];
                         Buffer.BlockCopy(key, prefix.Length, path, 0, path.Length);
                         if (result.ContainsKey(path)) continue;
@@ -231,14 +231,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
                 return result;
             }
-        }
-
-        private static bool StartsWithPrefix(byte[] value, byte[] prefix)
-        {
-            if (value.Length < prefix.Length) return false;
-            for (int i = 0; i < prefix.Length; i++)
-                if (value[i] != prefix[i]) return false;
-            return true;
         }
 
         public void DropAbove(ulong block)

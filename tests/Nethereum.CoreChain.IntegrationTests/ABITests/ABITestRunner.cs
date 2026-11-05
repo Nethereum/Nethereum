@@ -7,16 +7,17 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.ABITests
 {
+    [Trait("Requires", "Externals")]
     public class ABITestRunner
     {
         private readonly ITestOutputHelper _output;
 
-        private static readonly string TestPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "ABITests");
+        private static string TestPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "ABITests");
 
         public ABITestRunner(ITestOutputHelper output)
         {
@@ -142,9 +143,7 @@ namespace Nethereum.CoreChain.IntegrationTests.ABITests
 
         public static IEnumerable<object[]> GetABITests()
         {
-            var filePath = Path.Combine(
-                AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "external", "ethereum-tests", "ABITests", "basic_abi_tests.json");
+            var filePath = Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "ABITests", "basic_abi_tests.json");
 
             if (!File.Exists(filePath))
                 yield break;

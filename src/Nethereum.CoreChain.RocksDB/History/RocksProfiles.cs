@@ -40,11 +40,7 @@ namespace Nethereum.CoreChain.RocksDB.History
             Cache sharedCache, int l0CompactionTrigger, int l0SlowdownTrigger, int l0StopTrigger,
             ulong softPendingCompactionBytes, ulong hardPendingCompactionBytes)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true)
+            var table = BloomTable(sharedCache)
                 .SetPinL0FilterAndIndexBlocksInCache(true)
                 .SetBlockSize(16 * 1024);
 
@@ -61,9 +57,7 @@ namespace Nethereum.CoreChain.RocksDB.History
                 .SetHardPendingCompactionBytesLimit(hardPendingCompactionBytes)
                 .SetCompression(Compression.Lz4);
 
-            TryNative(() => Native.Instance.rocksdb_options_set_bottommost_compression(
-                cf.Handle, (int)Compression.Zstd));
-            return cf;
+            return cf.WithZstdBottommost();
         }
 
         public static ColumnFamilyOptions Bulk(Cache sharedCache)
@@ -84,11 +78,7 @@ namespace Nethereum.CoreChain.RocksDB.History
 
         public static ColumnFamilyOptions UniversalIndexCf(Cache sharedCache, UniversalCompactionSettings settings)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true)
+            var table = BloomTable(sharedCache)
                 .SetPinL0FilterAndIndexBlocksInCache(true)
                 .SetBlockSize(16 * 1024);
 
@@ -111,6 +101,18 @@ namespace Nethereum.CoreChain.RocksDB.History
                 .SetCompression(Compression.Lz4)
                 .SetCompactionStyle(Compaction.Universal);
 
+            ApplyUniversalCompaction(cf, settings);
+            cf.WithZstdBottommost();
+
+            if (settings.PeriodicCompactionSeconds > 0)
+                TryNative(() => Native.Instance.rocksdb_options_set_periodic_compaction_seconds(
+                    cf.Handle, settings.PeriodicCompactionSeconds));
+
+            return cf;
+        }
+
+        private static void ApplyUniversalCompaction(ColumnFamilyOptions cf, UniversalCompactionSettings settings)
+        {
             var universal = Native.Instance.rocksdb_universal_compaction_options_create();
             try
             {
@@ -126,24 +128,11 @@ namespace Nethereum.CoreChain.RocksDB.History
             {
                 Native.Instance.rocksdb_universal_compaction_options_destroy(universal);
             }
-
-            TryNative(() => Native.Instance.rocksdb_options_set_bottommost_compression(
-                cf.Handle, (int)Compression.Zstd));
-
-            if (settings.PeriodicCompactionSeconds > 0)
-                TryNative(() => Native.Instance.rocksdb_options_set_periodic_compaction_seconds(
-                    cf.Handle, settings.PeriodicCompactionSeconds));
-
-            return cf;
         }
 
         public static ColumnFamilyOptions Control(Cache sharedCache)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true);
+            var table = BloomTable(sharedCache);
 
             return new ColumnFamilyOptions()
                 .SetBlockBasedTableFactory(table)
@@ -204,17 +193,27 @@ namespace Nethereum.CoreChain.RocksDB.History
             }
         }
 
+        private static BlockBasedTableOptions BloomTable(Cache sharedCache)
+            => new BlockBasedTableOptions()
+                .SetBlockCache(sharedCache)
+                .SetFilterPolicy(BloomFilterPolicy.Create(10))
+                .SetWholeKeyFiltering(true)
+                .SetCacheIndexAndFilterBlocks(true);
+
+        private static ColumnFamilyOptions WithZstdBottommost(this ColumnFamilyOptions cf)
+        {
+            TryNative(() => Native.Instance.rocksdb_options_set_bottommost_compression(
+                cf.Handle, (int)Compression.Zstd));
+            return cf;
+        }
+
         private static ColumnFamilyOptions WithLivePendingCompactionLimits(this ColumnFamilyOptions cf)
             => cf.SetSoftPendingCompactionBytesLimit(128 * GB)
                  .SetHardPendingCompactionBytesLimit(320 * GB);
 
         public static ColumnFamilyOptions RandomPoint(Cache sharedCache, StoragePreset preset)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true)
+            var table = BloomTable(sharedCache)
                 .SetPinL0FilterAndIndexBlocksInCache(true)
                 .SetBlockSize(8 * 1024);
 
@@ -227,18 +226,12 @@ namespace Nethereum.CoreChain.RocksDB.History
                 .SetCompression(Compression.Lz4)
                 .WithLivePendingCompactionLimits();
 
-            TryNative(() => Native.Instance.rocksdb_options_set_bottommost_compression(
-                cf.Handle, (int)Compression.Zstd));
-            return cf;
+            return cf.WithZstdBottommost();
         }
 
         public static ColumnFamilyOptions LocationSequential(Cache sharedCache, StoragePreset preset)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true)
+            var table = BloomTable(sharedCache)
                 .SetPinL0FilterAndIndexBlocksInCache(true)
                 .SetBlockSize(16 * 1024);
 
@@ -251,18 +244,12 @@ namespace Nethereum.CoreChain.RocksDB.History
                 .SetCompression(Compression.Lz4)
                 .WithLivePendingCompactionLimits();
 
-            TryNative(() => Native.Instance.rocksdb_options_set_bottommost_compression(
-                cf.Handle, (int)Compression.Zstd));
-            return cf;
+            return cf.WithZstdBottommost();
         }
 
         public static ColumnFamilyOptions SecondaryIndex(Cache sharedCache, StoragePreset preset)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true);
+            var table = BloomTable(sharedCache);
 
             return new ColumnFamilyOptions()
                 .SetBlockBasedTableFactory(table)
@@ -275,11 +262,7 @@ namespace Nethereum.CoreChain.RocksDB.History
 
         public static ColumnFamilyOptions HotTiny(Cache sharedCache, StoragePreset preset)
         {
-            var table = new BlockBasedTableOptions()
-                .SetBlockCache(sharedCache)
-                .SetFilterPolicy(BloomFilterPolicy.Create(10))
-                .SetWholeKeyFiltering(true)
-                .SetCacheIndexAndFilterBlocks(true)
+            var table = BloomTable(sharedCache)
                 .SetPinL0FilterAndIndexBlocksInCache(true);
 
             return new ColumnFamilyOptions()

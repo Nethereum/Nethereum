@@ -11,7 +11,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly RocksDbManager _manager;
         private readonly object _lock = new object();
-        private int _nextFilterId = 0;
 
         public RocksDbFilterStore(RocksDbManager manager)
         {
@@ -112,10 +111,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             _manager.Put(RocksDbManager.CF_FILTERS, key, data);
         }
 
-        private string GenerateFilterId()
-        {
-            var id = _nextFilterId++;
-            return $"0x{id:x}";
-        }
+        private string GenerateFilterId() => FilterIdGenerator.Next();
     }
 }

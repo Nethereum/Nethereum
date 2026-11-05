@@ -61,7 +61,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 throw new InvalidOperationException($"Recover: block {targetBlock} has no block hash in the store.");
             var root = header.StateRoot;
 
-            var stats = new RocksDbNodeReverseDiffStore(_rocks, buildKeyMajorIndex: false)
+            var stats = new RocksDbNodeReverseDiffStore(_rocks, buildKeyMajorIndex: _rocks.Options.TrieNodeHistoryIndex)
                 .MaterializingRewindTo(targetBlock);
             (StateTrieNodes as ICacheInvalidatable)?.ClearCache();
             progress?.Invoke(
@@ -92,13 +92,28 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     "node history did not fully restore the head. Aborting WITHOUT moving the cursor.");
             }
 
-            Metadata.Commit(targetBlock, hash);
+            CommitRewoundHead(targetBlock, hash);
             var fh = Metadata.GetLastFetchedHeader();
             var fb = Metadata.GetLastFetchedBody();
             Metadata.SetLastFetchedHeaderAndBody(fh > targetBlock ? targetBlock : fh, fb > targetBlock ? targetBlock : fb);
             if (JournalEnabled) await Diffs.DeleteDiffsAboveBlockAsync(targetBlock).ConfigureAwait(false);
             progress?.Invoke($"recover.committed head -> {targetBlock} (flat via {flatSource}).");
             return targetBlock;
+        }
+
+        private void CommitRewoundHead(ulong targetBlock, byte[] hash)
+        {
+            if (Metadata is RocksDbChainMetadataStore rocksMetadata)
+            {
+                using var batch = _rocks.CreateWriteBatch();
+                var staged = rocksMetadata.AddExecutedHeadToBatch(batch, targetBlock, hash);
+                rocksMetadata.AddDurableStateToBatch(batch, targetBlock, hash);
+                _rocks.Write(batch);
+                rocksMetadata.ReleaseExecuted(staged);
+                return;
+            }
+            Metadata.Commit(targetBlock, hash);
+            Metadata.CommitDurableState(targetBlock, hash);
         }
 
         private async Task ReplayFlatJournalToAsync(
@@ -134,7 +149,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private async Task ReconcileFlatFromTrieAsync(byte[] root, Action<string> progress, CancellationToken ct)
         {
-            NewFlatStateReconciler().ClearCleanShardMarkers(root);
             var reconcile = await ReconcileFlatStateAsync(root, progress, ct).ConfigureAwait(false);
             progress?.Invoke($"recover.reconcile repairs={reconcile.TotalRepairs}");
         }
@@ -224,6 +238,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public void ClearPersistedDamage()
             => NewFlatStateReconciler().ClearPersistedDamage();
+
+        internal void DiscardCertifyJournal()
+            => ((IFlatStateReconciler)NewFlatStateReconciler()).DiscardCertifyJournal();
 
         public System.Collections.Generic.IReadOnlyList<byte[]> GetPersistedMissingCode()
             => NewFlatStateReconciler().GetPersistedMissingCode();

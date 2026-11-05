@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Nethereum.CoreChain.Storage;
-using Nethereum.Merkle.Patricia;
 using RocksDbSharp;
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Storage;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
@@ -17,7 +17,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private readonly INodeBlobStore _innerBlob;
         private readonly RocksDbManager _manager;
         private readonly bool _walOff;
-        private readonly Dictionary<byte[], byte[]> _pending = new Dictionary<byte[], byte[]>(ByteArrayComparer.Instance);
+        private readonly Dictionary<byte[], byte[]> _pending = new Dictionary<byte[], byte[]>(ByteArrayComparer.Current);
         private readonly Dictionary<NodeIdentity, Node> _pendingNodes = new Dictionary<NodeIdentity, Node>(NodeIdentity.Comparer);
 
         public BufferedTrieStorage(ITrieNodeStore inner, RocksDbManager manager, bool walOff = false)
@@ -119,31 +119,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public void FlushBuffer() => Flush();
 
-        private sealed class ByteArrayComparer : IEqualityComparer<byte[]>
-        {
-            public static readonly ByteArrayComparer Instance = new ByteArrayComparer();
-
-            public bool Equals(byte[] a, byte[] b)
-            {
-                if (ReferenceEquals(a, b)) return true;
-                if (a == null || b == null || a.Length != b.Length) return false;
-                for (int i = 0; i < a.Length; i++)
-                    if (a[i] != b[i]) return false;
-                return true;
-            }
-
-            public int GetHashCode(byte[] a)
-            {
-                if (a == null) return 0;
-                unchecked
-                {
-                    int h = (int)2166136261;
-                    for (int i = 0; i < a.Length; i++) h = (h ^ a[i]) * 16777619;
-                    return h;
-                }
-            }
-        }
-
         private readonly struct NodeIdentity
         {
             private static readonly byte[] Empty = Array.Empty<byte>();
@@ -165,13 +140,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             private sealed class Cmp : IEqualityComparer<NodeIdentity>
             {
                 private static bool Eq(byte[] a, byte[] b)
-                    => ByteArrayComparer.Instance.Equals(a ?? Empty, b ?? Empty);
+                    => ByteArrayComparer.Current.Equals(a ?? Empty, b ?? Empty);
 
                 public bool Equals(NodeIdentity x, NodeIdentity y)
                     => Eq(x.Hash, y.Hash) && Eq(x.Owner, y.Owner) && Eq(x.Path, y.Path);
 
                 public int GetHashCode(NodeIdentity o)
-                    => o.Hash == null ? 0 : ByteArrayComparer.Instance.GetHashCode(o.Hash);
+                    => o.Hash == null ? 0 : ByteArrayComparer.Current.GetHashCode(o.Hash);
             }
         }
     }

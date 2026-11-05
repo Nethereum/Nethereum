@@ -18,6 +18,7 @@ namespace Nethereum.CoreChain.RocksDB.History
         public const int DefaultCheckpointMaxPendingEntries = 2_000_000;
 
         private readonly RocksDb _db;
+        private readonly RocksDbManager _manager;
         private readonly ColumnFamilyHandle _txBody, _receiptBody, _blockHeader, _blockMeta, _control;
         private readonly Dictionary<string, ColumnFamilyHandle> _cfByName = new();
         private readonly WriteOptions _walOff = new WriteOptions().DisableWal(1);
@@ -32,8 +33,26 @@ namespace Nethereum.CoreChain.RocksDB.History
             int checkpointIntervalBlocks = DefaultCheckpointIntervalBlocks,
             int checkpointIntervalSeconds = DefaultCheckpointIntervalSeconds,
             int maxPendingEntries = DefaultCheckpointMaxPendingEntries)
+            : this(db, null, scratchDir, checkpointIntervalBlocks, checkpointIntervalSeconds, maxPendingEntries)
+        {
+        }
+
+        internal SyncBulkSaveService(
+            RocksDbManager manager, string scratchDir,
+            int checkpointIntervalBlocks = DefaultCheckpointIntervalBlocks,
+            int checkpointIntervalSeconds = DefaultCheckpointIntervalSeconds,
+            int maxPendingEntries = DefaultCheckpointMaxPendingEntries)
+            : this((manager ?? throw new ArgumentNullException(nameof(manager))).Database, manager, scratchDir,
+                  checkpointIntervalBlocks, checkpointIntervalSeconds, maxPendingEntries)
+        {
+        }
+
+        private SyncBulkSaveService(
+            RocksDb db, RocksDbManager manager, string scratchDir,
+            int checkpointIntervalBlocks, int checkpointIntervalSeconds, int maxPendingEntries)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
+            _manager = manager;
             if (scratchDir == null) throw new ArgumentNullException(nameof(scratchDir));
             _txBody = db.GetColumnFamily(HistoryColumnFamilies.TxBody);
             _receiptBody = db.GetColumnFamily(HistoryColumnFamilies.ReceiptBody);
@@ -41,16 +60,28 @@ namespace Nethereum.CoreChain.RocksDB.History
             _blockMeta = db.GetColumnFamily(HistoryColumnFamilies.BlockMeta);
             _control = db.GetColumnFamily(HistoryColumnFamilies.Control);
 
-            _indexIngestor = new BulkIndexIngestor(
-                db, scratchDir,
-                new[] { HistoryColumnFamilies.TxHashIndex, HistoryColumnFamilies.BlockHashIndex },
-                windowHead => _db.Put(ProgressKey, HistoryKeys.BlockKey(windowHead), _control, _durable),
-                checkpointIntervalBlocks, checkpointIntervalSeconds, maxPendingEntries, sortDegreeOfParallelism: 1);
+            var indexColumnFamilies = new[] { HistoryColumnFamilies.TxHashIndex, HistoryColumnFamilies.BlockHashIndex };
+            Action<ulong> commitProgress = windowHead =>
+            {
+                using (Lease())
+                    _db.Put(ProgressKey, HistoryKeys.BlockKey(windowHead), _control, _durable);
+            };
+            _indexIngestor = manager == null
+                ? new BulkIndexIngestor(
+                    db, scratchDir, indexColumnFamilies, commitProgress,
+                    checkpointIntervalBlocks, checkpointIntervalSeconds, maxPendingEntries, sortDegreeOfParallelism: 1)
+                : new BulkIndexIngestor(
+                    manager, scratchDir, indexColumnFamilies, commitProgress,
+                    checkpointIntervalBlocks, checkpointIntervalSeconds, maxPendingEntries, sortDegreeOfParallelism: 1);
         }
+
+        private IDisposable Lease() => _manager == null ? null : (IDisposable)_manager.Lease();
 
         public ulong? LastCompletedBlock()
         {
-            var raw = _db.Get(ProgressKey, _control);
+            byte[] raw;
+            using (Lease())
+                raw = _db.Get(ProgressKey, _control);
             return raw == null ? (ulong?)null : HistoryKeys.ReadBlockNumber(raw);
         }
 
@@ -85,7 +116,8 @@ namespace Nethereum.CoreChain.RocksDB.History
                     if (b.SequentialExtra != null)
                         foreach (var w in b.SequentialExtra) { batch.Put(w.Key, w.Value, Cf(w.Cf)); _pendingSeqCfs.Add(w.Cf); }
                 }
-                _db.Write(batch, _walOff);
+                using (Lease())
+                    _db.Write(batch, _walOff);
             }
 
             var entries = new List<(string Cf, byte[] Key, byte[] Value)>();
@@ -130,7 +162,10 @@ namespace Nethereum.CoreChain.RocksDB.History
                 CheckpointCore();
                 _indexIngestor.Finish();
                 foreach (var cf in new[] { _blockHeader, _blockMeta, _txBody, _receiptBody })
-                    _db.CompactRange((byte[])null, (byte[])null, cf);
+                {
+                    using (Lease())
+                        _db.CompactRange((byte[])null, (byte[])null, cf);
+                }
             }
         }
 
@@ -138,10 +173,16 @@ namespace Nethereum.CoreChain.RocksDB.History
         {
             var fo = new FlushOptions();
             foreach (var cf in new[] { _blockHeader, _blockMeta, _txBody, _receiptBody })
-                Native.Instance.rocksdb_flush_cf(_db.Handle, fo.Handle, cf.Handle);
+            {
+                using (Lease())
+                    Native.Instance.rocksdb_flush_cf(_db.Handle, fo.Handle, cf.Handle);
+            }
             if (extraSequentialCfs != null)
                 foreach (var name in extraSequentialCfs)
-                    Native.Instance.rocksdb_flush_cf(_db.Handle, fo.Handle, Cf(name).Handle);
+                {
+                    using (Lease())
+                        Native.Instance.rocksdb_flush_cf(_db.Handle, fo.Handle, Cf(name).Handle);
+                }
         }
 
         private ColumnFamilyHandle Cf(string name)

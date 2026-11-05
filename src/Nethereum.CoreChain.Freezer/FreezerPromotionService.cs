@@ -41,6 +41,9 @@ namespace Nethereum.CoreChain.Freezer
             if (upperBound < _freezer.Items)
                 return new PromotionResult(0, _freezer.Items);
 
+            if (_freezer.Items < _hot.HotFloorNumber)
+                return new PromotionResult(0, _freezer.Items);
+
             var batch = _freezer.BeginBatch();
             List<(long Number, HotBlock Block)> promoted;
             long newItems;

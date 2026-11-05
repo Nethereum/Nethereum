@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class StorageLayoutDetectionTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"layoutdetect_{Guid.NewGuid():N}");

@@ -72,6 +72,7 @@ namespace Nethereum.CoreChain.IntegrationTests.DevChain
         }
 
         [Fact]
+        [Trait("Category", "Performance")]
         public async Task Performance_ManyTransactions_StateRootComputation()
         {
             const int transactionCount = 20;

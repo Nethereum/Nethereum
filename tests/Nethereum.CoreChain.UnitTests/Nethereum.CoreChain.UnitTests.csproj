@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.MainnetChain\Nethereum.MainnetChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Model.SSZ\Nethereum.Model.SSZ.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
   </ItemGroup>
@@ -28,6 +29,10 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
   </ItemGroup>
 
 </Project>

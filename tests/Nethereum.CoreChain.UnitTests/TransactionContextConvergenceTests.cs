@@ -146,6 +146,7 @@ namespace Nethereum.CoreChain.UnitTests
                 {
                     cases.Add(Case("Transaction2930", creation, withAccessList, Sign2930(creation, withAccessList)));
                     cases.Add(Case("Transaction1559", creation, withAccessList, Sign1559(creation, withAccessList)));
+                    if (creation) continue;
                     cases.Add(Case("Transaction4844", creation, withAccessList, Sign4844(creation, withAccessList)));
                     cases.Add(Case("Transaction7702", creation, withAccessList, Sign7702(creation, withAccessList)));
                 }

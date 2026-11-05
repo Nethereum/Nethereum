@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
-using Nethereum.RLP;
 using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage
@@ -12,9 +10,6 @@ namespace Nethereum.CoreChain.Storage
     {
         public static readonly byte[] Tombstone = new byte[0];
 
-        /// <summary>Cached "no account at this key" (deleted account) — distinct object identity; a real
-        /// EIP-161-empty <see cref="Account"/> (nonce=0, balance=0, empty code/storage roots) is a DIFFERENT
-        /// instance and must NOT be confused with this sentinel by callers that only compare by value.</summary>
         public static readonly Account AccountTombstone = new Account();
 
         private const byte AccountPrefix = 0x00;
@@ -43,7 +38,7 @@ namespace Nethereum.CoreChain.Storage
         {
             if (budgetBytes <= 0) throw new ArgumentOutOfRangeException(nameof(budgetBytes));
             _budgetBytes = budgetBytes;
-            _map = new Dictionary<byte[], LinkedListNode<Entry>>(KeyComparer.Instance);
+            _map = new Dictionary<byte[], LinkedListNode<Entry>>(ByteArrayComparer.Current);
         }
 
         public long ApproxBytes { get { lock (_gate) return _bytes; } }
@@ -52,10 +47,14 @@ namespace Nethereum.CoreChain.Storage
         public long Misses { get { lock (_gate) return _misses; } }
 
 
-        public static byte[] AccountKey(string address) => BuildKey(AccountPrefix, NormalizeAddress(address), null);
+        public static byte[] AccountKey(string address) => AccountKey(EvmAddress.FromHex(address));
 
-        public static byte[] StorageKey(string address, BigInteger slot)
-            => BuildKey(StoragePrefix, NormalizeAddress(address), SlotBytes(slot));
+        public static byte[] AccountKey(EvmAddress address) => BuildKey(AccountPrefix, address, null);
+
+        public static byte[] StorageKey(string address, BigInteger slot) => StorageKey(EvmAddress.FromHex(address), slot);
+
+        public static byte[] StorageKey(EvmAddress address, BigInteger slot)
+            => BuildKey(StoragePrefix, address, StateKeys.StorageSlotBytes(slot));
 
         public static byte[] CodeKey(byte[] codeHash)
         {
@@ -67,25 +66,19 @@ namespace Nethereum.CoreChain.Storage
             return key;
         }
 
-        private static byte[] NormalizeAddress(string address)
-        {
-            var hex = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
-            return hex.HexToByteArray();
-        }
-
-        private static byte[] SlotBytes(BigInteger slot) => slot.ToBytesForRLPEncoding().PadBytes(32);
-
-        private static byte[] BuildKey(byte prefix, byte[] addr20, byte[] slot32)
+        private static byte[] BuildKey(byte prefix, EvmAddress address, byte[] slot32)
         {
             var key = new byte[1 + 20 + (slot32?.Length ?? 0)];
             key[0] = prefix;
-            Buffer.BlockCopy(addr20, 0, key, 1, 20);
+            address.AsSpan().CopyTo(key.AsSpan(1, 20));
             if (slot32 != null) Buffer.BlockCopy(slot32, 0, key, 21, 32);
             return key;
         }
 
 
-        public bool TryGetAccount(string address, out Account account)
+        public bool TryGetAccount(string address, out Account account) => TryGetAccount(EvmAddress.FromHex(address), out account);
+
+        public bool TryGetAccount(EvmAddress address, out Account account)
         {
             if (TryGetRaw(AccountKey(address), out var raw))
             {
@@ -97,16 +90,23 @@ namespace Nethereum.CoreChain.Storage
             return false;
         }
 
-        public void PutAccount(string address, Account account)
+        public void PutAccount(string address, Account account) => PutAccount(EvmAddress.FromHex(address), account);
+
+        public void PutAccount(EvmAddress address, Account account)
         {
             if (account == null) throw new ArgumentNullException(nameof(account));
             Put(AccountKey(address), account);
         }
 
-        public void PutAccountAbsent(string address) => Put(AccountKey(address), AccountTombstone);
+        public void PutAccountAbsent(string address) => PutAccountAbsent(EvmAddress.FromHex(address));
+
+        public void PutAccountAbsent(EvmAddress address) => Put(AccountKey(address), AccountTombstone);
 
 
         public bool TryGetStorage(string address, BigInteger slot, out byte[] value)
+            => TryGetStorage(EvmAddress.FromHex(address), slot, out value);
+
+        public bool TryGetStorage(EvmAddress address, BigInteger slot, out byte[] value)
         {
             if (TryGetRaw(StorageKey(address, slot), out var raw))
             {
@@ -118,13 +118,17 @@ namespace Nethereum.CoreChain.Storage
             return false;
         }
 
-        public void PutStorage(string address, BigInteger slot, byte[] value)
+        public void PutStorage(string address, BigInteger slot, byte[] value) => PutStorage(EvmAddress.FromHex(address), slot, value);
+
+        public void PutStorage(EvmAddress address, BigInteger slot, byte[] value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             Put(StorageKey(address, slot), value);
         }
 
-        public void PutStorageAbsent(string address, BigInteger slot) => Put(StorageKey(address, slot), Tombstone);
+        public void PutStorageAbsent(string address, BigInteger slot) => PutStorageAbsent(EvmAddress.FromHex(address), slot);
+
+        public void PutStorageAbsent(EvmAddress address, BigInteger slot) => Put(StorageKey(address, slot), Tombstone);
 
 
         public bool TryGetCode(byte[] codeHash, out byte[] code)
@@ -145,17 +149,16 @@ namespace Nethereum.CoreChain.Storage
         }
 
 
-        public void RemoveOwnerStorage(string address)
+        public void RemoveOwnerStorage(string address) => RemoveOwnerStorage(EvmAddress.FromHex(address));
+
+        public void RemoveOwnerStorage(EvmAddress address)
         {
-            var addr20 = NormalizeAddress(address);
-            var prefix = new byte[21];
-            prefix[0] = StoragePrefix;
-            Buffer.BlockCopy(addr20, 0, prefix, 1, 20);
+            var prefix = BuildKey(StoragePrefix, address, null);
             lock (_gate)
             {
                 List<byte[]> hits = null;
                 foreach (var k in _map.Keys)
-                    if (StartsWith(k, prefix)) (hits ??= new List<byte[]>()).Add(k);
+                    if (ByteUtil.StartsWith(k, prefix)) (hits ??= new List<byte[]>()).Add(k);
                 if (hits == null) return;
                 foreach (var k in hits) RemoveLocked(k);
             }
@@ -239,39 +242,6 @@ namespace Nethereum.CoreChain.Storage
             if (key[0] == AccountPrefix) return key.Length + AccountValueCost + NodeOverhead;
             var bytes = (byte[])value;
             return key.Length + bytes.Length + ByteArrayOverhead + NodeOverhead;
-        }
-
-        private static bool StartsWith(byte[] value, byte[] prefix)
-        {
-            if (value.Length < prefix.Length) return false;
-            for (int i = 0; i < prefix.Length; i++)
-                if (value[i] != prefix[i]) return false;
-            return true;
-        }
-
-        private sealed class KeyComparer : IEqualityComparer<byte[]>
-        {
-            public static readonly KeyComparer Instance = new KeyComparer();
-
-            public bool Equals(byte[] a, byte[] b)
-            {
-                if (ReferenceEquals(a, b)) return true;
-                if (a == null || b == null || a.Length != b.Length) return false;
-                for (int i = 0; i < a.Length; i++)
-                    if (a[i] != b[i]) return false;
-                return true;
-            }
-
-            public int GetHashCode(byte[] a)
-            {
-                if (a == null) return 0;
-                unchecked
-                {
-                    int h = (int)2166136261;
-                    for (int i = 0; i < a.Length; i++) h = (h ^ a[i]) * 16777619;
-                    return h;
-                }
-            }
         }
     }
 }

@@ -10,12 +10,16 @@ A persistent database for a Nethereum node. It stores everything a chain accumul
 | Store the state trie by *location* (PBSS-style path keys) instead of by hash | `RocksDbStorageOptions.PathKeyedState` |
 | Serve EIP-1186 proofs and snap ranges **as of a recent block**, not just the tip | `RocksDbStorageOptions.TrieNodeHistoryBlocks` + `TrieNodeHistoryIndex` → `bundle.NodeServing` |
 | Undo blocks after a reorg, from the per-block reverse-diff journal | `RocksDbNodeReverseDiffStore.MaterializingRewindTo`, driven by CoreChain's `RewindCoordinator` |
-| Move ancient history out of the LSM tree into a geth-compatible append-only freezer | `RocksDbStorageOptions.UseFreezerHistory` |
+| Move ancient history out of the LSM tree into an append-only freezer in the standard ancient-store format | `RocksDbStorageOptions.UseFreezerHistory` |
 | Keep recent blocks in a small hot database and the rest in a separate history one | `RocksDbStorageOptions.SplitHistoryStore` |
 | Snapshot and roll back the whole database with hard-linked checkpoints | `bundle.SaveCheckpointAsync` / `RestoreCheckpointAsync` |
 | Commit a batch of blocks durably, cursor last | `bundle.BeginBatch()` / `IBatchedBlockPersister.PersistBlocksAsync` |
 | Bulk-load from genesis without going through the memtable | `bulkSync: true` (`SyncBulkSaveService` + `BulkIndexIngestor`) |
 | Recover cleanly from a kill mid-write | `BootRecoveryGate` — the host calls it around open |
+| Stop the node when the database can no longer take writes | `bundle.FatalStoreFault` (`IStoreFaultSource`) |
+| Read block-cache hits and misses | `RocksDbManager.ReadCacheStats` with `RocksDbStorageOptions.EnableStatistics` |
+| Prove the flat account and storage state against the healed trie at the end of a snap sync | `IFlatStateReconciler` on the bundle (`VerifyFlatStateAsync` for a write-free check) |
+| Wipe the state a snap sync built and free its disk | `bundle.ResetSnapBootstrapStateAsync` (`ISnapBootstrapStateReset`) |
 
 ## Install
 
@@ -23,11 +27,11 @@ A persistent database for a Nethereum node. It stores everything a chain accumul
 dotnet add package Nethereum.CoreChain.RocksDB
 ```
 
-This assembly is **not** strong-named (`SignAssembly` is off because its RocksDB dependency is not strong-named), so it cannot be referenced from a strong-named assembly.
+This assembly is strong-named with the shared Nethereum key.
 
 ### Dependencies
 
-Project references: Nethereum.CoreChain, Nethereum.DevP2P.Sync, Nethereum.Documentation, Nethereum.Freezer, Nethereum.CoreChain.Freezer. Packages: RocksDB 10.4.2, Microsoft.Extensions.DependencyInjection.Abstractions, Microsoft.Extensions.Hosting.Abstractions, Microsoft.Extensions.Logging.Abstractions. Targets net8.0/net9.0/net10.0.
+Project references: Nethereum.CoreChain, Nethereum.DevP2P.Sync, Nethereum.Freezer, Nethereum.CoreChain.Freezer. Packages: RocksDB 10.4.2, Microsoft.Extensions.DependencyInjection.Abstractions, Microsoft.Extensions.Hosting.Abstractions, Microsoft.Extensions.Logging.Abstractions. Targets net8.0/net9.0/net10.0.
 
 ## Entry points
 
@@ -118,7 +122,7 @@ public class RocksDbStorageOptions
     public bool EnableLogIndex { get; set; } = false;
     public bool UseFreezerHistory { get; set; } = false;
     public string FreezerHistoryDirectory { get; set; }
-    public bool BackgroundFreezeIndexing { get; set; } = false;
+    public bool BackgroundFreezeIndexing { get; set; } = true;
     public int FreezerBackgroundDegreeOfParallelism { get; set; } = 0;
     public FilterMapsParams? FilterMapsIndexParams { get; set; }
     public long? FreezerMaxFileSizeBytes { get; set; }
@@ -126,6 +130,7 @@ public class RocksDbStorageOptions
     public long FreezerBulkResidentCeilingBytes { get; set; } = BulkIndexIngestor.DefaultResidentCeilingBytes;
     public int FreezerBulkSortDegreeOfParallelism { get; set; } = 0;
     public bool SkipBootReconcile { get; set; } = false;
+    public IBlobBaseFeeFractionResolver BlobBaseFeeFraction { get; set; }
 
     public void Validate();
     public RocksDbStorageOptions Clone();
@@ -140,6 +145,8 @@ public enum StoragePreset
 }
 ```
 
+`BlobBaseFeeFraction` is the fork-aware blob base-fee fraction that re-derives the blob fields of frozen receipts; left `null` it is `ChainBlobBaseFeeFractionResolver.Mainnet`, which reads the fraction from the fork schedule at the block's timestamp. `EnableStatistics` turns on RocksDB statistics so `RocksDbManager.ReadCacheStats()` can report them.
+
 `TrieNodeHistoryBlocks` is a tri-state: `-1` off, `0` archive (never prune), `N > 0` retain an N-block window. `Validate()` rejects anything below `-1`, rejects `TrieNodeHistoryIndex` without history (`>= 0`), and rejects history without `PathKeyedState` — the hash store cannot journal path-keyed nodes.
 
 Combinations the bundle refuses outright, at `FromManager` time:
@@ -153,7 +160,7 @@ Combinations the bundle refuses outright, at `FromManager` time:
 | `UseFreezerHistory` without `FreezerHistoryDirectory` | there is nowhere to write the archive |
 | `UseFreezerHistory` without a `signer` | frozen receipts need sender recovery on read |
 
-`UseFreezerHistory` **combines** with `PromotionEnabled`: with both on, the freezer's own follow-promotion driver (`FreezerPromotionService`, wrapped by `FreezerPromotionDriver`) drives the hot window instead of `RocksDbPromotionService`.
+`UseFreezerHistory` **combines** with `PromotionEnabled`: with both on, the freezer's own follow-promotion driver (`FreezerPromotionService`) drives the hot window instead of `RocksDbPromotionService`.
 
 `HistoricalStateOptions` (defined in Nethereum.CoreChain) governs the separate **flat-state value** reverse-diff journal: `Default` (256-block window, pruning on), `FullArchive` (unbounded, no pruning), `DevChainDefault` (128). Node history may not outlive it — `TrieNodeHistoryBlocks` must be `<= MaxHistoryBlocks` (or both 0), because a rewind cannot reconstruct node state beyond the value journal it replays against.
 
@@ -207,7 +214,7 @@ When path-keyed state, node history, and the key-major index are all on, the bun
 
 ## Freezer / ancient store
 
-`UseFreezerHistory` moves immutable history out of the LSM tree into `Nethereum.Freezer`'s geth-compatible append-only files under `FreezerHistoryDirectory`. After that, **a block lives in exactly one tier**: number `<` the freezer's item count is frozen; everything else is the mutable RocksDB "recent" band. The frozen by-hash and EIP-7745 filtermaps indexes live in their own narrow database (`FreezerHistorySubDir` = `"freezer-history"`, `CatalogueScope.FreezerHistory`, holding only `block_hash_index` / `tx_hash_index` / `log_filter_maps` / `control`), opened internally — independent of `SplitHistoryStore`'s history database.
+`UseFreezerHistory` moves immutable history out of the LSM tree into `Nethereum.Freezer`'s append-only files, in the standard ancient-store format, under `FreezerHistoryDirectory`. After that, **a block lives in exactly one tier**: number `<` the freezer's item count is frozen; everything else is the mutable RocksDB "recent" band. The frozen by-hash and EIP-7745 filtermaps indexes live in their own narrow database (`FreezerHistorySubDir` = `"freezer-history"`, `CatalogueScope.FreezerHistory`, holding only `block_hash_index` / `tx_hash_index` / `log_filter_maps` / `control`), opened internally — independent of `SplitHistoryStore`'s history database.
 
 `FreezerReadRouter` is the single source of truth for the routing decision. Its by-hash lookup consults two indexes, recent-first, so a block's hash resolves both before and after it is frozen:
 
@@ -220,22 +227,68 @@ public bool TryResolveTxLocation(byte[] txHash, out long blockNumber, out int tx
 
 Six thin `FreezerAware*Store` wrappers apply it — `FreezerAwareBlockStore`, `FreezerAwareTransactionStore`, `FreezerAwareUncleStore`, `FreezerAwareWithdrawalStore`, `FreezerAwareReceiptStore` and `FreezerAwareBlockAccessListStore` — each routing a read to the frozen `FreezerHistoryStore` or to the recent RocksDB store, and always writing to the recent side.
 
-Because a frozen receipt does not store its sender or its effective gas price, `ReceiptFieldDeriver` (with the supplied `signer` and a Cancun blob-base-fee resolver) re-derives those fields on read, and a `DecodedClusterCache` keeps recently decoded blocks hot.
+Because a frozen receipt does not store its sender or its effective gas price, `ReceiptFieldDeriver` (with the supplied `signer` and `ChainBlobBaseFeeFractionResolver.Mainnet`, or the `BlobBaseFeeFraction` you set) re-derives those fields on read, and a `DecodedClusterCache` keeps recently decoded blocks hot.
 
-### Derived-index build — the background trailer
+### Promotion and indexing jobs
 
-The freezer's derived indexes — the by-hash reverse lookups and the EIP-7745 filtermaps log index — are built by `FreezerBackgroundIndexer`, the single writer of those CFs. It can run in two modes:
+Freezing and indexing are background jobs, not part of the block flush. The follower run starts them (promotion, and `FreezerBackgroundIndexer` for the derived indexes), a boundary flush returns without freezing or indexing anything, and a bundle that is disposed stops them, in order, before any store closes.
 
-- **Inline** (default): each freeze batch renders its indexes as blocks freeze, on the persist drain.
-- **Background trailer** (`BackgroundFreezeIndexing = true`): the index build moves onto a standing loop that chases the freezer head, so the drain does only freezer-append + cursor-advance. Start it after construction:
+- **Promotion waits for backfill.** On a snap-synced node the hot window starts near the pivot while blocks `1` to `pivot - 1` reach the freezer through history backfill. `FreezerPromotionService` returns with nothing promoted while the next block to freeze is below `IHotBlockWindowSource.HotFloorNumber` (`RocksDbHotBlockWindowStore.TryGetOldestNumber`), and resumes contiguously once backfill has filled the range, instead of failing every round. A node that has only full-synced is unchanged.
+- **Yielding to execution.** After the host arms it with `SetYieldToExecution(true)` (`IBackfillPauseControl`), the freezer jobs and the history backfill pause while the executed head is more than 32 blocks behind the trusted tip and resume when it is within 2 (`ShouldYieldToExecution`, `DescribeYieldToExecution`; a trusted tip of 0 never yields). Blocks that age past the threshold while the jobs wait stay readable by number and by hash, and freeze after the resume.
+- **Derived indexes.** The by-hash reverse lookups and the EIP-7745 filtermaps log index are built by `FreezerBackgroundIndexer`, the single writer of those CFs. `BackgroundFreezeIndexing` is on by default; `false` leaves frozen blocks unindexed while freezing still advances. Start the trailer after construction:
 
 ```csharp
 public void StartBackgroundFreezeIndexing();   // begins the background freeze-index trailer (FreezerBackgroundIndexer.Start)
 ```
 
-Both modes write through the SAME bulk-SST engine (`BulkIndexIngestor`, sorted SST ingest — never a per-batch memtable `WriteBatch`), which is what keeps the index build's compaction cost bounded. The trailer is also pausable independently of the freezer files: it waits out a compaction backlog on the index CFs (`RocksDbWritePressureMonitor.ShouldPauseFreezerIndexing`) while the freezer keeps filling. During fast sync the trailer can lag the freeze head, so a by-hash lookup for a frozen-but-not-yet-indexed block returns null until it catches up (the frontier is reported, never silent); `BackgroundFreezeIndexing` is off by default so the established freeze⇒indexed-synchronously contract holds for every existing consumer.
+The trailer writes through the bulk-SST engine (`BulkIndexIngestor`, sorted SST ingest — never a per-batch memtable `WriteBatch`), which is what keeps the index build's compaction cost bounded. The trailer is also pausable independently of the freezer files: it waits out a compaction backlog on the index CFs (`RocksDbWritePressureMonitor.ShouldPauseFreezerIndexing`) while the freezer keeps filling. The trailer can lag the freeze head, so a by-hash lookup for a frozen-but-not-yet-indexed block returns null until it catches up (the frontier is reported, never silent); until the trailer reaches a just-frozen block, by-hash, transaction, receipt and log reads of it return nothing.
 
-Logs are served by `FreezerFilterMapsLogStore` over the filtermaps index: `FilterMapsQueryEngine` answers `eth_getLogs` from the rendered maps, and `FreezerAwareBloomScan` covers the un-indexed hot tail. `FilterMapsIndexParams` overrides the map geometry and exists only so a test can use tiny params — production always uses `FilterMapsParams.Default`, geth's real geometry.
+Logs are served by `FreezerFilterMapsLogStore` over the filtermaps index: `FilterMapsQueryEngine` answers `eth_getLogs` from the rendered maps, and `FreezerAwareBloomScan` covers the un-indexed hot tail. `FilterMapsIndexParams` overrides the map geometry and exists only so a test can use tiny params — production always uses `FilterMapsParams.Default`, the specified geometry.
+
+## Store faults and cache statistics
+
+`RocksDbChainStoreBundle` implements `IStoreFaultSource`. `FatalStoreFault` is `null` while the databases accept writes and a message once one of them cannot: a RocksDB background error that stops writes (reported even when no write is in flight, because the pressure monitor polls `rocksdb.background-errors` and probes a write), or a corrupted file that a compaction or write surfaces. A background error the database has recovered from, and ordinary retryable pressure, are not faults. The host turns a fault into a fatal exit rather than letting the node stall silently.
+
+`RocksDbManager.ReadCacheStats()` returns the block-cache counters when `RocksDbStorageOptions.EnableStatistics` is on, and throws `InvalidOperationException` when it is off (`StatisticsEnabled` says which):
+
+```csharp
+public sealed class RocksDbCacheStats
+{
+    public long IndexHit { get; set; }
+    public long IndexMiss { get; set; }
+    public long FilterHit { get; set; }
+    public long FilterMiss { get; set; }
+    public long DataHit { get; set; }
+    public long DataMiss { get; set; }
+    public long BytesRead { get; set; }
+    public long UsageBytes { get; set; }
+
+    public static RocksDbCacheStats Parse(string statisticsString, string blockCacheUsage);
+}
+
+public RocksDbCacheStats ReadCacheStats();
+public bool StatisticsEnabled { get; }
+```
+
+## Snap bootstrap state
+
+When a snap sync is restarted the state it built is wiped with `ResetSnapBootstrapStateAsync`, and the wipe reports what it does and gives the disk back before it returns:
+
+```csharp
+public async Task ResetSnapBootstrapStateAsync(Action<string> progress, CancellationToken ct);
+```
+
+It reports each column family it wipes, the compaction that follows and its completion through `progress`. The SST files of a wiped column family are gone before the database is closed, chain metadata is left intact, the checkpoints of the state it wipes are deleted (as `ResetStateOnlyAsync` also does), and the metadata column family is left with no delete tombstones. A rewind that moves the head below a checkpoint deletes that checkpoint too.
+
+## Flat-state certification
+
+A snap sync leaves a flat account and storage state beside the healed trie. `IFlatStateReconciler` certifies the flat state against the trie root in one run at finalize, and `VerifyFlatStateAsync(stateRoot, progress, ct, sampleAccountsPerShard)` runs the same walk without writing.
+
+- The account space is divided into 256 units that a worker pool drains. Each unit hashes its flat rows and compares the result with the trie's own node reference; a unit that matches costs one hash and no repair. A storage owner with many slots is proven as sixteen first-nibble ranges.
+- Only a range whose hash differs is walked leaf by leaf: ghost rows are deleted, diverged rows are patched, an account missing from flat is added, and storage rows whose owner has neither an account row nor a trie entry are deleted. An undecodable account row sends its unit to the leaf walk.
+- A trie node missing under a range that diverges is never regenerated by the certify pass. It is reported as `FlatReconcileUnresolvableNodeException` with the owner and path in `MissingNodes`, nothing is written for that range, and the heal that follows deletes the ancestor chain of the hole and fetches those nodes again.
+- The progress of a generation is kept in its own column family (`RocksDbManager.CF_FLAT_GENERATION`), so a cancelled or crashed run resumes with only its unfinished units hashed, and a heal that moves toward a newer root re-walks only the regions the heal changed (`PathHealNodeSink` captures the first pre-image of every node it overwrites or deletes, and drops its own flat writes while a generation is running). `IFlatStateReconciler.DiscardCertifyJournal()` removes the journal.
+- The reconciler refuses to run, before any read or write, while a node-commit block context holds a current block.
 
 ## Hot window vs history
 
@@ -299,6 +352,7 @@ public sealed class BootRecoveryGate
     public const string CleanShutdownMarkerFileName = "clean-shutdown.ok";
 
     public BootRecoveryGate(ILogger logger);
+    public bool HasPendingRestore(string dataDir);
     public void ApplyPendingRestore(string dataDir, string freezerHistoryDirectory = null, bool promotionEnabled = false);
     public void EnsureConsistentOrEscalate(RocksDbChainStoreBundle bundle, string dataDir);
     public bool RecordRestoreRequest(string dataDir, ulong blockNumber);
@@ -306,7 +360,7 @@ public sealed class BootRecoveryGate
 }
 ```
 
-A host calls `ApplyPendingRestore` before opening the database (to honour a restore requested by a previous run), `EnsureConsistentOrEscalate` after opening and before serving, and `MarkCleanShutdown` on an orderly stop — an absent clean-shutdown marker is what turns the next boot into a consistency check rather than a straight start. On an unrecoverable torn head `EnsureConsistentOrEscalate` records a checkpoint-restore request and throws (a bounded escalation that cannot loop). `RocksDbRecoveryService` and `RocksDbStateResetService` are the underlying operations; `RocksDbLifetimeService` wires the whole lifecycle into a generic host.
+`HasPendingRestore` says whether a restore request is waiting, which a write-free check uses to refuse a store that still needs recovery. A host calls `ApplyPendingRestore` before opening the database (to honour a restore requested by a previous run), `EnsureConsistentOrEscalate` after opening and before serving, and `MarkCleanShutdown` on an orderly stop — an absent clean-shutdown marker is what turns the next boot into a consistency check rather than a straight start. On an unrecoverable torn head `EnsureConsistentOrEscalate` records a checkpoint-restore request and throws (a bounded escalation that cannot loop). `RocksDbRecoveryService` and `RocksDbStateResetService` are the underlying operations; `RocksDbLifetimeService` wires the whole lifecycle into a generic host.
 
 ## Other subsystems
 

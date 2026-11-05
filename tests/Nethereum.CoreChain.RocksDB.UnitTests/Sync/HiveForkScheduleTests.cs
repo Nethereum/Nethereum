@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 {
+    [Trait("Requires", "Externals")]
     public class HiveForkScheduleTests
     {
         private static JObject ForkEnv() => JObject.Parse(

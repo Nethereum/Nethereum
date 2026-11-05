@@ -62,22 +62,6 @@ namespace Nethereum.CoreChain.UnitTests.Composition
         }
 
         [Fact]
-        public void StateLayer_SnapSync_builds_TrieFallbackOverGivenStores()
-        {
-            var stateLayer = new StateLayer();
-            var rawFlat = new InMemoryStateStore();
-            var nodeBlobStore = new InMemoryContentNodeStore();
-            Func<byte[]> rootFn = () => new byte[] { 1, 2, 3 };
-
-            var store = stateLayer.Stores.SnapSync(rawFlat, nodeBlobStore, rootFn);
-
-            var fallback = Assert.IsType<TrieFallbackStateStore>(store);
-            Assert.Same(rawFlat, fallback.Inner);
-            Assert.Same(nodeBlobStore, fallback.TrieStorage);
-            Assert.Same(rootFn, fallback.StateRootProvider);
-        }
-
-        [Fact]
         public void StateLayer_WitnessCapture_withNoHistorical_wrapsGivenStore()
         {
             var stateLayer = new StateLayer();

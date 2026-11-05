@@ -39,6 +39,25 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         }
 
         [Fact]
+        public async Task Given_AChainIdAboveInt32_When_TheNodeIsComposed_Then_ItsNetworkIdIsThatChainId()
+        {
+            var config = new DevChainServerConfig { Storage = "memory" };
+            config.Chain.ChainId = 3503995874084926;
+            using var provider = BuildProvider(config);
+
+            var node = provider.GetRequiredService<Nethereum.DevChain.DevChainNode>();
+            var bundle = provider.GetRequiredService<IChainStoreBundle>();
+            var accounts = provider.GetRequiredService<DevAccountManager>();
+
+            await using var composed = await DevChainComposition.ComposeAsync(
+                config, node, bundle,
+                n => n.StartAsync(accounts.Accounts.Select(a => a.Address)),
+                NullLoggerFactory.Instance);
+
+            Assert.Equal(3503995874084926UL, composed.Profile.NetworkId);
+        }
+
+        [Fact]
         public async Task Given_NetworkServeForcedOn_When_TheNodeIsComposed_Then_AListenerActuallyBinds()
         {
             var config = new DevChainServerConfig { Storage = "memory" };

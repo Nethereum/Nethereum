@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class RocksDbFilterMapsStoreTests : IDisposable
     {
         private readonly string _dbPath;
@@ -193,6 +194,30 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.Equal(new byte[] { 0x22 }, store.ReadExtRow(2));
             Assert.Equal(100, store.ReadLastBlockOfMap(3).Value.blockNumber);
             Assert.Equal(200, store.ReadBlockLvPointer(4));
+        }
+
+        [Fact]
+        public void Given_FortyWritesOfOneBaseRowGroupInOneWindow_When_TheWindowIsFlushed_Then_TheLastValueIsStored()
+        {
+            _store.BeginBulk();
+            for (var i = 1; i <= 40; i++)
+                _store.WriteBaseRowGroup(mapRowIndex: 7, new byte[] { (byte)i });
+            _store.EndBulk();
+
+            Assert.Equal(new byte[] { 40 }, _store.ReadBaseRowGroup(7));
+        }
+
+        [Fact]
+        public void Given_ABaseRowGroupDeletedThenWrittenInOneWindow_When_TheWindowIsFlushed_Then_TheWrittenValueIsStored()
+        {
+            _store.WriteBaseRowGroup(mapRowIndex: 9, new byte[] { 0x01 });
+
+            _store.BeginBulk();
+            _store.WriteBaseRowGroup(mapRowIndex: 9, null);
+            _store.WriteBaseRowGroup(mapRowIndex: 9, new byte[] { 0x02 });
+            _store.EndBulk();
+
+            Assert.Equal(new byte[] { 0x02 }, _store.ReadBaseRowGroup(9));
         }
     }
 }

@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class RocksDbLogStoreBatchTests : IDisposable
     {
         private readonly string _dataDir = Path.Combine(Path.GetTempPath(), $"logbatch_{Guid.NewGuid():N}");

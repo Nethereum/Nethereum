@@ -15,36 +15,10 @@ namespace Nethereum.CoreChain.DataAvailability
                 return new byte[32];
 
             var keccak = new Sha3Keccack();
-            var leaves = new List<byte[]>(blockHashes.Count);
-
-            foreach (var hash in blockHashes)
-            {
-                var tagged = new byte[DomainTag.Length + (hash?.Length ?? 0)];
-                Array.Copy(DomainTag, 0, tagged, 0, DomainTag.Length);
-                if (hash != null)
-                    Array.Copy(hash, 0, tagged, DomainTag.Length, hash.Length);
-                leaves.Add(keccak.CalculateHash(tagged));
-            }
+            var leaves = HashLeaves(keccak, blockHashes);
 
             while (leaves.Count > 1)
-            {
-                var next = new List<byte[]>((leaves.Count + 1) / 2);
-                for (int i = 0; i < leaves.Count; i += 2)
-                {
-                    if (i + 1 < leaves.Count)
-                    {
-                        var combined = new byte[64];
-                        Array.Copy(leaves[i], 0, combined, 0, 32);
-                        Array.Copy(leaves[i + 1], 0, combined, 32, 32);
-                        next.Add(keccak.CalculateHash(combined));
-                    }
-                    else
-                    {
-                        next.Add(leaves[i]);
-                    }
-                }
-                leaves = next;
-            }
+                leaves = NextLevel(keccak, leaves);
 
             return leaves[0];
         }
@@ -56,16 +30,7 @@ namespace Nethereum.CoreChain.DataAvailability
                 throw new ArgumentException("Invalid index");
 
             var keccak = new Sha3Keccack();
-            var leaves = new List<byte[]>(blockHashes.Count);
-
-            foreach (var hash in blockHashes)
-            {
-                var tagged = new byte[DomainTag.Length + (hash?.Length ?? 0)];
-                Array.Copy(DomainTag, 0, tagged, 0, DomainTag.Length);
-                if (hash != null)
-                    Array.Copy(hash, 0, tagged, DomainTag.Length, hash.Length);
-                leaves.Add(keccak.CalculateHash(tagged));
-            }
+            var leaves = HashLeaves(keccak, blockHashes);
 
             leaf = leaves[index];
             var proof = new List<byte[]>();
@@ -73,26 +38,11 @@ namespace Nethereum.CoreChain.DataAvailability
 
             while (leaves.Count > 1)
             {
-                var next = new List<byte[]>((leaves.Count + 1) / 2);
-                for (int i = 0; i < leaves.Count; i += 2)
-                {
-                    if (i + 1 < leaves.Count)
-                    {
-                        if (i == idx - (idx % 2))
-                            proof.Add(leaves[i + (idx % 2 == 0 ? 1 : 0)]);
+                if (HasSibling(idx, leaves.Count))
+                    proof.Add(leaves[idx ^ 1]);
 
-                        var combined = new byte[64];
-                        Array.Copy(leaves[i], 0, combined, 0, 32);
-                        Array.Copy(leaves[i + 1], 0, combined, 32, 32);
-                        next.Add(keccak.CalculateHash(combined));
-                    }
-                    else
-                    {
-                        next.Add(leaves[i]);
-                    }
-                }
+                leaves = NextLevel(keccak, leaves);
                 idx /= 2;
-                leaves = next;
             }
 
             var proofBytes = new byte[proof.Count * 32];
@@ -103,36 +53,90 @@ namespace Nethereum.CoreChain.DataAvailability
 
         public static bool VerifyProof(byte[] root, byte[] blockHash, int index, byte[] proof, int totalLeaves)
         {
-            var keccak = new Sha3Keccack();
+            if (root == null || blockHash == null || proof == null || proof.Length % 32 != 0)
+                return false;
+            if (totalLeaves <= 0 || index < 0 || index >= totalLeaves)
+                return false;
+            if (proof.Length / 32 != ExpectedProofNodes(index, totalLeaves))
+                return false;
 
-            var tagged = new byte[DomainTag.Length + (blockHash?.Length ?? 0)];
-            Array.Copy(DomainTag, 0, tagged, 0, DomainTag.Length);
-            if (blockHash != null)
-                Array.Copy(blockHash, 0, tagged, DomainTag.Length, blockHash.Length);
-            var current = keccak.CalculateHash(tagged);
+            var keccak = new Sha3Keccack();
+            var current = HashLeaf(keccak, blockHash);
 
             var idx = index;
+            long levelCount = totalLeaves;
             for (int i = 0; i < proof.Length; i += 32)
             {
+                while (levelCount > 1 && !HasSibling(idx, levelCount))
+                {
+                    idx /= 2;
+                    levelCount = (levelCount + 1) / 2;
+                }
+
                 var sibling = new byte[32];
                 Array.Copy(proof, i, sibling, 0, 32);
 
-                var combined = new byte[64];
-                if (idx % 2 == 0)
-                {
-                    Array.Copy(current, 0, combined, 0, 32);
-                    Array.Copy(sibling, 0, combined, 32, 32);
-                }
-                else
-                {
-                    Array.Copy(sibling, 0, combined, 0, 32);
-                    Array.Copy(current, 0, combined, 32, 32);
-                }
-                current = keccak.CalculateHash(combined);
+                current = idx % 2 == 0
+                    ? HashPair(keccak, current, sibling)
+                    : HashPair(keccak, sibling, current);
                 idx /= 2;
+                levelCount = (levelCount + 1) / 2;
             }
 
             return ByteUtil.AreEqual(current, root);
+        }
+
+        private static int ExpectedProofNodes(int index, int totalLeaves)
+        {
+            var count = 0;
+            long idx = index;
+            long levelCount = totalLeaves;
+            while (levelCount > 1)
+            {
+                if (HasSibling(idx, levelCount))
+                    count++;
+                idx /= 2;
+                levelCount = (levelCount + 1) / 2;
+            }
+            return count;
+        }
+
+        private static bool HasSibling(long index, long levelCount)
+        {
+            return (index ^ 1) < levelCount;
+        }
+
+        private static byte[] HashLeaf(Sha3Keccack keccak, byte[] hash)
+        {
+            var tagged = new byte[DomainTag.Length + (hash?.Length ?? 0)];
+            Array.Copy(DomainTag, 0, tagged, 0, DomainTag.Length);
+            if (hash != null)
+                Array.Copy(hash, 0, tagged, DomainTag.Length, hash.Length);
+            return keccak.CalculateHash(tagged);
+        }
+
+        private static List<byte[]> HashLeaves(Sha3Keccack keccak, IReadOnlyList<byte[]> blockHashes)
+        {
+            var leaves = new List<byte[]>(blockHashes.Count);
+            foreach (var hash in blockHashes)
+                leaves.Add(HashLeaf(keccak, hash));
+            return leaves;
+        }
+
+        private static byte[] HashPair(Sha3Keccack keccak, byte[] left, byte[] right)
+        {
+            var combined = new byte[64];
+            Array.Copy(left, 0, combined, 0, 32);
+            Array.Copy(right, 0, combined, 32, 32);
+            return keccak.CalculateHash(combined);
+        }
+
+        private static List<byte[]> NextLevel(Sha3Keccack keccak, List<byte[]> leaves)
+        {
+            var next = new List<byte[]>((leaves.Count + 1) / 2);
+            for (int i = 0; i < leaves.Count; i += 2)
+                next.Add(i + 1 < leaves.Count ? HashPair(keccak, leaves[i], leaves[i + 1]) : leaves[i]);
+            return next;
         }
     }
 }

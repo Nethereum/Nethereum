@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using System.Threading;
+using Nethereum.Signer;
+using Nethereum.Util;
 using Nethereum.Model;
 using Nethereum.RLP;
 
@@ -14,8 +17,13 @@ namespace Nethereum.CoreChain
         private const int DefaultMaxPoolSize = 10_000;
 
         private readonly ConcurrentDictionary<string, PendingTransaction> _pending = new();
-        private readonly ConcurrentDictionary<string, BigInteger> _pendingNonces = new(StringComparer.OrdinalIgnoreCase);
-        private readonly ConcurrentDictionary<string, int> _senderTxCounts = new(StringComparer.OrdinalIgnoreCase);
+        private NonceTracking _tracking = new NonceTracking();
+
+        private sealed class NonceTracking
+        {
+            public readonly ConcurrentDictionary<string, BigInteger> Nonces = new(StringComparer.OrdinalIgnoreCase);
+            public readonly ConcurrentDictionary<string, int> Counts = new(StringComparer.OrdinalIgnoreCase);
+        }
         private readonly ITxPoolOrderingStrategy _orderingStrategy;
         private readonly int _maxPoolSize;
         private readonly int _maxTxsPerSender;
@@ -99,14 +107,13 @@ namespace Nethereum.CoreChain
         public Task ClearAsync()
         {
             _pending.Clear();
-            _pendingNonces.Clear();
-            _senderTxCounts.Clear();
+            Interlocked.Exchange(ref _tracking, new NonceTracking());
             return Task.CompletedTask;
         }
 
         public Task<BigInteger> GetPendingNonceAsync(string senderAddress, BigInteger confirmedNonce)
         {
-            if (_pendingNonces.TryGetValue(senderAddress, out var pendingNonce) && pendingNonce > confirmedNonce)
+            if (_tracking.Nonces.TryGetValue(senderAddress, out var pendingNonce) && pendingNonce > confirmedNonce)
             {
                 return Task.FromResult(pendingNonce);
             }
@@ -116,24 +123,32 @@ namespace Nethereum.CoreChain
         public void TrackPendingNonce(string senderAddress, BigInteger nonce)
         {
             var nextNonce = nonce + 1;
-            _pendingNonces.AddOrUpdate(senderAddress, nextNonce, (_, existing) =>
+            _tracking.Nonces.AddOrUpdate(senderAddress, nextNonce, (_, existing) =>
                 nextNonce > existing ? nextNonce : existing);
         }
 
         public void ResetPendingNonces()
         {
-            _pendingNonces.Clear();
-            _senderTxCounts.Clear();
+            var rebuilt = new NonceTracking();
+            var verifier = new TransactionVerificationAndRecoveryImp();
+            foreach (var pending in _pending.Values)
+            {
+                var sender = verifier.GetSenderAddress(pending.Transaction);
+                var next = pending.Transaction.GetNonce().ToBigInteger() + BigInteger.One;
+                rebuilt.Nonces.AddOrUpdate(sender, next, (_, current) => next > current ? next : current);
+                rebuilt.Counts.AddOrUpdate(sender, 1, (_, current) => current + 1);
+            }
+            Interlocked.Exchange(ref _tracking, rebuilt);
         }
 
         public int GetSenderTxCount(string senderAddress)
         {
-            return _senderTxCounts.TryGetValue(senderAddress, out var count) ? count : 0;
+            return _tracking.Counts.TryGetValue(senderAddress, out var count) ? count : 0;
         }
 
         public void IncrementSenderTxCount(string senderAddress)
         {
-            _senderTxCounts.AddOrUpdate(senderAddress, 1, (_, existing) => existing + 1);
+            _tracking.Counts.AddOrUpdate(senderAddress, 1, (_, existing) => existing + 1);
         }
     }
 

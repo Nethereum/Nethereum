@@ -16,6 +16,13 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [CollectionDefinition("Freezer logs scale", DisableParallelization = true)]
+    [Trait("Slice", "Freezer")]
+    public class FreezerLogsScaleTestsCollection { }
+
+    [Collection("Freezer logs scale")]
+    [Trait("Slice", "Freezer")]
+    [Trait("Category", "Performance")]
     public class FreezerLogsScaleTests : IDisposable
     {
         private static readonly FilterMapsParams TinyParams = new FilterMapsParams(

@@ -24,8 +24,8 @@ namespace Nethereum.CoreChain.Storage.InMemory
             if (logs == null || logs.Count == 0)
                 return Task.CompletedTask;
 
-            var txHashHex = ToHex(txHash);
-            var blockHashHex = ToHex(blockHash);
+            var txHashHex = txHash?.ToHex();
+            var blockHashHex = blockHash?.ToHex();
 
             var txIndexes = _logIndexesByTxHash.GetOrAdd(txHashHex, _ => new ConcurrentDictionary<int, byte>());
             var blockHashIndexes = _logIndexesByBlockHash.GetOrAdd(blockHashHex, _ => new ConcurrentDictionary<int, byte>());
@@ -184,7 +184,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash)
         {
-            var hashHex = ToHex(txHash);
+            var hashHex = txHash?.ToHex();
             if (!_logIndexesByTxHash.TryGetValue(hashHex, out var indexes))
                 return Task.FromResult(new List<FilteredLog>());
 
@@ -199,7 +199,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<List<FilteredLog>> GetLogsByBlockHashAsync(byte[] blockHash)
         {
-            var hashHex = ToHex(blockHash);
+            var hashHex = blockHash?.ToHex();
             if (!_logIndexesByBlockHash.TryGetValue(hashHex, out var indexes))
                 return Task.FromResult(new List<FilteredLog>());
 
@@ -234,13 +234,13 @@ namespace Nethereum.CoreChain.Storage.InMemory
                 {
                     if (_logs.TryRemove(logIndex, out var log))
                     {
-                        var txHashHex = ToHex(log.TransactionHash);
+                        var txHashHex = log.TransactionHash?.ToHex();
                         if (txHashHex != null && _logIndexesByTxHash.TryGetValue(txHashHex, out var txIndexes))
                         {
                             txIndexes.TryRemove(logIndex, out _);
                         }
 
-                        var blockHashHex = ToHex(log.BlockHash);
+                        var blockHashHex = log.BlockHash?.ToHex();
                         if (blockHashHex != null && _logIndexesByBlockHash.TryGetValue(blockHashHex, out var blockIndexes))
                         {
                             blockIndexes.TryRemove(logIndex, out _);
@@ -264,7 +264,5 @@ namespace Nethereum.CoreChain.Storage.InMemory
             Interlocked.Exchange(ref _nextLogIndex, 0);
         }
 
-
-        private static string ToHex(byte[] bytes) => bytes?.ToHex();
     }
 }

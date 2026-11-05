@@ -58,7 +58,25 @@ namespace Nethereum.CoreChain.UnitTests
                 RequestsHashMismatch = true,
                 ContainsInvalidTransaction = true,
                 GasLimitBoundViolated = true,
-                WithdrawalsRootMismatch = true
+                WithdrawalsRootMismatch = true,
+                BlockRlpSizeExceeded = true,
+                UnknownParent = true,
+                BlockNumberMismatch = true,
+                TimestampNotAfterParent = true,
+                FutureBlock = true,
+                ExtraDataTooLong = true,
+                DaoExtraDataMismatch = true,
+                GasLimitTooBig = true,
+                DifficultyMismatch = true,
+                NonceInvalid = true,
+                UnclesHashMismatch = true,
+                UnclesInvalid = true,
+                TransactionsRootMismatch = true,
+                WithdrawalsRootPresenceMismatch = true,
+                ParentBeaconRootPresenceMismatch = true,
+                BlockAccessListHashPresenceMismatch = true,
+                SlotNumberPresenceMismatch = true,
+                ParentNotHead = true
             };
 
             var importer = new BlockImporterResult();

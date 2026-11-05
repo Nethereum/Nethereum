@@ -31,7 +31,7 @@ namespace Nethereum.CoreChain.Freezer
                 throw new InvalidOperationException(
                     $"receipt/transaction count mismatch: {stored.Count} receipts vs {body.Txs.Count} transactions");
 
-            var blockHash = ComputeBlockHash(header);
+            var blockHash = RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(header);
             var blockNumber = header.BlockNumber.ToLong();
             var baseFee = header.BaseFee ?? EvmUInt256.Zero;
 
@@ -41,35 +41,47 @@ namespace Nethereum.CoreChain.Freezer
 
             for (var i = 0; i < stored.Count; i++)
             {
-                var tx = body.Txs[i];
                 var receipt = stored[i];
-
                 var gasUsed = DeriveGasUsed(receipt.CumulativeGasUsed, previousCumulativeGasUsed);
                 previousCumulativeGasUsed = receipt.CumulativeGasUsed;
 
-                var logs = DeriveLogFields(receipt.Logs, blockHash, blockNumber, tx.Hash, i, blockLogIndex);
-                blockLogIndex += logs.Count;
-
-                var bloom = DeriveBloom(receipt.Logs);
-                var effectiveGasPrice = DeriveEffectiveGasPrice(tx, baseFee);
-                var contractAddress = DeriveContractAddress(tx);
-                var (blobGasUsed, blobGasPrice) = DeriveBlobFields(tx, header);
-
-                derived.Add(new DerivedReceipt(
-                    receipt.PostStateOrStatus,
-                    receipt.CumulativeGasUsed,
-                    gasUsed,
-                    bloom,
-                    logs,
-                    tx.Hash,
-                    tx.TransactionType,
-                    effectiveGasPrice,
-                    contractAddress,
-                    blobGasUsed,
-                    blobGasPrice));
+                derived.Add(DeriveReceipt(header, body.Txs[i], receipt, gasUsed, i, blockHash, blockNumber, baseFee, ref blockLogIndex));
             }
 
             return derived;
+        }
+
+        private DerivedReceipt DeriveReceipt(
+            BlockHeader header,
+            ISignedTransaction tx,
+            ReceiptForStorage receipt,
+            BigInteger gasUsed,
+            int index,
+            byte[] blockHash,
+            long blockNumber,
+            EvmUInt256 baseFee,
+            ref int blockLogIndex)
+        {
+            var logs = DeriveLogFields(receipt.Logs, blockHash, blockNumber, tx.Hash, index, blockLogIndex);
+            blockLogIndex += logs.Count;
+
+            var bloom = DeriveBloom(receipt.Logs);
+            var effectiveGasPrice = DeriveEffectiveGasPrice(tx, baseFee);
+            var contractAddress = DeriveContractAddress(tx);
+            var (blobGasUsed, blobGasPrice) = DeriveBlobFields(tx, header);
+
+            return new DerivedReceipt(
+                receipt.PostStateOrStatus,
+                receipt.CumulativeGasUsed,
+                gasUsed,
+                bloom,
+                logs,
+                tx.Hash,
+                tx.TransactionType,
+                effectiveGasPrice,
+                contractAddress,
+                blobGasUsed,
+                blobGasPrice);
         }
 
         private static BigInteger DeriveGasUsed(BigInteger cumulativeGasUsed, BigInteger previousCumulativeGasUsed) =>
@@ -118,12 +130,6 @@ namespace Nethereum.CoreChain.Freezer
             var blobGasPrice = BlobGasCalculator.CalculateBlobBaseFee(excessBlobGas, fraction);
 
             return (blobGasUsed, blobGasPrice);
-        }
-
-        private static byte[] ComputeBlockHash(BlockHeader header)
-        {
-            var encoded = BlockHeaderEncoder.Current.Encode(header, legacyMode: false);
-            return new Sha3Keccack().CalculateHash(encoded);
         }
     }
 }

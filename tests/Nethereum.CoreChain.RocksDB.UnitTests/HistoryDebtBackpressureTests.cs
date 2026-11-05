@@ -2,6 +2,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class HistoryDebtBackpressureTests
     {
         private const long PauseAt = 100;

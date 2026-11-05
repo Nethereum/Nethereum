@@ -34,12 +34,29 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         public void PromoteDurableBlocks(ulong durableHead)
+            => PromoteDurableBlocks(durableHead, default, () => false, () => false, null);
+
+        internal void PromoteDurableBlocks(
+            ulong durableHead, System.Threading.CancellationToken ct, Func<bool> yieldNow, Func<bool> recoveryWaiting,
+            System.Threading.SemaphoreSlim cursorGate)
         {
             if (_maxHistoryBlocks == 0 || durableHead < _maxHistoryBlocks) return;
             var floor = durableHead - _maxHistoryBlocks;
-            var cursor = _metadata.GetPromotionCursor();
-            for (var p = cursor + 1; p <= floor; p++)
-                PromoteBlock(p);
+            while (!ct.IsCancellationRequested && !yieldNow())
+            {
+                cursorGate?.Wait(ct);
+                try
+                {
+                    var next = _metadata.GetPromotionCursor() + 1;
+                    if (next > floor) break;
+                    PromoteBlock(next);
+                }
+                finally
+                {
+                    cursorGate?.Release();
+                }
+                if (recoveryWaiting()) return;
+            }
         }
 
         public void ReconcilePromotionOnBoot(ulong durableHead)

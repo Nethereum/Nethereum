@@ -208,6 +208,8 @@ namespace Nethereum.CoreChain.UnitTests
                 Balance = 1_000_000_000_000_000,
                 Nonce = 0
             });
+            await ShapedHeaders.SaveGenesisAsync(
+                bundle.Blocks, HardforkName.Amsterdam, AmsterdamBlockPipelineHarness.DefaultBlockGasLimit);
             var config = new ChainConfig
             {
                 ChainId = AmsterdamBlockPipelineHarness.ChainId,

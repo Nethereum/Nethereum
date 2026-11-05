@@ -18,7 +18,7 @@ namespace Nethereum.CoreChain.UnitTests
             var author = await BlockPipelineHarness.CreateAsync();
             var mempool = new List<ISignedTransaction> { BlockPipelineHarness.Transfer(nonce: 0), invalid };
             var produced = await author.ProduceAsync(mempool);
-            return (produced.Header, mempool);
+            return (BlockPipelineHarness.DeclaringTransactionsOf(produced.Header, mempool), mempool);
         }
 
         [Fact]

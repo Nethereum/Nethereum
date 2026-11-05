@@ -20,6 +20,12 @@ namespace Nethereum.CoreChain.Rpc
 
         private static StateOverride ToStateOverride(string address, AccountOverride accountOverride)
         {
+            if (accountOverride == null)
+                throw RpcException.InvalidParams($"state override for account '{address}' must be an object");
+
+            if (accountOverride.Nonce != null)
+                StateOverrideJsonParser.RequireNonceFitsUint64(address, accountOverride.Nonce.Value);
+
             if (accountOverride.State != null && accountOverride.StateDiff != null)
                 throw RpcException.InvalidParams(
                     $"account '{address}' cannot set both 'state' and 'stateDiff'");

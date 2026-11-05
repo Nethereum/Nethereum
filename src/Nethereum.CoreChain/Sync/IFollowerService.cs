@@ -34,7 +34,11 @@ namespace Nethereum.CoreChain.Sync
         TimeSpan? TipPollInterval = null,
         ulong WalkerInvocationThreshold = 1UL,
         ulong MaxReorgDepth = 1024UL,
-        bool ExternalHeaderFollow = false);
+        bool ExternalHeaderFollow = false)
+    {
+        public AsyncGate ChainWriteGate { get; init; }
+        public System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task> AfterRewindAsync { get; init; }
+    }
 
     public sealed record FollowerRunResult(
         FollowerExitReason ExitReason,

@@ -6,12 +6,50 @@ namespace Nethereum.CoreChain.Rpc
     {
         public static RpcHandlerRegistry AddStandardHandlers(this RpcHandlerRegistry registry)
         {
+            return registry.AddEthNetWeb3Handlers().AddTxpoolHandlers().AddDebugHandlers();
+        }
+
+        public static RpcHandlerRegistry AddStandardHandlers(this RpcHandlerRegistry registry, RpcModuleSet modules)
+        {
+            if (modules.Contains(RpcModuleSet.Eth)) registry.AddEthHandlers();
+            if (modules.Contains(RpcModuleSet.Net)) registry.AddNetHandlers();
+            if (modules.Contains(RpcModuleSet.Web3)) registry.AddWeb3Handlers();
+            if (modules.Contains(RpcModuleSet.Txpool)) registry.AddTxpoolHandlers();
+            if (modules.Contains(RpcModuleSet.Debug)) registry.AddDebugHandlers();
+            return registry;
+        }
+
+        public static RpcHandlerRegistry AddEthNetWeb3Handlers(this RpcHandlerRegistry registry)
+        {
+            return registry.AddEthHandlers().AddNetHandlers().AddWeb3Handlers();
+        }
+
+        public static RpcHandlerRegistry AddNetHandlers(this RpcHandlerRegistry registry)
+        {
+            registry.Register(new NetVersionHandler());
+            registry.Register(new NetListeningHandler());
+            registry.Register(new NetPeerCountHandler());
+
+            return registry;
+        }
+
+        public static RpcHandlerRegistry AddWeb3Handlers(this RpcHandlerRegistry registry)
+        {
+            registry.Register(new Web3ClientVersionHandler());
+            registry.Register(new Web3Sha3Handler());
+
+            return registry;
+        }
+
+        public static RpcHandlerRegistry AddEthHandlers(this RpcHandlerRegistry registry)
+        {
             registry.Register(new EthChainIdHandler());
             registry.Register(new EthBlockNumberHandler());
             registry.Register(new EthGasPriceHandler());
             registry.Register(new EthGetBalanceHandler());
             registry.Register(new EthGetCodeHandler());
             registry.Register(new EthGetStorageAtHandler());
+            registry.Register(new EthGetStorageValuesHandler());
             registry.Register(new EthGetTransactionCountHandler());
             registry.Register(new EthGetBlockByNumberHandler());
             registry.Register(new EthGetBlockByHashHandler());
@@ -36,27 +74,32 @@ namespace Nethereum.CoreChain.Rpc
             registry.Register(new EthSyncingHandler());
             registry.Register(new EthMiningHandler());
             registry.Register(new EthCoinbaseHandler());
-            registry.Register(new NetVersionHandler());
-            registry.Register(new NetListeningHandler());
-            registry.Register(new NetPeerCountHandler());
-            registry.Register(new Web3ClientVersionHandler());
-            registry.Register(new Web3Sha3Handler());
-
             registry.Register(new EthNewFilterHandler());
             registry.Register(new EthGetFilterChangesHandler());
             registry.Register(new EthGetFilterLogsHandler());
             registry.Register(new EthUninstallFilterHandler());
             registry.Register(new EthNewBlockFilterHandler());
 
+            registry.Register(new EthBaseFeeHandler());
             registry.Register(new EthBlobBaseFeeHandler());
             registry.Register(new EthConfigHandler());
             registry.Register(new EthSimulateV1Handler());
             registry.Register(new EthCapabilitiesHandler());
 
+            return registry;
+        }
+
+        public static RpcHandlerRegistry AddTxpoolHandlers(this RpcHandlerRegistry registry)
+        {
             registry.Register(new TxpoolStatusHandler());
             registry.Register(new TxpoolContentHandler());
             registry.Register(new TxpoolContentFromHandler());
 
+            return registry;
+        }
+
+        public static RpcHandlerRegistry AddDebugHandlers(this RpcHandlerRegistry registry)
+        {
             registry.Register(new DebugTraceTransactionHandler());
             registry.Register(new DebugTraceCallHandler());
             registry.Register(new DebugTraceBlockByNumberHandler());

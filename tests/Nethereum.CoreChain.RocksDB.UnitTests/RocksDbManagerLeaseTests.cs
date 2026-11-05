@@ -105,6 +105,47 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
+        public void Given_CallersQueuedForALeaseBehindAPendingDispose_When_TheHeldLeaseIsReleased_Then_DisposeCompletesAndEveryQueuedCallerGetsObjectDisposed()
+        {
+            const int rounds = 40;
+            const int waiters = 16;
+            for (var round = 0; round < rounds; round++)
+            {
+                var manager = new RocksDbManager(new RocksDbStorageOptions { DatabasePath = SubDir("queued-" + round) });
+                var lease = manager.Lease();
+
+                Exception disposeFailure = null;
+                var disposer = Task.Run(() =>
+                {
+                    try { manager.Dispose(); }
+                    catch (Exception ex) { disposeFailure = ex; }
+                });
+                Thread.Sleep(20);
+
+                var queued = new CountdownEvent(waiters);
+                var outcomes = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+                var callers = new Task[waiters];
+                for (var i = 0; i < waiters; i++)
+                {
+                    callers[i] = Task.Factory.StartNew(() =>
+                    {
+                        queued.Signal();
+                        try { manager.Lease().Dispose(); }
+                        catch (Exception ex) { outcomes.Add(ex); }
+                    }, TaskCreationOptions.LongRunning);
+                }
+                queued.Wait();
+                Thread.Sleep(20);
+                lease.Dispose();
+
+                Assert.True(disposer.Wait(TimeSpan.FromSeconds(10)));
+                Assert.True(Task.WaitAll(callers, TimeSpan.FromSeconds(10)));
+                Assert.Null(disposeFailure);
+                Assert.All(outcomes, ex => Assert.IsType<ObjectDisposedException>(ex));
+            }
+        }
+
+        [Fact]
         public async Task Given_AnOpenManager_When_ABlockStoreReadsAHeader_Then_ItStillReturnsThePersistedBlock()
         {
             using var manager = new RocksDbManager(new RocksDbStorageOptions { DatabasePath = SubDir("blockstore-open") });

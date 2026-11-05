@@ -5,16 +5,17 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.RLPTests
 {
+    [Trait("Requires", "Externals")]
     public class RLPTestRunner
     {
         private readonly ITestOutputHelper _output;
 
-        private static readonly string TestPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "RLPTests");
+        private static string TestPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "RLPTests");
 
         public RLPTestRunner(ITestOutputHelper output)
         {
@@ -64,38 +65,12 @@ namespace Nethereum.CoreChain.IntegrationTests.RLPTests
         [Trait("Category", "RLPTests")]
         public void InvalidRLP_DecodeHandlesGracefully(string testName, string invalidHex)
         {
-            if (string.IsNullOrEmpty(invalidHex))
-            {
-                _output.WriteLine($"  {testName}: empty input, skipping");
-                return;
-            }
+            var bytes = invalidHex.HexToByteArray();
 
-            byte[] bytes;
-            try
-            {
-                bytes = invalidHex.HexToByteArray();
-            }
-            catch
-            {
-                _output.WriteLine($"  {testName}: invalid hex, skipping");
-                return;
-            }
+            var ex = Record.Exception(() => RLP.RLP.Decode(bytes));
 
-            if (bytes.Length == 0)
-            {
-                _output.WriteLine($"  {testName}: empty bytes, skipping");
-                return;
-            }
-
-            try
-            {
-                var decoded = RLP.RLP.Decode(bytes);
-                _output.WriteLine($"  {testName}: decoded without exception (some invalid RLP is still decodable at byte level)");
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"  {testName}: correctly threw {ex.GetType().Name}");
-            }
+            Assert.NotNull(ex);
+            _output.WriteLine($"  {testName}: correctly threw {ex.GetType().Name}");
         }
 
         private byte[] ReEncodeCollection(RLPCollection collection)
@@ -128,9 +103,7 @@ namespace Nethereum.CoreChain.IntegrationTests.RLPTests
 
         public static IEnumerable<object[]> GetInvalidRLPTests()
         {
-            var path = Path.Combine(
-                AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "external", "ethereum-tests", "RLPTests", "invalidRLPTest.json");
+            var path = Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "RLPTests", "invalidRLPTest.json");
 
             if (!File.Exists(path))
                 yield break;
@@ -151,9 +124,7 @@ namespace Nethereum.CoreChain.IntegrationTests.RLPTests
 
         private static Dictionary<string, string> LoadRLPTests(string fileName)
         {
-            var path = Path.Combine(
-                AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "external", "ethereum-tests", "RLPTests", fileName);
+            var path = Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "RLPTests", fileName);
 
             if (!File.Exists(path))
                 return new Dictionary<string, string>();

@@ -20,6 +20,11 @@ namespace Nethereum.CoreChain.Rpc
 
             var blockNumber = await ResolveLabelAsync(blockTag, context);
 
+            if (Handlers.Standard.EthGetBlockByNumberHandler.IsAboveExecutedHead(context, blockNumber))
+            {
+                return Success(request.Id, null);
+            }
+
             var blockHeader = await context.Node.GetBlockByNumberAsync(blockNumber);
             if (blockHeader == null)
             {

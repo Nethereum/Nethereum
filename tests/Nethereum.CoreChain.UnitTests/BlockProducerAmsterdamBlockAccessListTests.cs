@@ -71,7 +71,7 @@ namespace Nethereum.CoreChain.UnitTests
         {
             var retargeted = AmsterdamBlockPipelineHarness.CloneHeader(header);
             retargeted.GasLimit = gasLimit;
-            var importer = await AmsterdamBlockPipelineHarness.CreateImporterAsync();
+            var importer = await AmsterdamBlockPipelineHarness.CreateImporterAsync(genesisGasLimit: gasLimit);
             return await importer.ImportAsync(retargeted, txs, uncles: null, withdrawals: null, CancellationToken.None);
         }
 

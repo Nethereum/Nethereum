@@ -21,7 +21,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<ISignedTransaction> GetByHashAsync(byte[] txHash)
         {
-            var hashHex = ToHex(txHash);
+            var hashHex = txHash?.ToHex();
             if (_txByHash.TryGetValue(hashHex, out var stored))
                 return Task.FromResult(stored.Transaction);
             return Task.FromResult<ISignedTransaction>(null);
@@ -29,7 +29,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<List<ISignedTransaction>> GetByBlockHashAsync(byte[] blockHash)
         {
-            var hashHex = ToHex(blockHash);
+            var hashHex = blockHash?.ToHex();
             if (!_txHashesByBlockHash.TryGetValue(hashHex, out var txHashes))
                 return Task.FromResult(new List<ISignedTransaction>());
 
@@ -45,7 +45,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<List<byte[]>> GetHashesByBlockHashAsync(byte[] blockHash)
         {
-            var hashHex = ToHex(blockHash);
+            var hashHex = blockHash?.ToHex();
             if (!_txHashesByBlockHash.TryGetValue(hashHex, out var txHashes))
                 return Task.FromResult(new List<byte[]>());
 
@@ -73,8 +73,8 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task SaveAsync(ISignedTransaction tx, byte[] blockHash, int txIndex, BigInteger blockNumber)
         {
-            var txHashHex = ToHex(tx.Hash);
-            var blockHashHex = ToHex(blockHash);
+            var txHashHex = tx.Hash?.ToHex();
+            var blockHashHex = blockHash?.ToHex();
 
             _txByHash[txHashHex] = new StoredTransaction
             {
@@ -92,7 +92,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<TransactionLocation> GetLocationAsync(byte[] txHash)
         {
-            var hashHex = ToHex(txHash);
+            var hashHex = txHash?.ToHex();
             if (!_txByHash.TryGetValue(hashHex, out var stored))
                 return Task.FromResult<TransactionLocation>(null);
 
@@ -111,7 +111,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
             var blockHash = await _blockStore.GetHashByNumberAsync(blockNumber);
             if (blockHash == null) return;
 
-            var blockHashHex = ToHex(blockHash);
+            var blockHashHex = blockHash?.ToHex();
             if (_txHashesByBlockHash.TryRemove(blockHashHex, out var txHashes))
             {
                 foreach (var txHashHex in txHashes.Keys)
@@ -121,13 +121,25 @@ namespace Nethereum.CoreChain.Storage.InMemory
             }
         }
 
+        public async Task DeleteLookupsByBlockNumberAsync(BigInteger blockNumber)
+        {
+            byte[] canonicalHash = _blockStore == null
+                ? null
+                : await _blockStore.GetHashByNumberAsync(blockNumber);
+            var canonicalHex = canonicalHash?.ToHex();
+            foreach (var entry in _txByHash)
+            {
+                if (entry.Value.BlockNumber != blockNumber) continue;
+                if (canonicalHex != null && entry.Value.BlockHash?.ToHex() == canonicalHex) continue;
+                _txByHash.TryRemove(entry.Key, out _);
+            }
+        }
+
         public void Clear()
         {
             _txByHash.Clear();
             _txHashesByBlockHash.Clear();
         }
-
-        private static string ToHex(byte[] bytes) => bytes?.ToHex();
 
         private class StoredTransaction
         {

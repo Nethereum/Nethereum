@@ -164,10 +164,12 @@ namespace Nethereum.CoreChain.UnitTests
                 config.ResolveHardforkAt(22_431_084, MainnetChainActivations.PragueTimestamp));
             Assert.Equal(HardforkName.Osaka,
                 config.ResolveHardforkAt(23_935_694, MainnetChainActivations.OsakaTimestamp.Value));
-            Assert.Equal(HardforkName.OsakaBpo1,
-                config.ResolveHardforkAt(23_976_500, MainnetChainActivations.OsakaBpo1Timestamp.Value));
-            Assert.Equal(HardforkName.OsakaBpo2,
-                config.ResolveHardforkAt(24_179_383, MainnetChainActivations.OsakaBpo2Timestamp.Value));
+            Assert.Equal(HardforkName.Osaka,
+                config.ResolveHardforkAt(23_976_500, MainnetBlobSchedule.Bpo1Timestamp));
+            Assert.Equal(15, config.GetHardforkConfigAt(23_976_500, MainnetBlobSchedule.Bpo1Timestamp).MaxBlobsPerBlock);
+            Assert.Equal(HardforkName.Osaka,
+                config.ResolveHardforkAt(24_179_383, MainnetBlobSchedule.Bpo2Timestamp));
+            Assert.Equal(21, config.GetHardforkConfigAt(24_179_383, MainnetBlobSchedule.Bpo2Timestamp).MaxBlobsPerBlock);
 
             Assert.Equal(HardforkName.Prague,
                 config.ResolveHardforkAt(23_935_693, MainnetChainActivations.OsakaTimestamp.Value - 1));

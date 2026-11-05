@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.RocksDB
 {
-    public sealed partial class RocksDbChainStoreBundle : IChainStoreBundle, IBatchedBlockPersister, IBackpressureExemptPersister, IBulkDurabilityBoundary, IHealNodeSinkProvider, IHistoryWriteBackpressure, IBackfillPauseControl, IStateWriteBackpressure, IStateCompaction, IFlatStateReconciler, IFlatStateTrieGenerator, IBulkFlatStateSinkProvider, INodeHistoryRecoverable, Services.IHistoricalProofServingBundle, Services.ILatestProofServingBundle, IAtomicBlockFlush, IPromotionFloorGuard
+    public sealed partial class RocksDbChainStoreBundle : IChainStoreBundle, IBatchedBlockPersister, IBackpressureExemptPersister, IBulkDurabilityBoundary, IHealNodeSinkProvider, IHistoryWriteBackpressure, IBackfillPauseControl, IStateWriteBackpressure, IStateCompaction, ISnapBootstrapStateReset, IFlatStateReconciler, IFlatStateTrieGenerator, IBulkFlatStateSinkProvider, INodeHistoryRecoverable, Services.IHistoricalProofServingBundle, Services.ILatestProofServingBundle, IAtomicBlockFlush, IPromotionFloorGuard, IStoreFaultSource
     {
 
         private const int NodeHistoryPruneIntervalBlocks = 128;
@@ -98,7 +99,12 @@ namespace Nethereum.CoreChain.RocksDB
         private ulong? _stagedFlushOwnsBlock;
         private bool _stagedFlushOwnsWithdrawals;
 
-        private Task _pendingFlush = Task.CompletedTask;
+        private readonly Stores.BackgroundFlushSignal _flushSignal;
+
+        private long _awaitPrevMs;
+        private long _stageMs;
+        private long _prevWriteMs;
+        private long _pruneMs;
 
         private RocksDbChainStoreBundle(
             IStateStore state, ITrieNodeStore trie, ITrieNodeStore stateTrieNodes,
@@ -116,6 +122,7 @@ namespace Nethereum.CoreChain.RocksDB
             RocksDbStateStore rawFlatState = null,
             Stores.RocksDbNodeReverseDiffStore nodeReverseDiffStore = null,
             Stores.INodeHistoryFloorPolicy nodeHistoryFloor = null,
+            Stores.BackgroundFlushSignal flushSignal = null,
             Stores.WindowDirtyLayers windowLayers = null,
             Stores.PendingFlushFlatOverlay pendingFlushFlatOverlay = null,
             RocksDbManager historyRocks = null,
@@ -155,6 +162,7 @@ namespace Nethereum.CoreChain.RocksDB
             _nodeReverseDiffStore = nodeReverseDiffStore;
             _nodeHistoryFloor = nodeHistoryFloor;
             _logIndexStore = logIndexStore;
+            _flushSignal = flushSignal;
             _windowLayers = windowLayers;
             _pendingFlushFlatOverlay = pendingFlushFlatOverlay;
             _bulkSave = bulkSave;
@@ -188,10 +196,10 @@ namespace Nethereum.CoreChain.RocksDB
                     rocks.Options.FreezerBackgroundDegreeOfParallelism);
             _freezerAppendService = freezerAppend == null
                 ? null
-                : new Freezer.FreezerAppendService(freezerAppend, freezerCodecs, rocks, _freezerIndexer, _freezerAppendLock);
+                : new Freezer.FreezerAppendService(freezerAppend, freezerCodecs, rocks, _freezerAppendLock);
             _freezerPromotionDriver = freezerPromotionService == null
                 ? null
-                : new Freezer.FreezerPromotionDriver(_freezerAppendService, _freezerIndexer, freezerPromotionService, freezerHotWindowAdapter);
+                : new Freezer.FreezerPromotionDriver(_freezerAppendService, freezerPromotionService, freezerHotWindowAdapter);
             var isFreezerCheckpoint = _freezerHistoryRocks != null;
             _checkpointManager = (isFreezerCheckpoint, isSplit) switch
             {
@@ -258,6 +266,8 @@ namespace Nethereum.CoreChain.RocksDB
                 Stores.RocksDbCheckpointManager.CompleteInterruptedRestore(Path.Combine(dataDir, CoreSubDir, FreezerHistorySubDir));
             }
 
+            SweepLeakedCheckpointStaging(dataDir, options);
+
             var layout = DetectStorageLayout(dataDir);
             var useSplit = ResolveEffectiveSplit(layout, options.SplitHistoryStore);
             if (useSplit != options.SplitHistoryStore)
@@ -291,6 +301,22 @@ namespace Nethereum.CoreChain.RocksDB
             var rocks = new RocksDbManager(options);
             return FromManager(rocks, dataDir, journalOptions, ownsManager: true, bulkSync: bulkSync,
                 flatStateCache: null, historyRocks: null, historyDataDir: null, signer: signer);
+        }
+
+        private static void SweepLeakedCheckpointStaging(string dataDir, RocksDbStorageOptions options)
+        {
+            var dirs = new List<string>
+            {
+                dataDir,
+                Path.Combine(dataDir, CoreSubDir),
+                Path.Combine(dataDir, HistorySubDir),
+            };
+            if (options.UseFreezerHistory)
+            {
+                dirs.Add(Path.Combine(dataDir, FreezerHistorySubDir));
+                dirs.Add(Path.Combine(dataDir, CoreSubDir, FreezerHistorySubDir));
+            }
+            Stores.RocksDbCheckpointManager.SweepStagingDirectories(dirs.ToArray());
         }
 
         public static RocksDbChainStoreBundle FromManager(
@@ -393,6 +419,7 @@ namespace Nethereum.CoreChain.RocksDB
                 ? new Stores.WindowDirtyLayers()
                 : null;
             var pendingFlushFlatOverlay = new Stores.PendingFlushFlatOverlay();
+            var flushSignal = new Stores.BackgroundFlushSignal();
 
             IStateStore wired = new StateLayer().Stores.MainnetFollower(rawState, diffStore, journalOptions, flatStateCache, pendingFlushFlatOverlay);
 
@@ -400,7 +427,7 @@ namespace Nethereum.CoreChain.RocksDB
             if (bulkSync)
             {
                 bulk = new History.SyncBulkSaveService(
-                    (isSplit ? historyManager : rocks).Database,
+                    isSplit ? historyManager : rocks,
                     Path.Combine(isSplit ? historyDataDir : dataDir, "bulk-scratch"),
                     checkpointIntervalBlocks: BulkCheckpointIntervalBlocks,
                     checkpointIntervalSeconds: BulkCheckpointIntervalSecondsDisabled,
@@ -448,7 +475,7 @@ namespace Nethereum.CoreChain.RocksDB
                     nodeHistoryFloor = floor;
                     var journalingPathStore = new Stores.JournalingPathNodeStore(
                         pathStore, journal, nodeCommitBlockSource, floor, NodeHistoryPruneIntervalBlocks);
-                    stateTrieNodes = new Stores.CapturingJournalingPathNodeStore(journalingPathStore, nodeCommitBlockSource, windowLayers);
+                    stateTrieNodes = new Stores.CapturingJournalingPathNodeStore(journalingPathStore, nodeCommitBlockSource, windowLayers, flushSignal);
 
                     if (rocks.Options.TrieNodeHistoryIndex)
                     {
@@ -538,7 +565,7 @@ namespace Nethereum.CoreChain.RocksDB
 
                 freezerAppendLock = new object();
                 freezerIndexIngestor = new History.BulkIndexIngestor(
-                    freezerHistoryRocks.Database,
+                    freezerHistoryRocks,
                     Path.Combine(freezerHistoryDataDir, "bulk-scratch"),
                     new[] { History.HistoryColumnFamilies.BlockHashIndex, History.HistoryColumnFamilies.TxHashIndex },
                     windowHead => { lock (freezerAppendLock) freezerIndexProgress.SetByHashCursor(windowHead + 1); },
@@ -572,7 +599,7 @@ namespace Nethereum.CoreChain.RocksDB
                 }
 
                 var freezerReceiptDeriver = new Nethereum.CoreChain.Freezer.ReceiptFieldDeriver(
-                    signer, new Nethereum.CoreChain.Freezer.CancunBlobBaseFeeFractionResolver());
+                    signer, rocks.Options.BlobBaseFeeFraction ?? Nethereum.CoreChain.Freezer.ChainBlobBaseFeeFractionResolver.Mainnet);
                 var freezerDecodedClusterCache = new Nethereum.CoreChain.Freezer.DecodedClusterCache(FreezerDecodedClusterCacheBlocks);
                 var freezerHistory = new Nethereum.CoreChain.Freezer.FreezerHistoryStore(
                     freezerAppend, freezerCodecs, freezerReceiptDeriver, signer, frozenRandomIndex, freezerDecodedClusterCache);
@@ -626,6 +653,7 @@ namespace Nethereum.CoreChain.RocksDB
                 rawFlatState: rawState,
                 nodeReverseDiffStore: nodeReverseDiffStore,
                 nodeHistoryFloor: nodeHistoryFloor,
+                flushSignal: flushSignal,
                 windowLayers: windowLayers,
                 pendingFlushFlatOverlay: pendingFlushFlatOverlay,
                 historyRocks: historyManager,
@@ -668,11 +696,12 @@ namespace Nethereum.CoreChain.RocksDB
 
         public IHealNodeSink CreateHealSink()
             => _healPathStore != null
-                ? (IHealNodeSink)new Stores.PathHealNodeSink(_healPathStore, _rocks)
+                ? (IHealNodeSink)new Stores.PathHealNodeSink(_healPathStore, _rocks, State as ISnapFlatStateWriter)
                 : new HashHealNodeSink((INodeBlobStore)TrieNodes);
 
         public async Task<FlatStateReconcileResult> ReconcileFlatStateAsync(byte[] stateRoot, Action<string> progress, CancellationToken ct)
         {
+            EnsureNoNodeCommitBlock(nameof(ReconcileFlatStateAsync));
             if (this is IAtomicBlockFlush atomicFlush)
                 await atomicFlush.DrainAsync().ConfigureAwait(false);
             try
@@ -684,11 +713,26 @@ namespace Nethereum.CoreChain.RocksDB
                 (State as IFlatCacheInvalidatable)?.ClearCache();
             }
         }
-        public Task<FlatStateReconcileResult> VerifyFlatStateAsync(byte[] stateRoot, Action<string> progress, CancellationToken ct, long sampleAccountsPerShard = 0)
-            => _recoveryService.VerifyFlatStateAsync(stateRoot, progress, ct, sampleAccountsPerShard);
+
+        public async Task<FlatStateReconcileResult> VerifyFlatStateAsync(byte[] stateRoot, Action<string> progress, CancellationToken ct, long sampleAccountsPerShard = 0)
+        {
+            EnsureNoNodeCommitBlock(nameof(VerifyFlatStateAsync));
+            if (this is IAtomicBlockFlush atomicFlush)
+                await atomicFlush.DrainAsync().ConfigureAwait(false);
+            return await _recoveryService.VerifyFlatStateAsync(stateRoot, progress, ct, sampleAccountsPerShard).ConfigureAwait(false);
+        }
+
+        private void EnsureNoNodeCommitBlock(string operation)
+        {
+            if (NodeCommitBlockSource?.CurrentBlock is { } block)
+                throw new InvalidOperationException(
+                    $"{operation} refused: NodeCommitBlockSource.CurrentBlock={block} is set, so trie writes would be " +
+                    "journaled as block reverse-diffs; run it only while no block is executing.");
+        }
 
         public async Task<FlatTrieGenerationResult> GenerateTrieFromFlatAsync(byte[] expectedRoot, Action<string> progress, CancellationToken ct)
         {
+            EnsureNoNodeCommitBlock(nameof(GenerateTrieFromFlatAsync));
             if (this is IAtomicBlockFlush atomicFlush)
                 await atomicFlush.DrainAsync().ConfigureAwait(false);
             try
@@ -715,11 +759,13 @@ namespace Nethereum.CoreChain.RocksDB
         }
         public async Task<ulong> RecoverToAsync(ulong targetBlock, FlatRecoverySource flatSource, Action<string> progress, CancellationToken ct, bool skipVerify = false)
         {
+            EnsureNoNodeCommitBlock(nameof(RecoverToAsync));
             if (this is IAtomicBlockFlush atomicFlush)
                 await atomicFlush.DrainAsync().ConfigureAwait(false);
             try
             {
-                return await _recoveryService.RecoverToAsync(targetBlock, flatSource, progress, ct, skipVerify).ConfigureAwait(false);
+                return await UnderPromotionCursorGateAsync(
+                    () => _recoveryService.RecoverToAsync(targetBlock, flatSource, progress, ct, skipVerify), ct).ConfigureAwait(false);
             }
             finally
             {
@@ -728,11 +774,13 @@ namespace Nethereum.CoreChain.RocksDB
         }
         public async Task<(ulong Head, bool Recovered)> EnsureConsistentHeadAsync(Action<string> progress, CancellationToken ct = default)
         {
+            EnsureNoNodeCommitBlock(nameof(EnsureConsistentHeadAsync));
             if (this is IAtomicBlockFlush atomicFlush)
                 await atomicFlush.DrainAsync().ConfigureAwait(false);
             try
             {
-                return await _recoveryService.EnsureConsistentHeadAsync(progress, ct).ConfigureAwait(false);
+                return await UnderPromotionCursorGateAsync(
+                    () => _recoveryService.EnsureConsistentHeadAsync(progress, ct), ct).ConfigureAwait(false);
             }
             finally
             {
@@ -742,6 +790,7 @@ namespace Nethereum.CoreChain.RocksDB
         public System.Collections.Generic.IReadOnlyList<(byte[] AccountHash, byte[] StorageRoot)> GetPersistedDamage()
             => _recoveryService.GetPersistedDamage();
         public void ClearPersistedDamage() => _recoveryService.ClearPersistedDamage();
+        void IFlatStateReconciler.DiscardCertifyJournal() => _recoveryService.DiscardCertifyJournal();
         public System.Collections.Generic.IReadOnlyList<byte[]> GetPersistedMissingCode()
             => _recoveryService.GetPersistedMissingCode();
         public void ClearPersistedMissingCode() => _recoveryService.ClearPersistedMissingCode();
@@ -833,6 +882,10 @@ namespace Nethereum.CoreChain.RocksDB
 
         public bool ShouldPauseHistoryWrites() => _pressureMonitor.ShouldPauseHistoryWrites();
         public string DescribeHistoryBackpressure() => _pressureMonitor.DescribeHistoryBackpressure();
+        public void SetYieldToExecution(bool armed) => _yieldArmed = armed;
+        public bool ShouldYieldToExecution()
+            => _yieldArmed && _pressureMonitor.ShouldYieldToExecution(Metadata.GetLastBlock(), CachedTrustedTip());
+        public string DescribeYieldToExecution() => _pressureMonitor.DescribeYieldToExecution();
         public bool ShouldPauseBackfill() => _pressureMonitor.ShouldPauseBackfill();
         public string DescribeBackfillPause() => _pressureMonitor.DescribeBackfillPause();
         public bool ShouldPauseStateWrites() => _pressureMonitor.ShouldPauseStateWrites();
@@ -841,12 +894,12 @@ namespace Nethereum.CoreChain.RocksDB
             => _pressureMonitor.CompactStateAsync(progress, ct);
 
         public Task CompactAllAsync(Action<string> progress, CancellationToken ct)
-            => Task.Run(() =>
+            => Task.Factory.StartNew(() =>
             {
                 progress?.Invoke("full store compaction started (all column families)");
                 _rocks.Compact();
                 progress?.Invoke("full store compaction complete");
-            }, ct);
+            }, ct, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
         public void FlushStateAtomically(
             FlatStateBatch flat,
@@ -857,81 +910,88 @@ namespace Nethereum.CoreChain.RocksDB
             IReadOnlyList<(ulong Block, TrieNodeSet Set)> perBlockJournal = null,
             IList<Nethereum.Model.Withdrawal> withdrawals = null)
         {
-            var batch = StageFlushBatch(flat, nodes, block, hash, pathStore, rangeWipes, perBlockJournal,
-                withdrawals, out var runPruneGate);
-            WriteAndFinalizeBatch(batch, block, runPruneGate);
+            var window = new CapturedWindow(nodes, perBlockJournal, rangeWipes, withdrawals, pathStore);
+            var staged = StageFlushBatch(flat, window, block, hash);
+            WriteAndFinalizeWithRetry(staged.Batch, staged.HistoryBatch, block, staged.RunPruneGate);
+            ((RocksDbChainMetadataStore)Metadata).ReleaseExecuted(staged.ExecutedStaged);
         }
 
-        internal RocksDbSharp.WriteBatch StageFlushBatch(
-            FlatStateBatch flat,
-            TrieNodeSet nodes,
-            ulong block, byte[] hash,
-            Stores.RocksDbPathTrieNodeStore pathStore,
-            IReadOnlyList<(ulong Block, byte[] Owner)> rangeWipes,
-            IReadOnlyList<(ulong Block, TrieNodeSet Set)> perBlockJournal,
-            IList<Nethereum.Model.Withdrawal> withdrawals,
-            out bool runPruneGate)
+        private sealed record CapturedWindow(
+            TrieNodeSet Nodes,
+            IReadOnlyList<(ulong Block, TrieNodeSet Set)> PerBlockJournal,
+            IReadOnlyList<(ulong Block, byte[] Owner)> Wipes,
+            IList<Nethereum.Model.Withdrawal> Withdrawals,
+            Stores.RocksDbPathTrieNodeStore PathStore);
+
+        private sealed record StagedFlush(
+            RocksDbSharp.WriteBatch Batch,
+            RocksDbSharp.WriteBatch HistoryBatch,
+            bool RunPruneGate,
+            List<KeyValuePair<ulong, byte[]>> ExecutedStaged);
+
+        private StagedFlush StageFlushBatch(FlatStateBatch flat, CapturedWindow window, ulong block, byte[] hash)
         {
             var batch = _rocks.CreateWriteBatch();
-
-            if (flat != null)
-                _rawFlatState.AddBatchToWriteBatch(batch, flat);
-
-            if (withdrawals != null)
+            RocksDbSharp.WriteBatch historyBatch = null;
+            List<KeyValuePair<ulong, byte[]>> executedStaged = null;
+            try
             {
-                if (ReferenceEquals(_historyRocks, _rocks))
+
+                if (flat != null)
+                    _rawFlatState.AddBatchToWriteBatch(batch, flat);
+
+                if (window.Withdrawals != null)
                 {
-                    var target = _hotWithdrawalStore ?? (Stores.RocksDbWithdrawalStore)Withdrawals;
-                    target.StageInto(batch, hash, withdrawals);
+                    if (ReferenceEquals(_historyRocks, _rocks))
+                    {
+                        var target = _hotWithdrawalStore ?? (Stores.RocksDbWithdrawalStore)Withdrawals;
+                        target.StageInto(batch, hash, window.Withdrawals);
+                    }
+                    else
+                    {
+                        historyBatch = _historyRocks.CreateWriteBatch();
+                        ((Stores.RocksDbWithdrawalStore)Withdrawals).StageInto(historyBatch, hash, window.Withdrawals);
+                    }
                 }
-                else
+
+                var stagedJournalKeys = new HashSet<byte[]>(ByteArrayComparer.Current);
+
+                if (window.Wipes != null && window.Wipes.Count > 0)
                 {
-                    using var historyBatch = _historyRocks.CreateWriteBatch();
-                    ((Stores.RocksDbWithdrawalStore)Withdrawals).StageInto(historyBatch, hash, withdrawals);
-                    _historyRocks.Write(historyBatch);
+                    if (_nodeReverseDiffStore == null)
+                        throw new InvalidOperationException("FlushStateAtomically requires node history to be enabled to stage a range wipe.");
+                    if (window.PathStore == null)
+                        throw new ArgumentNullException("pathStore");
+                    foreach (var wipe in window.Wipes)
+                        _nodeReverseDiffStore.AddRangeWipeToBatch(batch, wipe.Block, window.PathStore, wipe.Owner, _windowLayers, stagedJournalKeys);
                 }
+
+                if (window.Nodes != null)
+                {
+                    if (_nodeReverseDiffStore == null)
+                        throw new InvalidOperationException("FlushStateAtomically requires node history to be enabled (TrieNodeHistoryBlocks >= 0).");
+                    if (window.PathStore == null)
+                        throw new ArgumentNullException("pathStore");
+                    IReadOnlyList<(ulong Block, TrieNodeSet Set)> journalEntries =
+                        window.PerBlockJournal ?? new List<(ulong Block, TrieNodeSet Set)> { (block, window.Nodes) };
+                    var stagedRoots = new HashSet<byte[]>(ByteArrayComparer.Current);
+                    foreach (var entry in journalEntries.OrderBy(e => e.Block))
+                        _nodeReverseDiffStore.AddJournalRecordToBatch(batch, entry.Block, window.PathStore, entry.Set, _windowLayers, stagedRoots, stagedJournalKeys);
+                    _nodeReverseDiffStore.AddStateMoveToBatch(batch, window.PathStore, window.Nodes);
+                }
+
+                ((RocksDbChainMetadataStore)Metadata).AddDurableStateToBatch(batch, block, hash);
+                executedStaged = ((RocksDbChainMetadataStore)Metadata).AddExecutedHeadToBatch(batch, block, hash);
             }
-
-            var stagedJournalKeys = new HashSet<byte[]>(ByteArrayComparer.Current);
-
-            if (rangeWipes != null && rangeWipes.Count > 0)
+            catch
             {
-                if (_nodeReverseDiffStore == null)
-                    throw new InvalidOperationException("FlushStateAtomically requires node history to be enabled to stage a range wipe.");
-                if (pathStore == null)
-                    throw new ArgumentNullException(nameof(pathStore));
-                foreach (var wipe in rangeWipes)
-                    _nodeReverseDiffStore.AddRangeWipeToBatch(batch, wipe.Block, pathStore, wipe.Owner, _windowLayers, stagedJournalKeys);
+                batch.Dispose();
+                historyBatch?.Dispose();
+                historyBatch = null;
+                throw;
             }
 
-            if (nodes != null)
-            {
-                if (_nodeReverseDiffStore == null)
-                    throw new InvalidOperationException("FlushStateAtomically requires node history to be enabled (TrieNodeHistoryBlocks >= 0).");
-                if (pathStore == null)
-                    throw new ArgumentNullException(nameof(pathStore));
-                IReadOnlyList<(ulong Block, TrieNodeSet Set)> journalEntries =
-                    perBlockJournal ?? new List<(ulong Block, TrieNodeSet Set)> { (block, nodes) };
-                var stagedRoots = new HashSet<byte[]>(ByteArrayComparer.Current);
-                foreach (var entry in journalEntries.OrderBy(e => e.Block))
-                    _nodeReverseDiffStore.AddJournalRecordToBatch(batch, entry.Block, pathStore, entry.Set, _windowLayers, stagedRoots, stagedJournalKeys);
-                _nodeReverseDiffStore.AddStateMoveToBatch(batch, pathStore, nodes);
-            }
-
-            ((RocksDbChainMetadataStore)Metadata).AddDurableStateToBatch(batch, block, hash);
-            ((RocksDbChainMetadataStore)Metadata).AddExecutedHeadToBatch(batch, block, hash);
-
-            runPruneGate = nodes != null;
-            return batch;
-        }
-
-        internal void WriteAndFinalizeBatch(RocksDbSharp.WriteBatch batch, ulong block, bool runPruneGate)
-        {
-            using (batch)
-            {
-                _rocks.Write(batch);
-                if (runPruneGate) RunPruneSweepIfDue(block);
-            }
+            return new StagedFlush(batch, historyBatch, window.Nodes != null, executedStaged);
         }
 
         private void RunPruneSweepIfDue(ulong block)
@@ -952,11 +1012,45 @@ namespace Nethereum.CoreChain.RocksDB
 
         private async Task FlushBlockAsyncCore(FlatStateBatch flat, ulong block, byte[] hash)
         {
+            var window = TakeCapturedWindow(block);
+
+            var swAwait = System.Diagnostics.Stopwatch.StartNew();
+            await _flushSignal.Pending.ConfigureAwait(false);
+            Interlocked.Exchange(ref _awaitPrevMs, swAwait.ElapsedMilliseconds);
+
+            PushWindowLayers(window.PerBlockJournal, window.Wipes);
+            ArmStagedOwnership(block, window.Withdrawals != null);
+            _pendingFlushFlatOverlay?.Populate(block, flat);
+
+            _flushSignal.Track(Task.Run(() => PersistWindow(flat, window, block, hash)));
+        }
+
+        private CapturedWindow TakeCapturedWindow(ulong block)
+        {
             var capturing = StateTrieNodes as Stores.CapturingJournalingPathNodeStore;
             var wipes = capturing?.TakeCapturedWipes();
             var perBlockJournal = capturing?.TakeCapturedJournal();
             var nodes = capturing?.TakeCaptured();
+            var withdrawals = TakeArmedWithdrawals(block);
+            var pathStore = (nodes != null || (wipes != null && wipes.Count > 0)) ? _healPathStore : null;
+            return new CapturedWindow(nodes, perBlockJournal, wipes, withdrawals, pathStore);
+        }
 
+        private void PersistWindow(FlatStateBatch flat, CapturedWindow window, ulong block, byte[] hash)
+        {
+            var swStage = System.Diagnostics.Stopwatch.StartNew();
+            var staged = StageFlushBatch(flat, window, block, hash);
+            Interlocked.Exchange(ref _stageMs, swStage.ElapsedMilliseconds);
+
+            WriteAndFinalizeWithRetry(staged.Batch, staged.HistoryBatch, block, staged.RunPruneGate);
+            ((RocksDbChainMetadataStore)Metadata).ReleaseExecuted(staged.ExecutedStaged);
+            if (window.Nodes != null && _windowLayers != null)
+                _windowLayers.DropThrough(block);
+            _pendingFlushFlatOverlay?.Clear(block);
+        }
+
+        private IList<Nethereum.Model.Withdrawal> TakeArmedWithdrawals(ulong block)
+        {
             IList<Nethereum.Model.Withdrawal> withdrawalsToStage = null;
             if (_armedWithdrawals is { } armed && armed.Block == block)
             {
@@ -964,13 +1058,13 @@ namespace Nethereum.CoreChain.RocksDB
                     withdrawalsToStage = armed.Withdrawals;
                 _armedWithdrawals = null;
             }
+            return withdrawalsToStage;
+        }
 
-            var previous = _pendingFlush;
-            await previous.ConfigureAwait(false);
-
-            _promotionService?.PromoteDurableBlocks(Metadata.GetDurableStateBlock());
-            _freezerPromotionDriver?.Drive();
-
+        private void PushWindowLayers(
+            IReadOnlyList<(ulong Block, TrieNodeSet Set)> perBlockJournal,
+            IReadOnlyList<(ulong Block, byte[] Owner)> wipes)
+        {
             if (_windowLayers != null && perBlockJournal != null)
             {
                 foreach (var entry in perBlockJournal)
@@ -981,25 +1075,11 @@ namespace Nethereum.CoreChain.RocksDB
                 foreach (var wipe in wipes)
                     _windowLayers.PushOwnerWipe(wipe.Block, wipe.Owner);
             }
-            var pathStore = (nodes != null || (wipes != null && wipes.Count > 0)) ? _healPathStore : null;
-
-            var batch = StageFlushBatch(flat, nodes, block, hash, pathStore, wipes, perBlockJournal,
-                withdrawalsToStage, out var runPruneGate);
-
-            ArmStagedOwnership(block, withdrawalsToStage != null);
-
-            _pendingFlushFlatOverlay?.Populate(block, flat);
-
-            bool dropWindowLayersOnSuccess = nodes != null && _windowLayers != null;
-
-            _pendingFlush = Task.Run(() =>
-            {
-                WriteAndFinalizeWithRetry(batch, block, runPruneGate);
-                if (dropWindowLayersOnSuccess)
-                    _windowLayers.DropThrough(block);
-                _pendingFlushFlatOverlay?.Clear(block);
-            });
         }
+
+        string IAtomicBlockFlush.DescribeLastFlush()
+            => $"await_prev_ms={Interlocked.Read(ref _awaitPrevMs)} stage_ms={Interlocked.Read(ref _stageMs)} " +
+               $"prev_write_ms={Interlocked.Read(ref _prevWriteMs)} prune_ms={Interlocked.Read(ref _pruneMs)}";
 
         void IAtomicBlockFlush.DiscardCapturedBlock()
         {
@@ -1032,36 +1112,52 @@ namespace Nethereum.CoreChain.RocksDB
             _stagedFlushOwnsWithdrawals = withdrawalsIncluded;
         }
 
-        Task IAtomicBlockFlush.DrainAsync() => _pendingFlush;
+        Task IAtomicBlockFlush.DrainAsync() => _flushSignal.Pending;
 
         internal Func<Exception, bool> TestTransientClassifier;
 
         private bool IsTransientWriteFailure(Exception ex)
         {
             if (TestTransientClassifier != null) return TestTransientClassifier(ex);
-            return ex is RocksDbSharp.RocksDbException rex && RocksDbManager.IsTransientFlushStall(rex.Message);
+            return RocksDbManager.IsTransientWriteFailure(ex);
         }
 
-        internal void WriteAndFinalizeWithRetry(RocksDbSharp.WriteBatch batch, ulong block, bool runPruneGate)
+        public string FatalStoreFault
+            => _rocks?.FatalWriteFault ?? _historyRocks?.FatalWriteFault ?? _freezerHistoryRocks?.FatalWriteFault
+               ?? _pressureMonitor?.FatalBackgroundError();
+
+        internal void WriteAndFinalizeWithRetry(
+            RocksDbSharp.WriteBatch batch, RocksDbSharp.WriteBatch historyBatch, ulong block, bool runPruneGate)
         {
             using (batch)
+            using (historyBatch)
             {
-                const int MaxRetries = 5;
-                var backoff = TimeSpan.FromMilliseconds(50);
-                for (int attempt = 0; ; attempt++)
-                {
-                    try
-                    {
-                        _rocks.Write(batch);
-                        break;
-                    }
-                    catch (Exception ex) when (attempt < MaxRetries && IsTransientWriteFailure(ex))
-                    {
-                        System.Threading.Thread.Sleep(backoff);
-                        backoff += backoff;
-                    }
-                }
+                var swWrite = System.Diagnostics.Stopwatch.StartNew();
+                if (historyBatch != null) WriteWithRetry(_historyRocks, historyBatch);
+                WriteWithRetry(_rocks, batch);
+                Interlocked.Exchange(ref _prevWriteMs, swWrite.ElapsedMilliseconds);
+                var swPrune = System.Diagnostics.Stopwatch.StartNew();
                 if (runPruneGate) RunPruneSweepIfDue(block);
+                Interlocked.Exchange(ref _pruneMs, swPrune.ElapsedMilliseconds);
+            }
+        }
+
+        private void WriteWithRetry(RocksDbManager target, RocksDbSharp.WriteBatch batch)
+        {
+            const int MaxRetries = 5;
+            var backoff = TimeSpan.FromMilliseconds(50);
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    target.Write(batch);
+                    return;
+                }
+                catch (Exception ex) when (attempt < MaxRetries && IsTransientWriteFailure(ex))
+                {
+                    System.Threading.Thread.Sleep(backoff);
+                    backoff += backoff;
+                }
             }
         }
 
@@ -1074,7 +1170,16 @@ namespace Nethereum.CoreChain.RocksDB
         public long LogRenderProgressBlock => _freezerIndexer?.LogRenderProgressBlock ?? 0;
 
         [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ChainInfrastructure, "freezer", "RocksDbChainStoreBundle.StartBackgroundFreezeIndexing — start the background freeze-index trailer")]
-        public void StartBackgroundFreezeIndexing() => _freezerIndexer?.Start();
+        public void StartBackgroundFreezeIndexing()
+        {
+            lock (_jobsLock)
+            {
+                if (_jobsState != JobsNotStarted) return;
+                _jobsState = JobsStarted;
+                StartFreezerJob();
+                _freezerIndexer?.Start(ShouldYieldToExecution, DescribeYieldToExecution);
+            }
+        }
 
         public void FinishBulkIndexing(CancellationToken ct = default)
         {
@@ -1103,31 +1208,47 @@ namespace Nethereum.CoreChain.RocksDB
             _freezerIndexer?.SetPressureMonitorForTests(monitor);
         }
 
-        public async Task ResetSnapBootstrapStateAsync(CancellationToken ct = default)
+        public Task ResetSnapBootstrapStateAsync(CancellationToken ct = default)
+            => ResetSnapBootstrapStateAsync(null, ct);
+
+        [NethereumDocExample(DocSection.ChainInfrastructure, "corechain-rocksdb", "RocksDbChainStoreBundle.ResetSnapBootstrapStateAsync - wipe the state a snap sync built, with progress")]
+        public async Task ResetSnapBootstrapStateAsync(Action<string> progress, CancellationToken ct)
         {
             ClearPersistedDamage();
             ClearPersistedMissingCode();
-            await new Stores.RocksDbStateResetService(_rocks, Metadata).ResetSnapBootstrapStateAsync(ct).ConfigureAwait(false);
+            await DeleteAllCheckpointsAsync(progress, ct).ConfigureAwait(false);
+            await new Stores.RocksDbStateResetService(_rocks, Metadata).ResetSnapBootstrapStateAsync(progress, ct).ConfigureAwait(false);
             (StateTrieNodes as Stores.ICacheInvalidatable)?.ClearCache();
             (State as IFlatCacheInvalidatable)?.ClearCache();
         }
 
         public async Task ResetStateOnlyAsync(CancellationToken ct = default)
         {
+            await DeleteAllCheckpointsAsync(message => Console.Error.WriteLine($"state.wipe {message}"), ct).ConfigureAwait(false);
             await new Stores.RocksDbStateResetService(_rocks, Metadata).ResetStateOnlyAsync(ct).ConfigureAwait(false);
             (StateTrieNodes as Stores.ICacheInvalidatable)?.ClearCache();
             (State as IFlatCacheInvalidatable)?.ClearCache();
         }
 
+        private async Task DeleteAllCheckpointsAsync(Action<string> progress, CancellationToken ct)
+        {
+            var checkpoints = await ListCheckpointsAsync(ct).ConfigureAwait(false);
+            foreach (var checkpoint in checkpoints)
+                await DeleteCheckpointAsync(checkpoint.BlockNumber, ct).ConfigureAwait(false);
+            progress?.Invoke($"checkpoints deleted count={checkpoints.Count}");
+        }
+
         public void Dispose()
         {
-            _freezerIndexer?.Stop();
+            var job = BeginDispose();
+            job?.Stop();
+            _freezerIndexer?.Close();
+            try { _flushSignal.Pending.GetAwaiter().GetResult(); } catch { }
             _freezerIndexer?.FlushIfDirty();
             _freezerAppendService?.CommitPending();
             _freezerAppend?.Dispose();
             _freezerHistoryRocks?.Dispose();
             if (!_ownsManager) return;
-            try { _pendingFlush.GetAwaiter().GetResult(); } catch { }
             (State as IDisposable)?.Dispose();
             _rocks?.Dispose();
             if (!ReferenceEquals(_historyRocks, _rocks)) _historyRocks?.Dispose();
@@ -1135,14 +1256,15 @@ namespace Nethereum.CoreChain.RocksDB
 
         public async ValueTask DisposeAsync()
         {
-            if (_freezerIndexer != null)
-                await _freezerIndexer.StopAsync().ConfigureAwait(false);
+            var job = BeginDispose();
+            if (job != null) await job.StopAsync().ConfigureAwait(false);
+            if (_freezerIndexer != null) await _freezerIndexer.CloseAsync().ConfigureAwait(false);
+            try { await _flushSignal.Pending.ConfigureAwait(false); } catch { }
             _freezerIndexer?.FlushIfDirty();
             _freezerAppendService?.CommitPending();
             _freezerAppend?.Dispose();
             _freezerHistoryRocks?.Dispose();
             if (!_ownsManager) return;
-            try { await _pendingFlush.ConfigureAwait(false); } catch { }
             (State as IDisposable)?.Dispose();
             _rocks?.Dispose();
             if (!ReferenceEquals(_historyRocks, _rocks)) _historyRocks?.Dispose();

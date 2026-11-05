@@ -13,6 +13,7 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.Model;
 using Nethereum.RLP;
 using Nethereum.Signer;
+using Nethereum.Testing;
 using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 
@@ -20,9 +21,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 {
     public static class HiveTestdataFixture
     {
-        public const string TestdataRelativePath =
-            "go-ethereum/cmd/devp2p/internal/ethtest/testdata";
-
         private static readonly Lazy<string> _testdataDir = new(LocateTestdataDir);
         private static readonly Lazy<IReadOnlyList<BlockBundle>> _chain = new(LoadChain);
         private static readonly Lazy<JObject> _genesis = new(LoadGenesis);
@@ -32,9 +30,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             new(() => HiveForkSchedule.Load(TestdataDir, HardforkConfigFactory));
 
         public static string TestdataDir =>
-            _testdataDir.Value ?? throw new DirectoryNotFoundException(TestdataNotFoundMessage());
-
-        public static bool IsAvailable => _testdataDir.Value != null;
+            _testdataDir.Value;
 
         public static IReadOnlyList<BlockBundle> Chain => _chain.Value;
 
@@ -97,29 +93,46 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             }
         }
 
-        private static string LocateTestdataDir() => ProbedCandidates().FirstOrDefault(Directory.Exists);
-
-        private static IEnumerable<string> ProbedCandidates()
+        public static async System.Threading.Tasks.Task PopulateGenesisAsync(IChainStoreBundle bundle)
         {
-            var probe = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
-            while (probe != null)
+            await PopulateGenesisAsync(bundle.State);
+
+            var genesis = _genesis.Value;
+            var calculator = new IncrementalStateRootCalculator(bundle.State, bundle.StateTrieNodes,
+                emitTombstones: !ReferenceEquals(bundle.StateTrieNodes, bundle.TrieNodes));
+            var stateRoot = await calculator.ComputeStateRootWithoutPersistAsync(null);
+            await calculator.PersistPendingStateAsync();
+            var header = new BlockHeader
             {
-                yield return Path.GetFullPath(Path.Combine(probe, TestdataRelativePath));
-                probe = Path.GetDirectoryName(probe);
-            }
+                ParentHash = new byte[32],
+                UnclesHash = DefaultValues.EMPTY_UNCLES_HASH,
+                Coinbase = genesis["coinbase"].ToString(),
+                StateRoot = stateRoot,
+                TransactionsHash = DefaultValues.EMPTY_TRIE_ROOT,
+                ReceiptHash = DefaultValues.EMPTY_TRIE_ROOT,
+                LogsBloom = new byte[256],
+                Difficulty = EvmUInt256BigIntegerExtensions.FromBigInteger(new HexBigInteger(genesis["difficulty"].ToString()).Value),
+                BlockNumber = 0,
+                GasLimit = (long)new HexBigInteger(genesis["gasLimit"].ToString()).Value,
+                GasUsed = 0,
+                Timestamp = (long)new HexBigInteger(genesis["timestamp"].ToString()).Value,
+                ExtraData = genesis["extraData"].ToString().HexToByteArray(),
+                MixHash = new byte[32],
+                Nonce = new byte[8],
+                BaseFee = EvmUInt256BigIntegerExtensions.FromBigInteger(new HexBigInteger(genesis["baseFeePerGas"].ToString()).Value),
+                WithdrawalsRoot = DefaultValues.EMPTY_TRIE_ROOT
+            };
+            await bundle.Blocks.SaveAsync(header, Chain[0].Header.ParentHash);
         }
 
-        private static string TestdataNotFoundMessage()
+        private static string LocateTestdataDir()
         {
-            var candidates = string.Join(Environment.NewLine, ProbedCandidates().Select(c => "  " + c));
-            return
-                $"Hive testdata not found. These are the live geth-parity scenarios and cannot be skipped.{Environment.NewLine}" +
-                $"Looked for '{TestdataRelativePath}' walking up from the test binary at {AppContext.BaseDirectory}, " +
-                $"trying:{Environment.NewLine}{candidates}{Environment.NewLine}" +
-                "Expected layout — a go-ethereum checkout sitting beside this repository:" +
-                $"{Environment.NewLine}  <repos>/Nethereum   (this repository){Environment.NewLine}" +
-                $"  <repos>/go-ethereum/{TestdataRelativePath.Substring("go-ethereum/".Length)}{Environment.NewLine}" +
-                "Run the suite from the repository root, or clone go-ethereum next to it.";
+            var dir = Path.Combine(TestEnvironment.RequireExternalPath("GoEthereum"), "cmd", "devp2p", "internal", "ethtest", "testdata");
+            if (!Directory.Exists(dir))
+                throw new DirectoryNotFoundException(
+                    $"Hive testdata not found at '{dir}'. These are the live geth-parity scenarios and cannot be skipped. " +
+                    "ExternalPaths:GoEthereum must be a go-ethereum source checkout.");
+            return dir;
         }
 
         private static IReadOnlyList<BlockBundle> LoadChain()

@@ -79,20 +79,9 @@ namespace Nethereum.CoreChain.Storage
             => throw new InvalidOperationException("HistoricalStateStoreReadAdapter is read-only; wrap in ReadOnlyStateStoreWrapper before writing.");
 
         public Task<IStateSnapshot> CreateSnapshotAsync()
-            => Task.FromResult<IStateSnapshot>(new NoOpSnapshot());
+            => Task.FromResult<IStateSnapshot>(new NoOpStateSnapshot(0));
 
         public Task CommitSnapshotAsync(IStateSnapshot snapshot) => Task.CompletedTask;
         public Task RevertSnapshotAsync(IStateSnapshot snapshot) => Task.CompletedTask;
-
-        private sealed class NoOpSnapshot : IStateSnapshot
-        {
-            public int SnapshotId => 0;
-            public void SetAccount(string address, Account account) { }
-            public void SetStorage(string address, BigInteger slot, byte[] value) { }
-            public void SetCode(byte[] codeHash, byte[] code) { }
-            public void DeleteAccount(string address) { }
-            public void ClearStorage(string address) { }
-            public void Dispose() { }
-        }
     }
 }

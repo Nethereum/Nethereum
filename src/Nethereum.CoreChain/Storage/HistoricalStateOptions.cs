@@ -22,6 +22,13 @@ namespace Nethereum.CoreChain.Storage
             PruningIntervalBlocks = 0
         };
 
+        public static HistoricalStateOptions CurrentBlockOnly => new()
+        {
+            MaxHistoryBlocks = 1,
+            EnablePruning = true,
+            PruningIntervalBlocks = 1
+        };
+
         public static HistoricalStateOptions DevChainDefault => new()
         {
             MaxHistoryBlocks = 128,

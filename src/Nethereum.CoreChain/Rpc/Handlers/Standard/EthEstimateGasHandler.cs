@@ -18,8 +18,16 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
             var callInput = GetParam<CallInput>(request, 0);
-            var blockTag = GetOptionalParam<string>(request, 1, "latest");
+            var blockTag = GetOptionalBlockParam(request, 1, "latest");
 
+            return context.Node is ChainNodeBase node
+                ? await node.WithinRpcEvmDeadlineAsync(() => EstimateAsync(request, context, callInput, blockTag))
+                : await EstimateAsync(request, context, callInput, blockTag);
+        }
+
+        private async Task<RpcResponseMessage> EstimateAsync(
+            RpcRequestMessage request, RpcContext context, CallInput callInput, string blockTag)
+        {
             var blockNumber = await ResolveBlockNumberAsync(blockTag, context);
 
             BigInteger? value = callInput.Value?.Value;

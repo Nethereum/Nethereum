@@ -246,5 +246,114 @@ namespace Nethereum.Freezer.UnitTests
                 DeleteDirectory(dir);
             }
         }
+
+        private static FreezerTablePaths WriteSequentialIndexWithGarbageEntry(string dir, int items, int garbageItem)
+        {
+            var paths = new FreezerTablePaths(dir, "synthetic", useCompression: false);
+            var index = new byte[(items + 1) * FreezerIndexEntry.Size];
+            for (var entry = 0; entry <= items; entry++)
+                new FreezerIndexEntry(0, (uint)entry).WriteTo(index.AsSpan(entry * FreezerIndexEntry.Size));
+            if (garbageItem > 0)
+                new FreezerIndexEntry(7, 0).WriteTo(index.AsSpan(garbageItem * FreezerIndexEntry.Size));
+            File.WriteAllBytes(paths.IndexPath, index);
+            File.WriteAllBytes(Path.Combine(dir, "synthetic.0000.rdat"), new byte[items]);
+            return paths;
+        }
+
+        [Fact]
+        public void Given_AnIndexWithAGarbageEntryMidway_When_TheTableOpensForAppend_Then_ItTruncatesAtTheSameItemAsBefore()
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var paths = WriteSequentialIndexWithGarbageEntry(dir, items: 5000, garbageItem: 2500);
+
+                using var table = FreezerTable<byte[]>.OpenForAppend(
+                    paths, new PassthroughByteCodec(), RollingDataFiles.DefaultMaxFileSize);
+
+                Assert.Equal(2499L, table.Count);
+            }
+            finally
+            {
+                DeleteDirectory(dir);
+            }
+        }
+
+        [Fact]
+        public void Given_AnIndexWithAGarbageEntryMidway_When_TheTableOpensReadOnly_Then_ItThrowsFreezerValidationException()
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var paths = WriteSequentialIndexWithGarbageEntry(dir, items: 5000, garbageItem: 2500);
+
+                Assert.Throws<FreezerValidationException>(() =>
+                    FreezerTable<byte[]>.OpenReadOnly(paths, new PassthroughByteCodec()).Dispose());
+            }
+            finally
+            {
+                DeleteDirectory(dir);
+            }
+        }
+
+        [Fact]
+        public void Given_AnIndexOfAMillionItems_When_TheTableOpens_Then_IndexReadOperationsAreProportionalToBytesNotItems()
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                const int items = 1_000_000;
+                var paths = WriteSequentialIndexWithGarbageEntry(dir, items, garbageItem: 0);
+                var indexBytes = (items + 1L) * FreezerIndexEntry.Size;
+                const long oneMebibyte = 1024 * 1024;
+                const long smallConstant = 8;
+
+                using var table = FreezerTable<byte[]>.OpenForAppend(
+                    paths, new PassthroughByteCodec(), RollingDataFiles.DefaultMaxFileSize);
+
+                Assert.Equal((long)items, table.Count);
+                Assert.True(table.IndexReadOperationCount <= indexBytes / oneMebibyte + smallConstant,
+                    $"index read operations {table.IndexReadOperationCount} exceed {indexBytes / oneMebibyte + smallConstant}");
+            }
+            finally
+            {
+                DeleteDirectory(dir);
+            }
+        }
+
+        private sealed class AbstractMembersOnlyIndex : IFreezerIndex
+        {
+            private readonly FreezerIndex _inner;
+            public AbstractMembersOnlyIndex(FreezerIndex inner) { _inner = inner; }
+            public long Count => _inner.Count;
+            public long ByteSize => _inner.ByteSize;
+            public FreezerIndexEntry EntryAt(long itemNumber) => _inner.EntryAt(itemNumber);
+            public System.Collections.Generic.IReadOnlyList<FreezerIndexEntry> ReadEntries(long firstEntry, int maxEntries) => _inner.ReadEntries(firstEntry, maxEntries);
+            public ItemRange RangeOf(long itemNumber) => _inner.RangeOf(itemNumber);
+            public void Append(FreezerIndexEntry entry) => _inner.Append(entry);
+            public void TruncateToItems(long items) => _inner.TruncateToItems(items);
+            public long DurableItemCount(long flushOffset) => _inner.DurableItemCount(flushOffset);
+            public void Sync() => _inner.Sync();
+            public void Dispose() => _inner.Dispose();
+        }
+
+        [Fact]
+        public void Given_AnIndexImplementationRelyingOnTheDefaultMember_When_ScanningAGarbageEntry_Then_ItFindsTheSameItemAsFreezerIndex()
+        {
+            var dir = CreateTempDirectory();
+            try
+            {
+                var paths = WriteSequentialIndexWithGarbageEntry(dir, items: 5000, garbageItem: 2500);
+                using var real = FreezerIndex.OpenReadOnly(paths.IndexPath);
+                IFreezerIndex defaulted = new AbstractMembersOnlyIndex(real);
+
+                Assert.Equal(2500L, real.FirstItemBreakingSequence());
+                Assert.Equal(real.FirstItemBreakingSequence(), defaulted.FirstItemBreakingSequence());
+            }
+            finally
+            {
+                DeleteDirectory(dir);
+            }
+        }
     }
 }

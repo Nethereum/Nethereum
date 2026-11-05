@@ -10,6 +10,7 @@ using Nethereum.DevChain.Configuration;
 using Nethereum.DevChain.Hosting;
 using Nethereum.JsonRpc.Client.RpcMessages;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.Fixtures
 {
@@ -31,24 +32,11 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
         public Nethereum.Web3.Web3 Web3 { get; private set; } = null!;
         public Nethereum.Web3.Web3? MainnetWeb3 { get; private set; }
         public Nethereum.Web3.Accounts.Account Account { get; private set; } = null!;
-        public bool IsAvailable { get; private set; }
 
-        private const string DefaultMainnetRpcUrl = "https://rpc.mevblocker.io";
-
-        public static string GetMainnetRpcUrl() =>
-            Environment.GetEnvironmentVariable("MAINNET_RPC_URL") ?? DefaultMainnetRpcUrl;
-
-        public static bool MainnetForkTestsEnabled() =>
-            Environment.GetEnvironmentVariable("RUN_MAINNET_FORK_TESTS") == "1";
+        public static string GetMainnetRpcUrl() => TestEnvironment.Service("MainnetRpcUrl");
 
         public async Task InitializeAsync()
         {
-            if (!MainnetForkTestsEnabled())
-            {
-                IsAvailable = false;
-                return;
-            }
-
             var mainnetRpc = GetMainnetRpcUrl();
 
             try
@@ -56,10 +44,10 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
                 MainnetWeb3 = new Nethereum.Web3.Web3(mainnetRpc);
                 await MainnetWeb3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                IsAvailable = false;
-                return;
+                throw new InvalidOperationException(
+                    $"Services:MainnetRpcUrl '{mainnetRpc}' is not reachable; the MainnetFork category needs a live mainnet RPC.", ex);
             }
 
             var config = new DevChainServerConfig
@@ -164,7 +152,6 @@ namespace Nethereum.CoreChain.IntegrationTests.Fixtures
             Account = new Nethereum.Web3.Accounts.Account(PrivateKey, ChainId);
             Account.TransactionManager.UseLegacyAsDefault = true;
             Web3 = new Nethereum.Web3.Web3(Account, Url);
-            IsAvailable = true;
         }
 
         public async Task DisposeAsync()

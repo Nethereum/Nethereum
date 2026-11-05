@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerCheckpointTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"freezercp_{Guid.NewGuid():N}");
@@ -82,6 +83,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 DriveFreezerPromotion(bundle);
 
                 Assert.Equal(11, bundle.FreezerHead);
+                bundle.FinishBulkIndexing();
                 Assert.Equal(11, bundle.ByHashIndexedHead);
                 Assert.True(bundle.LogIndexRenderedHead > 0);
 
@@ -176,6 +178,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             gate.ApplyPendingRestore(DataDir, FreezerDir, promotionEnabled: true);
 
             using var reopened = OpenBundle();
+            reopened.FinishBulkIndexing();
 
             Assert.Equal(11, reopened.FreezerHead);
             Assert.Equal(reopened.FreezerHead, reopened.ByHashIndexedHead);

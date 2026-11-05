@@ -18,7 +18,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         internal const int DefaultStorageCollapseIntervalSlots = 5_000;
         internal const int DefaultAccountCollapseIntervalAccounts = 50_000;
 
-        private const int ShardCount = 16;
+        private const int ShardCount = FlatStateWalk.ShardCount;
         private const long ProgressAccountInterval = 1_000_000;
 
         private readonly RocksDbManager _rocks;
@@ -104,13 +104,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private static IEnumerable<byte[]> ProtectedOwners(SnapSyncAccountTask task)
             => task.StorageCompleted.Concat(task.SubTasks.Keys)
-                .Where(owner => Compare(owner, task.Next) >= 0 && Compare(owner, task.Last) <= 0)
+                .Where(owner => ByteArrayComparer.Current.Compare(owner, task.Next) >= 0
+                    && ByteArrayComparer.Current.Compare(owner, task.Last) <= 0)
                 .Distinct(ByteArrayComparer.Current)
                 .OrderBy(owner => owner, ByteArrayComparer.Current);
 
         private static void DeleteRange(WriteBatch batch, ColumnFamilyHandle columnFamily, byte[] from, byte[] to)
         {
-            if (Compare(from, to) >= 0) return;
+            if (ByteArrayComparer.Current.Compare(from, to) >= 0) return;
             batch.DeleteRange(from, (ulong)from.Length, to, (ulong)to.Length, columnFamily);
         }
 
@@ -129,22 +130,22 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private async Task<ShardCounters> GenerateShardAsync(
             int shard, AccountTrieBuilder accountTrie, Action<string> progress, CancellationToken ct)
         {
-            var (shardStart, shardEnd) = ShardBounds(shard);
+            var (shardStart, shardEnd) = FlatStateWalk.ShardBounds(shard);
             var counters = new ShardCounters();
             var encoder = new AccountEncoder();
             using var accounts = _rocks.CreateIterator(RocksDbManager.CF_STATE_ACCOUNTS);
             using var storage = _rocks.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
             accounts.Seek(shardStart);
-            storage.Seek(OwnerLowBound(shardStart));
+            storage.Seek(FlatStateWalk.OwnerSlotKey(shardStart, FlatStateWalk.ZeroSlot));
 
-            for (var accountHash = NextAccountKey(accounts, shardEnd); accountHash != null; accountHash = NextAccountKey(accounts, shardEnd))
+            for (var accountHash = FlatStateWalk.NextAccountKey(accounts, shardEnd); accountHash != null; accountHash = FlatStateWalk.NextAccountKey(accounts, shardEnd))
             {
                 ct.ThrowIfCancellationRequested();
-                counters.DanglingSlotsDeleted += DeleteStorageBelow(storage, OwnerLowBound(accountHash), ct);
+                counters.DanglingSlotsDeleted += FlatStateWalk.DeleteStorageBelow(_rocks, storage, FlatStateWalk.OwnerSlotKey(accountHash, FlatStateWalk.ZeroSlot), ct);
 
                 var account = DecodeAccount(accountHash, accounts.Value());
                 var storageRoot = BuildStorageTrie(accountHash, storage, counters, ct);
-                if (!ByteUtil.AreEqual(storageRoot, account.StateRoot ?? DefaultValues.EMPTY_TRIE_HASH))
+                if (!ByteUtil.AreEqual(storageRoot, account.StateRoot))
                 {
                     account.StateRoot = storageRoot;
                     await _flat.SaveAccountByHashAsync(accountHash, account).ConfigureAwait(false);
@@ -157,17 +158,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 accounts.Next();
             }
 
-            counters.DanglingSlotsDeleted += DeleteStorageBelow(storage, shardEnd == null ? null : OwnerLowBound(shardEnd), ct);
+            counters.DanglingSlotsDeleted += FlatStateWalk.DeleteStorageBelow(_rocks, storage, shardEnd == null ? null : FlatStateWalk.OwnerSlotKey(shardEnd, FlatStateWalk.ZeroSlot), ct);
             return counters;
         }
 
         private byte[] BuildStorageTrie(byte[] accountHash, Iterator storage, ShardCounters counters, CancellationToken ct)
         {
-            if (!IsStorageOf(storage, accountHash)) return DefaultValues.EMPTY_TRIE_HASH;
+            if (!FlatStateWalk.IsStorageOf(storage, accountHash)) return DefaultValues.EMPTY_TRIE_HASH;
 
             var storageTrie = new PatriciaTrie(_trieNodes, accountHash);
             int sinceCollapse = 0;
-            for (; IsStorageOf(storage, accountHash); storage.Next())
+            for (; FlatStateWalk.IsStorageOf(storage, accountHash); storage.Next())
             {
                 var slotHash = new byte[32];
                 Buffer.BlockCopy(storage.Key(), 32, slotHash, 0, 32);
@@ -183,66 +184,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return storageTrie.Root.GetHash();
         }
 
-        private long DeleteStorageBelow(Iterator storage, byte[] bound64, CancellationToken ct)
-        {
-            long deleted = 0;
-            for (; storage.Valid() && (bound64 == null || Compare(storage.Key(), bound64) < 0); storage.Next())
-            {
-                _rocks.Delete(RocksDbManager.CF_STATE_STORAGE, storage.Key());
-                if ((++deleted & 0xFFFF) == 0) ct.ThrowIfCancellationRequested();
-            }
-            return deleted;
-        }
-
         private Account DecodeAccount(byte[] accountHash, byte[] flatValue)
-        {
-            var account = _flat.DecodeFlatAccountValue(flatValue)
+            => FlatStateWalk.DecodeFlatAccount(_flat, accountHash, flatValue)
                 ?? throw new InvalidOperationException($"snap.generate: flat account 0x{accountHash.ToHex()} does not decode");
-            if (account.CodeHash == null && _flat.HasExternalCodeHashLayout)
-                account.CodeHash = _flat.GetFlatCodeHash(accountHash);
-            account.CodeHash ??= DefaultValues.EMPTY_DATA_HASH;
-            return account;
-        }
-
-        private static byte[] NextAccountKey(Iterator accounts, byte[] shardEnd)
-        {
-            for (; accounts.Valid(); accounts.Next())
-            {
-                var key = accounts.Key();
-                if (key.Length != 32) continue;
-                return shardEnd != null && Compare(key, shardEnd) >= 0 ? null : key;
-            }
-            return null;
-        }
-
-        private static bool IsStorageOf(Iterator storage, byte[] accountHash)
-        {
-            if (!storage.Valid()) return false;
-            var key = storage.Key();
-            if (key.Length < 32) return false;
-            for (int i = 0; i < 32; i++)
-                if (key[i] != accountHash[i]) return false;
-            return true;
-        }
-
-        private static (byte[] Start, byte[] End) ShardBounds(int shard)
-        {
-            var start = new byte[32];
-            start[0] = (byte)(shard << 4);
-            if (shard == ShardCount - 1) return (start, null);
-            var end = new byte[32];
-            end[0] = (byte)((shard + 1) << 4);
-            return (start, end);
-        }
-
-        private static byte[] OwnerLowBound(byte[] owner32)
-        {
-            var bound = new byte[64];
-            Buffer.BlockCopy(owner32, 0, bound, 0, 32);
-            return bound;
-        }
-
-        private static int Compare(byte[] a, byte[] b) => ByteArrayComparer.Current.Compare(a, b);
 
         private sealed class AccountTrieBuilder
         {

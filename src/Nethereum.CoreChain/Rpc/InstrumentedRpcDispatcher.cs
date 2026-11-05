@@ -9,13 +9,17 @@ using RpcMessages = Nethereum.JsonRpc.Client.RpcMessages;
 
 namespace Nethereum.CoreChain.Rpc
 {
-    public class InstrumentedRpcDispatcher
+    public class InstrumentedRpcDispatcher : IRpcDispatcher
     {
         private readonly RpcHandlerRegistry _registry;
         private readonly RpcContext _context;
         private readonly ILogger? _logger;
         private readonly JsonSerializerOptions _serializerOptions;
         private readonly RpcMetrics _metrics;
+
+        public const string UnknownMethodMetric = "unknown";
+
+        public int MaxBatchSize { get; set; } = RpcDispatcher.DefaultMaxBatchSize;
 
         public InstrumentedRpcDispatcher(
             RpcHandlerRegistry registry,
@@ -55,63 +59,85 @@ namespace Nethereum.CoreChain.Rpc
 
             var methodName = request.Method;
 
-            using var timer = _metrics.MeasureRequest(methodName);
-
-            if (_logger != null && _logger.IsEnabled(LogLevel.Debug))
-            {
-                var paramsJson = request.RawParameters != null
-                    ? JsonSerializer.Serialize(request.RawParameters, _serializerOptions)
-                    : "null";
-                _logger.LogDebug("RPC Request: {Method} Params: {Params}", methodName, paramsJson);
-            }
-
             var handler = _registry.GetHandler(methodName);
+            var metricKey = handler?.MethodName ?? UnknownMethodMetric;
+
+            using var timer = _metrics.MeasureRequest(metricKey);
+
             if (handler == null)
             {
-                _logger?.LogWarning("RPC method not found: {Method}", methodName);
-                _metrics.RecordError(methodName, -32601);
-                return CreateErrorResponse(request.Id, -32601, $"Method not found: {methodName}");
+                _logger?.LogDebug("RPC method not found: {Method}", RpcLogText.Method(methodName));
+                _metrics.RecordError(metricKey, -32601);
+                return CreateErrorResponse(request.Id, -32601, $"Method not found: {RpcLogText.Method(methodName)}");
             }
 
             try
             {
+                if (_logger != null && _logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("RPC Request: {Method} Params: {Params}", RpcLogText.Method(methodName), RpcDispatcher.DescribeParams(request));
+                }
+
                 var response = await handler.HandleAsync(request, _context);
 
                 if (response.HasError)
                 {
-                    _metrics.RecordError(methodName, response.Error.Code);
+                    _metrics.RecordError(metricKey, response.Error.Code);
                 }
 
                 if (_logger != null && _logger.IsEnabled(LogLevel.Debug))
                 {
-                    var resultJson = response.Result != null
-                        ? JsonSerializer.Serialize(response.Result, _serializerOptions)
-                        : "null";
-                    _logger.LogDebug("RPC Response: {Method} Result: {Result}", methodName, resultJson);
+                    LogResult(RpcLogText.Method(methodName), response);
                 }
 
                 return response;
             }
             catch (RpcException ex)
             {
-                _logger?.LogError(ex, "RPC error in {Method}: Code={Code} Message={Message}",
-                    methodName, ex.Code, ex.Message);
-                _metrics.RecordError(methodName, ex.Code);
+                RpcDispatcher.LogRpcException(_logger, ex, methodName);
+                _metrics.RecordError(metricKey, ex.Code);
                 return CreateErrorResponse(request.Id, ex.Code, ex.Message, ex.Data);
+            }
+            catch (Exception ex) when (RpcDispatcher.IsClientInputError(ex))
+            {
+                RpcDispatcher.LogClientInputError(_logger, methodName, ex);
+                _metrics.RecordError(metricKey, -32602);
+                return CreateErrorResponse(request.Id, -32602, "Invalid params");
+            }
+            catch (Exception ex) when (RpcDispatcher.IsExpectedStateError(ex))
+            {
+                RpcDispatcher.LogExpectedStateError(_logger, methodName, ex);
+                _metrics.RecordError(metricKey, -32000);
+                return CreateErrorResponse(request.Id, -32000, ex.Message);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Internal error in {Method}: {Message}", methodName, ex.Message);
-                _metrics.RecordError(methodName, -32603);
+                _logger?.LogError(ex, "Internal error in {Method}: {Message}", RpcLogText.Method(methodName), ex.Message);
+                _metrics.RecordError(metricKey, -32603);
                 return CreateErrorResponse(request.Id, -32603, "Internal error");
+            }
+        }
+
+        private void LogResult(string method, RpcResponseMessage response)
+        {
+            try
+            {
+                var resultJson = response.Result != null
+                    ? JsonSerializer.Serialize(response.Result, _serializerOptions)
+                    : "null";
+                _logger.LogDebug("RPC Response: {Method} Result: {Result}", method, RpcLogText.Body(resultJson));
+            }
+            catch (Exception)
+            {
             }
         }
 
         public async Task<List<RpcResponseMessage>> DispatchBatchAsync(RpcRequestMessage[] requests)
         {
-            if (requests == null || requests.Length == 0)
+            var rejection = RpcDispatcher.RejectBatch(requests, MaxBatchSize);
+            if (rejection != null)
             {
-                return new List<RpcResponseMessage> { CreateErrorResponse(null, -32600, "Invalid Request") };
+                return rejection;
             }
 
             _logger?.LogDebug("RPC Batch Request: {Count} requests", requests.Length);

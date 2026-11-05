@@ -27,6 +27,7 @@ namespace Nethereum.CoreChain.UnitTests
         private static readonly LegacyTransactionSigner Signer = new();
 
         private BlockPipelineHarness(
+            HardforkName fork,
             InMemoryStateStore stateStore,
             InMemoryBlockStore blockStore,
             ITrieNodeStore trieNodeStore,
@@ -34,6 +35,7 @@ namespace Nethereum.CoreChain.UnitTests
             BlockExecutor engine,
             IBlockAccessListStore blockAccessListStore)
         {
+            Fork = fork;
             BlockAccessListStore = blockAccessListStore;
             StateStore = stateStore;
             BlockStore = blockStore;
@@ -42,6 +44,7 @@ namespace Nethereum.CoreChain.UnitTests
             Engine = engine;
         }
 
+        public HardforkName Fork { get; }
         public InMemoryStateStore StateStore { get; }
         public InMemoryBlockStore BlockStore { get; }
         public ITrieNodeStore TrieNodeStore { get; }
@@ -62,6 +65,7 @@ namespace Nethereum.CoreChain.UnitTests
             });
 
             var blockStore = new InMemoryBlockStore();
+            await ShapedHeaders.SaveGenesisAsync(blockStore, fork, 30_000_000);
             var config = new ChainConfig { ChainId = ChainId, BlockGasLimit = 30_000_000, BaseFee = 0 };
             var trieNodeStore = new InMemoryContentNodeStore();
             var stateRootCalculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
@@ -76,7 +80,7 @@ namespace Nethereum.CoreChain.UnitTests
                 rewardPolicy: NoRewardPolicy.Instance,
                 trieNodeStore: trieNodeStore);
 
-            return new BlockPipelineHarness(stateStore, blockStore, trieNodeStore, stateRootCalculator, engine, blockAccessListStore);
+            return new BlockPipelineHarness(fork, stateStore, blockStore, trieNodeStore, stateRootCalculator, engine, blockAccessListStore);
         }
 
         public BlockProducer Producer() =>
@@ -97,12 +101,19 @@ namespace Nethereum.CoreChain.UnitTests
                 Coinbase = SenderAddress,
                 BaseFee = 0,
                 BlockGasLimit = 30_000_000,
-                Difficulty = 1,
+                Difficulty = Fork >= HardforkName.Paris ? 0 : 1,
                 ChainId = ChainId
             });
 
         public Task<BlockImporterResult> ImportAsync(BlockHeader header, IList<ISignedTransaction> transactions) =>
             Importer().ImportAsync(header, transactions, uncles: null, withdrawals: null, CancellationToken.None);
+
+        public static BlockHeader DeclaringTransactionsOf(BlockHeader header, IList<ISignedTransaction> transactions)
+        {
+            var declaring = CloneHeader(header);
+            declaring.TransactionsHash = PatriciaBlockRootsProvider.Instance.CalculateTransactionsRoot(transactions);
+            return declaring;
+        }
 
         public static BlockHeader CloneHeader(BlockHeader header)
         {
@@ -116,6 +127,12 @@ namespace Nethereum.CoreChain.UnitTests
             TransactionFactory.CreateTransaction(
                 Signer.SignTransaction(
                     PrivateKey.HexToByteArray(), ChainId, RecipientAddress, 100, nonce,
+                    AboveInitialBaseFeeGasPrice, gasLimit, ""));
+
+        public static ISignedTransaction UnprotectedTransfer(BigInteger nonce, long gasLimit = IntrinsicTransferGas) =>
+            TransactionFactory.CreateTransaction(
+                Signer.SignTransaction(
+                    PrivateKey.HexToByteArray(), RecipientAddress, 100, nonce,
                     AboveInitialBaseFeeGasPrice, gasLimit, ""));
     }
 }

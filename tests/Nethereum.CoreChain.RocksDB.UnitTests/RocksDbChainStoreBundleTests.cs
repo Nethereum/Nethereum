@@ -3,10 +3,13 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.RocksDB;
+using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Documentation;
 using Nethereum.Model;
 using Xunit;
+
+#pragma warning disable CS0618
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
@@ -146,7 +149,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task ResetStateOnlyAsync_ClearsMetadataAndKeepsCheckpointArchive()
+        public async Task ResetStateOnlyAsync_ClearsMetadataAndDeletesCheckpointArchive()
         {
             using var bundle = RocksDbChainStoreBundle.Open(_dataDir);
             await bundle.SaveCheckpointAsync(100, FillBytes(0xAA), FillBytes(0xBB));
@@ -158,7 +161,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.False(bundle.Metadata.IsGenesisLoaded());
             Assert.Equal(0UL, bundle.Metadata.GetLastBlock());
             Assert.Null(bundle.Metadata.GetCheckpoint(100));
-            Assert.True(Directory.Exists(bundle.ResolveCheckpointSnapshotPath(100)));
+            Assert.False(Directory.Exists(bundle.ResolveCheckpointSnapshotPath(100)));
         }
 
         [Fact]
@@ -179,7 +182,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task ResetSnapBootstrapStateAsync_ClearsCommittedHeadForResnapButPreservesCursorsCheckpointsAndGenesisFlag()
+        public async Task ResetSnapBootstrapStateAsync_ClearsCommittedHeadForResnapAndDeletesCheckpointsButPreservesCursorsAndGenesisFlag()
         {
             const string addr = "0x4444444444444444444444444444444444444444";
 
@@ -205,14 +208,17 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 Counters = SnapSyncCounters.Zero,
             });
             bundle.Metadata.SaveDeferredHealAccountsBlob(new byte[] { 1, 2, 3 });
-            bundle.Metadata.UpsertDeferredStorageDebt(new DeferredStorageDebt
-            {
-                AccountHash = FillBytes(0x31),
-                DiscoveredStorageRoot = FillBytes(0x32),
-                FetchStateRoot = FillBytes(0x33),
-                Reason = DeferredStorageReason.BigAccountSubrangeFailed,
-                Status = StorageCompleteness.DeferredBigAccount,
-            });
+            bundle.Rocks.Put(
+                RocksDbManager.CF_METADATA,
+                RocksDbChainMetadataStore.DeferredStorageDebtKey(FillBytes(0x31), FillBytes(0x32)),
+                DeferredStorageDebtCodec.Encode(new DeferredStorageDebt
+                {
+                    AccountHash = FillBytes(0x31),
+                    DiscoveredStorageRoot = FillBytes(0x32),
+                    FetchStateRoot = FillBytes(0x33),
+                    Reason = DeferredStorageReason.BigAccountSubrangeFailed,
+                    Status = StorageCompleteness.DeferredBigAccount,
+                }));
             SeedPersistedMissingCode(bundle, FillBytes(0x34));
             Assert.Single(((IFlatStateReconciler)bundle).GetPersistedMissingCode());
 
@@ -226,7 +232,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             Assert.Equal(0UL, bundle.Metadata.GetLastBlock());
 
-            Assert.NotNull(bundle.Metadata.GetCheckpoint(42));
+            Assert.Null(bundle.Metadata.GetCheckpoint(42));
+            Assert.False(Directory.Exists(bundle.ResolveCheckpointSnapshotPath(42)));
 
             var snapAfter = bundle.Metadata.GetSnapSyncState();
             Assert.True(snapAfter is null || snapAfter.Phase == SnapPhase.NotStarted);

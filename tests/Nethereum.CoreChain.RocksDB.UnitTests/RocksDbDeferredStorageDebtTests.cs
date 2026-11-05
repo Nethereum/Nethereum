@@ -5,6 +5,8 @@ using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
 using Xunit;
 
+#pragma warning disable CS0618
+
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
     public class RocksDbDeferredStorageDebtTests : IDisposable
@@ -35,7 +37,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         {
             var debt = Debt(StorageCompleteness.DeferredBigAccount);
 
-            _store.UpsertDeferredStorageDebt(debt);
+            SeedRow(debt);
             Reopen();
 
             Assert.Equal(1UL, _store.CountOpenDeferredStorageDebts());
@@ -61,7 +63,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             StorageCompleteness status,
             bool expectedOpen)
         {
-            _store.UpsertDeferredStorageDebt(Debt(status));
+            SeedRow(Debt(status));
 
             Assert.Equal(expectedOpen ? 1UL : 0UL, _store.CountOpenDeferredStorageDebts());
             Assert.Equal(expectedOpen ? 1 : 0, _store.ListOpenDeferredStorageDebts().Count);
@@ -71,7 +73,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         public void Given_DebtSaved_When_Cleared_Then_OpenDebtIsRemoved()
         {
             var debt = Debt(StorageCompleteness.DeferredBigAccount);
-            _store.UpsertDeferredStorageDebt(debt);
+            SeedRow(debt);
 
             _store.ClearDeferredStorageDebt(debt.AccountHash, debt.DiscoveredStorageRoot);
 
@@ -82,7 +84,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         [Fact]
         public void Given_MaxZero_When_ListOpenDeferredStorageDebts_Then_ReturnsEmpty()
         {
-            _store.UpsertDeferredStorageDebt(Debt(StorageCompleteness.DeferredBigAccount));
+            SeedRow(Debt(StorageCompleteness.DeferredBigAccount));
 
             Assert.Empty(_store.ListOpenDeferredStorageDebts(0));
         }
@@ -100,6 +102,21 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.Equal(1UL, _store.CountOpenDeferredStorageDebts());
             Assert.Empty(_store.ListOpenDeferredStorageDebts());
         }
+        [Fact]
+        public void Given_AnUpsertedDebt_When_Counted_Then_NothingWasWritten()
+        {
+            _store.UpsertDeferredStorageDebt(Debt(StorageCompleteness.DeferredBigAccount));
+
+            Assert.Equal(0UL, _store.CountOpenDeferredStorageDebts());
+            Assert.Empty(_store.ListOpenDeferredStorageDebts());
+        }
+
+        private void SeedRow(DeferredStorageDebt debt)
+            => _manager.Put(
+                RocksDbManager.CF_METADATA,
+                RocksDbChainMetadataStore.DeferredStorageDebtKey(debt.AccountHash, debt.DiscoveredStorageRoot),
+                DeferredStorageDebtCodec.Encode(debt));
+
         private void Reopen()
         {
             _manager.Dispose();

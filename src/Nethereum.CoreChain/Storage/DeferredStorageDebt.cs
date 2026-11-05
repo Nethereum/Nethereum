@@ -2,6 +2,7 @@ using System;
 
 namespace Nethereum.CoreChain.Storage
 {
+    [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
     public enum StorageCompleteness : byte
     {
         Unknown = 0,
@@ -15,6 +16,7 @@ namespace Nethereum.CoreChain.Storage
         Damaged = 8
     }
 
+    [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
     public enum DeferredStorageReason : byte
     {
         StorageResponseEmpty = 1,
@@ -30,6 +32,7 @@ namespace Nethereum.CoreChain.Storage
         PersistentlyUnservableRoot = 11
     }
 
+    [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
     public sealed class DeferredStorageDebt
     {
         public byte[] AccountHash { get; set; }

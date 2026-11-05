@@ -108,11 +108,7 @@ namespace Nethereum.CoreChain.RocksDB
         {
             EnsureOpen();
             _metaOps.Add((batch, cf) =>
-            {
-                batch.Put(RocksDbChainMetadataStore.MetaKeys.LastBlock, RocksDbManager.Write64BE(lastBlock), cf);
-                if (lastBlockHash != null && lastBlockHash.Length == 32)
-                    batch.Put(RocksDbChainMetadataStore.MetaKeys.LastBlockHash, lastBlockHash, cf);
-            });
+                RocksDbChainMetadataStore.AddExecutedHeadToBatch(batch, cf, lastBlock, lastBlockHash));
         }
 
         public void SaveSnapSyncState(SnapSyncState state)
@@ -124,14 +120,12 @@ namespace Nethereum.CoreChain.RocksDB
                 batch.Put(RocksDbChainMetadataStore.MetaKeys.SnapSyncState, blob, cf));
         }
 
+#pragma warning disable CS0618
         public void UpsertDeferredStorageDebt(DeferredStorageDebt debt)
         {
             EnsureOpen();
-            DeferredStorageDebt.Validate(debt);
-            var key = RocksDbChainMetadataStore.DeferredStorageDebtKey(debt.AccountHash, debt.DiscoveredStorageRoot);
-            var blob = DeferredStorageDebtCodec.Encode(debt);
-            _metaOps.Add((batch, cf) => batch.Put(key, blob, cf));
         }
+#pragma warning restore CS0618
 
         public void SaveDeferredHealCodeBlob(byte[] blob)
         {

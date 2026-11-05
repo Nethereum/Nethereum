@@ -40,11 +40,9 @@ namespace Nethereum.CoreChain.State
                 _codeByHash[codeHash.ToHex()] = code;
             }
 
-            // "zero-balance, zero-nonce, no code". Treat the all-zero case as
-            // non-existent so the engine sees null and the EIP-158/161 empty-
             if (balance == EvmUInt256.Zero
                 && nonce == EvmUInt256.Zero
-                && IsEmptyCodeHash(codeHash))
+                && ByteUtil.AreEqual(codeHash, DefaultValues.EMPTY_DATA_HASH))
             {
                 return null;
             }
@@ -71,7 +69,7 @@ namespace Nethereum.CoreChain.State
         public Task<byte[]> GetCodeAsync(byte[] codeHash)
         {
             if (codeHash == null) return Task.FromResult<byte[]>(null);
-            if (IsEmptyCodeHash(codeHash)) return Task.FromResult<byte[]>(null);
+            if (ByteUtil.AreEqual(codeHash, DefaultValues.EMPTY_DATA_HASH)) return Task.FromResult<byte[]>(null);
             var hex = codeHash.ToHex();
             return Task.FromResult(_codeByHash.TryGetValue(hex, out var code) ? code : null);
         }
@@ -109,7 +107,7 @@ namespace Nethereum.CoreChain.State
         public Task<Storage.IStateSnapshot> CreateSnapshotAsync()
         {
             var id = System.Threading.Interlocked.Increment(ref _nextSnapshotId);
-            return Task.FromResult<Storage.IStateSnapshot>(new NoOpSnapshot(id));
+            return Task.FromResult<Storage.IStateSnapshot>(new NoOpStateSnapshot(id));
         }
 
         public Task CommitSnapshotAsync(Storage.IStateSnapshot snapshot) => Task.CompletedTask;
@@ -127,29 +125,5 @@ namespace Nethereum.CoreChain.State
             => Task.FromResult<IReadOnlyCollection<string>>(Array.Empty<string>());
 
         public Task ClearDirtyTrackingAsync() => Task.CompletedTask;
-
-        private static bool IsEmptyCodeHash(byte[] codeHash)
-        {
-            if (codeHash == null || codeHash.Length != DefaultValues.EMPTY_DATA_HASH.Length)
-                return false;
-            for (int i = 0; i < codeHash.Length; i++)
-            {
-                if (codeHash[i] != DefaultValues.EMPTY_DATA_HASH[i])
-                    return false;
-            }
-            return true;
-        }
-
-        private sealed class NoOpSnapshot : Storage.IStateSnapshot
-        {
-            public NoOpSnapshot(int id) { SnapshotId = id; }
-            public int SnapshotId { get; }
-            public void SetAccount(string address, Account account) { }
-            public void SetStorage(string address, BigInteger slot, byte[] value) { }
-            public void SetCode(byte[] codeHash, byte[] code) { }
-            public void DeleteAccount(string address) { }
-            public void ClearStorage(string address) { }
-            public void Dispose() { }
-        }
     }
 }

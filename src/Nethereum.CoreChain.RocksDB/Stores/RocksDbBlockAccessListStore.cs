@@ -71,8 +71,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (blockHash == null) return null;
             using var lease = _manager.Lease();
-            var num = lease.Database.Get(blockHash, _blockHashIndex);
-            return num == null || num.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(num);
+            return HistoryKeys.TryReadBlockNumber(lease.Database.Get(blockHash, _blockHashIndex));
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
         [Fact]
         [NethereumDocExample(DocSection.ChainInfrastructure, "reorg-rewind", "Node history materializing rewind restores a torn head to the target block state, peer-free")]
-        public async Task MaterializingRewind_RestoresTargetTrie_FromTornHead_AndLeavesNodeHistoryIntact()
+        public async Task MaterializingRewind_RestoresTargetTrie_FromTornHead_AndDropsTheRolledBackNodeHistory()
         {
             const int M = 5;
             const ulong N = 2;
@@ -70,7 +70,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.Throws<InvalidOperationException>(() =>
                 PatriciaTrie.LoadFromStorage(roots[M], bundle.StateTrieNodes).Get(StateKeys.AccountKey(AddrA)));
 
-            var historyBefore = CountNodeHistoryTotal();
+            var historyKept = System.Linq.Enumerable.Sum(System.Linq.Enumerable.Range(1, (int)N), b => CountNodeHistoryAt((ulong)b));
 
             var journal = new RocksDbNodeReverseDiffStore(_mgr, buildKeyMajorIndex: false);
             var stats = journal.MaterializingRewindTo(N);
@@ -91,7 +91,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.Null(trie.Get(StateKeys.AccountKey(ContractAddr(5))));
             Assert.Equal(roots[(int)N], trie.Root.GetHash());
 
-            Assert.Equal(historyBefore, CountNodeHistoryTotal());
+            Assert.Equal(historyKept, CountNodeHistoryTotal());
+            for (ulong b = N + 1; b <= M; b++) Assert.Equal(0, CountNodeHistoryAt(b));
         }
 
         [Fact]
@@ -271,6 +272,23 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var h = new byte[32];
             for (int i = 0; i < 32; i++) h[i] = fill;
             return h;
+        }
+
+        private int CountNodeHistoryAt(ulong block)
+        {
+            var be = RocksDbManager.Write64BE(block);
+            using var it = _mgr.CreateIterator(RocksDbManager.CF_NODE_HISTORY);
+            it.SeekToFirst();
+            int n = 0;
+            while (it.Valid())
+            {
+                var k = it.Key();
+                bool match = k.Length >= 8;
+                for (int i = 0; i < 8 && match; i++) if (k[i] != be[i]) match = false;
+                if (match) n++;
+                it.Next();
+            }
+            return n;
         }
 
         private int CountNodeHistoryTotal()

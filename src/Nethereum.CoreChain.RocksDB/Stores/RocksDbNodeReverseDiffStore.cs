@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Nethereum.CoreChain.Storage.History;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Util;
 using Nethereum.Merkle.Patricia.Storage;
@@ -104,29 +105,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (owner == null || owner.Length == 0) return;
 
             using var batch = _manager.CreateWriteBatch();
-            var logCf = _manager.GetColumnFamily(RocksDbManager.CF_NODE_HISTORY);
-            var idxCf = _buildKeyMajorIndex ? _manager.GetColumnFamily(RocksDbManager.CF_NODE_HISTORY_INDEX) : null;
-            var storCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_TRIE_STORAGE);
-
-            using var it = _manager.CreateIterator(RocksDbManager.CF_STATE_TRIE_STORAGE);
-            it.Seek(owner);
-            while (it.Valid())
-            {
-                var key = it.Key();
-                if (!ByteUtil.StartsWith(key, owner)) break;
-                var blob = it.Value();
-                var path = new byte[key.Length - owner.Length];
-                Buffer.BlockCopy(key, owner.Length, path, 0, path.Length);
-                var blockKey = BlockKey(block, owner, path);
-                if (!_manager.KeyExists(RocksDbManager.CF_NODE_HISTORY, blockKey))
-                {
-                    batch.Put(blockKey, blob ?? ABSENT, logCf);
-                    if (idxCf != null) batch.Put(IndexKey(owner, path, block), ABSENT, idxCf);
-                }
-                batch.Delete(key, storCf);
-                it.Next();
-            }
-
+            AddRangeWipeToBatch(batch, block, pathStore, owner);
             _manager.Write(batch);
         }
 
@@ -218,6 +197,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var stats = new NodeRewindStats { TargetBlock = targetBlock };
             var acctCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_TRIE_ACCOUNT);
             var storCf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_TRIE_STORAGE);
+            var logCf = _manager.GetColumnFamily(RocksDbManager.CF_NODE_HISTORY);
+            var idxCf = _buildKeyMajorIndex ? _manager.GetColumnFamily(RocksDbManager.CF_NODE_HISTORY_INDEX) : null;
 
             using var it = _manager.CreateIterator(RocksDbManager.CF_NODE_HISTORY);
             it.SeekToLast();
@@ -242,6 +223,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     var val = it.Value();
                     if (val == null || val.Length == 0) { batch.Delete(physKey, cf); stats.Deletes++; }
                     else { batch.Put(physKey, val, cf); stats.Puts++; }
+                    batch.Delete(key, logCf);
+                    if (idxCf != null) batch.Delete(IndexKeyOfLogKey(key, block), idxCf);
                     stats.EntriesApplied++;
 
                     if (++inBatch >= 20000) { _manager.Write(batch); batch.Dispose(); batch = _manager.CreateWriteBatch(); inBatch = 0; }
@@ -251,6 +234,18 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
             finally { batch.Dispose(); }
             return stats;
+        }
+
+        private static byte[] IndexKeyOfLogKey(byte[] logKey, ulong block)
+        {
+            bool acct = logKey[8] == (byte)'A';
+            const int OwnerLength = 32;
+            var ownerLen = acct ? 0 : OwnerLength;
+            var owner = new byte[ownerLen];
+            if (ownerLen > 0) Buffer.BlockCopy(logKey, 9, owner, 0, ownerLen);
+            var path = new byte[logKey.Length - 9 - ownerLen];
+            if (path.Length > 0) Buffer.BlockCopy(logKey, 9 + ownerLen, path, 0, path.Length);
+            return IndexKey(owner, path, block);
         }
 
         public ulong? FindBlockByStateRoot(byte[] stateRoot)
@@ -310,7 +305,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             while (iterator.Valid())
             {
                 var key = iterator.Key();
-                if (key.Length >= 8 && ReadBlockSuffix(key) < floorBlock)
+                if (key.Length >= 8 && HistoryKeys.ReadBlockNumber(key.AsSpan(key.Length - 8)) < floorBlock)
                     batch.Delete(key, cf);
                 iterator.Next();
             }
@@ -334,7 +329,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 var key = it.Key();
                 if (ByteUtil.StartsWith(key, prefix))
                 {
-                    var b = ReadBlockSuffix(key);
+                    var b = HistoryKeys.ReadBlockNumber(key.AsSpan(key.Length - 8));
                     return _manager.Get(RocksDbManager.CF_NODE_HISTORY, BlockKey(b, owner, path)) ?? ABSENT;
                 }
             }
@@ -380,21 +375,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return prefix;
         }
 
-        private static ulong ReadBlockSuffix(byte[] key)
-        {
-            ulong b = 0;
-            for (int i = key.Length - 8; i < key.Length; i++) b = (b << 8) | key[i];
-            return b;
-        }
-
         private static bool BlockBelow(byte[] key, byte[] floor8)
-        {
-            for (int i = 0; i < 8; i++)
-            {
-                if (key[i] < floor8[i]) return true;
-                if (key[i] > floor8[i]) return false;
-            }
-            return false;
-        }
+            => key.AsSpan(0, 8).SequenceCompareTo(floor8) < 0;
     }
 }

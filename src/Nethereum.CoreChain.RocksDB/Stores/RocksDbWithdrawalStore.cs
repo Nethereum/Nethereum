@@ -28,11 +28,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (withdrawalsRlp == null) return null;
             var result = new List<Withdrawal>();
             if (withdrawalsRlp.Length == 0) return result;
-            foreach (var item in (RLPCollection)RLP.RLP.Decode(withdrawalsRlp))
+            var reader = new RlpReader(withdrawalsRlp);
+            var scope = reader.ReadListHeader();
+            while (!reader.IsAtEnd(scope))
             {
-                var w = WithdrawalEncoder.Current.Decode(item.RLPData);
+                var w = WithdrawalEncoder.Current.Decode(reader);
                 if (w != null) result.Add(w);
             }
+            reader.EnsureEnd(scope);
+            reader.EnsureEnd();
             return result;
         }
 
@@ -56,10 +60,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (!n.HasValue) return Task.CompletedTask;
             var key = HistoryKeys.BlockKey(n.Value);
             using var lease = _manager.Lease();
-            var meta = BlockMetaCodec.Decode(lease.Database.Get(key, _blockMeta)) ?? new BlockMeta { BlockHash = blockHash };
-            var encoded = new byte[withdrawals.Count][];
-            for (int i = 0; i < withdrawals.Count; i++) encoded[i] = WithdrawalEncoder.Current.Encode(withdrawals[i]);
-            meta.Withdrawals = RLP.RLP.EncodeList(encoded);
+            var meta = MetaWithWithdrawals(lease.Database.Get(key, _blockMeta), blockHash, withdrawals);
             lease.Database.Put(key, BlockMetaCodec.Encode(meta), _blockMeta);
             return Task.CompletedTask;
         }
@@ -72,11 +73,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var key = HistoryKeys.BlockKey(n.Value);
             byte[] metaBytes;
             using (var lease = _manager.Lease()) metaBytes = lease.Database.Get(key, _blockMeta);
+            var meta = MetaWithWithdrawals(metaBytes, blockHash, withdrawals);
+            batch.Put(key, BlockMetaCodec.Encode(meta), _blockMeta);
+        }
+
+        private static BlockMeta MetaWithWithdrawals(byte[] metaBytes, byte[] blockHash, IList<Withdrawal> withdrawals)
+        {
             var meta = BlockMetaCodec.Decode(metaBytes) ?? new BlockMeta { BlockHash = blockHash };
             var encoded = new byte[withdrawals.Count][];
             for (int i = 0; i < withdrawals.Count; i++) encoded[i] = WithdrawalEncoder.Current.Encode(withdrawals[i]);
             meta.Withdrawals = RLP.RLP.EncodeList(encoded);
-            batch.Put(key, BlockMetaCodec.Encode(meta), _blockMeta);
+            return meta;
         }
 
         public Task DeleteByBlockHashAsync(byte[] blockHash) => Task.CompletedTask;
@@ -86,8 +93,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (blockHash == null) return null;
             using var lease = _manager.Lease();
-            var num = lease.Database.Get(blockHash, _blockHashIndex);
-            return num == null || num.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(num);
+            return HistoryKeys.TryReadBlockNumber(lease.Database.Get(blockHash, _blockHashIndex));
         }
     }
 }

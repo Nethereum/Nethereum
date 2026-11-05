@@ -60,6 +60,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public Task SaveManyAsync(byte[] blockHash, BigInteger blockNumber, IReadOnlyList<ISignedTransaction> txs)
             => _recent.SaveManyAsync(blockHash, blockNumber, txs);
 
+        public Task DeleteLookupsByBlockNumberAsync(BigInteger blockNumber)
+            => (long)blockNumber < _router.FrozenCount()
+                ? Task.CompletedTask
+                : _recent.DeleteLookupsByBlockNumberAsync(blockNumber);
+
         public Task DeleteByBlockNumberAsync(BigInteger blockNumber)
             => (long)blockNumber < _router.FrozenCount()
                 ? _frozen.DeleteByBlockNumberAsync(blockNumber)

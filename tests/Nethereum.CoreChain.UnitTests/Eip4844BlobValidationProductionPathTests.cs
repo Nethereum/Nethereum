@@ -62,8 +62,10 @@ namespace Nethereum.CoreChain.UnitTests
                 maxFeePerBlobGas: maxFeePerBlobGas ?? EvmUInt256.One,
                 blobVersionedHashes: blobVersionedHashes);
 
-            return TransactionFactory.CreateTransaction(
-                Signer.SignTransaction(PrivateKey, transaction).HexToByteArray());
+            var signed = Signer.SignTransaction(PrivateKey, transaction).HexToByteArray();
+            if (string.IsNullOrEmpty(receiverAddress))
+                return transaction;
+            return TransactionFactory.CreateTransaction(signed);
         }
 
         private static async Task<TransactionExecutionResult> ExecuteAsFollowerAsync(

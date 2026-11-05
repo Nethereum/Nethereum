@@ -105,6 +105,12 @@ namespace Nethereum.CoreChain.IntegrationTests
             }
         }
 
+        private static async Task SeedJournalAsync(IChainStoreBundle bundle, ulong from, ulong to)
+        {
+            for (ulong n = from; n <= to; n++)
+                await bundle.Diffs.SaveBlockDiffAsync(new BlockStateDiff { BlockNumber = n });
+        }
+
         private static FollowerOptions BuildOptions(ulong startBlock = 0, ulong? endBlock = null, int walkerThreshold = 1)
             => new FollowerOptions(
                 StartBlock: startBlock,
@@ -186,7 +192,7 @@ namespace Nethereum.CoreChain.IntegrationTests
         }
 
         [Fact]
-        public async Task ExternalHeaderFollow_ReorgBeneathCommittedHead_NoMatchingCheckpoint_HaltsLoudly()
+        public async Task ExternalHeaderFollow_ReorgBeneathCommittedHead_NoExecutedHashRecordAndNoCheckpoint_ReportsRewindUnavailable()
         {
             var bundle = InMemoryChainStoreBundle.Open();
             await SeedBlocksAsync(bundle, 1, 80);
@@ -214,8 +220,8 @@ namespace Nethereum.CoreChain.IntegrationTests
                 ct: cts.Token,
                 logger: NullLogger.Instance);
 
-            Assert.Equal(FollowerExitReason.FatalVerdict, result.ExitReason);
-            Assert.Contains("no retained checkpoint", result.Detail);
+            Assert.Equal(FollowerExitReason.RewindUnavailable, result.ExitReason);
+            Assert.Contains("unavailable", result.Detail);
             Assert.Equal(0, executor.CallCount);
         }
 
@@ -386,9 +392,10 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task Divergence_FindsAncestor_RewindsCleanly()
         {
-            var bundle = InMemoryChainStoreBundle.Open();
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.FullArchive);
             bundle.Metadata.Commit(50UL, HashFor(50));
             await SeedBlocksAsync(bundle, 1, 50);
+            await SeedJournalAsync(bundle, 1, 50);
 
             var executor = new ScriptedExecutor();
             var canonical = new FakeCanonicalSource(new[]
@@ -446,9 +453,10 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task Divergence_AtCommittedTip_AncestorSearchDescendsBelowTip()
         {
-            var bundle = InMemoryChainStoreBundle.Open();
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.FullArchive);
             bundle.Metadata.Commit(50UL, HashFor(50));
             await SeedBlocksAsync(bundle, 1, 50);
+            await SeedJournalAsync(bundle, 1, 50);
 
             var executor = new ScriptedExecutor();
             var canonical = new FakeCanonicalSource(new[]
@@ -887,9 +895,10 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task Given_AForcedReLayThatKeepsDivergingDeeper_When_TheThreeRepairAttemptsAreSpent_Then_TheFollowerHaltsNamingTheLastDivergenceAndTheAttemptCount()
         {
-            var bundle = InMemoryChainStoreBundle.Open();
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.FullArchive);
             bundle.Metadata.Commit(50UL, HashFor(50));
             await SeedBlocksAsync(bundle, 1, 50);
+            await SeedJournalAsync(bundle, 1, 50);
 
             var executor = new ScriptedExecutor();
             var canonical = new FakeCanonicalSource(new[]
@@ -931,9 +940,10 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task Given_AForcedReLayThatLinksOnTheSecondAttempt_When_TheRepairRuns_Then_TheFollowerResumesAndTheRunReachesEndBlock()
         {
-            var bundle = InMemoryChainStoreBundle.Open();
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.FullArchive);
             bundle.Metadata.Commit(50UL, HashFor(50));
             await SeedBlocksAsync(bundle, 1, 50);
+            await SeedJournalAsync(bundle, 1, 50);
 
             var executor = new ScriptedExecutor();
             var canonical = new FakeCanonicalSource(new[]
@@ -977,9 +987,10 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task Given_AForcedReLayThatTHROWS_When_TheRepairRuns_Then_TheLoopStopsAfterThatAttemptRatherThanRetrying()
         {
-            var bundle = InMemoryChainStoreBundle.Open();
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.FullArchive);
             bundle.Metadata.Commit(50UL, HashFor(50));
             await SeedBlocksAsync(bundle, 1, 50);
+            await SeedJournalAsync(bundle, 1, 50);
 
             var executor = new ScriptedExecutor();
             var canonical = new FakeCanonicalSource(new[]
@@ -1024,9 +1035,10 @@ namespace Nethereum.CoreChain.IntegrationTests
         [Fact]
         public async Task Given_ACommittedHeadAboveMaxReorgDepth_When_TheAncestorSearchFloorIsAnchored_Then_TheFloorIsCommittedMinusMaxReorgDepth()
         {
-            var bundle = InMemoryChainStoreBundle.Open();
+            var bundle = InMemoryChainStoreBundle.Open(HistoricalStateOptions.FullArchive);
             bundle.Metadata.Commit(50UL, HashFor(50));
             await SeedBlocksAsync(bundle, 1, 50);
+            await SeedJournalAsync(bundle, 1, 50);
 
             var executor = new ScriptedExecutor();
             var canonical = new FakeCanonicalSource(new[]

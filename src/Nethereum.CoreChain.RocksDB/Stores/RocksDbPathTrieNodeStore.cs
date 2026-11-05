@@ -1,7 +1,7 @@
 using System;
+using System.Linq;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Util;
-using Nethereum.Util.HashProviders;
 using RocksDbSharp;
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Storage;
@@ -15,18 +15,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     public class RocksDbPathTrieNodeStore : ITrieNodeStore, IContractStorageWipeable, IRawNodeReader, ICacheInvalidatable
     {
         private readonly RocksDbManager _manager;
-        private static readonly IHashProvider _hashProvider = Sha3KeccackHashProvider.Instance;
 
         public RocksDbPathTrieNodeStore(RocksDbManager manager)
         {
             _manager = manager;
-        }
-
-        private byte[] ReadRaw(byte[] owner, byte[] path)
-        {
-            return IsAccount(owner)
-                ? _manager.Get(RocksDbManager.CF_STATE_TRIE_ACCOUNT, path ?? Array.Empty<byte>())
-                : _manager.Get(RocksDbManager.CF_STATE_TRIE_STORAGE, StorageKey(owner, path));
         }
 
         public void ClearCache() { }
@@ -51,7 +43,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 if (IsAccount(node.Owner))
                     batch.Put(node.Path ?? Array.Empty<byte>(), rlp, acctCf);
                 else
-                    batch.Put(StorageKey(node.Owner, node.Path), rlp, storCf);
+                    batch.Put(TrieTracer.Key(node.Owner, node.Path), rlp, storCf);
             }
             foreach (var d in nodes.Deletes)
             {
@@ -59,24 +51,25 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 if (IsAccount(d.Owner))
                     batch.Delete(d.Path ?? Array.Empty<byte>(), acctCf);
                 else
-                    batch.Delete(StorageKey(d.Owner, d.Path), storCf);
+                    batch.Delete(TrieTracer.Key(d.Owner, d.Path), storCf);
             }
         }
 
         internal byte[] TryGetRaw(byte[] owner, byte[] path)
         {
-            return ReadRaw(owner, path);
+            return IsAccount(owner)
+                ? _manager.Get(RocksDbManager.CF_STATE_TRIE_ACCOUNT, path ?? Array.Empty<byte>())
+                : _manager.Get(RocksDbManager.CF_STATE_TRIE_STORAGE, TrieTracer.Key(owner, path));
         }
 
         public byte[] TryGetRawNode(byte[] owner, byte[] path) => TryGetRaw(owner, path);
 
+
         public byte[] Get(Node reference)
         {
             if (reference == null) return null;
-            byte[] blob = ReadRaw(reference.Owner, reference.Path);
-            if (!ProofVerification.Current.TrieNode.Verify(reference.GetHash(), blob, _hashProvider))
-                throw new InvalidOperationException(
-                    "Path-keyed trie node hash mismatch: stored blob does not match the parent-referenced hash (tampered or corrupt).");
+            byte[] blob = TryGetRaw(reference.Owner, reference.Path);
+            TrieNodeVerification.RequireAuthentic(reference, blob);
             return blob;
         }
 
@@ -85,64 +78,62 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (reference == null) return false;
             return IsAccount(reference.Owner)
                 ? _manager.KeyExists(RocksDbManager.CF_STATE_TRIE_ACCOUNT, reference.Path ?? Array.Empty<byte>())
-                : _manager.KeyExists(RocksDbManager.CF_STATE_TRIE_STORAGE, StorageKey(reference.Owner, reference.Path));
+                : _manager.KeyExists(RocksDbManager.CF_STATE_TRIE_STORAGE, TrieTracer.Key(reference.Owner, reference.Path));
         }
 
         public bool ContainsKey(byte[] stateRoot)
-        {
-            if (stateRoot == null || stateRoot.Length != 32) return false;
-            var blob = TryGetRaw(Array.Empty<byte>(), Array.Empty<byte>());
-            if (blob == null || blob.Length == 0) return false;
-            return ByteUtil.AreEqual(_hashProvider.ComputeHash(blob), stateRoot);
-        }
+            => TrieNodeVerification.RootBlobHashesTo(TryGetRaw(Array.Empty<byte>(), Array.Empty<byte>()), stateRoot);
 
         public void Flush() => _manager.Flush();
 
         public void Clear()
         {
-            WipeCf(RocksDbManager.CF_STATE_TRIE_ACCOUNT);
-            WipeCf(RocksDbManager.CF_STATE_TRIE_STORAGE);
+            WipeCf(_manager, RocksDbManager.CF_STATE_TRIE_ACCOUNT);
+            WipeCf(_manager, RocksDbManager.CF_STATE_TRIE_STORAGE);
         }
 
         public void DeleteRange(byte[] owner)
         {
             if (owner == null || owner.Length == 0) return;
 
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_TRIE_STORAGE);
-            using var batch = _manager.CreateWriteBatch();
-            var cf = _manager.GetColumnFamily(RocksDbManager.CF_STATE_TRIE_STORAGE);
-
-            iterator.Seek(owner);
-            while (iterator.Valid())
+            var end = OwnerRangeEnd(owner);
+            var compactAfterWipe = HoldsAtLeast(owner, end, CompactAfterWipeNodes);
+            using (var batch = _manager.CreateWriteBatch())
             {
-                var key = iterator.Key();
-                if (!ByteUtil.StartsWith(key, owner)) break;
-                batch.Delete(key, cf);
-                iterator.Next();
+                batch.DeleteRange(owner, (ulong)owner.Length, end, (ulong)end.Length,
+                    _manager.GetColumnFamily(RocksDbManager.CF_STATE_TRIE_STORAGE));
+                _manager.Write(batch);
             }
-
-            _manager.Write(batch);
+            if (compactAfterWipe) _manager.CompactKeyRange(RocksDbManager.CF_STATE_TRIE_STORAGE, owner, end);
         }
 
-        private void WipeCf(string cfName)
+        private const int CompactAfterWipeNodes = 4_096;
+
+        private bool HoldsAtLeast(byte[] owner, byte[] end, int nodes)
         {
-            using var iterator = _manager.CreateIterator(cfName);
-            using var batch = _manager.CreateWriteBatch();
-            var cf = _manager.GetColumnFamily(cfName);
+            using var iterator = _manager.CreateIterator(RocksDbManager.CF_STATE_TRIE_STORAGE);
+            int seen = 0;
+            for (iterator.Seek(owner); iterator.Valid() && seen < nodes; iterator.Next())
+            {
+                if (iterator.GetKeySpan().SequenceCompareTo(end) >= 0) return false;
+                seen++;
+            }
+            return seen >= nodes;
+        }
+
+        internal static byte[] OwnerRangeEnd(byte[] owner)
+            => ByteUtil.PrefixSuccessor(owner) ?? ByteUtil.Merge(owner, Enumerable.Repeat((byte)0xFF, 65).ToArray());
+
+        internal static void WipeCf(RocksDbManager manager, string cfName)
+        {
+            using var iterator = manager.CreateIterator(cfName);
+            using var batch = manager.CreateWriteBatch();
+            var cf = manager.GetColumnFamily(cfName);
             iterator.SeekToFirst();
             while (iterator.Valid()) { batch.Delete(iterator.Key(), cf); iterator.Next(); }
-            _manager.Write(batch);
+            manager.Write(batch);
         }
 
         private static bool IsAccount(byte[] owner) => owner == null || owner.Length == 0;
-
-        internal static byte[] StorageKey(byte[] owner, byte[] path)
-        {
-            var pathLen = path?.Length ?? 0;
-            var key = new byte[owner.Length + pathLen];
-            Buffer.BlockCopy(owner, 0, key, 0, owner.Length);
-            if (pathLen > 0) Buffer.BlockCopy(path, 0, key, owner.Length, pathLen);
-            return key;
-        }
     }
 }

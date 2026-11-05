@@ -10,10 +10,18 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Storage
 {
-    public class HistoricalStateStore : IStateStore, IHistoricalStateProvider, ISnapFlatStateWriter, IFlatCacheInvalidatable, IStateReadStats
+    public class HistoricalStateStore : IStateStore, IHistoricalStateProvider, ISnapFlatStateWriter, IFlatCacheInvalidatable, IStateReadStats, IStateReadMeterHost, IDirtyKeySource, IAddressHashCache, IBaseAbsenceSource
     {
         private readonly IStateStore _inner;
         public IStateStore Inner => _inner;
+
+        public bool WasAbsentInBase(EvmAddress address) => (_inner as IBaseAbsenceSource)?.WasAbsentInBase(address) ?? false;
+
+        public bool TryAttachReadMeter(StateReadMeter meter)
+            => _inner is IStateReadMeterHost host && host.TryAttachReadMeter(meter);
+
+        public void DetachReadMeter(StateReadMeter meter)
+            => (_inner as IStateReadMeterHost)?.DetachReadMeter(meter);
 
         public long AccountReads => (_inner as IStateReadStats)?.AccountReads ?? 0;
         public long StorageReads => (_inner as IStateReadStats)?.StorageReads ?? 0;
@@ -42,6 +50,12 @@ namespace Nethereum.CoreChain.Storage
             _diffStore = diffStore ?? throw new ArgumentNullException(nameof(diffStore));
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
+
+        public bool TryAttachDirtyKeyObserver(IDirtyKeyObserver observer)
+            => _inner is IDirtyKeySource source && source.TryAttachDirtyKeyObserver(observer);
+
+        public void DetachDirtyKeyObserver(IDirtyKeyObserver observer)
+            => (_inner as IDirtyKeySource)?.DetachDirtyKeyObserver(observer);
 
         private ISnapFlatStateWriter InnerFlatWriter
             => _inner as ISnapFlatStateWriter
@@ -175,6 +189,7 @@ namespace Nethereum.CoreChain.Storage
         public async Task<Account> GetAccountAtBlockAsync(string address, BigInteger blockNumber)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var evmAddress = EvmAddress.FromHex(address);
 
             await ThrowIfBlockOutOfRangeAsync(blockNumber).ConfigureAwait(false);
 
@@ -182,7 +197,7 @@ namespace Nethereum.CoreChain.Storage
             var journalBlock = _currentBlockNumber;
             if (journal != null && journalBlock.HasValue && journalBlock.Value > blockNumber)
             {
-                if (journal.AccountPreValues.TryGetValue(normalizedAddress, out var journalPreValue))
+                if (journal.AccountPreValues.TryGetValue(evmAddress, out var journalPreValue))
                 {
                     var (persistedFound, persistedPreValue) = await _diffStore
                         .GetFirstAccountPreValueAfterBlockAsync(normalizedAddress, blockNumber).ConfigureAwait(false);
@@ -206,6 +221,7 @@ namespace Nethereum.CoreChain.Storage
         public async Task<byte[]> GetStorageAtBlockAsync(string address, BigInteger slot, BigInteger blockNumber)
         {
             var normalizedAddress = NormalizeAddress(address);
+            var evmAddress = EvmAddress.FromHex(address);
 
             await ThrowIfBlockOutOfRangeAsync(blockNumber).ConfigureAwait(false);
 
@@ -213,7 +229,7 @@ namespace Nethereum.CoreChain.Storage
             var journalBlock = _currentBlockNumber;
             if (journal != null && journalBlock.HasValue && journalBlock.Value > blockNumber)
             {
-                var storageKey = GetStorageKey(normalizedAddress, StateKeys.StorageSlotKey(slot));
+                var storageKey = new JournalSlot(evmAddress, StateKeys.StorageSlotKey(slot));
                 if (journal.StoragePreValues.TryGetValue(storageKey, out var journalPreValue))
                 {
                     var (persistedFound, persistedPreValue) = await _diffStore
@@ -258,44 +274,39 @@ namespace Nethereum.CoreChain.Storage
 
         #region IStateStore delegation with journal recording
 
-        public Task<Account> GetAccountAsync(string address)
-        {
-            return _inner.GetAccountAsync(address);
-        }
+        public Task<Account> GetAccountAsync(string address) => _inner.GetAccountAsync(address);
 
-        public async Task SaveAccountAsync(string address, Account account)
+        public Task<Account> GetAccountAsync(EvmAddress address) => _inner.GetAccountAsync(address);
+
+        public Task SaveAccountAsync(string address, Account account) => SaveAccountAsync(EvmAddress.FromHex(address), account);
+
+        public async Task SaveAccountAsync(EvmAddress address, Account account)
         {
-            var journal = _currentJournal;
-            if (journal != null)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                if (!journal.AccountPreValues.ContainsKey(normalizedAddress))
-                {
-                    var preValue = await _inner.GetAccountAsync(address).ConfigureAwait(false);
-                    journal.AccountPreValues[normalizedAddress] = preValue.Clone();
-                }
-            }
+            await JournalAccountPreValueAsync(address).ConfigureAwait(false);
 
             await _inner.SaveAccountAsync(address, account).ConfigureAwait(false);
         }
 
-        public Task<bool> AccountExistsAsync(string address)
-        {
-            return _inner.AccountExistsAsync(address);
-        }
-
-        public async Task DeleteAccountAsync(string address)
+        private async Task JournalAccountPreValueAsync(EvmAddress address)
         {
             var journal = _currentJournal;
-            if (journal != null)
-            {
-                var normalizedAddress = NormalizeAddress(address);
-                if (!journal.AccountPreValues.ContainsKey(normalizedAddress))
-                {
-                    var preValue = await _inner.GetAccountAsync(address).ConfigureAwait(false);
-                    journal.AccountPreValues[normalizedAddress] = preValue.Clone();
-                }
-            }
+            if (journal == null) return;
+
+            if (journal.AccountPreValues.ContainsKey(address)) return;
+
+            var preValue = await _inner.GetAccountAsync(address).ConfigureAwait(false);
+            journal.AccountPreValues[address] = preValue.Clone();
+        }
+
+        public Task<bool> AccountExistsAsync(string address) => _inner.AccountExistsAsync(address);
+
+        public Task<bool> AccountExistsAsync(EvmAddress address) => _inner.AccountExistsAsync(address);
+
+        public Task DeleteAccountAsync(string address) => DeleteAccountAsync(EvmAddress.FromHex(address));
+
+        public async Task DeleteAccountAsync(EvmAddress address)
+        {
+            await JournalAccountPreValueAsync(address).ConfigureAwait(false);
 
             await _inner.DeleteAccountAsync(address).ConfigureAwait(false);
         }
@@ -310,28 +321,32 @@ namespace Nethereum.CoreChain.Storage
             return _inner.StreamAccountsAsync();
         }
 
-        public Task<byte[]> GetStorageAsync(string address, BigInteger slot)
-        {
-            return _inner.GetStorageAsync(address, slot);
-        }
+        public Task<byte[]> GetStorageAsync(string address, BigInteger slot) => _inner.GetStorageAsync(address, slot);
+
+        public Task<byte[]> GetStorageAsync(EvmAddress address, BigInteger slot) => _inner.GetStorageAsync(address, slot);
 
         public Task SaveStorageByKeccakAsync(string address, byte[] slotKeccak, byte[] value)
             => _inner.SaveStorageByKeccakAsync(address, slotKeccak, value);
 
-        public async Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
+        public Task SaveStorageByKeccakAsync(EvmAddress address, byte[] slotKeccak, byte[] value)
+            => _inner.SaveStorageByKeccakAsync(address, slotKeccak, value);
+
+        public Task SaveStorageAsync(string address, BigInteger slot, byte[] value)
+            => SaveStorageAsync(EvmAddress.FromHex(address), slot, value);
+
+        public async Task SaveStorageAsync(EvmAddress address, BigInteger slot, byte[] value)
         {
             var journal = _currentJournal;
             if (journal != null)
             {
-                var normalizedAddress = NormalizeAddress(address);
                 var slotKey = StateKeys.StorageSlotKey(slot);
-                var storageKey = GetStorageKey(normalizedAddress, slotKey);
+                var storageKey = new JournalSlot(address, slotKey);
                 if (!journal.StoragePreValues.ContainsKey(storageKey))
                 {
                     var preValue = await _inner.GetStorageAsync(address, slot).ConfigureAwait(false);
                     journal.StoragePreValues[storageKey] = new StorageJournalEntry
                     {
-                        Address = normalizedAddress,
+                        Address = address,
                         SlotKey = slotKey,
                         PreValue = (byte[])preValue?.Clone()
                     };
@@ -341,26 +356,26 @@ namespace Nethereum.CoreChain.Storage
             await _inner.SaveStorageAsync(address, slot, value).ConfigureAwait(false);
         }
 
-        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address)
-        {
-            return _inner.GetAllStorageAsync(address);
-        }
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(string address) => _inner.GetAllStorageAsync(address);
 
-        public async Task ClearStorageAsync(string address)
+        public Task<Dictionary<byte[], byte[]>> GetAllStorageAsync(EvmAddress address) => _inner.GetAllStorageAsync(address);
+
+        public Task ClearStorageAsync(string address) => ClearStorageAsync(EvmAddress.FromHex(address));
+
+        public async Task ClearStorageAsync(EvmAddress address)
         {
             var journal = _currentJournal;
             if (journal != null)
             {
-                var normalizedAddress = NormalizeAddress(address);
                 var allStorage = await _inner.GetAllStorageAsync(address).ConfigureAwait(false);
                 foreach (var kvp in allStorage)
                 {
-                    var storageKey = GetStorageKey(normalizedAddress, kvp.Key);
+                    var storageKey = new JournalSlot(address, kvp.Key);
                     if (!journal.StoragePreValues.ContainsKey(storageKey))
                     {
                         journal.StoragePreValues[storageKey] = new StorageJournalEntry
                         {
-                            Address = normalizedAddress,
+                            Address = address,
                             SlotKey = kvp.Key,
                             PreValue = (byte[])kvp.Value?.Clone()
                         };
@@ -401,7 +416,14 @@ namespace Nethereum.CoreChain.Storage
             return _inner.GetDirtyAccountAddressesAsync();
         }
 
+        public Task<IReadOnlyCollection<EvmAddress>> GetDirtyAccountsAsync() => _inner.GetDirtyAccountsAsync();
+
         public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(string address)
+        {
+            return _inner.GetDirtyStorageSlotsAsync(address);
+        }
+
+        public Task<IReadOnlyCollection<BigInteger>> GetDirtyStorageSlotsAsync(EvmAddress address)
         {
             return _inner.GetDirtyStorageSlotsAsync(address);
         }
@@ -411,10 +433,23 @@ namespace Nethereum.CoreChain.Storage
             return _inner.GetStorageClearedAddressesAsync();
         }
 
+        public Task<IReadOnlyCollection<EvmAddress>> GetStorageClearedAccountsAsync() => _inner.GetStorageClearedAccountsAsync();
+
         public Task ClearDirtyTrackingAsync()
         {
             return _inner.ClearDirtyTrackingAsync();
         }
+
+        public bool TryGetAddressHash(EvmAddress address, out byte[] hash)
+        {
+            if (_inner is IAddressHashCache cache) return cache.TryGetAddressHash(address, out hash);
+            hash = null;
+            return false;
+        }
+
+        public void SetAddressHash(EvmAddress address, byte[] hash) => (_inner as IAddressHashCache)?.SetAddressHash(address, hash);
+
+        public void ClearAddressHashCache() => (_inner as IAddressHashCache)?.ClearAddressHashCache();
 
         #endregion
 
@@ -424,18 +459,31 @@ namespace Nethereum.CoreChain.Storage
         {
             return AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
         }
+    }
 
-        private static string GetStorageKey(string normalizedAddress, byte[] slotKey)
+    internal readonly struct JournalSlot : IEquatable<JournalSlot>
+    {
+        private readonly EvmAddress _address;
+        private readonly byte[] _slotKey;
+
+        public JournalSlot(EvmAddress address, byte[] slotKey)
         {
-            return $"{normalizedAddress}:{slotKey.ToHex()}";
+            _address = address;
+            _slotKey = slotKey;
         }
 
+        public bool Equals(JournalSlot other)
+            => _address.Equals(other._address) && ByteUtil.AreEqual(_slotKey, other._slotKey);
+
+        public override bool Equals(object obj) => obj is JournalSlot other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(_address, ByteArrayComparer.Current.GetHashCode(_slotKey));
     }
 
     internal class BlockJournal
     {
-        public ConcurrentDictionary<string, Account> AccountPreValues { get; } = new();
-        public ConcurrentDictionary<string, StorageJournalEntry> StoragePreValues { get; } = new();
+        public ConcurrentDictionary<EvmAddress, Account> AccountPreValues { get; } = new();
+        public ConcurrentDictionary<JournalSlot, StorageJournalEntry> StoragePreValues { get; } = new();
 
         public BlockStateDiff ToBlockStateDiff(BigInteger blockNumber)
         {
@@ -445,19 +493,18 @@ namespace Nethereum.CoreChain.Storage
             {
                 diff.AccountDiffs.Add(new AccountDiffEntry
                 {
-                    Address = kvp.Key,
+                    Address = kvp.Key.ToHexLower(),
                     PreValue = kvp.Value
                 });
             }
 
-            foreach (var kvp in StoragePreValues)
+            foreach (var entry in StoragePreValues.Values)
             {
-                var parts = kvp.Key.Split(':');
                 diff.StorageDiffs.Add(new StorageDiffEntry
                 {
-                    Address = parts[0],
-                    SlotKey = kvp.Value.SlotKey,
-                    PreValue = kvp.Value.PreValue
+                    Address = entry.Address.ToHexLower(),
+                    SlotKey = entry.SlotKey,
+                    PreValue = entry.PreValue
                 });
             }
 
@@ -467,7 +514,7 @@ namespace Nethereum.CoreChain.Storage
 
     internal class StorageJournalEntry
     {
-        public string Address { get; set; }
+        public EvmAddress Address { get; set; }
         public byte[] SlotKey { get; set; }
         public byte[] PreValue { get; set; }
     }

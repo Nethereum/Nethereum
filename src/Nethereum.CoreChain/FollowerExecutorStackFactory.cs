@@ -1,6 +1,6 @@
 using System;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+using Nethereum.CoreChain.Prefetch;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Sync;
 using Nethereum.EVM;
@@ -27,6 +27,20 @@ namespace Nethereum.CoreChain
             Func<HardforkName, ChainConfig> chainConfigFactory,
             Func<HardforkName, HardforkConfig> hardforkConfigFactory,
             IRewardPolicy rewardPolicy,
+            ILoggerFactory? loggerFactory,
+            IStateStore? stateOverride,
+            IFlushCadence? flushCadence,
+            StatePrefetcher? prefetcher)
+            => BuildFollowerExecutorStackWithCalculator(
+                bundle, activations, chainConfigFactory, hardforkConfigFactory,
+                rewardPolicy, loggerFactory, stateOverride, flushCadence, prefetcher).Executor;
+
+        public static IBlockExecutor BuildFollowerExecutorStack(
+            IChainStoreBundle bundle,
+            IChainActivations activations,
+            Func<HardforkName, ChainConfig> chainConfigFactory,
+            Func<HardforkName, HardforkConfig> hardforkConfigFactory,
+            IRewardPolicy rewardPolicy,
             ILoggerFactory? loggerFactory = null,
             IStateStore? stateOverride = null,
             IFlushCadence? flushCadence = null)
@@ -43,6 +57,35 @@ namespace Nethereum.CoreChain
             ILoggerFactory? loggerFactory = null,
             IStateStore? stateOverride = null,
             IFlushCadence? flushCadence = null)
+            => BuildFollowerExecutorStackWithCalculator(
+                bundle, activations, chainConfigFactory, hardforkConfigFactory,
+                rewardPolicy, loggerFactory, stateOverride, flushCadence, prefetcher: null);
+
+        public static FollowerExecutorStack BuildFollowerExecutorStackWithCalculator(
+            IChainStoreBundle bundle,
+            IChainActivations activations,
+            Func<HardforkName, ChainConfig> chainConfigFactory,
+            Func<HardforkName, HardforkConfig> hardforkConfigFactory,
+            IRewardPolicy rewardPolicy,
+            ILoggerFactory? loggerFactory,
+            IStateStore? stateOverride,
+            IFlushCadence? flushCadence,
+            StatePrefetcher? prefetcher)
+            => BuildFollowerExecutorStackWithCalculator(
+                bundle, activations, chainConfigFactory, hardforkConfigFactory,
+                rewardPolicy, loggerFactory, stateOverride, flushCadence, prefetcher, ExecutionStackOptions.DefaultStateRootWorkers);
+
+        public static FollowerExecutorStack BuildFollowerExecutorStackWithCalculator(
+            IChainStoreBundle bundle,
+            IChainActivations activations,
+            Func<HardforkName, ChainConfig> chainConfigFactory,
+            Func<HardforkName, HardforkConfig> hardforkConfigFactory,
+            IRewardPolicy rewardPolicy,
+            ILoggerFactory? loggerFactory,
+            IStateStore? stateOverride,
+            IFlushCadence? flushCadence,
+            StatePrefetcher? prefetcher,
+            int stateRootWorkers)
         {
             if (bundle == null) throw new ArgumentNullException(nameof(bundle));
             if (activations == null) throw new ArgumentNullException(nameof(activations));
@@ -50,31 +93,19 @@ namespace Nethereum.CoreChain
             if (hardforkConfigFactory == null) throw new ArgumentNullException(nameof(hardforkConfigFactory));
             if (rewardPolicy == null) throw new ArgumentNullException(nameof(rewardPolicy));
 
-            var state = stateOverride ?? bundle.State;
-            var effectiveLoggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
+            var stack = ExecutionStackFactory.Build(
+                bundle, activations, chainConfigFactory, hardforkConfigFactory,
+                new ExecutionStackOptions
+                {
+                    RewardPolicy = rewardPolicy,
+                    LoggerFactory = loggerFactory,
+                    StateOverride = stateOverride,
+                    FlushCadence = flushCadence,
+                    Prefetcher = prefetcher,
+                    StateRootWorkers = stateRootWorkers
+                });
 
-            var calc = new IncrementalStateRootCalculator(state, bundle.StateTrieNodes,
-                emitTombstones: !ReferenceEquals(bundle.StateTrieNodes, bundle.TrieNodes));
-            var engine = new BlockExecutor(
-                state, bundle.Blocks, activations,
-                chainConfigFactory: chainConfigFactory,
-                hardforkConfigFactory: hardforkConfigFactory,
-                stateRootCalculator: calc,
-                rewardPolicy: rewardPolicy,
-                trieNodeStore: bundle.TrieNodes,
-                logger: effectiveLoggerFactory.CreateLogger<BlockExecutor>());
-
-            var importer = new BlockImporter(
-                engine, bundle.Blocks, state,
-                bundle.Transactions, bundle.Receipts, bundle.Logs, bundle.Uncles,
-                logger: effectiveLoggerFactory.CreateLogger<BlockImporter>(),
-                nodeCommitBlockContext: bundle.NodeCommitBlockSource,
-                atomicFlush: bundle as IAtomicBlockFlush,
-                flushCadence: flushCadence,
-                blockAccessListStore: bundle.BlockAccessLists,
-                withdrawalStore: bundle.Withdrawals);
-
-            return new FollowerExecutorStack(importer, calc);
+            return new FollowerExecutorStack(stack.Importer, (IncrementalStateRootCalculator)stack.Calculator);
         }
     }
 }

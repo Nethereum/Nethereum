@@ -16,6 +16,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerReindexTests : IDisposable
     {
         private static readonly FilterMapsParams TinyParams = new FilterMapsParams(
@@ -41,7 +42,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_FrozenBlocks_When_InlineFreeze_Then_ByHashAndFiltermapsBothBuilt()
+        public async Task Given_FrozenBlocks_When_FinishBulkIndexingRuns_Then_ByHashAndFiltermapsBothBuilt()
         {
             var dataDir = Path.Combine(_root, "inline1");
             Directory.CreateDirectory(dataDir);
@@ -51,6 +52,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var blocks = MakeBlocks(0, DrainCount);
             await SetTipHeightAsync(bundle, TipHeight);
             await bundle.PersistBlocksAsync(blocks);
+            bundle.FinishBulkIndexing();
 
             var probe = blocks[3];
             var resolved = await bundle.Blocks.GetByHashAsync(probe.Hash);
@@ -129,7 +131,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_BackgroundFlagOnButTrailerNeverStarted_When_Freeze_Then_IndexesInlineNotDropped()
+        public async Task Given_BackgroundFlagOnButTrailerNeverStarted_When_Freeze_Then_NothingIsIndexedUntilTheTrailerStarts()
         {
             var dataDir = Path.Combine(_root, "fallback1");
             Directory.CreateDirectory(dataDir);
@@ -140,32 +142,14 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             await SetTipHeightAsync(bundle, TipHeight);
             await bundle.PersistBlocksAsync(blocks);
 
-            var probe = blocks[3];
-            var resolved = await bundle.Blocks.GetByHashAsync(probe.Hash);
-            Assert.NotNull(resolved);
-            Assert.Equal(probe.Header.BlockNumber.ToBigInteger(), resolved.BlockNumber.ToBigInteger());
-        }
+            Assert.True(bundle.FreezerHead > 0, "expected frozen blocks");
+            Assert.Equal(0, bundle.ByHashIndexedHead);
+            Assert.Null(new RocksDbFilterMapsStore(bundle.FreezerHistoryRocksForTests).ReadRange());
 
-        [Fact]
-        public async Task Given_TrailerStoppedByFinishBulkIndexing_When_FreezeAgain_Then_IndexesInlineNotDropped()
-        {
-            var dataDir = Path.Combine(_root, "stopped1");
-            Directory.CreateDirectory(dataDir);
-            var rocks = new RocksDbManager(FreezerOptions(dataDir, Path.Combine(_root, "stopped1_freezer"), backgroundIndexing: true));
-            using var bundle = OpenBundle(rocks, dataDir);
             bundle.StartBackgroundFreezeIndexing();
+            await WaitUntilAsync(() => bundle.ByHashIndexedHead >= bundle.FreezerHead, TimeSpan.FromSeconds(15));
 
-            var firstBatch = MakeBlocks(0, DrainCount);
-            await SetTipHeightAsync(bundle, TipHeight);
-            await bundle.PersistBlocksAsync(firstBatch);
-
-            bundle.FinishBulkIndexing();
-            Assert.Equal(bundle.FreezerHead, bundle.ByHashIndexedHead);
-
-            var secondBatch = MakeBlocks(DrainCount, DrainCount);
-            await bundle.PersistBlocksAsync(secondBatch);
-
-            var probe = secondBatch[3];
+            var probe = blocks[3];
             var resolved = await bundle.Blocks.GetByHashAsync(probe.Hash);
             Assert.NotNull(resolved);
             Assert.Equal(probe.Header.BlockNumber.ToBigInteger(), resolved.BlockNumber.ToBigInteger());
@@ -191,6 +175,31 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.Equal(0, bundle.ByHashIndexedHead);
         }
 
+        [Fact]
+        public async Task Given_AnArmedBundleBehindTheTip_When_TheTrailerStarts_Then_ByHashStaysBehindUntilCaughtUp()
+        {
+            const ulong followerTip = 1_000;
+            var dataDir = Path.Combine(_root, "yield1");
+            Directory.CreateDirectory(dataDir);
+            var rocks = new RocksDbManager(FreezerOptions(dataDir, Path.Combine(_root, "yield1_freezer"), backgroundIndexing: true));
+            using var bundle = OpenBundle(rocks, dataDir);
+            bundle.SetYieldToExecution(true);
+            bundle.Metadata.SaveHeaderSyncState(HeaderSubchains.OpenTip(HeaderSyncState.Empty, followerTip));
+            bundle.Metadata.Commit(100, Fill(0x64, 32));
+            bundle.StartBackgroundFreezeIndexing();
+
+            var blocks = MakeBlocks(0, DrainCount);
+            await SetTipHeightAsync(bundle, TipHeight);
+            await bundle.PersistBlocksAsync(blocks).WaitAsync(TimeSpan.FromSeconds(60));
+
+            Assert.True(bundle.FreezerHead > 0, "freezer files must keep advancing while the trailer yields");
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            Assert.Equal(0, bundle.ByHashIndexedHead);
+
+            bundle.Metadata.Commit(followerTip - 1, Fill(0x65, 32));
+            await WaitUntilAsync(() => bundle.ByHashIndexedHead == bundle.FreezerHead, TimeSpan.FromSeconds(30));
+        }
+
         private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
         {
             var deadline = DateTime.UtcNow + timeout;
@@ -210,6 +219,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var blocks = MakeBlocks(0, DrainCount);
             await SetTipHeightAsync(bundle, TipHeight);
             await bundle.PersistBlocksAsync(blocks);
+            bundle.FinishBulkIndexing();
 
             var hole = blocks[5];
             Assert.NotNull(await bundle.Blocks.GetByHashAsync(hole.Hash));
@@ -239,6 +249,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             var head = bundle.FreezerHead;
             Assert.True(head > 0, "expected frozen blocks");
+            bundle.FinishBulkIndexing();
             Assert.Equal(head, bundle.ByHashIndexedHead);
 
             bundle.SetByHashReindexCursorForTests(0);
@@ -315,7 +326,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_TheTrailerHasCaughtUp_When_FinishBulkIndexingRuns_Then_ItFinalizesWithTheWholeHeadIndexed()
+        public async Task Given_TheTrailerHasCaughtUp_When_FinishBulkIndexingRuns_Then_TheTrailerKeepsRunningAndTheWholeHeadIsIndexed()
         {
             var dataDir = Path.Combine(_root, "finalfile1");
             Directory.CreateDirectory(dataDir);
@@ -336,6 +347,13 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var resolved = await bundle.Blocks.GetByHashAsync(tip.Hash);
             Assert.NotNull(resolved);
             Assert.Equal(tip.Header.BlockNumber.ToBigInteger(), resolved.BlockNumber.ToBigInteger());
+
+            var headAfterFinish = bundle.FreezerHead;
+            await SetTipHeightAsync(bundle, TipHeight + DrainCount);
+            await bundle.PersistBlocksAsync(MakeBlocks(headAfterFinish, DrainCount));
+            Assert.True(bundle.FreezerHead > headAfterFinish);
+            await WaitUntilAsync(() => bundle.ByHashIndexedHead >= bundle.FreezerHead, TimeSpan.FromSeconds(15));
+            Assert.Equal(bundle.FreezerHead, bundle.ByHashIndexedHead);
         }
 
         private const long MultiRecordFreezerFileSizeBytes = 700;
@@ -592,7 +610,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         private const long TinyFreezerFileSizeBytes = 8;
 
         private RocksDbStorageOptions FreezerOptions(
-            string dataDir, string freezerDir, bool backgroundIndexing = false, bool tinyFreezerFiles = false,
+            string dataDir, string freezerDir, bool backgroundIndexing = true, bool tinyFreezerFiles = false,
             long? freezerMaxFileSizeBytes = null) => new RocksDbStorageOptions
         {
             DatabasePath = dataDir,

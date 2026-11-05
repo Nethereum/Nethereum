@@ -44,6 +44,9 @@ namespace Nethereum.CoreChain.Sync
 
         private ForkChoiceVerdict Choose(Branch incoming, Branch ours, ulong ancestor, byte[] incomingHash)
         {
+            if (incoming.Difficulty.IsZero && ours.Difficulty.IsZero)
+                return ForkChoiceVerdict.AdoptIncoming(ancestor, "post-merge import");
+
             var difference = incoming.Difficulty.CompareTo(ours.Difficulty);
             if (difference > 0) return ForkChoiceVerdict.AdoptIncoming(ancestor, "heavier branch");
             if (difference < 0) return ForkChoiceVerdict.KeepLocal("local branch is heavier");

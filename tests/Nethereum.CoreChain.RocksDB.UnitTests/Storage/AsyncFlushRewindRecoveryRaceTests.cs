@@ -194,5 +194,135 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Storage
             await flush.DrainAsync();
             Assert.Equal(1UL, bundle.Metadata.GetDurableStateBlock());
         }
+
+        private const string ClearedAddress = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+        private sealed class StagingProbeList : System.Collections.Generic.IReadOnlyList<string>
+        {
+            private readonly Action _onStagingEnumeration;
+            private int _enumerations;
+
+            public StagingProbeList(Action onStagingEnumeration) => _onStagingEnumeration = onStagingEnumeration;
+
+            public int Count => 1;
+            public string this[int index] => ClearedAddress;
+
+            public System.Collections.Generic.IEnumerator<string> GetEnumerator()
+            {
+                if (Interlocked.Increment(ref _enumerations) > 1) _onStagingEnumeration();
+                return ((System.Collections.Generic.IEnumerable<string>)new[] { ClearedAddress }).GetEnumerator();
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private static FlatStateBatch BatchWhoseStagingRuns(Action onStagingEnumeration)
+            => new FlatStateBatch(null, new StagingProbeList(onStagingEnumeration), null, null, null, null);
+
+        [Fact]
+        public async Task Given_StagingThrowsInTheBackground_When_TheNextBoundaryFlushes_Then_TheFailureSurfacesAndNothingIsWritten()
+        {
+            using var mgr = new FaultInjectableRocksDbManager(PathKeyedOptions(_dir));
+            var bundle = RocksDbChainStoreBundle.FromManager(mgr, _dir, ownsManager: false);
+            var flush = (IAtomicBlockFlush)bundle;
+
+            var writes = 0;
+            mgr.OnBeforeWrite = () => Interlocked.Increment(ref writes);
+
+            CommitOneNode(bundle, 1, 0x11);
+            var failing = BatchWhoseStagingRuns(() => throw new InvalidOperationException("staging failed"));
+            await flush.FlushBlockAsync(failing, block: 1, Hash32(1)).WaitAsync(TimeSpan.FromSeconds(30));
+
+            CommitOneNode(bundle, 2, 0x22);
+            var next = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => flush.FlushBlockAsync(flat: null, block: 2, Hash32(2)).WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal("staging failed", next.Message);
+
+            var drain = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => flush.DrainAsync().WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal("staging failed", drain.Message);
+
+            Assert.Equal(0, Volatile.Read(ref writes));
+            Assert.Equal(0UL, bundle.Metadata.GetDurableStateBlock());
+            Assert.Null(new RocksDbPathTrieNodeStore(mgr).TryGetRawNode(Array.Empty<byte>(), new byte[] { 0x11 }));
+        }
+
+        [Fact]
+        public async Task Given_AStagingInProgress_When_TheNextWindowReadsANodeOfTheFlushingWindow_Then_ItReadsTheWindowValue()
+        {
+            using var mgr = new FaultInjectableRocksDbManager(PathKeyedOptions(_dir));
+            var bundle = RocksDbChainStoreBundle.FromManager(mgr, _dir, ownsManager: false);
+            var flush = (IAtomicBlockFlush)bundle;
+
+            var stagingEntered = new ManualResetEventSlim(false);
+            var releaseStaging = new ManualResetEventSlim(false);
+            var holding = BatchWhoseStagingRuns(() => { stagingEntered.Set(); releaseStaging.Wait(TimeSpan.FromSeconds(30)); });
+
+            var owner = Array.Empty<byte>();
+            var path = new byte[] { 0x11 };
+            CommitOneNode(bundle, 1, 0x11);
+            await flush.FlushBlockAsync(holding, block: 1, Hash32(1)).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(stagingEntered.Wait(TimeSpan.FromSeconds(10)), "staging should be running in the background");
+
+            Assert.Equal(0UL, bundle.Metadata.GetDurableStateBlock());
+            var rawReader = (IRawNodeReader)bundle.StateTrieNodes;
+            var duringStaging = rawReader.TryGetRawNode(owner, path);
+            Assert.NotNull(duringStaging);
+
+            releaseStaging.Set();
+            await flush.DrainAsync().WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(1UL, bundle.Metadata.GetDurableStateBlock());
+            Assert.Equal(duringStaging, rawReader.TryGetRawNode(owner, path));
+        }
+
+        [Fact]
+        public async Task Given_AFlushStagingOrWritingInTheBackground_When_GetExecutedHashIsAskedForABlockOfThatWindow_Then_ItReturnsTheExecutedHash()
+        {
+            using var mgr = new FaultInjectableRocksDbManager(PathKeyedOptions(_dir));
+            var bundle = RocksDbChainStoreBundle.FromManager(mgr, _dir, ownsManager: false);
+            var flush = (IAtomicBlockFlush)bundle;
+
+            var writeEntered = new ManualResetEventSlim(false);
+            var releaseWrite = new ManualResetEventSlim(false);
+            mgr.OnBeforeWrite = () => { writeEntered.Set(); releaseWrite.Wait(TimeSpan.FromSeconds(10)); };
+
+            bundle.Metadata.SaveExecutedHash(1, Hash32(1));
+            bundle.Metadata.SaveExecutedHash(2, Hash32(2));
+            CommitOneNode(bundle, 2, 0x22);
+            await flush.FlushBlockAsync(flat: null, block: 2, Hash32(2)).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(writeEntered.Wait(TimeSpan.FromSeconds(10)));
+
+            Assert.Equal(Hash32(1), bundle.Metadata.GetExecutedHash(1));
+
+            releaseWrite.Set();
+            await flush.DrainAsync().WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(Hash32(1), bundle.Metadata.GetExecutedHash(1));
+            Assert.Equal(Hash32(2), bundle.Metadata.GetExecutedHash(2));
+        }
+
+        [Fact]
+        public async Task Given_ACommitWriteInProgress_When_GetExecutedHashIsAsked_Then_ItReturnsTheExecutedHash()
+        {
+            using var mgr = new FaultInjectableRocksDbManager(PathKeyedOptions(_dir));
+            var bundle = RocksDbChainStoreBundle.FromManager(mgr, _dir, ownsManager: false);
+
+            var writeEntered = new ManualResetEventSlim(false);
+            var releaseWrite = new ManualResetEventSlim(false);
+            mgr.OnBeforeWrite = () => { writeEntered.Set(); releaseWrite.Wait(TimeSpan.FromSeconds(10)); };
+
+            bundle.Metadata.SaveExecutedHash(1, Hash32(1));
+            var commit = Task.Run(() => bundle.Metadata.Commit(2, Hash32(2)));
+            Assert.True(writeEntered.Wait(TimeSpan.FromSeconds(10)));
+
+            Assert.Equal(Hash32(1), bundle.Metadata.GetExecutedHash(1));
+
+            releaseWrite.Set();
+            await commit.WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(Hash32(1), bundle.Metadata.GetExecutedHash(1));
+            Assert.Equal(Hash32(2), bundle.Metadata.GetExecutedHash(2));
+        }
     }
 }

@@ -48,6 +48,7 @@ namespace Nethereum.CoreChain.Freezer.UnitTests
         {
             private readonly Dictionary<long, HotBlock> _blocks = new();
             public long HotTipNumber { get; private set; }
+            public long HotFloorNumber => _blocks.Count == 0 ? -1 : _blocks.Keys.Min();
 
             public void Add(long number, HotBlock block)
             {

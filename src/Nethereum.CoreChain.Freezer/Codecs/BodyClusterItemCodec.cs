@@ -23,25 +23,8 @@ namespace Nethereum.CoreChain.Freezer.Codecs
 
         public BlockBodyCluster Decode(ReadOnlySpan<byte> bytes)
         {
-            var bodyRlp = (RLPCollection)RLP.RLP.Decode(bytes.ToArray());
-
-            var txs = new List<ISignedTransaction>();
-            foreach (var txRlp in (RLPCollection)bodyRlp[0])
-                txs.Add(TransactionFactory.CreateTransaction(txRlp.RLPData));
-
-            var uncles = new List<BlockHeader>();
-            foreach (RLPCollection uncleRlp in (RLPCollection)bodyRlp[1])
-                uncles.Add(BlockHeaderEncoder.Current.Decode(uncleRlp.RLPData));
-
-            List<Withdrawal> withdrawals = null;
-            if (bodyRlp.Count > 2)
-            {
-                withdrawals = new List<Withdrawal>();
-                foreach (var wRlp in (RLPCollection)bodyRlp[2])
-                    withdrawals.Add(WithdrawalEncoder.Current.Decode(wRlp.RLPData));
-            }
-
-            return new BlockBodyCluster(txs, uncles, withdrawals);
+            var body = BlockBodiesMessageEncoder.DecodeBody(bytes.ToArray());
+            return new BlockBodyCluster(body.Transactions, body.Uncles, body.Withdrawals);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.CoreChain.RocksDB.History;
 using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.History;
@@ -121,6 +122,23 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             _core.Write(batch);
         }
 
+        public void DeleteBlockTransactionLookups(ulong blockNumber)
+        {
+            using var batch = _core.CreateWriteBatch();
+            using (var lease = _core.Lease())
+            using (var it = lease.Database.NewIterator(_txBody))
+            {
+                HistoryRows.ScanBlock(it, blockNumber, row =>
+                {
+                    var tx = _provider.DecodeTransaction(row);
+                    if (tx?.Hash == null) return;
+                    var loc = HistoryKeys.TryReadTxLocation(lease.Database.Get(tx.Hash, _txHashIndex));
+                    if (loc.HasValue && loc.Value.BlockNumber == blockNumber) batch.Delete(tx.Hash, _txHashIndex);
+                });
+            }
+            _core.Write(batch);
+        }
+
         public void DeleteBlockTransactions(ulong blockNumber)
         {
             var fromKey = HistoryKeys.TxKey(blockNumber, 0);
@@ -129,12 +147,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             using (var lease = _core.Lease())
             using (var it = lease.Database.NewIterator(_txBody))
             {
-                for (it.Seek(fromKey); it.Valid(); it.Next())
+                HistoryRows.ScanBlock(it, blockNumber, row =>
                 {
-                    if (HistoryKeys.ReadBlockNumber(it.Key()) != blockNumber) break;
-                    var tx = _provider.DecodeTransaction(it.Value());
+                    var tx = _provider.DecodeTransaction(row);
                     if (tx?.Hash != null) batch.Delete(tx.Hash, _txHashIndex);
-                }
+                });
             }
             batch.DeleteRange(fromKey, (ulong)fromKey.Length, toKey, (ulong)toKey.Length, _txBody);
             _core.Write(batch);
@@ -205,12 +222,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var result = new List<ReceiptInfo>();
             using var lease = _core.Lease();
             using var it = lease.Database.NewIterator(_receiptBody);
-            for (it.Seek(HistoryKeys.TxKey(number, 0)); it.Valid(); it.Next())
+            HistoryRows.ScanBlock(it, number, row =>
             {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != number) break;
-                var info = _serializer.DeserializeReceiptInfoWith(it.Value());
+                var info = _serializer.DeserializeReceiptInfoWith(row);
                 if (info != null) result.Add(info);
-            }
+            });
             return result;
         }
 
@@ -271,8 +287,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (hash == null) return null;
             using var lease = _core.Lease();
-            var loc = lease.Database.Get(hash, _blockHashIndex);
-            return loc == null || loc.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(loc);
+            return HistoryKeys.TryReadBlockNumber(lease.Database.Get(hash, _blockHashIndex));
         }
 
         public BlockHeader TryGetHeaderByHash(byte[] hash)
@@ -281,14 +296,19 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             return n.HasValue ? TryGetHeader(n.Value) : null;
         }
 
+        public ulong? TryGetOldestNumber()
+        {
+            using var lease = _core.Lease();
+            using var it = lease.Database.NewIterator(_header);
+            it.SeekToFirst();
+            return it.Valid() ? HistoryKeys.TryReadBlockNumber(it.Key()) : null;
+        }
+
         public ulong? TryGetLatestNumber()
         {
             using var lease = _core.Lease();
             using var it = lease.Database.NewIterator(_header);
-            it.SeekToLast();
-            if (!it.Valid()) return null;
-            var key = it.Key();
-            return key.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(key);
+            return HistoryRows.Tip(it);
         }
 
         public List<ISignedTransaction> GetTransactionsForBlock(ulong number)
@@ -296,11 +316,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var result = new List<ISignedTransaction>();
             using var lease = _core.Lease();
             using var it = lease.Database.NewIterator(_txBody);
-            for (it.Seek(HistoryKeys.TxKey(number, 0)); it.Valid(); it.Next())
-            {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != number) break;
-                result.Add(_provider.DecodeTransaction(it.Value()));
-            }
+            HistoryRows.ScanBlock(it, number, row => result.Add(_provider.DecodeTransaction(row)));
             return result;
         }
 
@@ -309,11 +325,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var result = new List<byte[]>();
             using var lease = _core.Lease();
             using var it = lease.Database.NewIterator(_txBody);
-            for (it.Seek(HistoryKeys.TxKey(number, 0)); it.Valid(); it.Next())
-            {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != number) break;
-                result.Add(_provider.DecodeTransaction(it.Value()).Hash);
-            }
+            HistoryRows.ScanBlock(it, number, row => result.Add(_provider.DecodeTransaction(row).Hash));
             return result;
         }
 
@@ -321,9 +333,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (txHash == null) return null;
             using var lease = _core.Lease();
-            var loc = lease.Database.Get(txHash, _txHashIndex);
-            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
-            return (HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc));
+            var loc = HistoryKeys.TryReadTxLocation(lease.Database.Get(txHash, _txHashIndex));
+            if (loc == null) return null;
+            return (loc.Value.BlockNumber, loc.Value.TxIndex);
         }
 
         public ISignedTransaction TryGetTransactionByHash(byte[] txHash)
@@ -334,5 +346,30 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             using (var lease = _core.Lease()) b = lease.Database.Get(HistoryKeys.TxKey(loc.Value.Block, loc.Value.Index), _txBody);
             return b == null ? null : _provider.DecodeTransaction(b);
         }
+    }
+}
+
+namespace Nethereum.CoreChain.RocksDB.Stores
+{
+    internal static class HotThenHistory
+    {
+        internal static async System.Threading.Tasks.Task<T> ReadAsync<T>(
+            bool hotKnowsBlock,
+            System.Func<System.Threading.Tasks.Task<T>> hot,
+            System.Func<T, bool> holdsBody,
+            System.Func<System.Threading.Tasks.Task<T>> history)
+        {
+            if (hotKnowsBlock)
+            {
+                var fromHot = await hot().ConfigureAwait(false);
+                if (holdsBody(fromHot)) return fromHot;
+            }
+            return await history().ConfigureAwait(false);
+        }
+
+        internal static bool NotEmpty<TSeq>(TSeq items) where TSeq : System.Collections.IEnumerable
+            => items != null && items.GetEnumerator().MoveNext();
+
+        internal static bool NotNull<T>(T item) where T : class => item != null;
     }
 }

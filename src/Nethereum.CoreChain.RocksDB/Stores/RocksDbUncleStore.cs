@@ -29,11 +29,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var result = new List<BlockHeader>();
             if (unclesRlp == null || unclesRlp.Length == 0) return result;
-            foreach (var item in (RLPCollection)RLP.RLP.Decode(unclesRlp))
+            var reader = new RlpReader(unclesRlp);
+            var scope = reader.ReadListHeader();
+            while (!reader.IsAtEnd(scope))
             {
-                var h = _provider.DecodeBlockHeader(item.RLPData);
+                var h = _provider.DecodeBlockHeader(reader.ReadData());
                 if (h != null) result.Add(h);
             }
+            reader.EnsureEnd(scope);
+            reader.EnsureEnd();
             return result;
         }
 
@@ -71,8 +75,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (blockHash == null) return null;
             using var lease = _manager.Lease();
-            var num = lease.Database.Get(blockHash, _blockHashIndex);
-            return num == null || num.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(num);
+            return HistoryKeys.TryReadBlockNumber(lease.Database.Get(blockHash, _blockHashIndex));
         }
     }
 }

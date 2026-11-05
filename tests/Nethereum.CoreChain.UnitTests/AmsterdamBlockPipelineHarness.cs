@@ -54,7 +54,7 @@ namespace Nethereum.CoreChain.UnitTests
             Func<InMemoryStateStore, Task> seed = null,
             ulong slotNumber = 1)
         {
-            var stack = await CreateStackAsync(fork, seed).ConfigureAwait(false);
+            var stack = await CreateStackAsync(fork, seed, genesisGasLimit: blockGasLimit).ConfigureAwait(false);
             var producer = new BlockProducer(
                 stack.Engine, stack.BlockStore,
                 new InMemoryTransactionStore(stack.BlockStore), new InMemoryReceiptStore(), new InMemoryLogStore(),
@@ -69,16 +69,17 @@ namespace Nethereum.CoreChain.UnitTests
                 Coinbase = SenderAddress,
                 BaseFee = 0,
                 BlockGasLimit = blockGasLimit,
-                Difficulty = 1,
+                Difficulty = 0,
                 ChainId = ChainId,
                 SlotNumber = slotNumber
             }).ConfigureAwait(false);
         }
 
         public static async Task<BlockImporter> CreateImporterAsync(
-            IBlockAccessListStore blockAccessListStore = null)
+            IBlockAccessListStore blockAccessListStore = null,
+            long genesisGasLimit = DefaultBlockGasLimit)
         {
-            var stack = await CreateStackAsync().ConfigureAwait(false);
+            var stack = await CreateStackAsync(genesisGasLimit: genesisGasLimit).ConfigureAwait(false);
             return new BlockImporter(
                 stack.Engine, stack.BlockStore, stack.StateStore,
                 transactionStore: null, receiptStore: null, logStore: null, uncleStore: null,
@@ -90,7 +91,7 @@ namespace Nethereum.CoreChain.UnitTests
             BlockHeader header, IList<ISignedTransaction> transactions,
             IBlockAccessListStore blockAccessListStore = null)
         {
-            var importer = await CreateImporterAsync(blockAccessListStore).ConfigureAwait(false);
+            var importer = await CreateImporterAsync(blockAccessListStore, header.GasLimit).ConfigureAwait(false);
             return await importer.ImportAsync(
                 header, transactions, uncles: null, withdrawals: null, CancellationToken.None).ConfigureAwait(false);
         }
@@ -107,7 +108,8 @@ namespace Nethereum.CoreChain.UnitTests
         private static async Task<Stack> CreateStackAsync(
             Nethereum.EVM.HardforkName fork = Nethereum.EVM.HardforkName.Amsterdam,
             Func<InMemoryStateStore, Task> seed = null,
-            ulong slotNumber = 1)
+            ulong slotNumber = 1,
+            long genesisGasLimit = DefaultBlockGasLimit)
         {
             var stateStore = new InMemoryStateStore();
             await Nethereum.CoreChain.Forks.SystemContractPredeploys
@@ -120,6 +122,9 @@ namespace Nethereum.CoreChain.UnitTests
             if (seed != null) await seed(stateStore).ConfigureAwait(false);
 
             var blockStore = new InMemoryBlockStore();
+            var genesisIdentity = BlockHashCalculator.ForFork(
+                ShapedHeaders.Genesis(fork, DefaultBlockGasLimit), fork);
+            await blockStore.SaveAsync(ShapedHeaders.Genesis(fork, genesisGasLimit), genesisIdentity);
             var config = new ChainConfig
             {
                 ChainId = ChainId,

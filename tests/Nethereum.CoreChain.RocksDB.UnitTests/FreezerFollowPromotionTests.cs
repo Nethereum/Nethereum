@@ -18,6 +18,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerFollowPromotionTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"freezerfollow_{Guid.NewGuid():N}");
@@ -75,9 +76,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.True(condition(), "the trailer did not converge within the timeout");
         }
 
-        private static void SetIndexTrailerTaskForTests(RocksDbChainStoreBundle bundle, Task value)
-            => bundle.SetByHashTrailerTaskForTests(value);
-
         private static RocksDbPromotionService RocksPromotionServiceOf(RocksDbChainStoreBundle bundle)
             => bundle.PromotionService;
 
@@ -104,7 +102,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_AFollowedBlockAgesPastTheBound_When_Flush_Then_ItIsFrozen_Indexed_AndEvictedFromHot()
+        public async Task Given_AFollowedBlockAgesPastTheBound_When_Flush_Then_ItIsFrozenAndEvictedFromHot()
         {
             using var bundle = OpenBundle();
             var blocks = MakeChainedBlocks(0, 6);
@@ -118,6 +116,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             DriveFreezerPromotion(bundle);
 
             Assert.Equal(4, bundle.FreezerHead);
+
+            bundle.FinishBulkIndexing();
             Assert.Equal(4, bundle.ByHashIndexedHead);
 
             var promoted = blocks[3];
@@ -127,6 +127,45 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             Assert.False(HotWindowOf(bundle).ContainsBlock(3), "block 3 must have been evicted from hot once frozen");
             Assert.True(HotWindowOf(bundle).ContainsBlock(4), "block 4 is above the bound and must stay hot");
+        }
+
+        [Fact]
+        public async Task Given_ASnapSyncedStoreWhoseHotWindowStartsAbovePendingBackfill_When_PromotionRuns_Then_NothingIsPromotedAndNothingThrows_AndOnceBackfillFillsTheGapTheFreezerIsFilledUpToFinalized()
+        {
+            using var bundle = OpenBundle();
+            AppendToFreezerWithoutIndexing(bundle, MakeChainedBlocks(0, 1));
+            foreach (var b in MakeChainedBlocks(5, 5))
+                await WriteToHotAsync(bundle, b);
+            StampTipHeight(CoreManagerOf(bundle), ImmutabilityThreshold + 7);
+
+            DriveFreezerPromotion(bundle);
+
+            Assert.Equal(1, bundle.FreezerHead);
+            Assert.True(HotWindowOf(bundle).ContainsBlock(5));
+
+            AppendToFreezerWithoutIndexing(bundle, MakeChainedBlocks(1, 4));
+            Assert.Equal(5, bundle.FreezerHead);
+
+            DriveFreezerPromotion(bundle);
+
+            Assert.Equal(8, bundle.FreezerHead);
+            Assert.False(HotWindowOf(bundle).ContainsBlock(7), "block 7 must have been evicted from hot once frozen");
+            Assert.True(HotWindowOf(bundle).ContainsBlock(8), "block 8 is above finalized and must stay hot");
+        }
+
+        [Fact]
+        public async Task Given_AGapInsideTheHotWindow_When_PromotionRuns_Then_FreezerConsistencyExceptionAndNothingIsSkipped()
+        {
+            using var bundle = OpenBundle();
+            foreach (var b in MakeChainedBlocks(0, 3))
+                await WriteToHotAsync(bundle, b);
+            foreach (var b in MakeChainedBlocks(4, 3))
+                await WriteToHotAsync(bundle, b);
+            StampTipHeight(CoreManagerOf(bundle), ImmutabilityThreshold + 6);
+
+            Assert.Throws<Nethereum.Freezer.FreezerConsistencyException>(() => DriveFreezerPromotion(bundle));
+
+            Assert.Equal(0, bundle.FreezerHead);
         }
 
         [Fact]
@@ -233,13 +272,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             }
         }
 
-        // Task 6 (freezer-as-history-backend plan): the gap this task closes -- IndexPromoted (by-hash only)
-        // left the EIP-7745 log index behind, so a follow-promoted block's logs were unreachable from the
-        // rendered filtermaps index (only from the O(n) hot-scan fallback over the whole range). Composes
-        // RenderFilterMapsCatchUp into DriveFreezerPromotion; asserts the index itself advanced
-        // (LogIndexRenderedHead), then confirms eth_getLogs resolves EXCLUSIVELY through that rendered range
-        // (ToBlock capped at the rendered head, never spilling into the hot-scan fallback that would mask a
-        // missing render).
         [Fact]
         public async Task Given_AFollowedBlockWithLogs_When_Promoted_Then_GetLogsResolvesFromHistory()
         {
@@ -253,6 +285,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             DriveFreezerPromotion(bundle);
 
             Assert.Equal(11, bundle.FreezerHead);
+            bundle.FinishBulkIndexing();
             Assert.True(bundle.LogIndexRenderedHead > 0,
                 "the log index must have rendered at least one epoch across the promoted range");
 
@@ -276,8 +309,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             AppendToFreezerWithoutIndexing(bundle, blocks.GetRange(0, 2));
             Assert.Equal(2, bundle.FreezerHead);
             Assert.Equal(0, bundle.ByHashIndexedHead);
-
-            SetIndexTrailerTaskForTests(bundle, Task.CompletedTask);
 
             foreach (var b in blocks)
                 await WriteToHotAsync(bundle, b);

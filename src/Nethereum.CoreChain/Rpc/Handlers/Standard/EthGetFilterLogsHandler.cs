@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
 using Nethereum.CoreChain.Storage;
@@ -27,15 +26,9 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             }
 
             var filter = filterState.LogFilter ?? new LogFilter();
+            LogFilterLimits.Enforce(filter, context.Node.Config.RpcLogQueryLimit);
 
-            var latest = await LogQueryGuards.ResolveConcreteRangeAsync(filter, context);
-            LogQueryGuards.EnforceBlockRangeCap(filter, context);
-            LogQueryGuards.EnforceToBlockWithinHead(filter, latest);
-
-            var logs = await context.Node.Logs.GetLogsAsync(filter);
-            LogQueryGuards.EnforceResultCap(logs.Count, context);
-
-            var result = logs.Select(FilteredLogRpcMapper.ToRpcFilterLog).ToList();
+            var result = await LogQueryGuards.GetGuardedLogsAsync(filter, context);
 
             return Success(request.Id, result);
         }

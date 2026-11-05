@@ -7,18 +7,19 @@ using Nethereum.Util;
 using Nethereum.Util.HashProviders;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
+    [Trait("Requires", "Externals")]
     public class BlockchainFullExecutionTests
     {
         private readonly ITestOutputHelper _output;
         private readonly Sha3Keccack _keccak = new();
         private readonly IHashProvider _hashProvider = new Sha3KeccackHashProvider();
 
-        private static readonly string TestVectorsPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "BlockchainTests", "ValidBlocks");
+        private static string TestVectorsPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "BlockchainTests", "ValidBlocks");
 
         public BlockchainFullExecutionTests(ITestOutputHelper output)
         {
@@ -291,9 +292,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
         public static IEnumerable<object[]> GetAllValidBlockTestFiles()
         {
-            var testVectorsPath = Path.Combine(
-                AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "external", "ethereum-tests", "BlockchainTests", "ValidBlocks");
+            var testVectorsPath = Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "BlockchainTests", "ValidBlocks");
 
             if (!Directory.Exists(testVectorsPath))
                 yield break;

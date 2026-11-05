@@ -189,7 +189,10 @@ namespace Nethereum.CoreChain
             var ctx = TransactionContextFactory.From(tx, senderAddress, blockContext, executionStateService);
             ctx.TraceEnabled = traceEnabled;
 
-            return await ResolveExecutor((long)blockContext.BlockNumber, (ulong)blockContext.Timestamp).ExecuteAsync(ctx);
+            return await RunWithinTimeoutAsync(
+                Config.RpcTraceTimeout,
+                executionStateService,
+                () => ResolveExecutor((long)blockContext.BlockNumber, (ulong)blockContext.Timestamp).ExecuteAsync(ctx));
         }
 
         protected virtual void ApplyStateOverrides(

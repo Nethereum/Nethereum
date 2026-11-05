@@ -428,5 +428,17 @@ namespace Nethereum.CoreChain.UnitTests.Storage
             Assert.True(cache.TryGetStorage(addr, slot, out var got));
             Assert.Same(FlatStateCache.Tombstone, got);
         }
+
+        [Fact]
+        public void Given_AnAddressInMixedCase_When_AccountKeyIsBuilt_Then_ItEqualsTheLowercasedForm()
+        {
+            var mixed = "0xAbCdEf0123456789aBcDeF0123456789AbCdEf01";
+            var lower = mixed.ToLowerInvariant();
+
+            Assert.Equal(FlatStateCache.AccountKey(lower), FlatStateCache.AccountKey(mixed));
+            Assert.Equal(
+                FlatStateCache.StorageKey(lower, new BigInteger(7)),
+                FlatStateCache.StorageKey(mixed, new BigInteger(7)));
+        }
     }
 }

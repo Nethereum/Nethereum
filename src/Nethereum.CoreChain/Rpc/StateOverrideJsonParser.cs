@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Nethereum.CoreChain.Tracing;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 
 namespace Nethereum.CoreChain.Rpc
@@ -24,22 +25,32 @@ namespace Nethereum.CoreChain.Rpc
             return overrides;
         }
 
+        public static void RequireNonceFitsUint64(string address, System.Numerics.BigInteger nonce)
+        {
+            if (nonce > ulong.MaxValue)
+                throw RpcException.InvalidParams($"nonce override for account '{address}' exceeds 64 bits");
+        }
+
         public static StateOverride ParseStateOverride(string address, JsonElement element)
         {
             var stateOverride = new StateOverride();
 
             if (element.TryGetProperty("balance", out var balanceProp))
             {
-                var balanceStr = balanceProp.GetString();
+                var balanceStr = balanceProp.GetOptionalRpcString("balance override");
                 if (!string.IsNullOrEmpty(balanceStr))
                     stateOverride.Balance = new HexBigInteger(balanceStr);
             }
 
             if (element.TryGetProperty("nonce", out var nonceProp))
-                stateOverride.Nonce = nonceProp.GetString();
+            {
+                stateOverride.Nonce = nonceProp.GetOptionalRpcString("nonce override");
+                if (!string.IsNullOrEmpty(stateOverride.Nonce))
+                    RequireNonceFitsUint64(address, stateOverride.Nonce.HexToBigInteger(false));
+            }
 
             if (element.TryGetProperty("code", out var codeProp))
-                stateOverride.Code = codeProp.GetString();
+                stateOverride.Code = codeProp.GetOptionalRpcString("code override");
 
             var hasState = element.TryGetProperty("state", out var stateProp)
                            && stateProp.ValueKind != JsonValueKind.Null;
@@ -74,7 +85,7 @@ namespace Nethereum.CoreChain.Rpc
             var slots = new Dictionary<string, string>();
             foreach (var prop in element.EnumerateObject())
             {
-                slots[prop.Name] = prop.Value.GetString();
+                slots[prop.Name] = prop.Value.GetOptionalRpcString("storage slot value");
             }
             return slots;
         }

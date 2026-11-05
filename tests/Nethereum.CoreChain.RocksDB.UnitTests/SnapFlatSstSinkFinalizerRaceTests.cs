@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class SnapFlatSstSinkFinalizerRaceTests : IDisposable
     {
         private readonly string _dir = Path.Combine(Path.GetTempPath(), $"sstsink_race_{Guid.NewGuid():N}");

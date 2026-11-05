@@ -17,6 +17,20 @@ namespace Nethereum.CoreChain
         public byte[]? BlockAccessListRlp { get; set; }
         public object? MessageBatchResult { get; set; }
         public List<ISignedTransaction> IncludedTransactions { get; set; } = new();
+        public List<ISignedTransaction> DeferredTransactions { get; set; } = new();
+        public List<DroppedTransaction> DroppedTransactions { get; set; } = new();
+    }
+
+    public sealed class DroppedTransaction
+    {
+        public DroppedTransaction(ISignedTransaction transaction, string reason)
+        {
+            Transaction = transaction;
+            Reason = reason;
+        }
+
+        public ISignedTransaction Transaction { get; }
+        public string Reason { get; }
     }
 
     public class TransactionResult
@@ -28,6 +42,7 @@ namespace Nethereum.CoreChain
         public bool IsOutOfGas { get; set; }
         public Receipt Receipt { get; set; }
         public List<Log> Logs { get; set; }
+        public List<long> LogIndexes { get; set; }
         public string ErrorMessage { get; set; }
         public BigInteger GasUsed { get; set; }
         public BigInteger GasRefund { get; set; }

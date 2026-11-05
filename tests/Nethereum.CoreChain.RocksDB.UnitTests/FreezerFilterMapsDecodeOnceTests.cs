@@ -19,6 +19,7 @@ using FreezerCore = Nethereum.Freezer.Freezer;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerFilterMapsDecodeOnceTests : IDisposable
     {
         private static readonly FilterMapsParams TinyParams = new FilterMapsParams(
@@ -113,6 +114,69 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
                 $"expected live render progress ({liveHead}) ahead of the durable epoch-committed head ({durableHead})");
         }
 
+        [Fact]
+        public void Given_AFreezerLargerThanOneChunk_When_RenderingWithTheSmallerTarget_Then_TheFilterMapsAreIdenticalToTheLargeChunkRender()
+        {
+            using var large = OpenRolledStore(BlockCount, maxFileSize: 700);
+            var largeSource = new CountingFrozenReadSource(large.Freezer);
+            var (largeStore, largeIndexer, largeProgress) = WireIndexer(large, largeSource);
+            var largeRocks = _managers[_managers.Count - 1];
+            var largeEpochs = new FreezerBulkIndexBuilder(largeSource, large.Codecs, ingestor: null, largeStore, largeIndexer, largeProgress)
+                .RenderFilterMaps(headOverride: largeSource.Items);
+
+            using var small = OpenRolledStore(BlockCount, maxFileSize: 700);
+            var smallSource = new CountingFrozenReadSource(small.Freezer, chunkTargetOverride: 1);
+            var (smallStore, smallIndexer, smallProgress) = WireIndexer(small, smallSource);
+            var smallRocks = _managers[_managers.Count - 1];
+            var smallEpochs = new FreezerBulkIndexBuilder(smallSource, small.Codecs, ingestor: null, smallStore, smallIndexer, smallProgress)
+                .RenderFilterMaps(headOverride: smallSource.Items);
+
+            Assert.True(largeEpochs > 1);
+            Assert.True(smallSource.DecodeSealedChunkCalls > largeSource.DecodeSealedChunkCalls,
+                "the smaller target must split the freezer into more chunks");
+            Assert.Equal(largeEpochs, smallEpochs);
+            Assert.Equal(largeStore.ReadRange().Encode(), smallStore.ReadRange().Encode());
+
+            var largeDump = DumpColumnFamily(largeRocks, HistoryColumnFamilies.LogFilterMaps);
+            var smallDump = DumpColumnFamily(smallRocks, HistoryColumnFamilies.LogFilterMaps);
+            Assert.NotEmpty(largeDump);
+            Assert.Equal(largeDump.Count, smallDump.Count);
+            foreach (var kv in largeDump)
+            {
+                Assert.True(smallDump.TryGetValue(kv.Key, out var other), $"key present only in the large-chunk render: {kv.Key}");
+                Assert.Equal(kv.Value, other);
+            }
+        }
+
+        [Fact]
+        public void Given_ARenderRoundPausedBetweenChunks_When_ItWaits_Then_TheDecodedChunkIsNoLongerReachable()
+        {
+            using var h = OpenRolledStore(BlockCount, maxFileSize: 700);
+            var source = new CountingFrozenReadSource(h.Freezer, chunkTargetOverride: 1);
+            var (fmStore, fmIndexer, progress) = WireIndexer(h, source);
+
+            var pauseChecks = 0;
+            var firstChunkReleasedAtSecondPause = false;
+            var builder = new FreezerBulkIndexBuilder(source, h.Codecs, ingestor: null, fmStore, fmIndexer, progress,
+                shouldPause: () =>
+                {
+                    pauseChecks++;
+                    if (pauseChecks == 2)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect();
+                        firstChunkReleasedAtSecondPause = source.FirstChunkItem != null && !source.FirstChunkItem.IsAlive;
+                    }
+                    return false;
+                });
+
+            builder.RenderFilterMaps(headOverride: source.Items);
+
+            Assert.True(pauseChecks >= 2, "the fixture must render more than one chunk");
+            Assert.True(firstChunkReleasedAtSecondPause);
+        }
+
         private (RocksDbFilterMapsStore fmStore, FilterMapsIndexer fmIndexer, FreezerHistoryIndexProgress progress) WireIndexer(
             Harness h, IFrozenReadSource freezerForWiring)
         {
@@ -128,6 +192,19 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var fmIndexer = new FilterMapsIndexer(fmStore, chainView, finality, TinyParams);
             var progress = new FreezerHistoryIndexProgress(indexRocks, HistoryColumnFamilies.Control);
             return (fmStore, fmIndexer, progress);
+        }
+
+        private static Dictionary<string, byte[]> DumpColumnFamily(RocksDbManager manager, string cf)
+        {
+            var result = new Dictionary<string, byte[]>();
+            using var it = manager.CreateIterator(cf);
+            it.SeekToFirst();
+            while (it.Valid())
+            {
+                result[Convert.ToHexString(it.Key())] = it.Value();
+                it.Next();
+            }
+            return result;
         }
 
         private readonly List<RocksDbManager> _managers = new List<RocksDbManager>();
@@ -227,7 +304,14 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             public int ReadReceiptsSingleItemCalls;
             public int DecodeSealedChunkCalls;
 
-            public CountingFrozenReadSource(IFrozenReadSource inner) => _inner = inner;
+            private readonly int? _chunkTargetOverride;
+            public WeakReference FirstChunkItem;
+
+            public CountingFrozenReadSource(IFrozenReadSource inner, int? chunkTargetOverride = null)
+            {
+                _inner = inner;
+                _chunkTargetOverride = chunkTargetOverride;
+            }
 
             public long Items => _inner.Items;
 
@@ -268,10 +352,14 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             public IReadOnlyList<(long BlockNumber, byte[] Decoded)> DecodeSealedChunk(
                 string tableName, long startBlock, int targetBytes, long endExclusiveBlock, int? maxDegreeOfParallelism = null)
             {
-                var result = _inner.DecodeSealedChunk(tableName, startBlock, targetBytes, endExclusiveBlock, maxDegreeOfParallelism);
+                var result = _inner.DecodeSealedChunk(tableName, startBlock, _chunkTargetOverride ?? targetBytes, endExclusiveBlock, maxDegreeOfParallelism);
                 if (tableName == "receipts")
                 {
-                    lock (_gate) DecodeSealedChunkCalls++;
+                    lock (_gate)
+                    {
+                        DecodeSealedChunkCalls++;
+                        if (FirstChunkItem == null && result.Count > 0) FirstChunkItem = new WeakReference(result[0].Decoded);
+                    }
                     TrackAll(result);
                 }
                 return result;

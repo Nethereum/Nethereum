@@ -11,10 +11,8 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.Sync
 {
-    public sealed class ConsensusGatedBlockExecutor : IBlockExecutor
+    public sealed class ConsensusGatedBlockExecutor : IBlockExecutor, IRewindableExecutor
     {
-        private static readonly Sha3Keccack _keccak = new Sha3Keccack();
-
         private readonly IBlockExecutor _inner;
         private readonly IConsensusBlockGate _gate;
         private readonly ILogger _logger;
@@ -35,8 +33,7 @@ namespace Nethereum.CoreChain.Sync
         {
             if (header == null) throw new ArgumentNullException(nameof(header));
 
-            var encoded = BlockHeaderEncoder.Current.Encode(header);
-            var blockHash = _keccak.CalculateHash(encoded);
+            var blockHash = BlockHashCalculator.ForHeader(header);
 
             var verdict = await _gate.IsBlockCanonicalAsync(header, blockHash, ct).ConfigureAwait(false);
             if (!verdict.Accepted)
@@ -63,5 +60,12 @@ namespace Nethereum.CoreChain.Sync
 
             return result;
         }
+
+        Task<RewindToAncestorResult> IRewindableExecutor.RewindToAncestorAsync(
+            Services.IRewindCoordinator rewind, ulong ancestorNumber, Services.RewindScope scope, CancellationToken ct)
+            => _inner is IRewindableExecutor rewindable
+                ? rewindable.RewindToAncestorAsync(rewind, ancestorNumber, scope, ct)
+                : throw new InvalidOperationException(
+                    "The inner block executor cannot rewind to a common ancestor.");
     }
 }

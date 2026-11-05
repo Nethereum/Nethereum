@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class PromotionEnableLogIndexGuardTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"promotionlogindexguard_{Guid.NewGuid():N}");

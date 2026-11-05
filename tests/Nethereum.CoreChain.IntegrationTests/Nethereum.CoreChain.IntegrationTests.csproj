@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
-    <ProjectReference Include="..\..\src\Nethereum.Zisk.Prover.Server\Nethereum.Zisk.Prover.Server.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\..\src\Nethereum.Zisk.Prover.Server\Nethereum.Zisk.Prover.Server.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net8.0" />
     <ProjectReference Include="..\..\src\Nethereum.CoreChain.RocksDB\Nethereum.CoreChain.RocksDB.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Node.HarnessServer\Nethereum.Node.HarnessServer.csproj" />
@@ -43,6 +43,9 @@
        explicitly — without it the BLS12-381 backend cannot load and the
        Amsterdam host fixtures fall straight back into the unwired-precompile
        divergence HostBlockchainTestRunner.FixtureRegistry exists to prevent. -->
+  <ItemGroup>
+    <None Include="Fixtures\hive-rpc-compat\*" CopyToOutputDirectory="PreserveNewest" LinkBase="Fixtures\hive-rpc-compat" />
+  </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <None Include="..\..\src\Nethereum.Signer.Bls.Herumi\runtimes\win-x64\native\*.dll">
       <Link>%(Filename)%(Extension)</Link>
@@ -59,6 +62,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
   </ItemGroup>
 
 </Project>

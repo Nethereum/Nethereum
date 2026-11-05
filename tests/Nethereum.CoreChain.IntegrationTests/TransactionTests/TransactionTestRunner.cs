@@ -6,16 +6,17 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.TransactionTests
 {
+    [Trait("Requires", "Externals")]
     public class TransactionTestRunner
     {
         private readonly ITestOutputHelper _output;
 
-        private static readonly string TestPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "TransactionTests");
+        private static string TestPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "TransactionTests");
 
         public TransactionTestRunner(ITestOutputHelper output)
         {

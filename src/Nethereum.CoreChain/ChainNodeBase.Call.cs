@@ -16,17 +16,23 @@ namespace Nethereum.CoreChain
             BigInteger? value = null, BigInteger? gasLimit = null, Dictionary<string, StateOverride> stateOverrides = null,
             List<Authorisation7702Signed> authorisationList = null)
         {
-            var blockContext = await GetBlockContextForCallAsync();
-            return await CallCoreAsync(_nodeDataService, blockContext, to, data, from, value, gasLimit, stateOverrides, authorisationList);
+            return await WithinRpcEvmDeadlineAsync(async () =>
+            {
+                var blockContext = await GetBlockContextForCallAsync();
+                return await CallCoreAsync(_nodeDataService, blockContext, to, data, from, value, gasLimit, stateOverrides, authorisationList);
+            });
         }
 
         public virtual async Task<CallResult> CallAsync(string to, byte[] data, BigInteger blockNumber,
             string from = null, BigInteger? value = null, BigInteger? gasLimit = null, Dictionary<string, StateOverride> stateOverrides = null,
             List<Authorisation7702Signed> authorisationList = null)
         {
-            var dataService = await GetNodeDataServiceAtBlockAsync(blockNumber);
-            var blockContext = await GetBlockContextAtBlockAsync(blockNumber);
-            return await CallCoreAsync(dataService, blockContext, to, data, from, value, gasLimit, stateOverrides, authorisationList);
+            return await WithinRpcEvmDeadlineAsync(async () =>
+            {
+                var dataService = await GetNodeDataServiceAtBlockAsync(blockNumber);
+                var blockContext = await GetBlockContextAtBlockAsync(blockNumber);
+                return await CallCoreAsync(dataService, blockContext, to, data, from, value, gasLimit, stateOverrides, authorisationList);
+            });
         }
 
         internal async Task<CallResult> CallWithFeePolicyAsync(string to, byte[] data, BigInteger blockNumber,
@@ -34,10 +40,13 @@ namespace Nethereum.CoreChain
             List<Authorisation7702Signed> authorisationList,
             BigInteger? gasPrice, BigInteger? maxFeePerGas, BigInteger? maxPriorityFeePerGas)
         {
-            var dataService = await GetNodeDataServiceAtBlockAsync(blockNumber);
-            var blockContext = await GetBlockContextAtBlockAsync(blockNumber);
-            return await CallCoreAsync(dataService, blockContext, to, data, from, value, gasLimit, stateOverrides, authorisationList,
-                gasPrice, maxFeePerGas, maxPriorityFeePerGas);
+            return await WithinRpcEvmDeadlineAsync(async () =>
+            {
+                var dataService = await GetNodeDataServiceAtBlockAsync(blockNumber);
+                var blockContext = await GetBlockContextAtBlockAsync(blockNumber);
+                return await CallCoreAsync(dataService, blockContext, to, data, from, value, gasLimit, stateOverrides, authorisationList,
+                    gasPrice, maxFeePerGas, maxPriorityFeePerGas);
+            });
         }
 
         private async Task<CallResult> CallCoreAsync(
@@ -53,6 +62,7 @@ namespace Nethereum.CoreChain
             var contextBaseFee = applyBlockBaseFee ? blockContext.BaseFee : BigInteger.Zero;
 
             var executionStateService = new ExecutionStateService(dataService);
+            executionStateService.CancellationToken = _rpcEvmDeadline.Value;
 
             var isContractCreation = string.IsNullOrEmpty(to);
 

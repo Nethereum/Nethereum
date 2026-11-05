@@ -11,6 +11,7 @@ namespace Nethereum.CoreChain.Rpc
     {
         public static async Task<LogFilter> ParseAsync(JsonElement input, RpcContext context)
         {
+            input.RequireRpcObject("filter");
             var filter = new LogFilter();
 
             if (input.TryGetProperty("fromBlock", out var fromBlock))
@@ -25,12 +26,13 @@ namespace Nethereum.CoreChain.Rpc
             if (input.TryGetProperty("topics", out var topics))
                 filter.Topics = ParseTopics(topics);
 
-            if (input.TryGetProperty("blockHash", out var blockHashEl) && blockHashEl.ValueKind == JsonValueKind.String)
+            if (input.TryGetProperty("blockHash", out var blockHashEl) && blockHashEl.ValueKind != JsonValueKind.Null)
             {
+                var blockHash = blockHashEl.RequireRpcString("blockHash");
                 if (filter.FromBlock.HasValue || filter.ToBlock.HasValue)
                     throw RpcException.InvalidParams("cannot specify both blockHash and fromBlock/toBlock");
 
-                var header = await context.Node.GetBlockByHashAsync(blockHashEl.GetString().HexToByteArray());
+                var header = await context.Node.GetBlockByHashAsync(blockHash.HexToByteArray());
                 if (header == null)
                     throw RpcException.InvalidParams("blockHash not found");
 
@@ -39,6 +41,7 @@ namespace Nethereum.CoreChain.Rpc
                 filter.ToBlock = number;
             }
 
+            LogFilterLimits.Enforce(filter, context.Node.Config.RpcLogQueryLimit);
             return filter;
         }
 
@@ -47,7 +50,7 @@ namespace Nethereum.CoreChain.Rpc
             if (element.ValueKind == JsonValueKind.Null || element.ValueKind == JsonValueKind.Undefined)
                 return null;
 
-            var value = element.GetString();
+            var value = element.RequireRpcString("block bound");
             if (string.IsNullOrEmpty(value))
                 return null;
 
@@ -62,15 +65,23 @@ namespace Nethereum.CoreChain.Rpc
         {
             var addresses = new List<string>();
 
+            if (element.ValueKind == JsonValueKind.Null)
+            {
+                return addresses;
+            }
+
             if (element.ValueKind == JsonValueKind.String)
             {
-                addresses.Add(element.GetString());
+                addresses.Add(element.GetRpcString());
             }
             else if (element.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in element.EnumerateArray())
-                    if (item.ValueKind == JsonValueKind.String)
-                        addresses.Add(item.GetString());
+                    addresses.Add(item.RequireRpcString("address"));
+            }
+            else
+            {
+                throw RpcException.InvalidParams("address must be a string or an array of strings");
             }
 
             return addresses;
@@ -80,8 +91,11 @@ namespace Nethereum.CoreChain.Rpc
         {
             var topics = new List<List<byte[]>>();
 
-            if (element.ValueKind != JsonValueKind.Array)
+            if (element.ValueKind == JsonValueKind.Null)
                 return topics;
+
+            if (element.ValueKind != JsonValueKind.Array)
+                throw RpcException.InvalidParams("topics must be an array");
 
             foreach (var item in element.EnumerateArray())
             {
@@ -93,15 +107,18 @@ namespace Nethereum.CoreChain.Rpc
                 }
                 else if (item.ValueKind == JsonValueKind.String)
                 {
-                    topicList.Add(item.GetString().HexToByteArray());
+                    topicList.Add(item.GetRpcString().HexToByteArray());
                     topics.Add(topicList);
                 }
                 else if (item.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var subItem in item.EnumerateArray())
-                        if (subItem.ValueKind == JsonValueKind.String)
-                            topicList.Add(subItem.GetString().HexToByteArray());
+                        topicList.Add(subItem.RequireRpcString("topic").HexToByteArray());
                     topics.Add(topicList);
+                }
+                else
+                {
+                    throw RpcException.InvalidParams("a topic must be null, a string or an array of strings");
                 }
             }
 

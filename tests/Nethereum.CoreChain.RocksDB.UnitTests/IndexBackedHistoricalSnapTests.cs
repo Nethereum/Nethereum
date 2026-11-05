@@ -18,6 +18,7 @@ using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class IndexBackedHistoricalSnapTests : IDisposable
     {
         private const string TargetAddr = "0x0000000000000000000000000000000000000001";

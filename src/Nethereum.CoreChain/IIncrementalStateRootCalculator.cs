@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Nethereum.CoreChain.Prefetch;
 using Nethereum.Documentation;
+using Nethereum.Merkle.Patricia.Storage;
 namespace Nethereum.CoreChain
 {
     [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "IIncrementalStateRootCalculator - the pluggable state-root seam")]
@@ -20,6 +22,10 @@ namespace Nethereum.CoreChain
         void DiscardPendingState();
 
         Task<byte[]> ComputeFullStateRootAsync();
+
+        ITrieNodeStore NodeStore => null;
+
+        BlockTrieSet BeginBlockTries(byte[] parentRoot) => null;
 
     }
 }

@@ -1,11 +1,26 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Models;
+using Nethereum.RPC.Eth.DTOs;
 
 namespace Nethereum.CoreChain.Rpc
 {
     internal static class LogQueryGuards
     {
+        public static async Task<List<FilterLog>> GetGuardedLogsAsync(LogFilter filter, RpcContext context)
+        {
+            var latest = await ResolveConcreteRangeAsync(filter, context);
+            EnforceBlockRangeCap(filter, context);
+            EnforceToBlockWithinHead(filter, latest);
+
+            var logs = await context.Node.Logs.GetLogsAsync(filter);
+            EnforceResultCap(logs.Count, context);
+
+            return logs.Select(FilteredLogRpcMapper.ToRpcFilterLog).ToList();
+        }
+
         public static async Task<BigInteger> ResolveConcreteRangeAsync(LogFilter filter, RpcContext context)
         {
             var latest = await context.Node.GetBlockNumberAsync();

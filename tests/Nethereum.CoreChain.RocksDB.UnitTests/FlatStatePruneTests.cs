@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class FlatStatePruneTests : IDisposable
     {
         private readonly string _dir = Path.Combine(Path.GetTempPath(), $"flatprune_{Guid.NewGuid():N}");

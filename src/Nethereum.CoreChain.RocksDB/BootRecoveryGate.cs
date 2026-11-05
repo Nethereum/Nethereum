@@ -18,6 +18,13 @@ namespace Nethereum.CoreChain.RocksDB
         private static string ResolveRestoreRequestMarkerPath(string dataDir) =>
             dataDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "." + RestoreRequestFileName;
 
+        public bool HasPendingRestore(string dataDir)
+        {
+            if (string.IsNullOrEmpty(dataDir)) return false;
+            return File.Exists(ResolveRestoreRequestMarkerPath(dataDir))
+                || File.Exists(Path.Combine(dataDir, RestoreRequestFileName));
+        }
+
         public void ApplyPendingRestore(string dataDir, string freezerHistoryDirectory = null, bool promotionEnabled = false)
         {
             if (string.IsNullOrEmpty(dataDir)) return;

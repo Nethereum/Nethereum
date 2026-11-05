@@ -40,5 +40,6 @@ namespace Nethereum.CoreChain.Sync
         StateRootMismatch,
         TxValidationFailed,
         MalformedRlp,
+        InvalidBlock,
     }
 }

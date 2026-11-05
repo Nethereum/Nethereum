@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
@@ -10,14 +11,14 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly object _gate = new object();
 
-        private readonly Dictionary<string, Account> _accounts = new Dictionary<string, Account>();
-        private readonly HashSet<string> _deletedAccounts = new HashSet<string>();
-        private readonly HashSet<string> _clearedStorage = new HashSet<string>();
-        private readonly Dictionary<(string Address, BigInteger Slot), byte[]> _nonZeroStorage =
-            new Dictionary<(string, BigInteger), byte[]>();
-        private readonly HashSet<(string Address, BigInteger Slot)> _deletedSlots =
-            new HashSet<(string, BigInteger)>();
-        private readonly Dictionary<string, byte[]> _code = new Dictionary<string, byte[]>();
+        private readonly Dictionary<EvmAddress, Account> _accounts = new Dictionary<EvmAddress, Account>();
+        private readonly HashSet<EvmAddress> _deletedAccounts = new HashSet<EvmAddress>();
+        private readonly HashSet<EvmAddress> _clearedStorage = new HashSet<EvmAddress>();
+        private readonly Dictionary<(EvmAddress Address, BigInteger Slot), byte[]> _nonZeroStorage =
+            new Dictionary<(EvmAddress, BigInteger), byte[]>();
+        private readonly HashSet<(EvmAddress Address, BigInteger Slot)> _deletedSlots =
+            new HashSet<(EvmAddress, BigInteger)>();
+        private readonly Dictionary<byte[], byte[]> _code = new Dictionary<byte[], byte[]>(ByteArrayComparer.Current);
 
         private ulong? _forBlock;
 
@@ -27,25 +28,25 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             lock (_gate)
             {
-                foreach (var address in flat.DeletedAccountAddresses)
-                    _deletedAccounts.Add(NormalizeAddress(address));
+                foreach (var address in flat.DeletedAccountEvmAddresses)
+                    _deletedAccounts.Add(address);
 
-                foreach (var address in flat.ClearedStorageAddresses)
-                    _clearedStorage.Add(NormalizeAddress(address));
+                foreach (var address in flat.ClearedStorageEvmAddresses)
+                    _clearedStorage.Add(address);
 
-                foreach (var (address, slot, value) in flat.NonZeroStorage)
-                    _nonZeroStorage[(NormalizeAddress(address), slot)] = value;
+                foreach (var (address, slot, value) in flat.NonZeroStorageEvm)
+                    _nonZeroStorage[(address, slot)] = value;
 
-                foreach (var (address, slot) in flat.DeletedSlots)
-                    _deletedSlots.Add((NormalizeAddress(address), slot));
+                foreach (var (address, slot) in flat.DeletedSlotsEvm)
+                    _deletedSlots.Add((address, slot));
 
-                foreach (var (address, account) in flat.Accounts)
-                    _accounts[NormalizeAddress(address)] = account;
+                foreach (var (address, account) in flat.AccountsEvm)
+                    _accounts[address] = account;
 
                 foreach (var (codeHash, code) in flat.Code)
                 {
                     if (codeHash == null || codeHash.Length != 32) continue;
-                    _code[Convert.ToHexString(codeHash)] = code;
+                    _code[codeHash] = code;
                 }
 
                 _forBlock = block;
@@ -68,8 +69,10 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         public bool TryGetAccount(string address, out Account account, out bool isDeleted)
+            => TryGetAccount(EvmAddress.FromHex(address), out account, out isDeleted);
+
+        public bool TryGetAccount(EvmAddress key, out Account account, out bool isDeleted)
         {
-            var key = NormalizeAddress(address);
             lock (_gate)
             {
                 if (_accounts.TryGetValue(key, out var stored))
@@ -91,8 +94,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         public bool TryGetStorage(string address, BigInteger slot, out byte[] value, out bool isCleared)
+            => TryGetStorage(EvmAddress.FromHex(address), slot, out value, out isCleared);
+
+        public bool TryGetStorage(EvmAddress address, BigInteger slot, out byte[] value, out bool isCleared)
         {
-            var key = (NormalizeAddress(address), slot);
+            var key = (address, slot);
             lock (_gate)
             {
                 if (_nonZeroStorage.TryGetValue(key, out var stored))
@@ -128,11 +134,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
             lock (_gate)
             {
-                return _code.TryGetValue(Convert.ToHexString(codeHash), out code);
+                return _code.TryGetValue(codeHash, out code);
             }
         }
-
-        private static string NormalizeAddress(string address) => StateKeys.AccountKeyHex(address);
 
         private static Account CloneAccount(Account account)
         {

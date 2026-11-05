@@ -5,8 +5,8 @@ ancient store (bytes in, bytes out), this package is where Nethereum's block typ
 format and where a running node uses the freezer as its finalized-history tier:
 
 - **Codecs** — turn `BlockHeader`, transactions, receipts, withdrawals and EIP-7928 block access lists
-  into the raw geth-compatible item bytes each freezer table stores, and back.
-- **Receipt-field reconstruction** — geth trims receipts to three fields before freezing them; this
+  into the raw item bytes, in the standard ancient-store format, that each freezer table stores, and back.
+- **Receipt-field reconstruction** — the ancient-store format trims receipts to three fields before freezing them; this
   package strips them on write and rebuilds `gasUsed`, `logs`, `bloom`, `txHash`, effective gas price,
   contract address and blob fields on read, so a receipt-trie root built from the reconstructed receipts
   matches the header's `ReceiptsRoot`.
@@ -26,7 +26,7 @@ dotnet add package Nethereum.CoreChain.Freezer
 
 ### Dependencies
 
-Nethereum.Freezer, Nethereum.CoreChain, Nethereum.Documentation (direct project references). Targets
+Nethereum.Freezer, Nethereum.CoreChain (direct project references). Targets
 net8.0/net9.0/net10.0.
 
 ## Codecs — domain block data ↔ freezer item bytes
@@ -53,7 +53,7 @@ public sealed class FreezerCodecSet
 | --- | --- | --- |
 | `HeaderItemCodec` | `headers` | `RLP(header)`, via `Nethereum.Model.BlockHeaderEncoder` |
 | `BodyClusterItemCodec` | `bodies` | `RLP([txs, uncles, withdrawals])`; withdrawals `null` pre-Shanghai vs empty-but-present post-Shanghai is preserved |
-| `ReceiptsItemCodec` | `receipts` | `RLP([]ReceiptForStorage)` — geth's trimmed 3-field storage receipt, no bloom, no per-tx type byte |
+| `ReceiptsItemCodec` | `receipts` | `RLP([]ReceiptForStorage)` — the trimmed 3-field storage receipt, no bloom, no per-tx type byte |
 | `HashesItemCodec` | `hashes` | the raw 32-byte block hash, uncompressed |
 | `BalItemCodec` | `bals` | raw EIP-7928 block-access-list bytes, passthrough (empty placeholder pre-activation) |
 
@@ -75,7 +75,7 @@ public sealed class BlockBodyCluster
 
 ## Receipt reconstruction
 
-Geth's freezer stores a **trimmed** receipt — `ReceiptForStorage`, just three fields — and re-derives
+The freezer stores a **trimmed** receipt — `ReceiptForStorage`, just three fields — and re-derives
 everything else on read. `ReceiptForStorage` is what `ReceiptsItemCodec` reads and writes:
 
 ```csharp
@@ -90,7 +90,7 @@ public sealed class ReceiptForStorage
 ```
 
 `ReceiptFieldDeriver` rebuilds the full receipt from the trimmed one plus the sibling header and body —
-geth's `Receipt.DeriveFields`. The reconstructed receipts rebuild the header's `ReceiptsRoot` exactly:
+the receipt derivation step of the ancient-store format. The reconstructed receipts rebuild the header's `ReceiptsRoot` exactly:
 
 ```csharp
 public sealed class ReceiptFieldDeriver
@@ -104,7 +104,7 @@ public sealed class ReceiptFieldDeriver
 }
 ```
 
-Each `DerivedReceipt` carries the fields geth's trimmed form drops, per log location included:
+Each `DerivedReceipt` carries the fields the trimmed form drops, per log location included:
 
 ```csharp
 public sealed class DerivedReceipt
@@ -143,7 +143,7 @@ public interface IBlobBaseFeeFractionResolver
 }
 ```
 
-`CancunBlobBaseFeeFractionResolver` applies Cancun's fraction; it is the default resolver.
+`CancunBlobBaseFeeFractionResolver` applies Cancun's fraction. `ChainBlobBaseFeeFractionResolver(activations, configForFork)` reads the fraction from the fork schedule active at the header's block number and timestamp, so a receipt frozen after a later blob-parameter change derives the right blob gas price; `ChainBlobBaseFeeFractionResolver.Mainnet` is mainnet's schedule and is what `Nethereum.CoreChain.RocksDB` uses unless `RocksDbStorageOptions.BlobBaseFeeFraction` is set.
 
 ```csharp
 var deriver = new ReceiptFieldDeriver(
@@ -199,6 +199,7 @@ a finality source. Both are interfaces so mainnet and an AppChain can each suppl
 public interface IHotBlockWindowSource
 {
     long HotTipNumber { get; }
+    long HotFloorNumber { get; }
     HotBlock ReadHotBlock(long blockNumber);
 }
 
@@ -208,7 +209,7 @@ public interface IFinalitySource
 }
 ```
 
-`IHotBlockWindowEvict` (`EvictAtOrBelow(long number)`) is the write-side half of the hot-window seam,
+`HotFloorNumber` is the oldest block the hot window holds: `PromoteFinalizedBlocks` returns with nothing promoted while the next block to freeze is below it, so a node whose earlier blocks arrive through history backfill waits for them instead of failing, and promotion resumes contiguously once they are frozen. `IHotBlockWindowEvict` (`EvictAtOrBelow(long number)`) is the write-side half of the hot-window seam,
 called once promotion has durably frozen through a block. A `HotBlock` is the typed source cluster
 promotion consumes — full consensus receipts, which promotion strips to `ReceiptForStorage`:
 
@@ -309,7 +310,7 @@ blocks never block each other.
 
 ## FilterMaps log index (EIP-7745)
 
-The `Nethereum.CoreChain.Freezer.FilterMaps` namespace renders finalized blocks into geth's `fm-`
+The `Nethereum.CoreChain.Freezer.FilterMaps` namespace renders finalized blocks into the `fm-`
 filtermaps log index and answers `eth_getLogs` over it, driving the pure, storage-agnostic filtermaps
 core — `LogValueHasher`, `FilterMapsParams`, `FilterMapsSchema`, `FilterMapsRowCodec`,
 `FilterMapsMatcher`, `IFilterMapsStore` — documented in the `Nethereum.Freezer` package. In production

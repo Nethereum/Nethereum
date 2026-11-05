@@ -15,9 +15,10 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class EnableLogIndexTests : IDisposable
     {
-        private const string LogAddress = "0x00000000000000000000000000000000c0ffee";
+        private const string LogAddress = "0x0000000000000000000000000000000000c0ffee";
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"enablelogindex_{Guid.NewGuid():N}");
 
         public void Dispose()

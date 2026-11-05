@@ -33,38 +33,18 @@ namespace Nethereum.CoreChain
             var baseBlockContext = await GetBlockContextAtBlockAsync(resolvedBaseBlockNumber);
 
             var stateForSimulate = await BuildIsolatedSimulateStateStoreAsync(baseBlockNumber);
-            var trieNodeStoreForSimulate = _trieNodeStore != null
-                ? (ITrieNodeStore)new ReadOnlyTrieNodeStoreWrapper(_trieNodeStore)
-                : new InMemoryContentNodeStore();
-
             var activations = Config.ResolveActivations();
-            var calculator = new IncrementalStateRootCalculator(stateForSimulate, trieNodeStoreForSimulate);
-            var engine = new BlockExecutor(
-                stateForSimulate,
-                _blockStore,
-                activations,
-                chainConfigFactory: fork => new ChainConfig
-                {
-                    ChainId = Config.ChainId,
-                    BaseFee = Config.BaseFee,
-                    Registry = Config.Registry,
-                    RpcGasCap = Config.RpcGasCap,
-                    Hardfork = fork.ToString().ToLowerInvariant()
-                },
-                hardforkConfigFactory: Config.ConfigForFork,
-                stateRootCalculator: calculator,
-                rewardPolicy: NoRewardPolicy.Instance,
-                trieNodeStore: trieNodeStoreForSimulate);
+            var producer = CreateIsolatedBlockProducer(stateForSimulate, activations);
 
-            var producer = new BlockProducer(
-                engine, _blockStore, _transactionStore, _receiptStore, _logStore, stateForSimulate,
-                trieNodeStoreForSimulate, calculator, hardforkConfigFactory: Config.ConfigForFork);
-
+            using var deadline = Config.RpcEvmTimeout > TimeSpan.Zero
+                ? new System.Threading.CancellationTokenSource(Config.RpcEvmTimeout)
+                : new System.Threading.CancellationTokenSource();
             var simulateCallOptions = new SimulateCallOptions
             {
                 Validation = input.Validation ?? false,
                 TraceTransfers = input.TraceTransfers ?? false,
-                ExpectedNonces = new Dictionary<string, EvmUInt256>()
+                ExpectedNonces = new Dictionary<string, EvmUInt256>(),
+                CancellationToken = deadline.Token
             };
 
             if (input.BlockStateCalls.Count > MaxSimulateBlockCount)
@@ -119,7 +99,7 @@ namespace Nethereum.CoreChain
                 foreach (var call in blockCalls)
                 {
                     var resolvedCall = ResolveCallForSimulate(call);
-                    var syntheticTx = BlockExecutor.BuildSyntheticSimulateTransaction(resolvedCall, workingBlockContext.ChainId);
+                    var syntheticTx = SimulateEntryResolver.BuildSyntheticSimulateTransaction(resolvedCall, workingBlockContext.ChainId);
                     txEntries.Add(new TxEntry(syntheticTx, resolvedCall.From ?? AddressUtil.ZERO_ADDRESS, resolvedCall));
                 }
 
@@ -132,6 +112,9 @@ namespace Nethereum.CoreChain
                 }
                 simulateCallOptions.PrecompileRelocations = blockRelocations != null && blockRelocations.Count > 0
                     ? blockRelocations : null;
+                simulateCallOptions.LogIndexCounter = new Nethereum.EVM.LogIndexCounter();
+                simulateCallOptions.BlobBaseFee = overrides?.BlobBaseFee != null
+                    ? (EvmUInt256)overrides.BlobBaseFee.Value : (EvmUInt256?)null;
 
                 var baseFeeOverride = ResolveSimulateBaseFeeOverride(overrides, simulateCallOptions.Validation);
                 var excessBlobGasOverride = ResolveSimulateExcessBlobGasOverride(
@@ -161,7 +144,7 @@ namespace Nethereum.CoreChain
                     var callOutput = ToSimulateCallResult(callResult);
                     DecorateSimulateLogs(
                         callOutput.Logs, production.BlockHash, workingBlockContext.BlockNumber,
-                        production.Header.Timestamp, callResult.TxHash, callIndex, ref blockLogIndex);
+                        production.Header.Timestamp, callResult.TxHash, callIndex, callResult.LogIndexes, ref blockLogIndex);
                     callOutputs.Add(callOutput);
                 }
                 blockResult.Calls = callOutputs;
@@ -169,27 +152,64 @@ namespace Nethereum.CoreChain
                 results.Add(blockResult);
             }
 
-            foreach (var blockStateCall in input.BlockStateCalls)
+            try
             {
-                var overrides = blockStateCall.BlockOverrides;
-                var targetNumber = overrides?.Number?.Value ?? (previousNumber + 1);
+                foreach (var blockStateCall in input.BlockStateCalls)
+                {
+                    var overrides = blockStateCall.BlockOverrides;
+                    var targetNumber = overrides?.Number?.Value ?? (previousNumber + 1);
 
-                if (overrides?.Number != null && targetNumber <= previousNumber)
-                    throw new Rpc.RpcException(-38020,
-                        $"block numbers must be in order: {targetNumber} <= {previousNumber}");
+                    if (overrides?.Number != null && targetNumber <= previousNumber)
+                        throw new Rpc.RpcException(-38020,
+                            $"block numbers must be in order: {targetNumber} <= {previousNumber}");
 
-                while (previousNumber + 1 < targetNumber)
-                    await ProduceSimulatedBlockResultAsync(null, null, null);
+                    while (previousNumber + 1 < targetNumber)
+                        await ProduceSimulatedBlockResultAsync(null, null, null);
 
-                if (overrides?.Time != null && (long)overrides.Time.Value <= previousTimestamp)
-                    throw new Rpc.RpcException(-38021,
-                        $"block timestamps must be in order: {(long)overrides.Time.Value} <= {previousTimestamp}");
+                    if (overrides?.Time != null && (long)overrides.Time.Value <= previousTimestamp)
+                        throw new Rpc.RpcException(-38021,
+                            $"block timestamps must be in order: {(long)overrides.Time.Value} <= {previousTimestamp}");
 
-                await ProduceSimulatedBlockResultAsync(
-                    overrides, blockStateCall.Calls, blockStateCall.StateOverrides);
+                    await ProduceSimulatedBlockResultAsync(
+                        overrides, blockStateCall.Calls, blockStateCall.StateOverrides);
+                }
+            }
+            catch (OperationCanceledException) when (deadline.IsCancellationRequested)
+            {
+                throw new Rpc.RpcException(-32000, $"execution aborted (timeout = {Config.RpcEvmTimeout.TotalSeconds}s)");
             }
 
             return results;
+        }
+
+        protected virtual IRewardPolicy SimulationRewardPolicy => NoRewardPolicy.Instance;
+
+        private BlockProducer CreateIsolatedBlockProducer(IStateStore isolatedState, IChainActivations activations)
+        {
+            var isolatedTrieNodes = _trieNodeStore != null
+                ? (ITrieNodeStore)new ReadOnlyTrieNodeStoreWrapper(_trieNodeStore)
+                : new InMemoryContentNodeStore();
+            var calculator = new IncrementalStateRootCalculator(isolatedState, isolatedTrieNodes);
+            var engine = new BlockExecutor(
+                isolatedState,
+                _blockStore,
+                activations,
+                chainConfigFactory: fork => new ChainConfig
+                {
+                    ChainId = Config.ChainId,
+                    BaseFee = Config.BaseFee,
+                    Registry = Config.Registry,
+                    RpcGasCap = Config.RpcGasCap,
+                    Hardfork = fork.ToString().ToLowerInvariant()
+                },
+                hardforkConfigFactory: Config.ConfigForFork,
+                stateRootCalculator: calculator,
+                rewardPolicy: SimulationRewardPolicy,
+                trieNodeStore: isolatedTrieNodes);
+
+            return new BlockProducer(
+                engine, _blockStore, _transactionStore, _receiptStore, _logStore, isolatedState,
+                isolatedTrieNodes, calculator, hardforkConfigFactory: Config.ConfigForFork);
         }
 
         private static Dictionary<string, int> BuildBlockPrecompileMoves(
@@ -232,14 +252,11 @@ namespace Nethereum.CoreChain
             IChainActivations activations, BlockContext workingBlockContext, BlockHeader? parentHeader)
         {
             var fork = activations.ResolveAt((long)workingBlockContext.BlockNumber, (ulong)workingBlockContext.Timestamp);
-            var targetBlobsPerBlock = Config.ConfigForFork(fork).TargetBlobsPerBlock;
-            if (targetBlobsPerBlock <= 0) return null;
+            var blockConfig = Config.ConfigForFork(fork)
+                .AtBlock(activations, (long)workingBlockContext.BlockNumber, (ulong)workingBlockContext.Timestamp);
+            if (blockConfig.TargetBlobsPerBlock <= 0 || blockConfig.IntrinsicGasRules?.Blob == null) return null;
 
-            var parentExcessBlobGas = parentHeader?.ExcessBlobGas is long parentExcess ? unchecked((ulong)parentExcess) : 0UL;
-            var parentBlobGasUsed = parentHeader?.BlobGasUsed is long parentUsed ? unchecked((ulong)parentUsed) : 0UL;
-            var targetBlobGasPerBlock = (ulong)targetBlobsPerBlock * BlobGasCalculator.GAS_PER_BLOB;
-
-            return (long)BlobGasCalculator.CalculateExcessBlobGas(parentExcessBlobGas, parentBlobGasUsed, targetBlobGasPerBlock);
+            return (long)BlockExecutor.ExpectedExcessBlobGas(parentHeader, blockConfig);
         }
 
         private static object[] BuildSimulateTransactions(BlockProductionResult production, bool returnFullTransactions)
@@ -352,6 +369,8 @@ namespace Nethereum.CoreChain
                 GasPrice = call.GasPrice,
                 MaxFeePerGas = call.MaxFeePerGas,
                 MaxPriorityFeePerGas = call.MaxPriorityFeePerGas,
+                MaxFeePerBlobGas = call.MaxFeePerBlobGas,
+                BlobVersionedHashes = call.BlobVersionedHashes,
                 Nonce = call.Nonce
             };
         }
@@ -379,41 +398,25 @@ namespace Nethereum.CoreChain
 
         private static EthSimulateCallResult ToSimulateCallResult(TransactionResult result)
         {
-            if (!result.Success && result.IsOutOfGas)
-            {
-                return new EthSimulateCallResult
-                {
-                    Status = "0x0",
-                    ReturnData = "0x",
-                    GasUsed = new HexBigInteger(result.GasUsed),
-                    MaxUsedGas = new HexBigInteger(result.GasUsed + result.GasRefund),
-                    Logs = ToFilterLogs(result.Logs ?? result.Receipt?.Logs),
-                    Error = new EthSimulateCallError { Message = "out of gas", Code = -32015 }
-                };
-            }
-
-            if (!result.Success && result.IsRevert)
-            {
-                return new EthSimulateCallResult
-                {
-                    Status = "0x0",
-                    ReturnData = "0x",
-                    GasUsed = new HexBigInteger(result.GasUsed),
-                    MaxUsedGas = new HexBigInteger(result.GasUsed + result.GasRefund),
-                    Logs = ToFilterLogs(result.Logs ?? result.Receipt?.Logs),
-                    Error = BuildRevertError(result)
-                };
-            }
+            var failedWithOpaqueReturnData = !result.Success && (result.IsOutOfGas || result.IsRevert);
 
             return new EthSimulateCallResult
             {
                 Status = result.Success ? "0x1" : "0x0",
-                ReturnData = result.ReturnData?.ToHex(true) ?? "0x",
+                ReturnData = failedWithOpaqueReturnData ? "0x" : result.ReturnData?.ToHex(true) ?? "0x",
                 GasUsed = new HexBigInteger(result.GasUsed),
                 MaxUsedGas = new HexBigInteger(result.GasUsed + result.GasRefund),
                 Logs = ToFilterLogs(result.Logs ?? result.Receipt?.Logs),
-                Error = result.Success ? null : (result.ErrorMessage ?? "revert")
+                Error = SimulateCallErrorOf(result)
             };
+        }
+
+        private static object SimulateCallErrorOf(TransactionResult result)
+        {
+            if (result.Success) return null;
+            if (result.IsOutOfGas) return new EthSimulateCallError { Message = "out of gas", Code = -32015 };
+            if (result.IsRevert) return BuildRevertError(result);
+            return result.ErrorMessage ?? "revert";
         }
 
         private static EthSimulateCallError BuildRevertError(TransactionResult result)
@@ -446,13 +449,15 @@ namespace Nethereum.CoreChain
 
         private static void DecorateSimulateLogs(
             List<FilterLog> logs, byte[] blockHash, BigInteger blockNumber, long blockTimestamp,
-            byte[] transactionHash, int callIndex, ref int blockLogIndex)
+            byte[] transactionHash, int callIndex, List<long> stampedIndexes, ref int blockLogIndex)
         {
             if (logs == null) return;
 
             var blockHashHex = blockHash?.ToHex(true);
             var transactionHashHex = transactionHash?.ToHex(true);
 
+            var useStamped = stampedIndexes != null && stampedIndexes.Count == logs.Count;
+            var position = 0;
             foreach (var log in logs)
             {
                 log.BlockHash = blockHashHex;
@@ -460,9 +465,10 @@ namespace Nethereum.CoreChain
                 log.BlockTimestamp = new HexBigInteger(blockTimestamp);
                 log.BlockNumber = new HexBigInteger(blockNumber);
                 log.TransactionIndex = new HexBigInteger((BigInteger)callIndex);
-                log.LogIndex = new HexBigInteger((BigInteger)blockLogIndex);
+                log.LogIndex = new HexBigInteger(useStamped ? stampedIndexes[position] : (BigInteger)blockLogIndex);
                 log.Removed = false;
                 blockLogIndex++;
+                position++;
             }
         }
     }

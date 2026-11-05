@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using Nethereum.CoreChain.Storage;
-using Nethereum.Merkle.Patricia;
 using Nethereum.Merkle.Patricia.Nodes;
 using Nethereum.Merkle.Patricia.Storage;
 
@@ -56,6 +55,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public void Clear() => _inner.Clear();
 
         public byte[] TryGetRawNode(byte[] owner, byte[] path) => _inner.TryGetRawNode(owner, path);
+
 
         public void ClearCache() => _inner.ClearCache();
 

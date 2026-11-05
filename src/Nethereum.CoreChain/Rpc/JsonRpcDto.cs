@@ -46,4 +46,25 @@ namespace Nethereum.CoreChain.Rpc
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public object? Data { get; set; }
     }
+
+    public class JsonRpcSubscriptionNotification
+    {
+        [JsonPropertyName("jsonrpc")]
+        public string Jsonrpc { get; set; } = "2.0";
+
+        [JsonPropertyName("method")]
+        public string Method { get; set; } = "eth_subscription";
+
+        [JsonPropertyName("params")]
+        public JsonRpcSubscriptionResult Params { get; set; } = new JsonRpcSubscriptionResult();
+    }
+
+    public class JsonRpcSubscriptionResult
+    {
+        [JsonPropertyName("subscription")]
+        public string Subscription { get; set; } = "";
+
+        [JsonPropertyName("result")]
+        public object? Result { get; set; }
+    }
 }

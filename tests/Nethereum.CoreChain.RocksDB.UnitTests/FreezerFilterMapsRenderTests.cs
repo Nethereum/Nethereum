@@ -20,6 +20,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerFilterMapsRenderTests : IDisposable
     {
         private static readonly FilterMapsParams TinyParams = new FilterMapsParams(
@@ -66,6 +67,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var blocks = MakeBlocks(0, DrainCount);
             await SetTipHeightAsync(bundle, TipHeight);
             await bundle.PersistBlocksAsync(blocks);
+            bundle.FinishBulkIndexing();
 
             var fmStore = new RocksDbFilterMapsStore(bundle.FreezerHistoryRocksForTests);
             var range = fmStore.ReadRange();
@@ -372,6 +374,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var blocks = MakeBlocks(0, DrainCount);
             await SetTipHeightAsync(bundle, TipHeight);
             await bundle.PersistBlocksAsync(blocks);
+            bundle.FinishBulkIndexing();
 
             var fmStore = new RocksDbFilterMapsStore(bundle.FreezerHistoryRocksForTests);
             var rangeAfterFreeze = fmStore.ReadRange();
@@ -428,7 +431,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             var scratchPath = Path.Combine(dataDir, RocksDbChainStoreBundle.FreezerHistorySubDir, "fm-sst-scratch");
             File.WriteAllBytes(scratchPath, new byte[] { 0 });
 
-            var ex = await Assert.ThrowsAnyAsync<Exception>(() => bundle.PersistBlocksAsync(blocks));
+            await bundle.PersistBlocksAsync(blocks);
+            var ex = Assert.ThrowsAny<Exception>(() => bundle.RenderFilterMapsCatchUp());
             Assert.IsType<IOException>(ex);
 
             File.Delete(scratchPath);
@@ -437,7 +441,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_FrozenRangeBelowOneEpoch_When_Persist_Then_GateSkipsRenderButCountsLogValues()
+        public async Task Given_FrozenRangeBelowOneEpoch_When_PersistThenRenderCatchUp_Then_GateSkipsRenderButCountsLogValues()
         {
             var dataDir = Path.Combine(_root, "gate_below");
             Directory.CreateDirectory(dataDir);
@@ -447,9 +451,10 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             await SetTipHeightAsync(bundle, TipHeight);
             await bundle.PersistBlocksAsync(MakeBlocks(0, DrainCount));
 
+            Assert.Equal(0, bundle.RenderFilterMapsCatchUp());
+
             var range = new RocksDbFilterMapsStore(bundle.FreezerHistoryRocksForTests).ReadRange();
             Assert.True(range == null || range.BlocksAfterLast == 0, "below one epoch, the gate must render nothing");
-            Assert.Equal(0, bundle.RenderFilterMapsCatchUp());
 
             var raw = bundle.FreezerHistoryRocksForTests.Get(Nethereum.CoreChain.RocksDB.History.HistoryColumnFamilies.Control,
                 System.Text.Encoding.ASCII.GetBytes("filtermaps_lv_progress"));

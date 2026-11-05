@@ -15,9 +15,16 @@ namespace Nethereum.CoreChain.Services
             _bundle = bundle ?? throw new ArgumentNullException(nameof(bundle));
         }
 
+        public Task<RewindResult> RewindToAsync(
+            ulong targetBlock,
+            RewindPolicy policy,
+            CancellationToken ct = default)
+            => RewindToAsync(targetBlock, policy, RewindScope.ExecutionAndChain, ct);
+
         public async Task<RewindResult> RewindToAsync(
             ulong targetBlock,
             RewindPolicy policy,
+            RewindScope scope,
             CancellationToken ct = default)
         {
             await DrainPendingFlushAsync().ConfigureAwait(false);
@@ -38,14 +45,14 @@ namespace Nethereum.CoreChain.Services
             var pathKeyed = IsPathKeyedState();
             if (pathKeyed)
             {
-                return await RewindPathKeyedAsync(targetBlock, currentHead, policy, ct).ConfigureAwait(false);
+                return await RewindPathKeyedAsync(targetBlock, currentHead, policy, scope, ct).ConfigureAwait(false);
             }
 
             if (policy != RewindPolicy.SnapshotOnly && _bundle.JournalEnabled)
             {
                 if (await JournalCoversAsync(targetBlock).ConfigureAwait(false))
                 {
-                    return await RewindByJournalThenSnapshotAsync(targetBlock, currentHead, policy, ct).ConfigureAwait(false);
+                    return await RewindByJournalThenSnapshotAsync(targetBlock, currentHead, policy, scope, ct).ConfigureAwait(false);
                 }
                 if (policy == RewindPolicy.JournalOnly)
                     return NoPathAvailable(
@@ -85,7 +92,7 @@ namespace Nethereum.CoreChain.Services
 
 
         private async Task<RewindResult> RewindPathKeyedAsync(
-            ulong targetBlock, ulong currentHead, RewindPolicy policy, CancellationToken ct)
+            ulong targetBlock, ulong currentHead, RewindPolicy policy, RewindScope scope, CancellationToken ct)
         {
             if (policy == RewindPolicy.SnapshotOnly)
                 return TrySnapshot(targetBlock, currentHead, journalError: null, ct);
@@ -95,11 +102,11 @@ namespace Nethereum.CoreChain.Services
             if (policy == RewindPolicy.JournalOnly && result.Outcome == RewindOutcome.SnapshotUsed)
                 return NoPathAvailable(
                     currentHead, $"node history does not cover target {targetBlock:N0} and policy is JournalOnly");
-            return await FinalizeRewindAsync(result, currentHead, ct).ConfigureAwait(false);
+            return await FinalizeRewindAsync(result, currentHead, scope, ct).ConfigureAwait(false);
         }
 
         private async Task<RewindResult> RewindByJournalThenSnapshotAsync(
-            ulong targetBlock, ulong currentHead, RewindPolicy policy, CancellationToken ct)
+            ulong targetBlock, ulong currentHead, RewindPolicy policy, RewindScope scope, CancellationToken ct)
         {
             try
             {
@@ -118,7 +125,7 @@ namespace Nethereum.CoreChain.Services
                 var journalResult = new RewindResult(
                     RewindOutcome.JournalUsed, newHead, UndoneCount: undone, RestoredCheckpoint: null,
                     Detail: $"journal-rewound {undone:N0} block(s) to {newHead:N0}");
-                return await FinalizeRewindAsync(journalResult, currentHead, ct).ConfigureAwait(false);
+                return await FinalizeRewindAsync(journalResult, currentHead, scope, ct).ConfigureAwait(false);
             }
             catch (InvalidOperationException ex) when (policy == RewindPolicy.JournalFirstThenSnapshot)
             {
@@ -176,18 +183,25 @@ namespace Nethereum.CoreChain.Services
                 Detail: $"{how} rebuilt committed state to {newHead:N0} (target {committed:N0})");
         }
 
-        private async Task<RewindResult> FinalizeRewindAsync(RewindResult result, ulong originalHead, CancellationToken ct)
+        private async Task<RewindResult> FinalizeRewindAsync(
+            RewindResult result, ulong originalHead, RewindScope scope, CancellationToken ct)
         {
             if ((result.Outcome != RewindOutcome.JournalUsed && result.Outcome != RewindOutcome.NodeHistoryUsed)
                 || result.NewHead >= originalHead)
                 return result;
 
+            _bundle.Metadata.DeleteCheckpointsAbove(result.NewHead);
+
             for (var n = originalHead; n > result.NewHead; n--)
             {
                 ct.ThrowIfCancellationRequested();
                 var block = (BigInteger)n;
-                await _bundle.Logs.DeleteByBlockNumberAsync(block).ConfigureAwait(false);
-                await _bundle.Receipts.DeleteByBlockNumberAsync(block).ConfigureAwait(false);
+                await DeleteExecutionProducedAsync(block).ConfigureAwait(false);
+                if (scope == RewindScope.ExecutionOnly)
+                {
+                    await _bundle.Transactions.DeleteLookupsByBlockNumberAsync(block).ConfigureAwait(false);
+                    continue;
+                }
                 await _bundle.Transactions.DeleteByBlockNumberAsync(block).ConfigureAwait(false);
                 await _bundle.Uncles.DeleteByBlockNumberAsync(block).ConfigureAwait(false);
                 await _bundle.Withdrawals.DeleteByBlockNumberAsync(block).ConfigureAwait(false);
@@ -197,6 +211,18 @@ namespace Nethereum.CoreChain.Services
 
             return result;
         }
+
+        private async Task DeleteExecutionProducedAsync(BigInteger block)
+        {
+            await DeleteLogRowsAndTheirIndexesAsync(block).ConfigureAwait(false);
+            await DeleteReceiptRowsAsync(block).ConfigureAwait(false);
+        }
+
+        private Task DeleteReceiptRowsAsync(BigInteger block)
+            => _bundle.Receipts.DeleteByBlockNumberAsync(block);
+
+        private Task DeleteLogRowsAndTheirIndexesAsync(BigInteger block)
+            => _bundle.Logs.DeleteByBlockNumberAsync(block);
 
         private async Task<bool> JournalCoversAsync(ulong targetBlock)
         {

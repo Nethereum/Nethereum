@@ -1,9 +1,7 @@
-using System;
 using Nethereum.CoreChain.State;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Storage.InMemory;
 using Nethereum.EVM.BlockchainState;
-using Nethereum.Merkle.Patricia.Storage;
 using Nethereum.RPC;
 using Nethereum.RPC.Eth.DTOs;
 
@@ -39,11 +37,6 @@ namespace Nethereum.CoreChain.Composition
             return journalOptions != null
                 ? new HistoricalStateStore(rawState, diffStore, journalOptions)
                 : rawState;
-        }
-
-        public IStateStore SnapSync(IStateStore rawFlat, INodeBlobStore nodeBlobStore, Func<byte[]> stateRootProvider, bool backfill = true)
-        {
-            return new TrieFallbackStateStore(rawFlat, nodeBlobStore, stateRootProvider, backfill);
         }
 
         public IStateStore WitnessCapture(IStateStore store, IStateStore historicalReadAdapter = null)

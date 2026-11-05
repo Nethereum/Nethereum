@@ -6,6 +6,7 @@ using System.Linq;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
+using Nethereum.CoreChain;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
@@ -59,6 +60,10 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
     public static class ExpectedRejectionMatcher
     {
+        public const string UnspecifiedRejection = "UNSPECIFIED_REJECTION";
+
+        private const string DecodeFailureMarker = "does not decode:";
+
         public static bool Satisfies(string expectException, in ObservedRejection observed, out string detail)
         {
             if (string.IsNullOrEmpty(expectException))
@@ -119,6 +124,111 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
         public static bool Satisfies(string expectException, TransactionError transactionReason, out string detail) =>
             Satisfies(expectException, ObservedRejection.FromTransaction(transactionReason), out detail);
 
+        public enum EngineReasonVerdict { Matched, Mismatch, NotModeled }
+
+        public static EngineReasonVerdict MatchEngineInvalidReason(
+            string expectException, string description, out string detail)
+        {
+            if (string.IsNullOrEmpty(expectException))
+                throw new ArgumentException("A fixture with no expectException is not a rejection fixture.", nameof(expectException));
+
+            description ??= "";
+            if (description.Contains(DecodeFailureMarker) && SatisfiedByDecodeFailure(expectException))
+            {
+                detail = $"{expectException} matched by the transaction decode failure \"{description}\"";
+                return EngineReasonVerdict.Matched;
+            }
+
+            var alternatives = expectException.Split('|');
+            var unresolved = new List<string>();
+
+            foreach (var alternative in alternatives)
+            {
+                var label = BareLabel(alternative);
+
+                if (label == "INVALID_BLOCK_HASH")
+                {
+                    if (description.Contains("passed every validity check"))
+                    {
+                        detail = $"{alternative} matched by engine block-hash check";
+                        return EngineReasonVerdict.Matched;
+                    }
+                    unresolved.Add(alternative);
+                    continue;
+                }
+
+                if (!Table.TryGetValue(label, out var rule) || rule.Unimplemented != null)
+                {
+                    unresolved.Add(alternative);
+                    continue;
+                }
+
+                if (DescriptionEvidences(rule, description))
+                {
+                    detail = $"{alternative} matched by description \"{description}\"";
+                    return EngineReasonVerdict.Matched;
+                }
+            }
+
+            if (unresolved.Count == alternatives.Length)
+            {
+                detail = $"{expectException} is not modeled as a distinct engine verdict; description \"{description}\"";
+                return EngineReasonVerdict.NotModeled;
+            }
+
+            detail = $"expected {expectException}, engine described \"{description}\"";
+            return EngineReasonVerdict.Mismatch;
+        }
+
+        private static bool DescriptionEvidences(RejectionRule rule, string description)
+        {
+            if (rule.AcceptsDecodeDescription(description)) return true;
+            if (rule.SystemCallFailure && description.Contains("SystemCallFailed")) return true;
+            if (rule.FaultType != null && description.Contains(rule.FaultType.Name)) return true;
+
+            foreach (var reason in rule.TransactionReasons)
+                if (description.Contains(reason.ToString())) return true;
+
+            foreach (var check in rule.BlockChecks)
+                if (description.Contains(check.Identifier())) return true;
+
+            return false;
+        }
+
+        public static bool SkippedByDecision(string expectException, out string reason)
+        {
+            reason = "";
+            if (string.IsNullOrEmpty(expectException)) return false;
+            foreach (var alternative in expectException.Split('|'))
+            {
+                if (BareLabel(alternative) == "InvalidBlockNonce")
+                {
+                    reason = "the ethash proof-of-work seal is not verified: geth removed it in #27178 and v1.17.4 has no seal check";
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool SatisfiedByDecodeFailure(string expectException)
+        {
+            if (string.IsNullOrEmpty(expectException)) return false;
+            foreach (var alternative in expectException.Split('|'))
+            {
+                switch (BareLabel(alternative))
+                {
+                    case "INCORRECT_BLOCK_FORMAT":
+                    case "RLP_STRUCTURES_ENCODING":
+                    case "RLP_WITHDRAWALS_NOT_READ":
+                    case "RLP_INVALID_FIELD_OVERFLOW_64":
+                    case "RLP_ExpectedAsList":
+                    case UnspecifiedRejection:
+                        return true;
+                }
+            }
+            return false;
+        }
+
         private static bool IsDeliberateRejection(in ObservedRejection observed, out string detail)
         {
             var fault = observed.Fault;
@@ -133,7 +243,10 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 if (!(fault is TransactionValidationException
                       || fault is SystemCallFailedException
                       || fault is ScalarWiderThanItsFieldException
-                      || fault is NonCanonicalScalarRlpException))
+                      || fault is NonCanonicalScalarRlpException
+                      || fault is TransactionFieldFormatException
+                      || fault is MalformedDepositLogException
+                      || fault is SystemCallPredeployMissingException))
                 {
                     detail = $"unexpected {fault.GetType().Name}: {fault.Message}";
                     return false;
@@ -179,10 +292,30 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             public Type? FaultType { get; private set; }
 
             public static RejectionRule Tx(params TransactionError[] reasons) =>
-                new RejectionRule(reasons, Array.Empty<BlockValidityCheck>(), false, null);
+                new RejectionRule(reasons, new[] { BlockValidityCheck.TransactionsRoot }, false, null);
+
+            public Func<Exception, bool>? FaultPredicate { get; private set; }
+
+            public string? DecodeFailureCode { get; private set; }
+
+            public RejectionRule OrFieldFormat(LegacyTransactionField field)
+            {
+                FaultPredicate = fault => fault is TransactionFieldFormatException typed && typed.Field == field;
+                var message = new TransactionFieldFormatException(field, "").Message;
+                DecodeFailureCode = message.Substring(0, message.IndexOf(':'));
+                return this;
+            }
+
+            public bool AcceptsDecodeDescription(string description) =>
+                DecodeFailureCode != null
+                && description.Contains(DecodeFailureMarker)
+                && description.Contains(DecodeFailureCode);
 
             public static RejectionRule Block(params BlockValidityCheck[] checks) =>
                 new RejectionRule(Array.Empty<TransactionError>(), checks, false, null);
+
+            public static RejectionRule TxOrBlock(TransactionError[] reasons, BlockValidityCheck[] checks) =>
+                new RejectionRule(reasons, checks.Append(BlockValidityCheck.TransactionsRoot).ToArray(), false, null);
 
             public static RejectionRule SystemCall() =>
                 new RejectionRule(Array.Empty<TransactionError>(), Array.Empty<BlockValidityCheck>(), true, null);
@@ -193,14 +326,23 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                     FaultType = typeof(TFault)
                 };
 
+            public static RejectionRule AnyRejection() =>
+                new RejectionRule(Array.Empty<TransactionError>(), Array.Empty<BlockValidityCheck>(), false, null) { AcceptsAnyRejection = true };
+
+            public bool AcceptsAnyRejection { get; private init; }
+
             public static RejectionRule NotImplemented(string why) =>
                 new RejectionRule(Array.Empty<TransactionError>(), Array.Empty<BlockValidityCheck>(), false, why);
 
             public bool SatisfiedBy(in ObservedRejection observed)
             {
+                if (AcceptsAnyRejection) return true;
+
                 if (SystemCallFailure && observed.Fault is SystemCallFailedException) return true;
 
                 if (FaultType != null && observed.Fault != null && FaultType.IsInstanceOfType(observed.Fault)) return true;
+
+                if (FaultPredicate != null && observed.Fault != null && FaultPredicate(observed.Fault)) return true;
 
                 foreach (var reason in TransactionReasons)
                     if (observed.TransactionReason == reason) return true;
@@ -212,14 +354,8 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             }
         }
 
-        private const string NoHeaderPrecheck =
-            "neither runner validates the header against its parent before execution, so no rejection of this kind can occur";
-
         private const string NoRlpVerdict =
             "block RLP well-formedness is not a verdict either engine renders — the harness decodes the block before the engine sees it";
-
-        private static string NoDimension(string what) =>
-            $"no BlockValidityCheck models {what}, so a mismatch there cannot be named as the reason a block was refused";
 
         private static readonly IReadOnlyDictionary<string, RejectionRule> Table =
             new Dictionary<string, RejectionRule>(StringComparer.Ordinal)
@@ -235,56 +371,118 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 ["INSUFFICIENT_MAX_FEE_PER_BLOB_GAS"] = RejectionRule.Tx(TransactionError.InsufficientMaxFeePerBlobGas),
                 ["PRIORITY_GREATER_THAN_MAX_FEE_PER_GAS"] = RejectionRule.Tx(TransactionError.PriorityGreaterThanMaxFee),
                 ["SENDER_NOT_EOA"] = RejectionRule.Tx(TransactionError.SenderNotEOA),
+                ["INVALID_CHAINID"] = RejectionRule.Tx(TransactionError.InvalidChainId),
+                ["INVALID_SIGNATURE_VRS"] = RejectionRule.Tx(TransactionError.InvalidSignature),
                 ["NONCE_IS_MAX"] = RejectionRule.Tx(TransactionError.NonceIsMax),
                 ["NONCE_MISMATCH_TOO_HIGH"] = RejectionRule.Tx(TransactionError.NonceMismatch),
                 ["NONCE_MISMATCH_TOO_LOW"] = RejectionRule.Tx(TransactionError.NonceMismatch),
                 ["TYPE_NOT_SUPPORTED"] = RejectionRule.Tx(TransactionError.TransactionTypeNotSupported),
+                ["TYPE_1_TX_PRE_FORK"] = RejectionRule.Tx(TransactionError.TransactionTypeNotSupported),
+                ["TYPE_2_TX_PRE_FORK"] = RejectionRule.Tx(TransactionError.TransactionTypeNotSupported),
                 ["TYPE_3_TX_PRE_FORK"] = RejectionRule.Tx(TransactionError.TransactionTypeNotSupported),
-                ["TYPE_3_TX_CONTRACT_CREATION"] = RejectionRule.Tx(TransactionError.Type3TxContractCreation),
+                ["TYPE_4_TX_PRE_FORK"] = RejectionRule.Tx(TransactionError.TransactionTypeNotSupported),
+                ["TYPE_3_TX_CONTRACT_CREATION"] = RejectionRule.Tx(TransactionError.Type3TxContractCreation).OrFieldFormat(LegacyTransactionField.ReceiveAddress),
                 ["TYPE_3_TX_ZERO_BLOBS"] = RejectionRule.Tx(TransactionError.Type3TxZeroBlobs),
                 ["TYPE_3_TX_INVALID_BLOB_VERSIONED_HASH"] = RejectionRule.Tx(TransactionError.Type3TxInvalidBlobVersionedHash),
-                ["TYPE_3_TX_BLOB_COUNT_EXCEEDED"] = RejectionRule.Tx(TransactionError.Type3TxBlobCountExceeded),
-                ["TYPE_3_TX_MAX_BLOB_GAS_ALLOWANCE_EXCEEDED"] = RejectionRule.Tx(TransactionError.Type3TxBlobCountExceeded),
-                ["TYPE_4_TX_CONTRACT_CREATION"] = RejectionRule.Tx(TransactionError.Type4TxContractCreation),
+                ["TYPE_3_TX_BLOB_COUNT_EXCEEDED"] = RejectionRule.TxOrBlock(
+                    new[] { TransactionError.Type3TxBlobCountExceeded },
+                    new[] { BlockValidityCheck.BlobGasCapacity }),
+                ["TYPE_3_TX_MAX_BLOB_GAS_ALLOWANCE_EXCEEDED"] = RejectionRule.TxOrBlock(
+                    new[] { TransactionError.Type3TxBlobCountExceeded },
+                    new[] { BlockValidityCheck.BlobGasCapacity }),
+                ["TYPE_4_EMPTY_AUTHORIZATION_LIST"] = RejectionRule.Tx(TransactionError.Type4EmptyAuthorizationList),
+                ["INVALID_DEPOSIT_EVENT_LAYOUT"] = RejectionRule.Fault<MalformedDepositLogException>(),
+                ["TYPE_4_TX_CONTRACT_CREATION"] = RejectionRule.Tx(TransactionError.Type4TxContractCreation).OrFieldFormat(LegacyTransactionField.ReceiveAddress),
                 ["TYPE_4_TX_EMPTY_AUTHORIZATION_LIST"] = RejectionRule.Tx(TransactionError.Type4EmptyAuthorizationList),
                 ["GASLIMIT_PRICE_PRODUCT_OVERFLOW"] = RejectionRule.NotImplemented(
                     "no guard exists on the gasLimit x gasPrice product; the shortfall is only seen as a balance failure, which is a different verdict"),
 
-                // AMS-7928-35. EEST uses ONE label for both halves of EIP-7928 §Engine
-                // API's "malformed or doesn't match", so both of our observables satisfy
                 ["INVALID_BLOCK_ACCESS_LIST"] = RejectionRule.Block(
                     BlockValidityCheck.BlockAccessListHash,
                     BlockValidityCheck.BlockAccessListMalformed),
                 ["INVALID_BAL_HASH"] = RejectionRule.Block(BlockValidityCheck.BlockAccessListHash),
 
                 ["SYSTEM_CONTRACT_CALL_FAILED"] = RejectionRule.SystemCall(),
+                ["SYSTEM_CONTRACT_EMPTY"] = RejectionRule.Fault<SystemCallPredeployMissingException>(),
 
                 ["BLOCK_ACCESS_LIST_GAS_LIMIT_EXCEEDED"] = RejectionRule.Block(BlockValidityCheck.BlockAccessListGasLimit),
-                ["INCORRECT_BLOCK_FORMAT"] = RejectionRule.Block(BlockValidityCheck.BlockAccessListMalformed),
-                ["GAS_USED_OVERFLOW"] = RejectionRule.Tx(TransactionError.GasAllowanceExceeded),
+                ["INCORRECT_BLOCK_FORMAT"] = RejectionRule.Block(
+                    BlockValidityCheck.BlockAccessListMalformed,
+                    BlockValidityCheck.BlobFieldFormat),
+                ["GAS_USED_OVERFLOW"] = RejectionRule.TxOrBlock(
+                    new[] { TransactionError.GasAllowanceExceeded },
+                    new[] { BlockValidityCheck.GasCapacity }),
                 ["INVALID_BLOCK_HASH"] = RejectionRule.NotImplemented(
                     "the importer does not validate the block's declared hash; the host runner only recomputes it on the ACCEPT path"),
 
                 ["INVALID_STATE_ROOT"] = RejectionRule.Block(BlockValidityCheck.StateRoot),
+                ["RLP_BLOCK_LIMIT_EXCEEDED"] = RejectionRule.Block(BlockValidityCheck.BlockRlpSize),
                 ["INVALID_RECEIPTS_ROOT"] = RejectionRule.Block(BlockValidityCheck.ReceiptsRoot),
                 ["INVALID_LOG_BLOOM"] = RejectionRule.Block(BlockValidityCheck.LogsBloom),
                 ["INVALID_GAS_USED"] = RejectionRule.Block(BlockValidityCheck.GasUsed),
                 ["INCORRECT_EXCESS_BLOB_GAS"] = RejectionRule.Block(BlockValidityCheck.ExcessBlobGas),
+                ["INCORRECT_BLOB_GAS_USED"] = RejectionRule.Block(BlockValidityCheck.BlobGasUsed, BlockValidityCheck.BlobGasCapacity),
+                ["BLOB_GAS_USED_ABOVE_LIMIT"] = RejectionRule.Block(BlockValidityCheck.BlobGasUsed, BlockValidityCheck.BlobGasCapacity),
                 ["INVALID_BASEFEE_PER_GAS"] = RejectionRule.Block(BlockValidityCheck.BaseFee),
+                ["INVALID_REQUESTS"] = RejectionRule.Block(BlockValidityCheck.RequestsHash),
 
-                ["INVALID_TRANSACTIONS_ROOT"] = RejectionRule.NotImplemented(NoDimension("the transactions root")),
+                ["INVALID_TRANSACTIONS_ROOT"] = RejectionRule.Block(BlockValidityCheck.TransactionsRoot),
                 ["INVALID_WITHDRAWALS_ROOT"] = RejectionRule.Block(BlockValidityCheck.WithdrawalsRoot),
-                ["INVALID_GASLIMIT"] = RejectionRule.Block(BlockValidityCheck.GasLimitBound),
-                ["INVALID_BLOCK_NUMBER"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
-                ["INVALID_BLOCK_TIMESTAMP_OLDER_THAN_PARENT"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
-                ["EXTRA_DATA_TOO_BIG"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
-                ["UNKNOWN_PARENT"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
-                ["UNKNOWN_PARENT_ZERO"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
-                ["IMPORT_IMPOSSIBLE_UNCLES_OVER_PARIS"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
-                ["IMPORT_IMPOSSIBLE_DIFFICULTY_OVER_PARIS"] = RejectionRule.NotImplemented(NoHeaderPrecheck),
+                ["INVALID_GASLIMIT"] = RejectionRule.Block(BlockValidityCheck.GasLimitBound, BlockValidityCheck.GasCapacity),
+                ["GASLIMIT_TOO_BIG"] = RejectionRule.Block(BlockValidityCheck.GasLimitTooBig),
+                ["INVALID_BLOCK_NUMBER"] = RejectionRule.Block(BlockValidityCheck.BlockNumber),
+                ["INVALID_BLOCK_TIMESTAMP_OLDER_THAN_PARENT"] = RejectionRule.Block(BlockValidityCheck.Timestamp),
+                ["EXTRA_DATA_TOO_BIG"] = RejectionRule.Block(BlockValidityCheck.ExtraDataSize),
+                ["UNKNOWN_PARENT"] = RejectionRule.Block(BlockValidityCheck.UnknownParent),
+                ["UNKNOWN_PARENT_ZERO"] = RejectionRule.Block(BlockValidityCheck.UnknownParent),
+                ["IMPORT_IMPOSSIBLE_UNCLES_OVER_PARIS"] = RejectionRule.Block(BlockValidityCheck.UnclesHash, BlockValidityCheck.Uncles),
+                ["IMPORT_IMPOSSIBLE_DIFFICULTY_OVER_PARIS"] = RejectionRule.Block(BlockValidityCheck.Difficulty),
                 ["RLP_STRUCTURES_ENCODING"] = RejectionRule.NotImplemented(NoRlpVerdict),
                 ["RLP_WITHDRAWALS_NOT_READ"] = RejectionRule.NotImplemented(NoRlpVerdict),
                 ["RLP_INVALID_FIELD_OVERFLOW_64"] = RejectionRule.NotImplemented(NoRlpVerdict),
+
+                [UnspecifiedRejection] = RejectionRule.AnyRejection(),
+                ["UncleInChain"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["UncleIsBrother"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["UncleIsAncestor"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["UncleTooOld"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["TooManyUncles"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["UncleParentIsNotAncestor"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["InvalidUncleParentHash"] = RejectionRule.Block(BlockValidityCheck.Uncles),
+                ["InvalidUnclesHash"] = RejectionRule.Block(BlockValidityCheck.UnclesHash),
+                ["PostParisUncleHashIsNotEmpty"] = RejectionRule.Block(BlockValidityCheck.UnclesHash, BlockValidityCheck.Uncles),
+                ["InvalidGasLimit"] = RejectionRule.Block(
+                    BlockValidityCheck.GasLimitBound, BlockValidityCheck.GasCapacity, BlockValidityCheck.GasLimitTooBig,
+                    BlockValidityCheck.Uncles),
+                ["InvalidGasLimit2"] = RejectionRule.Block(BlockValidityCheck.GasLimitBound, BlockValidityCheck.GasCapacity, BlockValidityCheck.Uncles),
+                ["InvalidNumber"] = RejectionRule.Block(BlockValidityCheck.BlockNumber, BlockValidityCheck.Uncles),
+                ["InvalidTimestamp"] = RejectionRule.Block(BlockValidityCheck.Timestamp, BlockValidityCheck.Uncles),
+                ["InvalidTimestampOlderParent"] = RejectionRule.Block(BlockValidityCheck.Timestamp, BlockValidityCheck.Uncles),
+                ["InvalidDifficulty"] = RejectionRule.Block(BlockValidityCheck.Difficulty, BlockValidityCheck.Uncles),
+                ["PostParisDifficultyIsNot0"] = RejectionRule.Block(BlockValidityCheck.Difficulty),
+                ["3675PreParis1559BlockRejected"] = RejectionRule.Block(
+                    BlockValidityCheck.Difficulty, BlockValidityCheck.BaseFee, BlockValidityCheck.Nonce,
+                    BlockValidityCheck.UnclesHash, BlockValidityCheck.Uncles),
+                ["3675PoSBlockRejected"] = RejectionRule.Block(
+                    BlockValidityCheck.Difficulty, BlockValidityCheck.BaseFee, BlockValidityCheck.Nonce,
+                    BlockValidityCheck.UnclesHash, BlockValidityCheck.Uncles),
+                ["1559BlockImportImpossible_BaseFeeWrong"] = RejectionRule.Block(BlockValidityCheck.BaseFee, BlockValidityCheck.Uncles),
+                ["ExtraDataTooBig"] = RejectionRule.Block(BlockValidityCheck.ExtraDataSize, BlockValidityCheck.Uncles),
+                ["UnknownParent"] = RejectionRule.Block(BlockValidityCheck.UnknownParent),
+                ["UnknownParent2"] = RejectionRule.Block(BlockValidityCheck.UnknownParent),
+                ["TooMuchGasUsed"] = RejectionRule.TxOrBlock(
+                    new[] { TransactionError.GasAllowanceExceeded },
+                    new[] { BlockValidityCheck.GasCapacity, BlockValidityCheck.GasUsed, BlockValidityCheck.Uncles }),
+                ["BlockGasLimitReached"] = RejectionRule.TxOrBlock(
+                    new[] { TransactionError.GasAllowanceExceeded },
+                    new[] { BlockValidityCheck.GasCapacity }),
+                ["InvalidGasUsed"] = RejectionRule.Block(BlockValidityCheck.GasUsed),
+                ["InvalidStateRoot"] = RejectionRule.Block(BlockValidityCheck.StateRoot),
+                ["InvalidReceiptsStateRoot"] = RejectionRule.Block(BlockValidityCheck.ReceiptsRoot),
+                ["InvalidLogBloom"] = RejectionRule.Block(BlockValidityCheck.LogsBloom),
+                ["InvalidTransactionsRoot"] = RejectionRule.Block(BlockValidityCheck.TransactionsRoot),
+                ["InvalidWithdrawals"] = RejectionRule.Block(BlockValidityCheck.WithdrawalsRoot),
+                ["SenderNotEOAorNoCASH"] = RejectionRule.Tx(TransactionError.SenderNotEOA, TransactionError.InsufficientBalance),
 
                 ["TR_IntrinsicGas"] = RejectionRule.Tx(TransactionError.IntrinsicGasTooLow),
                 ["IntrinsicGas"] = RejectionRule.Tx(TransactionError.IntrinsicGasTooLow),
@@ -304,7 +502,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
                 ["TR_InitCodeLimitExceeded"] = RejectionRule.Tx(TransactionError.InitcodeSizeExceeded),
                 ["TR_BLOBVERSION_INVALID"] = RejectionRule.Tx(TransactionError.Type3TxInvalidBlobVersionedHash),
                 ["TR_EMPTYBLOB"] = RejectionRule.Tx(TransactionError.Type3TxZeroBlobs),
-                ["TR_BLOBCREATE"] = RejectionRule.Tx(TransactionError.Type3TxContractCreation),
+                ["TR_BLOBCREATE"] = RejectionRule.Tx(TransactionError.Type3TxContractCreation).OrFieldFormat(LegacyTransactionField.ReceiveAddress),
                 ["TR_BLOBLIST_OVERSIZE"] = RejectionRule.Tx(TransactionError.Type3TxBlobCountExceeded),
                 ["TR_RLP_WRONGVALUE"] = RejectionRule.Fault<ScalarWiderThanItsFieldException>(),
                 ["TR_RLP_LEADINGZEROS"] = RejectionRule.Fault<NonCanonicalScalarRlpException>(),

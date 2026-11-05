@@ -16,7 +16,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<Receipt> GetByTxHashAsync(byte[] txHash)
         {
-            var hashHex = ToHex(txHash);
+            var hashHex = txHash?.ToHex();
             if (_receiptByTxHash.TryGetValue(hashHex, out var stored))
                 return Task.FromResult(stored.Receipt);
             return Task.FromResult<Receipt>(null);
@@ -24,7 +24,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<ReceiptInfo> GetInfoByTxHashAsync(byte[] txHash)
         {
-            var hashHex = ToHex(txHash);
+            var hashHex = txHash?.ToHex();
             if (_receiptByTxHash.TryGetValue(hashHex, out var stored))
             {
                 return Task.FromResult(new ReceiptInfo
@@ -44,18 +44,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         public Task<List<Receipt>> GetByBlockHashAsync(byte[] blockHash)
         {
-            var hashHex = ToHex(blockHash);
-            if (!_txHashesByBlockHash.TryGetValue(hashHex, out var txHashes))
-                return Task.FromResult(new List<Receipt>());
-
-            var result = txHashes.Keys
-                .Select(h => _receiptByTxHash.TryGetValue(h, out var stored) ? stored : null)
-                .Where(s => s != null)
-                .OrderBy(s => s.TransactionIndex)
-                .Select(s => s.Receipt)
-                .ToList();
-
-            return Task.FromResult(result);
+            return Task.FromResult(ByBlockHashHex(blockHash?.ToHex()));
         }
 
         public Task<List<Receipt>> GetByBlockNumberAsync(BigInteger blockNumber)
@@ -63,23 +52,26 @@ namespace Nethereum.CoreChain.Storage.InMemory
             if (!_blockHashByNumber.TryGetValue(blockNumber, out var blockHashHex))
                 return Task.FromResult(new List<Receipt>());
 
-            if (!_txHashesByBlockHash.TryGetValue(blockHashHex, out var txHashes))
-                return Task.FromResult(new List<Receipt>());
+            return Task.FromResult(ByBlockHashHex(blockHashHex));
+        }
 
-            var result = txHashes.Keys
+        private List<Receipt> ByBlockHashHex(string blockHashHex)
+        {
+            if (!_txHashesByBlockHash.TryGetValue(blockHashHex, out var txHashes))
+                return new List<Receipt>();
+
+            return txHashes.Keys
                 .Select(h => _receiptByTxHash.TryGetValue(h, out var stored) ? stored : null)
                 .Where(s => s != null)
                 .OrderBy(s => s.TransactionIndex)
                 .Select(s => s.Receipt)
                 .ToList();
-
-            return Task.FromResult(result);
         }
 
         public Task SaveAsync(Receipt receipt, byte[] txHash, byte[] blockHash, BigInteger blockNumber, int txIndex, BigInteger gasUsed, string contractAddress, BigInteger effectiveGasPrice)
         {
-            var txHashHex = ToHex(txHash);
-            var blockHashHex = ToHex(blockHash);
+            var txHashHex = txHash?.ToHex();
+            var blockHashHex = blockHash?.ToHex();
 
             _receiptByTxHash[txHashHex] = new StoredReceipt
             {
@@ -122,8 +114,6 @@ namespace Nethereum.CoreChain.Storage.InMemory
             _txHashesByBlockHash.Clear();
             _blockHashByNumber.Clear();
         }
-
-        private static string ToHex(byte[] bytes) => bytes?.ToHex();
 
         private class StoredReceipt
         {

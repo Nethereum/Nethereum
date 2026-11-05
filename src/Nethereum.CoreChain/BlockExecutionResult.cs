@@ -28,6 +28,8 @@ namespace Nethereum.CoreChain
 
         public byte[]? WitnessBytes { get; init; }
 
+        public BlockExecutionStats? Stats { get; init; }
+
         public BigInteger MinerRewardCredited { get; init; }
 
         public int WithdrawalsCredited { get; init; }
@@ -66,6 +68,42 @@ namespace Nethereum.CoreChain
 
         public bool WithdrawalsRootMismatch { get; init; }
 
+        public bool BlockRlpSizeExceeded { get; init; }
+
+        public bool UnknownParent { get; init; }
+
+        public bool BlockNumberMismatch { get; init; }
+
+        public bool TimestampNotAfterParent { get; init; }
+
+        public bool FutureBlock { get; init; }
+
+        public bool ExtraDataTooLong { get; init; }
+
+        public bool DaoExtraDataMismatch { get; init; }
+
+        public bool GasLimitTooBig { get; init; }
+
+        public bool DifficultyMismatch { get; init; }
+
+        public bool NonceInvalid { get; init; }
+
+        public bool UnclesHashMismatch { get; init; }
+
+        public bool UnclesInvalid { get; init; }
+
+        public bool TransactionsRootMismatch { get; init; }
+
+        public bool WithdrawalsRootPresenceMismatch { get; init; }
+
+        public bool ParentBeaconRootPresenceMismatch { get; init; }
+
+        public bool BlockAccessListHashPresenceMismatch { get; init; }
+
+        public bool SlotNumberPresenceMismatch { get; init; }
+
+        public bool ParentNotHead { get; init; }
+
         public List<AccountChanges>? BlockAccessList { get; init; }
 
         public long BlockExecutionGasUsed { get; init; }
@@ -98,6 +136,8 @@ namespace Nethereum.CoreChain
         }
 
         public Exception? Exception { get; init; }
+
+        public int FailedTransactionIndex { get; init; } = -1;
 
         public string? ErrorMessage { get; init; }
     }

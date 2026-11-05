@@ -10,6 +10,8 @@ namespace Nethereum.CoreChain.Freezer
     {
         long HotTipNumber { get; }
 
+        long HotFloorNumber { get; }
+
         HotBlock ReadHotBlock(long blockNumber);
     }
 

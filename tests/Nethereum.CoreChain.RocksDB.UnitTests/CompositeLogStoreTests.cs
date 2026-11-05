@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class CompositeLogStoreTests
     {
         private sealed class RecordingLogStore : ILogStore

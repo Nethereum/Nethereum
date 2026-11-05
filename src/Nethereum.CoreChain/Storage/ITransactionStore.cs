@@ -23,6 +23,8 @@ namespace Nethereum.CoreChain.Storage
 
         Task<TransactionLocation> GetLocationAsync(byte[] txHash);
         Task DeleteByBlockNumberAsync(BigInteger blockNumber);
+
+        Task DeleteLookupsByBlockNumberAsync(BigInteger blockNumber) => Task.CompletedTask;
     }
 
     public class TransactionLocation

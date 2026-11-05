@@ -7,6 +7,7 @@ using Nethereum.CoreChain.RocksDB.Serialization;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
+using Nethereum.Util;
 
 namespace Nethereum.CoreChain.RocksDB.Stores
 {
@@ -24,36 +25,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (logs == null || logs.Count == 0) return Task.CompletedTask;
 
             using var batch = _manager.CreateWriteBatch();
-            var logsCf = _manager.GetColumnFamily(RocksDbManager.CF_LOGS);
-            var logByBlockCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_BLOCK);
-            var logByAddressCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_ADDRESS);
-            var logByTxCf = _manager.GetColumnFamily(RocksDbManager.CF_LOG_BY_TX);
-
-            for (int i = 0; i < logs.Count; i++)
-            {
-                var log = logs[i];
-                var filteredLog = FilteredLog.FromLog(log, blockHash, blockNumber, txHash, txIndex, i);
-
-                var logKey = CreateLogKey(blockNumber, txIndex, i);
-                var logData = RocksDbSerializer.SerializeFilteredLog(filteredLog);
-                batch.Put(logKey, logData, logsCf);
-
-                var blockLogKey = CreateBlockLogKey(blockHash, txIndex, i);
-                batch.Put(blockLogKey, logKey, logByBlockCf);
-
-                if (txHash != null)
-                {
-                    var txLogKey = CreateTxLogKey(txHash, i);
-                    batch.Put(txLogKey, logKey, logByTxCf);
-                }
-
-                if (!string.IsNullOrEmpty(log.Address))
-                {
-                    var addressLogKey = CreateAddressLogKey(log.Address, blockNumber, txIndex, i);
-                    batch.Put(addressLogKey, logKey, logByAddressCf);
-                }
-            }
-
+            StageManyLogsInto(batch, new[] { (logs, txHash, txIndex) }, blockHash, blockNumber);
             _manager.Write(batch);
             return Task.CompletedTask;
         }
@@ -390,64 +362,45 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task<List<FilteredLog>> GetLogsByTxHashAsync(byte[] txHash)
         {
-            var result = new List<FilteredLog>();
-            if (txHash == null) return Task.FromResult(result);
+            if (txHash == null) return Task.FromResult(new List<FilteredLog>());
 
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOG_BY_TX);
-            iterator.Seek(txHash);
-
-            while (iterator.Valid())
-            {
-                var key = iterator.Key();
-                if (!Nethereum.Util.ByteUtil.StartsWith(key, txHash))
-                    break;
-
-                var logKey = iterator.Value();
-                var logData = _manager.Get(RocksDbManager.CF_LOGS, logKey);
-                if (logData != null)
-                {
-                    var log = RocksDbSerializer.DeserializeFilteredLog(logData);
-                    if (log != null)
-                        result.Add(log);
-                }
-
-                iterator.Next();
-            }
-
+            var result = ReadIndexed(RocksDbManager.CF_LOG_BY_TX, txHash);
             result.Sort((a, b) => a.LogIndex.CompareTo(b.LogIndex));
             return Task.FromResult(result);
         }
 
         public Task<List<FilteredLog>> GetLogsByBlockHashAsync(byte[] blockHash)
         {
-            var result = new List<FilteredLog>();
-            if (blockHash == null) return Task.FromResult(result);
+            if (blockHash == null) return Task.FromResult(new List<FilteredLog>());
 
-            using var iterator = _manager.CreateIterator(RocksDbManager.CF_LOG_BY_BLOCK);
-            iterator.Seek(blockHash);
+            var result = ReadIndexed(RocksDbManager.CF_LOG_BY_BLOCK, blockHash);
+            BlockWideLogIndex.Assign(result);
+            return Task.FromResult(result);
+        }
+
+        private List<FilteredLog> ReadIndexed(string indexCf, byte[] prefix)
+        {
+            var result = new List<FilteredLog>();
+            using var iterator = _manager.CreateIterator(indexCf);
+            iterator.Seek(prefix);
 
             while (iterator.Valid())
             {
-                var key = iterator.Key();
-                if (!Nethereum.Util.ByteUtil.StartsWith(key, blockHash))
+                if (!Nethereum.Util.ByteUtil.StartsWith(iterator.Key(), prefix))
                     break;
 
-                var logKey = iterator.Value();
-                var logData = _manager.Get(RocksDbManager.CF_LOGS, logKey);
+                var logData = _manager.Get(RocksDbManager.CF_LOGS, iterator.Value());
                 if (logData != null)
                 {
                     var log = RocksDbSerializer.DeserializeFilteredLog(logData);
                     if (log != null)
-                    {
                         result.Add(log);
-                    }
                 }
 
                 iterator.Next();
             }
 
-            BlockWideLogIndex.Assign(result);
-            return Task.FromResult(result);
+            return result;
         }
 
         public Task<List<FilteredLog>> GetLogsByBlockNumberAsync(BigInteger blockNumber)
@@ -509,58 +462,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         private static byte[] CreateLogKey(BigInteger blockNumber, int txIndex, int logIndex)
-        {
-            var blockBytes = blockNumber.ToByteArray(isUnsigned: true, isBigEndian: true);
-            var paddedBlock = new byte[32];
-            if (blockBytes.Length <= 32)
-            {
-                Buffer.BlockCopy(blockBytes, 0, paddedBlock, 32 - blockBytes.Length, blockBytes.Length);
-            }
-
-            var txBytes = BitConverter.GetBytes(txIndex);
-            var logBytes = BitConverter.GetBytes(logIndex);
-
-            var key = new byte[paddedBlock.Length + txBytes.Length + logBytes.Length];
-            Buffer.BlockCopy(paddedBlock, 0, key, 0, paddedBlock.Length);
-            Buffer.BlockCopy(txBytes, 0, key, paddedBlock.Length, txBytes.Length);
-            Buffer.BlockCopy(logBytes, 0, key, paddedBlock.Length + txBytes.Length, logBytes.Length);
-
-            return key;
-        }
+            => ByteUtil.Merge(CreateBlockNumberKey(blockNumber), BitConverter.GetBytes(txIndex), BitConverter.GetBytes(logIndex));
 
         private static byte[] CreateBlockLogKey(byte[] blockHash, int txIndex, int logIndex)
-        {
-            var txBytes = BitConverter.GetBytes(txIndex);
-            var logBytes = BitConverter.GetBytes(logIndex);
-
-            var key = new byte[blockHash.Length + txBytes.Length + logBytes.Length];
-            Buffer.BlockCopy(blockHash, 0, key, 0, blockHash.Length);
-            Buffer.BlockCopy(txBytes, 0, key, blockHash.Length, txBytes.Length);
-            Buffer.BlockCopy(logBytes, 0, key, blockHash.Length + txBytes.Length, logBytes.Length);
-
-            return key;
-        }
+            => ByteUtil.Merge(blockHash, BitConverter.GetBytes(txIndex), BitConverter.GetBytes(logIndex));
 
         private static byte[] CreateAddressLogKey(string address, BigInteger blockNumber, int txIndex, int logIndex)
-        {
-            var addressBytes = address.HexToByteArray();
-            var logKey = CreateLogKey(blockNumber, txIndex, logIndex);
-
-            var key = new byte[addressBytes.Length + logKey.Length];
-            Buffer.BlockCopy(addressBytes, 0, key, 0, addressBytes.Length);
-            Buffer.BlockCopy(logKey, 0, key, addressBytes.Length, logKey.Length);
-
-            return key;
-        }
+            => ByteUtil.Merge(address.HexToByteArray(), CreateLogKey(blockNumber, txIndex, logIndex));
 
         private static byte[] CreateTxLogKey(byte[] txHash, int logIndex)
-        {
-            var logBytes = BitConverter.GetBytes(logIndex);
-            var key = new byte[txHash.Length + logBytes.Length];
-            Buffer.BlockCopy(txHash, 0, key, 0, txHash.Length);
-            Buffer.BlockCopy(logBytes, 0, key, txHash.Length, logBytes.Length);
-            return key;
-        }
-
+            => ByteUtil.Merge(txHash, BitConverter.GetBytes(logIndex));
     }
 }

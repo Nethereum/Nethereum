@@ -177,11 +177,13 @@ namespace Nethereum.CoreChain.IntegrationTests
             public void SaveDeferredHealCodeBlob(byte[] blob) => _inner.SaveDeferredHealCodeBlob(blob);
             public void ClearDeferredHealCodeBlob() => _inner.ClearDeferredHealCodeBlob();
 
+#pragma warning disable CS0618
             public void UpsertDeferredStorageDebt(DeferredStorageDebt debt) => _inner.UpsertDeferredStorageDebt(debt);
             public IReadOnlyList<DeferredStorageDebt> ListOpenDeferredStorageDebts(int max = int.MaxValue) => _inner.ListOpenDeferredStorageDebts(max);
             public ulong CountOpenDeferredStorageDebts() => _inner.CountOpenDeferredStorageDebts();
             public void ClearDeferredStorageDebt(byte[] accountHash, byte[] discoveredStorageRoot) => _inner.ClearDeferredStorageDebt(accountHash, discoveredStorageRoot);
             public void ClearAllDeferredStorageDebts() => _inner.ClearAllDeferredStorageDebts();
+#pragma warning restore CS0618
         }
 
         [Fact]

@@ -166,6 +166,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
             var importer = new Nethereum.CoreChain.BlockImporter(engine, blockStore, stateStore);
 
             await SeedPreStateAsync(stateStore, test.Pre).ConfigureAwait(false);
+            await stateRootCalculator.ComputeStateRootAsync().ConfigureAwait(false);
 
             if (test.GenesisBlockHeader.Hash != null && test.GenesisBlockHeader.Hash.Length == 32)
             {

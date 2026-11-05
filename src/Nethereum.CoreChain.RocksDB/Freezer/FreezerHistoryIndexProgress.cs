@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using Nethereum.CoreChain.RocksDB.Stores;
 
 namespace Nethereum.CoreChain.RocksDB.Freezer
 {
@@ -20,7 +21,7 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
         public ulong GetByHashCursor()
         {
             var raw = _rocks.Get(_controlColumnFamily, ByHashCursorKey);
-            return raw == null || raw.Length != 8 ? 0UL : RocksDbManager.Read64BE(raw);
+            return RocksDbChainMetadataStore.ReadCursor(raw);
         }
 
         public void SetByHashCursor(ulong itemNumber)

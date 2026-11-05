@@ -11,6 +11,7 @@ using Nethereum.Model.Codecs;
 using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.UnitTests.DevChain
 {
@@ -101,14 +102,15 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         }
 
         [Fact]
+        [Trait("Requires", "Externals")]
         public async Task Given_TheExecutionApisReferenceGenesisJsonWithAnUnpaddedNonce_When_TheConstructedGenesisIsBuilt_Then_ItsHashMatchesTheGethGoldenHash()
         {
             const string gethGoldenHash =
-                "0x79e0f5ffb6a0c9f54d507dbbadc935603ac1db86d32f7857472180a75ec11f90";
+                "0x44fd89d504659cd58f48f4796b77a7e7012cf296a2409afa2f6c3cb99b5b3d99";
 
-            var genesisPath = Path.Combine(FindRepoRoot(), "external", "execution-apis", "tests", "genesis.json");
+            var genesisPath = Path.Combine(TestEnvironment.RequireExternalPath("ExecutionApis"), "tests", "genesis.json");
             Assert.True(File.Exists(genesisPath),
-                $"ethereum/execution-apis fixture missing at {genesisPath}. See external/README.md.");
+                $"ethereum/execution-apis fixture missing at {genesisPath}; ExternalPaths:ExecutionApis must contain tests/genesis.json.");
 
             var document = StandardGenesisLoader.LoadFromFile(genesisPath);
 
@@ -212,20 +214,6 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
                 Nonce = new byte[8],
                 BaseFee = 1_000_000_000
             };
-
-        private static string FindRepoRoot()
-        {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return dir.FullName;
-                dir = dir.Parent;
-            }
-
-            return Directory.GetCurrentDirectory();
-        }
 
         private sealed class PersistedDevChainStore : IDisposable
         {

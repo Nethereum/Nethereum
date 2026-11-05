@@ -65,6 +65,25 @@ namespace Nethereum.CoreChain.UnitTests.Storage.History
             Assert.Equal(byNumber, byBytes);
         }
 
+        [Fact]
+        public void Given_ABlockHashIndexRowShorterThan8Bytes_When_ResolvedToANumber_Then_NullIsReturned()
+        {
+            Assert.Null(HistoryKeys.TryReadBlockNumber(null));
+            Assert.Null(HistoryKeys.TryReadBlockNumber(new byte[0]));
+            Assert.Null(HistoryKeys.TryReadBlockNumber(new byte[7]));
+            Assert.Equal(7UL, HistoryKeys.TryReadBlockNumber(HistoryKeys.BlockKey(7)));
+            Assert.Equal(ulong.MaxValue, HistoryKeys.TryReadBlockNumber(HistoryKeys.TxKey(ulong.MaxValue, 3)));
+        }
+
+        [Fact]
+        public void Given_ATxHashIndexRowShorterThan12Bytes_When_ResolvedToALocation_Then_NullIsReturned()
+        {
+            Assert.Null(HistoryKeys.TryReadTxLocation(null));
+            Assert.Null(HistoryKeys.TryReadTxLocation(HistoryKeys.BlockKey(5)));
+            Assert.Null(HistoryKeys.TryReadTxLocation(new byte[11]));
+            Assert.Equal(new TxLocation(9, 4), HistoryKeys.TryReadTxLocation(HistoryKeys.TxKey(9, 4)));
+        }
+
         private static int Cmp(byte[] a, byte[] b) => ByteArrayComparer.Instance.Compare(a, b);
 
         private sealed class ByteArrayComparer : IComparer<byte[]>

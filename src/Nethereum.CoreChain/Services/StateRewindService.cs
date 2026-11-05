@@ -33,13 +33,15 @@ namespace Nethereum.CoreChain.Services
                 : _metadataStore.GetLastBlock();
             if (start <= targetBlock) return 0UL;
 
+            var oldestDiff = await _diffStore.GetOldestDiffBlockAsync().ConfigureAwait(false);
             ulong undone = 0;
             for (ulong n = start; n > targetBlock; n--)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var diff = await _diffStore.GetBlockDiffAsync((BigInteger)n).ConfigureAwait(false);
-                if (diff == null)
+                var changedNothing = diff == null && oldestDiff.HasValue && (BigInteger)n > oldestDiff.Value;
+                if (diff == null && !changedNothing)
                 {
                     throw new InvalidOperationException(
                         $"Journal-rewind aborted at block {n:N0}: no reverse-diff recorded. " +
@@ -47,6 +49,7 @@ namespace Nethereum.CoreChain.Services
                         $"before journal-on-write was wired. Use --rewind-to-checkpoint for " +
                         $"the snapshot-based path or rebuild state from genesis with --re-execute-from.");
                 }
+                diff ??= new BlockStateDiff { BlockNumber = n };
 
                 var prevHash = await _blockStore.GetHashByNumberAsync((BigInteger)(n - 1)).ConfigureAwait(false);
                 if (prevHash == null || prevHash.Length != 32)

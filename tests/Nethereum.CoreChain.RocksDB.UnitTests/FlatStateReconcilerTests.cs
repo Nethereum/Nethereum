@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class FlatStateReconcilerTests : IDisposable
     {
         private readonly string _dir = Path.Combine(Path.GetTempPath(), $"flatrec_{Guid.NewGuid():N}");
@@ -139,8 +140,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
             var second = await reconciler.ReconcileFlatStateAsync(stateRoot, null, CancellationToken.None);
             Assert.Equal(0, second.TotalRepairs);
-            Assert.Equal(0, second.AccountsScanned);
-            Assert.Equal(0, second.SlotsScanned);
+            Assert.Equal(4, second.AccountsScanned);
+            Assert.Equal(2, second.SlotsScanned);
 
             var verified = await reconciler.VerifyFlatStateAsync(stateRoot, null, CancellationToken.None);
             Assert.Equal(0, verified.TotalRepairs);

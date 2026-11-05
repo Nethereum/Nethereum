@@ -28,8 +28,10 @@ namespace Nethereum.CoreChain
             => EVM.Gas.GasConstants.BlockGasLimitLargeEnoughToDeployAt(
                 Registry.Get(fork).IntrinsicGasRules.StateGasActive);
         public BigInteger BaseFee { get; set; } = 1_000_000_000;
+        public virtual bool FeeFreeBaseFee => false;
         public BigInteger SuggestedPriorityFee { get; set; } = 1_000_000_000;
         public int EstimateGasPaddingPercent { get; set; } = 10;
+        public long TargetGasLimit { get; set; } = 60_000_000;
         public BigInteger InitialBalance { get; set; } = BigInteger.Parse("10000000000000000000000");
         public const string DefaultHardfork = "prague";
 
@@ -56,7 +58,13 @@ namespace Nethereum.CoreChain
 
         public int RpcMaxLogResults { get; set; } = 10_000;
 
+        public int RpcLogQueryLimit { get; set; } = 1_000;
+
         public BigInteger RpcGasCap { get; set; } = 50_000_000;
+
+        public System.TimeSpan RpcEvmTimeout { get; set; } = System.TimeSpan.FromSeconds(5);
+
+        public System.TimeSpan RpcTraceTimeout { get; set; } = System.TimeSpan.FromSeconds(5);
 
         public string DepositContractAddress { get; set; } = AddressUtil.ZERO_ADDRESS;
 
@@ -85,7 +93,10 @@ namespace Nethereum.CoreChain
             => ResolveActivations().ResolveAt(blockNumber, timestamp);
 
         public HardforkConfig GetHardforkConfigAt(long blockNumber, ulong timestamp)
-            => Registry.Get(ResolveHardforkAt(blockNumber, timestamp));
+        {
+            var activations = ResolveActivations();
+            return Registry.Get(activations.ResolveAt(blockNumber, timestamp)).AtBlock(activations, blockNumber, timestamp);
+        }
 
         public IStateRootCalculator CreateStateRootCalculator()
         {
@@ -102,6 +113,14 @@ namespace Nethereum.CoreChain
         {
             return new IncrementalStateRootCalculator(stateStore, trieNodeStore,
                 Sha3KeccackHashProvider.Instance);
+        }
+
+        public IIncrementalStateRootCalculator CreateIncrementalStateRootCalculatorForStateTree(
+            IStateStore stateStore, ITrieNodeStore trieNodeStore = null)
+        {
+            return StateTree == StateTreeType.Binary
+                ? CreateBinaryIncrementalStateRootCalculator(stateStore)
+                : CreateIncrementalStateRootCalculator(stateStore, trieNodeStore);
         }
 
         public BinaryIncrementalStateRootCalculator CreateBinaryIncrementalStateRootCalculator(

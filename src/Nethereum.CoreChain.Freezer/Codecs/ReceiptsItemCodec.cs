@@ -18,10 +18,13 @@ namespace Nethereum.CoreChain.Freezer.Codecs
 
         public IReadOnlyList<ReceiptForStorage> Decode(ReadOnlySpan<byte> bytes)
         {
-            var list = (RLPCollection)RLP.RLP.Decode(bytes.ToArray());
-            var result = new List<ReceiptForStorage>(list.Count);
-            foreach (RLPCollection receiptRlp in list)
-                result.Add(DecodeOne(receiptRlp));
+            var reader = new RlpReader(bytes.ToArray());
+            var list = reader.ReadListHeader();
+            var result = new List<ReceiptForStorage>();
+            while (!reader.IsAtEnd(list))
+                result.Add(DecodeOne(reader));
+            reader.EnsureEnd(list);
+            reader.EnsureEnd();
             return result;
         }
 
@@ -37,15 +40,13 @@ namespace Nethereum.CoreChain.Freezer.Codecs
                 RLP.RLP.EncodeList(encodedLogs));
         }
 
-        private static ReceiptForStorage DecodeOne(RLPCollection receiptRlp)
+        private static ReceiptForStorage DecodeOne(RlpReader reader)
         {
-            var postStateOrStatus = receiptRlp[0].RLPData ?? Array.Empty<byte>();
-            var cumulativeGasUsed = receiptRlp[1].RLPData.ToBigIntegerFromRLPDecoded();
-
-            var logs = new List<Log>();
-            foreach (RLPCollection logRlp in (RLPCollection)receiptRlp[2])
-                logs.Add(LogEncoder.Current.Decode(logRlp.RLPData));
-
+            var scope = reader.ReadListHeader();
+            var postStateOrStatus = reader.ReadBytes();
+            var cumulativeGasUsed = new System.Numerics.BigInteger(reader.ReadUInt64());
+            var logs = LogEncoder.Current.DecodeList(reader);
+            reader.EnsureEnd(scope);
             return new ReceiptForStorage(postStateOrStatus, cumulativeGasUsed, logs);
         }
     }

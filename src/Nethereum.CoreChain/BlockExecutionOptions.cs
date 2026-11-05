@@ -23,6 +23,12 @@ namespace Nethereum.CoreChain
         public Dictionary<string, EvmUInt256> ExpectedNonces { get; init; } = new Dictionary<string, EvmUInt256>();
 
         public IReadOnlyDictionary<string, int>? PrecompileRelocations { get; set; }
+
+        public EvmUInt256? BlobBaseFee { get; set; }
+
+        public Nethereum.EVM.LogIndexCounter? LogIndexCounter { get; set; }
+
+        public System.Threading.CancellationToken CancellationToken { get; init; }
     }
 
     [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "BlockExecutionOptions — what a caller hands BlockExecutor.ExecuteAsync")]
@@ -33,6 +39,8 @@ namespace Nethereum.CoreChain
         public bool CaptureWitness { get; init; }
 
         public byte[]? ParentBeaconBlockRoot { get; init; }
+
+        public Nethereum.CoreChain.Prefetch.PrefetchSession? Prefetch { get; init; }
 
         public int? TraceTxIndex { get; init; }
 

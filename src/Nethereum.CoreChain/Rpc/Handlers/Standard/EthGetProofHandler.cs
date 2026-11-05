@@ -18,7 +18,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
         {
             var address = GetParam<string>(request, 0);
             var storageKeys = ParseStorageKeys(request);
-            var blockParameter = GetOptionalParam<string>(request, 2, BlockParameter.BlockParameterType.latest.ToString());
+            var blockParameter = GetOptionalBlockParam(request, 2, BlockParameter.BlockParameterType.latest.ToString());
 
             var block = await ResolveBlockAsync(blockParameter, context);
             if (block == null)
@@ -85,7 +85,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                 {
                     foreach (var item in je.EnumerateArray())
                     {
-                        var keyStr = item.GetString();
+                        var keyStr = item.RequireRpcString("storage key");
                         if (!string.IsNullOrEmpty(keyStr))
                         {
                             keys.Add(keyStr.HexToBigInteger(false));
@@ -113,7 +113,7 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
                     {
                         foreach (var item in keysElement.EnumerateArray())
                         {
-                            var keyStr = item.GetString();
+                            var keyStr = item.RequireRpcString("storage key");
                             if (!string.IsNullOrEmpty(keyStr))
                             {
                                 keys.Add(keyStr.HexToBigInteger(false));

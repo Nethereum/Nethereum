@@ -136,6 +136,40 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
         }
 
         [Fact]
+        public async Task Given_ABpoScheduledNext_When_AskedForEthConfig_Then_NextCarriesItsBlobScheduleAndANewForkId()
+        {
+            var config = DevChainConfig.Default;
+            config.GenesisTimestamp = 0;
+            config.ForkSchedule.GenesisFork = "osaka";
+            config.ForkSchedule.Schedule = new List<ForkActivationEntry>
+            {
+                new ForkActivationEntry { Fork = "osaka", Timestamp = 0 }
+            };
+            config.ForkSchedule.BlobSchedule = new List<BlobScheduleActivationEntry>
+            {
+                new BlobScheduleActivationEntry { Name = "bpo3", Timestamp = 100, Target = 21, Max = 32, BaseFeeUpdateFraction = 20_609_697 }
+            };
+
+            using var node = DevChainNode.CreateInMemory(config);
+            await node.StartAsync();
+
+            var response = await new EthConfigHandler().HandleAsync(
+                new RpcRequestMessage(1, "eth_config"),
+                new RpcContext(node, chainId: node.Config.ChainId, services: null));
+
+            Assert.False(response.HasError, response.Error?.Message);
+            var cfg = Assert.IsType<ChainConfiguration>(response.ResultNewtonsoft);
+
+            Assert.Equal(9UL, cfg.Current.BlobSchedule.Max);
+            Assert.NotNull(cfg.Next);
+            Assert.Equal(100UL, cfg.Next.ActivationTime);
+            Assert.Equal(21UL, cfg.Next.BlobSchedule.Target);
+            Assert.Equal(32UL, cfg.Next.BlobSchedule.Max);
+            Assert.Equal(20_609_697UL, cfg.Next.BlobSchedule.BaseFeeUpdateFraction);
+            Assert.NotEqual(cfg.Current.ForkId, cfg.Next.ForkId);
+        }
+
+        [Fact]
         public async Task Given_NoForkScheduledAfterTheCurrentOne_When_AskedForEthConfig_Then_NextAndLastAreBothNull()
         {
             var config = DevChainConfig.Default;

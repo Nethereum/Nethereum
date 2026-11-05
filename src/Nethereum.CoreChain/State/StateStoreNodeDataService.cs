@@ -8,7 +8,7 @@ using Nethereum.Util;
 
 namespace Nethereum.CoreChain.State
 {
-    public class StateStoreNodeDataService : IStateReader, IAccountStorageReader
+    public class StateStoreNodeDataService : IStateReader, IAccountStorageAddressReader
     {
         private readonly IStateStore _stateStore;
         private readonly IBlockStore _blockStore;
@@ -19,12 +19,11 @@ namespace Nethereum.CoreChain.State
             _blockStore = blockStore;
         }
 
-        public async Task<EvmUInt256> GetBalanceAsync(byte[] address)
-        {
-            return await GetBalanceAsync(address.ToHex());
-        }
+        public Task<EvmUInt256> GetBalanceAsync(byte[] address) => GetBalanceAsync(EvmAddress.From(address));
 
-        public async Task<EvmUInt256> GetBalanceAsync(string address)
+        public Task<EvmUInt256> GetBalanceAsync(string address) => GetBalanceAsync(EvmAddress.FromHex(address));
+
+        private async Task<EvmUInt256> GetBalanceAsync(EvmAddress address)
         {
             var account = await _stateStore.GetAccountAsync(address);
             return account?.Balance ?? EvmUInt256.Zero;
@@ -36,33 +35,26 @@ namespace Nethereum.CoreChain.State
             return AccountStorageValues.AnyNonZero(slots?.Values);
         }
 
-        public async Task<byte[]> GetCodeAsync(byte[] address)
+        public async Task<bool> AccountHasStorageAsync(EvmAddress address)
         {
-            return await GetCodeAsync(address.ToHex());
+            var slots = await _stateStore.GetAllStorageAsync(address);
+            return AccountStorageValues.AnyNonZero(slots?.Values);
         }
 
-        public async Task<byte[]> GetCodeAsync(string address)
+        public Task<byte[]> GetCodeAsync(byte[] address) => GetCodeAsync(EvmAddress.From(address));
+
+        public Task<byte[]> GetCodeAsync(string address) => GetCodeAsync(EvmAddress.FromHex(address));
+
+        private async Task<byte[]> GetCodeAsync(EvmAddress address)
         {
             var account = await _stateStore.GetAccountAsync(address);
             if (account?.CodeHash == null)
                 return null;
 
-            if (IsEmptyCodeHash(account.CodeHash))
+            if (ByteUtil.AreEqual(account.CodeHash, DefaultValues.EMPTY_DATA_HASH))
                 return null;
 
             return await _stateStore.GetCodeAsync(account.CodeHash);
-        }
-
-        private static bool IsEmptyCodeHash(byte[] codeHash)
-        {
-            if (codeHash == null || codeHash.Length != DefaultValues.EMPTY_DATA_HASH.Length)
-                return false;
-            for (int i = 0; i < codeHash.Length; i++)
-            {
-                if (codeHash[i] != DefaultValues.EMPTY_DATA_HASH[i])
-                    return false;
-            }
-            return true;
         }
 
         public async Task<byte[]> GetBlockHashAsync(long blockNumber)
@@ -73,22 +65,17 @@ namespace Nethereum.CoreChain.State
             return await _blockStore.GetHashByNumberAsync(blockNumber);
         }
 
-        public async Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
-        {
-            return await GetStorageAtAsync(address.ToHex(), position);
-        }
+        public Task<byte[]> GetStorageAtAsync(byte[] address, EvmUInt256 position)
+            => _stateStore.GetStorageAsync(EvmAddress.From(address), position);
 
-        public async Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
-        {
-            return await _stateStore.GetStorageAsync(address, position);
-        }
+        public Task<byte[]> GetStorageAtAsync(string address, EvmUInt256 position)
+            => _stateStore.GetStorageAsync(EvmAddress.FromHex(address), position);
 
-        public async Task<EvmUInt256> GetTransactionCountAsync(byte[] address)
-        {
-            return await GetTransactionCountAsync(address.ToHex());
-        }
+        public Task<EvmUInt256> GetTransactionCountAsync(byte[] address) => GetTransactionCountAsync(EvmAddress.From(address));
 
-        public async Task<EvmUInt256> GetTransactionCountAsync(string address)
+        public Task<EvmUInt256> GetTransactionCountAsync(string address) => GetTransactionCountAsync(EvmAddress.FromHex(address));
+
+        private async Task<EvmUInt256> GetTransactionCountAsync(EvmAddress address)
         {
             var account = await _stateStore.GetAccountAsync(address);
             return account?.Nonce ?? EvmUInt256.Zero;
@@ -96,7 +83,7 @@ namespace Nethereum.CoreChain.State
 
         public Task<bool> AccountExistsAsync(string address)
         {
-            return _stateStore.AccountExistsAsync(address);
+            return _stateStore.AccountExistsAsync(EvmAddress.FromHex(address));
         }
     }
 }

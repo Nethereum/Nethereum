@@ -56,10 +56,12 @@ namespace Nethereum.CoreChain.UnitTests.Sync
             public bool AnchorAlways { get; set; }
             public ValidationAction VerdictAction { get; set; } = ValidationAction.Continue;
             public int OnVerdictCalls { get; private set; }
+            public DivergenceVerdict LastVerdict { get; private set; }
             public bool ShouldAnchorAt(ulong blockNumber) => AnchorAlways;
             public ValidationAction OnVerdict(DivergenceVerdict verdict, ulong blockNumber)
             {
                 OnVerdictCalls++;
+                LastVerdict = verdict;
                 return VerdictAction;
             }
         }
@@ -173,6 +175,58 @@ namespace Nethereum.CoreChain.UnitTests.Sync
             Assert.Equal(1UL, result.RootMismatches);
             Assert.Contains("fatal verdict", result.Detail);
             Assert.Single(source.BadBundleReports);
+        }
+
+        private sealed class GasLimitBoundRefusingExecutor : IBlockExecutor
+        {
+            public Task<BlockImporterResult> ProcessBlockAsync(
+                BlockHeader header,
+                IList<ISignedTransaction> transactions,
+                IList<BlockHeader> uncles,
+                IList<Withdrawal> withdrawals,
+                CancellationToken ct)
+                => Task.FromResult(new BlockImporterResult
+                {
+                    ExpectedStateRoot = header.StateRoot,
+                    GasLimitBoundViolated = true,
+                });
+        }
+
+        [Fact]
+        public async Task Given_ABlockThatFailsAValidityCheckAndNoCanonicalSource_When_ItIsImported_Then_TheRefusalIsNamedAndReportedAsAnInvalidBlock()
+        {
+            var bundle = InMemoryChainStoreBundle.Open();
+            var source = new LocalReplayBlockSource(new List<BlockBundle> { MakeBundle(1) });
+            var policy = new PolicyStub { VerdictAction = ValidationAction.Fatal };
+            var follower = new FollowerService();
+
+            await follower.RunAsync(
+                source, BundleFactoryFor(bundle), _ => new GasLimitBoundRefusingExecutor(), policy, null,
+                new FollowerOptions(StartBlock: 1, CheckpointEvery: 0, AnchorEvery: 0), default);
+
+            Assert.Equal(DivergenceOutcome.SourceUnavailable, policy.LastVerdict.Outcome);
+            Assert.Contains("gasLimitBound", policy.LastVerdict.Detail);
+            Assert.Equal((1UL, BadBundleReason.InvalidBlock), Assert.Single(source.BadBundleReports));
+        }
+
+        [Fact]
+        public async Task Given_ACanonicalBlockThatOurValidationRefusesBeforeExecution_When_ItIsImported_Then_TheVerdictIsAnEvmBug()
+        {
+            var bundle = InMemoryChainStoreBundle.Open();
+            var block = MakeBundle(1);
+            var source = new LocalReplayBlockSource(new List<BlockBundle> { block });
+            var canonical = new StubCanonicalSource(new Dictionary<ulong, byte[]> { { 1, block.Header.StateRoot } });
+            var policy = new PolicyStub { VerdictAction = ValidationAction.Fatal };
+            var follower = new FollowerService();
+
+            var result = await follower.RunAsync(
+                source, BundleFactoryFor(bundle), _ => new GasLimitBoundRefusingExecutor(), policy, canonical,
+                new FollowerOptions(StartBlock: 1, CheckpointEvery: 0, AnchorEvery: 0), default);
+
+            Assert.Equal(DivergenceOutcome.EvmBug, policy.LastVerdict.Outcome);
+            Assert.Contains("gasLimitBound", policy.LastVerdict.Detail);
+            Assert.Equal(FollowerExitReason.FatalVerdict, result.ExitReason);
+            Assert.Equal((1UL, BadBundleReason.InvalidBlock), Assert.Single(source.BadBundleReports));
         }
 
         [Fact]

@@ -12,11 +12,23 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
 {
     public class SubscriptionManager
     {
+        public const int DefaultMaxSubscriptionsPerConnection = 200;
+
         private readonly ConcurrentDictionary<string, Subscription> _subscriptions = new();
+        private readonly ConcurrentDictionary<string, int> _countsByConnection = new();
         private long _idCounter;
+
+        public int MaxSubscriptionsPerConnection { get; set; } = DefaultMaxSubscriptionsPerConnection;
 
         public string Subscribe(string connectionId, SubscriptionType type, LogFilter logFilter = null)
         {
+            var held = _countsByConnection.AddOrUpdate(connectionId, 1, (_, count) => count + 1);
+            if (held > MaxSubscriptionsPerConnection)
+            {
+                ReleaseOne(connectionId);
+                throw new RpcException(-32000, $"too many subscriptions on this connection (limit {MaxSubscriptionsPerConnection})");
+            }
+
             var subId = GenerateSubscriptionId();
             var sub = new Subscription
             {
@@ -31,15 +43,21 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
 
         public bool Unsubscribe(string subscriptionId, string connectionId)
         {
-            if (_subscriptions.TryGetValue(subscriptionId, out var sub) && sub.ConnectionId == connectionId)
+            if (_subscriptions.TryGetValue(subscriptionId, out var sub) && sub.ConnectionId == connectionId
+                && _subscriptions.TryRemove(subscriptionId, out _))
             {
-                return _subscriptions.TryRemove(subscriptionId, out _);
+                ReleaseOne(connectionId);
+                return true;
             }
             return false;
         }
 
+        private void ReleaseOne(string connectionId) =>
+            _countsByConnection.AddOrUpdate(connectionId, 0, (_, count) => count - 1);
+
         public void RemoveAllForConnection(string connectionId)
         {
+            _countsByConnection.TryRemove(connectionId, out _);
             var toRemove = _subscriptions.Where(kvp => kvp.Value.ConnectionId == connectionId).Select(kvp => kvp.Key).ToList();
             foreach (var key in toRemove)
             {
@@ -50,13 +68,15 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
         public IReadOnlyList<SubscriptionNotification> OnNewBlock(BlockHeader header, byte[] blockHash, List<FilteredLog> logs)
         {
             var notifications = new List<SubscriptionNotification>();
+            object headerDto = null;
+            object[] logDtos = null;
 
             foreach (var sub in _subscriptions.Values)
             {
                 if (sub.Type == SubscriptionType.NewHeads)
                 {
-                    var headerOnlySize = BlockHeaderExtensions.CalculateFullBlockSize(header, transactions: null, uncles: null);
-                    var headerDto = header.ToBlockWithTransactionHashes(blockHash, transactionHashes: null, headerOnlySize);
+                    headerDto ??= header.ToBlockWithTransactionHashes(
+                        blockHash, transactionHashes: null, BlockHeaderExtensions.CalculateFullBlockSize(header, transactions: null, uncles: null));
                     notifications.Add(new SubscriptionNotification
                     {
                         SubscriptionId = sub.Id,
@@ -66,16 +86,17 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
                 }
                 else if (sub.Type == SubscriptionType.Logs && logs != null)
                 {
-                    foreach (var log in logs)
+                    logDtos ??= new object[logs.Count];
+                    for (var i = 0; i < logs.Count; i++)
                     {
-                        if (MatchesFilter(log, sub.LogFilter))
+                        if (MatchesFilter(logs[i], sub.LogFilter))
                         {
-                            var logDto = log.ToRpcFilterLog();
+                            logDtos[i] ??= logs[i].ToRpcFilterLog();
                             notifications.Add(new SubscriptionNotification
                             {
                                 SubscriptionId = sub.Id,
                                 ConnectionId = sub.ConnectionId,
-                                Payload = logDto
+                                Payload = logDtos[i]
                             });
                         }
                     }

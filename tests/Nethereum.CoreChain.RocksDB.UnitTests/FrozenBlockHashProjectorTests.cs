@@ -13,6 +13,7 @@ using FreezerCore = Nethereum.Freezer.Freezer;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FrozenBlockHashProjectorTests
     {
         private const int BlockCount = 40;

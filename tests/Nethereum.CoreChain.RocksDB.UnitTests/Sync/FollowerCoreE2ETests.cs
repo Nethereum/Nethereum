@@ -29,6 +29,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 {
+    [Trait("Requires", "Externals")]
     public class FollowerCoreE2ETests : IDisposable
     {
         private readonly string _dataDir;
@@ -82,7 +83,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
@@ -117,11 +118,9 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task Given_the_real_FollowerService_replays_HiveTestdataFixture_through_block_17_When_eth_getBlockByNumber_is_called_Then_withdrawals_are_served()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const int targetBlock = 17;
@@ -238,8 +237,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task ForwardSync_HiveChain_PathKeyed_StateRootsMatchCanonical()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             var storageOptions = new RocksDbStorageOptions
             {
                 DatabasePath = _dataDir,
@@ -251,7 +248,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             {
                 using (var seedBundle = RocksDbChainStoreBundle.FromManager(manager, _dataDir, journalOptions: null, ownsManager: false))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
                 }
 
                 var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
@@ -391,8 +388,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task ForwardSync_HiveChain_PathKeyed_K2_MatchesK1_CfByteIdentical()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             var defaults = new MainnetChainServerConfig();
             var journalOptions = new HistoricalStateOptions
             {
@@ -427,8 +422,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
                 using var bundleK1 = RocksDbChainStoreBundle.FromManager(mgrK1, dirK1, journalOptions: journalOptions, ownsManager: false);
                 using var bundleK2 = RocksDbChainStoreBundle.FromManager(mgrK2, dirK2, journalOptions: journalOptions, ownsManager: false);
 
-                await HiveTestdataFixture.PopulateGenesisAsync(bundleK1.State);
-                await HiveTestdataFixture.PopulateGenesisAsync(bundleK2.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(bundleK1);
+                await HiveTestdataFixture.PopulateGenesisAsync(bundleK2);
 
                 var executorK1 = FollowerStackBuilder.BuildPathKeyed(
                     bundleK1, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory, HiveTestdataFixture.ChainConfigFactory);
@@ -497,8 +492,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [InlineData(120)]
         public async Task ForwardSync_HiveChain_PathKeyed_LargerK_MatchesK1_CfByteIdentical(int k)
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             var defaults = new MainnetChainServerConfig();
             var journalOptions = new HistoricalStateOptions
             {
@@ -533,8 +526,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
                 using var bundleK1 = RocksDbChainStoreBundle.FromManager(mgrK1, dirK1, journalOptions: journalOptions, ownsManager: false);
                 using var bundleK = RocksDbChainStoreBundle.FromManager(mgrK, dirK, journalOptions: journalOptions, ownsManager: false);
 
-                await HiveTestdataFixture.PopulateGenesisAsync(bundleK1.State);
-                await HiveTestdataFixture.PopulateGenesisAsync(bundleK.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(bundleK1);
+                await HiveTestdataFixture.PopulateGenesisAsync(bundleK);
 
                 var executorK1 = FollowerStackBuilder.BuildPathKeyed(
                     bundleK1, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory, HiveTestdataFixture.ChainConfigFactory);
@@ -599,8 +592,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task BoundaryKill_HeadCommitSkippedAfterAtomicBatch_ResumesCleanlyWithoutThrow()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             var dbDir = Path.Combine(Path.GetTempPath(), $"boundary_kill_{Guid.NewGuid():N}");
             Directory.CreateDirectory(dbDir);
             try
@@ -622,7 +613,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 
                 using (var bundle = RocksDbChainStoreBundle.Open(dbDir, journalOptions: journalOptions, storageOptions: storageOptions))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(bundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(bundle);
 
                     var executor = FollowerStackBuilder.BuildPathKeyed(
                         bundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
@@ -683,7 +674,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
                         TrieNodeHistoryIndex = true,
                     }))
                     {
-                        await HiveTestdataFixture.PopulateGenesisAsync(refBundle.State);
+                        await HiveTestdataFixture.PopulateGenesisAsync(refBundle);
                         var refExecutor = FollowerStackBuilder.BuildPathKeyed(
                             refBundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                             HiveTestdataFixture.ChainConfigFactory);
@@ -716,8 +707,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task MidWindowKill_NonBoundaryBlock_ResumesFromDurableCursor_MatchesUninterruptedK2Run()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             RocksDbStorageOptions StorageOptionsFor(string dir) => new RocksDbStorageOptions
             {
                 DatabasePath = dir,
@@ -742,7 +731,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             {
                 using (var controlBundle = RocksDbChainStoreBundle.Open(dirControl, journalOptions: journalOptions, storageOptions: StorageOptionsFor(dirControl)))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(controlBundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(controlBundle);
                     var controlExecutor = FollowerStackBuilder.BuildPathKeyed(
                         controlBundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                         HiveTestdataFixture.ChainConfigFactory, flushCadence: new FixedIntervalFlushCadence(2));
@@ -755,7 +744,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 
                 using (var crashBundle = RocksDbChainStoreBundle.Open(dirCrash, journalOptions: journalOptions, storageOptions: StorageOptionsFor(dirCrash)))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(crashBundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(crashBundle);
                     var crashExecutor = FollowerStackBuilder.BuildPathKeyed(
                         crashBundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                         HiveTestdataFixture.ChainConfigFactory, flushCadence: new FixedIntervalFlushCadence(2));
@@ -815,8 +804,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task RaggedTailKill_K16_MidTailDispose_ResumesFromDurableCursor_MatchesUninterruptedK16Run()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             const ulong k = 16;
             const ulong killAfterBlock = 596UL;
 
@@ -851,7 +838,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             {
                 using (var controlBundle = RocksDbChainStoreBundle.Open(dirControl, journalOptions: journalOptions, storageOptions: StorageOptionsFor(dirControl)))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(controlBundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(controlBundle);
                     var controlExecutor = FollowerStackBuilder.BuildPathKeyed(
                         controlBundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                         HiveTestdataFixture.ChainConfigFactory, flushCadence: new FixedIntervalFlushCadence(k));
@@ -864,7 +851,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 
                 using (var crashBundle = RocksDbChainStoreBundle.Open(dirCrash, journalOptions: journalOptions, storageOptions: StorageOptionsFor(dirCrash)))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(crashBundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(crashBundle);
                     var crashExecutor = FollowerStackBuilder.BuildPathKeyed(
                         crashBundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                         HiveTestdataFixture.ChainConfigFactory, flushCadence: new FixedIntervalFlushCadence(k));
@@ -993,8 +980,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task BoundaryWithdrawalsKill_K1_Block17_NeverDurableWithoutWithdrawals()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             RocksDbStorageOptions StorageOptionsFor(string dir) => new RocksDbStorageOptions
             {
                 DatabasePath = dir,
@@ -1016,7 +1001,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             {
                 using (var bundle = RocksDbChainStoreBundle.Open(dbDir, journalOptions: journalOptions, storageOptions: StorageOptionsFor(dbDir)))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(bundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(bundle);
                     var executor = FollowerStackBuilder.BuildPathKeyed(
                         bundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                         HiveTestdataFixture.ChainConfigFactory);
@@ -1052,8 +1037,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task BoundaryWithdrawalsKill_K4Boundary_Block28_NeverDurableWithoutWithdrawals()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             RocksDbStorageOptions StorageOptionsFor(string dir) => new RocksDbStorageOptions
             {
                 DatabasePath = dir,
@@ -1076,7 +1059,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             {
                 using (var bundle = RocksDbChainStoreBundle.Open(dbDir, journalOptions: journalOptions, storageOptions: StorageOptionsFor(dbDir)))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(bundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(bundle);
                     var executor = FollowerStackBuilder.BuildPathKeyed(
                         bundle, HiveTestdataFixture.ChainActivations, HiveTestdataFixture.HardforkConfigFactory,
                         HiveTestdataFixture.ChainConfigFactory, flushCadence: new FixedIntervalFlushCadence(4));
@@ -1192,8 +1175,6 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         [Fact]
         public async Task ForwardSync_HiveChain_PathKeyed_ProductionConfig_AtomicFlush_StateRootsMatchCanonical()
         {
-            if (!HiveTestdataFixture.IsAvailable) return;
-
             var defaults = new MainnetChainServerConfig();
             Assert.True(defaults.PathKeyedState, "test assumes the documented production default PathKeyedState=true");
             Assert.True(defaults.JournalBlocks > 0, "test assumes the documented production default JournalBlocks>0 (journal armed)");
@@ -1217,7 +1198,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             {
                 using (var seedBundle = RocksDbChainStoreBundle.FromManager(manager, _dataDir, journalOptions: journalOptions, ownsManager: false))
                 {
-                    await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                    await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
                 }
 
                 var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
@@ -1283,7 +1264,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
@@ -1458,7 +1439,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: HistoricalStateOptions.Default))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong targetMismatchBlock = 10UL;
@@ -1512,7 +1493,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong targetMismatchBlock = 10UL;
@@ -1556,7 +1537,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong targetMismatchBlock = 10UL;
@@ -1598,7 +1579,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong targetMismatchBlock = 10UL;
@@ -1642,7 +1623,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong tamperStart = 10UL;
@@ -1692,7 +1673,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong checkpointEvery = 5UL;
@@ -1741,7 +1722,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         {
             using (var seedBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: HistoricalStateOptions.Default))
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(seedBundle);
             }
 
             const ulong tamperBlock = 10UL;
@@ -1787,7 +1768,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         public async Task ImporterMismatch_DoesNotPersistHeaderOrAdvanceHeight()
         {
             _activeBundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: HistoricalStateOptions.Default);
-            await HiveTestdataFixture.PopulateGenesisAsync(_activeBundle.State);
+            await HiveTestdataFixture.PopulateGenesisAsync(_activeBundle);
 
             var executor = FollowerStackBuilder.Build(
                 _activeBundle,

@@ -191,17 +191,13 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             using var lease = _manager.Lease();
             using var it = lease.Database.NewIterator(_blockHeader);
-            it.SeekToLast();
-            if (!it.Valid()) return null;
-            var key = it.Key();
-            return key.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(key);
+            return HistoryRows.Tip(it);
         }
 
         private ulong? FindBlock(byte[] hash)
         {
             using var lease = _manager.Lease();
-            var num = lease.Database.Get(hash, _blockHashIndex);
-            return num == null || num.Length < HistoryKeys.BlockKeyLength ? (ulong?)null : HistoryKeys.ReadBlockNumber(num);
+            return HistoryKeys.TryReadBlockNumber(lease.Database.Get(hash, _blockHashIndex));
         }
 
         private static readonly byte[] MaxBlockBound =

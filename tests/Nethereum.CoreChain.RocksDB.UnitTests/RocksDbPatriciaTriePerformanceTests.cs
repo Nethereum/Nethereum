@@ -17,6 +17,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Category", "Performance")]
     public class RocksDbPatriciaTriePerformanceTests : IAsyncLifetime
     {
         private RocksDbTestFixture _fixture = null!;

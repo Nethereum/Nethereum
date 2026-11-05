@@ -59,6 +59,7 @@ namespace Nethereum.CoreChain.Genesis
                     AmsterdamTime = ParseUlongOrNull(config["amsterdamTime"]),
                     TerminalTotalDifficulty = ParseDecimalOrNull(config["terminalTotalDifficulty"]),
                     BlobSchedule = config["blobSchedule"] as JObject,
+                    BpoTimes = ParseBpoTimes(config),
                     DepositContractAddress = config["depositContractAddress"]?.ToString(),
                 },
                 Alloc = root["alloc"] as JObject ?? new JObject(),
@@ -114,6 +115,8 @@ namespace Nethereum.CoreChain.Genesis
             AddTimestampActivation(schedule, "Osaka", config.OsakaTime);
             AddTimestampActivation(schedule, "Amsterdam", config.AmsterdamTime);
 
+            AddBlobSchedule(schedule, config);
+
             return schedule;
         }
 
@@ -139,6 +142,17 @@ namespace Nethereum.CoreChain.Genesis
                 ? unchecked((long)document.SlotNumber.Value) : (long?)null;
             target.DepositContractAddress = document.Config.DepositContractAddress ?? target.DepositContractAddress;
             target.ForkSchedule = BuildForkSchedule(document);
+        }
+
+        public static bool DeclaresAnySystemContract(StandardGenesisDocument document)
+        {
+            if (document == null) throw new ArgumentNullException(nameof(document));
+
+            foreach (var predeploy in Nethereum.CoreChain.Forks.SystemContractPredeploys.All)
+                foreach (var key in document.Alloc.Properties())
+                    if (key.Name.Replace("0x", "").Equals(predeploy.Address.Replace("0x", ""), StringComparison.OrdinalIgnoreCase))
+                        return true;
+            return false;
         }
 
         public static async Task<int> PopulateAllocAsync(IStateStore stateStore, JObject alloc)
@@ -190,6 +204,41 @@ namespace Nethereum.CoreChain.Genesis
             }
 
             return n;
+        }
+
+        private static System.Collections.Generic.Dictionary<string, ulong> ParseBpoTimes(JObject config)
+        {
+            var times = new System.Collections.Generic.Dictionary<string, ulong>();
+            foreach (var property in config.Properties())
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(property.Name, "^bpo[0-9]+Time$")) continue;
+                var time = ParseUlongOrNull(property.Value);
+                if (time.HasValue) times[property.Name.Substring(0, property.Name.Length - 4)] = time.Value;
+            }
+            return times;
+        }
+
+        private static void AddBlobSchedule(ChainForkSchedule schedule, StandardGenesisForkConfig config)
+        {
+            if (config.BlobSchedule == null) return;
+            foreach (var property in config.BlobSchedule.Properties())
+            {
+                var parameters = property.Value as JObject;
+                if (parameters == null) continue;
+                var entry = new BlobScheduleActivationEntry
+                {
+                    Name = property.Name,
+                    Target = (int)parameters["target"],
+                    Max = (int)parameters["max"],
+                    BaseFeeUpdateFraction = (int)parameters["baseFeeUpdateFraction"]
+                };
+                if (property.Name.StartsWith("bpo"))
+                {
+                    if (!config.BpoTimes.TryGetValue(property.Name, out var time)) continue;
+                    entry.Timestamp = time;
+                }
+                schedule.BlobSchedule.Add(entry);
+            }
         }
 
         private static void AddBlockActivation(ChainForkSchedule schedule, string fork, long? block)

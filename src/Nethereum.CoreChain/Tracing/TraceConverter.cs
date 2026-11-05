@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Numerics;
 using Nethereum.CoreChain.Rpc;
@@ -46,7 +47,7 @@ namespace Nethereum.CoreChain.Tracing
                 if (!config.DisableStack && trace.Stack != null)
                 {
                     step.Stack = new List<HexBigInteger>();
-                    foreach (var stackItem in trace.Stack)
+                    foreach (var stackItem in Enumerable.Reverse(trace.Stack))
                     {
                         var value = stackItem.HexToBigInteger(false);
                         step.Stack.Add(new HexBigInteger(value));
@@ -56,12 +57,13 @@ namespace Nethereum.CoreChain.Tracing
                 if (config.EnableMemory && trace.Memory != null)
                 {
                     step.Memory = trace.Memory;
+                    if (trace.Memory.Length > 0) step.MemoryWords = ToWords(trace.Memory);
                     step.MemSize = trace.Memory.Length / 2;
                 }
 
                 if (!config.DisableStorage && trace.Storage != null && trace.Storage.Count > 0)
                 {
-                    step.Storage = new Dictionary<string, string>(trace.Storage);
+                    step.Storage = trace.Storage.ToDictionary(p => "0x" + p.Key, p => "0x" + p.Value);
                 }
 
                 structLogs.Add(step);
@@ -113,6 +115,14 @@ namespace Nethereum.CoreChain.Tracing
             }
 
             return response;
+        }
+
+        private static List<string> ToWords(string memoryHex)
+        {
+            var words = new List<string>();
+            for (var i = 0; i < memoryHex.Length; i += 64)
+                words.Add("0x" + memoryHex.Substring(i, System.Math.Min(64, memoryHex.Length - i)).PadRight(64, '0'));
+            return words;
         }
 
         private static readonly string[] FrameTypeNames = { "CALL", "DELEGATECALL", "STATICCALL", "CALLCODE", "CREATE", "CREATE2" };

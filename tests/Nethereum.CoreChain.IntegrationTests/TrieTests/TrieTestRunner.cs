@@ -6,18 +6,19 @@ using Nethereum.Util;
 using Nethereum.Util.HashProviders;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.TrieTests
 {
+    [Trait("Requires", "Externals")]
     public class TrieTestRunner
     {
         private readonly ITestOutputHelper _output;
         private readonly IHashProvider _hashProvider = new Sha3KeccackHashProvider();
         private readonly Sha3Keccack _keccak = new();
 
-        private static readonly string TestPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "TrieTests");
+        private static string TestPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "TrieTests");
 
         public TrieTestRunner(ITestOutputHelper output)
         {
@@ -107,9 +108,7 @@ namespace Nethereum.CoreChain.IntegrationTests.TrieTests
 
         public static IEnumerable<object[]> GetTrieTests()
         {
-            var testPath = Path.Combine(
-                AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-                "external", "ethereum-tests", "TrieTests");
+            var testPath = Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "TrieTests");
 
             if (!Directory.Exists(testPath))
                 yield break;

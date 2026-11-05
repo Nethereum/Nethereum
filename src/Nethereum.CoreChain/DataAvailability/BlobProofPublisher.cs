@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Proving;
@@ -33,36 +31,7 @@ namespace Nethereum.CoreChain.DataAvailability
                 BlockNumber = proof.BlockNumber
             });
 
-            var blobs = BlobEncoder.EncodeBlobs(payload);
-            var records = new List<BlobSidecarRecord>();
-            var commitmentHash = new byte[32];
-
-            using (var sha = SHA256.Create())
-            {
-                for (int i = 0; i < blobs.Count; i++)
-                {
-                    var blob = blobs[i];
-                    var commitment = _kzg.BlobToKzgCommitment(blob);
-                    var kzgProof = _kzg.ComputeBlobKzgProof(blob, commitment);
-                    var versionedHash = _kzg.ComputeVersionedHash(commitment);
-
-                    records.Add(new BlobSidecarRecord
-                    {
-                        Index = i,
-                        Blob = blob,
-                        KzgCommitment = commitment,
-                        KzgProof = kzgProof,
-                        VersionedHash = versionedHash
-                    });
-                }
-
-                var allHashes = new byte[records.Count * 32];
-                for (int i = 0; i < records.Count; i++)
-                    Array.Copy(records[i].VersionedHash, 0, allHashes, i * 32, 32);
-                commitmentHash = sha.ComputeHash(allHashes);
-            }
-
-            await _blobStore.StoreBlobsAsync(scope.EndBlock, commitmentHash, records);
+            var commitmentHash = await BlobSidecarStore.StoreAsync(_kzg, _blobStore, payload, scope.EndBlock);
 
             return new ProofPublication
             {
@@ -75,12 +44,8 @@ namespace Nethereum.CoreChain.DataAvailability
         {
             if (commitment?.CommitmentHash == null) return null;
 
-            var blobs = await _blobStore.GetBlobsByTransactionHashAsync(commitment.CommitmentHash);
-            if (blobs == null || blobs.Count == 0) return null;
-
-            var blobData = new List<byte[]>();
-            foreach (var b in blobs) blobData.Add(b.Blob);
-            var decoded = BlobEncoder.DecodeBlobs(blobData);
+            var decoded = await BlobSidecarStore.LoadAsync(_blobStore, commitment.CommitmentHash);
+            if (decoded == null) return null;
 
             return BlockProofSubmitter.DeserializeProofPayload(decoded)?.ProofBytes;
         }

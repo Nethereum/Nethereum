@@ -1,6 +1,8 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -15,11 +17,20 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
 {
     public class WebSocketRpcHandler
     {
+        public const int MaxMessageSize = 32 * 1024 * 1024;
+        public static readonly TimeSpan WriteTimeout = TimeSpan.FromSeconds(10);
+
+        private const int ReceiveChunkSize = 16 * 1024;
+
         private readonly SubscriptionManager _subscriptionManager;
-        private readonly RpcHandlerRegistry _rpcRegistry;
-        private readonly RpcContext _rpcContext;
+        private readonly IRpcDispatcher _dispatcher;
         private readonly ConcurrentDictionary<string, WebSocket> _connections = new();
+        private readonly ConcurrentDictionary<string, WebSocketOutbox> _outboxes = new();
         private readonly JsonSerializerOptions _serializerOptions;
+
+        public bool SubscriptionsEnabled { get; set; } = true;
+
+        public int LogQueryLimit { get; set; } = 1_000;
 
         public ConcurrentDictionary<string, WebSocket> Connections => _connections;
         public SubscriptionManager SubscriptionManager => _subscriptionManager;
@@ -29,39 +40,56 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
             RpcHandlerRegistry rpcRegistry,
             RpcContext rpcContext,
             JsonSerializerOptions serializerOptions = null)
+            : this(subscriptionManager, new RpcDispatcher(rpcRegistry, rpcContext), serializerOptions)
+        {
+        }
+
+        public WebSocketRpcHandler(
+            SubscriptionManager subscriptionManager,
+            IRpcDispatcher dispatcher,
+            JsonSerializerOptions serializerOptions = null)
         {
             _subscriptionManager = subscriptionManager;
-            _rpcRegistry = rpcRegistry;
-            _rpcContext = rpcContext;
-            _serializerOptions = serializerOptions ?? new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            };
+            _dispatcher = dispatcher;
+            _serializerOptions = serializerOptions ?? JsonRpcEnvelope.CreateSerializerOptions();
         }
 
         public async Task HandleConnectionAsync(WebSocket ws, CancellationToken ct = default)
         {
             var connectionId = Guid.NewGuid().ToString("N");
             _connections[connectionId] = ws;
+            var envelope = new JsonRpcEnvelope(new SubscriptionDispatcher(this, connectionId), _serializerOptions);
 
             try
             {
-                var buffer = new byte[4096];
+                var chunk = new byte[ReceiveChunkSize];
+                using var message = new MemoryStream();
                 while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
                 {
-                    var received = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                    if (received.MessageType == WebSocketMessageType.Close)
-                        break;
+                    message.SetLength(0);
+                    WebSocketReceiveResult received;
+                    do
+                    {
+                        received = await ws.ReceiveAsync(new ArraySegment<byte>(chunk), ct);
+                        if (received.MessageType == WebSocketMessageType.Close) return;
 
-                    if (received.MessageType != WebSocketMessageType.Text)
-                        continue;
+                        if (message.Length + received.Count > MaxMessageSize)
+                        {
+                            await ws.CloseOutputAsync(WebSocketCloseStatus.MessageTooBig, "message too big", default);
+                            return;
+                        }
 
-                    var requestJson = Encoding.UTF8.GetString(buffer, 0, received.Count);
-                    var responseJson = await ProcessRequestAsync(requestJson, connectionId);
+                        message.Write(chunk, 0, received.Count);
+                    }
+                    while (!received.EndOfMessage);
 
-                    var responseBytes = Encoding.UTF8.GetBytes(responseJson);
-                    await ws.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, ct);
+                    if (received.MessageType != WebSocketMessageType.Text) continue;
+
+                    var result = await envelope.HandleAsync(message.GetBuffer().AsMemory(0, (int)message.Length), ct);
+                    if (result.Body != null)
+                    {
+                        GetOutbox(connectionId, ws).TryEnqueue(Encoding.UTF8.GetBytes(result.Body));
+                    }
                 }
             }
             catch (WebSocketException)
@@ -72,8 +100,7 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
             }
             finally
             {
-                _connections.TryRemove(connectionId, out _);
-                _subscriptionManager.RemoveAllForConnection(connectionId);
+                Remove(connectionId);
                 if (ws.State == WebSocketState.CloseReceived)
                 {
                     try { await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default); } catch { }
@@ -86,120 +113,111 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
             }
         }
 
-        public async Task BroadcastBlockAsync(BlockHeader header, byte[] blockHash, List<FilteredLog> logs)
+        public Task BroadcastBlockAsync(BlockHeader header, byte[] blockHash, List<FilteredLog> logs)
         {
             var notifications = _subscriptionManager.OnNewBlock(header, blockHash, logs);
-            if (notifications.Count == 0) return;
+            var payloads = new Dictionary<object, byte[]>(ReferenceEqualityComparer.Instance);
+            var message = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(message);
 
             foreach (var notification in notifications)
             {
-                if (_connections.TryGetValue(notification.ConnectionId, out var ws) && ws.State == WebSocketState.Open)
+                if (!_connections.TryGetValue(notification.ConnectionId, out var ws) || ws.State != WebSocketState.Open)
                 {
-                    try
-                    {
-                        var msg = JsonSerializer.Serialize(new
-                        {
-                            jsonrpc = "2.0",
-                            method = "eth_subscription",
-                            @params = new
-                            {
-                                subscription = notification.SubscriptionId,
-                                result = notification.Payload
-                            }
-                        }, _serializerOptions);
-                        var bytes = Encoding.UTF8.GetBytes(msg);
-                        await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, default);
-                    }
-                    catch (WebSocketException)
-                    {
-                        _connections.TryRemove(notification.ConnectionId, out _);
-                        _subscriptionManager.RemoveAllForConnection(notification.ConnectionId);
-                    }
+                    continue;
                 }
+
+                if (!payloads.TryGetValue(notification.Payload, out var payload))
+                {
+                    payload = JsonSerializer.SerializeToUtf8Bytes<object>(notification.Payload, _serializerOptions);
+                    payloads[notification.Payload] = payload;
+                }
+
+                message.Clear();
+                writer.Reset(message);
+                writer.WriteStartObject();
+                writer.WriteString("jsonrpc", "2.0");
+                writer.WriteString("method", "eth_subscription");
+                writer.WriteStartObject("params");
+                writer.WriteString("subscription", notification.SubscriptionId);
+                writer.WritePropertyName("result");
+                writer.WriteRawValue(payload, skipInputValidation: true);
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+                writer.Flush();
+
+                GetOutbox(notification.ConnectionId, ws).TryEnqueue(message.WrittenSpan.ToArray());
             }
+
+            return Task.CompletedTask;
         }
 
-        private async Task<string> ProcessRequestAsync(string requestJson, string connectionId)
+        private WebSocketOutbox GetOutbox(string connectionId, WebSocket ws) =>
+            _outboxes.GetOrAdd(connectionId, id => new WebSocketOutbox(ws, WriteTimeout, () => Remove(id)));
+
+        private void Remove(string connectionId)
         {
+            _connections.TryRemove(connectionId, out _);
+            _outboxes.TryRemove(connectionId, out _);
+            _subscriptionManager.RemoveAllForConnection(connectionId);
+        }
+
+        private RpcResponseMessage Subscribe(RpcRequestMessage request, string connectionId)
+        {
+            string subType;
+            LogFilter logFilter = null;
             try
             {
-                var jsonRequest = JsonSerializer.Deserialize<JsonRpcRequest>(requestJson, _serializerOptions);
-                if (jsonRequest == null || string.IsNullOrEmpty(jsonRequest.Method))
-                    return "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"Invalid Request\"}}";
-
-                if (jsonRequest.Method == "eth_subscribe")
-                    return HandleSubscribe(jsonRequest, connectionId);
-
-                if (jsonRequest.Method == "eth_unsubscribe")
-                    return HandleUnsubscribe(jsonRequest, connectionId);
-
-                var handler = _rpcRegistry.GetHandler(jsonRequest.Method);
-                if (handler == null)
-                    return JsonSerializer.Serialize(new JsonRpcResponse
-                    {
-                        Id = jsonRequest.Id,
-                        Error = new JsonRpcError { Code = -32601, Message = $"Method not found: {jsonRequest.Method}" }
-                    }, _serializerOptions);
-
-                var request = new RpcRequestMessage(jsonRequest.Id, jsonRequest.Method);
-                if (jsonRequest.Params.HasValue)
-                    request.RawParameters = jsonRequest.Params.Value;
-
-                var response = await handler.HandleAsync(request, _rpcContext);
-                var jsonResponse = response.ToJsonRpcResponse();
-                return JsonSerializer.Serialize(jsonResponse, _serializerOptions);
+                var parameters = RequireParams(request);
+                subType = parameters[0].GetString();
+                if (subType == "logs" && parameters.GetArrayLength() > 1)
+                    logFilter = ParseLogFilter(parameters[1], LogQueryLimit);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is InvalidOperationException || ex is FormatException || ex is JsonException)
             {
-                var escapedMessage = JsonSerializer.Serialize(ex.Message);
-                return $"{{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{{\"code\":-32603,\"message\":{escapedMessage}}}}}";
-            }
-        }
-
-        private string HandleSubscribe(JsonRpcRequest request, string connectionId)
-        {
-            string subType = null;
-            LogFilter logFilter = null;
-
-            if (request.Params.HasValue)
-            {
-                var paramsElement = request.Params.Value;
-                if (paramsElement.ValueKind == JsonValueKind.Array && paramsElement.GetArrayLength() > 0)
-                {
-                    subType = paramsElement[0].GetString();
-
-                    if (subType == "logs" && paramsElement.GetArrayLength() > 1)
-                        logFilter = ParseLogFilter(paramsElement[1]);
-                }
+                throw RpcException.InvalidParams("invalid subscription params");
             }
 
             if (subType != "newHeads" && subType != "logs")
-                return JsonSerializer.Serialize(new JsonRpcResponse
+                return new RpcResponseMessage(request.Id, new RpcError
                 {
-                    Id = request.Id,
-                    Error = new JsonRpcError { Code = -32000, Message = $"no \"{subType}\" subscription in eth namespace" }
-                }, _serializerOptions);
+                    Code = -32000,
+                    Message = $"no \"{RpcLogText.Method(subType)}\" subscription in eth namespace"
+                });
 
             var type = subType == "logs" ? SubscriptionType.Logs : SubscriptionType.NewHeads;
             var subId = _subscriptionManager.Subscribe(connectionId, type, logFilter);
-            return JsonSerializer.Serialize(new JsonRpcResponse { Id = request.Id, Result = subId }, _serializerOptions);
+            return new RpcResponseMessage(request.Id, subId);
         }
 
-        private string HandleUnsubscribe(JsonRpcRequest request, string connectionId)
+        private RpcResponseMessage Unsubscribe(RpcRequestMessage request, string connectionId)
         {
-            var subId = "";
-            if (request.Params.HasValue)
+            string subId;
+            try
             {
-                var paramsElement = request.Params.Value;
-                if (paramsElement.ValueKind == JsonValueKind.Array && paramsElement.GetArrayLength() > 0)
-                    subId = paramsElement[0].GetString() ?? "";
+                subId = RequireParams(request)[0].GetString() ?? "";
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is FormatException)
+            {
+                throw RpcException.InvalidParams("invalid subscription id");
             }
 
-            var result = _subscriptionManager.Unsubscribe(subId, connectionId);
-            return JsonSerializer.Serialize(new JsonRpcResponse { Id = request.Id, Result = result }, _serializerOptions);
+            return new RpcResponseMessage(request.Id, _subscriptionManager.Unsubscribe(subId, connectionId));
         }
 
-        private static LogFilter ParseLogFilter(JsonElement filterObj)
+        private static JsonElement RequireParams(RpcRequestMessage request)
+        {
+            if (request.RawParameters is JsonElement parameters
+                && parameters.ValueKind == JsonValueKind.Array
+                && parameters.GetArrayLength() > 0)
+            {
+                return parameters;
+            }
+
+            throw RpcException.InvalidParams("missing value for required argument 0");
+        }
+
+        private static LogFilter ParseLogFilter(JsonElement filterObj, int logQueryLimit)
         {
             var filter = new LogFilter();
 
@@ -230,7 +248,56 @@ namespace Nethereum.CoreChain.Rpc.Subscriptions
                 }
             }
 
+            LogFilterLimits.Enforce(filter, logQueryLimit);
             return filter;
+        }
+
+        private sealed class SubscriptionDispatcher : IRpcDispatcher
+        {
+            private readonly WebSocketRpcHandler _owner;
+            private readonly string _connectionId;
+
+            public SubscriptionDispatcher(WebSocketRpcHandler owner, string connectionId)
+            {
+                _owner = owner;
+                _connectionId = connectionId;
+            }
+
+            public int MaxBatchSize
+            {
+                get => _owner._dispatcher.MaxBatchSize;
+                set => _owner._dispatcher.MaxBatchSize = value;
+            }
+
+            public async Task<RpcResponseMessage> DispatchAsync(RpcRequestMessage request)
+            {
+                if (!_owner.SubscriptionsEnabled || (request?.Method != "eth_subscribe" && request?.Method != "eth_unsubscribe"))
+                {
+                    return await _owner._dispatcher.DispatchAsync(request);
+                }
+
+                try
+                {
+                    return request.Method == "eth_subscribe"
+                        ? _owner.Subscribe(request, _connectionId)
+                        : _owner.Unsubscribe(request, _connectionId);
+                }
+                catch (RpcException ex)
+                {
+                    return new RpcResponseMessage(request.Id, new RpcError { Code = ex.Code, Message = ex.Message });
+                }
+            }
+
+            public async Task<List<RpcResponseMessage>> DispatchBatchAsync(RpcRequestMessage[] requests)
+            {
+                var responses = new List<RpcResponseMessage>();
+                foreach (var request in requests)
+                {
+                    responses.Add(await DispatchAsync(request));
+                }
+
+                return responses;
+            }
         }
     }
 }

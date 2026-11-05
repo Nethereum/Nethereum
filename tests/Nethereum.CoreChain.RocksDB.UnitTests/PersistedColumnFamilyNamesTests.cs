@@ -16,7 +16,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         public void StateWipeGroups_HaveTheExpectedMembership()
         {
             Assert.Equal(
-                new[] { "state_accounts", "state_storage", "state_code", "trie_nodes", "state_trie_account", "state_trie_storage" },
+                new[] { "state_accounts", "state_storage", "state_code", "trie_nodes", "state_trie_account", "state_trie_storage", "flat_generation" },
                 (IEnumerable<string>)RocksDbManager.StateTrieCfs);
             Assert.Equal(
                 new[] { "binary_trie_nodes", "binary_trie_depth_idx", "binary_trie_addr_stems" },

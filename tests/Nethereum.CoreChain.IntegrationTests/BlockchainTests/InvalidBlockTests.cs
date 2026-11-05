@@ -4,17 +4,18 @@ using Nethereum.RLP;
 using Nethereum.Util;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
+    [Trait("Requires", "Externals")]
     public class InvalidBlockTests
     {
         private readonly ITestOutputHelper _output;
         private readonly Sha3Keccack _keccak = new();
 
-        private static readonly string TestVectorsPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "BlockchainTests", "InvalidBlocks");
+        private static string TestVectorsPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "BlockchainTests", "InvalidBlocks");
 
         public InvalidBlockTests(ITestOutputHelper output)
         {

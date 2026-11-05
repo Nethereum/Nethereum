@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.IntegrationTests.DevChain
 {
+    [Trait("Category", "Performance")]
     public class PatriciaTriePerformanceTests : IClassFixture<DevChainNodeFixture>
     {
         private readonly DevChainNodeFixture _fixture;

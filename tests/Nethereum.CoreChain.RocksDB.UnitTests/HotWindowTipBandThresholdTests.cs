@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class HotWindowTipBandThresholdTests : IDisposable
     {
         private const int WindowSize = 128;

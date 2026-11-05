@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using Nethereum.EVM;
 using Nethereum.Model;
 
@@ -12,8 +13,8 @@ namespace Nethereum.CoreChain
         private readonly Func<HardforkName, HardforkConfig> _hardforkConfigFactory;
         private readonly ConcurrentDictionary<HardforkName, HardforkConfig> _hardforkConfigByFork
             = new ConcurrentDictionary<HardforkName, HardforkConfig>();
-        private readonly ConcurrentDictionary<HardforkName, TransactionExecutor> _executorByFork
-            = new ConcurrentDictionary<HardforkName, TransactionExecutor>();
+        private readonly ConditionalWeakTable<HardforkConfig, TransactionExecutor> _executorByConfig
+            = new ConditionalWeakTable<HardforkConfig, TransactionExecutor>();
 
         private bool HasInjectedActivations => _activations != null && _hardforkConfigFactory != null;
 
@@ -31,7 +32,8 @@ namespace Nethereum.CoreChain
         protected HardforkConfig ResolveHardforkConfig(long blockNumber, ulong timestamp)
         {
             if (HasInjectedActivations)
-                return _hardforkConfigByFork.GetOrAdd(_activations.ResolveAt(blockNumber, timestamp), _hardforkConfigFactory);
+                return _hardforkConfigByFork.GetOrAdd(_activations.ResolveAt(blockNumber, timestamp), _hardforkConfigFactory)
+                    .AtBlock(_activations, blockNumber, timestamp);
 
             if (!FollowsAForkSchedule) return _staticHardforkConfig;
 
@@ -42,9 +44,8 @@ namespace Nethereum.CoreChain
         {
             if (!FollowsAForkSchedule) return _executor;
 
-            return _executorByFork.GetOrAdd(
-                ResolveHardforkName(blockNumber, timestamp),
-                _ => new TransactionExecutor(ResolveHardforkConfig(blockNumber, timestamp)));
+            var config = ResolveHardforkConfig(blockNumber, timestamp);
+            return _executorByConfig.GetValue(config, c => new TransactionExecutor(c));
         }
 
         protected TransactionExecutor ExecutorAt(BlockContext blockContext)

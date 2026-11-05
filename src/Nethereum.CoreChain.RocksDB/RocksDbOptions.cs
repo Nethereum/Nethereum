@@ -48,7 +48,7 @@ namespace Nethereum.CoreChain.RocksDB
 
         public string FreezerHistoryDirectory { get; set; }
 
-        public bool BackgroundFreezeIndexing { get; set; } = false;
+        public bool BackgroundFreezeIndexing { get; set; } = true;
 
         public int FreezerBackgroundDegreeOfParallelism { get; set; } = 0;
 
@@ -63,6 +63,8 @@ namespace Nethereum.CoreChain.RocksDB
         public int FreezerBulkSortDegreeOfParallelism { get; set; } = 0;
 
         public bool SkipBootReconcile { get; set; } = false;
+
+        public Nethereum.CoreChain.Freezer.IBlobBaseFeeFractionResolver BlobBaseFeeFraction { get; set; }
 
         public void Validate()
         {

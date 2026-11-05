@@ -18,6 +18,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         private readonly Func<string, string, string> _readFreezerHistoryProperty;
 
+        private readonly Func<string> _probeStateWrite;
+        private readonly Func<string> _probeHistoryWrite;
+        private readonly Func<string> _probeFreezerHistoryWrite;
+
+        private const ulong CaughtUpWithinBlocks = 2;
+        private const ulong FallenBehindBlocks = 32;
+        private readonly object _yieldGate = new object();
+        private bool _yielding = true;
+        private ulong _lastHead;
+        private ulong _lastTip;
+
         public RocksDbWritePressureMonitor(RocksDbManager rocks, string dataDir)
             : this(rocks, dataDir, rocks, null) { }
 
@@ -27,25 +38,35 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         public RocksDbWritePressureMonitor(
             RocksDbManager rocks, string dataDir, RocksDbManager historyRocks, RocksDbManager freezerHistoryRocks)
             : this(rocks, dataDir, DefaultReader(rocks), DefaultReader(historyRocks ?? rocks),
-                   freezerHistoryRocks == null ? null : DefaultReader(freezerHistoryRocks)) { }
+                   freezerHistoryRocks == null ? null : DefaultReader(freezerHistoryRocks),
+                   rocks.TryProbeWrite, (historyRocks ?? rocks).TryProbeWrite,
+                   freezerHistoryRocks == null ? null : freezerHistoryRocks.TryProbeWrite) { }
 
         public RocksDbWritePressureMonitor(string dataDir, Func<string, string, string> readProperty)
-            : this(null, dataDir, readProperty, readProperty, null) { }
+            : this(null, dataDir, readProperty, readProperty, null, null, null, null) { }
+
+        public RocksDbWritePressureMonitor(
+            string dataDir, Func<string, string, string> readProperty, Func<string> probeWrite)
+            : this(null, dataDir, readProperty, readProperty, null, probeWrite, probeWrite, null) { }
 
         public RocksDbWritePressureMonitor(
             string dataDir, Func<string, string, string> readProperty, Func<string, string, string> readHistoryProperty)
-            : this(null, dataDir, readProperty, readHistoryProperty, null) { }
+            : this(null, dataDir, readProperty, readHistoryProperty, null, null, null, null) { }
 
         public RocksDbWritePressureMonitor(
             string dataDir, Func<string, string, string> readProperty, Func<string, string, string> readHistoryProperty,
             Func<string, string, string> readFreezerHistoryProperty)
-            : this(null, dataDir, readProperty, readHistoryProperty, readFreezerHistoryProperty) { }
+            : this(null, dataDir, readProperty, readHistoryProperty, readFreezerHistoryProperty, null, null, null) { }
 
         private RocksDbWritePressureMonitor(
             RocksDbManager rocks, string dataDir,
             Func<string, string, string> readProperty, Func<string, string, string> readHistoryProperty,
-            Func<string, string, string> readFreezerHistoryProperty)
+            Func<string, string, string> readFreezerHistoryProperty,
+            Func<string> probeStateWrite, Func<string> probeHistoryWrite, Func<string> probeFreezerHistoryWrite)
         {
+            _probeStateWrite = probeStateWrite;
+            _probeHistoryWrite = probeHistoryWrite;
+            _probeFreezerHistoryWrite = probeFreezerHistoryWrite;
             _rocks = rocks;
             _dataDir = dataDir;
             _readProperty = readProperty;
@@ -173,56 +194,20 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         private long WorstFreezerIndexingDebtBytes()
-        {
-            long worst = 0;
-            foreach (var cf in FreezerIndexingLiveIndexCfs)
-            {
-                var raw = _readFreezerHistoryProperty("rocksdb.estimate-pending-compaction-bytes", cf);
-                if (raw != null && long.TryParse(raw, out var bytes) && bytes > worst) worst = bytes;
-            }
-            return worst;
-        }
+            => Worst(_readFreezerHistoryProperty, FreezerIndexingLiveIndexCfs, PropPendingCompactionBytes);
 
         private long WorstFreezerIndexingL0Files()
-        {
-            long worst = 0;
-            foreach (var cf in FreezerIndexingLiveIndexCfs)
-            {
-                var raw = _readFreezerHistoryProperty("rocksdb.num-files-at-level0", cf);
-                if (raw != null && long.TryParse(raw, out var files) && files > worst) worst = files;
-            }
-            return worst;
-        }
+            => Worst(_readFreezerHistoryProperty, FreezerIndexingLiveIndexCfs, PropNumFilesAtLevel0);
 
         private bool EvaluateFreezerIndexingWriteStall()
-        {
-            bool hardStopped = AnyFreezerIndexingCfWriteStopped();
-            bool saturating = EvaluateHysteresisPause(
-                WorstFreezerIndexingImmutableMemtables(), _freezerIndexingStallPaused,
+            => EvaluateStall(_readFreezerHistoryProperty, FreezerIndexingLiveIndexCfs, _freezerIndexingStallPaused,
                 FreezerIndexingImmutableMemtablePauseCount, FreezerIndexingImmutableMemtableResumeCount);
-            return hardStopped || saturating;
-        }
 
         private bool AnyFreezerIndexingCfWriteStopped()
-        {
-            foreach (var cf in FreezerIndexingLiveIndexCfs)
-            {
-                var raw = _readFreezerHistoryProperty(PropIsWriteStopped, cf);
-                if (raw != null && long.TryParse(raw, out var stopped) && stopped != 0) return true;
-            }
-            return false;
-        }
+            => AnyNonZero(_readFreezerHistoryProperty, FreezerIndexingLiveIndexCfs, PropIsWriteStopped);
 
         private long WorstFreezerIndexingImmutableMemtables()
-        {
-            long worst = 0;
-            foreach (var cf in FreezerIndexingLiveIndexCfs)
-            {
-                var raw = _readFreezerHistoryProperty(PropNumImmutableMemtable, cf);
-                if (raw != null && long.TryParse(raw, out var n) && n > worst) worst = n;
-            }
-            return worst;
-        }
+            => Worst(_readFreezerHistoryProperty, FreezerIndexingLiveIndexCfs, PropNumImmutableMemtable);
 
         private const string BackfillPauseFileName = "backfill.paused";
         private string BackfillPauseFilePath => Path.Combine(_dataDir, BackfillPauseFileName);
@@ -237,55 +222,48 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             => $"operator pause switch present ({BackfillPauseFilePath})";
 
         private long WorstHistoryDebtBytes()
-        {
-            long worst = 0;
-            foreach (var cf in HistoryBulkCfs)
-            {
-                var raw = _readHistoryProperty("rocksdb.estimate-pending-compaction-bytes", cf);
-                if (raw != null && long.TryParse(raw, out var bytes) && bytes > worst) worst = bytes;
-            }
-            return worst;
-        }
+            => Worst(_readHistoryProperty, HistoryBulkCfs, PropPendingCompactionBytes);
 
         private long WorstHistoryL0Files()
+            => Worst(_readHistoryProperty, HistoryBulkCfs, PropNumFilesAtLevel0);
+
+        private bool EvaluateHistoryWriteStall()
+            => EvaluateStall(_readHistoryProperty, HistoryBulkCfs, _historyStallPaused,
+                HistoryImmutableMemtablePauseCount, HistoryImmutableMemtableResumeCount);
+
+        private bool AnyHistoryCfWriteStopped()
+            => AnyNonZero(_readHistoryProperty, HistoryBulkCfs, PropIsWriteStopped);
+
+        private long WorstHistoryImmutableMemtables()
+            => Worst(_readHistoryProperty, HistoryBulkCfs, PropNumImmutableMemtable);
+
+        private static long Worst(Func<string, string, string> read, IEnumerable<string> cfs, string property)
         {
             long worst = 0;
-            foreach (var cf in HistoryBulkCfs)
+            foreach (var cf in cfs)
             {
-                var raw = _readHistoryProperty("rocksdb.num-files-at-level0", cf);
-                if (raw != null && long.TryParse(raw, out var files) && files > worst) worst = files;
+                var raw = read(property, cf);
+                if (raw != null && long.TryParse(raw, out var value) && value > worst) worst = value;
             }
             return worst;
         }
 
-        private bool EvaluateHistoryWriteStall()
+        private static bool AnyNonZero(Func<string, string, string> read, IEnumerable<string> cfs, string property)
         {
-            bool hardStopped = AnyHistoryCfWriteStopped();
-            bool saturating = EvaluateHysteresisPause(
-                WorstHistoryImmutableMemtables(), _historyStallPaused,
-                HistoryImmutableMemtablePauseCount, HistoryImmutableMemtableResumeCount);
-            return hardStopped || saturating;
-        }
-
-        private bool AnyHistoryCfWriteStopped()
-        {
-            foreach (var cf in HistoryBulkCfs)
+            foreach (var cf in cfs)
             {
-                var raw = _readHistoryProperty(PropIsWriteStopped, cf);
-                if (raw != null && long.TryParse(raw, out var stopped) && stopped != 0) return true;
+                var raw = read(property, cf);
+                if (raw != null && long.TryParse(raw, out var value) && value != 0) return true;
             }
             return false;
         }
 
-        private long WorstHistoryImmutableMemtables()
+        private static bool EvaluateStall(
+            Func<string, string, string> read, IEnumerable<string> cfs, bool wasPaused, long pauseAt, long resumeAt)
         {
-            long worst = 0;
-            foreach (var cf in HistoryBulkCfs)
-            {
-                var raw = _readHistoryProperty(PropNumImmutableMemtable, cf);
-                if (raw != null && long.TryParse(raw, out var n) && n > worst) worst = n;
-            }
-            return worst;
+            bool hardStopped = AnyNonZero(read, cfs, PropIsWriteStopped);
+            bool saturating = EvaluateHysteresisPause(Worst(read, cfs, PropNumImmutableMemtable), wasPaused, pauseAt, resumeAt);
+            return hardStopped || saturating;
         }
 
         public static bool EvaluateHysteresisPause(long worstBytes, bool currentlyPaused, long pauseAt, long resumeAt)
@@ -300,6 +278,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private const long StateImmutableMemtableResumeCount = 1;
         private const string PropIsWriteStopped = "rocksdb.is-write-stopped";
         private const string PropNumImmutableMemtable = "rocksdb.num-immutable-mem-table";
+        private const string PropPendingCompactionBytes = "rocksdb.estimate-pending-compaction-bytes";
+        private const string PropNumFilesAtLevel0 = "rocksdb.num-files-at-level0";
 
         private static readonly string[] StateWriteCfs =
         {
@@ -353,69 +333,82 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         }
 
         private bool EvaluateStateWriteStall()
-        {
-            bool hardStopped = AnyStateCfWriteStopped();
-            bool saturating = EvaluateHysteresisPause(
-                WorstStateImmutableMemtables(), _stateStallPaused,
+            => EvaluateStall(_readProperty, StateWriteCfs, _stateStallPaused,
                 StateImmutableMemtablePauseCount, StateImmutableMemtableResumeCount);
-            return hardStopped || saturating;
-        }
 
         private bool AnyStateCfWriteStopped()
-        {
-            foreach (var cf in StateWriteCfs)
-            {
-                var raw = _readProperty(PropIsWriteStopped, cf);
-                if (raw != null && long.TryParse(raw, out var stopped) && stopped != 0) return true;
-            }
-            return false;
-        }
+            => AnyNonZero(_readProperty, StateWriteCfs, PropIsWriteStopped);
 
         private long WorstStateImmutableMemtables()
-        {
-            long worst = 0;
-            foreach (var cf in StateWriteCfs)
-            {
-                var raw = _readProperty(PropNumImmutableMemtable, cf);
-                if (raw != null && long.TryParse(raw, out var n) && n > worst) worst = n;
-            }
-            return worst;
-        }
+            => Worst(_readProperty, StateWriteCfs, PropNumImmutableMemtable);
 
         private long WorstStateDebtBytes()
-        {
-            long worst = 0;
-            foreach (var cf in StateWriteCfs)
-            {
-                var raw = _readProperty("rocksdb.estimate-pending-compaction-bytes", cf);
-                if (raw != null && long.TryParse(raw, out var bytes) && bytes > worst) worst = bytes;
-            }
-            return worst;
-        }
+            => Worst(_readProperty, StateWriteCfs, PropPendingCompactionBytes);
 
         private long WorstStateL0Files()
+            => Worst(_readProperty, StateLeveledCfs, PropNumFilesAtLevel0);
+
+        public bool ShouldYieldToExecution(ulong executedHead, ulong trustedTip)
         {
-            long worst = 0;
-            foreach (var cf in StateLeveledCfs)
+            lock (_yieldGate)
             {
-                var raw = _readProperty("rocksdb.num-files-at-level0", cf);
-                if (raw != null && long.TryParse(raw, out var files) && files > worst) worst = files;
+                _lastHead = executedHead;
+                _lastTip = trustedTip;
+                if (trustedTip == 0) return false;
+                var behind = Nethereum.CoreChain.Storage.HeaderSubchains.BlocksBehind(executedHead, trustedTip);
+                _yielding = EvaluateHysteresisPause(
+                    (long)behind, _yielding, (long)FallenBehindBlocks, (long)CaughtUpWithinBlocks);
+                return _yielding;
             }
-            return worst;
+        }
+
+        public string DescribeYieldToExecution()
+        {
+            lock (_yieldGate)
+            {
+                var behind = Nethereum.CoreChain.Storage.HeaderSubchains.BlocksBehind(_lastHead, _lastTip);
+                return $"yielding to block execution: executed head {_lastHead} is {behind} block(s) behind the trusted tip {_lastTip} (resumes within {CaughtUpWithinBlocks})";
+            }
+        }
+
+        private const string PropBackgroundErrors = "rocksdb.background-errors";
+
+        public string FatalBackgroundError()
+        {
+            var databases = new (string Name, Func<string, string, string> Read, Func<string> ProbeWrite)[]
+            {
+                ("state", _readProperty, _probeStateWrite),
+                ("history", _readHistoryProperty, _probeHistoryWrite),
+                ("freezer-history", _readFreezerHistoryProperty, _probeFreezerHistoryWrite),
+            };
+            foreach (var (name, read, probeWrite) in databases)
+            {
+                if (read == null) continue;
+                try
+                {
+                    var raw = read(PropBackgroundErrors, null);
+                    if (raw == null || !long.TryParse(raw, out var count) || count <= 0) continue;
+                    var rejection = probeWrite == null ? "no write probe" : probeWrite();
+                    if (rejection != null)
+                        return $"{name} database reports {count} {PropBackgroundErrors} and rejects writes until it is reopened: {rejection}";
+                }
+                catch (ObjectDisposedException) { continue; }
+            }
+            return null;
         }
 
         public Task CompactStateAsync(Action<string> progress, CancellationToken ct)
-            => Task.Run(() =>
+            => Task.Factory.StartNew(() =>
             {
                 foreach (var cf in StateWriteCfs)
                 {
                     ct.ThrowIfCancellationRequested();
                     var sw = System.Diagnostics.Stopwatch.StartNew();
                     progress?.Invoke($"compacting {cf}...");
-                    _rocks.CompactColumnFamilyParallel(cf, subcompactions: 4);
+                    _rocks.CompactColumnFamilyParallel(cf, 4, ct);
                     progress?.Invoke($"{cf} compacted in {sw.Elapsed:hh\\:mm\\:ss}");
                 }
-            }, ct);
+            }, ct, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
         private const long EngineL0PauseFiles = 15;
         private const long EngineL0ResumeFiles = 9;
@@ -427,7 +420,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             string worstCf = null;
             foreach (var cf in EngineLeveledCfs)
             {
-                var raw = _readProperty("rocksdb.num-files-at-level0", cf);
+                var raw = _readProperty(PropNumFilesAtLevel0, cf);
                 if (raw != null && long.TryParse(raw, out var files) && files > worstFiles)
                 {
                     worstFiles = files;

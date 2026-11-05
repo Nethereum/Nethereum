@@ -20,7 +20,7 @@ namespace Nethereum.CoreChain.UnitTests
             var produced = await author.ProduceAsync(txs);
 
             var follower = await BlockPipelineHarness.CreateAsync();
-            var result = await follower.ImportAsync(produced.Header, txs);
+            var result = await follower.ImportAsync(BlockPipelineHarness.DeclaringTransactionsOf(produced.Header, txs), txs);
 
             Assert.Equal(2, result.ExecutionResults.Count);
             Assert.True(result.ExecutionResults[1].Skipped);

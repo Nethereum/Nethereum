@@ -15,6 +15,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerHashIndexTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"freezerhashidx_{Guid.NewGuid():N}");
@@ -48,6 +49,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             {
                 await SetTipHeightAsync(bundle, 100_000);
                 await bundle.PersistBlocksAsync(blocks);
+                bundle.FinishBulkIndexing();
             }
 
             using var manager = OpenReaderManager();
@@ -69,6 +71,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             {
                 await SetTipHeightAsync(bundle, 100_000);
                 await bundle.PersistBlocksAsync(blocks);
+                bundle.FinishBulkIndexing();
             }
 
             using var manager = OpenReaderManager();
@@ -95,6 +98,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             {
                 await SetTipHeightAsync(bundle, 100_000);
                 await bundle.PersistBlocksAsync(blocks);
+                bundle.FinishBulkIndexing();
             }
 
             using var manager = OpenReaderManager();
@@ -118,6 +122,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             {
                 await SetTipHeightAsync(bundle, 90_010);
                 await bundle.PersistBlocksAsync(blocks);
+                bundle.FinishBulkIndexing();
             }
 
             using var frozenManager = OpenReaderManager();

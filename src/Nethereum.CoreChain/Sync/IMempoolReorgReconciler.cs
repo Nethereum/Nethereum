@@ -14,5 +14,14 @@ namespace Nethereum.CoreChain.Sync
             ulong orphanedHead,
             IReadOnlyList<ISignedTransaction> winningBranchTransactions,
             CancellationToken ct);
+
+        Task ReconcileAsync(
+            IChainStoreBundle bundle,
+            ulong commonAncestor,
+            ulong orphanedHead,
+            IReadOnlyList<ISignedTransaction> orphanedBranchTransactions,
+            IReadOnlyList<ISignedTransaction> winningBranchTransactions,
+            CancellationToken ct)
+            => ReconcileAsync(bundle, commonAncestor, orphanedHead, winningBranchTransactions, ct);
     }
 }

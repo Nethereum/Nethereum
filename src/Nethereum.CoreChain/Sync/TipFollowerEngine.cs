@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Nethereum.CoreChain.Services;
 using Nethereum.CoreChain.Storage;
 using Nethereum.CoreChain.Validation;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -52,13 +53,20 @@ namespace Nethereum.CoreChain.Sync
             ulong rewindCyclesUsed = 0UL;
             int consecutiveBodyRepairs = 0;
 
+            options.ChainWriteGate?.Publish(executor);
+            options.ChainWriteGate?.SetHead(lastCommittedBlock, lastCommittedHash);
             SeedHeaderSubchainFromFrontier(bundle, options, lastCommittedBlock);
+            await ReorgRewindCoordinator.SeedExecutedHashesAsync(
+                bundle, lastCommittedBlock, lastCommittedHash,
+                System.Math.Min(options.MaxReorgDepth, ExecutedHashRetention.Blocks)).ConfigureAwait(false);
 
             try
             {
                 while (true)
                 {
                     ct.ThrowIfCancellationRequested();
+
+                    AdoptGateHead(options.ChainWriteGate, ref lastCommittedBlock, ref lastCommittedHash, ref blocksExecuted);
 
                     var acquired = await AcquireActionableTipAsync(
                         canonical, options, pollInterval,
@@ -84,7 +92,7 @@ namespace Nethereum.CoreChain.Sync
                         delta);
 
                     var advanced = await AdvanceHeaderSubchainToTipAsync(
-                        tip, cursor, bundle, options, pollInterval,
+                        tip, cursor, bundle, executor, options, pollInterval,
                         lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash,
                         blocksExecuted, rootMismatches, ct, logger).ConfigureAwait(false);
                     lastCommittedBlock = advanced.LastCommittedBlock;
@@ -135,6 +143,7 @@ namespace Nethereum.CoreChain.Sync
             }
             catch (OperationCanceledException)
             {
+                AdoptGateHead(options.ChainWriteGate, ref lastCommittedBlock, ref lastCommittedHash, ref blocksExecuted);
                 return new FollowerRunResult(
                     FollowerExitReason.Cancelled,
                     lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
@@ -148,6 +157,30 @@ namespace Nethereum.CoreChain.Sync
             }
         }
 
+        private static void AdoptGateHead(
+            AsyncGate gate, ref ulong lastCommittedBlock, ref byte[] lastCommittedHash, ref ulong blocksExecuted)
+        {
+            if (gate == null || !gate.HasHead) return;
+            var head = gate.HeadNumber;
+            if (head > lastCommittedBlock) blocksExecuted += head - lastCommittedBlock;
+            lastCommittedBlock = head;
+            lastCommittedHash = gate.HeadHash ?? lastCommittedHash;
+        }
+
+        private static async Task<T> UnderGateAsync<T>(FollowerOptions options, CancellationToken ct, Func<Task<T>> work)
+        {
+            var gate = options.ChainWriteGate;
+            if (gate != null) await gate.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                return await work().ConfigureAwait(false);
+            }
+            finally
+            {
+                gate?.Release();
+            }
+        }
+
         private enum TipCycleSignal { Proceed, Continue }
 
         private readonly struct TipAcquisition
@@ -158,6 +191,36 @@ namespace Nethereum.CoreChain.Sync
             public int ConsecutiveSourceFailures { get; init; }
             public ulong LastSeenTipBlock { get; init; }
             public byte[] LastSeenTipHash { get; init; }
+
+            public static TipAcquisition Halted(
+                FollowerRunResult terminal, int consecutiveSourceFailures, ulong lastSeenTipBlock, byte[] lastSeenTipHash)
+                => new TipAcquisition
+                {
+                    Terminal = terminal,
+                    ConsecutiveSourceFailures = consecutiveSourceFailures,
+                    LastSeenTipBlock = lastSeenTipBlock,
+                    LastSeenTipHash = lastSeenTipHash,
+                };
+
+            public static TipAcquisition Retry(
+                int consecutiveSourceFailures, ulong lastSeenTipBlock, byte[] lastSeenTipHash)
+                => new TipAcquisition
+                {
+                    Signal = TipCycleSignal.Continue,
+                    ConsecutiveSourceFailures = consecutiveSourceFailures,
+                    LastSeenTipBlock = lastSeenTipBlock,
+                    LastSeenTipHash = lastSeenTipHash,
+                };
+
+            public static TipAcquisition Ready(CanonicalTip tip, int consecutiveSourceFailures)
+                => new TipAcquisition
+                {
+                    Signal = TipCycleSignal.Proceed,
+                    Tip = tip,
+                    ConsecutiveSourceFailures = consecutiveSourceFailures,
+                    LastSeenTipBlock = tip.BlockNumber,
+                    LastSeenTipHash = tip.BlockHash,
+                };
         }
 
         private async Task<TipAcquisition> AcquireActionableTipAsync(
@@ -182,21 +245,10 @@ namespace Nethereum.CoreChain.Sync
                     ref consecutiveSourceFailures, options, canonical, lastSourceException,
                     lastCommittedBlock, blocksExecuted, rootMismatches, logger);
                 if (unreachable != null)
-                    return new TipAcquisition
-                    {
-                        Terminal = unreachable,
-                        ConsecutiveSourceFailures = consecutiveSourceFailures,
-                        LastSeenTipBlock = lastSeenTipBlock,
-                        LastSeenTipHash = lastSeenTipHash,
-                    };
+                    return TipAcquisition.Halted(
+                        unreachable, consecutiveSourceFailures, lastSeenTipBlock, lastSeenTipHash);
                 await Task.Delay(pollInterval, ct).ConfigureAwait(false);
-                return new TipAcquisition
-                {
-                    Signal = TipCycleSignal.Continue,
-                    ConsecutiveSourceFailures = consecutiveSourceFailures,
-                    LastSeenTipBlock = lastSeenTipBlock,
-                    LastSeenTipHash = lastSeenTipHash,
-                };
+                return TipAcquisition.Retry(consecutiveSourceFailures, lastSeenTipBlock, lastSeenTipHash);
             }
 
             consecutiveSourceFailures = 0;
@@ -204,23 +256,10 @@ namespace Nethereum.CoreChain.Sync
             if (TipOffersNothingNew(tip, lastCommittedBlock, lastSeenTipBlock, lastSeenTipHash))
             {
                 await Task.Delay(pollInterval, ct).ConfigureAwait(false);
-                return new TipAcquisition
-                {
-                    Signal = TipCycleSignal.Continue,
-                    ConsecutiveSourceFailures = consecutiveSourceFailures,
-                    LastSeenTipBlock = lastSeenTipBlock,
-                    LastSeenTipHash = lastSeenTipHash,
-                };
+                return TipAcquisition.Retry(consecutiveSourceFailures, lastSeenTipBlock, lastSeenTipHash);
             }
 
-            return new TipAcquisition
-            {
-                Signal = TipCycleSignal.Proceed,
-                Tip = tip,
-                ConsecutiveSourceFailures = consecutiveSourceFailures,
-                LastSeenTipBlock = tip.BlockNumber,
-                LastSeenTipHash = tip.BlockHash,
-            };
+            return TipAcquisition.Ready(tip, consecutiveSourceFailures);
         }
 
         private readonly struct HeaderSubchainAdvance
@@ -231,12 +270,58 @@ namespace Nethereum.CoreChain.Sync
             public byte[] LastCommittedHash { get; init; }
             public ulong LastSeenTipBlock { get; init; }
             public byte[] LastSeenTipHash { get; init; }
+
+            public static HeaderSubchainAdvance Halted(
+                FollowerRunResult terminal, ulong lastCommittedBlock, byte[] lastCommittedHash,
+                ulong lastSeenTipBlock, byte[] lastSeenTipHash)
+                => new HeaderSubchainAdvance
+                {
+                    Terminal = terminal,
+                    LastCommittedBlock = lastCommittedBlock,
+                    LastCommittedHash = lastCommittedHash,
+                    LastSeenTipBlock = lastSeenTipBlock,
+                    LastSeenTipHash = lastSeenTipHash,
+                };
+
+            public static HeaderSubchainAdvance Retry(
+                ulong lastCommittedBlock, byte[] lastCommittedHash, ulong lastSeenTipBlock, byte[] lastSeenTipHash)
+                => new HeaderSubchainAdvance
+                {
+                    Signal = TipCycleSignal.Continue,
+                    LastCommittedBlock = lastCommittedBlock,
+                    LastCommittedHash = lastCommittedHash,
+                    LastSeenTipBlock = lastSeenTipBlock,
+                    LastSeenTipHash = lastSeenTipHash,
+                };
+
+            public static HeaderSubchainAdvance Ready(
+                ulong lastCommittedBlock, byte[] lastCommittedHash, ulong lastSeenTipBlock, byte[] lastSeenTipHash)
+                => new HeaderSubchainAdvance
+                {
+                    Signal = TipCycleSignal.Proceed,
+                    LastCommittedBlock = lastCommittedBlock,
+                    LastCommittedHash = lastCommittedHash,
+                    LastSeenTipBlock = lastSeenTipBlock,
+                    LastSeenTipHash = lastSeenTipHash,
+                };
+        }
+
+        private static HeaderSubchainAdvance AfterRepair(
+            FollowerRunResult terminal, ulong lastCommittedBlock, byte[] lastCommittedHash,
+            ulong lastSeenTipBlock, byte[] lastSeenTipHash)
+        {
+            if (terminal != null)
+                return HeaderSubchainAdvance.Halted(
+                    terminal, lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash);
+            ForceTipRepollNextCycle(ref lastSeenTipBlock, ref lastSeenTipHash);
+            return HeaderSubchainAdvance.Retry(lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash);
         }
 
         private async Task<HeaderSubchainAdvance> AdvanceHeaderSubchainToTipAsync(
             CanonicalTip tip,
             ulong cursor,
             IChainStoreBundle bundle,
+            IBlockExecutor executor,
             FollowerOptions options,
             TimeSpan pollInterval,
             ulong lastCommittedBlock,
@@ -248,37 +333,54 @@ namespace Nethereum.CoreChain.Sync
             CancellationToken ct,
             ILogger logger)
         {
-            WalkerOutcome walkResult = null;
-            if (options.ExternalHeaderFollow)
-            {
-                var externalReorg = await ReorgRewindCoordinator.TryRewindOnExternalReorgAsync(
-                    bundle, lastCommittedBlock, lastCommittedHash,
+            if (!options.ExternalHeaderFollow)
+                return await AdvanceByWalkerAsync(
+                    tip, cursor, bundle, executor, options, pollInterval,
+                    lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash,
                     blocksExecuted, rootMismatches, ct, logger).ConfigureAwait(false);
-                if (externalReorg is ReorgRewindCoordinator.ForwardRewindOutcome reorgOutcome)
-                {
-                    lastCommittedBlock = reorgOutcome.NewHead;
-                    lastCommittedHash = reorgOutcome.NewHeadHash ?? lastCommittedHash;
-                    if (reorgOutcome.Terminal is FollowerRunResult terminalResult)
-                        return new HeaderSubchainAdvance
-                        {
-                            Terminal = terminalResult,
-                            LastCommittedBlock = lastCommittedBlock,
-                            LastCommittedHash = lastCommittedHash,
-                            LastSeenTipBlock = lastSeenTipBlock,
-                            LastSeenTipHash = lastSeenTipHash,
-                        };
-                    ForceTipRepollNextCycle(ref lastSeenTipBlock, ref lastSeenTipHash);
-                    return new HeaderSubchainAdvance
-                    {
-                        Signal = TipCycleSignal.Continue,
-                        LastCommittedBlock = lastCommittedBlock,
-                        LastCommittedHash = lastCommittedHash,
-                        LastSeenTipBlock = lastSeenTipBlock,
-                        LastSeenTipHash = lastSeenTipHash,
-                    };
-                }
+
+            var externalReorg = await UnderGateAsync(options, ct, async () =>
+            {
+                var gate = options.ChainWriteGate;
+                var committedBlock = gate != null && gate.HasHead ? gate.HeadNumber : lastCommittedBlock;
+                var committedHash = gate != null && gate.HasHead ? gate.HeadHash ?? lastCommittedHash : lastCommittedHash;
+                var rewound = await ReorgRewindCoordinator.TryRewindOnExternalReorgAsync(
+                bundle, executor, options, committedBlock, committedHash,
+                blocksExecuted, rootMismatches, ct, logger).ConfigureAwait(false);
+                if (rewound is ReorgRewindCoordinator.ForwardRewindOutcome applied && applied.Terminal == null)
+                    options.ChainWriteGate?.SetHead(applied.NewHead, applied.NewHeadHash ?? lastCommittedHash);
+                return rewound;
+            }).ConfigureAwait(false);
+            if (externalReorg is ReorgRewindCoordinator.ForwardRewindOutcome reorgOutcome)
+            {
+                if (reorgOutcome.Terminal == null)
+                    await AfterAncestorRewindAsync(bundle, reorgOutcome.NewHead, tip.BlockNumber, ct, logger)
+                        .ConfigureAwait(false);
+                return AfterRepair(
+                    reorgOutcome.Terminal, reorgOutcome.NewHead, reorgOutcome.NewHeadHash ?? lastCommittedHash,
+                    lastSeenTipBlock, lastSeenTipHash);
             }
-            else
+
+            return HeaderSubchainAdvance.Ready(lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash);
+        }
+
+        private async Task<HeaderSubchainAdvance> AdvanceByWalkerAsync(
+            CanonicalTip tip,
+            ulong cursor,
+            IChainStoreBundle bundle,
+            IBlockExecutor executor,
+            FollowerOptions options,
+            TimeSpan pollInterval,
+            ulong lastCommittedBlock,
+            byte[] lastCommittedHash,
+            ulong lastSeenTipBlock,
+            byte[] lastSeenTipHash,
+            ulong blocksExecuted,
+            ulong rootMismatches,
+            CancellationToken ct,
+            ILogger logger)
+        {
+            WalkerOutcome walkResult;
             try
             {
                 walkResult = await _walker(
@@ -298,16 +400,31 @@ namespace Nethereum.CoreChain.Sync
                     "snap.walker.exception tip={Tip}; backing off and retrying",
                     tip.BlockNumber);
                 await Task.Delay(pollInterval, ct).ConfigureAwait(false);
-                return new HeaderSubchainAdvance
-                {
-                    Signal = TipCycleSignal.Continue,
-                    LastCommittedBlock = lastCommittedBlock,
-                    LastCommittedHash = lastCommittedHash,
-                    LastSeenTipBlock = lastSeenTipBlock,
-                    LastSeenTipHash = lastSeenTipHash,
-                };
+                return HeaderSubchainAdvance.Retry(lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash);
             }
 
+            return await AdvanceAfterWalkAsync(
+                walkResult, tip, bundle, executor, options, pollInterval,
+                lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash,
+                blocksExecuted, rootMismatches, ct, logger).ConfigureAwait(false);
+        }
+
+        private async Task<HeaderSubchainAdvance> AdvanceAfterWalkAsync(
+            WalkerOutcome walkResult,
+            CanonicalTip tip,
+            IChainStoreBundle bundle,
+            IBlockExecutor executor,
+            FollowerOptions options,
+            TimeSpan pollInterval,
+            ulong lastCommittedBlock,
+            byte[] lastCommittedHash,
+            ulong lastSeenTipBlock,
+            byte[] lastSeenTipHash,
+            ulong blocksExecuted,
+            ulong rootMismatches,
+            CancellationToken ct,
+            ILogger logger)
+        {
             if (walkResult != null)
             {
                 logger.LogInformation(
@@ -319,53 +436,22 @@ namespace Nethereum.CoreChain.Sync
                     case WalkerDisposition.Backoff:
                         ForceTipRepollNextCycle(ref lastSeenTipBlock, ref lastSeenTipHash);
                         await Task.Delay(pollInterval, ct).ConfigureAwait(false);
-                        return new HeaderSubchainAdvance
-                        {
-                            Signal = TipCycleSignal.Continue,
-                            LastCommittedBlock = lastCommittedBlock,
-                            LastCommittedHash = lastCommittedHash,
-                            LastSeenTipBlock = lastSeenTipBlock,
-                            LastSeenTipHash = lastSeenTipHash,
-                        };
+                        return HeaderSubchainAdvance.Retry(
+                            lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash);
 
                     case WalkerDisposition.RepairDivergence:
                         var repair = await RepairDivergenceAsync(
-                            walkResult, tip, bundle, options,
+                            walkResult, tip, bundle, executor, options,
                             lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches,
                             ct, logger).ConfigureAwait(false);
-                        lastCommittedBlock = repair.NewHead;
-                        lastCommittedHash = repair.NewHeadHash;
-                        if (repair.Terminal is FollowerRunResult repairTerminal)
-                            return new HeaderSubchainAdvance
-                            {
-                                Terminal = repairTerminal,
-                                LastCommittedBlock = lastCommittedBlock,
-                                LastCommittedHash = lastCommittedHash,
-                                LastSeenTipBlock = lastSeenTipBlock,
-                                LastSeenTipHash = lastSeenTipHash,
-                            };
-                        ForceTipRepollNextCycle(ref lastSeenTipBlock, ref lastSeenTipHash);
-                        return new HeaderSubchainAdvance
-                        {
-                            Signal = TipCycleSignal.Continue,
-                            LastCommittedBlock = lastCommittedBlock,
-                            LastCommittedHash = lastCommittedHash,
-                            LastSeenTipBlock = lastSeenTipBlock,
-                            LastSeenTipHash = lastSeenTipHash,
-                        };
+                        return AfterRepair(
+                            repair.Terminal, repair.NewHead, repair.NewHeadHash, lastSeenTipBlock, lastSeenTipHash);
                 }
 
                 RecordSkeletonSegment(bundle, tip);
             }
 
-            return new HeaderSubchainAdvance
-            {
-                Signal = TipCycleSignal.Proceed,
-                LastCommittedBlock = lastCommittedBlock,
-                LastCommittedHash = lastCommittedHash,
-                LastSeenTipBlock = lastSeenTipBlock,
-                LastSeenTipHash = lastSeenTipHash,
-            };
+            return HeaderSubchainAdvance.Ready(lastCommittedBlock, lastCommittedHash, lastSeenTipBlock, lastSeenTipHash);
         }
 
         private readonly struct ConfirmedRangeExecution
@@ -452,6 +538,7 @@ namespace Nethereum.CoreChain.Sync
                             blocksExecuted, rootMismatches, consecutiveDivergences, rewindCyclesUsed,
                             consecutiveBodyRepairs, executor);
                     executor = executorFactory(bundle);
+                    options.ChainWriteGate?.Publish(executor);
                     ForceTipRepollNextCycle(ref lastSeenTipBlock, ref lastSeenTipHash);
                     return BuildRangeExecution(
                         TipCycleSignal.Continue, null,
@@ -547,6 +634,7 @@ namespace Nethereum.CoreChain.Sync
             WalkerOutcome walkResult,
             CanonicalTip tip,
             IChainStoreBundle bundle,
+            IBlockExecutor executor,
             FollowerOptions options,
             ulong lastCommittedBlock,
             byte[] lastCommittedHash,
@@ -582,8 +670,17 @@ namespace Nethereum.CoreChain.Sync
                     .GetHashByNumberAsync(new BigInteger(ancestorBlock))
                     .ConfigureAwait(false);
 
-                await RewindCommittedHeadToAncestorAsync(bundle, ancestorBlock, ancestorHash, ct)
-                    .ConfigureAwait(false);
+                var rewind = await UnderGateAsync(options, ct, async () =>
+                {
+                    var rewound = await ReorgRewindCoordinator.RewindToAncestorAsync(
+                    bundle, executor, ancestorBlock, RewindScope.ExecutionAndChain,
+                    lastCommittedBlock, blocksExecuted, rootMismatches, logger, ct).ConfigureAwait(false);
+                    if (rewound.Terminal == null)
+                        options.ChainWriteGate?.SetHead(ancestorBlock, ancestorHash ?? lastCommittedHash);
+                    return rewound;
+                }).ConfigureAwait(false);
+                if (rewind.Terminal != null)
+                    return new DivergenceRepairOutcome(rewind.Terminal, lastCommittedBlock, lastCommittedHash);
 
                 lastCommittedBlock = ancestorBlock;
                 lastCommittedHash = ancestorHash ?? lastCommittedHash;
@@ -601,6 +698,10 @@ namespace Nethereum.CoreChain.Sync
                 }
                 relaid = relay.Relaid;
             }
+
+            if (relaid)
+                await AfterAncestorRewindAsync(bundle, lastCommittedBlock, tip.BlockNumber, ct, logger)
+                    .ConfigureAwait(false);
 
             var exhausted = HaltOnExhaustedRepairBudget(
                 relaid, divergedBlock, lastCommittedBlock, blocksExecuted, rootMismatches, logger);
@@ -873,19 +974,21 @@ namespace Nethereum.CoreChain.Sync
             return floorBlock;
         }
 
-        private static async Task RewindCommittedHeadToAncestorAsync(
-            IChainStoreBundle bundle, ulong ancestorBlock, byte[] ancestorHash, CancellationToken ct)
+        private async Task AfterAncestorRewindAsync(
+            IChainStoreBundle bundle, ulong newHead, ulong tipBlock, CancellationToken ct, ILogger logger)
         {
-            if (ancestorHash != null)
+            if (_bodyRepair == null) return;
+            try
             {
-                using (var rewindBatch = bundle.BeginBatch())
-                {
-                    rewindBatch.Commit(ancestorBlock, ancestorHash);
-                    await rewindBatch.CommitAsync(ct).ConfigureAwait(false);
-                }
+                await _bodyRepair(newHead + 1, tipBlock, bundle, ct).ConfigureAwait(false);
             }
-
-            bundle.Metadata.DeleteCheckpointsAbove(ancestorBlock);
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "snap.tip.requeue_failed from={From} to={To}; the tip band refills on its next pass",
+                    newHead + 1, tipBlock);
+            }
         }
 
         private static void SeedHeaderSubchainFromFrontier(
@@ -936,6 +1039,56 @@ namespace Nethereum.CoreChain.Sync
             public ulong? BodyHoleAt { get; }
         }
 
+        private async Task<ReorgRewindCoordinator.ForwardRewindOutcome> RewindOnRootMismatchAsync(
+            IChainStoreBundle bundle,
+            FollowerOptions options,
+            ulong lastCommittedBlock,
+            byte[] lastCommittedHash,
+            ulong divergedBlock,
+            ulong blocksExecuted,
+            ulong rootMismatches,
+            CancellationToken ct,
+            ILogger logger)
+        {
+            if (lastCommittedBlock == 0)
+                return new ReorgRewindCoordinator.ForwardRewindOutcome(
+                    lastCommittedBlock, null,
+                    new FollowerRunResult(
+                        FollowerExitReason.FatalVerdict,
+                        lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
+                        SnapshotRestoreTarget: null,
+                        Detail: $"tip-driven forward exec: state-root mismatch at block {divergedBlock:N0}; no rewind target above genesis"));
+
+            logger.LogWarning("snap.tip.root_mismatch block={Block}; rewinding", divergedBlock);
+
+            ReorgRewindCoordinator.RewindLoopOutcome outcome;
+            try
+            {
+                outcome = await ReorgRewindCoordinator.ValidatingRewindAsync(
+                    bundle, null, options, lastCommittedBlock, lastCommittedHash,
+                    blocksExecuted, rootMismatches, 0UL, ct, _ancestorResolver, divergedBlock, logger,
+                    options.ExternalHeaderFollow ? RewindScope.ExecutionOnly : RewindScope.ExecutionAndChain)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "snap.tip.rewind_failed block={Block}", divergedBlock);
+                return new ReorgRewindCoordinator.ForwardRewindOutcome(
+                    bundle.Metadata.GetLastBlock(), bundle.Metadata.GetLastBlockHash(),
+                    new FollowerRunResult(
+                        FollowerExitReason.FatalVerdict,
+                        lastCommittedBlock, blocksExecuted, rootMismatches, RewindCyclesUsed: 0,
+                        SnapshotRestoreTarget: null,
+                        Detail: $"tip-driven forward exec: rewind threw {ex.GetType().Name}: {ex.Message}"));
+            }
+
+            if (outcome.TerminalResult == null)
+                logger.LogInformation("snap.tip.rewound new_head={Head}", outcome.NewHead);
+            return new ReorgRewindCoordinator.ForwardRewindOutcome(
+                outcome.NewHead, outcome.NewHeadHash, outcome.TerminalResult);
+        }
+
         private static string DescribeBodyIntegrityFault(BlockHeader header, BlockBundle blockBundle)
         {
             if (header.TransactionsHash != null && header.TransactionsHash.Length == 32)
@@ -977,77 +1130,106 @@ namespace Nethereum.CoreChain.Sync
                 var header = blockBundle.Header;
                 var blockNumber = (ulong)header.BlockNumber;
 
-                var bodyFault = DescribeBodyIntegrityFault(header, blockBundle);
-                if (bodyFault != null)
+                var gate = options.ChainWriteGate;
+                if (gate != null) await gate.WaitAsync(ct).ConfigureAwait(false);
+                try
                 {
-                    logger.LogWarning(
-                        "snap.tip.body_integrity block={Block} {Fault} — deferring execution for body repair",
-                        blockNumber, bodyFault);
-                    return new ForwardExecOutcome(
-                        lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches,
-                        terminal: null,
-                        consecutiveDivergences: consecutiveDivergences,
-                        bodyHoleAt: blockNumber);
-                }
-
-                (bundle as IAtomicBlockFlush)?.ArmWithdrawals(blockNumber, blockBundle.Withdrawals);
-                var result = await executor.ProcessBlockAsync(
-                    header,
-                    blockBundle.Transactions,
-                    blockBundle.Uncles,
-                    blockBundle.Withdrawals,
-                    ct).ConfigureAwait(false);
-
-                if (result.RootMatches)
-                {
-                    lastCommittedBlock = blockNumber;
-                    lastCommittedHash = blockBundle.HeaderHash;
-                    blocksExecuted++;
-                    consecutiveDivergences = 0;
-                    await CommitMatchedBlockAsync(
-                        bundle, blockNumber, blockBundle.HeaderHash, blockBundle,
-                        result.ComputedStateRoot, options, logger, ct).ConfigureAwait(false);
-                }
-                else
-                {
-                    logger.LogError(
-                        "Block {Block} rejected: {Reason}. Rewinding.",
-                        blockNumber, result.DescribeRejection());
-
-                    rootMismatches++;
-                    consecutiveDivergences++;
-                    if (consecutiveDivergences > (ulong)options.MaxConsecutiveDivergences)
+                    if (gate != null)
                     {
-                        return new ForwardExecOutcome(
-                            lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches,
-                            new FollowerRunResult(
-                                FollowerExitReason.FatalVerdict,
-                                lastCommittedBlock, blocksExecuted, rootMismatches, rewindCyclesUsed,
-                                SnapshotRestoreTarget: null,
-                                Detail: $"max consecutive divergences ({options.MaxConsecutiveDivergences}) exceeded at block {blockNumber:N0}"),
-                            consecutiveDivergences: consecutiveDivergences);
+                        AdoptGateHead(gate, ref lastCommittedBlock, ref lastCommittedHash, ref blocksExecuted);
+
+                        if (lastCommittedBlock >= blockNumber) continue;
+
+                        if (blockNumber != lastCommittedBlock + 1)
+                        {
+                            return new ForwardExecOutcome(
+                                lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches, null,
+                                consecutiveDivergences: consecutiveDivergences);
+                        }
                     }
 
-                    var rewindOutcome = await ReorgRewindCoordinator.TryRewindOnRootMismatchAsync(
-                        bundle, lastCommittedBlock, blockNumber, options, _ancestorResolver, logger, ct).ConfigureAwait(false);
-
-                    if (rewindOutcome.Terminal is FollowerRunResult terminalResult)
+                    var bodyFault = DescribeBodyIntegrityFault(header, blockBundle);
+                    if (bodyFault != null)
                     {
+                        logger.LogWarning(
+                            "snap.tip.body_integrity block={Block} {Fault} — deferring execution for body repair",
+                            blockNumber, bodyFault);
+                        return new ForwardExecOutcome(
+                            lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches,
+                            terminal: null,
+                            consecutiveDivergences: consecutiveDivergences,
+                            bodyHoleAt: blockNumber);
+                    }
+
+                    (bundle as IAtomicBlockFlush)?.ArmWithdrawals(blockNumber, blockBundle.Withdrawals);
+                    var result = await executor.ProcessBlockAsync(
+                        header,
+                        blockBundle.Transactions,
+                        blockBundle.Uncles,
+                        blockBundle.Withdrawals,
+                        ct).ConfigureAwait(false);
+
+                    if (result.RootMatches)
+                    {
+                        lastCommittedBlock = blockNumber;
+                        lastCommittedHash = blockBundle.HeaderHash;
+                        bundle.Metadata.SaveExecutedHash(blockNumber, blockBundle.HeaderHash);
+                        gate?.SetHead(blockNumber, blockBundle.HeaderHash);
+                        blocksExecuted++;
+                        consecutiveDivergences = 0;
+                        await CommitMatchedBlockAsync(
+                            bundle, blockNumber, blockBundle.HeaderHash, blockBundle,
+                            result.ComputedStateRoot, options, logger, ct).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        logger.LogError(
+                            "Block {Block} rejected: {Reason}. Rewinding.",
+                            blockNumber, result.DescribeRejection());
+
+                        rootMismatches++;
+                        consecutiveDivergences++;
+                        if (consecutiveDivergences > (ulong)options.MaxConsecutiveDivergences)
+                        {
+                            return new ForwardExecOutcome(
+                                lastCommittedBlock, lastCommittedHash, blocksExecuted, rootMismatches,
+                                new FollowerRunResult(
+                                    FollowerExitReason.FatalVerdict,
+                                    lastCommittedBlock, blocksExecuted, rootMismatches, rewindCyclesUsed,
+                                    SnapshotRestoreTarget: null,
+                                    Detail: $"max consecutive divergences ({options.MaxConsecutiveDivergences}) exceeded at block {blockNumber:N0}"),
+                                consecutiveDivergences: consecutiveDivergences);
+                        }
+
+                        var rewindOutcome = await RewindOnRootMismatchAsync(
+                            bundle, options, lastCommittedBlock, lastCommittedHash, blockNumber,
+                            blocksExecuted, rootMismatches, ct, logger).ConfigureAwait(false);
+
+                        if (rewindOutcome.Terminal == null)
+                            gate?.SetHead(rewindOutcome.NewHead, rewindOutcome.NewHeadHash ?? lastCommittedHash);
+
+                        if (rewindOutcome.Terminal is FollowerRunResult terminalResult)
+                        {
+                            return new ForwardExecOutcome(
+                                rewindOutcome.NewHead,
+                                rewindOutcome.NewHeadHash ?? lastCommittedHash,
+                                blocksExecuted, rootMismatches,
+                                terminalResult,
+                                consecutiveDivergences: consecutiveDivergences);
+                        }
+
                         return new ForwardExecOutcome(
                             rewindOutcome.NewHead,
                             rewindOutcome.NewHeadHash ?? lastCommittedHash,
                             blocksExecuted, rootMismatches,
-                            terminalResult,
+                            terminal: null,
+                            rewound: true,
                             consecutiveDivergences: consecutiveDivergences);
                     }
-
-                    return new ForwardExecOutcome(
-                        rewindOutcome.NewHead,
-                        rewindOutcome.NewHeadHash ?? lastCommittedHash,
-                        blocksExecuted, rootMismatches,
-                        terminal: null,
-                        rewound: true,
-                        consecutiveDivergences: consecutiveDivergences);
+                }
+                finally
+                {
+                    gate?.Release();
                 }
             }
             return new ForwardExecOutcome(

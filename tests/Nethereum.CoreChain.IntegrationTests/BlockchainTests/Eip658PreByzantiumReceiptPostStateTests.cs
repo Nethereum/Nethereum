@@ -6,6 +6,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 {
+    [Trait("Requires", "Externals")]
     public class Eip658PreByzantiumReceiptPostStateTests
     {
         private readonly HostBlockchainTestRunner _runner;
@@ -17,7 +18,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
 
         private static BlockchainTestLoader.BlockchainTest LoadCase(string fileName, string forkFragment, string caseFragment)
         {
-            var filePath = Path.Combine(FrontierValidationFixtureCorpus.Path, fileName);
+            var filePath = FrontierValidationFixtureCorpus.TransactionFile(forkFragment.Substring("fork_".Length), fileName);
             var tests = BlockchainTestLoader.LoadFromFile(filePath);
             return tests.Single(t => t.Name.Contains(forkFragment) && t.Name.Contains(caseFragment));
         }
@@ -28,7 +29,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
         [InlineData("fork_Homestead")]
         public async Task Given_PreByzantiumBlock_When_ReceiptConstructed_Then_Field0IsIntermediateStateRoot(string forkFragment)
         {
-            var test = LoadCase("test_sender_balance.json", forkFragment, "balance_diff_0-expected_exception_None");
+            var test = LoadCase("sender_balance.json", forkFragment, "balance_diff_0-expected_exception_None");
 
             var result = await _runner.RunSingleBlockTestAsync(test);
 
@@ -44,7 +45,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
         [InlineData("fork_Homestead")]
         public async Task Given_PreByzantiumBlock_When_ReceiptConstructed_Then_Field0IsNotStatusByte(string forkFragment)
         {
-            var test = LoadCase("test_tx_nonce.json", forkFragment, "nonce_diff_0-expected_exception_None");
+            var test = LoadCase("tx_nonce.json", forkFragment, "nonce_diff_0-expected_exception_None");
 
             var result = await _runner.RunSingleBlockTestAsync(test);
 
@@ -59,7 +60,7 @@ namespace Nethereum.CoreChain.IntegrationTests.BlockchainTests
         [InlineData("fork_Shanghai")]
         public async Task Given_ByzantiumPlusBlock_When_ReceiptConstructed_Then_Field0IsStatusCode(string forkFragment)
         {
-            var test = LoadCase("test_sender_balance.json", forkFragment, "balance_diff_0-expected_exception_None");
+            var test = LoadCase("sender_balance.json", forkFragment, "balance_diff_0-expected_exception_None");
 
             var result = await _runner.RunSingleBlockTestAsync(test);
 

@@ -15,7 +15,7 @@ namespace Nethereum.CoreChain.UnitTests.DevChain
 {
     public class TxpoolHandlerTests
     {
-        private const string Recipient = "0x00000000000000000000000000000000000abc";
+        private const string Recipient = "0x0000000000000000000000000000000000000abc";
 
         [Fact]
         public async Task Given_AnEmptyPool_When_AskedForTxpoolStatus_Then_PendingAndQueuedAreZero()

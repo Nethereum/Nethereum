@@ -21,6 +21,7 @@ using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.Snap
 {
+    [Trait("Slice", "Flat")]
     public class PathKeyedSnapSinkWriteTests : IDisposable
     {
         private readonly string _pathDir;

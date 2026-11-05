@@ -98,6 +98,16 @@ namespace Nethereum.CoreChain.UnitTests
             Assert.Equal(150UL, still.Subchains[0].Tail);
         }
 
+        [Theory]
+        [InlineData(100UL, 1000UL, 900UL)]
+        [InlineData(1000UL, 1000UL, 0UL)]
+        [InlineData(1001UL, 1000UL, 0UL)]
+        [InlineData(0UL, 0UL, 0UL)]
+        public void Given_HeadAndTip_When_BlocksBehindIsComputed_Then_ItIsTheNonNegativeDifference(ulong head, ulong tip, ulong expected)
+        {
+            Assert.Equal(expected, HeaderSubchains.BlocksBehind(head, tip));
+        }
+
         [Fact]
         public void FullFlow_TipToZero_ThenTipAdvance_FillsGapAndMerges()
         {

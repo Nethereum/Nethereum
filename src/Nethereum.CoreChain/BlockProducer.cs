@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -10,6 +11,7 @@ using Nethereum.CoreChain.Sync;
 using Nethereum.EVM;
 using Nethereum.EVM.BlockchainState;
 using Nethereum.EVM.Execution;
+using Nethereum.EVM.Execution.TransactionValidation.Rules;
 using Nethereum.EVM.Witness;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Model;
@@ -38,8 +40,9 @@ namespace Nethereum.CoreChain
         private readonly IBlockRootsProvider _blockRootsProvider;
         private readonly IWithdrawalStore _withdrawalStore;
         private readonly IBlockAccessListStore? _blockAccessListStore;
-        private readonly NodeCommitBlockContext? _nodeCommitBlockContext;
+        private readonly BlockCommit? _commit;
         private readonly Func<HardforkName, HardforkConfig> _hardforkConfigFactory;
+        private const int BlockRlpSizeBufferZone = 1_000_000;
         private readonly SemaphoreSlim _produceLock = new SemaphoreSlim(1, 1);
         private readonly BlockHeaderSealer _headerSealer;
 
@@ -82,11 +85,14 @@ namespace Nethereum.CoreChain
             IWithdrawalStore? withdrawalStore,
             NodeCommitBlockContext? nodeCommitBlockContext,
             IBlockAccessListStore? blockAccessListStore,
-            Func<HardforkName, HardforkConfig>? hardforkConfigFactory = null)
+            Func<HardforkName, HardforkConfig>? hardforkConfigFactory = null,
+            BlockCommit? commit = null)
         {
             _withdrawalStore = withdrawalStore;
             _blockAccessListStore = blockAccessListStore;
-            _nodeCommitBlockContext = nodeCommitBlockContext;
+            _commit = commit ?? (nodeCommitBlockContext != null
+                ? new BlockCommit(stateStore, nodeCommitBlockContext, null, null, null)
+                : null);
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _transactionStore = transactionStore ?? throw new ArgumentNullException(nameof(transactionStore));
@@ -95,7 +101,7 @@ namespace Nethereum.CoreChain
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _trieNodeStore = trieNodeStore ?? throw new ArgumentNullException(nameof(trieNodeStore));
             _stateRootCalculator = stateRootCalculator ?? throw new ArgumentNullException(nameof(stateRootCalculator));
-            _orderingPolicy = orderingPolicy ?? MempoolNonceOrderingPolicy.Instance;
+            _orderingPolicy = orderingPolicy ?? new MempoolNonceOrderingPolicy(_engine.SenderVerifier);
             _blockHashProvider = blockHashProvider ?? RlpKeccakBlockHashProvider.Instance;
             _blockEncodingProvider = blockEncodingProvider ?? RlpBlockEncodingProvider.Instance;
             _blockRootsProvider = blockRootsProvider ?? new PatriciaBlockRootsProvider(_blockEncodingProvider, trieNodeStore: _trieNodeStore);
@@ -121,32 +127,96 @@ namespace Nethereum.CoreChain
             }
         }
 
+        private const int MaxIsolatedFaultsPerBlock = 4;
+
         private async Task<BlockProductionResult> ProduceBlockInternalAsync(
+            IReadOnlyList<ISignedTransaction> transactions,
+            BlockProductionOptions options)
+        {
+            var candidates = transactions;
+            List<DroppedTransaction>? dropped = null;
+            List<ISignedTransaction>? deferred = null;
+            while (true)
+            {
+                try
+                {
+                    var produced = await ProduceBlockOnceAsync(candidates, options);
+                    if (dropped != null)
+                    {
+                        produced.DroppedTransactions = dropped;
+                        produced.DeferredTransactions.AddRange(deferred!);
+                    }
+                    return produced;
+                }
+                catch (TransactionExecutionFaultException fault)
+                {
+                    dropped ??= new List<DroppedTransaction>();
+                    deferred ??= new List<ISignedTransaction>();
+                    dropped.Add(new DroppedTransaction(fault.Transaction, fault.Reason));
+
+                    if (dropped.Count > MaxIsolatedFaultsPerBlock)
+                    {
+                        deferred.AddRange(fault.Following);
+                        candidates = fault.Preceding;
+                        continue;
+                    }
+
+                    var laterOfSender = new HashSet<ISignedTransaction>(fault.SenderLater, ReferenceEqualityComparer.Instance);
+                    deferred.AddRange(fault.SenderLater);
+                    candidates = fault.Preceding.Concat(fault.Following.Where(tx => !laterOfSender.Contains(tx))).ToList();
+                }
+            }
+        }
+
+        private async Task<BlockProductionResult> ProduceBlockOnceAsync(
             IReadOnlyList<ISignedTransaction> transactions,
             BlockProductionOptions options)
         {
             var latestBlock = await _blockStore.GetLatestAsync();
             var nextBlockNumber = latestBlock != null ? latestBlock.BlockNumber + 1 : 1;
 
-            var ordered = OrderMempool(transactions, nextBlockNumber, options);
+            var ordered = FitToBlockRlpSize(OrderMempool(transactions, nextBlockNumber, options), nextBlockNumber, options, out var deferred);
             var blockHeader = SynthesiseHeader(nextBlockNumber, await ResolveParentHashAsync(latestBlock), latestBlock, options);
 
             var journal = ArmReverseDiffJournal(nextBlockNumber);
-            var preStateRoot = await ComputePreStateRootAsync(latestBlock, journal);
-            var execResult = await ExecuteBlockAsync(blockHeader, ordered, options, journal, nextBlockNumber);
-            RefuseFailedExecution(execResult, nextBlockNumber);
-            RefuseOversizedBlockAccessList(execResult, blockHeader, nextBlockNumber);
+            _commit?.Arm((ulong)nextBlockNumber);
+            try
+            {
+                var preStateRoot = await ComputePreStateRootAsync(latestBlock, journal);
+                var execResult = await ExecuteBlockAsync(blockHeader, ordered, options, journal);
+                RefuseFaultedTransaction(execResult, ordered, deferred, journal);
+                RefuseFailedExecution(execResult, nextBlockNumber);
+                RefuseOversizedBlockAccessList(execResult, blockHeader, nextBlockNumber);
+                deferred.AddRange(TransactionsThatDidNotFit(execResult, ordered, blockHeader));
+                var body = AssembleBlockBody(execResult);
+                ApplyBlobFieldsIfCarried(blockHeader, latestBlock, execResult.Fork, body.IncludedTransactions);
+                var blockAccessListRlp = EncodeBlockAccessList(execResult);
+                SealHeader(blockHeader, body, execResult, options, blockAccessListRlp);
+                options.ApplyConsensusSeal?.Invoke(blockHeader);
 
-            var body = AssembleBlockBody(execResult);
-            ApplyBlobFieldsIfCarried(blockHeader, latestBlock, execResult.Fork, body.IncludedTransactions);
-            var blockAccessListRlp = EncodeBlockAccessList(execResult);
-            SealHeader(blockHeader, body, execResult, options, blockAccessListRlp);
-            options.ApplyConsensusSeal?.Invoke(blockHeader);
+                var blockHash = BlockHashCalculator.ForFork(blockHeader, execResult.Fork, _blockHashProvider);
+                await PersistBlockAsync(blockHeader, blockHash, body, blockAccessListRlp, options, nextBlockNumber);
+                await FlushCommittedBlockAsync(journal, blockHeader, blockHash);
 
-            var blockHash = BlockHashCalculator.ForFork(blockHeader, execResult.Fork, _blockHashProvider);
-            await PersistBlockAsync(blockHeader, blockHash, body, blockAccessListRlp, options, nextBlockNumber);
+                return ProducedBlock(blockHeader, blockHash, body, preStateRoot, execResult, blockAccessListRlp, deferred);
+            }
+            catch
+            {
+                _commit?.Clear();
+                await DiscardUncommittedBlockAsync(journal);
+                throw;
+            }
+        }
 
-            return new BlockProductionResult
+        private static BlockProductionResult ProducedBlock(
+            BlockHeader blockHeader,
+            byte[] blockHash,
+            AssembledBlockBody body,
+            byte[] preStateRoot,
+            BlockExecutionResult execResult,
+            byte[]? blockAccessListRlp,
+            List<ISignedTransaction> deferred) =>
+            new BlockProductionResult
             {
                 Header = blockHeader,
                 BlockHash = blockHash,
@@ -157,7 +227,74 @@ namespace Nethereum.CoreChain
                 WitnessBytes = execResult.WitnessBytes,
                 ExecutionRequests = execResult.ExecutionRequests,
                 BlockAccessListRlp = blockAccessListRlp,
-                IncludedTransactions = body.IncludedTransactions
+                IncludedTransactions = body.IncludedTransactions,
+                DeferredTransactions = deferred
+            };
+
+        private bool CommitsAtomically => _commit?.HasAtomicFlush == true;
+
+        private Task FlushCommittedBlockAsync(IHistoricalStateProvider journal, BlockHeader header, byte[] blockHash) =>
+            CommitsAtomically
+                ? _commit!.FlushAndJournalMatchedBlockAsync(journal, header, blockHash)
+                : Task.CompletedTask;
+
+        private Task DiscardUncommittedBlockAsync(IHistoricalStateProvider journal) =>
+            CommitsAtomically
+                ? _commit!.DiscardAndRevertUnpersistedBlockAsync(journal)
+                : journal?.RevertCurrentBlockAsync() ?? Task.CompletedTask;
+
+        public async Task<BlockProductionResult> BuildBlockOnParentAsync(
+            IReadOnlyList<ISignedTransaction> transactions,
+            bool orderLikeMempool,
+            BlockProductionOptions options,
+            byte[] parentHash,
+            BlockHeader parentHeader)
+        {
+            if (transactions == null) throw new ArgumentNullException(nameof(transactions));
+            if (options == null) throw new ArgumentNullException(nameof(options));
+            if (parentHeader == null) throw new ArgumentNullException(nameof(parentHeader));
+
+            var blockNumber = parentHeader.BlockNumber + 1;
+            var deferred = new List<ISignedTransaction>();
+            IReadOnlyList<TxEntry> ordered = orderLikeMempool
+                ? FitToBlockRlpSize(OrderMempool(transactions, blockNumber, options), blockNumber, options, out deferred)
+                : transactions.Select(tx => new TxEntry(tx)).ToList();
+            var blockHeader = SynthesiseHeader(blockNumber, parentHash, parentHeader, options);
+
+            var execResult = await _engine.ExecuteAsync(
+                blockHeader,
+                ordered,
+                uncles: new List<BlockHeader>(),
+                withdrawals: WithdrawalAdapter.Convert(options.Withdrawals),
+                new BlockExecutionOptions
+                {
+                    ParentBeaconBlockRoot = (options.ParentBeaconBlockRoot ?? new byte[32])
+                });
+
+            RefuseFailedExecution(execResult, blockNumber);
+            RefuseOversizedBlockAccessList(execResult, blockHeader, blockNumber);
+            if (orderLikeMempool) deferred.AddRange(TransactionsThatDidNotFit(execResult, ordered, blockHeader));
+
+            var body = AssembleBlockBody(execResult);
+            ApplyBlobFieldsIfCarried(blockHeader, parentHeader, execResult.Fork, body.IncludedTransactions);
+            var blockAccessListRlp = EncodeBlockAccessList(execResult);
+            SealHeader(blockHeader, body, execResult, options, blockAccessListRlp);
+            options.ApplyConsensusSeal?.Invoke(blockHeader);
+
+            var blockHash = BlockHashCalculator.ForFork(blockHeader, execResult.Fork, _blockHashProvider);
+
+            return new BlockProductionResult
+            {
+                Header = blockHeader,
+                BlockHash = blockHash,
+                TransactionResults = body.Results,
+                SuccessfulTransactions = body.SuccessCount,
+                FailedTransactions = body.FailCount,
+                PreStateRoot = execResult.PreStateRoot,
+                ExecutionRequests = execResult.ExecutionRequests,
+                BlockAccessListRlp = blockAccessListRlp,
+                IncludedTransactions = body.IncludedTransactions,
+                DeferredTransactions = deferred
             };
         }
 
@@ -232,7 +369,8 @@ namespace Nethereum.CoreChain
         {
             if (!Model.Codecs.BlockHeaderCodecs.ForFork(fork).CarriesBlobFieldsAndBeaconRoot) return;
 
-            var hardforkConfig = _hardforkConfigFactory(fork);
+            var hardforkConfig = _hardforkConfigFactory(fork)
+                .AtBlock(_engine.Activations, (long)blockHeader.BlockNumber, (ulong)blockHeader.Timestamp);
             blockHeader.ExcessBlobGas = unchecked((long)BlockExecutor.ExpectedExcessBlobGas(parentHeader, hardforkConfig));
             blockHeader.BlobGasUsed = TotalBlobGasUsed(includedTransactions);
         }
@@ -261,6 +399,7 @@ namespace Nethereum.CoreChain
                     IsOutOfGas = executed.IsOutOfGas,
                     Receipt = executed.Receipt,
                     Logs = executed.Logs,
+                    LogIndexes = executed.LogIndexes,
                     ErrorMessage = executed.RevertReason,
                     GasUsed = executed.GasUsed,
                     GasRefund = executed.GasRefund,
@@ -273,7 +412,68 @@ namespace Nethereum.CoreChain
         private IReadOnlyList<TxEntry> OrderMempool(
             IReadOnlyList<ISignedTransaction> transactions, BigInteger blockNumber, BlockProductionOptions options)
             => _orderingPolicy.Order(
-                transactions, CreateBlockContext(blockNumber, options), options.BlockGasLimit, default);
+                transactions, CreateBlockContext(blockNumber, options), default);
+
+        private IReadOnlyList<TxEntry> FitToBlockRlpSize(
+            IReadOnlyList<TxEntry> ordered, BigInteger blockNumber, BlockProductionOptions options,
+            out List<ISignedTransaction> deferred)
+        {
+            deferred = new List<ISignedTransaction>();
+            var fork = _engine.Activations.ResolveAt((long)blockNumber, (ulong)options.Timestamp);
+            if (fork < HardforkName.Osaka) return ordered;
+
+            var fitting = new List<TxEntry>(ordered.Count);
+            long size = 0;
+            for (var i = 0; i < ordered.Count; i++)
+            {
+                var txSize = ordered[i].Tx.GetRLPEncoded().Length;
+                if (size + txSize >= BlockBodyValidator.MaximumRlpBlockSize - BlockRlpSizeBufferZone)
+                {
+                    for (var j = i; j < ordered.Count; j++) deferred.Add(ordered[j].Tx);
+                    break;
+                }
+                size += txSize;
+                fitting.Add(ordered[i]);
+            }
+            return fitting;
+        }
+
+        private List<ISignedTransaction> TransactionsThatDidNotFit(
+            BlockExecutionResult execResult, IReadOnlyList<TxEntry> ordered, BlockHeader blockHeader)
+        {
+            var notFitted = new List<ISignedTransaction>();
+            HashSet<string>? blockedSenders = null;
+            var maxBlobsPerBlock = _hardforkConfigFactory(execResult.Fork)
+                .AtBlock(_engine.Activations, (long)blockHeader.BlockNumber, (ulong)blockHeader.Timestamp)
+                .MaxBlobsPerBlock;
+            for (var i = 0; i < execResult.Receipts.Count; i++)
+            {
+                var executed = execResult.Receipts[i];
+                if (!executed.Skipped) continue;
+
+                var sender = ordered[i].CachedSender ?? _engine.SenderVerifier.GetSenderAddress(ordered[i].Tx);
+                var budgetExhausted = executed.ErrorCode == TransactionError.GasAllowanceExceeded
+                    || executed.ErrorCode == TransactionError.Type3TxBlobCountExceeded;
+                if (budgetExhausted)
+                {
+                    (blockedSenders ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase)).Add(sender);
+                    if (!WouldFitAnEmptyBlock(ordered[i].Tx, blockHeader, maxBlobsPerBlock)) continue;
+                }
+                else if (blockedSenders == null || !blockedSenders.Contains(sender))
+                    continue;
+
+                notFitted.Add(ordered[i].Tx);
+            }
+            return notFitted;
+        }
+
+        private static bool WouldFitAnEmptyBlock(ISignedTransaction tx, BlockHeader blockHeader, int maxBlobsPerBlock)
+        {
+            if (tx.GetGasLimit() > new EvmUInt256((ulong)blockHeader.GasLimit)) return false;
+            if (tx is not Transaction4844 blobTx) return true;
+            var blobCount = blobTx.BlobVersionedHashes?.Count ?? 0;
+            return blobCount <= Math.Min(Eip7594MaxBlobsPerTxRule.MAX_BLOBS_PER_TX, maxBlobsPerBlock);
+        }
 
         private async Task<byte[]> ResolveParentHashAsync(BlockHeader latestBlock)
             => latestBlock != null
@@ -300,7 +500,7 @@ namespace Nethereum.CoreChain
                 ExtraData = options.ExtraData ?? Array.Empty<byte>(),
                 MixHash = options.PrevRandao ?? new byte[32],
                 Nonce = options.Nonce ?? new byte[8],
-                BaseFee = baseFeeOverride ?? ExpectedBaseFeeFor(parentHeader),
+                BaseFee = baseFeeOverride ?? (options.FeeFreeBaseFee ? EvmUInt256.Zero : ExpectedBaseFeeFor(parentHeader)),
                 ParentBeaconBlockRoot = (options.ParentBeaconBlockRoot ?? new byte[32]),
                 SlotNumber = options.SlotNumber
             };
@@ -327,7 +527,7 @@ namespace Nethereum.CoreChain
             }
             catch
             {
-                if (journal != null)
+                if (journal != null && !CommitsAtomically)
                 {
                     await journal.ClearCurrentBlockNumberAsync().ConfigureAwait(false);
                 }
@@ -339,13 +539,12 @@ namespace Nethereum.CoreChain
             BlockHeader blockHeader,
             IReadOnlyList<TxEntry> ordered,
             BlockProductionOptions options,
-            IHistoricalStateProvider journal,
-            BigInteger blockNumber)
+            IHistoricalStateProvider journal)
         {
-            _nodeCommitBlockContext?.Arm((ulong)blockNumber);
+            BlockExecutionResult? result = null;
             try
             {
-                return await _engine.ExecuteAsync(
+                result = await _engine.ExecuteAsync(
                     blockHeader,
                     ordered,
                     uncles: new List<BlockHeader>(),
@@ -355,15 +554,68 @@ namespace Nethereum.CoreChain
                         CaptureWitness = options.CaptureWitness,
                         ParentBeaconBlockRoot = (options.ParentBeaconBlockRoot ?? new byte[32])
                     });
+                return result;
             }
             finally
             {
-                _nodeCommitBlockContext?.Clear();
-                if (journal != null)
+                _commit?.Clear();
+                if (journal != null && !CommitsAtomically && !IsIsolatableHostFault(result, journal))
                 {
                     await journal.ClearCurrentBlockNumberAsync().ConfigureAwait(false);
                 }
             }
+        }
+
+        private bool IsIsolatableHostFault(BlockExecutionResult? execResult, IHistoricalStateProvider journal) =>
+            execResult != null
+            && execResult.Exception is EvmHostException
+            && execResult.FailedTransactionIndex >= 0
+            && (CommitsAtomically || journal != null);
+
+        private void RefuseFaultedTransaction(
+            BlockExecutionResult execResult, IReadOnlyList<TxEntry> ordered, List<ISignedTransaction> sizeDeferred,
+            IHistoricalStateProvider journal)
+        {
+            if (!IsIsolatableHostFault(execResult, journal)) return;
+
+            var index = execResult.FailedTransactionIndex;
+            var preceding = new List<ISignedTransaction>(index);
+            for (var i = 0; i < index; i++) preceding.Add(ordered[i].Tx);
+            var following = new List<ISignedTransaction>(ordered.Count - index - 1 + sizeDeferred.Count);
+            for (var i = index + 1; i < ordered.Count; i++) following.Add(ordered[i].Tx);
+            following.AddRange(sizeDeferred);
+
+            var sender = ordered[index].CachedSender ?? _engine.SenderVerifier.GetSenderAddress(ordered[index].Tx);
+            var senderLater = following
+                .Where(tx => string.Equals(_engine.SenderVerifier.GetSenderAddress(tx), sender, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            throw new TransactionExecutionFaultException(
+                ordered[index].Tx, execResult.Exception!.Message, preceding, following, senderLater);
+        }
+
+        private sealed class TransactionExecutionFaultException : Exception
+        {
+            public TransactionExecutionFaultException(
+                ISignedTransaction transaction,
+                string reason,
+                IReadOnlyList<ISignedTransaction> preceding,
+                IReadOnlyList<ISignedTransaction> following,
+                IReadOnlyList<ISignedTransaction> senderLater)
+                : base(reason)
+            {
+                Transaction = transaction;
+                Reason = reason;
+                Preceding = preceding;
+                Following = following;
+                SenderLater = senderLater;
+            }
+
+            public ISignedTransaction Transaction { get; }
+            public string Reason { get; }
+            public IReadOnlyList<ISignedTransaction> Preceding { get; }
+            public IReadOnlyList<ISignedTransaction> Following { get; }
+            public IReadOnlyList<ISignedTransaction> SenderLater { get; }
         }
 
         private static void RefuseFailedExecution(BlockExecutionResult execResult, BigInteger blockNumber)

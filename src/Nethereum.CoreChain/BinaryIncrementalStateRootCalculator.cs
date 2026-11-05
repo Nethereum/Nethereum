@@ -89,7 +89,7 @@ namespace Nethereum.CoreChain
             if (_trieStorage == null
                 || previousStateRoot == null
                 || previousStateRoot.Length == 0
-                || IsAllZero(previousStateRoot))
+                || ByteUtil.IsZero(previousStateRoot))
                 return false;
 
             _trie = BinaryTrie.FromRootHash(previousStateRoot, new BinaryTrieOptions
@@ -126,13 +126,13 @@ namespace Nethereum.CoreChain
 
             await foreach (var kvp in _stateStore.StreamAccountsAsync().ConfigureAwait(false))
             {
-                await PutAccountInTrieAsync(kvp.Key, kvp.Value, useAllStorage: true);
+                await PutAccountInTrieAsync(kvp.Key, kvp.Value);
             }
         }
 
         private async Task<bool> UpdateFromDirtyAccountsAsync()
         {
-            var dirtyAddresses = await _stateStore.GetDirtyAccountAddressesAsync();
+            var dirtyAddresses = await _stateStore.GetDirtyAccountsAsync();
             if (dirtyAddresses.Count == 0)
                 return false;
 
@@ -141,21 +141,33 @@ namespace Nethereum.CoreChain
                 var account = await _stateStore.GetAccountAsync(address);
                 if (account == null)
                 {
-                    DeleteAccountFromTrie(address);
+                    DeleteAccountFromTrie(address.ToByteArray());
                 }
                 else
                 {
-                    await PutAccountInTrieAsync(address, account, useAllStorage: false);
+                    await PutAccountInTrieAsync(address, account);
                 }
             }
 
             return true;
         }
 
-        private async Task PutAccountInTrieAsync(string address, Account account, bool useAllStorage)
+        private async Task PutAccountInTrieAsync(string address, Account account)
         {
             var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
+            await PutAccountFieldsAsync(addressBytes, account);
+            await PutAllStorageAsync(address, addressBytes);
+        }
 
+        private async Task PutAccountInTrieAsync(EvmAddress address, Account account)
+        {
+            var addressBytes = address.ToByteArray();
+            await PutAccountFieldsAsync(addressBytes, account);
+            await PutDirtyStorageAsync(address, addressBytes);
+        }
+
+        private async Task PutAccountFieldsAsync(byte[] addressBytes, Account account)
+        {
             var basicDataKey = _keyDerivation.GetTreeKeyForBasicData(addressBytes);
             var codeHashKey = _keyDerivation.GetTreeKeyForCodeHash(addressBytes);
 
@@ -166,11 +178,6 @@ namespace Nethereum.CoreChain
             PutBasicData(basicDataKey, account, code);
             PutCodeHash(codeHashKey, account);
             PutCodeChunks(addressBytes, code, oldChunkCount);
-
-            if (useAllStorage)
-                await PutAllStorageAsync(address, addressBytes);
-            else
-                await PutDirtyStorageAsync(address, addressBytes);
         }
 
         private void PutBasicData(byte[] key, Account account, byte[] code)
@@ -217,7 +224,7 @@ namespace Nethereum.CoreChain
         private int ReadChunkCountFromKey(byte[] basicKey)
         {
             var leaf = _trie.Get(basicKey);
-            if (leaf == null || IsAllZero(leaf))
+            if (leaf == null || ByteUtil.IsZero(leaf))
                 return 0;
 
             BasicDataLeaf.Unpack(leaf, out _, out var codeSize, out _, out _);
@@ -255,7 +262,7 @@ namespace Nethereum.CoreChain
             }
         }
 
-        private async Task PutDirtyStorageAsync(string address, byte[] addressBytes)
+        private async Task PutDirtyStorageAsync(EvmAddress address, byte[] addressBytes)
         {
             var dirtySlots = await _stateStore.GetDirtyStorageSlotsAsync(address);
             if (dirtySlots.Count == 0)
@@ -273,7 +280,7 @@ namespace Nethereum.CoreChain
             var storageKey = EvmUInt256BigIntegerExtensions.FromBigInteger(slot);
             var key = _keyDerivation.GetTreeKeyForStorageSlot(addressBytes, storageKey);
 
-            if (value == null || value.Length == 0 || IsAllZero(value))
+            if (value == null || value.Length == 0 || ByteUtil.IsZero(value))
             {
                 _trie.Delete(key);
                 return;
@@ -282,9 +289,8 @@ namespace Nethereum.CoreChain
             _trie.Put(key, PadTo32(value));
         }
 
-        private void DeleteAccountFromTrie(string address)
+        private void DeleteAccountFromTrie(byte[] addressBytes)
         {
-            var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(address).HexToByteArray();
 
             var oldChunkCount = ReadChunkCountFromTrie(addressBytes);
             for (int i = 0; i < oldChunkCount; i++)
@@ -292,13 +298,6 @@ namespace Nethereum.CoreChain
 
             _trie.Delete(_keyDerivation.GetTreeKeyForBasicData(addressBytes));
             _trie.Delete(_keyDerivation.GetTreeKeyForCodeHash(addressBytes));
-        }
-
-        private static bool IsAllZero(byte[] bytes)
-        {
-            for (int i = 0; i < bytes.Length; i++)
-                if (bytes[i] != 0) return false;
-            return true;
         }
 
         private static byte[] PadTo32(byte[] value)

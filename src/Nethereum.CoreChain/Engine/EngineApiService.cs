@@ -21,6 +21,8 @@ namespace Nethereum.CoreChain.Engine
     {
         private static readonly byte[] EmptyListHash = new Sha3Keccack().CalculateHash(RLP.RLP.EncodeList());
         private static readonly byte[] ZeroHash32 = new byte[32];
+        private const int TooDeepReorgCode = -38006;
+        private const int GenericServerErrorCode = -32000;
 
         private readonly IBlockStore _blockStore;
         private readonly BlockImporter _importer;
@@ -40,7 +42,7 @@ namespace Nethereum.CoreChain.Engine
             _blockStore = blockStore ?? throw new ArgumentNullException(nameof(blockStore));
             _importer = importer ?? throw new ArgumentNullException(nameof(importer));
             _blockProducer = blockProducer ?? throw new ArgumentNullException(nameof(blockProducer));
-            _forkChoice = forkChoice ?? throw new ArgumentNullException(nameof(forkChoice));
+            _forkChoice = forkChoice;
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
@@ -60,7 +62,7 @@ namespace Nethereum.CoreChain.Engine
             ImportPayloadAsync(
                 payload,
                 parentBeaconBlockRoot,
-                RequestsHashFor(executionRequests),
+                EnginePayloadDecoder.RequestsHashFor(executionRequests),
                 declaredBlockAccessListRlp: null,
                 slotNumber: null,
                 ct);
@@ -73,7 +75,7 @@ namespace Nethereum.CoreChain.Engine
             ImportPayloadAsync(
                 payload,
                 parentBeaconBlockRoot,
-                RequestsHashFor(executionRequests),
+                EnginePayloadDecoder.RequestsHashFor(executionRequests),
                 payload?.BlockAccessList != null ? payload.BlockAccessList.HexToByteArray() : null,
                 payload?.SlotNumber != null ? (ulong)payload.SlotNumber.Value : (ulong?)null,
                 ct);
@@ -88,58 +90,47 @@ namespace Nethereum.CoreChain.Engine
         {
             if (payload == null) throw new ArgumentNullException(nameof(payload));
 
+            var declaredBlockAccessList = EnginePayloadDecoder.DecodeDeclaredBlockAccessList(declaredBlockAccessListRlp);
+
             var parentHash = payload.ParentHash.HexToByteArray();
-            var parentHeader = await _blockStore.GetByHashAsync(parentHash).ConfigureAwait(false);
+            if (_importer.TryGetInvalidBlock(parentHash, out var invalidParentLatestValid))
+            {
+                return new PayloadStatusV1
+                {
+                    Status = EnginePayloadStatus.Invalid,
+                    LatestValidHash = invalidParentLatestValid?.ToHex(true),
+                    ValidationError = "the parent payload was already found invalid"
+                };
+            }
+
+            var parentHeader = await _importer.Blocks.GetByHashAsync(parentHash).ConfigureAwait(false);
             if (parentHeader == null)
             {
                 return new PayloadStatusV1 { Status = EnginePayloadStatus.Syncing };
             }
 
-            var transactions = DecodeTransactions(payload.Transactions);
-            var withdrawalsForRoot = ToModelWithdrawals(payload.Withdrawals);
-
-            var header = new BlockHeader
+            DecodedEnginePayload decoded;
+            try
             {
-                ParentHash = parentHash,
-                UnclesHash = EmptyListHash,
-                Coinbase = payload.FeeRecipient,
-                StateRoot = payload.StateRoot.HexToByteArray(),
-                TransactionsHash = PatriciaBlockRootsProvider.Instance.CalculateTransactionsRoot(transactions),
-                ReceiptHash = payload.ReceiptsRoot.HexToByteArray(),
-                LogsBloom = payload.LogsBloom.HexToByteArray(),
-                Difficulty = EvmUInt256.Zero,
-                BlockNumber = EvmUInt256BigIntegerExtensions.FromBigInteger(payload.BlockNumber.Value),
-                GasLimit = ToHeaderScalarLong(payload.GasLimit.Value),
-                GasUsed = ToHeaderScalarLong(payload.GasUsed.Value),
-                Timestamp = ToHeaderScalarLong(payload.Timestamp.Value),
-                ExtraData = payload.ExtraData.HexToByteArray(),
-                MixHash = payload.PrevRandao.HexToByteArray(),
-                Nonce = new byte[8],
-                BaseFee = EvmUInt256BigIntegerExtensions.FromBigInteger(payload.BaseFeePerGas.Value),
-                WithdrawalsRoot = PatriciaBlockRootsProvider.Instance.CalculateWithdrawalsRoot(withdrawalsForRoot),
-                BlobGasUsed = payload.BlobGasUsed != null ? ToHeaderScalarLong(payload.BlobGasUsed.Value) : (long?)null,
-                ExcessBlobGas = payload.ExcessBlobGas != null ? ToHeaderScalarLong(payload.ExcessBlobGas.Value) : (long?)null,
-                ParentBeaconBlockRoot = parentBeaconBlockRoot != null
-                    ? parentBeaconBlockRoot.HexToByteArray()
-                    : ZeroHash32,
-                RequestsHash = requestsHash,
-                BlockAccessListHash = declaredBlockAccessListRlp != null
-                    ? new Sha3Keccack().CalculateHash(declaredBlockAccessListRlp)
-                    : null,
-                SlotNumber = slotNumber
-            };
-
-            var declaredBlockAccessList = declaredBlockAccessListRlp != null
-                ? BlockAccessListRLPEncoder.Current.Decode(declaredBlockAccessListRlp)
-                : null;
+                decoded = EnginePayloadDecoder.Decode(
+                    payload, parentBeaconBlockRoot, requestsHash, declaredBlockAccessListRlp, slotNumber, _config);
+            }
+            catch (InvalidEnginePayloadException ex)
+            {
+                return EnginePayloadDecoder.InvalidStatus(ex.Message);
+            }
+            var header = decoded.Header;
+            var transactions = decoded.Transactions;
+            var withdrawalsForRoot = decoded.Withdrawals;
 
             var result = await _importer
                 .ImportAsync(header, transactions, uncles: null, withdrawalsForRoot, declaredBlockAccessList, ct)
                 .ConfigureAwait(false);
 
             var declaredBlockHash = payload.BlockHash.HexToByteArray();
+            var hashMatches = result.BlockHash != null && ByteUtil.AreEqual(result.BlockHash, declaredBlockHash);
 
-            if (result.RootMatches && result.BlockHash != null && ByteUtil.AreEqual(result.BlockHash, declaredBlockHash))
+            if (hashMatches && result.RootMatches)
             {
                 return new PayloadStatusV1
                 {
@@ -148,52 +139,23 @@ namespace Nethereum.CoreChain.Engine
                 };
             }
 
+            if (hashMatches && (result.Disposition == BlockImportDisposition.StoredAsSide
+                                || result.Disposition == BlockImportDisposition.AlreadySide))
+            {
+                return new PayloadStatusV1 { Status = EnginePayloadStatus.Accepted };
+            }
+
+            if (result.Disposition == BlockImportDisposition.UnknownParent)
+            {
+                return new PayloadStatusV1 { Status = EnginePayloadStatus.Syncing };
+            }
+
             return new PayloadStatusV1
             {
                 Status = EnginePayloadStatus.Invalid,
-                LatestValidHash = parentHash.ToHex(true),
+                LatestValidHash = (result.LatestValidHash ?? parentHash).ToHex(true),
                 ValidationError = result.DescribeRejection()
             };
-        }
-
-        private static long ToHeaderScalarLong(BigInteger value)
-        {
-            if (value < 0 || value > ulong.MaxValue)
-            {
-                throw RpcException.InvalidParams($"value {value} is outside the uint64 range");
-            }
-
-            return unchecked((long)(ulong)value);
-        }
-
-        private static byte[] RequestsHashFor(string[] executionRequests)
-        {
-            if (executionRequests == null)
-            {
-                throw RpcException.InvalidParams("executionRequests must not be null");
-            }
-
-            var decoded = DecodeExecutionRequests(executionRequests);
-            if (!Nethereum.EVM.Execution.ExecutionRequests.IsValidEngineRequestsList(decoded))
-            {
-                throw RpcException.InvalidParams(
-                    "executionRequests elements must be ordered by request_type ascending, unique per request_type, and longer than 1 byte");
-            }
-
-            return Nethereum.EVM.Execution.ExecutionRequests.ComputeRequestsHash(decoded);
-        }
-
-        private static List<byte[]> DecodeExecutionRequests(string[] executionRequests)
-        {
-            var list = new List<byte[]>(executionRequests?.Length ?? 0);
-            if (executionRequests == null) return list;
-
-            foreach (var hex in executionRequests)
-            {
-                list.Add(hex.HexToByteArray());
-            }
-
-            return list;
         }
 
         public Task<ForkchoiceUpdatedResponseV1> ForkchoiceUpdatedAsync(
@@ -221,7 +183,19 @@ namespace Nethereum.CoreChain.Engine
             if (state == null) throw new ArgumentNullException(nameof(state));
 
             var headHash = state.HeadBlockHash.HexToByteArray();
-            var headHeader = await _blockStore.GetByHashAsync(headHash).ConfigureAwait(false);
+            if (_importer.TryGetInvalidBlock(headHash, out var invalidLatestValid))
+            {
+                return new ForkchoiceUpdatedResponseV1
+                {
+                    PayloadStatus = new PayloadStatusV1
+                    {
+                        Status = EnginePayloadStatus.Invalid,
+                        LatestValidHash = invalidLatestValid?.ToHex(true)
+                    }
+                };
+            }
+
+            var headHeader = await _importer.Blocks.GetByHashAsync(headHash).ConfigureAwait(false);
             if (headHeader == null)
             {
                 return new ForkchoiceUpdatedResponseV1
@@ -230,11 +204,9 @@ namespace Nethereum.CoreChain.Engine
                 };
             }
 
-            var verdict = await _forkChoice.ShouldAdoptAsync(headHeader, headHash, ct).ConfigureAwait(false);
-
-            var status = verdict.Outcome == ForkChoiceOutcome.Undecidable
-                ? new PayloadStatusV1 { Status = EnginePayloadStatus.Syncing }
-                : new PayloadStatusV1 { Status = EnginePayloadStatus.Valid, LatestValidHash = headHash.ToHex(true) };
+            var status = await MakeHeadCanonicalAsync(headHeader, headHash, ct).ConfigureAwait(false);
+            if (status.Status == EnginePayloadStatus.Valid)
+                await PruneSideBlocksBelowFinalizedAsync(state.FinalizedBlockHash).ConfigureAwait(false);
 
             if (attributes == null || status.Status != EnginePayloadStatus.Valid)
             {
@@ -247,6 +219,45 @@ namespace Nethereum.CoreChain.Engine
             var payloadId = _registry.Register(buildTask);
 
             return new ForkchoiceUpdatedResponseV1 { PayloadStatus = status, PayloadId = payloadId };
+        }
+
+        private async Task PruneSideBlocksBelowFinalizedAsync(string finalizedBlockHash)
+        {
+            if (string.IsNullOrEmpty(finalizedBlockHash)) return;
+
+            var finalized = await _blockStore.GetByHashAsync(finalizedBlockHash.HexToByteArray()).ConfigureAwait(false);
+            if (finalized != null) _importer.PruneSideBlocksBelow((ulong)finalized.BlockNumber);
+        }
+
+        private async Task<PayloadStatusV1> MakeHeadCanonicalAsync(BlockHeader headHeader, byte[] headHash, CancellationToken ct)
+        {
+            var valid = new PayloadStatusV1 { Status = EnginePayloadStatus.Valid, LatestValidHash = headHash.ToHex(true) };
+            if (!_importer.SupportsSideChains) return valid;
+
+            var canonicalAtNumber = await _blockStore
+                .GetHashByNumberAsync((BigInteger)headHeader.BlockNumber).ConfigureAwait(false);
+            if (canonicalAtNumber != null && ByteUtil.AreEqual(canonicalAtNumber, headHash)) return valid;
+
+            var set = await _importer.SetCanonicalAsync(headHash, ct).ConfigureAwait(false);
+            switch (set.Status)
+            {
+                case SetCanonicalStatus.Reorganised:
+                case SetCanonicalStatus.NoOp:
+                    return valid;
+                case SetCanonicalStatus.BranchInvalid:
+                    return new PayloadStatusV1
+                    {
+                        Status = EnginePayloadStatus.Invalid,
+                        LatestValidHash = set.Reorganisation?.FailedBlockParentHash?.ToHex(true),
+                        ValidationError = set.Detail
+                    };
+                case SetCanonicalStatus.AncestryUnavailable:
+                    return new PayloadStatusV1 { Status = EnginePayloadStatus.Syncing };
+                case SetCanonicalStatus.TooDeepReorg:
+                    throw new RpcException(TooDeepReorgCode, "Too deep reorg: " + set.Detail);
+                default:
+                    throw new RpcException(GenericServerErrorCode, "Server error: " + set.Detail);
+            }
         }
 
         public async Task<ExecutionPayloadV3> GetPayloadAsync(string payloadId, CancellationToken ct = default)
@@ -266,6 +277,21 @@ namespace Nethereum.CoreChain.Engine
                 BlobsBundle = new BlobsBundleV1(),
                 ShouldOverrideBuilder = false,
                 ExecutionRequests = EncodeExecutionRequests(build.Result.ExecutionRequests)
+            };
+        }
+
+        public static GetPayloadV4Response ToGetPayloadV4Response(
+            BlockProductionResult result, IReadOnlyList<ModelWithdrawal> withdrawals, BigInteger blockValue)
+        {
+            var build = new EnginePayloadBuild(result, result.IncludedTransactions, withdrawals);
+
+            return new GetPayloadV4Response
+            {
+                ExecutionPayload = ConvertToPayload(build),
+                BlockValue = new HexBigInteger(blockValue),
+                BlobsBundle = new BlobsBundleV1(),
+                ShouldOverrideBuilder = false,
+                ExecutionRequests = EncodeExecutionRequests(result.ExecutionRequests)
             };
         }
 
@@ -316,7 +342,7 @@ namespace Nethereum.CoreChain.Engine
             IBlockProducer producer, IReadOnlyList<ISignedTransaction> transactions, BlockProductionOptions options)
         {
             var result = await producer.ProduceBlockAsync(transactions, options).ConfigureAwait(false);
-            return new EnginePayloadBuild(result, transactions);
+            return new EnginePayloadBuild(result, transactions, options.Withdrawals == null ? null : new List<ModelWithdrawal>(options.Withdrawals));
         }
 
         private BlockProductionOptions BuildProductionOptions(PayloadAttributesV3 attributes) =>
@@ -333,7 +359,7 @@ namespace Nethereum.CoreChain.Engine
                 ParentBeaconBlockRoot = attributes.ParentBeaconBlockRoot != null
                     ? attributes.ParentBeaconBlockRoot.HexToByteArray()
                     : ZeroHash32,
-                Withdrawals = ToModelWithdrawals(attributes.Withdrawals)
+                Withdrawals = EnginePayloadDecoder.ToModelWithdrawals(attributes.Withdrawals)
             };
 
         private BlockProductionOptions BuildProductionOptionsV4(PayloadAttributesV4 attributes)
@@ -376,7 +402,7 @@ namespace Nethereum.CoreChain.Engine
                 BaseFeePerGas = new HexBigInteger((header.BaseFee ?? EvmUInt256.Zero).ToBigInteger()),
                 BlockHash = build.Result.BlockHash.ToHex(true),
                 Transactions = EncodeIncludedTransactions(build),
-                Withdrawals = new List<EngineWithdrawal>(),
+                Withdrawals = ToEngineWithdrawals(build.Withdrawals),
                 BlobGasUsed = new HexBigInteger(header.BlobGasUsed ?? 0),
                 ExcessBlobGas = new HexBigInteger(header.ExcessBlobGas ?? 0)
             };
@@ -403,32 +429,17 @@ namespace Nethereum.CoreChain.Engine
             return encoded;
         }
 
-        private static List<ISignedTransaction> DecodeTransactions(List<string> raw)
+        private static List<EngineWithdrawal> ToEngineWithdrawals(IReadOnlyList<ModelWithdrawal> withdrawals)
         {
-            var list = new List<ISignedTransaction>(raw?.Count ?? 0);
-            if (raw == null) return list;
-
-            foreach (var hex in raw)
-            {
-                list.Add(TransactionFactory.CreateTransaction(hex.HexToByteArray(), allowBlobNetworkWrapper: false));
-            }
-
-            return list;
-        }
-
-        private static List<ModelWithdrawal> ToModelWithdrawals(List<EngineWithdrawal> withdrawals)
-        {
-            var list = new List<Nethereum.Model.Withdrawal>(withdrawals?.Count ?? 0);
-            if (withdrawals == null) return list;
-
+            var list = new List<EngineWithdrawal>(withdrawals.Count);
             foreach (var w in withdrawals)
             {
-                list.Add(new Nethereum.Model.Withdrawal
+                list.Add(new EngineWithdrawal
                 {
-                    Index = (ulong)w.Index.Value,
-                    ValidatorIndex = (ulong)w.ValidatorIndex.Value,
-                    Address = w.Address.HexToByteArray(),
-                    AmountInGwei = (ulong)w.Amount.Value
+                    Index = new HexBigInteger(w.Index),
+                    ValidatorIndex = new HexBigInteger(w.ValidatorIndex),
+                    Address = w.Address.ToHex(true),
+                    Amount = new HexBigInteger(w.AmountInGwei)
                 });
             }
 

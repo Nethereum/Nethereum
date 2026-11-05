@@ -14,7 +14,6 @@ namespace Nethereum.CoreChain.RocksDB.Stores
     {
         private readonly JournalingPathNodeStore _inner;
         private readonly INodeCommitBlockSource _blockSource;
-        private static readonly IHashProvider _rootHashProvider = Sha3KeccackHashProvider.Instance;
 
         private readonly Dictionary<PathKey, (Node Node, ulong Block)> _pendingPuts = new Dictionary<PathKey, (Node, ulong)>(PathKey.Comparer);
         private readonly Dictionary<PathKey, (TrieNodeDelete Delete, ulong Block)> _pendingDeletes = new Dictionary<PathKey, (TrieNodeDelete, ulong)>(PathKey.Comparer);
@@ -23,14 +22,24 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private ulong? _bufferedBlock;
 
         private readonly WindowDirtyLayers _inFlightLayers;
+        private readonly BackgroundFlushSignal _flushSignal;
 
         public CapturingJournalingPathNodeStore(
             JournalingPathNodeStore inner, INodeCommitBlockSource blockSource,
-            WindowDirtyLayers inFlightLayers = null)
+            WindowDirtyLayers inFlightLayers = null,
+            BackgroundFlushSignal flushSignal = null)
         {
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             _blockSource = blockSource ?? throw new ArgumentNullException(nameof(blockSource));
             _inFlightLayers = inFlightLayers;
+            _flushSignal = flushSignal;
+        }
+
+        private void RequireNoBackgroundFlush(string operation)
+        {
+            if (_flushSignal != null && _flushSignal.InFlight)
+                throw new InvalidOperationException(
+                    $"An unarmed {operation} reached the state trie node store while a background flush is in flight; the flush stages from the on-disk path store, so no write may reach it until the flush completes.");
         }
 
         public void Commit(TrieNodeSet nodes)
@@ -43,6 +52,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 return;
             }
 
+            RequireNoBackgroundFlush(nameof(Commit));
             _inner.Commit(nodes);
         }
 
@@ -180,9 +190,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (reference != null && TryGetBuffered(reference.Owner, reference.Path, out var blob, out var tombstoned))
             {
                 if (tombstoned) return null;
-                if (!ProofVerification.Current.TrieNode.Verify(reference.GetHash(), blob, _rootHashProvider))
-                    throw new InvalidOperationException(
-                        "Path-keyed trie node hash mismatch: stored blob does not match the parent-referenced hash (tampered or corrupt).");
+                TrieNodeVerification.RequireAuthentic(reference, blob);
                 return blob;
             }
             return _inner.Get(reference);
@@ -197,10 +205,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public bool ContainsKey(byte[] stateRoot)
         {
-            if (stateRoot != null && stateRoot.Length == 32
-                && TryGetBuffered(Array.Empty<byte>(), Array.Empty<byte>(), out var rootBlob, out var tombstoned)
-                && !tombstoned && rootBlob != null && rootBlob.Length > 0
-                && ByteUtil.AreEqual(_rootHashProvider.ComputeHash(rootBlob), stateRoot))
+            if (TryGetBuffered(Array.Empty<byte>(), Array.Empty<byte>(), out var rootBlob, out var tombstoned)
+                && !tombstoned && TrieNodeVerification.RootBlobHashesTo(rootBlob, stateRoot))
             {
                 return true;
             }
@@ -215,6 +221,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var block = _blockSource.CurrentBlock;
             if (!block.HasValue)
             {
+                RequireNoBackgroundFlush(nameof(DeleteRange));
                 _inner.DeleteRange(owner);
                 return;
             }
@@ -231,7 +238,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             List<PathKey> stalePuts = null;
             foreach (var kv in _pendingPuts)
             {
-                if (kv.Value.Block < wipeBlock && OwnerEquals(kv.Value.Node.Owner, owner))
+                if (kv.Value.Block < wipeBlock && ByteUtil.AreEqual(kv.Value.Node.Owner, owner))
                     (stalePuts ??= new List<PathKey>()).Add(kv.Key);
             }
             if (stalePuts != null)
@@ -240,21 +247,11 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             List<PathKey> staleDeletes = null;
             foreach (var kv in _pendingDeletes)
             {
-                if (kv.Value.Block < wipeBlock && OwnerEquals(kv.Value.Delete.Owner, owner))
+                if (kv.Value.Block < wipeBlock && ByteUtil.AreEqual(kv.Value.Delete.Owner, owner))
                     (staleDeletes ??= new List<PathKey>()).Add(kv.Key);
             }
             if (staleDeletes != null)
                 foreach (var key in staleDeletes) _pendingDeletes.Remove(key);
-        }
-
-        private static bool OwnerEquals(byte[] a, byte[] b)
-        {
-            var aLen = a?.Length ?? 0;
-            var bLen = b?.Length ?? 0;
-            if (aLen != bLen) return false;
-            for (int i = 0; i < aLen; i++)
-                if (a[i] != b[i]) return false;
-            return true;
         }
 
         public byte[] TryGetRawNode(byte[] owner, byte[] path)
@@ -263,6 +260,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                 return tombstoned ? null : blob;
             return _inner.TryGetRawNode(owner, path);
         }
+
 
         public void ClearCache() => _inner.ClearCache();
 
@@ -284,35 +282,17 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
             private sealed class Cmp : IEqualityComparer<PathKey>
             {
-                public bool Equals(PathKey x, PathKey y) => ByteEq(x._owner, y._owner) && ByteEq(x._path, y._path);
+                public bool Equals(PathKey x, PathKey y)
+                    => ByteArrayComparer.Current.Equals(x._owner, y._owner)
+                       && ByteArrayComparer.Current.Equals(x._path, y._path);
 
                 public int GetHashCode(PathKey k)
                 {
                     unchecked
                     {
-                        int h = (int)2166136261;
-                        h = Mix(h, k._owner);
-                        h = Mix(h, k._path);
-                        return h;
+                        return ByteArrayComparer.Current.GetHashCode(k._owner) * 31
+                            + ByteArrayComparer.Current.GetHashCode(k._path);
                     }
-                }
-
-                private static int Mix(int h, byte[] a)
-                {
-                    unchecked
-                    {
-                        for (int i = 0; i < a.Length; i++) h = (h ^ a[i]) * 16777619;
-                        return h;
-                    }
-                }
-
-                private static bool ByteEq(byte[] a, byte[] b)
-                {
-                    if (ReferenceEquals(a, b)) return true;
-                    if (a.Length != b.Length) return false;
-                    for (int i = 0; i < a.Length; i++)
-                        if (a[i] != b[i]) return false;
-                    return true;
                 }
             }
         }

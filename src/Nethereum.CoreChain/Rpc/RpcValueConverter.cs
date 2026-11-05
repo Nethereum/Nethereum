@@ -13,9 +13,37 @@ namespace Nethereum.CoreChain.Rpc
 
         public static T FromJsonElement<T>(JsonElement element)
         {
+            try
+            {
+                return ConvertJsonElement<T>(element);
+            }
+            catch (Exception ex) when (IsConversionError(ex))
+            {
+                throw RpcException.InvalidParams("parameter has an invalid value or type");
+            }
+        }
+
+        public static T FromObject<T>(object value)
+        {
+            try
+            {
+                return ConvertObject<T>(value);
+            }
+            catch (Exception ex) when (IsConversionError(ex))
+            {
+                throw RpcException.InvalidParams("parameter has an invalid value or type");
+            }
+        }
+
+        private static bool IsConversionError(Exception ex) =>
+            ex is FormatException || ex is InvalidOperationException || ex is OverflowException || ex is InvalidCastException ||
+            ex is System.Text.Json.JsonException || ex is Newtonsoft.Json.JsonException;
+
+        private static T ConvertJsonElement<T>(JsonElement element)
+        {
             var targetType = typeof(T);
 
-            if (targetType == typeof(string)) return (T)(object)element.GetString();
+            if (targetType == typeof(string)) return (T)(object)element.GetRpcString();
             if (targetType == typeof(bool)) return (T)(object)element.GetBoolean();
             if (targetType == typeof(int)) return (T)(object)element.GetInt32();
             if (targetType == typeof(long)) return (T)(object)element.GetInt64();
@@ -25,11 +53,11 @@ namespace Nethereum.CoreChain.Rpc
             return System.Text.Json.JsonSerializer.Deserialize<T>(element.GetRawText(), AotOptions);
         }
 
-        public static T FromObject<T>(object value)
+        private static T ConvertObject<T>(object value)
         {
             if (value == null) return default;
             if (value is T typed) return typed;
-            if (value is JsonElement element) return FromJsonElement<T>(element);
+            if (value is JsonElement element) return ConvertJsonElement<T>(element);
 
             var targetType = typeof(T);
 

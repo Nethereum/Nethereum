@@ -21,6 +21,7 @@ namespace Nethereum.CoreChain.UnitTests
             await Nethereum.CoreChain.Forks.SystemContractPredeploys
                 .ApplyGenesisAllocationAsync(stateStore, fork);
             var blockStore = new InMemoryBlockStore();
+            var genesisHash = await ShapedHeaders.SaveGenesisAsync(blockStore, fork, BlockGasLimit);
             var config = new ChainConfig
             {
                 ChainId = ChainId,
@@ -40,18 +41,9 @@ namespace Nethereum.CoreChain.UnitTests
                 rewardPolicy: NoRewardPolicy.Instance,
                 trieNodeStore: trieNodeStore);
 
-            var header = new BlockHeader
-            {
-                BlockNumber = 1,
-                Timestamp = 1_700_000_000,
-                GasLimit = BlockGasLimit,
-                GasUsed = gasUsed,
-                BlobGasUsed = blobGasUsed ?? 0,
-                ExcessBlobGas = 0,
-                BaseFee = 0,
-                Coinbase = "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
-                ParentHash = new byte[32]
-            };
+            var header = ShapedHeaders.Create(fork, 1, 1_700_000_000, BlockGasLimit, gasUsed, 0);
+            header.BlobGasUsed = blobGasUsed ?? 0;
+            header.ParentHash = genesisHash;
 
             var result = await engine.ExecuteAsync(
                 header, new TxEntry[0], uncles: null, withdrawals: null,

@@ -72,6 +72,7 @@ namespace Nethereum.CoreChain.Sync
             logger ??= NullLogger.Instance;
 
             var bundle = bundleFactory();
+            (bundle as IBulkDurabilityBoundary)?.StartBackgroundFreezeIndexing();
             var executor = executorFactory(bundle);
 
             ulong lastCommittedBlock = bundle.Metadata.GetLastBlock();

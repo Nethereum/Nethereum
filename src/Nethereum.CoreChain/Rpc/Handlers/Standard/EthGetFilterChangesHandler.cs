@@ -48,17 +48,25 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
             FilterState filterState,
             BigInteger currentBlock)
         {
-            var filter = filterState.LogFilter ?? new LogFilter();
-
-            filter.FromBlock = filterState.LastCheckedBlock + 1;
-            filter.ToBlock = currentBlock;
+            var installed = filterState.LogFilter ?? new LogFilter();
+            LogFilterLimits.Enforce(installed, context.Node.Config.RpcLogQueryLimit);
+            var filter = new LogFilter
+            {
+                FromBlock = filterState.LastCheckedBlock + 1,
+                ToBlock = currentBlock,
+                Addresses = installed.Addresses,
+                Topics = installed.Topics
+            };
 
             if (filter.FromBlock > currentBlock)
             {
                 return Success(request.Id, new List<object>());
             }
 
+            LogQueryGuards.EnforceBlockRangeCap(filter, context);
+
             var logs = await context.Node.Logs.GetLogsAsync(filter);
+            LogQueryGuards.EnforceResultCap(logs.Count, context);
             context.Node.Filters.UpdateFilterLastBlock(filterState.Id, currentBlock);
 
             var result = logs.Select(FilteredLogRpcMapper.ToRpcFilterLog).ToList();

@@ -76,6 +76,7 @@ namespace Nethereum.CoreChain.UnitTests
             await SystemContractPredeploys.ApplyGenesisAllocationAsync(stores.State, HardforkName.Prague);
             await stores.State.SaveAccountAsync(SenderAddress, new Account { Balance = 1_000_000_000_000_000, Nonce = 0 });
 
+            await ShapedHeaders.SaveGenesisAsync(stores.Blocks, HardforkName.Prague, 30_000_000);
             var config = new ChainConfig { ChainId = ChainId, BlockGasLimit = 30_000_000, BaseFee = 0 };
             var roots = new IncrementalStateRootCalculator(stores.State, stores.TrieNodes);
             var engine = new BlockExecutor(
@@ -96,7 +97,7 @@ namespace Nethereum.CoreChain.UnitTests
             Coinbase = SenderAddress,
             BaseFee = 0,
             BlockGasLimit = 30_000_000,
-            Difficulty = 1,
+            Difficulty = 0,
             ChainId = ChainId
         };
 

@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 
 namespace Nethereum.CoreChain
@@ -25,5 +26,17 @@ namespace Nethereum.CoreChain
         }
 
         public bool IsBoundary(ulong blockNumber) => _k == 1 || blockNumber % _k == 0;
+    }
+
+    public static class FlushCadences
+    {
+        [NethereumDocExample(DocSection.ChainInfrastructure, "corechain", "FlushCadences.ForBlocks - the state flush interval a node asks for")]
+        public static IFlushCadence? ForBlocks(int blocks, string paramName = "blocks")
+        {
+            if (blocks < 1)
+                throw new ArgumentException($"FlushCadenceBlocks must be >= 1 (got {blocks}).", paramName);
+
+            return blocks > 1 ? new FixedIntervalFlushCadence((ulong)blocks) : null;
+        }
     }
 }

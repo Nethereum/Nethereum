@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class RocksDbLogStoreBloomPreFilterTests : IDisposable
     {
         private readonly RocksDbTestFixture _fixture;

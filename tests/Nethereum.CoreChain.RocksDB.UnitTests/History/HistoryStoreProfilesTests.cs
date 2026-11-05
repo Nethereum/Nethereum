@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.History
 {
+    [Trait("Slice", "Freezer")]
     public class HistoryStoreProfilesTests : IDisposable
     {
         private readonly string _dir = Path.Combine(Path.GetTempPath(), $"histprofiles_{Guid.NewGuid():N}");

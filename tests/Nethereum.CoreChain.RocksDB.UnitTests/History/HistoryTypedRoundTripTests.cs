@@ -14,6 +14,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.History
 {
+    [Trait("Slice", "Freezer")]
     public class HistoryTypedRoundTripTests : IDisposable
     {
         private readonly string _dir = Path.Combine(Path.GetTempPath(), $"histtyped_{Guid.NewGuid():N}");

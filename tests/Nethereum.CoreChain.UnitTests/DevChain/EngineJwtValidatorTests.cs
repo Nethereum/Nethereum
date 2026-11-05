@@ -2,7 +2,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Nethereum.DevChain.Hosting;
+using Nethereum.EngineApi.Hosting;
 using Xunit;
 
 namespace Nethereum.CoreChain.UnitTests.DevChain

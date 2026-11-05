@@ -13,7 +13,8 @@ namespace Nethereum.CoreChain.Rpc.Handlers.Standard
 
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, RpcContext context)
         {
-            var address = GetParam<string>(request, 0).ToLowerInvariant();
+            var address = (GetParam<string>(request, 0)
+                ?? throw RpcException.InvalidParams("address must be a string")).ToLowerInvariant();
 
             var pending = await context.Node.GetPendingTransactionsAsync();
             var entries = PendingTransactionInfoBuilder.Build(pending)

@@ -10,7 +10,6 @@ namespace Nethereum.CoreChain.Storage.InMemory
     {
         private readonly object _lock = new object();
         private readonly Dictionary<string, FilterState> _filters = new Dictionary<string, FilterState>();
-        private long _filterIdCounter = 0;
         private DateTime _lastCleanup = DateTime.UtcNow;
 
         public TimeSpan FilterTtl { get; set; } = TimeSpan.FromMinutes(5);
@@ -27,7 +26,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
                     Id = filterId,
                     Type = FilterType.Log,
                     LogFilter = filter,
-                    LastCheckedBlock = filter.FromBlock ?? currentBlock
+                    LastCheckedBlock = currentBlock
                 };
                 _filters[filterId] = state;
                 return filterId;
@@ -132,8 +131,14 @@ namespace Nethereum.CoreChain.Storage.InMemory
 
         private string GenerateFilterId()
         {
-            _filterIdCounter++;
-            return "0x" + _filterIdCounter.ToString("x");
+            string filterId;
+            do
+            {
+                filterId = FilterIdGenerator.Next();
+            }
+            while (_filters.ContainsKey(filterId));
+
+            return filterId;
         }
     }
 }

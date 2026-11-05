@@ -15,7 +15,6 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
         private readonly Nethereum.Freezer.Freezer _freezerAppend;
         private readonly Nethereum.CoreChain.Freezer.Codecs.FreezerCodecSet _freezerCodecs;
         private readonly RocksDbManager _rocks;
-        private readonly FreezerBackgroundIndexer _freezerIndexer;
         private readonly object _freezerAppendLock;
 
         private readonly System.Threading.Tasks.ParallelOptions _freezeEncodeParallelOptions;
@@ -37,13 +36,11 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
             Nethereum.Freezer.Freezer freezerAppend,
             Nethereum.CoreChain.Freezer.Codecs.FreezerCodecSet freezerCodecs,
             RocksDbManager rocks,
-            FreezerBackgroundIndexer freezerIndexer,
             object freezerAppendLock)
         {
             _freezerAppend = freezerAppend;
             _freezerCodecs = freezerCodecs;
             _rocks = rocks;
-            _freezerIndexer = freezerIndexer;
             _freezerAppendLock = freezerAppendLock;
             _freezeEncodeParallelOptions = new System.Threading.Tasks.ParallelOptions
             {
@@ -78,17 +75,10 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
 
             var crossesBoundary = splitIndex < blocks.Count;
 
-            int startIndex, committed;
             lock (_freezerAppendLock)
             {
-                (startIndex, committed) = AppendToFreezer(blocks, splitIndex);
+                AppendToFreezer(blocks, splitIndex);
                 if (crossesBoundary) CommitOpenBatch();
-            }
-
-            if (committed > 0 && !_freezerIndexer.IsRunning)
-            {
-                _freezerIndexer.IndexFrozenInline(blocks, startIndex, committed);
-                _freezerIndexer.RenderFilterMaps();
             }
 
             return splitIndex;

@@ -75,7 +75,9 @@ namespace Nethereum.CoreChain.RocksDB.Stores
 
         public Task SaveBlockBloomAsync(BigInteger blockNumber, byte[] bloom) => Task.CompletedTask;
 
-        public Task DeleteByBlockNumberAsync(BigInteger blockNumber) => Task.CompletedTask;
+        public Task DeleteByBlockNumberAsync(BigInteger blockNumber) => FilterMapsIndexFrozenBlocksOnlyAndTheRewindWindowIsAboveThem();
+
+        private static Task FilterMapsIndexFrozenBlocksOnlyAndTheRewindWindowIsAboveThem() => Task.CompletedTask;
 
 
         private async Task<List<FilteredLog>> ResolveAndMapAsync(LogFilter filter)

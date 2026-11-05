@@ -14,6 +14,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Flat")]
     public class FlatStateTrieGeneratorTests : IDisposable
     {
         private readonly List<string> _dirs = new();

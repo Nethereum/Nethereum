@@ -71,12 +71,26 @@ namespace Nethereum.CoreChain.Storage
         void SaveDeferredHealCodeBlob(byte[] blob);
         void ClearDeferredHealCodeBlob();
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         void UpsertDeferredStorageDebt(DeferredStorageDebt debt);
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         System.Collections.Generic.IReadOnlyList<DeferredStorageDebt> ListOpenDeferredStorageDebts(int max = int.MaxValue);
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         ulong CountOpenDeferredStorageDebts();
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         void ClearDeferredStorageDebt(byte[] accountHash, byte[] discoveredStorageRoot);
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         void ClearAllDeferredStorageDebts();
+
+        void SaveExecutedHash(ulong blockNumber, byte[] blockHash) { }
+
+        byte[] GetExecutedHash(ulong blockNumber) => null;
+    }
+
+    public static class ExecutedHashRetention
+    {
+        public const ulong Blocks = 1024UL;
     }
 
     public readonly struct ChainCheckpoint

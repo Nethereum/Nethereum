@@ -16,6 +16,7 @@ namespace Nethereum.CoreChain.Sync
                 return;
 
             bool checkpointSaved = false;
+            var elapsed = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 await bundle.SaveCheckpointAsync(committedBlock, stateRoot, committedHash, ct).ConfigureAwait(false);
@@ -31,6 +32,10 @@ namespace Nethereum.CoreChain.Sync
 
             if (checkpointSaved && options.KeepLatestCheckpoints.HasValue && options.KeepLatestCheckpoints.Value > 0)
                 await PruneOlderCheckpointsAsync(bundle, options.KeepLatestCheckpoints.Value, logger, ct).ConfigureAwait(false);
+
+            if (checkpointSaved)
+                logger.LogInformation(
+                    "checkpoint.saved block={Block} elapsed_ms={Ms}", committedBlock, elapsed.ElapsedMilliseconds);
         }
 
         private static async Task PruneOlderCheckpointsAsync(

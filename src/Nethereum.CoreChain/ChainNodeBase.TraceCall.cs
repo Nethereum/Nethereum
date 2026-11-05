@@ -190,7 +190,10 @@ namespace Nethereum.CoreChain
                 AdvanceSenderNonce = isContractCreation
             };
 
-            var result = await ResolveExecutor((long)blockContext.BlockNumber, (ulong)blockContext.Timestamp).ExecuteAsync(ctx);
+            var result = await RunWithinTimeoutAsync(
+                Config.RpcTraceTimeout,
+                executionStateService,
+                () => ResolveExecutor((long)blockContext.BlockNumber, (ulong)blockContext.Timestamp).ExecuteAsync(ctx));
 
             if (result.Program == null)
                 return null;

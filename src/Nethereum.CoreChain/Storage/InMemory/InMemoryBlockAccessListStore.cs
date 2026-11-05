@@ -20,14 +20,14 @@ namespace Nethereum.CoreChain.Storage.InMemory
         {
             if (blockHash == null) return Task.CompletedTask;
             if (blockAccessListRlp == null) return Task.CompletedTask;
-            _byBlockHash[ToHex(blockHash)] = Snapshot(blockAccessListRlp);
+            _byBlockHash[blockHash.ToHex()] = Snapshot(blockAccessListRlp);
             return Task.CompletedTask;
         }
 
         public Task<byte[]> GetByBlockHashAsync(byte[] blockHash)
         {
             if (blockHash == null) return Task.FromResult<byte[]>(null);
-            return Task.FromResult(_byBlockHash.TryGetValue(ToHex(blockHash), out var rlp) ? Snapshot(rlp) : null);
+            return Task.FromResult(_byBlockHash.TryGetValue(blockHash.ToHex(), out var rlp) ? Snapshot(rlp) : null);
         }
 
         public async Task<byte[]> GetByBlockNumberAsync(BigInteger blockNumber)
@@ -40,7 +40,7 @@ namespace Nethereum.CoreChain.Storage.InMemory
         public Task DeleteByBlockHashAsync(byte[] blockHash)
         {
             if (blockHash == null) return Task.CompletedTask;
-            _byBlockHash.TryRemove(ToHex(blockHash), out _);
+            _byBlockHash.TryRemove(blockHash.ToHex(), out _);
             return Task.CompletedTask;
         }
 
@@ -62,7 +62,5 @@ namespace Nethereum.CoreChain.Storage.InMemory
             Array.Copy(rlp, copy, rlp.Length);
             return copy;
         }
-
-        private static string ToHex(byte[] bytes) => bytes.ToHex();
     }
 }

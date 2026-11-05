@@ -36,9 +36,8 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         private TxLoc? Find(byte[] txHash)
         {
             using var lease = _manager.Lease();
-            var loc = lease.Database.Get(txHash, _txHashIndex);
-            if (loc == null || loc.Length < HistoryKeys.TxKeyLength) return null;
-            return new TxLoc(HistoryKeys.ReadBlockNumber(loc), HistoryKeys.ReadTxIndex(loc));
+            var loc = HistoryKeys.TryReadTxLocation(lease.Database.Get(txHash, _txHashIndex));
+            return loc.HasValue ? new TxLoc(loc.Value.BlockNumber, loc.Value.TxIndex) : (TxLoc?)null;
         }
 
         public Task<ISignedTransaction> GetByHashAsync(byte[] txHash)
@@ -57,11 +56,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             var n = (ulong)blockNumber;
             using var lease = _manager.Lease();
             using var it = lease.Database.NewIterator(_txBody);
-            for (it.Seek(HistoryKeys.TxKey(n, 0)); it.Valid(); it.Next())
-            {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != n) break;
-                result.Add(_provider.DecodeTransaction(it.Value()));
-            }
+            HistoryRows.ScanBlock(it, n, row => result.Add(_provider.DecodeTransaction(row)));
             return Task.FromResult(result);
         }
 
@@ -78,11 +73,7 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             if (!n.HasValue) return result;
             using var lease = _manager.Lease();
             using var it = lease.Database.NewIterator(_txBody);
-            for (it.Seek(HistoryKeys.TxKey((ulong)n.Value, 0)); it.Valid(); it.Next())
-            {
-                if (HistoryKeys.ReadBlockNumber(it.Key()) != (ulong)n.Value) break;
-                result.Add(_provider.DecodeTransaction(it.Value()).Hash);
-            }
+            HistoryRows.ScanBlock(it, (ulong)n.Value, row => result.Add(_provider.DecodeTransaction(row).Hash));
             return result;
         }
 
@@ -141,6 +132,24 @@ namespace Nethereum.CoreChain.RocksDB.Stores
                     if (h != null) batch.Delete(h, _txHashIndex);
                 }
             batch.DeleteRange(fromKey, (ulong)fromKey.Length, MaxTxBound, (ulong)MaxTxBound.Length, _txBody);
+            _manager.Write(batch);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteLookupsByBlockNumberAsync(BigInteger blockNumber)
+        {
+            if (blockNumber < 0) return Task.CompletedTask;
+            var n = (ulong)blockNumber;
+            using var batch = _manager.CreateWriteBatch();
+            using (var lease = _manager.Lease())
+            using (var it = lease.Database.NewIterator(_txBody))
+                HistoryRows.ScanBlock(it, n, row =>
+                {
+                    var h = _reorg.TxHash(row);
+                    if (h == null) return;
+                    var loc = HistoryKeys.TryReadTxLocation(lease.Database.Get(h, _txHashIndex));
+                    if (loc.HasValue && loc.Value.BlockNumber == n) batch.Delete(h, _txHashIndex);
+                });
             _manager.Write(batch);
             return Task.CompletedTask;
         }

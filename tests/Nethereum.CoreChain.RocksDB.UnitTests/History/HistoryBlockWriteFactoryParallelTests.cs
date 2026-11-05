@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.History
 {
+    [Trait("Slice", "Freezer")]
     public class HistoryBlockWriteFactoryParallelTests
     {
         [Fact]

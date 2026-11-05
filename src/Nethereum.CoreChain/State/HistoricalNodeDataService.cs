@@ -49,7 +49,7 @@ namespace Nethereum.CoreChain.State
             if (account?.CodeHash == null)
                 return null;
 
-            if (IsEmptyCodeHash(account.CodeHash))
+            if (ByteUtil.AreEqual(account.CodeHash, DefaultValues.EMPTY_DATA_HASH))
                 return null;
 
             return await _stateStore.GetCodeAsync(account.CodeHash);
@@ -87,18 +87,6 @@ namespace Nethereum.CoreChain.State
         public async Task<bool> AccountExistsAsync(string address)
         {
             return await _historyProvider.GetAccountAtBlockAsync(address, _blockNumber) != null;
-        }
-
-        private static bool IsEmptyCodeHash(byte[] codeHash)
-        {
-            if (codeHash == null || codeHash.Length != DefaultValues.EMPTY_DATA_HASH.Length)
-                return false;
-            for (int i = 0; i < codeHash.Length; i++)
-            {
-                if (codeHash[i] != DefaultValues.EMPTY_DATA_HASH[i])
-                    return false;
-            }
-            return true;
         }
     }
 }

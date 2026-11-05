@@ -33,7 +33,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
 
         [Fact]
         [NethereumDocExample(DocSection.ChainInfrastructure, "reorg-rewind", "Follow-mode journals each block once and rewind patches without double-journaling")]
-        public async Task Follow_WithNodeHistory_Journals_PerBlock_And_Rewind_Patches_Without_DoubleJournal()
+        public async Task Follow_WithNodeHistory_Journals_PerBlock_And_Rewind_Patches_Without_DoubleJournal_And_Drops_The_Rolled_Back_History()
         {
             const int M = 4;
             const ulong N = 2;
@@ -71,7 +71,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             for (ulong b = 1; b <= M; b++)
                 Assert.True(CountNodeHistoryAt(b) > 0, $"expected node-history entry for followed block {b}");
 
-            var historyBeforeRewind = CountNodeHistoryTotal();
+            var historyKept = 0;
+            for (ulong b = 1; b <= N; b++) historyKept += CountNodeHistoryAt(b);
 
             var coordinator = new RewindCoordinator(bundle);
             var result = await coordinator.RewindToAsync(N, RewindPolicy.JournalOnly);
@@ -88,7 +89,8 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             Assert.Null(trie.Get(StateKeys.AccountKey(ContractAddr(4))));
             Assert.Equal(targetHeader.StateRoot, trie.Root.GetHash());
 
-            Assert.Equal(historyBeforeRewind, CountNodeHistoryTotal());
+            Assert.Equal(historyKept, CountNodeHistoryTotal());
+            for (ulong b = N + 1; b <= M; b++) Assert.Equal(0, CountNodeHistoryAt(b));
         }
 
         private static IIncrementalStateRootCalculator NewCalc(IChainStoreBundle bundle)

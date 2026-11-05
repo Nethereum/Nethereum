@@ -450,5 +450,43 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.History
                 txs.Add(new HistoryTxWrite { TxHash = TxHash(n, i), Tx = Enc($"tx{n}.{i}"), Receipt = Enc($"rcpt{n}.{i}") });
             return new HistoryBlockWrite { BlockNumber = n, BlockHash = BlockHash(n), Header = Enc($"hdr{n}"), Meta = Enc($"meta{n}"), Transactions = txs };
         }
+
+        [Fact]
+        public void Given_DuplicateKeysAcrossParallelSortPartitions_When_Ingested_Then_TheLastAccumulatedValueWins()
+        {
+            using var db = OpenDb("parallel_sort_last_wins");
+            const int distinctCount = 120_000;
+            var ingestor = new BulkIndexIngestor(
+                db, NewScratchDir(), new[] { HistoryColumnFamilies.BlockHashIndex },
+                w => { },
+                checkpointIntervalBlocks: 1, checkpointIntervalSeconds: 0, maxPendingEntries: 1_000_000,
+                sortDegreeOfParallelism: 8);
+
+            var rnd = new Random(12345);
+            var keys = new byte[distinctCount][];
+            for (var i = 0; i < distinctCount; i++)
+            {
+                keys[i] = new byte[32];
+                rnd.NextBytes(keys[i]);
+            }
+
+            var entries = new List<(string Cf, byte[] Key, byte[] Value)>(distinctCount * 2);
+            for (var i = 0; i < distinctCount; i++)
+                entries.Add((HistoryColumnFamilies.BlockHashIndex, keys[i], HistoryKeys.BlockKey((ulong)i)));
+            for (var i = 0; i < distinctCount; i++)
+                entries.Add((HistoryColumnFamilies.BlockHashIndex, keys[i], HistoryKeys.BlockKey((ulong)(distinctCount + i))));
+
+            Assert.True(entries.Count >= BulkIndexIngestor.ParallelSortThreshold);
+            ingestor.Accumulate(1, 1, entries);
+            ingestor.Checkpoint();
+
+            var wrong = 0;
+            for (var i = 0; i < distinctCount; i++)
+            {
+                var stored = ReadRow(db, HistoryColumnFamilies.BlockHashIndex, keys[i]);
+                if (!stored.AsSpan().SequenceEqual(HistoryKeys.BlockKey((ulong)(distinctCount + i)))) wrong++;
+            }
+            Assert.Equal(0, wrong);
+        }
     }
 }

@@ -33,6 +33,8 @@ using Nethereum.DevP2P.Sync.Serving;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Requires", "Externals")]
+    [Trait("Slice", "Flat")]
     public class PathKeyedLatestProofServeTests : IDisposable
     {
         private const string TargetAddr = "0x0000000000000000000000000000000000000001";

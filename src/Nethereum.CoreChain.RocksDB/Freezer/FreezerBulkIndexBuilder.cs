@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Freezer.Codecs;
@@ -12,7 +13,7 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
     public sealed class FreezerBulkIndexBuilder
     {
         public const int ByHashChunkTargetBytes = 250 * 1024 * 1024;
-        public const int FilterMapsChunkTargetBytes = 250 * 1024 * 1024;
+        public const int FilterMapsChunkTargetBytes = 32 * 1024 * 1024;
         private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
         private static readonly string[] FreezerIndexableTableNames = { "hashes", "bodies", "receipts" };
 
@@ -146,23 +147,11 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
                         WaitForCompactionToDrain(ct);
                         if (ct.IsCancellationRequested) break;
 
-                        var rawChunk = _freezer.DecodeSealedChunk(
-                            "receipts", cursor, FilterMapsChunkTargetBytes, head,
-                            maxDegreeOfParallelism: _logDegreeOfParallelism);
-                        if (rawChunk.Count == 0) break;
+                        var rendered = RenderNextChunk(cursor, head, stepLog);
+                        if (rendered.Items == 0) break;
 
-                        var decodeSw = stepLog == null ? null : Stopwatch.StartNew();
-                        var decodedChunk = DecodeReceiptsChunk(rawChunk);
-                        decodeSw?.Stop();
-
-                        epochs += _fmIndexer.RenderChunk(decodedChunk, head - 1);
-                        cursor += decodedChunk.Length;
-
-                        stepLog?.Invoke(
-                            $"filtermaps chunk items={decodedChunk.Length} decode_ms={decodeSw.ElapsedMilliseconds} " +
-                            $"emit_ms={_fmIndexer.LastEmitMilliseconds} passA_ms={_fmIndexer.LastPassAMilliseconds} " +
-                            $"render_ms={_fmIndexer.LastRenderMilliseconds} write_ms={_fmIndexer.LastWriteMilliseconds} " +
-                            $"dop={_fmIndexer.RenderDegreeOfParallelism}");
+                        epochs += rendered.Epochs;
+                        cursor += rendered.Items;
                     }
                     var endBulkSw = stepLog == null ? null : Stopwatch.StartNew();
                     _fmStore.EndBulk();
@@ -178,6 +167,29 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
                     throw;
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private (int Epochs, int Items) RenderNextChunk(long cursor, long head, Action<string> stepLog)
+        {
+            var rawChunk = _freezer.DecodeSealedChunk(
+                "receipts", cursor, FilterMapsChunkTargetBytes, head,
+                maxDegreeOfParallelism: _logDegreeOfParallelism);
+            if (rawChunk.Count == 0) return (0, 0);
+
+            var decodeSw = stepLog == null ? null : Stopwatch.StartNew();
+            var decodedChunk = DecodeReceiptsChunk(rawChunk);
+            decodeSw?.Stop();
+
+            var epochs = _fmIndexer.RenderChunk(decodedChunk, head - 1);
+
+            stepLog?.Invoke(
+                $"filtermaps chunk items={decodedChunk.Length} decode_ms={decodeSw.ElapsedMilliseconds} " +
+                $"emit_ms={_fmIndexer.LastEmitMilliseconds} passA_ms={_fmIndexer.LastPassAMilliseconds} " +
+                $"render_ms={_fmIndexer.LastRenderMilliseconds} write_ms={_fmIndexer.LastWriteMilliseconds} " +
+                $"dop={_fmIndexer.RenderDegreeOfParallelism}");
+
+            return (epochs, decodedChunk.Length);
         }
 
         private (long BlockNumber, IReadOnlyList<Nethereum.CoreChain.Freezer.ReceiptForStorage> Receipts)[] DecodeReceiptsChunk(

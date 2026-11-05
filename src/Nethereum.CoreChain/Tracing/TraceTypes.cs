@@ -73,9 +73,14 @@ namespace Nethereum.CoreChain.Tracing
         [JsonProperty("gasCost")]
         public ulong GasCost { get; set; }
 
-        [JsonProperty("memory")]
-        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
+        [Newtonsoft.Json.JsonIgnore]
+        [Stj.JsonIgnore]
         public string Memory { get; set; }
+
+        [JsonProperty("memory")]
+        [Stj.JsonPropertyName("memory")]
+        [Stj.JsonIgnore(Condition = Stj.JsonIgnoreCondition.WhenWritingNull)]
+        public List<string> MemoryWords { get; set; }
 
         [JsonProperty("memSize")]
         [Stj.JsonIgnore]

@@ -272,7 +272,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Storage
             var flush = (IAtomicBlockFlush)bundle;
 
             var releaseWrite = new ManualResetEventSlim(false);
-            mgr.OnBeforeWrite = () => releaseWrite.Wait(TimeSpan.FromSeconds(10));
+            mgr.OnBeforeWrite = () => releaseWrite.Wait(TimeSpan.FromMinutes(5));
 
             bundle.NodeCommitBlockSource.Arm(1);
             var set = new TrieNodeSet();

@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Services;
 using Nethereum.CoreChain.Storage;
-using Nethereum.Merkle.Patricia;
 using Nethereum.Util;
 using Nethereum.Merkle.Patricia.Storage;
 

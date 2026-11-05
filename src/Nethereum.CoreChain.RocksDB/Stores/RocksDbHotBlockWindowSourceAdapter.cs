@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Nethereum.CoreChain.Freezer;
 using Nethereum.CoreChain.Storage.History;
+using Nethereum.Freezer;
 using Nethereum.Model;
 using Nethereum.RLP;
 
@@ -30,12 +31,21 @@ namespace Nethereum.CoreChain.RocksDB.Stores
             }
         }
 
+        public long HotFloorNumber
+        {
+            get
+            {
+                var oldest = _window.TryGetOldestNumber();
+                return oldest.HasValue ? (long)oldest.Value : EmptyWindowSentinel;
+            }
+        }
+
         public HotBlock ReadHotBlock(long blockNumber)
         {
             var data = _window.ReadForPromotion((ulong)blockNumber);
             if (data == null)
-                throw new InvalidOperationException(
-                    $"hot window has no block {blockNumber} to promote -- caller must never read past HotTipNumber");
+                throw new FreezerConsistencyException(
+                    $"hot window has a gap at block {blockNumber}; promotion requires contiguous history");
 
             return new HotBlock(
                 data.Header,
@@ -56,11 +66,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             var result = new List<BlockHeader>();
             if (unclesRlp == null || unclesRlp.Length == 0) return result;
-            foreach (var item in (RLPCollection)RLP.RLP.Decode(unclesRlp))
+            var reader = new RlpReader(unclesRlp);
+            var scope = reader.ReadListHeader();
+            while (!reader.IsAtEnd(scope))
             {
-                var header = BlockHeaderEncoder.Current.Decode(item.RLPData);
+                var header = BlockHeaderEncoder.Current.Decode(reader);
                 if (header != null) result.Add(header);
             }
+            reader.EnsureEnd(scope);
+            reader.EnsureEnd();
             return result;
         }
 
@@ -68,11 +82,15 @@ namespace Nethereum.CoreChain.RocksDB.Stores
         {
             if (withdrawalsRlp == null || withdrawalsRlp.Length == 0) return null;
             var result = new List<Withdrawal>();
-            foreach (var item in (RLPCollection)RLP.RLP.Decode(withdrawalsRlp))
+            var reader = new RlpReader(withdrawalsRlp);
+            var scope = reader.ReadListHeader();
+            while (!reader.IsAtEnd(scope))
             {
-                var withdrawal = WithdrawalEncoder.Current.Decode(item.RLPData);
+                var withdrawal = WithdrawalEncoder.Current.Decode(reader);
                 if (withdrawal != null) result.Add(withdrawal);
             }
+            reader.EnsureEnd(scope);
+            reader.EnsureEnd();
             return result;
         }
     }

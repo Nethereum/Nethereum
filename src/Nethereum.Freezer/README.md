@@ -1,14 +1,14 @@
 # Nethereum.Freezer
 
-A geth-compatible append-only **ancient store** ("freezer") for write-once, sequential-by-block historical
+An append-only **ancient store** ("freezer") for write-once, sequential-by-block historical
 chain data: headers, block hashes, bodies, receipts, and EIP-7928 block access lists (bals).
 
 ## Overview
 
 Historical block data is written once and read rarely, so it belongs in flat append-only files (~1× write
 amplification, no compaction) rather than a leveled-compaction LSM (10–30× write amplification). This package
-reads and writes geth's on-disk freezer format, so a geth `ancient/` directory can be imported directly and the
-format interoperates with the wider portable-history tooling.
+reads and writes the standard on-disk freezer format, so an existing `ancient/` directory can be imported directly and
+the format interoperates with the wider portable-history tooling.
 
 The archive is **not** five independent tables — it is one lockstep unit. Every finalized block writes exactly
 one item to every table (headers, hashes, bodies, receipts, bals), from genesis. Reads are by absolute block
@@ -19,22 +19,22 @@ The CoreChain integration (finality-gated promotion, receipt-field derivation, t
 `fm-` filtermaps log index driven by RocksDB) lives alongside in the CoreChain assemblies; this package is the
 byte-level store plus the pure filtermaps hashing/codec/matcher core.
 
-## Geth format & interoperability
+## Format & interoperability
 
-The "freezer" ancient store was introduced by **go-ethereum (geth)** and is the de-facto standard for archival
+The "freezer" ancient store was introduced by Ethereum execution clients and is the de-facto standard for archival
 block data. This package implements that same on-disk format: the fixed multi-table layout (headers, hashes,
 bodies, receipts, bals), snappy-compressed `.cdat`/`.cidx` rolling data/index files (and the raw `.rdat`/`.ridx`
 pair for the uncompressed `hashes` table), and lockstep multi-table append where every block writes one item to
 every table.
 
-Nethereum interoperates with an existing geth freezer directory: `GethFreezerImporter.InspectSource` opens a
-copied geth `ancient/` directory read-only and returns an `ImportReadiness` reporting whether any tail-group was
-pruned by geth's history-expiry (each pruned group surfaced as a `PrunedGroup`).
+Nethereum interoperates with an existing client freezer directory: `GethFreezerImporter.InspectSource` opens a
+copied `ancient/` directory read-only and returns an `ImportReadiness` reporting whether any tail-group was
+pruned by the source client's history-expiry (each pruned group surfaced as a `PrunedGroup`).
 
 ## On-disk format
 
-Each table is stored as a small index file plus one or more rolled data files, following geth's
-`freezer_table.go` layout:
+Each table is stored as a small index file plus one or more rolled data files, following the standard
+freezer table layout:
 
 | Artifact | Purpose |
 | --- | --- |
@@ -45,7 +45,7 @@ Each table is stored as a small index file plus one or more rolled data files, f
 Each index entry is `FreezerIndexEntry` — big-endian `filenum` (uint16) then `offset` (uint32), 6 bytes total
 (`FreezerIndexEntry.Size`). An item's byte span is the gap between consecutive entries.
 
-The fixed 5-table chain-freezer layout (`FreezerLayout`), matching geth's `ancient_scheme.go`:
+The fixed 5-table chain-freezer layout (`FreezerLayout`), matching the standard ancient scheme:
 
 | Table | Compression | Index / data extension | Tail group |
 | --- | --- | --- | --- |
@@ -66,7 +66,7 @@ dotnet add package Nethereum.Freezer
 
 ### Dependencies
 
-Nethereum.RLP, Nethereum.Documentation (direct project references); IronSnappy (package). Targets
+Nethereum.RLP, Nethereum.Util (direct project references); IronSnappy (package). Targets
 net8.0/net9.0/net10.0.
 
 ## Open the store — `Freezer.Open`
@@ -205,10 +205,10 @@ public void TruncateHead(long newItemCount)
 It rejects (`FreezerImmutableException`) any target below the highest `VirtualTail` across tables — truncating
 into already-pruned, immutable history — and is a no-op for a target above the current head.
 
-## Import a copied geth freezer — `GethFreezerImporter`
+## Import a copied freezer — `GethFreezerImporter`
 
-Copying a geth `ancient/` directory only equals "complete history" if geth's history-expiry pruning never ran
-against the source. `GethFreezerImporter` opens the copy read-only and reports whether any tail-group was pruned:
+Copying an `ancient/` directory only equals "complete history" if the source client's history-expiry pruning never ran
+against it. `GethFreezerImporter` opens the copy read-only and reports whether any tail-group was pruned:
 
 ```csharp
 public ImportReadiness InspectSource(FreezerLayout source)
@@ -240,7 +240,7 @@ public interface IItemCodec<T>
 
 - **`IdentityByteCodec`** (`IItemCodec<byte[]>`) — the raw leaf codec; the `hashes` table stores bytes with no
   framing.
-- **`SnappyItemCodec<T>`** — a decorator that applies geth's snappy block format around an inner codec; every
+- **`SnappyItemCodec<T>`** — a decorator that applies the snappy block format around an inner codec; every
   compressed table wraps `IdentityByteCodec` in one of these.
 
 ## Lower-level primitives
@@ -254,7 +254,12 @@ For direct table access (the coordinator builds on these):
 - **`FreezerTableMeta`** — the `.meta` RLP (`Version`, `VirtualTail`, `FlushOffset`); `Encode` / `Decode` /
   `WriteAtomic` (temp + fsync + rename). `SupportedVersion` is 2.
 - **`FreezerIndex`** (`IFreezerIndex`) — the direct-seek 6-byte-entry index file; positional reads via
-  `RandomAccess`.
+  `RandomAccess`. `FirstItemBreakingSequence()` reads the index in 1 MiB chunks and returns the first item whose
+  entry does not follow its predecessor (the same file or the next one, with a non-decreasing offset), or `null`
+  when the index is sound. Opening a table runs it as the index self-consistency check: `ReadOnly` throws
+  `FreezerValidationException` at the defect, `Append` truncates the index to the item before it, and a
+  `[Nethereum.Freezer] verified index of table ...` line with the elapsed time is written to stderr. It is a default
+  member of `IFreezerIndex`, so an existing implementation keeps compiling.
 - **`RollingDataFiles`** (`IFreezerDataFiles`) — the rolled `.cdat`/`.rdat` data files; `DefaultMaxFileSize` is
   `2 GiB − 1`.
 - **`FreezerIndexEntry`** / **`ItemRange`** / **`TableTail`** — the index-record, resolved `(file, start,
@@ -269,7 +274,7 @@ For direct table access (the coordinator builds on these):
 
 ## FilterMaps log index (pure core)
 
-The package also carries the pure, storage-agnostic core of geth's `filtermaps` (EIP-7745-style) log index —
+The package also carries the pure, storage-agnostic core of the `filtermaps` (EIP-7745-style) log index —
 the hashing, byte layout, and matcher — under the `Nethereum.Freezer.FilterMaps` namespace. The rendered rows
 live in an LSM in production (`Nethereum.CoreChain.RocksDB`), not the freezer; this package supplies the format
 and the query logic.
@@ -282,7 +287,7 @@ and the query logic.
   `LastBlockOfMapKey`, `BlockLvPointerKey`, `MapRowIndex`).
 - **`FilterMapsRowCodec`** / **`FilterRow`** — encode/decode base-row groups and ext rows; a `FilterRow` is a
   list of `uint` column indices (`FilterRow.Empty`).
-- **`FilterMapsRange`** — the `fm-R` range value (8-field RLP mirroring geth's struct).
+- **`FilterMapsRange`** — the `fm-R` range value (8-field RLP mirroring the reference struct).
 - **`IFilterMapsStore`** / **`InMemoryFilterMapsStore`** — the KV port over the `fm-` layout and its dict-backed
   test fake.
 - **`IFilterMapsQueryBackend`** / **`FilterMapsQueryBackend`** — the read port the matcher needs and its adapter

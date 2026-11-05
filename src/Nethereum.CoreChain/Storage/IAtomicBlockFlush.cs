@@ -17,5 +17,7 @@ namespace Nethereum.CoreChain.Storage
         bool BlockOwnedByStagedFlush(ulong block);
 
         Task DrainAsync();
+
+        string DescribeLastFlush() => null;
     }
 }

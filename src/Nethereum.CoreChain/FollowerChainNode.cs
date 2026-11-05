@@ -26,6 +26,7 @@ namespace Nethereum.CoreChain
         private readonly FollowerOptions _options;
         private readonly ChainConfig _chainConfig;
         private bool _disposed;
+        private IDisposable? _executionResources;
 
         public FollowerChainNode(
             IChainStoreBundle bundle,
@@ -90,6 +91,18 @@ namespace Nethereum.CoreChain
 
         public Sync.ITransactionSubmissionService TransactionSubmission { get; set; }
 
+        public IDisposable? ExecutionResources
+        {
+            get => _executionResources;
+            set => _executionResources = value;
+        }
+
+        public void ReleaseExecutionResources()
+        {
+            var resources = Interlocked.Exchange(ref _executionResources, null);
+            try { resources?.Dispose(); } catch { }
+        }
+
         public override Task<TransactionExecutionResult> SendTransactionAsync(ISignedTransaction transaction)
         {
             if (TransactionSubmission != null)
@@ -146,6 +159,7 @@ namespace Nethereum.CoreChain
         {
             if (_disposed) return;
             _disposed = true;
+            ReleaseExecutionResources();
             if (_source is IAsyncDisposable srcAsync)
             {
                 try { await srcAsync.DisposeAsync(); } catch { }

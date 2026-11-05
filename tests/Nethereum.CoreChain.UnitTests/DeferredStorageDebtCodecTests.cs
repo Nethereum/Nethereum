@@ -1,3 +1,4 @@
+#pragma warning disable CS0618
 using Nethereum.CoreChain.Storage;
 using Xunit;
 

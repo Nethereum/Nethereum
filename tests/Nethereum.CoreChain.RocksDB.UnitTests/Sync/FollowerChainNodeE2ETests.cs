@@ -18,6 +18,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
 {
+    [Trait("Requires", "Externals")]
     public class FollowerChainNodeE2ETests : IDisposable
     {
         private readonly string _dataDir;
@@ -48,7 +49,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
             var bundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null);
             try
             {
-                await HiveTestdataFixture.PopulateGenesisAsync(bundle.State);
+                await HiveTestdataFixture.PopulateGenesisAsync(bundle);
 
                 var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
                 var policy = new FixedPolicy { Verdict = ValidationAction.RewindAndRetry };
@@ -104,7 +105,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         public async Task MainnetChainNode_FollowerOnly_RejectsTransactionSubmission()
         {
             using var bundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null);
-            await HiveTestdataFixture.PopulateGenesisAsync(bundle.State);
+            await HiveTestdataFixture.PopulateGenesisAsync(bundle);
 
             var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
             var hardforkConfig = HiveTestdataFixture.HardforkConfigFactory(HardforkName.Cancun);
@@ -140,7 +141,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests.Sync
         public async Task MainnetChainNode_WithSubmissionService_DelegatesTransactionSubmission()
         {
             using var bundle = RocksDbChainStoreBundle.Open(_dataDir, journalOptions: null);
-            await HiveTestdataFixture.PopulateGenesisAsync(bundle.State);
+            await HiveTestdataFixture.PopulateGenesisAsync(bundle);
 
             var source = new HiveChainRlpBlockSource(HiveTestdataFixture.Chain);
             var hardforkConfig = HiveTestdataFixture.HardforkConfigFactory(HardforkName.Cancun);

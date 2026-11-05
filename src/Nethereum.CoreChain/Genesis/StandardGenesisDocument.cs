@@ -28,6 +28,7 @@ namespace Nethereum.CoreChain.Genesis
         public ulong? AmsterdamTime { get; set; }
         public BigInteger? TerminalTotalDifficulty { get; set; }
         public JObject BlobSchedule { get; set; }
+        public System.Collections.Generic.Dictionary<string, ulong> BpoTimes { get; set; } = new System.Collections.Generic.Dictionary<string, ulong>();
         public string DepositContractAddress { get; set; }
     }
 

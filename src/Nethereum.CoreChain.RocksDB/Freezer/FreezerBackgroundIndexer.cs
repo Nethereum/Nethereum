@@ -19,14 +19,15 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
         private readonly FreezerBulkIndexBuilder _builder;
         private readonly bool _backgroundEnabled;
 
-        private CancellationTokenSource _backgroundCts;
-        private Task _byHashTask;
-        private Task _renderTask;
-        private volatile string _lastError;
+        private BackgroundRoundLoop _byHash;
+        private BackgroundRoundLoop _render;
+        private Task _byHashTaskForTests;
+        private bool _closed;
+        private Func<bool> _yieldToExecution;
+        private Func<string> _describeYield;
         private readonly System.Diagnostics.Stopwatch _progressLog = System.Diagnostics.Stopwatch.StartNew();
         private readonly object _progressLogGate = new object();
         private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
-        private static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(30);
 
         internal FreezerBackgroundIndexer(
             Nethereum.Freezer.IFrozenReadSource freezerAppend,
@@ -51,18 +52,22 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
                 shouldPause: ShouldPauseIndexing);
         }
 
+        private bool YieldsToExecution => _yieldToExecution?.Invoke() == true;
+
         private bool ShouldPauseIndexing()
-            => _pressureMonitor.ShouldPauseFreezerIndexing();
+            => _pressureMonitor.ShouldPauseFreezerIndexing() || YieldsToExecution;
 
         private string DescribeIndexingPause()
-            => _pressureMonitor.DescribeFreezerIndexingBackpressure();
+            => YieldsToExecution ? _describeYield?.Invoke() : _pressureMonitor.DescribeFreezerIndexingBackpressure();
 
-        public bool IsRunning => _backgroundEnabled && (_byHashTask != null || _renderTask != null);
+        public bool IsRunning => _backgroundEnabled
+            && (_byHash?.IsStarted == true || _render?.IsStarted == true || _byHashTaskForTests != null);
 
         internal void SetPressureMonitorForTests(Stores.RocksDbWritePressureMonitor monitor) => _pressureMonitor = monitor;
 
-        internal void SetByHashTaskForTests(Task trailer) => _byHashTask = trailer;
+        internal void SetByHashTaskForTests(Task trailer) => _byHashTaskForTests = trailer;
 
+        [Obsolete("No longer used: frozen blocks are indexed by the background trailer only.")]
         public void IndexFrozenInline(IReadOnlyList<PersistableBlock> blocks, int startIndex, int count)
         {
             if (count <= 0) return;
@@ -84,9 +89,13 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
 
         public void Finish(CancellationToken ct = default)
         {
-            Stop();
+            if (!_backgroundEnabled || IsRunning)
+            {
+                CheckpointIngest();
+                return;
+            }
             DrainIndexingToTrueFreezerHead(ct);
-            _freezerIndexIngestor?.Finish();
+            _freezerIndexIngestor?.Finish(ct);
         }
 
         private void DrainIndexingToTrueFreezerHead(CancellationToken ct)
@@ -98,84 +107,33 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
             _builder.RenderFilterMaps(ct, headOverride: head);
         }
 
-        public void Start()
+        public void Start() => Start(null, null);
+
+        internal void Start(Func<bool> yieldToExecution, Func<string> describeYield)
         {
-            if (_freezerAppend == null || !_backgroundEnabled) return;
-            if (_byHashTask != null || _renderTask != null) return;
+            if (_closed || _freezerAppend == null || !_backgroundEnabled) return;
+            if (_byHash != null || _render != null) return;
 
-            _backgroundCts = new CancellationTokenSource();
-            var ct = _backgroundCts.Token;
-            _byHashTask = Task.Factory.StartNew(
-                () => RunLoopAsync(RunByHashRound, ct),
-                CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
-            _renderTask = Task.Factory.StartNew(
-                () => RunLoopAsync(RunRenderRound, ct),
-                CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
-        }
-
-        private async Task RunLoopAsync(Func<CancellationToken, TimeSpan, TimeSpan> round, CancellationToken ct)
-        {
-            var backoff = TimeSpan.Zero;
-            while (!ct.IsCancellationRequested)
-            {
-                if (!await WaitWhilePausedForCompactionAsync(ct).ConfigureAwait(false)) break;
-                backoff = round(ct, backoff);
-                LogProgressIfDue();
-                if (!await WaitForPollIntervalOrBackoffAsync(backoff, ct).ConfigureAwait(false)) break;
-            }
-        }
-
-        private async Task<bool> WaitWhilePausedForCompactionAsync(CancellationToken ct)
-        {
-            if (!ShouldPauseIndexing()) return true;
-
-            Console.Error.WriteLine(
-                $"[Nethereum.Freezer] background-indexer pausing (freezer files keep writing): {DescribeIndexingPause()}");
-            try
-            {
-                while (ShouldPauseIndexing())
-                    await Task.Delay(PollInterval, ct).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) { return false; }
-            Console.Error.WriteLine("[Nethereum.Freezer] background-indexer resuming — freezer-history compaction debt drained.");
-            return true;
-        }
-
-        private TimeSpan RunByHashRound(CancellationToken ct, TimeSpan backoff)
-        {
-            try
+            _yieldToExecution = yieldToExecution;
+            _describeYield = describeYield;
+            _byHash = NewLoop("index-trailer byhash");
+            _render = NewLoop("index-trailer render");
+            _byHash.Start(ct =>
             {
                 _builder.CatchUpByHash(_builder.ComputeIndexableBoundary(), ct);
-                _lastError = null;
-                return TimeSpan.Zero;
-            }
-            catch (Exception ex)
-            {
-                return BackOffAfterRoundFailure("byhash", ex, backoff);
-            }
-        }
-
-        private TimeSpan RunRenderRound(CancellationToken ct, TimeSpan backoff)
-        {
-            try
+                LogProgressIfDue();
+            });
+            _render.Start(ct =>
             {
                 _builder.RenderFilterMaps(ct, headOverride: _builder.ComputeIndexableBoundary());
-                _lastError = null;
-                return TimeSpan.Zero;
-            }
-            catch (Exception ex)
-            {
-                return BackOffAfterRoundFailure("render", ex, backoff);
-            }
+                LogProgressIfDue();
+            });
         }
 
-        private TimeSpan BackOffAfterRoundFailure(string round, Exception ex, TimeSpan backoff)
-        {
-            _lastError = $"{ex.GetType().Name}: {ex.Message}";
-            Console.Error.WriteLine($"[Nethereum.Freezer] index-trailer {round} round failed; backing off: {_lastError}");
-            var next = backoff == TimeSpan.Zero ? TimeSpan.FromSeconds(1) : backoff + backoff;
-            return next > MaxBackoff ? MaxBackoff : next;
-        }
+        private BackgroundRoundLoop NewLoop(string name)
+            => new BackgroundRoundLoop(
+                name, "background-indexer pausing (freezer files keep writing)", "background-indexer resuming",
+                ShouldPauseIndexing, DescribeIndexingPause, PollInterval, PollInterval);
 
         public void CatchUpByHash(long head, CancellationToken ct) => _builder.CatchUpByHash(head, ct);
 
@@ -187,45 +145,42 @@ namespace Nethereum.CoreChain.RocksDB.Freezer
             lock (_progressLogGate)
             {
                 if (_progressLog.Elapsed.TotalSeconds < 15) return;
-                var err = _lastError == null ? "" : $" last_error=\"{_lastError}\"";
+                var lastError = _byHash?.LastError ?? _render?.LastError;
+                var err = lastError == null ? "" : $" last_error=\"{lastError}\"";
                 Console.Error.WriteLine(
                     $"snap.index.background freezer_head={_freezerAppend?.Items ?? 0} byhash_indexed={ByHashIndexedHead} log_rendered={LogIndexRenderedHead}{err}");
                 _progressLog.Restart();
             }
         }
 
-        private async Task<bool> WaitForPollIntervalOrBackoffAsync(TimeSpan backoff, CancellationToken ct)
-        {
-            try
-            {
-                await Task.Delay(backoff > TimeSpan.Zero ? backoff : PollInterval, ct).ConfigureAwait(false);
-                return true;
-            }
-            catch (OperationCanceledException) { return false; }
-        }
-
         public void Stop()
         {
-            if (_byHashTask == null && _renderTask == null) return;
-            _backgroundCts?.Cancel();
-            try { _byHashTask?.Wait(); } catch { }
-            try { _renderTask?.Wait(); } catch { }
-            _backgroundCts?.Dispose();
-            _backgroundCts = null;
-            _byHashTask = null;
-            _renderTask = null;
+            _byHash?.Stop();
+            _render?.Stop();
+            _byHash = null;
+            _render = null;
         }
 
         internal async Task StopAsync()
         {
-            if (_byHashTask == null && _renderTask == null) return;
-            _backgroundCts?.Cancel();
-            try { if (_byHashTask != null) await _byHashTask.ConfigureAwait(false); } catch { }
-            try { if (_renderTask != null) await _renderTask.ConfigureAwait(false); } catch { }
-            _backgroundCts?.Dispose();
-            _backgroundCts = null;
-            _byHashTask = null;
-            _renderTask = null;
+            var byHash = _byHash;
+            var render = _render;
+            _byHash = null;
+            _render = null;
+            if (byHash != null) await byHash.StopAsync().ConfigureAwait(false);
+            if (render != null) await render.StopAsync().ConfigureAwait(false);
+        }
+
+        internal void Close()
+        {
+            _closed = true;
+            Stop();
+        }
+
+        internal Task CloseAsync()
+        {
+            _closed = true;
+            return StopAsync();
         }
 
         public long ByHashIndexedHead => _builder.ByHashIndexedHead;

@@ -6,16 +6,17 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.CoreChain.IntegrationTests.BasicTests
 {
+    [Trait("Requires", "Externals")]
     public class BasicTestRunner
     {
         private readonly ITestOutputHelper _output;
 
-        private static readonly string TestPath = Path.Combine(
-            AppContext.BaseDirectory, "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "BasicTests");
+        private static string TestPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "BasicTests");
 
         public BasicTestRunner(ITestOutputHelper output)
         {

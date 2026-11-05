@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Nethereum.CoreChain.RocksDB.UnitTests
 {
+    [Trait("Slice", "Freezer")]
     public class FreezerBulkIndexIngestTests : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), $"freezerbulkidx_{Guid.NewGuid():N}");
@@ -30,7 +31,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         private string DataDir => Path.Combine(_root, "data");
         private string FreezerDir => Path.Combine(_root, "freezer");
 
-        private RocksDbStorageOptions BulkOptions(bool backgroundIndexing = false) => new RocksDbStorageOptions
+        private RocksDbStorageOptions BulkOptions(bool backgroundIndexing = true) => new RocksDbStorageOptions
         {
             UseFreezerHistory = true,
             FreezerHistoryDirectory = FreezerDir,
@@ -38,7 +39,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             BackgroundFreezeIndexing = backgroundIndexing,
         };
 
-        private RocksDbChainStoreBundle OpenBundle(bool backgroundIndexing = false)
+        private RocksDbChainStoreBundle OpenBundle(bool backgroundIndexing = true)
             => RocksDbChainStoreBundle.Open(DataDir, null, false, BulkOptions(backgroundIndexing), _signer);
 
         private static async Task SetTipHeightAsync(RocksDbChainStoreBundle bundle, long height)
@@ -48,7 +49,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_ABulkFreezeRun_Then_TheByHashCursorAdvancesDuringTheRun_AtWindowHeadPlusOne()
+        public async Task Given_ABulkFreezeRun_Then_TheByHashCursorReachesTheFreezerHeadAfterFinishBulkIndexing()
         {
             using var bundle = OpenBundle();
             var blocks = MakeChainedBlocks(0, 5);
@@ -57,6 +58,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             await bundle.PersistBlocksAsync(blocks);
 
             Assert.Equal(5, bundle.FreezerHead);
+            bundle.FinishBulkIndexing();
             Assert.Equal(bundle.FreezerHead, (long)bundle.ByHashIndexedHead);
 
             for (var i = 0; i < 5; i++)
@@ -77,17 +79,17 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             {
                 await SetTipHeightAsync(bundle, ImmutabilityThreshold + 7);
                 await bundle.PersistBlocksAsync(firstBatch);
-                Assert.Equal(5, bundle.ByHashIndexedHead);
+                Assert.Equal(0, bundle.ByHashIndexedHead);
 
                 await bundle.PersistBlocksAsync(secondBatch);
                 Assert.Equal(8, bundle.FreezerHead);
-                Assert.Equal(5, bundle.ByHashIndexedHead);
+                Assert.Equal(0, bundle.ByHashIndexedHead);
             }
 
             using (var reopened = OpenBundle())
             {
                 Assert.Equal(8, reopened.FreezerHead);
-                Assert.Equal(5, reopened.ByHashIndexedHead);
+                Assert.Equal(0, reopened.ByHashIndexedHead);
 
                 reopened.FinishBulkIndexing();
                 Assert.Equal(8, reopened.ByHashIndexedHead);
@@ -109,6 +111,7 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
             {
                 await SetTipHeightAsync(bundle, ImmutabilityThreshold + 4);
                 await bundle.PersistBlocksAsync(blocks);
+                bundle.FinishBulkIndexing();
                 Assert.Equal(5, bundle.ByHashIndexedHead);
             }
 
@@ -118,21 +121,19 @@ namespace Nethereum.CoreChain.RocksDB.UnitTests
         }
 
         [Fact]
-        public async Task Given_APendingFreezerWindow_When_CheckpointBulkIsCalled_Then_ItIsIngestedImmediately()
+        public async Task Given_AFrozenRangeAndNoTrailer_When_CheckpointBulkIsCalled_Then_TheFreezerBatchIsCommittedAndNothingIsIndexed()
         {
             using var bundle = OpenBundle();
             await SetTipHeightAsync(bundle, ImmutabilityThreshold + 7);
 
             await bundle.PersistBlocksAsync(MakeChainedBlocks(0, 5));
-            var pending = MakeChainedBlocks(5, 3);
-            await bundle.PersistBlocksAsync(pending);
-            Assert.Equal(5, bundle.ByHashIndexedHead);
+            await bundle.PersistBlocksAsync(MakeChainedBlocks(5, 3));
+            Assert.Equal(0, bundle.ByHashIndexedHead);
 
             ((IBulkDurabilityBoundary)bundle).CheckpointBulk();
 
-            Assert.Equal(8, bundle.ByHashIndexedHead);
-            for (var i = 0; i < 3; i++)
-                Assert.NotNull(await bundle.Blocks.GetByHashAsync(pending[i].Hash));
+            Assert.Equal(8, bundle.FreezerHead);
+            Assert.Equal(0, bundle.ByHashIndexedHead);
         }
 
         [Fact]

@@ -42,6 +42,7 @@ namespace Nethereum.CoreChain.RocksDB
                 (RocksDbManager.CF_TRIE_NODES, LiveCfProfile.RandomPoint),
                 (RocksDbManager.CF_STATE_TRIE_ACCOUNT, LiveCfProfile.UniversalBulkPoint),
                 (RocksDbManager.CF_STATE_TRIE_STORAGE, LiveCfProfile.UniversalBulkPoint),
+                (RocksDbManager.CF_FLAT_GENERATION, LiveCfProfile.RandomPoint),
                 (RocksDbManager.CF_NODE_HISTORY, LiveCfProfile.LocationSequential),
                 (RocksDbManager.CF_NODE_HISTORY_INDEX, LiveCfProfile.SecondaryIndex),
                 (RocksDbManager.CF_STATE_ROOT_INDEX, LiveCfProfile.SecondaryIndex),
