@@ -99,7 +99,7 @@ public class X402MiddlewareReplayTests
         var payload = new PaymentPayload
         {
             X402Version = 2,
-            Accepted = new PaymentRequirements { Scheme = "exact", Network = Network },
+            Accepted = RouteRequirements(),
             Payload = new ExactSchemePayload
             {
                 Signature = "0x" + new string('0', 130),
@@ -117,6 +117,17 @@ public class X402MiddlewareReplayTests
         var json = JsonSerializer.Serialize(payload);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
     }
+
+    private static PaymentRequirements RouteRequirements() => new()
+    {
+        Scheme = "exact",
+        Network = Network,
+        Amount = "100000",
+        PayTo = Payee,
+        Asset = Token,
+        MaxTimeoutSeconds = 300,
+        Extra = new ExactSchemeExtra { Name = "USDC", Version = "2" }
+    };
 
     private static async Task<TestServer> CreateServerAsync(int[] callCount, bool replayProtection)
     {
@@ -138,16 +149,7 @@ public class X402MiddlewareReplayTests
                         options.Routes.Add(new RoutePaymentConfig
                         {
                             PathPattern = "/premium",
-                            Requirements = new PaymentRequirements
-                            {
-                                Scheme = "exact",
-                                Network = Network,
-                                Amount = "100000",
-                                PayTo = Payee,
-                                Asset = Token,
-                                MaxTimeoutSeconds = 300,
-                                Extra = new ExactSchemeExtra { Name = "USDC", Version = "2" }
-                            }
+                            Requirements = RouteRequirements()
                         });
                     });
 

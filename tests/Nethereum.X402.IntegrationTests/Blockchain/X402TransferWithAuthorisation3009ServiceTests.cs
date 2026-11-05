@@ -121,7 +121,7 @@ public class X402TransferWithAuthorisation3009ServiceTests
         var result = await service.VerifyPaymentAsync(paymentPayload, requirements);
 
         Assert.False(result.IsValid);
-        Assert.Equal(X402ErrorCodes.InvalidPaymentRequirements, result.InvalidReason);
+        Assert.Equal(X402ErrorCodes.MissingEip712Domain, result.InvalidReason);
     }
 
     [Fact]

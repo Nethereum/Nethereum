@@ -21,8 +21,6 @@ namespace Nethereum.Contracts.EIP3009.EIP3009.ContractDefinition
 
     public class Eip3009DeploymentBase : ContractDeploymentMessage
     {
-        // Note: EIP-3009 is an interface/standard, not a deployable contract
-        // Tokens like USDC implement this standard
         public static string BYTECODE = "0x";
         public Eip3009DeploymentBase() : base(BYTECODE) { }
         public Eip3009DeploymentBase(string byteCode) : base(byteCode) { }

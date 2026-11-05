@@ -13,6 +13,9 @@ using Nethereum.Web3.Accounts;
 using Nethereum.X402.Blockchain;
 using Nethereum.X402.Client;
 using Nethereum.X402.Extensions;
+using Nethereum.X402.AspNetCore;
+using Nethereum.X402.Facilitator;
+using Nethereum.X402.Server;
 using Nethereum.X402.IntegrationTests.Helpers;
 using Nethereum.X402.Models;
 using Nethereum.X402.Processors;
@@ -259,6 +262,104 @@ public class X402EndToEndTests : IAsyncLifetime
     }
 
     #endregion
+    [Fact]
+    public async Task Given_AnUpfrontRequirement_When_TheFacilitatorVerifiesAndSettles_Then_ItBehavesLikeAuthorization()
+    {
+        var requirements = UpfrontRequirements();
+        PaymentPayload? payment = null;
+        var builder = new WebHostBuilder().Configure(app => app.Run(async context =>
+        {
+            if (!context.Request.Headers.TryGetValue("PAYMENT-SIGNATURE", out var header))
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.PaymentRequired;
+                await context.Response.WriteAsync(JsonSerializer.Serialize(
+                    new PaymentRequired { Accepts = new List<PaymentRequirements> { requirements } }));
+                return;
+            }
+
+            payment = X402HttpClient.DecodePaymentHeader(header.ToString());
+        }));
+        using var paymentSource = new TestServer(builder);
+        var client = new X402HttpClient(paymentSource.CreateClient(), PAYER_PRIVATE_KEY, new X402HttpClientOptions
+        {
+            PreferredNetwork = NETWORK_NAME,
+            PreferredScheme = "exact",
+            MaxAmount = "1000000"
+        });
+        await client.GetAsync("/premium");
+        var processor = new X402TransferWithAuthorisation3009Service(
+            new Account(PAYEE_PRIVATE_KEY, CHAIN_ID), new Dictionary<int, IClient> { [CHAIN_ID] = DevChainClient });
+        var initialBalance = await GetUSDCBalanceAsync(PAYER_ADDRESS);
+
+        var verification = await processor.VerifyPaymentAsync(payment!, requirements);
+        var settlement = await processor.SettlePaymentAsync(payment!, requirements);
+
+        Assert.True(verification.IsValid, verification.InvalidReason);
+        Assert.Equal(PAYER_ADDRESS, verification.Payer, ignoreCase: true);
+        Assert.True(settlement.Success, settlement.ErrorReason);
+        Assert.True(await GetUSDCBalanceAsync(PAYER_ADDRESS) < initialBalance);
+    }
+
+    [Fact]
+    public async Task Given_AnUpfrontRoute_When_ClientPaysThroughTheMiddleware_Then_TheAmountMovesAndTheReceiptIsReturned()
+    {
+        var processor = new X402TransferWithAuthorisation3009Service(
+            new Account(PAYEE_PRIVATE_KEY, CHAIN_ID), new Dictionary<int, IClient> { [CHAIN_ID] = DevChainClient });
+        var requirements = UpfrontRequirements();
+        var builder = new WebHostBuilder()
+            .ConfigureServices(services => services.AddSingleton<IFacilitatorClient>(new ProcessorFacilitatorClient(processor)))
+            .Configure(app =>
+            {
+                app.UseX402(options =>
+                {
+                    options.FacilitatorUrl = "https://facilitator.test";
+                    options.Routes.Add(new RoutePaymentConfig("/premium", requirements));
+                });
+                app.Run(context => context.Response.WriteAsync("premium content"));
+            });
+        using var server = new TestServer(builder);
+        var client = new X402HttpClient(server.CreateClient(), PAYER_PRIVATE_KEY, new X402HttpClientOptions
+        {
+            PreferredNetwork = NETWORK_NAME,
+            PreferredScheme = "exact",
+            MaxAmount = "1000000"
+        });
+        var initialBalance = await GetUSDCBalanceAsync(PAYER_ADDRESS);
+
+        var response = await client.GetAsync("/premium");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.IsPaymentSuccessful());
+        Assert.True(await GetUSDCBalanceAsync(PAYER_ADDRESS) < initialBalance);
+    }
+
+    private PaymentRequirements UpfrontRequirements() => new()
+    {
+        Scheme = "exact",
+        Network = NETWORK_NAME,
+        Amount = "100000",
+        PayTo = PAYEE_ADDRESS,
+        MaxTimeoutSeconds = 300,
+        Asset = _usdcAddress!,
+        Extra = new ExactSchemeExtra { PaymentFlow = X402PaymentFlows.Upfront, Name = TOKEN_NAME, Version = TOKEN_VERSION }
+    };
+
+    private sealed class ProcessorFacilitatorClient : IFacilitatorClient
+    {
+        private readonly IX402PaymentProcessor _processor;
+
+        public ProcessorFacilitatorClient(IX402PaymentProcessor processor) => _processor = processor;
+
+        public Task<VerificationResponse> VerifyAsync(PaymentPayload paymentPayload, PaymentRequirements requirements, CancellationToken cancellationToken = default) =>
+            _processor.VerifyPaymentAsync(paymentPayload, requirements, cancellationToken);
+
+        public Task<SettlementResponse> SettleAsync(PaymentPayload paymentPayload, PaymentRequirements requirements, CancellationToken cancellationToken = default) =>
+            _processor.SettlePaymentAsync(paymentPayload, requirements, cancellationToken);
+
+        public Task<SupportedPaymentKindsResponse> GetSupportedAsync(CancellationToken cancellationToken = default) =>
+            _processor.GetSupportedAsync(cancellationToken);
+    }
+
 
     #region Test Cases - Error Scenarios
 

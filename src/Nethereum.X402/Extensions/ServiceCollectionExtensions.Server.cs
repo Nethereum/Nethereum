@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +13,9 @@ using Nethereum.X402.Server;
 
 namespace Nethereum.X402.Extensions;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "ServiceCollectionExtensionsServer - facilitator proxy and processor registrations")]
 public static class ServiceCollectionExtensionsServer
 {
-    /// <summary>
-    /// Registers X402FacilitatorProxyProcessor for proxying payments to a remote facilitator service.
-    /// This is the simplest option - no private keys or blockchain interaction needed on the server.
-    /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <param name="facilitatorUrl">URL of the remote facilitator service</param>
-    /// <param name="routes">Route configurations for payment requirements</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddX402FacilitatorProxy(
         this IServiceCollection services,
         string facilitatorUrl,
@@ -36,18 +30,15 @@ public static class ServiceCollectionExtensionsServer
 
         ArgumentNullException.ThrowIfNull(routes, nameof(routes));
 
-        // Register HttpClient for facilitator
-        services.AddHttpClient();
+        services.AddHttpClient(HttpFacilitatorClient.HttpClientName, client => client.Timeout = System.Threading.Timeout.InfiniteTimeSpan);
 
-        // Register facilitator client
         services.AddSingleton<IFacilitatorClient>(sp =>
         {
             var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-            var httpClient = httpClientFactory.CreateClient();
+            var httpClient = httpClientFactory.CreateClient(HttpFacilitatorClient.HttpClientName);
             return new HttpFacilitatorClient(httpClient, facilitatorUrl);
         });
 
-        // Register the proxy processor
         services.AddSingleton(sp =>
         {
             var facilitator = sp.GetRequiredService<IFacilitatorClient>();
@@ -57,15 +48,6 @@ public static class ServiceCollectionExtensionsServer
         return services;
     }
 
-    /// <summary>
-    /// Registers X402TransferWithAuthorisation3009Service for direct blockchain settlement.
-    /// Uses TransferWithAuthorization pattern where the facilitator (this server) submits transactions.
-    /// Requires a private key with ETH for gas fees.
-    /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <param name="facilitatorPrivateKey">Private key for submitting transactions (hex format with or without 0x prefix)</param>
-    /// <param name="rpcEndpointsByChainId">Dictionary mapping chain IDs to RPC endpoints (e.g., 84532 -> "https://...")</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddX402TransferProcessor(
         this IServiceCollection services,
         string facilitatorPrivateKey,
@@ -80,15 +62,8 @@ public static class ServiceCollectionExtensionsServer
 
         ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
-        // Register as IX402PaymentProcessor
-        services.AddSingleton<IX402PaymentProcessor>(sp =>
-        {
-            return new X402TransferWithAuthorisation3009Service(
-                facilitatorPrivateKey,
-                ClientsFromUrls(rpcEndpointsByChainId));
-        });
-
-        return services;
+        var account = new Account(facilitatorPrivateKey);
+        return services.AddX402TransferProcessor(sp => account, rpcEndpointsByChainId);
     }
 
     public static IServiceCollection AddX402TransferProcessor(
@@ -100,14 +75,7 @@ public static class ServiceCollectionExtensionsServer
         ArgumentNullException.ThrowIfNull(facilitatorAccount, nameof(facilitatorAccount));
         ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
-        services.AddSingleton<IX402PaymentProcessor>(sp =>
-        {
-            return new X402TransferWithAuthorisation3009Service(
-                facilitatorAccount,
-                ClientsFromUrls(rpcEndpointsByChainId));
-        });
-
-        return services;
+        return services.AddX402TransferProcessor(sp => facilitatorAccount, rpcEndpointsByChainId);
     }
 
     public static IServiceCollection AddX402TransferProcessor(
@@ -124,7 +92,8 @@ public static class ServiceCollectionExtensionsServer
             var account = accountFactory(sp);
             return new X402TransferWithAuthorisation3009Service(
                 account,
-                ClientsFromUrls(rpcEndpointsByChainId));
+                ClientsFromUrls(rpcEndpointsByChainId),
+                sp.GetService<X402FacilitatorOptions>());
         });
 
         return services;
@@ -155,8 +124,8 @@ public static class ServiceCollectionExtensionsServer
             var account = accountFactory(sp);
             var clients = ClientsFromUrls(rpcEndpointsByChainId);
             return new X402ExactSchemeProcessor(
-                new X402TransferWithAuthorisation3009Service(account, clients),
-                new X402ExactPermit2Service(account, clients));
+                new X402TransferWithAuthorisation3009Service(account, clients, sp.GetService<X402FacilitatorOptions>()),
+                new X402ExactPermit2Service(account, clients, (Erc20ApprovalGasSponsoringOptions?)null, sp.GetService<X402FacilitatorOptions>()));
         });
 
         return services;
@@ -171,26 +140,9 @@ public static class ServiceCollectionExtensionsServer
         ArgumentNullException.ThrowIfNull(facilitatorAccount, nameof(facilitatorAccount));
         ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
-        services.AddSingleton<IX402PaymentProcessor>(sp =>
-        {
-            var clients = ClientsFromUrls(rpcEndpointsByChainId);
-            return new X402ExactSchemeProcessor(
-                new X402TransferWithAuthorisation3009Service(facilitatorAccount, clients),
-                new X402ExactPermit2Service(facilitatorAccount, clients));
-        });
-
-        return services;
+        return services.AddX402ExactProcessor(sp => facilitatorAccount, rpcEndpointsByChainId);
     }
 
-    /// <summary>
-    /// Registers X402ReceiveWithAuthorisation3009Service for direct blockchain settlement.
-    /// Uses ReceiveWithAuthorization pattern where the receiver (this server) submits transactions.
-    /// Requires a private key with ETH for gas fees.
-    /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <param name="receiverPrivateKey">Private key for submitting transactions (hex format with or without 0x prefix)</param>
-    /// <param name="rpcEndpointsByChainId">Dictionary mapping chain IDs to RPC endpoints (e.g., 84532 -> "https://...")</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddX402ReceiveProcessor(
         this IServiceCollection services,
         string receiverPrivateKey,
@@ -205,15 +157,8 @@ public static class ServiceCollectionExtensionsServer
 
         ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
-        // Register as IX402PaymentProcessor
-        services.AddSingleton<IX402PaymentProcessor>(sp =>
-        {
-            return new X402ReceiveWithAuthorisation3009Service(
-                receiverPrivateKey,
-                ClientsFromUrls(rpcEndpointsByChainId));
-        });
-
-        return services;
+        var account = new Account(receiverPrivateKey);
+        return services.AddX402ReceiveProcessor(sp => account, rpcEndpointsByChainId);
     }
 
     public static IServiceCollection AddX402ReceiveProcessor(
@@ -225,14 +170,7 @@ public static class ServiceCollectionExtensionsServer
         ArgumentNullException.ThrowIfNull(receiverAccount, nameof(receiverAccount));
         ArgumentNullException.ThrowIfNull(rpcEndpointsByChainId, nameof(rpcEndpointsByChainId));
 
-        services.AddSingleton<IX402PaymentProcessor>(sp =>
-        {
-            return new X402ReceiveWithAuthorisation3009Service(
-                receiverAccount,
-                ClientsFromUrls(rpcEndpointsByChainId));
-        });
-
-        return services;
+        return services.AddX402ReceiveProcessor(sp => receiverAccount, rpcEndpointsByChainId);
     }
 
     public static IServiceCollection AddX402ReceiveProcessor(
@@ -249,7 +187,8 @@ public static class ServiceCollectionExtensionsServer
             var account = accountFactory(sp);
             return new X402ReceiveWithAuthorisation3009Service(
                 account,
-                ClientsFromUrls(rpcEndpointsByChainId));
+                ClientsFromUrls(rpcEndpointsByChainId),
+                sp.GetService<X402FacilitatorOptions>());
         });
 
         return services;

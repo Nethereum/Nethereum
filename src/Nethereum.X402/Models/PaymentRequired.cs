@@ -1,8 +1,10 @@
+using Nethereum.Documentation;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentRequired - the 402 body and PAYMENT-REQUIRED header")]
 public class PaymentRequired
 {
     [JsonPropertyName("x402Version")]

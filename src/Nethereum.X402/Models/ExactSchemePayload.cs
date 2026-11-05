@@ -1,11 +1,9 @@
+using Nethereum.Documentation;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
-/// <summary>
-/// Represents the payload for the "exact" payment scheme.
-/// Spec Reference: Section 5.2.2
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "ExactSchemePayload - the EIP-3009 payload")]
 public class ExactSchemePayload
 {
     [JsonPropertyName("signature")]

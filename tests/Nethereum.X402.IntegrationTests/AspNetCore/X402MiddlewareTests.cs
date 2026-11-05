@@ -171,7 +171,7 @@ public class X402MiddlewareTests
     }
 
     [Fact]
-    public async Task Given_MalformedPaymentHeader_When_ProcessingRequest_Then_402IsReturnedWithError()
+    public async Task Given_MalformedPaymentHeader_When_ProcessingRequest_Then_400IsReturnedWithError()
     {
         var mockFacilitator = new MockFacilitatorClient();
         using var server = CreateTestServer(mockFacilitator);
@@ -180,7 +180,7 @@ public class X402MiddlewareTests
 
         var response = await client.GetAsync("/api/premium");
 
-        Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.False(mockFacilitator.VerifyCalled);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -332,9 +332,9 @@ public class X402MiddlewareTests
             Accepted = new PaymentRequirements
             {
                 Scheme = "exact",
-                Network = "eip155:84532",
+                Network = "base-sepolia",
                 Amount = "10000",
-                Asset = "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                Asset = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
                 PayTo = "0x209693Bc6afc0C5328bA36FaF03C514EF312287C",
                 MaxTimeoutSeconds = 60
             },
@@ -365,6 +365,7 @@ public class MockFacilitatorClient : IFacilitatorClient
 {
     public VerificationResponse? VerifyResponse { get; set; }
     public SettlementResponse? SettleResponse { get; set; }
+    public Exception? SettleException { get; set; }
     public bool VerifyCalled { get; private set; }
     public bool SettleCalled { get; private set; }
 
@@ -387,6 +388,7 @@ public class MockFacilitatorClient : IFacilitatorClient
         CancellationToken cancellationToken = default)
     {
         SettleCalled = true;
+        if (SettleException != null) throw SettleException;
         return Task.FromResult(SettleResponse ?? new SettlementResponse
         {
             Success = true,

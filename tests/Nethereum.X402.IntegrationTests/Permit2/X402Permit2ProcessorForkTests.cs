@@ -20,21 +20,24 @@ using Nethereum.X402.Models;
 using Nethereum.X402.Permit2;
 using Nethereum.X402.Processors;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Permit2;
 
+[Trait("Category", "LiveNetwork")]
 public class X402Permit2ProcessorForkTests
 {
     private const int ChainId = 84532;
     private const string Network = "eip155:84532";
-    private static string? ForkRpc => Environment.GetEnvironmentVariable("X402_FORK_RPC");
+    private static string? ForkRpc => TestEnvironment.ServiceOrNull("X402ForkRpc");
 
-    [Fact]
+    [SkippableFact]
     [NethereumDocExample(DocSection.DeFi, "x402-payments", "Permit2 method: facilitator verifies and settles a permit2 payment", Order = 40)]
     public async Task Verify_And_Settle_Permit2_MovesFunds_ThroughWire()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var setup = await SetUpAsync(rpc, approvePermit2: true);
         var amount = BigInteger.Parse("1000000");
@@ -57,11 +60,12 @@ public class X402Permit2ProcessorForkTests
         Assert.Equal(amount, after - before);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Dispatcher_RoutesPermit2_And_Settles()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var setup = await SetUpAsync(rpc, approvePermit2: true);
         var amount = BigInteger.Parse("1000000");
@@ -78,11 +82,12 @@ public class X402Permit2ProcessorForkTests
         Assert.Equal(amount, await setup.Usdc.GetBalanceAsync(setup.Recipient) - before);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Settle_ThenReplaySameNonce_RealPermit2Revert_DecodesToNonceAlreadyUsed()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var setup = await SetUpAsync(rpc, approvePermit2: true);
         var amount = BigInteger.Parse("1000000");
@@ -103,14 +108,15 @@ public class X402Permit2ProcessorForkTests
             () => proxyHandler.EstimateGasAsync(settle));
 
         Assert.Equal("InvalidNonce", Permit2Service.FindCustomError(ex)?.ErrorABI?.Name);
-        Assert.Equal(X402ErrorCodes.NonceAlreadyUsed, Permit2SettlementErrorMapper.MapReason(ex));
+        Assert.Equal(X402ErrorCodes.Permit2InvalidNonce, Permit2SettlementErrorMapper.MapReason(ex));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Verify_RejectsRecipientMismatch()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var setup = await SetUpAsync(rpc, approvePermit2: true);
         var amount = BigInteger.Parse("1000000");
@@ -124,11 +130,12 @@ public class X402Permit2ProcessorForkTests
         Assert.Equal(X402ErrorCodes.Permit2RecipientMismatch, verify.InvalidReason);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Verify_RejectsAmountMismatch()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var setup = await SetUpAsync(rpc, approvePermit2: true);
         var wirePayload = RoundTrip(BuildWirePayload(setup, BigInteger.Parse("500000"), setup.Recipient));
@@ -140,11 +147,12 @@ public class X402Permit2ProcessorForkTests
         Assert.Equal(X402ErrorCodes.Permit2AmountMismatch, verify.InvalidReason);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Verify_RejectsMissingPermit2Allowance()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var setup = await SetUpAsync(rpc, approvePermit2: false);
         var amount = BigInteger.Parse("1000000");
@@ -157,11 +165,12 @@ public class X402Permit2ProcessorForkTests
         Assert.Equal(X402ErrorCodes.Permit2AllowanceRequired, verify.InvalidReason);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Verify_And_Settle_Permit2_FromErc1271SmartWallet_MovesFunds()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var deployerKey = EthECKey.GenerateKey();
         var ownerKey = EthECKey.GenerateKey();

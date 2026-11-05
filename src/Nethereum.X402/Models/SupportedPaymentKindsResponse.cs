@@ -1,11 +1,9 @@
+using Nethereum.Documentation;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
-/// <summary>
-/// Represents a payment kind (scheme + network + version).
-/// Spec Reference: Section 7.3 - GET /supported
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentKind - one supported scheme and network")]
 public class PaymentKind
 {
     [JsonPropertyName("x402Version")]
@@ -22,12 +20,15 @@ public class PaymentKind
     public object? Extra { get; set; }
 }
 
-/// <summary>
-/// Represents the response from the GET /supported endpoint.
-/// Spec Reference: Section 7.3 - GET /supported
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "SupportedPaymentKindsResponse - kinds, extensions and signers a facilitator supports")]
 public class SupportedPaymentKindsResponse
 {
     [JsonPropertyName("kinds")]
     public List<PaymentKind> Kinds { get; set; } = null!;
+
+    [JsonPropertyName("extensions")]
+    public List<string> Extensions { get; set; } = new();
+
+    [JsonPropertyName("signers")]
+    public Dictionary<string, List<string>> Signers { get; set; } = new();
 }

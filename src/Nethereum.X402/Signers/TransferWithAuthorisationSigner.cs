@@ -1,8 +1,11 @@
+using System;
+using Nethereum.Documentation;
 using System.Numerics;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Nethereum.ABI.EIP712;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Model;
 using Nethereum.Signer;
 using Nethereum.Signer.EIP712;
 using Nethereum.Util;
@@ -11,12 +14,7 @@ using Nethereum.X402.Models;
 
 namespace Nethereum.X402.Signers;
 
-/// <summary>
-/// Signs and recovers EIP-3009 authorizations for both the TransferWithAuthorization and
-/// ReceiveWithAuthorization variants. The two variants differ only in the EIP-712 message type
-/// (which fixes the type hash); the private-key/Web3 signing and recovery mechanics are shared by
-/// the generic helpers below.
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "TransferWithAuthorisationSigner - sign, recover and digest EIP-3009 authorizations")]
 public class TransferWithAuthorisationSigner
 {
     private readonly Eip712TypedDataSigner _typedDataSigner;
@@ -66,7 +64,6 @@ public class TransferWithAuthorisationSigner
         return Recover(BuildTransferMessage(authorization), typedData, signature);
     }
 
-    // ReceiveWithAuthorization methods
 
     public Task<EthECDSASignature> SignReceiveWithPrivateKeyAsync(
         Authorization authorization,
@@ -108,10 +105,6 @@ public class TransferWithAuthorisationSigner
         return Recover(BuildReceiveMessage(authorization), typedData, signature);
     }
 
-    /// <summary>
-    /// Computes the EIP-712 digest (keccak of the encoded typed data) that a payer signs for a
-    /// TransferWithAuthorization. This is the hash an ERC-1271 contract wallet validates.
-    /// </summary>
     public byte[] ComputeTransferDigest(
         Authorization authorization,
         string tokenName,
@@ -124,10 +117,6 @@ public class TransferWithAuthorisationSigner
         return Sha3Keccack.Current.CalculateHash(_typedDataSigner.EncodeTypedData(BuildTransferMessage(authorization), typedData));
     }
 
-    /// <summary>
-    /// Computes the EIP-712 digest that a payer signs for a ReceiveWithAuthorization. This is the
-    /// hash an ERC-1271 contract wallet validates.
-    /// </summary>
     public byte[] ComputeReceiveDigest(
         Authorization authorization,
         string tokenName,
@@ -140,14 +129,51 @@ public class TransferWithAuthorisationSigner
         return Sha3Keccack.Current.CalculateHash(_typedDataSigner.EncodeTypedData(BuildReceiveMessage(authorization), typedData));
     }
 
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "SignCancelWithPrivateKeyAsync - the authorizer signs a cancellation")]
+    public Task<EthECDSASignature> SignCancelWithPrivateKeyAsync(
+        string authorizer,
+        byte[] nonce,
+        string tokenName,
+        string tokenVersion,
+        BigInteger chainId,
+        string verifyingContract,
+        string privateKey)
+    {
+        var typedData = new CancelAuthorisationBuilder()
+            .GetTypedDataForCancellation(tokenName, tokenVersion, chainId, verifyingContract);
+        return Task.FromResult(SignWithPrivateKey(BuildCancelMessage(authorizer, nonce), typedData, privateKey));
+    }
+
+    public Task<EthECDSASignature> SignCancelWithWeb3Async(
+        string authorizer,
+        byte[] nonce,
+        string tokenName,
+        string tokenVersion,
+        BigInteger chainId,
+        string verifyingContract,
+        IWeb3 web3,
+        string signerAddress)
+    {
+        var typedData = new CancelAuthorisationBuilder()
+            .GetTypedDataForCancellation(tokenName, tokenVersion, chainId, verifyingContract);
+        return SignWithWeb3(BuildCancelMessage(authorizer, nonce), typedData, web3, signerAddress);
+    }
+
+    private static CancelAuthorisationBuilder.CancelAuthorization BuildCancelMessage(string authorizer, byte[] nonce) =>
+        new()
+        {
+            Authorizer = authorizer,
+            Nonce = nonce
+        };
+
     private static TransferWithAuthorisationBuilder.TransferWithAuthorization BuildTransferMessage(Authorization authorization) =>
         new()
         {
             From = authorization.From,
             To = authorization.To,
-            Value = BigInteger.Parse(authorization.Value),
-            ValidAfter = BigInteger.Parse(authorization.ValidAfter),
-            ValidBefore = BigInteger.Parse(authorization.ValidBefore),
+            Value = X402Number.Parse(authorization.Value),
+            ValidAfter = X402Number.Parse(authorization.ValidAfter),
+            ValidBefore = X402Number.Parse(authorization.ValidBefore),
             Nonce = authorization.Nonce.HexToByteArray()
         };
 
@@ -156,9 +182,9 @@ public class TransferWithAuthorisationSigner
         {
             From = authorization.From,
             To = authorization.To,
-            Value = BigInteger.Parse(authorization.Value),
-            ValidAfter = BigInteger.Parse(authorization.ValidAfter),
-            ValidBefore = BigInteger.Parse(authorization.ValidBefore),
+            Value = X402Number.Parse(authorization.Value),
+            ValidAfter = X402Number.Parse(authorization.ValidAfter),
+            ValidBefore = X402Number.Parse(authorization.ValidBefore),
             Nonce = authorization.Nonce.HexToByteArray()
         };
 
@@ -171,26 +197,19 @@ public class TransferWithAuthorisationSigner
 
     private async Task<EthECDSASignature> SignWithWeb3<TMessage>(TMessage message, TypedData<Domain> typedData, IWeb3 web3, string signerAddress)
     {
-        var typedDataWithMessage = new
-        {
-            types = typedData.Types,
-            primaryType = typedData.PrimaryType,
-            domain = typedData.Domain,
-            message
-        };
-        var typedDataJson = JsonSerializer.Serialize(typedDataWithMessage);
-        var signatureHex = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(signerAddress, typedDataJson);
+        var accountAddress = web3.TransactionManager?.Account?.Address;
+        if (!string.IsNullOrEmpty(accountAddress) && !accountAddress.IsTheSameAddress(signerAddress))
+            throw new ArgumentException(
+                $"The web3 account {accountAddress} is not the signer address {signerAddress}.",
+                nameof(signerAddress));
+
+        typedData.SetMessage(message);
+        var signatureHex = await web3.Eth.AccountSigning.SignTypedDataV4.SendRequestAsync(typedData.ToJson());
         return EthECDSASignatureFactory.ExtractECDSASignature(signatureHex);
     }
 
     private string Recover<TMessage>(TMessage message, TypedData<Domain> typedData, EthECDSASignature signature)
     {
-        var signatureBytes = new byte[signature.R.Length + signature.S.Length + signature.V.Length];
-        signature.R.CopyTo(signatureBytes, 0);
-        signature.S.CopyTo(signatureBytes, signature.R.Length);
-        signature.V.CopyTo(signatureBytes, signature.R.Length + signature.S.Length);
-        var signatureHex = signatureBytes.ToHex(true);
-
-        return _typedDataSigner.RecoverFromSignatureV4(message, typedData, signatureHex);
+        return _typedDataSigner.RecoverFromSignatureV4(message, typedData, signature.CreateStringSignature());
     }
 }

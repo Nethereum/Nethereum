@@ -221,7 +221,7 @@ public class X402HttpClientAutomaticFlowTests
                             Scheme = "exact",
                             Network = "ethereum",
                             Amount = "100000",
-                            PayTo = "0x111",
+                            PayTo = "0x1111111111111111111111111111111111111111",
                             Asset = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
                         },
                         new()
@@ -229,7 +229,7 @@ public class X402HttpClientAutomaticFlowTests
                             Scheme = "exact",
                             Network = NETWORK,
                             Amount = "100000",
-                            PayTo = "0x222",
+                            PayTo = "0x2222222222222222222222222222222222222222",
                             Asset = TOKEN_ADDRESS,
                             Extra = new ExactSchemeExtra { Name = TOKEN_NAME, Version = TOKEN_VERSION }
                         }
@@ -636,7 +636,7 @@ public class X402HttpClientAutomaticFlowTests
     #endregion
 
     [Fact]
-    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: allow-list refuses a redirected payment", Order = 4)]
+    [NethereumDocExample(DocSection.DeFi, "x402-payments", "X402HttpClient: allow-list refuses a redirected payment", Order = 7)]
     public async Task Given_RecipientNotAllowed_When_MakingRequest_Then_PolicyViolationIsThrown()
     {
         var signed = false;

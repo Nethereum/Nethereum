@@ -8,10 +8,6 @@ using System.Text.Json;
 
 namespace Nethereum.X402.AspNetCore;
 
-/// <summary>
-/// ASP.NET Core middleware for x402 payment processing.
-/// Spec Reference: Section 8 - Server Implementation
-/// </summary>
 public class X402Middleware
 {
     private readonly RequestDelegate _next;
@@ -20,7 +16,7 @@ public class X402Middleware
     private readonly bool _replayProtectionEnabled;
     private readonly TimeSpan _replayRetention;
     private readonly IPaymentReplayStore _fallbackReplayStore = new InMemoryPaymentReplayStore();
-    private const int X402Version = 2;
+    private const string PaymentRequiredCacheControl = "no-store";
 
     public X402Middleware(RequestDelegate next, X402Options options, IFacilitatorClient facilitator)
     {
@@ -29,14 +25,12 @@ public class X402Middleware
         ArgumentNullException.ThrowIfNull(options, nameof(options));
         ArgumentNullException.ThrowIfNull(facilitator, nameof(facilitator));
 
-        // Validate options
         options.Validate();
 
         _maxBufferedResponseBytes = options.MaxBufferedResponseBytes;
         _replayProtectionEnabled = options.EnablePaymentReplayProtection;
         _replayRetention = options.PaymentReplayRetention;
 
-        // Initialize the core processor
         _processor = new X402FacilitatorProxyProcessor(facilitator, options.Routes);
     }
 
@@ -48,39 +42,75 @@ public class X402Middleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // Try to find a matching route
-        var routeConfig = _processor.FindMatchingRoute(context.Request.Path, context.Request.Method);
+        var routeConfig = _processor.FindMatchingRoute(context.Request.Path.Value ?? string.Empty, context.Request.Method);
 
-        // If no matching route, pass through to next middleware
         if (routeConfig == null)
         {
             await _next(context);
             return;
         }
 
-        var requirements = routeConfig.Requirements;
-
         if (!context.Request.Headers.TryGetValue(X402Headers.PaymentSignature, out var paymentHeader) ||
             string.IsNullOrWhiteSpace(paymentHeader))
         {
-            // No payment provided - return 402 with payment requirements
-            await Return402WithRequirements(context, routeConfig, X402ErrorCodes.PaymentRequired);
+            await ReturnPaymentRequired(context, routeConfig, StatusCodes.Status402PaymentRequired, X402ErrorCodes.PaymentRequired);
             return;
         }
 
-        // Decode payment payload
         PaymentPayload payment;
         try
         {
             payment = X402FacilitatorProxyProcessor.DecodePaymentHeader(paymentHeader!);
         }
-        catch (ArgumentException)
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
-            await Return402WithRequirements(context, routeConfig, X402ErrorCodes.InvalidPayload);
+            await ReturnPaymentRequired(context, routeConfig, StatusCodes.Status400BadRequest, X402ErrorCodes.InvalidPayload);
             return;
         }
 
-        // Verify payment
+        var requirements = X402FacilitatorProxyProcessor.FindMatchingRequirements(routeConfig, payment);
+        if (requirements == null)
+        {
+            await ReturnPaymentRequired(context, routeConfig, StatusCodes.Status402PaymentRequired, X402ErrorMessages.NoMatchingPaymentRequirements);
+            return;
+        }
+
+        var upfront = X402RequirementSupport.IsUpfrontFlow(requirements);
+        var (valid, payer) = await VerifyAsync(context, routeConfig, payment, requirements);
+        if (!valid)
+            return;
+
+        string? reservedKey = null;
+        if (_replayProtectionEnabled)
+        {
+            var reservation = await ReserveAsync(context, routeConfig, payment, requirements, payer);
+            if (!reservation.Accepted)
+                return;
+
+            reservedKey = reservation.Key;
+        }
+
+        if (upfront)
+        {
+            await InvokeUpfrontAsync(context, payment, requirements, payer, reservedKey);
+            return;
+        }
+
+        var outcome = new SettlementOutcome();
+        try
+        {
+            await InvokeAuthorizationFlowAsync(context, payment, requirements, payer, outcome);
+        }
+        finally
+        {
+            if (!outcome.Settled)
+                await ReleaseReservationAsync(context, reservedKey);
+        }
+    }
+
+    private async Task<(bool Valid, string Payer)> VerifyAsync(
+        HttpContext context, RoutePaymentConfig routeConfig, PaymentPayload payment, PaymentRequirements requirements)
+    {
         VerificationResponse verificationResponse;
         try
         {
@@ -89,50 +119,67 @@ public class X402Middleware
         catch (Exception ex)
         {
             GetLogger(context)?.LogError(ex, "x402 facilitator verify failed");
-            context.Response.StatusCode = 500;
-            context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(new { error = X402ErrorCodes.FacilitatorError }), context.RequestAborted);
-            return;
+            await WriteJsonErrorAsync(context, 500, X402ErrorCodes.FacilitatorError, noStore: false);
+            return (false, string.Empty);
         }
 
         if (!verificationResponse.IsValid)
         {
-            // Payment verification failed
-            await Return402WithRequirements(
-                context,
-                routeConfig,
-                verificationResponse.InvalidReason ?? X402ErrorCodes.UnexpectedVerifyError,
-                verificationResponse.Payer);
-            return;
+            var invalidReason = verificationResponse.InvalidReason ?? X402ErrorCodes.UnexpectedVerifyError;
+            await ReturnPaymentRequired(context, routeConfig, StatusCodeForInvalidReason(invalidReason), invalidReason);
+            return (false, string.Empty);
         }
 
-        if (_replayProtectionEnabled)
+        return (true, verificationResponse.Payer ?? string.Empty);
+    }
+
+    private async Task<(bool Accepted, string? Key)> ReserveAsync(
+        HttpContext context, RoutePaymentConfig routeConfig, PaymentPayload payment, PaymentRequirements requirements, string payer)
+    {
+        var replayKey = PaymentReplayIdentity.Extract(payment, requirements);
+        if (replayKey == null)
         {
-            var replayKey = PaymentReplayIdentity.Extract(payment);
-            if (replayKey != null)
-            {
-                var reserved = await GetReplayStore(context)
-                    .TryReserveAsync(replayKey, _replayRetention, context.RequestAborted);
-                if (!reserved)
-                {
-                    GetLogger(context)?.LogWarning("x402 rejected a replayed payment for {Payer}", verificationResponse.Payer);
-                    await Return402WithRequirements(
-                        context, routeConfig, X402ErrorCodes.NonceAlreadyUsed, verificationResponse.Payer);
-                    return;
-                }
-            }
-            else
-            {
-                GetLogger(context)?.LogWarning("x402 replay protection: could not derive a payment identity; skipping reservation");
-            }
+            GetLogger(context)?.LogWarning("x402 replay protection: could not derive a payment identity; rejecting the payment");
+            await ReturnPaymentRequired(context, routeConfig, StatusCodes.Status400BadRequest, X402ErrorCodes.InvalidPayload);
+            return (false, null);
         }
 
+        bool reserved;
+        try
+        {
+            reserved = await GetReplayStore(context)
+                .TryReserveAsync(replayKey, _replayRetention, context.RequestAborted);
+        }
+        catch (PaymentReplayStoreFullException ex)
+        {
+            GetLogger(context)?.LogError(ex, "x402 replay store is full; refusing the payment");
+            await ReturnReplayStoreFull(context);
+            return (false, null);
+        }
+
+        if (!reserved)
+        {
+            GetLogger(context)?.LogWarning("x402 rejected a replayed payment for {Payer}", payer);
+            await ReturnPaymentRequired(
+                context, routeConfig, StatusCodes.Status402PaymentRequired, X402ErrorCodes.NonceAlreadyUsed);
+            return (false, null);
+        }
+
+        return (true, replayKey);
+    }
+
+    private sealed class SettlementOutcome
+    {
+        public bool Settled { get; set; }
+    }
+
+    private async Task InvokeAuthorizationFlowAsync(
+        HttpContext context, PaymentPayload payment, PaymentRequirements requirements, string payer, SettlementOutcome outcome)
+    {
         var originalResponseBody = context.Response.Body;
         using var responseBuffer = new MemoryStream();
         context.Response.Body = new BoundedWriteStream(responseBuffer, _maxBufferedResponseBytes);
 
-        // Call next middleware / endpoint
         try
         {
             await _next(context);
@@ -149,57 +196,144 @@ public class X402Middleware
             return;
         }
 
-        // Check response status
         if (context.Response.StatusCode >= 400)
         {
-            // Endpoint returned error - skip settlement, return response as-is
             responseBuffer.Seek(0, SeekOrigin.Begin);
             await responseBuffer.CopyToAsync(originalResponseBody, context.RequestAborted);
             context.Response.Body = originalResponseBody;
             return;
         }
 
-        // Settle payment
         SettlementResponse settlementResponse;
         try
         {
-            settlementResponse = await _processor.SettlePaymentAsync(payment, requirements, context.RequestAborted);
+            settlementResponse = await _processor.SettlePaymentAsync(payment, requirements, CancellationToken.None)
+                ?? SettlementResponse.Failure(requirements.Network, X402ErrorCodes.SettlementPending, payer);
+            outcome.Settled = KeepsReservation(settlementResponse);
         }
         catch (Exception ex)
         {
             GetLogger(context)?.LogError(ex, "x402 settlement failed");
+            var unknown = X402SettleOutcomes.OutcomeIsUnknown(ex);
+            outcome.Settled = unknown;
             context.Response.Body = originalResponseBody;
-            await Return402WithRequirements(context, routeConfig, X402ErrorCodes.UnexpectedSettleError);
+            await ReturnSettlementFailure(
+                context,
+                SettlementResponse.Failure(requirements.Network, unknown ? X402ErrorCodes.SettlementPending : X402ErrorCodes.UnexpectedSettleError, payer),
+                requirements);
             return;
         }
 
         if (!settlementResponse.Success)
         {
-            // Settlement failed - return 402
             context.Response.Body = originalResponseBody;
-            await Return402WithRequirements(
-                context,
-                routeConfig,
-                settlementResponse.ErrorReason ?? X402ErrorCodes.UnexpectedSettleError);
+            await ReturnSettlementFailure(context, settlementResponse, requirements);
             return;
         }
 
-        var settlementHeader = X402FacilitatorProxyProcessor.EncodeSettlementResponse(settlementResponse);
-        context.Response.Headers.Append(X402Headers.PaymentResponse, settlementHeader);
+        AppendSettlementReceipt(context, settlementResponse);
 
         responseBuffer.Seek(0, SeekOrigin.Begin);
         await responseBuffer.CopyToAsync(originalResponseBody, context.RequestAborted);
         context.Response.Body = originalResponseBody;
     }
 
-    private static async Task Return402WithRequirements(
+    private async Task InvokeUpfrontAsync(
+        HttpContext context, PaymentPayload payment, PaymentRequirements requirements, string payer, string? reservedKey)
+    {
+        SettlementResponse settlementResponse;
+        try
+        {
+            settlementResponse = await _processor.SettlePaymentAsync(payment, requirements, CancellationToken.None)
+                ?? SettlementResponse.Failure(requirements.Network, X402ErrorCodes.SettlementPending, payer);
+        }
+        catch (Exception ex)
+        {
+            GetLogger(context)?.LogError(ex, "x402 upfront settlement failed");
+            var unknown = X402SettleOutcomes.OutcomeIsUnknown(ex);
+            if (!unknown)
+                await ReleaseReservationAsync(context, reservedKey);
+
+            await ReturnSettlementFailure(
+                context,
+                SettlementResponse.Failure(requirements.Network, unknown ? X402ErrorCodes.SettlementPending : X402ErrorCodes.UnexpectedSettleError, payer),
+                requirements);
+            return;
+        }
+
+        if (!settlementResponse.Success)
+        {
+            if (!KeepsReservation(settlementResponse))
+                await ReleaseReservationAsync(context, reservedKey);
+
+            await ReturnSettlementFailure(context, settlementResponse, requirements);
+            return;
+        }
+
+        context.Response.OnStarting(() =>
+        {
+            AppendSettlementReceipt(context, settlementResponse);
+            return Task.CompletedTask;
+        });
+
+        await _next(context);
+    }
+
+    private static bool KeepsReservation(SettlementResponse settlementResponse) =>
+        !X402SettleOutcomes.IsDefiniteFailure(settlementResponse);
+
+    private async Task ReleaseReservationAsync(HttpContext context, string? reservedKey)
+    {
+        if (reservedKey == null)
+            return;
+
+        try
+        {
+            await GetReplayStore(context).ReleaseAsync(reservedKey, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            GetLogger(context)?.LogError(ex, "x402 could not release the replay reservation");
+        }
+    }
+
+    private static Task ReturnReplayStoreFull(HttpContext context) =>
+        WriteJsonErrorAsync(context, StatusCodes.Status503ServiceUnavailable, X402ErrorCodes.ReplayStoreFull, noStore: true);
+
+    private static async Task WriteJsonErrorAsync(HttpContext context, int statusCode, string error, bool noStore)
+    {
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+        if (noStore)
+            context.Response.Headers["Cache-Control"] = PaymentRequiredCacheControl;
+        await context.Response.WriteAsync(
+            JsonSerializer.Serialize(new { error }), context.RequestAborted);
+    }
+
+    private static void AppendSettlementReceipt(HttpContext context, SettlementResponse settlementResponse)
+    {
+        context.Response.Headers.Append(
+            X402Headers.PaymentResponse,
+            X402FacilitatorProxyProcessor.EncodeSettlementResponse(settlementResponse));
+        context.Response.Headers["Cache-Control"] = X402CacheControl.WithPrivate(context.Response.Headers["Cache-Control"].ToString());
+    }
+
+    private static int StatusCodeForInvalidReason(string invalidReason) => invalidReason switch
+    {
+        X402ErrorCodes.InvalidPayload => StatusCodes.Status400BadRequest,
+        X402ErrorCodes.Permit2AllowanceRequired => StatusCodes.Status412PreconditionFailed,
+        _ => StatusCodes.Status402PaymentRequired
+    };
+
+    private static async Task ReturnPaymentRequired(
         HttpContext context,
         RoutePaymentConfig routeConfig,
-        string errorMessage,
-        string? payer = null)
+        int statusCode,
+        string errorMessage)
     {
-        context.Response.StatusCode = 402;
+        context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
+        context.Response.Headers["Cache-Control"] = PaymentRequiredCacheControl;
 
         var resource = new ResourceInfo
         {
@@ -207,15 +341,20 @@ public class X402Middleware
                 ? $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path}"
                 : routeConfig.Resource!.Url,
             Description = routeConfig.Resource?.Description,
-            MimeType = routeConfig.Resource?.MimeType
+            MimeType = routeConfig.Resource?.MimeType,
+            ServiceName = routeConfig.Resource?.ServiceName,
+            Tags = routeConfig.Resource?.Tags,
+            IconUrl = routeConfig.Resource?.IconUrl,
+            ExtensionData = routeConfig.Resource?.ExtensionData
         };
 
         var response = new PaymentRequired
         {
-            X402Version = X402Version,
+            X402Version = X402Protocol.Version,
             Error = errorMessage,
             Resource = resource,
-            Accepts = new List<PaymentRequirements> { routeConfig.Requirements }
+            Accepts = routeConfig.GetOffers().ToList(),
+            Extensions = routeConfig.Extensions
         };
 
         var json = JsonSerializer.Serialize(response);
@@ -227,40 +366,25 @@ public class X402Middleware
         await context.Response.WriteAsync(json, context.RequestAborted);
     }
 
-    private sealed class ResponseTooLargeException : Exception { }
-
-    private sealed class BoundedWriteStream : Stream
+    private static async Task ReturnSettlementFailure(
+        HttpContext context,
+        SettlementResponse settlement,
+        PaymentRequirements requirements)
     {
-        private readonly Stream _inner;
-        private readonly long _limit;
-        private long _written;
+        settlement.Transaction ??= string.Empty;
+        settlement.Network ??= requirements.Network;
+        settlement.ErrorReason ??= X402ErrorCodes.UnexpectedSettleError;
 
-        public BoundedWriteStream(Stream inner, long limit)
-        {
-            _inner = inner;
-            _limit = limit;
-        }
+        if (!context.Response.HasStarted)
+            context.Response.Clear();
 
-        private void Track(long count)
-        {
-            _written += count;
-            if (_written > _limit) throw new ResponseTooLargeException();
-        }
+        context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
+        context.Response.ContentType = "application/json";
+        context.Response.Headers["Cache-Control"] = PaymentRequiredCacheControl;
+        context.Response.Headers.Append(
+            X402Headers.PaymentResponse,
+            X402FacilitatorProxyProcessor.EncodeSettlementResponse(settlement));
 
-        public override bool CanWrite => true;
-        public override bool CanRead => _inner.CanRead;
-        public override bool CanSeek => _inner.CanSeek;
-        public override long Length => _inner.Length;
-        public override long Position { get => _inner.Position; set => _inner.Position = value; }
-
-        public override void Write(byte[] buffer, int offset, int count) { Track(count); _inner.Write(buffer, offset, count); }
-        public override void Write(ReadOnlySpan<byte> buffer) { Track(buffer.Length); _inner.Write(buffer); }
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { Track(count); return _inner.WriteAsync(buffer, offset, count, cancellationToken); }
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) { Track(buffer.Length); return _inner.WriteAsync(buffer, cancellationToken); }
-        public override void Flush() => _inner.Flush();
-        public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
-        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
-        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
-        public override void SetLength(long value) => _inner.SetLength(value);
+        await context.Response.WriteAsync("{}", context.RequestAborted);
     }
 }

@@ -1,15 +1,16 @@
+using Nethereum.X402.Blockchain;
 using Nethereum.X402.Models;
 using System.Text;
 using System.Text.Json;
 
 namespace Nethereum.X402.Facilitator;
 
-/// <summary>
-/// HTTP implementation of facilitator client.
-/// Spec Reference: Section 7 - Facilitator API
-/// </summary>
 public class HttpFacilitatorClient : IFacilitatorClient
 {
+    public const string HttpClientName = "Nethereum.X402.Facilitator";
+
+    private const int SettleTimeoutMultiplier = 3;
+
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
 
@@ -19,7 +20,12 @@ public class HttpFacilitatorClient : IFacilitatorClient
         _baseUrl = baseUrl?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(baseUrl));
     }
 
-    /// <inheritdoc />
+    public TimeSpan VerifyTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public TimeSpan SettleTimeoutGrace { get; set; } = TimeSpan.FromSeconds(30);
+
+    public int MaxResponseBytes { get; set; } = 1024 * 1024;
+
     public async Task<VerificationResponse> VerifyAsync(
         PaymentPayload paymentPayload,
         PaymentRequirements requirements,
@@ -28,23 +34,35 @@ public class HttpFacilitatorClient : IFacilitatorClient
         ArgumentNullException.ThrowIfNull(paymentPayload, nameof(paymentPayload));
         ArgumentNullException.ThrowIfNull(requirements, nameof(requirements));
 
-        var requestBody = new
+        var json = RequestJson(paymentPayload, requirements);
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        bound.CancelAfter(VerifyTimeout);
+
+        try
         {
-            paymentPayload = paymentPayload,
-            paymentRequirements = requirements
-        };
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await PostAsync("verify", content, bound.Token);
+            var responseJson = await ReadBoundedAsync(response, bound.Token);
+            if (!response.IsSuccessStatusCode)
+            {
+                var failed = ParseFailure<VerificationResponse>(responseJson, "isValid");
+                if (failed == null)
+                    response.EnsureSuccessStatusCode();
 
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+                failed!.IsValid = false;
+                failed.InvalidReason ??= X402ErrorCodes.UnexpectedVerifyError;
+                return failed;
+            }
 
-        var response = await _httpClient.PostAsync($"{_baseUrl}/verify", content, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<VerificationResponse>(responseJson)!;
+            return JsonSerializer.Deserialize<VerificationResponse>(responseJson)
+                ?? new VerificationResponse { IsValid = false, InvalidReason = X402ErrorCodes.UnexpectedVerifyError };
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"The facilitator did not answer verify within {VerifyTimeout.TotalSeconds:0} seconds.", ex);
+        }
     }
 
-    /// <inheritdoc />
     public async Task<SettlementResponse> SettleAsync(
         PaymentPayload paymentPayload,
         PaymentRequirements requirements,
@@ -53,30 +71,93 @@ public class HttpFacilitatorClient : IFacilitatorClient
         ArgumentNullException.ThrowIfNull(paymentPayload, nameof(paymentPayload));
         ArgumentNullException.ThrowIfNull(requirements, nameof(requirements));
 
-        var requestBody = new
+        var json = RequestJson(paymentPayload, requirements);
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        bound.CancelAfter(SettleBound(requirements.MaxTimeoutSeconds));
+
+        try
         {
-            paymentPayload = paymentPayload,
-            paymentRequirements = requirements
-        };
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await PostAsync("settle", content, bound.Token);
+            var responseJson = await ReadBoundedAsync(response, bound.Token);
+            if (!response.IsSuccessStatusCode)
+            {
+                var failed = ParseFailure<SettlementResponse>(responseJson, "success");
+                if (failed == null)
+                    response.EnsureSuccessStatusCode();
 
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+                failed!.Success = false;
+                failed.ErrorReason = X402SettleOutcomes.IsDefiniteStatus(response.StatusCode) && !string.IsNullOrEmpty(failed.ErrorReason)
+                    ? failed.ErrorReason
+                    : X402ErrorCodes.SettlementPending;
+                return failed;
+            }
 
-        var response = await _httpClient.PostAsync($"{_baseUrl}/settle", content, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<SettlementResponse>(responseJson)!;
+            return ParseFailure<SettlementResponse>(responseJson, "success")
+                ?? SettlementResponse.Failure(requirements.Network, X402ErrorCodes.SettlementPending, string.Empty);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return SettlementResponse.Failure(requirements.Network, X402ErrorCodes.SettlementPending, string.Empty);
+        }
     }
 
-    /// <inheritdoc />
     public async Task<SupportedPaymentKindsResponse> GetSupportedAsync(
         CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync($"{_baseUrl}/supported", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var bound = VerifyTimeout;
+        if (_httpClient.Timeout != Timeout.InfiniteTimeSpan && _httpClient.Timeout < bound)
+            bound = _httpClient.Timeout;
 
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<SupportedPaymentKindsResponse>(json)!;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        linked.CancelAfter(bound);
+
+        try
+        {
+            using var response = await _httpClient.GetAsync($"{_baseUrl}/supported", HttpCompletionOption.ResponseHeadersRead, linked.Token);
+            response.EnsureSuccessStatusCode();
+
+            var json = await ReadBoundedAsync(response, linked.Token);
+            return JsonSerializer.Deserialize<SupportedPaymentKindsResponse>(json)!;
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"The facilitator did not answer supported within {bound.TotalSeconds:0} seconds.", ex);
+        }
     }
+
+    private Task<HttpResponseMessage> PostAsync(string path, HttpContent content, CancellationToken cancellationToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/{path}") { Content = content };
+        return _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+    }
+
+    private Task<string> ReadBoundedAsync(HttpResponseMessage response, CancellationToken cancellationToken) =>
+        X402BoundedBody.ReadAsync(response, MaxResponseBytes, cancellationToken);
+
+    private static T? ParseFailure<T>(string body, string discriminator) where T : class
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            return document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty(discriminator, out _)
+                ? document.RootElement.Deserialize<T>()
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private TimeSpan SettleBound(int maxTimeoutSeconds) =>
+        TimeSpan.FromSeconds((double)SettleTimeoutMultiplier * FacilitatorTransactionSender.BoundFor(maxTimeoutSeconds).TotalSeconds) + SettleTimeoutGrace;
+
+    private static string RequestJson(PaymentPayload paymentPayload, PaymentRequirements requirements) =>
+        JsonSerializer.Serialize(new
+        {
+            x402Version = X402Protocol.Version,
+            paymentPayload,
+            paymentRequirements = requirements
+        });
 }

@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System;
 
 namespace Nethereum.X402.Client;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentPolicyDimension - which allow-list refused a payment")]
 public enum PaymentPolicyDimension
 {
     Network,
@@ -9,6 +11,7 @@ public enum PaymentPolicyDimension
     Recipient
 }
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "X402PaymentPolicyViolationException - a payment refused by the client policy")]
 public class X402PaymentPolicyViolationException : Exception
 {
     public PaymentPolicyDimension Dimension { get; }

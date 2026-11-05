@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Permit2SchemePayload - the Permit2 payload")]
 public class Permit2SchemePayload
 {
     [JsonPropertyName("signature")]
@@ -11,6 +13,7 @@ public class Permit2SchemePayload
     public Permit2Authorization Permit2Authorization { get; set; } = null!;
 }
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Permit2Authorization - the signed Permit2 fields")]
 public class Permit2Authorization
 {
     [JsonPropertyName("from")]
@@ -32,6 +35,7 @@ public class Permit2Authorization
     public Permit2WitnessData Witness { get; set; } = null!;
 }
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Permit2TokenPermissions - the permitted token and amount")]
 public class Permit2TokenPermissions
 {
     [JsonPropertyName("token")]
@@ -41,10 +45,7 @@ public class Permit2TokenPermissions
     public string Amount { get; set; } = null!;
 }
 
-/// <summary>
-/// The x402 witness bound into the permit2 signature: the enforced recipient (<c>to</c>) and the
-/// not-before time (<c>validAfter</c>). EIP-712 type <c>Witness(address to,uint256 validAfter)</c>.
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Permit2WitnessData - the witness recipient and validAfter")]
 public class Permit2WitnessData
 {
     [JsonPropertyName("to")]

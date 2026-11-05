@@ -66,11 +66,7 @@ public class X402TransferE2ETests : IClassFixture<X402DevChainFixture>
 
     private static string EncodeSignature(EthECDSASignature signature)
     {
-        var bytes = new byte[signature.R.Length + signature.S.Length + signature.V.Length];
-        signature.R.CopyTo(bytes, 0);
-        signature.S.CopyTo(bytes, signature.R.Length);
-        signature.V.CopyTo(bytes, signature.R.Length + signature.S.Length);
-        return bytes.ToHex(true);
+        return EthECDSASignature.CreateStringSignature(signature);
     }
 
     [Fact]

@@ -1,11 +1,9 @@
+using Nethereum.Documentation;
 using Nethereum.X402.Models;
 
 namespace Nethereum.X402.Client;
 
-/// <summary>
-/// Interface for selecting payment requirements when multiple options are available.
-/// Spec Reference: Section 4.2 - Payment Requirements Selection
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "IPaymentRequirementsSelector - picks the requirement the client pays")]
 public interface IPaymentRequirementsSelector
 {
     PaymentRequirements SelectRequirements(

@@ -18,11 +18,14 @@ public class Permit2SettlementErrorMapperTests
     }
 
     [Theory]
-    [InlineData(typeof(InvalidNonceError), "invalid_exact_evm_nonce_already_used")]
+    [InlineData(typeof(InvalidNonceError), "permit2_invalid_nonce")]
     [InlineData(typeof(SignatureExpiredError), "permit2_deadline_expired")]
     [InlineData(typeof(AllowanceExpiredError), "permit2_allowance_required")]
     [InlineData(typeof(InsufficientAllowanceError), "permit2_allowance_required")]
-    [InlineData(typeof(InvalidAmountError), "permit2_amount_mismatch")]
+    [InlineData(typeof(InvalidAmountError), "permit2_invalid_amount")]
+    [InlineData(typeof(InvalidDestinationError), "permit2_invalid_destination")]
+    [InlineData(typeof(InvalidOwnerError), "permit2_invalid_owner")]
+    [InlineData(typeof(PaymentTooEarlyError), "permit2_payment_too_early")]
     [InlineData(typeof(InvalidSignerError), "invalid_permit2_signature")]
     [InlineData(typeof(InvalidContractSignatureError), "invalid_permit2_signature")]
     [InlineData(typeof(InvalidSignatureError), "invalid_permit2_signature")]

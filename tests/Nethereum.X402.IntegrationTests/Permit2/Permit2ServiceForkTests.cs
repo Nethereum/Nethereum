@@ -8,20 +8,23 @@ using Nethereum.RPC.Extensions;
 using Nethereum.Signer;
 using Nethereum.Web3.Accounts;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Permit2;
 
+[Trait("Category", "LiveNetwork")]
 public class Permit2ServiceForkTests
 {
     private const int ChainId = 84532;
-    private static string? ForkRpc => Environment.GetEnvironmentVariable("X402_FORK_RPC");
+    private static string? ForkRpc => TestEnvironment.ServiceOrNull("X402ForkRpc");
 
-    [Fact]
+    [SkippableFact]
     [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "Permit2: read and write the canonical Permit2 via GetPermit2Service", SkillName = "built-in-standards", Order = 20)]
     public async Task GetPermit2Service_ReadsAndWritesCanonicalPermit2()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var ownerKey = EthECKey.GenerateKey();
         var owner = new Account(ownerKey.GetPrivateKey(), ChainId);

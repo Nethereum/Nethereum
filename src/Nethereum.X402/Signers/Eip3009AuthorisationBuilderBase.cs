@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -7,6 +8,7 @@ using Nethereum.X402.Models;
 
 namespace Nethereum.X402.Signers;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Eip3009AuthorisationBuilderBase - nonce and authorization building")]
 public abstract class Eip3009AuthorisationBuilderBase
 {
     public byte[] GenerateNonce()
@@ -23,7 +25,7 @@ public abstract class Eip3009AuthorisationBuilderBase
         BigInteger? validBeforeTimestamp = null)
     {
         var validAfter = validAfterTimestamp ?? GetDefaultValidAfter();
-        var validBefore = validBeforeTimestamp ?? GetDefaultValidBefore();
+        var validBefore = validBeforeTimestamp ?? GetDefaultValidBefore(requirements);
         var nonce = GenerateNonce();
 
         return new Authorization
@@ -37,11 +39,6 @@ public abstract class Eip3009AuthorisationBuilderBase
         };
     }
 
-    /// <summary>
-    /// Builds the EIP-712 TypedData definition for the given message type and primary type. The
-    /// message type's <c>[Struct]</c> name determines the EIP-712 type hash, so the concrete
-    /// builders pass their own type here.
-    /// </summary>
     protected TypedData<Domain> BuildTypedData(
         Type messageType,
         string primaryType,
@@ -69,8 +66,11 @@ public abstract class Eip3009AuthorisationBuilderBase
         return new BigInteger(DateTimeOffset.UtcNow.AddMinutes(-10).ToUnixTimeSeconds());
     }
 
-    private BigInteger GetDefaultValidBefore()
+    private BigInteger GetDefaultValidBefore(PaymentRequirements requirements)
     {
-        return new BigInteger(DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds());
+        var validity = requirements.MaxTimeoutSeconds > 0
+            ? TimeSpan.FromSeconds(requirements.MaxTimeoutSeconds)
+            : TimeSpan.FromHours(1);
+        return new BigInteger(DateTimeOffset.UtcNow.Add(validity).ToUnixTimeSeconds());
     }
 }

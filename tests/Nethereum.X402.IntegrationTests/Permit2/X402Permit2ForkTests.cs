@@ -12,20 +12,22 @@ using Nethereum.Web3.Accounts;
 using Nethereum.X402.IntegrationTests.Helpers;
 using Nethereum.X402.Permit2;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Permit2;
 
+[Trait("Category", "LiveNetwork")]
 public class X402Permit2ForkTests
 {
     private const int ChainId = 84532;
-    private static string? ForkRpc => Environment.GetEnvironmentVariable("X402_FORK_RPC");
+    private static string? ForkRpc => TestEnvironment.ServiceOrNull("X402ForkRpc");
 
-    [Fact]
+    [SkippableFact]
     public async Task PermitWitnessTransfer_SettlesViaProxy_MovesFunds()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc))
-            return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var deployerKey = EthECKey.GenerateKey();
         var payerKey = EthECKey.GenerateKey();

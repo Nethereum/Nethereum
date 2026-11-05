@@ -12,6 +12,7 @@ using Nethereum.X402.Processors;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Facilitator;
 
@@ -92,7 +93,7 @@ public class FacilitatorIntegrationTests
 
         services.AddX402ExactProcessor(
             _ => { factoryCalls++; return new Account("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"); },
-            new Dictionary<int, string> { { 84532, "http://localhost:8545" } });
+            new Dictionary<int, string> { { 84532, TestEnvironment.Service("X402AnvilUrl") } });
 
         using var provider = services.BuildServiceProvider();
         var processor = provider.GetRequiredService<IX402PaymentProcessor>();
@@ -109,7 +110,7 @@ public class FacilitatorIntegrationTests
 
         var rpcEndpointsByChainId = new Dictionary<int, string>
         {
-            { 31337, "http://localhost:8545" }
+            { 31337, TestEnvironment.Service("X402AnvilUrl") }
         };
 
         using var server = new TestServer(new WebHostBuilder()

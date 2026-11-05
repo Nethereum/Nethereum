@@ -1,31 +1,25 @@
+using Nethereum.Documentation;
 using Nethereum.X402.Models;
 
 namespace Nethereum.X402.Server;
 
-/// <summary>
-/// Configuration for a route that requires payment.
-/// Spec Reference: Section 8 - Server Implementation
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "RoutePaymentConfig - a payment-protected route")]
 public class RoutePaymentConfig
 {
-    /// <summary>
-    /// Path pattern for the route. Supports wildcards (*).
-    /// Example: "/api/premium" or "/api/data/*"
-    /// </summary>
     public string PathPattern { get; set; } = null!;
 
-    /// <summary>
-    /// HTTP method for the route (GET, POST, etc.).
-    /// Null means any method.
-    /// </summary>
     public string? Method { get; set; }
 
-    /// <summary>
-    /// Payment requirements for this route.
-    /// </summary>
     public PaymentRequirements Requirements { get; set; } = null!;
 
+    public List<PaymentRequirements>? Accepts { get; set; }
+
+    public IReadOnlyList<PaymentRequirements> GetOffers() =>
+        Accepts is { Count: > 0 } ? Accepts : new[] { Requirements };
+
     public ResourceInfo? Resource { get; set; }
+
+    public Dictionary<string, object>? Extensions { get; set; }
 
     public RoutePaymentConfig()
     {

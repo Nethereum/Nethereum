@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.X402.Facilitator;
 using Nethereum.X402.Models;
 using System.Text;
@@ -6,15 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Nethereum.X402.Server;
 
-/// <summary>
-/// Core payment processing logic for x402 servers using a remote facilitator.
-/// Framework-agnostic - can be used with any .NET server framework.
-/// Spec Reference: Section 8 - Server Implementation
-///
-/// This processor proxies payment verification and settlement to a remote facilitator service.
-/// Use X402TransferWithAuthorisation3009Service or X402ReceiveWithAuthorisation3009Service
-/// for direct blockchain interaction without a facilitator.
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "X402FacilitatorProxyProcessor - route matching and forwarding to a facilitator")]
 public class X402FacilitatorProxyProcessor
 {
     private readonly IFacilitatorClient _facilitator;
@@ -26,43 +19,23 @@ public class X402FacilitatorProxyProcessor
 
         ArgumentNullException.ThrowIfNull(routes, nameof(routes));
 
-        // Compile route patterns to regex for efficient matching
-        _compiledRoutes = routes.Select(route =>
-        {
-            var pattern = ConvertPathPatternToRegex(route.PathPattern);
-            return (new Regex(pattern, RegexOptions.IgnoreCase), route);
-        }).ToList();
-
-        // Sort by specificity (exact paths before wildcards)
-        _compiledRoutes.Sort((a, b) =>
-        {
-            var aHasWildcard = a.Config.PathPattern.Contains('*');
-            var bHasWildcard = b.Config.PathPattern.Contains('*');
-
-            if (aHasWildcard && !bHasWildcard) return 1;
-            if (!aHasWildcard && bHasWildcard) return -1;
-
-            // Both same wildcard status, sort by length (more specific first)
-            return b.Config.PathPattern.Length.CompareTo(a.Config.PathPattern.Length);
-        });
+        _compiledRoutes = routes
+            .OrderBy(route => route.PathPattern, Comparer<string>.Create(X402RoutePattern.ComparePrecedence))
+            .Select(route => (X402RoutePattern.Compile(route.PathPattern), route))
+            .ToList();
     }
 
-    /// <summary>
-    /// Finds the payment requirements for a given path and HTTP method.
-    /// Returns null if no matching route is found.
-    /// Spec Reference: Section 8 - Server Implementation
-    /// </summary>
     public RoutePaymentConfig? FindMatchingRoute(string path, string? method = null)
     {
         ArgumentNullException.ThrowIfNull(path, nameof(path));
 
+        var candidates = X402RoutePattern.CandidatePaths(path);
+
         foreach (var (pattern, config) in _compiledRoutes)
         {
-            // Check if path matches
-            if (!pattern.IsMatch(path))
+            if (!candidates.Any(candidate => pattern.IsMatch(candidate)))
                 continue;
 
-            // Check if method matches (null means any method)
             if (config.Method != null &&
                 !string.Equals(config.Method, method, StringComparison.OrdinalIgnoreCase))
                 continue;
@@ -73,17 +46,24 @@ public class X402FacilitatorProxyProcessor
         return null;
     }
 
-    /// <summary>
-    /// Decodes a base64-encoded PAYMENT-SIGNATURE header into a PaymentPayload.
-    /// Spec Reference: Section 5.2 - PaymentPayload Schema
-    /// </summary>
+    public static PaymentRequirements? FindMatchingRequirements(RoutePaymentConfig route, PaymentPayload payment)
+    {
+        ArgumentNullException.ThrowIfNull(route, nameof(route));
+        ArgumentNullException.ThrowIfNull(payment, nameof(payment));
+
+        return X402RequirementsMatcher.Find(route.GetOffers(), payment.Accepted);
+    }
+
     public static PaymentPayload DecodePaymentHeader(string header)
     {
         ArgumentNullException.ThrowIfNull(header, nameof(header));
 
         try
         {
-            var json = Encoding.UTF8.GetString(Convert.FromBase64String(header));
+            var json = Encoding.UTF8.GetString(X402Base64.Decode(header));
+            if (X402DuplicateJsonProperties.Contains(json))
+                throw new ArgumentException("Duplicate property names in PAYMENT-SIGNATURE header", nameof(header));
+
             var payload = JsonSerializer.Deserialize<PaymentPayload>(json);
 
             if (payload == null)
@@ -101,10 +81,6 @@ public class X402FacilitatorProxyProcessor
         }
     }
 
-    /// <summary>
-    /// Verifies a payment payload against requirements using the facilitator.
-    /// Spec Reference: Section 6.1.2 - Verification Steps, Section 7.1 - POST /verify
-    /// </summary>
     public async Task<VerificationResponse> VerifyPaymentAsync(
         PaymentPayload payment,
         PaymentRequirements requirements,
@@ -116,10 +92,6 @@ public class X402FacilitatorProxyProcessor
         return await _facilitator.VerifyAsync(payment, requirements, cancellationToken);
     }
 
-    /// <summary>
-    /// Settles a verified payment using the facilitator.
-    /// Spec Reference: Section 6.1.3 - Settlement, Section 7.2 - POST /settle
-    /// </summary>
     public async Task<SettlementResponse> SettlePaymentAsync(
         PaymentPayload payment,
         PaymentRequirements requirements,
@@ -131,31 +103,11 @@ public class X402FacilitatorProxyProcessor
         return await _facilitator.SettleAsync(payment, requirements, cancellationToken);
     }
 
-    /// <summary>
-    /// Encodes a settlement response for the PAYMENT-RESPONSE header.
-    /// Spec Reference: Section 5.3 - SettlementResponse Schema
-    /// </summary>
     public static string EncodeSettlementResponse(SettlementResponse response)
     {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
 
         var json = JsonSerializer.Serialize(response);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
-    }
-
-    /// <summary>
-    /// Converts a path pattern with wildcards (*) to a regex pattern.
-    /// Example: "/api/data/*" -> "^/api/data/.*$"
-    /// </summary>
-    private static string ConvertPathPatternToRegex(string pathPattern)
-    {
-        // Escape regex special characters except *
-        var escaped = Regex.Escape(pathPattern);
-
-        // Replace escaped \* with .* (match any characters)
-        escaped = escaped.Replace("\\*", ".*");
-
-        // Add anchors to match entire path
-        return "^" + escaped + "$";
     }
 }

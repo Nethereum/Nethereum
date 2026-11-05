@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 /**
  * @title MockUSDC
  * @notice Minimal ERC20 + EIP-3009 implementation for testing
  * @dev This is a simplified USDC mock with:
  * - Basic ERC20 functionality
- * - EIP-3009 transferWithAuthorization
+ * - EIP-3009 transferWithAuthorization and receiveWithAuthorization, validating the signature
+  *   like FiatTokenV2_2: ecrecover for EOAs, ERC-1271 isValidSignature for contracts
+ * - A USDC-style blocklist
  * - Mint function for testing
  * - EIP-712 domain separator
  */
@@ -23,15 +25,24 @@ contract MockUSDC {
     string public version;
     mapping(address => mapping(bytes32 => bool)) public authorizationState;
 
+    mapping(address => bool) public blocklisted;
+    bool public suppressTransferEvent;
+
     // EIP-712 Domain
     bytes32 public DOMAIN_SEPARATOR;
     bytes32 private constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH =
         keccak256("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)");
+    bytes32 private constant RECEIVE_WITH_AUTHORIZATION_TYPEHASH =
+        keccak256("ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)");
+
+    bytes32 private constant CANCEL_AUTHORIZATION_TYPEHASH =
+        keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
 
     // Events
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event AuthorizationUsed(address indexed authorizer, bytes32 indexed nonce);
+    event AuthorizationCanceled(address indexed authorizer, bytes32 indexed nonce);
 
     constructor(
         string memory _name,
@@ -83,6 +94,25 @@ contract MockUSDC {
         return true;
     }
 
+    function setBlocklisted(address account, bool blocked) external {
+        blocklisted[account] = blocked;
+    }
+
+    function setSuppressTransferEvent(bool suppress) external {
+        suppressTransferEvent = suppress;
+    }
+
+    function _isValidSignature(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s) private view returns (bool) {
+        if (signer.code.length == 0) {
+            address recoveredAddress = ecrecover(digest, v, r, s);
+            return recoveredAddress != address(0) && recoveredAddress == signer;
+        }
+        (bool ok, bytes memory ret) = signer.staticcall(
+            abi.encodeWithSelector(0x1626ba7e, digest, abi.encodePacked(r, s, v))
+        );
+        return ok && ret.length >= 32 && bytes4(abi.decode(ret, (bytes32))) == 0x1626ba7e;
+    }
+
     // Testing Function - Mint tokens
     function mint(address to, uint256 amount) external {
         totalSupply += amount;
@@ -102,6 +132,7 @@ contract MockUSDC {
         bytes32 r,
         bytes32 s
     ) external {
+        require(!blocklisted[from] && !blocklisted[to], "Blocklisted");
         require(block.timestamp > validAfter, "Authorization not yet valid");
         require(block.timestamp < validBefore, "Authorization expired");
         require(!authorizationState[from][nonce], "Authorization already used");
@@ -127,8 +158,7 @@ contract MockUSDC {
             )
         );
 
-        address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == from, "Invalid signature");
+        require(_isValidSignature(from, digest, v, r, s), "Invalid signature");
 
         // Mark authorization as used
         authorizationState[from][nonce] = true;
@@ -138,7 +168,7 @@ contract MockUSDC {
         require(balanceOf[from] >= value, "Insufficient balance");
         balanceOf[from] -= value;
         balanceOf[to] += value;
-        emit Transfer(from, to, value);
+        if (!suppressTransferEvent) emit Transfer(from, to, value);
     }
 
     // EIP-3009 Function - transferWithAuthorization (packed signature)
@@ -165,5 +195,77 @@ contract MockUSDC {
 
         // Call the v,r,s version
         this.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
+    }
+
+    function cancelAuthorization(
+        address authorizer,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        require(!authorizationState[authorizer][nonce], "Authorization already used");
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(CANCEL_AUTHORIZATION_TYPEHASH, authorizer, nonce))
+            )
+        );
+
+        require(_isValidSignature(authorizer, digest, v, r, s), "Invalid signature");
+
+        authorizationState[authorizer][nonce] = true;
+        emit AuthorizationCanceled(authorizer, nonce);
+    }
+
+    // EIP-3009 Function - receiveWithAuthorization (v, r, s signature); the caller must be the payee
+    function receiveWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        require(to == msg.sender, "Caller must be the payee");
+        require(!blocklisted[from] && !blocklisted[to], "Blocklisted");
+        require(block.timestamp > validAfter, "Authorization not yet valid");
+        require(block.timestamp < validBefore, "Authorization expired");
+        require(!authorizationState[from][nonce], "Authorization already used");
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                RECEIVE_WITH_AUTHORIZATION_TYPEHASH,
+                from,
+                to,
+                value,
+                validAfter,
+                validBefore,
+                nonce
+            )
+        );
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                structHash
+            )
+        );
+
+        require(_isValidSignature(from, digest, v, r, s), "Invalid signature");
+
+        authorizationState[from][nonce] = true;
+        emit AuthorizationUsed(from, nonce);
+
+        require(balanceOf[from] >= value, "Insufficient balance");
+        balanceOf[from] -= value;
+        balanceOf[to] += value;
+        if (!suppressTransferEvent) emit Transfer(from, to, value);
     }
 }

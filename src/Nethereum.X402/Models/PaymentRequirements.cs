@@ -1,11 +1,10 @@
+using Nethereum.Documentation;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
-/// <summary>
-/// Represents the payment requirements for accessing a protected resource.
-/// Spec Reference: Section 5.1.2
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentRequirements - one accepted payment option")]
 public class PaymentRequirements
 {
     [JsonPropertyName("scheme")]
@@ -29,4 +28,7 @@ public class PaymentRequirements
     [JsonPropertyName("extra")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? Extra { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }

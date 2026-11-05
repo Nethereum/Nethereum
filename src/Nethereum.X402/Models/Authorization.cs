@@ -1,11 +1,9 @@
+using Nethereum.Documentation;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
-/// <summary>
-/// Represents EIP-3009 authorization parameters for transferWithAuthorization.
-/// Spec Reference: Section 5.2.2, Section 6.1.1
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Authorization - the EIP-3009 authorization fields")]
 public class Authorization
 {
     [JsonPropertyName("from")]

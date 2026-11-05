@@ -12,24 +12,38 @@ using Nethereum.X402.Blockchain;
 using Nethereum.X402.IntegrationTests.Helpers;
 using Nethereum.X402.Models;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Integration;
 
+[Trait("Category", "LiveNetwork")]
 public class X402ReferenceReverseInteropTests
 {
     private const int ChainId = 84532;
     private const string TokenName = "USD Coin";
     private const string TokenVersion = "2";
 
-    private static string? SignScript => Environment.GetEnvironmentVariable("X402_REF_SIGN_SCRIPT");
-    private static string Rpc => Environment.GetEnvironmentVariable("X402_RPC") ?? "http://127.0.0.1:8545";
+    private static string? SignScript
+    {
+        get
+        {
+            var configured = TestEnvironment.ServiceOrNull("X402RefSignScript");
+            if (string.IsNullOrEmpty(configured)) return null;
+            return System.IO.Path.IsPathRooted(configured)
+                ? configured
+                : System.IO.Path.Combine(TestEnvironment.RepoRoot, configured);
+        }
+    }
+    private static string Rpc => TestEnvironment.Service("X402AnvilUrl");
 
-    [Fact]
+    [SkippableFact]
     public async Task ReferenceClientPayload_IsVerifiedAndSettledByOurFacilitator()
     {
         var script = SignScript;
-        if (string.IsNullOrEmpty(script))
-            return;
+        Skip.If(string.IsNullOrEmpty(script),
+            "Services:X402RefSignScript is not set in appsettings.test.local.json; set it to the reference signer script to run this test.");
+        Assert.True(System.IO.File.Exists(script),
+            $"Services:X402RefSignScript resolves to '{script}', which does not exist.");
 
         var facilitatorKey = EthECKey.GenerateKey();
         var payerKey = EthECKey.GenerateKey();

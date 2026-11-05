@@ -13,23 +13,25 @@ using Nethereum.X402.IntegrationTests.Helpers;
 using Nethereum.X402.Models;
 using Nethereum.X402.Permit2;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Integration;
 
 [Collection("X402 Reference Forward Interop")]
+[Trait("Category", "LiveNetwork")]
 public class X402ReferencePermit2InteropTests
 {
     private const int ChainId = 84532;
 
-    private static string? RefUrl => Environment.GetEnvironmentVariable("X402_REF_FACILITATOR");
-    private static string Rpc => Environment.GetEnvironmentVariable("X402_RPC") ?? "http://127.0.0.1:8545";
+    private static string? RefUrl => TestEnvironment.ServiceOrNull("X402RefFacilitator");
+    private static string Rpc => TestEnvironment.Service("X402AnvilUrl");
 
-    [Fact]
+    [SkippableFact]
     public async Task OurPermit2Payload_IsVerifiedAndSettledByReferenceFacilitator()
     {
         var refUrl = RefUrl;
-        if (string.IsNullOrEmpty(refUrl))
-            return;
+        Skip.If(string.IsNullOrEmpty(refUrl),
+            "Services:X402RefFacilitator is not set in appsettings.test.local.json; set it to the reference facilitator URL to run this test.");
 
         var deployerKey = EthECKey.GenerateKey();
         var payerKey = EthECKey.GenerateKey();

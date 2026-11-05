@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System.Numerics;
 using Nethereum.ABI.EIP712.Permit2;
 using Nethereum.ABI.FunctionEncoding.Attributes;
@@ -13,11 +14,7 @@ public static class X402Permit2Addresses
     public const string ExactPermit2Proxy = "0x402085c248EeA27D92E8b30b2C58ed07f9E20001";
 }
 
-/// <summary>
-/// The x402 witness bound into the Permit2 signature: the enforced recipient and the not-before
-/// time. The x402ExactPermit2Proxy checks this so the facilitator cannot redirect the funds.
-/// EIP-712 type: <c>Witness(address to,uint256 validAfter)</c>.
-/// </summary>
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "Witness - the Permit2 witness struct")]
 [Struct("Witness")]
 public class Witness
 {
@@ -28,6 +25,7 @@ public class Witness
     public virtual BigInteger ValidAfter { get; set; }
 }
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PermitWitnessTransferFrom - the Permit2 witness transfer message")]
 [Struct("PermitWitnessTransferFrom")]
 public class PermitWitnessTransferFrom
 {

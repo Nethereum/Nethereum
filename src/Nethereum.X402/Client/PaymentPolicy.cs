@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +7,9 @@ using Nethereum.X402.Models;
 
 namespace Nethereum.X402.Client;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentPolicy - client allow-list of networks, assets and recipients")]
 public class PaymentPolicy
 {
-    /// <summary>CAIP-2 networks the client may pay on (e.g. "eip155:8453"). Empty = any network.</summary>
     public List<string> AllowedNetworks { get; } = new();
 
     public List<string> AllowedAssets { get; } = new();

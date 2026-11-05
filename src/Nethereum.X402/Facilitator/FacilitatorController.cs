@@ -1,11 +1,15 @@
+using Nethereum.Documentation;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.X402.Models;
 using Nethereum.X402.Processors;
 
 namespace Nethereum.X402.Facilitator;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "FacilitatorController - the hosted verify, settle and supported endpoints")]
 [ApiController]
 [Route("facilitator")]
+[TypeFilter(typeof(FacilitatorAuthorizationFilter))]
+[TypeFilter(typeof(X402DuplicatePropertiesFilter))]
 public class FacilitatorController : ControllerBase
 {
     private readonly IX402PaymentProcessor _processor;

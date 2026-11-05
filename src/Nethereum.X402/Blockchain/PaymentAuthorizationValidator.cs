@@ -1,3 +1,6 @@
+using Nethereum.Documentation;
+using System;
+using Nethereum.Contracts;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,8 +16,11 @@ using Nethereum.X402.Signers;
 
 namespace Nethereum.X402.Blockchain;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentAuthorizationValidator - EIP-3009 signature, funds, nonce and time checks")]
 public class PaymentAuthorizationValidator
 {
+    internal const int BlockTimeBufferSeconds = 6;
+
     private readonly TransferWithAuthorisationSigner _signer;
 
     public PaymentAuthorizationValidator()
@@ -58,10 +64,13 @@ public class PaymentAuthorizationValidator
         CancellationToken cancellationToken = default)
     {
         var web3 = new Nethereum.Web3.Web3(client);
+        var latestBlock = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(
+            BlockParameter.CreateLatest()
+        );
         var erc20Service = web3.Eth.ERC20.GetContractService(tokenAddress);
 
         var balance = await erc20Service.BalanceOfQueryAsync(authorization.From);
-        var requiredValue = BigInteger.Parse(authorization.Value);
+        var requiredValue = X402Number.Parse(authorization.Value);
 
         if (balance < requiredValue)
         {
@@ -70,44 +79,55 @@ public class PaymentAuthorizationValidator
 
         var eip3009Service = new Eip3009Service(web3, tokenAddress);
         var nonceBytes = authorization.Nonce.HexToByteArray();
-        var nonceState = await eip3009Service.AuthorizationStateQueryAsync(
-            authorization.From,
-            nonceBytes
-        );
+        bool nonceState;
+        try
+        {
+            nonceState = await eip3009Service.AuthorizationStateQueryAsync(
+                authorization.From,
+                nonceBytes
+            );
+        }
+        catch (Exception ex) when (ex is Nethereum.ABI.FunctionEncoding.SmartContractRevertException or SmartContractCustomErrorRevertException or RpcResponseException)
+        {
+            return ValidationResult.Invalid(X402ErrorCodes.Eip3009NotSupported);
+        }
 
         if (nonceState)
         {
             return ValidationResult.Invalid(X402ErrorCodes.NonceAlreadyUsed);
         }
 
-        var latestBlock = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(
-            BlockParameter.CreateLatest()
-        );
         var blockTimestamp = (long)latestBlock.Timestamp.Value;
 
-        var validAfter = BigInteger.Parse(authorization.ValidAfter);
-        var validBefore = BigInteger.Parse(authorization.ValidBefore);
+        var validAfter = X402Number.Parse(authorization.ValidAfter);
+        var validBefore = X402Number.Parse(authorization.ValidBefore);
 
         if (blockTimestamp < validAfter)
         {
             return ValidationResult.Invalid(X402ErrorCodes.InvalidValidAfter);
         }
 
-        if (blockTimestamp > validBefore)
+        if (validBefore <= blockTimestamp + BlockTimeBufferSeconds)
         {
             return ValidationResult.Invalid(X402ErrorCodes.InvalidValidBefore);
         }
 
-        return ValidationResult.Valid();
+        return ValidationResult.Valid(latestBlock.Number.Value);
     }
 }
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "ValidationResult - the outcome of an authorization check")]
 public class ValidationResult
 {
     public bool IsValid { get; set; }
     public string InvalidReason { get; set; }
 
+    public BigInteger BlockNumber { get; set; }
+
     public static ValidationResult Valid() => new ValidationResult { IsValid = true };
+
+    public static ValidationResult Valid(BigInteger blockNumber) =>
+        new ValidationResult { IsValid = true, BlockNumber = blockNumber };
 
     public static ValidationResult Invalid(string reason) =>
         new ValidationResult { IsValid = false, InvalidReason = reason };

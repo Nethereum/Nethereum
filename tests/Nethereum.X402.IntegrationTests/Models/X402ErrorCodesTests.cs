@@ -71,7 +71,7 @@ public class X402ErrorCodesTests
     public void Given_X402ErrorCodes_When_AccessingUnsupportedScheme_Then_CorrectValueIsReturned()
     {
         var errorCode = X402ErrorCodes.UnsupportedScheme;
-        Assert.Equal("unsupported_payload_type", errorCode);
+        Assert.Equal("unsupported_scheme", errorCode);
     }
 
     [Fact]

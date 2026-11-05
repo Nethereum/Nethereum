@@ -14,20 +14,23 @@ using Nethereum.Signer.EIP712.Permit2;
 using Nethereum.Web3.Accounts;
 using Nethereum.X402.IntegrationTests.Helpers;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.X402.IntegrationTests.Permit2;
 
+[Trait("Category", "LiveNetwork")]
 public class Permit2SignatureTransferForkTests
 {
     private const int ChainId = 84532;
-    private static string? ForkRpc => Environment.GetEnvironmentVariable("X402_FORK_RPC");
+    private static string? ForkRpc => TestEnvironment.ServiceOrNull("X402ForkRpc");
 
-    [Fact]
+    [SkippableFact]
     [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "Permit2 SignatureTransfer: sign with spender and settle on-chain", SkillName = "built-in-standards", Order = 21)]
     public async Task SignPermitTransferFrom_WithSpender_VerifiesAndTransfersOnChain()
     {
         var rpc = ForkRpc;
-        if (string.IsNullOrEmpty(rpc)) return;
+        Skip.If(string.IsNullOrEmpty(rpc),
+            "Services:X402ForkRpc is not set in appsettings.test.local.json; set it to a forkable RPC URL to run this test.");
 
         var ownerKey = EthECKey.GenerateKey();
         var spenderKey = EthECKey.GenerateKey();

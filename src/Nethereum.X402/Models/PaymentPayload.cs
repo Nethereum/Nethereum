@@ -1,7 +1,9 @@
+using Nethereum.Documentation;
 using System.Text.Json.Serialization;
 
 namespace Nethereum.X402.Models;
 
+[NethereumDocExample(DocSection.DeFi, "x402-payments", "PaymentPayload - the signed payment in PAYMENT-SIGNATURE")]
 public class PaymentPayload
 {
     [JsonPropertyName("x402Version")]

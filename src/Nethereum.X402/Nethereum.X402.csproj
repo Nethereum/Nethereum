@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum x402 payment protocol implementation for accepting HTTP 402 payments with EIP-3009 USDC transfers</Description>
     <AssemblyTitle>Nethereum.X402</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <AssemblyName>Nethereum.X402</AssemblyName>
     <PackageId>Nethereum.X402</PackageId>

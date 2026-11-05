@@ -1,21 +1,29 @@
-using Nethereum.Web3;
+using Nethereum.DevChain;
 using Nethereum.Web3.Accounts;
+using Nethereum.X402.IntegrationTests.Blockchain;
 using System.Numerics;
 
 namespace Nethereum.X402.IntegrationTests.Helpers;
 
-public class USDCDeploymentTest
+[Collection("X402 DevChain E2E")]
+public class USDCDeploymentTest : IClassFixture<X402DevChainFixture>
 {
-    private const string RPC_URL = "http://localhost:8545";
-    private const int CHAIN_ID = 84532;
-    private const string DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-    private const string TEST_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+    private const int CHAIN_ID = X402DevChainFixture.ChainId;
+    private const string DEPLOYER_KEY = X402DevChainFixture.FacilitatorKey;
+    private const string TEST_ADDRESS = X402DevChainFixture.FacilitatorAddress;
+
+    private readonly X402DevChainFixture _chain;
+
+    public USDCDeploymentTest(X402DevChainFixture chain)
+    {
+        _chain = chain;
+    }
 
     [Fact]
     public async Task Given_ValidParameters_When_DeployingContract_Then_ContractIsDeployedSuccessfully()
     {
         var account = new Account(DEPLOYER_KEY, CHAIN_ID);
-        var web3 = new Nethereum.Web3.Web3(account, RPC_URL);
+        var web3 = (Nethereum.Web3.Web3)_chain.Node.CreateWeb3(account);
         var helper = new USDCDeploymentHelper(web3, account);
 
         var address = await helper.DeployAsync("USD Coin", "USDC", 6, "2");
@@ -34,7 +42,7 @@ public class USDCDeploymentTest
     public async Task Given_DeployedContract_When_MintingTokens_Then_BalanceIsUpdated()
     {
         var account = new Account(DEPLOYER_KEY, CHAIN_ID);
-        var web3 = new Nethereum.Web3.Web3(account, RPC_URL);
+        var web3 = (Nethereum.Web3.Web3)_chain.Node.CreateWeb3(account);
         var helper = new USDCDeploymentHelper(web3, account);
 
         await helper.DeployAsync("USD Coin", "USDC", 6, "2");
@@ -54,7 +62,7 @@ public class USDCDeploymentTest
     public async Task Given_DeployedContract_When_GettingMetadata_Then_MetadataIsCorrect()
     {
         var account = new Account(DEPLOYER_KEY, CHAIN_ID);
-        var web3 = new Nethereum.Web3.Web3(account, RPC_URL);
+        var web3 = (Nethereum.Web3.Web3)_chain.Node.CreateWeb3(account);
         var helper = new USDCDeploymentHelper(web3, account);
 
         await helper.DeployAsync("Test Token", "TST", 18, "1");
