@@ -530,6 +530,19 @@ RLP encoder/decoder for block headers.
 **Methods:**
 - `byte[] Encode(BlockHeader header, bool legacyMode = false)`: Encode block header to RLP
 - `BlockHeader Decode(byte[] rawdata, bool legacyMode = false)`: Decode RLP to block header
+- `BlockHeader Decode(RlpReader reader)`: Decode the next header from an `RlpReader`
+
+The header decoders accept the 15, 16, 17, 20, 21 and 23 field shapes only. They refuse a `ParentHash`, `UnclesHash`, `StateRoot`, `TransactionsHash`, `ReceiptHash`, `MixHash`, `WithdrawalsRoot`, `ParentBeaconBlockRoot`, `RequestsHash` or `BlockAccessListHash` that is not 32 bytes, a `LogsBloom` that is not 256 bytes, a coinbase that is not 20 bytes and a `Nonce` that is not 8 bytes. `GasLimit`, `GasUsed` and `Timestamp` decode across the full unsigned 64-bit range (a value at or above 2^63 is held as the same 64 bits in the `long`); a wider scalar throws.
+
+```csharp
+var wire = BlockHeaderEncoder.Current.Encode(header);
+
+var reader = new RlpReader(wire);
+var decoded = BlockHeaderEncoder.Current.Decode(reader);
+reader.EnsureEnd();
+```
+
+Backed by `FoundationsModelDocExampleTests.Given_AnEncodedHeader_When_DecodedFromAnRlpReader_Then_ItRoundTripsTheHash` and `FoundationsModelDocExampleTests.Given_AHeaderWhoseMixHashIsShort_When_Decoded_Then_TheHeaderIsRefused`.
 
 ### Account Models
 
@@ -667,6 +680,126 @@ Utilities for signature V value and chain ID calculations.
 **Methods:**
 - `static EvmUInt256 GetChainFromVChain(EvmUInt256 vChain)`: Extract chain ID from V
 - V value encoding/decoding for EIP-155
+
+### Strict Decoding of Untrusted Bytes
+
+Every transaction, receipt, header, body, log, withdrawal and peer-message decoder in this package reads through `Nethereum.RLP.RlpReader`: it checks canonical form and field shapes as it reads and allocates in proportion to the bytes it was given, not to counts the bytes declare. The input is refused when an integer has a leading zero, a scalar is wider than its field, a list stands where a string belongs, the field count is wrong, or bytes follow the value.
+
+For transactions that means a `to` of 0 or 20 bytes (20 for blob and set-code transactions), signature scalars of at most 32 bytes, a gas limit that fits 64 bits, a nonce below 2^64, access-list addresses of 20 bytes and keys of 32 bytes, and exactly one RLP item per transaction. `TransactionFactory.CreateTransaction(byte[])` and the `Transaction*Encoder.Decode` methods apply these rules, and so does the peer-wire entry point:
+
+```csharp
+public static ISignedTransaction ReadTransaction(RlpReader reader, bool allowBlobNetworkWrapper = true);
+```
+
+`ReadTransaction` also refuses a typed transaction without a signature, as a peer's transaction must carry one; `CreateTransaction` still accepts an unsigned typed transaction so signers can build one. Pass `allowBlobNetworkWrapper: false` to refuse the sidecar form of an EIP-4844 transaction (a broadcast carries the bare transaction).
+
+```csharp
+var tx = TransactionFactory.ReadTransaction(new RlpReader(rlp), allowBlobNetworkWrapper: false);
+```
+
+Backed by `FoundationsModelDocExampleTests.Given_ALegacyTransaction_When_ReadFromAnRlpReader_Then_ItEqualsTheTransactionCreatedFromTheBytes`.
+
+A refused transaction raises one of these exceptions (all derive from `System.Exception`):
+
+```csharp
+public class TransactionNonceOverflowException : Exception
+{
+    public EvmUInt256 Nonce { get; }
+    public TransactionNonceOverflowException(EvmUInt256 nonce);
+}
+
+public class TransactionRlpLengthException : Exception
+{
+    public TransactionRlpLengthException(int availableBytes, int rlpItemBytes);
+}
+
+public class TransactionFieldFormatException : Exception
+{
+    public LegacyTransactionField Field { get; }
+    public TransactionFieldFormatException(LegacyTransactionField field, string found);
+}
+
+public class AuthorisationFormatException : Exception
+{
+    public AuthorisationFormatException(string reason);
+}
+
+public class ScalarWiderThanItsFieldException : Exception
+{
+    public LegacyTransactionField Field { get; }
+    public int ByteCount { get; }
+    public ScalarWiderThanItsFieldException(LegacyTransactionField field, int byteCount);
+    public ScalarWiderThanItsFieldException(LegacyTransactionField field, int byteCount, int fieldBytes);
+}
+```
+
+`LegacyTransactionField` names the field: `Nonce`, `GasPrice`, `GasLimit`, `ReceiveAddress`, `Value`, `Data`, `ChainId`, `MaxPriorityFeePerGas`, `MaxFeePerGas`, `MaxFeePerBlobGas`, `SignatureV`, `SignatureR`, `SignatureS`. An EIP-7702 authorisation must be a list of exactly six canonical fields (chain id U256, address 20 bytes, nonce U64, y-parity U8, r and s U256) or `AuthorisationFormatException` is thrown.
+
+```csharp
+var exception = Assert.Throws<TransactionFieldFormatException>(() => TransactionFactory.CreateTransaction(rlp));
+Assert.Equal(LegacyTransactionField.ReceiveAddress, exception.Field);
+```
+
+Backed by `FoundationsModelDocExampleTests.Given_ATransactionWhoseReceiverIsNotTwentyBytes_When_Decoded_Then_ATransactionFieldFormatExceptionNamesTheField`.
+
+The same reader-based decoders are public for the other types: `LogEncoder.Decode(RlpReader)` and `DecodeList(RlpReader)`, `ReceiptEncoder.Decode(RlpReader)`, `WithdrawalEncoder.Decode(RlpReader)`, `BlockBodiesMessageEncoder.ReadBody(RlpReader, bool allowBlobNetworkWrapper = true)` and `DecodeBody(byte[], bool allowBlobNetworkWrapper = true)`, `NewBlockMessageEncoder.DecodeBlock(byte[], bool allowBlobNetworkWrapper = true)`, `ForkIdEncoder.Read(RlpReader, out uint forkHash, out ulong forkNext)` and `ReceiptsMessageEth69Encoder.ReadBlockReceipts(RlpReader)` / `ReadSingleReceipt(RlpReader)`. A receipt's status is empty, `0x01` or a 32-byte root, and a typed receipt is type 1 to 4.
+
+`BlobSidecar.WrapperVersion` (`byte`) carries the EIP-7594 network wrapper version: `Transaction4844Encoder` decodes `rlp([tx_payload_body, wrapper_version, blobs, commitments, cell_proofs])` and emits the five-element form when it is non-zero. A sidecar with a wrapper version other than 1 is refused with `InvalidOperationException`. Blob, commitment and proof element sizes (131072, 48, 48) are checked at decode.
+
+### Peer Message Limits
+
+```csharp
+public static class BlockRangeValidator
+{
+    public static string Violation(ulong earliestBlock, ulong latestBlock, byte[] latestBlockHash);
+}
+
+public static class PeerResponseBounds
+{
+    public const int MaxTransactionAnnouncements = 5000;
+    public const int MinimumTransactionGas = 21000;
+    public const long ImplausibleBlockGasLimit = 1000000000;
+    public const int MaxTransactionsPerBlock = (int)(ImplausibleBlockGasLimit / MinimumTransactionGas);
+    public static bool ExceedsWhatABlockCanHold(RLPCollection perBlockItems);
+}
+
+public static class SnapServingLimits
+{
+    public const int MaxTrieNodeLookups = 1024;
+    public const int MaxResponseProofNodes = 128;
+}
+```
+
+`BlockRangeValidator.Violation` returns `null` for an acceptable advertised range and `"earliest > latest"` or `"zero latest hash"` otherwise; the DevP2P status validation and block-range-update handling disconnect a peer whose range it flags. `TransactionsMessageEncoder.Decode` refuses a `Transactions` message of more than `PeerResponseBounds.MaxTransactionAnnouncements` transactions, one that repeats a transaction hash, one that carries any EIP-4844 blob transaction (`"disallowed broadcast blob transaction"`; a broadcast carries no blobs) and one that carries an unsigned typed transaction (`InvalidOperationException` in each case); `PeerResponseBounds.ExceedsWhatABlockCanHold` is true when a per-block item list is longer than `MaxTransactionsPerBlock`, the most transactions a block of the largest plausible gas limit can hold; a `GetTrieNodes` request materialises at most `SnapServingLimits.MaxTrieNodeLookups` paths and a snap response proof holds at most `MaxResponseProofNodes` nodes.
+
+```csharp
+Assert.Null(BlockRangeValidator.Violation(0, 100, hash));
+Assert.Equal("earliest > latest", BlockRangeValidator.Violation(101, 100, hash));
+Assert.Equal("zero latest hash", BlockRangeValidator.Violation(0, 100, new byte[32]));
+Assert.Equal(5000, PeerResponseBounds.MaxTransactionAnnouncements);
+```
+
+Backed by `FoundationsModelDocExampleTests.Given_AnAdvertisedBlockRange_When_Validated_Then_AViolationNamesWhatIsWrong` and `FoundationsModelDocExampleTests.Given_TheServingLimits_Then_TheyCarryTheValuesPeersAreHeldTo`.
+
+### ENR Records
+
+`EnrRecord` (`Nethereum.Model.Enr`) holds an EIP-778 node record. A value that is an RLP list, such as the `eth` fork-id entry, is stored with `SetListValue` and emitted verbatim, so the record's signature still verifies after a round trip; `EnrRecordEncoder.Decode` keeps a list value as its exact bytes and rejects a record whose keys are not unique and sorted, whose sequence is wider than 64 bits or has a leading zero, or that exceeds `EnrRecord.MaxEncodedSize` (300).
+
+```csharp
+public void SetListValue(string key, byte[] encodedList);
+public bool IsListValue(string key);
+```
+
+```csharp
+var record = new EnrRecord { Sequence = 1 };
+record.Pairs["ip"] = new byte[] { 8, 8, 4, 4 };
+record.SetListValue("eth", new byte[] { 0xc2, 0x01, 0x02 });
+
+var decoded = EnrRecordEncoder.Decode(EnrRecordEncoder.EncodeRecord(record));
+Assert.True(decoded.IsListValue("eth"));
+```
+
+`SetListValue` throws `ArgumentException` unless the bytes are exactly one RLP-encoded list. Backed by `FoundationsModelDocExampleTests.Given_AListValuedEnrEntry_When_EncodedAndDecoded_Then_TheListSurvivesVerbatim`.
 
 ## Related Packages
 

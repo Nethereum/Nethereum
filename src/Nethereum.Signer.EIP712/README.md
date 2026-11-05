@@ -766,6 +766,21 @@ var domain = new Domain
 };
 ```
 
+### What the Encoder Accepts
+
+`Eip712TypedDataSigner` encodes through `Eip712TypedDataEncoder`, which follows go-ethereum's `apitypes`. The same input therefore gives the same hash as `eth_signTypedData_v4` on geth and MetaMask, including recursive types and struct names such as `Point1`. Input the types do not describe is refused with `ArgumentException` rather than signed: an unknown member type, a type that references itself directly, a missing declared field, a value that does not match its type (an `address` that is not 20 bytes, a `bytesN` of the wrong length, an integer outside the declared width). Keys in the message or domain that the types do not declare are ignored. See the Nethereum.ABI README for the full value rules.
+
+A `TypedData<TDomain>` is not modified by signing, and its `Domain` is read on every call, so a domain changed after a first signature is the domain of the next one:
+
+```csharp
+var first = signer.SignTypedDataV4(permit, typedData, key);
+
+typedData.Domain = new Domain { Name = "Token", Version = "1", ChainId = 11155111, VerifyingContract = contractB };
+var second = signer.SignTypedDataV4(permit, typedData, key);
+```
+
+Backed by `Eip712DomainChangedAfterEncodeTests.Given_a_signed_typed_data_When_a_new_Domain_is_assigned_and_signed_again_Then_the_signature_is_for_the_new_domain` and `FoundationsEip712DocExampleTests.Given_AnAddressWithAndWithoutThePrefixAndAnOutOfRangeInteger_When_Encoded_Then_TheAddressFormsMatchAndTheIntegerIsRefused`.
+
 ### Type Order Matters
 
 Member order in type definitions must match exactly:

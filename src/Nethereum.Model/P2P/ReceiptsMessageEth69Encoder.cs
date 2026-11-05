@@ -58,61 +58,44 @@ namespace Nethereum.Model.P2P
 
         public static ReceiptsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var msg = new ReceiptsMessage
-            {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
-            };
-
-            var blockList = (RLPCollection)outer[1];
-            foreach (RLPCollection blockReceipts in blockList)
-            {
-                if (PeerResponseBounds.ExceedsWhatABlockCanHold(blockReceipts)) break;
-                msg.ReceiptsByBlock.Add(DecodeBlockReceipts(blockReceipts));
-            }
-
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var msg = new ReceiptsMessage { RequestId = reader.ReadUInt64() };
+            PeerRlp.ReadReceiptBlocks(reader, ReadSingleReceipt, msg.ReceiptsByBlock);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
 
         public static List<Receipt> DecodeBlockReceipts(RLPCollection blockReceipts)
         {
-            var receipts = new List<Receipt>();
-            foreach (RLPCollection receiptFields in blockReceipts)
-                receipts.Add(DecodeSingleReceipt(receiptFields));
+            var reader = new RlpReader(blockReceipts.RLPData);
+            var receipts = ReadBlockReceipts(reader);
+            reader.EnsureEnd();
             return receipts;
         }
 
         public static Receipt DecodeSingleReceipt(RLPCollection receiptFields)
         {
-            var txTypeBytes = receiptFields[0].RLPData ?? new byte[0];
-            var receipt = new Receipt
-            {
-                TransactionType = txTypeBytes.Length == 0 ? (byte)0 : txTypeBytes[txTypeBytes.Length - 1],
-                PostStateOrStatus = receiptFields[1].RLPData ?? new byte[0],
-                CumulativeGasUsed = receiptFields[2].RLPData.ToEvmUInt256FromRLPDecoded()
-            };
-
-            var logsCollection = (RLPCollection)receiptFields[3];
-            receipt.Logs = new List<Log>();
-            foreach (var logData in logsCollection)
-            {
-                receipt.Logs.Add(LogEncoder.Current.Decode(logData.RLPData));
-            }
-
-            // EIP-7642: eth/69 strips the bloom from the wire and
-            // expects the receiver to recompute it from the logs.
-            // Without this, downstream receipt-root computation
-            // (which encodes via ReceiptEncoder.Encode and includes
-            // the bloom field) sees a zeroed bloom and produces the
-            // wrong trie root.
-            var bloom = new LogBloomFilter();
-            foreach (var log in receipt.Logs)
-            {
-                bloom.AddLog(log);
-            }
-            receipt.Bloom = bloom.Data;
-
+            var reader = new RlpReader(receiptFields.RLPData);
+            var receipt = ReadSingleReceipt(reader);
+            reader.EnsureEnd();
             return receipt;
+        }
+
+        public static List<Receipt> ReadBlockReceipts(RlpReader reader)
+        {
+            var scope = reader.ReadListHeader();
+            var receipts = new List<Receipt>();
+            while (!reader.IsAtEnd(scope))
+                receipts.Add(ReadSingleReceipt(reader));
+            reader.EnsureEnd(scope);
+            return receipts;
+        }
+
+        public static Receipt ReadSingleReceipt(RlpReader reader)
+        {
+            return ReceiptRlpDecoder.ReadEth69(reader);
         }
     }
 }

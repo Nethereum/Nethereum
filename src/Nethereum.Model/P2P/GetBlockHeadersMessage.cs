@@ -17,30 +17,24 @@ namespace Nethereum.Model.P2P
     {
         public static GetBlockHeadersMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var inner = (RLPCollection)outer[1];
-
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var msg = new GetBlockHeadersMessage
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64()
             };
 
-            var startData = inner[0].RLPData ?? new byte[0];
-            if (startData.Length == 32)
-            {
-                msg.StartBlockHash = startData;
-            }
+            var inner = reader.ReadListHeader();
+            if (reader.PeekSize() == PeerRlp.HashLength)
+                msg.StartBlockHash = reader.ReadFixed(PeerRlp.HashLength);
             else
-            {
-                msg.StartBlock = (ulong)startData.ToLongFromRLPDecoded();
-            }
-
-            msg.Limit = (ulong)inner[1].RLPData.ToLongFromRLPDecoded();
-            msg.Skip = (ulong)inner[2].RLPData.ToLongFromRLPDecoded();
-
-            var reverseData = inner[3].RLPData ?? new byte[0];
-            msg.Reverse = reverseData.Length > 0 && reverseData[0] != 0;
-
+                msg.StartBlock = reader.ReadUInt64();
+            msg.Limit = reader.ReadUInt64();
+            msg.Skip = reader.ReadUInt64();
+            msg.Reverse = reader.ReadBool();
+            reader.EnsureEnd(inner);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
 

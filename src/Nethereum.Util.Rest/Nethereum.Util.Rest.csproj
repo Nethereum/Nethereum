@@ -8,7 +8,7 @@
 		<TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
 		<AssemblyName>Nethereum.Util.Rest</AssemblyName>
 		<PackageId>Nethereum.Util.Rest</PackageId>
-		<PackageTags>Netherum;Ethereum;Blockchain;Util;Rest Client</PackageTags>
+		<PackageTags>Nethereum;Ethereum;Blockchain;Util;Rest Client</PackageTags>
 		<LangVersion>Latest</LangVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>

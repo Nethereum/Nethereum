@@ -1,4 +1,5 @@
-﻿using Nethereum.Model;
+﻿using System;
+using Nethereum.Model;
 
 namespace Nethereum.Signer
 {
@@ -21,19 +22,52 @@ namespace Nethereum.Signer
 
         public byte[] GetPublicKey(ISignedTransaction transaction)
         {
-            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).GetPubKey();
+            return RecoverKey(transaction).GetPubKey();
         }
 
         public string GetSenderAddress(ISignedTransaction transaction)
         {
-            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).GetPublicAddress();
+            return RecoverKey(transaction).GetPublicAddress();
         }
 
         public bool VerifyTransaction(ISignedTransaction transaction)
         {
+            var key = EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction);
+            if (key == null)
+            {
+                return false;
+            }
+
             var signature = EthECDSASignatureFactory.FromSignature(transaction.Signature);
-            return EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction).VerifyAllowingOnlyLowS(transaction.RawHash, signature);
+            if (transaction.TransactionType != TransactionType.LegacyTransaction
+                && transaction.TransactionType != TransactionType.LegacyChainTransaction
+                && !HasCanonicalTypedSignature(transaction, signature))
+            {
+                return false;
+            }
+
+            return key.VerifyAllowingOnlyLowS(transaction.RawHash, signature);
         }
 
+        private static bool HasCanonicalTypedSignature(ISignedTransaction transaction, EthECDSASignature signature)
+        {
+            var v = transaction.Signature.V;
+            if (v == null || v.Length > 1 || (v.Length == 1 && v[0] > 1))
+            {
+                return false;
+            }
+
+            return signature.IsCanonical;
+        }
+
+        private static EthECKey RecoverKey(ISignedTransaction transaction)
+        {
+            var key = EthECKeyBuilderFromSignedTransaction.GetEthECKey(transaction);
+            if (key == null)
+            {
+                throw new InvalidOperationException("The transaction signature does not recover a sender.");
+            }
+            return key;
+        }
     }
 }

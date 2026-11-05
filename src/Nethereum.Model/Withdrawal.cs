@@ -25,16 +25,28 @@ namespace Nethereum.Model
             );
         }
 
+        private const int AddressLength = 20;
+
         public Withdrawal Decode(byte[] data)
         {
-            var items = (RLPCollection)RLP.RLP.Decode(data);
-            return new Withdrawal
+            var reader = new RlpReader(data);
+            var withdrawal = Decode(reader);
+            reader.EnsureEnd();
+            return withdrawal;
+        }
+
+        public Withdrawal Decode(RlpReader reader)
+        {
+            var scope = reader.ReadListHeader();
+            var withdrawal = new Withdrawal
             {
-                Index = (ulong)items[0].RLPData.ToLongFromRLPDecoded(),
-                ValidatorIndex = (ulong)items[1].RLPData.ToLongFromRLPDecoded(),
-                Address = items[2].RLPData,
-                AmountInGwei = (ulong)items[3].RLPData.ToLongFromRLPDecoded()
+                Index = reader.ReadUInt64(),
+                ValidatorIndex = reader.ReadUInt64(),
+                Address = reader.ReadFixed(AddressLength),
+                AmountInGwei = reader.ReadUInt64()
             };
+            reader.EnsureEnd(scope);
+            return withdrawal;
         }
     }
 }

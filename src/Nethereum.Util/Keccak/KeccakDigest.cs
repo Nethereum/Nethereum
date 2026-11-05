@@ -6,64 +6,6 @@ namespace Nethereum.Util.Keccak
 {
     public class KeccakDigest
     {
-        private static readonly ulong[] KeccakRoundConstants = KeccakInitializeRoundConstants();
-
-        private static readonly int[] KeccakRhoOffsets = KeccakInitializeRhoOffsets();
-
-        private static ulong[] KeccakInitializeRoundConstants()
-        {
-            ulong[] keccakRoundConstants = new ulong[24];
-            byte LFSRState = 0x01;
-
-            for (int i = 0; i < 24; i++)
-            {
-                keccakRoundConstants[i] = 0;
-                for (int j = 0; j < 7; j++)
-                {
-                    int bitPosition = (1 << j) - 1;
-
-                    // LFSR86540
-
-                    bool loBit = (LFSRState & 0x01) != 0;
-                    if (loBit)
-                    {
-                        keccakRoundConstants[i] ^= 1UL << bitPosition;
-                    }
-
-                    bool hiBit = (LFSRState & 0x80) != 0;
-                    LFSRState <<= 1;
-                    if (hiBit)
-                    {
-                        LFSRState ^= 0x71;
-                    }
-                }
-            }
-
-            return keccakRoundConstants;
-        }
-
-        private static int[] KeccakInitializeRhoOffsets()
-        {
-            int[] keccakRhoOffsets = new int[25];
-            int x, y, t, newX, newY;
-
-            int rhoOffset = 0;
-            keccakRhoOffsets[0] = rhoOffset;
-            x = 1;
-            y = 0;
-            for (t = 1; t < 25; t++)
-            {
-                rhoOffset = (rhoOffset + t) & 63;
-                keccakRhoOffsets[(((x) % 5) + 5 * ((y) % 5))] = rhoOffset;
-                newX = (0 * x + 1 * y) % 5;
-                newY = (2 * x + 3 * y) % 5;
-                x = newX;
-                y = newY;
-            }
-
-            return keccakRhoOffsets;
-        }
-
         private static readonly int STATE_LENGTH = (1600 / 8);
 
         private ulong[] state = new ulong[STATE_LENGTH / 8];
@@ -314,13 +256,7 @@ namespace Nethereum.Util.Keccak
 
         private void KeccakAbsorb(byte[] data, int off)
         {
-            int count = rate >> 6;
-            for (int i = 0; i < count; ++i)
-            {
-                state[i] ^= Pack.LE_To_UInt64(data, off);
-                off += 8;
-            }
-
+            KeccakF1600.XorLanes(state, data, off, rate >> 6);
             KeccakPermutation();
         }
 
@@ -331,131 +267,337 @@ namespace Nethereum.Util.Keccak
 
         private void KeccakPermutation()
         {
-            for (int i = 0; i < 24; i++)
+            KeccakF1600.Permute(state);
+        }
+    }
+
+    internal static class KeccakF1600
+    {
+        internal const int StateLanes = 25;
+        internal const int Keccak256RateBytes = 136;
+        internal const int Keccak256RateLanes = 17;
+        internal const int Keccak256OutputBytes = 32;
+
+        private static readonly ulong[] RoundConstants =
+        {
+            0x0000000000000001UL, 0x0000000000008082UL, 0x800000000000808AUL, 0x8000000080008000UL,
+            0x000000000000808BUL, 0x0000000080000001UL, 0x8000000080008081UL, 0x8000000000008009UL,
+            0x000000000000008AUL, 0x0000000000000088UL, 0x0000000080008009UL, 0x000000008000000AUL,
+            0x000000008000808BUL, 0x800000000000008BUL, 0x8000000000008089UL, 0x8000000000008003UL,
+            0x8000000000008002UL, 0x8000000000000080UL, 0x000000000000800AUL, 0x800000008000000AUL,
+            0x8000000080008081UL, 0x8000000000008080UL, 0x0000000080000001UL, 0x8000000080008008UL
+        };
+
+        [ThreadStatic] private static ulong[] _threadState;
+
+        internal static void Keccak256(byte[] input, int offset, int length, byte[] output, int outputOffset)
+        {
+            var state = _threadState ?? (_threadState = new ulong[StateLanes]);
+            Array.Clear(state, 0, StateLanes);
+
+            while (length >= Keccak256RateBytes)
             {
-                Theta(state);
-                Rho(state);
-                Pi(state);
-                Chi(state);
-                Iota(state, i);
+                XorLanes(state, input, offset, Keccak256RateLanes);
+                Permute(state);
+                offset += Keccak256RateBytes;
+                length -= Keccak256RateBytes;
+            }
+
+            var fullLanes = length >> 3;
+            XorLanes(state, input, offset, fullLanes);
+            offset += fullLanes << 3;
+
+            var tailBytes = length & 7;
+            var tail = 0UL;
+            for (var i = 0; i < tailBytes; i++)
+            {
+                tail |= (ulong)input[offset + i] << (i << 3);
+            }
+
+            state[fullLanes] ^= tail | (1UL << (tailBytes << 3));
+            state[Keccak256RateLanes - 1] ^= 0x8000000000000000UL;
+            Permute(state);
+
+            StoreLane(state[0], output, outputOffset);
+            StoreLane(state[1], output, outputOffset + 8);
+            StoreLane(state[2], output, outputOffset + 16);
+            StoreLane(state[3], output, outputOffset + 24);
+        }
+
+        internal static void XorLanes(ulong[] state, byte[] data, int offset, int laneCount)
+        {
+            for (var i = 0; i < laneCount; i++)
+            {
+                state[i] ^= LoadLane(data, offset);
+                offset += 8;
             }
         }
 
-        private static ulong leftRotate(ulong v, int r)
+        internal static ulong LoadLane(byte[] data, int offset)
         {
-            return (v << r) | (v >> -r);
-        }
-
-        private static void Theta(ulong[] A)
-        {
-            ulong C0 = A[0 + 0] ^ A[0 + 5] ^ A[0 + 10] ^ A[0 + 15] ^ A[0 + 20];
-            ulong C1 = A[1 + 0] ^ A[1 + 5] ^ A[1 + 10] ^ A[1 + 15] ^ A[1 + 20];
-            ulong C2 = A[2 + 0] ^ A[2 + 5] ^ A[2 + 10] ^ A[2 + 15] ^ A[2 + 20];
-            ulong C3 = A[3 + 0] ^ A[3 + 5] ^ A[3 + 10] ^ A[3 + 15] ^ A[3 + 20];
-            ulong C4 = A[4 + 0] ^ A[4 + 5] ^ A[4 + 10] ^ A[4 + 15] ^ A[4 + 20];
-
-            ulong dX = leftRotate(C1, 1) ^ C4;
-
-            A[0] ^= dX;
-            A[5] ^= dX;
-            A[10] ^= dX;
-            A[15] ^= dX;
-            A[20] ^= dX;
-
-            dX = leftRotate(C2, 1) ^ C0;
-
-            A[1] ^= dX;
-            A[6] ^= dX;
-            A[11] ^= dX;
-            A[16] ^= dX;
-            A[21] ^= dX;
-
-            dX = leftRotate(C3, 1) ^ C1;
-
-            A[2] ^= dX;
-            A[7] ^= dX;
-            A[12] ^= dX;
-            A[17] ^= dX;
-            A[22] ^= dX;
-
-            dX = leftRotate(C4, 1) ^ C2;
-
-            A[3] ^= dX;
-            A[8] ^= dX;
-            A[13] ^= dX;
-            A[18] ^= dX;
-            A[23] ^= dX;
-
-            dX = leftRotate(C0, 1) ^ C3;
-
-            A[4] ^= dX;
-            A[9] ^= dX;
-            A[14] ^= dX;
-            A[19] ^= dX;
-            A[24] ^= dX;
-        }
-
-        private static void Rho(ulong[] A)
-        {
-            // KeccakRhoOffsets[0] == 0
-            for (int x = 1; x < 25; x++)
+            if (BitConverter.IsLittleEndian)
             {
-                A[x] = leftRotate(A[x], KeccakRhoOffsets[x]);
+                return BitConverter.ToUInt64(data, offset);
             }
+
+            return data[offset]
+                   | (ulong)data[offset + 1] << 8
+                   | (ulong)data[offset + 2] << 16
+                   | (ulong)data[offset + 3] << 24
+                   | (ulong)data[offset + 4] << 32
+                   | (ulong)data[offset + 5] << 40
+                   | (ulong)data[offset + 6] << 48
+                   | (ulong)data[offset + 7] << 56;
         }
 
-        private static void Pi(ulong[] A)
+        internal static void StoreLane(ulong lane, byte[] data, int offset)
         {
-            ulong a1 = A[1];
-            A[1] = A[6];
-            A[6] = A[9];
-            A[9] = A[22];
-            A[22] = A[14];
-            A[14] = A[20];
-            A[20] = A[2];
-            A[2] = A[12];
-            A[12] = A[13];
-            A[13] = A[19];
-            A[19] = A[23];
-            A[23] = A[15];
-            A[15] = A[4];
-            A[4] = A[24];
-            A[24] = A[21];
-            A[21] = A[8];
-            A[8] = A[16];
-            A[16] = A[5];
-            A[5] = A[3];
-            A[3] = A[18];
-            A[18] = A[17];
-            A[17] = A[11];
-            A[11] = A[7];
-            A[7] = A[10];
-            A[10] = a1;
+            data[offset + 7] = (byte)(lane >> 56);
+            data[offset] = (byte)lane;
+            data[offset + 1] = (byte)(lane >> 8);
+            data[offset + 2] = (byte)(lane >> 16);
+            data[offset + 3] = (byte)(lane >> 24);
+            data[offset + 4] = (byte)(lane >> 32);
+            data[offset + 5] = (byte)(lane >> 40);
+            data[offset + 6] = (byte)(lane >> 48);
         }
 
-        private static void Chi(ulong[] A)
+        internal static void Permute(ulong[] state)
         {
-            ulong chiC0, chiC1, chiC2, chiC3, chiC4;
+            var asu = state[24];
+            var aba = state[0];
+            var abe = state[1];
+            var abi = state[2];
+            var abo = state[3];
+            var abu = state[4];
+            var aga = state[5];
+            var age = state[6];
+            var agi = state[7];
+            var ago = state[8];
+            var agu = state[9];
+            var aka = state[10];
+            var ake = state[11];
+            var aki = state[12];
+            var ako = state[13];
+            var aku = state[14];
+            var ama = state[15];
+            var ame = state[16];
+            var ami = state[17];
+            var amo = state[18];
+            var amu = state[19];
+            var asa = state[20];
+            var ase = state[21];
+            var asi = state[22];
+            var aso = state[23];
 
-            for (int yBy5 = 0; yBy5 < 25; yBy5 += 5)
+            ulong eba, ebe, ebi, ebo, ebu, ega, ege, egi, ego, egu, eka, eke, eki, eko, eku;
+            ulong ema, eme, emi, emo, emu, esa, ese, esi, eso, esu;
+            ulong b0, b1, b2, b3, b4, d0, d1, d2, d3, d4, t;
+
+            var c0 = aba ^ aga ^ aka ^ ama ^ asa;
+            var c1 = abe ^ age ^ ake ^ ame ^ ase;
+            var c2 = abi ^ agi ^ aki ^ ami ^ asi;
+            var c3 = abo ^ ago ^ ako ^ amo ^ aso;
+            var c4 = abu ^ agu ^ aku ^ amu ^ asu;
+
+            var rc = RoundConstants;
+            for (var round = 0; round < 24; round += 2)
             {
-                chiC0 = A[0 + yBy5] ^ ((~A[(((0 + 1) % 5) + yBy5)]) & A[(((0 + 2) % 5) + yBy5)]);
-                chiC1 = A[1 + yBy5] ^ ((~A[(((1 + 1) % 5) + yBy5)]) & A[(((1 + 2) % 5) + yBy5)]);
-                chiC2 = A[2 + yBy5] ^ ((~A[(((2 + 1) % 5) + yBy5)]) & A[(((2 + 2) % 5) + yBy5)]);
-                chiC3 = A[3 + yBy5] ^ ((~A[(((3 + 1) % 5) + yBy5)]) & A[(((3 + 2) % 5) + yBy5)]);
-                chiC4 = A[4 + yBy5] ^ ((~A[(((4 + 1) % 5) + yBy5)]) & A[(((4 + 2) % 5) + yBy5)]);
-
-                A[0 + yBy5] = chiC0;
-                A[1 + yBy5] = chiC1;
-                A[2 + yBy5] = chiC2;
-                A[3 + yBy5] = chiC3;
-                A[4 + yBy5] = chiC4;
+                d0 = c4 ^ ((c1 << 1) | (c1 >> 63));
+                d1 = c0 ^ ((c2 << 1) | (c2 >> 63));
+                d2 = c1 ^ ((c3 << 1) | (c3 >> 63));
+                d3 = c2 ^ ((c4 << 1) | (c4 >> 63));
+                d4 = c3 ^ ((c0 << 1) | (c0 >> 63));
+                b0 = aba ^ d0;
+                t = age ^ d1;
+                b1 = (t << 44) | (t >> 20);
+                t = aki ^ d2;
+                b2 = (t << 43) | (t >> 21);
+                t = amo ^ d3;
+                b3 = (t << 21) | (t >> 43);
+                t = asu ^ d4;
+                b4 = (t << 14) | (t >> 50);
+                eba = b0 ^ (~b1 & b2) ^ rc[round];
+                ebe = b1 ^ (~b2 & b3);
+                ebi = b2 ^ (~b3 & b4);
+                ebo = b3 ^ (~b4 & b0);
+                ebu = b4 ^ (~b0 & b1);
+                t = abo ^ d3;
+                b0 = (t << 28) | (t >> 36);
+                t = agu ^ d4;
+                b1 = (t << 20) | (t >> 44);
+                t = aka ^ d0;
+                b2 = (t << 3) | (t >> 61);
+                t = ame ^ d1;
+                b3 = (t << 45) | (t >> 19);
+                t = asi ^ d2;
+                b4 = (t << 61) | (t >> 3);
+                ega = b0 ^ (~b1 & b2);
+                ege = b1 ^ (~b2 & b3);
+                egi = b2 ^ (~b3 & b4);
+                ego = b3 ^ (~b4 & b0);
+                egu = b4 ^ (~b0 & b1);
+                t = abe ^ d1;
+                b0 = (t << 1) | (t >> 63);
+                t = agi ^ d2;
+                b1 = (t << 6) | (t >> 58);
+                t = ako ^ d3;
+                b2 = (t << 25) | (t >> 39);
+                t = amu ^ d4;
+                b3 = (t << 8) | (t >> 56);
+                t = asa ^ d0;
+                b4 = (t << 18) | (t >> 46);
+                eka = b0 ^ (~b1 & b2);
+                eke = b1 ^ (~b2 & b3);
+                eki = b2 ^ (~b3 & b4);
+                eko = b3 ^ (~b4 & b0);
+                eku = b4 ^ (~b0 & b1);
+                t = abu ^ d4;
+                b0 = (t << 27) | (t >> 37);
+                t = aga ^ d0;
+                b1 = (t << 36) | (t >> 28);
+                t = ake ^ d1;
+                b2 = (t << 10) | (t >> 54);
+                t = ami ^ d2;
+                b3 = (t << 15) | (t >> 49);
+                t = aso ^ d3;
+                b4 = (t << 56) | (t >> 8);
+                ema = b0 ^ (~b1 & b2);
+                eme = b1 ^ (~b2 & b3);
+                emi = b2 ^ (~b3 & b4);
+                emo = b3 ^ (~b4 & b0);
+                emu = b4 ^ (~b0 & b1);
+                t = abi ^ d2;
+                b0 = (t << 62) | (t >> 2);
+                t = ago ^ d3;
+                b1 = (t << 55) | (t >> 9);
+                t = aku ^ d4;
+                b2 = (t << 39) | (t >> 25);
+                t = ama ^ d0;
+                b3 = (t << 41) | (t >> 23);
+                t = ase ^ d1;
+                b4 = (t << 2) | (t >> 62);
+                esa = b0 ^ (~b1 & b2);
+                ese = b1 ^ (~b2 & b3);
+                esi = b2 ^ (~b3 & b4);
+                eso = b3 ^ (~b4 & b0);
+                esu = b4 ^ (~b0 & b1);
+                c0 = eba ^ ega ^ eka ^ ema ^ esa;
+                c1 = ebe ^ ege ^ eke ^ eme ^ ese;
+                c2 = ebi ^ egi ^ eki ^ emi ^ esi;
+                c3 = ebo ^ ego ^ eko ^ emo ^ eso;
+                c4 = ebu ^ egu ^ eku ^ emu ^ esu;
+                d0 = c4 ^ ((c1 << 1) | (c1 >> 63));
+                d1 = c0 ^ ((c2 << 1) | (c2 >> 63));
+                d2 = c1 ^ ((c3 << 1) | (c3 >> 63));
+                d3 = c2 ^ ((c4 << 1) | (c4 >> 63));
+                d4 = c3 ^ ((c0 << 1) | (c0 >> 63));
+                b0 = eba ^ d0;
+                t = ege ^ d1;
+                b1 = (t << 44) | (t >> 20);
+                t = eki ^ d2;
+                b2 = (t << 43) | (t >> 21);
+                t = emo ^ d3;
+                b3 = (t << 21) | (t >> 43);
+                t = esu ^ d4;
+                b4 = (t << 14) | (t >> 50);
+                aba = b0 ^ (~b1 & b2) ^ rc[round + 1];
+                abe = b1 ^ (~b2 & b3);
+                abi = b2 ^ (~b3 & b4);
+                abo = b3 ^ (~b4 & b0);
+                abu = b4 ^ (~b0 & b1);
+                t = ebo ^ d3;
+                b0 = (t << 28) | (t >> 36);
+                t = egu ^ d4;
+                b1 = (t << 20) | (t >> 44);
+                t = eka ^ d0;
+                b2 = (t << 3) | (t >> 61);
+                t = eme ^ d1;
+                b3 = (t << 45) | (t >> 19);
+                t = esi ^ d2;
+                b4 = (t << 61) | (t >> 3);
+                aga = b0 ^ (~b1 & b2);
+                age = b1 ^ (~b2 & b3);
+                agi = b2 ^ (~b3 & b4);
+                ago = b3 ^ (~b4 & b0);
+                agu = b4 ^ (~b0 & b1);
+                t = ebe ^ d1;
+                b0 = (t << 1) | (t >> 63);
+                t = egi ^ d2;
+                b1 = (t << 6) | (t >> 58);
+                t = eko ^ d3;
+                b2 = (t << 25) | (t >> 39);
+                t = emu ^ d4;
+                b3 = (t << 8) | (t >> 56);
+                t = esa ^ d0;
+                b4 = (t << 18) | (t >> 46);
+                aka = b0 ^ (~b1 & b2);
+                ake = b1 ^ (~b2 & b3);
+                aki = b2 ^ (~b3 & b4);
+                ako = b3 ^ (~b4 & b0);
+                aku = b4 ^ (~b0 & b1);
+                t = ebu ^ d4;
+                b0 = (t << 27) | (t >> 37);
+                t = ega ^ d0;
+                b1 = (t << 36) | (t >> 28);
+                t = eke ^ d1;
+                b2 = (t << 10) | (t >> 54);
+                t = emi ^ d2;
+                b3 = (t << 15) | (t >> 49);
+                t = eso ^ d3;
+                b4 = (t << 56) | (t >> 8);
+                ama = b0 ^ (~b1 & b2);
+                ame = b1 ^ (~b2 & b3);
+                ami = b2 ^ (~b3 & b4);
+                amo = b3 ^ (~b4 & b0);
+                amu = b4 ^ (~b0 & b1);
+                t = ebi ^ d2;
+                b0 = (t << 62) | (t >> 2);
+                t = ego ^ d3;
+                b1 = (t << 55) | (t >> 9);
+                t = eku ^ d4;
+                b2 = (t << 39) | (t >> 25);
+                t = ema ^ d0;
+                b3 = (t << 41) | (t >> 23);
+                t = ese ^ d1;
+                b4 = (t << 2) | (t >> 62);
+                asa = b0 ^ (~b1 & b2);
+                ase = b1 ^ (~b2 & b3);
+                asi = b2 ^ (~b3 & b4);
+                aso = b3 ^ (~b4 & b0);
+                asu = b4 ^ (~b0 & b1);
+                c0 = aba ^ aga ^ aka ^ ama ^ asa;
+                c1 = abe ^ age ^ ake ^ ame ^ ase;
+                c2 = abi ^ agi ^ aki ^ ami ^ asi;
+                c3 = abo ^ ago ^ ako ^ amo ^ aso;
+                c4 = abu ^ agu ^ aku ^ amu ^ asu;
             }
-        }
 
-        private static void Iota(ulong[] A, int indexRound)
-        {
-            A[0] ^= KeccakRoundConstants[indexRound];
+            state[24] = asu;
+            state[0] = aba;
+            state[1] = abe;
+            state[2] = abi;
+            state[3] = abo;
+            state[4] = abu;
+            state[5] = aga;
+            state[6] = age;
+            state[7] = agi;
+            state[8] = ago;
+            state[9] = agu;
+            state[10] = aka;
+            state[11] = ake;
+            state[12] = aki;
+            state[13] = ako;
+            state[14] = aku;
+            state[15] = ama;
+            state[16] = ame;
+            state[17] = ami;
+            state[18] = amo;
+            state[19] = amu;
+            state[20] = asa;
+            state[21] = ase;
+            state[22] = asi;
+            state[23] = aso;
         }
     }
 

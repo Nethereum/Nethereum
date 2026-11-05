@@ -30,9 +30,15 @@ namespace Nethereum.Merkle.Binary.Proofs
             {
                 if (proof.Nodes[i] == null || proof.Nodes[i].Length == 0)
                     continue;
-                var node = CompactBinaryNodeCodec.Decode(proof.Nodes[i], 0);
-                var hash = node.ComputeHash(_hashProvider);
-                nodesByHash[hash] = node;
+                try
+                {
+                    var node = CompactBinaryNodeCodec.Decode(proof.Nodes[i], 0);
+                    var hash = node.ComputeHash(_hashProvider);
+                    nodesByHash[hash] = node;
+                }
+                catch (Exception)
+                {
+                }
             }
 
             if (!nodesByHash.TryGetValue(rootHash, out var current))

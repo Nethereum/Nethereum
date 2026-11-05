@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Nethereum.Signer.Bls.Tests
 {
+    [Collection("HerumiNative")]
     public class NativeBlsTests
     {
         [Fact]

@@ -317,7 +317,7 @@ var tampered = verifier.VerifyProof(trie.ComputeRoot(), key, proof);
 Assert.Null(tampered);
 ```
 
-`BuildProof` always returns a `BinaryTrieProof`; when the key is not in the trie, or the trie is empty, the proof simply does not reconstruct the root and the verifier returns `null` (`Proof_MissingKey_ReturnsNull`, `Proof_EmptyTrie_ReturnsNull`). It throws `ArgumentException` if the key is not exactly 32 bytes. The verifier also returns `null` for a null or empty proof and for a null root (`Proof_NullInputs_ReturnsNull`).
+`BuildProof` always returns a `BinaryTrieProof`; when the key is not in the trie, or the trie is empty, the proof simply does not reconstruct the root and the verifier returns `null` (`Proof_MissingKey_ReturnsNull`, `Proof_EmptyTrie_ReturnsNull`). It throws `ArgumentException` if the key is not exactly 32 bytes. The verifier also returns `null` for a null or empty proof and for a null root (`Proof_NullInputs_ReturnsNull`). A proof node that cannot be decoded is skipped rather than raised, so a proof carrying a malformed or truncated node returns `null` (or the honest value when the remaining nodes still reconstruct the root), never another value and never an exception (`BinaryTrieProofSoundnessTests.Given_a_proof_with_a_malformed_node_when_verified_then_it_returns_null_without_throwing`, `BinaryTrieRound2Tests.Given_a_proof_when_any_single_node_is_replaced_by_an_undecodable_blob_then_the_result_is_null_never_another_value`).
 
 ## State diffs — carrying one root to the next
 

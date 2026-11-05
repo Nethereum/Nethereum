@@ -18,6 +18,14 @@ namespace Nethereum.Model
             Decode();
         }
 
+        internal RLPSignedDataHashBuilder(byte[] rawData, byte[][] data, ISignature signature, int numberOfEncodingElements)
+        {
+            rlpSignedEncoded = rawData;
+            this.numberOfEncodingElements = numberOfEncodingElements;
+            Data = data;
+            Signature = signature;
+        }
+
         public RLPSignedDataHashBuilder(byte[][] data) : this(data, data.Length)
         {
         }

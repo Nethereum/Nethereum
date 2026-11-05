@@ -20,6 +20,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.CoreFoundation, "fee-estimation", "EIP-1559 fees with MedianPriorityFee strategy")]
         public async void ShouldBeAbleToCalculateHistoryMedium()

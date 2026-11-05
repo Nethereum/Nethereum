@@ -84,6 +84,49 @@ namespace Nethereum.Util
             );
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "util-evmuint256-slice", "EvmUInt256.FromBigEndian slice")]
+        public static EvmUInt256 FromBigEndian(byte[] source, int offset, int length)
+        {
+            if (length < 0 || length > 32) throw new ArgumentOutOfRangeException(nameof(length));
+            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (source != null && offset + length <= source.Length)
+            {
+                int end = offset + length;
+                return new EvmUInt256(
+                    BigEndianLimbEndingAt(source, offset, end - 24),
+                    BigEndianLimbEndingAt(source, offset, end - 16),
+                    BigEndianLimbEndingAt(source, offset, end - 8),
+                    BigEndianLimbEndingAt(source, offset, end));
+            }
+            ulong u0 = 0, u1 = 0, u2 = 0, u3 = 0;
+            var available = source == null ? 0 : Math.Max(0, Math.Min(length, source.Length - offset));
+            for (var i = 0; i < available; i++)
+            {
+                var place = length - 1 - i;
+                var shifted = (ulong)source[offset + i] << ((place & 7) * 8);
+                switch (place >> 3)
+                {
+                    case 0: u0 |= shifted; break;
+                    case 1: u1 |= shifted; break;
+                    case 2: u2 |= shifted; break;
+                    default: u3 |= shifted; break;
+                }
+            }
+            return new EvmUInt256(u3, u2, u1, u0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong BigEndianLimbEndingAt(byte[] source, int lowest, int end)
+        {
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            if (end - 8 >= lowest)
+                return System.Buffers.Binary.BinaryPrimitives.ReadUInt64BigEndian(new ReadOnlySpan<byte>(source, end - 8, 8));
+#endif
+            ulong limb = 0;
+            for (int i = Math.Max(lowest, end - 8); i < end; i++) limb = (limb << 8) | source[i];
+            return limb;
+        }
+
         public byte[] ToBigEndian()
         {
             var result = new byte[32];
@@ -264,254 +307,15 @@ namespace Nethereum.Util
             if (a < b) { quotient = Zero; remainder = a; return; }
             if (a == b) { quotient = One; remainder = Zero; return; }
 
-            if (b._u3 == 0 && b._u2 == 0 && b._u1 == 0 && b._u0 <= 0xFFFFFFFF)
+            if ((a._u1 | a._u2 | a._u3 | b._u1 | b._u2 | b._u3) == 0)
             {
-                ulong d = b._u0;
-                ulong rem = 0;
-                ulong q3 = 0, q2 = 0, q1 = 0, q0 = 0;
-
-                if (a._u3 != 0) { q3 = a._u3 / d; rem = a._u3 % d; }
-                ulong n2 = (rem << 32) | (a._u2 >> 32);
-                ulong qh2 = n2 / d; rem = n2 % d;
-                ulong n2b = (rem << 32) | (a._u2 & 0xFFFFFFFF);
-                ulong ql2 = n2b / d; rem = n2b % d;
-                q2 = (qh2 << 32) | ql2;
-
-                ulong n1 = (rem << 32) | (a._u1 >> 32);
-                ulong qh1 = n1 / d; rem = n1 % d;
-                ulong n1b = (rem << 32) | (a._u1 & 0xFFFFFFFF);
-                ulong ql1 = n1b / d; rem = n1b % d;
-                q1 = (qh1 << 32) | ql1;
-
-                ulong n0 = (rem << 32) | (a._u0 >> 32);
-                ulong qh0 = n0 / d; rem = n0 % d;
-                ulong n0b = (rem << 32) | (a._u0 & 0xFFFFFFFF);
-                ulong ql0 = n0b / d; rem = n0b % d;
-                q0 = (qh0 << 32) | ql0;
-
-                quotient = new EvmUInt256(q3, q2, q1, q0);
-                remainder = new EvmUInt256(rem);
+                quotient = new EvmUInt256(a._u0 / b._u0);
+                remainder = new EvmUInt256(a._u0 % b._u0);
                 return;
             }
 
-            // Knuth's Algorithm D for multi-limb division using 32-bit digits
-            DivmodKnuth(a, b, out quotient, out remainder);
+            Reduce(a, Zero, b, out quotient, out remainder);
         }
-
-        // Knuth Algorithm D — multi-limb division using base 2^32 digits
-        private static void DivmodKnuth(EvmUInt256 a, EvmUInt256 b, out EvmUInt256 quotient, out EvmUInt256 remainder)
-        {
-            // Convert to base-2^32 digits (little-endian: index 0 = least significant)
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            Span<uint> u = stackalloc uint[8];
-            Span<uint> v = stackalloc uint[8];
-            ToUint32LE(a, u); // 8 digits
-            ToUint32LE(b, v); // 8 digits
-#else
-            uint[] u = ToUint32LE(a); // 8 digits
-            uint[] v = ToUint32LE(b); // 8 digits
-#endif
-
-            // Find actual lengths (number of significant digits)
-            int n = 8; while (n > 1 && v[n - 1] == 0) n--;
-            int m = 8; while (m > 1 && u[m - 1] == 0) m--;
-
-            if (m < n) { quotient = Zero; remainder = a; return; }
-
-            // n == 1: single-digit divisor (already handled above, but safety)
-            if (n == 1)
-            {
-                ulong rem1 = 0;
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-                Span<uint> qd = stackalloc uint[8];
-                qd.Clear();
-#else
-                var qd = new uint[8];
-#endif
-                for (int j = m - 1; j >= 0; j--)
-                {
-                    ulong cur = (rem1 << 32) | u[j];
-                    qd[j] = (uint)(cur / v[0]);
-                    rem1 = cur % v[0];
-                }
-                quotient = FromUint32LE(qd);
-                remainder = new EvmUInt256(0, 0, 0, rem1);
-                return;
-            }
-
-            // D1: Normalize — shift so high bit of v[n-1] is set
-            int shift = Clz32(v[n - 1]);
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            Span<uint> un = stackalloc uint[9]; // m+1 digits for shifted dividend
-            Span<uint> vn = stackalloc uint[8];
-            un.Clear();
-            vn.Clear();
-#else
-            var un = new uint[m + 1]; // m+1 digits for shifted dividend
-            var vn = new uint[n];
-#endif
-
-            if (shift > 0)
-            {
-                for (int i = n - 1; i > 0; i--)
-                    vn[i] = (v[i] << shift) | (v[i - 1] >> (32 - shift));
-                vn[0] = v[0] << shift;
-
-                un[m] = u[m - 1] >> (32 - shift);
-                for (int i = m - 1; i > 0; i--)
-                    un[i] = (u[i] << shift) | (u[i - 1] >> (32 - shift));
-                un[0] = u[0] << shift;
-            }
-            else
-            {
-                for (int i = 0; i < n; i++) vn[i] = v[i];
-                for (int i = 0; i < m; i++) un[i] = u[i];
-                un[m] = 0;
-            }
-
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            Span<uint> q = stackalloc uint[8];
-            q.Clear();
-#else
-            var q = new uint[8];
-#endif
-
-            // D2-D7: Main loop
-            for (int j = m - n; j >= 0; j--)
-            {
-                // D3: Compute trial quotient qhat
-                ulong uHi = ((ulong)un[j + n] << 32) | un[j + n - 1];
-                ulong qhat = uHi / vn[n - 1];
-                ulong rhat = uHi % vn[n - 1];
-
-                // Refine qhat
-                while (qhat > 0xFFFFFFFF || (n >= 2 && qhat * vn[n - 2] > ((rhat << 32) | un[j + n - 2])))
-                {
-                    qhat--;
-                    rhat += vn[n - 1];
-                    if (rhat > 0xFFFFFFFF) break;
-                }
-
-                // D4: Multiply and subtract
-                long borrow = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    ulong p = qhat * vn[i];
-                    long diff = (long)un[j + i] - (long)(uint)p - borrow;
-                    un[j + i] = (uint)diff;
-                    borrow = (long)(p >> 32) - (diff >> 32);
-                }
-                long finalBorrow = (long)un[j + n] - borrow;
-                un[j + n] = (uint)finalBorrow;
-
-                q[j] = (uint)qhat;
-
-                // D6: Add back if we subtracted too much
-                if (finalBorrow < 0)
-                {
-                    q[j]--;
-                    ulong carry = 0;
-                    for (int i = 0; i < n; i++)
-                    {
-                        carry += (ulong)un[j + i] + vn[i];
-                        un[j + i] = (uint)carry;
-                        carry >>= 32;
-                    }
-                    un[j + n] += (uint)carry;
-                }
-            }
-
-            quotient = FromUint32LE(q);
-
-            // D8: Unnormalize remainder
-            if (shift > 0)
-            {
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-                Span<uint> r = stackalloc uint[8];
-                r.Clear();
-#else
-                var r = new uint[8];
-#endif
-                for (int i = 0; i < n - 1; i++)
-                    r[i] = (un[i] >> shift) | (un[i + 1] << (32 - shift));
-                r[n - 1] = un[n - 1] >> shift;
-                remainder = FromUint32LE(r);
-            }
-            else
-            {
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-                Span<uint> r = stackalloc uint[8];
-                r.Clear();
-#else
-                var r = new uint[8];
-#endif
-                int rc = Math.Min(n, 8);
-                for (int i = 0; i < rc; i++) r[i] = un[i];
-                remainder = FromUint32LE(r);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int Clz32(uint x)
-        {
-            if (x == 0) return 32;
-#if NET6_0_OR_GREATER
-            return System.Numerics.BitOperations.LeadingZeroCount(x);
-#else
-            int n = 0;
-            if (x <= 0x0000FFFF) { n += 16; x <<= 16; }
-            if (x <= 0x00FFFFFF) { n += 8; x <<= 8; }
-            if (x <= 0x0FFFFFFF) { n += 4; x <<= 4; }
-            if (x <= 0x3FFFFFFF) { n += 2; x <<= 2; }
-            if (x <= 0x7FFFFFFF) { n += 1; }
-            return n;
-#endif
-        }
-
-#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-        private static void ToUint32LE(EvmUInt256 v, Span<uint> dest)
-        {
-            dest[0] = (uint)v._u0;
-            dest[1] = (uint)(v._u0 >> 32);
-            dest[2] = (uint)v._u1;
-            dest[3] = (uint)(v._u1 >> 32);
-            dest[4] = (uint)v._u2;
-            dest[5] = (uint)(v._u2 >> 32);
-            dest[6] = (uint)v._u3;
-            dest[7] = (uint)(v._u3 >> 32);
-        }
-
-        private static EvmUInt256 FromUint32LE(ReadOnlySpan<uint> d)
-        {
-            return new EvmUInt256(
-                (ulong)d[7] << 32 | d[6],
-                (ulong)d[5] << 32 | d[4],
-                (ulong)d[3] << 32 | d[2],
-                (ulong)d[1] << 32 | d[0]
-            );
-        }
-#else
-        private static uint[] ToUint32LE(EvmUInt256 v)
-        {
-            return new uint[]
-            {
-                (uint)v._u0, (uint)(v._u0 >> 32),
-                (uint)v._u1, (uint)(v._u1 >> 32),
-                (uint)v._u2, (uint)(v._u2 >> 32),
-                (uint)v._u3, (uint)(v._u3 >> 32),
-            };
-        }
-
-        private static EvmUInt256 FromUint32LE(uint[] d)
-        {
-            return new EvmUInt256(
-                (ulong)d[7] << 32 | d[6],
-                (ulong)d[5] << 32 | d[4],
-                (ulong)d[3] << 32 | d[2],
-                (ulong)d[1] << 32 | d[0]
-            );
-        }
-#endif
 
         // --- Modular Arithmetic ---
 
@@ -519,19 +323,8 @@ namespace Nethereum.Util
         {
             if (mod.IsZero) return Zero;
             EvmUInt256 sum = a + b;
-            bool carry = sum < a;
-
-            if (!carry)
-                return sum % mod;
-
-            EvmUInt256 pow256Mod = (MaxValue % mod + One) % mod;
-            EvmUInt256 sumMod = sum % mod;
-            EvmUInt256 result = sumMod + pow256Mod;
-            bool carry2 = result < sumMod;
-            if (!carry2)
-                return result >= mod ? result % mod : result;
-            EvmUInt256 r2 = result % mod;
-            return (r2 + pow256Mod) % mod;
+            Reduce(sum, sum < a ? One : Zero, mod, out _, out var remainder);
+            return remainder;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -585,31 +378,9 @@ namespace Nethereum.Util
         public static EvmUInt256 MulMod(EvmUInt256 a, EvmUInt256 b, EvmUInt256 mod)
         {
             if (mod.IsZero) return Zero;
-            var upper = BigMul(a, b, out var lower512);
-
-            if (upper.IsZero)
-                return lower512 % mod;
-
-            return Mod512(upper, lower512, mod);
-        }
-
-        private static EvmUInt256 Mod512(EvmUInt256 upper, EvmUInt256 lower, EvmUInt256 mod)
-        {
-            EvmUInt256 pow256Mod = (MaxValue % mod + One) % mod;
-
-            EvmUInt256 upperReduced = Zero;
-            EvmUInt256 factor = pow256Mod;
-            EvmUInt256 u = upper;
-            while (!u.IsZero)
-            {
-                if ((u._u0 & 1) == 1)
-                    upperReduced = AddMod(upperReduced, factor, mod);
-                factor = AddMod(factor, factor, mod);
-                u = u >> 1;
-            }
-
-            EvmUInt256 lowerReduced = lower % mod;
-            return AddMod(upperReduced, lowerReduced, mod);
+            var upper = BigMul(a, b, out var lower);
+            Reduce(lower, upper, mod, out _, out var remainder);
+            return remainder;
         }
 
         public static EvmUInt256 ModPow(EvmUInt256 baseVal, EvmUInt256 exponent, EvmUInt256 modulus)

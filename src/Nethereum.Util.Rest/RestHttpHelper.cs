@@ -20,7 +20,11 @@ namespace Nethereum.Util.Rest
 {
     public class RestHttpHelper : IRestHttpHelper
     {
+        public const long DefaultMaxResponseBytes = 32L * 1024 * 1024;
+
         private readonly HttpClient _httpClient;
+
+        public long MaxResponseBytes { get; set; } = DefaultMaxResponseBytes;
 
         public RestHttpHelper(HttpClient httpClient = null)
         {
@@ -28,6 +32,76 @@ namespace Nethereum.Util.Rest
         }
 
        
+        private async Task<string> ReadBodyAsync(HttpContent content)
+        {
+            var declared = content.Headers.ContentLength;
+            if (declared.HasValue && declared.Value > MaxResponseBytes)
+            {
+                throw new HttpRequestException($"Response of {declared.Value} bytes exceeds the {MaxResponseBytes} byte limit.");
+            }
+
+            using (var stream = await content.ReadAsStreamAsync())
+            using (var buffer = new MemoryStream())
+            {
+                var chunk = new byte[81920];
+                int read;
+                while ((read = await stream.ReadAsync(chunk, 0, chunk.Length)) > 0)
+                {
+                    if (buffer.Length + read > MaxResponseBytes)
+                    {
+                        throw new HttpRequestException($"Response exceeds the {MaxResponseBytes} byte limit.");
+                    }
+                    buffer.Write(chunk, 0, read);
+                }
+                buffer.Position = 0;
+                using (var reader = new StreamReader(buffer, ResolveEncoding(content), true))
+                {
+                    return await reader.ReadToEndAsync();
+                }
+            }
+        }
+
+        private static Encoding ResolveEncoding(HttpContent content)
+        {
+            var charset = content.Headers.ContentType?.CharSet;
+            if (string.IsNullOrWhiteSpace(charset))
+            {
+                return Encoding.UTF8;
+            }
+            try
+            {
+                return Encoding.GetEncoding(charset.Trim('"'));
+            }
+            catch (ArgumentException)
+            {
+                return Encoding.UTF8;
+            }
+        }
+
+        private async Task<string> SendForBodyAsync(HttpRequestMessage request, bool errorIncludesHeaders = false)
+        {
+            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await ReadBodyAsync(response.Content);
+                throw new Exception(errorIncludesHeaders
+                    ? $"Error: {response.StatusCode}, {errorBody}, {response.Headers}"
+                    : $"Error: {response.StatusCode}, {errorBody}");
+            }
+
+            return await ReadBodyAsync(response.Content);
+        }
+
+        private static T Deserialize<T>(string content)
+        {
+#if NET8_0_OR_GREATER
+            return JsonSerializer.Deserialize<T>(content);
+#else
+            return JsonConvert.DeserializeObject<T>(content);
+#endif
+        }
+
         public async Task<T> GetAsync<T>(string path, Dictionary<string, string> headers = null)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -40,22 +114,7 @@ namespace Nethereum.Util.Rest
                 }
             }
 
-            var response = await _httpClient.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-
-#if NET8_0_OR_GREATER
-                return JsonSerializer.Deserialize<T>(content); 
-#else
-                return JsonConvert.DeserializeObject<T>(content); 
-#endif
-            }
-            else
-            {
-                throw new Exception($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}, {response.Headers}");
-            }
+            return Deserialize<T>(await SendForBodyAsync(request, true));
         }
 
         public async Task<TResponse> PostAsync<TResponse, TRequest>(string path, TRequest request, Dictionary<string, string> headers = null)
@@ -81,22 +140,7 @@ namespace Nethereum.Util.Rest
                 }
             }
 
-            var response = await _httpClient.SendAsync(requestMessage);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-
-#if NET8_0_OR_GREATER
-                return JsonSerializer.Deserialize<TResponse>(content); 
-#else
-                return JsonConvert.DeserializeObject<TResponse>(content); 
-#endif
-            }
-            else
-            {
-                throw new Exception($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
-            }
+            return Deserialize<TResponse>(await SendForBodyAsync(requestMessage));
         }
 
         public async Task<TResponse> PutAsync<TResponse, TRequest>(string path, TRequest request, Dictionary<string, string> headers = null)
@@ -122,22 +166,7 @@ namespace Nethereum.Util.Rest
                 }
             }
 
-            var response = await _httpClient.SendAsync(requestMessage);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-
-#if NET8_0_OR_GREATER
-                return JsonSerializer.Deserialize<TResponse>(content); 
-#else
-                return JsonConvert.DeserializeObject<TResponse>(content);
-#endif
-            }
-            else
-            {
-                throw new Exception($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
-            }
+            return Deserialize<TResponse>(await SendForBodyAsync(requestMessage));
         }
 
         public async Task DeleteAsync(string path, Dictionary<string, string> headers = null)
@@ -153,12 +182,7 @@ namespace Nethereum.Util.Rest
                 }
             }
 
-            var response = await _httpClient.SendAsync(requestMessage);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
-            }
+            await SendForBodyAsync(requestMessage);
         }
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
@@ -204,22 +228,7 @@ namespace Nethereum.Util.Rest
                 }
             }
 
-            var response = await _httpClient.SendAsync(httpRequest);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Error: {response.StatusCode}, {await response.Content.ReadAsStringAsync()}");
-            }
-
-            var responseStream = await response.Content.ReadAsStreamAsync();
-
-#if NET8_0_OR_GREATER
-    return await JsonSerializer.DeserializeAsync<TResponse>(responseStream);
-#else
-            using var reader = new StreamReader(responseStream);
-            var contentStr = await reader.ReadToEndAsync();
-            return JsonConvert.DeserializeObject<TResponse>(contentStr);
-#endif
+            return Deserialize<TResponse>(await SendForBodyAsync(httpRequest));
         }
     }
 

@@ -26,9 +26,6 @@ namespace Nethereum.Signer
         private static readonly SecureRandom SecureRandom = new SecureRandom();
 
 #if NETCOREAPP3_1 || NET5_0_OR_GREATER
-        /// <summary>
-        /// Enables / Disables whilst signing creating a recoverable id, as opposed to afterward. When enabled this uses NBitcoin.Secp256k1 as opposed to BouncyCastle to create the signature.
-        /// </summary>
 #if NET8_0_OR_GREATER
         public static bool SignRecoverable { get; set; } = true;
 #else
@@ -93,10 +90,9 @@ namespace Nethereum.Signer
             return sharedPoint.GetEncoded(true);
         }
 
-        //Note: Y coordinates can only be forced, so it is assumed 0 and 1 will be the recId (even if implementation allows for 2 and 3)
         internal int CalculateRecId(ECDSASignature signature, byte[] hash)
         {
-            var thisKey = _ecKey.GetPubKey(false); // compressed
+            var thisKey = _ecKey.GetPubKey(false);
             return CalculateRecId(signature, hash, thisKey);
         }
 
@@ -208,7 +204,6 @@ namespace Nethereum.Signer
                 {
                     var pubKey = _ecKey.GetPubKey(false);
                     var arr = new byte[pubKey.Length - 1];
-                    //remove the prefix
                     Array.Copy(pubKey, 1, arr, 0, arr.Length);
                     _publicKeyNoPrefix = arr;
                 }
@@ -220,7 +215,6 @@ namespace Nethereum.Signer
                 {
                     var pubKey = _ecKey.GetPubKey(true);
                     var arr = new byte[pubKey.Length - 1];
-                    //remove the prefix
                     Array.Copy(pubKey, 1, arr, 0, arr.Length);
                     _publicKeyNoPrefixCompressed = arr;
                 }
@@ -286,27 +280,36 @@ namespace Nethereum.Signer
             
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.Signing, "signer-recover-null", "EthECKey.RecoverFromSignature")]
         public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash)
         {
-            return new EthECKey(ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature.ECDSASignature, hash,
+            return Wrap(ECKey.RecoverFromSignature(GetRecIdFromV(signature.V), signature.ECDSASignature, hash,
                 false));
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.Signing, "signer-recover-parity", "EthECKey.RecoverFromParityYSignature")]
         public static EthECKey RecoverFromParityYSignature(EthECDSASignature signature, byte[] hash)
         {
-            return new EthECKey(ECKey.RecoverFromSignature(signature.V.ToIntFromRLPDecoded(), signature.ECDSASignature, hash,
+            return Wrap(ECKey.RecoverFromSignature(signature.V.ToIntFromRLPDecoded(), signature.ECDSASignature, hash,
                 false));
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.Signing, "signer-recover-null", "EthECKey.RecoverFromSignature with recId")]
         public static EthECKey RecoverFromSignature(EthECDSASignature signature, int recId, byte[] hash)
         {
-            return new EthECKey(ECKey.RecoverFromSignature(recId, signature.ECDSASignature, hash, false));
+            return Wrap(ECKey.RecoverFromSignature(recId, signature.ECDSASignature, hash, false));
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.Signing, "signer-recover-null", "EthECKey.RecoverFromSignature with chain id")]
         public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash, BigInteger chainId)
         {
-            return new EthECKey(ECKey.RecoverFromSignature(GetRecIdFromVChain(signature.V, chainId),
+            return Wrap(ECKey.RecoverFromSignature(GetRecIdFromVChain(signature.V, chainId),
                 signature.ECDSASignature, hash, false));
+        }
+
+        private static EthECKey Wrap(ECKey recovered)
+        {
+            return recovered == null ? null : new EthECKey(recovered);
         }
 
         public EthECDSASignature SignAndCalculateV(byte[] hash, BigInteger chainId)

@@ -18,53 +18,67 @@ namespace Nethereum.Model
             LegacyTransactionField.Value
         };
 
+        private const int AddressBytes = 20;
+        private const int SixtyFourBitBytes = 8;
+
         public static void RejectMalformedScalars(byte[] rlp)
         {
-            var items = DecodedListOrNullWhenStructurallyUnreadable(rlp);
-            if (items == null) return;
-
-            RefuseANonCanonicalEncoding(items);
-            RefuseAScalarWiderThanItsField(items);
-        }
-
-        private static void RefuseANonCanonicalEncoding(RLPCollection items)
-        {
-            foreach (var field in ScalarFields)
-            {
-                if ((int)field >= items.Count) return;
-
-                if (!RlpScalar.IsCanonical(items[(int)field].RLPData))
-                    throw new NonCanonicalScalarRlpException(field);
-            }
-        }
-
-        private static void RefuseAScalarWiderThanItsField(RLPCollection items)
-        {
-            foreach (var field in TwoHundredFiftySixBitFields)
-            {
-                if ((int)field >= items.Count) return;
-
-                var scalar = items[(int)field].RLPData;
-                if (!RlpScalar.FitsA256BitField(scalar))
-                    throw new ScalarWiderThanItsFieldException(field, scalar.Length);
-            }
-        }
-
-        private static RLPCollection DecodedListOrNullWhenStructurallyUnreadable(byte[] rlp)
-        {
-            if (rlp == null || rlp.Length == 0) return null;
-
+            SignedRlpFields fields;
             try
             {
-                return RLP.RLP.Decode(rlp) as RLPCollection;
+                fields = RLPSignedDataDecoder.ReadFields(rlp, SignedLegacyTransaction.NUMBER_ENCODING_ELEMENTS);
             }
             catch
             {
-                return null;
+                return;
             }
+
+            RejectMalformedScalars(fields);
+        }
+
+        internal static void RejectMalformedScalars(SignedRlpFields fields)
+        {
+            foreach (var field in ScalarFields)
+            {
+                if (!RlpScalar.IsCanonical(fields.Data[(int)field]))
+                    throw new NonCanonicalScalarRlpException(field);
+            }
+
+            RejectWiderThan64Bits(fields.Data[(int)LegacyTransactionField.GasLimit], LegacyTransactionField.GasLimit);
+
+            foreach (var field in TwoHundredFiftySixBitFields)
+            {
+                var scalar = fields.Data[(int)field];
+                if (!RlpScalar.FitsA256BitField(scalar))
+                    throw new ScalarWiderThanItsFieldException(field, scalar.Length);
+            }
+
+            var receiver = fields.Data[(int)LegacyTransactionField.ReceiveAddress];
+            if (receiver != null && receiver.Length != AddressBytes)
+                throw new TransactionFieldFormatException(LegacyTransactionField.ReceiveAddress, receiver.Length + " bytes");
+
+            if (!fields.Signed) return;
+            RejectMalformedScalar(fields.V, LegacyTransactionField.SignatureV);
+            RejectMalformedScalar(fields.R, LegacyTransactionField.SignatureR);
+            RejectMalformedScalar(fields.S, LegacyTransactionField.SignatureS);
+        }
+
+        internal static void RejectWiderThan64Bits(byte[] scalar, LegacyTransactionField field)
+        {
+            if (scalar != null && scalar.Length > SixtyFourBitBytes)
+                throw new ScalarWiderThanItsFieldException(field, scalar.Length, SixtyFourBitBytes);
+        }
+
+        internal static void RejectMalformedScalar(byte[] scalar, LegacyTransactionField field)
+        {
+            if (!RlpScalar.IsCanonical(scalar))
+                throw new NonCanonicalScalarRlpException(field);
+            if (!RlpScalar.FitsA256BitField(scalar))
+                throw new ScalarWiderThanItsFieldException(field, scalar.Length);
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "model-decode-exceptions", "ScalarWiderThanItsFieldException")]
     public class ScalarWiderThanItsFieldException : System.Exception
     {
         public LegacyTransactionField Field { get; }
@@ -72,8 +86,13 @@ namespace Nethereum.Model
         public int ByteCount { get; }
 
         public ScalarWiderThanItsFieldException(LegacyTransactionField field, int byteCount)
+            : this(field, byteCount, 32)
+        {
+        }
+
+        public ScalarWiderThanItsFieldException(LegacyTransactionField field, int byteCount, int fieldBytes)
             : base("RLP_WRONGVALUE_" + field.ToString().ToUpperInvariant() +
-                   ": the scalar is " + byteCount + " bytes and a 256-bit field holds 32.")
+                   ": the scalar is " + byteCount + " bytes and a " + fieldBytes * 8 + "-bit field holds " + fieldBytes + ".")
         {
             Field = field;
             ByteCount = byteCount;

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>HexTypes for encoding and encoding String, BigInteger, this is specific for Ethereum</Description>
     <AssemblyTitle>Nethereum.Hex</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <AssemblyName>Nethereum.Hex</AssemblyName>

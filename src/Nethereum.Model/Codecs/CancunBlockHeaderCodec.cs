@@ -60,34 +60,7 @@ namespace Nethereum.Model.Codecs
 
         public BlockHeader Decode(byte[] rawBytes)
         {
-            var collection = (RLPCollection)RLP.RLP.Decode(rawBytes);
-            if (collection.Count != 20)
-                throw new System.InvalidOperationException(
-                    $"Cancun header codec expects 20 fields, got {collection.Count}");
-
-            return new BlockHeader
-            {
-                ParentHash = collection[0].RLPData,
-                UnclesHash = collection[1].RLPData,
-                Coinbase = collection[2].RLPData.ToHex(),
-                StateRoot = collection[3].RLPData,
-                TransactionsHash = collection[4].RLPData,
-                ReceiptHash = collection[5].RLPData,
-                LogsBloom = collection[6].RLPData,
-                Difficulty = collection[7].RLPData.ToEvmUInt256FromRLPDecoded(),
-                BlockNumber = collection[8].RLPData.ToEvmUInt256FromRLPDecoded(),
-                GasLimit = collection[9].RLPData.ToLongFromRLPDecoded(),
-                GasUsed = collection[10].RLPData.ToLongFromRLPDecoded(),
-                Timestamp = collection[11].RLPData.ToLongFromRLPDecoded(),
-                ExtraData = collection[12].RLPData,
-                MixHash = collection[13].RLPData,
-                Nonce = collection[14].RLPData,
-                BaseFee = collection[15].RLPData.ToEvmUInt256FromRLPDecoded(),
-                WithdrawalsRoot = collection[16].RLPData,
-                BlobGasUsed = unchecked((long)collection[17].RLPData.ToULongFromRLPDecoded()),
-                ExcessBlobGas = unchecked((long)collection[18].RLPData.ToULongFromRLPDecoded()),
-                ParentBeaconBlockRoot = collection[19].RLPData,
-            };
+            return BlockHeaderRlpDecoder.Decode(rawBytes, 20, "Cancun");
         }
     }
 }

@@ -541,6 +541,9 @@ public class Sha3Keccack
     // Hash bytes
     public byte[] CalculateHash(byte[] value);
 
+    // Hash a slice of input and write the 32-byte digest into output at outputOffset
+    public void CalculateHash(byte[] input, int offset, int length, byte[] output, int outputOffset);
+
     // Hash concatenated hex values
     public string CalculateHashFromHex(params string[] hexValues);
 }
@@ -771,14 +774,116 @@ public static class DateTimeHelper
 }
 ```
 
+The slice overload of `CalculateHash` throws `ArgumentNullException` for a null input or output and `ArgumentOutOfRangeException` when the slice or the 32-byte output window does not fit its array.
+
+```csharp
+var sha3 = new Sha3Keccack();
+var input = Encoding.UTF8.GetBytes("xxhello world");
+var output = new byte[40];
+
+sha3.CalculateHash(input, 2, 11, output, 4);
+```
+
+Backed by `FoundationsUtilDocExampleTests.Given_AnInputSlice_When_HashedIntoAnOutputBuffer_Then_TheDigestIsWrittenAtTheOffset`.
+
 #### ByteUtil
 ```csharp
 public static class ByteUtil
 {
     public static byte[] Merge(params byte[][] arrays);
     public static bool AreEqual(byte[] a, byte[] b);
+    public static byte[] PrefixSuccessor(byte[] prefix);
 }
 ```
+
+`PrefixSuccessor` returns the smallest byte string greater than every string that starts with `prefix`, the exclusive upper bound for a range scan over a key prefix. It returns `null` when `prefix` is `null` or every byte is `0xFF` (no upper bound exists).
+
+```csharp
+var upperBound = ByteUtil.PrefixSuccessor(new byte[] { 0x12, 0xFF });
+Assert.Equal(new byte[] { 0x13, 0x00 }, upperBound);
+Assert.Null(ByteUtil.PrefixSuccessor(new byte[] { 0xFF, 0xFF }));
+```
+
+Backed by `FoundationsUtilDocExampleTests.Given_APrefix_When_ItsSuccessorIsTaken_Then_ItIsTheExclusiveUpperBoundOfEveryKeyWithThatPrefix`.
+
+#### ByteArrayComparer
+```csharp
+public class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
+{
+    public static readonly ByteArrayComparer Current;
+    public int Compare(byte[] x, byte[] y);
+    public bool Equals(byte[] x, byte[] y);
+    public int GetHashCode(byte[] obj);
+}
+```
+
+Ordering is unsigned and bytewise, with a shorter array sorting before a longer one it prefixes. `Equals` compares length first and then content, and `GetHashCode` is a null-safe FNV-1a over the content (0 for `null`), so the comparer can key a `Dictionary<byte[], T>` or `HashSet<byte[]>`.
+
+```csharp
+var map = new Dictionary<byte[], string>(ByteArrayComparer.Current);
+map[new byte[] { 1, 2, 3 }] = "first";
+map[new byte[] { 1, 2, 3 }] = "second";
+Assert.Single(map);
+```
+
+Backed by `FoundationsUtilDocExampleTests.Given_TwoByteArraysWithTheSameContent_When_UsedAsDictionaryKeys_Then_TheyAreTheSameKey`.
+
+#### Backoff
+```csharp
+public sealed class Backoff
+{
+    public Backoff(int initialMs);
+    public int Current { get; }
+    public void Advance(int capMs);
+    public void Reset();
+}
+```
+
+`Advance` doubles `Current` up to `capMs`; `Reset` returns it to `initialMs`. The constructor throws `ArgumentOutOfRangeException` for a non-positive `initialMs`.
+
+```csharp
+var backoff = new Backoff(100);
+backoff.Advance(1000);
+Assert.Equal(200, backoff.Current);
+backoff.Reset();
+Assert.Equal(100, backoff.Current);
+```
+
+Backed by `FoundationsUtilDocExampleTests.Given_ABackoff_When_AdvancedPastItsCap_Then_ItStopsAtTheCapAndResetReturnsTheInitialWait`.
+
+#### ContractUtils.CalculateCreate2Address (byte arrays)
+```csharp
+public static string CalculateCreate2Address(string address, byte[] salt, byte[] byteCode);
+```
+
+The EIP-1014 address `keccak256(0xff ++ address ++ salt ++ keccak256(byteCode))[12:]`, checksummed, computed on bytes with no hex round trip; it equals the hex-string overload `CalculateCreate2Address(string address, string saltHex, string byteCodeHex)`.
+
+```csharp
+var address = ContractUtils.CalculateCreate2Address(
+    "0x0000000000000000000000000000000000000000", new byte[32], new byte[] { 0x00 });
+Assert.Equal("0x4D1A2e2bB4F88F0250f26Ffff098B0b30B26BF38", address);
+```
+
+Backed by `FoundationsUtilDocExampleTests.Given_AnAddressSaltAndInitCode_When_TheCreate2AddressIsCalculatedFromBytes_Then_ItMatchesEip1014`.
+
+#### EvmAddress.FromHex and EvmUInt256.FromBigEndian(slice)
+```csharp
+public static EvmAddress FromHex(string address);
+public static EvmUInt256 FromBigEndian(byte[] source, int offset, int length);
+```
+
+`EvmAddress.FromHex` parses a 40-digit address, with or without `0x`, straight into its 20 bytes and returns `EvmAddress.Zero` for `null` or an empty string; any other form goes through `AddressUtil.ConvertToValid20ByteAddress`. `EvmUInt256.FromBigEndian(source, offset, length)` reads up to 32 bytes at `offset` as a big-endian value; bytes missing because the source ends before `offset + length` read as zero in the least significant positions, and `length` above 32 or a negative `offset` throws `ArgumentOutOfRangeException`.
+
+```csharp
+var prefixed = EvmAddress.FromHex("0xD8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+var bare = EvmAddress.FromHex("d8da6bf26964af9d7eed9e03e53415d37aa96045");
+Assert.Equal(prefixed, bare);
+
+var value = EvmUInt256.FromBigEndian(new byte[] { 0xAA, 0x01, 0x02, 0x03, 0xBB }, 1, 3);
+Assert.Equal(new BigInteger(0x010203), (BigInteger)value);
+```
+
+Backed by `FoundationsUtilDocExampleTests.Given_AnAddressWithAndWithoutThePrefix_When_ParsedWithFromHex_Then_BothGiveTheSameTwentyBytes` and `FoundationsUtilDocExampleTests.Given_ABufferHoldingAWord_When_ASliceIsRead_Then_ItIsTheBigEndianValueAndAShortSliceIsZeroExtended`.
 
 ### Poseidon Hashing (ZK-Proof Friendly)
 

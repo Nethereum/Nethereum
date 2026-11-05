@@ -25,14 +25,15 @@ namespace Nethereum.Model.P2P
 
         public static GetPooledTransactionsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var hashList = (RLPCollection)outer[1];
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var msg = new GetPooledTransactionsMessage
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64()
             };
-            foreach (var h in hashList)
-                msg.Hashes.Add(h.RLPData);
+            msg.Hashes.AddRange(PeerRlp.ReadHashes(reader));
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
     }
@@ -64,14 +65,20 @@ namespace Nethereum.Model.P2P
 
         public static PooledTransactionsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var txList = (RLPCollection)outer[1];
-            var msg = new PooledTransactionsMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var msg = new PooledTransactionsMessage { RequestId = reader.ReadUInt64() };
+            var transactions = reader.ReadListHeader();
+            var seen = new HashSet<string>();
+            while (!reader.IsAtEnd(transactions))
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
-            };
-            foreach (var txRlp in txList)
-                msg.Transactions.Add(TransactionFactory.CreateTransaction(txRlp.RLPData));
+                var tx = TransactionFactory.ReadTransaction(reader);
+                PeerRlp.AddUnique(seen, tx);
+                msg.Transactions.Add(tx);
+            }
+            reader.EnsureEnd(transactions);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
 

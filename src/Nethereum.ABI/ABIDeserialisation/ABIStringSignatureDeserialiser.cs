@@ -1,7 +1,6 @@
 ﻿using Nethereum.ABI.Model;
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 
 namespace Nethereum.ABI.ABIDeserialisation
@@ -11,12 +10,47 @@ namespace Nethereum.ABI.ABIDeserialisation
     {
         //https://stackoverflow.com/questions/546433/regular-expression-to-match-balanced-parentheses
         //balanced parameters to support tuples
-        private const string paramsRegPattern = @"\((?<params>(?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))?\)";
      
         public List<Parameter> ExtractParameters(string parameters, bool canIndex = false)
         {
+            return ExtractParametersChecked(parameters, canIndex);
+        }
 
-            var parametersArray = Regex.Split(parameters, @",(?![^(](?<params>(?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))?\))"); 
+        private static List<string> SplitTopLevel(string text, bool onWhitespace)
+        {
+            var parts = new List<string>();
+            var depth = 0;
+            var start = 0;
+            var i = 0;
+            while (i < text.Length)
+            {
+                var c = text[i];
+                if (c == '(')
+                {
+                    if (++depth > AbiParsingLimits.MaxNestingDepth)
+                        throw new ArgumentException("ABI type nesting exceeds " + AbiParsingLimits.MaxNestingDepth + " levels");
+                }
+                else if (c == ')')
+                {
+                    if (depth > 0) depth--;
+                }
+                else if (depth == 0 && (onWhitespace ? AbiSignatureScanner.IsSpace(c) : c == ','))
+                {
+                    parts.Add(text.Substring(start, i - start));
+                    if (onWhitespace)
+                        while (i + 1 < text.Length && AbiSignatureScanner.IsSpace(text[i + 1])) i++;
+                    start = i + 1;
+                }
+                i++;
+            }
+            parts.Add(text.Substring(start));
+            return parts;
+        }
+
+        private List<Parameter> ExtractParametersChecked(string parameters, bool canIndex)
+        {
+
+            var parametersArray = SplitTopLevel(parameters, false);
             var returnParameters = new List<Parameter>();
             var parameterOrder = 0;
             foreach(var parameter in parametersArray)
@@ -24,15 +58,15 @@ namespace Nethereum.ABI.ABIDeserialisation
                 parameterOrder = parameterOrder + 1;
                 bool isIndexed = false;
                 string name = null;
-                var nameTypeIndex = Regex.Split(parameter.Trim(), @"\s+(?![^(](?<params>(?>\((?<c>)|[^()]+|\)(?<-c>))*(?(c)(?!)))?\))");
+                var nameTypeIndex = SplitTopLevel(parameter.Trim(), true);
                 string type = GetType(nameTypeIndex[0]);
-                if (canIndex && nameTypeIndex.Length == 3 && parameter.IndexOf("indexed") > -1)
+                if (canIndex && nameTypeIndex.Count == 3 && parameter.IndexOf("indexed") > -1)
                 {
                     name = nameTypeIndex[2];
                     isIndexed = true;
                     
                 }
-                else if (nameTypeIndex.Length == 2)
+                else if (nameTypeIndex.Count == 2)
                 {
                     name = nameTypeIndex[1];
                     type = GetType(nameTypeIndex[0]);
@@ -42,8 +76,8 @@ namespace Nethereum.ABI.ABIDeserialisation
                 var tupleType = returnParameter.ABIType as TupleType;
                 if(tupleType != null)
                 {
-                    var match = Regex.Match(parameter, paramsRegPattern);
-                    tupleType.SetComponents(ExtractParameters(match.Groups["params"].Value).ToArray());
+                    AbiSignatureScanner.TryFirstBalanced(parameter, AbiSignatureScanner.BuildPartners(parameter), 0, out var inner);
+                    tupleType.SetComponents(ExtractParametersChecked(inner, false).ToArray());
                 }
 
                 var arrayType = returnParameter.ABIType as ArrayType;
@@ -53,8 +87,8 @@ namespace Nethereum.ABI.ABIDeserialisation
 
                     if (arrayType.ElementType is TupleType arrayTupleType)
                     {
-                        var match = Regex.Match(parameter, paramsRegPattern);
-                        arrayTupleType.SetComponents(ExtractParameters(match.Groups["params"].Value).ToArray());
+                        AbiSignatureScanner.TryFirstBalanced(parameter, AbiSignatureScanner.BuildPartners(parameter), 0, out var inner);
+                        arrayTupleType.SetComponents(ExtractParametersChecked(inner, false).ToArray());
                         arrayType = null;
                     }
                     else
@@ -124,11 +158,9 @@ namespace Nethereum.ABI.ABIDeserialisation
 
         public FunctionABI ExtractFunctionABI(string signature, string name, string parameters)
         {
-            var matchReturns = Regex.Match(signature, @"returns\s*" + paramsRegPattern);
-            var parameterReturns = matchReturns.Groups["params"].Value;
-            var matchModifier = Regex.Match(signature, @"\)\s*\w*\s+(?<modifier>view|pure|constant)");
-            var modifier = matchModifier.Groups["modifier"].Value;
-            var function = new FunctionABI(name, !string.IsNullOrEmpty(modifier));
+            AbiParsingLimits.EnsureParenthesesDepth(signature, AbiParsingLimits.MaxNestingDepth + 1);
+            var parameterReturns = AbiSignatureScanner.ReturnsParameters(signature, AbiSignatureScanner.BuildPartners(signature));
+            var function = new FunctionABI(name, AbiSignatureScanner.HasStateModifier(signature));
             function.InputParameters = new List<Parameter>().ToArray();
             function.OutputParameters = new List<Parameter>().ToArray();
             if (!string.IsNullOrEmpty(parameterReturns))
@@ -158,11 +190,9 @@ namespace Nethereum.ABI.ABIDeserialisation
             
             foreach(var signature in signatures)
             {
-                
-                var match = Regex.Match(signature.Trim(), @"(?<scope>\w*)\s*(?<name>\w*)\s*" + paramsRegPattern);
-                var scope = match.Groups["scope"].Value;
-                var name = match.Groups["name"].Value;
-                var parameters = match.Groups["params"].Value;
+                AbiParsingLimits.EnsureParenthesesDepth(signature, AbiParsingLimits.MaxNestingDepth + 1);
+                var trimmed = signature.Trim();
+                AbiSignatureScanner.TryMatchHead(trimmed, AbiSignatureScanner.BuildPartners(trimmed), out var scope, out var name, out var parameters);
  
                 if (scope == "function")
                 {

@@ -45,7 +45,7 @@ namespace Nethereum.Model.P2P
 
         public static HelloMessage Decode(byte[] data)
         {
-            var items = (RLPCollection)RLP.RLP.Decode(data);
+            var items = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
 
             var msg = new HelloMessage
             {

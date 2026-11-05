@@ -41,8 +41,23 @@ namespace Nethereum.KeyStore.Crypto
             return key.GetKey();
         }
 
+        private static void ValidateCost(byte[] password, byte[] salt, int N, int r, int p, int dkLen)
+        {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            if (salt == null) throw new ArgumentNullException(nameof(salt));
+            if (N <= 1 || (N & (N - 1)) != 0) throw new ArgumentException("N must be a power of two greater than 1", nameof(N));
+            if (r < 1) throw new ArgumentException("r must be at least 1", nameof(r));
+            if (p < 1) throw new ArgumentException("p must be at least 1", nameof(p));
+            if ((long)r * p >= (1L << 30)) throw new ArgumentException("r * p must be below 2^30");
+            if (dkLen < 1) throw new ArgumentException("dkLen must be at least 1", nameof(dkLen));
+            const long maxArray = int.MaxValue - 64;
+            if (128L * r * N > maxArray || 128L * r * p > maxArray || 256L * r > maxArray)
+                throw new ArgumentException("scrypt cost parameters exceed the supported memory size");
+        }
+
         public unsafe static byte[] CryptoScrypt(byte[] password, byte[] salt, int N, int r, int p, int dkLen)
         {
+            ValidateCost(password, salt, N, r, p, dkLen);
             var Ba = new byte[128 * r * p + 63];
             var XYa = new byte[256 * r + 63];
             var Va = new byte[128 * r * N + 63];

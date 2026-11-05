@@ -19,7 +19,7 @@ namespace Nethereum.Model.P2P
         public static byte[] Encode(Eth69StatusMessage msg)
         {
             return RLP.RLP.EncodeList(
-                RLP.RLP.EncodeElement(((long)msg.ProtocolVersion).ToBytesForRLPEncoding()),
+                RLP.RLP.EncodeElement(((long)(uint)msg.ProtocolVersion).ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(((long)msg.NetworkId).ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(msg.GenesisHash),
                 ForkIdEncoder.Encode(msg.ForkHash, msg.ForkNext),
@@ -31,22 +31,23 @@ namespace Nethereum.Model.P2P
 
         public static Eth69StatusMessage Decode(byte[] data)
         {
-            var items = (RLPCollection)RLP.RLP.Decode(data);
-
-            var forkIdItems = (RLPCollection)items[3];
-            ForkIdEncoder.DecodeItems(forkIdItems, out var forkHash, out var forkNext);
-
-            return new Eth69StatusMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var message = new Eth69StatusMessage
             {
-                ProtocolVersion = items[0].RLPData.ToIntFromRLPDecoded(),
-                NetworkId = (ulong)items[1].RLPData.ToLongFromRLPDecoded(),
-                GenesisHash = items[2].RLPData,
-                ForkHash = forkHash,
-                ForkNext = forkNext,
-                EarliestBlock = (ulong)items[4].RLPData.ToLongFromRLPDecoded(),
-                LatestBlock = (ulong)items[5].RLPData.ToLongFromRLPDecoded(),
-                LatestBlockHash = items[6].RLPData
+                ProtocolVersion = unchecked((int)PeerRlp.ReadUInt32(reader)),
+                NetworkId = reader.ReadUInt64(),
+                GenesisHash = reader.ReadFixed(PeerRlp.HashLength)
             };
+            ForkIdEncoder.Read(reader, out var forkHash, out var forkNext);
+            message.ForkHash = forkHash;
+            message.ForkNext = forkNext;
+            message.EarliestBlock = reader.ReadUInt64();
+            message.LatestBlock = reader.ReadUInt64();
+            message.LatestBlockHash = reader.ReadFixed(PeerRlp.HashLength);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return message;
         }
     }
 }

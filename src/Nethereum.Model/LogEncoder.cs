@@ -20,23 +20,42 @@ namespace Nethereum.Model
             );
         }
 
+        private const int AddressLength = 20;
+        private const int TopicLength = 32;
+
         public Log Decode(byte[] rawdata)
         {
-            var decodedList = RLP.RLP.Decode(rawdata);
-            var decodedElements = (RLP.RLPCollection)decodedList;
-
-            var log = new Log();
-            log.Address = decodedElements[0].RLPData.ToHex(true);
-
-            var topicsCollection = (RLP.RLPCollection)decodedElements[1];
-            log.Topics = new List<byte[]>();
-            foreach (var topic in topicsCollection)
-            {
-                log.Topics.Add(topic.RLPData);
-            }
-
-            log.Data = decodedElements[2].RLPData;
+            var reader = new RLP.RlpReader(rawdata);
+            var log = Decode(reader);
+            reader.EnsureEnd();
             return log;
+        }
+
+        public Log Decode(RLP.RlpReader reader)
+        {
+            var scope = reader.ReadListHeader();
+            var log = new Log();
+            log.Address = reader.ReadFixed(AddressLength).ToHex(true);
+
+            var topics = reader.ReadListHeader();
+            log.Topics = new List<byte[]>();
+            while (!reader.IsAtEnd(topics))
+                log.Topics.Add(reader.ReadFixed(TopicLength));
+            reader.EnsureEnd(topics);
+
+            log.Data = reader.ReadBytes();
+            reader.EnsureEnd(scope);
+            return log;
+        }
+
+        public List<Log> DecodeList(RLP.RlpReader reader)
+        {
+            var scope = reader.ReadListHeader();
+            var logs = new List<Log>();
+            while (!reader.IsAtEnd(scope))
+                logs.Add(Decode(reader));
+            reader.EnsureEnd(scope);
+            return logs;
         }
     }
 }

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.HdWallet.UnitTests Class Library</Description>
     <Authors>Juan Blanco</Authors>
-    <TargetFrameworks>netcoreapp3.1;net461;net5.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net461;net5.0;net8.0</TargetFrameworks>
     <AssemblyName>Nethereum.HdWallet.UnitTests</AssemblyName>
     <PackageId>Nethereum.HdWallet.UnitTests</PackageId>
   </PropertyGroup>
@@ -20,6 +20,10 @@
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Web3\Nethereum.Web3.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Remove="HdWalletDerivationDifferentialTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

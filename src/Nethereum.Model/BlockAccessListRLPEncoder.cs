@@ -29,56 +29,84 @@ namespace Nethereum.Model
         {
             if (data == null) throw new System.ArgumentNullException(nameof(data));
 
-            var accounts = (RLPCollection)RLP.RLP.Decode(data);
-            var result = new List<AccountChanges>(accounts.Count);
-            foreach (RLPCollection accountRlp in accounts)
-                result.Add(DecodeAccount(accountRlp));
+            var reader = new RlpReader(data);
+            var accounts = reader.ReadListHeader();
+            var result = new List<AccountChanges>();
+            while (!reader.IsAtEnd(accounts))
+                result.Add(ReadAccount(reader));
+            reader.EnsureEnd(accounts);
+            reader.EnsureEnd();
             return result;
         }
 
-        private static AccountChanges DecodeAccount(RLPCollection accountRlp)
+        private static AccountChanges ReadAccount(RlpReader reader)
         {
-            return new AccountChanges(accountRlp[0].RLPData.ToHex(true))
+            var scope = reader.ReadListHeader();
+            var account = new AccountChanges(reader.ReadFixed(AddressLength).ToHex(true))
             {
-                StorageChanges = DecodeStorageChanges((RLPCollection)accountRlp[1]),
-                StorageReads = DecodeStorageReads((RLPCollection)accountRlp[2]),
-                BalanceChanges = DecodeIndexed((RLPCollection)accountRlp[3],
-                    (index, value) => new BalanceChange(index, value.ToEvmUInt256FromRLPDecoded())),
-                NonceChanges = DecodeIndexed((RLPCollection)accountRlp[4],
-                    (index, value) => new NonceChange(index, value.ToULongFromRLPDecoded())),
-                CodeChanges = DecodeIndexed((RLPCollection)accountRlp[5],
-                    (index, value) => new CodeChange(index, value ?? RLP.RLP.EMPTY_BYTE_ARRAY))
+                StorageChanges = ReadStorageChanges(reader),
+                StorageReads = ReadStorageReads(reader),
+                BalanceChanges = ReadIndexed(reader, ReadUInt256, (index, value) => new BalanceChange(index, value)),
+                NonceChanges = ReadIndexed(reader, r => r.ReadUInt64(), (index, value) => new NonceChange(index, value)),
+                CodeChanges = ReadIndexed(reader, r => r.ReadBytes(), (index, value) => new CodeChange(index, value))
             };
+            reader.EnsureEnd(scope);
+            return account;
         }
 
-        private static List<SlotChanges> DecodeStorageChanges(RLPCollection storageChangesRlp)
+        private static List<SlotChanges> ReadStorageChanges(RlpReader reader)
         {
-            var result = new List<SlotChanges>(storageChangesRlp.Count);
-            foreach (RLPCollection slotRlp in storageChangesRlp)
+            var scope = reader.ReadListHeader();
+            var result = new List<SlotChanges>();
+            while (!reader.IsAtEnd(scope))
             {
-                result.Add(new SlotChanges(slotRlp[0].RLPData.ToEvmUInt256FromRLPDecoded())
-                {
-                    Changes = DecodeIndexed((RLPCollection)slotRlp[1],
-                        (index, value) => new StorageChange(index, value.ToEvmUInt256FromRLPDecoded()))
-                });
+                var slotScope = reader.ReadListHeader();
+                var slot = new SlotChanges(ReadUInt256(reader));
+                slot.Changes = ReadIndexed(reader, ReadUInt256, (index, value) => new StorageChange(index, value));
+                reader.EnsureEnd(slotScope);
+                result.Add(slot);
             }
+            reader.EnsureEnd(scope);
             return result;
         }
 
-        private static List<EvmUInt256> DecodeStorageReads(RLPCollection storageReadsRlp)
+        private static List<EvmUInt256> ReadStorageReads(RlpReader reader)
         {
-            var result = new List<EvmUInt256>(storageReadsRlp.Count);
-            foreach (var slotRlp in storageReadsRlp)
-                result.Add(slotRlp.RLPData.ToEvmUInt256FromRLPDecoded());
+            var scope = reader.ReadListHeader();
+            var result = new List<EvmUInt256>();
+            while (!reader.IsAtEnd(scope))
+                result.Add(ReadUInt256(reader));
+            reader.EnsureEnd(scope);
             return result;
         }
 
-        private static List<T> DecodeIndexed<T>(RLPCollection changesRlp, System.Func<ulong, byte[], T> factory)
+        private static List<T> ReadIndexed<TValue, T>(RlpReader reader, System.Func<RlpReader, TValue> readValue,
+            System.Func<ulong, TValue, T> factory)
         {
-            var result = new List<T>(changesRlp.Count);
-            foreach (RLPCollection changeRlp in changesRlp)
-                result.Add(factory(changeRlp[0].RLPData.ToULongFromRLPDecoded(), changeRlp[1].RLPData));
+            var scope = reader.ReadListHeader();
+            var result = new List<T>();
+            while (!reader.IsAtEnd(scope))
+            {
+                var changeScope = reader.ReadListHeader();
+                var index = reader.ReadUInt64();
+                if (index > uint.MaxValue)
+                    throw new System.InvalidOperationException("RLP block access index does not fit in 32 bits");
+                var value = readValue(reader);
+                reader.EnsureEnd(changeScope);
+                result.Add(factory(index, value));
+            }
+            reader.EnsureEnd(scope);
             return result;
+        }
+
+        private static EvmUInt256 ReadUInt256(RlpReader reader)
+        {
+            var value = reader.ReadBytes();
+            if (!RlpScalar.FitsA256BitField(value))
+                throw new System.InvalidOperationException("RLP integer does not fit in 256 bits");
+            if (!RlpScalar.IsCanonical(value))
+                throw new System.InvalidOperationException("RLP integer has a leading zero");
+            return value.ToEvmUInt256FromRLPDecoded();
         }
 
         private static byte[] EncodeAccount(AccountChanges account)

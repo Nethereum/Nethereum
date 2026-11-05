@@ -1,5 +1,6 @@
 using System;
 using Org.BouncyCastle.Math;
+using System.Runtime.CompilerServices;
 
 namespace Nethereum.Signer.Crypto.BN128
 {
@@ -75,6 +76,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// <summary>
         /// Adds two Fp2 elements: (a1 + b1*i) + (a2 + b2*i) = (a1+a2) + (b1+b2)*i
         /// </summary>
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp2 Add(Fp2 x, Fp2 y)
         {
             _a = x._a.Add(y._a);
@@ -85,6 +89,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// <summary>
         /// Subtracts two Fp2 elements: (a1 + b1*i) - (a2 + b2*i) = (a1-a2) + (b1-b2)*i
         /// </summary>
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp2 Sub(Fp2 x, Fp2 y)
         {
             _a = x._a.Sub(y._a);
@@ -117,6 +124,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// (a1 + b1*i)(a2 + b2*i) = (b1*b2 - a1*a2) + (a1*b2 + a2*b1)*i
         /// since i² = -1
         /// </summary>
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp2 Mul(Fp2 x, Fp2 y)
         {
             var tx = x._a.Mul(y._b).Add(y._a.Mul(x._b));
@@ -131,6 +141,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// Squares an Fp2 element using optimized formula.
         /// (a + b*i)² = (b-a)(b+a) + 2ab*i
         /// </summary>
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp2 Square(Fp2 x)
         {
             var t1 = x._b.Sub(x._a);

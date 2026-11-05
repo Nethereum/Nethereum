@@ -1,4 +1,5 @@
-using System.Text.RegularExpressions;
+using System;
+using System.Collections.Generic;
 
 namespace Nethereum.ABI.FunctionEncoding
 {
@@ -12,15 +13,42 @@ namespace Nethereum.ABI.FunctionEncoding
 
         public string GetSwarmAddress(string byteCode)
         {
-     
-            var r = new Regex("(?<=a165627a7a72305820)(.*[0-9a-fA-F]{64})(?=0029)");
-      
-            if (r.IsMatch(byteCode))
+            var firstPrefix = byteCode.IndexOf(Prefix_Address_Hex, StringComparison.Ordinal);
+            if (firstPrefix < 0)
+                return null;
+
+            var endings = new List<int>();
+            var hexRun = 0;
+            for (var i = 0; i < byteCode.Length; i++)
             {
-                return r.Match(byteCode).Value;
+                if (hexRun >= 64 && string.CompareOrdinal(byteCode, i, Suffix_Address_Hex, 0, 4) == 0)
+                    endings.Add(i);
+                hexRun = IsHex(byteCode[i]) ? hexRun + 1 : 0;
+            }
+
+            var lineEnd = -1;
+            for (var prefix = firstPrefix; prefix >= 0;
+                 prefix = byteCode.IndexOf(Prefix_Address_Hex, prefix + 1, StringComparison.Ordinal))
+            {
+                var start = prefix + Prefix_Address_Hex.Length;
+                if (lineEnd < start)
+                {
+                    lineEnd = byteCode.IndexOf((char)10, start);
+                    if (lineEnd < 0) lineEnd = byteCode.Length;
+                }
+
+                var index = endings.BinarySearch(lineEnd);
+                if (index < 0) index = ~index - 1;
+                if (index >= 0 && endings[index] >= start + 64)
+                    return byteCode.Substring(start, endings[index] - start);
             }
 
             return null;
+        }
+
+        private static bool IsHex(char c)
+        {
+            return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
         }
 
         private string GetSwarmPaddedString(string byteCode)

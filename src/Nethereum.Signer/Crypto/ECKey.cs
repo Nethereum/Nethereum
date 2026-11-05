@@ -357,9 +357,9 @@ public static unsafe bool Compare128(byte* b0, byte* b1, int length)
 #if NETCOREAPP3_1 || NET5_0_OR_GREATER
             if (EthECKey.SignRecoverable)
             {
-                SecpECDSASignature.TryCreateFromDer(sig.ToDER(), out var signature);
+                if (!SecpECDSASignature.TryCreateFromDer(sig.ToDER(), out var signature)) return null;
                 var recoverable = new SecpRecoverableECDSASignature(signature, recId);
-                ECPubKey.TryRecover(Context.Instance, recoverable, message, out var pubKey);
+                if (!ECPubKey.TryRecover(Context.Instance, recoverable, message, out var pubKey)) return null;
                 return new ECKey(pubKey.ToBytes(compressed), false);
             }
             else

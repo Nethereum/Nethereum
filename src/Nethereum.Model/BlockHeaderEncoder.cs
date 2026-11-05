@@ -34,19 +34,13 @@ namespace Nethereum.Model
         {
             if (legacyMode) return LegacyBlockHeaderCodec.Instance.Decode(rawdata);
 
-            var decoded = RLP.RLP.Decode(rawdata) as RLP.RLPCollection;
-            if (decoded == null)
-                throw new ArgumentException("Block header RLP is not a list.", nameof(rawdata));
+            return BlockHeaderRlpDecoder.Decode(rawdata);
+        }
 
-            var codec = BlockHeaderCodecSelector.ForFieldCount(decoded.Count);
-            if (codec == null)
-                throw new ArgumentException(
-                    $"A block header with {decoded.Count} fields matches no fork this build knows. " +
-                    "Decoding it as the nearest shorter fork would discard the trailing fields, and the " +
-                    "header would then re-encode to different bytes and fail its own hash check.",
-                    nameof(rawdata));
-
-            return codec.Decode(rawdata);
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "model-header-reader", "BlockHeaderEncoder.Decode(RlpReader)")]
+        public BlockHeader Decode(RLP.RlpReader reader)
+        {
+            return BlockHeaderRlpDecoder.Read(reader);
         }
 
         private static IBlockHeaderCodec SelectForEncode(BlockHeader header, bool legacyMode)

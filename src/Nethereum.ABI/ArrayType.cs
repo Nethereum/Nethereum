@@ -27,6 +27,7 @@ namespace Nethereum.ABI
 
         private void InitialiseElementType(string name)
         {
+            AbiParsingLimits.EnsureBracketCount(name);
             var indexLastBracket = name.LastIndexOf("[", StringComparison.Ordinal);
             var elementTypeName = name.Substring(0, indexLastBracket);
             //var indexSecondBracket = name.IndexOf("]", indexFirstBracket, StringComparison.Ordinal);

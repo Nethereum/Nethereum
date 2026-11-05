@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Nethereum.RLP;
 
@@ -46,15 +47,19 @@ namespace Nethereum.Model.P2P.Snap
 
         public static GetAccountRangeMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
-            return new GetAccountRangeMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var message = new GetAccountRangeMessage
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded(),
-                RootHash = o[1].RLPData,
-                StartingHash = o[2].RLPData,
-                LimitHash = o[3].RLPData,
-                ResponseBytes = (ulong)o[4].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64(),
+                RootHash = reader.ReadFixed(PeerRlp.HashLength),
+                StartingHash = reader.ReadFixed(PeerRlp.HashLength),
+                LimitHash = reader.ReadFixed(PeerRlp.HashLength),
+                ResponseBytes = reader.ReadUInt64()
             };
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return message;
         }
 
         private static byte[] ULongToRlp(ulong v) => v == 0 ? new byte[0] : ((long)v).ToBytesForRLPEncoding();
@@ -75,6 +80,8 @@ namespace Nethereum.Model.P2P.Snap
 
     public static class AccountRangeMessageEncoder
     {
+        private const int SlimAccountItemCount = 4;
+
         public static byte[] Encode(AccountRangeMessage m)
         {
             var accountElements = new byte[m.Accounts.Count][];
@@ -97,35 +104,45 @@ namespace Nethereum.Model.P2P.Snap
 
         public static AccountRangeMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
-            var m = new AccountRangeMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var m = new AccountRangeMessage { RequestId = reader.ReadUInt64() };
+
+            var accounts = reader.ReadListHeader();
+            while (!reader.IsAtEnd(accounts))
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded()
-            };
-            foreach (RLPCollection accRlp in (RLPCollection)o[1])
-            {
-                var bodyElement = accRlp[1];
-                byte[] bodyBytes;
-                if (bodyElement is RLPCollection bodyList)
-                {
-                    var items = new byte[bodyList.Count][];
-                    for (int i = 0; i < bodyList.Count; i++)
-                        items[i] = RLP.RLP.EncodeElement(bodyList[i].RLPData);
-                    bodyBytes = RLP.RLP.EncodeList(items);
-                }
-                else
-                {
-                    bodyBytes = bodyElement.RLPData ?? new byte[0];
-                }
-                m.Accounts.Add(new AccountRangeMessage.AccountEntry
-                {
-                    Hash = accRlp[0].RLPData,
-                    Body = bodyBytes
-                });
+                var entry = reader.ReadListHeader();
+                var hash = reader.ReadFixed(PeerRlp.HashLength);
+                m.Accounts.Add(new AccountRangeMessage.AccountEntry { Hash = hash, Body = ReadSlimAccount(reader, data) });
+                reader.EnsureEnd(entry);
             }
-            foreach (var pNode in (RLPCollection)o[2])
-                m.Proof.Add(pNode.RLPData);
+            reader.EnsureEnd(accounts);
+
+            m.Proof = PeerRlp.ReadByteStrings(reader, SnapServingLimits.MaxResponseProofNodes);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
+        }
+
+        private static byte[] ReadSlimAccount(RlpReader reader, byte[] data)
+        {
+            var start = reader.Position;
+            var body = reader.ReadListHeader();
+            reader.ReadUInt64();
+            var balance = reader.ReadBytes();
+            if (balance.Length > 32 || (balance.Length > 0 && balance[0] == 0))
+                throw new InvalidOperationException("AccountRange slim account balance is not a canonical uint256");
+            for (var i = 2; i < SlimAccountItemCount; i++)
+            {
+                if (reader.PeekKind() == RlpKind.List)
+                    throw new InvalidOperationException("AccountRange slim account holds a list where a string is expected");
+                reader.Skip();
+            }
+            reader.EnsureEnd(body);
+
+            var slim = new byte[reader.Position - start];
+            Array.Copy(data, start, slim, 0, slim.Length);
+            return slim;
         }
 
         private static byte[] ULongToRlp(ulong v) => v == 0 ? new byte[0] : ((long)v).ToBytesForRLPEncoding();
@@ -161,17 +178,19 @@ namespace Nethereum.Model.P2P.Snap
 
         public static GetStorageRangesMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var m = new GetStorageRangesMessage
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded(),
-                RootHash = o[1].RLPData,
-                StartingHash = o[3].RLPData ?? new byte[0],
-                LimitHash = o[4].RLPData ?? new byte[0],
-                ResponseBytes = (ulong)o[5].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64(),
+                RootHash = reader.ReadFixed(PeerRlp.HashLength)
             };
-            foreach (var h in (RLPCollection)o[2])
-                m.AccountHashes.Add(h.RLPData);
+            m.AccountHashes.AddRange(PeerRlp.ReadHashes(reader));
+            m.StartingHash = reader.ReadBytes();
+            m.LimitHash = reader.ReadBytes();
+            m.ResponseBytes = reader.ReadUInt64();
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
@@ -223,26 +242,33 @@ namespace Nethereum.Model.P2P.Snap
 
         public static StorageRangesMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
-            var m = new StorageRangesMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var m = new StorageRangesMessage { RequestId = reader.ReadUInt64() };
+
+            var accounts = reader.ReadListHeader();
+            while (!reader.IsAtEnd(accounts))
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded()
-            };
-            foreach (RLPCollection acctRlp in (RLPCollection)o[1])
-            {
+                var slots = reader.ReadListHeader();
                 var slotsForAccount = new List<StorageRangesMessage.SlotEntry>();
-                foreach (RLPCollection slotRlp in acctRlp)
+                while (!reader.IsAtEnd(slots))
                 {
+                    var slot = reader.ReadListHeader();
                     slotsForAccount.Add(new StorageRangesMessage.SlotEntry
                     {
-                        Hash = slotRlp[0].RLPData,
-                        Data = slotRlp[1].RLPData ?? new byte[0]
+                        Hash = reader.ReadFixed(PeerRlp.HashLength),
+                        Data = reader.ReadBytes()
                     });
+                    reader.EnsureEnd(slot);
                 }
+                reader.EnsureEnd(slots);
                 m.Slots.Add(slotsForAccount);
             }
-            foreach (var p in (RLPCollection)o[2])
-                m.Proof.Add(p.RLPData);
+            reader.EnsureEnd(accounts);
+
+            m.Proof = PeerRlp.ReadByteStrings(reader, SnapServingLimits.MaxResponseProofNodes);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
@@ -273,14 +299,16 @@ namespace Nethereum.Model.P2P.Snap
 
         public static GetByteCodesMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var m = new GetByteCodesMessage
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded(),
-                ResponseBytes = (ulong)o[2].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64()
             };
-            foreach (var h in (RLPCollection)o[1])
-                m.Hashes.Add(h.RLPData);
+            m.Hashes.AddRange(PeerRlp.ReadHashes(reader));
+            m.ResponseBytes = reader.ReadUInt64();
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
@@ -309,13 +337,12 @@ namespace Nethereum.Model.P2P.Snap
 
         public static ByteCodesMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
-            var m = new ByteCodesMessage
-            {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded()
-            };
-            foreach (var c in (RLPCollection)o[1])
-                m.Codes.Add(c.RLPData);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var m = new ByteCodesMessage { RequestId = reader.ReadUInt64() };
+            m.Codes = PeerRlp.ReadByteStrings(reader);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
@@ -354,24 +381,62 @@ namespace Nethereum.Model.P2P.Snap
 
         public static GetTrieNodesMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var m = new GetTrieNodesMessage
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded(),
-                RootHash = o[1].RLPData,
-                ResponseBytes = (ulong)o[3].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64(),
+                RootHash = reader.ReadFixed(PeerRlp.HashLength)
             };
-            foreach (RLPCollection groupRlp in (RLPCollection)o[2])
+            var groups = reader.ReadListHeader();
+            var lookups = 0;
+            while (!reader.IsAtEnd(groups))
             {
+                var groupScope = reader.ReadListHeader();
+                if (reader.IsAtEnd(groupScope))
+                    throw new InvalidOperationException("GetTrieNodes holds a zero-item pathset");
+
+                var budget = SnapServingLimits.MaxTrieNodeLookups - lookups;
+                if (budget <= 0)
+                {
+                    SkipRest(reader, groupScope);
+                    continue;
+                }
+
                 var group = new List<byte[]>();
-                foreach (var p in groupRlp)
-                    group.Add(p.RLPData);
+                while (!reader.IsAtEnd(groupScope) && group.Count < budget)
+                    group.Add(reader.ReadBytes());
+                lookups += group.Count;
+                SkipRest(reader, groupScope);
                 m.Paths.Add(group);
             }
+            reader.EnsureEnd(groups);
+            m.ResponseBytes = reader.ReadUInt64();
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
+        private static void SkipRest(RlpReader reader, RlpListScope scope)
+        {
+            while (!reader.IsAtEnd(scope))
+            {
+                if (reader.PeekKind() == RlpKind.List)
+                    throw new InvalidOperationException("GetTrieNodes path is not a byte string");
+                reader.Skip();
+            }
+            reader.EnsureEnd(scope);
+        }
+
         private static byte[] ULongToRlp(ulong v) => v == 0 ? new byte[0] : ((long)v).ToBytesForRLPEncoding();
+    }
+
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "model-peer-limits", "SnapServingLimits")]
+    public static class SnapServingLimits
+    {
+        public const int MaxTrieNodeLookups = 1024;
+
+        public const int MaxResponseProofNodes = 128;
     }
 
     public class TrieNodesMessage
@@ -396,13 +461,12 @@ namespace Nethereum.Model.P2P.Snap
 
         public static TrieNodesMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
-            var m = new TrieNodesMessage
-            {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded()
-            };
-            foreach (var n in (RLPCollection)o[1])
-                m.Nodes.Add(n.RLPData);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var m = new TrieNodesMessage { RequestId = reader.ReadUInt64() };
+            m.Nodes = PeerRlp.ReadByteStrings(reader);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
@@ -441,14 +505,16 @@ namespace Nethereum.Model.P2P.Snap
 
         public static GetBlockAccessListsMessage Decode(byte[] data)
         {
-            var o = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var m = new GetBlockAccessListsMessage
             {
-                RequestId = (ulong)o[0].RLPData.ToLongFromRLPDecoded(),
-                Bytes = (ulong)o[2].RLPData.ToLongFromRLPDecoded()
+                RequestId = reader.ReadUInt64()
             };
-            foreach (var h in (RLPCollection)o[1])
-                m.Hashes.Add(h.RLPData);
+            m.Hashes.AddRange(PeerRlp.ReadHashes(reader));
+            m.Bytes = reader.ReadUInt64();
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return m;
         }
 
@@ -474,19 +540,12 @@ namespace Nethereum.Model.P2P.Snap
 
         public static BlockAccessListsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-
-            var msg = new BlockAccessListsMessage
-            {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
-            };
-
-            var balList = (RLPCollection)outer[1];
-            foreach (var balRlp in balList)
-            {
-                msg.BlockAccessListsByBlock.Add(balRlp.RLPData ?? new byte[0]);
-            }
-
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var msg = new BlockAccessListsMessage { RequestId = reader.ReadUInt64() };
+            msg.BlockAccessListsByBlock = PeerRlp.ReadBlockAccessLists(reader);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
     }

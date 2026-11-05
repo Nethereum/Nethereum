@@ -32,24 +32,61 @@ namespace Nethereum.Model
         }
         public static List<Authorisation7702Signed> Decode(byte[] encoded)
         {
-            var decodedList = (RLPCollection)(RLP.RLP.Decode(encoded));
+            var reader = new RlpReader(encoded);
+            var authorisations = Read(reader);
+            reader.EnsureEnd();
+            return authorisations;
+        }
 
-
-            var accessLists = new List<Authorisation7702Signed>();
-            foreach (var rlpElement in decodedList)
+        internal static List<Authorisation7702Signed> Read(RlpReader reader)
+        {
+            var scope = reader.ReadListHeader();
+            var authorisations = new List<Authorisation7702Signed>();
+            while (!reader.IsAtEnd(scope))
             {
-                var decodedItem = (RLPCollection)rlpElement;
+                if (reader.PeekKind() != RlpKind.List)
+                    throw new AuthorisationFormatException($"an authorization is a list of exactly {AuthorisationTupleFieldCount} fields");
+
+                var item = reader.ReadListHeader();
+                if (reader.CountItems(item) != AuthorisationTupleFieldCount)
+                    throw new AuthorisationFormatException($"an authorization is a list of exactly {AuthorisationTupleFieldCount} fields");
+
                 var authorisationListItem = new Authorisation7702Signed();
-                authorisationListItem.ChainId = decodedItem[0].RLPData.ToEvmUInt256FromRLPDecoded();
-                authorisationListItem.Address = decodedItem[1].RLPData.ToHex();
-                authorisationListItem.Nonce = decodedItem[2].RLPData.ToEvmUInt256FromRLPDecoded();
-                authorisationListItem.V = decodedItem[3].RLPData ?? new byte[0];
-                authorisationListItem.R = decodedItem[4].RLPData ?? new byte[0];
-                authorisationListItem.S = decodedItem[5].RLPData ?? new byte[0];
-                accessLists.Add(authorisationListItem);
+                authorisationListItem.ChainId = Scalar(reader, 32, "chain_id").ToEvmUInt256FromRLPDecoded();
+                authorisationListItem.Address = Address(reader).ToHex();
+                authorisationListItem.Nonce = Scalar(reader, 8, "nonce").ToEvmUInt256FromRLPDecoded();
+                authorisationListItem.V = Scalar(reader, 1, "y_parity") ?? new byte[0];
+                authorisationListItem.R = Scalar(reader, 32, "r") ?? new byte[0];
+                authorisationListItem.S = Scalar(reader, 32, "s") ?? new byte[0];
+                reader.EnsureEnd(item);
+                authorisations.Add(authorisationListItem);
             }
 
-            return accessLists;
+            reader.EnsureEnd(scope);
+            return authorisations;
+        }
+
+        private const int AuthorisationTupleFieldCount = 6;
+        private const int AddressLength = 20;
+
+        private static byte[] Scalar(RlpReader reader, int maxBytes, string field)
+        {
+            if (reader.PeekKind() == RlpKind.List)
+                throw new AuthorisationFormatException($"{field} is a list, not a scalar");
+
+            var bytes = reader.ReadBytes();
+            if (!RlpScalar.IsCanonical(bytes))
+                throw new AuthorisationFormatException($"{field} is encoded with a leading zero byte");
+            if (bytes.Length > maxBytes)
+                throw new AuthorisationFormatException($"{field} is {bytes.Length} bytes and its field holds {maxBytes}");
+            return bytes.Length == 0 ? null : bytes;
+        }
+
+        private static byte[] Address(RlpReader reader)
+        {
+            if (reader.PeekKind() == RlpKind.List || reader.PeekSize() != AddressLength)
+                throw new AuthorisationFormatException($"address is not {AddressLength} bytes");
+            return reader.ReadFixed(AddressLength);
         }
 
     }

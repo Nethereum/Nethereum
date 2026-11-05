@@ -10,6 +10,7 @@ using KeyPath = NBitcoin.KeyPath;
 
 namespace Nethereum.HdWallet
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.Signing, "hd-wallets", "Wallet constructors and members")]
     public class Wallet
     {
         public const string DEFAULT_PATH = "m/44'/60'/0'/0/x";
@@ -24,10 +25,14 @@ namespace Nethereum.HdWallet
             InitialiseSeed(wordList, wordCount, seedPassword);
         }
 
-        public Wallet(string words, string seedPassword, string path = DEFAULT_PATH, IRandom random = null) : this(path,
+        public Wallet(string words, string seedPassword, string path = DEFAULT_PATH, IRandom random = null) : this(words, seedPassword, path, random, true)
+        {
+        }
+
+        public Wallet(string words, string seedPassword, string path, IRandom random, bool validateMnemonic) : this(path,
             random)
         {
-            InitialiseSeed(words, seedPassword);
+            InitialiseSeed(words, seedPassword, validateMnemonic);
         }
 
         public Wallet(byte[] seed, string path = DEFAULT_PATH, IRandom random = null) : this(path, random)
@@ -45,14 +50,11 @@ namespace Nethereum.HdWallet
 #else
             if (random == null) random = new SecureRandom();
 #endif
-            Random = random;
+            _random = random;
         }
 
-        private IRandom Random
-        {
-            get => RandomUtils.Random;
-            set => RandomUtils.Random = value;
-        }
+        private readonly IRandom _random;
+        private const int MaxInputLength = 4096;
 
         public string Seed { get; private set; }
         public string[] Words { get; private set; }
@@ -65,7 +67,9 @@ namespace Nethereum.HdWallet
 
         private void InitialiseSeed(Wordlist wordlist, WordCount wordCount, string seedPassword = null)
         {
-            var mnemonic = new Mnemonic(wordlist, wordCount);
+            var entropy = new byte[(11 * (int)wordCount - (int)wordCount / 3) / 8];
+            _random.GetBytes(entropy);
+            var mnemonic = new Mnemonic(wordlist, entropy);
             Seed = mnemonic.DeriveSeed(seedPassword).ToHex();
             Words = mnemonic.Words;
             IsMnemonicValidChecksum = mnemonic.IsValidChecksum;
@@ -73,14 +77,38 @@ namespace Nethereum.HdWallet
             _masterKey = new ExtKey(Seed).Derive(keyPath);
         }
 
-        private void InitialiseSeed(string words, string seedPassword = null)
+        private void InitialiseSeed(string words, string seedPassword, bool validateMnemonic)
         {
-            var mnemonic = new Mnemonic(words);
+            if (words == null) throw new ArgumentNullException(nameof(words));
+            if (validateMnemonic && words.Length > MaxInputLength)
+                throw new ArgumentException("Mnemonic is longer than " + MaxInputLength + " characters", nameof(words));
+            if (validateMnemonic && seedPassword != null && seedPassword.Length > MaxInputLength)
+                throw new ArgumentException("Passphrase is longer than " + MaxInputLength + " characters", nameof(seedPassword));
+            var mnemonic = validateMnemonic ? ParseEnglishMnemonic(words) : new Mnemonic(words);
             Seed = mnemonic.DeriveSeed(seedPassword).ToHex();
             Words = mnemonic.Words;
             IsMnemonicValidChecksum = mnemonic.IsValidChecksum;
             var keyPath = new KeyPath(GetMasterPath());
             _masterKey = new ExtKey(Seed).Derive(keyPath);
+        }
+
+        private static Mnemonic ParseEnglishMnemonic(string words)
+        {
+            Mnemonic mnemonic;
+            try
+            {
+                mnemonic = new Mnemonic(words, Wordlist.English);
+            }
+            catch (FormatException)
+            {
+                throw new ArgumentException("Mnemonic contains a word that is not in the BIP-39 English word list", nameof(words));
+            }
+            var count = mnemonic.Words.Length;
+            if (count != 12 && count != 15 && count != 18 && count != 21 && count != 24)
+                throw new ArgumentException("Mnemonic must have 12, 15, 18, 21 or 24 words", nameof(words));
+            if (!mnemonic.IsValidChecksum)
+                throw new ArgumentException("Mnemonic checksum is invalid", nameof(words));
+            return mnemonic;
         }
 
         private string GetIndexPath(int index)

@@ -21,7 +21,7 @@ namespace Nethereum.Model.P2P
 
         public static void Decode(byte[] ethEntryValue, out uint forkHash, out ulong forkNext)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(ethEntryValue);
+            var outer = (RLPCollection)RLP.RLP.Decode(ethEntryValue, RLP.RLP.UntrustedElementBudget(ethEntryValue.Length));
             var forkIdItem = (RLPCollection)outer[0];
             ForkIdEncoder.DecodeItems(forkIdItem, out forkHash, out forkNext);
         }

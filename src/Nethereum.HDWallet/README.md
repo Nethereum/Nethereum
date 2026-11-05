@@ -27,10 +27,12 @@ Nethereum.HdWallet implements **BIP32** (Hierarchical Deterministic Wallets) and
 dotnet add package Nethereum.HdWallet
 ```
 
+Targets: `netstandard2.0` and `net461` (`net452` is no longer built; NBitcoin 10 has no asset it can use). The `net461` build is not strong-name signed, because NBitcoin is not strong-named and .NET Framework refuses a signed assembly that references it.
+
 ## Dependencies
 
 **External:**
-- **NBitcoin** (v7.0.6) - Bitcoin and cryptographic primitives (BIP32/BIP39 implementation)
+- **NBitcoin** (v10.0.16) - Bitcoin and cryptographic primitives (BIP32/BIP39 implementation)
 
 **Nethereum:**
 - **Nethereum.Web3** - Web3 client and account integration
@@ -113,6 +115,17 @@ var web3 = new Nethereum.Web3.Web3(account, "https://mainnet.infura.io/v3/YOUR-P
 
 // All addresses derived from this seed will match the original wallet
 ```
+
+`new Wallet(words, password)` validates the mnemonic: 12, 15, 18, 21 or 24 words from the BIP-39 English list with a valid checksum, each of `words` and `password` at most 4096 characters; anything else throws `ArgumentException`. To open a phrase that does not pass (a non-English or non-checksummed phrase from another tool), use the overload with `validateMnemonic: false` and read `IsMnemonicValidChecksum`:
+
+```csharp
+Assert.Throws<ArgumentException>(() => new Wallet(wrongChecksumWords, "TREZOR"));
+
+var lenient = new Wallet(wrongChecksumWords, "TREZOR", Wallet.DEFAULT_PATH, null, false);
+Assert.False(lenient.IsMnemonicValidChecksum);
+```
+
+Backed by `FoundationsHdWalletDocExampleTests.Given_AMnemonicWithABadChecksum_When_ARestoredWalletIsCreated_Then_ItIsRefusedUnlessValidationIsTurnedOff`. Stray whitespace (a double space, a tab, leading or trailing blanks) gives the same seed as the clean phrase, in strict mode and with `validateMnemonic: false`; capital letters throw `ArgumentException` in strict mode. The canonical-seed derivation of `Nethereum.Accounts`' `Bip39` helper is a separate change, described in the Accounts release note (slice 02). A wallet created from a word list and count draws its entropy from the `IRandom` passed to the constructor; the wallet no longer replaces NBitcoin's process-wide `RandomUtils.Random`.
 
 ### Example 3: Generate Multiple Addresses
 
@@ -305,9 +318,12 @@ public class Wallet
     // Constructors
     // Every constructor takes a trailing IRandom random = null (NBitcoin.IRandom) so callers
     // can inject a deterministic/test RNG; when null, RandomNumberGeneratorRandom (or
-    // SecureRandom pre-.NET Standard 2.0) is used to seed NBitcoin's RandomUtils.
+    // SecureRandom pre-.NET Standard 2.0) is used. The supplied IRandom is used for this wallet only and never replaces NBitcoin's process-wide RandomUtils.Random.
     public Wallet(Wordlist wordList, WordCount wordCount, string seedPassword = null, string path = DEFAULT_PATH, IRandom random = null);
     public Wallet(string words, string seedPassword, string path = DEFAULT_PATH, IRandom random = null);
+    // Throws ArgumentException unless words are 12/15/18/21/24 BIP-39 English words with a valid checksum; mnemonic and seedPassword are limited to 4096 characters
+    // validateMnemonic: false keeps the previous lenient behaviour (IsMnemonicValidChecksum then reports the result)
+    public Wallet(string words, string seedPassword, string path, IRandom random, bool validateMnemonic);
     public Wallet(byte[] seed, string path = DEFAULT_PATH, IRandom random = null);
 
     // Properties

@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Signer.AzureKeyVault provides the External Signing capability for Ethereum transactions and Messages using Azure Key Vault</Description>
+    <Description>Nethereum.Signer.AzureKeyVault provides the External Signing capability for Ethereum transactions and Messages using Azure Key Vault</Description>
     <AssemblyTitle>Nethereum.Signer.AzureKeyVault</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.AzureKeyVault</AssemblyName>
     <PackageId>Nethereum.Signer.AzureKeyVault</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Azure Key Vault</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Azure Key Vault</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>

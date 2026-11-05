@@ -9,7 +9,14 @@ namespace Nethereum.Model
         GasLimit = 2,
         ReceiveAddress = 3,
         Value = 4,
-        Data = 5
+        Data = 5,
+        ChainId = 6,
+        MaxPriorityFeePerGas = 7,
+        MaxFeePerGas = 8,
+        MaxFeePerBlobGas = 9,
+        SignatureV = 10,
+        SignatureR = 11,
+        SignatureS = 12
     }
 
     public abstract class SignedLegacyTransaction: SignedLegacyTransactionBase

@@ -21,10 +21,23 @@ namespace Nethereum.ABI.EIP712
 
         public void EnsureDomainRawValuesAreInitialised()
         {
-           if(DomainRawValues == null)
+            if (Domain != null || DomainRawValues == null)
             {
                 InitDomainRawValues();
             }
+        }
+
+        internal TypedDataRaw ToRaw(MemberValue[] message)
+        {
+            return new TypedDataRaw
+            {
+                Types = Types,
+                PrimaryType = PrimaryType,
+                Message = message,
+                DomainRawValues = Domain != null || DomainRawValues == null
+                    ? MemberValueFactory.CreateFromMessage(Domain)
+                    : DomainRawValues
+            };
         }
     }
 }

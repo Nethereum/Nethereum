@@ -3,10 +3,11 @@
   <PropertyGroup>
     <Description>SQLite-based storage for ABIInfo caching and offline use</Description>
     <AssemblyTitle>Nethereum.ABI.ABIInfoSqliteStorage</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0;net9.0</TargetFrameworks>
     <AssemblyName>Nethereum.ABI.ABIInfoSqliteStorage</AssemblyName>
     <PackageId>Nethereum.ABI.ABIInfoSqliteStorage</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>Nethereum;Ethereum;Blockchain;ABI;SQLite;Cache</PackageTags>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
@@ -25,6 +26,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

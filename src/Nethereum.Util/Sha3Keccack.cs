@@ -26,16 +26,23 @@ namespace Nethereum.Util
             return CalculateHash(joinedHex.HexToByteArray()).ToHex();
         }
 
-        [ThreadStatic] private static KeccakDigest _threadDigest;
-
         public byte[] CalculateHash(byte[] value)
         {
-            var digest = _threadDigest ??= new KeccakDigest(256);
-            digest.Reset();
-            var output = new byte[digest.GetDigestSize()];
-            digest.BlockUpdate(value, 0, value.Length);
-            digest.DoFinal(output, 0);
+            var output = new byte[KeccakF1600.Keccak256OutputBytes];
+            KeccakF1600.Keccak256(value, 0, value.Length, output, 0);
             return output;
+        }
+
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "util-keccak-into-buffer", "Sha3Keccack.CalculateHash into a buffer")]
+        public void CalculateHash(byte[] input, int offset, int length, byte[] output, int outputOffset)
+        {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            if (output == null) throw new ArgumentNullException(nameof(output));
+            if (offset < 0 || offset > input.Length) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length < 0 || length > input.Length - offset) throw new ArgumentOutOfRangeException(nameof(length));
+            if (outputOffset < 0 || outputOffset > output.Length - KeccakF1600.Keccak256OutputBytes) throw new ArgumentOutOfRangeException(nameof(outputOffset));
+
+            KeccakF1600.Keccak256(input, offset, length, output, outputOffset);
         }
 
         public byte[] CalculateHashAsBytes(string value)

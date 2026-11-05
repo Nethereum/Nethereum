@@ -33,27 +33,42 @@ namespace Nethereum.Model
 
         public static List<AccessListItem> DecodeAccessList(byte[] accessListEncoded)
         {
-            if (accessListEncoded == null || accessListEncoded.Length == 0 || accessListEncoded[0] ==  RLP.RLP.OFFSET_SHORT_LIST ) return null;
+            if (accessListEncoded == null || accessListEncoded.Length == 0) return null;
 
-            var decodedList = (RLPCollection)(RLP.RLP.Decode(accessListEncoded));
-
-            var accessLists = new List<AccessListItem>();
-            foreach (var rlpElement in decodedList)
-            {
-                var decodedItem =  (RLPCollection)rlpElement;
-                var accessListItem = new AccessListItem();
-                accessListItem.Address = decodedItem[0].RLPData.ToHex();
-                var decodedStorageKeys = (RLPCollection)decodedItem[1];
-
-                foreach (var decodedStorageKey in decodedStorageKeys)
-                {
-                    accessListItem.StorageKeys.Add(decodedStorageKey.RLPData);   
-                }
-                accessLists.Add(accessListItem);
-            }
-
+            var reader = new RlpReader(accessListEncoded);
+            var accessLists = Read(reader);
+            reader.EnsureEnd();
             return accessLists;
         }
+
+        internal static List<AccessListItem> Read(RlpReader reader)
+        {
+            var scope = reader.ReadListHeader();
+            if (reader.IsAtEnd(scope))
+            {
+                reader.EnsureEnd(scope);
+                return null;
+            }
+
+            var items = new List<AccessListItem>();
+            while (!reader.IsAtEnd(scope))
+            {
+                var itemScope = reader.ReadListHeader();
+                var item = new AccessListItem { Address = reader.ReadFixed(AddressBytes).ToHex() };
+                var keysScope = reader.ReadListHeader();
+                while (!reader.IsAtEnd(keysScope))
+                    item.StorageKeys.Add(reader.ReadFixed(StorageKeyBytes));
+                reader.EnsureEnd(keysScope);
+                reader.EnsureEnd(itemScope);
+                items.Add(item);
+            }
+
+            reader.EnsureEnd(scope);
+            return items;
+        }
+
+        private const int AddressBytes = 20;
+        private const int StorageKeyBytes = 32;
 
     }
 }

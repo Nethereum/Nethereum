@@ -3,6 +3,7 @@ using System.Linq;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
 using Nethereum.Signer.Crypto.BN128;
+using Nethereum.Signer.Crypto.BN128.Managed;
 
 namespace Nethereum.Signer.Crypto
 {
@@ -32,86 +33,56 @@ namespace Nethereum.Signer.Crypto
 
         public static byte[] Add(byte[] input)
         {
-            input = PadToLength(input, 128);
-
-            var x1 = ReadCoordinate(input, 0);
-            var y1 = ReadCoordinate(input, 32);
-            var x2 = ReadCoordinate(input, 64);
-            var y2 = ReadCoordinate(input, 96);
-
-            if (!IsValidCoordinate(x1) || !IsValidCoordinate(y1) ||
-                !IsValidCoordinate(x2) || !IsValidCoordinate(y2))
-            {
-                throw new ArgumentException("Invalid BN128 coordinates");
-            }
-
-            ECPoint p1, p2;
-
-            if (x1.Equals(BigInteger.Zero) && y1.Equals(BigInteger.Zero))
-            {
-                p1 = Curve.Infinity;
-            }
-            else
-            {
-                p1 = Curve.CreatePoint(x1, y1);
-                if (!p1.IsValid())
-                    throw new ArgumentException("Point 1 is not on the BN128 curve");
-            }
-
-            if (x2.Equals(BigInteger.Zero) && y2.Equals(BigInteger.Zero))
-            {
-                p2 = Curve.Infinity;
-            }
-            else
-            {
-                p2 = Curve.CreatePoint(x2, y2);
-                if (!p2.IsValid())
-                    throw new ArgumentException("Point 2 is not on the BN128 curve");
-            }
-
-            var result = p1.Add(p2).Normalize();
-            return EncodePoint(result);
+            return TryAdd(input, out var output)
+                ? output
+                : throw new ArgumentException("Invalid BN128 ADD input: coordinates not in the field or point not on the curve");
         }
 
         public static byte[] Mul(byte[] input)
         {
-            input = PadToLength(input, 96);
-
-            var x = ReadCoordinate(input, 0);
-            var y = ReadCoordinate(input, 32);
-            var scalar = ReadCoordinate(input, 64);
-
-            if (!IsValidCoordinate(x) || !IsValidCoordinate(y))
-            {
-                throw new ArgumentException("Invalid BN128 coordinates");
-            }
-
-            ECPoint p;
-            if (x.Equals(BigInteger.Zero) && y.Equals(BigInteger.Zero))
-            {
-                p = Curve.Infinity;
-            }
-            else
-            {
-                p = Curve.CreatePoint(x, y);
-                if (!p.IsValid())
-                    throw new ArgumentException("Point is not on the BN128 curve");
-            }
-
-            var result = p.Multiply(scalar).Normalize();
-            return EncodePoint(result);
+            return TryMul(input, out var output)
+                ? output
+                : throw new ArgumentException("Invalid BN128 MUL input: coordinates not in the field or point not on the curve");
         }
 
         public static byte[] Pairing(byte[] input)
         {
+            return TryPairing(input, out var output)
+                ? output
+                : throw new ArgumentException("Invalid BN128 pairing input: length, coordinates, curve membership or subgroup");
+        }
+
+        public static bool TryAdd(byte[] input, out byte[] output)
+        {
+            var data = PadToLength(input, 128);
+            output = null;
+            if (!G1Jacobian.TryFromAffineBytes(data, 0, out var first)) return false;
+            if (!G1Jacobian.TryFromAffineBytes(data, G1Jacobian.AffineByteLength, out var second)) return false;
+            output = first.Add(second).ToAffineBytes();
+            return true;
+        }
+
+        public static bool TryMul(byte[] input, out byte[] output)
+        {
+            var data = PadToLength(input, 96);
+            output = null;
+            if (!G1Jacobian.TryFromAffineBytes(data, 0, out var point)) return false;
+            var scalar = BigEndianBytes.ReadUnsignedBigInteger(data, G1Jacobian.AffineByteLength, 32);
+            output = G1ScalarMultiplication.Multiply(point, scalar).ToAffineBytes();
+            return true;
+        }
+
+        public static bool TryPairing(byte[] input, out byte[] output)
+        {
+            output = null;
             if (input == null) input = new byte[0];
 
-            if (input.Length % 192 != 0)
-                throw new ArgumentException("Invalid BN128 pairing input length");
+            if (input.Length % 192 != 0) return false;
 
             if (input.Length == 0)
             {
-                return PadTo32BytesLeft(new byte[] { 1 });
+                output = PadTo32BytesLeft(new byte[] { 1 });
+                return true;
             }
 
             int pairCount = input.Length / 192;
@@ -122,73 +93,70 @@ namespace Nethereum.Signer.Crypto
             {
                 int offset = i * 192;
 
-                // Read G1 point (first 64 bytes)
-                var ax = ReadCoordinate(input, offset);
-                var ay = ReadCoordinate(input, offset + 32);
-
-                if (!IsValidCoordinate(ax) || !IsValidCoordinate(ay))
-                    throw new ArgumentException("Invalid G1 coordinates in pairing input");
-
-                if (ax.Equals(BigInteger.Zero) && ay.Equals(BigInteger.Zero))
-                {
-                    g1Points[i] = Curve.Infinity;
-                }
-                else
-                {
-                    var g1Point = Curve.CreatePoint(ax, ay);
-                    if (!g1Point.IsValid())
-                        throw new ArgumentException("G1 point not on curve in pairing input");
-                    g1Points[i] = g1Point;
-                }
-
-                // Read G2 point (next 128 bytes)
-                // G2 coordinates are in Fp2, stored as (imaginary, real) pairs
-                var bx_im = ReadCoordinate(input, offset + 64);
-                var bx_re = ReadCoordinate(input, offset + 96);
-                var by_im = ReadCoordinate(input, offset + 128);
-                var by_re = ReadCoordinate(input, offset + 160);
-
-                if (!IsValidCoordinate(bx_im) || !IsValidCoordinate(bx_re) ||
-                    !IsValidCoordinate(by_im) || !IsValidCoordinate(by_re))
-                    throw new ArgumentException("Invalid G2 coordinates in pairing input");
-
-                // Create G2 twist point
-                var g2X = new Fp2(bx_im, bx_re);
-                var g2Y = new Fp2(by_im, by_re);
-
-                if (g2X.IsZero() && g2Y.IsZero())
-                {
-                    g2Points[i] = new TwistPoint();
-                    g2Points[i].SetInfinity();
-                }
-                else
-                {
-                    g2Points[i] = TwistPoint.FromAffine(g2X, g2Y);
-                    // Validate G2 point is on the twist curve
-                    if (!IsOnTwistCurve(g2X, g2Y))
-                        throw new ArgumentException("G2 point not on twist curve in pairing input");
-                    // Validate G2 point is in the correct subgroup
-                    if (!g2Points[i].IsInCorrectSubgroup())
-                        throw new ArgumentException("G2 point not in correct subgroup in pairing input");
-                }
+                if (!TryReadG1Point(input, offset, out g1Points[i])) return false;
+                if (!TryReadG2Point(input, offset + 64, out g2Points[i])) return false;
             }
 
-            // Compute pairing check: ∏ e(g1[i], g2[i]) == 1
             bool result = BN128Pairing.PairingCheck(g1Points, g2Points);
 
-            return PadTo32BytesLeft(new byte[] { result ? (byte)1 : (byte)0 });
+            output = PadTo32BytesLeft(new byte[] { result ? (byte)1 : (byte)0 });
+            return true;
         }
 
-        /// <summary>
-        /// Validates that a G2 point is on the twist curve y² = x³ + B'
-        /// where B' = 3/(9+i) in Fp2
-        /// </summary>
+        private static bool TryReadG1Point(byte[] input, int offset, out ECPoint point)
+        {
+            point = null;
+            var x = ReadCoordinate(input, offset);
+            var y = ReadCoordinate(input, offset + 32);
+
+            if (!IsValidCoordinate(x) || !IsValidCoordinate(y)) return false;
+
+            if (x.Equals(BigInteger.Zero) && y.Equals(BigInteger.Zero))
+            {
+                point = Curve.Infinity;
+                return true;
+            }
+
+            var candidate = Curve.CreatePoint(x, y);
+            if (!candidate.IsValid()) return false;
+            point = candidate;
+            return true;
+        }
+
+        private static bool TryReadG2Point(byte[] input, int offset, out TwistPoint point)
+        {
+            point = null;
+            var xIm = ReadCoordinate(input, offset);
+            var xRe = ReadCoordinate(input, offset + 32);
+            var yIm = ReadCoordinate(input, offset + 64);
+            var yRe = ReadCoordinate(input, offset + 96);
+
+            if (!IsValidCoordinate(xIm) || !IsValidCoordinate(xRe) ||
+                !IsValidCoordinate(yIm) || !IsValidCoordinate(yRe))
+                return false;
+
+            var g2X = new Fp2(xIm, xRe);
+            var g2Y = new Fp2(yIm, yRe);
+
+            if (g2X.IsZero() && g2Y.IsZero())
+            {
+                point = new TwistPoint();
+                point.SetInfinity();
+                return true;
+            }
+
+            if (!IsOnTwistCurve(g2X, g2Y)) return false;
+            var candidate = TwistPoint.FromAffine(g2X, g2Y);
+            if (!candidate.IsInCorrectSubgroup()) return false;
+            point = candidate;
+            return true;
+        }
+
         private static bool IsOnTwistCurve(Fp2 x, Fp2 y)
         {
             if (x.IsZero() && y.IsZero())
                 return true;
 
-            // y² = x³ + B'
             var y2 = new Fp2().Square(y);
             var x3 = new Fp2().Square(x);
             x3.Mul(x3, x);
@@ -214,26 +182,6 @@ namespace Nethereum.Signer.Crypto
         private static bool IsValidCoordinate(BigInteger coord)
         {
             return coord.CompareTo(BigInteger.Zero) >= 0 && coord.CompareTo(P) < 0;
-        }
-
-        private static byte[] EncodePoint(ECPoint point)
-        {
-            if (point.IsInfinity)
-            {
-                return new byte[64];
-            }
-
-            var x = point.AffineXCoord.ToBigInteger();
-            var y = point.AffineYCoord.ToBigInteger();
-
-            var result = new byte[64];
-            var xBytes = x.ToByteArrayUnsigned();
-            var yBytes = y.ToByteArrayUnsigned();
-
-            Array.Copy(xBytes, 0, result, 32 - xBytes.Length, xBytes.Length);
-            Array.Copy(yBytes, 0, result, 64 - yBytes.Length, yBytes.Length);
-
-            return result;
         }
 
         private static byte[] PadToLength(byte[] data, int length)

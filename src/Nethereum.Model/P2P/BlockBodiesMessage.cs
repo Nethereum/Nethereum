@@ -69,41 +69,35 @@ namespace Nethereum.Model.P2P
 
         public static BlockBodiesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var msg = new BlockBodiesMessage { RequestId = reader.ReadUInt64() };
 
-            var msg = new BlockBodiesMessage
+            var bodies = reader.ReadListHeader();
+            while (!reader.IsAtEnd(bodies))
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
-            };
-
-            var bodiesList = (RLPCollection)outer[1];
-            foreach (RLPCollection bodyRlp in bodiesList)
-            {
-                var body = new BlockBody();
-
-                var txList = (RLPCollection)bodyRlp[0];
-
-                if (PeerResponseBounds.ExceedsWhatABlockCanHold(txList)) break;
-
-                foreach (var txRlp in txList)
-                    body.Transactions.Add(TransactionFactory.CreateTransaction(txRlp.RLPData, allowBlobNetworkWrapper: false));
-
-                var uncleList = (RLPCollection)bodyRlp[1];
-                foreach (RLPCollection uncleRlp in uncleList)
-                    body.Uncles.Add(BlockHeaderEncoder.Current.Decode(uncleRlp.RLPData));
-
-                if (bodyRlp.Count > 2)
-                {
-                    body.Withdrawals = new List<Withdrawal>();
-                    var withdrawalList = (RLPCollection)bodyRlp[2];
-                    foreach (var wRlp in withdrawalList)
-                        body.Withdrawals.Add(WithdrawalEncoder.Current.Decode(wRlp.RLPData));
-                }
-
+                var body = BlockBodyRlpDecoder.ReadBody(reader, allowBlobNetworkWrapper: false,
+                    PeerResponseBounds.MaxTransactionsPerBlock);
                 msg.Bodies.Add(body);
             }
 
+            reader.EnsureEnd(bodies);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
+        }
+
+        public static BlockBody ReadBody(RlpReader reader, bool allowBlobNetworkWrapper = true)
+        {
+            return BlockBodyRlpDecoder.ReadBody(reader, allowBlobNetworkWrapper, BlockBodyRlpDecoder.NoTransactionBound);
+        }
+
+        public static BlockBody DecodeBody(byte[] data, bool allowBlobNetworkWrapper = true)
+        {
+            var reader = new RlpReader(data);
+            var body = ReadBody(reader, allowBlobNetworkWrapper);
+            reader.EnsureEnd();
+            return body;
         }
     }
 }

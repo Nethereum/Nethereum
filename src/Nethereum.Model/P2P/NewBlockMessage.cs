@@ -74,31 +74,31 @@ namespace Nethereum.Model.P2P
 
         public static NewBlockMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var blockRlp = (RLPCollection)outer[0];
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var msg = ReadBlock(reader, allowBlobNetworkWrapper: false);
+            msg.TotalDifficulty = reader.ReadBigInteger();
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return msg;
+        }
 
-            var msg = new NewBlockMessage
-            {
-                Header = BlockHeaderEncoder.Current.Decode(blockRlp[0].RLPData),
-                TotalDifficulty = (outer[1].RLPData ?? new byte[0]).ToBigIntegerFromUnsignedBigEndian()
-            };
+        public static NewBlockMessage DecodeBlock(byte[] block, bool allowBlobNetworkWrapper = true)
+        {
+            var reader = new RlpReader(block);
+            var msg = ReadBlock(reader, allowBlobNetworkWrapper);
+            reader.EnsureEnd();
+            return msg;
+        }
 
-            var txList = (RLPCollection)blockRlp[1];
-            foreach (var txRlp in txList)
-                msg.Transactions.Add(TransactionFactory.CreateTransaction(txRlp.RLPData, allowBlobNetworkWrapper: false));
-
-            var uncleList = (RLPCollection)blockRlp[2];
-            foreach (RLPCollection uncleRlp in uncleList)
-                msg.Uncles.Add(BlockHeaderEncoder.Current.Decode(uncleRlp.RLPData));
-
-            if (blockRlp.Count > 3)
-            {
-                msg.Withdrawals = new List<Withdrawal>();
-                var withdrawalList = (RLPCollection)blockRlp[3];
-                foreach (var wRlp in withdrawalList)
-                    msg.Withdrawals.Add(WithdrawalEncoder.Current.Decode(wRlp.RLPData));
-            }
-
+        private static NewBlockMessage ReadBlock(RlpReader reader, bool allowBlobNetworkWrapper)
+        {
+            var scope = reader.ReadListHeader();
+            var msg = new NewBlockMessage { Header = BlockHeaderEncoder.Current.Decode(reader) };
+            BlockBodyRlpDecoder.ReadContent(reader, scope, msg.Transactions, msg.Uncles, out var withdrawals,
+                allowBlobNetworkWrapper, BlockBodyRlpDecoder.NoTransactionBound);
+            msg.Withdrawals = withdrawals;
+            reader.EnsureEnd(scope);
             return msg;
         }
 

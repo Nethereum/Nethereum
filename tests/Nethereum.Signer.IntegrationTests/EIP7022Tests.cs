@@ -66,78 +66,85 @@ namespace Nethereum.Signer.IntegrationTests
             var delegatedAddress = await authorisationService.GetDelegatedAccountAddressAsync(ownerAddress);
             Assert.Null(delegatedAddress);
 
-            var authorisationReceipt = await authorisationService.AuthoriseRequestAndWaitForReceiptAsync(defaultBatchCallService.ContractAddress, true);
-
-            var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(authorisationReceipt.TransactionHash);
-
-            Assert.True(authorisationReceipt.Status.Value == 1);
-            Assert.NotNull(transaction);
-            Assert.True(transaction.AuthorisationList.Count == 1);
-            Assert.Equal(0, transaction.AuthorisationList[0].ChainId.Value);
-            Assert.Equal(defaultBatchCallService.ContractAddress, transaction.AuthorisationList[0].Address);
-
-            delegatedAddress = await authorisationService.GetDelegatedAccountAddressAsync(ownerAddress);
-            Assert.True(defaultBatchCallService.ContractAddress.IsTheSameAddress(delegatedAddress));
-
-            var originalReceiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
-            var originalReceiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
-
-
-
-            var calls = new List<Call>();
-            var call1 = new Call();
-            call1.To = receiverAddress;
-            call1.Data = new byte[0];
-            call1.Value = Web3.Web3.Convert.ToWei(0.0001);
-            calls.Add(call1);
-
-            var call2 = new Call();
-            call2.To = tokenService.ContractHandler.ContractAddress;
-            call2.Value = 0;
-            call2.Data = new TransferFunction() { To = receiverAddress, Value = 100 }.GetCallData();
-            calls.Add(call2);
-
-
-
-            var accountBatchService = new BatchCallAndSponsorService(web3, ownerAddress);
-            var receipt = await accountBatchService.ExecuteRequestAndWaitForReceiptAsync(calls);
-            var batchExecutedEvent = receipt.DecodeAllEvents<BatchExecutedEventDTO>().FirstOrDefault();
-
-            var receiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
-            Assert.Equal(originalReceiverEthBalance + Web3.Web3.Convert.ToWei(0.0001), receiverEthBalance);
-
-            var receiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
-            Assert.Equal(originalReceiverTokenBalance + 100, receiverTokenBalance);
-
-
-            var removeReceipt2 = await authorisationService.RemoveAuthorisationRequestAndWaitForReceiptAsync();
-            delegatedAddress = await authorisationService.GetDelegatedAccountAddressAsync(ownerAddress);
-            Assert.Null(delegatedAddress);
-
-            //start again.. but now with the authorisation at the same time as submitting the transaction
-
-            originalReceiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
-            originalReceiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
-
-
-
-            var executionRequest = new ExecuteFunction();
-            executionRequest.Calls = calls;
-            executionRequest.Gas = 1000000; //as we are adding the authorisation on the same request we need to set the gas now ... estimates are not possible
-            executionRequest.AuthorisationList = new List<Authorisation>
+            try
             {
-                new Authorisation() { Address = defaultBatchCallService.ContractAddress }
-            };
-            //we could have done this too.. instead of adding the authorisation on the function message
-            //await authorisationService.Add7022AuthorisationDelegationOnNextRequestAsync(defaultBatchCallService.ContractAddress);
-            receipt = await accountBatchService.ExecuteRequestAndWaitForReceiptAsync(executionRequest);
-            batchExecutedEvent = receipt.DecodeAllEvents<BatchExecutedEventDTO>().FirstOrDefault();
+                var authorisationReceipt = await authorisationService.AuthoriseRequestAndWaitForReceiptAsync(defaultBatchCallService.ContractAddress, true);
 
-            receiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
-            Assert.Equal(originalReceiverEthBalance + Web3.Web3.Convert.ToWei(0.0001), receiverEthBalance);
+                var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(authorisationReceipt.TransactionHash);
 
-            receiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
-            Assert.Equal(originalReceiverTokenBalance + 100, receiverTokenBalance);
+                Assert.True(authorisationReceipt.Status.Value == 1);
+                Assert.NotNull(transaction);
+                Assert.True(transaction.AuthorisationList.Count == 1);
+                Assert.Equal(0, transaction.AuthorisationList[0].ChainId.Value);
+                Assert.Equal(defaultBatchCallService.ContractAddress, transaction.AuthorisationList[0].Address);
+
+                delegatedAddress = await authorisationService.GetDelegatedAccountAddressAsync(ownerAddress);
+                Assert.True(defaultBatchCallService.ContractAddress.IsTheSameAddress(delegatedAddress));
+
+                var originalReceiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
+                var originalReceiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
+
+
+
+                var calls = new List<Call>();
+                var call1 = new Call();
+                call1.To = receiverAddress;
+                call1.Data = new byte[0];
+                call1.Value = Web3.Web3.Convert.ToWei(0.0001);
+                calls.Add(call1);
+
+                var call2 = new Call();
+                call2.To = tokenService.ContractHandler.ContractAddress;
+                call2.Value = 0;
+                call2.Data = new TransferFunction() { To = receiverAddress, Value = 100 }.GetCallData();
+                calls.Add(call2);
+
+
+
+                var accountBatchService = new BatchCallAndSponsorService(web3, ownerAddress);
+                var receipt = await accountBatchService.ExecuteRequestAndWaitForReceiptAsync(calls);
+                var batchExecutedEvent = receipt.DecodeAllEvents<BatchExecutedEventDTO>().FirstOrDefault();
+
+                var receiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
+                Assert.Equal(originalReceiverEthBalance + Web3.Web3.Convert.ToWei(0.0001), receiverEthBalance);
+
+                var receiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
+                Assert.Equal(originalReceiverTokenBalance + 100, receiverTokenBalance);
+
+
+                var removeReceipt2 = await authorisationService.RemoveAuthorisationRequestAndWaitForReceiptAsync();
+                delegatedAddress = await authorisationService.GetDelegatedAccountAddressAsync(ownerAddress);
+                Assert.Null(delegatedAddress);
+
+                //start again.. but now with the authorisation at the same time as submitting the transaction
+
+                originalReceiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
+                originalReceiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
+
+
+
+                var executionRequest = new ExecuteFunction();
+                executionRequest.Calls = calls;
+                executionRequest.Gas = 1000000; //as we are adding the authorisation on the same request we need to set the gas now ... estimates are not possible
+                executionRequest.AuthorisationList = new List<Authorisation>
+                {
+                    new Authorisation() { Address = defaultBatchCallService.ContractAddress }
+                };
+                //we could have done this too.. instead of adding the authorisation on the function message
+                //await authorisationService.Add7022AuthorisationDelegationOnNextRequestAsync(defaultBatchCallService.ContractAddress);
+                receipt = await accountBatchService.ExecuteRequestAndWaitForReceiptAsync(executionRequest);
+                batchExecutedEvent = receipt.DecodeAllEvents<BatchExecutedEventDTO>().FirstOrDefault();
+
+                receiverEthBalance = await web3.Eth.GetBalance.SendRequestAsync(receiverAddress);
+                Assert.Equal(originalReceiverEthBalance + Web3.Web3.Convert.ToWei(0.0001), receiverEthBalance);
+
+                receiverTokenBalance = await tokenService.BalanceOfQueryAsync(receiverAddress);
+                Assert.Equal(originalReceiverTokenBalance + 100, receiverTokenBalance);
+            }
+            finally
+            {
+                await authorisationService.RemoveAuthorisationRequestAndWaitForReceiptAsync();
+            }
 
 
         }
@@ -210,6 +217,7 @@ namespace Nethereum.Signer.IntegrationTests
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetDelegatedContractAddressFromGnosisChainFirst()
         {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Nethereum.RLP;
 
@@ -26,10 +27,22 @@ namespace Nethereum.Model.P2P
 
         public static TransactionsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            if (reader.CountItems(outer) > PeerResponseBounds.MaxTransactionAnnouncements)
+                throw new InvalidOperationException("Transactions: too many transactions");
             var msg = new TransactionsMessage();
-            foreach (var txRlp in outer)
-                msg.Transactions.Add(TransactionFactory.CreateTransaction(txRlp.RLPData));
+            var seen = new HashSet<string>();
+            while (!reader.IsAtEnd(outer))
+            {
+                var tx = TransactionFactory.ReadTransaction(reader, allowBlobNetworkWrapper: false);
+                if (tx is Transaction4844)
+                    throw new InvalidOperationException("Transactions: disallowed broadcast blob transaction");
+                PeerRlp.AddUnique(seen, tx);
+                msg.Transactions.Add(tx);
+            }
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
 

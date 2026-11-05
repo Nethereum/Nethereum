@@ -40,7 +40,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static GetProofsV2Message Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var msg = new GetProofsV2Message
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -90,7 +90,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static ProofsV2Message Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var msg = new ProofsV2Message
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),

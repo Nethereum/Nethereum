@@ -47,11 +47,9 @@ namespace Nethereum.ABI.Decoders
 
         protected virtual object DecodeDynamicElementType(byte[] encoded, Type type, int size)
         {
-            if (size * 32 > encoded.Length) throw new Exception($@"Insufficient data length to decode Array. Data: {encoded.Length}, Size: {size}");
+            if (size < 0 || (long)size * 32 > encoded.Length) throw new Exception($@"Insufficient data length to decode Array. Data: {encoded.Length}, Size: {size}");
 
             var decodedListOutput = (IList) Activator.CreateInstance(type);
-
-
 
             if (decodedListOutput == null)
                 throw new Exception("Only types that implement IList<T> are supported to decode Array Types");
@@ -61,33 +59,33 @@ namespace Nethereum.ABI.Decoders
             if (elementType == null)
                 throw new Exception("Only types that implement IList<T> are supported to decode Array Types");
 
-            var intDecoder = new IntTypeDecoder();
-            var dataIndexes = new List<int>();
-
-            var currentIndex = 0;
-
-            while (currentIndex < size)
+            var offsets = new int[size];
+            for (var i = 0; i < size; i++)
             {
-                dataIndexes.Add(intDecoder.DecodeInt(encoded.Skip(currentIndex * 32).Take(32).ToArray()));
-                currentIndex++;
+                var offset = ReadOffsetWord(encoded, i * 32);
+                if (offset > encoded.Length) throw new Exception($@"Array element offset out of range. Offset: {offset}, Data: {encoded.Length}");
+                offsets[i] = offset;
             }
 
-            currentIndex = 0;
-
-            while (currentIndex < size)
-            {
-                var currentDataIndex = dataIndexes[currentIndex];
-                var nextDataIndex = encoded.Length;
-                if (currentIndex + 1 < dataIndexes.Count) nextDataIndex = dataIndexes[currentIndex + 1];
-                var encodedElement =
-                    encoded.Skip(currentDataIndex).Take(nextDataIndex - currentDataIndex).ToArray();
-
-                DecodeAndAddElement(elementType, decodedListOutput, encodedElement);
-
-                currentIndex++;
-            }
+            var ends = AbiOffsetTable.ComputeEnds(offsets, encoded.Length);
+            for (var i = 0; i < size; i++)
+                DecodeAndAddElement(elementType, decodedListOutput, Slice(encoded, offsets[i], ends[i] - offsets[i]));
 
             return decodedListOutput;
+        }
+
+        private static int ReadOffsetWord(byte[] encoded, int index)
+        {
+            for (var i = 0; i < 28; i++)
+                if (encoded[index + i] != 0) throw new OverflowException();
+            var value = (encoded[index + 28] << 24) | (encoded[index + 29] << 16) | (encoded[index + 30] << 8) | encoded[index + 31];
+            if (value < 0) throw new OverflowException();
+            return value;
+        }
+
+        private static byte[] Slice(byte[] source, long start, long count)
+        {
+            return AbiOffsetTable.Slice(source, start, count);
         }
 
         private void DecodeAndAddElement(Type elementType, IList decodedList, byte[] encodedElement)
@@ -119,7 +117,8 @@ namespace Nethereum.ABI.Decoders
 
         protected virtual object DecodeStaticElementType(byte[] encoded, Type type, int size)
         {
-            if (size * 32 > encoded.Length) throw new Exception($@"Insufficient data length to decode Array. Data: {encoded.Length}, Size: {size}");
+            var elementSize = ElementType.FixedSize;
+            if (size < 0 || (long)size * Math.Max(elementSize, 1) > encoded.Length) throw new Exception($@"Insufficient data length to decode Array. Data: {encoded.Length}, Size: {size}");
 
             var decodedListOutput = (IList) Activator.CreateInstance(type);
 
@@ -135,7 +134,7 @@ namespace Nethereum.ABI.Decoders
 
             while (currentIndex < size)
             {
-                var encodedElement = encoded.Skip(currentIndex * ElementType.FixedSize).Take(ElementType.FixedSize).ToArray();
+                var encodedElement = Slice(encoded, (long)currentIndex * elementSize, elementSize);
                 DecodeAndAddElement(elementType, decodedListOutput, encodedElement);
                 currentIndex++;
             }
@@ -175,9 +174,9 @@ namespace Nethereum.ABI.Decoders
 
             var currentIndex = 0;
 
-            while (currentIndex * ElementType.StaticSize < encoded.Length)
+            while ((long)currentIndex * ElementType.StaticSize < encoded.Length)
             {
-                var encodedElement = encoded.Skip(currentIndex * ElementType.StaticSize).Take(ElementType.StaticSize).ToArray();
+                var encodedElement = Slice(encoded, (long)currentIndex * ElementType.StaticSize, ElementType.StaticSize);
                 decodedListOutput.Add(ElementType.DecodePacked(encodedElement, elementType));
                 currentIndex++;
             }
@@ -203,9 +202,9 @@ namespace Nethereum.ABI.Decoders
 
             var currentIndex = 0;
 
-            while (currentIndex * ElementType.FixedSize < encoded.Length)
+            while ((long)currentIndex * ElementType.FixedSize < encoded.Length)
             {
-                var encodedElement = encoded.Skip(currentIndex * ElementType.FixedSize).Take(ElementType.FixedSize).ToArray();
+                var encodedElement = Slice(encoded, (long)currentIndex * ElementType.FixedSize, ElementType.FixedSize);
                 decodedListOutput.Add(ElementType.DecodePacked(encodedElement, elementType));
                 currentIndex++;
             }

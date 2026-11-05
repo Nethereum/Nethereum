@@ -24,6 +24,7 @@ namespace Nethereum.Signer.IntegrationTests
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetTransactionAndRecover2930WithAccessList()
         {
@@ -35,6 +36,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetTransactionAndRecover2930NoAccessList()
         {
@@ -46,6 +48,7 @@ namespace Nethereum.Signer.IntegrationTests
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetTransactionAndRecover1559()
         {

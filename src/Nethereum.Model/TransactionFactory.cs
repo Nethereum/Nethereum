@@ -56,37 +56,25 @@ namespace Nethereum.Model
 
         public static ISignedTransaction CreateTransaction(byte[] rlp, bool allowBlobNetworkWrapper)
         {
-            if (rlp.IsTypeTransaction())
-            {
-                var transactionType = (TransactionType) rlp[0];
-                if (!allowBlobNetworkWrapper && transactionType == TransactionType.Blob)
-                {
-                    var blobTx = Transaction4844Encoder.Current.Decode(rlp, allowNetworkWrapper: false);
-                    blobTx.OriginalRlpEncoded = DefensiveCopyOf(rlp);
-                    return blobTx;
-                }
+            return TransactionRlpDecoder.Decode(rlp, allowBlobNetworkWrapper, ownsBuffer: false);
+        }
 
-                var decoder = GetTransactionTypeDecoder(transactionType);
-                var tx = decoder.DecodeAsGeneric(rlp);
-                tx.OriginalRlpEncoded = DefensiveCopyOf(rlp);
-                return tx;
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "model-read-transaction", "TransactionFactory.ReadTransaction")]
+        public static ISignedTransaction ReadTransaction(RlpReader reader, bool allowBlobNetworkWrapper = true)
+        {
+            byte[] transaction;
+            if (reader.PeekKind() == RlpKind.List)
+            {
+                transaction = reader.ReadRaw();
             }
             else
             {
-                LegacyTransactionRlp.RejectMalformedScalars(rlp);
-
-                var rlpSigner = SignedLegacyTransaction.CreateDefaultRLPSigner(rlp);
-                return rlpSigner.IsVSignatureForChain()
-                    ? (SignedLegacyTransaction) new LegacyTransactionChainId(rlpSigner)
-                    : new LegacyTransaction(rlpSigner);
+                transaction = reader.ReadBytes();
+                if (transaction.Length == 0 || transaction[0] > 0x7f)
+                    throw new InvalidOperationException("A typed transaction is a byte string that opens with its type byte");
             }
-        }
 
-        private static byte[] DefensiveCopyOf(byte[] rlp)
-        {
-            var copy = new byte[rlp.Length];
-            Array.Copy(rlp, copy, rlp.Length);
-            return copy;
+            return TransactionRlpDecoder.Decode(transaction, allowBlobNetworkWrapper, ownsBuffer: true, requireSignature: true);
         }
 
         public static ISignedTransaction CreateLegacyTransaction(string to, EvmUInt256 gas, EvmUInt256 gasPrice, EvmUInt256 amount, string data, EvmUInt256 nonce, string r, string s, string v)

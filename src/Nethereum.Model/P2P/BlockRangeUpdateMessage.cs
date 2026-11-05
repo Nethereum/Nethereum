@@ -23,13 +23,17 @@ namespace Nethereum.Model.P2P
 
         public static BlockRangeUpdateMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            return new BlockRangeUpdateMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var message = new BlockRangeUpdateMessage
             {
-                EarliestBlock = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
-                LatestBlock = (ulong)outer[1].RLPData.ToLongFromRLPDecoded(),
-                LatestBlockHash = outer[2].RLPData
+                EarliestBlock = reader.ReadUInt64(),
+                LatestBlock = reader.ReadUInt64(),
+                LatestBlockHash = reader.ReadFixed(PeerRlp.HashLength)
             };
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return message;
         }
     }
 }

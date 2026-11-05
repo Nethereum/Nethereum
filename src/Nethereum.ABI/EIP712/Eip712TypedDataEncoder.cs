@@ -2,9 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.ABI;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.Util;
 using System.Collections;
@@ -15,18 +12,13 @@ namespace Nethereum.ABI.EIP712
 {
     public class Eip712TypedDataEncoder
     {
-        private readonly ABIEncode _abiEncode = new ABIEncode();
         public static Eip712TypedDataEncoder Current { get; } = new Eip712TypedDataEncoder();
         private readonly ParametersEncoder _parametersEncoder = new ParametersEncoder();
 
-        // <summary>
-        /// Encodes data according to EIP-712, it uses a predefined typed data schema and converts and encodes the provide the message value
-        /// </summary>
         public byte[] EncodeTypedData<T, TDomain>(T message, TypedData<TDomain> typedData)
         {
-            typedData.Message = MemberValueFactory.CreateFromMessage(message);
-            typedData.EnsureDomainRawValuesAreInitialised();
-            return EncodeTypedDataRaw(typedData);
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            return EncodeTypedDataRaw(typedData.ToRaw(MemberValueFactory.CreateFromMessage(message)));
         }
 
         public byte[] EncodeTypedData<T, TDomain>(T data, TDomain domain, string primaryTypeName)
@@ -47,11 +39,8 @@ namespace Nethereum.ABI.EIP712
             var encodedData = EncodeTypedData(json);
             return Sha3Keccack.Current.CalculateHash(encodedData);
         }
-         
-        /// <summary>
-        /// Encode typed data using a non standard json, which may not include the Domain type and uses a different key selector for message
-        /// </summary>
-         public byte[] EncodeTypedData<DomainType>(string json, string messageKeySelector = "message")
+
+        public byte[] EncodeTypedData<DomainType>(string json, string messageKeySelector = "message")
         {
             var typedDataRaw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData<DomainType>(json, messageKeySelector);
             return EncodeTypedDataRaw(typedDataRaw);
@@ -75,34 +64,35 @@ namespace Nethereum.ABI.EIP712
             return Sha3Keccack.Current.CalculateHash(encodedData);
         }
 
-        /// <summary>
-        /// Encodes data according to EIP-712.
-        /// </summary>
         public byte[] EncodeTypedData<TDomain>(TypedData<TDomain> typedData)
         {
-            typedData.EnsureDomainRawValuesAreInitialised();
-            return EncodeTypedDataRaw(typedData);
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            return EncodeTypedDataRaw(typedData.ToRaw(typedData.Message));
         }
 
         public byte[] EncodeTypedDataRaw(TypedDataRaw typedData)
         {
-            using (var memoryStream = new MemoryStream())
-            using (var writer = new BinaryWriter(memoryStream))
-            {
-                writer.Write("1901".HexToByteArray());
-                writer.Write(HashStruct(typedData.Types, "EIP712Domain", typedData.DomainRawValues));
-                writer.Write(HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message));
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            var context = new EncodingContext(typedData.Types);
+            var domainHash = HashStruct(context, "EIP712Domain", typedData.DomainRawValues);
+            var messageHash = HashStruct(context, typedData.PrimaryType, typedData.Message);
+            return EncodeTypedDataBytes(domainHash, messageHash);
+        }
 
-                writer.Flush();
-                var result = memoryStream.ToArray();
-                return result;
-            }
+        private static byte[] EncodeTypedDataBytes(byte[] domainHash, byte[] messageHash)
+        {
+            var result = new byte[2 + domainHash.Length + messageHash.Length];
+            result[0] = 0x19;
+            result[1] = 0x01;
+            Buffer.BlockCopy(domainHash, 0, result, 2, domainHash.Length);
+            Buffer.BlockCopy(messageHash, 0, result, 2 + domainHash.Length, messageHash.Length);
+            return result;
         }
 
         public byte[] HashDomainSeparator<TDomain>(TypedData<TDomain> typedData)
         {
-            typedData.EnsureDomainRawValuesAreInitialised();
-            return HashDomainSeparator((TypedDataRaw)typedData);
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            return HashDomainSeparator(typedData.ToRaw(typedData.Message));
         }
 
         public byte[] HashDomainSeparator(TypedDataRaw typedData)
@@ -113,58 +103,50 @@ namespace Nethereum.ABI.EIP712
                 throw new ArgumentException("Typed data domain values have not been initialised.", nameof(typedData));
             }
 
-            using (var memoryStream = new MemoryStream())
-            using (var writer = new BinaryWriter(memoryStream))
-            {
-                writer.Write(HashStruct(typedData.Types, "EIP712Domain", typedData.DomainRawValues));
-                writer.Flush();
-                return memoryStream.ToArray();
-            }
+            return HashStruct(new EncodingContext(typedData.Types), "EIP712Domain", typedData.DomainRawValues);
         }
 
         public byte[] HashStruct<T>(T message, string primaryType, params Type[] types)
         {
             var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
             var memberValue = MemberValueFactory.CreateFromMessage(message);
-            return HashStruct(memberDescriptions, primaryType, memberValue);
+            return HashStruct(new EncodingContext(memberDescriptions), primaryType, memberValue);
         }
 
         public byte[] EncodeStruct<T>(T message, string primaryType, params Type[] types)
         {
             var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
             var memberValue = MemberValueFactory.CreateFromMessage(message);
-            return EncodeStruct(memberDescriptions, primaryType, memberValue);
+            return EncodeStruct(new EncodingContext(memberDescriptions), primaryType, memberValue);
         }
 
         public string GetEncodedType(string primaryType, params Type[] types)
         {
             var memberDescriptions = MemberDescriptionFactory.GetTypesMemberDescription(types);
-            return EncodeType(memberDescriptions, primaryType);
+            return new EncodingContext(memberDescriptions).EncodeType(primaryType);
         }
 
         public string GetEncodedTypeDomainSeparator<TDomain>(TypedData<TDomain> typedData)
         {
-            typedData.EnsureDomainRawValuesAreInitialised();
-            return EncodeType(typedData.Types, "EIP712Domain");
+            if (typedData == null) throw new ArgumentNullException(nameof(typedData));
+            return new EncodingContext(typedData.Types).EncodeType("EIP712Domain");
         }
 
         public TypedDataHashResult CalculateTypedDataHashes<TDomain>(TypedData<TDomain> typedData)
         {
             if (typedData == null) throw new ArgumentNullException(nameof(typedData));
-            typedData.EnsureDomainRawValuesAreInitialised();
             if (typedData.Message == null)
             {
                 throw new ArgumentException("Typed data message has not been initialised. Call SetMessage before calculating hashes.", nameof(typedData));
             }
 
-            return CalculateTypedDataHashes((TypedDataRaw)typedData);
+            return CalculateTypedDataHashes(typedData.ToRaw(typedData.Message));
         }
 
         public TypedDataHashResult CalculateTypedDataHashes<TDomain, TMessage>(TMessage message, TypedData<TDomain> typedData)
         {
             if (typedData == null) throw new ArgumentNullException(nameof(typedData));
-            typedData.SetMessage(message);
-            return CalculateTypedDataHashes(typedData);
+            return CalculateTypedDataHashes(typedData.ToRaw(MemberValueFactory.CreateFromMessage(message)));
         }
 
         public TypedDataHashResult CalculateTypedDataHashes(string json)
@@ -192,182 +174,259 @@ namespace Nethereum.ABI.EIP712
                 throw new ArgumentException("Typed data message has not been initialised.", nameof(typedData));
             }
 
-            var domainHash = HashDomainSeparator(typedData);
-            var messageHash = HashStruct(typedData.Types, typedData.PrimaryType, typedData.Message);
-            var typedDataHash = Sha3Keccack.Current.CalculateHash(EncodeTypedDataRaw(typedData));
+            var context = new EncodingContext(typedData.Types);
+            var domainHash = HashStruct(context, "EIP712Domain", typedData.DomainRawValues);
+            var messageHash = HashStruct(context, typedData.PrimaryType, typedData.Message);
+            var typedDataHash = Sha3Keccack.Current.CalculateHash(EncodeTypedDataBytes(domainHash, messageHash));
 
             return new TypedDataHashResult(domainHash, messageHash, typedDataHash);
         }
 
-        private byte[] HashStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
+        private static byte[] HashStruct(EncodingContext context, string typeName, IEnumerable<MemberValue> message)
         {
-           return Sha3Keccack.Current.CalculateHash(EncodeStruct(types, primaryType, message));
+            return Sha3Keccack.Current.CalculateHash(EncodeStruct(context, typeName, message));
         }
-        private byte[] EncodeStruct(IDictionary<string, MemberDescription[]> types, string primaryType, IEnumerable<MemberValue> message)
+
+        private static byte[] EncodeStruct(EncodingContext context, string typeName, IEnumerable<MemberValue> message)
         {
-            using (var memoryStream = new MemoryStream())
-            using (var writer = new BinaryWriter(memoryStream))
+            if (message == null) throw new ArgumentException("The value of struct '" + typeName + "' is missing.");
+            var members = context.GetMembers(typeName);
+            var values = message as IList<MemberValue> ?? message.ToList();
+            if (values.Count != members.Length)
             {
-                var encodedType = EncodeType(types, primaryType);
-                var typeHash = Sha3Keccack.Current.CalculateHash(Encoding.UTF8.GetBytes(encodedType));
-                writer.Write(typeHash);
+                throw new ArgumentException("The value of struct '" + typeName + "' has " + values.Count + " members but its type declares " + members.Length + ".");
+            }
 
-                EncodeData(writer, types, message);
-
-                writer.Flush();
+            using (var memoryStream = new MemoryStream())
+            {
+                var typeHash = context.GetTypeHash(typeName);
+                memoryStream.Write(typeHash, 0, typeHash.Length);
+                for (var i = 0; i < members.Length; i++)
+                {
+                    var encoded = EncodeValue(context, members[i].Type, values[i]?.Value);
+                    memoryStream.Write(encoded, 0, encoded.Length);
+                }
                 return memoryStream.ToArray();
             }
         }
 
-        private static string EncodeType(IDictionary<string, MemberDescription[]> types, string typeName)
+        private static byte[] EncodeValue(EncodingContext context, string type, object value)
         {
-            var encodedTypes = EncodeTypes(types, typeName);
-            var encodedPrimaryType = encodedTypes.Single(x => x.Key == typeName);
-            var encodedReferenceTypes = encodedTypes.Where(x => x.Key != typeName).OrderBy(x => x.Key).Select(x => x.Value);
-            var fullyEncodedType = encodedPrimaryType.Value + string.Join(string.Empty, encodedReferenceTypes.ToArray());
-
-            return fullyEncodedType;
-        }
-
-        private static IList<KeyValuePair<string, string>> EncodeTypes(IDictionary<string, MemberDescription[]> types, string currentTypeName)
-        {
-            var currentTypeMembers = types[currentTypeName];
-            var currentTypeMembersEncoded = currentTypeMembers.Select(x => x.Type + " " + x.Name);
-            var result = new List<KeyValuePair<string, string>>
+            if (type.EndsWith("]", StringComparison.Ordinal))
             {
-                new KeyValuePair<string, string>(currentTypeName, currentTypeName + "(" + string.Join(",", currentTypeMembersEncoded.ToArray()) + ")")
-            };
-
-            result.AddRange(currentTypeMembers.Select(x => ConvertToElementType(x.Type)).Distinct().Where(IsReferenceType).SelectMany(x => EncodeTypes(types, x)));
-
-            return result.Distinct().ToList();
-        }
-
-        private static string ConvertToElementType(string type)
-        {
-            if (type.Contains("["))
-            {
-                return type.Substring(0, type.IndexOf("["));
+                return EncodeArray(context, type, value);
             }
-            return type;
-        }
 
-        internal static bool IsReferenceType(string typeName)
-        {
-            switch (typeName)
+            if (context.IsStruct(type))
             {
-                // TODO: specify more precise conditions
-                case var bytes when new Regex("bytes\\d+").IsMatch(bytes):
-                case var @uint when new Regex("uint\\d+").IsMatch(@uint):
-                case var @int when new Regex("int\\d+").IsMatch(@int):
-                case "bytes":
-                case "string":
-                case "bool":
-                case "address":
-                    return false;
-                case var array when array.Contains("["):
-                    return false;
-                default:
-                    return true;
+                var structValue = value as IEnumerable<MemberValue>;
+                if (structValue == null) throw DataMismatch(type, value);
+                return HashStruct(context, type, structValue);
             }
+
+            return EncodePrimitive(type, value);
         }
 
-        private void EncodeData(BinaryWriter writer, IDictionary<string, MemberDescription[]> types, IEnumerable<MemberValue> memberValues)
+        private static byte[] EncodeArray(EncodingContext context, string type, object value)
         {
-            foreach (var memberValue in memberValues)
+            var items = value as IList;
+            if (items == null || value is string) throw DataMismatch(type, value);
+            var elementType = type.Substring(0, type.LastIndexOf('['));
+            using (var memoryStream = new MemoryStream())
             {
-                switch (memberValue.TypeName)
+                foreach (var item in items)
                 {
-                    case var refType when IsReferenceType(refType):
-                        {
-                            writer.Write(HashStruct(types, memberValue.TypeName, (IEnumerable<MemberValue>)memberValue.Value));
-                            break;
-                        }
-                    case "string":
-                        {
-                            var value = Encoding.UTF8.GetBytes((string)memberValue.Value);
-                            var abiValueEncoded = Sha3Keccack.Current.CalculateHash(value);
-                            writer.Write(abiValueEncoded);
-                            break;
-                        }
-                    case "bytes":
-                        {
-                            byte[] value;
-                            if (memberValue.Value is string)
-                            {
-                                value = ((string)memberValue.Value).HexToByteArray();
-                            }
-                            else
-                            {
-                                value = (byte[])memberValue.Value;
-                            }
-                            var abiValueEncoded = Sha3Keccack.Current.CalculateHash(value);
-                            writer.Write(abiValueEncoded);
-                            break;
-                        }
-                    default:
-                        {
-                            if (memberValue.TypeName.Contains("["))
-                            {
-                                var items = (IList)memberValue.Value;
-                                var itemsMemberValues = new List<MemberValue>();
-                                foreach (var item in items)
-                                {
-                                    itemsMemberValues.Add(new MemberValue()
-                                    {
-                                        TypeName = memberValue.TypeName.Substring(0, memberValue.TypeName.LastIndexOf("[")),
-                                        Value = item
-                                    });
-                                }
-                                using (var memoryStream = new MemoryStream())
-                                using (var writerItem = new BinaryWriter(memoryStream))
-                                {
-                                    EncodeData(writerItem, types, itemsMemberValues);
-                                    writerItem.Flush();
-                                    writer.Write(Sha3Keccack.Current.CalculateHash(memoryStream.ToArray()));
-                                }
+                    var encoded = EncodeValue(context, elementType, item);
+                    memoryStream.Write(encoded, 0, encoded.Length);
+                }
+                return Sha3Keccack.Current.CalculateHash(memoryStream.ToArray());
+            }
+        }
 
-                            }
-                            else if(memberValue.TypeName.StartsWith("int") || memberValue.TypeName.StartsWith("uint"))
-                            {
-                                object value;
-                                if (memberValue.Value is string)
-                                {
-                                    BigInteger parsedOutput;
-                                    if(BigInteger.TryParse((string)memberValue.Value, out parsedOutput))
-                                    {
-                                        value = parsedOutput;
-                                    }
-                                    else
-                                    {
-                                        value = memberValue.Value;
-                                    }
-                                }
-                                else
-                                {
-                                    value = memberValue.Value;
-                                }
-                                var abiValue = new ABIValue(memberValue.TypeName, value);
-                                var abiValueEncoded = _abiEncode.GetABIEncoded(abiValue);
-                                writer.Write(abiValueEncoded);
-                            }
-                            else
-                            {
-                                var abiValue = new ABIValue(memberValue.TypeName, memberValue.Value);
-                                var abiValueEncoded = _abiEncode.GetABIEncoded(abiValue);
-                                writer.Write(abiValueEncoded);
-                            }
-                            break;
-                        }
+        private static byte[] EncodePrimitive(string type, object value)
+        {
+            switch (type)
+            {
+                case "address":
+                    return EncodeAddress(value);
+                case "bool":
+                    if (!(value is bool flag)) throw DataMismatch(type, value);
+                    var boolWord = new byte[32];
+                    if (flag) boolWord[31] = 1;
+                    return boolWord;
+                case "string":
+                    if (!(value is string text)) throw DataMismatch(type, value);
+                    return Sha3Keccack.Current.CalculateHash(Encoding.UTF8.GetBytes(text));
+                case "bytes":
+                    if (!TryGetBytes(value, out var dynamicBytes)) throw DataMismatch(type, value);
+                    return Sha3Keccack.Current.CalculateHash(dynamicBytes);
+            }
+
+            if (Eip712Values.TryGetBytesWidth(type, out var bytesWidth))
+            {
+                if (!TryGetBytes(value, out var fixedBytes) || fixedBytes.Length != bytesWidth) throw DataMismatch(type, value);
+                var word = new byte[32];
+                Buffer.BlockCopy(fixedBytes, 0, word, 0, fixedBytes.Length);
+                return word;
+            }
+
+            if (Eip712Values.TryGetIntegerWidth(type, out var width, out var signed))
+            {
+                return EncodeInteger(type, value, width, signed);
+            }
+
+            throw new ArgumentException("Unrecognized type '" + type + "'.");
+        }
+
+        private static byte[] EncodeAddress(object value)
+        {
+            var word = new byte[32];
+            if (value is string emptyAddress && emptyAddress == AddressUtil.AddressEmptyAsHex)
+            {
+                return word;
+            }
+
+            if (value is string text && Eip712Values.IsHexAddress(text))
+            {
+                Eip712Values.TryParseHexBytes(text.Length == 42 ? text : "0x" + text, out var parsed);
+                Buffer.BlockCopy(parsed, 0, word, 12, 20);
+                return word;
+            }
+
+            if (value is byte[] bytes && bytes.Length == 20)
+            {
+                Buffer.BlockCopy(bytes, 0, word, 12, 20);
+                return word;
+            }
+
+            throw DataMismatch("address", value);
+        }
+
+        private static byte[] EncodeInteger(string type, object value, int width, bool signed)
+        {
+            if (!Eip712Values.TryParseInteger(value, out var number)) throw DataMismatch(type, value);
+            var limit = BigInteger.One << (signed ? width - 1 : width);
+            var inRange = signed ? number >= -limit && number < limit : number.Sign >= 0 && number < limit;
+            if (!inRange) throw new ArgumentException("The value '" + number + "' is out of range for type '" + type + "'.");
+
+            if (number.Sign < 0) number += BigInteger.One << 256;
+            var littleEndian = number.ToByteArray();
+            var word = new byte[32];
+            var length = Math.Min(littleEndian.Length, 32);
+            for (var i = 0; i < length; i++)
+            {
+                word[31 - i] = littleEndian[i];
+            }
+            return word;
+        }
+
+        private static bool TryGetBytes(object value, out byte[] bytes)
+        {
+            bytes = value as byte[];
+            if (bytes != null) return true;
+            return Eip712Values.TryParseHexBytes(value as string, out bytes);
+        }
+
+        private static ArgumentException DataMismatch(string type, object value)
+        {
+            return new ArgumentException("The provided data '" + value + "' does not match type '" + type + "'.");
+        }
+
+        private sealed class EncodingContext
+        {
+            private readonly IDictionary<string, MemberDescription[]> _types;
+            private readonly Dictionary<string, byte[]> _typeHashes = new Dictionary<string, byte[]>();
+
+            public EncodingContext(IDictionary<string, MemberDescription[]> types)
+            {
+                _types = types ?? throw new ArgumentException("Typed data types are missing.");
+                Validate();
+            }
+
+            public bool IsStruct(string type)
+            {
+                return _types.ContainsKey(type);
+            }
+
+            public MemberDescription[] GetMembers(string typeName)
+            {
+                if (typeName == null || !_types.TryGetValue(typeName, out var members))
+                {
+                    throw new ArgumentException("Type '" + typeName + "' is not defined.");
+                }
+                return members;
+            }
+
+            public byte[] GetTypeHash(string typeName)
+            {
+                if (!_typeHashes.TryGetValue(typeName, out var hash))
+                {
+                    hash = Sha3Keccack.Current.CalculateHash(Encoding.UTF8.GetBytes(EncodeType(typeName)));
+                    _typeHashes[typeName] = hash;
+                }
+                return hash;
+            }
+
+            public string EncodeType(string primaryType)
+            {
+                GetMembers(primaryType);
+                var found = new List<string>();
+                var visited = new HashSet<string>();
+                CollectDependencies(primaryType, found, visited);
+
+                var dependencies = found.Where(x => x != primaryType).ToList();
+                dependencies.Sort(StringComparer.Ordinal);
+                dependencies.Insert(0, primaryType);
+
+                var builder = new StringBuilder();
+                foreach (var dependency in dependencies)
+                {
+                    builder.Append(dependency).Append('(');
+                    builder.Append(string.Join(",", _types[dependency].Select(x => x.Type + " " + x.Name)));
+                    builder.Append(')');
+                }
+                return builder.ToString();
+            }
+
+            private void CollectDependencies(string type, List<string> found, HashSet<string> visited)
+            {
+                var bracket = type.IndexOf('[');
+                var name = bracket >= 0 ? type.Substring(0, bracket) : type;
+                if (visited.Contains(name)) return;
+                if (!_types.TryGetValue(name, out var members)) return;
+                visited.Add(name);
+                found.Add(name);
+                foreach (var member in members)
+                {
+                    CollectDependencies(member.Type, found, visited);
                 }
             }
 
+            private void Validate()
+            {
+                foreach (var entry in _types)
+                {
+                    if (string.IsNullOrEmpty(entry.Key)) throw new ArgumentException("A type has an empty name.");
+                    if (entry.Value == null) throw new ArgumentException("Type '" + entry.Key + "' has no members.");
+                    for (var i = 0; i < entry.Value.Length; i++)
+                    {
+                        var member = entry.Value[i];
+                        if (member == null || string.IsNullOrEmpty(member.Type))
+                            throw new ArgumentException("Type '" + entry.Key + "' member " + i + " has an empty type.");
+                        if (string.IsNullOrEmpty(member.Name))
+                            throw new ArgumentException("Type '" + entry.Key + "' member " + i + " has an empty name.");
+                        if (member.Type == entry.Key)
+                            throw new ArgumentException("Type '" + entry.Key + "' cannot reference itself.");
 
+                        var bracket = member.Type.IndexOf('[');
+                        var baseType = bracket >= 0 ? member.Type.Substring(0, bracket) : member.Type;
+                        if (!_types.ContainsKey(baseType) && !Eip712Values.IsPrimitiveType(baseType))
+                            throw new ArgumentException("Type '" + entry.Key + "' member '" + member.Name + "' has the unrecognized type '" + member.Type + "'.");
+                    }
+                }
+            }
         }
 
-        /// <summary>
-        /// For flat messages only, for complex messages with reference type fields use "EncodeTypedData(TypedData typedData).
-        /// </summary>
         public TypedData<TDomain> GenerateTypedData<T, TDomain>(T data, TDomain domain, string primaryTypeName)
         {
             var parameters = _parametersEncoder.GetParameterAttributeValues(typeof(T), data).OrderBy(x => x.ParameterAttribute.Order);

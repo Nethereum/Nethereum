@@ -141,7 +141,7 @@ namespace Nethereum.Signer.UnitTests
             },
             ""message"": {
                 ""source"": ""b"",
-                ""connectionId"": ""e9d4fad2244749f8e85e3ffd5d7a9b97""
+                ""connectionId"": ""0xe9d4fad2244749f8e85e3ffd5d7a9b97e9d4fad2244749f8e85e3ffd5d7a9b97""
             },
             ""primaryType"": ""Agent""
        }";

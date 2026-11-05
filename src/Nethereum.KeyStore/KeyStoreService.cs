@@ -26,6 +26,17 @@ namespace Nethereum.KeyStore
             _keyStorePbkdf2Service = keyStorePbkdf2Service;
         }
 
+        public KeyStoreKdfLimits KdfLimits
+        {
+            get { return _keyStoreScryptService.KdfLimits; }
+            set
+            {
+                var limits = value ?? new KeyStoreKdfLimits();
+                _keyStoreScryptService.KdfLimits = limits;
+                _keyStorePbkdf2Service.KdfLimits = limits;
+            }
+        }
+
         public string GetAddressFromKeyStore(string json)
         {
             if (json == null) throw new ArgumentNullException(nameof(json));
@@ -48,6 +59,18 @@ namespace Nethereum.KeyStore
             }
         }
 #endif
+
+        public byte[] DecryptKeyStoreFromJson(string password, string json, KeyStoreKdfLimits limits)
+        {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            if (json == null) throw new ArgumentNullException(nameof(json));
+
+            var type = _keyStoreKdfChecker.GetKeyStoreKdfType(json);
+            if (type == KeyStoreKdfChecker.KdfType.pbkdf2)
+                return _keyStorePbkdf2Service.DecryptKeyStoreFromJson(password, json, limits);
+
+            return _keyStoreScryptService.DecryptKeyStoreFromJson(password, json, limits);
+        }
 
         public byte[] DecryptKeyStoreFromJson(string password, string json)
         {

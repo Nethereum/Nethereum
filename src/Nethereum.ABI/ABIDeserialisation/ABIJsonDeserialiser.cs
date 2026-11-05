@@ -137,7 +137,9 @@ namespace Nethereum.ABI.ABIDeserialisation
 #endif
 
             var converter = new ExpandoObjectConverter();
-            var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, converter);
+            var settings = new JsonSerializerSettings { MaxDepth = ExpandoObjectConverter.MaxJsonDepth };
+            settings.Converters.Add(converter);
+            var contract = JsonConvert.DeserializeObject<List<IDictionary<string, object>>>(abi, settings);
 
             return DeserialiseContractBody(contract);
         }

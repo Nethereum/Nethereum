@@ -243,8 +243,12 @@ public abstract class KeyStoreServiceBase<T> : IKeyStoreService<T> where T : Kdf
     public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss);
     public string EncryptAndGenerateKeyStoreAsJson(string password, byte[] privateKey, string addresss, T kdfParams);
 
+    public KeyStoreKdfLimits KdfLimits { get; set; }
+
     public byte[] DecryptKeyStoreFromJson(string password, string json);
+    public byte[] DecryptKeyStoreFromJson(string password, string json, KeyStoreKdfLimits limits);
     public virtual byte[] DecryptKeyStore(string password, KeyStore<T> keyStore);
+    public byte[] DecryptKeyStore(string password, KeyStore<T> keyStore, KeyStoreKdfLimits limits);
 
     public abstract KeyStore<T> DeserializeKeyStoreFromJson(string json);   // overridden per-KDF
     public abstract string SerializeKeyStoreToJson(KeyStore<T> keyStore);  // overridden per-KDF
@@ -316,8 +320,12 @@ public class KeyStoreService
     // Encrypt with default Scrypt parameters
     public string EncryptAndGenerateDefaultKeyStoreAsJson(string password, byte[] key, string address);
 
+    // Cost caps applied to every decryption (shared by the scrypt and pbkdf2 services)
+    public KeyStoreKdfLimits KdfLimits { get; set; }
+
     // Decrypt (auto-detects KDF type via KeyStoreKdfChecker)
     public byte[] DecryptKeyStoreFromJson(string password, string json);
+    public byte[] DecryptKeyStoreFromJson(string password, string json, KeyStoreKdfLimits limits);
 #if !PCL
     public byte[] DecryptKeyStoreFromFile(string password, string filePath);
 #endif
@@ -338,6 +346,48 @@ public class KeyStoreService
 }
 ```
 
+### KeyStoreKdfLimits
+
+The address check on decryption is a tamper heuristic: it only applies when the keystore has a well-formed `address` field (the v3 MAC does not cover the IV, and a keystore without an address is valid).
+
+Decryption validates every KDF parameter before allocating and rejects a keystore outside these limits with `ArgumentException` (scrypt: N a power of two above 1, r and p at least 1, dklen 32; pbkdf2: c at least 1, dklen 32, prf `hmac-sha256`; cipher `aes-128-ctr`; version 3). The cost caps default to the values below and are set on `KeyStoreService.KdfLimits` or `KeyStoreServiceBase<T>.KdfLimits`, or passed to `KeyStoreService.DecryptKeyStoreFromJson(password, json, limits)`.
+
+```csharp
+public class KeyStoreKdfLimits
+{
+    public const long DefaultMaxScryptMemoryBytes = 512L * 1024 * 1024;
+    public const int DefaultMaxScryptP = 16;
+    public const int DefaultMaxPbkdf2Iterations = 10000000;
+
+    public static KeyStoreKdfLimits Default { get; }
+
+    public long MaxScryptMemoryBytes { get; set; } = DefaultMaxScryptMemoryBytes;   // 128 * r * N
+    public int MaxScryptP { get; set; } = DefaultMaxScryptP;
+    public int MaxPbkdf2Iterations { get; set; } = DefaultMaxPbkdf2Iterations;
+}
+```
+
+```csharp
+var service = new KeyStoreService
+{
+    KdfLimits = new KeyStoreKdfLimits { MaxScryptMemoryBytes = 128L * 4096 - 1 }
+};
+
+Assert.Throws<ArgumentException>(() => service.DecryptKeyStoreFromJson(password, json));
+
+var raised = new KeyStoreKdfLimits { MaxScryptMemoryBytes = 128L * 4096 };
+var privateKey = service.DecryptKeyStoreFromJson(password, json, raised);
+```
+
+Backed by `FoundationsKeyStoreDocExampleTests.Given_AKeyStoreCostingMoreThanTheConfiguredLimit_When_Decrypted_Then_ItIsRefusedUntilTheLimitIsRaised`. Hostile fields (an unsupported cipher, a field that is not hex, a wrong-length IV) also throw `ArgumentException`, and a keystore whose well-formed `address` is not the address of the decrypted key throws `DecryptionException`; the MAC is compared in constant time.
+
+```csharp
+Assert.Throws<ArgumentException>(() => new KeyStoreService().DecryptKeyStoreFromJson(password, wrongCipherJson));
+Assert.Throws<DecryptionException>(() => new KeyStoreService().DecryptKeyStoreFromJson(password, jsonWithAnotherAddress));
+```
+
+Backed by `FoundationsKeyStoreDocExampleTests.Given_AKeyStoreWhoseAddressIsNotTheAddressOfItsKey_When_Decrypted_Then_ADecryptionExceptionIsThrown` and `FoundationsKeyStoreDocExampleTests.Given_AKeyStoreWithAnUnsupportedCipherOrNonHexField_When_Decrypted_Then_ArgumentExceptionIsThrown`.
+
 ### KeyStoreKdfChecker
 
 Detect KDF type from JSON. This is the only detection API — there is no `IsScryptKdf`/`IsPbkdf2Kdf`.
@@ -347,7 +397,9 @@ public class KeyStoreKdfChecker
 {
     public enum KdfType { scrypt, pbkdf2 }
 
-    // Throws if "crypto.kdf" is missing or is neither "scrypt" nor "pbkdf2"
+    // Throws Exception("Invalid KeyStore json") wrapping an InvalidKdfException if "crypto.kdf" is
+    // neither "scrypt" nor "pbkdf2"; throws ArgumentException("Invalid KeyStore json") if the
+    // text is not a keystore document at all
     public KdfType GetKeyStoreKdfType(string json);
 }
 ```
@@ -428,6 +480,8 @@ P = 1
 ```
 
 **Use for:** Cold storage, high-value accounts, paranoid security
+
+This cost (about 1 GiB) is above the default decryption limit of 512 MiB; decrypting it needs a raised `KeyStoreKdfLimits.MaxScryptMemoryBytes`.
 
 ### Parameter Effects
 

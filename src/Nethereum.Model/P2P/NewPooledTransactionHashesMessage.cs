@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Nethereum.RLP;
 
@@ -40,20 +41,28 @@ namespace Nethereum.Model.P2P
 
         public static NewPooledTransactionHashesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var msg = new NewPooledTransactionHashesMessage
             {
-                Types = outer[0].RLPData ?? new byte[0]
+                Types = reader.ReadBytes()
             };
 
-            var sizes = (RLPCollection)outer[1];
-            foreach (var s in sizes)
-                msg.Sizes.Add(s.RLPData.ToLongFromRLPDecoded());
+            var sizes = reader.ReadListHeader();
+            if (reader.CountItems(sizes) != msg.Types.Length
+                || outer.End - sizes.End < (long)msg.Types.Length * (PeerRlp.HashLength + 1))
+                throw new InvalidOperationException("NewPooledTransactionHashes: invalid len of fields");
+            msg.Sizes.Capacity = msg.Types.Length;
+            while (!reader.IsAtEnd(sizes))
+                msg.Sizes.Add(PeerRlp.ReadUInt32(reader));
+            reader.EnsureEnd(sizes);
 
-            var hashes = (RLPCollection)outer[2];
-            foreach (var h in hashes)
-                msg.Hashes.Add(h.RLPData);
+            msg.Hashes.AddRange(PeerRlp.ReadHashes(reader));
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
 
+            if (msg.Hashes.Count != msg.Types.Length || msg.Hashes.Count != msg.Sizes.Count)
+                throw new InvalidOperationException("NewPooledTransactionHashes: invalid len of fields");
             return msg;
         }
     }

@@ -39,11 +39,43 @@ namespace Nethereum.Util
             return new EvmAddress(result);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "util-evmaddress-fromhex", "EvmAddress.FromHex")]
         public static EvmAddress FromHex(string address)
         {
             if (string.IsNullOrEmpty(address)) return Zero;
+            return TryParseTwentyBytes(address, out var parsed) ? parsed : FromNormalizedHex(address);
+        }
+
+        private static EvmAddress FromNormalizedHex(string address)
+        {
             var normalized = AddressUtil.Current.ConvertToValid20ByteAddress(address).ToLowerInvariant();
             return From(normalized.HexToByteArray());
+        }
+
+        private static bool TryParseTwentyBytes(string address, out EvmAddress parsed)
+        {
+            parsed = Zero;
+            var first = address.Length == 42 && address[0] == '0' && address[1] == 'x' ? 2 : 0;
+            if (address.Length - first != ByteLength * 2) return false;
+
+            var bytes = new byte[ByteLength];
+            for (var i = 0; i < ByteLength; i++)
+            {
+                var high = HexDigit(address[first + 2 * i]);
+                var low = HexDigit(address[first + 2 * i + 1]);
+                if ((high | low) < 0) return false;
+                bytes[i] = (byte)(high << 4 | low);
+            }
+            parsed = new EvmAddress(bytes);
+            return true;
+        }
+
+        private static int HexDigit(char c)
+        {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            return -1;
         }
 
         public byte[] ToByteArray()

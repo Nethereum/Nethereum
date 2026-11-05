@@ -1,5 +1,6 @@
 using System;
 using Org.BouncyCastle.Math;
+using System.Runtime.CompilerServices;
 
 namespace Nethereum.Signer.Crypto.BN128
 {
@@ -96,6 +97,9 @@ namespace Nethereum.Signer.Crypto.BN128
 
         public bool IsZero => (L0 | L1 | L2 | L3) == 0;
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp Add(Fp other)
         {
             AddLimbs(L0, L1, L2, L3, other.L0, other.L1, other.L2, other.L3,
@@ -105,6 +109,9 @@ namespace Nethereum.Signer.Crypto.BN128
             return new Fp(s0, s1, s2, s3);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp Sub(Fp other)
         {
             SubLimbs(L0, L1, L2, L3, other.L0, other.L1, other.L2, other.L3,
@@ -116,6 +123,9 @@ namespace Nethereum.Signer.Crypto.BN128
 
         public Fp Neg() => IsZero ? this : Zero.Sub(this);
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public Fp Mul(Fp other)
         {
             MontgomeryMultiply(L0, L1, L2, L3, other.L0, other.L1, other.L2, other.L3,
@@ -145,6 +155,9 @@ namespace Nethereum.Signer.Crypto.BN128
 
         public override int GetHashCode() => unchecked((int)(L0 ^ L1 ^ L2 ^ L3));
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void MontgomeryMultiply(
             ulong a0, ulong a1, ulong a2, ulong a3,
             ulong b0, ulong b1, ulong b2, ulong b3,
@@ -164,6 +177,9 @@ namespace Nethereum.Signer.Crypto.BN128
                 SubtractModulus(ref r0, ref r1, ref r2, ref r3);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void MontgomeryStep(
             ulong a0, ulong a1, ulong a2, ulong a3, ulong b,
             ref ulong t0, ref ulong t1, ref ulong t2, ref ulong t3, ref ulong t4, ref ulong t5)
@@ -184,6 +200,9 @@ namespace Nethereum.Signer.Crypto.BN128
             t4 = t5 + overflow2;
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void MulAddAdd(ulong a, ulong b, ulong c, ulong d, out ulong hi, out ulong lo)
         {
             Mul64(a, b, out hi, out lo);
@@ -195,6 +214,9 @@ namespace Nethereum.Signer.Crypto.BN128
             lo = sum;
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void Mul64(ulong a, ulong b, out ulong hi, out ulong lo)
         {
 #if NET5_0_OR_GREATER
@@ -214,6 +236,9 @@ namespace Nethereum.Signer.Crypto.BN128
 #endif
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void AddCarry(ulong a, ulong b, ulong carryIn, out ulong carryOut, out ulong sum)
         {
             var s = a + b;
@@ -224,6 +249,9 @@ namespace Nethereum.Signer.Crypto.BN128
             carryOut = c;
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void AddLimbs(
             ulong a0, ulong a1, ulong a2, ulong a3,
             ulong b0, ulong b1, ulong b2, ulong b3,
@@ -235,6 +263,9 @@ namespace Nethereum.Signer.Crypto.BN128
             AddCarry(a3, b3, c2, out carry, out s3);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void SubLimbs(
             ulong a0, ulong a1, ulong a2, ulong a3,
             ulong b0, ulong b1, ulong b2, ulong b3,
@@ -246,6 +277,9 @@ namespace Nethereum.Signer.Crypto.BN128
             SubBorrow(a3, b3, br2, out borrow, out d3);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void SubBorrow(ulong a, ulong b, ulong borrowIn, out ulong borrowOut, out ulong diff)
         {
             var d = a - b;
@@ -256,6 +290,9 @@ namespace Nethereum.Signer.Crypto.BN128
             borrowOut = br;
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static bool GreaterOrEqualModulus(ulong l0, ulong l1, ulong l2, ulong l3)
         {
             if (l3 != M3) return l3 > M3;
@@ -264,11 +301,17 @@ namespace Nethereum.Signer.Crypto.BN128
             return l0 >= M0;
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void SubtractModulus(ref ulong l0, ref ulong l1, ref ulong l2, ref ulong l3)
         {
             SubLimbs(l0, l1, l2, l3, M0, M1, M2, M3, out l0, out l1, out l2, out l3, out _);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         private static void AddModulus(ref ulong l0, ref ulong l1, ref ulong l2, ref ulong l3)
         {
             AddLimbs(l0, l1, l2, l3, M0, M1, M2, M3, out l0, out l1, out l2, out l3, out _);

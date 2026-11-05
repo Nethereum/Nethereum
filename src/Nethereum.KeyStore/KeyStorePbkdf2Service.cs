@@ -25,7 +25,8 @@ namespace Nethereum.KeyStore
 
         protected override byte[] GenerateDerivedKey(string pasword, byte[] salt, Pbkdf2Params kdfParams)
         {
-            return KeyStoreCrypto.GeneratePbkdf2Sha256DerivedKey(pasword, salt, kdfParams.Count, kdfParams.Dklen);
+            return KeyStoreCrypto.GeneratePbkdf2Sha256DerivedKey(pasword, salt, kdfParams.Count, kdfParams.Dklen,
+                new KeyStoreKdfLimits { MaxPbkdf2Iterations = int.MaxValue });
         }
 
         protected override Pbkdf2Params GetDefaultParams()
@@ -35,7 +36,7 @@ namespace Nethereum.KeyStore
 
         public override KeyStore<Pbkdf2Params> DeserializeKeyStoreFromJson(string json)
         {
-            return JsonKeyStorePbkdf2Serialiser.DeserialisePbkdf2(json);
+            return KeyStoreParameterValidator.Parse(() => JsonKeyStorePbkdf2Serialiser.DeserialisePbkdf2(json));
         }
 
         public override string SerializeKeyStoreToJson(KeyStore<Pbkdf2Params> keyStore)
@@ -50,15 +51,22 @@ namespace Nethereum.KeyStore
 
         protected override byte[] DecryptFromCryptoInfo(string password, CryptoInfo<Pbkdf2Params> cryptoInfo)
         {
+            return DecryptFromCryptoInfo(password, cryptoInfo, KdfLimits);
+        }
+
+        protected override byte[] DecryptFromCryptoInfo(string password, CryptoInfo<Pbkdf2Params> cryptoInfo, KeyStoreKdfLimits limits)
+        {
             if (password == null) throw new ArgumentNullException(nameof(password));
             if (cryptoInfo == null) throw new ArgumentNullException(nameof(cryptoInfo));
-
-            return KeyStoreCrypto.DecryptPbkdf2Sha256(password, cryptoInfo.Mac.HexToByteArray(),
-                cryptoInfo.CipherParams.Iv.HexToByteArray(),
-                cryptoInfo.CipherText.HexToByteArray(),
+            KeyStoreParameterValidator.ValidateEnvelope(cryptoInfo, KdfType);
+            KeyStoreParameterValidator.ValidatePbkdf2(cryptoInfo.Kdfparams, limits);
+            return KeyStoreCrypto.DecryptPbkdf2Sha256(password, KeyStoreParameterValidator.RequireHex(cryptoInfo.Mac, "mac", 0, int.MaxValue),
+                KeyStoreParameterValidator.RequireHex(cryptoInfo.CipherParams.Iv, "iv", 16, 16),
+                KeyStoreParameterValidator.RequireHex(cryptoInfo.CipherText, "ciphertext", 0, int.MaxValue),
                 cryptoInfo.Kdfparams.Count,
-                cryptoInfo.Kdfparams.Salt.HexToByteArray(),
-                cryptoInfo.Kdfparams.Dklen);
+                KeyStoreParameterValidator.RequireHex(cryptoInfo.Kdfparams.Salt, "salt", 1, int.MaxValue),
+                cryptoInfo.Kdfparams.Dklen,
+                limits);
         }
     }
 }

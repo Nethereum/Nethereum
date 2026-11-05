@@ -3,7 +3,7 @@ using mcl;
 
 namespace Nethereum.Signer.Bls.Herumi
 {
-    public class Bls12381Operations : IBls12381Operations
+    public class Bls12381Operations : IBls12381Operations, IBls12381OutcomeOperations
     {
         private static readonly object InitLock = new object();
         private static bool _initialized;
@@ -36,268 +36,274 @@ namespace Nethereum.Signer.Bls.Herumi
             }
         }
 
-        public byte[] G1Add(byte[] p1, byte[] p2) => MclSerialization.InEvmMode(() =>
-        {
-            MclBindings.MclBnG1 x = DecodeG1(p1, requireSubgroup: false);
-            MclBindings.MclBnG1 y = DecodeG1(p2, requireSubgroup: false);
-            MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
-            MclBindings.mclBnG1_add(ref z, in x, in y);
-            return EncodeG1(z);
-        });
+        public byte[] G1Add(byte[] p1, byte[] p2)
+            => TryG1Add(p1, p2, out var result) ? result : throw new ArgumentException("Invalid G1ADD input");
 
-        public byte[] G1Mul(byte[] point, byte[] scalar) => MclSerialization.InEvmMode(() =>
-        {
-            MclBindings.MclBnG1 x = DecodeG1(point);
-            MclBindings.MclBnFr y = DecodeScalar(scalar);
-            MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
-            MclBindings.mclBnG1_mul(ref z, in x, in y);
-            return EncodeG1(z);
-        });
+        public byte[] G1Mul(byte[] point, byte[] scalar)
+            => TryG1Mul(point, scalar, out var result) ? result : throw new ArgumentException("Invalid G1MUL input");
 
-        public byte[] G1Msm(byte[][] points, byte[][] scalars) => MclSerialization.InEvmMode(() =>
-        {
-            if (points.Length != scalars.Length)
-            {
-                throw new ArgumentException("Points and scalars must have same length");
-            }
-            if (points.Length == 0)
-            {
-                throw new ArgumentException("Empty input");
-            }
-            MclBindings.MclBnG1[] array = new MclBindings.MclBnG1[points.Length];
-            MclBindings.MclBnFr[] array2 = new MclBindings.MclBnFr[scalars.Length];
-            for (int i = 0; i < points.Length; i++)
-            {
-                array[i] = DecodeG1(points[i]);
-                array2[i] = DecodeScalar(scalars[i]);
-            }
-            MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
-            MclBindings.mclBnG1_mulVec(ref z, in array[0], in array2[0], (ulong)points.Length);
-            return EncodeG1(z);
-        });
+        public byte[] G1Msm(byte[][] points, byte[][] scalars)
+            => TryG1Msm(points, scalars, out var result) ? result : throw new ArgumentException("Invalid G1MSM input");
 
-        public byte[] G2Add(byte[] p1, byte[] p2) => MclSerialization.InEvmMode(() =>
-        {
-            MclBindings.MclBnG2 x = DecodeG2(p1, requireSubgroup: false);
-            MclBindings.MclBnG2 y = DecodeG2(p2, requireSubgroup: false);
-            MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
-            MclBindings.mclBnG2_add(ref z, in x, in y);
-            return EncodeG2(z);
-        });
+        public byte[] G2Add(byte[] p1, byte[] p2)
+            => TryG2Add(p1, p2, out var result) ? result : throw new ArgumentException("Invalid G2ADD input");
 
-        public byte[] G2Mul(byte[] point, byte[] scalar) => MclSerialization.InEvmMode(() =>
-        {
-            MclBindings.MclBnG2 x = DecodeG2(point);
-            MclBindings.MclBnFr y = DecodeScalar(scalar);
-            MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
-            MclBindings.mclBnG2_mul(ref z, in x, in y);
-            return EncodeG2(z);
-        });
+        public byte[] G2Mul(byte[] point, byte[] scalar)
+            => TryG2Mul(point, scalar, out var result) ? result : throw new ArgumentException("Invalid G2MUL input");
 
-        public byte[] G2Msm(byte[][] points, byte[][] scalars) => MclSerialization.InEvmMode(() =>
-        {
-            if (points.Length != scalars.Length)
-            {
-                throw new ArgumentException("Points and scalars must have same length");
-            }
-            if (points.Length == 0)
-            {
-                throw new ArgumentException("Empty input");
-            }
-            MclBindings.MclBnG2[] array = new MclBindings.MclBnG2[points.Length];
-            MclBindings.MclBnFr[] array2 = new MclBindings.MclBnFr[scalars.Length];
-            for (int i = 0; i < points.Length; i++)
-            {
-                array[i] = DecodeG2(points[i]);
-                array2[i] = DecodeScalar(scalars[i]);
-            }
-            MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
-            MclBindings.mclBnG2_mulVec(ref z, in array[0], in array2[0], (ulong)points.Length);
-            return EncodeG2(z);
-        });
+        public byte[] G2Msm(byte[][] points, byte[][] scalars)
+            => TryG2Msm(points, scalars, out var result) ? result : throw new ArgumentException("Invalid G2MSM input");
 
-        public bool Pairing(byte[][] g1Points, byte[][] g2Points) => MclSerialization.InEvmMode(() =>
+        public bool Pairing(byte[][] g1Points, byte[][] g2Points)
+            => TryPairing(g1Points, g2Points, out var pairs) ? pairs : throw new ArgumentException("Invalid PAIRING input");
+
+        public byte[] MapFpToG1(byte[] fp)
+            => TryMapFpToG1(fp, out var result) ? result : throw new ArgumentException("Invalid MAP_FP_TO_G1 input");
+
+        public byte[] MapFp2ToG2(byte[] fp2)
+            => TryMapFp2ToG2(fp2, out var result) ? result : throw new ArgumentException("Invalid MAP_FP2_TO_G2 input");
+
+        public bool TryG1Add(byte[] p1, byte[] p2, out byte[] result)
         {
-            if (g1Points.Length != g2Points.Length)
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
             {
-                throw new ArgumentException("G1 and G2 point arrays must have same length");
-            }
-            if (g1Points.Length == 0)
-            {
+                if (!TryDecodeG1(p1, false, out var x) || !TryDecodeG1(p2, false, out var y)) return false;
+                MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
+                MclBindings.mclBnG1_add(ref z, in x, in y);
+                encoded = EncodeG1(z);
                 return true;
-            }
-            MclBindings.MclBnG1[] array = new MclBindings.MclBnG1[g1Points.Length];
-            MclBindings.MclBnG2[] array2 = new MclBindings.MclBnG2[g2Points.Length];
-            for (int i = 0; i < g1Points.Length; i++)
-            {
-                array[i] = DecodeG1(g1Points[i]);
-                array2[i] = DecodeG2(g2Points[i]);
-            }
-            MclBindings.MclBnGT z = default(MclBindings.MclBnGT);
-            MclBindings.mclBn_millerLoopVec(ref z, in array[0], in array2[0], (ulong)g1Points.Length);
-            MclBindings.mclBn_finalExp(ref z, in z);
-            return MclBindings.mclBnGT_isOne(in z) == 1;
-        });
-
-        public byte[] MapFpToG1(byte[] fp) => MclSerialization.InEvmMode(() =>
-        {
-            if (fp.Length != 64)
-            {
-                throw new ArgumentException($"Invalid Fp length: expected {64}, got {fp.Length}");
-            }
-            MclBindings.MclBnFp x = DecodeFp(fp);
-            MclBindings.MclBnG1 y = default(MclBindings.MclBnG1);
-            if (MclBindings.mclBnFp_mapToG1(ref y, in x) != 0)
-            {
-                throw new ArgumentException("Failed to map Fp to G1");
-            }
-            return EncodeG1(y);
-        });
-
-        public byte[] MapFp2ToG2(byte[] fp2) => MclSerialization.InEvmMode(() =>
-        {
-            if (fp2.Length != 128)
-            {
-                throw new ArgumentException($"Invalid Fp2 length: expected {128}, got {fp2.Length}");
-            }
-            MclBindings.MclBnFp2 x = DecodeFp2(fp2);
-            MclBindings.MclBnG2 y = default(MclBindings.MclBnG2);
-            if (MclBindings.mclBnFp2_mapToG2(ref y, in x) != 0)
-            {
-                throw new ArgumentException("Failed to map Fp2 to G2");
-            }
-            return EncodeG2(y);
-        });
-
-        private MclBindings.MclBnG1 DecodeG1(byte[] eip2537, bool requireSubgroup = true)
-        {
-            if (eip2537.Length != 128)
-            {
-                throw new ArgumentException($"G1 point must be {128} bytes");
-            }
-            ValidateFpPadding(eip2537, 0);
-            ValidateFpPadding(eip2537, 64);
-            if (IsAllZero(eip2537))
-            {
-                MclBindings.MclBnG1 x = default(MclBindings.MclBnG1);
-                MclBindings.mclBnG1_clear(ref x);
-                return x;
-            }
-            MclBindings.MclBnG1 x2 = default(MclBindings.MclBnG1);
-            byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
-            byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
-            // EIP-2537 strict Fp decode: every coordinate must be in
-            // [0, p). setLittleEndianMod silently reduces inputs >= p,
-            // accepting points the spec rejects.
-            ulong xOk = MclBindings.mclBnFp_deserialize(ref x2.x, array, (ulong)array.Length);
-            ulong yOk = MclBindings.mclBnFp_deserialize(ref x2.y, array2, (ulong)array2.Length);
-            if (xOk == 0L || yOk == 0L)
-            {
-                throw new ArgumentException("Invalid G1 point: coordinate not in field");
-            }
-            MclBindings.mclBnFp_setInt(ref x2.z, 1);
-            if (MclBindings.mclBnG1_isValid(in x2) == 0)
-            {
-                throw new ArgumentException("Invalid G1 point: not on curve");
-            }
-            if (requireSubgroup && MclBindings.mclBnG1_isValidOrder(in x2) != 1)
-            {
-                throw new ArgumentException("Invalid G1 point: not in prime-order subgroup");
-            }
-            return x2;
+            });
+            result = encoded;
+            return ok;
         }
 
-        private MclBindings.MclBnG2 DecodeG2(byte[] eip2537, bool requireSubgroup = true)
+        public bool TryG1Mul(byte[] point, byte[] scalar, out byte[] result)
         {
-            if (eip2537.Length != 256)
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
             {
-                throw new ArgumentException($"G2 point must be {256} bytes");
-            }
-            ValidateFpPadding(eip2537, 0);
-            ValidateFpPadding(eip2537, 64);
-            ValidateFpPadding(eip2537, 128);
-            ValidateFpPadding(eip2537, 192);
+                if (!TryDecodeG1(point, true, out var x) || !TryDecodeScalar(scalar, out var y)) return false;
+                MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
+                MclBindings.mclBnG1_mul(ref z, in x, in y);
+                encoded = EncodeG1(z);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        public bool TryG1Msm(byte[][] points, byte[][] scalars, out byte[] result)
+        {
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (points == null || scalars == null || points.Length != scalars.Length || points.Length == 0) return false;
+                MclBindings.MclBnG1[] array = new MclBindings.MclBnG1[points.Length];
+                MclBindings.MclBnFr[] array2 = new MclBindings.MclBnFr[scalars.Length];
+                for (int i = 0; i < points.Length; i++)
+                {
+                    if (!TryDecodeG1(points[i], true, out array[i])) return false;
+                    if (!TryDecodeScalar(scalars[i], out array2[i])) return false;
+                }
+                MclBindings.MclBnG1 z = default(MclBindings.MclBnG1);
+                MclBindings.mclBnG1_mulVec(ref z, in array[0], in array2[0], (ulong)points.Length);
+                encoded = EncodeG1(z);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        public bool TryG2Add(byte[] p1, byte[] p2, out byte[] result)
+        {
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (!TryDecodeG2(p1, false, out var x) || !TryDecodeG2(p2, false, out var y)) return false;
+                MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
+                MclBindings.mclBnG2_add(ref z, in x, in y);
+                encoded = EncodeG2(z);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        public bool TryG2Mul(byte[] point, byte[] scalar, out byte[] result)
+        {
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (!TryDecodeG2(point, true, out var x) || !TryDecodeScalar(scalar, out var y)) return false;
+                MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
+                MclBindings.mclBnG2_mul(ref z, in x, in y);
+                encoded = EncodeG2(z);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        public bool TryG2Msm(byte[][] points, byte[][] scalars, out byte[] result)
+        {
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (points == null || scalars == null || points.Length != scalars.Length || points.Length == 0) return false;
+                MclBindings.MclBnG2[] array = new MclBindings.MclBnG2[points.Length];
+                MclBindings.MclBnFr[] array2 = new MclBindings.MclBnFr[scalars.Length];
+                for (int i = 0; i < points.Length; i++)
+                {
+                    if (!TryDecodeG2(points[i], true, out array[i])) return false;
+                    if (!TryDecodeScalar(scalars[i], out array2[i])) return false;
+                }
+                MclBindings.MclBnG2 z = default(MclBindings.MclBnG2);
+                MclBindings.mclBnG2_mulVec(ref z, in array[0], in array2[0], (ulong)points.Length);
+                encoded = EncodeG2(z);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        public bool TryPairing(byte[][] g1Points, byte[][] g2Points, out bool pairs)
+        {
+            bool verified = false;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (g1Points == null || g2Points == null || g1Points.Length != g2Points.Length) return false;
+                if (g1Points.Length == 0)
+                {
+                    verified = true;
+                    return true;
+                }
+                MclBindings.MclBnG1[] array = new MclBindings.MclBnG1[g1Points.Length];
+                MclBindings.MclBnG2[] array2 = new MclBindings.MclBnG2[g2Points.Length];
+                for (int i = 0; i < g1Points.Length; i++)
+                {
+                    if (!TryDecodeG1(g1Points[i], true, out array[i])) return false;
+                    if (!TryDecodeG2(g2Points[i], true, out array2[i])) return false;
+                }
+                MclBindings.MclBnGT z = default(MclBindings.MclBnGT);
+                MclBindings.mclBn_millerLoopVec(ref z, in array[0], in array2[0], (ulong)g1Points.Length);
+                MclBindings.mclBn_finalExp(ref z, in z);
+                verified = MclBindings.mclBnGT_isOne(in z) == 1;
+                return true;
+            });
+            pairs = verified;
+            return ok;
+        }
+
+        public bool TryMapFpToG1(byte[] fp, out byte[] result)
+        {
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (fp == null || fp.Length != EIP2537_FP_SIZE) return false;
+                if (!TryDecodeFp(fp, out var x)) return false;
+                MclBindings.MclBnG1 y = default(MclBindings.MclBnG1);
+                if (MclBindings.mclBnFp_mapToG1(ref y, in x) != 0) return false;
+                encoded = EncodeG1(y);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        public bool TryMapFp2ToG2(byte[] fp2, out byte[] result)
+        {
+            byte[] encoded = null;
+            var ok = MclSerialization.InEvmMode(() =>
+            {
+                if (fp2 == null || fp2.Length != EIP2537_FP2_SIZE) return false;
+                if (!TryDecodeFp2(fp2, out var x)) return false;
+                MclBindings.MclBnG2 y = default(MclBindings.MclBnG2);
+                if (MclBindings.mclBnFp2_mapToG2(ref y, in x) != 0) return false;
+                encoded = EncodeG2(y);
+                return true;
+            });
+            result = encoded;
+            return ok;
+        }
+
+        private bool TryDecodeG1(byte[] eip2537, bool requireSubgroup, out MclBindings.MclBnG1 point)
+        {
+            point = default(MclBindings.MclBnG1);
+            if (eip2537 == null || eip2537.Length != EIP2537_G1_POINT_SIZE) return false;
+            if (!HasValidFpPadding(eip2537, 0) || !HasValidFpPadding(eip2537, 64)) return false;
             if (IsAllZero(eip2537))
             {
-                MclBindings.MclBnG2 x = default(MclBindings.MclBnG2);
-                MclBindings.mclBnG2_clear(ref x);
-                return x;
+                MclBindings.mclBnG1_clear(ref point);
+                return true;
             }
-            MclBindings.MclBnG2 x2 = default(MclBindings.MclBnG2);
+            byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
+            byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
+            ulong xOk = MclBindings.mclBnFp_deserialize(ref point.x, array, (ulong)array.Length);
+            ulong yOk = MclBindings.mclBnFp_deserialize(ref point.y, array2, (ulong)array2.Length);
+            if (xOk == 0L || yOk == 0L) return false;
+            MclBindings.mclBnFp_setInt(ref point.z, 1);
+            if (MclBindings.mclBnG1_isValid(in point) == 0) return false;
+            if (requireSubgroup && MclBindings.mclBnG1_isValidOrder(in point) != 1) return false;
+            return true;
+        }
+
+        private bool TryDecodeG2(byte[] eip2537, bool requireSubgroup, out MclBindings.MclBnG2 point)
+        {
+            point = default(MclBindings.MclBnG2);
+            if (eip2537 == null || eip2537.Length != EIP2537_G2_POINT_SIZE) return false;
+            if (!HasValidFpPadding(eip2537, 0) || !HasValidFpPadding(eip2537, 64) ||
+                !HasValidFpPadding(eip2537, 128) || !HasValidFpPadding(eip2537, 192)) return false;
+            if (IsAllZero(eip2537))
+            {
+                MclBindings.mclBnG2_clear(ref point);
+                return true;
+            }
             byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
             byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
             byte[] array3 = ExtractFpAsLittleEndian(eip2537, 128);
             byte[] array4 = ExtractFpAsLittleEndian(eip2537, 192);
-            ulong num = MclBindings.mclBnFp_deserialize(ref x2.x.c0, array, (ulong)array.Length);
-            ulong num2 = MclBindings.mclBnFp_deserialize(ref x2.x.c1, array2, (ulong)array2.Length);
-            ulong num3 = MclBindings.mclBnFp_deserialize(ref x2.y.c0, array3, (ulong)array3.Length);
-            ulong num4 = MclBindings.mclBnFp_deserialize(ref x2.y.c1, array4, (ulong)array4.Length);
-            if (num == 0L || num2 == 0L || num3 == 0L || num4 == 0L)
-            {
-                throw new ArgumentException("Invalid G2 point: failed to deserialize coordinates");
-            }
-            MclBindings.mclBnFp_setInt(ref x2.z.c0, 1);
-            MclBindings.mclBnFp_setInt(ref x2.z.c1, 0);
-            if (MclBindings.mclBnG2_isValid(in x2) == 0)
-            {
-                throw new ArgumentException("Invalid G2 point: not on curve");
-            }
-            if (requireSubgroup && MclBindings.mclBnG2_isValidOrder(in x2) != 1)
-            {
-                throw new ArgumentException("Invalid G2 point: not in prime-order subgroup");
-            }
-            return x2;
+            ulong num = MclBindings.mclBnFp_deserialize(ref point.x.c0, array, (ulong)array.Length);
+            ulong num2 = MclBindings.mclBnFp_deserialize(ref point.x.c1, array2, (ulong)array2.Length);
+            ulong num3 = MclBindings.mclBnFp_deserialize(ref point.y.c0, array3, (ulong)array3.Length);
+            ulong num4 = MclBindings.mclBnFp_deserialize(ref point.y.c1, array4, (ulong)array4.Length);
+            if (num == 0L || num2 == 0L || num3 == 0L || num4 == 0L) return false;
+            MclBindings.mclBnFp_setInt(ref point.z.c0, 1);
+            MclBindings.mclBnFp_setInt(ref point.z.c1, 0);
+            if (MclBindings.mclBnG2_isValid(in point) == 0) return false;
+            if (requireSubgroup && MclBindings.mclBnG2_isValidOrder(in point) != 1) return false;
+            return true;
         }
 
-        private MclBindings.MclBnFr DecodeScalar(byte[] eip2537)
+        private bool TryDecodeScalar(byte[] eip2537, out MclBindings.MclBnFr scalar)
         {
-            if (eip2537.Length != 32)
-            {
-                throw new ArgumentException($"Scalar must be {32} bytes");
-            }
+            scalar = default(MclBindings.MclBnFr);
+            if (eip2537 == null || eip2537.Length != EIP2537_SCALAR_SIZE) return false;
             byte[] array = new byte[32];
             for (int i = 0; i < 32; i++)
             {
                 array[i] = eip2537[31 - i];
             }
-            // EIP-2537: scalars are 256-bit integers reduced modulo r.
-            // mclBnFr_deserialize is strict — it rejects values >= r,
-            // which fails legitimate test inputs like max_scalar,
-            // q_times_point and unnormalized_scalar variants.
-            MclBindings.MclBnFr x = default(MclBindings.MclBnFr);
-            if (MclBindings.mclBnFr_setLittleEndianMod(ref x, array, (ulong)array.Length) != 0)
-            {
-                throw new ArgumentException("Invalid scalar");
-            }
-            return x;
+            return MclBindings.mclBnFr_setLittleEndianMod(ref scalar, array, (ulong)array.Length) == 0;
         }
 
-        private MclBindings.MclBnFp DecodeFp(byte[] eip2537)
+        private bool TryDecodeFp(byte[] eip2537, out MclBindings.MclBnFp element)
         {
-            ValidateFpPadding(eip2537, 0);
+            element = default(MclBindings.MclBnFp);
+            if (!HasValidFpPadding(eip2537, 0)) return false;
             byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
-            MclBindings.MclBnFp x = default(MclBindings.MclBnFp);
-            if (MclBindings.mclBnFp_deserialize(ref x, array, (ulong)array.Length) == 0L)
-            {
-                throw new ArgumentException("Invalid Fp element");
-            }
-            return x;
+            return MclBindings.mclBnFp_deserialize(ref element, array, (ulong)array.Length) != 0L;
         }
 
-        private MclBindings.MclBnFp2 DecodeFp2(byte[] eip2537)
+        private bool TryDecodeFp2(byte[] eip2537, out MclBindings.MclBnFp2 element)
         {
-            ValidateFpPadding(eip2537, 0);
-            ValidateFpPadding(eip2537, 64);
-            MclBindings.MclBnFp2 result = default(MclBindings.MclBnFp2);
+            element = default(MclBindings.MclBnFp2);
+            if (!HasValidFpPadding(eip2537, 0) || !HasValidFpPadding(eip2537, 64)) return false;
             byte[] array = ExtractFpAsLittleEndian(eip2537, 0);
             byte[] array2 = ExtractFpAsLittleEndian(eip2537, 64);
-            ulong num = MclBindings.mclBnFp_deserialize(ref result.c0, array, (ulong)array.Length);
-            ulong num2 = MclBindings.mclBnFp_deserialize(ref result.c1, array2, (ulong)array2.Length);
-            if (num == 0L || num2 == 0L)
-            {
-                throw new ArgumentException("Invalid Fp2 element");
-            }
-            return result;
+            ulong num = MclBindings.mclBnFp_deserialize(ref element.c0, array, (ulong)array.Length);
+            ulong num2 = MclBindings.mclBnFp_deserialize(ref element.c1, array2, (ulong)array2.Length);
+            return num != 0L && num2 != 0L;
         }
 
         private byte[] EncodeG1(MclBindings.MclBnG1 point)
@@ -370,15 +376,14 @@ namespace Nethereum.Signer.Bls.Herumi
             }
         }
 
-        private void ValidateFpPadding(byte[] data, int offset)
+        private bool HasValidFpPadding(byte[] data, int offset)
         {
+            if (data == null || data.Length < offset + 16) return false;
             for (int i = 0; i < 16; i++)
             {
-                if (data[offset + i] != 0)
-                {
-                    throw new ArgumentException($"Invalid padding at offset {offset}: first 16 bytes must be zero");
-                }
+                if (data[offset + i] != 0) return false;
             }
+            return true;
         }
 
         private bool IsAllZero(byte[] data)

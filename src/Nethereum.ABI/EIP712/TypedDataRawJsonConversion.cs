@@ -19,8 +19,7 @@ namespace Nethereum.ABI.EIP712
 
         public static string ToJson<TDomain>(this TypedData<TDomain> typedData)
         {
-            typedData.EnsureDomainRawValuesAreInitialised();
-            return SerialiseRawTypedDataToJson(typedData);
+            return SerialiseRawTypedDataToJson(typedData.ToRaw(typedData.Message));
         }
 
         public static string ToJson<TMessage, TDomain>(this TypedData<TDomain> typedData, TMessage message)
@@ -28,12 +27,6 @@ namespace Nethereum.ABI.EIP712
             return SerialiseTypedDataToJson(typedData, message);
         }        
 
-        /// <summary>
-        /// Encode typed data using a non standard json (streamlined)
-        /// if a Domain type is not included in the json, the generic DomainType will be used
-        /// enables using a different message key selector
-        /// if a primary type is not set and it includes only a single type this will be used as the primary type
-        /// </summary>
         public static TypedDataRaw DeserialiseJsonToRawTypedData<DomainType>(string json, string messageKeySelector = "message")
         {
             var convertor = new ExpandoObjectConverter();
@@ -87,9 +80,7 @@ namespace Nethereum.ABI.EIP712
 
         public static string SerialiseTypedDataToJson<TMessage, TDomain>(TypedData<TDomain> typedData, TMessage message)
         {
-            typedData.EnsureDomainRawValuesAreInitialised();
-            typedData.Message = MemberValueFactory.CreateFromMessage(message);
-            return SerialiseRawTypedDataToJson(typedData);
+            return SerialiseRawTypedDataToJson(typedData.ToRaw(MemberValueFactory.CreateFromMessage(message)));
         }
 
         public static string SerialiseRawTypedDataToJson(TypedDataRaw typedDataRaw)
@@ -107,64 +98,53 @@ namespace Nethereum.ABI.EIP712
         }
         private static MemberValue GetMemberValue(string memberType, object memberValue, Dictionary<string, MemberDescription[]> typeMemberDescriptions)
         {
-
-            if (Eip712TypedDataEncoder.IsReferenceType(memberType))
+            return new MemberValue()
             {
-                return new MemberValue()
-                {
-                    TypeName = memberType,
-                    Value = GetMemberValues((IDictionary<string, object>)memberValue, memberType, typeMemberDescriptions).ToArray()
-                };
-            }
-            else
+                TypeName = memberType,
+                Value = GetValue(memberType, memberValue, typeMemberDescriptions)
+            };
+        }
+
+        private static object GetValue(string type, object value, Dictionary<string, MemberDescription[]> typeMemberDescriptions)
+        {
+            if (type.EndsWith("]", StringComparison.Ordinal))
             {
-                if (memberType.StartsWith("bytes") && !memberType.Contains("["))
+                var items = value as IList;
+                if (items == null || value is string)
                 {
-                    return new MemberValue()
-                    {
-                        TypeName = memberType,
-                        Value = ((string)memberValue).HexToByteArray()
-                    };
+                    throw new ArgumentException("The provided data does not match type '" + type + "'.");
                 }
-                else
+
+                var innerType = type.Substring(0, type.LastIndexOf('['));
+                if (typeMemberDescriptions.ContainsKey(innerType))
                 {
-                    if (memberType.Contains("["))
+                    var structItems = new List<MemberValue[]>();
+                    foreach (var item in items)
                     {
-                        var items = (IList)memberValue;
-                        var innerType = memberType.Substring(0, memberType.LastIndexOf("["));
-                        if (Eip712TypedDataEncoder.IsReferenceType(innerType))
-                        {
-                            var itemsMemberValues = new List<MemberValue[]>();
-                            foreach (var item in items)
-                            {
-                                itemsMemberValues.Add(GetMemberValues((IDictionary<string, object>)item, innerType, typeMemberDescriptions).ToArray());
-                            }
-
-                            return new MemberValue() { TypeName = memberType, Value = itemsMemberValues };
-                        }
-                        else
-                        {
-                            var itemsMemberValues = new List<object>();
-
-                            foreach (var item in items)
-                            {
-                                itemsMemberValues.Add(item);
-                            }
-
-                            return new MemberValue() { TypeName = memberType, Value = itemsMemberValues };
-                        }
-
+                        structItems.Add((MemberValue[])GetValue(innerType, item, typeMemberDescriptions));
                     }
-                    else
-                    {
-                        return new MemberValue()
-                        {
-                            TypeName = memberType,
-                            Value = memberValue
-                        };
-                    }
+                    return structItems;
                 }
+
+                var convertedItems = new List<object>();
+                foreach (var item in items)
+                {
+                    convertedItems.Add(GetValue(innerType, item, typeMemberDescriptions));
+                }
+                return convertedItems;
             }
+
+            if (typeMemberDescriptions.ContainsKey(type))
+            {
+                var structValue = value as IDictionary<string, object>;
+                if (structValue == null)
+                {
+                    throw new ArgumentException("The provided data does not match type '" + type + "'.");
+                }
+                return GetMemberValues(structValue, type, typeMemberDescriptions).ToArray();
+            }
+
+            return value;
         }
 
         private static Dictionary<string, MemberDescription[]> GetMemberDescriptions(IDictionary<string, object> types)
@@ -172,8 +152,14 @@ namespace Nethereum.ABI.EIP712
             var typeMemberDescriptions = new Dictionary<string, MemberDescription[]>();
             foreach (var type in types)
             {
+                var members = type.Value as IList;
+                if (members == null)
+                {
+                    throw new ArgumentException("Type '" + type.Key + "' does not declare a list of members.");
+                }
+
                 var memberDescriptions = new List<MemberDescription>();
-                foreach (var typeMember in type.Value as List<object>)
+                foreach (var typeMember in members)
                 {
                     var typeMemberDictionary = (IDictionary<string, object>)typeMember;
                     memberDescriptions.Add(
@@ -191,15 +177,25 @@ namespace Nethereum.ABI.EIP712
 
         private static List<MemberValue> GetMemberValues(IDictionary<string, object> deserialisedObject, string typeName, Dictionary<string, MemberDescription[]> typeMemberDescriptions)
         {
+            if (deserialisedObject == null)
+            {
+                throw new ArgumentException("The value of '" + typeName + "' is missing.");
+            }
+
+            if (!typeMemberDescriptions.TryGetValue(typeName, out var typeMemberDescription))
+            {
+                throw new ArgumentException("Type '" + typeName + "' is not defined.");
+            }
+
             var memberValues = new List<MemberValue>();
-            var typeMemberDescription = typeMemberDescriptions[typeName];
             foreach (var member in typeMemberDescription)
             {
+                if (!deserialisedObject.TryGetValue(member.Name, out var memberValue))
+                {
+                    throw new ArgumentException("The value of member '" + member.Name + "' of '" + typeName + "' is missing.");
+                }
 
-                var memberType = member.Type;
-                var memberValue = deserialisedObject[member.Name];
-
-                memberValues.Add(GetMemberValue(memberType, memberValue, typeMemberDescriptions));
+                memberValues.Add(GetMemberValue(member.Type, memberValue, typeMemberDescriptions));
             }
 
             return memberValues;
@@ -213,7 +209,7 @@ namespace Nethereum.ABI.EIP712
             {
                 var memberType = mainType[i].Type;
                 var memberName = mainType[i].Name;
-                if (Eip712TypedDataEncoder.IsReferenceType(memberType))
+                if (typedDataRaw.Types.ContainsKey(memberType))
                 {
                     var memberProperty = new JProperty(memberName);
                     if (values[i].Value != null)
@@ -256,7 +252,7 @@ namespace Nethereum.ABI.EIP712
                             }
                             else
                             {
-                                if (Eip712TypedDataEncoder.IsReferenceType(innerType))
+                                if (typedDataRaw.Types.ContainsKey(innerType))
                                 {
                                     var items = (List<MemberValue[]>)values[i].Value;
 

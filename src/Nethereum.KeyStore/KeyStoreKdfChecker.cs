@@ -27,9 +27,13 @@ namespace Nethereum.KeyStore
 
                 throw new InvalidKdfException(kdf);
             }
-            catch (Exception ex)
+            catch (InvalidKdfException ex)
             {
                 throw new Exception("Invalid KeyStore json", ex);
+            }
+            catch (Exception)
+            {
+                throw new ArgumentException("Invalid KeyStore json");
             }
         }
     }

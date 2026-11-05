@@ -8,6 +8,7 @@ namespace Nethereum.Model
         public List<byte[]> Blobs { get; set; }
         public List<byte[]> Commitments { get; set; }
         public List<byte[]> Proofs { get; set; }
+        public byte WrapperVersion { get; set; }
 
         public BlobSidecar()
         {

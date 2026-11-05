@@ -4,9 +4,11 @@ using Nethereum.ABI.Model;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace Nethereum.ABI.ABIInfoSqliteStorage
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "abi-info-sqlite-storage", "SqliteABIInfoStorage surface")]
     public class SqliteABIInfoStorage : IABIInfoStorage, IDisposable
     {
         private readonly SqliteConnection _connection;
@@ -290,6 +292,46 @@ namespace Nethereum.ABI.ABIInfoSqliteStorage
         public List<ErrorABI> FindErrorABI(string signature)
         {
             return _memoryCache.FindErrorABI(signature);
+        }
+
+        public Task<ABIInfo> GetABIInfoAsync(long chainId, string contractAddress)
+        {
+            return Task.FromResult(GetABIInfo(new BigInteger(chainId), contractAddress));
+        }
+
+        public Task<FunctionABI> FindFunctionABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            return Task.FromResult(FindFunctionABI(chainId, contractAddress, signature));
+        }
+
+        public Task<FunctionABI> FindFunctionABIFromInputDataAsync(BigInteger chainId, string contractAddress, string inputData)
+        {
+            return Task.FromResult(FindFunctionABIFromInputData(chainId, contractAddress, inputData));
+        }
+
+        public Task<EventABI> FindEventABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            return Task.FromResult(FindEventABI(chainId, contractAddress, signature));
+        }
+
+        public Task<ErrorABI> FindErrorABIAsync(BigInteger chainId, string contractAddress, string signature)
+        {
+            return Task.FromResult(FindErrorABI(chainId, contractAddress, signature));
+        }
+
+        public Task<IDictionary<string, FunctionABI>> FindFunctionABIsBatchAsync(IEnumerable<string> signatures)
+        {
+            return _memoryCache.FindFunctionABIsBatchAsync(signatures);
+        }
+
+        public Task<IDictionary<string, EventABI>> FindEventABIsBatchAsync(IEnumerable<string> signatures)
+        {
+            return _memoryCache.FindEventABIsBatchAsync(signatures);
+        }
+
+        public Task<ABIBatchResult> FindABIsBatchAsync(IEnumerable<string> functionSignatures, IEnumerable<string> eventSignatures)
+        {
+            return _memoryCache.FindABIsBatchAsync(functionSignatures, eventSignatures);
         }
 
         public void Dispose()

@@ -28,7 +28,7 @@ namespace Nethereum.RLP
         ///     byte with value 0x80 plus the length of the string followed by the
         ///     string. The range of the first byte is thus [0x80, 0xb7].
         /// </summary>
-        private const byte OFFSET_SHORT_ITEM = 0x80;
+        internal const byte OFFSET_SHORT_ITEM = 0x80;
 
         /// <summary>
         ///     [0xb7]
@@ -39,7 +39,7 @@ namespace Nethereum.RLP
         ///     \xb9\x04\x00 followed by the string. The range of the first byte is thus
         ///     [0xb8, 0xbf].
         /// </summary>
-        private const byte OFFSET_LONG_ITEM = 0xb7;
+        internal const byte OFFSET_LONG_ITEM = 0xb7;
 
         /// <summary>
         ///     [0xc0]
@@ -61,6 +61,10 @@ namespace Nethereum.RLP
         /// </summary>
         private const byte OFFSET_LONG_LIST = 0xf7;
 
+        public const int MaxDecodeDepth = 64;
+
+        private const int MaxErrorHexBytes = 64;
+
         public static readonly byte[] EMPTY_BYTE_ARRAY = new byte[0];
         public static readonly byte[] ZERO_BYTE_ARRAY = {0};
 
@@ -72,17 +76,38 @@ namespace Nethereum.RLP
             return BitConverter.ToInt32(bytes, 0);
         }
 
+        public const int MinUntrustedElementBudget = 1024;
+        public static int UntrustedElementBudget(int inputLength)
+        {
+            return (int) Math.Max(MinUntrustedElementBudget, (long) inputLength * 3 / 4);
+        }
+
         public static IRLPElement Decode(byte[] msgData)
         {
-            var rlpCollection = new RLPCollection();
-            Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
-            return rlpCollection[0];
+            EnsureNotNullOrEmpty(msgData);
+            return DecodeSingle(msgData, int.MaxValue);
+        }
+
+        public static IRLPElement Decode(byte[] msgData, int maxElements)
+        {
+            EnsureNotNullOrEmpty(msgData);
+            return DecodeSingle(msgData, maxElements);
         }
 
         public static IRLPElement DecodeCollection(byte[] msgData)
         {
+            if (msgData == null)
+                throw new Exception("Invalid RLP ");
+            return DecodeCollection(msgData, int.MaxValue);
+        }
+
+        public static IRLPElement DecodeCollection(byte[] msgData, int maxElements)
+        {
+            if (msgData == null)
+                throw new Exception("Invalid RLP ");
             var rlpCollection = new RLPCollection();
-            Decode(msgData, 0, 0, msgData.Length, 1, rlpCollection);
+            if (msgData.Length > 0)
+                DecodeOwned((byte[]) msgData.Clone(), 0, msgData.Length, rlpCollection, maxElements, false);
             return rlpCollection;
         }
 
@@ -95,202 +120,180 @@ namespace Nethereum.RLP
             if (msgData == null || msgData.Length == 0)
                 return;
 
-            var currentData = new byte[endPosition - startPosition];
-            Array.Copy(msgData, startPosition, currentData, 0, currentData.Length);
+            DecodeOwned((byte[]) msgData.Clone(), startPosition, endPosition, rlpCollection,
+                int.MaxValue, false);
+        }
 
+        private static IRLPElement DecodeSingle(byte[] msgData, int maxElements)
+        {
+            var rlpCollection = new RLPCollection();
+            DecodeOwned((byte[]) msgData.Clone(), 0, msgData.Length, rlpCollection, maxElements, true);
+            return rlpCollection[0];
+        }
+
+        private static void DecodeOwned(byte[] msgData, int startPosition, int endPosition,
+            RLPCollection rlpCollection, int maxElements, bool singleTopLevelItem)
+        {
             try
             {
-                var currentPosition = startPosition;
-
-                while (currentPosition < endPosition)
+                var limit = msgData.Length;
+                if (singleTopLevelItem)
                 {
-                    if (IsListBiggerThan55Bytes(msgData, currentPosition))
-                    {
-                        currentPosition = ProcessListBiggerThan55Bytes(msgData, level, levelToIndex, rlpCollection,
-                            currentPosition);
-                        continue;
-                    }
-
-                    if (IsListLessThan55Bytes(msgData, currentPosition))
-                    {
-                        currentPosition = ProcessListLessThan55Bytes(msgData, level, levelToIndex, rlpCollection,
-                            currentPosition);
-                        continue;
-                    }
-
-                    if (IsItemBiggerThan55Bytes(msgData, currentPosition))
-                    {
-                        currentPosition = ProcessItemBiggerThan55Bytes(msgData, rlpCollection, currentPosition);
-                        continue;
-                    }
-
-                    if (IsItemLessThan55Bytes(msgData, currentPosition))
-                    {
-                        currentPosition = ProcessItemLessThan55Bytes(msgData, rlpCollection, currentPosition);
-                        continue;
-                    }
-
-                    if (IsNullItem(msgData, currentPosition))
-                    {
-                        currentPosition = ProcessNullItem(rlpCollection, currentPosition);
-                        continue;
-                    }
-
-                    if (IsSigleByteItem(msgData, currentPosition))
-                        currentPosition = ProcessSingleByteItem(msgData, rlpCollection, currentPosition);
+                    ReadHeader(msgData, startPosition, limit, out var payloadStart, out var payloadLength);
+                    if (payloadStart + payloadLength != endPosition)
+                        throw new InvalidOperationException("RLP input has bytes after the top-level value");
                 }
+
+                CountElements(msgData, startPosition, endPosition, limit, 0, 0, maxElements);
+                DecodeRange(msgData, startPosition, endPosition, limit, rlpCollection, 0);
             }
             catch (Exception ex)
             {
                 throw new Exception(
-                    "Invalid RLP " + currentData.ToHex(), ex);
+                    "Invalid RLP " + DescribeRange(msgData, startPosition, endPosition), ex);
             }
         }
 
-        /// <summary>
-        ///     data[0] - 0xF7 = how many next bytes allocated
-        ///     for the length of the list
-        /// </summary>
-        private static bool IsListBiggerThan55Bytes(byte[] msgData, int currentPosition)
+        private static void EnsureNotNullOrEmpty(byte[] msgData)
         {
-            return msgData[currentPosition] > OFFSET_LONG_LIST;
+            if (msgData == null || msgData.Length == 0)
+                throw new Exception("Invalid RLP ");
         }
 
-        private static bool IsListLessThan55Bytes(byte[] msgData, int currentPosition)
+        private static string DescribeRange(byte[] msgData, int startPosition, int endPosition)
         {
-            return msgData[currentPosition] >= OFFSET_SHORT_LIST
-                   && msgData[currentPosition] <= OFFSET_LONG_LIST;
+            var start = Math.Max(0, Math.Min(startPosition, msgData.Length));
+            var end = Math.Max(start, Math.Min(endPosition, msgData.Length));
+            var length = end - start;
+            var shown = Math.Min(length, MaxErrorHexBytes);
+            var head = new byte[shown];
+            Array.Copy(msgData, start, head, 0, shown);
+            return head.ToHex() + (shown < length ? "... (" + length + " bytes)" : "");
         }
 
-        // It's an item with a payload more than 55 bytes
-        // data[0] - 0xB7 = how much next bytes allocated for
-        // the length of the string
-        private static bool IsItemBiggerThan55Bytes(byte[] msgData, int currentPosition)
+        internal static bool ReadHeader(byte[] msgData, int position, int limit,
+            out int payloadStart, out int payloadLength)
         {
-            return msgData[currentPosition] > OFFSET_LONG_ITEM
-                   && msgData[currentPosition] < OFFSET_SHORT_LIST;
+            if (position < 0 || position >= limit)
+                throw new InvalidOperationException("RLP element starts beyond the input");
+
+            var prefix = msgData[position];
+
+            if (prefix < OFFSET_SHORT_ITEM)
+            {
+                payloadStart = position;
+                payloadLength = 1;
+                return false;
+            }
+
+            if (prefix <= OFFSET_LONG_ITEM)
+            {
+                payloadStart = position + 1;
+                payloadLength = prefix - OFFSET_SHORT_ITEM;
+                EnsureWithinLimit(payloadStart, payloadLength, limit);
+                if (payloadLength == 1 && msgData[payloadStart] < OFFSET_SHORT_ITEM)
+                    throw new InvalidOperationException("RLP single byte below 0x80 must not carry a string prefix");
+                return false;
+            }
+
+            var isList = prefix >= OFFSET_SHORT_LIST;
+
+            if (isList && prefix <= OFFSET_LONG_LIST)
+            {
+                payloadStart = position + 1;
+                payloadLength = prefix - OFFSET_SHORT_LIST;
+                EnsureWithinLimit(payloadStart, payloadLength, limit);
+                return true;
+            }
+
+            var lengthOfLength = prefix - (isList ? OFFSET_LONG_LIST : OFFSET_LONG_ITEM);
+            payloadStart = position + 1 + lengthOfLength;
+            if (payloadStart > limit)
+                throw new InvalidOperationException("RLP length extends beyond the input");
+            if (msgData[position + 1] == 0)
+                throw new InvalidOperationException("RLP length has a leading zero");
+
+            ulong declared = 0;
+            for (var i = 1; i <= lengthOfLength; i++)
+                declared = (declared << 8) | msgData[position + i];
+            if (declared < SIZE_THRESHOLD)
+                throw new InvalidOperationException("RLP long form used for a payload under 56 bytes");
+            if (declared > int.MaxValue)
+                throw new InvalidOperationException("RLP length exceeds the maximum supported size");
+
+            payloadLength = (int) declared;
+            EnsureWithinLimit(payloadStart, payloadLength, limit);
+            return isList;
         }
 
-        // data[0] - 0x80 == length of the item
-        private static bool IsItemLessThan55Bytes(byte[] msgData, int currentPosition)
+        private static int CountElements(byte[] msgData, int startPosition, int endPosition, int limit,
+            int depth, int count, int maxElements)
         {
-            return msgData[currentPosition] > OFFSET_SHORT_ITEM
-                   && msgData[currentPosition] <= OFFSET_LONG_ITEM;
+            var position = startPosition;
+            while (position < endPosition)
+            {
+                var isList = ReadHeader(msgData, position, limit, out var payloadStart, out var payloadLength);
+                if (++count > maxElements)
+                    throw new InvalidOperationException("RLP holds more than " + maxElements + " elements");
+                var next = payloadStart + payloadLength;
+                if (isList)
+                {
+                    EnsureListDepthWithinLimit(depth);
+                    count = CountElements(msgData, payloadStart, next, next, depth + 1, count, maxElements);
+                }
+                position = next;
+            }
+            return count;
         }
 
-        private static bool IsNullItem(byte[] msgData, int currentPosition)
+        private static void DecodeRange(byte[] msgData, int startPosition, int endPosition, int limit,
+            RLPCollection rlpCollection, int depth)
         {
-            return msgData[currentPosition] == OFFSET_SHORT_ITEM;
+            var position = startPosition;
+            while (position < endPosition)
+            {
+                var isList = ReadHeader(msgData, position, limit, out var payloadStart, out var payloadLength);
+                var next = payloadStart + payloadLength;
+                if (isList)
+                {
+                    EnsureListDepthWithinLimit(depth);
+                    var newLevelCollection = new RLPCollection();
+                    newLevelCollection.SetSource(msgData, position, next - position);
+                    DecodeRange(msgData, payloadStart, next, next, newLevelCollection, depth + 1);
+                    rlpCollection.Add(newLevelCollection);
+                }
+                else
+                {
+                    var item = EMPTY_BYTE_ARRAY;
+                    if (payloadLength > 0)
+                    {
+                        item = new byte[payloadLength];
+                        Array.Copy(msgData, payloadStart, item, 0, payloadLength);
+                    }
+                    rlpCollection.Add(new RLPItem(item));
+                }
+                position = next;
+            }
         }
 
-        private static bool IsSigleByteItem(byte[] msgData, int currentPosition)
+        private static void EnsureWithinLimit(int payloadStart, int payloadLength, int limit)
         {
-            return msgData[currentPosition] < OFFSET_SHORT_ITEM;
+            if (payloadLength < 0 || payloadLength > limit - payloadStart)
+                throw new InvalidOperationException("RLP element is larger than containing list");
         }
 
-        private static int ProcessSingleByteItem(byte[] msgData, RLPCollection rlpCollection, int currentPosition)
+        private static void EnsureListDepthWithinLimit(int depth)
         {
-            byte[] item = {msgData[currentPosition]};
-
-            var rlpItem = new RLPItem(item);
-            rlpCollection.Add(rlpItem);
-            currentPosition += 1;
-            return currentPosition;
-        }
-
-        private static int ProcessNullItem(RLPCollection rlpCollection, int currentPosition)
-        {
-            var item = EMPTY_BYTE_ARRAY;
-            var rlpItem = new RLPItem(item);
-            rlpCollection.Add(rlpItem);
-            currentPosition += 1;
-            return currentPosition;
-        }
-
-        private static int ProcessItemLessThan55Bytes(byte[] msgData, RLPCollection rlpCollection, int currentPosition)
-        {
-            var length = (byte) (msgData[currentPosition] - OFFSET_SHORT_ITEM);
-
-            var item = new byte[length];
-            Array.Copy(msgData, currentPosition + 1, item, 0, length);
-
-            var rlpPrefix = new byte[2];
-            Array.Copy(msgData, currentPosition, rlpPrefix, 0, 2);
-
-            var rlpItem = new RLPItem(item);
-            rlpCollection.Add(rlpItem);
-            currentPosition += 1 + length;
-            return currentPosition;
-        }
-
-        private static int ProcessItemBiggerThan55Bytes(byte[] msgData, RLPCollection rlpCollection,
-            int currentPosition)
-        {
-            var lengthOfLength = (byte) (msgData[currentPosition] - OFFSET_LONG_ITEM);
-            var length = CalculateLength(lengthOfLength, msgData, currentPosition);
-
-            // now we can parse an item for data[1]..data[length]
-            var item = new byte[length];
-            Array.Copy(msgData, currentPosition + lengthOfLength + 1, item,
-                0, length);
-
-            var rlpPrefix = new byte[lengthOfLength + 1];
-            Array.Copy(msgData, currentPosition, rlpPrefix, 0,
-                lengthOfLength + 1);
-
-            var rlpItem = new RLPItem(item);
-            rlpCollection.Add(rlpItem);
-            currentPosition += lengthOfLength + length + 1;
-            return currentPosition;
-        }
-
-        private static int ProcessListLessThan55Bytes(byte[] msgData, int level, int levelToIndex,
-            RLPCollection rlpCollection, int currentPosition)
-        {
-            var length = msgData[currentPosition] - OFFSET_SHORT_LIST;
-            var rlpDataLength = length + 1;
-            var rlpData = new byte[length + 1];
-
-            Array.Copy(msgData, currentPosition, rlpData, 0, rlpDataLength);
-
-            var newLevelCollection = new RLPCollection {RLPData = rlpData};
-
-            if (length > 0)
-                Decode(msgData, level + 1, currentPosition + 1, currentPosition + rlpDataLength,
-                    levelToIndex,
-                    newLevelCollection);
-
-            rlpCollection.Add(newLevelCollection);
-
-            currentPosition += rlpDataLength;
-            return currentPosition;
-        }
-
-        private static int ProcessListBiggerThan55Bytes(byte[] msgData, int level, int levelToIndex,
-            RLPCollection rlpCollection, int currentPosition)
-        {
-            var lengthOfLength = (byte) (msgData[currentPosition] - OFFSET_LONG_LIST);
-            var length = CalculateLength(lengthOfLength, msgData, currentPosition);
-
-            var rlpDataLength = lengthOfLength + length + 1;
-            var rlpData = new byte[rlpDataLength];
-
-            Array.Copy(msgData, currentPosition, rlpData, 0, rlpDataLength);
-            var newLevelCollection = new RLPCollection {RLPData = rlpData};
-
-            Decode(msgData, level + 1, currentPosition + lengthOfLength + 1,
-                currentPosition + rlpDataLength, levelToIndex,
-                newLevelCollection);
-            rlpCollection.Add(newLevelCollection);
-
-            currentPosition += rlpDataLength;
-            return currentPosition;
+            if (depth + 1 > MaxDecodeDepth)
+                throw new InvalidOperationException("RLP list nesting exceeds " + MaxDecodeDepth);
         }
 
         public static IRLPElement DecodeFirstElement(byte[] msgData, int startPos)
         {
+            EnsureNotNullOrEmpty(msgData);
             var rlpCollection = new RLPCollection();
-            Decode(msgData, 0, startPos, startPos + 1, 1, rlpCollection);
+            DecodeOwned((byte[]) msgData.Clone(), startPos, startPos + 1, rlpCollection,
+                int.MaxValue, false);
             return rlpCollection[0];
         }
 
@@ -443,27 +446,8 @@ namespace Nethereum.RLP
 
         public static int GetFirstElementLength(byte[] data, int offset = 0)
         {
-            byte prefix = data[offset];
-
-            if (prefix < OFFSET_SHORT_ITEM)
-                return 1;
-
-            if (prefix <= OFFSET_LONG_ITEM)
-                return 1 + (prefix - OFFSET_SHORT_ITEM);
-
-            if (prefix < OFFSET_SHORT_LIST)
-            {
-                int lenOfLen = prefix - OFFSET_LONG_ITEM;
-                int len = CalculateLength(lenOfLen, data, offset);
-                return 1 + lenOfLen + len;
-            }
-
-            if (prefix <= OFFSET_LONG_LIST)
-                return 1 + (prefix - OFFSET_SHORT_LIST);
-
-            int lengthOfLength = prefix - OFFSET_LONG_LIST;
-            int length = CalculateLength(lengthOfLength, data, offset);
-            return 1 + lengthOfLength + length;
+            ReadHeader(data, offset, data.Length, out var payloadStart, out var payloadLength);
+            return payloadStart + payloadLength - offset;
         }
 
         public static bool TryReadLeadingListUInt64(byte[] payload, out ulong value)
@@ -477,27 +461,29 @@ namespace Nethereum.RLP
                 : 1 + (listPrefix - OFFSET_LONG_LIST);
             if (headerLength >= payload.Length) return false;
 
-            var first = DecodeFirstElement(payload, headerLength);
-            var data = first?.RLPData;
-            if (data == null || data.Length == 0 || data.Length > 8) return false;
+            byte itemPrefix = payload[headerLength];
+            if (itemPrefix >= OFFSET_SHORT_LIST) return false;
+
+            byte[] data;
+            if (itemPrefix < OFFSET_SHORT_ITEM)
+                data = new[] {itemPrefix};
+            else if (itemPrefix <= OFFSET_LONG_ITEM)
+            {
+                var length = itemPrefix - OFFSET_SHORT_ITEM;
+                if (length > 8 || headerLength + 1 + length > payload.Length) return false;
+                data = new byte[length];
+                Array.Copy(payload, headerLength + 1, data, 0, length);
+            }
+            else
+                return false;
+
+            if (data.Length == 0) return false;
 
             ulong result = 0;
             for (var i = 0; i < data.Length; i++)
                 result = (result << 8) | data[i];
             value = result;
             return true;
-        }
-
-        private static int CalculateLength(int lengthOfLength, byte[] msgData, int pos)
-        {
-            var pow = (byte) (lengthOfLength - 1);
-            var length = 0;
-            for (var i = 1; i <= lengthOfLength; ++i)
-            {
-                length += msgData[pos + i] << (8 * pow);
-                pow--;
-            }
-            return length;
         }
     }
 }

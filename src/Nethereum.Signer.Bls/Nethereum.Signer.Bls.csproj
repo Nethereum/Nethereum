@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Core BLS abstraction and shared types for pluggable implementations.</Description>
     <AssemblyTitle>Nethereum.Signer.Bls</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0;net9.0</TargetFrameworks>
     <OutputType>Library</OutputType>
     <AssemblyName>Nethereum.Signer.Bls</AssemblyName>

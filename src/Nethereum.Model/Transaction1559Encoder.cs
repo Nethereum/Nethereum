@@ -54,28 +54,7 @@ namespace Nethereum.Model
 
         public override Transaction1559 Decode(byte[] rplData)
         {
-            if (rplData[0] == Type)
-            {
-                rplData = rplData.SliceFrom(1);
-            }
-
-            var decodedList = RLP.RLP.Decode(rplData);
-            var decodedData = new List<byte[]>();
-            var decodedElements = (RLPCollection)decodedList;
-            var chainId = decodedElements[0].RLPData.ToEvmUInt256FromRLPDecoded();
-            var nonce = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
-            var maxPriorityFeePerGas = decodedElements[2].RLPData.ToEvmUInt256FromRLPDecoded();
-            var maxFeePerGas = decodedElements[3].RLPData.ToEvmUInt256FromRLPDecoded();
-            var gasLimit = decodedElements[4].RLPData.ToEvmUInt256FromRLPDecoded();
-            var receiverAddress = decodedElements[5].RLPData?.ToHex(true);
-            var amount = decodedElements[6].RLPData.ToEvmUInt256FromRLPDecoded();
-            var data = decodedElements[7].RLPData?.ToHex(true);
-            var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[8].RLPData);
-
-            var signature = RLPSignedDataDecoder.DecodeSignature(decodedElements, 9);
-
-            return new Transaction1559(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit,
-                receiverAddress, amount, data, accessList, signature);
+            return (Transaction1559)TransactionRlpDecoder.DecodeBody(rplData, TransactionType.EIP1559, true);
         }
 
     }

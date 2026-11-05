@@ -31,16 +31,21 @@ namespace Nethereum.Model.P2P
 
         public static NewBlockHashesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var msg = new NewBlockHashesMessage();
-            foreach (RLPCollection entry in outer)
+            while (!reader.IsAtEnd(outer))
             {
+                var entry = reader.ReadListHeader();
                 msg.Entries.Add(new NewBlockHashesMessage.BlockHashEntry
                 {
-                    Hash = entry[0].RLPData,
-                    Number = (ulong)entry[1].RLPData.ToLongFromRLPDecoded()
+                    Hash = reader.ReadFixed(PeerRlp.HashLength),
+                    Number = reader.ReadUInt64()
                 });
+                reader.EnsureEnd(entry);
             }
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
     }

@@ -21,7 +21,7 @@ namespace Nethereum.ABI.EIP712
     {
         public static BigInteger? GetChainIdFromDomain(this TypedDataRaw typedData)
         {
-            if (!typedData.Types.TryGetValue("EIP712Domain", out var domainMembers))
+            if (typedData.Types == null || !typedData.Types.TryGetValue("EIP712Domain", out var domainMembers))
                 return null;
 
             for (int i = 0; i < domainMembers.Length; i++)
@@ -29,7 +29,9 @@ namespace Nethereum.ABI.EIP712
                 var member = domainMembers[i];
                 if (member.Type == "uint256" && member.Name == "chainId")
                 {
-                    if (i < typedData.DomainRawValues.Length && typedData.DomainRawValues[i].Value is BigInteger value)
+                    if (typedData.DomainRawValues != null
+                        && i < typedData.DomainRawValues.Length
+                        && Eip712Values.TryParseInteger(typedData.DomainRawValues[i]?.Value, out var value))
                     {
                         return value;
                     }

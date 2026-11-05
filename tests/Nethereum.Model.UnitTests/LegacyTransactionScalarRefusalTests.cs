@@ -74,9 +74,19 @@ namespace Nethereum.Model.UnitTests
         }
 
         [Fact]
-        public void Given_AGasLimitWiderThanTwoHundredFiftySixBits_When_Decoded_Then_ItIsNotRefused()
+        public void Given_AGasLimitWiderThanUint64_When_Decoded_Then_ItIsRefusedNamingTheGasLimit()
         {
-            var tx = TransactionFactory.CreateTransaction(SignedLegacyRlp(gasLimit: Filled(33, 0x01)));
+            var refusal = Assert.Throws<ScalarWiderThanItsFieldException>(
+                () => TransactionFactory.CreateTransaction(SignedLegacyRlp(gasLimit: Filled(9, 0x01))));
+
+            Assert.Equal(LegacyTransactionField.GasLimit, refusal.Field);
+            Assert.Equal(9, refusal.ByteCount);
+        }
+
+        [Fact]
+        public void Given_AGasLimitFillingUint64Exactly_When_Decoded_Then_ItIsAccepted()
+        {
+            var tx = TransactionFactory.CreateTransaction(SignedLegacyRlp(gasLimit: Filled(8, 0x01)));
 
             Assert.NotNull(tx);
         }

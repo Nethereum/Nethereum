@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Herumi-backed native BLS implementation for Nethereum.</Description>
     <AssemblyTitle>Nethereum.Signer.Bls.Herumi</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.Bls.Herumi</AssemblyName>
     <PackageId>Nethereum.Signer.Bls.Herumi</PackageId>

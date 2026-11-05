@@ -106,12 +106,12 @@ on `IBls`/`NativeBls` (it is pure byte slicing and needs no native call).
 
 ### Bls12381Operations
 
-Implements `IBls12381Operations` (from `Nethereum.Signer.Bls`) — the EIP-2537 BLS12-381 precompile
+Implements `IBls12381Operations` and `IBls12381OutcomeOperations` (from `Nethereum.Signer.Bls`) — the EIP-2537 BLS12-381 precompile
 primitives consumed by `Nethereum.EVM.Precompiles.Bls`. Distinct from `NativeBls`/`IBls`: this is
 point/scalar arithmetic on raw EIP-2537-encoded G1/G2 points, not signature aggregation/verification.
 
 ```csharp
-public class Bls12381Operations : IBls12381Operations
+public class Bls12381Operations : IBls12381Operations, IBls12381OutcomeOperations
 {
     public Bls12381Operations();
 
@@ -127,8 +127,34 @@ public class Bls12381Operations : IBls12381Operations
 
     public byte[] MapFpToG1(byte[] fp);
     public byte[] MapFp2ToG2(byte[] fp2);
+
+    public bool TryG1Add(byte[] p1, byte[] p2, out byte[] result);
+    public bool TryG1Mul(byte[] point, byte[] scalar, out byte[] result);
+    public bool TryG1Msm(byte[][] points, byte[][] scalars, out byte[] result);
+
+    public bool TryG2Add(byte[] p1, byte[] p2, out byte[] result);
+    public bool TryG2Mul(byte[] point, byte[] scalar, out byte[] result);
+    public bool TryG2Msm(byte[][] points, byte[][] scalars, out byte[] result);
+
+    public bool TryPairing(byte[][] g1Points, byte[][] g2Points, out bool pairs);
+
+    public bool TryMapFpToG1(byte[] fp, out byte[] result);
+    public bool TryMapFp2ToG2(byte[] fp2, out byte[] result);
 }
 ```
+
+The throwing methods are the `Try` forms wrapped: each throws `ArgumentException` (`"Invalid G1ADD input"`, `"Invalid PAIRING input"` and so on) exactly when its `Try` form returns `false`. `TryG1Mul` and `TryG2Mul` are members of `Bls12381Operations` only; `IBls12381OutcomeOperations` does not declare them. An empty pairing input pairs (`TryPairing` returns `true` with `pairs == true`).
+
+```csharp
+var operations = new Bls12381Operations();
+
+var infinity = new byte[128];
+var accepted = operations.TryG1Add(infinity, infinity, out var sum);
+var rejected = operations.TryG1Add(new byte[3], infinity, out var none);
+Assert.Throws<ArgumentException>(() => operations.G1Add(new byte[3], infinity));
+```
+
+Backed by `FoundationsBlsDocExampleTests.Given_InvalidAndValidEip2537Input_When_TryG1AddIsCalled_Then_InvalidInputReturnsFalseAndTheFacadeThrows`.
 
 ## Important Notes
 

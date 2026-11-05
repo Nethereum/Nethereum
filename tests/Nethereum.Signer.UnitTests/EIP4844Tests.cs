@@ -153,7 +153,6 @@ namespace Nethereum.Signer.UnitTests
         [InlineData("blobhashListBounds8.json")]
         [InlineData("blobhashListBounds9.json")]
         [InlineData("blobhashListBounds10.json")]
-        [InlineData("createBlobhashTx.json")]
         [InlineData("emptyBlobhashList.json")]
         [InlineData("opcodeBlobhashOutOfRange.json")]
         [InlineData("opcodeBlobhBounds.json")]
@@ -176,6 +175,17 @@ namespace Nethereum.Signer.UnitTests
 
             var reencoded = decoded.GetRLPEncoded().ToHex(true);
             Assert.Equal(txbytes.ToLowerInvariant(), reencoded.ToLowerInvariant());
+        }
+
+        [Fact]
+        public void ShouldRefuseTheBlobTransactionWithNoRecipientFromTheSpecVector()
+        {
+            var json = System.IO.File.ReadAllText(System.IO.Path.Combine(FindTestVectorDir(), "createBlobhashTx.json"));
+            var testObj = Newtonsoft.Json.Linq.JObject.Parse(json);
+            var test = testObj[((Newtonsoft.Json.Linq.JProperty)testObj.First).Name];
+            var rlpBytes = test["post"]["Cancun"][0]["txbytes"].ToString().HexToByteArray();
+
+            Assert.Throws<TransactionFieldFormatException>(() => Transaction4844Encoder.Current.Decode(rlpBytes));
         }
 
         [Theory]
@@ -253,17 +263,8 @@ namespace Nethereum.Signer.UnitTests
             return EvmUInt256.FromBigEndian(hex.HexToByteArray());
         }
 
-        private static string FindTestVectorDir()
-        {
-            var dir = System.AppDomain.CurrentDomain.BaseDirectory;
-            while (dir != null)
-            {
-                var candidate = System.IO.Path.Combine(dir, "tests", "Nethereum.EVM.UnitTests",
-                    "Tests", "GeneralStateTests", "Cancun", "stEIP4844-blobtransactions");
-                if (System.IO.Directory.Exists(candidate)) return candidate;
-                dir = System.IO.Path.GetDirectoryName(dir);
-            }
-            throw new System.IO.DirectoryNotFoundException("Cannot find stEIP4844-blobtransactions test vector directory");
-        }
+        private static string FindTestVectorDir() =>
+            System.IO.Path.Combine(Nethereum.Testing.TestEnvironment.RequireExternalPath("EthereumTests"),
+                "GeneralStateTests", "Cancun", "stEIP4844-blobtransactions");
     }
 }

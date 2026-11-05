@@ -49,6 +49,8 @@ namespace Nethereum.Signer.Enr
             Buffer.BlockCopy(record.Signature, 0, r, 0, 32);
             Buffer.BlockCopy(record.Signature, 32, s, 0, 32);
 
+            if (!EthECDSASignatureFactory.FromComponents(r, s, new byte[] { 27 }).IsLowS) return false;
+
             foreach (byte v in new byte[] { 27, 28 })
             {
                 try

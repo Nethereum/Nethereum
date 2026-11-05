@@ -433,6 +433,85 @@ public class EthereumMessageSigner : MessageSigner
 }
 ```
 
+#### Public key recovery
+
+```csharp
+public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash);
+public static EthECKey RecoverFromSignature(EthECDSASignature signature, int recId, byte[] hash);
+public static EthECKey RecoverFromSignature(EthECDSASignature signature, byte[] hash, BigInteger chainId);
+public static EthECKey RecoverFromParityYSignature(EthECDSASignature signature, byte[] hash);
+```
+
+The recovery methods return `null` when no public key recovers from the signature; `EcRecover` throws instead.
+
+```csharp
+var signature = EthECDSASignatureFactory.FromComponents(rBytes, sBytes, new byte[] { 27 });
+
+Assert.Null(EthECKey.RecoverFromSignature(signature, hash));
+Assert.Throws<ArgumentException>(() => new MessageSigner().EcRecover(hash, signature));
+```
+
+`VerifyTransaction` on a typed transaction (EIP-2930, EIP-1559, EIP-4844, EIP-7702) returns `false` unless the y-parity is 0 or 1 and `r` and `s` are canonical (`s` in the lower half of the curve order), and returns `false` when no sender recovers. `EthECKey.RecoverFromParityYSignature` and `GetSenderAddress` do not check them: `RecoverFromParityYSignature` recovers with `V` as given and returns `null` only when no key recovers, and `GetSenderAddress` / `GetPublicKey` throw `InvalidOperationException` when no sender recovers.
+
+```csharp
+decoded.SetSignature(new Signature { R = signature.R, S = signature.S, V = new byte[] { 2 } });
+Assert.False(decoded.VerifyTransaction());
+```
+
+Backed by `FoundationsSignerDocExampleTests.Given_ASignatureThatRecoversNoKey_When_Recovered_Then_RecoverFromSignatureReturnsNullAndEcRecoverThrows` and `FoundationsSignerDocExampleTests.Given_AYParityAboveOne_When_TheTypedTransactionIsVerified_Then_VerificationFails`.
+
+### Secp256k1Contexts
+
+```csharp
+public static class Secp256k1Contexts
+{
+    public static bool IsInitialised { get; }
+    public static void EnsureInitialised();
+}
+```
+
+NBitcoin.Secp256k1 builds its precomputation tables on first use, which is a cost the first signature or recovery would otherwise pay. `EnsureInitialised()` runs one sign and one recovery under a lock, once per process, so a host can pay it at startup; later calls return immediately. It does nothing on targets without the NBitcoin.Secp256k1 backend (below .NET Core 3.1).
+
+```csharp
+Secp256k1Contexts.EnsureInitialised();
+Assert.True(Secp256k1Contexts.IsInitialised);
+```
+
+Backed by `FoundationsSignerDocExampleTests.Given_TheSecp256k1Contexts_When_EnsureInitialisedIsCalled_Then_TheyAreReportedInitialised`.
+
+### BN128Curve
+
+`Nethereum.Signer.Crypto.BN128Curve` implements the alt_bn128 operations of the EIP-196 and EIP-197 precompiles. G1 addition and scalar multiplication (`Add`, `Mul`, `TryAdd`, `TryMul`) run on a managed implementation shared with the EVM `ecAdd` and `ecMul` precompiles; `Pairing` and `TryPairing` read G1 through BouncyCastle. On .NET 8 and 9 the G2 subgroup check and the field arithmetic under it are compiled with `MethodImplOptions.AggressiveOptimization`, because under tiered dynamic PGO concurrent pairings wrongly refused valid input. `Add`, `Mul` and `Pairing` take the precompile input bytes and throw `ArgumentException` on invalid input (a coordinate not in the field, a point not on the curve, a G2 point outside the subgroup, a pairing input whose length is not a multiple of 192). The `Try` forms report the same conditions as `false`, for callers that cannot afford an exception:
+
+```csharp
+public static byte[] Add(byte[] input);
+public static byte[] Mul(byte[] input);
+public static byte[] Pairing(byte[] input);
+
+public static bool TryAdd(byte[] input, out byte[] output);
+public static bool TryMul(byte[] input, out byte[] output);
+public static bool TryPairing(byte[] input, out byte[] output);
+```
+
+```csharp
+Assert.True(BN128Curve.TryAdd(validInput, out var sum));
+Assert.False(BN128Curve.TryAdd(offCurveInput, out var none));
+Assert.Throws<ArgumentException>(() => BN128Curve.Add(offCurveInput));
+```
+
+Backed by `FoundationsSignerDocExampleTests.Given_AnInvalidBn128Point_When_AddedWithTryAddAndAdd_Then_TryAddReturnsFalseAndAddThrows`.
+
+### EnrRecordSigner
+
+`Nethereum.Signer.Enr.EnrRecordSigner.Sign(EnrRecord record, EthECKey privateKey)` signs an EIP-778 node record and `Verify(EnrRecord record)` checks it. `Verify` returns `false` for a signature with a high `s`.
+
+```csharp
+EnrRecordSigner.Sign(record, key);
+Assert.True(EnrRecordSigner.Verify(record));
+```
+
+Backed by `FoundationsSignerDocExampleTests.Given_ASignedEnrRecordWhoseSignatureIsMadeHighS_When_Verified_Then_ItIsRejected`.
+
 ### MessageSigner
 
 Raw message signing (without Ethereum prefix).

@@ -42,9 +42,6 @@ namespace Nethereum.Util
             return count;
         }
 
-        /// <summary>
-        ///     Creates a copy of bytes and appends b to the end of it
-        /// </summary>
         public static byte[] AppendByte(byte[] bytes, byte b)
         {
             var result = new byte[bytes.Length + 1];
@@ -98,8 +95,6 @@ namespace Nethereum.Util
                 yield return b;
         }
 
-        /// <param name="arrays"> - arrays to merge </param>
-        /// <returns> - merged array </returns>
         public static byte[] Merge(params byte[][] arrays)
         {
             int totalLen = 0;
@@ -162,14 +157,6 @@ namespace Nethereum.Util
 
             public static byte[] ShiftLeft(this byte[] value, int shift)
         {
-//#if NETCOREAPP2_0_OR_GREATER
-
-//                        var bitArray = new BitArray(value);
-//                        var returnByteArray = new byte[value.Length];
-//                        bitArray.LeftShift(shift);
-//                        bitArray.CopyTo(returnByteArray, 0);
-//                        return returnByteArray;
-//#else
             byte[] newValue = new byte[value.Length];
             byte overflow = 0x00;
 
@@ -187,7 +174,6 @@ namespace Nethereum.Util
             }
 
             return newValue;
-//#endif
         }
 
 
@@ -195,14 +181,6 @@ namespace Nethereum.Util
        
         public static byte[] ShiftRight(this byte[] value, int shift)
         {
-//#if NETCOREAPP2_0_OR_GREATER
-
-//                        var bitArray = new BitArray(value);
-//                        var returnByteArray = new byte[value.Length];
-//                        bitArray.RightShift(shift);
-//                        bitArray.CopyTo(returnByteArray, 0);
-//                        return returnByteArray;
-//#else
             byte[] newValue = new byte[value.Length];
             byte overflow = 0x00;
 
@@ -220,7 +198,6 @@ namespace Nethereum.Util
             }
 
             return newValue;
-//#endif
         }
 
         public static List<byte[]> SplitBytes(this byte[] bytes, int chunkSize = 32)
@@ -273,6 +250,21 @@ namespace Nethereum.Util
             return true;
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "util-prefix-successor", "ByteUtil.PrefixSuccessor")]
+        public static byte[] PrefixSuccessor(byte[] prefix)
+        {
+            if (prefix == null) return null;
+            for (var i = prefix.Length - 1; i >= 0; i--)
+            {
+                if (prefix[i] == 0xFF) continue;
+                var successor = new byte[prefix.Length];
+                Array.Copy(prefix, successor, i);
+                successor[i] = (byte)(prefix[i] + 1);
+                return successor;
+            }
+            return null;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsZero(byte[] value)
         {
@@ -307,6 +299,7 @@ namespace Nethereum.Util
     }
 
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "util-byte-array-comparer", "ByteArrayComparer")]
     public class ByteArrayComparer : IComparer<byte[]>, IEqualityComparer<byte[]>
     {
         public readonly static ByteArrayComparer Current = new ByteArrayComparer();
@@ -329,12 +322,24 @@ namespace Nethereum.Util
 
         public bool Equals(byte[] x, byte[] y)
         {
-           return Compare(x, y) == 0;
+            if (ReferenceEquals(x, y)) return true;
+            if (x == null || y == null) return false;
+            if (x.Length != y.Length) return false;
+            for (var i = 0; i < x.Length; i++)
+                if (x[i] != y[i]) return false;
+            return true;
         }
 
         public int GetHashCode(byte[] obj)
         {
-            return new BigInteger(obj).GetHashCode();
+            if (obj == null) return 0;
+            unchecked
+            {
+                var hash = (int)2166136261;
+                for (var i = 0; i < obj.Length; i++)
+                    hash = (hash ^ obj[i]) * 16777619;
+                return hash;
+            }
         }
     }
 

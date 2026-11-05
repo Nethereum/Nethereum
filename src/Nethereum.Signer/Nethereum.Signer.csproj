@@ -3,11 +3,11 @@
   <PropertyGroup>
     <Description>Nethereum signer library to sign and verify messages, RLP and transactions using an Ethereum account</Description>
     <AssemblyTitle>Nethereum.Signer</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer</AssemblyName>
     <PackageId>Nethereum.Signer</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Transactions;Signer</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Transactions;Signer</PackageTags>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

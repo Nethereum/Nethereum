@@ -32,7 +32,7 @@ namespace Nethereum.ABI.EIP712
                             typeValues.Add(new MemberValue
                             {
                                 TypeName = parameterAttributeValue.ParameterAttribute.StructTypeName,
-                                Value = new List<MemberValue>()
+                                Value = new List<MemberValue[]>()
                             }); 
                         }
                         else
@@ -103,17 +103,12 @@ namespace Nethereum.ABI.EIP712
                 
                     if (arrayType.ElementType is TupleType tupleTypeElement)
                     {
-                        var innerInput = input[i] as object[];
+                        var innerInput = input[i] as IList;
 
+                        structInnerValue.TypeName = component.StructTypeName;
                         if (innerInput == null)
                         {
-                            innerInput = _parametersEncoder.GetTupleComponentValuesFromTypeAttributes(input[i].GetType(), input[i]);
-                        }
-
-                        if (innerInput == null)
-                        {
-                            structInnerValue.TypeName = component.StructTypeName;
-                            structInnerValue.Value = new List<MemberValue>();
+                            structInnerValue.Value = new List<MemberValue[]>();
                         }
                         else
                         {
@@ -123,10 +118,9 @@ namespace Nethereum.ABI.EIP712
                                 arrayMemberValue.Add(CreateFromTuple(tupleTypeElement, itemValue));
                             }
 
-                            structInnerValue.TypeName = component.StructTypeName;
                             structInnerValue.Value = arrayMemberValue;
-                            
                         }
+                        structValue.Add(structInnerValue);
                     }
                     else
                     {
@@ -158,4 +152,4 @@ namespace Nethereum.ABI.EIP712
             return memberValue;
         }
     }
-}
+}

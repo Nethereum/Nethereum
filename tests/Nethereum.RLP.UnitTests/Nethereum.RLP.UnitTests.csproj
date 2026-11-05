@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.RLP\Nethereum.RLP.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -26,22 +26,18 @@ namespace Nethereum.Model.P2P
 
         public static BlockHeadersMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var msg = new BlockHeadersMessage { RequestId = reader.ReadUInt64() };
 
-            var msg = new BlockHeadersMessage
-            {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
-            };
-
-            var headersList = (RLPCollection)outer[1];
+            var headers = reader.ReadListHeader();
             var encoder = BlockHeaderEncoder.Current;
+            while (!reader.IsAtEnd(headers))
+                msg.Headers.Add(encoder.Decode(reader));
 
-            foreach (RLPCollection headerRlp in headersList)
-            {
-                var header = encoder.Decode(headerRlp.RLPData);
-                msg.Headers.Add(header);
-            }
-
+            reader.EnsureEnd(headers);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
     }

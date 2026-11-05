@@ -10,7 +10,8 @@ Nethereum.RLP implements Ethereum's primary data serialization format. RLP encod
 
 - **Encode Elements**: Encode single items (bytes, strings, integers) to RLP format
 - **Encode Lists**: Encode collections and nested structures to RLP format
-- **Decode RLP**: Deserialize RLP-encoded data back to elements or collections
+- **Decode RLP**: Deserialize RLP-encoded data back to elements or collections, rejecting non-canonical encodings and bounding nesting depth and element count
+- **Stream RLP**: `RlpReader` walks an RLP structure field by field without building a tree
 - **Type Conversions**: Extension methods for encoding/decoding int, BigInteger, and string types
 - **Ethereum Compatibility**: Full compliance with Ethereum's RLP specification
 
@@ -369,11 +370,21 @@ public class RLP
 
     // Decoding
     public static IRLPElement Decode(byte[] msgData);
+    public static IRLPElement Decode(byte[] msgData, int maxElements);
+    public static IRLPElement DecodeCollection(byte[] msgData);
+    public static IRLPElement DecodeCollection(byte[] msgData, int maxElements);
+
+    // Limits for untrusted input
+    public const int MaxDecodeDepth = 64;
+    public const int MinUntrustedElementBudget = 1024;
+    public static int UntrustedElementBudget(int inputLength);
 
     // Utilities
     public static int ByteArrayToInt(byte[] bytes);
 }
 ```
+
+`Decode` and `DecodeCollection` validate the whole structure before they build anything: a single byte below `0x80` carrying a string prefix, a long-form length under 56, a length with a leading zero, a length larger than the input and list nesting deeper than `MaxDecodeDepth` all throw `Exception("Invalid RLP ...")` with the cause as `InnerException`. The `maxElements` overloads count elements first and throw once the payload holds more, so a flood of one-byte elements is refused before any element is allocated; `UntrustedElementBudget(inputLength)` is the budget used for bytes read from a peer, `max(MinUntrustedElementBudget, inputLength * 3 / 4)`. `Decode` also refuses bytes after the top-level value, since it reads exactly one item; `DecodeCollection` reads a sequence of items and returns them as an `RLPCollection`. `RLPCollection.RLPData` of a nested list is a slice of the input copied on first access.
 
 ### IRLPElement Interface
 
@@ -432,10 +443,93 @@ public static class ConvertorForRLPEncodingExtensions
     public static BigInteger ToBigIntegerFromRLPDecoded(this byte[] bytes);
     public static string ToStringFromRLPDecoded(this byte[] bytes);
 
+    public static long ToLongBitsFromRLPDecoded(this byte[] bytes);
+
     // Utilities
     public static byte[] TrimZeroBytes(this byte[] bytes);
 }
 ```
+
+`ToLongBitsFromRLPDecoded` reads the scalar as a `uint64` and returns the same 64 bits as a `long`, so a value in `[2^63, 2^64)` does not overflow; a scalar wider than 64 bits still throws.
+
+### RlpReader
+
+A forward-only reader over an RLP byte array for decoding input you do not trust. It shares the canonical header parser of `RLP.Decode`, allocates nothing for structure, and reads each field in the shape you expect, so a list where a string is expected, a leading-zero integer or a wrong-width fixed field throws `InvalidOperationException`.
+
+```csharp
+public enum RlpKind { Byte, String, List }
+
+public readonly struct RlpListScope
+{
+    public int Start { get; }
+    public int End { get; }
+    public int Length { get; }
+}
+
+public readonly struct RlpSegment
+{
+    public RlpSegment(int offset, int length);
+    public int Offset { get; }
+    public int Length { get; }
+}
+
+public sealed class RlpReader
+{
+    public RlpReader(byte[] data);
+    public RlpReader(byte[] data, int offset, int length);
+
+    public int Position { get; }
+    public bool IsAtEnd();
+    public bool IsAtEnd(RlpListScope scope);
+    public RlpKind PeekKind();
+    public int PeekSize();
+
+    public RlpListScope ReadListHeader();
+    public void EnsureEnd(RlpListScope scope);
+    public void EnsureEnd();
+    public int CountItems(RlpListScope scope);
+
+    public byte[] ReadBytes();
+    public byte[] ReadFixed(int length);
+    public ulong ReadUInt64();
+    public BigInteger ReadBigInteger();
+    public bool ReadBool();
+
+    public void Skip();
+    public RlpSegment ReadRawSegment();
+    public byte[] ReadRaw();
+    public byte[] ReadData();
+}
+```
+
+```csharp
+var encoded = RLP.EncodeList(
+    RLP.EncodeElement("cat".ToBytesForRLPEncoding()),
+    RLP.EncodeElement(1000.ToBytesForRLPEncoding()),
+    RLP.EncodeElement(new byte[] { 0x01 }));
+
+var reader = new RlpReader(encoded);
+var list = reader.ReadListHeader();
+var name = Encoding.UTF8.GetString(reader.ReadBytes());
+var amount = reader.ReadUInt64();
+var flag = reader.ReadBool();
+reader.EnsureEnd(list);
+reader.EnsureEnd();
+```
+
+Backed by `FoundationsRlpDocExampleTests.Given_AnEncodedList_When_ReadWithRlpReader_Then_EachFieldIsReadInOrderAndTheEndIsChecked`.
+
+`ReadUInt64`, `ReadBigInteger` and `ReadBool` refuse a leading zero, an integer wider than the target and a boolean other than 0 or 1. `ReadFixed(length)` refuses any other length. `ReadListHeader` refuses nesting deeper than `RLP.MaxDecodeDepth`. `EnsureEnd(scope)` throws when the list holds more elements than were read and `EnsureEnd()` when bytes follow the top-level value. `ReadRaw` returns the encoded bytes of the next element, header included, and `ReadData` returns the payload of a string or the raw encoding of a list.
+
+```csharp
+var leadingZero = new RlpReader("820001".HexToByteArray());
+Assert.Throws<InvalidOperationException>(() => leadingZero.ReadUInt64());
+
+var fixedField = new RlpReader("8301020304".HexToByteArray());
+Assert.Throws<InvalidOperationException>(() => fixedField.ReadFixed(32));
+```
+
+Backed by `FoundationsRlpDocExampleTests.Given_NonCanonicalOrWrongWidthFields_When_ReadWithRlpReader_Then_ItThrows`.
 
 ## Related Packages
 
@@ -517,6 +611,22 @@ else
     var value = decoded.RLPData;
 }
 ```
+
+### Untrusted Input
+
+`RLP.Decode` rejects non-canonical encodings and nesting deeper than `RLP.MaxDecodeDepth`, and the `maxElements` overloads cap the element count:
+
+```csharp
+var budget = RLP.UntrustedElementBudget(payload.Length);
+
+Assert.Throws<Exception>(() => RLP.Decode(payload, 100));
+var decoded = (RLPCollection)RLP.Decode(payload, budget);
+
+Assert.Throws<Exception>(() => RLP.Decode("8100".HexToByteArray()));
+Assert.Throws<Exception>(() => RLP.Decode("b80101".HexToByteArray()));
+```
+
+Backed by `FoundationsRlpDocExampleTests.Given_APayloadWithMoreElementsThanTheBudget_When_Decoded_Then_ItIsRejectedBeforeTheTreeIsBuilt` and `FoundationsRlpDocExampleTests.Given_NonCanonicalOrOverDeepRlp_When_Decoded_Then_AnExceptionIsThrown`.
 
 ### Null vs Empty
 

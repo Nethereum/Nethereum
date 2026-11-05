@@ -521,6 +521,7 @@ namespace Nethereum.ABI.UnitTests
         }
 
         [Fact]
+        [Trait("Category", "Performance")]
         public virtual void DecodeInt_BinaryPrimitives_PerformanceBenchmark()
         {
             var decoder = new Decoders.IntTypeDecoder();

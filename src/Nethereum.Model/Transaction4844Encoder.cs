@@ -50,70 +50,7 @@ namespace Nethereum.Model
 
         public Transaction4844 Decode(byte[] rlpData, bool allowNetworkWrapper)
         {
-            if (rlpData[0] == Type)
-            {
-                rlpData = rlpData.SliceFrom(1);
-            }
-
-            var decodedList = RLP.RLP.Decode(rlpData);
-            var decodedElements = (RLPCollection)decodedList;
-
-            if (IsNetworkWrapper(decodedElements))
-            {
-                if (!allowNetworkWrapper)
-                    throw new BlobSidecarNotAllowedInBlockBodyException();
-
-                var txElements = (RLPCollection)decodedElements[0];
-                var tx = DecodeTxFields(txElements);
-                tx.Sidecar = DecodeSidecar(decodedElements);
-                return tx;
-            }
-
-            return DecodeTxFields(decodedElements);
-        }
-
-        private static Transaction4844 DecodeTxFields(RLPCollection decodedElements)
-        {
-            var chainId = decodedElements[0].RLPData.ToEvmUInt256FromRLPDecoded();
-            var nonce = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
-            var maxPriorityFeePerGas = decodedElements[2].RLPData.ToEvmUInt256FromRLPDecoded();
-            var maxFeePerGas = decodedElements[3].RLPData.ToEvmUInt256FromRLPDecoded();
-            var gasLimit = decodedElements[4].RLPData.ToEvmUInt256FromRLPDecoded();
-            var receiverAddress = decodedElements[5].RLPData?.ToHex(true);
-            var amount = decodedElements[6].RLPData.ToEvmUInt256FromRLPDecoded();
-            var data = decodedElements[7].RLPData?.ToHex(true);
-            var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[8].RLPData);
-            var maxFeePerBlobGas = decodedElements[9].RLPData.ToEvmUInt256FromRLPDecoded();
-            var blobVersionedHashes = DecodeBlobVersionedHashes(decodedElements[10]);
-
-            var signature = RLPSignedDataDecoder.DecodeSignature(decodedElements, 11);
-
-            return new Transaction4844(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit,
-                receiverAddress, amount, data, accessList, maxFeePerBlobGas, blobVersionedHashes, signature);
-        }
-
-        private static bool IsNetworkWrapper(RLPCollection elements)
-        {
-            return elements.Count == 4 && elements[0] is RLPCollection;
-        }
-
-        private static BlobSidecar DecodeSidecar(RLPCollection wrapperElements)
-        {
-            var blobs = DecodeByteArrayList(wrapperElements[1]);
-            var commitments = DecodeByteArrayList(wrapperElements[2]);
-            var proofs = DecodeByteArrayList(wrapperElements[3]);
-            return new BlobSidecar(blobs, commitments, proofs);
-        }
-
-        private static List<byte[]> DecodeByteArrayList(IRLPElement element)
-        {
-            var result = new List<byte[]>();
-            if (element is RLPCollection collection)
-            {
-                foreach (var item in collection)
-                    result.Add(item.RLPData);
-            }
-            return result;
+            return (Transaction4844)TransactionRlpDecoder.DecodeBody(rlpData, TransactionType.Blob, allowNetworkWrapper);
         }
 
         public byte[] EncodeWithSidecar(Transaction4844 transaction)
@@ -129,13 +66,9 @@ namespace Nethereum.Model
             var commitmentsEncoded = EncodeByteArrayList(transaction.Sidecar.Commitments);
             var proofsEncoded = EncodeByteArrayList(transaction.Sidecar.Proofs);
 
-            var wrapperElements = new[]
-            {
-                signedTxRlp,
-                blobsEncoded,
-                commitmentsEncoded,
-                proofsEncoded
-            };
+            var wrapperElements = transaction.Sidecar.WrapperVersion == 0
+                ? new[] { signedTxRlp, blobsEncoded, commitmentsEncoded, proofsEncoded }
+                : new[] { signedTxRlp, RLP.RLP.EncodeElement(new[] { transaction.Sidecar.WrapperVersion }), blobsEncoded, commitmentsEncoded, proofsEncoded };
 
             var encodedBytes = RLP.RLP.EncodeList(wrapperElements);
             return AddTypeToEncodedBytes(encodedBytes, Type);
@@ -163,17 +96,6 @@ namespace Nethereum.Model
                 encoded[i] = RLP.RLP.EncodeElement(hashes[i]);
 
             return RLP.RLP.EncodeList(encoded);
-        }
-
-        private static List<byte[]> DecodeBlobVersionedHashes(IRLPElement element)
-        {
-            var result = new List<byte[]>();
-            if (element is RLPCollection collection)
-            {
-                foreach (var item in collection)
-                    result.Add(item.RLPData);
-            }
-            return result;
         }
     }
 }

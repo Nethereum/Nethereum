@@ -13,6 +13,24 @@ namespace Nethereum.Hex.HexConvertors.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string ToHex(this byte[] value, bool prefix = false)
         {
+#if NET6_0_OR_GREATER
+            return string.Create(value.Length * 2 + (prefix ? 2 : 0), (value, prefix), static (chars, state) =>
+            {
+                var offset = 0;
+                if (state.prefix)
+                {
+                    chars[0] = '0';
+                    chars[1] = 'x';
+                    offset = 2;
+                }
+                for (int i = 0; i < state.value.Length; i++)
+                {
+                    var b = state.value[i];
+                    chars[offset + i * 2] = HexChars[b >> 4];
+                    chars[offset + i * 2 + 1] = HexChars[b & 0x0F];
+                }
+            });
+#else
             var length = value.Length;
             var chars = new char[length * 2 + (prefix ? 2 : 0)];
             var offset = 0;
@@ -29,6 +47,7 @@ namespace Nethereum.Hex.HexConvertors.Extensions
                 chars[offset + i * 2 + 1] = HexChars[b & 0x0F];
             }
             return new string(chars);
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

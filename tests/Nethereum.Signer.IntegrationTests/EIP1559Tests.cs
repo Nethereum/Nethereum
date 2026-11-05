@@ -51,7 +51,7 @@ namespace Nethereum.Signer.IntegrationTests
             [Fact]
             public async void ShouldSendTransactionWithAccessLists()
             {
-                var chainId = 444444444500;
+                var chainId = EthereumClientIntegrationFixture.ChainId;
 
                 var accessLists = new List<AccessListItem>();
                 accessLists.Add(new AccessListItem("0x527306090abaB3A6e1400e9345bC60c78a8BEf57",
@@ -101,7 +101,7 @@ namespace Nethereum.Signer.IntegrationTests
             [Fact]
             public async void ShouldSendTransactionCalculatingTheDefaultFees()
             {
-                var chainId = 444444444500;
+                var chainId = EthereumClientIntegrationFixture.ChainId;
                 var web3 = _ethereumClientIntegrationFixture.GetWeb3();
                 var nonce = await web3.Eth.TransactionManager.Account.NonceService.GetNextNonceAsync().ConfigureAwait(false);
                 var lastBlock =

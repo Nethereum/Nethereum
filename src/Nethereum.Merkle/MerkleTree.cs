@@ -128,9 +128,15 @@ public class MerkleTree<T>
 
         public static bool VerifyProof(IEnumerable<byte[]> proof, byte[] rootHash, byte[] itemHash, IHashProvider hashProvider, PairingConcatType pairingConcatType = PairingConcatType.Sorted)
         {
+            if (proof == null || itemHash == null || rootHash == null)
+                return false;
+
             var hash = itemHash;
             foreach (var proofHash in proof)
             {
+                if (proofHash == null)
+                    return false;
+
                 hash = ConcatAndHashPair(proofHash, hash, hashProvider, pairingConcatType);
             }
             return hash.SequenceEqual(rootHash);

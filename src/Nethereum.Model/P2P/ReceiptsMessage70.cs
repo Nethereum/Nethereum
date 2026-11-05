@@ -28,22 +28,16 @@ namespace Nethereum.Model.P2P
 
         public static ReceiptsMessage70 Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var incompleteData = outer[1].RLPData ?? new byte[0];
-
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
             var msg = new ReceiptsMessage70
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
-                LastBlockIncomplete = incompleteData.Length > 0 && incompleteData[0] != 0
+                RequestId = reader.ReadUInt64(),
+                LastBlockIncomplete = reader.ReadBool()
             };
-
-            var blockList = (RLPCollection)outer[2];
-            foreach (RLPCollection blockReceipts in blockList)
-            {
-                if (PeerResponseBounds.ExceedsWhatABlockCanHold(blockReceipts)) break;
-                msg.ReceiptsByBlock.Add(ReceiptsMessageEth69Encoder.DecodeBlockReceipts(blockReceipts));
-            }
-
+            PeerRlp.ReadReceiptBlocks(reader, ReceiptsMessageEth69Encoder.ReadSingleReceipt, msg.ReceiptsByBlock);
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
             return msg;
         }
     }

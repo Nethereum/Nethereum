@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
@@ -10,12 +11,22 @@ namespace Nethereum.Signer
         public virtual string EcRecover(byte[] hashMessage, string signature)
         {
             var ecdaSignature = ExtractEcdsaSignature(signature);
-            return EthECKey.RecoverFromSignature(ecdaSignature, hashMessage).GetPublicAddress();
+            return RecoverAddress(ecdaSignature, hashMessage);
         }
 
         public virtual string EcRecover(byte[] hashMessage, EthECDSASignature signature)
         {
-            return EthECKey.RecoverFromSignature(signature, hashMessage).GetPublicAddress();
+            return RecoverAddress(signature, hashMessage);
+        }
+
+        private static string RecoverAddress(EthECDSASignature signature, byte[] hashMessage)
+        {
+            var key = EthECKey.RecoverFromSignature(signature, hashMessage);
+            if (key == null)
+            {
+                throw new ArgumentException("The signature does not recover a public key.", nameof(signature));
+            }
+            return key.GetPublicAddress();
         }
 
         public byte[] Hash(byte[] plainMessage)

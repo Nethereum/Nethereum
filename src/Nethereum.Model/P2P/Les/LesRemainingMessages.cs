@@ -39,7 +39,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesGetBlockHeadersMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var inner = (RLPCollection)outer[1];
             var m = new LesGetBlockHeadersMessage
             {
@@ -80,7 +80,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesBlockHeadersMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesBlockHeadersMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
@@ -114,7 +114,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesGetBlockBodiesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesGetBlockBodiesMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -162,7 +162,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesBlockBodiesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesBlockBodiesMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
@@ -211,7 +211,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesGetReceiptsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesGetReceiptsMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -258,7 +258,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesReceiptsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesReceiptsMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
@@ -307,7 +307,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesGetContractCodesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesGetContractCodesMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -348,7 +348,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesContractCodesMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesContractCodesMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
@@ -398,7 +398,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesGetHelperTrieProofsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesGetHelperTrieProofsMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -447,7 +447,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesHelperTrieProofsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesHelperTrieProofsMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
@@ -485,7 +485,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesSendTxV2Message Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesSendTxV2Message
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -517,7 +517,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesGetTxStatusMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesGetTxStatusMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded()
@@ -570,7 +570,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesTxStatusMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var m = new LesTxStatusMessage
             {
                 RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
@@ -606,7 +606,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesResumeMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             return new LesResumeMessage
             {
                 BufferValue = outer.Count > 0 && outer[0].RLPData != null

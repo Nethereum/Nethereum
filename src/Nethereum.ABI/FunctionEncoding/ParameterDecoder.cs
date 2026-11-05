@@ -227,40 +227,57 @@ namespace Nethereum.ABI.FunctionEncoding
                 var param = outputParam.Parameter;
                 if (param.ABIType.IsDynamic())
                 {
-                    outputParam.DataIndexStart =
-                        EncoderDecoderHelpers.GetNumberOfBytes(outputBytes.Skip(currentIndex).ToArray());
+                    var dataIndexStart = EncoderDecoderHelpers.GetNumberOfBytes(HeadWord(outputBytes, currentIndex));
+                    if (dataIndexStart < 0 || dataIndexStart > outputBytes.Length)
+                        throw new Exception($@"Encoded data offset out of range. Offset: {dataIndexStart}, Data: {outputBytes.Length}");
+                    outputParam.DataIndexStart = dataIndexStart;
                     currentIndex = currentIndex + 32;
                 }
                 else
                 {
-                    var bytes = outputBytes.Skip(currentIndex).Take(param.ABIType.FixedSize).ToArray();
+                    var bytes = Nethereum.ABI.Decoders.AbiOffsetTable.Slice(outputBytes, currentIndex, param.ABIType.FixedSize);
                     outputParam.Result = param.ABIType.Decode(bytes, outputParam.Parameter.DecodedType);
 
                     currentIndex = currentIndex + param.ABIType.FixedSize;
                 }
             }
 
-            ParameterOutput currentDataItem = null;
-            foreach (
-                var nextDataItem in outputParameters.Where(outputParam => outputParam.Parameter.ABIType.IsDynamic()))
+            var dynamicCount = 0;
+            foreach (var outputParam in outputParameters)
+                if (outputParam.Parameter.ABIType.IsDynamic()) dynamicCount++;
+
+            if (dynamicCount > 0)
             {
-                if (currentDataItem != null)
+                var starts = new int[dynamicCount];
+                var dynamicParameters = new ParameterOutput[dynamicCount];
+                var next = 0;
+                foreach (var outputParam in outputParameters)
                 {
-                    var bytes =
-                        outputBytes.Skip(currentDataItem.DataIndexStart).Take(nextDataItem.DataIndexStart - currentDataItem.DataIndexStart).ToArray();
-                    currentDataItem.Result = currentDataItem.Parameter.ABIType.Decode(bytes, currentDataItem.Parameter.DecodedType);
+                    if (!outputParam.Parameter.ABIType.IsDynamic()) continue;
+                    starts[next] = outputParam.DataIndexStart;
+                    dynamicParameters[next++] = outputParam;
                 }
-                currentDataItem = nextDataItem;
+
+                var ends = Nethereum.ABI.Decoders.AbiOffsetTable.ComputeEnds(starts, outputBytes.Length);
+                for (var i = 0; i < dynamicCount; i++)
+                {
+                    var item = dynamicParameters[i];
+                    var bytes = Nethereum.ABI.Decoders.AbiOffsetTable.Slice(outputBytes, starts[i], ends[i] - starts[i]);
+                    item.Result = item.Parameter.ABIType.Decode(bytes, item.Parameter.DecodedType);
+                }
             }
 
-            if (currentDataItem != null)
-            {
-                var bytes = outputBytes.Skip(currentDataItem.DataIndexStart).ToArray();
-                currentDataItem.Result = currentDataItem.Parameter.ABIType.Decode(bytes, currentDataItem.Parameter.DecodedType);
-            }
             return outputParameters.ToList();
         }
 
+
+        private static byte[] HeadWord(byte[] data, int index)
+        {
+            var count = Math.Max(0, Math.Min(32, data.Length - index));
+            var word = new byte[count];
+            Array.Copy(data, index, word, 0, count);
+            return word;
+        }
 
         public List<ParameterOutput> DecodeOutput(string output, params ParameterOutput[] outputParameters)
         {

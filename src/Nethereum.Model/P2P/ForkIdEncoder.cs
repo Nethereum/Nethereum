@@ -20,8 +20,17 @@ namespace Nethereum.Model.P2P
 
         public static void Decode(byte[] rlpData, out uint forkHash, out ulong forkNext)
         {
-            var items = (RLPCollection)RLP.RLP.Decode(rlpData);
+            var items = (RLPCollection)RLP.RLP.Decode(rlpData, RLP.RLP.UntrustedElementBudget(rlpData.Length));
             DecodeItems(items, out forkHash, out forkNext);
+        }
+
+        public static void Read(RlpReader reader, out uint forkHash, out ulong forkNext)
+        {
+            var scope = reader.ReadListHeader();
+            var hashBytes = reader.ReadFixed(4);
+            forkHash = BinaryPrimitives.ReadUInt32BigEndian(hashBytes);
+            forkNext = reader.ReadUInt64();
+            reader.EnsureEnd(scope);
         }
 
         public static void DecodeItems(RLPCollection items, out uint forkHash, out ulong forkNext)

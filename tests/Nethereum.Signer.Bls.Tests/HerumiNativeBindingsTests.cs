@@ -8,11 +8,13 @@ using System.Threading.Tasks;
 using mcl;
 using Nethereum.Signer.Bls.Herumi;
 using Xunit;
+using Nethereum.Testing;
 
 #nullable enable
 
 namespace Nethereum.Signer.Bls.Tests
 {
+    [Collection("HerumiNative")]
     public class HerumiNativeBindingsTests
     {
         [SkippableFact]
@@ -228,31 +230,17 @@ namespace Nethereum.Signer.Bls.Tests
 
             private static string? TryLocateRepoNative(string libraryName, string rid)
             {
-                var root = TryLocateRepoRoot();
-                if (root == null)
+                string root;
+                try
+                {
+                    root = TestEnvironment.RepoRoot;
+                }
+                catch (InvalidOperationException)
                 {
                     return null;
                 }
 
                 return Path.Combine(root, "src", "Nethereum.Signer.Bls.Herumi", "runtimes", rid, "native", libraryName);
-            }
-
-            private static string? TryLocateRepoRoot()
-            {
-                var directory = new DirectoryInfo(AppContext.BaseDirectory);
-                while (directory != null)
-                {
-                    var slnx = Path.Combine(directory.FullName, "Nethereum.slnx");
-                    var sln = Path.Combine(directory.FullName, "Nethereum.sln");
-                    if (File.Exists(slnx) || File.Exists(sln))
-                    {
-                        return directory.FullName;
-                    }
-
-                    directory = directory.Parent;
-                }
-
-                return null;
             }
         }
     }

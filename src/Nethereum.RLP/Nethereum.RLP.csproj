@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>RLP Encoding and decoding</Description>
+    <Description>Recursive Length Prefix (RLP) encoding and decoding of Ethereum data, with RLP element and collection types</Description>
     <AssemblyTitle>Nethereum.RLP</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.RLP</AssemblyName>
     <PackageId>Nethereum.RLP</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;RLP</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;RLP</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 

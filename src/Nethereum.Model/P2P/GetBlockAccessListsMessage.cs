@@ -16,18 +16,16 @@ namespace Nethereum.Model.P2P
     {
         public static GetBlockAccessListsMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var hashList = (RLPCollection)outer[1];
-
-            var hashes = new byte[hashList.Count][];
-            for (int i = 0; i < hashList.Count; i++)
-                hashes[i] = hashList[i].RLPData;
-
-            return new GetBlockAccessListsMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var message = new GetBlockAccessListsMessage
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
-                BlockHashes = hashes
+                RequestId = reader.ReadUInt64(),
+                BlockHashes = PeerRlp.ReadHashes(reader)
             };
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return message;
         }
 
         public static byte[] Encode(GetBlockAccessListsMessage msg)

@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Signer.Ledger provides the External Signing capability for Ethereum transactions and Messages using Ledger Hardware wallets</Description>
+    <Description>Nethereum.Signer.Ledger provides the External Signing capability for Ethereum transactions and Messages using Ledger Hardware wallets</Description>
     <AssemblyTitle>Nethereum.Signer.Ledger</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(ExternalSignerFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Signer.Ledger</AssemblyName>
     <PackageId>Nethereum.Signer.Ledger</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Ledger</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Ledger</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
 	 <LangVersion>preview</LangVersion>
   </PropertyGroup>
@@ -27,4 +27,13 @@
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' Or '$(TargetFramework)' == 'net461'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 </Project>

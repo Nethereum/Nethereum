@@ -59,8 +59,8 @@ var account = new Nethereum.Web3.Accounts.Account(privateKeyBytes, chainId: 1);
 ## Detect KDF Type
 
 ```csharp
-var kdfType = KeyStoreKdfChecker.GetKdfType(json);
-// Returns "scrypt" or "pbkdf2"
+var kdfType = new KeyStoreKdfChecker().GetKeyStoreKdfType(json);
+// Returns KeyStoreKdfChecker.KdfType.scrypt or KeyStoreKdfChecker.KdfType.pbkdf2
 ```
 
 ## Default Service

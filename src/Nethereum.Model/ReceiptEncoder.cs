@@ -33,40 +33,12 @@ namespace Nethereum.Model
 
         public Receipt Decode(byte[] rawdata)
         {
-            if (rawdata == null || rawdata.Length == 0)
-                return null;
-
-            if (rawdata[0] <= 0x7f)
-            {
-                var transactionType = rawdata[0];
-                var innerData = new byte[rawdata.Length - 1];
-                System.Array.Copy(rawdata, 1, innerData, 0, innerData.Length);
-                var receipt = DecodeRlp(innerData);
-                receipt.TransactionType = transactionType;
-                return receipt;
-            }
-
-            return DecodeRlp(rawdata);
+            return ReceiptRlpDecoder.Decode(rawdata);
         }
 
-        private Receipt DecodeRlp(byte[] rawdata)
+        public Receipt Decode(RlpReader reader)
         {
-            var decodedList = RLP.RLP.Decode(rawdata);
-            var decodedElements = (RLPCollection)decodedList;
-
-            var receipt = new Receipt();
-            receipt.PostStateOrStatus = decodedElements[0].RLPData ?? new byte[0];
-            receipt.CumulativeGasUsed = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
-            receipt.Bloom = decodedElements[2].RLPData;
-
-            var logsCollection = (RLPCollection)decodedElements[3];
-            receipt.Logs = new List<Log>();
-            foreach (var logData in logsCollection)
-            {
-                receipt.Logs.Add(LogEncoder.Current.Decode(logData.RLPData));
-            }
-
-            return receipt;
+            return ReceiptRlpDecoder.Read(reader);
         }
     }
 }

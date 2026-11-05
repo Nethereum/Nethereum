@@ -178,16 +178,16 @@ namespace Nethereum.Model.UnitTests
         {
             var overWide = AmsterdamHeaderCarrying(Enumerable.Repeat((byte)0xFF, 9).ToArray());
 
-            Assert.Throws<OverflowException>(() => BlockHeaderEncoder.Current.Decode(overWide));
+            Assert.Throws<InvalidOperationException>(() => BlockHeaderEncoder.Current.Decode(overWide));
         }
 
         [Fact]
-        public void Given_ASlotNumberEncodedWithALeadingZero_When_Decoded_Then_ItIsCurrentlyAccepted_SeeAmsRlp01()
+        public void Given_ASlotNumberEncodedWithALeadingZero_When_Decoded_Then_ItIsRejected()
         {
             var nonCanonical = AmsterdamHeaderCarrying(
                 new byte[] { 0x00 }.Concat(Enumerable.Repeat((byte)0xFF, 8)).ToArray());
 
-            Assert.Equal(ulong.MaxValue, BlockHeaderEncoder.Current.Decode(nonCanonical).SlotNumber);
+            Assert.Throws<InvalidOperationException>(() => BlockHeaderEncoder.Current.Decode(nonCanonical));
         }
     }
 }

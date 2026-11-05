@@ -46,7 +46,7 @@ namespace Nethereum.Signer.UnitTests
             };
             typedData.SetMessage(new BytesType()
             {
-                First = "0567ba82f82338342c11".HexToByteArray(),
+                First = "0567ba82f82338342c115e01e2461857ecefd0db574456d345ffb092d0273f67".HexToByteArray(),
                 Second = "0567ba82f82338342c115e01e2461857ecefd0db574456d345ffb092d0273f670567ba82f82338342c115e01e2461857ecefd0db574456d345ffb092d0273f67".HexToByteArray(),
                 Third = "05".HexToByteArray(),
                 Empty = new byte[0]

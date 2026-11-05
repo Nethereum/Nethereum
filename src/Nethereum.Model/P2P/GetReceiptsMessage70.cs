@@ -13,19 +13,17 @@ namespace Nethereum.Model.P2P
     {
         public static GetReceiptsMessage70 Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
-            var hashList = (RLPCollection)outer[2];
-
-            var hashes = new byte[hashList.Count][];
-            for (int i = 0; i < hashList.Count; i++)
-                hashes[i] = hashList[i].RLPData;
-
-            return new GetReceiptsMessage70
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var message = new GetReceiptsMessage70
             {
-                RequestId = (ulong)outer[0].RLPData.ToLongFromRLPDecoded(),
-                FirstBlockReceiptIndex = (ulong)outer[1].RLPData.ToLongFromRLPDecoded(),
-                BlockHashes = hashes
+                RequestId = reader.ReadUInt64(),
+                FirstBlockReceiptIndex = reader.ReadUInt64(),
+                BlockHashes = PeerRlp.ReadHashes(reader)
             };
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return message;
         }
 
         public static byte[] Encode(GetReceiptsMessage70 msg)

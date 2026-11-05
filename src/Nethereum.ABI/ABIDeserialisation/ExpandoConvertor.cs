@@ -31,8 +31,10 @@ namespace Nethereum.ABI.ABIDeserialisation
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
             JsonSerializer serializer)
         {
-            return ReadValue(reader);
+            return ReadValue(reader, 0);
         }
+
+        internal const int MaxJsonDepth = 2 * AbiParsingLimits.MaxNestingDepth + 4;
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
@@ -57,8 +59,9 @@ namespace Nethereum.ABI.ABIDeserialisation
             }
         }
 
-        private object ReadList(JsonReader reader)
+        private object ReadList(JsonReader reader, int depth)
         {
+            if (depth > MaxJsonDepth) throw new JsonReaderException("ABI JSON nesting exceeds the maximum depth");
             IList<object> list = new List<object>();
 
             while (reader.Read())
@@ -67,7 +70,7 @@ namespace Nethereum.ABI.ABIDeserialisation
                     case JsonToken.Comment:
                         break;
                     default:
-                        var v = ReadValue(reader);
+                        var v = ReadValue(reader, depth + 1);
 
                         list.Add(v);
                         break;
@@ -78,8 +81,9 @@ namespace Nethereum.ABI.ABIDeserialisation
             throw new Exception("Unexpected end.");
         }
 
-        private object ReadObject(JsonReader reader)
+        private object ReadObject(JsonReader reader, int depth)
         {
+            if (depth > MaxJsonDepth) throw new JsonReaderException("ABI JSON nesting exceeds the maximum depth");
             IDictionary<string, object> expandoObject = new Dictionary<string, object>();
 
             while (reader.Read())
@@ -91,7 +95,7 @@ namespace Nethereum.ABI.ABIDeserialisation
                         if (!reader.Read())
                             throw new Exception("Unexpected end.");
 
-                        var v = ReadValue(reader);
+                        var v = ReadValue(reader, depth + 1);
 
                         expandoObject[propertyName] = v;
                         break;
@@ -104,7 +108,7 @@ namespace Nethereum.ABI.ABIDeserialisation
             throw new Exception("Unexpected end.");
         }
 
-        private object ReadValue(JsonReader reader)
+        private object ReadValue(JsonReader reader, int depth)
         {
             while (reader.TokenType == JsonToken.Comment)
                 if (!reader.Read())
@@ -113,9 +117,9 @@ namespace Nethereum.ABI.ABIDeserialisation
             switch (reader.TokenType)
             {
                 case JsonToken.StartObject:
-                    return ReadObject(reader);
+                    return ReadObject(reader, depth);
                 case JsonToken.StartArray:
-                    return ReadList(reader);
+                    return ReadList(reader, depth);
                 default:
                     if (IsPrimitiveToken(reader.TokenType))
                         return reader.Value;
@@ -131,27 +135,42 @@ namespace Nethereum.ABI.ABIDeserialisation
         public List<IDictionary<string, object>> JObjectArray(JArray array) {
             var l = new List<IDictionary<string, object>>();
             foreach(JObject obj in array)
-                l.Add(JObject(obj));
+                l.Add(JObject(obj, 1));
             return l;
         }
         public List<object> JArray(JArray array) {
-            var l = new List<object>();
-            foreach(JToken token in array)
-                l.Add(JToken(token));
-            return l;
+            return JArray(array, 0);
         }
         public IDictionary<string, object> JObject(JObject obj) {
+            return JObject(obj, 0);
+        }
+        public object JToken(JToken token) {
+            return JToken(token, 0);
+        }
+        private List<object> JArray(JArray array, int depth) {
+            EnsureDepth(depth);
+            var l = new List<object>();
+            foreach(JToken token in array)
+                l.Add(JToken(token, depth + 1));
+            return l;
+        }
+        private IDictionary<string, object> JObject(JObject obj, int depth) {
+            EnsureDepth(depth);
             var dic = new Dictionary<string, object>();
             foreach(var pair in obj) {
-                dic[pair.Key] = JToken(pair.Value);
+                dic[pair.Key] = JToken(pair.Value, depth + 1);
             }
             return dic;
         }
-        public object JToken(JToken token) {
+        private static void EnsureDepth(int depth) {
+            if (depth > ExpandoObjectConverter.MaxJsonDepth)
+                throw new JsonReaderException("ABI JSON nesting exceeds the maximum depth");
+        }
+        private object JToken(JToken token, int depth) {
             if(token is JObject)
-                return JObject((JObject)token);
+                return JObject((JObject)token, depth);
             else if(token is JArray)
-                return JArray((JArray)token);
+                return JArray((JArray)token, depth);
             else if(token.Type == JTokenType.String)
                 return token.Value<string>();
             else if(token.Type == JTokenType.Boolean)

@@ -40,7 +40,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesAnnounceMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var msg = new LesAnnounceMessage
             {
                 HeadHash = outer[0].RLPData,

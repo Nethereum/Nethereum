@@ -1,4 +1,5 @@
 using Org.BouncyCastle.Math;
+using System.Runtime.CompilerServices;
 
 namespace Nethereum.Signer.Crypto.BN128
 {
@@ -56,6 +57,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// <summary>
         /// Adds two twist points using the 2007 Bernstein-Lange addition formula.
         /// </summary>
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public TwistPoint Add(TwistPoint a, TwistPoint b)
         {
             if (a.IsInfinity())
@@ -149,6 +153,9 @@ namespace Nethereum.Signer.Crypto.BN128
         /// <summary>
         /// Doubles a twist point using the 2009 Bernstein-Lange doubling formula.
         /// </summary>
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public TwistPoint Double(TwistPoint a)
         {
             // Save a.Y * a.Z early to avoid aliasing issues when a == this
@@ -249,6 +256,9 @@ namespace Nethereum.Signer.Crypto.BN128
             return new TwistPoint(X, Y, Z, T);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public TwistPoint ScalarMul(TwistPoint point, BigInteger scalar)
         {
             var result = new TwistPoint();
@@ -275,6 +285,9 @@ namespace Nethereum.Signer.Crypto.BN128
             return this.Set(result);
         }
 
+#if NET8_0 || NET9_0
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+#endif
         public bool IsInCorrectSubgroup()
         {
             if (IsInfinity())

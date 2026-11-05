@@ -3,11 +3,11 @@
   <PropertyGroup>
     <Description>Nethereum Utilities library, including Sha3 Keccack encoding and Address Checksum</Description>
     <AssemblyTitle>Nethereum.Util</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
     <AssemblyName>Nethereum.Util</AssemblyName>
     <PackageId>Nethereum.Util</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain</PackageTags>
 	<LangVersion>Latest</LangVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

@@ -14,6 +14,8 @@ namespace Nethereum.KeyStore
         protected readonly KeyStoreCrypto KeyStoreCrypto;
         protected readonly IRandomBytesGenerator RandomBytesGenerator;
 
+        public KeyStoreKdfLimits KdfLimits { get; set; } = new KeyStoreKdfLimits();
+
         protected KeyStoreServiceBase() : this(new RandomBytesGenerator(), new KeyStoreCrypto())
         {
         }
@@ -63,13 +65,14 @@ namespace Nethereum.KeyStore
 
         public byte[] DecryptCryptoStoreFromJson(string password, string json)
         {
-            var cryptoStore = JsonCryptoStoreSerialiser.Deserialise<T>(json);
+            var cryptoStore = KeyStoreParameterValidator.Parse(() => JsonCryptoStoreSerialiser.Deserialise<T>(json));
             return DecryptCryptoStore(password, cryptoStore);
         }
 
         public byte[] DecryptCryptoStore(string password, CryptoStore<T> cryptoStore)
         {
             if (cryptoStore == null) throw new ArgumentNullException(nameof(cryptoStore));
+            KeyStoreParameterValidator.ValidateVersion(cryptoStore.Version);
             return DecryptFromCryptoInfo(password, cryptoStore.Crypto);
         }
 
@@ -78,8 +81,16 @@ namespace Nethereum.KeyStore
 
         public virtual byte[] DecryptKeyStore(string password, KeyStore<T> keyStore)
         {
+            return DecryptKeyStore(password, keyStore, KdfLimits);
+        }
+
+        public byte[] DecryptKeyStore(string password, KeyStore<T> keyStore, KeyStoreKdfLimits limits)
+        {
             if (keyStore == null) throw new ArgumentNullException(nameof(keyStore));
-            return DecryptFromCryptoInfo(password, keyStore.Crypto);
+            KeyStoreParameterValidator.ValidateVersion(keyStore.Version);
+            var key = DecryptFromCryptoInfo(password, keyStore.Crypto, limits ?? KdfLimits);
+            KeyStoreAddressChecker.EnsureMatches(keyStore.Address, key);
+            return key;
         }
 
         public abstract string GetKdfType();
@@ -119,8 +130,13 @@ namespace Nethereum.KeyStore
 
         public byte[] DecryptKeyStoreFromJson(string password, string json)
         {
+            return DecryptKeyStoreFromJson(password, json, KdfLimits);
+        }
+
+        public byte[] DecryptKeyStoreFromJson(string password, string json, KeyStoreKdfLimits limits)
+        {
             var keyStore = DeserializeKeyStoreFromJson(json);
-            return DecryptKeyStore(password, keyStore);
+            return DecryptKeyStore(password, keyStore, limits);
         }
 
         protected CryptoInfo<T> CreateCryptoInfo(string password, byte[] payload, T kdfParams)
@@ -171,6 +187,11 @@ namespace Nethereum.KeyStore
         }
 
         protected abstract byte[] DecryptFromCryptoInfo(string password, CryptoInfo<T> cryptoInfo);
+
+        protected virtual byte[] DecryptFromCryptoInfo(string password, CryptoInfo<T> cryptoInfo, KeyStoreKdfLimits limits)
+        {
+            return DecryptFromCryptoInfo(password, cryptoInfo);
+        }
         protected abstract byte[] GenerateDerivedKey(string pasword, byte[] salt, T kdfParams);
 
         protected abstract T GetDefaultParams();

@@ -49,28 +49,7 @@ namespace Nethereum.Model
 
         public override Transaction7702 Decode(byte[] rlpData)
         {
-            if (rlpData[0] == Type)
-            {
-                rlpData = rlpData.SliceFrom(1);
-            }
-
-            var decodedList = RLP.RLP.Decode(rlpData);
-            var decodedElements = (RLPCollection)decodedList;
-            var chainId = decodedElements[0].RLPData.ToEvmUInt256FromRLPDecoded();
-            var nonce = decodedElements[1].RLPData.ToEvmUInt256FromRLPDecoded();
-            var maxPriorityFeePerGas = decodedElements[2].RLPData.ToEvmUInt256FromRLPDecoded();
-            var maxFeePerGas = decodedElements[3].RLPData.ToEvmUInt256FromRLPDecoded();
-            var gasLimit = decodedElements[4].RLPData.ToEvmUInt256FromRLPDecoded();
-            var receiverAddress = decodedElements[5].RLPData?.ToHex(true);
-            var amount = decodedElements[6].RLPData.ToEvmUInt256FromRLPDecoded();
-            var data = decodedElements[7].RLPData?.ToHex(true);
-            var accessList = AccessListRLPEncoderDecoder.DecodeAccessList(decodedElements[8].RLPData);
-            var authorizationList = AuthorisationListRLPEncoderDecoder.Decode(decodedElements[9].RLPData);
-
-            var signature = RLPSignedDataDecoder.DecodeSignature(decodedElements, 10);
-
-            return new Transaction7702(chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit,
-                receiverAddress, amount, data, accessList, authorizationList, signature);
+            return (Transaction7702)TransactionRlpDecoder.DecodeBody(rlpData, TransactionType.EIP7702, true);
         }
     }
 }

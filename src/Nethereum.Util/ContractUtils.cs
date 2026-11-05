@@ -64,6 +64,18 @@ namespace Nethereum.Util
         }
 
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "util-create2-bytes", "ContractUtils.CalculateCreate2Address from bytes")]
+        public static string CalculateCreate2Address(string address, byte[] salt, byte[] byteCode)
+        {
+            var sha3 = new Sha3Keccack();
+            var preimage = new byte[1 + 20 + salt.Length + 32];
+            preimage[0] = 0xff;
+            System.Array.Copy(address.HexToByteArray(), 0, preimage, 1, 20);
+            System.Array.Copy(salt, 0, preimage, 21, salt.Length);
+            System.Array.Copy(sha3.CalculateHash(byteCode), 0, preimage, 21 + salt.Length, 32);
+            return sha3.CalculateHash(preimage).ToHex().Substring(24).ConvertToEthereumChecksumAddress();
+        }
+
         public static bool IsContractByteCodeSizeAboveLimit(string byteCodeHex)
         {
             return byteCodeHex.RemoveHexPrefix().Length / 2 > MAXIMUM_BYTECODE_SIZE;
@@ -85,9 +97,6 @@ namespace Nethereum.Util
             {
                 throw new System.ArgumentException($"'{nameof(saltHex)}' needs to be 32 bytes", nameof(saltHex));
             }
-            //ensure the address is a checksum address for hex hashing
-            address = address.ConvertToEthereumChecksumAddress();
-
             var sha3 = new Sha3Keccack();
             return sha3.CalculateHashFromHex("0xff", address, saltHex, byteCodeHexHash)
                 .Substring(24).ConvertToEthereumChecksumAddress();

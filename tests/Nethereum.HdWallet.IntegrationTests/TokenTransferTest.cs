@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.TransactionReceipts;
 using Nethereum.StandardTokenEIP20;
@@ -22,12 +23,16 @@ namespace Nethereum.HdWallet.IntegrationTests
         }
 
         [Fact]
-        public async void ShouldBeAbleTransferTokensUsingTheHdWallet()
+        public async Task ShouldBeAbleTransferTokensUsingTheHdWallet()
         {
             var wallet = new Wallet(Words, Password);
             var account = wallet.GetAccount(0, EthereumClientIntegrationFixture.ChainId);
-            
-            var web3 = new Web3.Web3(account, _ethereumClientIntegrationFixture.GetWeb3().Client);
+
+            var fundedWeb3 = _ethereumClientIntegrationFixture.GetWeb3();
+            await fundedWeb3.Eth.GetEtherTransferService()
+                .TransferEtherAndWaitForReceiptAsync(account.Address, 1m).ConfigureAwait(false);
+
+            var web3 = new Web3.Web3(account, fundedWeb3.Client);
 
             ulong totalSupply = 1000000;
             var contractByteCode =

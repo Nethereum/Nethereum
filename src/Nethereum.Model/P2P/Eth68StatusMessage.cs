@@ -20,7 +20,7 @@ namespace Nethereum.Model.P2P
         public static byte[] Encode(Eth68StatusMessage msg)
         {
             return RLP.RLP.EncodeList(
-                RLP.RLP.EncodeElement(((long)msg.ProtocolVersion).ToBytesForRLPEncoding()),
+                RLP.RLP.EncodeElement(((long)(uint)msg.ProtocolVersion).ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(((long)msg.NetworkId).ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(msg.TotalDifficulty.ToBytesForRLPEncoding()),
                 RLP.RLP.EncodeElement(msg.BestHash),
@@ -31,21 +31,22 @@ namespace Nethereum.Model.P2P
 
         public static Eth68StatusMessage Decode(byte[] data)
         {
-            var items = (RLPCollection)RLP.RLP.Decode(data);
-
-            var forkIdItems = (RLPCollection)items[5];
-            ForkIdEncoder.DecodeItems(forkIdItems, out var forkHash, out var forkNext);
-
-            return new Eth68StatusMessage
+            var reader = new RlpReader(data);
+            var outer = reader.ReadListHeader();
+            var message = new Eth68StatusMessage
             {
-                ProtocolVersion = items[0].RLPData.ToIntFromRLPDecoded(),
-                NetworkId = (ulong)items[1].RLPData.ToLongFromRLPDecoded(),
-                TotalDifficulty = items[2].RLPData.ToBigIntegerFromRLPDecoded(),
-                BestHash = items[3].RLPData,
-                GenesisHash = items[4].RLPData,
-                ForkHash = forkHash,
-                ForkNext = forkNext
+                ProtocolVersion = unchecked((int)PeerRlp.ReadUInt32(reader)),
+                NetworkId = reader.ReadUInt64(),
+                TotalDifficulty = reader.ReadBigInteger(),
+                BestHash = reader.ReadFixed(PeerRlp.HashLength),
+                GenesisHash = reader.ReadFixed(PeerRlp.HashLength)
             };
+            ForkIdEncoder.Read(reader, out var forkHash, out var forkNext);
+            message.ForkHash = forkHash;
+            message.ForkNext = forkNext;
+            reader.EnsureEnd(outer);
+            reader.EnsureEnd();
+            return message;
         }
     }
 }

@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls\Nethereum.Signer.Bls.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Util\Nethereum.Util.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer.Bls.Herumi\Nethereum.Signer.Bls.Herumi.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -30,4 +31,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
+  </ItemGroup>
+
 </Project>

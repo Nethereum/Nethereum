@@ -479,7 +479,7 @@ public interface IRestHttpHelper
 `RestHttpHelper` additionally exposes a lower-level method not on the interface:
 
 ```csharp
-// Send a fully-constructed HttpRequestMessage directly (RestHttpHelper.cs:164)
+// Send a fully-constructed HttpRequestMessage directly; returns the raw response, so the caller owns the body and MaxResponseBytes does not apply
 public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request);
 ```
 
@@ -492,6 +492,9 @@ public class RestHttpHelper : IRestHttpHelper
 {
     // Constructor - optionally provide HttpClient
     public RestHttpHelper(HttpClient httpClient = null);
+
+    public const long DefaultMaxResponseBytes = 32L * 1024 * 1024;
+    public long MaxResponseBytes { get; set; } = DefaultMaxResponseBytes;
 
     // Implements all IRestHttpHelper methods
     // Throws Exception on non-success status codes
@@ -578,12 +581,27 @@ public class MultipartFile
 
 ## Important Notes
 
+### Response Size Cap
+
+`GetAsync`, `PostAsync`, `PutAsync`, `DeleteAsync` and `PostMultipartAsync` send with `ResponseHeadersRead` and read each response body, successful or not, through one bounded reader and decode it with the charset in the response `Content-Type` (UTF-8 when none is declared). A body larger than `MaxResponseBytes` (default `RestHttpHelper.DefaultMaxResponseBytes`, 32 MiB) throws `HttpRequestException`, from the declared `Content-Length` before reading, or while streaming when the length is not declared. `DeleteAsync` and the body of a non-success response are capped the same way: an over-cap error body throws `HttpRequestException` instead of the status exception. The public `SendAsync` returns the raw `HttpResponseMessage` and is not capped: its caller owns reading the body. Raise or lower the limit per instance:
+
+```csharp
+var restHelper = new RestHttpHelper(new HttpClient()) { MaxResponseBytes = 1024 * 1024 };
+
+try
+{
+    var data = await restHelper.GetAsync<MyData>("https://api.example.com/data");
+}
+catch (HttpRequestException)
+{
+}
+```
+
 ### Error Handling
 
 All methods throw `Exception` on non-success HTTP status codes. The message format
-differs slightly by method: only `GetAsync` includes the response headers
-(`RestHttpHelper.cs:57`); `PostAsync`, `PutAsync`, `DeleteAsync`, and `PostMultipartAsync`
-omit them (`RestHttpHelper.cs:98,139,160,211`).
+differs slightly by method: only `GetAsync` includes the response headers;
+`PostAsync`, `PutAsync`, `DeleteAsync`, and `PostMultipartAsync` omit them.
 
 ```csharp
 try

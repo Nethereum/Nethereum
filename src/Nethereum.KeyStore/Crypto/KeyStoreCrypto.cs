@@ -79,6 +79,22 @@ namespace Nethereum.KeyStore.Crypto
         //http://stackoverflow.com/questions/34950611/how-to-create-a-pbkdf2-sha256-password-hash-in-c-sharp-bouncy-castle//
         public byte[] GeneratePbkdf2Sha256DerivedKey(string password, byte[] salt, int count, int dklen)
         {
+            return GeneratePbkdf2Sha256DerivedKey(password, salt, count, dklen, null);
+        }
+
+        public byte[] GeneratePbkdf2Sha256DerivedKey(string password, byte[] salt, int count, int dklen, KeyStoreKdfLimits limits)
+        {
+            if (password == null) throw new ArgumentNullException(nameof(password));
+            if (salt == null) throw new ArgumentNullException(nameof(salt));
+            if (limits == null) limits = KeyStoreKdfLimits.Default;
+            if (count < 1 || count > limits.MaxPbkdf2Iterations)
+                throw new ArgumentException("pbkdf2 iteration count is outside the allowed range", nameof(count));
+            if (dklen < 1) throw new ArgumentException("dklen must be at least 1", nameof(dklen));
+#if NET6_0_OR_GREATER
+            return System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                PbeParametersGenerator.Pkcs5PasswordToUtf8Bytes(password.ToCharArray()), salt, count,
+                System.Security.Cryptography.HashAlgorithmName.SHA256, dklen);
+#else
             var pdb = new Pkcs5S2ParametersGenerator(new Sha256Digest());
 
             //note Pkcs5PasswordToUtf8Bytes is the same as Encoding.UTF8.GetBytes(password)
@@ -89,6 +105,7 @@ namespace Nethereum.KeyStore.Crypto
             //if dklen == 32, then it is 256 (8 * 32)
             var key = (KeyParameter) pdb.GenerateDerivedMacParameters(8 * dklen);
             return key.GetKey();
+#endif
         }
 
         public byte[] GenerateAesCtrCipher(byte[] iv, byte[] encryptKey, byte[] input)
@@ -119,6 +136,13 @@ namespace Nethereum.KeyStore.Crypto
         public byte[] DecryptScrypt(string password, byte[] mac, byte[] iv, byte[] cipherText, int n, int p, int r,
             byte[] salt, int dklen)
         {
+            return DecryptScrypt(password, mac, iv, cipherText, n, p, r, salt, dklen, null);
+        }
+
+        public byte[] DecryptScrypt(string password, byte[] mac, byte[] iv, byte[] cipherText, int n, int p, int r,
+            byte[] salt, int dklen, KeyStoreKdfLimits limits)
+        {
+            KeyStoreParameterValidator.ValidateScryptCost(n, r, p, dklen, limits);
             var derivedKey = GenerateDerivedScryptKey(GetPasswordAsBytes(password), salt, n, r, p, dklen, false);
             return Decrypt(mac, iv, cipherText, derivedKey);
         }
@@ -126,7 +150,14 @@ namespace Nethereum.KeyStore.Crypto
         public byte[] DecryptPbkdf2Sha256(string password, byte[] mac, byte[] iv, byte[] cipherText, int c, byte[] salt,
             int dklen)
         {
-            var derivedKey = GeneratePbkdf2Sha256DerivedKey(password, salt, c, dklen);
+            return DecryptPbkdf2Sha256(password, mac, iv, cipherText, c, salt, dklen, null);
+        }
+
+        public byte[] DecryptPbkdf2Sha256(string password, byte[] mac, byte[] iv, byte[] cipherText, int c, byte[] salt,
+            int dklen, KeyStoreKdfLimits limits)
+        {
+            KeyStoreParameterValidator.ValidatePbkdf2Cost(c, dklen, limits);
+            var derivedKey = GeneratePbkdf2Sha256DerivedKey(password, salt, c, dklen, limits);
             return Decrypt(mac, iv, cipherText, derivedKey);
         }
 
@@ -142,9 +173,18 @@ namespace Nethereum.KeyStore.Crypto
         private void ValidateMac(byte[] mac, byte[] cipherText, byte[] derivedKey)
         {
             var generatedMac = GenerateMac(derivedKey, cipherText);
-            if (generatedMac.ToHex() != mac.ToHex())
+            if (mac == null || !FixedTimeEquals(generatedMac, mac))
                 throw new DecryptionException(
                     "Cannot derive the same mac as the one provided from the cipher and derived key");
+        }
+
+        private static bool FixedTimeEquals(byte[] left, byte[] right)
+        {
+            if (left.Length != right.Length) return false;
+            var difference = 0;
+            for (var i = 0; i < left.Length; i++)
+                difference |= left[i] ^ right[i];
+            return difference == 0;
         }
 
         public byte[] GetPasswordAsBytes(string password)

@@ -37,7 +37,7 @@ namespace Nethereum.KeyStore
 
         public override KeyStore<ScryptParams> DeserializeKeyStoreFromJson(string json)
         {
-            return JsonKeyStoreScryptSerialiser.DeserialiseScrypt(json);
+            return KeyStoreParameterValidator.Parse(() => JsonKeyStoreScryptSerialiser.DeserialiseScrypt(json));
         }
 
         public override string SerializeKeyStoreToJson(KeyStore<ScryptParams> keyStore)
@@ -52,17 +52,24 @@ namespace Nethereum.KeyStore
 
         protected override byte[] DecryptFromCryptoInfo(string password, CryptoInfo<ScryptParams> cryptoInfo)
         {
+            return DecryptFromCryptoInfo(password, cryptoInfo, KdfLimits);
+        }
+
+        protected override byte[] DecryptFromCryptoInfo(string password, CryptoInfo<ScryptParams> cryptoInfo, KeyStoreKdfLimits limits)
+        {
             if (password == null) throw new ArgumentNullException(nameof(password));
             if (cryptoInfo == null) throw new ArgumentNullException(nameof(cryptoInfo));
-
-            return KeyStoreCrypto.DecryptScrypt(password, cryptoInfo.Mac.HexToByteArray(),
-                cryptoInfo.CipherParams.Iv.HexToByteArray(),
-                cryptoInfo.CipherText.HexToByteArray(),
+            KeyStoreParameterValidator.ValidateEnvelope(cryptoInfo, KdfType);
+            KeyStoreParameterValidator.ValidateScrypt(cryptoInfo.Kdfparams, limits);
+            return KeyStoreCrypto.DecryptScrypt(password, KeyStoreParameterValidator.RequireHex(cryptoInfo.Mac, "mac", 0, int.MaxValue),
+                KeyStoreParameterValidator.RequireHex(cryptoInfo.CipherParams.Iv, "iv", 16, 16),
+                KeyStoreParameterValidator.RequireHex(cryptoInfo.CipherText, "ciphertext", 0, int.MaxValue),
                 cryptoInfo.Kdfparams.N,
                 cryptoInfo.Kdfparams.P,
                 cryptoInfo.Kdfparams.R,
-                cryptoInfo.Kdfparams.Salt.HexToByteArray(),
-                cryptoInfo.Kdfparams.Dklen);
+                KeyStoreParameterValidator.RequireHex(cryptoInfo.Kdfparams.Salt, "salt", 1, int.MaxValue),
+                cryptoInfo.Kdfparams.Dklen,
+                limits);
         }
     }
 }

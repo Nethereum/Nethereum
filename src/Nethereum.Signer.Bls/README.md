@@ -127,6 +127,38 @@ public interface IBls12381Operations
 }
 ```
 
+### IBls12381OutcomeOperations Interface
+
+An additive interface for implementations that report invalid EIP-2537 input as a return value instead of throwing. `IBls12381Operations` is unchanged and still throws; an implementation that can do both implements both, as `Bls12381Operations` does. The precompile handlers use the `Try` forms so that a call with malformed input fails the call without an exception (a zkVM guest is linked without exception handling).
+
+```csharp
+public interface IBls12381OutcomeOperations
+{
+    bool TryG1Add(byte[] p1, byte[] p2, out byte[] result);
+    bool TryG1Msm(byte[][] points, byte[][] scalars, out byte[] result);
+
+    bool TryG2Add(byte[] p1, byte[] p2, out byte[] result);
+    bool TryG2Msm(byte[][] points, byte[][] scalars, out byte[] result);
+
+    bool TryPairing(byte[][] g1Points, byte[][] g2Points, out bool pairs);
+
+    bool TryMapFpToG1(byte[] fp, out byte[] result);
+    bool TryMapFp2ToG2(byte[] fp2, out byte[] result);
+}
+```
+
+`true` means the input was valid and `result` (or `pairs`) holds the outcome; `false` means the input was malformed (wrong length, non-zero padding, a coordinate outside the field, a point off the curve or, where EIP-2537 requires it, outside the prime-order subgroup) and `result` is `null`.
+
+```csharp
+IBls12381OutcomeOperations operations = new Bls12381Operations();
+
+var infinity = new byte[128];
+var accepted = operations.TryG1Add(infinity, infinity, out var sum);
+var rejected = operations.TryG1Add(new byte[3], infinity, out var none);
+```
+
+Backed by `FoundationsBlsDocExampleTests.Given_InvalidAndValidEip2537Input_When_TryG1AddIsCalled_Then_InvalidInputReturnsFalseAndTheFacadeThrows` and `FoundationsBlsDocExampleTests.Given_MismatchedPairingInputs_When_TryPairingIsCalled_Then_FalseIsReturnedAndAnEmptyInputPairs`.
+
 ### BlsImplementationKind Enum
 
 ```csharp

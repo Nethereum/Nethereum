@@ -803,6 +803,50 @@ if (errorAbi != null)
 }
 ```
 
+## Decoding Untrusted ABI Data
+
+Decoders, the JSON ABI parser and the signature parser are safe to point at bytes or text from a node, a peer or a user.
+
+- **Declared sizes are checked against the bytes that exist.** An array that declares more elements than the remaining data can hold throws `Exception("Insufficient data length to decode Array...")` before anything is allocated (the size and offset arithmetic is done in 64 bits).
+- **Head offsets are validated.** An offset past the end of the data throws, and two head offsets that point at the same element throw `Exception("Duplicate offset in encoded data...")`. Each dynamic element is sliced from its offset to the next greater distinct offset, so decoding is linear in the data size. The same rules apply to arrays, tuples and `ParameterDecoder.DecodeOutput`.
+- **Nesting is limited to 32 levels** for signature strings (parentheses) and array types (brackets); beyond that `ABIStringSignatureDeserialiser` and `ABIType.CreateABIType` throw `ArgumentException`. A JSON ABI document may nest 68 JSON levels (`2 * 32 + 4`); beyond that `ABIJsonDeserialiser` throws a `JsonException`.
+- **Signature and bytecode parsing is a linear scan.** `ABIStringSignatureDeserialiser` and `ByteCodeSwarmExtractor` no longer use regular expressions, so a crafted signature or bytecode string cannot cause quadratic backtracking.
+
+```csharp
+var tuple = new string('(', 40) + "uint256" + new string(')', 40);
+Assert.Throws<ArgumentException>(() => new ABIStringSignatureDeserialiser().ExtractContractABI("function f(" + tuple + ")"));
+Assert.Throws<ArgumentException>(() => ABIType.CreateABIType("uint256" + string.Concat(Enumerable.Repeat("[]", 40))));
+
+var declaringTooMany = (Word(1 << 26) + Word(1)).HexToByteArray();
+Assert.ThrowsAny<Exception>(() => ABIType.CreateABIType("uint256[]").Decode<List<BigInteger>>(declaringTooMany));
+
+var sameOffsetTwice = (Word(2) + Word(0x40) + Word(0x40) + Word(1) + "61".PadRight(64, '0')).HexToByteArray();
+Assert.ThrowsAny<Exception>(() => ABIType.CreateABIType("string[]").Decode<List<string>>(sameOffsetTwice));
+```
+
+Backed by `FoundationsAbiDocExampleTests.Given_ASignatureOrArrayTypeNestedPastThirtyTwoLevels_When_Parsed_Then_ArgumentExceptionIsThrown`, `FoundationsAbiDocExampleTests.Given_AJsonAbiNestedFarPastTheLimit_When_Deserialised_Then_AJsonExceptionIsThrown`, `FoundationsAbiDocExampleTests.Given_AnArrayDeclaring67MillionElementsInTwoWords_When_Decoded_Then_TheDecoderRefusesBeforeAllocating`, `FoundationsAbiDocExampleTests.Given_ADynamicArrayWhoseTwoHeadOffsetsPointAtTheSameElement_When_Decoded_Then_TheDuplicateOffsetIsRefused` and `FoundationsAbiDocExampleTests.Given_AWellFormedStringArray_When_Decoded_Then_TheElementsAreReturned`.
+
+### EIP-712 encoding rules
+
+`Eip712TypedDataEncoder` encodes by the declared types, as go-ethereum's `apitypes` does:
+
+- A type is a struct if and only if it is a key in `types`, so a struct named `Point1` or `Mybytes4` encodes as a struct. Dependencies are collected with a visited set, primary type first and the rest sorted by name, so mutually recursive types (legal under EIP-712) encode. Empty member names or types, a member that references its own type directly, and unknown member types throw `ArgumentException`.
+- Values must match the declared type: an `address` is 40 hex digits with or without `0x`, or 20 bytes (`AddressUtil.AddressEmptyAsHex`, `"0x0"`, is the zero address); `bytesN` is exactly N bytes from `0x`-prefixed even-length hex or a byte array; `bytes` is hex or bytes, never null; `intN` / `uintN` accept decimal or `0x` hex strings, integral numbers or CLR integers and are range-checked for the declared width (`ArgumentException` when out of range); `bool` must be a `bool`.
+- Message and domain keys that the types do not declare are ignored, as MetaMask's `eth-sig-util` V4 does; a declared field that is missing throws `ArgumentException`.
+- Encoding does not write to the `TypedData<TDomain>` argument, and the domain is rebuilt from `Domain` on every encode: a domain changed after the first encode is the domain signed.
+- `TypedDataRaw.GetChainIdFromDomain()` reads `long`, `int`, `BigInteger` and decimal or `0x`-hex string chain ids, and returns `null` when the domain declares none.
+
+where `json` declares `Person` with a `friends` member of type `Person[]`:
+
+```csharp
+var encoded = Eip712TypedDataSigner.Current.EncodeTypedData(json);
+
+var raw = TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData(jsonWithChainId);
+BigInteger? chainId = raw.GetChainIdFromDomain();
+```
+
+Backed by `FoundationsEip712DocExampleTests.Given_ATypeThatReferencesItselfThroughAnArray_When_Encoded_Then_TheHashIsStable`, `FoundationsEip712DocExampleTests.Given_ATypeThatReferencesItselfDirectlyOrAnUnknownType_When_Encoded_Then_ArgumentExceptionIsThrown`, `FoundationsEip712DocExampleTests.Given_AnAddressWithAndWithoutThePrefixAndAnOutOfRangeInteger_When_Encoded_Then_TheAddressFormsMatchAndTheIntegerIsRefused`, `FoundationsEip712DocExampleTests.Given_AMessageWithAnExtraKeyAndAMessageMissingADeclaredKey_When_Encoded_Then_TheExtraKeyIsIgnoredAndTheMissingKeyIsRefused`, `FoundationsEip712DocExampleTests.Given_DomainsWithNumberDecimalAndHexChainIds_When_TheChainIdIsRead_Then_EachFormGivesTheSameChainId` and `Eip712DomainChangedAfterEncodeTests.Given_a_signed_typed_data_When_a_new_Domain_is_assigned_and_signed_again_Then_the_signature_is_for_the_new_domain` (in `Nethereum.Signer.UnitTests`).
+
 ## Related Packages
 
 - **Nethereum.Hex** - Hexadecimal encoding used throughout ABI operations

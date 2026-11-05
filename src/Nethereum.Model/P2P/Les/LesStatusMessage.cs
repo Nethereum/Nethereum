@@ -62,7 +62,7 @@ namespace Nethereum.Model.P2P.Les
 
         public static LesStatusMessage Decode(byte[] data)
         {
-            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            var outer = (RLPCollection)RLP.RLP.Decode(data, RLP.RLP.UntrustedElementBudget(data.Length));
             var msg = new LesStatusMessage();
             foreach (RLPCollection entry in outer)
             {

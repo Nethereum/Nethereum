@@ -64,6 +64,11 @@ namespace Nethereum.RLP
             return (long) ToBigIntegerFromRLPDecoded(bytes);
         }
 
+        public static long ToLongBitsFromRLPDecoded(this byte[] bytes)
+        {
+            return unchecked((long) ToULongFromRLPDecoded(bytes));
+        }
+
         public static ulong ToULongFromRLPDecoded(this byte[] bytes)
         {
             return (ulong) ToBigIntegerFromRLPDecoded(bytes);
